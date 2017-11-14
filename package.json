@@ -1,0 +1,62 @@
+{
+  "name": "type-autofac",
+  "version": "0.0.1",
+  "description": "type-autofac is ioc container, via typescript decorator",
+  "main": "./lib/index.js",
+  "typings": "./lib/index",
+  "scripts": {
+    "gulp": "gulp",
+    "postinstall": "npm prune",
+    "reinstall": "npm cache clean && npm install",
+    "test": "gulp build --test",
+    "debug": "npm build && node dist/app.js",
+    "prepublish": "gulp build --release",
+    "e2e": "protractor",
+    "e2e.live": "protractor --elementExplorer"
+  },
+  "keywords": [
+    "typescript",
+    "mvc",
+    "decorators",
+    "di",
+    "frameworker",
+    "koa"
+  ],
+  "author": "houjun",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhouhoujun/type-autofac/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhouhoujun/type-autofac.git"
+  },
+  "dependencies": {
+    "globby": "^6.1.0",
+    "reflect-metadata": "^0.1.10"
+  },
+  "devDependencies": {
+    "bluebird": "^3.4.1",
+    "checksum": "^0.1.1",
+    "development-assert-ts": "^2.1.3",
+    "development-core": "^2.1.6",
+    "development-tool": "^2.1.3",
+    "development-tool-node": "^2.1.0",
+    "gulp": "^3.9.1",
+    "gulp-html-replace": "^1.6.1",
+    "gulp-mocha": "^4.3.0",
+    "gulp-replace": "^0.5.4",
+    "gulp-uglify": "^1.5.4",
+    "lodash": "^4.13.1",
+    "through2": "^2.0.3",
+    "ts-node": "^3.0.2",
+    "tslint": "^5.0.0",
+    "tslint-stylish": "^2.1.0",
+    "typescript": "^2.2.2",
+    "vinyl-buffer": "^1.0.0",
+    "vinyl-paths": "^2.1.0",
+    "vinyl-source-stream": "^1.1.0",
+    "zone.js": "^0.8.5"
+  },
+  "homepage": "https://github.com/zhouhoujun/type-autofac#readme"
+}

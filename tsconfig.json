@@ -1,0 +1,32 @@
+{
+    "name": "development-tool",
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2017",
+        "lib": ["dom", "es2015", "es2017"],
+        "declaration": true,
+        "allowSyntheticDefaultImports": true,
+        "removeComments": false,
+        "noLib": false,
+        "jsx": "react",
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "sourceMap": true,
+        "pretty": true,
+        "allowUnreachableCode": false,
+        "allowUnusedLabels": false,
+        "noImplicitAny": false,
+        "noImplicitReturns": true,
+        "noImplicitUseStrict": false,
+        "noFallthroughCasesInSwitch": true,
+        "moduleResolution": "node",
+        "suppressImplicitAnyIndexErrors": true,
+        "skipDefaultLibCheck": true
+    },
+    "exclude": [
+        "lib",
+        "node_modules",
+        "jspm_packages"
+    ],
+    "compileOnSave": false
+}
