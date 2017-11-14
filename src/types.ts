@@ -1,6 +1,5 @@
 import { Type } from './Type';
 import { Registration } from './Registration';
-import { type } from 'os';
 import { IContainer } from './IContainer';
 
 /**

@@ -1,6 +1,12 @@
 import { Token } from './types';
 
 
+/**
+ * container interface.
+ *
+ * @export
+ * @interface IContainer
+ */
 export interface IContainer {
     /**
      * Retrieves an instance from the injector based on the provided token.

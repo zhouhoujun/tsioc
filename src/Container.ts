@@ -125,7 +125,7 @@ export class Container implements IContainer {
             let instance = new ClassT(...paramInstances);
             if (instance) {
                 props.forEach((prop, idx) => {
-                    instance[prop.bindingPropertyName] = this.get(prop.type);
+                    instance[prop.propertyName] = this.get(prop.type);
                 });
             }
 

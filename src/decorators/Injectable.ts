@@ -1,15 +1,14 @@
 import { Type } from '../Type';
-import { createClassDecorator } from './factories';
+import { createClassDecorator, ClassMetadata } from './factories';
 
 /**
  * Injectable. default a
  *
  * @export
- * @interface InjectableDecorator
+ * @interface InjectableMetadata
  */
-export interface InjectableDecorator {
-    (): any;
-    new (): any;
+export interface InjectableMetadata extends ClassMetadata {
+    alias?: string;
 }
 
 
@@ -19,5 +18,5 @@ export interface InjectableDecorator {
  * @stable
  * @Annotation
  */
-export const Injectable = createClassDecorator<InjectableDecorator>('Injectable');
+export const Injectable = createClassDecorator<InjectableMetadata>('Injectable');
 

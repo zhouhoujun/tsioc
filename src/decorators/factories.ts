@@ -26,6 +26,23 @@ export function createDecorator<T>(name: string) {
 }
 
 /**
+ * class metadata
+ *
+ * @export
+ * @interface ClassMetadata
+ */
+export interface ClassMetadata {
+
+    /**
+     * property type
+     *
+     * @type {(Type<any> | string)}
+     * @memberof PropertyMetadata
+     */
+    type?: Type<any> | string;
+}
+
+/**
  * create class decorator
  *
  * @export
