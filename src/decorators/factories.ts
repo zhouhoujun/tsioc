@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { Type } from '../Type';
-import { magenta } from 'chalk';
+import { PropertyMetadata, ClassMetadata, MethodMetadata, ParameterMetadata } from './Metadata';
 
 
 /**
@@ -25,22 +25,6 @@ export function createDecorator<T>(name: string) {
     }
 }
 
-/**
- * class metadata
- *
- * @export
- * @interface ClassMetadata
- */
-export interface ClassMetadata {
-
-    /**
-     * property type
-     *
-     * @type {(Type<any> | string)}
-     * @memberof PropertyMetadata
-     */
-    type?: Type<any> | string;
-}
 
 /**
  * create class decorator
@@ -50,14 +34,18 @@ export interface ClassMetadata {
  * @param {string} name decorator name.
  * @returns {*}
  */
-export function createClassDecorator<T>(name: string): any {
-
+export function createClassDecorator<T extends ClassMetadata>(name: string): any {
+    let metaName = `class`;
     function ClassDecoratorFactory(metadata?: T) {
+        this.metaName = metadata;
         return function (clsDef: Function) {
             applyParams(clsDef.hasOwnProperty('constructor') ? clsDef.constructor : undefined, 'constructor');
-            let annotations = Reflect.getOwnMetadata('autofac:class', clsDef) || [];
-            annotations.push(metadata);
-            Reflect.defineMetadata('autofac:class', annotations, clsDef);
+            let annotations = Reflect.getOwnMetadata(metaName, clsDef) || [];
+
+            let classMetadata: ClassMetadata = metadata || {};
+            classMetadata.decorator = name;
+            annotations.push(classMetadata);
+            Reflect.defineMetadata(metaName, annotations, clsDef);
             return clsDef;
         }
     }
@@ -74,11 +62,12 @@ export function createClassDecorator<T>(name: string): any {
  * @param {string} name decorator name.
  * @returns
  */
-export function createParamDecorator<T>(name: string) {
+export function createParamDecorator<T extends ParameterMetadata>(name: string) {
+    let metaName = `parameters`;
     function ParamDecoratorFactory(metadata?: T) {
-
+        this.metaName = metaName;
         return function ParamDecorator(cls: Function, propertyKey: string | symbol, index: number) {
-            let parameters: any[][] = Reflect.getOwnMetadata('autofac:parameters', cls) || [];
+            let parameters: any[][] = Reflect.getOwnMetadata(metaName, cls) || [];
 
             // there might be gaps if some in between parameters do not have annotations.
             // we pad with nulls.
@@ -87,9 +76,12 @@ export function createParamDecorator<T>(name: string) {
             }
 
             parameters[index] = parameters[index] || [];
-            parameters[index].push(metadata);
 
-            Reflect.defineMetadata('parameters', parameters, cls);
+            let paramMeadata: ParameterMetadata = metadata || {};
+            paramMeadata.decorator = name;
+            parameters[index].push(paramMeadata);
+
+            Reflect.defineMetadata(metaName, parameters, cls);
             return cls;
         }
     }
@@ -106,14 +98,18 @@ export function createParamDecorator<T>(name: string) {
  * @param {string} name decorator name.
  * @returns
  */
-export function createMethodDecorator<T>(name: string) {
-
+export function createMethodDecorator<T extends MethodMetadata>(name: string) {
+    let metaName = `method`;
     function MethodDecoratorFactory(metadata?: T) {
+        this.metaName = metaName;
         return function (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): TypedPropertyDescriptor<T> | void {
-            let meta = Reflect.getOwnMetadata('autofac:methods', target.constructor) || {};
+            let meta = Reflect.getOwnMetadata(metaName, target.constructor) || {};
             meta[propertyKey] = meta.hasOwnProperty(propertyKey) && meta[propertyKey] || [];
-            meta[propertyKey].unshift(metadata);
-            Reflect.defineMetadata('autofac:methods', meta, target.constructor);
+
+            let methodMeadata: MethodMetadata = metadata || {};
+            methodMeadata.decorator = name;
+            meta[propertyKey].unshift(methodMeadata);
+            Reflect.defineMetadata(metaName, meta, target.constructor);
         };
     }
 
@@ -122,28 +118,10 @@ export function createMethodDecorator<T>(name: string) {
 
 }
 
-/**
- * property metadata
- *
- * @export
- * @interface PropMetadata
- */
-export interface PropertyMetadata {
-    /**
-     * property name
-     *
-     * @type {string}
-     * @memberof PropertyMetadata
-     */
-    propertyName?: string | symbol;
+export interface IPropertyDecorator extends PropertyDecorator {
+    metaName: string;
+    toString(): string;
 
-    /**
-     * property type
-     *
-     * @type {(Type<any> | string)}
-     * @memberof PropertyMetadata
-     */
-    type?: Type<any> | string;
 }
 
 /**
@@ -155,20 +133,23 @@ export interface PropertyMetadata {
  * @returns
  */
 export function createPropDecorator<T extends PropertyMetadata>(name: string) {
-    function PropDecoratorFactory(metadata?: T): PropertyDecorator {
+    let metaName = `property`;
+    function PropDecoratorFactory(metadata?: T) {
         return function PropDecorator(target: any, propertyKey: string | symbol) {
-            let meta = Reflect.getOwnMetadata('autofac:props', target.constructor) || {};
-            let propmetadata: PropertyMetadata = metadata || { };
+            let meta = Reflect.getOwnMetadata(metaName, target.constructor) || {};
+            let propmetadata: PropertyMetadata = metadata || {};
 
             propmetadata.propertyName = propertyKey;
+            propmetadata.decorator = name;
             // propmetadata.type = propmetadata.type;
 
             meta[propertyKey] = meta.hasOwnProperty(propertyKey) && meta[propertyKey] || [];
             meta[propertyKey].unshift(propmetadata);
-            Reflect.defineMetadata('autofac:props', meta, target.constructor);
+            Reflect.defineMetadata(metaName, meta, target.constructor);
         };
     }
 
+    PropDecoratorFactory.prototype.metaName = metaName;
     PropDecoratorFactory.prototype.toString = () => `@${name}`;
     return PropDecoratorFactory;
 }
@@ -219,7 +200,7 @@ function applyParams(fnOrArray: (Function | any[]), key: string): Function {
                 paramAnno.push(annotation);
             }
         }
-        Reflect.defineMetadata('autofac:parameters', paramsAnnotations, fn);
+        Reflect.defineMetadata('parameters', paramsAnnotations, fn);
         return fn;
     }
 

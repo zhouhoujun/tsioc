@@ -1,5 +1,6 @@
-import { createPropDecorator, PropertyMetadata } from './factories';
+import { createPropDecorator } from './factories';
 import { Type } from '../Type';
+import { PropertyMetadata } from './Metadata';
 
 
 /**

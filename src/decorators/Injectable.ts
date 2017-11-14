@@ -1,5 +1,6 @@
 import { Type } from '../Type';
-import { createClassDecorator, ClassMetadata } from './factories';
+import { createClassDecorator } from './factories';
+import { ClassMetadata } from './Metadata';
 
 /**
  * Injectable. default a

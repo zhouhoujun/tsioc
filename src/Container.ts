@@ -137,18 +137,18 @@ export class Container implements IContainer {
     }
 
     protected getParameterMetadata<T>(type: Type<T>): Type<T>[] {
-        let parameters: Type<T>[] = Reflect.getMetadata('autofac:parameters', type) || [];
+        let parameters: Type<T>[] = Reflect.getMetadata('fac:parameters', type) || [];
         return parameters;
     }
 
     protected getAutoWriedMetadata<T>(type: Type<T>): AutoWiredMetadata[] {
-        let parameters: AutoWiredMetadata[] = Reflect.getMetadata('autofac:AutoWired', type) || [];
+        let parameters: AutoWiredMetadata[] = Reflect.getMetadata('fac:AutoWired', type) || [];
         return parameters;
     }
 
     protected registerDependencies<T>(...deps: Token<T>[]) {
         deps.forEach(Deptype => {
-            let InjectableConfig = Reflect.getMetadata('autofac:Injectable', Deptype);
+            let InjectableConfig = Reflect.getMetadata(Injectable.metaName, Deptype);
             if (InjectableConfig) {
                 this.register(Deptype, InjectableConfig);
             }
