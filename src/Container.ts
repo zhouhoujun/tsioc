@@ -1,10 +1,11 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
-import { Token, Factory } from './types';
+import { Token, Factory, ObjectMap } from './types';
 import { Registration } from './Registration';
 import { Injectable } from './decorators/Injectable';
 import { Type } from './Type';
 import { AutoWired, AutoWiredMetadata } from './decorators/AutoWried';
+import { ParameterMetadata } from './decorators/Metadata';
 
 
 export const NOT_FOUND = new Object();
@@ -17,6 +18,16 @@ export class Container implements IContainer {
     private singleton: Map<Token<any>, any>;
     constructor() {
         this.factories = new Map<Token<any>, any>();
+        this.singleton = new Map<Token<any>, any>();
+        this.init();
+    }
+
+    init() {
+        this.register(Date);
+        this.register(String);
+        this.register(Number);
+        this.register(Boolean);
+        this.register(Object);
     }
 
     /**
@@ -121,7 +132,7 @@ export class Container implements IContainer {
                 return this.singleton.get(key);
             }
 
-            let paramInstances = parameters.map((ParamClass, index) => this.get(ParamClass));
+            let paramInstances = parameters.map((type, index) => this.get(type));
             let instance = new ClassT(...paramInstances);
             if (instance) {
                 props.forEach((prop, idx) => {
@@ -136,19 +147,31 @@ export class Container implements IContainer {
         };
     }
 
-    protected getParameterMetadata<T>(type: Type<T>): Type<T>[] {
-        let parameters: Type<T>[] = Reflect.getMetadata('fac:parameters', type) || [];
-        return parameters;
+    protected getParameterMetadata<T>(type: Type<T>): Type<any>[] {
+        let designParams: Type<any>[] = Reflect.getMetadata('design:paramtypes', type) || [];
+        let parameters: ParameterMetadata[] = Reflect.getMetadata(AutoWired.toString(), type) || [];
+        if (Array.isArray(parameters)) {
+            parameters.forEach(parm => {
+                if (parm.index >= 0 && parm.type) {
+                    designParams[parm.index] = parm.type;
+                }
+            });
+        }
+        return designParams;
     }
 
     protected getAutoWriedMetadata<T>(type: Type<T>): AutoWiredMetadata[] {
-        let parameters: AutoWiredMetadata[] = Reflect.getMetadata('fac:AutoWired', type) || [];
-        return parameters;
+        let prop = Reflect.getMetadata(AutoWired.toString(), type) || {} as ObjectMap<AutoWiredMetadata[]>;
+        let props = [];
+        for (let n in prop) {
+            props = props.concat(prop[n]);
+        }
+        return props;
     }
 
     protected registerDependencies<T>(...deps: Token<T>[]) {
         deps.forEach(Deptype => {
-            let InjectableConfig = Reflect.getMetadata(Injectable.metaName, Deptype);
+            let InjectableConfig = Reflect.getMetadata(Injectable.toString(), Deptype);
             if (InjectableConfig) {
                 this.register(Deptype, InjectableConfig);
             }

@@ -34,19 +34,17 @@ export function createDecorator<T>(name: string) {
  * @param {string} name decorator name.
  * @returns {*}
  */
-export function createClassDecorator<T extends ClassMetadata>(name: string): any {
-    let metaName = `class`;
+export function createClassDecorator<T extends ClassMetadata>(name: string) {
+    let metaName = `@${name}`;
     function ClassDecoratorFactory(metadata?: T) {
-        this.metaName = metadata;
-        return function (clsDef: Function) {
-            applyParams(clsDef.hasOwnProperty('constructor') ? clsDef.constructor : undefined, 'constructor');
-            let annotations = Reflect.getOwnMetadata(metaName, clsDef) || [];
-
+        return function (target: any) {
+            let annotations = Reflect.getMetadata(metaName, target) || [];
+            // let designParams = Reflect.getMetadata('design:paramtypes', target) || [];
             let classMetadata: ClassMetadata = metadata || {};
             classMetadata.decorator = name;
             annotations.push(classMetadata);
-            Reflect.defineMetadata(metaName, annotations, clsDef);
-            return clsDef;
+            Reflect.defineMetadata(metaName, annotations, target);
+            return target;
         }
     }
     ClassDecoratorFactory.prototype.toString = () => `@${name}`;
@@ -63,26 +61,33 @@ export function createClassDecorator<T extends ClassMetadata>(name: string): any
  * @returns
  */
 export function createParamDecorator<T extends ParameterMetadata>(name: string) {
-    let metaName = `parameters`;
+    let metaName = `@${name}`;
     function ParamDecoratorFactory(metadata?: T) {
-        this.metaName = metaName;
-        return function ParamDecorator(cls: Function, propertyKey: string | symbol, index: number) {
-            let parameters: any[][] = Reflect.getOwnMetadata(metaName, cls) || [];
+        return function ParamDecorator(target: any, propertyKey: string | symbol, parameterIndex: number) {
+            let parameters: any[][] = Reflect.getOwnMetadata(metaName, target) || [];
 
             // there might be gaps if some in between parameters do not have annotations.
             // we pad with nulls.
-            while (parameters.length <= index) {
+            while (parameters.length <= parameterIndex) {
                 parameters.push(null);
             }
 
-            parameters[index] = parameters[index] || [];
+            parameters[parameterIndex] = parameters[parameterIndex] || [];
 
             let paramMeadata: ParameterMetadata = metadata || {};
-            paramMeadata.decorator = name;
-            parameters[index].push(paramMeadata);
 
-            Reflect.defineMetadata(metaName, parameters, cls);
-            return cls;
+            let t = Reflect.getMetadata('design:type', target, propertyKey);
+            if (!t) {
+                // Needed to support react native inheritance
+                t = Reflect.getMetadata('design:type', target.constructor, propertyKey);
+            }
+            paramMeadata.decorator = name;
+            paramMeadata.type = paramMeadata.type || t;
+            paramMeadata.index = parameterIndex;
+            parameters[parameterIndex].push(paramMeadata);
+
+            Reflect.defineMetadata(metaName, parameters, target);
+            return target;
         }
     }
     ParamDecoratorFactory.prototype.toString = () => `@${name}`;
@@ -99,17 +104,17 @@ export function createParamDecorator<T extends ParameterMetadata>(name: string) 
  * @returns
  */
 export function createMethodDecorator<T extends MethodMetadata>(name: string) {
-    let metaName = `method`;
+    let metaName = `@${name}`;
     function MethodDecoratorFactory(metadata?: T) {
         this.metaName = metaName;
         return function (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): TypedPropertyDescriptor<T> | void {
-            let meta = Reflect.getOwnMetadata(metaName, target.constructor) || {};
+            let meta = Reflect.getOwnMetadata(metaName, target) || {};
             meta[propertyKey] = meta.hasOwnProperty(propertyKey) && meta[propertyKey] || [];
 
             let methodMeadata: MethodMetadata = metadata || {};
             methodMeadata.decorator = name;
             meta[propertyKey].unshift(methodMeadata);
-            Reflect.defineMetadata(metaName, meta, target.constructor);
+            Reflect.defineMetadata(metaName, meta, target);
         };
     }
 
@@ -133,15 +138,20 @@ export interface IPropertyDecorator extends PropertyDecorator {
  * @returns
  */
 export function createPropDecorator<T extends PropertyMetadata>(name: string) {
-    let metaName = `property`;
+    let metaName = `@${name}`;
     function PropDecoratorFactory(metadata?: T) {
         return function PropDecorator(target: any, propertyKey: string | symbol) {
-            let meta = Reflect.getOwnMetadata(metaName, target.constructor) || {};
+            let meta = Reflect.getOwnMetadata(metaName, target) || {};
             let propmetadata: PropertyMetadata = metadata || {};
 
             propmetadata.propertyName = propertyKey;
             propmetadata.decorator = name;
-            // propmetadata.type = propmetadata.type;
+            let t = Reflect.getMetadata('design:type', target, propertyKey);
+            if (!t) {
+                // Needed to support react native inheritance
+                t = Reflect.getMetadata('design:type', target.constructor, propertyKey);
+            }
+            propmetadata.type = propmetadata.type || t;
 
             meta[propertyKey] = meta.hasOwnProperty(propertyKey) && meta[propertyKey] || [];
             meta[propertyKey].unshift(propmetadata);
@@ -149,83 +159,7 @@ export function createPropDecorator<T extends PropertyMetadata>(name: string) {
         };
     }
 
-    PropDecoratorFactory.prototype.metaName = metaName;
+    // PropDecoratorFactory.prototype.metaName = metaName;
     PropDecoratorFactory.prototype.toString = () => `@${name}`;
     return PropDecoratorFactory;
-}
-
-function extractAnnotation(annotation: any): any {
-    if (typeof annotation === 'function' && annotation.hasOwnProperty('annotation')) {
-        // it is a decorator, extract annotation
-        annotation = annotation.annotation;
-    }
-    return annotation;
-}
-
-function applyParams(fnOrArray: (Function | any[]), key: string): Function {
-
-    if (fnOrArray === Object || fnOrArray === String || fnOrArray === Function ||
-        fnOrArray === Number || fnOrArray === Array) {
-        throw new Error(`Can not use native ${stringify(fnOrArray)} as constructor`);
-    }
-
-    if (typeof fnOrArray === 'function') {
-        return fnOrArray;
-    }
-
-    if (Array.isArray(fnOrArray)) {
-        let annotations: any[] = fnOrArray;
-        let annoLength = annotations.length - 1;
-        let fn: Function = fnOrArray[annoLength];
-        if (typeof fn !== 'function') {
-            throw new Error(
-                `Last position of Class method array must be Function in key ${key} was '${stringify(fn)}'`);
-        }
-        if (annoLength !== fn.length) {
-            throw new Error(
-                `Number of annotations (${annoLength}) does not match number of arguments (${fn.length}) in the function: ${stringify(fn)}`);
-        }
-        let paramsAnnotations: any[][] = [];
-        for (let i = 0, ii = annotations.length - 1; i < ii; i++) {
-            let paramAnno: any[] = [];
-            paramsAnnotations.push(paramAnno);
-            let annotation = annotations[i];
-            if (Array.isArray(annotation)) {
-                for (let j = 0; j < annotation.length; j++) {
-                    paramAnno.push(extractAnnotation(annotation[j]));
-                }
-            } else if (typeof annotation === 'function') {
-                paramAnno.push(extractAnnotation(annotation));
-            } else {
-                paramAnno.push(annotation);
-            }
-        }
-        Reflect.defineMetadata('parameters', paramsAnnotations, fn);
-        return fn;
-    }
-
-    throw new Error(
-        `Only Function or Array is supported in Class definition for key '${key}' is '${stringify(fnOrArray)}'`);
-}
-
-function stringify(token: any): string {
-    if (typeof token === 'string') {
-        return token;
-    }
-
-    if (token == null) {
-        return '' + token;
-    }
-
-    if (token.overriddenName) {
-        return `${token.overriddenName}`;
-    }
-
-    if (token.name) {
-        return `${token.name}`;
-    }
-
-    let res = token.toString();
-    let newLineIndex = res.indexOf('\n');
-    return newLineIndex === -1 ? res : res.substring(0, newLineIndex);
 }

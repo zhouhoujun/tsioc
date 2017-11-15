@@ -5,12 +5,12 @@
   "main": "./lib/index.js",
   "typings": "./lib/index",
   "scripts": {
-    "gulp": "gulp",
     "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",
-    "test": "gulp build --test",
-    "debug": "npm build && node dist/app.js",
-    "prepublish": "gulp build --release",
+    "start": "gulp start",
+    "test": "gulp start --test",
+    "debug": "gulp start && node lib/debug.js",
+    "prepublish": "gulp start --release",
     "e2e": "protractor",
     "e2e.live": "protractor --elementExplorer"
   },

@@ -51,10 +51,10 @@ export interface PropertyMetadata extends Metadate {
     /**
      * property type
      *
-     * @type {(Type<any> | string)}
+     * @type {Type<any>}
      * @memberof PropertyMetadata
      */
-    type?: Type<any> | string;
+    type?: Type<any>;
 }
 
 /**
@@ -71,8 +71,10 @@ export interface ParameterMetadata extends Metadate {
     /**
      * parameter type
      *
-     * @type {(Type<any> | string)}
+     * @type {Type<any>}
      * @memberof PropertyMetadata
      */
-    type?: Type<any> | string;
+    type?: Type<any>;
+
+    index?: number;
 }

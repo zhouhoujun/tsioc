@@ -1,14 +1,14 @@
 {
-    "name": "development-tool",
+    "name": "type-autofac",
     "compilerOptions": {
         "module": "commonjs",
-        "target": "es2017",
+        "target":"es5",
         "lib": ["dom", "es2015", "es2017"],
         "declaration": true,
         "allowSyntheticDefaultImports": true,
         "removeComments": false,
         "noLib": false,
-        "jsx": "react",
+        "jsx":"preserve",
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "sourceMap": true,
@@ -20,13 +20,11 @@
         "noImplicitUseStrict": false,
         "noFallthroughCasesInSwitch": true,
         "moduleResolution": "node",
-        "suppressImplicitAnyIndexErrors": true,
-        "skipDefaultLibCheck": true
-    },
-    "exclude": [
+        "suppressImplicitAnyIndexErrors": true
+      },
+      "exclude": [
         "lib",
-        "node_modules",
-        "jspm_packages"
-    ],
-    "compileOnSave": false
+        "node_modules"    
+      ],
+      "compileOnSave": false
 }
