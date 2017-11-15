@@ -10,16 +10,16 @@ describe('AutoWried test', () => {
         constructor() {
         }
 
-        @AutoWired()
+        @AutoWired
         dateProperty: Date;
     }
 
-    @Injectable()
+    @Injectable
     class RoomService {
         constructor() {
 
         }
-        @AutoWired()
+        @AutoWired
         current: Date;
     }
 
@@ -36,7 +36,7 @@ describe('AutoWried test', () => {
         abstract sayHi(): string;
     }
 
-    @Injectable
+    @Injectable()
     class MiddleSchoolStudent extends Student {
         constructor() {
             super();

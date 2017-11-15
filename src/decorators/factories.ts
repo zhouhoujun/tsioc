@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { Type } from '../Type';
 import { PropertyMetadata, ClassMetadata, MethodMetadata, ParameterMetadata } from './Metadata';
-import { arch } from 'os';
+import { arch, type } from 'os';
 
 
 /**
@@ -30,6 +30,8 @@ export function createDecorator<T>(name: string) {
     }
 }
 
+export type DecoratorFactory<T, TDecorator> = TDecorator | ((meatedata: T) => TDecorator);
+
 /**
  * create parameter or property decorator
  *
@@ -38,9 +40,12 @@ export function createDecorator<T>(name: string) {
  * @param {string} name
  * @returns
  */
-export function createParamPropDecorator<T>(name: string): (target?: any, propertyKey?: string | symbol, parameterIndex?: number) => any {
+export function createParamPropDecorator<T>(name: string) {
     return function (...args: any[]) {
-        if (args.length <= 3 && typeof args[2] !== 'number') {
+        if (args.length === 1 && typeof args[0] === 'function') {
+            throw new Error(`Invalid @${name} Decorator declaration.`);
+        }
+        if (args.length < 3 || typeof args[2] === 'undefined') {
             return createPropDecorator<T>(name).apply(this, args);
         } else if (args.length === 3 && typeof args[2] === 'number') {
             return createParamDecorator<T>(name).apply(this, args);
@@ -59,15 +64,15 @@ export function createParamPropDecorator<T>(name: string): (target?: any, proper
  * @param {string} name decorator name.
  * @returns {*}
  */
-export function createClassDecorator<T extends ClassMetadata>(name: string) {
+export function createClassDecorator<T extends ClassMetadata>(name: string): (target?: T | Type<any>) => any {
     let metaName = `@${name}`;
-    return function (target: any) {
+    return <TClass>(target?: T | Type<TClass>) => {
         if (target && typeof target === 'function') {
             setClassMetadata<T>(name, metaName, target);
             return target;
         } else {
-            let metadata = target;
-            return function (target: any) {
+            let metadata = target as T;
+            return (target: Type<TClass>) => {
                 setClassMetadata<T>(name, metaName, target, metadata);
                 return target;
             }
@@ -92,27 +97,26 @@ function setClassMetadata<T>(name: string, metaName: string, target: any, metada
  * @param {string} name decorator name.
  * @returns
  */
-export function createParamDecorator<T extends ParameterMetadata>(name: string): (target?: any, propertyKey?: string | symbol, parameterIndex?: number) => any {
+export function createParamDecorator<T extends ParameterMetadata>(name: string): any {
     let metaName = `@${name}`;
-    return function (...args: any[]) {
+    return (...args: any[]) => {
         if (args.length === 3 && typeof args[2] === 'number') {
             let target = args[0];
             let propertyKey = args[1];
             let parameterIndex = args[2];
             setParamMetadata<T>(name, metaName, target, propertyKey, parameterIndex);
-            return target;
+            return undefined;
 
         } else {
             let metadata = args[0];
-            return function (target: any, propertyKey: string | symbol, parameterIndex: number) {
+            return (target: any, propertyKey: string | symbol, parameterIndex: number) => {
                 setParamMetadata<T>(name, metaName, target, propertyKey, parameterIndex, metadata);
-                return target;
             }
         }
     };
 }
 
-function setParamMetadata<T>(name: string, metaName: string, target: any, propertyKey: string | symbol, parameterIndex: number, metadata?: T) {
+function setParamMetadata<T>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, parameterIndex: number, metadata?: T) {
     let parameters: any[][] = Reflect.getOwnMetadata(metaName, target) || [];
 
     // there might be gaps if some in between parameters do not have annotations.
@@ -135,7 +139,7 @@ function setParamMetadata<T>(name: string, metaName: string, target: any, proper
     paramMeadata.index = parameterIndex;
     parameters[parameterIndex].push(paramMeadata);
 
-    Reflect.defineMetadata(metaName, parameters, target);
+    Reflect.defineMetadata(metaName, parameters, target.constructor);
 }
 
 /**
@@ -146,7 +150,7 @@ function setParamMetadata<T>(name: string, metaName: string, target: any, proper
  * @param {string} name decorator name.
  * @returns
  */
-export function createMethodDecorator<T extends MethodMetadata>(name: string): (target?: any, propertyKey?: string | symbol, descriptor?: TypedPropertyDescriptor<T>) => any {
+export function createMethodDecorator<T extends MethodMetadata>(name: string): DecoratorFactory<T, MethodDecorator> {
     let metaName = `@${name}`;
     return (...args: any[]) => {
         if (args.length === 3 && typeof args[2] !== 'number') {
@@ -154,33 +158,28 @@ export function createMethodDecorator<T extends MethodMetadata>(name: string): (
             let propertyKey = args[1];
             let descriptor = args[2];
             setMethodMetadata<T>(name, metaName, target, propertyKey, descriptor);
-            return target;
+            return descriptor;
 
         } else {
             let metadata = args[0];
-            return function (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): TypedPropertyDescriptor<T> | void {
-                setMethodMetadata<T>(name, metaName, target, propertyKey, descriptor, metadata);
-                return target;
+            return <T>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): TypedPropertyDescriptor<T> | void => {
+                setMethodMetadata<T>(name, metaName, target as Type<T>, propertyKey, descriptor, metadata);
+                return descriptor;
             };
         }
     }
 }
 
-function setMethodMetadata<T>(name: string, metaName: string, target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>, metadata?: T) {
+function setMethodMetadata<T>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>, metadata?: T) {
     let meta = Reflect.getOwnMetadata(metaName, target) || {};
     meta[propertyKey] = meta.hasOwnProperty(propertyKey) && meta[propertyKey] || [];
 
     let methodMeadata: MethodMetadata = metadata || {};
     methodMeadata.decorator = name;
     meta[propertyKey].unshift(methodMeadata);
-    Reflect.defineMetadata(metaName, meta, target);
+    Reflect.defineMetadata(metaName, meta, target.constructor);
 }
 
-export interface IPropertyDecorator extends PropertyDecorator {
-    metaName: string;
-    toString(): string;
-
-}
 
 /**
  * create property decorator.
@@ -190,27 +189,25 @@ export interface IPropertyDecorator extends PropertyDecorator {
  * @param {string} name decorator name.
  * @returns
  */
-export function createPropDecorator<T extends PropertyMetadata>(name: string): (target?: any, propertyKey?: string | symbol) => any {
+export function createPropDecorator<T extends PropertyMetadata>(name: string): any {
     let metaName = `@${name}`;
-    return function (...args: any[]) {
+    return (...args: any[]) => {
         if (args.length > 1 && (args.length < 3 || typeof args[2] === 'undefined')) {
             let target = args[0];
             let propertyKey = args[1];
             let descriptor = args[2];
             setPropertyMetadata<T>(name, metaName, target, propertyKey);
-            return target;
-
+            return undefined;
         } else {
             let metadata = args[0];
-            return function PropDecorator(target: any, propertyKey: string | symbol) {
+            return (target: any, propertyKey: string | symbol) => {
                 setPropertyMetadata<T>(name, metaName, target, propertyKey, metadata);
-                return target;
             };
         };
     }
 }
 
-function setPropertyMetadata<T>(name: string, metaName: string, target: any, propertyKey: string | symbol, metadata?: T) {
+function setPropertyMetadata<T>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, metadata?: T) {
     let meta = Reflect.getOwnMetadata(metaName, target) || {};
     let propmetadata: PropertyMetadata = metadata || {};
 

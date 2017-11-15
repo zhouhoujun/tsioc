@@ -1,19 +1,12 @@
 import 'reflect-metadata';
-import { ContainerBuilder, AutoWired, Injectable } from './index';
-
-@Injectable
+import { ContainerBuilder, AutoWired, Injectable, Param } from './index';
 class SimppleAutoWried {
-    @AutoWired()
+    constructor() {
+    }
+
+    @AutoWired
     dateProperty: Date;
 }
-
-
-let builder = new ContainerBuilder();
-let container = builder.build();
-container.register(SimppleAutoWried);
-let instance = container.get(SimppleAutoWried);
-console.log(instance.dateProperty);
-
 
 @Injectable
 class RoomService {
@@ -31,20 +24,13 @@ class ClassRoom {
     }
 }
 
-
-container.register(ClassRoom);
-let room = container.get(ClassRoom);
-console.log(room.service.current);
-
-
-
 abstract class Student {
     constructor() {
     }
     abstract sayHi(): string;
 }
 
-@Injectable()
+@Injectable
 class MiddleSchoolStudent extends Student {
     constructor() {
         super();
@@ -77,11 +63,22 @@ class CollegeStudent extends Student {
 @Injectable()
 class CollegeClassRoom {
     constructor(
-        @AutoWired({ type: CollegeStudent })
+        @Param({ type: CollegeStudent })
         public leader: Student) {
 
     }
 }
+
+let builder = new ContainerBuilder();
+let container = builder.build();
+container.register(SimppleAutoWried);
+let instance = container.get(SimppleAutoWried);
+console.log(instance.dateProperty);
+
+
+container.register(ClassRoom);
+let room = container.get(ClassRoom);
+console.log(room.service.current);
 
 container.register(MClassRoom);
 console.log(container.get(MClassRoom).leader.sayHi());

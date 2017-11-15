@@ -149,7 +149,7 @@ export class Container implements IContainer {
 
     protected getParameterMetadata<T>(type: Type<T>): Type<any>[] {
         let designParams: Type<any>[] = Reflect.getMetadata('design:paramtypes', type) || [];
-        let parameters: ParameterMetadata[] = Reflect.getMetadata('@AutoWired', type) || [];
+        let parameters: ParameterMetadata[] = Reflect.getMetadata('@Param', type) || [];
         if (Array.isArray(parameters)) {
             parameters.forEach(parm => {
                 if (parm.index >= 0 && parm.type) {
@@ -171,6 +171,9 @@ export class Container implements IContainer {
 
     protected registerDependencies<T>(...deps: Token<T>[]) {
         deps.forEach(Deptype => {
+            if (this.has(Deptype)) {
+                return;
+            }
             let InjectableConfig = Reflect.getMetadata('@Injectable', Deptype);
             if (InjectableConfig) {
                 this.register(Deptype);
