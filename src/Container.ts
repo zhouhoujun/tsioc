@@ -90,7 +90,7 @@ export class Container implements IContainer {
         let classFactory;
         if (value && typeof value === 'function') {
             classFactory = this.createCustomFactory(key, value, singleton);
-        } else if (value !== undefined) {
+        } else if (singleton && value !== undefined) {
             let symbolValue = value;
             classFactory = () => {
                 return symbolValue;
@@ -149,7 +149,7 @@ export class Container implements IContainer {
 
     protected getParameterMetadata<T>(type: Type<T>): Type<any>[] {
         let designParams: Type<any>[] = Reflect.getMetadata('design:paramtypes', type) || [];
-        let parameters: ParameterMetadata[] = Reflect.getMetadata(AutoWired.toString(), type) || [];
+        let parameters: ParameterMetadata[] = Reflect.getMetadata('@AutoWired', type) || [];
         if (Array.isArray(parameters)) {
             parameters.forEach(parm => {
                 if (parm.index >= 0 && parm.type) {
@@ -161,7 +161,7 @@ export class Container implements IContainer {
     }
 
     protected getAutoWriedMetadata<T>(type: Type<T>): AutoWiredMetadata[] {
-        let prop = Reflect.getMetadata(AutoWired.toString(), type) || {} as ObjectMap<AutoWiredMetadata[]>;
+        let prop = Reflect.getMetadata('@AutoWired', type) || {} as ObjectMap<AutoWiredMetadata[]>;
         let props = [];
         for (let n in prop) {
             props = props.concat(prop[n]);
@@ -171,9 +171,9 @@ export class Container implements IContainer {
 
     protected registerDependencies<T>(...deps: Token<T>[]) {
         deps.forEach(Deptype => {
-            let InjectableConfig = Reflect.getMetadata(Injectable.toString(), Deptype);
+            let InjectableConfig = Reflect.getMetadata('@Injectable', Deptype);
             if (InjectableConfig) {
-                this.register(Deptype, InjectableConfig);
+                this.register(Deptype);
             }
         });
     }

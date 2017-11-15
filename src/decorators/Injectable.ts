@@ -16,8 +16,7 @@ export interface InjectableMetadata extends ClassMetadata {
 /**
  * Injectable decorator and metadata. define a class.
  *
- * @stable
- * @Annotation
+ * @Injectable
  */
 export const Injectable = createClassDecorator<InjectableMetadata>('Injectable');
 
