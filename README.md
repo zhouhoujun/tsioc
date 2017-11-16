@@ -29,6 +29,7 @@ class SimppleAutoWried {
     dateProperty: Date;
 }
 
+@Singleton
 @Injectable
 class RoomService {
     constructor() {

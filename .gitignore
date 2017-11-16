@@ -1,7 +1,6 @@
 .DS_STORE
 .vscode/.*
 node_modules
-test
 lib
 build
 

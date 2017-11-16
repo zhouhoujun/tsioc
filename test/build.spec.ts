@@ -1,19 +1,19 @@
-
 import 'mocha';
 import { expect } from 'chai';
 import { ContainerBuilder, AutoWired, Injectable, IContainer, ParameterMetadata, Param } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom } from './debug';
 
-describe('custom register test', () => {
+describe('auto register with build', () => {
 
     let container: IContainer;
     beforeEach(async () => {
         let builder = new ContainerBuilder();
-        container = await builder.build();
+        container = await builder.build({
+            files: __dirname + '/debug.ts'
+        });
     });
 
     it('should auto wried property', () => {
-        container.register(SimppleAutoWried);
         let instance = container.get(SimppleAutoWried);
         expect(instance).not.undefined;
         expect(instance.dateProperty).not.undefined;
@@ -21,7 +21,6 @@ describe('custom register test', () => {
     });
 
     it('should auto create constructor params', () => {
-        container.register(ClassRoom);
         let instance = container.get(ClassRoom);
         // console.log(instance);
         expect(instance).not.undefined;
@@ -30,7 +29,6 @@ describe('custom register test', () => {
     });
 
     it('should auto create prop with spec implement sub class.', () => {
-        container.register(MClassRoom);
         let instance = container.get(MClassRoom);
         expect(instance).not.undefined;
         expect(instance.leader).not.undefined;
@@ -38,7 +36,6 @@ describe('custom register test', () => {
     });
 
     it('should auto create constructor params with spec implement sub class.', () => {
-        container.register(CollegeClassRoom);
         let instance = container.get(CollegeClassRoom);
         expect(instance).not.undefined;
         expect(instance.leader).not.undefined;

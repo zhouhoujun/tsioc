@@ -10,3 +10,4 @@ export * from './ParamPropDecoratorFactory';
 export * from './Injectable';
 export * from './AutoWried';
 export * from './Param';
+export * from './Singleton';

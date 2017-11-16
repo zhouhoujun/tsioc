@@ -6,6 +6,7 @@ import { Injectable } from './decorators/Injectable';
 import { Type } from './Type';
 import { AutoWired, AutoWiredMetadata } from './decorators/AutoWried';
 import { ParameterMetadata } from './decorators/Metadata';
+import { fail } from 'assert';
 
 
 export const NOT_FOUND = new Object();
@@ -126,6 +127,9 @@ export class Container implements IContainer {
         this.registerDependencies(...parameters);
         let props = this.getAutoWriedMetadata(ClassT);
         this.registerDependencies(...props.map(it => it.type));
+        if (!singleton) {
+            singleton = this.isSingletonType<T>(ClassT);
+        }
 
         return () => {
             if (singleton && this.singleton.has(key)) {
@@ -145,6 +149,10 @@ export class Container implements IContainer {
             }
             return instance;
         };
+    }
+
+    protected isSingletonType<T>(type: Type<T>): boolean {
+        return Reflect.hasMetadata('@Singleton', type);
     }
 
     protected getParameterMetadata<T>(type: Type<T>): Type<any>[] {
