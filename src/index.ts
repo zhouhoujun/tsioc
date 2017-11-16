@@ -4,7 +4,5 @@ export * from './Type';
 export * from './types';
 export * from './Registration';
 export * from './ContainerBuilder';
-export * from './decorators/Param';
-export * from './decorators/AutoWried';
-export * from './decorators/factories';
-export * from './decorators/Injectable';
+export * from './decorators';
+

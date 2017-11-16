@@ -1,6 +1,9 @@
-import { createPropDecorator } from './factories';
+
 import { Type } from '../Type';
-import { PropertyMetadata } from './Metadata';
+import { PropertyMetadata, ParameterMetadata } from './Metadata';
+// import { IParamPropDecorator, createParamPropDecorator } from './ParamPropDecoratorFactory';
+import { createPropDecorator, IPropertyDecorator } from './PropertyDecoratorFactory';
+
 
 
 /**
@@ -8,8 +11,8 @@ import { PropertyMetadata } from './Metadata';
  *
  * @export
  * @interface AutoWiredMetadata
- * @extends {PropertyMetadata}
+ * @extends {PropertyMetadata, ParameterMetadata}
  */
 export interface AutoWiredMetadata extends PropertyMetadata {
 }
-export const AutoWired = createPropDecorator<AutoWiredMetadata>('AutoWired');
+export const AutoWired: IPropertyDecorator = createPropDecorator<AutoWiredMetadata>('AutoWired');

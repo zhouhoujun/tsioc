@@ -43,7 +43,7 @@ export interface PropertyMetadata extends Metadate {
     /**
      * property name
      *
-     * @type {string}
+     * @type {(string | symbol)}
      * @memberof PropertyMetadata
      */
     propertyName?: string | symbol;
@@ -72,9 +72,23 @@ export interface ParameterMetadata extends Metadate {
      * parameter type
      *
      * @type {Type<any>}
-     * @memberof PropertyMetadata
+     * @memberof ParameterMetadata
      */
     type?: Type<any>;
 
+    /**
+     * property name
+     *
+     * @type {(string | symbol)}
+     * @memberof ParameterMetadata
+     */
+    propertyName?: string | symbol;
+
+    /**
+     * parameter index.
+     *
+     * @type {number}
+     * @memberof ParameterMetadata
+     */
     index?: number;
 }

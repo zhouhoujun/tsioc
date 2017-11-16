@@ -149,14 +149,21 @@ export class Container implements IContainer {
 
     protected getParameterMetadata<T>(type: Type<T>): Type<any>[] {
         let designParams: Type<any>[] = Reflect.getMetadata('design:paramtypes', type) || [];
-        let parameters: ParameterMetadata[] = Reflect.getMetadata('@Param', type) || [];
-        if (Array.isArray(parameters)) {
-            parameters.forEach(parm => {
-                if (parm.index >= 0 && parm.type) {
-                    designParams[parm.index] = parm.type;
+        designParams = designParams.slice(0);
+        if (designParams.length > 0) {
+            ['@AutoWired', '@Param'].forEach(name => {
+                let parameters: ParameterMetadata[] = Reflect.getMetadata(name, type) || [];
+                if (Array.isArray(parameters) && parameters.length > 0) {
+                    parameters.forEach(params => {
+                        let parm = Array.isArray(params) && params.length > 0 ? params[0] : params;
+                        if (parm && parm.index >= 0 && parm.type) {
+                            designParams[parm.index] = parm.type;
+                        }
+                    });
                 }
             });
         }
+
         return designParams;
     }
 

@@ -1,85 +1,16 @@
 
-import 'reflect-metadata';
 import 'mocha';
 import { expect } from 'chai';
-import { ContainerBuilder, AutoWired, Injectable, IContainer } from '../src';
+import { ContainerBuilder, AutoWired, Injectable, IContainer, ParameterMetadata, Param } from '../src';
+import { async } from 'q';
+import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom } from './debug';
 
-describe('AutoWried test', () => {
-
-    class SimppleAutoWried {
-        constructor() {
-        }
-
-        @AutoWired
-        dateProperty: Date;
-    }
-
-    @Injectable
-    class RoomService {
-        constructor() {
-
-        }
-        @AutoWired
-        current: Date;
-    }
-
-    @Injectable()
-    class ClassRoom {
-        constructor(public service: RoomService) {
-
-        }
-    }
-
-    abstract class Student {
-        constructor() {
-        }
-        abstract sayHi(): string;
-    }
-
-    @Injectable()
-    class MiddleSchoolStudent extends Student {
-        constructor() {
-            super();
-        }
-        sayHi() {
-            return 'I am a middle school student';
-        }
-    }
-
-    @Injectable()
-    class MClassRoom {
-        @AutoWired({ type: MiddleSchoolStudent })
-        leader: Student;
-        constructor() {
-
-        }
-    }
-
-
-    @Injectable()
-    class CollegeStudent extends Student {
-        constructor() {
-            super();
-        }
-        sayHi() {
-            return 'I am a college student';
-        }
-    }
-
-    @Injectable()
-    class CollegeClassRoom {
-        constructor(
-            @AutoWired({ type: CollegeStudent })
-            public leader: Student) {
-
-        }
-    }
-
+describe('custom register test', () => {
 
     let container: IContainer;
-    beforeEach(() => {
+    beforeEach(async () => {
         let builder = new ContainerBuilder();
-        container = builder.build();
+        container = await builder.build();
     });
 
     it('should auto wried property', () => {
@@ -93,18 +24,19 @@ describe('AutoWried test', () => {
     it('should auto create constructor params', () => {
         container.register(ClassRoom);
         let instance = container.get(ClassRoom);
+        // console.log(instance);
         expect(instance).not.undefined;
         expect(instance.service).not.undefined;
         expect(instance.service.current).instanceOf(Date);
     });
 
-    it('should auto create constructor params', () => {
-        container.register(ClassRoom);
-        let instance = container.get(ClassRoom);
-        expect(instance).not.undefined;
-        expect(instance.service).not.undefined;
-        expect(instance.service.current).instanceOf(Date);
-    });
+    // it('should auto create constructor params', () => {
+    //     container.register(ClassRoom);
+    //     let instance = container.get(ClassRoom);
+    //     expect(instance).not.undefined;
+    //     expect(instance.service).not.undefined;
+    //     expect(instance.service.current).instanceOf(Date);
+    // });
 
 
     it('should auto create prop with spec implement sub class.', () => {
