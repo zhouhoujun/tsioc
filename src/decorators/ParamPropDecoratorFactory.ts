@@ -4,6 +4,9 @@ import { PropertyMetadata, ClassMetadata, MethodMetadata, ParameterMetadata } fr
 import { createDecorator } from './DecoratorFactory';
 
 
+export interface IParamPropMetadata extends PropertyMetadata, ParameterMetadata {
+
+}
 
 /**
  * Parameter and Property decorator.
@@ -11,9 +14,8 @@ import { createDecorator } from './DecoratorFactory';
  * @export
  * @interface IParamPropDecorator
  */
-export interface IParamPropDecorator {
-    <T extends PropertyMetadata>(meatedata?: T): PropertyDecorator;
-    <T extends ParameterMetadata>(meatedata?: T): ParameterDecorator;
+export interface IParamPropDecorator<T extends IParamPropMetadata> {
+    (metadata?: T): (target: Object, propertyKey: string | symbol, parameterIndex?: number) => void;
     (target: object, propertyKey: string | symbol): void;
     (target: object, propertyKey: string | symbol, parameterIndex: number): void;
 }
@@ -25,23 +27,8 @@ export interface IParamPropDecorator {
  * @param {string} name
  * @returns
  */
-export function createParamPropDecorator<T>(name: string): IParamPropDecorator {
+export function createParamPropDecorator<T extends IParamPropMetadata>(name: string): IParamPropDecorator<T> {
     return createDecorator<T>(name);
-    // return (...args: any[]) => {
-    //     switch (args.length) {
-    //         case 1:
-    //             return createClassDecorator<T>(name).apply(this, args);
-    //         case 2:
-    //             return createPropDecorator<T>(name).apply(this, args);
-    //         case 3:
-    //             if (args.length === 3 && typeof args[2] === 'number') {
-    //                 return createParamDecorator<T>(name).apply(this, args);
-    //             } else if (typeof args[2] === 'undefined') {
-    //                 return createPropDecorator<T>(name).apply(this, args);
-    //             }
-    //     }
-    //     throw new Error(`Invalid @${name} Decorator declaration.`);
-    // }
 }
 
 

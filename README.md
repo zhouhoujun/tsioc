@@ -17,6 +17,23 @@ npm install type-autofac
 
 ## Documentation
 
+### create Container
+
+```ts
+let builder = new ContainerBuilder();
+
+1. via create.
+let container = builder.create();
+//with BuildOptions to auto register module.
+let container = await builder.build({
+  files: [__dirname +'/controller/**/*.ts, '__dirname + '/*.model.js],
+  moudles:['node-modules-name', ClassType]
+});
+
+```
+
+### demo
+
 ```ts
 
 import { ContainerBuilder, AutoWired, Injectable, Param } from 'type-autofac';
@@ -93,12 +110,8 @@ class CollegeClassRoom {
 
 
 let builder = new ContainerBuilder();
-// with BuildOptions to auto register module.
-// let container = await builder.build({
-//   files: [__dirname +'/controller/**/*.ts, '__dirname + '/*.model.js],
-//   moudles:['node-modules-name', ClassType]
-// });
-let container = await builder.build();
+
+let container = builder.create();
 container.register(SimppleAutoWried);
 let instance = container.get(SimppleAutoWried);
 console.log(instance.dateProperty);

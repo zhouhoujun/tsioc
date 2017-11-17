@@ -26,6 +26,10 @@ export interface BuilderOptions {
 
 export class ContainerBuilder {
 
+    create(): IContainer {
+        return new Container();
+    }
+
     /**
      * build container.
      *
@@ -34,7 +38,7 @@ export class ContainerBuilder {
      * @memberof ContainerBuilder
      */
     async build(options?: BuilderOptions) {
-        let container: IContainer = new Container();
+        let container: IContainer = this.create();
         if (options) {
             if (options.files) {
                 let files: string[] = await globby(options.files);

@@ -1,8 +1,8 @@
 
 import 'mocha';
 import { expect } from 'chai';
-import { ContainerBuilder, AutoWired, Injectable, IContainer, ParameterMetadata, Param } from '../src';
-import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom } from './debug';
+import { ContainerBuilder, AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration } from '../src';
+import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student } from './debug';
 
 describe('custom register test', () => {
 
@@ -43,6 +43,19 @@ describe('custom register test', () => {
         expect(instance).not.undefined;
         expect(instance.leader).not.undefined;
         expect(instance.leader.sayHi()).eq('I am a college student');
+    });
+
+    it('should provider implement sub class to abstract class', () => {
+        container.register(MiddleSchoolStudent);
+        container.register(CollegeStudent);
+
+        let instance = container.get(Student);
+        expect(instance).not.undefined;
+        expect(instance.sayHi()).eq('I am a middle school student');
+
+        let instance2 = container.get(new Registration(Student, 'college'));
+        expect(instance2).not.undefined;
+        expect(instance2.sayHi()).eq('I am a college student');
     });
 
 });

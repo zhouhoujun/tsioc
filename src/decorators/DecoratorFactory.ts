@@ -29,7 +29,6 @@ export function createDecorator<T>(name: string): any {
             case 1:
                 if (args[0] && typeof args[0] === 'function') {
                     let target = args[0];
-                    metadata = null;
                     setClassMetadata<T>(name, metaName, target, metadata);
                     return target;
                 } else {
@@ -69,7 +68,7 @@ export function createDecorator<T>(name: string): any {
 }
 
 
-function setClassMetadata<T>(name: string, metaName: string, target: any, metadata?: T) {
+function setClassMetadata<T>(name: string, metaName: string, target: Type<T>, metadata?: T) {
     let annotations = Reflect.getMetadata(metaName, target) || [];
     // let designParams = Reflect.getMetadata('design:paramtypes', target) || [];
     let classMetadata: ClassMetadata = metadata || {};

@@ -1,4 +1,5 @@
 import { Type } from '../Type';
+import { SymbolType } from '../types';
 
 /**
  * metadata
@@ -27,10 +28,10 @@ export interface ClassMetadata extends Metadate {
     /**
      * property type
      *
-     * @type {(Type<any> | string)}
+     * @type {SymbolType<any>}
      * @memberof PropertyMetadata
      */
-    type?: Type<any> | string;
+    type?: SymbolType<any>;
 }
 
 /**

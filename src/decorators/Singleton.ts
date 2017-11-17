@@ -18,5 +18,5 @@ export interface SingletonMetadata extends ClassMetadata {
  *
  * @Singleton
  */
-export const Singleton: IClassDecorator = createClassDecorator<SingletonMetadata>('Singleton');
+export const Singleton: IClassDecorator<SingletonMetadata> = createClassDecorator<SingletonMetadata>('Singleton');
 

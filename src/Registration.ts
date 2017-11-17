@@ -1,4 +1,4 @@
-import { Type } from './Type';
+import { Type, AbstractType } from './Type';
 
 /**
  * injecto token.
@@ -7,14 +7,14 @@ import { Type } from './Type';
  * @template T
  */
 export class Registration<T> {
-    protected type: 'Registration';
+    protected type = 'regist';
     /**
      * Creates an instance of Registration.
-     * @param {Type<T>} classType
+     * @param {Type<T> | AbstractType<T>} classType
      * @param {string} desc
      * @memberof Registration
      */
-    constructor(protected classType: Type<T>, protected desc: string) {
+    constructor(protected classType: Type<T> | AbstractType<T>, protected desc: string) {
     }
 
     /**
@@ -34,6 +34,6 @@ export class Registration<T> {
      * @memberof Registration
      */
     toString(): string {
-        return `${this.type} ${typeof this.classType} ${this.desc}`;
+        return `${this.type} ${this.classType.name} ${this.desc}`;
     }
 }

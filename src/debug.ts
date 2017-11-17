@@ -1,4 +1,5 @@
-import { AutoWired, Injectable, Param, Singleton, Registration, Inject } from '../src';
+import { AutoWired, Injectable, Param, Singleton, Inject, Registration, ContainerBuilder } from './index';
+
 
 export class SimppleAutoWried {
     constructor() {
@@ -89,3 +90,25 @@ export class InjCollegeClassRoom {
 
     }
 }
+
+let builder = new ContainerBuilder();
+let container = builder.create();
+
+container.register(SimppleAutoWried);
+let instance = container.get(SimppleAutoWried);
+console.log(instance.dateProperty);
+
+
+container.register(ClassRoom);
+let room = container.get(ClassRoom);
+console.log(room.service.current);
+
+container.register(MiddleSchoolStudent);
+container.register(CollegeStudent);
+
+let student = container.get(Student);
+console.log(student.sayHi());
+
+let student2 = container.get(new Registration(Student, 'college'));
+
+console.log(student2.sayHi());
