@@ -93,6 +93,11 @@ class CollegeClassRoom {
 
 
 let builder = new ContainerBuilder();
+// with BuildOptions to auto register module.
+// let container = await builder.build({
+//   files: [__dirname +'/controller/**/*.ts, '__dirname + '/*.model.js],
+//   moudles:['node-modules-name', ClassType]
+// });
 let container = await builder.build();
 container.register(SimppleAutoWried);
 let instance = container.get(SimppleAutoWried);
