@@ -15,12 +15,12 @@
     "e2e.live": "protractor --elementExplorer"
   },
   "keywords": [
-    "typescript",
-    "mvc",
-    "decorators",
+    "Ioc",
     "di",
-    "frameworker",
-    "koa"
+    "decorator",
+    "Container",
+    "autofac",
+    "type"
   ],
   "author": "houjun",
   "license": "MIT",
