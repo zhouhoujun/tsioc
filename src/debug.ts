@@ -10,6 +10,11 @@ export class SimppleAutoWried {
 }
 
 @Singleton
+export class Person {
+    name = 'testor';
+}
+
+@Singleton
 @Injectable
 export class RoomService {
     constructor() {
@@ -65,6 +70,7 @@ export class CollegeStudent extends Student {
 @Injectable
 export class CollegeClassRoom {
     constructor(
+        @AutoWired({ type: CollegeStudent })
         @Param({ type: CollegeStudent })
         public leader: Student) {
 
@@ -74,7 +80,7 @@ export class CollegeClassRoom {
 
 @Injectable
 export class InjMClassRoom {
-    @Inject({ type: MiddleSchoolStudent })
+    @Inject // @Inject({ type: MiddleSchoolStudent })
     leader: Student;
     constructor() {
 
@@ -90,6 +96,7 @@ export class InjCollegeClassRoom {
 
     }
 }
+
 
 let builder = new ContainerBuilder();
 let container = builder.create();
@@ -112,3 +119,15 @@ console.log(student.sayHi());
 let student2 = container.get(new Registration(Student, 'college'));
 
 console.log(student2.sayHi());
+
+
+builder.build({
+    files: __dirname + '/debug.js'
+})
+    .then(container => {
+        let instance = container.get(Student);
+        console.log(instance.sayHi());
+
+        let instance2 = container.get(new Registration(Student, 'college'));
+        console.log(instance2.sayHi())
+    });

@@ -38,7 +38,8 @@ let container = await builder.build({
 
 import { ContainerBuilder, AutoWired, Injectable, Param } from 'type-autofac';
 
-class SimppleAutoWried {
+
+export class SimppleAutoWried {
     constructor() {
     }
 
@@ -47,8 +48,13 @@ class SimppleAutoWried {
 }
 
 @Singleton
+export class Person {
+    name = 'testor';
+}
+
+@Singleton
 @Injectable
-class RoomService {
+export class RoomService {
     constructor() {
 
     }
@@ -57,20 +63,20 @@ class RoomService {
 }
 
 @Injectable()
-class ClassRoom {
+export class ClassRoom {
     constructor(public service: RoomService) {
 
     }
 }
 
-abstract class Student {
+export abstract class Student {
     constructor() {
     }
     abstract sayHi(): string;
 }
 
-@Injectable()
-class MiddleSchoolStudent extends Student {
+@Injectable({ provider: Student })
+export class MiddleSchoolStudent extends Student {
     constructor() {
         super();
     }
@@ -80,7 +86,7 @@ class MiddleSchoolStudent extends Student {
 }
 
 @Injectable()
-class MClassRoom {
+export class MClassRoom {
     @AutoWired({ type: MiddleSchoolStudent })
     leader: Student;
     constructor() {
@@ -89,8 +95,8 @@ class MClassRoom {
 }
 
 
-@Injectable()
-class CollegeStudent extends Student {
+@Injectable({ provider: Student, alias: 'college' })
+export class CollegeStudent extends Student {
     constructor() {
         super();
     }
@@ -99,9 +105,10 @@ class CollegeStudent extends Student {
     }
 }
 
-@Injectable()
-class CollegeClassRoom {
+@Injectable
+export class CollegeClassRoom {
     constructor(
+        @AutoWired({ type: CollegeStudent })
         @Param({ type: CollegeStudent })
         public leader: Student) {
 
@@ -109,9 +116,29 @@ class CollegeClassRoom {
 }
 
 
-let builder = new ContainerBuilder();
+@Injectable
+export class InjMClassRoom {
+    @Inject // @Inject({ type: MiddleSchoolStudent })
+    leader: Student;
+    constructor() {
 
+    }
+}
+
+
+@Injectable
+export class InjCollegeClassRoom {
+    constructor(
+        @Inject({ type: CollegeStudent })
+        public leader: Student) {
+
+    }
+}
+
+
+let builder = new ContainerBuilder();
 let container = builder.create();
+
 container.register(SimppleAutoWried);
 let instance = container.get(SimppleAutoWried);
 console.log(instance.dateProperty);
@@ -121,11 +148,28 @@ container.register(ClassRoom);
 let room = container.get(ClassRoom);
 console.log(room.service.current);
 
-container.register(MClassRoom);
-console.log(container.get(MClassRoom).leader.sayHi());
+container.register(MiddleSchoolStudent);
+container.register(CollegeStudent);
 
-container.register(CollegeClassRoom);
-console.log(container.get(CollegeClassRoom).leader.sayHi());
+let student = container.get(Student);
+console.log(student.sayHi());
+
+let student2 = container.get(new Registration(Student, 'college'));
+
+console.log(student2.sayHi());
+
+
+builder.build({
+    files: __dirname + '/debug.js'
+})
+    .then(container => {
+        let instance = container.get(Student);
+        console.log(instance.sayHi());
+
+        let instance2 = container.get(new Registration(Student, 'college'));
+        console.log(instance2.sayHi())
+    });
+
 
 
 ```

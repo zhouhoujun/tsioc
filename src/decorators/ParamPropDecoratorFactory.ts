@@ -16,8 +16,8 @@ export interface IParamPropMetadata extends PropertyMetadata, ParameterMetadata 
  */
 export interface IParamPropDecorator<T extends IParamPropMetadata> {
     (metadata?: T): (target: Object, propertyKey: string | symbol, parameterIndex?: number) => void;
-    (target: object, propertyKey: string | symbol): void;
-    (target: object, propertyKey: string | symbol, parameterIndex: number): void;
+    // (target: object, propertyKey: string | symbol): void;
+    (target: object, propertyKey: string | symbol, parameterIndex?: number): void;
 }
 /**
  * create parameter or property decorator

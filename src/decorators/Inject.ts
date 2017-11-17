@@ -1,6 +1,5 @@
 
 import { Type } from '../Type';
-import { PropertyMetadata, ParameterMetadata } from './Metadata';
 import { IParamPropDecorator, createParamPropDecorator, IParamPropMetadata } from './ParamPropDecoratorFactory';
 
 
@@ -9,8 +8,7 @@ import { IParamPropDecorator, createParamPropDecorator, IParamPropMetadata } fro
  *
  * @export
  * @interface InjectMetadata
- * @extends {PropertyMetadata}
- * @extends {ParameterMetadata}
+ * @extends {IParamPropMetadata}
  */
 export interface InjectMetadata extends IParamPropMetadata {
 }

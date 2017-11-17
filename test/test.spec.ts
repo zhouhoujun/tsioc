@@ -2,7 +2,7 @@
 import 'mocha';
 import { expect } from 'chai';
 import { ContainerBuilder, AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration } from '../src';
-import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student } from './debug';
+import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student, InjMClassRoom, InjCollegeClassRoom } from './debug';
 
 describe('custom register test', () => {
 
@@ -29,7 +29,7 @@ describe('custom register test', () => {
         expect(instance.service.current).instanceOf(Date);
     });
 
-    it('should auto create prop with spec implement sub class.', () => {
+    it('should auto create prop with spec @Param class.', () => {
         container.register(MClassRoom);
         let instance = container.get(MClassRoom);
         expect(instance).not.undefined;
@@ -37,9 +37,26 @@ describe('custom register test', () => {
         expect(instance.leader.sayHi()).eq('I am a middle school student');
     });
 
-    it('should auto create constructor params with spec implement sub class.', () => {
+    it('should auto create constructor params with spec @Param class.', () => {
         container.register(CollegeClassRoom);
         let instance = container.get(CollegeClassRoom);
+        expect(instance).not.undefined;
+        expect(instance.leader).not.undefined;
+        expect(instance.leader.sayHi()).eq('I am a college student');
+    });
+
+    it('should auto create prop with spec @Inject class.', () => {
+        container.register(MiddleSchoolStudent);
+        container.register(InjMClassRoom);
+        let instance = container.get(InjMClassRoom);
+        expect(instance).not.undefined;
+        expect(instance.leader).not.undefined;
+        expect(instance.leader.sayHi()).eq('I am a middle school student');
+    });
+
+    it('should auto create constructor params with spec @Inject class.', () => {
+        container.register(InjCollegeClassRoom);
+        let instance = container.get(InjCollegeClassRoom);
         expect(instance).not.undefined;
         expect(instance.leader).not.undefined;
         expect(instance.leader.sayHi()).eq('I am a college student');

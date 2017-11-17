@@ -18,10 +18,10 @@ export interface BuilderOptions {
     /**
      * node modules.
      *
-     * @type {((string | Type<any>)[])}
+     * @type {((string | Type<any> | object)[])}
      * @memberof BuilderOptions
      */
-    modules?: (string | Type<any>)[];
+    modules?: (string | Type<any> | object)[];
 }
 
 export class ContainerBuilder {

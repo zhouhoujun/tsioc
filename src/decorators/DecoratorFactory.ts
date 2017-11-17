@@ -30,6 +30,7 @@ export function createDecorator<T>(name: string): any {
                 if (args[0] && typeof args[0] === 'function') {
                     let target = args[0];
                     setClassMetadata<T>(name, metaName, target, metadata);
+                    metadata = null;
                     return target;
                 } else {
                     metadata = args.length > 0 ? args[0] : null;
@@ -69,7 +70,7 @@ export function createDecorator<T>(name: string): any {
 
 
 function setClassMetadata<T>(name: string, metaName: string, target: Type<T>, metadata?: T) {
-    let annotations = Reflect.getMetadata(metaName, target) || [];
+    let annotations = Reflect.getOwnMetadata(metaName, target) || [];
     // let designParams = Reflect.getMetadata('design:paramtypes', target) || [];
     let classMetadata: ClassMetadata = metadata || {};
     classMetadata.decorator = name;
@@ -112,6 +113,7 @@ function setPropertyMetadata<T>(name: string, metaName: string, target: Type<T>,
 
 
 function setParamMetadata<T>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, parameterIndex: number, metadata?: T) {
+
     let parameters: any[][] = Reflect.getOwnMetadata(metaName, target, propertyKey) || [];
 
     // there might be gaps if some in between parameters do not have annotations.
@@ -136,6 +138,5 @@ function setParamMetadata<T>(name: string, metaName: string, target: Type<T>, pr
     paramMeadata.decorator = name;
     paramMeadata.index = parameterIndex;
     parameters[parameterIndex].push(paramMeadata);
-
     Reflect.defineMetadata(metaName, parameters, target, propertyKey);
 }

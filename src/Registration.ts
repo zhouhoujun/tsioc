@@ -7,7 +7,8 @@ import { Type, AbstractType } from './Type';
  * @template T
  */
 export class Registration<T> {
-    protected type = 'regist';
+
+    protected type = 'Registration';
     /**
      * Creates an instance of Registration.
      * @param {Type<T> | AbstractType<T>} classType

@@ -42,7 +42,7 @@ export class Container implements IContainer {
      */
     get<T>(token?: Token<T>, notFoundValue?: T): T {
         let key = this.getTokenKey<T>(token);
-        if (!this.factories.has(key)) {
+        if (!this.hasRegister(key)) {
             return notFoundValue === undefined ? (NOT_FOUND as T) : notFoundValue;
         }
         let factory = this.factories.get(key);
@@ -61,8 +61,28 @@ export class Container implements IContainer {
         this.registerFactory(token, value);
     }
 
-    has<T>(token: Token<T>) {
+    /**
+     * has token.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {boolean}
+     * @memberof Container
+     */
+    has<T>(token: Token<T>): boolean {
         let key = this.getTokenKey(token);
+        return this.hasRegister(key);
+    }
+
+    /**
+     * has register type.
+     *
+     * @template T
+     * @param {SymbolType<T>} key
+     * @returns
+     * @memberof Container
+     */
+    hasRegister<T>(key: SymbolType<T>) {
         return this.factories.has(key);
     }
 
@@ -79,9 +99,9 @@ export class Container implements IContainer {
         this.registerFactory(token, value, true);
     }
 
-    protected getTokenKey<T>(token: Token<T>, alias?: string) {
+    protected getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
         if (token instanceof Registration) {
-            return token.toString()
+            return token.toString();
         } else {
             if (alias && typeof token === 'function') {
                 return new Registration(token, alias).toString();
@@ -92,7 +112,7 @@ export class Container implements IContainer {
 
     protected registerFactory<T>(token: Token<T>, value?: Factory<T>, singleton?: boolean) {
         let key = this.getTokenKey(token);
-        let providerKey;
+
         if (this.factories.has(key)) {
             return;
         }
@@ -115,20 +135,10 @@ export class Container implements IContainer {
         } else if (typeof token !== 'string' && typeof token !== 'symbol') {
             let ClassT = (token instanceof Registration) ? token.getClass() : token;
             classFactory = this.createTypeFactory(key, ClassT as Type<T>, singleton);
-            let injectableConfig = Reflect.getMetadata('@Injectable', ClassT) as InjectableMetadata[];
-            if (Array.isArray(injectableConfig) && injectableConfig.length > 0) {
-                let jcfg = injectableConfig.find(c => c && !!(c.provider || c.alias));
-                if (jcfg) {
-                    providerKey = this.getTokenKey(jcfg.provider, jcfg.alias);
-                }
-            }
         }
 
         if (classFactory) {
             this.factories.set(key, classFactory);
-            if (providerKey) {
-                this.factories.set(providerKey, classFactory);
-            }
         }
     }
 
@@ -157,7 +167,7 @@ export class Container implements IContainer {
             singleton = this.isSingletonType<T>(ClassT);
         }
 
-        return () => {
+        let factory = () => {
             if (singleton && this.singleton.has(key)) {
                 return this.singleton.get(key);
             }
@@ -175,18 +185,30 @@ export class Container implements IContainer {
             }
             return instance;
         };
+
+        // register provider.
+        let injectableConfig = Reflect.getOwnMetadata('@Injectable', ClassT) as InjectableMetadata[];
+        if (Array.isArray(injectableConfig) && injectableConfig.length > 0) {
+            let jcfg = injectableConfig.find(c => c && !!(c.provider || c.alias));
+            if (jcfg) {
+                let providerKey = this.getTokenKey(jcfg.provider, jcfg.alias);
+                this.factories.set(providerKey, factory);
+            }
+        }
+
+        return factory;
     }
 
     protected isSingletonType<T>(type: Type<T>): boolean {
-        return Reflect.hasMetadata('@Singleton', type);
+        return Reflect.hasOwnMetadata('@Singleton', type);
     }
 
     protected getParameterMetadata<T>(type: Type<T>): Type<any>[] {
-        let designParams: Type<any>[] = Reflect.getMetadata('design:paramtypes', type) || [];
+        let designParams: Type<any>[] = Reflect.getOwnMetadata('design:paramtypes', type) || [];
         designParams = designParams.slice(0);
         if (designParams.length > 0) {
-            ['@Inject', '@Param'].forEach(name => {
-                let parameters: ParameterMetadata[] = Reflect.getMetadata(name, type) || [];
+            ['@AutoWired', '@Inject', '@Param'].forEach(name => {
+                let parameters: ParameterMetadata[] = Reflect.getOwnMetadata(name, type) || [];
                 if (Array.isArray(parameters) && parameters.length > 0) {
                     parameters.forEach(params => {
                         let parm = Array.isArray(params) && params.length > 0 ? params[0] : params;
@@ -202,8 +224,8 @@ export class Container implements IContainer {
     }
 
     protected getPropMetadata<T>(type: Type<T>): PropertyMetadata[] {
-        let prop = Reflect.getMetadata('@Inject', type) || {} as ObjectMap<PropertyMetadata[]>;
-        let wiredprop = Reflect.getMetadata('@AutoWired', type) || {} as ObjectMap<PropertyMetadata[]>;
+        let prop = Reflect.getOwnMetadata('@Inject', type) || {} as ObjectMap<PropertyMetadata[]>;
+        let wiredprop = Reflect.getOwnMetadata('@AutoWired', type) || {} as ObjectMap<PropertyMetadata[]>;
         for (let n in wiredprop) {
             if (!prop[n]) {
                 prop[n] = wiredprop[n];
@@ -218,13 +240,13 @@ export class Container implements IContainer {
     }
 
     protected registerDependencies<T>(...deps: Token<T>[]) {
-        deps.forEach(Deptype => {
-            if (this.has(Deptype)) {
+        deps.forEach(depType => {
+            if (this.has(depType)) {
                 return;
             }
-            let injectableConfig = Reflect.getMetadata('@Injectable', Deptype);
-            if (injectableConfig) {
-                this.register(Deptype);
+            let injectableConfig: any[] = Reflect.getOwnMetadata('@Injectable', depType);
+            if (injectableConfig && injectableConfig.length > 0) {
+                this.register(depType);
             }
         });
     }
