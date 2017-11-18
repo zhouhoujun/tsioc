@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { PropertyMetadata } from './Metadata';
 import { Type } from '../Type';
 import { createDecorator } from './DecoratorFactory';
+import { DecoratorType } from './DecoratorType';
 
 
 /**
@@ -25,6 +26,7 @@ export interface IPropertyDecorator<T extends PropertyMetadata> {
  * @returns
  */
 export function createPropDecorator<T extends PropertyMetadata>(name: string): IPropertyDecorator<T> {
-    return createDecorator<T>(name);
+    let decorator = createDecorator<T>(name);
+    decorator.decoratorType = DecoratorType.Property;
+    return decorator;
 }
-

@@ -1,4 +1,5 @@
 export * from './Metadata';
+export * from './DecoratorType';
 export * from './DecoratorFactory';
 
 export * from './ClassDecoratorFactory';

@@ -6,7 +6,12 @@ import { Injectable, InjectableMetadata } from './decorators/Injectable';
 import { Type, AbstractType } from './Type';
 import { AutoWired, AutoWiredMetadata } from './decorators/AutoWried';
 import { ParameterMetadata } from './decorators/Metadata';
-import { PropertyMetadata } from './index';
+import { PropertyMetadata } from './decorators/Metadata';
+import { Inject, InjectMetadata } from './decorators/Inject';
+import { Param } from './decorators/Param';
+import { Singleton, SingletonMetadata } from './decorators/Singleton';
+import { DecoratorAction, ParamPropDecoratorAction, ParamDecoratorAction, PropDecoratorAction, ClassDecoratorAction } from './DecoratorAction';
+import { DecoratorType } from './decorators/DecoratorType';
 
 
 export const NOT_FOUND = new Object();
@@ -15,33 +20,29 @@ export const NOT_FOUND = new Object();
  * Container.
  */
 export class Container implements IContainer {
-    private factories: Map<Token<any>, any>;
-    private singleton: Map<Token<any>, any>;
+
+    protected factories: Map<Token<any>, any>;
+    protected singleton: Map<Token<any>, any>;
+    protected classDecoractors: Map<string, ClassDecoratorAction<any>>;
+    protected methodDecoractors: Map<string, DecoratorAction<any>>;
+    protected propDecoractors: Map<string, PropDecoratorAction<any>>;
+    protected paramDecoractors: Map<string, ParamDecoratorAction<any>>;
     constructor() {
-        this.factories = new Map<Token<any>, any>();
-        this.singleton = new Map<Token<any>, any>();
         this.init();
     }
 
-    init() {
-        this.register(Date);
-        this.register(String);
-        this.register(Number);
-        this.register(Boolean);
-        this.register(Object);
-    }
-
     /**
-     * get instance via token.
+     * Retrieves an instance from the container based on the provided token.
+     *
      * @template T
-     * @param {Token<T>} [token]
+     * @param {Token<T>} token
+     * @param {string} [alias]
      * @param {T} [notFoundValue]
      * @returns {T}
-     *
-     * @memberOf DefaultInjectableor
+     * @memberof Container
      */
-    get<T>(token?: Token<T>, notFoundValue?: T): T {
-        let key = this.getTokenKey<T>(token);
+    get<T>(token: Token<T>, alias?: string, notFoundValue?: T): T {
+        let key = this.getTokenKey<T>(token, alias);
         if (!this.hasRegister(key)) {
             return notFoundValue === undefined ? (NOT_FOUND as T) : notFoundValue;
         }
@@ -55,7 +56,7 @@ export class Container implements IContainer {
      * @template T
      * @param {Token<T>} token
      * @param {T} [value]
-     * @memberOf Injectableor
+     * @memberOf Container
      */
     register<T>(token: Token<T>, value?: Factory<T>) {
         this.registerFactory(token, value);
@@ -93,11 +94,127 @@ export class Container implements IContainer {
      * @param {Token<T>} token
      * @param {Factory<T>} [value]
      *
-     * @memberOf Injectableor
+     * @memberOf Container
      */
     registerSingleton<T>(token: Token<T>, value?: Factory<T>) {
         this.registerFactory(token, value, true);
     }
+
+    /**
+     * register decorator.
+     *
+     * @template T
+     * @param {Function} decirator
+     * @param {DecoratorAction<T>} actions
+     * @memberof Container
+     */
+    registerDecorator<T>(decirator: Function, actions: DecoratorAction<T>) {
+        if (!actions.type) {
+            actions.type = this.getDecoratorType(decirator);
+        }
+        if (!actions.name) {
+            actions.name = decirator.toString();
+        }
+        if (actions.type & DecoratorType.Class) {
+            this.cacheDecorator(this.classDecoractors, actions);
+        }
+        if (actions.type & DecoratorType.Method) {
+            this.cacheDecorator(this.methodDecoractors, actions);
+        }
+        if (actions.type & DecoratorType.Property) {
+            this.cacheDecorator(this.propDecoractors, actions);
+        }
+        if (actions.type & DecoratorType.Parameter) {
+            this.cacheDecorator(this.paramDecoractors, actions);
+        }
+    }
+
+    protected cacheDecorator<T>(map: Map<string, DecoratorAction<T>>, action: DecoratorAction<T>) {
+        if (!map.has(action.name)) {
+            map.set(action.name, action);
+        }
+    }
+
+    protected init() {
+        this.factories = new Map<Token<any>, any>();
+        this.singleton = new Map<Token<any>, any>();
+        this.classDecoractors = new Map<string, ClassDecoratorAction<any>>();
+        this.methodDecoractors = new Map<string, DecoratorAction<any>>();
+        this.paramDecoractors = new Map<string, ParamDecoratorAction<any>>();
+        this.propDecoractors = new Map<string, PropDecoratorAction<any>>();
+
+        this.registerDefautDecorators();
+        this.register(Date);
+        this.register(String);
+        this.register(Number);
+        this.register(Boolean);
+        this.register(Object);
+    }
+
+    protected getDecoratorType(decirator: any): DecoratorType {
+        return decirator.decoratorType || DecoratorType.All;
+    }
+
+    protected registerDefautDecorators() {
+        this.registerDecorator<InjectableMetadata>(Injectable, {
+            getType: (metadata) => metadata.type
+        });
+
+        this.registerDecorator<AutoWiredMetadata>(AutoWired, {
+            getType: (metadata) => metadata.type,
+            toMetadataList: (props) => {
+                return this.concatPropMetadata(props);
+            },
+            resetParamType: (designParams: Type<any>[], metadata) => {
+                return this.resetDesignParams(designParams, metadata);
+            }
+        } as ParamPropDecoratorAction<AutoWiredMetadata>);
+
+        this.registerDecorator<InjectMetadata>(Inject, {
+            getType: (metadata) => metadata.type,
+            toMetadataList: (props) => {
+                return this.concatPropMetadata(props);
+            },
+            resetParamType: (designParams: Type<any>[], metadata) => {
+                return this.resetDesignParams(designParams, metadata);
+            }
+        } as ParamPropDecoratorAction<InjectMetadata>);
+
+        this.registerDecorator<SingletonMetadata>(Singleton, {
+            getType: (metadata) => metadata.type
+        });
+
+        this.registerDecorator<ParameterMetadata>(Param, {
+            getType: (metadata) => metadata.type,
+            resetParamType: (designParams: Type<any>[], metadata) => {
+                return this.resetDesignParams(designParams, metadata);
+            }
+        } as ParamDecoratorAction<ParameterMetadata>);
+    }
+
+    protected concatPropMetadata<T>(props: ObjectMap<T>) {
+        if (Array.isArray(props)) {
+            props = {};
+        }
+        let list = [];
+        for (let n in props) {
+            list = list.concat(props[n]);
+        }
+
+        return list;
+    }
+
+    protected resetDesignParams(designParams: Type<any>[], parameters) {
+        if (Array.isArray(parameters) && parameters.length > 0) {
+            parameters.forEach(params => {
+                let parm = Array.isArray(params) && params.length > 0 ? params[0] : params;
+                if (parm && parm.index >= 0 && parm.type) {
+                    designParams[parm.index] = parm.type;
+                }
+            });
+        }
+    }
+
 
     protected getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
         if (token instanceof Registration) {
@@ -142,7 +259,7 @@ export class Container implements IContainer {
         }
     }
 
-    createCustomFactory<T>(key: SymbolType<T>, value?: ToInstance<T>, singleton?: boolean) {
+    protected createCustomFactory<T>(key: SymbolType<T>, value?: ToInstance<T>, singleton?: boolean) {
         return () => {
             if (singleton && this.singleton.has(key)) {
                 return this.singleton.get(key);
@@ -155,7 +272,7 @@ export class Container implements IContainer {
         }
     }
 
-    createTypeFactory<T>(key: SymbolType<T>, ClassT?: Type<T>, singleton?: boolean) {
+    protected createTypeFactory<T>(key: SymbolType<T>, ClassT?: Type<T>, singleton?: boolean) {
         if (!Reflect.isExtensible(ClassT)) {
             return null;
         }
@@ -187,7 +304,7 @@ export class Container implements IContainer {
         };
 
         // register provider.
-        let injectableConfig = Reflect.getOwnMetadata('@Injectable', ClassT) as InjectableMetadata[];
+        let injectableConfig = Reflect.getOwnMetadata(Injectable.toString(), ClassT) as InjectableMetadata[];
         if (Array.isArray(injectableConfig) && injectableConfig.length > 0) {
             let jcfg = injectableConfig.find(c => c && !!(c.provider || c.alias));
             if (jcfg) {
@@ -200,42 +317,35 @@ export class Container implements IContainer {
     }
 
     protected isSingletonType<T>(type: Type<T>): boolean {
-        return Reflect.hasOwnMetadata('@Singleton', type);
+        return Reflect.hasOwnMetadata(Singleton.toString(), type);
     }
 
     protected getParameterMetadata<T>(type: Type<T>): Type<any>[] {
         let designParams: Type<any>[] = Reflect.getOwnMetadata('design:paramtypes', type) || [];
         designParams = designParams.slice(0);
         if (designParams.length > 0) {
-            ['@AutoWired', '@Inject', '@Param'].forEach(name => {
-                let parameters: ParameterMetadata[] = Reflect.getOwnMetadata(name, type) || [];
-                if (Array.isArray(parameters) && parameters.length > 0) {
-                    parameters.forEach(params => {
-                        let parm = Array.isArray(params) && params.length > 0 ? params[0] : params;
-                        if (parm && parm.index >= 0 && parm.type) {
-                            designParams[parm.index] = parm.type;
-                        }
-                    });
+            this.paramDecoractors.forEach((v, name) => {
+                let parameters = Reflect.getMetadata(name, type);
+                if (v.resetParamType) {
+                    v.resetParamType(designParams, parameters);
                 }
             });
         }
-
         return designParams;
     }
 
     protected getPropMetadata<T>(type: Type<T>): PropertyMetadata[] {
-        let prop = Reflect.getOwnMetadata('@Inject', type) || {} as ObjectMap<PropertyMetadata[]>;
-        let wiredprop = Reflect.getOwnMetadata('@AutoWired', type) || {} as ObjectMap<PropertyMetadata[]>;
-        for (let n in wiredprop) {
-            if (!prop[n]) {
-                prop[n] = wiredprop[n];
-            }
-        }
 
         let props = [];
-        for (let n in prop) {
-            props = props.concat(prop[n]);
-        }
+
+        this.propDecoractors.forEach((val, name) => {
+            let prop = Reflect.getMetadata(name, type) || {} as ObjectMap<PropertyMetadata[]>;
+            if (val.toMetadataList) {
+                props = props.concat(val.toMetadataList(prop));
+            }
+        });
+
+
         return props;
     }
 
@@ -244,7 +354,7 @@ export class Container implements IContainer {
             if (this.has(depType)) {
                 return;
             }
-            let injectableConfig: any[] = Reflect.getOwnMetadata('@Injectable', depType);
+            let injectableConfig: any[] = Reflect.getMetadata(Injectable.toString(), depType);
             if (injectableConfig && injectableConfig.length > 0) {
                 this.register(depType);
             }

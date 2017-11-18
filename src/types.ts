@@ -6,7 +6,7 @@ import { type } from 'os';
 /**
  * symbol type
  */
-export type SymbolType<T> = Type<T> | AbstractType<T> | string | symbol;
+export type SymbolType<T> = Type<T> | AbstractType<T> | T | string | symbol;
 /**
  * factory tocken.
  */

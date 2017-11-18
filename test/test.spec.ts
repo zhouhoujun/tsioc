@@ -1,7 +1,7 @@
 
 import 'mocha';
 import { expect } from 'chai';
-import { ContainerBuilder, AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration } from '../src';
+import { ContainerBuilder, AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration, Inject, Singleton } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student, InjMClassRoom, InjCollegeClassRoom } from './debug';
 
 describe('custom register test', () => {
@@ -11,6 +11,15 @@ describe('custom register test', () => {
         let builder = new ContainerBuilder();
         container = await builder.build();
     });
+
+    it('decorator toString is decorator name', () => {
+        expect(AutoWired.toString()).eq('@AutoWired');
+        expect(Injectable.toString()).eq('@Injectable');
+        expect(Inject.toString()).eq('@Inject');
+        expect(Param.toString()).eq('@Param');
+        expect(Singleton.toString()).eq('@Singleton');
+
+    })
 
     it('should auto wried property', () => {
         container.register(SimppleAutoWried);

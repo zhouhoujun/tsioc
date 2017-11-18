@@ -1,4 +1,5 @@
-import { Token } from './types';
+import { Token, Factory } from './types';
+import { DecoratorAction } from './DecoratorAction';
 
 
 /**
@@ -9,36 +10,45 @@ import { Token } from './types';
  */
 export interface IContainer {
     /**
-     * Retrieves an instance from the injector based on the provided token.
+     * Retrieves an instance from the container based on the provided token.
      *
-     * @abstract
      * @template T
-     * @param {Token<T>} [token]
+     * @param {Token<T>} token
+     * @param {string} [alias]
      * @param {T} [notFoundValue]
      * @returns {T}
-     *
-     * @memberOf Injector
+     * @memberof IContainer
      */
-    get<T>(token?: Token<T>, notFoundValue?: T): T;
+    get<T>(token: Token<T>, alias?: string, notFoundValue?: T): T;
 
     /**
      * register type.
      *
      * @template T
      * @param {Token<T>} token
-     * @param {T} [notFoundValue]
-     * @memberOf Injector
+     * @param {Factory<T>} [value]
+     * @memberOf IContainer
      */
-    register<T>(token: Token<T>, notFoundValue?: T);
+    register<T>(token: Token<T>, value?: Factory<T>);
 
     /**
      * register stingleton type.
      *
      * @template T
      * @param {Token<T>} token
-     * @param {T} value
+     * @param {Factory<T>} value
      *
-     * @memberOf Injector
+     * @memberOf IContainer
      */
-    registerSingleton<T>(token: Token<T>, value: T);
+    registerSingleton<T>(token: Token<T>, value?: Factory<T>);
+
+    /**
+     * register decorator
+     *
+     * @template T
+     * @param {Function} decirator
+     * @param {DecoratorAction<T>} actions
+     * @memberof IContainer
+     */
+    registerDecorator<T>(decirator: Function, actions: DecoratorAction<T>)
 }

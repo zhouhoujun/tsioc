@@ -1,11 +1,7 @@
 import 'reflect-metadata';
 import { Type } from '../Type';
 import { PropertyMetadata, ClassMetadata, MethodMetadata, ParameterMetadata } from './Metadata';
-import { arch, type } from 'os';
-import { createClassDecorator } from './ClassDecoratorFactory';
-import { createPropDecorator, IPropertyDecorator } from './PropertyDecoratorFactory';
-import { createParamDecorator, IParameterDecorator } from './ParamDecoratorFactory';
-import { createMethodDecorator } from './MethodDecoratorFactory';
+import { DecoratorType } from './DecoratorType';
 
 
 /**
@@ -65,6 +61,8 @@ export function createDecorator<T>(name: string): any {
                 throw new Error(`Invalid @${name} Decorator declaration.`);
         }
     }
+    factory.toString = () => metaName;
+    (<any>factory).decoratorType = DecoratorType.All;
     return factory;
 }
 
