@@ -1,6 +1,6 @@
 {
   "name": "type-autofac",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "type-autofac is ioc container, via typescript decorator",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
