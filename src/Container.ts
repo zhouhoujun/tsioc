@@ -10,8 +10,9 @@ import { PropertyMetadata } from './decorators/Metadata';
 import { Inject, InjectMetadata } from './decorators/Inject';
 import { Param } from './decorators/Param';
 import { Singleton, SingletonMetadata } from './decorators/Singleton';
-import { DecoratorAction, ParamPropDecoratorAction, ParamDecoratorAction, PropDecoratorAction, ClassDecoratorAction } from './DecoratorAction';
+import { ActionComponent, ActionType, ActionBuilder } from './actions';
 import { DecoratorType } from './decorators/DecoratorType';
+import { ResetPropData } from './actions/ResetPropAction';
 
 
 export const NOT_FOUND = new Object();
@@ -23,10 +24,10 @@ export class Container implements IContainer {
 
     protected factories: Map<Token<any>, any>;
     protected singleton: Map<Token<any>, any>;
-    protected classDecoractors: Map<string, ClassDecoratorAction<any>>;
-    protected methodDecoractors: Map<string, DecoratorAction<any>>;
-    protected propDecoractors: Map<string, PropDecoratorAction<any>>;
-    protected paramDecoractors: Map<string, ParamDecoratorAction<any>>;
+    protected classDecoractors: Map<string, ActionComponent>;
+    protected methodDecoractors: Map<string, ActionComponent>;
+    protected propDecoractors: Map<string, ActionComponent>;
+    protected paramDecoractors: Map<string, ActionComponent>;
     constructor() {
         this.init();
     }
@@ -105,31 +106,31 @@ export class Container implements IContainer {
      *
      * @template T
      * @param {Function} decirator
-     * @param {DecoratorAction<T>} actions
+     * @param {ActionComponent<T>} actions
      * @memberof Container
      */
-    registerDecorator<T>(decirator: Function, actions: DecoratorAction<T>) {
-        if (!actions.type) {
-            actions.type = this.getDecoratorType(decirator);
+    registerDecorator<T>(decirator: Function, actions: ActionComponent) {
+        if (!actions.decorType) {
+            actions.decorType = this.getDecoratorType(decirator);
         }
         if (!actions.name) {
             actions.name = decirator.toString();
         }
-        if (actions.type & DecoratorType.Class) {
+        if (actions.decorType & DecoratorType.Class) {
             this.cacheDecorator(this.classDecoractors, actions);
         }
-        if (actions.type & DecoratorType.Method) {
+        if (actions.decorType & DecoratorType.Method) {
             this.cacheDecorator(this.methodDecoractors, actions);
         }
-        if (actions.type & DecoratorType.Property) {
+        if (actions.decorType & DecoratorType.Property) {
             this.cacheDecorator(this.propDecoractors, actions);
         }
-        if (actions.type & DecoratorType.Parameter) {
+        if (actions.decorType & DecoratorType.Parameter) {
             this.cacheDecorator(this.paramDecoractors, actions);
         }
     }
 
-    protected cacheDecorator<T>(map: Map<string, DecoratorAction<T>>, action: DecoratorAction<T>) {
+    protected cacheDecorator<T>(map: Map<string, ActionComponent>, action: ActionComponent) {
         if (!map.has(action.name)) {
             map.set(action.name, action);
         }
@@ -138,10 +139,10 @@ export class Container implements IContainer {
     protected init() {
         this.factories = new Map<Token<any>, any>();
         this.singleton = new Map<Token<any>, any>();
-        this.classDecoractors = new Map<string, ClassDecoratorAction<any>>();
-        this.methodDecoractors = new Map<string, DecoratorAction<any>>();
-        this.paramDecoractors = new Map<string, ParamDecoratorAction<any>>();
-        this.propDecoractors = new Map<string, PropDecoratorAction<any>>();
+        this.classDecoractors = new Map<string, ActionComponent>();
+        this.methodDecoractors = new Map<string, ActionComponent>();
+        this.paramDecoractors = new Map<string, ActionComponent>();
+        this.propDecoractors = new Map<string, ActionComponent>();
 
         this.registerDefautDecorators();
         this.register(Date);
@@ -156,63 +157,24 @@ export class Container implements IContainer {
     }
 
     protected registerDefautDecorators() {
-        this.registerDecorator<InjectableMetadata>(Injectable, {
-            getType: (metadata) => metadata.type
-        });
+        let builder = new ActionBuilder();
+        this.registerDecorator<InjectableMetadata>(Injectable,
+            builder.build(Injectable.toString(), this.getDecoratorType(Injectable)));
 
-        this.registerDecorator<AutoWiredMetadata>(AutoWired, {
-            getType: (metadata) => metadata.type,
-            toMetadataList: (props) => {
-                return this.concatPropMetadata(props);
-            },
-            resetParamType: (designParams: Type<any>[], metadata) => {
-                return this.resetDesignParams(designParams, metadata);
-            }
-        } as ParamPropDecoratorAction<AutoWiredMetadata>);
+        this.registerDecorator<AutoWiredMetadata>(AutoWired,
+            builder.build(AutoWired.toString(), this.getDecoratorType(AutoWired),
+            ActionType.resetParamType, ActionType.resetPropType));
 
-        this.registerDecorator<InjectMetadata>(Inject, {
-            getType: (metadata) => metadata.type,
-            toMetadataList: (props) => {
-                return this.concatPropMetadata(props);
-            },
-            resetParamType: (designParams: Type<any>[], metadata) => {
-                return this.resetDesignParams(designParams, metadata);
-            }
-        } as ParamPropDecoratorAction<InjectMetadata>);
+        this.registerDecorator<InjectMetadata>(Inject,
+            builder.build(AutoWired.toString(), this.getDecoratorType(AutoWired),
+            ActionType.resetParamType, ActionType.resetPropType));
 
-        this.registerDecorator<SingletonMetadata>(Singleton, {
-            getType: (metadata) => metadata.type
-        });
+        this.registerDecorator<SingletonMetadata>(Singleton,
+            builder.build(Injectable.toString(), this.getDecoratorType(Injectable)));
 
-        this.registerDecorator<ParameterMetadata>(Param, {
-            getType: (metadata) => metadata.type,
-            resetParamType: (designParams: Type<any>[], metadata) => {
-                return this.resetDesignParams(designParams, metadata);
-            }
-        } as ParamDecoratorAction<ParameterMetadata>);
-    }
-
-    protected concatPropMetadata<T>(props: ObjectMap<T>) {
-        if (Array.isArray(props)) {
-            props = {};
-        }
-        let list = [];
-        for (let n in props) {
-            list = list.concat(props[n]);
-        }
-
-        return list;
-    }
-
-    protected resetDesignParams(designParams: Type<any>[], parameters) {
-        if (Array.isArray(parameters) && parameters.length > 0) {
-            parameters.forEach(params => {
-                let parm = Array.isArray(params) && params.length > 0 ? params[0] : params;
-                if (parm && parm.index >= 0 && parm.type) {
-                    designParams[parm.index] = parm.type;
-                }
-            });
-        }
+        this.registerDecorator<ParameterMetadata>(Param,
+            builder.build(AutoWired.toString(), this.getDecoratorType(AutoWired),
+            ActionType.resetParamType));
     }
 
 
@@ -326,9 +288,10 @@ export class Container implements IContainer {
         if (designParams.length > 0) {
             this.paramDecoractors.forEach((v, name) => {
                 let parameters = Reflect.getMetadata(name, type);
-                if (v.resetParamType) {
-                    v.resetParamType(designParams, parameters);
-                }
+                v.execute({
+                    designMetadata: designParams,
+                    metadata: parameters
+                }, ActionType.resetParamType);
             });
         }
         return designParams;
@@ -336,17 +299,18 @@ export class Container implements IContainer {
 
     protected getPropMetadata<T>(type: Type<T>): PropertyMetadata[] {
 
-        let props = [];
+        let restPropData = {
+            props: []
+        } as ResetPropData;
 
         this.propDecoractors.forEach((val, name) => {
             let prop = Reflect.getMetadata(name, type) || {} as ObjectMap<PropertyMetadata[]>;
-            if (val.toMetadataList) {
-                props = props.concat(val.toMetadataList(prop));
-            }
+            restPropData.metadata = prop;
+            val.execute(restPropData, ActionType.resetPropType)
         });
 
 
-        return props;
+        return restPropData.props;
     }
 
     protected registerDependencies<T>(...deps: Token<T>[]) {

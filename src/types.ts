@@ -33,3 +33,37 @@ export type Factory<T> = T | Type<T> | ToInstance<T>;
 export interface ObjectMap<T> {
     [index: string]: T
 }
+
+/**
+ * express.
+ *
+ * @export
+ * @interface Express
+ * @template T
+ * @template TResult
+ */
+export interface Express<T, TResult> {
+    (item: T): TResult
+}
+
+/**
+ * iterate way.
+ *
+ * @export
+ * @enum {number}
+ */
+export enum Mode {
+    /**
+     * route up. iterate in parents.
+     */
+    route = 1,
+    /**
+     * iterate in children.
+     */
+    children,
+    /**
+     * iterate as tree map.
+     */
+    traverse
+}
+

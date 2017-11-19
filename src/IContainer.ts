@@ -1,5 +1,5 @@
 import { Token, Factory } from './types';
-import { DecoratorAction } from './DecoratorAction';
+import { ActionComponent } from './ActionComponent';
 
 
 /**
@@ -45,10 +45,9 @@ export interface IContainer {
     /**
      * register decorator
      *
-     * @template T
      * @param {Function} decirator
-     * @param {DecoratorAction<T>} actions
+     * @param {ActionComponent} actions
      * @memberof IContainer
      */
-    registerDecorator<T>(decirator: Function, actions: DecoratorAction<T>)
+    registerDecorator(decirator: Function, actions: ActionComponent)
 }
