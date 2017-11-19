@@ -1,5 +1,5 @@
 import { Token, Factory } from './types';
-import { ActionComponent } from './ActionComponent';
+import { ActionComponent } from './actions';
 
 
 /**
