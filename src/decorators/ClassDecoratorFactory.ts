@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { ClassMetadata } from './Metadata';
+import { TypeMetadata } from '../metadatas';
 import { Type } from '../Type';
 import { createDecorator } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
@@ -11,7 +11,7 @@ import { DecoratorType } from './DecoratorType';
  * @export
  * @interface IClassDecorator
  */
-export interface IClassDecorator<T extends ClassMetadata> {
+export interface IClassDecorator<T extends TypeMetadata> {
     (metadata?: T): ClassDecorator;
     /**
      * not allow abstract to decorator with out metadata.
@@ -28,7 +28,7 @@ export interface IClassDecorator<T extends ClassMetadata> {
  * @param {string} name decorator name.
  * @returns {*}
  */
-export function createClassDecorator<T extends ClassMetadata>(name: string): IClassDecorator<T> {
+export function createClassDecorator<T extends TypeMetadata>(name: string): IClassDecorator<T> {
     let decorator = createDecorator<T>(name);
     decorator.decoratorType = DecoratorType.Class;
     return decorator;

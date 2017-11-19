@@ -1,13 +1,9 @@
 import 'reflect-metadata';
 import { Type } from '../Type';
-import { PropertyMetadata, ClassMetadata, MethodMetadata, ParameterMetadata } from './Metadata';
+import { ParamPropMetadata } from '../metadatas';
 import { createDecorator } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
 
-
-export interface IParamPropMetadata extends PropertyMetadata, ParameterMetadata {
-
-}
 
 /**
  * Parameter and Property decorator.
@@ -15,7 +11,7 @@ export interface IParamPropMetadata extends PropertyMetadata, ParameterMetadata 
  * @export
  * @interface IParamPropDecorator
  */
-export interface IParamPropDecorator<T extends IParamPropMetadata> {
+export interface IParamPropDecorator<T extends ParamPropMetadata> {
     (metadata?: T): (target: Object, propertyKey: string | symbol, parameterIndex?: number) => void;
     // (target: object, propertyKey: string | symbol): void;
     (target: object, propertyKey: string | symbol, parameterIndex?: number): void;
@@ -28,7 +24,7 @@ export interface IParamPropDecorator<T extends IParamPropMetadata> {
  * @param {string} name
  * @returns
  */
-export function createParamPropDecorator<T extends IParamPropMetadata>(name: string): IParamPropDecorator<T> {
+export function createParamPropDecorator<T extends ParamPropMetadata>(name: string): IParamPropDecorator<T> {
     let decorator = createDecorator<T>(name);
     decorator.decoratorType = DecoratorType.Property | DecoratorType.Parameter;
     return decorator;

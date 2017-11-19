@@ -1,7 +1,8 @@
 import { ActionComposite } from './ActionComposite';
 import { ActionData } from './ActionData';
 import { ActionType} from './ActionType';
-import { ParameterMetadata, DecoratorType } from '../decorators';
+import { DecoratorType } from '../decorators';
+import { ParameterMetadata } from '../metadatas/index';
 
 export class ResetParamAction extends ActionComposite {
 

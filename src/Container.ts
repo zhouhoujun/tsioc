@@ -2,17 +2,18 @@ import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { Token, Factory, ObjectMap, SymbolType, ToInstance } from './types';
 import { Registration } from './Registration';
-import { Injectable, InjectableMetadata } from './decorators/Injectable';
+import { Injectable } from './decorators/Injectable';
 import { Type, AbstractType } from './Type';
 import { AutoWired, AutoWiredMetadata } from './decorators/AutoWried';
-import { ParameterMetadata } from './decorators/Metadata';
-import { PropertyMetadata } from './decorators/Metadata';
-import { Inject, InjectMetadata } from './decorators/Inject';
+import { ParameterMetadata, InjectableMetadata, PropertyMetadata, InjectMetadata } from './metadatas';
+import { Inject, } from './decorators/Inject';
 import { Param } from './decorators/Param';
 import { Singleton, SingletonMetadata } from './decorators/Singleton';
 import { ActionComponent, ActionType, ActionBuilder } from './actions';
 import { DecoratorType } from './decorators/DecoratorType';
 import { ResetPropData } from './actions/ResetPropAction';
+import { ProviderActionData } from './actions/ProviderAction';
+import { ProviderMetadata } from './metadatas/index';
 
 
 export const NOT_FOUND = new Object();
@@ -102,6 +103,21 @@ export class Container implements IContainer {
     }
 
     /**
+     * bind provider.
+     *
+     * @template T
+     * @param {Token<T>} provide
+     * @param {Token<T>} provider
+     * @memberof Container
+     */
+    bindProvider<T>(provide: Token<T>, provider: Token<T>) {
+        let provideKey = this.getTokenKey(provide);
+        this.factories.set(provideKey, () => {
+            return this.get(provider);
+        });
+    }
+
+    /**
      * register decorator.
      *
      * @template T
@@ -159,26 +175,27 @@ export class Container implements IContainer {
     protected registerDefautDecorators() {
         let builder = new ActionBuilder();
         this.registerDecorator<InjectableMetadata>(Injectable,
-            builder.build(Injectable.toString(), this.getDecoratorType(Injectable)));
+            builder.build(Injectable.toString(), this.getDecoratorType(Injectable),
+                ActionType.provider));
 
         this.registerDecorator<AutoWiredMetadata>(AutoWired,
             builder.build(AutoWired.toString(), this.getDecoratorType(AutoWired),
-            ActionType.resetParamType, ActionType.resetPropType));
+                ActionType.resetParamType, ActionType.resetPropType));
 
         this.registerDecorator<InjectMetadata>(Inject,
             builder.build(AutoWired.toString(), this.getDecoratorType(AutoWired),
-            ActionType.resetParamType, ActionType.resetPropType));
+                ActionType.resetParamType, ActionType.resetPropType));
 
         this.registerDecorator<SingletonMetadata>(Singleton,
             builder.build(Injectable.toString(), this.getDecoratorType(Injectable)));
 
         this.registerDecorator<ParameterMetadata>(Param,
             builder.build(AutoWired.toString(), this.getDecoratorType(AutoWired),
-            ActionType.resetParamType));
+                ActionType.resetParamType));
     }
 
 
-    protected getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
+    getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
         if (token instanceof Registration) {
             return token.toString();
         } else {
@@ -199,7 +216,7 @@ export class Container implements IContainer {
         let classFactory;
         if (typeof value !== 'undefined') {
             if (typeof value === 'function') {
-                if (value.constructor) {
+                if (this.isClass(value)) {
                     classFactory = this.createTypeFactory(key, value as Type<T>, singleton);
                 } else {
                     classFactory = this.createCustomFactory(key, value as ToInstance<T>, singleton);
@@ -221,17 +238,38 @@ export class Container implements IContainer {
         }
     }
 
-    protected createCustomFactory<T>(key: SymbolType<T>, value?: ToInstance<T>, singleton?: boolean) {
-        return () => {
-            if (singleton && this.singleton.has(key)) {
-                return this.singleton.get(key);
-            }
-            let instance = value(this);
-            if (singleton) {
-                this.singleton.set(key, instance);
-            }
-            return instance;
+    private isClass(value: Function) {
+        if (!value) {
+            return false;
         }
+
+        if (!value.constructor) {
+            return false;
+        }
+
+        if (!value.prototype) {
+            return false;
+        }
+
+        let idx = 0;
+        for (let n in value.prototype) {
+            idx++;
+        }
+
+        return idx > 1;
+    }
+
+    protected createCustomFactory<T>(key: SymbolType<T>, factory?: ToInstance<T>, singleton?: boolean) {
+        return singleton ?
+            () => {
+                if (this.singleton.has(key)) {
+                    return this.singleton.get(key);
+                }
+                let instance = factory(this);
+                this.singleton.set(key, instance);
+                return instance;
+            }
+            : () => factory(this);
     }
 
     protected createTypeFactory<T>(key: SymbolType<T>, ClassT?: Type<T>, singleton?: boolean) {
@@ -253,11 +291,19 @@ export class Container implements IContainer {
 
             let paramInstances = parameters.map((type, index) => this.get(type));
             let instance = new ClassT(...paramInstances);
+            // this.propDecoractors.forEach()
             if (instance) {
                 props.forEach((prop, idx) => {
                     instance[prop.propertyName] = this.get(prop.type);
                 });
             }
+
+            this.classDecoractors.forEach((act, key) => {
+                act.execute({
+                    metadata: Reflect.getMetadata(key, ClassT),
+                    instance: instance
+                });
+            });
 
             if (singleton) {
                 this.singleton.set(key, instance);
@@ -265,15 +311,29 @@ export class Container implements IContainer {
             return instance;
         };
 
-        // register provider.
-        let injectableConfig = Reflect.getOwnMetadata(Injectable.toString(), ClassT) as InjectableMetadata[];
-        if (Array.isArray(injectableConfig) && injectableConfig.length > 0) {
-            let jcfg = injectableConfig.find(c => c && !!(c.provider || c.alias));
-            if (jcfg) {
-                let providerKey = this.getTokenKey(jcfg.provider, jcfg.alias);
-                this.factories.set(providerKey, factory);
-            }
-        }
+        this.classDecoractors.forEach((action, decorator) => {
+            let metadata: ProviderMetadata[] = Reflect.getOwnMetadata(decorator, ClassT) as ProviderMetadata[];
+            action.execute({
+                container: this,
+                metadata: metadata,
+                // bindProvier: (providekey) => {
+                //     this.factories.set(providekey, () => {
+                //         return this.get(key);
+                //     })
+                // },
+                provider: key
+            } as ProviderActionData, ActionType.provider);
+        });
+
+        // // register provider.
+        // let injectableConfig = Reflect.getOwnMetadata(Injectable.toString(), ClassT) as InjectableMetadata[];
+        // if (Array.isArray(injectableConfig) && injectableConfig.length > 0) {
+        //     let jcfg = injectableConfig.find(c => c && !!(c.provide || c.alias));
+        //     if (jcfg) {
+        //         let providerKey = this.getTokenKey(jcfg.provide, jcfg.alias);
+        //         this.factories.set(providerKey, factory);
+        //     }
+        // }
 
         return factory;
     }

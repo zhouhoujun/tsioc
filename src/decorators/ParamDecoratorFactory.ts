@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { ParameterMetadata } from './Metadata';
+import { ParameterMetadata } from '../metadatas';
 import { Type } from '../Type';
 import { createDecorator } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';

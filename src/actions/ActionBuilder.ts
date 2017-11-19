@@ -5,6 +5,7 @@ import { type } from 'os';
 import { ActionType } from './ActionType';
 import { ResetParamAction } from './ResetParamAction';
 import { ResetPropAction } from './ResetPropAction';
+import { ProviderAction } from './ProviderAction';
 
 
 export class ActionBuilder {
@@ -27,6 +28,10 @@ export class ActionBuilder {
 
             case ActionType.resetPropType:
                 action = new ResetPropAction();
+                break;
+
+            case ActionType.provider:
+                action = new ProviderAction();
                 break;
 
         }

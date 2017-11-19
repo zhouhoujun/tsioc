@@ -75,7 +75,7 @@ export abstract class Student {
     abstract sayHi(): string;
 }
 
-@Injectable({ provider: Student })
+@Injectable({ provide: Student })
 export class MiddleSchoolStudent extends Student {
     constructor() {
         super();
@@ -95,7 +95,7 @@ export class MClassRoom {
 }
 
 
-@Injectable({ provider: Student, alias: 'college' })
+@Injectable({ provide: Student, alias: 'college' })
 export class CollegeStudent extends Student {
     constructor() {
         super();

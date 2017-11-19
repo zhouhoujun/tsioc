@@ -1,9 +1,9 @@
 import { Type } from '../Type';
 import { DecoratorType } from '../decorators/DecoratorType';
-import { PropertyMetadata } from '../decorators/Metadata';
 import { ObjectMap, Token, Express, Mode } from '../types';
 import { ActionData } from './ActionData';
 import { ActionType } from './ActionType';
+import { Metadate } from '../metadatas/Metadate';
 
 
 
@@ -45,7 +45,7 @@ export interface ActionComponent {
      * @param {(string|ActionType)} [name] execute action name.
      * @memberof ActionComponent
      */
-    execute<T>(data: ActionData<T>, name?: string | ActionType);
+    execute<T extends Metadate>(data: ActionData<T>, name?: string | ActionType);
 
     /**
      * parent action.

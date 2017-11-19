@@ -4,6 +4,7 @@ import { DecoratorType } from '../decorators/DecoratorType';
 import { Mode, Express } from '../types';
 import { NullAction } from './NullAction';
 import { ActionComponent } from './ActionComponent';
+import { Metadate } from '../metadatas/index';
 
 
 export class ActionComposite implements ActionComponent {
@@ -19,11 +20,11 @@ export class ActionComposite implements ActionComponent {
         this.children = [];
     }
 
-    protected working<T>(data: ActionData<T>) {
+    protected working(data: ActionData<Metadate>) {
         // do nothing.
     }
 
-    execute<T>(data: ActionData<T>, name?: string | ActionType) {
+    execute(data: ActionData<Metadate>, name?: string | ActionType) {
         if (name) {
             this.find(it => it.name === (typeof name === 'string' ? name : (<ActionType>name).toString()))
                 .execute(data);

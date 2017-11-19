@@ -6,5 +6,7 @@
  */
 export enum ActionType {
     resetParamType = 'resetParamType',
-    resetPropType = 'resetPropType'
+    resetPropType = 'resetPropType',
+    injectProp = 'injectProp',
+    provider = 'provider'
 }

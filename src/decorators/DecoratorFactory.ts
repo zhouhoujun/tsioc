@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { Type } from '../Type';
-import { PropertyMetadata, ClassMetadata, MethodMetadata, ParameterMetadata } from './Metadata';
+import { PropertyMetadata, TypeMetadata, MethodMetadata, ParameterMetadata } from '../metadatas';
 import { DecoratorType } from './DecoratorType';
 
 
@@ -25,7 +25,7 @@ export function createDecorator<T>(name: string): any {
             case 1:
                 if (args[0] && typeof args[0] === 'function') {
                     let target = args[0];
-                    setClassMetadata<T>(name, metaName, target, metadata);
+                    setTypeMetadata<T>(name, metaName, target, metadata);
                     metadata = null;
                     return target;
                 } else {
@@ -60,19 +60,20 @@ export function createDecorator<T>(name: string): any {
             default:
                 throw new Error(`Invalid @${name} Decorator declaration.`);
         }
-    }
+    };
+
     factory.toString = () => metaName;
     (<any>factory).decoratorType = DecoratorType.All;
     return factory;
 }
 
 
-function setClassMetadata<T>(name: string, metaName: string, target: Type<T>, metadata?: T) {
+function setTypeMetadata<T>(name: string, metaName: string, target: Type<T>, metadata?: T) {
     let annotations = Reflect.getOwnMetadata(metaName, target) || [];
     // let designParams = Reflect.getMetadata('design:paramtypes', target) || [];
-    let classMetadata: ClassMetadata = metadata || {};
-    classMetadata.decorator = name;
-    annotations.push(classMetadata);
+    let TypeMetadata: TypeMetadata = metadata || {};
+    TypeMetadata.decorator = name;
+    annotations.push(TypeMetadata);
     Reflect.defineMetadata(metaName, annotations, target);
 }
 

@@ -1,5 +1,5 @@
 import { Type } from '../Type';
-import { ClassMetadata } from './Metadata';
+import { TypeMetadata } from '../metadatas';
 import { createClassDecorator, IClassDecorator } from './ClassDecoratorFactory';
 
 /**
@@ -8,7 +8,7 @@ import { createClassDecorator, IClassDecorator } from './ClassDecoratorFactory';
  * @export
  * @interface SingletonMetadata
  */
-export interface SingletonMetadata extends ClassMetadata {
+export interface SingletonMetadata extends TypeMetadata {
 
 }
 
