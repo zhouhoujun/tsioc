@@ -20,7 +20,7 @@
     "decorator",
     "Container",
     "autofac",
-    "type"
+    "typescript"
   ],
   "author": "houjun",
   "license": "MIT",
