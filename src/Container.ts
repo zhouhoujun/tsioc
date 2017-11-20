@@ -4,15 +4,9 @@ import { Token, Factory, ObjectMap, SymbolType, ToInstance } from './types';
 import { Registration } from './Registration';
 import { Injectable } from './decorators/Injectable';
 import { Type, AbstractType } from './Type';
-import { AutoWired, AutoWiredMetadata } from './decorators/AutoWried';
-import { ParameterMetadata, InjectableMetadata, PropertyMetadata, InjectMetadata, TypeMetadata } from './metadatas';
-import { Inject, } from './decorators/Inject';
-import { Param } from './decorators/Param';
-import { Singleton, SingletonMetadata } from './decorators/Singleton';
-import { ActionComponent, ActionType, ActionBuilder } from './actions';
-import { DecoratorType } from './decorators/DecoratorType';
-import { ResetPropData } from './actions/ResetPropAction';
-import { ProviderActionData } from './actions/ProviderAction';
+import { ParameterMetadata, InjectableMetadata, PropertyMetadata, InjectMetadata, TypeMetadata, SingletonMetadata, AutoWiredMetadata } from './metadatas';
+import { DecoratorType, Inject, AutoWired, Param, Singleton } from './decorators';
+import { ActionComponent, ActionType, ActionBuilder, ResetPropData, ProviderActionData } from './actions';
 import { isClass } from './types';
 
 
@@ -227,14 +221,14 @@ export class Container implements IContainer {
                 ActionType.resetParamType, ActionType.resetPropType));
 
         this.registerDecorator<InjectMetadata>(Inject,
-            builder.build(AutoWired.toString(), this.getDecoratorType(AutoWired),
+            builder.build(Inject.toString(), this.getDecoratorType(Inject),
                 ActionType.resetParamType, ActionType.resetPropType));
 
         this.registerDecorator<SingletonMetadata>(Singleton,
-            builder.build(Injectable.toString(), this.getDecoratorType(Injectable)));
+            builder.build(Singleton.toString(), this.getDecoratorType(Singleton)));
 
         this.registerDecorator<ParameterMetadata>(Param,
-            builder.build(AutoWired.toString(), this.getDecoratorType(AutoWired),
+            builder.build(Param.toString(), this.getDecoratorType(Param),
                 ActionType.resetParamType));
     }
 
@@ -344,6 +338,13 @@ export class Container implements IContainer {
     protected getParameterMetadata<T>(type: Type<T>): Type<any>[] {
         let designParams: Type<any>[] = Reflect.getOwnMetadata('design:paramtypes', type) || [];
         designParams = designParams.slice(0);
+        designParams.forEach(ptype => {
+            if (this.isVaildDependence(ptype)) {
+                if (!this.has(ptype)) {
+                    this.register(ptype);
+                }
+            }
+        });
         if (designParams.length > 0) {
             this.paramDecoractors.forEach((v, name) => {
                 let parameters = Reflect.getMetadata(name, type);

@@ -31,7 +31,7 @@ export interface IParameterDecorator<T extends ParameterMetadata> {
 export function createParamDecorator<T extends ParameterMetadata>(name: string, adapter?: MetadataAdapter): IParameterDecorator<T> {
     adapter = adapter || ((...args: any[]) => {
         let metadata;
-        if (args.length > 0) {
+        if (args.length > 0 && args[0]) {
             if (isClass(args[0])) {
                 metadata = {
                     provider: args[0],

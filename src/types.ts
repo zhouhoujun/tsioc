@@ -69,7 +69,6 @@ export enum Mode {
 }
 
 export function isClass(target: any) {
-    console.log(target, '-------------------------');
     if (!target) {
         return false;
     }
@@ -81,11 +80,5 @@ export function isClass(target: any) {
     if (!target.prototype) {
         return false;
     }
-
-    let idx = 0;
-    for (let n in target.prototype) {
-        idx++;
-    }
-    console.log(idx > 1);
-    return idx > 1;
+    return true;
 }

@@ -60,11 +60,11 @@ describe('auto register with build', () => {
 
         let instance = container.get(Student);
         expect(instance).not.undefined;
-        console.log(instance.sayHi());
+        // console.log(instance.sayHi());
         expect(instance.sayHi()).eq('I am a middle school student');
 
         let instance2 = container.get(Student, 'college');
-        console.log(instance2);
+        // console.log(instance2);
         expect(instance2).not.undefined;
         expect(instance2.sayHi()).eq('I am a college student');
     });

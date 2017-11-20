@@ -70,8 +70,8 @@ export class CollegeStudent extends Student {
 @Injectable
 export class CollegeClassRoom {
     constructor(
-        @AutoWired(CollegeStudent)
         @Param(CollegeStudent)
+        @AutoWired(CollegeStudent)
         public leader: Student) {
 
     }

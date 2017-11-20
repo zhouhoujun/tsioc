@@ -7,5 +7,7 @@ export * from './PropertyMetadata';
 export * from './Provide';
 export * from './Provider';
 export * from './TypeMetadata';
+export * from './AutoWiredMetadata';
 export * from './InjectMetadata';
 export * from './InjectableMetadata';
+export * from './SingletonMetadata';

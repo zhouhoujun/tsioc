@@ -30,7 +30,7 @@ export interface IPropertyDecorator<T extends PropertyMetadata> {
 export function createPropDecorator<T extends PropertyMetadata>(name: string, adapter?: MetadataAdapter): IPropertyDecorator<T> {
     adapter = adapter || ((...args: any[]) => {
         let metadata = null;
-        if (args.length > 0) {
+        if (args.length > 0 && args[0]) {
             if (isClass(args[0])) {
                 metadata = {
                     provider: args[0],

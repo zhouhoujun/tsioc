@@ -31,6 +31,23 @@ export interface IParamPropDecorator<T extends ParamPropMetadata> {
  * @returns {IParamPropDecorator<T>}
  */
 export function createParamPropDecorator<T extends ParamPropMetadata>(name: string, adapter?: MetadataAdapter): IParamPropDecorator<T> {
+    adapter = adapter || ((...args: any[]) => {
+        let metadata;
+        if (args.length > 0 && args[0]) {
+            if (isClass(args[0])) {
+                metadata = {
+                    provider: args[0],
+                    alias: typeof args[1] === 'string' ? args[1] : ''
+                } as ParamPropMetadata;
+            } else if (typeof args[0] === 'string') {
+                metadata = {
+                    provider: args[0],
+                    alias: typeof args[1] === 'string' ? args[1] : ''
+                } as ParamPropMetadata;
+            }
+        }
+        return metadata
+    });
     let decorator = createDecorator<T>(name, adapter);
     decorator.decoratorType = DecoratorType.Property | DecoratorType.Parameter;
     return decorator;

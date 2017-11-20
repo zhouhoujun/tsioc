@@ -87,7 +87,7 @@ export class MiddleSchoolStudent extends Student {
 
 @Injectable()
 export class MClassRoom {
-    @AutoWired({ type: MiddleSchoolStudent })
+    @AutoWired(MiddleSchoolStudent)
     leader: Student;
     constructor() {
 
@@ -108,8 +108,8 @@ export class CollegeStudent extends Student {
 @Injectable
 export class CollegeClassRoom {
     constructor(
-        @AutoWired({ type: CollegeStudent })
-        @Param({ type: CollegeStudent })
+        @Param(CollegeStudent)
+        @AutoWired(CollegeStudent)
         public leader: Student) {
 
     }
@@ -118,7 +118,9 @@ export class CollegeClassRoom {
 
 @Injectable
 export class InjMClassRoom {
-    @Inject // @Inject({ type: MiddleSchoolStudent })
+    // @Inject(MiddleSchoolStudent)
+    @Inject
+    // @Inject({ type: MiddleSchoolStudent })
     leader: Student;
     constructor() {
 
@@ -128,12 +130,16 @@ export class InjMClassRoom {
 
 @Injectable
 export class InjCollegeClassRoom {
+    // @Inject(CollegeStudent)// @Inject({ type: CollegeStudent })
+    // public leader: Student
     constructor(
-        @Inject({ type: CollegeStudent })
-        public leader: Student) {
+        @Inject(CollegeStudent)// @Inject({ type: CollegeStudent })
+        public leader: Student
+    ) {
 
     }
 }
+
 
 
 let builder = new ContainerBuilder();

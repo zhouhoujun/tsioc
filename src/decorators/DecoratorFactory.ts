@@ -4,9 +4,6 @@ import { PropertyMetadata, TypeMetadata, MethodMetadata, ParameterMetadata, Meta
 import { DecoratorType } from './DecoratorType';
 
 
-export interface DecoratorFactory {
-    (...args: any[]): any;
-}
 
 export interface MetadataAdapter {
     (...args: any[]): Metadate;
@@ -26,9 +23,11 @@ export function createDecorator<T>(name: string, adapter?: MetadataAdapter): any
     let factory = (...args: any[]) => {
         if (adapter && !metadata) {
             metadata = adapter(...args) as T;
+            // console.log('metadata:-----------------\n ', metadata);
             if (metadata) {
                 return (...args: any[]) => {
                     factory(...args);
+                    metadata = null;
                 }
             }
         }
@@ -37,17 +36,18 @@ export function createDecorator<T>(name: string, adapter?: MetadataAdapter): any
                 metadata = null;
                 return (...args: any[]) => {
                     factory(...args);
+                    metadata = null;
                 }
             case 1:
                 if (args[0] && typeof args[0] === 'function') {
                     let target = args[0];
                     setTypeMetadata<T>(name, metaName, target, metadata);
-                    metadata = null;
                     return target;
                 } else {
                     metadata = args.length > 0 ? args[0] : null;
                     return (...args: any[]) => {
                         factory(...args);
+                        metadata = null;
                     }
                 }
             case 2:

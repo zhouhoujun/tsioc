@@ -18,7 +18,6 @@ export class ResetParamAction extends ActionComposite {
             parameters.forEach(params => {
                 let parm = Array.isArray(params) && params.length > 0 ? params[0] : null;
                 if (parm && parm.index >= 0) {
-                    console.log('provider', parm);
                     if (container.isVaildDependence(parm.provider)) {
                         if (!container.has(parm.provider, parm.alias)) {
                             container.register(container.getToken(parm.provider, parm.alias));

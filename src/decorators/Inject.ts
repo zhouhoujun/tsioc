@@ -1,5 +1,3 @@
-
-import { Type } from '../Type';
 import { IParamPropDecorator, createParamPropDecorator } from './ParamPropDecoratorFactory';
 import { InjectMetadata } from '../metadatas';
 
