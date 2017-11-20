@@ -1,4 +1,5 @@
 import { ObjectMap } from '../types';
+import { IContainer } from '../IContainer';
 
 
 /**
@@ -9,6 +10,14 @@ import { ObjectMap } from '../types';
  * @template T
  */
 export interface ActionData<T> {
+
+    /**
+     * the container.
+     *
+     * @type {IContainer}
+     * @memberof ActionData
+     */
+    container?: IContainer;
     /**
      * design metadata.
      *
@@ -29,7 +38,7 @@ export interface ActionData<T> {
      * @type {ObjectMap<T>}
      * @memberof ActionData
      */
-    propMetadata?: ObjectMap<T>;
+    propMetadata?: ObjectMap<T[]>;
     /**
      * paramerter metadata.
      *

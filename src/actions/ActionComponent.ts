@@ -4,6 +4,7 @@ import { ObjectMap, Token, Express, Mode } from '../types';
 import { ActionData } from './ActionData';
 import { ActionType } from './ActionType';
 import { Metadate } from '../metadatas/Metadate';
+import { IContainer } from '../IContainer';
 
 
 
@@ -41,11 +42,12 @@ export interface ActionComponent {
      * execute the action work.
      *
      * @template T
+     * @param { IContainer } container
      * @param {ActionData<T>} data execute data;
      * @param {(string|ActionType)} [name] execute action name.
      * @memberof ActionComponent
      */
-    execute<T extends Metadate>(data: ActionData<T>, name?: string | ActionType);
+    execute<T extends Metadate>(container: IContainer, data: ActionData<T>, name?: string | ActionType);
 
     /**
      * parent action.

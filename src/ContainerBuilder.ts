@@ -5,7 +5,7 @@ import { request } from 'https';
 const globby = require('globby');
 
 
-export interface BuilderOptions {
+export interface LoadOptions {
     /**
      * script files match express.
      * see: https://github.com/isaacs/node-glob
@@ -24,7 +24,40 @@ export interface BuilderOptions {
     modules?: (string | Type<any> | object)[];
 }
 
-export class ContainerBuilder {
+/**
+ * container builder.
+ *
+ * @export
+ * @interface IContainerBuilder
+ */
+export interface IContainerBuilder {
+    /**
+     * create a new container.
+     *
+     * @returns {IContainer}
+     * @memberof IContainerBuilder
+     */
+    create(): IContainer;
+    /**
+     * create a new container and load module via options.
+     *
+     * @param {LoadOptions} [options]
+     * @returns {Promise<IContainer>}
+     * @memberof IContainerBuilder
+     */
+    build(options?: LoadOptions): Promise<IContainer>;
+    /**
+     * load modules for container.
+     *
+     * @param {IContainer} container
+     * @param {LoadOptions} options
+     * @returns {Promise<IContainer>}
+     * @memberof IContainerBuilder
+     */
+    loadModule(container: IContainer, options: LoadOptions): Promise<IContainer>
+}
+
+export class ContainerBuilder implements IContainerBuilder {
 
     create(): IContainer {
         return new Container();
@@ -33,12 +66,27 @@ export class ContainerBuilder {
     /**
      * build container.
      *
-     * @param {BuilderOptions} [options]
+     * @param {LoadOptions} [options]
      * @returns { Promise<IContainer>}
      * @memberof ContainerBuilder
      */
-    async build(options?: BuilderOptions) {
+    async build(options?: LoadOptions) {
         let container: IContainer = this.create();
+        if (options) {
+            await this.loadModule(container, options);
+        }
+        return container;
+    }
+
+    /**
+     * load modules for container.
+     *
+     * @param {IContainer} container
+     * @param {LoadOptions} options
+     * @returns
+     * @memberof ContainerBuilder
+     */
+    async loadModule(container: IContainer, options: LoadOptions) {
         if (options) {
             if (options.files) {
                 let files: string[] = await globby(options.files);

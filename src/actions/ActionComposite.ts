@@ -5,6 +5,7 @@ import { Mode, Express } from '../types';
 import { NullAction } from './NullAction';
 import { ActionComponent } from './ActionComponent';
 import { Metadate } from '../metadatas/index';
+import { IContainer } from '../IContainer';
 
 
 export class ActionComposite implements ActionComponent {
@@ -20,18 +21,18 @@ export class ActionComposite implements ActionComponent {
         this.children = [];
     }
 
-    protected working(data: ActionData<Metadate>) {
+    protected working(container: IContainer, data: ActionData<Metadate>) {
         // do nothing.
     }
 
-    execute(data: ActionData<Metadate>, name?: string | ActionType) {
+    execute(container: IContainer, data: ActionData<Metadate>, name?: string | ActionType) {
         if (name) {
             this.find(it => it.name === (typeof name === 'string' ? name : (<ActionType>name).toString()))
-                .execute(data);
+                .execute(container, data);
         } else {
             this.trans(action => {
                 if (action instanceof ActionComposite) {
-                    action.working(data);
+                    action.working(container, data);
                 }
             });
         }

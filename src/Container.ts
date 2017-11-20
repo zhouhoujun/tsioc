@@ -5,7 +5,7 @@ import { Registration } from './Registration';
 import { Injectable } from './decorators/Injectable';
 import { Type, AbstractType } from './Type';
 import { AutoWired, AutoWiredMetadata } from './decorators/AutoWried';
-import { ParameterMetadata, InjectableMetadata, PropertyMetadata, InjectMetadata } from './metadatas';
+import { ParameterMetadata, InjectableMetadata, PropertyMetadata, InjectMetadata, TypeMetadata } from './metadatas';
 import { Inject, } from './decorators/Inject';
 import { Param } from './decorators/Param';
 import { Singleton, SingletonMetadata } from './decorators/Singleton';
@@ -13,7 +13,7 @@ import { ActionComponent, ActionType, ActionBuilder } from './actions';
 import { DecoratorType } from './decorators/DecoratorType';
 import { ResetPropData } from './actions/ResetPropAction';
 import { ProviderActionData } from './actions/ProviderAction';
-import { ProviderMetadata } from './metadatas/index';
+import { isClass } from './types';
 
 
 export const NOT_FOUND = new Object();
@@ -52,6 +52,30 @@ export class Container implements IContainer {
         return factory() as T;
     }
 
+
+    getToken<T>(token: Token<T>, alias?: string): Token<T> {
+        if (token instanceof Registration) {
+            return token;
+        } else {
+            if (alias && typeof token === 'function') {
+                return new Registration(token, alias);
+            }
+            return token;
+        }
+    }
+
+    getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
+        if (token instanceof Registration) {
+            return token.toString();
+        } else {
+            if (alias && typeof token === 'function') {
+                return new Registration(token, alias).toString();
+            }
+            return token;
+        }
+    }
+
+
     /**
      * register type.
      * @abstract
@@ -65,15 +89,16 @@ export class Container implements IContainer {
     }
 
     /**
-     * has token.
+     * has register the token or not.
      *
      * @template T
      * @param {Token<T>} token
+     * @param {string} [alias]
      * @returns {boolean}
      * @memberof Container
      */
-    has<T>(token: Token<T>): boolean {
-        let key = this.getTokenKey(token);
+    has<T>(token: Token<T>, alias?: string): boolean {
+        let key = this.getTokenKey(token, alias);
         return this.hasRegister(key);
     }
 
@@ -146,6 +171,25 @@ export class Container implements IContainer {
         }
     }
 
+    /**
+     * is vaildate dependence type or not. dependence type must with @Injectable decorator.
+     *
+     * @template T
+     * @param {Type<T>} target
+     * @returns {boolean}
+     * @memberof Container
+     */
+    isVaildDependence<T>(target: Type<T>): boolean {
+        if (!target) {
+            return false;
+        }
+        if (!this.isClass(target)) {
+            return false;
+        }
+        let injectable: any[] = Reflect.getMetadata(Injectable.toString(), target);
+        return injectable && injectable.length > 0;
+    }
+
     protected cacheDecorator<T>(map: Map<string, ActionComponent>, action: ActionComponent) {
         if (!map.has(action.name)) {
             map.set(action.name, action);
@@ -195,17 +239,6 @@ export class Container implements IContainer {
     }
 
 
-    getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
-        if (token instanceof Registration) {
-            return token.toString();
-        } else {
-            if (alias && typeof token === 'function') {
-                return new Registration(token, alias).toString();
-            }
-            return token;
-        }
-    }
-
     protected registerFactory<T>(token: Token<T>, value?: Factory<T>, singleton?: boolean) {
         let key = this.getTokenKey(token);
 
@@ -239,24 +272,7 @@ export class Container implements IContainer {
     }
 
     private isClass(value: Function) {
-        if (!value) {
-            return false;
-        }
-
-        if (!value.constructor) {
-            return false;
-        }
-
-        if (!value.prototype) {
-            return false;
-        }
-
-        let idx = 0;
-        for (let n in value.prototype) {
-            idx++;
-        }
-
-        return idx > 1;
+        return isClass(value);
     }
 
     protected createCustomFactory<T>(key: SymbolType<T>, factory?: ToInstance<T>, singleton?: boolean) {
@@ -277,9 +293,7 @@ export class Container implements IContainer {
             return null;
         }
         let parameters = this.getParameterMetadata(ClassT);
-        this.registerDependencies(...parameters);
         let props = this.getPropMetadata(ClassT);
-        this.registerDependencies(...props.map(it => it.type));
         if (!singleton) {
             singleton = this.isSingletonType<T>(ClassT);
         }
@@ -294,12 +308,13 @@ export class Container implements IContainer {
             // this.propDecoractors.forEach()
             if (instance) {
                 props.forEach((prop, idx) => {
-                    instance[prop.propertyName] = this.get(prop.type);
+                    instance[prop.propertyName] = prop.provider ?
+                        this.get(prop.provider, prop.alias) : this.get(prop.type);
                 });
             }
 
             this.classDecoractors.forEach((act, key) => {
-                act.execute({
+                act.execute(this, {
                     metadata: Reflect.getMetadata(key, ClassT),
                     instance: instance
                 });
@@ -312,11 +327,9 @@ export class Container implements IContainer {
         };
 
         this.classDecoractors.forEach((action, decorator) => {
-            let metadata: ProviderMetadata[] = Reflect.getOwnMetadata(decorator, ClassT) as ProviderMetadata[];
-            action.execute({
-                container: this,
-                metadata: metadata,
-                provider: key
+            let metadata: TypeMetadata[] = Reflect.getOwnMetadata(decorator, ClassT) as TypeMetadata[];
+            action.execute(this, {
+                metadata: metadata
             } as ProviderActionData, ActionType.provider);
         });
 
@@ -334,7 +347,7 @@ export class Container implements IContainer {
         if (designParams.length > 0) {
             this.paramDecoractors.forEach((v, name) => {
                 let parameters = Reflect.getMetadata(name, type);
-                v.execute({
+                v.execute(this, {
                     designMetadata: designParams,
                     paramMetadata: parameters
                 }, ActionType.resetParamType);
@@ -352,23 +365,11 @@ export class Container implements IContainer {
         this.propDecoractors.forEach((val, name) => {
             let prop = Reflect.getMetadata(name, type) || {} as ObjectMap<PropertyMetadata[]>;
             restPropData.propMetadata = prop;
-            val.execute(restPropData, ActionType.resetPropType)
+            val.execute(this, restPropData, ActionType.resetPropType)
         });
 
 
         return restPropData.props;
-    }
-
-    protected registerDependencies<T>(...deps: Token<T>[]) {
-        deps.forEach(depType => {
-            if (this.has(depType)) {
-                return;
-            }
-            let injectableConfig: any[] = Reflect.getMetadata(Injectable.toString(), depType);
-            if (injectableConfig && injectableConfig.length > 0) {
-                this.register(depType);
-            }
-        });
     }
 }
 

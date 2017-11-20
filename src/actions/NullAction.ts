@@ -2,13 +2,14 @@ import { ActionComponent} from './ActionComponent';
 import { DecoratorType } from '../decorators/DecoratorType';
 import { Mode, Express } from '../types';
 import { ActionData } from './ActionData';
+import { IContainer } from '../IContainer';
 
 
 class NullActionClass implements  ActionComponent {
     name: string;
     decorName: string;
     decorType: DecoratorType;
-    execute<T>(data: ActionData<T>, name?: string) {
+    execute<T>(container: IContainer, data: ActionData<T>, name?: string) {
 
     }
     parent?: ActionComponent;

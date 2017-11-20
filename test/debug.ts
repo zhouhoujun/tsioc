@@ -48,7 +48,7 @@ export class MiddleSchoolStudent extends Student {
 
 @Injectable()
 export class MClassRoom {
-    @AutoWired({ type: MiddleSchoolStudent })
+    @AutoWired(MiddleSchoolStudent)
     leader: Student;
     constructor() {
 
@@ -70,7 +70,7 @@ export class CollegeStudent extends Student {
 export class CollegeClassRoom {
     constructor(
         @AutoWired({ type: CollegeStudent })
-        @Param({ type: CollegeStudent })
+        @Param(CollegeStudent)
         public leader: Student) {
 
     }

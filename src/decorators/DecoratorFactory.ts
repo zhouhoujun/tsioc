@@ -1,8 +1,16 @@
 import 'reflect-metadata';
 import { Type } from '../Type';
-import { PropertyMetadata, TypeMetadata, MethodMetadata, ParameterMetadata } from '../metadatas';
+import { PropertyMetadata, TypeMetadata, MethodMetadata, ParameterMetadata, Metadate } from '../metadatas';
 import { DecoratorType } from './DecoratorType';
 
+
+export interface DecoratorFactory {
+    (...args: any[]): any;
+}
+
+export interface MetadataAdapter {
+    (...args: any[]): Metadate;
+}
 
 /**
  * create dectorator for class params props methods.
@@ -12,10 +20,18 @@ import { DecoratorType } from './DecoratorType';
  * @param {string} name
  * @returns
  */
-export function createDecorator<T>(name: string): any {
+export function createDecorator<T>(name: string, adapter?: MetadataAdapter): any {
     let metaName = `@${name}`;
     let metadata: T = null;
     let factory = (...args: any[]) => {
+        if (adapter && !metadata) {
+            metadata = adapter(...args) as T;
+            if (metadata) {
+                return (...args: any[]) => {
+                    factory(...args);
+                }
+            }
+        }
         switch (args.length) {
             case 0:
                 metadata = null;
@@ -37,7 +53,7 @@ export function createDecorator<T>(name: string): any {
             case 2:
                 let target = args[0];
                 let propertyKey = args[1];
-                setPropertyMetadata<T>(name, metaName, target, propertyKey, metadata);
+                setPropertyMetadata(name, metaName, target, propertyKey, metadata);
                 break;
             case 3:
                 if (typeof args[2] === 'number') {
@@ -71,9 +87,12 @@ export function createDecorator<T>(name: string): any {
 function setTypeMetadata<T>(name: string, metaName: string, target: Type<T>, metadata?: T) {
     let annotations = Reflect.getOwnMetadata(metaName, target) || [];
     // let designParams = Reflect.getMetadata('design:paramtypes', target) || [];
-    let TypeMetadata: TypeMetadata = metadata || {};
-    TypeMetadata.decorator = name;
-    annotations.push(TypeMetadata);
+    let typeMetadata = (metadata || {}) as TypeMetadata;
+    if (!typeMetadata.type) {
+        typeMetadata.type = target;
+    }
+    typeMetadata.decorator = name;
+    annotations.push(typeMetadata);
     Reflect.defineMetadata(metaName, annotations, target);
 }
 
@@ -92,7 +111,7 @@ function setMethodMetadata<T>(name: string, metaName: string, target: Type<T>, p
 
 function setPropertyMetadata<T>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, metadata?: T) {
     let meta = Reflect.getOwnMetadata(metaName, target) || {};
-    let propmetadata: PropertyMetadata = metadata || {};
+    let propmetadata = (metadata || {}) as PropertyMetadata;
 
     propmetadata.propertyName = propertyKey;
     propmetadata.decorator = name;
@@ -123,7 +142,7 @@ function setParamMetadata<T>(name: string, metaName: string, target: Type<T>, pr
 
     parameters[parameterIndex] = parameters[parameterIndex] || [];
 
-    let paramMeadata: ParameterMetadata = metadata || {};
+    let paramMeadata = (metadata || {}) as ParameterMetadata;
 
     if (!paramMeadata.type) {
         let t = Reflect.getOwnMetadata('design:type', target, propertyKey);

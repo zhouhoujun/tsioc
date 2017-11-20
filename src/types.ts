@@ -2,11 +2,12 @@ import { Type, AbstractType } from './Type';
 import { Registration } from './Registration';
 import { IContainer } from './IContainer';
 import { type } from 'os';
+import { close } from 'inspector';
 
 /**
  * symbol type
  */
-export type SymbolType<T> = Type<T> | AbstractType<T> | T | string | symbol;
+export type SymbolType<T> = Type<T> | AbstractType<T> | string | symbol;
 /**
  * factory tocken.
  */
@@ -67,3 +68,24 @@ export enum Mode {
     traverse
 }
 
+export function isClass(target: any) {
+    console.log(target, '-------------------------');
+    if (!target) {
+        return false;
+    }
+
+    if (!target.constructor) {
+        return false;
+    }
+
+    if (!target.prototype) {
+        return false;
+    }
+
+    let idx = 0;
+    for (let n in target.prototype) {
+        idx++;
+    }
+    console.log(idx > 1);
+    return idx > 1;
+}

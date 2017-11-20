@@ -2,6 +2,7 @@ import { Type } from '../Type';
 import { createClassDecorator, IClassDecorator } from './ClassDecoratorFactory';
 import { Token } from '../types';
 import { InjectableMetadata } from '../metadatas';
+import { isClass } from '../index';
 
 
 
