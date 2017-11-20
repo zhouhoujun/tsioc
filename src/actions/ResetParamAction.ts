@@ -11,11 +11,11 @@ export class ResetParamAction extends ActionComposite {
     }
 
     protected working(data: ActionData<ParameterMetadata>) {
-        let parameters = data.metadata;
+        let parameters = data.paramMetadata;
         let designParams = data.designMetadata;
         if (Array.isArray(parameters) && parameters.length > 0) {
             parameters.forEach(params => {
-                let parm = Array.isArray(params) && params.length > 0 ? params[0] : params;
+                let parm = Array.isArray(params) && params.length > 0 ? params[0] : null;
                 if (parm && parm.index >= 0 && parm.type) {
                     designParams[parm.index] = parm.type;
                 }

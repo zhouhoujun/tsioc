@@ -316,24 +316,10 @@ export class Container implements IContainer {
             action.execute({
                 container: this,
                 metadata: metadata,
-                // bindProvier: (providekey) => {
-                //     this.factories.set(providekey, () => {
-                //         return this.get(key);
-                //     })
-                // },
                 provider: key
             } as ProviderActionData, ActionType.provider);
         });
 
-        // // register provider.
-        // let injectableConfig = Reflect.getOwnMetadata(Injectable.toString(), ClassT) as InjectableMetadata[];
-        // if (Array.isArray(injectableConfig) && injectableConfig.length > 0) {
-        //     let jcfg = injectableConfig.find(c => c && !!(c.provide || c.alias));
-        //     if (jcfg) {
-        //         let providerKey = this.getTokenKey(jcfg.provide, jcfg.alias);
-        //         this.factories.set(providerKey, factory);
-        //     }
-        // }
 
         return factory;
     }
@@ -350,7 +336,7 @@ export class Container implements IContainer {
                 let parameters = Reflect.getMetadata(name, type);
                 v.execute({
                     designMetadata: designParams,
-                    metadata: parameters
+                    paramMetadata: parameters
                 }, ActionType.resetParamType);
             });
         }
@@ -365,7 +351,7 @@ export class Container implements IContainer {
 
         this.propDecoractors.forEach((val, name) => {
             let prop = Reflect.getMetadata(name, type) || {} as ObjectMap<PropertyMetadata[]>;
-            restPropData.metadata = prop;
+            restPropData.propMetadata = prop;
             val.execute(restPropData, ActionType.resetPropType)
         });
 

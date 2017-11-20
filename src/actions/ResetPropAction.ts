@@ -17,7 +17,7 @@ export class ResetPropAction extends ActionComposite {
 
     protected working(data: ActionData<ParameterMetadata>) {
         let restPropdata = data as ResetPropData;
-        let props = data.metadata;
+        let props = data.propMetadata;
         if (Array.isArray(props)) {
             props = {};
         }
