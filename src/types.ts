@@ -3,6 +3,7 @@ import { Registration } from './Registration';
 import { IContainer } from './IContainer';
 import { type } from 'os';
 import { close } from 'inspector';
+import { fail } from 'assert';
 
 /**
  * symbol type
@@ -73,12 +74,18 @@ export function isClass(target: any) {
         return false;
     }
 
-    if (!target.constructor) {
+    if (typeof target !== 'function') {
         return false;
     }
 
-    if (!target.prototype) {
-        return false;
+    if (target.prototype) {
+        try {
+            target.arguments && target.caller;
+            return false;
+        } catch (e) {
+            return true;
+        }
     }
-    return true;
+
+    return false;
 }
