@@ -1,4 +1,4 @@
-import { TypeMetadata } from "./TypeMetadata";
+import { TypeMetadata } from './TypeMetadata';
 
 
 /**
