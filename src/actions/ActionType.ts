@@ -8,5 +8,7 @@ export enum ActionType {
     resetParamType = 'resetParamType',
     resetPropType = 'resetPropType',
     injectProp = 'injectProp',
-    provider = 'provider'
+    provider = 'provider',
+    bindInstance = 'bindInstance',
+    bindMethod = 'bindMethod'
 }

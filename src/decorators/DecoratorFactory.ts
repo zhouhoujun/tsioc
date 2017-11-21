@@ -10,6 +10,22 @@ export interface MetadataAdapter {
 }
 
 /**
+ * decorator for all.
+ *
+ * @export
+ * @interface IDecorator
+ * @template T
+ */
+export interface IDecorator<T extends Metadate> {
+    (provider: string | Type<any>, alias?: string): any;
+    (metadata?: T): any;
+    (target: Type<any>): void;
+    (target: object, propertyKey: string | symbol): void;
+    (target: object, propertyKey: string | symbol, parameterIndex: number): void;
+    (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>): void;
+}
+
+/**
  * create dectorator for class params props methods.
  *
  * @export

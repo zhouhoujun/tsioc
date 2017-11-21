@@ -24,7 +24,8 @@ export interface ActionData<T> {
      * @type {*}
      * @memberof ActionData
      */
-    designMetadata?: any;
+    designMetadata?: any[];
+
     /**
      * custom class metadata.
      *
@@ -32,6 +33,14 @@ export interface ActionData<T> {
      * @memberof ActionData
      */
     metadata?: T[];
+
+    /**
+     * method metadata.
+     *
+     * @type {T[][]}
+     * @memberof ActionData
+     */
+    methodMetadata?: T[][];
     /**
      * property metadata.
      *
@@ -42,10 +51,10 @@ export interface ActionData<T> {
     /**
      * paramerter metadata.
      *
-     * @type {Array<T[]>}
+     * @type {T[][]>}
      * @memberof ActionData
      */
-    paramMetadata?: Array<T[]>;
+    paramMetadata?: T[][];
     /**
      * type instance.
      *

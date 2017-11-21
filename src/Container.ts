@@ -307,12 +307,20 @@ export class Container implements IContainer {
                 });
             }
 
+            // execute class instance action.
             this.classDecoractors.forEach((act, key) => {
                 act.execute(this, {
                     metadata: Reflect.getMetadata(key, ClassT),
                     instance: instance
-                });
+                }, ActionType.bindInstance);
             });
+
+            this.methodDecoractors.forEach((act, key) => {
+                act.execute(this, {
+                    methodMetadata: Reflect.getMetadata(key, ClassT),
+                    instance: instance
+                }, ActionType.bindMethod);
+            })
 
             if (singleton) {
                 this.singleton.set(key, instance);

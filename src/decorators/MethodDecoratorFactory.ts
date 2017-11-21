@@ -13,7 +13,7 @@ import { DecoratorType } from './DecoratorType';
  */
 export interface IMethodDecorator<T extends MethodMetadata> {
     (metadata?: T): MethodDecorator;
-    (target: Function, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void;
+    (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>): void;
 }
 
 

@@ -13,7 +13,8 @@ import { isClass } from '../types';
  * @interface IParameterDecorator
  */
 export interface IParameterDecorator<T extends ParameterMetadata> {
-    (metadata?: T | Type<any> | string, alias?: string): ParameterDecorator;
+    (provider: Type<any> | string, alias?: string): ParameterDecorator;
+    (metadata?: T): ParameterDecorator;
     (target: object, propertyKey: string | symbol, parameterIndex: number): void;
 }
 

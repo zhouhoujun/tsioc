@@ -13,7 +13,8 @@ import { isClass } from '../types';
  * @interface IPropertyDecorator
  */
 export interface IPropertyDecorator<T extends PropertyMetadata> {
-    (metadata?: T | Type<T> | string, alias?: string): PropertyDecorator;
+    (provider: string | Type<any>, alias?: string): PropertyDecorator;
+    (metadata?: T): PropertyDecorator;
     (target: object, propertyKey: string | symbol): void;
 }
 

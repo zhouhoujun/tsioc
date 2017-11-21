@@ -16,7 +16,8 @@ export type PropParamDecorator = (target: Object, propertyKey: string | symbol, 
  * @interface IParamPropDecorator
  */
 export interface IParamPropDecorator<T extends ParamPropMetadata> {
-    (metadata?: Type<any> | string | T, alias?: string): PropParamDecorator;
+    (provider: string | Type<any>, alias?: string): PropParamDecorator;
+    (metadata?: T): PropParamDecorator;
     // (target: object, propertyKey: string | symbol): void;
     (target: object, propertyKey: string | symbol, parameterIndex?: number): void;
 }
