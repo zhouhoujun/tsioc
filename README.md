@@ -48,6 +48,13 @@ You can extend yourself decorator via:
 registerDecorator(decirator: Function, actions: ActionComponent);
 
 //eg.
+/**
+ * Injectable decorator and metadata. define a class.
+ *
+ * @Injectable
+ */
+export const Injectable: IClassDecorator<InjectableMetadata> = createClassDecorator<InjectableMetadata>('Injectable');
+
 let container = builder.create();
 container.registerDecorator<InjectMetadata>(Inject,
     builder.build(Inject.toString(), this.getDecoratorType(Inject),
