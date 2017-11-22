@@ -111,6 +111,20 @@ export class Container implements IContainer {
     }
 
     /**
+     * unregister the token
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @memberof Container
+     */
+    unregister<T>(token: Token<T>) {
+        let key = this.getTokenKey(token);
+        if (this.hasRegister(key)) {
+            this.factories.delete(key);
+        }
+    }
+
+    /**
      * register stingleton type.
      * @abstract
      * @template T

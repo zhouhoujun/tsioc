@@ -66,6 +66,15 @@ export interface IContainer {
     register<T>(token: Token<T>, value?: Factory<T>);
 
     /**
+     * unregister the token
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @memberof IContainer
+     */
+    unregister<T>(token: Token<T>);
+
+    /**
      * bind provider
      *
      * @template T
