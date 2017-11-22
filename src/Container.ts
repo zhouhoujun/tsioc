@@ -4,11 +4,12 @@ import { Token, Factory, ObjectMap, SymbolType, ToInstance } from './types';
 import { Registration } from './Registration';
 import { Injectable } from './decorators/Injectable';
 import { Type, AbstractType } from './Type';
-import { ParameterMetadata, InjectableMetadata, PropertyMetadata, InjectMetadata, TypeMetadata, SingletonMetadata, AutoWiredMetadata } from './metadatas';
+import { ParameterMetadata, InjectableMetadata, PropertyMetadata, InjectMetadata, TypeMetadata, ClassMetadata, AutoWiredMetadata } from './metadatas';
 import { DecoratorType, Inject, AutoWired, Param, Singleton } from './decorators';
 import { ActionComponent, ActionType, ActionBuilder, ResetPropData, ProviderActionData } from './actions';
 import { isClass, isFunction } from './utils';
-import { isSymbol, isString, isUndefined } from 'util';
+import { isSymbol, isString, isUndefined, isArray } from 'util';
+import { fail } from 'assert';
 
 
 export const NOT_FOUND = new Object();
@@ -225,7 +226,7 @@ export class Container implements IContainer {
             builder.build(Inject.toString(), this.getDecoratorType(Inject),
                 ActionType.resetParamType, ActionType.resetPropType));
 
-        this.registerDecorator<SingletonMetadata>(Singleton,
+        this.registerDecorator<ClassMetadata>(Singleton,
             builder.build(Singleton.toString(), this.getDecoratorType(Singleton)));
 
         this.registerDecorator<ParameterMetadata>(Param,
@@ -343,7 +344,22 @@ export class Container implements IContainer {
     }
 
     protected isSingletonType<T>(type: Type<T>): boolean {
-        return Reflect.hasOwnMetadata(Singleton.toString(), type);
+        if (Reflect.hasOwnMetadata(Singleton.toString(), type)) {
+            return true;
+        }
+
+        let singleton;
+        this.classDecoractors.forEach((act, key) => {
+            if (singleton) {
+                return false;
+            }
+            let metadatas = Reflect.getMetadata(key, type) as ClassMetadata[] || [];
+            if (isArray(metadatas)) {
+                singleton = metadatas.some(m => m.singleton === true);
+            }
+            return true;
+        })
+        return singleton;
     }
 
     protected getParameterMetadata<T>(type: Type<T>): Type<any>[] {

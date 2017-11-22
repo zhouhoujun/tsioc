@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { Type } from '../Type';
 import { TypeMetadata } from '../metadatas';
-import { createDecorator, MetadataAdapter } from './DecoratorFactory'
+import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory'
 import { DecoratorType } from './DecoratorType';
 
 
@@ -26,11 +26,12 @@ export interface IClassMethodDecorator<T extends TypeMetadata> {
  * @export
  * @template T
  * @param {string} name
- * @param {MetadataAdapter} [adapter]
+ * @param {MetadataAdapter} [adapter]  metadata adapter
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
  * @returns {IClassMethodDecorator<T>}
  */
-export function createClassMethodDecorator<T extends TypeMetadata>(name: string, adapter?: MetadataAdapter): IClassMethodDecorator<T> {
-    let decorator = createDecorator<T>(name, adapter);
+export function createClassMethodDecorator<T extends TypeMetadata>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): IClassMethodDecorator<T> {
+    let decorator = createDecorator<T>(name, adapter, metadataExtends);
     decorator.decoratorType = DecoratorType.Class | DecoratorType.Method;
     return decorator;
 }

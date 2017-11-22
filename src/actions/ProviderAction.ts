@@ -4,9 +4,9 @@ import { ActionType } from './ActionType';
 import { DecoratorType } from '../decorators';
 import { IContainer } from '../IContainer';
 import { Token, SymbolType } from '../types';
-import { TypeMetadata, Provider } from '../metadatas';
+import { TypeMetadata, ProviderMetadata } from '../metadatas';
 
-export interface ProviderActionData extends ActionData<Provider> {
+export interface ProviderActionData extends ActionData<ProviderMetadata> {
     container?: IContainer;
 }
 

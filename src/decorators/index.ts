@@ -1,4 +1,4 @@
-export * from './Metadata';
+export * from './ArgsIterator';
 export * from './DecoratorType';
 export * from './DecoratorFactory';
 
@@ -14,3 +14,4 @@ export * from './Inject';
 export * from './AutoWried';
 export * from './Param';
 export * from './Singleton';
+

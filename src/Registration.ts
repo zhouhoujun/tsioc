@@ -18,6 +18,7 @@ export class Registration<T> {
     constructor(protected classType: Type<T> | AbstractType<T>, protected desc: string) {
     }
 
+
     /**
      * get class.
      *
@@ -26,6 +27,16 @@ export class Registration<T> {
      */
     getClass() {
         return this.classType
+    }
+
+    /**
+     * get desc.
+     *
+     * @returns
+     * @memberof Registration
+     */
+    getDesc() {
+        return this.desc;
     }
 
     /**

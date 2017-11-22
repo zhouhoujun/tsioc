@@ -1,10 +1,11 @@
 import 'reflect-metadata';
 import { ParameterMetadata } from '../metadatas';
 import { Type } from '../Type';
-import { createDecorator, MetadataAdapter } from './DecoratorFactory';
+import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
 import { isClass } from '../utils';
 import { isString } from 'util';
+import { ArgsIterator } from './ArgsIterator';
 
 
 /**
@@ -27,28 +28,54 @@ export interface IParameterDecorator<T extends ParameterMetadata> {
  * @export
  * @template T metadata type.
  * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]
+ * @param {MetadataAdapter} [adapter]  metadata adapter
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
  * @returns
  */
-export function createParamDecorator<T extends ParameterMetadata>(name: string, adapter?: MetadataAdapter): IParameterDecorator<T> {
-    adapter = adapter || ((...args: any[]) => {
-        let metadata;
-        if (args.length > 0 && args[0]) {
-            if (isClass(args[0])) {
-                metadata = {
-                    provider: args[0],
-                    alias: isString(args[1]) ? args[1] : ''
-                } as ParameterMetadata;
-            } else if (isString(args[0])) {
-                metadata = {
-                    provider: args[0],
-                    alias: isString(args[1]) ? args[1] : ''
-                } as ParameterMetadata;
-            }
+export function createParamDecorator<T extends ParameterMetadata>(
+    name: string,
+    adapter?: MetadataAdapter,
+    metadataExtends?: MetadataExtends<T>): IParameterDecorator<T> {
+
+    let paramAdapter = ((args: ArgsIterator) => {
+        if (adapter) {
+            adapter(args);
         }
-        return metadata
+        args.next<T>({
+            isMetadata: (arg) => isParamMetadata(arg),
+            match: (arg) => isClass(arg) || isString(arg),
+            setMetadata: (metadata, arg) => {
+                metadata.provider = arg;
+            }
+        });
+        args.next<T>({
+            match: (arg) => isString(arg),
+            setMetadata: (metadata, arg) => {
+                metadata.alias = arg;
+            }
+        });
     });
-    let decorator = createDecorator<T>(name, adapter);
+    let decorator = createDecorator<T>(name, paramAdapter, metadataExtends);
     decorator.decoratorType = DecoratorType.Parameter;
     return decorator;
 }
+
+/**
+ * check object is param metadata or not.
+ *
+ * @export
+ * @param {any} metadata
+ * @param {string[]} [extendsProps]
+ * @returns {boolean}
+ */
+export function isParamMetadata(metadata, extendsProps?: string[]): boolean {
+    if (!metadata) {
+        return false;
+    }
+    let props = ['type', 'provider', 'index'];
+    if (extendsProps) {
+        props = extendsProps.concat(props);
+    }
+    return Object.keys(metadata).some(n => props.indexOf(n) > 0)
+}
+

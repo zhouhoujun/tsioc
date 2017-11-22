@@ -1,6 +1,6 @@
 import { IContainer } from './IContainer';
 import { Container } from './Container';
-import { isFunction } from './utils';
+import { isFunction, isClass } from './utils';
 import { request } from 'https';
 import { Type } from './Type';
 import { isString } from 'util';
@@ -53,10 +53,10 @@ export interface IContainerBuilder {
      *
      * @param {IContainer} container
      * @param {LoadOptions} options
-     * @returns {Promise<IContainer>}
+     * @returns {Promise<Type<any>[]>}
      * @memberof IContainerBuilder
      */
-    loadModule(container: IContainer, options: LoadOptions): Promise<IContainer>
+    loadModule(container: IContainer, options: LoadOptions): Promise<Type<any>[]>
 }
 
 export class ContainerBuilder implements IContainerBuilder {
@@ -85,46 +85,50 @@ export class ContainerBuilder implements IContainerBuilder {
      *
      * @param {IContainer} container
      * @param {LoadOptions} options
-     * @returns
+     * @returns {Promise<Type<any>[]>}
      * @memberof ContainerBuilder
      */
-    async loadModule(container: IContainer, options: LoadOptions) {
+    async loadModule(container: IContainer, options: LoadOptions): Promise<Type<any>[]> {
+        let regModules: Type<any>[] = [];
         if (options) {
             if (options.files) {
                 let files: string[] = await globby(options.files);
                 files.forEach(fp => {
-                    this.registerModule(container, fp);
+                    let modules1 = this.registerModule(container, fp);
+                    regModules = regModules.concat(modules1);
                 });
             }
 
             if (options.modules && options.modules.length > 0) {
                 options.modules.forEach(nmd => {
-                    this.registerModule(container, nmd);
+                    let modules2 = this.registerModule(container, nmd);
+                    regModules = regModules.concat(modules2);
                 });
             }
-
-            return container;
-
-        } else {
-            return container;
         }
+
+        return regModules;
     }
 
     protected registerModule(container: IContainer, regModule: string | Type<any> | object) {
+        let regModules = [];
         try {
-            if (isFunction(regModule)) {
+            if (isClass(regModule)) {
+                regModules.push(regModule);
                 container.register(regModule);
             } else {
                 regModule = isString(regModule) ? require(regModule) : regModule;
-                let modules = regModule['exports'] ? regModule['exports'] : regModule;
-                for (let p in modules) {
-                    if (isFunction(modules[p])) {
-                        container.register(modules[p]);
+                let rmodules = regModule['exports'] ? regModule['exports'] : regModule;
+                for (let p in rmodules) {
+                    if (isClass(rmodules[p])) {
+                        regModules.push(rmodules[p]);
+                        container.register(rmodules[p]);
                     }
                 }
             }
         } catch {
 
         }
+        return regModules;
     }
 }

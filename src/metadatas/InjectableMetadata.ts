@@ -1,6 +1,6 @@
 import { TypeMetadata } from './TypeMetadata';
 import { SymbolType } from '../types';
-import { Provider } from './Provider';
+import { ProviderMetadata } from './ProviderMetadata';
 
 
 /**
@@ -9,5 +9,5 @@ import { Provider } from './Provider';
  * @export
  * @interface InjectableMetadata
  */
-export interface InjectableMetadata extends Provider {
+export interface InjectableMetadata extends ProviderMetadata {
 }

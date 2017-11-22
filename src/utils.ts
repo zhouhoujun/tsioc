@@ -1,3 +1,5 @@
+import { Type } from './Type';
+
 /**
  * check target is class or not.
  *
@@ -5,7 +7,7 @@
  * @param {*} target
  * @returns
  */
-export function isClass(target: any) {
+export function isClass(target: any): target is Type<any> {
     if (!isFunction(target)) {
         return false;
     }

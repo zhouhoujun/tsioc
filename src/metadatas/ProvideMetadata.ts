@@ -8,7 +8,7 @@ import { TypeMetadata } from './TypeMetadata';
  * @interface Provide
  * @extends {MetaType}
  */
-export interface Provide extends TypeMetadata {
+export interface ProvideMetadata extends TypeMetadata {
     /**
      * this type provide from.
      *
