@@ -1,7 +1,9 @@
 import { IContainer } from './IContainer';
 import { Container } from './Container';
-import { Type } from './index';
+import { isFunction } from './utils';
 import { request } from 'https';
+import { Type } from './Type';
+import { isString } from 'util';
 const globby = require('globby');
 
 
@@ -110,13 +112,13 @@ export class ContainerBuilder implements IContainerBuilder {
 
     protected registerModule(container: IContainer, regModule: string | Type<any> | object) {
         try {
-            if (typeof regModule === 'function') {
+            if (isFunction(regModule)) {
                 container.register(regModule);
             } else {
-                regModule = typeof regModule === 'string' ? require(regModule) : regModule;
+                regModule = isString(regModule) ? require(regModule) : regModule;
                 let modules = regModule['exports'] ? regModule['exports'] : regModule;
                 for (let p in modules) {
-                    if (typeof modules[p] === 'function') {
+                    if (isFunction(modules[p])) {
                         container.register(modules[p]);
                     }
                 }

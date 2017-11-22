@@ -3,7 +3,8 @@ import { ParameterMetadata } from '../metadatas';
 import { Type } from '../Type';
 import { createDecorator, MetadataAdapter } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isClass } from '../types';
+import { isClass } from '../utils';
+import { isString } from 'util';
 
 
 /**
@@ -36,12 +37,12 @@ export function createParamDecorator<T extends ParameterMetadata>(name: string, 
             if (isClass(args[0])) {
                 metadata = {
                     provider: args[0],
-                    alias: typeof args[1] === 'string' ? args[1] : ''
+                    alias: isString(args[1]) ? args[1] : ''
                 } as ParameterMetadata;
-            } else if (typeof args[0] === 'string') {
+            } else if (isString(args[0])) {
                 metadata = {
                     provider: args[0],
-                    alias: typeof args[1] === 'string' ? args[1] : ''
+                    alias: isString(args[1]) ? args[1] : ''
                 } as ParameterMetadata;
             }
         }

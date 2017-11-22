@@ -3,7 +3,6 @@ import { TypeMetadata } from '../metadatas';
 import { Type } from '../Type';
 import { createDecorator, MetadataAdapter } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isClass } from '../types';
 
 
 /**

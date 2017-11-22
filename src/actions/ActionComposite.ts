@@ -1,11 +1,13 @@
 import { ActionData } from './ActionData';
-import { ActionType} from './ActionType';
+import { ActionType } from './ActionType';
 import { DecoratorType } from '../decorators/DecoratorType';
 import { Mode, Express } from '../types';
 import { NullAction } from './NullAction';
 import { ActionComponent } from './ActionComponent';
 import { Metadate } from '../metadatas/index';
 import { IContainer } from '../IContainer';
+import { isString } from 'util';
+import { isFunction } from '../utils';
 
 
 export class ActionComposite implements ActionComponent {
@@ -27,7 +29,7 @@ export class ActionComposite implements ActionComponent {
 
     execute(container: IContainer, data: ActionData<Metadate>, name?: string | ActionType) {
         if (name) {
-            this.find(it => it.name === (typeof name === 'string' ? name : (<ActionType>name).toString()))
+            this.find(it => it.name === (isString(name) ? name : (<ActionType>name).toString()))
                 .execute(container, data);
         } else {
             this.trans(action => {
@@ -56,7 +58,7 @@ export class ActionComposite implements ActionComponent {
             if (component) {
                 return false;
             }
-            let isFinded = typeof express === 'function' ? express(item) : (<ActionComponent>express) === item;
+            let isFinded = isFunction(express) ? express(item) : (<ActionComponent>express) === item;
             if (isFinded) {
                 component = item;
                 return false;

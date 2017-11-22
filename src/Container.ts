@@ -7,7 +7,8 @@ import { Type, AbstractType } from './Type';
 import { ParameterMetadata, InjectableMetadata, PropertyMetadata, InjectMetadata, TypeMetadata, SingletonMetadata, AutoWiredMetadata } from './metadatas';
 import { DecoratorType, Inject, AutoWired, Param, Singleton } from './decorators';
 import { ActionComponent, ActionType, ActionBuilder, ResetPropData, ProviderActionData } from './actions';
-import { isClass } from './types';
+import { isClass, isFunction } from './utils';
+import { isSymbol, isString, isUndefined } from 'util';
 
 
 export const NOT_FOUND = new Object();
@@ -51,7 +52,7 @@ export class Container implements IContainer {
         if (token instanceof Registration) {
             return token;
         } else {
-            if (alias && typeof token === 'function') {
+            if (alias && isFunction(token)) {
                 return new Registration(token, alias);
             }
             return token;
@@ -62,7 +63,7 @@ export class Container implements IContainer {
         if (token instanceof Registration) {
             return token.toString();
         } else {
-            if (alias && typeof token === 'function') {
+            if (alias && isFunction(token)) {
                 return new Registration(token, alias).toString();
             }
             return token;
@@ -241,8 +242,8 @@ export class Container implements IContainer {
         }
 
         let classFactory;
-        if (typeof value !== 'undefined') {
-            if (typeof value === 'function') {
+        if (!isUndefined(value)) {
+            if (isFunction(value)) {
                 if (this.isClass(value)) {
                     classFactory = this.createTypeFactory(key, value as Type<T>, singleton);
                 } else {
@@ -255,7 +256,7 @@ export class Container implements IContainer {
                 }
             }
 
-        } else if (typeof token !== 'string' && typeof token !== 'symbol') {
+        } else if (!isString(token) && !isSymbol(token)) {
             let ClassT = (token instanceof Registration) ? token.getClass() : token;
             if (this.isClass(ClassT)) {
                 classFactory = this.createTypeFactory(key, ClassT as Type<T>, singleton);

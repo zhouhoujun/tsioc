@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { Type } from '../Type';
 import { PropertyMetadata, TypeMetadata, MethodMetadata, ParameterMetadata, Metadate } from '../metadatas';
 import { DecoratorType } from './DecoratorType';
+import { isUndefined, isFunction, isNumber } from 'util';
 
 
 
@@ -55,7 +56,7 @@ export function createDecorator<T>(name: string, adapter?: MetadataAdapter): any
                     metadata = null;
                 }
             case 1:
-                if (args[0] && typeof args[0] === 'function') {
+                if (isFunction(args[0])) {
                     let target = args[0];
                     setTypeMetadata<T>(name, metaName, target, metadata);
                     return target;
@@ -72,12 +73,12 @@ export function createDecorator<T>(name: string, adapter?: MetadataAdapter): any
                 setPropertyMetadata(name, metaName, target, propertyKey, metadata);
                 break;
             case 3:
-                if (typeof args[2] === 'number') {
+                if (isNumber(args[2])) {
                     let target = args[0];
                     let propertyKey = args[1];
                     let parameterIndex = args[2];
                     setParamMetadata<T>(name, metaName, target, propertyKey, parameterIndex, metadata);
-                } else if (typeof args[2] === 'undefined') {
+                } else if (isUndefined(args[2])) {
                     let target = args[0];
                     let propertyKey = args[1];
                     setPropertyMetadata<T>(name, metaName, target, propertyKey, metadata);

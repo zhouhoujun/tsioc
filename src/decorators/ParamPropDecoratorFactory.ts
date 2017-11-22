@@ -5,6 +5,7 @@ import { createDecorator, MetadataAdapter } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
 import { isClass, TypeMetadata } from '../index';
 import { magenta } from 'chalk';
+import { isString } from 'util';
 
 
 
@@ -38,12 +39,12 @@ export function createParamPropDecorator<T extends ParamPropMetadata>(name: stri
             if (isClass(args[0])) {
                 metadata = {
                     provider: args[0],
-                    alias: typeof args[1] === 'string' ? args[1] : ''
+                    alias: isString(args[1]) ? args[1] : ''
                 } as ParamPropMetadata;
-            } else if (typeof args[0] === 'string') {
+            } else if (isString(args[0])) {
                 metadata = {
                     provider: args[0],
-                    alias: typeof args[1] === 'string' ? args[1] : ''
+                    alias: isString(args[1]) ? args[1] : ''
                 } as ParamPropMetadata;
             }
         }

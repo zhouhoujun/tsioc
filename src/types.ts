@@ -68,24 +68,3 @@ export enum Mode {
      */
     traverse
 }
-
-export function isClass(target: any) {
-    if (!target) {
-        return false;
-    }
-
-    if (typeof target !== 'function') {
-        return false;
-    }
-
-    if (target.prototype) {
-        try {
-            target.arguments && target.caller;
-            return false;
-        } catch (e) {
-            return true;
-        }
-    }
-
-    return false;
-}
