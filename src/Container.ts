@@ -257,7 +257,9 @@ export class Container implements IContainer {
 
         } else if (typeof token !== 'string' && typeof token !== 'symbol') {
             let ClassT = (token instanceof Registration) ? token.getClass() : token;
-            classFactory = this.createTypeFactory(key, ClassT as Type<T>, singleton);
+            if (this.isClass(ClassT)) {
+                classFactory = this.createTypeFactory(key, ClassT as Type<T>, singleton);
+            }
         }
 
         if (classFactory) {

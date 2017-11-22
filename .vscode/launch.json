@@ -23,7 +23,7 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Program",
-            "program": "${workspaceFolder}/lib/debug.js",
+            "program": "${workspaceFolder}/lib/simples/debug.js",
             "outFiles": [
                 "${workspaceFolder}/**/*.js"
             ]

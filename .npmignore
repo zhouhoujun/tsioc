@@ -3,4 +3,6 @@ test
 gulpfile.ts
 tsconfig.json
 tslint.json
+lib/simples
+sourcemaps/simples
 package-lock.json
