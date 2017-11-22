@@ -36,35 +36,204 @@ let container = await builder.build({
 builder.loadModule(container, {
   files: [__dirname +'/controller/**/*.ts', __dirname + '/*.model.js'],
   moudles:['node-modules-name', ClassType]
-})
+});
+
+// 4. register a class
+container.register(Person);
+
+// 5. register a factory;
+container.register(Person, (container)=> {
+    ...
+    return new Person(...);
+});
+
+// 6. register with keyword
+container.register('keyword', Perosn);
+
+// 7. register with alais
+container.register(new Registration(Person, aliasname));
+
+
+// 8. get instance use get method of container.
+/**
+ * Retrieves an instance from the container based on the provided token.
+ *
+ * @template T
+ * @param {Token<T>} token
+ * @param {string} [alias]
+ * @param {T} [notFoundValue]
+ * @returns {T}
+ * @memberof IContainer
+ */
+get<T>(token: Token<T>, alias?: string, notFoundValue?: T): T;
+
+//get simple person
+let person = container.get(Person);
+//get colloge person
+let person = container.get(Person, 'Colloge');
 
 ```
+
+more see below [Demo](#Demo).
 
 ### Extend decorator
 
 You can extend yourself decorator via:
 
+1. `createClassDecorator`
 ```ts
-registerDecorator(decirator: Function, actions: ActionComponent);
-
-//eg.
 /**
- * Injectable decorator and metadata. define a class.
+ * create class decorator
  *
- * @Injectable
+ * @export
+ * @template T metadata type.
+ * @param {string} name decorator name.
+ * @param {MetadataAdapter} [adapter]  metadata adapter
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
+ * @returns {*}
  */
-export const Injectable: IClassDecorator<InjectableMetadata> = createClassDecorator<InjectableMetadata>('Injectable');
+export function createClassDecorator<T extends ClassMetadata>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): IClassDecorator<T>
+```
 
-let container = builder.create();
-container.registerDecorator<InjectMetadata>(Inject,
-    builder.build(Inject.toString(), this.getDecoratorType(Inject),
-        ActionType.resetParamType, ActionType.resetPropType));
+2. `createClassMethodDecorator`
+
+```ts
+/**
+ * create method decorator.
+ *
+ * @export
+ * @template T metadata type.
+ * @param {string} name decorator name.
+ * @param {MetadataAdapter} [adapter]  metadata adapter
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
+ * @returns
+ */
+export function createMethodDecorator<T extends MethodMetadata>
+```
+
+3. `createClassMethodDecorator`
+
+```ts
+/**
+ * create decorator for class and method.
+ *
+ * @export
+ * @template T
+ * @param {string} name
+ * @param {MetadataAdapter} [adapter]  metadata adapter
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
+ * @returns {IClassMethodDecorator<T>}
+ */
+export function createClassMethodDecorator<T extends TypeMetadata>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): IClassMethodDecorator<T>
+```
+
+4. `createParamDecorator`
+
+```ts
+/**
+ * create parameter decorator.
+ *
+ * @export
+ * @template T metadata type.
+ * @param {string} name decorator name.
+ * @param {MetadataAdapter} [adapter]  metadata adapter
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
+ * @returns
+ */
+export function createParamDecorator<T extends ParameterMetadata>
 
 ```
 
-more see interface. all document is typescript .d.ts.
+5. `createPropDecorator`
 
-eg.
+```ts
+/**
+ * create property decorator.
+ *
+ * @export
+ * @template T metadata type.
+ * @param {string} name decorator name.
+ * @param {MetadataAdapter} [adapter]  metadata adapter
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
+ * @returns
+ */
+export function createPropDecorator<T extends PropertyMetadata>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): IPropertyDecorator<T>
+```
+
+6. `createParamPropDecorator`
+
+```ts
+/**
+ * create parameter or property decorator
+ *
+ * @export
+ * @template T
+ * @param {string} name
+ * @param {MetadataAdapter} [adapter]  metadata adapter
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
+ * @returns {IParamPropDecorator<T>}
+ */
+export function createParamPropDecorator<T extends ParamPropMetadata>(
+    name: string,
+    adapter?: MetadataAdapter,
+    metadataExtends?: MetadataExtends<T>): IParamPropDecorator<T>
+```
+
+7. `createDecorator`
+
+```ts
+/**
+ * create dectorator for class params props methods.
+ *
+ * @export
+ * @template T
+ * @param {string} name
+ * @param {MetadataAdapter} [adapter]  metadata adapter
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
+ * @returns {*}
+ */
+export function createDecorator<T>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): any
+```
+
+### Demo fo extends yourself decorator
+
+```ts
+
+//eg.
+// 1. create decorator
+export interface IControllerDecorator<T extends ControllerMetadata> extends IClassDecorator<T> {
+    (routePrefix: string, provide?: Registration<any> | string, alias?: string): ClassDecorator;
+    (target: Function): void;
+}
+export const Controller: IControllerDecorator<ControllerMetadata> =
+    createClassDecorator<ControllerMetadata>('Controller', (args: ArgsIterator) => {
+        args.next<ControllerMetadata>({
+            isMetadata: (arg) => isClassMetadata(arg, ['routePrefix']),
+            match: (arg) => isString(arg),
+            setMetadata: (metadata, arg) => {
+                metadata.routePrefix = arg;
+            }
+        });
+    }) as IControllerDecorator<ControllerMetadata>;
+
+
+// 2. create decorator action
+let builder = new ActionBuilder();
+let actionComponent = builder.build(Controller.toString(), this.getDecoratorType(Controller),
+    ActionType.provider);
+actionComponent.add(...);
+
+// 3. register decorator
+let container = builder.create();
+container.registerDecorator<ControllerMetadata>(
+    Controller,
+    actionComponent);
+
+```
+
+## Container Interface
+
+see more interface. all document is typescript .d.ts.
 
 ```ts
 /**
@@ -130,6 +299,15 @@ export interface IContainer {
     register<T>(token: Token<T>, value?: Factory<T>);
 
     /**
+     * unregister the token
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @memberof IContainer
+     */
+    unregister<T>(token: Token<T>);
+
+    /**
      * bind provider
      *
      * @template T
@@ -172,7 +350,7 @@ export interface IContainer {
 }
 ```
 
-### demo
+### Use Demo
 
 ```ts
 
