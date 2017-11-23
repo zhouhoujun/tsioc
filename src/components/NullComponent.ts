@@ -34,6 +34,9 @@ export class NullComponent implements  IComponent {
 
     }
 
+    equals(node: IComponent): boolean {
+        return node === NullNode;
+    }
 }
 
 export const NullNode: IComponent = new NullComponent();

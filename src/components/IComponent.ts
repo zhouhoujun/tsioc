@@ -11,7 +11,7 @@ import { Express, Mode } from '../types';
 export interface IComponent {
 
     /**
-     * the action name.
+     * the node name.
      *
      * @type {string}
      * @memberof IComponent
@@ -19,7 +19,7 @@ export interface IComponent {
     name: string;
 
     /**
-     * parent action.
+     * parent node.
      *
      * @type {IComponent}
      * @memberof IComponent
@@ -27,22 +27,22 @@ export interface IComponent {
     parent?: IComponent;
 
     /**
-     * add action to this component and return self.
+     * add node to this component and return self.
      *
-     * @param {IComponent} action the action to add.
+     * @param {IComponent} node the node to add.
      * @returns {IComponent} self.
      * @memberof IComponent
      */
-    add(action: IComponent): IComponent;
+    add(node: IComponent): IComponent;
 
     /**
-     * remove action from this component.
+     * remove node from this component.
      *
-     * @param {(IComponent | string)} action
+     * @param {(IComponent | string)} node
      * @returns {IComponent}
      * @memberof IComponent
      */
-    remove(action: IComponent | string): IComponent;
+    remove(node: IComponent | string): IComponent;
 
 
     /**
@@ -78,7 +78,7 @@ export interface IComponent {
     each<T extends IComponent>(express: Express<T, void | boolean>, mode?: Mode);
 
     /**
-     * trans all sub actions.
+     * trans all sub nodes.
      *
      * @param {(Express<IComponent, void | boolean>)} express
      * @memberof IComponent
@@ -92,4 +92,21 @@ export interface IComponent {
      * @memberof IComponent
      */
     route(express: Express<IComponent, void | boolean>);
+
+    /**
+     * this component node equals to the node or not.
+     *
+     * @param {IComponent} node
+     * @returns {boolean}
+     * @memberof IComponent
+     */
+    equals(node: IComponent): boolean;
+
+    /**
+     * get empty node.
+     *
+     * @returns {IComponent}
+     * @memberof IComponent
+     */
+    empty(): IComponent
 }

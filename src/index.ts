@@ -7,5 +7,6 @@ export * from './Registration';
 export * from './ContainerBuilder';
 export * from './metadatas';
 export * from './decorators';
+export * from './components';
 export * from './actions';
 
