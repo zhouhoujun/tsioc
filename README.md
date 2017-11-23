@@ -17,6 +17,10 @@ npm install type-autofac
 
 ## Documentation
 
+1. Register one class will auto inject depdence class (must has a class decorator).
+
+2. get Instance can auto create create constructor param.
+
 ### create Container
 
 ```ts
@@ -74,7 +78,161 @@ let person = container.get(Person, 'Colloge');
 
 ```
 
-more see below [Demo](#Demo).
+
+### Use Demo
+
+```ts
+
+import { ContainerBuilder, AutoWired, Injectable, Param } from 'type-autofac';
+
+
+export class SimppleAutoWried {
+    constructor() {
+    }
+
+    @AutoWired
+    dateProperty: Date;
+}
+
+@Singleton
+export class Person {
+    name = 'testor';
+}
+// > v0.3.5 all class decorator can depdence.
+@Singleton
+// @Injectable
+export class RoomService {
+    constructor() {
+
+    }
+    @AutoWired
+    current: Date;
+}
+
+@Injectable()
+export class ClassRoom {
+    constructor(public service: RoomService) {
+
+    }
+}
+
+export abstract class Student {
+    constructor() {
+    }
+    abstract sayHi(): string;
+}
+
+@Injectable({ provide: Student })
+export class MiddleSchoolStudent extends Student {
+    constructor() {
+        super();
+    }
+    sayHi() {
+        return 'I am a middle school student';
+    }
+}
+
+@Injectable()
+export class MClassRoom {
+    @AutoWired(MiddleSchoolStudent)
+    leader: Student;
+    constructor() {
+
+    }
+}
+
+
+@Injectable({ provide: Student, alias: 'college' })
+export class CollegeStudent extends Student {
+    constructor() {
+        super();
+    }
+    sayHi() {
+        return 'I am a college student';
+    }
+}
+
+@Injectable
+export class CollegeClassRoom {
+    constructor(
+        @Param(CollegeStudent)
+        @AutoWired(CollegeStudent)
+        public leader: Student) {
+
+    }
+}
+
+
+@Injectable
+export class InjMClassRoom {
+    // @Inject(MiddleSchoolStudent)
+    @Inject
+    // @Inject({ type: MiddleSchoolStudent })
+    leader: Student;
+    constructor() {
+
+    }
+}
+
+
+@Injectable
+export class InjCollegeClassRoom {
+    // @Inject(CollegeStudent)// @Inject({ type: CollegeStudent })
+    // public leader: Student
+    constructor(
+        @Inject(CollegeStudent)// @Inject({ type: CollegeStudent })
+        public leader: Student
+    ) {
+
+    }
+}
+
+// 1. Custom register one class will auto inject depdence class (must has a class decorator).
+
+let builder = new ContainerBuilder();
+let container = builder.create();
+
+container.register(SimppleAutoWried);
+let instance = container.get(SimppleAutoWried);
+console.log(instance.dateProperty);
+
+
+container.register(ClassRoom);
+let room = container.get(ClassRoom);
+console.log(room.service.current);
+
+container.register(MiddleSchoolStudent);
+container.register(CollegeStudent);
+
+let student = container.get(Student);
+console.log(student.sayHi());
+
+let student2 = container.get(new Registration(Student, 'college'));
+
+console.log(student2.sayHi());
+
+let student3 = container.get(Student, 'college'));
+
+console.log(student3.sayHi());
+
+
+builder.build({
+    files: __dirname + '/debug.js'
+})
+    .then(container => {
+        let instance = container.get(Student);
+        console.log(instance.sayHi());
+
+        let instance2 = container.get(new Registration(Student, 'college'));
+        console.log(instance2.sayHi());
+
+        let instance3 = container.get(Student, 'college');
+        console.log(instance3.sayHi())
+    });
+
+
+
+```
 
 ### Extend decorator
 
@@ -350,160 +508,6 @@ export interface IContainer {
 }
 ```
 
-### Use Demo
-
-```ts
-
-import { ContainerBuilder, AutoWired, Injectable, Param } from 'type-autofac';
-
-
-export class SimppleAutoWried {
-    constructor() {
-    }
-
-    @AutoWired
-    dateProperty: Date;
-}
-
-@Singleton
-export class Person {
-    name = 'testor';
-}
-
-@Singleton
-@Injectable
-export class RoomService {
-    constructor() {
-
-    }
-    @AutoWired
-    current: Date;
-}
-
-@Injectable()
-export class ClassRoom {
-    constructor(public service: RoomService) {
-
-    }
-}
-
-export abstract class Student {
-    constructor() {
-    }
-    abstract sayHi(): string;
-}
-
-@Injectable({ provide: Student })
-export class MiddleSchoolStudent extends Student {
-    constructor() {
-        super();
-    }
-    sayHi() {
-        return 'I am a middle school student';
-    }
-}
-
-@Injectable()
-export class MClassRoom {
-    @AutoWired(MiddleSchoolStudent)
-    leader: Student;
-    constructor() {
-
-    }
-}
-
-
-@Injectable({ provide: Student, alias: 'college' })
-export class CollegeStudent extends Student {
-    constructor() {
-        super();
-    }
-    sayHi() {
-        return 'I am a college student';
-    }
-}
-
-@Injectable
-export class CollegeClassRoom {
-    constructor(
-        @Param(CollegeStudent)
-        @AutoWired(CollegeStudent)
-        public leader: Student) {
-
-    }
-}
-
-
-@Injectable
-export class InjMClassRoom {
-    // @Inject(MiddleSchoolStudent)
-    @Inject
-    // @Inject({ type: MiddleSchoolStudent })
-    leader: Student;
-    constructor() {
-
-    }
-}
-
-
-@Injectable
-export class InjCollegeClassRoom {
-    // @Inject(CollegeStudent)// @Inject({ type: CollegeStudent })
-    // public leader: Student
-    constructor(
-        @Inject(CollegeStudent)// @Inject({ type: CollegeStudent })
-        public leader: Student
-    ) {
-
-    }
-}
-
-
-
-let builder = new ContainerBuilder();
-let container = builder.create();
-
-container.register(SimppleAutoWried);
-let instance = container.get(SimppleAutoWried);
-console.log(instance.dateProperty);
-
-
-container.register(ClassRoom);
-let room = container.get(ClassRoom);
-console.log(room.service.current);
-
-container.register(MiddleSchoolStudent);
-container.register(CollegeStudent);
-
-let student = container.get(Student);
-console.log(student.sayHi());
-
-let student2 = container.get(new Registration(Student, 'college'));
-
-console.log(student2.sayHi());
-
-let student3 = container.get(Student, 'college'));
-
-console.log(student3.sayHi());
-
-
-builder.build({
-    files: __dirname + '/debug.js'
-})
-    .then(container => {
-        let instance = container.get(Student);
-        console.log(instance.sayHi());
-
-        let instance2 = container.get(new Registration(Student, 'college'));
-        console.log(instance2.sayHi());
-
-        let instance3 = container.get(Student, 'college');
-        console.log(instance3.sayHi())
-    });
-
-
-
-```
 
 Documentation is available on the
 [type-autofac docs site](https://github.com/zhouhoujun/type-autofac).
