@@ -1,4 +1,4 @@
-import { IComponent} from './IComponent';
+import { IComponent } from './IComponent';
 import { Mode, Express } from '../types';
 
 
@@ -9,7 +9,7 @@ import { Mode, Express } from '../types';
  * @class NullComponent
  * @implements {IComponent}
  */
-export class NullComponent implements  IComponent {
+export class NullComponent implements IComponent {
     name: string;
     parent?: IComponent;
     add(action: IComponent): IComponent {
@@ -36,6 +36,10 @@ export class NullComponent implements  IComponent {
 
     equals(node: IComponent): boolean {
         return node === NullNode;
+    }
+
+    empty() {
+        return NullNode;
     }
 }
 
