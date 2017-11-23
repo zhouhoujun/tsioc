@@ -338,7 +338,7 @@ export interface IContainer {
     registerDecorator(decirator: Function, actions: ActionComponent);
 
     /**
-     * is vaildate dependence type or not. dependence type must with @Injectable decorator.
+     * is vaildate dependence type or not. dependence type must with class decorator.
      *
      * @template T
      * @param {any} target
