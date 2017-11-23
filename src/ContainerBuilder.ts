@@ -4,10 +4,18 @@ import { isFunction, isClass } from './utils';
 import { request } from 'https';
 import { Type } from './Type';
 import { isString } from 'util';
+import { toAbsoluteSrc } from './index';
 const globby = require('globby');
 
 
 export interface LoadOptions {
+    /**
+     * fire express base on the root path.
+     *
+     * @type {string}
+     * @memberof LoadOptions
+     */
+    basePath?: string;
     /**
      * script files match express.
      * see: https://github.com/isaacs/node-glob
@@ -92,7 +100,7 @@ export class ContainerBuilder implements IContainerBuilder {
         let regModules: Type<any>[] = [];
         if (options) {
             if (options.files) {
-                let files: string[] = await globby(options.files);
+                let files: string[] = await globby(toAbsoluteSrc(options.basePath, options.files));
                 files.forEach(fp => {
                     let modules1 = this.registerModule(container, fp);
                     regModules = regModules.concat(modules1);
