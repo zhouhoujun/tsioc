@@ -17,8 +17,9 @@
   "keywords": [
     "Ioc",
     "di",
-    "decorator",
+    "Inject",
     "Container",
+    "decorator",
     "autofac",
     "typescript"
   ],
