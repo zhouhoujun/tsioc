@@ -6,6 +6,7 @@ import { DecoratorType } from './DecoratorType';
 import { isClass } from '../utils';
 import { isString } from 'util';
 import { ArgsIterator } from './ArgsIterator';
+import { Registration } from '../index';
 
 
 /**
@@ -15,7 +16,7 @@ import { ArgsIterator } from './ArgsIterator';
  * @interface IParameterDecorator
  */
 export interface IParameterDecorator<T extends ParameterMetadata> {
-    (provider: Type<any> | string, alias?: string): ParameterDecorator;
+    (provider: Type<any> | Registration<any> | string): ParameterDecorator;
     (metadata?: T): ParameterDecorator;
     (target: object, propertyKey: string | symbol, parameterIndex: number): void;
 }
@@ -43,17 +44,17 @@ export function createParamDecorator<T extends ParameterMetadata>(
         }
         args.next<T>({
             isMetadata: (arg) => isParamMetadata(arg),
-            match: (arg) => isClass(arg) || isString(arg),
+            match: (arg) => isClass(arg) || isString(arg) || arg instanceof Registration,
             setMetadata: (metadata, arg) => {
                 metadata.provider = arg;
             }
         });
-        args.next<T>({
-            match: (arg) => isString(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.alias = arg;
-            }
-        });
+        // args.next<T>({
+        //     match: (arg) => isString(arg),
+        //     setMetadata: (metadata, arg) => {
+        //         metadata.alias = arg;
+        //     }
+        // });
     });
     let decorator = createDecorator<T>(name, paramAdapter, metadataExtends);
     decorator.decoratorType = DecoratorType.Parameter;

@@ -16,5 +16,12 @@ export interface ProvideMetadata extends TypeMetadata {
      * @memberof Provide
      */
     provider?:  SymbolType<any>;
+
+    /**
+     * alias name. use to create Registration with provider.
+     *
+     * @type {string}
+     * @memberof ProvideMetadata
+     */
     alias?: string;
 }

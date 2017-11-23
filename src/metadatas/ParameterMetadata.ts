@@ -8,4 +8,12 @@ export interface ParameterMetadata extends PropertyMetadata {
      * @memberof ParameterMetadata
      */
     index?: number;
+
+    /**
+     * default value
+     *
+     * @type {object}
+     * @memberof ParameterMetadata
+     */
+    defaultValue?: object
 }

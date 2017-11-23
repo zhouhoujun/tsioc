@@ -3,7 +3,7 @@ import { Type } from '../Type';
 import { ParamPropMetadata } from '../metadatas';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isClass, TypeMetadata } from '../index';
+import { isClass, TypeMetadata, Registration } from '../index';
 import { magenta } from 'chalk';
 import { isString } from 'util';
 import { ArgsIterator } from './ArgsIterator';
@@ -18,9 +18,8 @@ export type PropParamDecorator = (target: Object, propertyKey: string | symbol, 
  * @interface IParamPropDecorator
  */
 export interface IParamPropDecorator<T extends ParamPropMetadata> {
-    (provider: string | Type<any>, alias?: string): PropParamDecorator;
+    (provider: Type<any> | Registration<any> | string): PropParamDecorator;
     (metadata?: T): PropParamDecorator;
-    // (target: object, propertyKey: string | symbol): void;
     (target: object, propertyKey: string | symbol, parameterIndex?: number): void;
 }
 
@@ -44,17 +43,17 @@ export function createParamPropDecorator<T extends ParamPropMetadata>(
         }
         args.next<T>({
             isMetadata: (arg) => isParamPropMetadata(arg),
-            match: (arg) => isClass(arg) || isString(arg),
+            match: (arg) => isClass(arg) || isString(arg)  || arg instanceof Registration,
             setMetadata: (metadata, arg) => {
                 metadata.provider = arg;
             }
         });
-        args.next<T>({
-            match: (arg) => isString(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.alias = arg;
-            }
-        });
+        // args.next<T>({
+        //     match: (arg) => isString(arg),
+        //     setMetadata: (metadata, arg) => {
+        //         metadata.alias = arg;
+        //     }
+        // });
     });
     let decorator = createDecorator<T>(name, paramPropAdapter, metadataExtends);
     decorator.decoratorType = DecoratorType.Property | DecoratorType.Parameter;

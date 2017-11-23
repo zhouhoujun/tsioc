@@ -91,10 +91,28 @@ export class InjMClassRoom {
 
 @Injectable
 export class InjCollegeClassRoom {
-    // @Inject(CollegeStudent)// @Inject({ type: CollegeStudent })
-    // public leader: Student
     constructor(
-        @Inject(CollegeStudent)// @Inject({ type: CollegeStudent })
+        // all below decorator can work, also @AutoWired, @Param is.
+        // @Inject(new Registration(Student, 'college')) // need CollegeStudent also register.
+        @Inject(CollegeStudent)
+        // @Inject({ provider: CollegeStudent })
+        // @Inject({ provider: Student, alias: 'college' }) //need CollegeStudent also register.
+        // @Inject({ type: CollegeStudent })
+        public leader: Student
+    ) {
+
+    }
+}
+
+@Injectable
+export class InjCollegeAliasClassRoom {
+    constructor(
+        // all below decorator can work, also @AutoWired, @Param is.
+        @Inject(new Registration(Student, 'college')) // need CollegeStudent also register.
+        // @Inject(CollegeStudent)
+        // @Inject({ provider: CollegeStudent })
+        // @Inject({ provider: Student, alias: 'college' }) // need CollegeStudent also register.
+        // @Inject({ type: CollegeStudent })
         public leader: Student
     ) {
 

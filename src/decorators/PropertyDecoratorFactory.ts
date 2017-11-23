@@ -6,6 +6,7 @@ import { DecoratorType } from './DecoratorType';
 import { isClass } from '../utils';
 import { isString } from 'util';
 import { ArgsIterator } from './ArgsIterator';
+import { Registration } from '../index';
 
 
 /**
@@ -15,7 +16,7 @@ import { ArgsIterator } from './ArgsIterator';
  * @interface IPropertyDecorator
  */
 export interface IPropertyDecorator<T extends PropertyMetadata> {
-    (provider: string | Type<any>, alias?: string): PropertyDecorator;
+    (provider: Type<any> | Registration<any> | string): PropertyDecorator;
     (metadata?: T): PropertyDecorator;
     (target: object, propertyKey: string | symbol): void;
 }
@@ -38,17 +39,17 @@ export function createPropDecorator<T extends PropertyMetadata>(name: string, ad
         }
         args.next<T>({
             isMetadata: (arg) => isPropertyMetadata(arg),
-            match: (arg) => isClass(arg) || isString(arg),
+            match: (arg) => isClass(arg) || isString(arg) || arg instanceof Registration,
             setMetadata: (metadata, arg) => {
                 metadata.provider = arg;
             }
         });
-        args.next<T>({
-            match: (arg) => isString(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.alias = arg;
-            }
-        });
+        // args.next<T>({
+        //     match: (arg) => isString(arg),
+        //     setMetadata: (metadata, arg) => {
+        //         metadata.alias = arg;
+        //     }
+        // });
     });
     let decorator = createDecorator<T>(name, propPropAdapter, metadataExtends);
     decorator.decoratorType = DecoratorType.Property;

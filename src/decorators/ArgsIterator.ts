@@ -31,7 +31,7 @@ export class ArgsIterator {
             return null;
         }
         let arg = this.args[this.idx];
-        if (express.isMetadata(arg)) {
+        if (express.isMetadata && express.isMetadata(arg)) {
             this.metadata = arg;
             this.end()
         } else if (express.match(arg)) {
