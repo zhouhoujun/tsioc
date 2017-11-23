@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { Type } from '../Type';
 import { PropertyMetadata, TypeMetadata, MethodMetadata, ParameterMetadata, Metadate } from '../metadatas';
 import { DecoratorType } from './DecoratorType';
-import { isUndefined, isFunction, isNumber } from 'util';
+import { isUndefined, isFunction, isNumber, isArray } from 'util';
 import { ArgsIterator } from './ArgsIterator';
 
 
@@ -111,7 +111,8 @@ export function createDecorator<T>(name: string, adapter?: MetadataAdapter, meta
 
 
 function setTypeMetadata<T>(name: string, metaName: string, target: Type<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let annotations = Reflect.getOwnMetadata(metaName, target) || [];
+    let annotations = Reflect.getOwnMetadata(metaName, target);
+    annotations = isArray(annotations) ? annotations : [];
     // let designParams = Reflect.getMetadata('design:paramtypes', target) || [];
     let typeMetadata = (metadata || {}) as TypeMetadata;
     if (!typeMetadata.type) {
@@ -128,6 +129,7 @@ function setTypeMetadata<T>(name: string, metaName: string, target: Type<T>, met
 
 function setMethodMetadata<T>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
     let meta = Reflect.getOwnMetadata(metaName, target) || {};
+    meta = isArray(meta) ? {} : meta;
     meta[propertyKey] = meta.hasOwnProperty(propertyKey) && meta[propertyKey] || [];
 
     let methodMeadata: MethodMetadata = metadata || {};
@@ -143,6 +145,7 @@ function setMethodMetadata<T>(name: string, metaName: string, target: Type<T>, p
 
 function setPropertyMetadata<T>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, metadata?: T, metadataExtends?: MetadataExtends<any>) {
     let meta = Reflect.getOwnMetadata(metaName, target) || {};
+    meta = isArray(meta) ? {} : meta;
     let propmetadata = (metadata || {}) as PropertyMetadata;
 
     propmetadata.propertyName = propertyKey;
@@ -169,7 +172,7 @@ function setPropertyMetadata<T>(name: string, metaName: string, target: Type<T>,
 function setParamMetadata<T>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, parameterIndex: number, metadata?: T, metadataExtends?: MetadataExtends<any>) {
 
     let parameters: any[][] = Reflect.getOwnMetadata(metaName, target, propertyKey) || [];
-
+    parameters = isArray(parameters) ? parameters : [];
     // there might be gaps if some in between parameters do not have annotations.
     // we pad with nulls.
     while (parameters.length <= parameterIndex) {
