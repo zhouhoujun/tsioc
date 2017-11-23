@@ -17,9 +17,9 @@ npm install type-autofac
 
 ## Documentation
 
-1. Register one class will auto inject depdence class (must has a class decorator).
+1. Register one class will auto register depdence class (must has a class decorator).
 
-2. get Instance can auto create create constructor param.
+2. get Instance can auto create constructor param.  (must has a class decorator or register in container).
 
 ### create Container
 
