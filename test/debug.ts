@@ -14,7 +14,7 @@ export class Person {
 }
 
 @Singleton
-@Injectable
+// @Injectable
 export class RoomService {
     constructor() {
 

@@ -182,7 +182,7 @@ export class Container implements IContainer {
     }
 
     /**
-     * is vaildate dependence type or not. dependence type must with @Injectable decorator.
+     * is vaildate dependence type or not. dependence type must with class decorator.
      *
      * @template T
      * @param {Type<T>} target
@@ -196,8 +196,15 @@ export class Container implements IContainer {
         if (!this.isClass(target)) {
             return false;
         }
-        let injectable: any[] = Reflect.getMetadata(Injectable.toString(), target);
-        return injectable && injectable.length > 0;
+        let vaildate = false;
+        this.classDecoractors.forEach((act, key) => {
+            if (vaildate) {
+                return false;
+            }
+            vaildate = Reflect.hasMetadata(key, target);
+            return true;
+        });
+        return vaildate;
     }
 
     protected cacheDecorator<T>(map: Map<string, ActionComponent>, action: ActionComponent) {
