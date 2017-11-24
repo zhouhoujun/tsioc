@@ -4,8 +4,8 @@ import { Type } from '../Type';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
 import { Registration } from '../index';
-import { isClass } from '../utils';
-import { isString } from 'util';
+import { isClass, isToken } from '../utils';
+import { isString, isSymbol } from 'util';
 import { ArgsIterator } from './ArgsIterator';
 import { fail } from 'assert';
 
@@ -17,7 +17,7 @@ import { fail } from 'assert';
  * @interface IClassDecorator
  */
 export interface IClassDecorator<T extends ClassMetadata> {
-    (provide: Registration<any> | string, alias?: string, singlton?: boolean): ClassDecorator;
+    (provide: Registration<any> | symbol | string, alias?: string, singlton?: boolean): ClassDecorator;
     (metadata?: T): ClassDecorator;
     /**
      * not allow abstract to decorator with out metadata.
@@ -47,7 +47,7 @@ export function createClassDecorator<T extends ClassMetadata>(name: string, adap
         }
         args.next<T>({
             isMetadata: (arg) => isClassMetadata(arg),
-            match: (arg) => arg instanceof Registration || isString(arg),
+            match: (arg) => arg instanceof Registration || isSymbol(arg) || isString(arg),
             setMetadata: (metadata, arg) => {
                 if (arg instanceof Registration) {
                     metadata.provide = arg.getClass();
@@ -81,6 +81,10 @@ export function isClassMetadata(metadata, extendsProps?: string[]): boolean {
     if (!metadata) {
         return false;
     }
+    if (isToken(metadata)) {
+        return false;
+    }
+    console.log('is not metadata?:', metadata);
     let props = ['singleton', 'provide', 'alias', 'type'];
     if (extendsProps) {
         props = extendsProps.concat(props);

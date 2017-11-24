@@ -1,12 +1,12 @@
 import 'reflect-metadata';
 import { PropertyMetadata } from '../metadatas';
-import { Type } from '../Type';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isClass } from '../utils';
-import { isString } from 'util';
+import { isClass, isToken } from '../utils';
+import { isString, isSymbol } from 'util';
 import { ArgsIterator } from './ArgsIterator';
-import { Registration } from '../index';
+import { Token } from '../types';
+import { Registration } from '../Registration';
 
 
 /**
@@ -16,7 +16,7 @@ import { Registration } from '../index';
  * @interface IPropertyDecorator
  */
 export interface IPropertyDecorator<T extends PropertyMetadata> {
-    (provider: Type<any> | Registration<any> | string): PropertyDecorator;
+    (provider: Token<any>): PropertyDecorator;
     (metadata?: T): PropertyDecorator;
     (target: object, propertyKey: string | symbol): void;
 }
@@ -39,7 +39,7 @@ export function createPropDecorator<T extends PropertyMetadata>(name: string, ad
         }
         args.next<T>({
             isMetadata: (arg) => isPropertyMetadata(arg),
-            match: (arg) => isClass(arg) || isString(arg) || arg instanceof Registration,
+            match: (arg) => isToken(arg),
             setMetadata: (metadata, arg) => {
                 metadata.provider = arg;
             }
@@ -67,6 +67,9 @@ export function createPropDecorator<T extends PropertyMetadata>(name: string, ad
  */
 export function isPropertyMetadata(metadata, extendsProps?: string[]): boolean {
     if (!metadata) {
+        return false;
+    }
+    if (isToken(metadata)) {
         return false;
     }
     let props = ['type', 'provider'];

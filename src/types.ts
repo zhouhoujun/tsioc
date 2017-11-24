@@ -1,9 +1,6 @@
 import { Type, AbstractType } from './Type';
 import { Registration } from './Registration';
 import { IContainer } from './IContainer';
-import { type } from 'os';
-import { close } from 'inspector';
-import { fail } from 'assert';
 
 /**
  * symbol type

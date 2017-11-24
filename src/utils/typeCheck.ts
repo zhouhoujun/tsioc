@@ -1,4 +1,25 @@
 import { Type } from '../Type';
+import { Token } from '../types';
+import { isString } from 'util';
+import { isSymbol } from 'lodash';
+import { Registration } from '../Registration';
+
+/**
+ * check target is token or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is Token<any>}
+ */
+export function isToken(target: any): target is Token<any> {
+    if (!target) {
+        return false;
+    }
+    if (isClass(target) || isString(target) || isSymbol(target) || target instanceof Registration) {
+        return true
+    }
+    return false;
+}
 
 /**
  * check target is class or not.

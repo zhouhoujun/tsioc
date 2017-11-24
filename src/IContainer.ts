@@ -79,10 +79,10 @@ export interface IContainer {
      *
      * @template T
      * @param {Token<T>} provide
-     * @param {Token<T>} provider
+     * @param {Token<T> | Factory<T>} provider
      * @memberof IContainer
      */
-    bindProvider<T>(provide: Token<T>, provider: Token<T>);
+    bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>);
 
     /**
      * register stingleton type.

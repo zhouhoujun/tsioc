@@ -145,11 +145,26 @@ export class Container implements IContainer {
      * @param {Token<T>} provider
      * @memberof Container
      */
-    bindProvider<T>(provide: Token<T>, provider: Token<T>) {
+    bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>) {
         let provideKey = this.getTokenKey(provide);
-        this.factories.set(provideKey, () => {
-            return this.get(provider);
-        });
+        let factory;
+        if (isClass(provider) || isString(provider) || provider instanceof Registration || isSymbol(provider)) {
+            factory = () => {
+                return this.get(provider);
+            };
+        } else {
+            if (isFunction(provider)) {
+                factory = () => {
+                    return (<ToInstance<any>>provider)(this);
+                };
+            } else {
+                factory = () => {
+                    return provider
+                };
+            }
+        }
+
+        this.factories.set(provideKey, factory);
     }
 
     /**

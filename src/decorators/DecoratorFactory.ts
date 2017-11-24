@@ -2,8 +2,9 @@ import 'reflect-metadata';
 import { Type } from '../Type';
 import { PropertyMetadata, TypeMetadata, MethodMetadata, ParameterMetadata, Metadate } from '../metadatas';
 import { DecoratorType } from './DecoratorType';
-import { isUndefined, isFunction, isNumber, isArray } from 'util';
+import { isUndefined, isFunction, isNumber, isArray, isSymbol } from 'util';
 import { ArgsIterator } from './ArgsIterator';
+import { isClass, isToken } from '../index';
 
 
 
@@ -45,11 +46,10 @@ export function createDecorator<T>(name: string, adapter?: MetadataAdapter, meta
     let metaName = `@${name}`;
     let metadata: T = null;
     let factory = (...args: any[]) => {
-        if (adapter && !metadata) {
+        if (args.length && adapter && !metadata) {
             let iterator = new ArgsIterator(args);
             adapter(iterator);
             metadata = iterator.getMetadata() as T;
-            // console.log('metadata:-----------------\n ', metadata);
             if (metadata) {
                 return (...args: any[]) => {
                     factory(...args);
@@ -57,6 +57,7 @@ export function createDecorator<T>(name: string, adapter?: MetadataAdapter, meta
                 }
             }
         }
+        // return checkArgs(name,metaName, args, metadata, metadataExtends);
         switch (args.length) {
             case 0:
                 metadata = null;
@@ -65,12 +66,15 @@ export function createDecorator<T>(name: string, adapter?: MetadataAdapter, meta
                     metadata = null;
                 }
             case 1:
-                if (isFunction(args[0])) {
+                if (isClass(args[0])) {
                     let target = args[0];
                     setTypeMetadata<T>(name, metaName, target, metadata, metadataExtends);
+                    metadata = null;
                     return target;
                 } else {
-                    metadata = args.length > 0 ? args[0] : null;
+                    if (!metadata) {
+                        metadata = args[0];
+                    }
                     return (...args: any[]) => {
                         factory(...args);
                         metadata = null;
@@ -109,6 +113,50 @@ export function createDecorator<T>(name: string, adapter?: MetadataAdapter, meta
     return factory;
 }
 
+
+// function checkArgs<T>(name: string, metaName: string, args: any[], metadata?: any, metadataExtends?: MetadataExtends<T>) {
+//     switch (args.length) {
+//         case 0:
+//             return (...args: any[]) => {
+//                 checkArgs(name, metaName, args, metadata, metadataExtends);
+//             }
+//         case 1:
+//             if (isClass(args[0])) {
+//                 let target = args[0];
+//                 setTypeMetadata<T>(name, metaName, target, metadata, metadataExtends);
+//                 return target;
+//             } else {
+//                 return (...args: any[]) => {
+//                     checkArgs(name, metaName, args, metadata, metadataExtends);
+//                 }
+//             }
+//         case 2:
+//             let target = args[0];
+//             let propertyKey = args[1];
+//             setPropertyMetadata(name, metaName, target, propertyKey, metadata, metadataExtends);
+//             break;
+//         case 3:
+//             if (isNumber(args[2])) {
+//                 let target = args[0];
+//                 let propertyKey = args[1];
+//                 let parameterIndex = args[2];
+//                 setParamMetadata<T>(name, metaName, target, propertyKey, parameterIndex, metadata, metadataExtends);
+//             } else if (isUndefined(args[2])) {
+//                 let target = args[0];
+//                 let propertyKey = args[1];
+//                 setPropertyMetadata<T>(name, metaName, target, propertyKey, metadata, metadataExtends);
+//             } else {
+//                 let target = args[0];
+//                 let propertyKey = args[1];
+//                 let descriptor = args[2];
+//                 setMethodMetadata<T>(name, metaName, target, propertyKey, descriptor, metadata, metadataExtends);
+//                 return descriptor;
+//             }
+//             break;
+//         default:
+//             throw new Error(`Invalid @${name} Decorator declaration.`);
+//     }
+// }
 
 function setTypeMetadata<T>(name: string, metaName: string, target: Type<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
     let annotations = Reflect.getOwnMetadata(metaName, target);

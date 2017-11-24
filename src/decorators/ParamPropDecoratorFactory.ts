@@ -1,12 +1,12 @@
 import 'reflect-metadata';
-import { Type } from '../Type';
-import { ParamPropMetadata } from '../metadatas';
+import { ParamPropMetadata, TypeMetadata } from '../metadatas';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isClass, TypeMetadata, Registration } from '../index';
-import { magenta } from 'chalk';
-import { isString } from 'util';
+import { Registration } from '../Registration';
+import { isClass, isToken } from '../utils';
+import { isString, isSymbol } from 'util';
 import { ArgsIterator } from './ArgsIterator';
+import { Token } from '../types';
 
 
 
@@ -18,7 +18,7 @@ export type PropParamDecorator = (target: Object, propertyKey: string | symbol, 
  * @interface IParamPropDecorator
  */
 export interface IParamPropDecorator<T extends ParamPropMetadata> {
-    (provider: Type<any> | Registration<any> | string): PropParamDecorator;
+    (provider: Token<any>): PropParamDecorator;
     (metadata?: T): PropParamDecorator;
     (target: object, propertyKey: string | symbol, parameterIndex?: number): void;
 }
@@ -43,7 +43,7 @@ export function createParamPropDecorator<T extends ParamPropMetadata>(
         }
         args.next<T>({
             isMetadata: (arg) => isParamPropMetadata(arg),
-            match: (arg) => isClass(arg) || isString(arg)  || arg instanceof Registration,
+            match: (arg) => isToken(arg),
             setMetadata: (metadata, arg) => {
                 metadata.provider = arg;
             }
@@ -71,6 +71,9 @@ export function createParamPropDecorator<T extends ParamPropMetadata>(
  */
 export function isParamPropMetadata(metadata, extendsProps?: string[]): boolean {
     if (!metadata) {
+        return false;
+    }
+    if (isToken(metadata)) {
         return false;
     }
     let props = ['type', 'provider', 'index'];
