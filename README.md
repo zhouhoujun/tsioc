@@ -211,6 +211,45 @@ export class InjCollegeAliasClassRoom {
 }
 
 
+@Injectable('StringClassRoom')
+export class StingMClassRoom {
+    // @Inject(MiddleSchoolStudent)
+    @Inject
+    // @Inject({ type: MiddleSchoolStudent })
+    leader: Student;
+    constructor() {
+
+    }
+}
+
+export class StringIdTest {
+    constructor(@Inject('StringClassRoom') public room: IClassRoom) {
+
+    }
+}
+
+export const CollClassRoom = Symbol('CollegeClassRoom');
+
+@Injectable(CollClassRoom)
+export class SymbolCollegeClassRoom {
+
+    @Inject(CollegeStudent)
+    leader: Student;
+    constructor() {
+
+    }
+}
+
+export class SymbolIdest {
+    @Inject(CollClassRoom)
+    public room: IClassRoom
+    constructor() {
+
+    }
+}
+
+
+
 
 // 1. Custom register one class will auto inject depdence class (must has a class decorator).
 
