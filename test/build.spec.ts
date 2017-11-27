@@ -73,7 +73,6 @@ describe('auto register with build', () => {
     it('should work with sting id to get class', () => {
 
         let instance = container.get(StringIdTest);
-        console.log(instance);
         expect(instance).not.undefined;
         expect(instance.room).not.undefined;
         expect(instance.room.leader).not.undefined;
@@ -84,7 +83,6 @@ describe('auto register with build', () => {
     it('should work with Symbol id to get class', () => {
 
         let instance = container.get(SymbolIdest);
-        console.log(instance);
         expect(instance).not.undefined;
         expect(instance.room).not.undefined;
         expect(instance.room.leader).not.undefined;

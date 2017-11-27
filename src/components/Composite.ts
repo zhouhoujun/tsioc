@@ -15,7 +15,6 @@ import { equal } from 'assert';
  */
 export class Composite implements IComponent {
 
-
     parent: IComponent;
     protected children: IComponent[];
     constructor(public name: string) {
@@ -139,5 +138,9 @@ export class Composite implements IComponent {
 
     empty() {
         return NullNode;
+    }
+
+    isEmpty(): boolean {
+        return this.equals(this.empty());
     }
 }

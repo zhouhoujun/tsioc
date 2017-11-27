@@ -10,6 +10,9 @@ import { Mode, Express } from '../types';
  * @implements {IComponent}
  */
 export class NullComponent implements IComponent {
+    isEmpty(): boolean {
+        return true;
+    }
     name: string;
     parent?: IComponent;
     add(action: IComponent): IComponent {

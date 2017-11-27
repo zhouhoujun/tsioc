@@ -222,6 +222,23 @@ export class Container implements IContainer {
         return vaildate;
     }
 
+    getDecoratorType(decirator: any): DecoratorType {
+        return decirator.decoratorType || DecoratorType.All;
+    }
+
+    execMethod<T>(propertyKey: string | symbol, type: Type<any>, instance?: any): T {
+
+        instance = instance || this.get(type);
+        if (instance && isFunction(instance[propertyKey])) {
+            let parameters = this.getParameterMetadata(type, propertyKey);
+            let paramInstances = parameters.map((type, index) => this.get(type));
+            return instance[propertyKey].call(instance, paramInstances) as T;
+        } else {
+            throw new Error(`type: ${type} has no method ${propertyKey}.`)
+        }
+
+    }
+
     protected cacheDecorator<T>(map: Map<string, ActionComponent>, action: ActionComponent) {
         if (!map.has(action.name)) {
             map.set(action.name, action);
@@ -242,10 +259,6 @@ export class Container implements IContainer {
         this.register(Number);
         this.register(Boolean);
         this.register(Object);
-    }
-
-    protected getDecoratorType(decirator: any): DecoratorType {
-        return decirator.decoratorType || DecoratorType.All;
     }
 
     protected registerDefautDecorators() {
@@ -342,7 +355,7 @@ export class Container implements IContainer {
             // this.propDecoractors.forEach()
             if (instance) {
                 props.forEach((prop, idx) => {
-                    instance[prop.propertyName] = prop.provider ?
+                    instance[prop.propertyKey] = prop.provider ?
                         this.get(prop.provider, prop.alias) : this.get(prop.type);
                 });
             }
@@ -398,8 +411,14 @@ export class Container implements IContainer {
         return singleton;
     }
 
-    protected getParameterMetadata<T>(type: Type<T>): Type<any>[] {
-        let designParams: Type<any>[] = Reflect.getOwnMetadata('design:paramtypes', type) || [];
+    protected getParameterMetadata<T>(type: Type<T>, propertyKey?: string | symbol): Type<any>[] {
+
+        let designParams: Type<any>[];
+        if (propertyKey) {
+            designParams = Reflect.getOwnMetadata('design:paramtypes', type, propertyKey) || [];
+        } else {
+            designParams = Reflect.getOwnMetadata('design:paramtypes', type) || [];
+        }
         designParams = designParams.slice(0);
         designParams.forEach(ptype => {
             if (this.isVaildDependence(ptype)) {

@@ -109,4 +109,12 @@ export interface IComponent {
      * @memberof IComponent
      */
     empty(): IComponent
+
+    /**
+     * check this node is empty or not.
+     *
+     * @returns {boolean}
+     * @memberof IComponent
+     */
+    isEmpty(): boolean;
 }

@@ -100,7 +100,6 @@ describe('custom register test', () => {
         container.register(StringIdTest);
 
         let instance = container.get(StringIdTest);
-        console.log(instance);
         expect(instance).not.undefined;
         expect(instance.room).not.undefined;
         expect(instance.room.leader).not.undefined;
@@ -113,7 +112,6 @@ describe('custom register test', () => {
         container.register(SymbolIdest);
 
         let instance = container.get(SymbolIdest);
-        console.log(instance);
         expect(instance).not.undefined;
         expect(instance.room).not.undefined;
         expect(instance.room.leader).not.undefined;

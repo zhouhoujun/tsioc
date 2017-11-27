@@ -1,6 +1,7 @@
 import { Token, Factory, SymbolType } from './types';
 import { ActionComponent } from './actions';
 import { Type } from './Type';
+import { DecoratorType } from './decorators';
 
 
 /**
@@ -98,11 +99,11 @@ export interface IContainer {
     /**
      * register decorator
      *
-     * @param {Function} decirator
+     * @param {Function} decorator
      * @param {ActionComponent} actions
      * @memberof IContainer
      */
-    registerDecorator(decirator: Function, actions: ActionComponent);
+    registerDecorator(decorator: Function, actions: ActionComponent);
 
     /**
      * is vaildate dependence type or not. dependence type must with class decorator.
@@ -113,5 +114,28 @@ export interface IContainer {
      * @memberof IContainer
      */
     isVaildDependence<T>(target: any): boolean;
+
+
+    /**
+     * get decorator type.
+     *
+     * @param {*} decorator
+     * @returns {DecoratorType}
+     * @memberof IContainer
+     */
+    getDecoratorType(decorator: any): DecoratorType;
+
+
+    /**
+     * try to exec the method of intance,  if no instance will create by type.
+     *
+     * @template T
+     * @param {(string | symbol)} propertyKey
+     * @param {Type<any>} type
+     * @param {*} [instance]
+     * @returns {T}
+     * @memberof IContainer
+     */
+    execMethod<T>(propertyKey: string | symbol, type: Type<any>, instance?: any): T;
 
 }

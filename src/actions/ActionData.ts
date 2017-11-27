@@ -37,10 +37,10 @@ export interface ActionData<T> {
     /**
      * method metadata.
      *
-     * @type {T[][]}
+     * @type {ObjectMap<T[]>}
      * @memberof ActionData
      */
-    methodMetadata?: T[][];
+    methodMetadata?: ObjectMap<T[]>;
     /**
      * property metadata.
      *

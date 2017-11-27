@@ -15,6 +15,6 @@ export interface PropertyMetadata extends ProvideMetadata {
      * @type {(string | symbol)}
      * @memberof PropertyMetadata
      */
-    propertyName?: string | symbol;
+    propertyKey?: string | symbol;
 
 }

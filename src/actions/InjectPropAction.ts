@@ -22,7 +22,7 @@ export class InjectPropAction extends ActionComposite {
         let instance = restPropdata.instance;
         if (container && instance && Array.isArray(props) && props.length > 0) {
             props.forEach((prop, idx) => {
-                instance[prop.propertyName] = container.get(prop.type);
+                instance[prop.propertyKey] = container.get(prop.type);
             });
         }
     }
