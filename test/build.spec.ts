@@ -1,7 +1,7 @@
 import 'mocha';
 import { expect } from 'chai';
 import { ContainerBuilder, AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration } from '../src';
-import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom } from './debug';
+import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom, StringIdTest, SymbolIdest } from './debug';
 
 describe('auto register with build', () => {
 
@@ -67,6 +67,29 @@ describe('auto register with build', () => {
         // console.log(instance2);
         expect(instance2).not.undefined;
         expect(instance2.sayHi()).eq('I am a college student');
+    });
+
+
+    it('should work with sting id to get class', () => {
+
+        let instance = container.get(StringIdTest);
+        console.log(instance);
+        expect(instance).not.undefined;
+        expect(instance.room).not.undefined;
+        expect(instance.room.leader).not.undefined;
+        expect(instance.room.leader.sayHi()).eq('I am a middle school student');
+
+    });
+
+    it('should work with Symbol id to get class', () => {
+
+        let instance = container.get(SymbolIdest);
+        console.log(instance);
+        expect(instance).not.undefined;
+        expect(instance.room).not.undefined;
+        expect(instance.room.leader).not.undefined;
+        expect(instance.room.leader.sayHi()).eq('I am a college student');
+
     });
 
 });

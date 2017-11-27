@@ -12,6 +12,7 @@ export class ArgsIterator {
     private metadata: Metadate;
     constructor(protected args: any[]) {
         this.idx = -1;
+        this.metadata = null;
     }
 
     isCompeted(): boolean {
@@ -30,6 +31,7 @@ export class ArgsIterator {
         if (this.isCompeted()) {
             return null;
         }
+
         let arg = this.args[this.idx];
         if (express.isMetadata && express.isMetadata(arg)) {
             this.metadata = arg;

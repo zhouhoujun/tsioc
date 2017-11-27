@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { PropertyMetadata } from '../metadatas';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isClass, isToken } from '../utils';
+import { isClass, isToken, isPropertyMetadata } from '../utils';
 import { isString, isSymbol } from 'util';
 import { ArgsIterator } from './ArgsIterator';
 import { Token } from '../types';
@@ -56,25 +56,3 @@ export function createPropDecorator<T extends PropertyMetadata>(name: string, ad
     return decorator;
 }
 
-
-/**
- * check object is property metadata or not.
- *
- * @export
- * @param {any} metadata
- * @param {string[]} [extendsProps]
- * @returns {boolean}
- */
-export function isPropertyMetadata(metadata, extendsProps?: string[]): boolean {
-    if (!metadata) {
-        return false;
-    }
-    if (isToken(metadata)) {
-        return false;
-    }
-    let props = ['type', 'provider'];
-    if (extendsProps) {
-        props = extendsProps.concat(props);
-    }
-    return Object.keys(metadata).some(n => props.indexOf(n) > 0)
-}

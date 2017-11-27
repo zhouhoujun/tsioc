@@ -88,11 +88,74 @@ export class InjMClassRoom {
 }
 
 
+export interface IClassRoom {
+    leader: Student;
+}
+
 @Injectable
 export class InjCollegeClassRoom {
     constructor(
+        // all below decorator can work, also @AutoWired, @Param is.
+        // @Inject(new Registration(Student, 'college')) // need CollegeStudent also register.
         @Inject(CollegeStudent)
-        public leader: Student) {
+        // @Inject({ provider: CollegeStudent })
+        // @Inject({ provider: Student, alias: 'college' }) //need CollegeStudent also register.
+        // @Inject({ type: CollegeStudent })
+        public leader: Student
+    ) {
+
+    }
+}
+
+@Injectable
+export class InjCollegeAliasClassRoom {
+    constructor(
+        // all below decorator can work, also @AutoWired, @Param is.
+        @Inject(new Registration(Student, 'college')) // need CollegeStudent also register.
+        // @Inject(CollegeStudent)
+        // @Inject({ provider: CollegeStudent })
+        // @Inject({ provider: Student, alias: 'college' }) // need CollegeStudent also register.
+        // @Inject({ type: CollegeStudent })
+        public leader: Student
+    ) {
+
+    }
+}
+
+
+@Injectable('StringClassRoom')
+export class StingMClassRoom {
+    // @Inject(MiddleSchoolStudent)
+    @Inject
+    // @Inject({ type: MiddleSchoolStudent })
+    leader: Student;
+    constructor() {
+
+    }
+}
+
+export class StringIdTest {
+    constructor(@Inject('StringClassRoom') public room: IClassRoom) {
+
+    }
+}
+
+export const CollClassRoom = Symbol('CollegeClassRoom');
+
+@Injectable(CollClassRoom)
+export class SymbolCollegeClassRoom {
+
+    @Inject(CollegeStudent)
+    leader: Student;
+    constructor() {
+
+    }
+}
+
+export class SymbolIdest {
+    @Inject(CollClassRoom)
+    public room: IClassRoom
+    constructor() {
 
     }
 }
@@ -119,6 +182,18 @@ console.log(student.sayHi());
 let student2 = container.get(new Registration(Student, 'college'));
 
 console.log(student2.sayHi());
+
+
+container.register(StingMClassRoom);
+container.register(StringIdTest);
+let stringIdTest = container.get(StringIdTest);
+console.log(stringIdTest.room.leader.sayHi());
+
+
+container.register(SymbolCollegeClassRoom);
+container.register(SymbolIdest);
+let symbolIdest = container.get(SymbolIdest);
+console.log(symbolIdest.room.leader.sayHi());
 
 
 builder.build({

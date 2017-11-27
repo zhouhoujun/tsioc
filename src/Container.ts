@@ -263,7 +263,7 @@ export class Container implements IContainer {
                 ActionType.resetParamType, ActionType.resetPropType));
 
         this.registerDecorator<ClassMetadata>(Singleton,
-            builder.build(Singleton.toString(), this.getDecoratorType(Singleton)));
+            builder.build(Singleton.toString(), this.getDecoratorType(Singleton), ActionType.provider));
 
         this.registerDecorator<ParameterMetadata>(Param,
             builder.build(Param.toString(), this.getDecoratorType(Param),

@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { ParameterMetadata } from '../metadatas';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isClass, isToken } from '../utils';
+import { isClass, isToken, isParamMetadata } from '../utils';
 import { isString, isSymbol } from 'util';
 import { ArgsIterator } from './ArgsIterator';
 import { Registration, Token } from '../index';
@@ -59,26 +59,3 @@ export function createParamDecorator<T extends ParameterMetadata>(
     decorator.decoratorType = DecoratorType.Parameter;
     return decorator;
 }
-
-/**
- * check object is param metadata or not.
- *
- * @export
- * @param {any} metadata
- * @param {string[]} [extendsProps]
- * @returns {boolean}
- */
-export function isParamMetadata(metadata, extendsProps?: string[]): boolean {
-    if (!metadata) {
-        return false;
-    }
-    if (isToken(metadata)) {
-        return false;
-    }
-    let props = ['type', 'provider', 'index'];
-    if (extendsProps) {
-        props = extendsProps.concat(props);
-    }
-    return Object.keys(metadata).some(n => props.indexOf(n) > 0)
-}
-

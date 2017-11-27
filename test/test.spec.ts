@@ -2,7 +2,7 @@
 import 'mocha';
 import { expect } from 'chai';
 import { ContainerBuilder, AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration, Inject, Singleton } from '../src';
-import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student, InjMClassRoom, InjCollegeClassRoom, InjCollegeAliasClassRoom } from './debug';
+import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student, InjMClassRoom, InjCollegeClassRoom, InjCollegeAliasClassRoom, StingMClassRoom, StringIdTest, SymbolIdest, SymbolCollegeClassRoom } from './debug';
 
 describe('custom register test', () => {
 
@@ -91,6 +91,34 @@ describe('custom register test', () => {
         let instance2 = container.get(new Registration(Student, 'college'));
         expect(instance2).not.undefined;
         expect(instance2.sayHi()).eq('I am a college student');
+    });
+
+
+    it('should work with sting id to get class', () => {
+        container.register(MiddleSchoolStudent);
+        container.register(StingMClassRoom);
+        container.register(StringIdTest);
+
+        let instance = container.get(StringIdTest);
+        console.log(instance);
+        expect(instance).not.undefined;
+        expect(instance.room).not.undefined;
+        expect(instance.room.leader).not.undefined;
+        expect(instance.room.leader.sayHi()).eq('I am a middle school student');
+
+    });
+
+    it('should work with Symbol id to get class', () => {
+        container.register(SymbolCollegeClassRoom);
+        container.register(SymbolIdest);
+
+        let instance = container.get(SymbolIdest);
+        console.log(instance);
+        expect(instance).not.undefined;
+        expect(instance.room).not.undefined;
+        expect(instance.room.leader).not.undefined;
+        expect(instance.room.leader.sayHi()).eq('I am a college student');
+
     });
 
 });

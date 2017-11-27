@@ -88,6 +88,9 @@ export class InjMClassRoom {
     }
 }
 
+export interface IClassRoom {
+    leader: Student;
+}
 
 @Injectable
 export class InjCollegeClassRoom {
@@ -115,6 +118,44 @@ export class InjCollegeAliasClassRoom {
         // @Inject({ type: CollegeStudent })
         public leader: Student
     ) {
+
+    }
+}
+
+
+@Injectable('StringClassRoom')
+export class StingMClassRoom {
+    // @Inject(MiddleSchoolStudent)
+    @Inject
+    // @Inject({ type: MiddleSchoolStudent })
+    leader: Student;
+    constructor() {
+
+    }
+}
+
+export class StringIdTest {
+    constructor(@Inject('StringClassRoom') public room: IClassRoom) {
+
+    }
+}
+
+export const CollClassRoom = Symbol('CollegeClassRoom');
+
+@Injectable(CollClassRoom)
+export class SymbolCollegeClassRoom {
+
+    @Inject(CollegeStudent)
+    leader: Student;
+    constructor() {
+
+    }
+}
+
+export class SymbolIdest {
+    @Inject(CollClassRoom)
+    public room: IClassRoom
+    constructor() {
 
     }
 }
