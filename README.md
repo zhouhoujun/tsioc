@@ -83,7 +83,7 @@ let person = container.get(Person, 'Colloge');
 
 ```ts
 
-import { ContainerBuilder, AutoWired, Injectable, Param } from 'type-autofac';
+import { Runner, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Execute, Aspect } from 'type-autofac';
 
 
 export class SimppleAutoWried {
@@ -248,13 +248,31 @@ export class SymbolIdest {
     }
 }
 
+@Injectable
+class MethodTestPerson {
+    say() {
+        return 'hello word.'
+    }
+}
 
+class MethodTest {
+
+    @Runner
+    sayHello(person: MethodTestPerson) {
+        return person.say();
+    }
+}
 
 
 // 1. Custom register one class will auto inject depdence class (must has a class decorator).
 
 let builder = new ContainerBuilder();
 let container = builder.create();
+
+
+container.register(MethodTest);
+let runner = new Execute(container);
+console.log(runner.exec(MethodTest, 'sayHello'));
 
 container.register(SimppleAutoWried);
 let instance = container.get(SimppleAutoWried);

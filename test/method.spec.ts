@@ -16,7 +16,6 @@ describe('method exec test', () => {
         }
     }
 
-    @Aspect
     class MethodTest {
         constructor() {
 
@@ -34,13 +33,21 @@ describe('method exec test', () => {
         container = builder.create();
     });
 
-    it('show exec', () => {
+    it('show exec with type and instance', () => {
         // container.register(Person);
         container.register(MethodTest);
         let mtt = container.get(MethodTest);
         expect(isFunction(mtt.sayHello)).is.true;
         let runner = new Execute(container);
         expect(runner.exec(MethodTest, 'sayHello', mtt)).eq('hello word.');
+
+    });
+
+    it('show exec with only type', () => {
+        // container.register(Person);
+        container.register(MethodTest);
+        let runner = new Execute(container);
+        expect(runner.exec(MethodTest, 'sayHello')).eq('hello word.');
 
     });
 });

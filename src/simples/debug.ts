@@ -168,7 +168,6 @@ class MethodTestPerson {
     }
 }
 
-@Aspect
 class MethodTest {
 
     @Runner
