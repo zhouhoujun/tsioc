@@ -1,4 +1,4 @@
-import { AutoWired, Injectable, Param, Singleton, Inject, Registration, ContainerBuilder } from '../index';
+import { AutoWired, Injectable, Param, Singleton, Inject, Registration, ContainerBuilder, Aspect, Runner } from '../index';
 
 
 export class SimppleAutoWried {
@@ -159,6 +159,24 @@ export class SymbolIdest {
 
     }
 }
+
+
+@Injectable
+class MethodTestPerson {
+    say() {
+        return 'hello word.'
+    }
+}
+
+@Aspect
+class MethodTest {
+
+    @Runner
+    sayHello(person: MethodTestPerson) {
+        return person.say();
+    }
+}
+
 
 
 let builder = new ContainerBuilder();

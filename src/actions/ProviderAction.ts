@@ -7,7 +7,6 @@ import { Token, SymbolType } from '../types';
 import { TypeMetadata, ProviderMetadata } from '../metadatas';
 
 export interface ProviderActionData extends ActionData<ProviderMetadata> {
-    container?: IContainer;
 }
 
 export class ProviderAction extends ActionComposite {

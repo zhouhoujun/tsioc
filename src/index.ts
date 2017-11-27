@@ -9,4 +9,8 @@ export * from './metadatas';
 export * from './decorators';
 export * from './components';
 export * from './actions';
+export * from './aop';
+
+export * from './IExecute';
+export * from './Execute';
 

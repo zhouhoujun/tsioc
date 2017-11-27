@@ -10,6 +10,7 @@ import { ActionComponent, ActionType, ActionBuilder, ResetPropData, ProviderActi
 import { isClass, isFunction } from './utils';
 import { isSymbol, isString, isUndefined, isArray } from 'util';
 import { fail } from 'assert';
+import { registerAspect } from './aop';
 
 
 export const NOT_FOUND = new Object();
@@ -226,19 +227,6 @@ export class Container implements IContainer {
         return decirator.decoratorType || DecoratorType.All;
     }
 
-    execMethod<T>(propertyKey: string | symbol, type: Type<any>, instance?: any): T {
-
-        instance = instance || this.get(type);
-        if (instance && isFunction(instance[propertyKey])) {
-            let parameters = this.getParameterMetadata(type, propertyKey);
-            let paramInstances = parameters.map((type, index) => this.get(type));
-            return instance[propertyKey].call(instance, paramInstances) as T;
-        } else {
-            throw new Error(`type: ${type} has no method ${propertyKey}.`)
-        }
-
-    }
-
     protected cacheDecorator<T>(map: Map<string, ActionComponent>, action: ActionComponent) {
         if (!map.has(action.name)) {
             map.set(action.name, action);
@@ -281,6 +269,8 @@ export class Container implements IContainer {
         this.registerDecorator<ParameterMetadata>(Param,
             builder.build(Param.toString(), this.getDecoratorType(Param),
                 ActionType.resetParamType));
+
+        registerAspect(this, builder);
     }
 
 
@@ -352,7 +342,6 @@ export class Container implements IContainer {
 
             let paramInstances = parameters.map((type, index) => this.get(type));
             let instance = new ClassT(...paramInstances);
-            // this.propDecoractors.forEach()
             if (instance) {
                 props.forEach((prop, idx) => {
                     instance[prop.propertyKey] = prop.provider ?
@@ -382,7 +371,7 @@ export class Container implements IContainer {
         };
 
         this.classDecoractors.forEach((action, decorator) => {
-            let metadata: TypeMetadata[] = Reflect.getOwnMetadata(decorator, ClassT) as TypeMetadata[];
+            let metadata: TypeMetadata[] = Reflect.getMetadata(decorator, ClassT) as TypeMetadata[];
             action.execute(this, {
                 metadata: metadata
             } as ProviderActionData, ActionType.provider);
@@ -411,14 +400,41 @@ export class Container implements IContainer {
         return singleton;
     }
 
-    protected getParameterMetadata<T>(type: Type<T>, propertyKey?: string | symbol): Type<any>[] {
+    /**
+     * get constructor parameters metadata.
+     *
+     * @template T
+     * @param {Type<T>} type
+     * @returns {Token<any>>[]}
+     * @memberof IContainer
+     */
+    getConstructorParameter<T>(type: Type<T>): Token<any>[] {
+        return this.getParameterMetadata(type);
+    }
+
+    /**
+     * get method params metadata.
+     *
+     * @template T
+     * @param {Type<T>} type
+     * @param {T} instance
+     * @param {(string | symbol)} propertyKey
+     * @returns {Token<any>[]}
+     * @memberof IContainer
+     */
+    getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): Token<any>[] {
+        return this.getParameterMetadata(type, instance, propertyKey);
+    }
+
+    protected getParameterMetadata<T>(type: Type<T>, instance?: T, propertyKey?: string | symbol): Token<any>[] {
 
         let designParams: Type<any>[];
-        if (propertyKey) {
-            designParams = Reflect.getOwnMetadata('design:paramtypes', type, propertyKey) || [];
+        if (instance && propertyKey) {
+            designParams = Reflect.getMetadata('design:paramtypes', instance, propertyKey) || [];
         } else {
-            designParams = Reflect.getOwnMetadata('design:paramtypes', type) || [];
+            designParams = Reflect.getMetadata('design:paramtypes', type) || [];
         }
+
         designParams = designParams.slice(0);
         designParams.forEach(ptype => {
             if (this.isVaildDependence(ptype)) {

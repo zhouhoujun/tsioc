@@ -127,15 +127,25 @@ export interface IContainer {
 
 
     /**
-     * try to exec the method of intance,  if no instance will create by type.
+     * get constructor parameters metadata.
      *
      * @template T
-     * @param {(string | symbol)} propertyKey
-     * @param {Type<any>} type
-     * @param {*} [instance]
-     * @returns {T}
+     * @param {Type<T>} type
+     * @returns {Token<any>>[]}
      * @memberof IContainer
      */
-    execMethod<T>(propertyKey: string | symbol, type: Type<any>, instance?: any): T;
+    getConstructorParameter<T>(type: Type<T>): Token<any>[];
+
+    /**
+     * get method params metadata.
+     *
+     * @template T
+     * @param {Type<T>} type
+     * @param {T} instance
+     * @param {(string | symbol)} propertyKey
+     * @returns {Token<any>[]}
+     * @memberof IContainer
+     */
+    getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): Token<any>[];
 
 }

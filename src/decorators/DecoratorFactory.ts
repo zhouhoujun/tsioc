@@ -180,6 +180,8 @@ function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: str
     let meta = getMethodMetadata(target, metaName);
     meta[propertyKey] = meta.hasOwnProperty(propertyKey) && meta[propertyKey] || [];
 
+    // let designParams = Reflect.getMetadata('design:paramtypes', target, propertyKey);
+    // console.log('setMethodMetadata', propertyKey, designParams);
     let methodMeadata = (metadata || {}) as T;
     methodMeadata.decorator = name;
     methodMeadata.propertyKey = propertyKey;

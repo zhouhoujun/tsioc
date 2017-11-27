@@ -1,3 +1,4 @@
+export * from './IActionBuilder';
 export * from './ActionBuilder';
 export * from './ActionComponent';
 export * from './ActionComposite';

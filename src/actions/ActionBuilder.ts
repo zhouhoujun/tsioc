@@ -6,9 +6,10 @@ import { ActionType } from './ActionType';
 import { ResetParamAction } from './ResetParamAction';
 import { ResetPropAction } from './ResetPropAction';
 import { ProviderAction } from './ProviderAction';
+import { IActionBuilder } from './IActionBuilder';
 
 
-export class ActionBuilder {
+export class ActionBuilder implements IActionBuilder {
     build(decorName: string, decorType: DecoratorType, ...types: ActionType[]): ActionComponent {
         let actions = new ActionComposite('', decorName, decorType);
         types.forEach(type => {

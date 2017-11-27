@@ -9,6 +9,14 @@ export enum ActionType {
     resetPropType = 'resetPropType',
     injectProp = 'injectProp',
     provider = 'provider',
+    /**
+     * runner
+     */
+    runner = 'runner',
+    /**
+     * Aspect
+     */
+    aspect = 'aspect',
     bindInstance = 'bindInstance',
     bindMethod = 'bindMethod'
 }
