@@ -176,6 +176,10 @@ export class InjMClassRoom {
 }
 
 
+export interface IClassRoom {
+    leader: Student;
+}
+
 @Injectable
 export class InjCollegeClassRoom {
     constructor(
@@ -205,6 +209,7 @@ export class InjCollegeAliasClassRoom {
 
     }
 }
+
 
 
 // 1. Custom register one class will auto inject depdence class (must has a class decorator).
