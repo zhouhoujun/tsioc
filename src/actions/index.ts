@@ -10,4 +10,5 @@ export * from './NullAction';
 export * from './ProviderAction'
 export * from './ResetParamAction';
 export * from './ResetPropAction';
+export * from './AccessMethodAction';
 

@@ -3,6 +3,9 @@ import { MethodMetadata } from '../metadatas';
 import { Type } from '../Type';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
+import { ArgsIterator } from './index';
+import { isArray } from 'util';
+import { ParamProvider } from '../IMethodAccessor';
 
 
 /**
@@ -12,6 +15,7 @@ import { DecoratorType } from './DecoratorType';
  * @interface IMethodDecorator
  */
 export interface IMethodDecorator<T extends MethodMetadata> {
+    (providers?: ParamProvider[]): MethodDecorator;
     (metadata?: T): MethodDecorator;
     (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>): void;
 }
@@ -32,7 +36,20 @@ export function createMethodDecorator<T extends MethodMetadata>(
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IMethodDecorator<T> {
 
-    let decorator = createDecorator<T>(name, adapter, metadataExtends);
+    let methodAdapter = (args: ArgsIterator) => {
+        if (adapter) {
+            adapter(args);
+        }
+
+        args.next<MethodMetadata>({
+            match: (arg) => isArray(arg),
+            setMetadata: (metadata, arg) => {
+                metadata.providers = arg;
+            }
+        });
+    }
+
+    let decorator = createDecorator<T>(name, methodAdapter, metadataExtends);
     decorator.decoratorType = DecoratorType.Method;
     return decorator;
 }

@@ -18,5 +18,7 @@ export enum ActionType {
      */
     aspect = 'aspect',
     bindInstance = 'bindInstance',
-    bindMethod = 'bindMethod'
+    bindMethod = 'bindMethod',
+
+    accessMethod = 'accessMethod'
 }

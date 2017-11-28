@@ -13,7 +13,7 @@ describe('method exec test', () => {
 
         }
         say() {
-            return 'hello word.'
+            return 'I love you.'
         }
     }
 
@@ -43,9 +43,20 @@ describe('method exec test', () => {
 
         }
 
-        @Method
+        @Method()
         sayHello( @Inject(Child) person: Person) {
             return person.say();
+        }
+    }
+
+    class MethodTest3 {
+        constructor() {
+
+        }
+
+        @Method
+        sayHello( @Inject(Child) personA: Person, personB: Person) {
+            return personA.say() + ', '  + personB.say();
         }
     }
 
@@ -60,7 +71,7 @@ describe('method exec test', () => {
         container.register(MethodTest);
         let mtt = container.get(MethodTest);
         expect(isFunction(mtt.sayHello)).is.true;
-        expect(await container.invoke(MethodTest, 'sayHello', mtt)).eq('hello word.');
+        expect(await container.invoke(MethodTest, 'sayHello', mtt)).eq('I love you.');
 
     });
 
@@ -68,6 +79,13 @@ describe('method exec test', () => {
         // container.register(Person);
         container.register(MethodTest2);
         expect(await container.invoke(MethodTest2, 'sayHello')).eq('Mama');
+
+    });
+
+    it('show exec with many params', async () => {
+        // container.register(Person);
+        container.register(MethodTest3);
+        expect(await container.invoke(MethodTest3, 'sayHello')).eq('Mama, I love you.');
 
     });
 });

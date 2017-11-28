@@ -89,20 +89,73 @@ let person = container.get(Person, 'Colloge');
 
 ### Invoke method
 
+you can use yourself `MethodAccessor` by implement IMethodAccessor, register `symbols.IMethodAccessor` with your `MethodAccessor` in container,   see below.
+
 ```ts
+/**
+ * try to invoke the method of intance,  if no instance will create by type.
+ *
+ * @template T
+ * @param {Type<any>} type  type of object
+ * @param {(string | symbol)} propertyKey method name
+ * @param {*} [instance] instance of type.
+ * @param {...ParamProvider[]} providers param provider.
+ * @returns {Promise<T>}
+ * @memberof IMethodAccessor
+ */
+invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: ParamProvider[]): Promise<T>;
+
 
 @Injectable
-class MethodTestPerson {
+class Person {
+    constructor() {
+
+    }
     say() {
-        return 'hello word.'
+        return 'I love you.'
+    }
+}
+
+@Injectable
+class Child extends Person {
+    constructor() {
+        super();
+    }
+    say() {
+        return 'Mama';
     }
 }
 
 class MethodTest {
+    constructor() {
+
+    }
 
     @Method
-    sayHello(person: MethodTestPerson) {
+    sayHello(person: Person) {
         return person.say();
+    }
+}
+
+class MethodTest2 {
+    constructor() {
+
+    }
+
+    @Method()
+    sayHello( @Inject(Child) person: Person) {
+        return person.say();
+    }
+}
+
+class MethodTest3 {
+    constructor() {
+
+    }
+
+    @Method
+    sayHello( @Inject(Child) personA: Person, personB: Person) {
+        return personA.say() + ', '  + personB.say();
     }
 }
 
@@ -113,11 +166,21 @@ container.invoke(MethodTest, 'sayHello')
         console.log(data);
     });
 
+container.register(MethodTest2);
+container.invoke(MethodTest2, 'sayHello')
+    .then(data =>{
+        console.log(data);
+    });
+
+container.register(MethodTest3);
+container.invoke(MethodTest3, 'sayHello')
+    .then(data =>{
+        console.log(data);
+    });
+
 ```
 
 ## AOP
-
-
 
 
 ## Use Demo
@@ -682,10 +745,11 @@ export interface IMethodAccessor {
      * @param {Type<any>} type  type of object
      * @param {(string | symbol)} propertyKey method name
      * @param {*} [instance] instance of type.
+     * @param {...ParamProvider[]} providers param provider.
      * @returns {Promise<T>}
      * @memberof IMethodAccessor
      */
-    invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any): Promise<T>;
+    invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: ParamProvider[]): Promise<T>;
 }
 
 ```

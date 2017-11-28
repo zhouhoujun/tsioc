@@ -1,9 +1,5 @@
 import { Metadate } from './Metadate';
-
-export interface ExecutionParam {
-    files: string | string [];
-    value: string;
-}
+import { ParamProvider } from '../IMethodAccessor';
 
 /**
  * method metadata
@@ -12,7 +8,7 @@ export interface ExecutionParam {
  * @interface PropMetadata
  */
 export interface MethodMetadata extends Metadate {
-    providers?: ExecutionParam[];
+    providers?: ParamProvider[];
     propertyKey?: string | symbol;
     descriptor?: TypedPropertyDescriptor<any>
 }

@@ -4,8 +4,8 @@ import { Token, Factory, ObjectMap, SymbolType, ToInstance } from './types';
 import { Registration } from './Registration';
 import { Injectable } from './decorators/Injectable';
 import { Type, AbstractType } from './Type';
-import { ParameterMetadata, InjectableMetadata, PropertyMetadata, InjectMetadata, TypeMetadata, ClassMetadata, AutoWiredMetadata } from './metadatas';
-import { DecoratorType, Inject, AutoWired, Param, Singleton } from './decorators';
+import { ParameterMetadata, InjectableMetadata, PropertyMetadata, InjectMetadata, TypeMetadata, ClassMetadata, AutoWiredMetadata, MethodMetadata } from './metadatas';
+import { DecoratorType, Inject, AutoWired, Param, Singleton, Method } from './decorators';
 import { ActionComponent, ActionType, ActionBuilder, ResetPropData, ProviderActionData } from './actions';
 import { isClass, isFunction, symbols } from './utils';
 import { isSymbol, isString, isUndefined, isArray } from 'util';
@@ -291,6 +291,10 @@ export class Container implements IContainer {
         this.register(Object);
         this.register(MethodAccessor);
         this.bindProvider(symbols.IContainer, () => this);
+        this.bindProvider(symbols.ClassDecoratorMap, () => this.classDecoractors);
+        this.bindProvider(symbols.MethodDecoratorMap, () => this.methodDecoractors);
+        this.bindProvider(symbols.ParameterDecoratorMap, () => this.paramDecoractors);
+        this.bindProvider(symbols.PropertyDecoratorMap, () => this.propDecoractors);
     }
 
     protected registerDefautDecorators() {
@@ -313,6 +317,10 @@ export class Container implements IContainer {
         this.registerDecorator<ParameterMetadata>(Param,
             builder.build(Param.toString(), this.getDecoratorType(Param),
                 ActionType.resetParamType));
+
+        this.registerDecorator<MethodMetadata>(Method,
+            builder.build(Method.toString(), this.getDecoratorType(Method),
+                ActionType.accessMethod));
 
         registerAspect(this, builder);
     }
@@ -406,7 +414,7 @@ export class Container implements IContainer {
                     methodMetadata: Reflect.getMetadata(key, ClassT),
                     instance: instance
                 }, ActionType.bindMethod);
-            })
+            });
 
             if (singleton) {
                 this.singleton.set(key, instance);

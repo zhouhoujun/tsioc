@@ -7,6 +7,7 @@ import { ResetParamAction } from './ResetParamAction';
 import { ResetPropAction } from './ResetPropAction';
 import { ProviderAction } from './ProviderAction';
 import { IActionBuilder } from './IActionBuilder';
+import { AccessMethodAction } from './index';
 
 
 export class ActionBuilder implements IActionBuilder {
@@ -33,6 +34,10 @@ export class ActionBuilder implements IActionBuilder {
 
             case ActionType.provider:
                 action = new ProviderAction();
+                break;
+
+            case ActionType.accessMethod:
+                action = new AccessMethodAction();
                 break;
 
         }

@@ -4,7 +4,7 @@ import { isFunction, isClass } from './utils';
 import { request } from 'https';
 import { Type } from './Type';
 import { isString } from 'util';
-import { toAbsoluteSrc } from './index';
+import { toAbsoluteSrc, symbols } from './index';
 const globby = require('globby');
 
 
@@ -70,7 +70,9 @@ export interface IContainerBuilder {
 export class ContainerBuilder implements IContainerBuilder {
 
     create(): IContainer {
-        return new Container();
+        let container = new Container();
+        container.bindProvider(symbols.IContainerBuilder, () => this);
+        return container;
     }
 
     /**
