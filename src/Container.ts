@@ -1,13 +1,13 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
-import { Token, Factory, ObjectMap, SymbolType, symbols, ToInstance } from './types';
+import { Token, Factory, ObjectMap, SymbolType, ToInstance } from './types';
 import { Registration } from './Registration';
 import { Injectable } from './decorators/Injectable';
 import { Type, AbstractType } from './Type';
 import { ParameterMetadata, InjectableMetadata, PropertyMetadata, InjectMetadata, TypeMetadata, ClassMetadata, AutoWiredMetadata } from './metadatas';
 import { DecoratorType, Inject, AutoWired, Param, Singleton } from './decorators';
 import { ActionComponent, ActionType, ActionBuilder, ResetPropData, ProviderActionData } from './actions';
-import { isClass, isFunction } from './utils';
+import { isClass, isFunction, symbols } from './utils';
 import { isSymbol, isString, isUndefined, isArray } from 'util';
 import { fail } from 'assert';
 import { registerAspect } from './aop';

@@ -3,7 +3,7 @@ import { IMethodAccessor } from './IMethodAccessor';
 import { Type } from './Type';
 import { isFunction } from 'util';
 import { Singleton, Inject } from './decorators/index';
-import { symbols } from './types';
+import { symbols } from './utils';
 
 @Singleton(symbols.IMethodAccessor)
 export class MethodAccessor implements IMethodAccessor {
