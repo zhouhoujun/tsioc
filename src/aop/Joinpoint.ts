@@ -1,5 +1,5 @@
 
-import { AutoWiredMetadata } from '../metadatas';
+import { MethodMetadata } from '../metadatas';
 import { createMethodDecorator, IMethodDecorator } from '../decorators';
 
-export const Joinpoint: IMethodDecorator<AutoWiredMetadata> = createMethodDecorator<AutoWiredMetadata>('Joinpoint');
+export const Joinpoint: IMethodDecorator<MethodMetadata> = createMethodDecorator<MethodMetadata>('Joinpoint');

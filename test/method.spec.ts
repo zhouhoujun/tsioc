@@ -1,6 +1,7 @@
 import 'mocha';
 import { expect } from 'chai';
-import { Runner, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Execute, Aspect, isFunction } from '../src';
+import { Method, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Execution, Aspect, isFunction } from '../src';
+import { async } from 'q';
 
 
 describe('method exec test', () => {
@@ -21,7 +22,7 @@ describe('method exec test', () => {
 
         }
 
-        @Runner
+        @Method
         sayHello(person: Person) {
             return person.say();
         }
@@ -33,21 +34,21 @@ describe('method exec test', () => {
         container = builder.create();
     });
 
-    it('show exec with type and instance', () => {
+    it('show exec with type and instance', async () => {
         // container.register(Person);
         container.register(MethodTest);
         let mtt = container.get(MethodTest);
         expect(isFunction(mtt.sayHello)).is.true;
-        let runner = new Execute(container);
-        expect(runner.exec(MethodTest, 'sayHello', mtt)).eq('hello word.');
+        let runner = new Execution(container);
+        expect(await runner.exec(MethodTest, 'sayHello', mtt)).eq('hello word.');
 
     });
 
-    it('show exec with only type', () => {
+    it('show exec with only type', async () => {
         // container.register(Person);
         container.register(MethodTest);
-        let runner = new Execute(container);
-        expect(runner.exec(MethodTest, 'sayHello')).eq('hello word.');
+        let runner = new Execution(container);
+        expect(await runner.exec(MethodTest, 'sayHello')).eq('hello word.');
 
     });
 });

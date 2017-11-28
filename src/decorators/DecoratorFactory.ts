@@ -100,7 +100,7 @@ function storeMetadata<T>(name: string, metaName: string, args: any[], metadata?
     switch (args.length) {
         case 1:
             target = args[0];
-            setTypeMetadata<T>(name, metaName, target, metadata, metadataExtends);
+            setTypeMetadata(name, metaName, target, metadata, metadataExtends);
             return target;
         case 2:
             target = args[0];
@@ -112,16 +112,16 @@ function storeMetadata<T>(name: string, metaName: string, args: any[], metadata?
                 target = args[0];
                 let propertyKey = args[1];
                 let parameterIndex = args[2];
-                setParamMetadata<T>(name, metaName, target, propertyKey, parameterIndex, metadata, metadataExtends);
+                setParamMetadata(name, metaName, target, propertyKey, parameterIndex, metadata, metadataExtends);
             } else if (isUndefined(args[2])) {
                 target = args[0];
                 let propertyKey = args[1];
-                setPropertyMetadata<T>(name, metaName, target, propertyKey, metadata, metadataExtends);
+                setPropertyMetadata(name, metaName, target, propertyKey, metadata, metadataExtends);
             } else {
                 target = args[0];
                 let propertyKey = args[1];
                 let descriptor = args[2];
-                setMethodMetadata<T>(name, metaName, target, propertyKey, descriptor, metadata, metadataExtends);
+                setMethodMetadata(name, metaName, target, propertyKey, descriptor, metadata, metadataExtends);
                 return descriptor;
             }
             break;

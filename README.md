@@ -81,7 +81,7 @@ let person = container.get(Person, 'Colloge');
 
 ```ts
 
-import { Runner, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Execute, Aspect } from 'type-autofac';
+import { Method, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Execution, Aspect } from 'type-autofac';
 
 
 export class SimppleAutoWried {
@@ -255,7 +255,7 @@ class MethodTestPerson {
 
 class MethodTest {
 
-    @Runner
+    @Method
     sayHello(person: MethodTestPerson) {
         return person.say();
     }
@@ -269,8 +269,11 @@ let container = builder.create();
 
 
 container.register(MethodTest);
-let runner = new Execute(container);
-console.log(runner.exec(MethodTest, 'sayHello'));
+let runner = new Execution(container);
+runner.exec(MethodTest, 'sayHello')
+    .then(data =>{
+        console.log(data);
+    });
 
 container.register(SimppleAutoWried);
 let instance = container.get(SimppleAutoWried);
