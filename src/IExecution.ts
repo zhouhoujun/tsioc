@@ -1,7 +1,7 @@
 import { Type } from './Type';
 
 
-export interface IExecute {
+export interface IExecution {
 
     /**
      * try to exec the method of intance,  if no instance will create by type.

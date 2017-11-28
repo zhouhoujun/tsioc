@@ -3,9 +3,7 @@
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/type-autofac).
 
-`type-autofac` is ioc container, via typescript decorator.
-
-
+`type-autofac` is AOP, Ioc container, via typescript decorator.
 
 ## Install
 

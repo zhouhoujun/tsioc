@@ -1,10 +1,10 @@
 import { IContainer } from './IContainer';
-import { IExecute } from './IExecute';
+import { IExecution } from './IExecution';
 import { Type } from './Type';
 import { isFunction } from 'util';
 
 
-export class Execute implements IExecute {
+export class Execution implements IExecution {
 
     constructor(private container: IContainer) {
 
