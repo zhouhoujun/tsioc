@@ -1,4 +1,4 @@
-import { AutoWired, Injectable, Param, Singleton, Inject, Registration, ContainerBuilder, Aspect } from '../index';
+import { AutoWired, Injectable, Param, Singleton, Inject, Registration, ContainerBuilder, Aspect, Method } from '../index';
 
 
 export class SimppleAutoWried {
@@ -170,7 +170,7 @@ class MethodTestPerson {
 
 class MethodTest {
 
-    @Runner
+    @Method
     sayHello(person: MethodTestPerson) {
         return person.say();
     }
