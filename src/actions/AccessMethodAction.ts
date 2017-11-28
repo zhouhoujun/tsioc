@@ -21,7 +21,7 @@ export interface AccessMethodData extends ActionData<MethodMetadata> {
 export class AccessMethodAction extends ActionComposite {
 
     constructor(decorName?: string, decorType?: DecoratorType) {
-        super(ActionType.resetParamType.toString(), decorName, decorType)
+        super(ActionType.setParamType.toString(), decorName, decorType)
     }
 
     protected working(container: IContainer, data: AccessMethodData) {

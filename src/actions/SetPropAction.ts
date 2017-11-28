@@ -6,18 +6,25 @@ import { PropertyMetadata } from '../metadatas/index';
 import { IContainer } from '../IContainer';
 
 
-export interface ResetPropData extends ActionData<PropertyMetadata> {
+export interface SetPropActionData extends ActionData<PropertyMetadata> {
     props: PropertyMetadata[];
 }
 
-export class ResetPropAction extends ActionComposite {
+/**
+ * set property type action.
+ *
+ * @export
+ * @class SetPropAction
+ * @extends {ActionComposite}
+ */
+export class SetPropAction extends ActionComposite {
 
     constructor(decorName?: string, decorType?: DecoratorType) {
-        super(ActionType.resetPropType.toString(), decorName, decorType)
+        super(ActionType.setPropType.toString(), decorName, decorType)
     }
 
-    protected working(container: IContainer, data: ResetPropData) {
-        let restPropdata = data as ResetPropData;
+    protected working(container: IContainer, data: SetPropActionData) {
+        let restPropdata = data as SetPropActionData;
         let props = data.propMetadata;
         if (Array.isArray(props)) {
             props = {};

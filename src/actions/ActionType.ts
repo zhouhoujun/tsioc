@@ -5,20 +5,36 @@
  * @enum {number}
  */
 export enum ActionType {
-    resetParamType = 'resetParamType',
-    resetPropType = 'resetPropType',
-    injectProp = 'injectProp',
-    provider = 'provider',
     /**
-     * runner
+     * set param type form metadata.
      */
-    runner = 'runner',
+    setParamType = 'setParamType',
+    /**
+     * set Property type from metadata.
+     */
+    setPropType = 'setPropType',
+
+    /**
+     * class provider bind action.
+     */
+    provider = 'provider',
     /**
      * Aspect
      */
     aspect = 'aspect',
-    bindInstance = 'bindInstance',
-    bindMethod = 'bindMethod',
 
-    accessMethod = 'accessMethod'
+    /**
+     * access method.
+     */
+    accessMethod = 'accessMethod',
+
+    /**
+     * bind instance, for custom extensions.
+     */
+    bindInstance = 'bindInstance',
+    /**
+     * bind instance method, for custom extensions.
+     */
+    bindMethod = 'bindMethod'
+
 }

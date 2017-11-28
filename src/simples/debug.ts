@@ -160,22 +160,58 @@ export class SymbolIdest {
     }
 }
 
+@Injectable
+class People {
+    constructor() {
+
+    }
+    say() {
+        return 'I love you.'
+    }
+}
 
 @Injectable
-class MethodTestPerson {
+class Child extends People {
+    constructor() {
+        super();
+    }
     say() {
-        return 'hello word.'
+        return 'Mama';
     }
 }
 
 class MethodTest {
+    constructor() {
+
+    }
 
     @Method
-    sayHello(person: MethodTestPerson) {
+    sayHello(person: People) {
         return person.say();
     }
 }
 
+class MethodTest2 {
+    constructor() {
+
+    }
+
+    @Method()
+    sayHello( @Inject(Child) person: People) {
+        return person.say();
+    }
+}
+
+class MethodTest3 {
+    constructor() {
+
+    }
+
+    @Method
+    sayHello( @Inject(Child) personA: People, personB: People) {
+        return personA.say() + ', '  + personB.say();
+    }
+}
 
 
 let builder = new ContainerBuilder();

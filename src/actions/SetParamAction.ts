@@ -5,10 +5,10 @@ import { DecoratorType, Param } from '../decorators';
 import { ParameterMetadata } from '../metadatas/index';
 import { IContainer } from '../IContainer';
 
-export class ResetParamAction extends ActionComposite {
+export class SetParamAction extends ActionComposite {
 
     constructor(decorName?: string, decorType?: DecoratorType) {
-        super(ActionType.resetParamType.toString(), decorName, decorType)
+        super(ActionType.setParamType.toString(), decorName, decorType)
     }
 
     protected working(container: IContainer, data: ActionData<ParameterMetadata>) {

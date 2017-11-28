@@ -1,13 +1,13 @@
 import { DecoratorType } from '../decorators';
 import { ActionComposite } from './ActionComposite';
 import { ActionComponent } from './ActionComponent';
-import { type } from 'os';
 import { ActionType } from './ActionType';
-import { ResetParamAction } from './ResetParamAction';
-import { ResetPropAction } from './ResetPropAction';
+import { SetParamAction } from './SetParamAction';
+import { SetPropAction } from './SetPropAction';
 import { ProviderAction } from './ProviderAction';
 import { IActionBuilder } from './IActionBuilder';
-import { AccessMethodAction } from './index';
+import { AccessMethodAction } from './AccessMethodAction';
+import { AspectAction } from './AspectAction';
 
 
 export class ActionBuilder implements IActionBuilder {
@@ -24,12 +24,12 @@ export class ActionBuilder implements IActionBuilder {
     protected createAction(type: ActionType): ActionComponent {
         let action: ActionComponent;
         switch (type) {
-            case ActionType.resetParamType:
-                action = new ResetParamAction();
+            case ActionType.setParamType:
+                action = new SetParamAction();
                 break;
 
-            case ActionType.resetPropType:
-                action = new ResetPropAction();
+            case ActionType.setPropType:
+                action = new SetPropAction();
                 break;
 
             case ActionType.provider:
@@ -38,6 +38,10 @@ export class ActionBuilder implements IActionBuilder {
 
             case ActionType.accessMethod:
                 action = new AccessMethodAction();
+                break;
+
+            case ActionType.aspect:
+                action =  new AspectAction();
                 break;
 
         }

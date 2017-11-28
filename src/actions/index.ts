@@ -5,10 +5,10 @@ export * from './ActionComposite';
 export * from './ActionData';
 export * from './ActionType';
 
-export * from './InjectPropAction';
 export * from './NullAction';
 export * from './ProviderAction'
-export * from './ResetParamAction';
-export * from './ResetPropAction';
+export * from './SetParamAction';
+export * from './SetPropAction';
 export * from './AccessMethodAction';
+export * from './AspectAction';
 

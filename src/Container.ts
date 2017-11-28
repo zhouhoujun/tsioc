@@ -6,7 +6,7 @@ import { Injectable } from './decorators/Injectable';
 import { Type, AbstractType } from './Type';
 import { ParameterMetadata, InjectableMetadata, PropertyMetadata, InjectMetadata, TypeMetadata, ClassMetadata, AutoWiredMetadata, MethodMetadata } from './metadatas';
 import { DecoratorType, Inject, AutoWired, Param, Singleton, Method } from './decorators';
-import { ActionComponent, ActionType, ActionBuilder, ResetPropData, ProviderActionData } from './actions';
+import { ActionComponent, ActionType, ActionBuilder, SetPropActionData, ProviderActionData, AspectActionData } from './actions';
 import { isClass, isFunction, symbols } from './utils';
 import { isSymbol, isString, isUndefined, isArray } from 'util';
 import { fail } from 'assert';
@@ -305,18 +305,18 @@ export class Container implements IContainer {
 
         this.registerDecorator<AutoWiredMetadata>(AutoWired,
             builder.build(AutoWired.toString(), this.getDecoratorType(AutoWired),
-                ActionType.resetParamType, ActionType.resetPropType));
+                ActionType.setParamType, ActionType.setPropType));
 
         this.registerDecorator<InjectMetadata>(Inject,
             builder.build(Inject.toString(), this.getDecoratorType(Inject),
-                ActionType.resetParamType, ActionType.resetPropType));
+                ActionType.setParamType, ActionType.setPropType));
 
         this.registerDecorator<ClassMetadata>(Singleton,
             builder.build(Singleton.toString(), this.getDecoratorType(Singleton), ActionType.provider));
 
         this.registerDecorator<ParameterMetadata>(Param,
             builder.build(Param.toString(), this.getDecoratorType(Param),
-                ActionType.resetParamType));
+                ActionType.setParamType));
 
         this.registerDecorator<MethodMetadata>(Method,
             builder.build(Method.toString(), this.getDecoratorType(Method),
@@ -427,6 +427,10 @@ export class Container implements IContainer {
             action.execute(this, {
                 metadata: metadata
             } as ProviderActionData, ActionType.provider);
+
+            action.execute(this, {
+                metadata: metadata
+            } as AspectActionData, ActionType.aspect);
         });
 
 
@@ -476,7 +480,7 @@ export class Container implements IContainer {
                 v.execute(this, {
                     designMetadata: designParams,
                     paramMetadata: parameters
-                }, ActionType.resetParamType);
+                }, ActionType.setParamType);
             });
         }
         return designParams;
@@ -486,12 +490,12 @@ export class Container implements IContainer {
 
         let restPropData = {
             props: []
-        } as ResetPropData;
+        } as SetPropActionData;
 
         this.propDecoractors.forEach((val, name) => {
             let prop = Reflect.getMetadata(name, type) || {} as ObjectMap<PropertyMetadata[]>;
             restPropData.propMetadata = prop;
-            val.execute(this, restPropData, ActionType.resetPropType)
+            val.execute(this, restPropData, ActionType.setPropType)
         });
 
 
