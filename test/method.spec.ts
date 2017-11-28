@@ -1,6 +1,6 @@
 import 'mocha';
 import { expect } from 'chai';
-import { Method, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Execution, Aspect, isFunction } from '../src';
+import { Method, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Aspect, isFunction } from '../src';
 import { async } from 'q';
 
 
@@ -39,16 +39,14 @@ describe('method exec test', () => {
         container.register(MethodTest);
         let mtt = container.get(MethodTest);
         expect(isFunction(mtt.sayHello)).is.true;
-        let runner = new Execution(container);
-        expect(await runner.exec(MethodTest, 'sayHello', mtt)).eq('hello word.');
+        expect(await container.invoke(MethodTest, 'sayHello', mtt)).eq('hello word.');
 
     });
 
     it('show exec with only type', async () => {
         // container.register(Person);
         container.register(MethodTest);
-        let runner = new Execution(container);
-        expect(await runner.exec(MethodTest, 'sayHello')).eq('hello word.');
+        expect(await container.invoke(MethodTest, 'sayHello')).eq('hello word.');
 
     });
 });

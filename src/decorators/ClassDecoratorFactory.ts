@@ -5,7 +5,7 @@ import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFa
 import { DecoratorType } from './DecoratorType';
 import { Registration } from '../index';
 import { isClass, isToken, isClassMetadata } from '../utils';
-import { isString, isSymbol } from 'util';
+import { isString, isSymbol, isObject } from 'util';
 import { ArgsIterator } from './ArgsIterator';
 import { fail } from 'assert';
 
@@ -47,13 +47,9 @@ export function createClassDecorator<T extends ClassMetadata>(name: string, adap
         }
         args.next<T>({
             isMetadata: (arg) => isClassMetadata(arg),
-            match: (arg) => (arg instanceof Registration || isSymbol(arg) || isString(arg)),
+            match: (arg) => isSymbol(arg) || isString(arg) || (isObject(arg) && arg instanceof Registration),
             setMetadata: (metadata, arg) => {
-                if (arg instanceof Registration) {
-                    metadata.provide = arg.getClass();
-                } else {
-                    metadata.provide = arg;
-                }
+                metadata.provide = arg;
             }
         });
 

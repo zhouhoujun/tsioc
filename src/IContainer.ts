@@ -2,6 +2,7 @@ import { Token, Factory, SymbolType } from './types';
 import { ActionComponent } from './actions';
 import { Type } from './Type';
 import { DecoratorType } from './decorators';
+import { IMethodAccessor } from './IMethodAccessor';
 
 
 /**
@@ -10,7 +11,7 @@ import { DecoratorType } from './decorators';
  * @export
  * @interface IContainer
  */
-export interface IContainer {
+export interface IContainer extends IMethodAccessor {
 
     /**
      * has register the token or not.
@@ -147,5 +148,6 @@ export interface IContainer {
      * @memberof IContainer
      */
     getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): Token<any>[];
+
 
 }

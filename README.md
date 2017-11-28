@@ -5,7 +5,7 @@ This repo is for distribution on `npm`. The source for this module is in the
 
 `type-autofac` is AOP, Ioc container, via typescript decorator.
 
-## Install
+# Install
 
 ```shell
 
@@ -13,7 +13,9 @@ npm install type-autofac
 
 ```
 
-## Documentation
+# Documentation
+
+## Ioc
 
 1. Register one class will auto register depdence class (must has a class decorator).
 
@@ -34,6 +36,11 @@ let container = await builder.build({
   moudles:['node-modules-name', ClassType]
 });
 
+```
+
+### init & register Container
+
+```ts
 // 3.  you can load modules by self
 builder.loadModule(container, {
   files: [__dirname +'/controller/**/*.ts', __dirname + '/*.model.js'],
@@ -55,7 +62,11 @@ container.register('keyword', Perosn);
 // 7. register with alais
 container.register(new Registration(Person, aliasname));
 
+```
 
+### get instance of type
+
+```ts
 // 8. get instance use get method of container.
 /**
  * Retrieves an instance from the container based on the provided token.
@@ -76,12 +87,44 @@ let person = container.get(Person, 'Colloge');
 
 ```
 
-
-### Use Demo
+### Invoke method
 
 ```ts
 
-import { Method, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Execution, Aspect } from 'type-autofac';
+@Injectable
+class MethodTestPerson {
+    say() {
+        return 'hello word.'
+    }
+}
+
+class MethodTest {
+
+    @Method
+    sayHello(person: MethodTestPerson) {
+        return person.say();
+    }
+}
+
+
+container.register(MethodTest);
+container.invoke(MethodTest, 'sayHello')
+    .then(data =>{
+        console.log(data);
+    });
+
+```
+
+## AOP
+
+
+
+
+## Use Demo
+
+```ts
+
+import { Method, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Aspect } from 'type-autofac';
 
 
 export class SimppleAutoWried {
@@ -269,8 +312,7 @@ let container = builder.create();
 
 
 container.register(MethodTest);
-let runner = new Execution(container);
-runner.exec(MethodTest, 'sayHello')
+container.invoke(MethodTest, 'sayHello')
     .then(data =>{
         console.log(data);
     });
@@ -317,7 +359,7 @@ builder.build({
 
 ```
 
-### Extend decorator
+## Extend decorator
 
 You can extend yourself decorator via:
 
@@ -483,7 +525,7 @@ see more interface. all document is typescript .d.ts.
  * @export
  * @interface IContainer
  */
-export interface IContainer {
+export interface IContainer extends IMethodAccessor {
 
     /**
      * has register the token or not.
@@ -553,10 +595,10 @@ export interface IContainer {
      *
      * @template T
      * @param {Token<T>} provide
-     * @param {Token<T>} provider
+     * @param {Token<T> | Factory<T>} provider
      * @memberof IContainer
      */
-    bindProvider<T>(provide: Token<T>, provider: Token<T>);
+    bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>);
 
     /**
      * register stingleton type.
@@ -572,11 +614,11 @@ export interface IContainer {
     /**
      * register decorator
      *
-     * @param {Function} decirator
+     * @param {Function} decorator
      * @param {ActionComponent} actions
      * @memberof IContainer
      */
-    registerDecorator(decirator: Function, actions: ActionComponent);
+    registerDecorator(decorator: Function, actions: ActionComponent);
 
     /**
      * is vaildate dependence type or not. dependence type must with class decorator.
@@ -588,7 +630,64 @@ export interface IContainer {
      */
     isVaildDependence<T>(target: any): boolean;
 
+
+    /**
+     * get decorator type.
+     *
+     * @param {*} decorator
+     * @returns {DecoratorType}
+     * @memberof IContainer
+     */
+    getDecoratorType(decorator: any): DecoratorType;
+
+
+    /**
+     * get constructor parameters metadata.
+     *
+     * @template T
+     * @param {Type<T>} type
+     * @returns {Token<any>>[]}
+     * @memberof IContainer
+     */
+    getConstructorParameter<T>(type: Type<T>): Token<any>[];
+
+    /**
+     * get method params metadata.
+     *
+     * @template T
+     * @param {Type<T>} type
+     * @param {T} instance
+     * @param {(string | symbol)} propertyKey
+     * @returns {Token<any>[]}
+     * @memberof IContainer
+     */
+    getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): Token<any>[];
+
+
 }
+
+
+/**
+ * execution, invoke some type method
+ *
+ * @export
+ * @interface IExecution
+ */
+export interface IMethodAccessor {
+
+    /**
+     * try to invoke the method of intance,  if no instance will create by type.
+     *
+     * @template T
+     * @param {Type<any>} type  type of object
+     * @param {(string | symbol)} propertyKey method name
+     * @param {*} [instance] instance of type.
+     * @returns {Promise<T>}
+     * @memberof IMethodAccessor
+     */
+    invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any): Promise<T>;
+}
+
 ```
 
 

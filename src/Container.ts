@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
-import { Token, Factory, ObjectMap, SymbolType, ToInstance } from './types';
+import { Token, Factory, ObjectMap, SymbolType, symbols, ToInstance } from './types';
 import { Registration } from './Registration';
 import { Injectable } from './decorators/Injectable';
 import { Type, AbstractType } from './Type';
@@ -11,6 +11,8 @@ import { isClass, isFunction } from './utils';
 import { isSymbol, isString, isUndefined, isArray } from 'util';
 import { fail } from 'assert';
 import { registerAspect } from './aop';
+import { MethodAccessor } from './MethodAccessor';
+import { IMethodAccessor } from './IMethodAccessor';
 
 
 export const NOT_FOUND = new Object();
@@ -198,6 +200,20 @@ export class Container implements IContainer {
     }
 
     /**
+     * invoke method.
+     *
+     * @template T
+     * @param {Type<any>} type
+     * @param {(string | symbol)} propertyKey
+     * @param {*} [instance]
+     * @returns {Promise<T>}
+     * @memberof Container
+     */
+    invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any): Promise<T> {
+        return this.get<IMethodAccessor>(symbols.IMethodAccessor).invoke(type, propertyKey, instance);
+    }
+
+    /**
      * is vaildate dependence type or not. dependence type must with class decorator.
      *
      * @template T
@@ -227,6 +243,32 @@ export class Container implements IContainer {
         return decirator.decoratorType || DecoratorType.All;
     }
 
+    /**
+     * get constructor parameters metadata.
+     *
+     * @template T
+     * @param {Type<T>} type
+     * @returns {Token<any>>[]}
+     * @memberof IContainer
+     */
+    getConstructorParameter<T>(type: Type<T>): Token<any>[] {
+        return this.getParameterMetadata(type);
+    }
+
+    /**
+     * get method params metadata.
+     *
+     * @template T
+     * @param {Type<T>} type
+     * @param {T} instance
+     * @param {(string | symbol)} propertyKey
+     * @returns {Token<any>[]}
+     * @memberof IContainer
+     */
+    getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): Token<any>[] {
+        return this.getParameterMetadata(type, instance, propertyKey);
+    }
+
     protected cacheDecorator<T>(map: Map<string, ActionComponent>, action: ActionComponent) {
         if (!map.has(action.name)) {
             map.set(action.name, action);
@@ -247,6 +289,8 @@ export class Container implements IContainer {
         this.register(Number);
         this.register(Boolean);
         this.register(Object);
+        this.register(MethodAccessor);
+        this.bindProvider(symbols.IContainer, () => this);
     }
 
     protected registerDefautDecorators() {
@@ -398,32 +442,6 @@ export class Container implements IContainer {
             return true;
         })
         return singleton;
-    }
-
-    /**
-     * get constructor parameters metadata.
-     *
-     * @template T
-     * @param {Type<T>} type
-     * @returns {Token<any>>[]}
-     * @memberof IContainer
-     */
-    getConstructorParameter<T>(type: Type<T>): Token<any>[] {
-        return this.getParameterMetadata(type);
-    }
-
-    /**
-     * get method params metadata.
-     *
-     * @template T
-     * @param {Type<T>} type
-     * @param {T} instance
-     * @param {(string | symbol)} propertyKey
-     * @returns {Token<any>[]}
-     * @memberof IContainer
-     */
-    getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): Token<any>[] {
-        return this.getParameterMetadata(type, instance, propertyKey);
     }
 
     protected getParameterMetadata<T>(type: Type<T>, instance?: T, propertyKey?: string | symbol): Token<any>[] {

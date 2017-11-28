@@ -65,3 +65,11 @@ export enum Mode {
      */
     traverse
 }
+
+/**
+ * symbols of container.
+ */
+export const symbols = {
+    IContainer: Symbol('IContainer'),
+    IMethodAccessor: Symbol('IMethodAccessor')
+}

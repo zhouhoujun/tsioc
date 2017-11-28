@@ -2,6 +2,7 @@ import { Metadate } from './Metadate';
 
 export interface ExecutionParam {
     files: string | string [];
+    value: string;
 }
 
 /**
@@ -11,7 +12,7 @@ export interface ExecutionParam {
  * @interface PropMetadata
  */
 export interface MethodMetadata extends Metadate {
-    providers: ExecutionParam[];
+    providers?: ExecutionParam[];
     propertyKey?: string | symbol;
     descriptor?: TypedPropertyDescriptor<any>
 }

@@ -1,17 +1,19 @@
 import { IContainer } from './IContainer';
-import { IExecution } from './IExecution';
+import { IMethodAccessor } from './IMethodAccessor';
 import { Type } from './Type';
 import { isFunction } from 'util';
+import { Singleton, Inject } from './decorators/index';
+import { symbols } from './types';
+
+@Singleton(symbols.IMethodAccessor)
+export class MethodAccessor implements IMethodAccessor {
 
 
-export class Execution implements IExecution {
-
-
-    constructor(private container: IContainer) {
+    constructor( @Inject(symbols.IContainer) private container: IContainer) {
 
     }
 
-    async exec<T>(type: Type<any>, propertyKey: string | symbol, instance?: any): Promise<T> {
+    async invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any): Promise<T> {
         instance = instance || this.container.get(type);
         if (instance && isFunction(instance[propertyKey])) {
             let parameters = this.container.getMethodParameters(type, instance, propertyKey);
