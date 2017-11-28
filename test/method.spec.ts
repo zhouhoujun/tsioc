@@ -1,6 +1,6 @@
 import 'mocha';
 import { expect } from 'chai';
-import { Method, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Aspect, isFunction } from '../src';
+import { Method, Inject, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Aspect, isFunction } from '../src';
 import { async } from 'q';
 
 
@@ -17,6 +17,16 @@ describe('method exec test', () => {
         }
     }
 
+    @Injectable
+    class Child extends Person {
+        constructor() {
+            super();
+        }
+        say() {
+            return 'Mama';
+        }
+    }
+
     class MethodTest {
         constructor() {
 
@@ -24,6 +34,17 @@ describe('method exec test', () => {
 
         @Method
         sayHello(person: Person) {
+            return person.say();
+        }
+    }
+
+    class MethodTest2 {
+        constructor() {
+
+        }
+
+        @Method
+        sayHello( @Inject(Child) person: Person) {
             return person.say();
         }
     }
@@ -43,10 +64,10 @@ describe('method exec test', () => {
 
     });
 
-    it('show exec with only type', async () => {
+    it('show exec with specail param', async () => {
         // container.register(Person);
-        container.register(MethodTest);
-        expect(await container.invoke(MethodTest, 'sayHello')).eq('hello word.');
+        container.register(MethodTest2);
+        expect(await container.invoke(MethodTest2, 'sayHello')).eq('Mama');
 
     });
 });

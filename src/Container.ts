@@ -463,7 +463,8 @@ export class Container implements IContainer {
         });
         if (designParams.length > 0) {
             this.paramDecoractors.forEach((v, name) => {
-                let parameters = Reflect.getMetadata(name, type);
+                let parameters = instance ? Reflect.getMetadata(name, instance, propertyKey)
+                    : Reflect.getMetadata(name, type);
                 v.execute(this, {
                     designMetadata: designParams,
                     paramMetadata: parameters
