@@ -1,9 +1,9 @@
-# packaged type-autofac
+# packaged tsioc
 
 This repo is for distribution on `npm`. The source for this module is in the
-[main repo](https://github.com/zhouhoujun/type-autofac).
+[main repo](https://github.com/zhouhoujun/tsioc).
 
-`type-autofac` is AOP, Ioc container, via typescript decorator.
+`tsioc` is AOP, Ioc container, via typescript decorator.
 
 rename as [`tsIoc`](https://www.npmjs.com/package/tsIoc)
 
@@ -11,7 +11,7 @@ rename as [`tsIoc`](https://www.npmjs.com/package/tsIoc)
 
 ```shell
 
-npm install type-autofac
+npm install tsioc
 
 ```
 
@@ -189,7 +189,7 @@ container.invoke(MethodTest3, 'sayHello')
 
 ```ts
 
-import { Method, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Aspect } from 'type-autofac';
+import { Method, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Aspect } from 'tsioc';
 
 
 export class SimppleAutoWried {
@@ -758,7 +758,7 @@ export interface IMethodAccessor {
 
 
 Documentation is available on the
-[type-autofac docs site](https://github.com/zhouhoujun/type-autofac).
+[tsioc docs site](https://github.com/zhouhoujun/tsioc).
 
 ## License
 

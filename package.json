@@ -1,7 +1,7 @@
 {
-  "name": "type-autofac",
+  "name": "tsioc",
   "version": "0.4.8",
-  "description": "type-autofac is AOP, Ioc container, via typescript decorator",
+  "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
@@ -27,11 +27,11 @@
   "author": "houjun",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/zhouhoujun/type-autofac/issues"
+    "url": "https://github.com/zhouhoujun/tsioc/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zhouhoujun/type-autofac.git"
+    "url": "git+https://github.com/zhouhoujun/tsioc.git"
   },
   "dependencies": {
     "globby": "^6.1.0",
@@ -60,5 +60,5 @@
     "vinyl-source-stream": "^1.1.0",
     "zone.js": "^0.8.5"
   },
-  "homepage": "https://github.com/zhouhoujun/type-autofac#readme"
+  "homepage": "https://github.com/zhouhoujun/tsioc#readme"
 }
