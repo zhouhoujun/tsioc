@@ -14,8 +14,19 @@ export interface MetadataAdapter {
     (args: ArgsIterator);
 }
 
+/**
+ * extend metadata.
+ *
+ * @export
+ * @interface MetadataExtends
+ * @template T
+ */
 export interface MetadataExtends<T> {
     (metadata: T): T;
+}
+
+export interface MetadataTarget<T> {
+    (target: Type<any> | object): Type<any> | object
 }
 
 /**
