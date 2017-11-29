@@ -1,16 +1,14 @@
 import { IContainer } from '../IContainer';
 import { IActionBuilder, ActionType } from '../actions';
 
-export * from './Aspect';
-export * from './After';
-export * from './AfterReturning';
-export * from './Before';
-export * from './Joinpoint';
-export * from  './Pointcut';
+export * from './decorators';
 
-import { Aspect } from './Aspect';
+
+import { Aspect } from './decorators';
+import { AspectSet } from './AspectSet';
 export function registerAspect(container: IContainer, builder: IActionBuilder) {
 
+    container.register(AspectSet);
     container.registerDecorator(Aspect,
         builder.build(Aspect.toString(),
             container.getDecoratorType(Aspect),
