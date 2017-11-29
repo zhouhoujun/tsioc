@@ -19,7 +19,7 @@ export class AspectAction extends ActionComposite {
     }
 
     protected working(container: IContainer, data: AspectActionData) {
-        let metadata = data.metadata;
+        let metadata = data.metadata || [];
         let aspects = container.get(AspectSet);
         metadata.forEach(meta => {
             if (isClass(meta.type)) {
