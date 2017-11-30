@@ -37,27 +37,36 @@ let container = await builder.build({
   moudles:['node-modules-name', ClassType]
 });
 
+// 3. via syncBuild
+let container = builder.syncBuild({
+  moudles:['node-modules-name', ClassType]
+});
+
 ```
 
 ### init & register Container
 
 ```ts
-// 3.  you can load modules by self
-builder.loadModule(container, {
+// 1.  you can load modules by self
+await builder.loadModule(container, {
   files: [__dirname +'/controller/**/*.ts', __dirname + '/*.model.js'],
   moudles:['node-modules-name', ClassType]
 });
+// 2. load sync
+builder.syncLoadModule(container, {
+  moudles:['node-modules-name', ClassType]
+});
 
-// 4. register a class
+// 3. register a class
 container.register(Person);
 
-// 5. register a factory;
+// 4. register a factory;
 container.register(Person, (container)=> {
     ...
     return new Person(...);
 });
 
-// 6. register with keyword
+// 5. register with keyword
 container.register('keyword', Perosn);
 
 // 7. register with alais
@@ -100,11 +109,24 @@ you can use yourself `MethodAccessor` by implement IMethodAccessor, register `sy
  * @param {Type<any>} type  type of object
  * @param {(string | symbol)} propertyKey method name
  * @param {*} [instance] instance of type.
- * @param {...ParamProvider[]} providers param provider.
+ * @param {...AsyncParamProvider[]} providers param provider.
  * @returns {Promise<T>}
  * @memberof IMethodAccessor
  */
-invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: ParamProvider[]): Promise<T>;
+invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: AsyncParamProvider[]): Promise<T>;
+
+/**
+ * try to invoke the method of intance,  if no instance will create by type.
+ *
+ * @template T
+ * @param {Type<any>} type
+ * @param {(string | symbol)} propertyKey
+ * @param {*} [instance]
+ * @param {...ParamProvider[]} providers
+ * @returns {T}
+ * @memberof IMethodAccessor
+ */
+syncInvoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: ParamProvider[]): T
 
 
 @Injectable

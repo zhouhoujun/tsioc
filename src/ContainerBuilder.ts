@@ -5,70 +5,11 @@ import { request } from 'https';
 import { Type } from './Type';
 import { isString } from 'util';
 import { toAbsoluteSrc, symbols } from './index';
+import { IContainerBuilder, AsyncLoadOptions, LoadOptions } from './IContainerBuilder';
 const globby = require('globby');
 
 
-export interface LoadOptions {
-    /**
-     * fire express base on the root path.
-     *
-     * @type {string}
-     * @memberof LoadOptions
-     */
-    basePath?: string;
-    /**
-     * script files match express.
-     * see: https://github.com/isaacs/node-glob
-     *
-     * @type {(string | string[])}
-     * @memberof BuilderOptions
-     */
-    files?: string | string[];
-
-    /**
-     * node modules.
-     *
-     * @type {((string | Type<any> | object)[])}
-     * @memberof BuilderOptions
-     */
-    modules?: (string | Type<any> | object)[];
-}
-
-/**
- * container builder.
- *
- * @export
- * @interface IContainerBuilder
- */
-export interface IContainerBuilder {
-    /**
-     * create a new container.
-     *
-     * @returns {IContainer}
-     * @memberof IContainerBuilder
-     */
-    create(): IContainer;
-    /**
-     * create a new container and load module via options.
-     *
-     * @param {LoadOptions} [options]
-     * @returns {Promise<IContainer>}
-     * @memberof IContainerBuilder
-     */
-    build(options?: LoadOptions): Promise<IContainer>;
-    /**
-     * load modules for container.
-     *
-     * @param {IContainer} container
-     * @param {LoadOptions} options
-     * @returns {Promise<Type<any>[]>}
-     * @memberof IContainerBuilder
-     */
-    loadModule(container: IContainer, options: LoadOptions): Promise<Type<any>[]>
-}
-
 export class ContainerBuilder implements IContainerBuilder {
-
     create(): IContainer {
         let container = new Container();
         container.bindProvider(symbols.IContainerBuilder, () => this);
@@ -78,11 +19,11 @@ export class ContainerBuilder implements IContainerBuilder {
     /**
      * build container.
      *
-     * @param {LoadOptions} [options]
+     * @param {AsyncLoadOptions} [options]
      * @returns { Promise<IContainer>}
      * @memberof ContainerBuilder
      */
-    async build(options?: LoadOptions) {
+    async build(options?: AsyncLoadOptions) {
         let container: IContainer = this.create();
         if (options) {
             await this.loadModule(container, options);
@@ -94,11 +35,11 @@ export class ContainerBuilder implements IContainerBuilder {
      * load modules for container.
      *
      * @param {IContainer} container
-     * @param {LoadOptions} options
+     * @param {AsyncLoadOptions} options
      * @returns {Promise<Type<any>[]>}
      * @memberof ContainerBuilder
      */
-    async loadModule(container: IContainer, options: LoadOptions): Promise<Type<any>[]> {
+    async loadModule(container: IContainer, options: AsyncLoadOptions): Promise<Type<any>[]> {
         let regModules: Type<any>[] = [];
         if (options) {
             if (options.files) {
@@ -108,15 +49,28 @@ export class ContainerBuilder implements IContainerBuilder {
                     regModules = regModules.concat(modules1);
                 });
             }
-
-            if (options.modules && options.modules.length > 0) {
-                options.modules.forEach(nmd => {
-                    let modules2 = this.registerModule(container, nmd);
-                    regModules = regModules.concat(modules2);
-                });
-            }
+            regModules.concat(this.snycLoadModule(container, options));
         }
 
+        return regModules;
+    }
+
+
+    syncBuild(options: LoadOptions): IContainer {
+        let container: IContainer = this.create();
+        if (options) {
+            this.snycLoadModule(container, options);
+        }
+        return container;
+    }
+    snycLoadModule(container: IContainer, options: LoadOptions): Type<any>[] {
+        let regModules: Type<any>[] = [];
+        if (options && options.modules && options.modules.length > 0) {
+            options.modules.forEach(nmd => {
+                let modules2 = this.registerModule(container, nmd);
+                regModules = regModules.concat(modules2);
+            });
+        }
         return regModules;
     }
 

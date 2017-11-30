@@ -12,7 +12,7 @@ import { isSymbol, isString, isUndefined, isArray } from 'util';
 import { fail } from 'assert';
 import { registerAspect } from './aop';
 import { MethodAccessor } from './MethodAccessor';
-import { IMethodAccessor } from './IMethodAccessor';
+import { IMethodAccessor, ParamProvider, AsyncParamProvider } from './IMethodAccessor';
 
 
 export const NOT_FOUND = new Object();
@@ -21,7 +21,6 @@ export const NOT_FOUND = new Object();
  * Container.
  */
 export class Container implements IContainer {
-
     protected factories: Map<Token<any>, any>;
     protected singleton: Map<Token<any>, any>;
     protected classDecoractors: Map<string, ActionComponent>;
@@ -209,8 +208,12 @@ export class Container implements IContainer {
      * @returns {Promise<T>}
      * @memberof Container
      */
-    invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any): Promise<T> {
-        return this.get<IMethodAccessor>(symbols.IMethodAccessor).invoke(type, propertyKey, instance);
+    invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: AsyncParamProvider[]): Promise<T> {
+        return this.get<IMethodAccessor>(symbols.IMethodAccessor).invoke(type, propertyKey, instance, ...providers);
+    }
+
+    syncInvoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: ParamProvider[]): T {
+        return this.get<IMethodAccessor>(symbols.IMethodAccessor).syncInvoke(type, propertyKey, instance, ...providers);
     }
 
     /**
