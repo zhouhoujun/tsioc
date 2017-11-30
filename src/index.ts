@@ -4,6 +4,7 @@ export * from './Container';
 export * from './Type';
 export * from './types';
 export * from './Registration';
+export * from './IContainerBuilder';
 export * from './ContainerBuilder';
 export * from './metadatas';
 export * from './decorators';
