@@ -182,13 +182,15 @@ function setTypeMetadata<T extends TypeMetadata>(name: string, metaName: string,
  * @returns {ObjectMap<T[]>}
  */
 export function getMethodMetadata<T>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
-    let meta = Reflect.getOwnMetadata(isFunction(decorator) ? decorator.toString() : decorator,  target.constructor || target);
-    meta = isArray(meta) ? {} : (meta || {});
-    return meta;
+    let meta = Reflect.getOwnMetadata(isFunction(decorator) ? decorator.toString() : decorator, target);
+    if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
+        meta = Reflect.getOwnMetadata(isFunction(decorator) ? decorator.toString() : decorator, target.constructor);
+    }
+    return isArray(meta) ? {} : (meta || {});
 }
 
 function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let meta = getMethodMetadata(metaName,  target);
+    let meta = getMethodMetadata(metaName, target);
     meta[propertyKey] = meta[propertyKey] || [];
 
     // let designParams = Reflect.getMetadata('design:paramtypes', target, propertyKey);
@@ -215,9 +217,11 @@ function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: str
  * @returns {ObjectMap<T[]>}
  */
 export function getPropertyMetadata<T>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
-    let meta = Reflect.getOwnMetadata(isFunction(decorator) ? decorator.toString() : decorator, target.constructor || target);
-    meta = isArray(meta) ? {} : (meta || {});
-    return meta;
+    let meta = Reflect.getOwnMetadata(isFunction(decorator) ? decorator.toString() : decorator, target);
+    if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
+        meta = Reflect.getOwnMetadata(isFunction(decorator) ? decorator.toString() : decorator, target.constructor);
+    }
+    return isArray(meta) ? {} : (meta || {});
 }
 
 function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, metadata?: T, metadataExtends?: MetadataExtends<any>) {
