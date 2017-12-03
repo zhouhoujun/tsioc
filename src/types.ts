@@ -61,7 +61,13 @@ export enum Mode {
      */
     children,
     /**
-     * iterate as tree map.
+     * iterate as tree map. node first
      */
-    traverse
+    traverse,
+
+    /**
+     * iterate as tree map. node last
+     */
+    traverseLast,
+
 }

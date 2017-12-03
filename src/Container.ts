@@ -345,10 +345,7 @@ export class Container implements IContainer {
                     classFactory = this.createCustomFactory(key, value as ToInstance<T>, singleton);
                 }
             } else if (singleton && value !== undefined) {
-                let symbolValue = value;
-                classFactory = () => {
-                    return symbolValue;
-                }
+                classFactory = this.createCustomFactory(key, () => value, singleton);
             }
 
         } else if (!isString(token) && !isSymbol(token)) {

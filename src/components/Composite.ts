@@ -4,7 +4,7 @@ import { NullComponent, NullNode } from './NullComponent';
 import { IComponent } from './IComponent';
 import { isString } from 'util';
 import { isFunction } from '../utils';
-import { equal } from 'assert';
+import { equal, fail } from 'assert';
 
 /**
  * compoiste.
@@ -78,7 +78,7 @@ export class Composite implements IComponent {
         let r;
         switch (mode) {
             case Mode.route:
-                r = this.route(express);
+                r = this.routeUp(express);
                 break;
             case Mode.children:
                 r = this.eachChildren(express);
@@ -86,6 +86,9 @@ export class Composite implements IComponent {
 
             case Mode.traverse:
                 r = this.trans(express);
+                break;
+            case Mode.traverseLast:
+                r = this.transAfter(express);
                 break;
             default:
                 r = this.trans(express);
@@ -107,12 +110,12 @@ export class Composite implements IComponent {
      *
      *@memberOf IComponent
      */
-    route(express: Express<IComponent, void | boolean>) {
+    routeUp(express: Express<IComponent, void | boolean>) {
         if (express(this) === false) {
             return false;
         };
-        if (this.parent && this.parent.route) {
-            return this.parent.route(express);
+        if (this.parent && this.parent.routeUp) {
+            return this.parent.routeUp(express);
         }
     }
     /**
@@ -126,9 +129,28 @@ export class Composite implements IComponent {
         if (express(this) === false) {
             return false;
         }
-        (this.children || []).forEach(item => {
-            return item.trans(express);
-        });
+        let children = this.children || [];
+        for (let i = 0; i < children.length; i++) {
+            let result = children[i].trans(express);
+            if (result === false) {
+                return result;
+            }
+        }
+        return true;
+    }
+
+    transAfter(express: Express<IComponent, void | boolean>) {
+        let children = this.children || []
+        for (let i = 0; i < children.length; i++) {
+            let result = children[i].transAfter(express);
+            if (result === false) {
+                return false;
+            }
+        }
+
+        if (express(this) === false) {
+            return false;
+        }
         return true;
     }
 

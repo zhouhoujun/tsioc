@@ -10,6 +10,7 @@ import { Mode, Express } from '../types';
  * @implements {IComponent}
  */
 export class NullComponent implements IComponent {
+
     isEmpty(): boolean {
         return true;
     }
@@ -28,12 +29,15 @@ export class NullComponent implements IComponent {
         return [];
     }
     each<T extends IComponent>(express: Express<T, boolean | void>, mode?: Mode) {
-
     }
+
     trans(express: Express<IComponent, boolean | void>) {
-
     }
-    route(express: Express<IComponent, boolean | void>) {
+
+    transAfter(express: Express<IComponent, boolean | void>) {
+    }
+
+    routeUp(express: Express<IComponent, boolean | void>) {
 
     }
 

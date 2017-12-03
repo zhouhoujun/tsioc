@@ -78,7 +78,7 @@ export interface IComponent {
     each<T extends IComponent>(express: Express<T, void | boolean>, mode?: Mode);
 
     /**
-     * trans all sub nodes.
+     * trans all sub nodes. node first iteration.
      *
      * @param {(Express<IComponent, void | boolean>)} express
      * @memberof IComponent
@@ -86,12 +86,20 @@ export interface IComponent {
     trans(express: Express<IComponent, void | boolean>);
 
     /**
-     * do express.
+     * trans all sub nodes. node last iteration.
      *
      * @param {(Express<IComponent, void | boolean>)} express
      * @memberof IComponent
      */
-    route(express: Express<IComponent, void | boolean>);
+    transAfter(express: Express<IComponent, void | boolean>);
+
+    /**
+     * route up iteration.
+     *
+     * @param {(Express<IComponent, void | boolean>)} express
+     * @memberof IComponent
+     */
+    routeUp(express: Express<IComponent, void | boolean>);
 
     /**
      * this component node equals to the node or not.
