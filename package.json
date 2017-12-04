@@ -16,12 +16,13 @@
   },
   "keywords": [
     "Ioc",
-    "AOP",
+    "type",
     "di",
     "Inject",
     "Container",
     "decorator",
     "autofac",
+    "AOP",
     "typescript"
   ],
   "author": "houjun",

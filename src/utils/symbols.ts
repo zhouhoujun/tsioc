@@ -12,8 +12,17 @@ export const IContainer = Symbol('IContainer');
  */
 export const IMethodAccessor = Symbol('IMethodAccessor');
 
+/**
+ * ContainerBuilder interface symbol.
+ * it is a symbol id, you can register yourself IContainerBuilder for this.
+ */
 export const IContainerBuilder = Symbol('IContainerBuilder');
 
+/**
+ * ActionBuilder interface symbol.
+ * it is a symbol id, you can register yourself IActionBuilder for this.
+ */
+export const IActionBuilder = Symbol('IActionBuilder');
 
 export const MethodDecoratorMap = Symbol('Autofac-MethodDecoratorMap');
 

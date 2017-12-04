@@ -6,7 +6,7 @@ import { Injectable } from './decorators/Injectable';
 import { Type, AbstractType } from './Type';
 import { ParameterMetadata, InjectableMetadata, PropertyMetadata, InjectMetadata, TypeMetadata, ClassMetadata, AutoWiredMetadata, MethodMetadata } from './metadatas';
 import { DecoratorType, Inject, AutoWired, Param, Singleton, Method } from './decorators';
-import { ActionComponent, ActionType, ActionBuilder, SetPropActionData, ProviderActionData, AspectActionData } from './actions';
+import { ActionComponent, ActionType, IActionBuilder, ActionBuilder, SetPropActionData, ProviderActionData, AspectActionData } from './actions';
 import { isClass, isFunction, symbols } from './utils';
 import { isSymbol, isString, isUndefined, isArray } from 'util';
 import { fail } from 'assert';
@@ -199,7 +199,7 @@ export class Container implements IContainer {
     }
 
     /**
-     * invoke method.
+     * invoke method async.
      *
      * @template T
      * @param {Type<any>} type
@@ -212,6 +212,17 @@ export class Container implements IContainer {
         return this.get<IMethodAccessor>(symbols.IMethodAccessor).invoke(type, propertyKey, instance, ...providers);
     }
 
+    /**
+     * invoke method.
+     *
+     * @template T
+     * @param {Type<any>} type
+     * @param {(string | symbol)} propertyKey
+     * @param {*} [instance]
+     * @param {...ParamProvider[]} providers
+     * @returns {T}
+     * @memberof Container
+     */
     syncInvoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: ParamProvider[]): T {
         return this.get<IMethodAccessor>(symbols.IMethodAccessor).syncInvoke(type, propertyKey, instance, ...providers);
     }
@@ -286,6 +297,7 @@ export class Container implements IContainer {
         this.paramDecoractors = new Map<string, ActionComponent>();
         this.propDecoractors = new Map<string, ActionComponent>();
 
+        this.registerSingleton(symbols.IActionBuilder, ActionBuilder);
         this.registerDefautDecorators();
         this.register(Date);
         this.register(String);
@@ -301,7 +313,7 @@ export class Container implements IContainer {
     }
 
     protected registerDefautDecorators() {
-        let builder = new ActionBuilder();
+        let builder = this.get<IActionBuilder>(symbols.IActionBuilder);
         this.registerDecorator<InjectableMetadata>(Injectable,
             builder.build(Injectable.toString(), this.getDecoratorType(Injectable),
                 ActionType.provider));

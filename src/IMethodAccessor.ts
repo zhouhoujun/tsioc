@@ -52,7 +52,7 @@ export interface AsyncParamProvider extends ParamProvider {
 export interface IMethodAccessor {
 
     /**
-     * try to invoke the method of intance,  if no instance will create by type.
+     * try to async invoke the method of intance,  if no instance will create by type.
      *
      * @template T
      * @param {Type<any>} type  type of object

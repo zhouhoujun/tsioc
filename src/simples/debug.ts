@@ -250,7 +250,7 @@ console.log(symbolIdest.room.leader.sayHi());
 
 
 builder.build({
-    files: __dirname + '/debug.js'
+    files: __dirname + '/debug.ts'
 })
     .then(container => {
         let instance = container.get(Student);

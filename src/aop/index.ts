@@ -2,7 +2,7 @@ import { IContainer } from '../IContainer';
 import { IActionBuilder, ActionType } from '../actions';
 
 export * from './decorators';
-
+export * from './AspectSet';
 
 import { Aspect } from './decorators';
 import { AspectSet } from './AspectSet';
