@@ -16,8 +16,21 @@ npm install tsioc
 
 # Documentation
 
-    Your project need config target at last `es6`.
-`tsconfig.json` "target":"es6",
+If you want use `ts-node` to run, need config `tsconfig.json` target gt than `es6`, eg.
+
+``` json
+{
+        "compilerOptions": {
+        "module": "commonjs",
+        "target": "es6",
+        "lib": ["dom", "es2015", "es2017"],
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "declaration": true,
+        ...
+    },
+}
+```
 
 ## Ioc
 
