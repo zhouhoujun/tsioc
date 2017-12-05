@@ -1,5 +1,4 @@
+import { AdviceMetadata } from '../metadatas/AdviceMetadata';
+import { IAdviceDecorator, createAdviceDecorator } from './Advice';
 
-import { MethodMetadata } from '../../metadatas';
-import { createMethodDecorator, IMethodDecorator } from '../../decorators';
-
-export const Around: IMethodDecorator<MethodMetadata> = createMethodDecorator<MethodMetadata>('Around');
+export const Around: IAdviceDecorator<AdviceMetadata> = createAdviceDecorator<AdviceMetadata>('Around');

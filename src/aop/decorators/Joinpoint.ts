@@ -1,5 +1,4 @@
+import { AdviceMetadata } from '../metadatas/AdviceMetadata';
+import { IAdviceDecorator, createAdviceDecorator } from './Advice';
 
-import { MethodMetadata } from '../../metadatas';
-import { createMethodDecorator, IMethodDecorator } from '../../decorators';
-
-export const Joinpoint: IMethodDecorator<MethodMetadata> = createMethodDecorator<MethodMetadata>('Joinpoint');
+export const Joinpoint: IAdviceDecorator<AdviceMetadata> = createAdviceDecorator<AdviceMetadata>('Joinpoint');

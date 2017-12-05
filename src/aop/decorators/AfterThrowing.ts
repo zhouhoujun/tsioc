@@ -1,9 +1,10 @@
+import { AdviceMetadata } from '../metadatas/AdviceMetadata';
+import { IAdviceDecorator, createAdviceDecorator } from './Advice';
 
-import { MethodMetadata } from '../../metadatas';
-import { createMethodDecorator, IMethodDecorator } from '../../decorators';
 
-export interface AfterThrowingMetadata extends  MethodMetadata {
+
+export interface AfterThrowingMetadata extends AdviceMetadata {
     throwing: string;
 }
 
-export const AfterThrowing: IMethodDecorator<MethodMetadata> = createMethodDecorator<MethodMetadata>('AfterThrowing');
+export const AfterThrowing: IAdviceDecorator<AdviceMetadata> = createAdviceDecorator<AdviceMetadata>('AfterThrowing');

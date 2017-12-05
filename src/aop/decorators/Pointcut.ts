@@ -1,5 +1,4 @@
+import { AdviceMetadata } from '../metadatas/AdviceMetadata';
+import { IAdviceDecorator, createAdviceDecorator } from './Advice';
 
-import { MethodMetadata } from '../../metadatas';
-import { createMethodDecorator, IMethodDecorator } from '../../decorators';
-
-export const Pointcut: IMethodDecorator<MethodMetadata> = createMethodDecorator<MethodMetadata>('Pointcut');
+export const Pointcut: IAdviceDecorator<AdviceMetadata> = createAdviceDecorator<AdviceMetadata>('Pointcut');

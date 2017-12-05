@@ -1,4 +1,5 @@
-import { AutoWired, Injectable, Param, Singleton, Registration, Inject } from '../src';
+import { AutoWired, Injectable, Param, Singleton, Registration, Inject, Aspect } from '../src';
+import { Around } from '../src/aop/decorators/Around';
 
 export class SimppleAutoWried {
     constructor() {
@@ -135,7 +136,7 @@ export class StingMClassRoom {
 }
 
 export class StringIdTest {
-    constructor(@Inject('StringClassRoom') public room: IClassRoom) {
+    constructor( @Inject('StringClassRoom') public room: IClassRoom) {
 
     }
 }
@@ -156,6 +157,15 @@ export class SymbolIdest {
     @Inject(CollClassRoom)
     public room: IClassRoom
     constructor() {
+
+    }
+}
+
+@Aspect
+export class AspectTest {
+
+    @Around('execution()')
+    public doLog() {
 
     }
 }
