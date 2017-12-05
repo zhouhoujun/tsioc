@@ -16,6 +16,9 @@ npm install tsioc
 
 # Documentation
 
+    Your project need config target at last `es6`.
+`tsconfig.json` "target":"es6",
+
 ## Ioc
 
 1. Register one class will auto register depdence class (must has a class decorator).
@@ -428,7 +431,7 @@ console.log(student3.sayHi());
 
 
 builder.build({
-    files: __dirname + '/debug.js'
+    files: __dirname + '/*{.ts,.js}'
 })
     .then(container => {
         let instance = container.get(Student);
