@@ -15,6 +15,9 @@ export function createAdviceDecorator<T extends AdviceMetadata>(name: string,
 
     return createMethodDecorator<AdviceMetadata>(name,
         args => {
+            if (adapter) {
+                adapter(args);
+            }
             args.next<AdviceMetadata>({
                 isMetadata: (arg) => isClassMetadata(arg, ['pointcut']),
                 match: (arg) => isString(arg),
@@ -22,5 +25,5 @@ export function createAdviceDecorator<T extends AdviceMetadata>(name: string,
                     metadata.pointcut = arg;
                 }
             });
-        }) as IAdviceDecorator<T>;
+        }, metadataExtends) as IAdviceDecorator<T>;
 }

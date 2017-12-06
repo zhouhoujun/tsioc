@@ -41,7 +41,7 @@ export function createMethodDecorator<T extends MethodMetadata>(
             adapter(args);
         }
 
-        args.next<MethodMetadata>({
+        args.next<T>({
             match: (arg) => isArray(arg),
             setMetadata: (metadata, arg) => {
                 metadata.providers = arg;

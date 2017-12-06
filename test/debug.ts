@@ -1,4 +1,4 @@
-import { AutoWired, Injectable, Param, Singleton, Registration, Inject, Aspect } from '../src';
+import { AutoWired, Injectable, Param, Singleton, Registration, Inject, Aspect, AfterReturning, AfterThrowing, Before, After } from '../src';
 import { Around } from '../src/aop/decorators/Around';
 
 export class SimppleAutoWried {
@@ -168,4 +168,25 @@ export class AspectTest {
     public doLog() {
 
     }
+
+    @Before('execution(**/model/*.dowork(...))')
+    beforCheck() {
+
+    }
+
+    @After('execution(**/model/*.dowork(...))')
+    afterCheck() {
+
+    }
+
+    @AfterReturning('xxx', 'execution(**/model/*.dowork(...))')
+    public returnCheck() {
+
+    }
+
+    @AfterThrowing('xxx', 'execution(**/model/*.dowork(...))')
+    public throwingCheck() {
+
+    }
+
 }
