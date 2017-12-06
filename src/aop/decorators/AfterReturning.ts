@@ -5,9 +5,9 @@ import { isString } from 'util';
 export interface IAfterReturningDecorator<T extends AfterReturningMetadata> extends IAdviceDecorator<T> {
     (returning?: string, pointcut?: string): MethodDecorator;
 }
-export const AfterThrowing: IAfterReturningDecorator<AfterReturningMetadata> =
+export const AfterReturning: IAfterReturningDecorator<AfterReturningMetadata> =
     createAdviceDecorator<AfterReturningMetadata>(
-        'AfterThrowing',
+        'AfterReturning',
         args => {
             args.next<AfterReturningMetadata>({
                 match: (arg) => isString(arg),
@@ -17,5 +17,3 @@ export const AfterThrowing: IAfterReturningDecorator<AfterReturningMetadata> =
             })
         }
     );
-
-export const AfterReturning: IAfterReturningDecorator<AfterReturningMetadata> = createAdviceDecorator<AfterReturningMetadata>('AfterReturning');
