@@ -1,4 +1,4 @@
-import { SymbolType } from '../types';
+import { SymbolType } from '../../types';
 import { TypeMetadata } from './TypeMetadata';
 
 /**

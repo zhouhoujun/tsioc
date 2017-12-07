@@ -1,6 +1,6 @@
 import { Metadate } from './Metadate';
-import { SymbolType } from '../types';
-import { Type } from '../Type';
+import { SymbolType } from '../../types';
+import { Type } from '../../Type';
 import { ProviderMetadata } from '../index';
 import { ProvideMetadata } from './index';
 

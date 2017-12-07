@@ -1,5 +1,5 @@
 import { TypeMetadata } from './TypeMetadata';
-import { SymbolType } from '../types';
+import { SymbolType } from '../../types';
 import { ProviderMetadata } from './ProviderMetadata';
 
 
