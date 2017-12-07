@@ -1,9 +1,7 @@
 import { Type } from '../../Type';
-import { createClassDecorator, IClassDecorator } from '../../decorators';
 import { Token } from '../../types';
-import { ClassMetadata } from '../../metadatas';
-import { isClass } from '../../index';
-
+import { isClass } from '../../utils';
+import { createClassDecorator, IClassDecorator, ClassMetadata } from '../../core';
 
 
 /**

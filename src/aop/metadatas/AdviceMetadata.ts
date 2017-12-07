@@ -1,4 +1,4 @@
-import { MethodMetadata } from '../../metadatas/index';
+import { MethodMetadata } from '../../core';
 
 export interface AdviceMetadata extends MethodMetadata {
     /**

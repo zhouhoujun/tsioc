@@ -1,4 +1,4 @@
-import {  MethodPropMetadata } from '../../metadatas';
+import {  MethodPropMetadata } from '../../core';
 
 
 export interface PointcutMetadata extends MethodPropMetadata {

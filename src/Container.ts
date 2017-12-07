@@ -2,18 +2,14 @@ import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { Token, Factory, ObjectMap, SymbolType, ToInstance } from './types';
 import { Registration } from './Registration';
-import { Injectable } from './decorators/Injectable';
 import { Type, AbstractType } from './Type';
-import { ParameterMetadata, InjectableMetadata, PropertyMetadata, InjectMetadata, TypeMetadata, ClassMetadata, AutoWiredMetadata, MethodMetadata } from './metadatas';
-import { DecoratorType, Inject, AutoWired, Param, Singleton, Method } from './decorators';
-import { ActionComponent, ActionType, IActionBuilder, ActionBuilder, SetPropActionData, ProviderActionData, AspectActionData } from './actions';
 import { isClass, isFunction, symbols } from './utils';
 import { isSymbol, isString, isUndefined, isArray } from 'util';
-import { fail } from 'assert';
-import { registerAspect } from './aop';
+import { registerAops, AopActions, RegistAspectActionData } from './aop';
 import { MethodAccessor } from './MethodAccessor';
 import { IMethodAccessor } from './IMethodAccessor';
 import { ParamProvider, AsyncParamProvider } from './ParamProvider';
+import { ActionComponent, DecoratorType, registerCores, CoreActions, TypeMetadata, BindProviderActionData, ClassMetadata, Singleton, PropertyMetadata, BindPropertyTypeActionData, getMethodMetadata, getPropertyMetadata, BindPropertyActionData } from './core';
 
 
 export const NOT_FOUND = new Object();
@@ -175,10 +171,10 @@ export class Container implements IContainer {
      *
      * @template T
      * @param {Function} decirator
-     * @param {ActionComponent<T>} actions
+     * @param {ActionComponent} actions
      * @memberof Container
      */
-    registerDecorator<T>(decirator: Function, actions: ActionComponent) {
+    registerDecorator(decirator: Function, actions: ActionComponent) {
         if (!actions.decorType) {
             actions.decorType = this.getDecoratorType(decirator);
         }
@@ -298,13 +294,9 @@ export class Container implements IContainer {
         this.paramDecoractors = new Map<string, ActionComponent>();
         this.propDecoractors = new Map<string, ActionComponent>();
 
-        this.registerSingleton(symbols.IActionBuilder, ActionBuilder);
-        this.registerDefautDecorators();
-        this.register(Date);
-        this.register(String);
-        this.register(Number);
-        this.register(Boolean);
-        this.register(Object);
+        registerCores(this);
+        registerAops(this);
+
         this.register(MethodAccessor);
         this.bindProvider(symbols.IContainer, () => this);
         this.bindProvider(symbols.ClassDecoratorMap, () => this.classDecoractors);
@@ -312,35 +304,6 @@ export class Container implements IContainer {
         this.bindProvider(symbols.ParameterDecoratorMap, () => this.paramDecoractors);
         this.bindProvider(symbols.PropertyDecoratorMap, () => this.propDecoractors);
     }
-
-    protected registerDefautDecorators() {
-        let builder = this.get<IActionBuilder>(symbols.IActionBuilder);
-        this.registerDecorator<InjectableMetadata>(Injectable,
-            builder.build(Injectable.toString(), this.getDecoratorType(Injectable),
-                ActionType.bindProvider));
-
-        this.registerDecorator<AutoWiredMetadata>(AutoWired,
-            builder.build(AutoWired.toString(), this.getDecoratorType(AutoWired),
-                ActionType.bindParameterType, ActionType.bindPropertyType));
-
-        this.registerDecorator<InjectMetadata>(Inject,
-            builder.build(Inject.toString(), this.getDecoratorType(Inject),
-                ActionType.bindParameterType, ActionType.bindPropertyType));
-
-        this.registerDecorator<ClassMetadata>(Singleton,
-            builder.build(Singleton.toString(), this.getDecoratorType(Singleton), ActionType.bindProvider));
-
-        this.registerDecorator<ParameterMetadata>(Param,
-            builder.build(Param.toString(), this.getDecoratorType(Param),
-                ActionType.bindParameterType));
-
-        this.registerDecorator<MethodMetadata>(Method,
-            builder.build(Method.toString(), this.getDecoratorType(Method),
-                ActionType.bindParameterProviders));
-
-        registerAspect(this, builder);
-    }
-
 
     protected registerFactory<T>(token: Token<T>, value?: Factory<T>, singleton?: boolean) {
         let key = this.getTokenKey(token);
@@ -395,7 +358,7 @@ export class Container implements IContainer {
             return null;
         }
         let parameters = this.getParameterMetadata(ClassT);
-        let props = this.getPropMetadata(ClassT);
+        // let props = this.getPropMetadata(ClassT);
         if (!singleton) {
             singleton = this.isSingletonType<T>(ClassT);
         }
@@ -407,26 +370,63 @@ export class Container implements IContainer {
 
             let paramInstances = parameters.map((type, index) => this.get(type));
             let instance = new ClassT(...paramInstances);
+
+            let propTypeData = {
+                props: []
+            } as BindPropertyTypeActionData;
+            this.propDecoractors.forEach((act, key) => {
+                let metadata = getPropertyMetadata(key, ClassT);
+
+                propTypeData.propMetadata = metadata;
+                act.execute(this, propTypeData, CoreActions.bindPropertyType)
+
+                act.execute(this, {
+                    propMetadata: metadata,
+                    instance: instance,
+                    instanceType: ClassT
+                }, AopActions.bindPropertyPointcut)
+
+            });
+
             if (instance) {
-                props.forEach((prop, idx) => {
+                propTypeData.props.forEach((prop, idx) => {
                     instance[prop.propertyKey] = prop.provider ?
                         this.get(prop.provider, prop.alias) : this.get(prop.type);
-                });
+                })
             }
+
+            // need it?
+            // this.propDecoractors.forEach((act, key) => {
+            //     let metadata = getPropertyMetadata(key, ClassT);
+            //     act.execute(this, <BindPropertyActionData>{
+            //         methodMetadata: metadata,
+            //         instance: instance,
+            //         props: [],
+            //         instanceType: ClassT
+            //     }, CoreActions.bindProperty);
+            // });
 
             // execute class instance action.
             this.classDecoractors.forEach((act, key) => {
                 act.execute(this, {
                     metadata: Reflect.getMetadata(key, ClassT),
                     instance: instance
-                }, ActionType.bindInstance);
+                }, CoreActions.bindInstance);
             });
 
             this.methodDecoractors.forEach((act, key) => {
+                let metadata = getMethodMetadata(key, ClassT);
                 act.execute(this, {
-                    methodMetadata: Reflect.getMetadata(key, ClassT),
-                    instance: instance
-                }, ActionType.bindMethod);
+                    methodMetadata: metadata,
+                    instance: instance,
+                    instanceType: ClassT
+                }, CoreActions.bindMethod);
+
+                act.execute(this, {
+                    methodMetadata: metadata,
+                    instance: instance,
+                    instanceType: ClassT
+                }, AopActions.bindMethodPointcut)
             });
 
             if (singleton) {
@@ -439,11 +439,11 @@ export class Container implements IContainer {
             let metadata: TypeMetadata[] = Reflect.getMetadata(decorator, ClassT) as TypeMetadata[];
             action.execute(this, {
                 metadata: metadata
-            } as ProviderActionData, ActionType.bindProvider);
+            } as BindProviderActionData, CoreActions.bindProvider);
 
             action.execute(this, {
                 metadata: metadata
-            } as AspectActionData, ActionType.aspect);
+            } as RegistAspectActionData, AopActions.registAspect);
         });
 
 
@@ -493,27 +493,27 @@ export class Container implements IContainer {
                 v.execute(this, {
                     designMetadata: designParams,
                     paramMetadata: parameters
-                }, ActionType.bindParameterType);
+                }, CoreActions.bindParameterType);
             });
         }
         return designParams;
     }
 
-    protected getPropMetadata<T>(type: Type<T>): PropertyMetadata[] {
+    // protected getPropMetadata<T>(type: Type<T>): PropertyMetadata[] {
 
-        let restPropData = {
-            props: []
-        } as SetPropActionData;
+    //     let restPropData = {
+    //         props: []
+    //     } as BindPropertyTypeActionData;
 
-        this.propDecoractors.forEach((val, name) => {
-            let prop = Reflect.getMetadata(name, type) || {} as ObjectMap<PropertyMetadata[]>;
-            restPropData.propMetadata = prop;
-            val.execute(this, restPropData, ActionType.bindPropertyType)
-        });
+    //     this.propDecoractors.forEach((val, name) => {
+    //         let prop = getPropertyMetadata(name, type);
+    //         restPropData.propMetadata = prop;
+    //         val.execute(this, restPropData, CoreActions.bindPropertyType)
+    //     });
 
 
-        return restPropData.props;
-    }
+    //     return restPropData.props;
+    // }
 }
 
 

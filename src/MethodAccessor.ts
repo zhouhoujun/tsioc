@@ -3,13 +3,11 @@ import { ParamProvider, AsyncParamProvider } from './ParamProvider';
 import { IMethodAccessor } from './IMethodAccessor';
 import { Type } from './Type';
 import { isFunction, isUndefined } from 'util';
-import { Singleton, Inject } from './decorators/index';
+import { Singleton, Inject, MethodMetadata, BindParameterProviderActionData, ActionComponent, CoreActions } from './core';
 import { symbols } from './utils';
 import { isToken, Token } from './index';
 import { Container } from './Container';
 import { IContainerBuilder } from './IContainerBuilder';
-import { MethodMetadata } from './metadatas/index';
-import { AccessMethodData, ActionType, ActionComponent } from './actions/index';
 
 @Singleton(symbols.IMethodAccessor)
 export class MethodAccessor implements IMethodAccessor {
@@ -26,10 +24,10 @@ export class MethodAccessor implements IMethodAccessor {
             let accessorData = {
                 propertyKey: propertyKey,
                 providers: []
-            } as AccessMethodData;
+            } as BindParameterProviderActionData;
             this.container.get<Map<string, ActionComponent>>(symbols.MethodDecoratorMap).forEach((act, key) => {
                 accessorData.methodMetadata = Reflect.getMetadata(key, type);
-                act.execute(this.container, accessorData, ActionType.bindMethod);
+                act.execute(this.container, accessorData, CoreActions.bindMethod);
             });
 
             providers = providers.concat(accessorData.providers as AsyncParamProvider[]);
@@ -76,10 +74,10 @@ export class MethodAccessor implements IMethodAccessor {
             let accessorData = {
                 propertyKey: propertyKey,
                 providers: []
-            } as AccessMethodData;
+            } as BindParameterProviderActionData;
             this.container.get<Map<string, ActionComponent>>(symbols.MethodDecoratorMap).forEach((act, key) => {
                 accessorData.methodMetadata = Reflect.getMetadata(key, type);
-                act.execute(this.container, accessorData, ActionType.bindParameterProviders);
+                act.execute(this.container, accessorData, CoreActions.bindParameterProviders);
             });
 
             providers = providers.concat(accessorData.providers);

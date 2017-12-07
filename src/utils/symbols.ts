@@ -19,10 +19,16 @@ export const IMethodAccessor = Symbol('IMethodAccessor');
 export const IContainerBuilder = Symbol('IContainerBuilder');
 
 /**
- * ActionBuilder interface symbol.
+ * Core ActionBuilder interface symbol.
  * it is a symbol id, you can register yourself IActionBuilder for this.
  */
-export const IActionBuilder = Symbol('IActionBuilder');
+export const ICoreActionBuilder = Symbol('ICoreActionBuilder');
+
+/**
+ * Aop ActionBuilder interface symbol.
+ * it is a symbol id, you can register yourself IActionBuilder for this.
+ */
+export const IAopActionBuilder = Symbol('IAopActionBuilder');
 
 export const MethodDecoratorMap = Symbol('Autofac-MethodDecoratorMap');
 

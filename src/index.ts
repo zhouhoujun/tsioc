@@ -6,13 +6,11 @@ export * from './types';
 export * from './Registration';
 export * from './IContainerBuilder';
 export * from './ContainerBuilder';
-export * from './metadatas';
-export * from './decorators';
-export * from './components';
-export * from './actions';
-export * from './aop';
-
 export * from './ParamProvider';
 export * from './IMethodAccessor';
 export * from './MethodAccessor';
+
+export * from './components';
+export * from './core';
+export * from './aop';
 

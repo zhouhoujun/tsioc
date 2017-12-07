@@ -1,7 +1,6 @@
 import { Token, Factory, SymbolType } from './types';
-import { ActionComponent } from './actions';
+import { ActionComponent, DecoratorType } from './core';
 import { Type } from './Type';
-import { DecoratorType } from './decorators';
 import { IMethodAccessor } from './IMethodAccessor';
 
 

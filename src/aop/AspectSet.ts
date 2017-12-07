@@ -1,7 +1,7 @@
-import { Singleton, Inject } from '../decorators/index';
+import { Singleton, Inject } from '../core';
 import { IContainer } from '../IContainer';
 import { symbols } from '../utils';
-import { Token } from '../index';
+import { Token } from '../types';
 import { Type } from '../Type';
 
 /**
