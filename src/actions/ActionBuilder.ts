@@ -24,19 +24,19 @@ export class ActionBuilder implements IActionBuilder {
     protected createAction(type: ActionType): ActionComponent {
         let action: ActionComponent;
         switch (type) {
-            case ActionType.setParamType:
+            case ActionType.bindParameterType:
                 action = new SetParamAction();
                 break;
 
-            case ActionType.setPropType:
+            case ActionType.bindPropertyType:
                 action = new SetPropAction();
                 break;
 
-            case ActionType.provider:
+            case ActionType.bindProvider:
                 action = new ProviderAction();
                 break;
 
-            case ActionType.accessMethod:
+            case ActionType.bindParameterProviders:
                 action = new AccessMethodAction();
                 break;
 

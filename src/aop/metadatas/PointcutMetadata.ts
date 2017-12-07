@@ -1,6 +1,6 @@
-import { TypeMetadata } from '../../metadatas';
+import {  MethodPropMetadata } from '../../metadatas';
 
 
-export interface PointcutMetadata extends TypeMetadata {
+export interface PointcutMetadata extends MethodPropMetadata {
 
 }

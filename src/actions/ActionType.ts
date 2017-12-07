@@ -8,16 +8,16 @@ export enum ActionType {
     /**
      * set param type form metadata.
      */
-    setParamType = 'setParamType',
+    bindParameterType = 'bindParameterType',
     /**
      * set Property type from metadata.
      */
-    setPropType = 'setPropType',
+    bindPropertyType = 'bindPropertyType',
 
     /**
      * class provider bind action.
      */
-    provider = 'provider',
+    bindProvider = 'bindProvider',
     /**
      * Aspect
      */
@@ -26,7 +26,7 @@ export enum ActionType {
     /**
      * access method.
      */
-    accessMethod = 'accessMethod',
+    bindParameterProviders = 'bindParameterProviders',
 
     /**
      * bind instance, for custom extensions.

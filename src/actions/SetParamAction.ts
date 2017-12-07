@@ -8,7 +8,7 @@ import { IContainer } from '../IContainer';
 export class SetParamAction extends ActionComposite {
 
     constructor(decorName?: string, decorType?: DecoratorType) {
-        super(ActionType.setParamType.toString(), decorName, decorType)
+        super(ActionType.bindParameterType.toString(), decorName, decorType)
     }
 
     protected working(container: IContainer, data: ActionData<ParameterMetadata>) {

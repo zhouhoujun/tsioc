@@ -8,6 +8,8 @@ export * from './ParamDecoratorFactory';
 export * from './PropertyDecoratorFactory';
 export * from './ParamPropDecoratorFactory';
 export * from './ClassMethodDecoratorFactory';
+export * from './MethodPropDecoratorFactory';
+export * from './MethodPropParamDecoratorFactory';
 
 export * from './Injectable';
 export * from './Inject';

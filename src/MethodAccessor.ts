@@ -1,5 +1,6 @@
 import { IContainer } from './IContainer';
-import { IMethodAccessor, ParamProvider, AsyncParamProvider } from './IMethodAccessor';
+import { ParamProvider, AsyncParamProvider } from './ParamProvider';
+import { IMethodAccessor } from './IMethodAccessor';
 import { Type } from './Type';
 import { isFunction, isUndefined } from 'util';
 import { Singleton, Inject } from './decorators/index';
@@ -78,7 +79,7 @@ export class MethodAccessor implements IMethodAccessor {
             } as AccessMethodData;
             this.container.get<Map<string, ActionComponent>>(symbols.MethodDecoratorMap).forEach((act, key) => {
                 accessorData.methodMetadata = Reflect.getMetadata(key, type);
-                act.execute(this.container, accessorData, ActionType.bindMethod);
+                act.execute(this.container, accessorData, ActionType.bindParameterProviders);
             });
 
             providers = providers.concat(accessorData.providers);

@@ -20,7 +20,7 @@ export interface SetPropActionData extends ActionData<PropertyMetadata> {
 export class SetPropAction extends ActionComposite {
 
     constructor(decorName?: string, decorType?: DecoratorType) {
-        super(ActionType.setPropType.toString(), decorName, decorType)
+        super(ActionType.bindPropertyType.toString(), decorName, decorType)
     }
 
     protected working(container: IContainer, data: SetPropActionData) {

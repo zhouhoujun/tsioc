@@ -10,14 +10,6 @@ import { IContainer } from '../IContainer';
  * @template T
  */
 export interface ActionData<T> {
-
-    /**
-     * the container.
-     *
-     * @type {IContainer}
-     * @memberof ActionData
-     */
-    container?: IContainer;
     /**
      * design metadata.
      *

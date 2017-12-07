@@ -12,7 +12,7 @@ export interface ProviderActionData extends ActionData<ProviderMetadata> {
 export class ProviderAction extends ActionComposite {
 
     constructor(decorName?: string, decorType?: DecoratorType) {
-        super(ActionType.provider.toString(), decorName, decorType)
+        super(ActionType.bindProvider.toString(), decorName, decorType)
     }
 
     protected working(container: IContainer, data: ProviderActionData) {

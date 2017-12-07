@@ -11,3 +11,4 @@ export * from './AutoWiredMetadata';
 export * from './InjectMetadata';
 export * from './InjectableMetadata';
 export * from './ClassMetadata';
+export * from './MethodPropMetadata';

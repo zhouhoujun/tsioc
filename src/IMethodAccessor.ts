@@ -1,47 +1,8 @@
 import { Type } from './Type';
 import { Token } from './index';
 import { IContainer } from './IContainer';
+import { ParamProvider, AsyncParamProvider } from './ParamProvider';
 
-/**
- * param provider.
- *
- * @export
- * @interface ParamProvider
- */
-export interface ParamProvider {
-    /**
-     * param value provider is value or value factory.
-     *
-     * @memberof ParamProvider
-     */
-    value?: any | ((container?: IContainer) => any)
-    /**
-     * param value is instance of type.
-     *
-     * @type {Token<any>}
-     * @memberof ParamProvider
-     */
-    type?: Token<any>;
-    /**
-     * param value is the result of type instance invoke the method return value.
-     *
-     * @type {string}
-     * @memberof ParamProvider
-     */
-    method?: string;
-    /**
-     * param index.
-     *
-     * @type {number}
-     * @memberof ParamProvider
-     */
-    index: number;
-}
-
-export interface AsyncParamProvider extends ParamProvider {
-    files?: string | string[];
-    execution?: string;
-}
 
 /**
  * execution, invoke some type method

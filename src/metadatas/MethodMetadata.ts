@@ -1,5 +1,5 @@
 import { Metadate } from './Metadate';
-import { ParamProvider } from '../IMethodAccessor';
+import { ParamProvider } from '../ParamProvider';
 
 /**
  * method metadata

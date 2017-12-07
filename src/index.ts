@@ -12,6 +12,7 @@ export * from './components';
 export * from './actions';
 export * from './aop';
 
+export * from './ParamProvider';
 export * from './IMethodAccessor';
 export * from './MethodAccessor';
 

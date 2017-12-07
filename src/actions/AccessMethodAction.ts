@@ -4,7 +4,7 @@ import { ActionType } from './ActionType';
 import { DecoratorType, Param } from '../decorators';
 import { MethodMetadata } from '../metadatas/index';
 import { IContainer } from '../IContainer';
-import { ParamProvider } from '../IMethodAccessor';
+import { ParamProvider } from '../ParamProvider';
 import { isArray } from 'util';
 
 export interface AccessMethodData extends ActionData<MethodMetadata> {
@@ -21,7 +21,7 @@ export interface AccessMethodData extends ActionData<MethodMetadata> {
 export class AccessMethodAction extends ActionComposite {
 
     constructor(decorName?: string, decorType?: DecoratorType) {
-        super(ActionType.setParamType.toString(), decorName, decorType)
+        super(ActionType.bindParameterType.toString(), decorName, decorType)
     }
 
     protected working(container: IContainer, data: AccessMethodData) {

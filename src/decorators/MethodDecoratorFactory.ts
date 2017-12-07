@@ -5,7 +5,7 @@ import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFa
 import { DecoratorType } from './DecoratorType';
 import { ArgsIterator } from './index';
 import { isArray } from 'util';
-import { ParamProvider } from '../IMethodAccessor';
+import { ParamProvider } from '../ParamProvider';
 
 
 /**
