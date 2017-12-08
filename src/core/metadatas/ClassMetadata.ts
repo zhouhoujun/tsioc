@@ -2,12 +2,25 @@ import { ProviderMetadata } from './ProviderMetadata';
 
 
 /**
- * Singleton. default a
+ * class metadata.
  *
  * @export
- * @interface SingletonMetadata
+ * @interface ClassMetadata
  */
 export interface ClassMetadata extends ProviderMetadata {
+    /**
+     * is singleton or not.
+     *
+     * @type {boolean}
+     * @memberof ClassMetadata
+     */
     singleton?: boolean;
+    /**
+     * class package name.
+     *
+     * @type {string}
+     * @memberof ClassMetadata
+     */
+    package?: string;
 }
 

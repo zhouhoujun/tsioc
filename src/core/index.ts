@@ -9,6 +9,12 @@ export * from './decorators';
 export * from './metadatas';
 export * from './factories';
 
+/**
+ * register core for container.
+ *
+ * @export
+ * @param {IContainer} container
+ */
 export function registerCores(container: IContainer) {
     container.registerSingleton(symbols.ICoreActionBuilder, CoreActionBuilder);
 

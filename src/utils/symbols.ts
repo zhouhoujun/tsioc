@@ -30,6 +30,12 @@ export const ICoreActionBuilder = Symbol('ICoreActionBuilder');
  */
 export const IAopActionBuilder = Symbol('IAopActionBuilder');
 
+/**
+ * Aop advice matcher interface symbol.
+ * it is a symbol id, you can register yourself IActionBuilder for this.
+ */
+export const IAdviceMatcher = Symbol('IAdviceMatcher');
+
 export const MethodDecoratorMap = Symbol('Autofac-MethodDecoratorMap');
 
 

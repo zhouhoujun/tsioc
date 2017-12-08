@@ -5,6 +5,6 @@ export * from './AfterReturning';
 export * from './AfterThrowing';
 export * from './Around';
 export * from './Before';
-export * from './Joinpoint';
-export * from  './Pointcut';
+// export * from './Joinpoint';
+// export * from  './Pointcut';
 

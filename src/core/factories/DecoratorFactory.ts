@@ -111,6 +111,7 @@ function storeMetadata<T>(name: string, metaName: string, args: any[], metadata?
     switch (args.length) {
         case 1:
             target = args[0];
+            // console.log('package:', target.name);
             setTypeMetadata(name, metaName, target, metadata, metadataExtends);
             return target;
         case 2:

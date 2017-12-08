@@ -25,12 +25,12 @@ export class BindPropertyAction extends BindPropertyTypeAction {
     protected working(container: IContainer, data: BindPropertyTypeActionData) {
         super.working(container, data);
 
-        if (data.instance && data.props && data.props.length) {
+        if (data.target && data.props && data.props.length) {
             data.props.forEach((prop, idx) => {
                 if (prop) {
                     let token = prop.provider ? container.getToken(prop.provider, prop.alias) : prop.type;
                     if (container.has(token)) {
-                        data.instance[prop.propertyKey] = container.get(token);
+                        data.target[prop.propertyKey] = container.get(token);
                     }
                 }
             });

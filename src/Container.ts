@@ -5,7 +5,7 @@ import { Registration } from './Registration';
 import { Type, AbstractType } from './Type';
 import { isClass, isFunction, symbols } from './utils';
 import { isSymbol, isString, isUndefined, isArray } from 'util';
-import { registerAops, AopActions, RegistAspectActionData } from './aop';
+import { registerAops, AopActions, RegistAspectActionData, BeforeConstructorActionData } from './aop';
 import { MethodAccessor } from './MethodAccessor';
 import { IMethodAccessor } from './IMethodAccessor';
 import { ParamProvider, AsyncParamProvider } from './ParamProvider';
@@ -357,8 +357,8 @@ export class Container implements IContainer {
         if (!Reflect.isExtensible(ClassT)) {
             return null;
         }
+
         let parameters = this.getParameterMetadata(ClassT);
-        // let props = this.getPropMetadata(ClassT);
         if (!singleton) {
             singleton = this.isSingletonType<T>(ClassT);
         }
@@ -369,7 +369,26 @@ export class Container implements IContainer {
             }
 
             let paramInstances = parameters.map((type, index) => this.get(type));
+            this.methodDecoractors.forEach((act, key) => {
+                let metadata = getMethodMetadata(key, ClassT);
+                act.execute(this, <BeforeConstructorActionData>{
+                    methodMetadata: metadata,
+                    params: paramInstances,
+                    paramTypes: parameters,
+                    targetType: ClassT
+                }, AopActions.beforeConstructor);
+            });
+
             let instance = new ClassT(...paramInstances);
+
+            this.methodDecoractors.forEach((act, key) => {
+                let metadata = getMethodMetadata(key, ClassT);
+                act.execute(this, {
+                    methodMetadata: metadata,
+                    target: instance,
+                    targetType: ClassT
+                }, AopActions.afterConstructor);
+            });
 
             let propTypeData = {
                 props: []
@@ -382,8 +401,8 @@ export class Container implements IContainer {
 
                 act.execute(this, {
                     propMetadata: metadata,
-                    instance: instance,
-                    instanceType: ClassT
+                    target: instance,
+                    targetType: ClassT
                 }, AopActions.bindPropertyPointcut)
 
             });
@@ -410,7 +429,7 @@ export class Container implements IContainer {
             this.classDecoractors.forEach((act, key) => {
                 act.execute(this, {
                     metadata: Reflect.getMetadata(key, ClassT),
-                    instance: instance
+                    target: instance
                 }, CoreActions.bindInstance);
             });
 
@@ -418,14 +437,14 @@ export class Container implements IContainer {
                 let metadata = getMethodMetadata(key, ClassT);
                 act.execute(this, {
                     methodMetadata: metadata,
-                    instance: instance,
-                    instanceType: ClassT
+                    target: instance,
+                    targetType: ClassT
                 }, CoreActions.bindMethod);
 
                 act.execute(this, {
                     methodMetadata: metadata,
-                    instance: instance,
-                    instanceType: ClassT
+                    target: instance,
+                    targetType: ClassT
                 }, AopActions.bindMethodPointcut)
             });
 
@@ -499,21 +518,6 @@ export class Container implements IContainer {
         return designParams;
     }
 
-    // protected getPropMetadata<T>(type: Type<T>): PropertyMetadata[] {
-
-    //     let restPropData = {
-    //         props: []
-    //     } as BindPropertyTypeActionData;
-
-    //     this.propDecoractors.forEach((val, name) => {
-    //         let prop = getPropertyMetadata(name, type);
-    //         restPropData.propMetadata = prop;
-    //         val.execute(this, restPropData, CoreActions.bindPropertyType)
-    //     });
-
-
-    //     return restPropData.props;
-    // }
 }
 
 

@@ -3,6 +3,7 @@ import { Token } from '../types';
 import { isString } from 'util';
 import { isSymbol } from 'lodash';
 import { Registration } from '../Registration';
+import { Promise } from 'q';
 
 
 /**
@@ -57,6 +58,23 @@ export function isToken(target: any): target is Token<any> {
     }
     if (isString(target) || isSymbol(target) || isClass(target) || target instanceof Registration) {
         return true
+    }
+    return false;
+}
+
+/**
+ * is target promise or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is Promise<any>} 
+ */
+export function isPromise(target: any): target is Promise<any> {
+    if (!target) {
+        return false;
+    }
+    if (isFunction(target.then) && isFunction(target.catch)) {
+        return true;
     }
     return false;
 }

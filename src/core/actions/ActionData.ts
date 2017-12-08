@@ -49,19 +49,19 @@ export interface ActionData<T> {
      */
     paramMetadata?: T[][];
     /**
-     * instance.
+     * target instance.
      *
      * @type {*}
      * @memberof ActionData
      */
-    instance?: any;
+    target?: any;
 
     /**
-     * instance type.
+     * target type.
      *
      * @type {Type<any>}
      * @memberof ActionData
      */
-    instanceType?: Type<any>;
+    targetType?: Type<any>;
 }
 
