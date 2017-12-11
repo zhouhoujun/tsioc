@@ -46,6 +46,17 @@ export interface Express<T, TResult> {
 }
 
 /**
+ * State of type in ioc.
+ *
+ * @export
+ * @enum {number}
+ */
+export enum IocState {
+    design = 'design',
+    runtime = 'runtime'
+}
+
+/**
  * iterate way.
  *
  * @export

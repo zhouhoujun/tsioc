@@ -161,32 +161,32 @@ export class SymbolIdest {
     }
 }
 
-@Aspect
-export class AspectTest {
+// @Aspect
+// export class AspectTest {
 
-    @Around('execution()')
-    public doLog() {
+//     @Around('execution()')
+//     public doLog() {
 
-    }
+//     }
 
-    @Before('execution(**/model/*.dowork(...))')
-    beforCheck() {
+//     @Before('execution(**/model/*.dowork(...))')
+//     beforCheck() {
 
-    }
+//     }
 
-    @After('execution(**/model/*.dowork(...))')
-    afterCheck() {
+//     @After('execution(**/model/*.dowork(...))')
+//     afterCheck() {
 
-    }
+//     }
 
-    @AfterReturning('xxx', 'execution(**/model/*.dowork(...))')
-    public returnCheck() {
+//     @AfterReturning('xxx', 'execution(**/model/*.dowork(...))')
+//     public returnCheck() {
 
-    }
+//     }
 
-    @AfterThrowing('xxx', 'execution(**/model/*.dowork(...))')
-    public throwingCheck() {
+//     @AfterThrowing('xxx', 'execution(**/model/*.dowork(...))')
+//     public throwingCheck() {
 
-    }
+//     }
 
-}
+// }

@@ -1,11 +1,12 @@
 import { Type } from '../../Type';
 import { DecoratorType } from '../factories';
 import { ObjectMap, Token, Express, Mode } from '../../types';
-import { ActionData } from './ActionData';
+import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
 import { Metadate } from '../metadatas';
 import { IContainer } from '../../IContainer';
 import { IComponent } from '../../components';
+import { IExecutable } from '../IExecutable';
 
 
 
@@ -16,32 +17,15 @@ import { IComponent } from '../../components';
  * @interface ActionComponent
  * @extends {IComponent}
  */
-export interface ActionComponent extends IComponent {
+export interface ActionComponent extends IComponent, IExecutable {
 
     /**
-     * decorator name.
+     * insert ActionComponent
      *
-     * @type {string}
+     * @param {IComponent} node
+     * @returns {IComponent}
      * @memberof ActionComponent
      */
-    decorName: string;
-    /**
-     * decorator type.
-     *
-     * @type {DecoratorType}
-     * @memberof ActionComponent
-     */
-    decorType: DecoratorType;
-
-    /**
-     * execute the action work.
-     *
-     * @template T
-     * @param { IContainer } container
-     * @param {ActionData<T>} data execute data;
-     * @param {(string|CoreActions)} [name] execute action name.
-     * @memberof ActionComponent
-     */
-    execute<T extends Metadate>(container: IContainer, data: ActionData<T>, name?: string | CoreActions);
+    insert(node: ActionComponent, index: number): ActionComponent;
 
 }

@@ -10,6 +10,9 @@ export * from './ParamProvider';
 export * from './IMethodAccessor';
 export * from './MethodAccessor';
 
+export * from './LifeScope';
+export * from './TypeFactory';
+
 export * from './components';
 export * from './core';
 export * from './aop';

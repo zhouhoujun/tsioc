@@ -7,7 +7,7 @@ import { symbols } from '../utils';
 import { Pointcut } from './Pointcut';
 import { ObjectMap } from '../types';
 import { MatchPointcut } from './MatchPointcut';
-
+import { Minimatch } from 'minimatch';
 
 @Singleton(symbols.IAdviceMatcher)
 export class AdviceMatcher implements IAdviceMatcher {
@@ -19,18 +19,27 @@ export class AdviceMatcher implements IAdviceMatcher {
     match(adviceMaps: ObjectMap<AdviceMetadata[]>, type: Type<any>, instance?: any): MatchPointcut[] {
 
         let className = type.name;
-        let points = instance ? Object.keys(instance).map(n => {
-            return {
-                name: n,
-                fullName: `${className}.${n}`
-            } as Pointcut;
-        }) : [
-                <Pointcut>{
-                    name: 'constructor',
-                    fullName: `${className}.constructor`
-                }
-            ];
+        let points: Pointcut[] = [];
 
+        // match method.
+        for (let name in Object.getOwnPropertyDescriptors(type.prototype)) {
+            points.push({
+                name: name,
+                fullName: `${className}.${name}`
+            });
+        }
+
+
+        // match property
+        Object.getOwnPropertyNames(instance || type.prototype).forEach(name => {
+            points.push({
+                name: name,
+                fullName: `${className}.${name}`
+            });
+        });
+
+
+        // console.log('all method or property:', points);
         let matched: MatchPointcut[] = [];
         for (let name in adviceMaps) {
             let advices = adviceMaps[name];
@@ -38,7 +47,6 @@ export class AdviceMatcher implements IAdviceMatcher {
                 matched = matched.concat(this.filterPointcut(points, metadata));
             });
         }
-
         return matched;
 
     }
@@ -51,17 +59,15 @@ export class AdviceMatcher implements IAdviceMatcher {
         if (isString(metadata.pointcut)) {
             let pointcut = metadata.pointcut;
             pointcut = (pointcut || '').trim();
+            if (/^execution\(\S+\)$/.test(pointcut)) {
+                pointcut = pointcut.substring(10, pointcut.length - 1);
+            }
+            let matcher = new Minimatch(pointcut);
             return points.filter(a => {
-                if (!/^execution\(\S+\)$/.test(pointcut)) {
-                    return false;
-                }
-                let execution = pointcut.substring(10, pointcut.length - 1);
-                if (execution === '*') {
+                if (pointcut === '*') {
                     return true;
                 }
-
-                // TODO: match
-                return false;
+                return matcher.match(a.fullName);
             }).map(p => {
                 let m = p as MatchPointcut;
                 m.advice = metadata;

@@ -2,22 +2,33 @@
  * cores decorator actions
  *
  * @export
- * @enum {number}
  */
 export enum CoreActions {
+
+    /**
+     * before constructor advice action.
+     */
+    beforeConstructor = 'beforeConstructor',
+
+    /**
+     * after constructor advice action.
+     */
+    afterConstructor = 'afterConstructor',
+
     /**
      * set param type form metadata.
      */
     bindParameterType = 'bindParameterType',
+
     /**
      * set Property type from metadata.
      */
     bindPropertyType = 'bindPropertyType',
 
     /**
-     * set Property value from metadata.
+     * inject property.
      */
-    bindProperty = 'bindProperty',
+    injectProperty =  'injectProperty',
 
     /**
      * class provider bind action.
@@ -27,15 +38,6 @@ export enum CoreActions {
     /**
      * access method.
      */
-    bindParameterProviders = 'bindParameterProviders',
-
-    /**
-     * bind instance, for custom extensions.
-     */
-    bindInstance = 'bindInstance',
-    /**
-     * bind instance method, for custom extensions.
-     */
-    bindMethod = 'bindMethod'
+    bindParameterProviders = 'bindParameterProviders'
 
 }

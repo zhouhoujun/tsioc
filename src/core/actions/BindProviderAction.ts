@@ -1,29 +1,44 @@
 import { ActionComposite } from './ActionComposite';
-import { ActionData } from './ActionData';
+import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
 import { DecoratorType } from '../factories';
 import { IContainer } from '../../IContainer';
 import { Token, SymbolType } from '../../types';
 import { TypeMetadata, ProviderMetadata } from '../metadatas';
+import { match } from 'minimatch';
+import { getTypeMetadata, ClassMetadata } from '../index';
 
-export interface BindProviderActionData extends ActionData<ProviderMetadata> {
+export interface BindProviderActionData extends ActionData<Token<any>[]> {
 }
 
 export class BindProviderAction extends ActionComposite {
 
-    constructor(decorName?: string, decorType?: DecoratorType) {
-        super(CoreActions.bindProvider.toString(), decorName, decorType)
+    constructor() {
+        super(CoreActions.bindProvider)
     }
 
     protected working(container: IContainer, data: BindProviderActionData) {
-        let metadata = data.metadata;
-        if (Array.isArray(metadata) && metadata.length > 0) {
-            let jcfg = metadata.find(c => c &&  !!c.provide);
-            if (jcfg) {
-                let provideKey = container.getTokenKey(jcfg.provide, jcfg.alias);
-                container.bindProvider(provideKey, jcfg.type);
+        let target = data.target
+        let type = data.targetType;
+        let propertyKey = data.propertyKey;
+        let lifeScope = container.getLifeScope();
+
+        let matchs = lifeScope.getClassDecorators(surm => surm.actions.includes(CoreActions.bindProvider) &&  Reflect.hasMetadata(surm.name, type));
+
+        let provides = [];
+        matchs.forEach(surm => {
+            let metadata = getTypeMetadata<ClassMetadata>(surm.name, type);
+            if (Array.isArray(metadata) && metadata.length > 0) {
+                let jcfg = metadata.find(c => c && !!c.provide);
+                if (jcfg) {
+                    let provideKey = container.getTokenKey(jcfg.provide, jcfg.alias);
+                    provides.push(provideKey);
+                    container.bindProvider(provideKey, jcfg.type);
+                }
             }
-        }
+        });
+
+        data.execResult = provides;
     }
 }
 

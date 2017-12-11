@@ -10,24 +10,23 @@ import { Type } from '../Type';
  * @export
  * @class AspectSet
  */
-@Singleton
 export class AspectSet {
-    @Inject(symbols.IContainer)
-    private container: IContainer;
-    private aspects: Set<Type<any>>;
-    constructor() {
-        this.aspects = new Set();
+    private aspects: Map<Type<any>, Function>;
+    constructor(private container: IContainer) {
+        this.aspects = new Map<Type<any>, Function>();
     }
 
     add(aspect: Type<any>) {
         if (!this.aspects.has(aspect)) {
-            this.aspects.add(aspect);
+            this.aspects.set(aspect, () => {
+                return this.container.get(aspect);
+            });
         }
     }
 
     forEach(express: (type: Type<any>, instance) => void) {
-        this.aspects.forEach(aspect => {
-            express(aspect, this.container.get(aspect));
+        this.aspects.forEach((value, aspect) => {
+            express(aspect, value());
         });
     }
 }

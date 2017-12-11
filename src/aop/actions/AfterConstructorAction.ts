@@ -14,8 +14,8 @@ export interface AfterConstructorActionData extends ActionData<AdviceMetadata> {
 
 export class AfterConstructorAction extends ActionComposite {
 
-    constructor(decorName?: string, decorType?: DecoratorType) {
-        super(AopActions.registAspect.toString(), decorName, decorType);
+    constructor() {
+        super(AopActions.registAspect);
     }
 
     protected working(container: IContainer, data: AfterConstructorActionData) {

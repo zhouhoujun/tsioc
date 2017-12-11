@@ -6,6 +6,7 @@
  * @enum {number}
  */
 export enum AopActions {
+
     /**
      * register aspect service.
      */
@@ -18,15 +19,6 @@ export enum AopActions {
     /**
      * bind method pointcut for instance.
      */
-    bindMethodPointcut = 'bindMethodPointcut',
+    bindMethodPointcut = 'bindMethodPointcut'
 
-    /**
-     * before constructor advice action.
-     */
-    beforeConstructor = 'beforeConstructor',
-
-    /**
-     * after constructor advice action.
-     */
-    afterConstructor = 'afterConstructor'
 }

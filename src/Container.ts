@@ -5,11 +5,13 @@ import { Registration } from './Registration';
 import { Type, AbstractType } from './Type';
 import { isClass, isFunction, symbols } from './utils';
 import { isSymbol, isString, isUndefined, isArray } from 'util';
-import { registerAops, AopActions, RegistAspectActionData, BeforeConstructorActionData } from './aop';
+import { AspectSet, registerAops, AopActions, RegistAspectActionData, BeforeConstructorActionData } from './aop';
 import { MethodAccessor } from './MethodAccessor';
 import { IMethodAccessor } from './IMethodAccessor';
 import { ParamProvider, AsyncParamProvider } from './ParamProvider';
 import { ActionComponent, DecoratorType, registerCores, CoreActions, TypeMetadata, BindProviderActionData, ClassMetadata, Singleton, PropertyMetadata, BindPropertyTypeActionData, getMethodMetadata, getPropertyMetadata, BindPropertyActionData } from './core';
+import { LifeScope } from './LifeScope';
+import { IocState } from './index';
 
 
 export const NOT_FOUND = new Object();
@@ -20,10 +22,6 @@ export const NOT_FOUND = new Object();
 export class Container implements IContainer {
     protected factories: Map<Token<any>, any>;
     protected singleton: Map<Token<any>, any>;
-    protected classDecoractors: Map<string, ActionComponent>;
-    protected methodDecoractors: Map<string, ActionComponent>;
-    protected propDecoractors: Map<string, ActionComponent>;
-    protected paramDecoractors: Map<string, ActionComponent>;
     constructor() {
         this.init();
     }
@@ -166,33 +164,8 @@ export class Container implements IContainer {
         this.factories.set(provideKey, factory);
     }
 
-    /**
-     * register decorator.
-     *
-     * @template T
-     * @param {Function} decirator
-     * @param {ActionComponent} actions
-     * @memberof Container
-     */
-    registerDecorator(decirator: Function, actions: ActionComponent) {
-        if (!actions.decorType) {
-            actions.decorType = this.getDecoratorType(decirator);
-        }
-        if (!actions.name) {
-            actions.name = decirator.toString();
-        }
-        if (actions.decorType & DecoratorType.Class) {
-            this.cacheDecorator(this.classDecoractors, actions);
-        }
-        if (actions.decorType & DecoratorType.Method) {
-            this.cacheDecorator(this.methodDecoractors, actions);
-        }
-        if (actions.decorType & DecoratorType.Property) {
-            this.cacheDecorator(this.propDecoractors, actions);
-        }
-        if (actions.decorType & DecoratorType.Parameter) {
-            this.cacheDecorator(this.paramDecoractors, actions);
-        }
+    getLifeScope(): LifeScope {
+        return this.get<LifeScope>(symbols.LifeScope);
     }
 
     /**
@@ -224,61 +197,6 @@ export class Container implements IContainer {
         return this.get<IMethodAccessor>(symbols.IMethodAccessor).syncInvoke(type, propertyKey, instance, ...providers);
     }
 
-    /**
-     * is vaildate dependence type or not. dependence type must with class decorator.
-     *
-     * @template T
-     * @param {Type<T>} target
-     * @returns {boolean}
-     * @memberof Container
-     */
-    isVaildDependence<T>(target: Type<T>): boolean {
-        if (!target) {
-            return false;
-        }
-        if (!this.isClass(target)) {
-            return false;
-        }
-        let vaildate = false;
-        this.classDecoractors.forEach((act, key) => {
-            if (vaildate) {
-                return false;
-            }
-            vaildate = Reflect.hasMetadata(key, target);
-            return true;
-        });
-        return vaildate;
-    }
-
-    getDecoratorType(decirator: any): DecoratorType {
-        return decirator.decoratorType || DecoratorType.All;
-    }
-
-    /**
-     * get constructor parameters metadata.
-     *
-     * @template T
-     * @param {Type<T>} type
-     * @returns {Token<any>>[]}
-     * @memberof IContainer
-     */
-    getConstructorParameter<T>(type: Type<T>): Token<any>[] {
-        return this.getParameterMetadata(type);
-    }
-
-    /**
-     * get method params metadata.
-     *
-     * @template T
-     * @param {Type<T>} type
-     * @param {T} instance
-     * @param {(string | symbol)} propertyKey
-     * @returns {Token<any>[]}
-     * @memberof IContainer
-     */
-    getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): Token<any>[] {
-        return this.getParameterMetadata(type, instance, propertyKey);
-    }
 
     protected cacheDecorator<T>(map: Map<string, ActionComponent>, action: ActionComponent) {
         if (!map.has(action.name)) {
@@ -289,20 +207,12 @@ export class Container implements IContainer {
     protected init() {
         this.factories = new Map<Token<any>, any>();
         this.singleton = new Map<Token<any>, any>();
-        this.classDecoractors = new Map<string, ActionComponent>();
-        this.methodDecoractors = new Map<string, ActionComponent>();
-        this.paramDecoractors = new Map<string, ActionComponent>();
-        this.propDecoractors = new Map<string, ActionComponent>();
 
         registerCores(this);
         registerAops(this);
 
         this.register(MethodAccessor);
         this.bindProvider(symbols.IContainer, () => this);
-        this.bindProvider(symbols.ClassDecoratorMap, () => this.classDecoractors);
-        this.bindProvider(symbols.MethodDecoratorMap, () => this.methodDecoractors);
-        this.bindProvider(symbols.ParameterDecoratorMap, () => this.paramDecoractors);
-        this.bindProvider(symbols.PropertyDecoratorMap, () => this.propDecoractors);
     }
 
     protected registerFactory<T>(token: Token<T>, value?: Factory<T>, singleton?: boolean) {
@@ -315,7 +225,7 @@ export class Container implements IContainer {
         let classFactory;
         if (!isUndefined(value)) {
             if (isFunction(value)) {
-                if (this.isClass(value)) {
+                if (isClass(value)) {
                     classFactory = this.createTypeFactory(key, value as Type<T>, singleton);
                 } else {
                     classFactory = this.createCustomFactory(key, value as ToInstance<T>, singleton);
@@ -326,7 +236,7 @@ export class Container implements IContainer {
 
         } else if (!isString(token) && !isSymbol(token)) {
             let ClassT = (token instanceof Registration) ? token.getClass() : token;
-            if (this.isClass(ClassT)) {
+            if (isClass(ClassT)) {
                 classFactory = this.createTypeFactory(key, ClassT as Type<T>, singleton);
             }
         }
@@ -334,10 +244,6 @@ export class Container implements IContainer {
         if (classFactory) {
             this.factories.set(key, classFactory);
         }
-    }
-
-    private isClass(value: Function) {
-        return isClass(value);
     }
 
     protected createCustomFactory<T>(key: SymbolType<T>, factory?: ToInstance<T>, singleton?: boolean) {
@@ -358,9 +264,11 @@ export class Container implements IContainer {
             return null;
         }
 
-        let parameters = this.getParameterMetadata(ClassT);
+        let lifeScope = this.getLifeScope();
+
+        let parameters = lifeScope.getConstructorParameters(ClassT);
         if (!singleton) {
-            singleton = this.isSingletonType<T>(ClassT);
+            singleton = lifeScope.isSingletonType<T>(ClassT);
         }
 
         let factory = () => {
@@ -369,84 +277,28 @@ export class Container implements IContainer {
             }
 
             let paramInstances = parameters.map((type, index) => this.get(type));
-            this.methodDecoractors.forEach((act, key) => {
-                let metadata = getMethodMetadata(key, ClassT);
-                act.execute(this, <BeforeConstructorActionData>{
-                    methodMetadata: metadata,
-                    params: paramInstances,
-                    paramTypes: parameters,
-                    targetType: ClassT
-                }, AopActions.beforeConstructor);
-            });
+
+            lifeScope.execute(DecoratorType.Class, {
+                targetType: ClassT
+            }, IocState.runtime, CoreActions.beforeConstructor);
 
             let instance = new ClassT(...paramInstances);
 
-            this.methodDecoractors.forEach((act, key) => {
-                let metadata = getMethodMetadata(key, ClassT);
-                act.execute(this, {
-                    methodMetadata: metadata,
-                    target: instance,
-                    targetType: ClassT
-                }, AopActions.afterConstructor);
+            lifeScope.execute(DecoratorType.Class, {
+                target: instance,
+                targetType: ClassT
+            }, IocState.runtime, CoreActions.afterConstructor);
+
+            lifeScope.execute(DecoratorType.Property, {
+                target: instance,
+                targetType: ClassT
             });
 
-            let propTypeData = {
-                props: []
-            } as BindPropertyTypeActionData;
-            this.propDecoractors.forEach((act, key) => {
-                let metadata = getPropertyMetadata(key, ClassT);
-
-                propTypeData.propMetadata = metadata;
-                act.execute(this, propTypeData, CoreActions.bindPropertyType)
-
-                act.execute(this, {
-                    propMetadata: metadata,
-                    target: instance,
-                    targetType: ClassT
-                }, AopActions.bindPropertyPointcut)
-
+            lifeScope.execute(DecoratorType.Method, {
+                target: instance,
+                targetType: ClassT
             });
 
-            if (instance) {
-                propTypeData.props.forEach((prop, idx) => {
-                    instance[prop.propertyKey] = prop.provider ?
-                        this.get(prop.provider, prop.alias) : this.get(prop.type);
-                })
-            }
-
-            // need it?
-            // this.propDecoractors.forEach((act, key) => {
-            //     let metadata = getPropertyMetadata(key, ClassT);
-            //     act.execute(this, <BindPropertyActionData>{
-            //         methodMetadata: metadata,
-            //         instance: instance,
-            //         props: [],
-            //         instanceType: ClassT
-            //     }, CoreActions.bindProperty);
-            // });
-
-            // execute class instance action.
-            this.classDecoractors.forEach((act, key) => {
-                act.execute(this, {
-                    metadata: Reflect.getMetadata(key, ClassT),
-                    target: instance
-                }, CoreActions.bindInstance);
-            });
-
-            this.methodDecoractors.forEach((act, key) => {
-                let metadata = getMethodMetadata(key, ClassT);
-                act.execute(this, {
-                    methodMetadata: metadata,
-                    target: instance,
-                    targetType: ClassT
-                }, CoreActions.bindMethod);
-
-                act.execute(this, {
-                    methodMetadata: metadata,
-                    target: instance,
-                    targetType: ClassT
-                }, AopActions.bindMethodPointcut)
-            });
 
             if (singleton) {
                 this.singleton.set(key, instance);
@@ -454,68 +306,12 @@ export class Container implements IContainer {
             return instance;
         };
 
-        this.classDecoractors.forEach((action, decorator) => {
-            let metadata: TypeMetadata[] = Reflect.getMetadata(decorator, ClassT) as TypeMetadata[];
-            action.execute(this, {
-                metadata: metadata
-            } as BindProviderActionData, CoreActions.bindProvider);
-
-            action.execute(this, {
-                metadata: metadata
-            } as RegistAspectActionData, AopActions.registAspect);
-        });
+        lifeScope.execute(DecoratorType.Class, {
+            targetType: ClassT
+        }, IocState.design);
 
 
         return factory;
-    }
-
-    protected isSingletonType<T>(type: Type<T>): boolean {
-        if (Reflect.hasOwnMetadata(Singleton.toString(), type)) {
-            return true;
-        }
-
-        let singleton;
-        this.classDecoractors.forEach((act, key) => {
-            if (singleton) {
-                return false;
-            }
-            let metadatas = Reflect.getMetadata(key, type) as ClassMetadata[] || [];
-            if (isArray(metadatas)) {
-                singleton = metadatas.some(m => m.singleton === true);
-            }
-            return true;
-        })
-        return singleton;
-    }
-
-    protected getParameterMetadata<T>(type: Type<T>, instance?: T, propertyKey?: string | symbol): Token<any>[] {
-
-        let designParams: Type<any>[];
-        if (instance && propertyKey) {
-            designParams = Reflect.getMetadata('design:paramtypes', instance, propertyKey) || [];
-        } else {
-            designParams = Reflect.getMetadata('design:paramtypes', type) || [];
-        }
-
-        designParams = designParams.slice(0);
-        designParams.forEach(ptype => {
-            if (this.isVaildDependence(ptype)) {
-                if (!this.has(ptype)) {
-                    this.register(ptype);
-                }
-            }
-        });
-        if (designParams.length > 0) {
-            this.paramDecoractors.forEach((v, name) => {
-                let parameters = instance ? Reflect.getMetadata(name, instance, propertyKey)
-                    : Reflect.getMetadata(name, type);
-                v.execute(this, {
-                    designMetadata: designParams,
-                    paramMetadata: parameters
-                }, CoreActions.bindParameterType);
-            });
-        }
-        return designParams;
     }
 
 }

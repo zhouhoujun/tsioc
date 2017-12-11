@@ -1,4 +1,4 @@
-import { ActionData } from './ActionData';
+import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
 import { DecoratorType } from '../factories';
 import { Mode, Express } from '../../types';
@@ -13,25 +13,27 @@ import { Composite, IComponent } from '../../components';
 
 export class ActionComposite extends Composite implements ActionComponent {
 
-    public decorName: string;
-    public decorType: DecoratorType;
-
     parent: ActionComponent;
     protected children: ActionComponent[];
-    constructor(name: string, decorName?: string, decorType?: DecoratorType) {
+    constructor(name: string) {
         super(name);
-        this.decorName = decorName;
-        this.decorType = decorType;
         this.children = [];
     }
 
-    protected working(container: IContainer, data: ActionData<Metadate>) {
-        // do nothing.
+    insert(node: ActionComponent, index: number): ActionComponent {
+        node.parent = this;
+        if (index < 0) {
+            index = 0;
+        } else if (index >= this.children.length) {
+            index = this.children.length - 1;
+        }
+        this.children.splice(index, 0, node);
+        return this;
     }
 
-    execute(container: IContainer, data: ActionData<Metadate>, name?: string | CoreActions) {
+    execute(container: IContainer, data: ActionData<Metadate>, name?: string) {
         if (name) {
-            this.find<ActionComponent>(it => it.name === (isString(name) ? name : (<CoreActions>name).toString()))
+            this.find<ActionComponent>(it => it.name === name)
                 .execute(container, data);
         } else {
             this.trans(action => {
@@ -42,14 +44,12 @@ export class ActionComposite extends Composite implements ActionComponent {
         }
     }
 
-    add(action: ActionComponent): IComponent {
-        action.decorName = this.decorName;
-        action.decorType = this.decorType;
-        return super.add(action);
-    }
-
     empty() {
         return NullAction;
+    }
+
+    protected working(container: IContainer, data: ActionData<any>) {
+        // do nothing.
     }
 
 }

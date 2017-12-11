@@ -1,48 +1,48 @@
 import { ActionComposite } from './ActionComposite';
-import { ActionData } from './ActionData';
+import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
 import { DecoratorType } from '../factories';
 import { MethodMetadata } from '../metadatas';
 import { IContainer } from '../../IContainer';
 import { ParamProvider } from '../../ParamProvider';
 import { isArray } from 'util';
+import { match } from 'minimatch';
+import { getMethodMetadata } from '../index';
 
-export interface BindParameterProviderActionData extends ActionData<MethodMetadata> {
-    /**
-     * method name.
-     *
-     * @type {(string | symbol)}
-     * @memberof BindParameterProviderActionData
-     */
-    propertyKey: string | symbol;
-    /**
-     * param providers.
-     *
-     * @type {ParamProvider[]}
-     * @memberof AccessorMethodData
-     */
-    providers?: ParamProvider[];
+export interface BindParameterProviderActionData extends ActionData<ParamProvider[]> {
+
 }
 
 export class BindParameterProviderAction extends ActionComposite {
 
-    constructor(decorName?: string, decorType?: DecoratorType) {
-        super(CoreActions.bindParameterType.toString(), decorName, decorType)
+    constructor() {
+        super(CoreActions.bindParameterProviders)
     }
 
     protected working(container: IContainer, data: BindParameterProviderActionData) {
-        let methodmtas = data.methodMetadata;
+
+        let target = data.target
+        let type = data.targetType;
         let propertyKey = data.propertyKey;
-        let designParams = data.designMetadata;
-        let metadatas = methodmtas[propertyKey];
-        if (metadatas && isArray(metadatas) && metadatas.length > 0) {
-            data.providers = data.providers || [];
-            metadatas.forEach(meta => {
-                if (meta.providers && meta.providers.length > 0) {
-                    data.providers = data.providers.concat(meta.providers);
-                }
-            });
-        }
+        let lifeScope = container.getLifeScope();
+
+        let matchs = lifeScope.getMethodDecorators(surm => surm.actions.includes(CoreActions.bindParameterProviders) && Reflect.hasMetadata(surm.name, type));
+
+        let providers: ParamProvider[] = [];
+        matchs.forEach(surm => {
+            let methodmtas = getMethodMetadata<MethodMetadata>(surm.name, type);
+            let metadatas = methodmtas[propertyKey];
+            if (metadatas && isArray(metadatas) && metadatas.length > 0) {
+                metadatas.forEach(meta => {
+                    if (meta.providers && meta.providers.length > 0) {
+                        providers = providers.concat(meta.providers);
+                    }
+                });
+            }
+        });
+
+        data.execResult = providers;
+
     }
 }
 

@@ -1,13 +1,14 @@
 import { ActionComposite } from './ActionComposite';
-import { ActionData } from './ActionData';
+import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
 import { DecoratorType } from '../factories';
 import { PropertyMetadata } from '../metadatas';
 import { IContainer } from '../../IContainer';
+import { getPropertyMetadata } from '../index';
 
 
-export interface BindPropertyTypeActionData extends ActionData<PropertyMetadata> {
-    props: PropertyMetadata[];
+export interface BindPropertyTypeActionData extends ActionData<PropertyMetadata[]> {
+
 }
 
 /**
@@ -19,35 +20,40 @@ export interface BindPropertyTypeActionData extends ActionData<PropertyMetadata>
  */
 export class BindPropertyTypeAction extends ActionComposite {
 
-    constructor(decorName?: string, decorType?: DecoratorType, name?: string) {
-        super(name || CoreActions.bindPropertyType.toString(), decorName, decorType)
+    constructor() {
+        super(CoreActions.bindPropertyType)
     }
 
     protected working(container: IContainer, data: BindPropertyTypeActionData) {
-        let restPropdata = data as BindPropertyTypeActionData;
-        let props = data.propMetadata;
-        if (Array.isArray(props)) {
-            props = {};
-        }
+        let target = data.target
+        let type = data.targetType;
+        let propertyKey = data.propertyKey;
+        let lifeScope = container.getLifeScope();
+
+        let matchs = lifeScope.getPropertyDecorators(surm => surm.actions.includes(CoreActions.bindPropertyType) && Reflect.hasMetadata(surm.name, type));
         let list: PropertyMetadata[] = [];
-        for (let n in props) {
-            list = list.concat(props[n]);
-        }
-        list = list.filter(n => !!n);
-        list.forEach(parm => {
-            if (container.isVaildDependence(parm.provider)) {
-                if (!container.has(parm.provider, parm.alias)) {
-                    container.register(container.getToken(parm.provider, parm.alias));
-                }
+        matchs.forEach(surm => {
+            let propMetadata = getPropertyMetadata<PropertyMetadata>(surm.name, type);
+
+            for (let n in propMetadata) {
+                list = list.concat(propMetadata[n]);
             }
-            if (container.isVaildDependence(parm.type)) {
-                if (!container.has(parm.type)) {
-                    container.register(parm.type);
+            list = list.filter(n => !!n);
+            list.forEach(parm => {
+                if (lifeScope.isVaildDependence(parm.provider)) {
+                    if (!container.has(parm.provider, parm.alias)) {
+                        container.register(container.getToken(parm.provider, parm.alias));
+                    }
                 }
-            }
+                if (lifeScope.isVaildDependence(parm.type)) {
+                    if (!container.has(parm.type)) {
+                        container.register(parm.type);
+                    }
+                }
+            });
         });
 
-        restPropdata.props = (restPropdata.props || []).concat(list);
+        data.execResult = list;
     }
 }
 

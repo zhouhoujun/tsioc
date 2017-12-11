@@ -8,6 +8,7 @@ import { Aspect, Advice } from '../decorators';
 import { AdviceMetadata } from '../metadatas';
 import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IMethodAccessor } from '../../IMethodAccessor';
+import { isValideAspectTarget } from '../isValideAspectTarget';
 
 
 export interface BindPropertyPointcutActionData extends ActionData<AdviceMetadata> {
@@ -15,13 +16,13 @@ export interface BindPropertyPointcutActionData extends ActionData<AdviceMetadat
 
 export class BindPropertyPointcutAction extends ActionComposite {
 
-    constructor(decorName?: string, decorType?: DecoratorType) {
-        super(AopActions.registAspect.toString(), decorName, decorType);
+    constructor() {
+        super(AopActions.registAspect);
     }
 
     protected working(container: IContainer, data: BindPropertyPointcutActionData) {
         // aspect class do nothing.
-        if (Reflect.hasMetadata(Aspect.toString(), data.targetType)) {
+        if (!isValideAspectTarget(data.targetType)) {
             return;
         }
         let aspects = container.get(AspectSet);
@@ -31,21 +32,23 @@ export class BindPropertyPointcutAction extends ActionComposite {
             let adviceMaps = getMethodMetadata<AdviceMetadata>(Advice, type);
             let matchpoints = matcher.match(adviceMaps, data.targetType, data.target);
             matchpoints.forEach(mpt => {
-                if (mpt.name !== 'constructor' && data.target) {
-                    let propertyMethod = data.target[mpt.name];
-                    if (!isFunction(propertyMethod)) {
-                        // TODO: set
-                        Object.defineProperty(data.target, mpt.name, {
-                            value: undefined,
-                            get() {
-                                this.value;
-                            },
-                            set(val: any) {
-                                this.value = val;
-                            }
-                        })
-                    }
-                }
+                // TODO: property work.
+
+                // if (mpt.name !== 'constructor' && data.target) {
+                //     let propertyMethod = data.target[mpt.name];
+                //     if (!isFunction(propertyMethod)) {
+                //         // TODO: set
+                //         Object.defineProperty(data.target, mpt.name, {
+                //             value: undefined,
+                //             get() {
+                //                 this.value;
+                //             },
+                //             set(val: any) {
+                //                 this.value = val;
+                //             }
+                //         })
+                //     }
+                // }
             });
         });
     }

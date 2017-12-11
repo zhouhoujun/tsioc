@@ -6,17 +6,23 @@ export * from './AspectSet';
 export * from './IAdviceMatcher';
 export * from './AdviceMatcher';
 export * from './MatchPointcut';
+export * from './Pointcut';
 export * from './Joinpoint';
-// export * from './MatchPointcutInvoker';
+export * from './isValideAspectTarget';
+
 
 
 import { IContainer } from '../IContainer';
 import { Aspect } from './decorators';
 import { AspectSet } from './AspectSet';
 import { symbols } from '../utils';
-import { IAopActionBuilder, AopActions, AopActionBuilder } from './actions';
+import { AopActions } from './actions';
 import { AdviceMatcher } from './AdviceMatcher';
-import { Advice } from '../index';
+import { Advice } from './decorators';
+import { LifeScope } from '../LifeScope';
+import { DecoratorType, CoreActions } from '../core/index';
+import { AopActionFactory } from './actions/AopActionFactory';
+import { IocState } from '../types';
 
 /**
  * register aop for container.
@@ -26,22 +32,19 @@ import { Advice } from '../index';
  */
 export function registerAops(container: IContainer) {
 
+    container.registerSingleton(AspectSet, () => {
+        return new AspectSet(container);
+    });
     container.register(AdviceMatcher);
-    container.register(AopActionBuilder);
-    container.register(AdviceMatcher);
-    container.register(AspectSet);
-    let builder = container.get<IAopActionBuilder>(symbols.IAopActionBuilder);
 
-    container.registerDecorator(Aspect,
-        builder.build(
-            Aspect.toString(),
-            container.getDecoratorType(Aspect),
-            AopActions.registAspect));
+    let lifeScope = container.get<LifeScope>(symbols.LifeScope);
 
-    container.register(Advice, builder.build(
-        Advice.toString(),
-        container.getDecoratorType(Advice),
-        AopActions.beforeConstructor, AopActions.afterConstructor,
-        AopActions.bindMethodPointcut, AopActions.bindPropertyPointcut))
+    let factory = new AopActionFactory();
+    lifeScope.addAction(factory.create(AopActions.registAspect), DecoratorType.Class, IocState.design);
+
+    lifeScope.addAction(factory.create(AopActions.bindMethodPointcut), DecoratorType.Method);
+    // lifeScope.addAction(factory.create(AopActions.bindPropertyPointcut), DecoratorType.Property);
+
+    lifeScope.registerDecorator(Aspect, AopActions.registAspect);
 
 }

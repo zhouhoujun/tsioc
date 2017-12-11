@@ -7,6 +7,12 @@
 export const IContainer = Symbol('IContainer');
 
 /**
+ * life scope interface symbol.
+ * it is a symbol id, you can register yourself MethodAccessor for this.
+ */
+export const LifeScope = Symbol('LifeScope');
+
+/**
  * IMethodAccessor interface symbol.
  * it is a symbol id, you can register yourself MethodAccessor for this.
  */
@@ -18,17 +24,6 @@ export const IMethodAccessor = Symbol('IMethodAccessor');
  */
 export const IContainerBuilder = Symbol('IContainerBuilder');
 
-/**
- * Core ActionBuilder interface symbol.
- * it is a symbol id, you can register yourself IActionBuilder for this.
- */
-export const ICoreActionBuilder = Symbol('ICoreActionBuilder');
-
-/**
- * Aop ActionBuilder interface symbol.
- * it is a symbol id, you can register yourself IActionBuilder for this.
- */
-export const IAopActionBuilder = Symbol('IAopActionBuilder');
 
 /**
  * Aop advice matcher interface symbol.
@@ -36,11 +31,3 @@ export const IAopActionBuilder = Symbol('IAopActionBuilder');
  */
 export const IAdviceMatcher = Symbol('IAdviceMatcher');
 
-export const MethodDecoratorMap = Symbol('Autofac-MethodDecoratorMap');
-
-
-export const PropertyDecoratorMap = Symbol('Autofac-PropertyDecoratorMap');
-
-export const ParameterDecoratorMap = Symbol('Autofac-ParameterDecoratorMap');
-
-export const ClassDecoratorMap = Symbol('Autofac-ClassDecoratorMap');

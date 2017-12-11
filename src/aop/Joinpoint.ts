@@ -1,6 +1,14 @@
 import { Pointcut } from './Pointcut';
 import { Token } from '../index';
 
+
+export enum JoinpointState {
+    Before = 'Before',
+    After =  'After',
+    AfterReturning = 'AfterReturning',
+    AfterThrowing = 'AfterThrowing'
+}
+
 /**
  * Joinpoint
  *
@@ -9,6 +17,7 @@ import { Token } from '../index';
  * @extends {Pointcut}
  */
 export interface Joinpoint extends Pointcut {
+    state: JoinpointState;
     args: any[];
     /**
      * target

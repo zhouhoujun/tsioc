@@ -221,6 +221,37 @@ container.invoke(MethodTest3, 'sayHello')
 
 ## AOP
 
+It's a dynamic aop base on ioc.
+
+define a Aspect class, must with decorator:
+
+* @Aspect
+
+define advice decorator have
+
+* @Before(matchstring|RegExp)
+
+* @After(matchstring|RegExp)
+
+* @Around(matchstring|RegExp)
+
+* AfterThrowing(matchstring|RegExp)
+
+* AfterReturning(matchstring|RegExp)
+
+```ts
+import { Joinpoint, Around, Aspect } from 'tsioc';
+
+@Aspect
+export class IocDebug {
+    @Around('execution(*)')
+    log(joinPoint: Joinpoint) {
+        console.log('aspect append log, method name:', joinPoint.fullName,  ' state:', joinPoint.state, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
+    }
+}
+
+
+```
 
 ## Use Demo
 
@@ -621,6 +652,7 @@ container.registerDecorator<ControllerMetadata>(
 see more interface. all document is typescript .d.ts.
 
 ```ts
+
 /**
  * container interface.
  *
@@ -714,23 +746,82 @@ export interface IContainer extends IMethodAccessor {
     registerSingleton<T>(token: Token<T>, value?: Factory<T>);
 
     /**
-     * register decorator
+     * get life scope of container.
      *
-     * @param {Function} decorator
-     * @param {ActionComponent} actions
+     * @returns {LifeScope}
      * @memberof IContainer
      */
-    registerDecorator(decorator: Function, actions: ActionComponent);
+    getLifeScope(): LifeScope;
+
+}
+
+
+
+/**
+ * life scope of decorator.
+ *
+ * @export
+ * @interface LifeScope
+ */
+export interface LifeScope {
 
     /**
-     * is vaildate dependence type or not. dependence type must with class decorator.
+     * execute the action work.
      *
      * @template T
-     * @param {any} target
-     * @returns {boolean}
-     * @memberof IContainer
+     * @param {DecoratorType} type action for decorator type.
+     * @param {ActionData<T>} data execute data;
+     * @param {string} names execute action name.
+     * @memberof ActionComponent
      */
-    isVaildDependence<T>(target: any): boolean;
+    execute<T>(type: DecoratorType, data: ActionData<T>, ...names: string[]);
+
+    /**
+     * register action.
+     *
+     * @param {ActionComponent} action the action.
+     * @param {DecoratorType} type action for decorator type.
+     * @param {...string[]} express the path  of action point to add the action.
+     * @returns {LifeScope}
+     * @memberof LifeScope
+     */
+    addAction(action: ActionComponent, type: DecoratorType, ...nodepaths: string[]): LifeScope;
+
+    /**
+     * register decorator.
+     *
+     * @param {Function} decorator decorator
+     * @param {...string[]} actions action names.
+     * @memberof LifeScope
+     */
+    registerDecorator(decorator: Function, ...actions: string[]): LifeScope;
+
+    /**
+     * register decorator.
+     *
+     * @param {Function} decorator decorator
+     * @param {DecoratorType} type  custom set decorator type.
+     * @param {...string[]} actions action names.
+     * @memberof LifeScope
+     */
+    registerCustomDecorator(decorator: Function, type: DecoratorType, ...actions: string[]): LifeScope;
+
+    /**
+     * filter match decorators.
+     *
+     * @param {Express<DecorSummary, boolean>} express
+     * @returns {DecorSummary[]}
+     * @memberof LifeScope
+     */
+    filerDecorators(express: Express<DecorSummary, boolean>): DecorSummary[];
+
+    getClassDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[];
+
+    getMethodDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[];
+
+    getPropertyDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[];
+
+    getParameterDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[];
 
 
     /**
@@ -738,9 +829,70 @@ export interface IContainer extends IMethodAccessor {
      *
      * @param {*} decorator
      * @returns {DecoratorType}
-     * @memberof IContainer
+     * @memberof LifeScope
      */
     getDecoratorType(decorator: any): DecoratorType;
+
+    /**
+     * is vaildate dependence type or not. dependence type must with class decorator.
+     *
+     * @template T
+     * @param {any} target
+     * @returns {boolean}
+     * @memberof LifeScope
+     */
+    isVaildDependence<T>(target: any): boolean;
+
+    /**
+     * is singleton or not.
+     *
+     * @template T
+     * @param {Type<T>} type
+     * @returns {boolean}
+     * @memberof LifeScope
+     */
+    isSingletonType<T>(type: Type<T>): boolean;
+
+    /**
+     * get action by name.
+     *
+     * @param {string} name
+     * @returns {ActionComponent}
+     * @memberof LifeScope
+     */
+    getAtionByName(name: string): ActionComponent;
+
+    /**
+     * get class action.
+     *
+     * @returns {ActionComponent}
+     * @memberof LifeScope
+     */
+    getClassAction(): ActionComponent;
+
+    /**
+     * get method action.
+     *
+     * @returns {ActionComponent}
+     * @memberof LifeScope
+     */
+    getMethodAction(): ActionComponent;
+
+    /**
+     * get propert action.
+     *
+     * @returns {ActionComponent}
+     * @memberof LifeScope
+     */
+    getPropertyAction(): ActionComponent;
+
+    /**
+     * get parameter action.
+     *
+     * @returns {ActionComponent}
+     * @memberof LifeScope
+     */
+    getParameterAction(): ActionComponent;
 
 
     /**
@@ -751,7 +903,7 @@ export interface IContainer extends IMethodAccessor {
      * @returns {Token<any>>[]}
      * @memberof IContainer
      */
-    getConstructorParameter<T>(type: Type<T>): Token<any>[];
+    getConstructorParameters<T>(type: Type<T>): Token<any>[];
 
     /**
      * get method params metadata.
@@ -764,9 +916,9 @@ export interface IContainer extends IMethodAccessor {
      * @memberof IContainer
      */
     getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): Token<any>[];
-
-
 }
+
+
 
 
 /**
@@ -778,18 +930,33 @@ export interface IContainer extends IMethodAccessor {
 export interface IMethodAccessor {
 
     /**
-     * try to invoke the method of intance,  if no instance will create by type.
+     * try to async invoke the method of intance,  if no instance will create by type.
      *
      * @template T
      * @param {Type<any>} type  type of object
      * @param {(string | symbol)} propertyKey method name
      * @param {*} [instance] instance of type.
-     * @param {...ParamProvider[]} providers param provider.
+     * @param {...AsyncParamProvider[]} providers param provider.
      * @returns {Promise<T>}
      * @memberof IMethodAccessor
      */
-    invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: ParamProvider[]): Promise<T>;
+    invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: AsyncParamProvider[]): Promise<T>;
+
+    /**
+     * try to invoke the method of intance,  if no instance will create by type.
+     *
+     * @template T
+     * @param {Type<any>} type
+     * @param {(string | symbol)} propertyKey
+     * @param {*} [instance]
+     * @param {...ParamProvider[]} providers
+     * @returns {T}
+     * @memberof IMethodAccessor
+     */
+    syncInvoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: ParamProvider[]): T
+
 }
+
 
 ```
 

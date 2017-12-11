@@ -3,7 +3,7 @@ import { ParamProvider, AsyncParamProvider } from './ParamProvider';
 import { IMethodAccessor } from './IMethodAccessor';
 import { Type } from './Type';
 import { isFunction, isUndefined } from 'util';
-import { Singleton, Inject, MethodMetadata, BindParameterProviderActionData, ActionComponent, CoreActions } from './core';
+import { Singleton, Inject, MethodMetadata, BindParameterProviderActionData, ActionComponent, CoreActions, DecoratorType } from './core';
 import { symbols } from './utils';
 import { isToken, Token } from './index';
 import { Container } from './Container';
@@ -21,17 +21,16 @@ export class MethodAccessor implements IMethodAccessor {
     async invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: AsyncParamProvider[]): Promise<T> {
         instance = instance || this.container.get(type);
         if (instance && isFunction(instance[propertyKey])) {
-            let accessorData = {
+            let actionData = {
+                target: instance,
+                targetType: type,
                 propertyKey: propertyKey,
-                providers: []
             } as BindParameterProviderActionData;
-            this.container.get<Map<string, ActionComponent>>(symbols.MethodDecoratorMap).forEach((act, key) => {
-                accessorData.methodMetadata = Reflect.getMetadata(key, type);
-                act.execute(this.container, accessorData, CoreActions.bindMethod);
-            });
+            let lifeScope = this.container.getLifeScope();
+            lifeScope.execute(DecoratorType.Parameter, actionData, CoreActions.bindParameterProviders);
+            providers = providers.concat(actionData.execResult);
 
-            providers = providers.concat(accessorData.providers as AsyncParamProvider[]);
-            let parameters = this.container.getMethodParameters(type, instance, propertyKey);
+            let parameters = lifeScope.getMethodParameters(type, instance, propertyKey);
             let paramInstances = await Promise.all(parameters.map(async (type, index) => {
                 let provider: AsyncParamProvider = null;
                 if (providers.length) {
@@ -71,17 +70,17 @@ export class MethodAccessor implements IMethodAccessor {
     syncInvoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: ParamProvider[]): T {
         instance = instance || this.container.get(type);
         if (instance && isFunction(instance[propertyKey])) {
-            let accessorData = {
+            let actionData = {
+                target: instance,
+                targetType: type,
                 propertyKey: propertyKey,
-                providers: []
             } as BindParameterProviderActionData;
-            this.container.get<Map<string, ActionComponent>>(symbols.MethodDecoratorMap).forEach((act, key) => {
-                accessorData.methodMetadata = Reflect.getMetadata(key, type);
-                act.execute(this.container, accessorData, CoreActions.bindParameterProviders);
-            });
+            let lifeScope = this.container.getLifeScope();
+            lifeScope.execute(DecoratorType.Parameter, actionData, CoreActions.bindParameterProviders);
 
-            providers = providers.concat(accessorData.providers);
-            let parameters = this.container.getMethodParameters(type, instance, propertyKey);
+
+            providers = providers.concat(actionData.execResult);
+            let parameters = lifeScope.getMethodParameters(type, instance, propertyKey);
             let paramInstances = parameters.map((type, index) => {
                 let provider: ParamProvider = null;
                 if (providers.length) {

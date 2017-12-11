@@ -5,7 +5,6 @@ import { Joinpoint, Around, Aspect } from '../src';
 export class IocDebug {
     @Around('execution(*)')
     log(joinPoint: Joinpoint) {
-        console.log(joinPoint.fullName, ':', joinPoint.returning, joinPoint.throwing);
+        console.log('aspect append log, method name:', joinPoint.fullName,  ' state:', joinPoint.state, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
     }
-
 }

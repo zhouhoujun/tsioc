@@ -9,22 +9,24 @@ import { AdviceMetadata } from '../metadatas'
 import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IMethodAccessor } from '../../IMethodAccessor';
 import { isFunction } from '../../utils';
-import { Joinpoint } from '../Joinpoint';
-import { async } from 'q';
+import { Joinpoint, JoinpointState } from '../Joinpoint';
+import { isValideAspectTarget } from '../isValideAspectTarget';
+import { isUndefined } from 'util';
+import { stat } from 'fs';
 
 
-export interface BindPointcutActionData extends ActionData<AdviceMetadata> {
+export interface BindPointcutActionData extends ActionData<Joinpoint> {
 }
 
 export class BindMethodPointcutAction extends ActionComposite {
 
-    constructor(decorName?: string, decorType?: DecoratorType) {
-        super(AopActions.registAspect.toString(), decorName, decorType);
+    constructor() {
+        super(AopActions.registAspect);
     }
 
     protected working(container: IContainer, data: BindPointcutActionData) {
         // aspect class do nothing.
-        if (Reflect.hasMetadata(Aspect.toString(), data.targetType)) {
+        if (!isValideAspectTarget(data.targetType)) {
             return;
         }
         let aspects = container.get(AspectSet);
@@ -33,8 +35,9 @@ export class BindMethodPointcutAction extends ActionComposite {
         aspects.forEach((type, aspect) => {
             let adviceMaps = getMethodMetadata<AdviceMetadata>(Advice, type);
             let matchpoints = matcher.match(adviceMaps, data.targetType, data.target);
+            // console.log('matchpoints:', matchpoints);
             matchpoints.forEach(mpt => {
-                if (mpt.name !== 'constructor' && data.target) {
+                if (mpt.name !== 'constructor') {
                     let propertyMethod = data.target[mpt.name];
                     if (isFunction(propertyMethod)) {
                         data.target[mpt.name] = ((...args: any[]) => {
@@ -45,7 +48,9 @@ export class BindMethodPointcutAction extends ActionComposite {
                                 target: data.target,
                                 targetType: data.targetType
                             } as Joinpoint;
+
                             if (mpt.advice.adviceName === 'Before') {
+                                joinPoint.state = JoinpointState.Before;
                                 access.syncInvoke(type, mpt.advice.propertyKey, aspect, {
                                     value: joinPoint,
                                     index: 0
@@ -53,92 +58,64 @@ export class BindMethodPointcutAction extends ActionComposite {
                             }
                             if (mpt.advice.adviceName === 'Around') {
                                 joinPoint.args = args;
+                                joinPoint.state = JoinpointState.Before;
                                 access.syncInvoke(type, mpt.advice.propertyKey, aspect, {
                                     value: joinPoint,
                                     index: 0
                                 });
                             }
-                            let afterAdvice = (value, isAsync?: boolean) => {
-                                if (mpt.advice.adviceName === 'After') {
-                                    if (isAsync) {
-                                        return access.invoke(type, mpt.advice.propertyKey, aspect, {
-                                            value: joinPoint,
-                                            index: 0
-                                        });
-                                    } else {
-                                        return access.syncInvoke(type, mpt.advice.propertyKey, aspect, {
-                                            value: joinPoint,
-                                            index: 0
-                                        });
-                                    }
-                                }
 
-                                if (mpt.advice.adviceName === 'Around') {
-                                    joinPoint.returning = value;
-                                    if (isAsync) {
-                                        return access.invoke(type, mpt.advice.propertyKey, aspect, {
-                                            value: joinPoint,
-                                            index: 0
-                                        });
-                                    } else {
-                                        return access.syncInvoke(type, mpt.advice.propertyKey, aspect, {
-                                            value: joinPoint,
-                                            index: 0
-                                        });
-                                    }
+                            let adviceAction = (state: JoinpointState, isAsync: boolean, returnValue?: any, throwError?: any) => {
+                                joinPoint.state = state;
+                                if (!isUndefined(returnValue)) {
+                                    joinPoint.returning = returnValue;
                                 }
-                                return null;
-                            }
-                            try {
-                                val = propertyMethod(...args);
-                                if (mpt.advice.adviceName === 'After') {
-                                    if (isPromise(val)) {
-                                        val.then(async (value) => {
-                                            await afterAdvice(value, true);
-                                            return value;
-                                        });
-                                    } else {
-                                        afterAdvice(val)
-                                    }
+                                if (!isUndefined(throwError)) {
+                                    joinPoint.throwing = throwError;
                                 }
-                            } catch (err) {
-                                if (mpt.advice.adviceName === 'AfterThrowing') {
-                                    joinPoint.throwing = err;
-                                    access.syncInvoke(type, mpt.advice.propertyKey, aspect, {
+                                if (isAsync) {
+                                    return access.invoke(type, mpt.advice.propertyKey, aspect, {
+                                        value: joinPoint,
+                                        index: 0
+                                    });
+                                } else {
+                                    return access.syncInvoke(type, mpt.advice.propertyKey, aspect, {
                                         value: joinPoint,
                                         index: 0
                                     });
                                 }
+                            }
+
+                            let asResult = (state: JoinpointState, val, hasReturn?: boolean, throwError?: any) => {
                                 if (isPromise(val)) {
-                                    val = val.then(async (value) => {
-                                        await afterAdvice(value, true);
+                                    val.then(async (value) => {
+                                        await adviceAction(state, true, hasReturn ? val : undefined, throwError);
                                         return value;
                                     });
                                 } else {
-                                    afterAdvice(val);
+                                    adviceAction(state, false, hasReturn ? val : undefined, throwError)
                                 }
+                            }
+
+                            try {
+                                val = propertyMethod(...args);
+                                asResult(JoinpointState.After, val);
+
+                            } catch (err) {
+                                if (mpt.advice.adviceName === 'AfterThrowing'
+                                    || mpt.advice.adviceName === 'Around'
+                                    || mpt.advice.adviceName === 'After') {
+                                    asResult(JoinpointState.AfterThrowing, val, false, err);
+                                }
+
                                 throw err;
                             }
-                            if (mpt.advice.adviceName === 'AfterReturning') {
-                                if (isPromise(val)) {
-                                    val = val.then(async value => {
-                                        joinPoint.returning = value;
-                                        await access.invoke(type, mpt.advice.propertyKey, aspect, {
-                                            value: joinPoint,
-                                            index: 0
-                                        });
-                                        return value
-                                    });
-                                } else {
-                                    joinPoint.returning = val;
-                                    access.syncInvoke(type, mpt.advice.propertyKey, aspect, {
-                                        value: joinPoint,
-                                        index: 0
-                                    });
-                                }
+
+                            if (mpt.advice.adviceName === 'AfterReturning' || mpt.advice.adviceName === 'Around') {
+                                asResult(JoinpointState.AfterReturning, val, true);
                             }
                             return val;
-                        }).bind(data.target);
+                        });
                     }
                 }
             });
