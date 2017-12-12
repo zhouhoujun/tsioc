@@ -2,6 +2,7 @@
 export * from './actions';
 export * from './decorators';
 export * from './metadatas';
+export * from './Advices';
 export * from './AspectSet';
 export * from './IAdviceMatcher';
 export * from './AdviceMatcher';
@@ -44,7 +45,8 @@ export function registerAops(container: IContainer) {
 
     lifeScope.addAction(factory.create(AopActions.bindMethodPointcut), DecoratorType.Method);
     // lifeScope.addAction(factory.create(AopActions.bindPropertyPointcut), DecoratorType.Property);
-
+    lifeScope.addAction(factory.create(CoreActions.beforeConstructor), DecoratorType.Class, IocState.runtime);
+    lifeScope.addAction(factory.create(CoreActions.afterConstructor), DecoratorType.Class, IocState.runtime);
     lifeScope.registerDecorator(Aspect, AopActions.registAspect);
 
 }

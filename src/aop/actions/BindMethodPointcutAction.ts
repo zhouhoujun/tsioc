@@ -37,36 +37,38 @@ export class BindMethodPointcutAction extends ActionComposite {
             let adviceMaps = getMethodMetadata<AdviceMetadata>(Advice, type);
             let matchpoints = matcher.match(adviceMaps, data.targetType, data.target);
             matchpoints.forEach(mpt => {
-                if (mpt.name !== 'constructor') {
-                    if (isFunction(data.target[mpt.name])) {
-                        let target = data.target;
-                        let advice = mpt.advice;
-                        let advices: Advices;
-                        let methodName = mpt.name;
-                        let advicesFiled = methodName + '__advices';
-                        if (!target[advicesFiled]) {
-                            target[advicesFiled] = {
-                                Before: [],
-                                After: [],
-                                Around: [],
-                                AfterThrowing: [],
-                                AfterReturning: []
-                            } as Advices;
+                if (isFunction(data.target[mpt.name])) {
+                    let target = data.target;
+                    let methodName = mpt.name;
+                    let fullName = mpt.fullName;
+                    let advice = mpt.advice;
+                    let bindTarget = data.targetType;
 
-                            advices = target[advicesFiled] as Advices;
+                    let advices = aspects.getAdvices(fullName);
+                    if (!advices) {
+                        advices  = {
+                            Before: [],
+                            After: [],
+                            Around: [],
+                            AfterThrowing: [],
+                            AfterReturning: []
+                        } as Advices;
+                        aspects.setAdvices(fullName, advices);
+                        if (methodName !== 'constructor') {
                             let propertyMethod = target[methodName].bind(target);
                             target[methodName] = ((...args: any[]) => {
+                                let advices = aspects.getAdvices(fullName);
                                 let val;
                                 let joinPoint = {
                                     name: methodName,
-                                    fullName: mpt.fullName,
+                                    fullName: fullName,
                                     target: target,
                                     targetType: data.targetType
                                 } as Joinpoint;
 
                                 advices.Before.forEach(advicer => {
                                     joinPoint.state = JoinpointState.Before;
-                                    access.syncInvoke(type, advicer.advice.propertyKey, advicer.aspect, {
+                                    access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, {
                                         value: joinPoint,
                                         index: 0
                                     });
@@ -75,13 +77,13 @@ export class BindMethodPointcutAction extends ActionComposite {
                                 advices.Around.forEach(advicer => {
                                     joinPoint.state = JoinpointState.Before;
                                     joinPoint.args = args;
-                                    access.syncInvoke(type, advicer.advice.propertyKey, advicer.aspect, {
+                                    access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, {
                                         value: joinPoint,
                                         index: 0
                                     });
                                 });
 
-                                let adviceAction = (state: JoinpointState, isAsync: boolean, returnValue?: any, throwError?: any) => {
+                                let adviceAction = (advicer: Advicer, state: JoinpointState, isAsync: boolean, returnValue?: any, throwError?: any) => {
                                     joinPoint.state = state;
                                     if (!isUndefined(returnValue)) {
                                         joinPoint.returning = returnValue;
@@ -90,12 +92,12 @@ export class BindMethodPointcutAction extends ActionComposite {
                                         joinPoint.throwing = throwError;
                                     }
                                     if (isAsync) {
-                                        return access.invoke(type, advice.propertyKey, aspect, {
+                                        return access.invoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, {
                                             value: joinPoint,
                                             index: 0
                                         });
                                     } else {
-                                        return access.syncInvoke(type, advice.propertyKey, aspect, {
+                                        return access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, {
                                             value: joinPoint,
                                             index: 0
                                         });
@@ -108,7 +110,7 @@ export class BindMethodPointcutAction extends ActionComposite {
                                             let hasReturn = ['AfterReturning', 'Around'].indexOf(propertyKey) >= 0;
                                             advices[propertyKey].forEach((advicer: Advicer) => {
                                                 val = val.then(async (value) => {
-                                                    await adviceAction(state, true, hasReturn ? val : undefined, throwError);
+                                                    await adviceAction(advicer, state, true, hasReturn ? val : undefined, throwError);
                                                     return value;
                                                 });
                                             });
@@ -117,7 +119,7 @@ export class BindMethodPointcutAction extends ActionComposite {
                                         propertyKeys.forEach(propertyKey => {
                                             let hasReturn = ['AfterReturning', 'Around'].indexOf(propertyKey) >= 0;
                                             advices[propertyKey].forEach((advicer: Advicer) => {
-                                                adviceAction(state, false, hasReturn ? val : undefined, throwError)
+                                                adviceAction(advicer, state, false, hasReturn ? val : undefined, throwError)
                                             });
                                         });
                                     }
@@ -134,35 +136,48 @@ export class BindMethodPointcutAction extends ActionComposite {
                                 asResult(['AfterReturning', 'Around'], JoinpointState.AfterReturning, val);
                                 return val;
                             });
-                        } else {
-                            advices = target[advicesFiled] as Advices
                         }
-
-                        if (advice.adviceName === 'Before') {
-                            if (!advices.Before.some(a => a.advice === advice && a.aspect === aspect)) {
-                                advices.Before.push({ advice: advice, aspect: aspect });
-                            }
-                        } else if (advice.adviceName === 'Around') {
-                            if (!advices.Around.some(a => a.advice === advice && a.aspect === aspect)) {
-                                advices.Around.push({ advice: advice, aspect: aspect });
-                            }
-                        } else if (advice.adviceName === 'After') {
-                            if (!advices.After.some(a => a.advice === advice && a.aspect === aspect)) {
-                                advices.After.push({ advice: advice, aspect: aspect });
-                            }
-                        } else if (advice.adviceName === 'AfterThrowing') {
-                            if (!advices.AfterThrowing.some(a => a.advice === advice && a.aspect === aspect)) {
-                                advices.AfterThrowing.push({ advice: advice, aspect: aspect });
-                            }
-                        } else if (advice.adviceName === 'AfterReturning') {
-                            if (!advices.AfterReturning.some(a => a.advice === advice && a.aspect === aspect)) {
-                                advices.AfterReturning.push({ advice: advice, aspect: aspect });
-                            }
-                        }
-
                     }
+
+
+                    if (advice.adviceName === 'Before') {
+                        if (!advices.Before.some(a => this.isAdviceEquals(a.advice, advice) && a.aspect === aspect)) {
+                            advices.Before.push({ advice: advice, aspect: aspect, aspectType: type });
+                        }
+                    } else if (advice.adviceName === 'Around') {
+                        if (!advices.Around.some(a => this.isAdviceEquals(a.advice, advice) && a.aspect === aspect)) {
+                            advices.Around.push({ advice: advice, aspect: aspect, aspectType: type });
+                        }
+                    } else if (advice.adviceName === 'After') {
+                        if (!advices.After.some(a => this.isAdviceEquals(a.advice, advice) && a.aspect === aspect)) {
+                            advices.After.push({ advice: advice, aspect: aspect, aspectType: type });
+                        }
+                    } else if (advice.adviceName === 'AfterThrowing') {
+                        if (!advices.AfterThrowing.some(a => this.isAdviceEquals(a.advice, advice) && a.aspect === aspect)) {
+                            advices.AfterThrowing.push({ advice: advice, aspect: aspect, aspectType: type });
+                        }
+                    } else if (advice.adviceName === 'AfterReturning') {
+                        if (!advices.AfterReturning.some(a => this.isAdviceEquals(a.advice, advice) && a.aspect === aspect)) {
+                            advices.AfterReturning.push({ advice: advice, aspect: aspect, aspectType: type });
+                        }
+                    }
+
                 }
+
             });
         });
+    }
+
+    isAdviceEquals(advice1: AdviceMetadata, advice2: AdviceMetadata) {
+        if (!advice1 || !advice2) {
+            return false;
+        }
+        if (advice1 === advice2) {
+            return true;
+        }
+
+        return advice1.adviceName === advice2.adviceName
+            && advice1.pointcut === advice2.pointcut
+            && advice1.propertyKey === advice2.propertyKey;
     }
 }

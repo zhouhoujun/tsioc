@@ -1,4 +1,5 @@
 import { AdviceMetadata } from './metadatas';
+import { Type } from '../index';
 
 
 export interface Advices {
@@ -19,4 +20,5 @@ export interface Advices {
 export interface Advicer {
     advice: AdviceMetadata;
     aspect: any;
+    aspectType: Type<any>;
 }

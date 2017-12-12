@@ -3,6 +3,8 @@ import { IContainer } from '../IContainer';
 import { symbols } from '../utils';
 import { Token } from '../types';
 import { Type } from '../Type';
+import { Advices } from './Advices';
+
 
 /**
  * for global aspect mamager.
@@ -12,8 +14,23 @@ import { Type } from '../Type';
  */
 export class AspectSet {
     private aspects: Map<Type<any>, Function>;
+    private advicesMap: Map<string, Advices>;
     constructor(private container: IContainer) {
         this.aspects = new Map<Type<any>, Function>();
+        this.advicesMap = new Map();
+    }
+
+    setAdvices(key: string, advices: Advices) {
+        if (!this.advicesMap.has(key)) {
+            this.advicesMap.set(key, advices);
+        }
+    }
+
+    getAdvices(key: string) {
+        if (!this.advicesMap.has(key)) {
+            return null;
+        }
+        return this.advicesMap.get(key);
     }
 
     add(aspect: Type<any>) {
