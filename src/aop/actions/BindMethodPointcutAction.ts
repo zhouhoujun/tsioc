@@ -98,7 +98,7 @@ export class BindMethodPointcutAction extends ActionComposite {
                             }
 
                             try {
-                                val = propertyMethod(...args);
+                                val = propertyMethod.bind(data.target)(...args);
                                 asResult(JoinpointState.After, val);
 
                             } catch (err) {
@@ -115,7 +115,7 @@ export class BindMethodPointcutAction extends ActionComposite {
                                 asResult(JoinpointState.AfterReturning, val, true);
                             }
                             return val;
-                        });
+                        }).bind(data.target);
                     }
                 }
             });
