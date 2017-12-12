@@ -4,7 +4,7 @@ import { PropertyMetadata, TypeMetadata, MethodMetadata, ParameterMetadata, Meta
 import { DecoratorType } from './DecoratorType';
 import { isUndefined, isFunction, isNumber, isArray, isSymbol } from 'util';
 import { ArgsIterator } from './ArgsIterator';
-import { isClass, isToken, isClassMetadata } from '../../utils';
+import { isClass, isToken, isClassMetadata, isMetadataObject } from '../../utils';
 import { ObjectMap } from '../../types';
 import { IClassDecorator } from './ClassDecoratorFactory';
 
@@ -94,7 +94,7 @@ export function createDecorator<T>(name: string, adapter?: MetadataAdapter, meta
 function argsToMetadata<T>(args: any[], adapter?: MetadataAdapter): T {
     let metadata: T = null;
     if (args.length) {
-        if (args.length === 1 && !isToken(args[0])) {
+        if (args.length === 1 && isMetadataObject(args[0])) {
             metadata = args[0];
         } else if (adapter) {
             let iterator = new ArgsIterator(args);

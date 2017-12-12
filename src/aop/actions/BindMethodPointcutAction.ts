@@ -13,6 +13,7 @@ import { Joinpoint, JoinpointState } from '../Joinpoint';
 import { isValideAspectTarget } from '../isValideAspectTarget';
 import { isUndefined } from 'util';
 import { stat } from 'fs';
+import { Advices, Advicer } from '../Advices';
 
 
 export interface BindPointcutActionData extends ActionData<Joinpoint> {
@@ -38,84 +39,132 @@ export class BindMethodPointcutAction extends ActionComposite {
             // console.log('matchpoints:', matchpoints);
             matchpoints.forEach(mpt => {
                 if (mpt.name !== 'constructor') {
-                    let propertyMethod = data.target[mpt.name];
-                    if (isFunction(propertyMethod)) {
-                        data.target[mpt.name] = ((...args: any[]) => {
-                            let val;
-                            let joinPoint = {
-                                name: mpt.name,
-                                fullName: mpt.fullName,
-                                target: data.target,
-                                targetType: data.targetType
-                            } as Joinpoint;
+                    if (isFunction(data.target[mpt.name])) {
+                        let target = data.target;
+                        let advice = mpt.advice;
+                        let advices: Advices;
+                        let methodName = mpt.name;
+                        let advicesFiled = methodName + '__advices';
+                        if (!target[advicesFiled]) {
+                            target[advicesFiled] = {
+                                Before: [],
+                                After: [],
+                                Around: [],
+                                AfterThrowing: [],
+                                AfterReturning: []
+                            } as Advices;
 
-                            if (mpt.advice.adviceName === 'Before') {
-                                joinPoint.state = JoinpointState.Before;
-                                access.syncInvoke(type, mpt.advice.propertyKey, aspect, {
-                                    value: joinPoint,
-                                    index: 0
-                                });
-                            }
-                            if (mpt.advice.adviceName === 'Around') {
-                                joinPoint.args = args;
-                                joinPoint.state = JoinpointState.Before;
-                                access.syncInvoke(type, mpt.advice.propertyKey, aspect, {
-                                    value: joinPoint,
-                                    index: 0
-                                });
-                            }
+                            advices = target[advicesFiled] as Advices;
+                            let propertyMethod = target[methodName].bind(target);
+                            target[methodName] = ((...args: any[]) => {
+                                let val;
+                                let joinPoint = {
+                                    name: methodName,
+                                    fullName: mpt.fullName,
+                                    target: target,
+                                    targetType: data.targetType
+                                } as Joinpoint;
 
-                            let adviceAction = (state: JoinpointState, isAsync: boolean, returnValue?: any, throwError?: any) => {
-                                joinPoint.state = state;
-                                if (!isUndefined(returnValue)) {
-                                    joinPoint.returning = returnValue;
-                                }
-                                if (!isUndefined(throwError)) {
-                                    joinPoint.throwing = throwError;
-                                }
-                                if (isAsync) {
-                                    return access.invoke(type, mpt.advice.propertyKey, aspect, {
+                                advices.Before.forEach(advicer => {
+                                    joinPoint.state = JoinpointState.Before;
+                                    access.syncInvoke(type, advicer.advice.propertyKey, advicer.aspect, {
                                         value: joinPoint,
                                         index: 0
                                     });
-                                } else {
-                                    return access.syncInvoke(type, mpt.advice.propertyKey, aspect, {
+                                });
+
+                                advices.Around.forEach(advicer => {
+                                    joinPoint.state = JoinpointState.Before;
+                                    joinPoint.args = args;
+                                    access.syncInvoke(type, advicer.advice.propertyKey, advicer.aspect, {
                                         value: joinPoint,
                                         index: 0
                                     });
-                                }
-                            }
+                                });
 
-                            let asResult = (state: JoinpointState, val, hasReturn?: boolean, throwError?: any) => {
-                                if (isPromise(val)) {
-                                    val.then(async (value) => {
-                                        await adviceAction(state, true, hasReturn ? val : undefined, throwError);
-                                        return value;
-                                    });
-                                } else {
-                                    adviceAction(state, false, hasReturn ? val : undefined, throwError)
-                                }
-                            }
-
-                            try {
-                                val = propertyMethod.bind(data.target)(...args);
-                                asResult(JoinpointState.After, val);
-
-                            } catch (err) {
-                                if (mpt.advice.adviceName === 'AfterThrowing'
-                                    || mpt.advice.adviceName === 'Around'
-                                    || mpt.advice.adviceName === 'After') {
-                                    asResult(JoinpointState.AfterThrowing, val, false, err);
+                                let adviceAction = (state: JoinpointState, isAsync: boolean, returnValue?: any, throwError?: any) => {
+                                    joinPoint.state = state;
+                                    if (!isUndefined(returnValue)) {
+                                        joinPoint.returning = returnValue;
+                                    }
+                                    if (!isUndefined(throwError)) {
+                                        joinPoint.throwing = throwError;
+                                    }
+                                    if (isAsync) {
+                                        return access.invoke(type, advice.propertyKey, aspect, {
+                                            value: joinPoint,
+                                            index: 0
+                                        });
+                                    } else {
+                                        return access.syncInvoke(type, advice.propertyKey, aspect, {
+                                            value: joinPoint,
+                                            index: 0
+                                        });
+                                    }
                                 }
 
-                                throw err;
-                            }
+                                let asResult = (propertyKeys: string[], state: JoinpointState, val, throwError?: any) => {
+                                    if (isPromise(val)) {
+                                        propertyKeys.forEach(propertyKey => {
+                                            let hasReturn = ['AfterReturning', 'Around'].indexOf(propertyKey) >= 0;
+                                            advices[propertyKey].forEach((advicer: Advicer) => {
+                                                val = val.then(async (value) => {
+                                                    await adviceAction(state, true, hasReturn ? val : undefined, throwError);
+                                                    return value;
+                                                });
+                                            });
+                                        });
+                                    } else {
+                                        propertyKeys.forEach(propertyKey => {
+                                            let hasReturn = ['AfterReturning', 'Around'].indexOf(propertyKey) >= 0;
+                                            advices[propertyKey].forEach((advicer: Advicer) => {
+                                                adviceAction(state, false, hasReturn ? val : undefined, throwError)
+                                            });
+                                        });
+                                    }
+                                }
 
-                            if (mpt.advice.adviceName === 'AfterReturning' || mpt.advice.adviceName === 'Around') {
-                                asResult(JoinpointState.AfterReturning, val, true);
+                                try {
+                                    val = propertyMethod(...args);
+                                    asResult(['Around', 'After'], JoinpointState.After, val);
+                                } catch (err) {
+                                    asResult(['After', 'Around', 'AfterThrowing'], JoinpointState.After, val, err);
+                                    throw err;
+                                }
+
+                                asResult(['AfterReturning', 'Around'], JoinpointState.AfterReturning, val);
+                                return val;
+                            });
+                        } else {
+                            advices = target[advicesFiled] as Advices
+                        }
+
+                        console.log('advice.adviceName', advice.adviceName);
+
+                        if (advice.adviceName === 'Before') {
+                            if (!advices.Before.some(a => a.advice === advice && a.aspect === aspect)) {
+                                // console.log('add Before:', advice);
+                                advices.Before.push({ advice: advice, aspect: aspect });
                             }
-                            return val;
-                        }).bind(data.target);
+                        } else if (advice.adviceName === 'Around') {
+                            if (!advices.Around.some(a => a.advice === advice && a.aspect === aspect)) {
+                                console.log('add Around:', advice);
+                                advices.Around.push({ advice: advice, aspect: aspect });
+                            }
+                        } else if (advice.adviceName === 'After') {
+                            if (!advices.After.some(a => a.advice === advice && a.aspect === aspect)) {
+                                advices.After.push({ advice: advice, aspect: aspect });
+                            }
+                        } else if (advice.adviceName === 'AfterThrowing') {
+                            if (!advices.AfterThrowing.some(a => a.advice === advice && a.aspect === aspect)) {
+                                advices.AfterThrowing.push({ advice: advice, aspect: aspect });
+                            }
+                        } else if (advice.adviceName === 'AfterReturning') {
+                            if (!advices.AfterReturning.some(a => a.advice === advice && a.aspect === aspect)) {
+                                advices.AfterReturning.push({ advice: advice, aspect: aspect });
+                            }
+                        }
+
                     }
                 }
             });

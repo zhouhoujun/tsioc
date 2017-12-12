@@ -41,12 +41,13 @@ export class AdviceMatcher implements IAdviceMatcher {
 
         // console.log('all method or property:', points);
         let matched: MatchPointcut[] = [];
-        for (let name in adviceMaps) {
+        Object.keys(adviceMaps).forEach(name => {
             let advices = adviceMaps[name];
             advices.forEach(metadata => {
-                matched = matched.concat(this.filterPointcut(points, metadata));
+                matched.push(...this.filterPointcut(points, metadata));
             });
-        }
+        });
+
         return matched;
 
     }
@@ -69,17 +70,13 @@ export class AdviceMatcher implements IAdviceMatcher {
                 }
                 return matcher.match(a.fullName);
             }).map(p => {
-                let m = p as MatchPointcut;
-                m.advice = metadata;
-                return m;
+                return Object.assign({}, p, { advice: metadata });
             });
         } else if (isRegExp(metadata.pointcut)) {
             let pointcut = metadata.pointcut;
             return points.filter(m => pointcut.test(m.fullName))
                 .map(p => {
-                    let m = p as MatchPointcut;
-                    m.advice = metadata;
-                    return m;
+                    return Object.assign({}, p, { advice: metadata });
                 });
         }
 

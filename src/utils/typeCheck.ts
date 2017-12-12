@@ -67,7 +67,7 @@ export function isToken(target: any): target is Token<any> {
  *
  * @export
  * @param {*} target
- * @returns {target is Promise<any>} 
+ * @returns {target is Promise<any>}
  */
 export function isPromise(target: any): target is Promise<any> {
     if (!target) {
@@ -80,7 +80,16 @@ export function isPromise(target: any): target is Promise<any> {
 }
 
 
-function isRightObject(target, props: string[], extendsProps?: string[]): boolean {
+/**
+ * is metadata object or not.
+ *
+ * @export
+ * @param {any} target
+ * @param {string[]} [props]
+ * @param {string[]} [extendsProps]
+ * @returns {boolean}
+ */
+export function isMetadataObject(target, props?: string[], extendsProps?: string[]): boolean {
     if (!target) {
         return false;
     }
@@ -88,9 +97,19 @@ function isRightObject(target, props: string[], extendsProps?: string[]): boolea
         return false;
     }
 
+    if (target instanceof RegExp || target instanceof Date) {
+        return false;
+    }
+
+    if (target.constructor && target.constructor.name !== 'Object') {
+        return false;
+    }
+
+    props = props || ['type'];
     if (extendsProps) {
         props = extendsProps.concat(props);
     }
+
     return Object.keys(target).some(n => props.indexOf(n) > 0)
 }
 
@@ -105,7 +124,7 @@ function isRightObject(target, props: string[], extendsProps?: string[]): boolea
  * @returns {boolean}
  */
 export function isClassMetadata(target, extendsProps?: string[]): boolean {
-    return isRightObject(target, ['singleton', 'provide', 'alias', 'type'], extendsProps);
+    return isMetadataObject(target, ['singleton', 'provide', 'alias', 'type'], extendsProps);
 }
 
 
@@ -119,7 +138,7 @@ export function isClassMetadata(target, extendsProps?: string[]): boolean {
  * @returns {boolean}
  */
 export function isParamMetadata(target, extendsProps?: string[]): boolean {
-    return isRightObject(target, ['type', 'provider', 'index'], extendsProps);
+    return isMetadataObject(target, ['type', 'provider', 'index'], extendsProps);
 }
 
 
@@ -132,7 +151,7 @@ export function isParamMetadata(target, extendsProps?: string[]): boolean {
  * @returns {boolean}
  */
 export function isParamPropMetadata(target, extendsProps?: string[]): boolean {
-    return isRightObject(target, ['type', 'provider', 'index'], extendsProps);
+    return isMetadataObject(target, ['type', 'provider', 'index'], extendsProps);
 }
 
 
@@ -145,7 +164,7 @@ export function isParamPropMetadata(target, extendsProps?: string[]): boolean {
  * @returns {boolean}
  */
 export function isPropertyMetadata(target, extendsProps?: string[]): boolean {
-    return isRightObject(target, ['type', 'provider'], extendsProps);
+    return isMetadataObject(target, ['type', 'provider'], extendsProps);
 }
 
 
