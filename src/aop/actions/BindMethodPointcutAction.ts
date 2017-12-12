@@ -139,8 +139,6 @@ export class BindMethodPointcutAction extends ActionComposite {
                             advices = target[advicesFiled] as Advices
                         }
 
-                        console.log('advice.adviceName', advice.adviceName);
-
                         if (advice.adviceName === 'Before') {
                             if (!advices.Before.some(a => a.advice === advice && a.aspect === aspect)) {
                                 // console.log('add Before:', advice);
