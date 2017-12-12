@@ -149,22 +149,17 @@ export class DefaultLifeScope implements LifeScope {
     }
 
     isSingletonType<T>(type: Type<T>): boolean {
-        if (Reflect.hasOwnMetadata(Singleton.toString(), type)) {
+        if (Reflect.hasMetadata(Singleton.toString(), type)) {
             return true;
         }
 
-        let singleton;
-        this.getClassDecorators().forEach((act, key) => {
-            if (singleton) {
-                return false;
-            }
-            let metadatas = Reflect.getMetadata(key, type) as ClassMetadata[] || [];
+        return this.getClassDecorators().some(surm => {
+            let metadatas = Reflect.getMetadata(surm.name, type) as ClassMetadata[] || [];
             if (isArray(metadatas)) {
-                singleton = metadatas.some(m => m.singleton === true);
+                return metadatas.some(m => m.singleton === true);
             }
-            return true;
+            return false;
         })
-        return singleton;
     }
 
     filerDecorators(express?: Express<DecorSummary, boolean>): DecorSummary[] {
