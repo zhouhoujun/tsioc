@@ -12,6 +12,7 @@ import { Advices } from './Advices';
  * @export
  * @class AspectSet
  */
+@Singleton
 export class AspectSet {
     private aspects: Map<Type<any>, Function>;
     private advicesMap: Map<string, Advices>;

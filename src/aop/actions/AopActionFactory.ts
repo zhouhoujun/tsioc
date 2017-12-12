@@ -1,7 +1,10 @@
 import { DecoratorType, ActionComposite, ActionComponent, Singleton, CoreActions } from '../../core';
 import { AopActions } from './AopActions';
 import { RegistAspectAction } from './RegistAspectAction';
-import { BeforeConstructorAction, AfterConstructorAction, BindMethodPointcutAction, BindPropertyPointcutAction } from '../actions';
+import {
+    InvokeBeforeConstructorAction, InvokeAfterConstructorAction,
+    BindMethodPointcutAction, BindPropertyPointcutAction, MatchPointcutAction
+} from '../actions';
 import { symbols } from '../../utils';
 
 
@@ -14,12 +17,16 @@ export class AopActionFactory {
                 action = new RegistAspectAction();
                 break;
 
-            case CoreActions.beforeConstructor:
-                action = new BeforeConstructorAction();
+            case AopActions.matchPointcut:
+                action = new MatchPointcutAction();
                 break;
 
-            case CoreActions.afterConstructor:
-                action = new AfterConstructorAction();
+            case AopActions.invokeBeforeConstructorAdvices:
+                action = new InvokeBeforeConstructorAction();
+                break;
+
+            case AopActions.invokeAfterConstructorAdvices:
+                action = new InvokeAfterConstructorAction();
                 break;
 
             case AopActions.bindMethodPointcut:

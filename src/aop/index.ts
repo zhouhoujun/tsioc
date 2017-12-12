@@ -21,7 +21,7 @@ import { AopActions } from './actions';
 import { AdviceMatcher } from './AdviceMatcher';
 import { Advice } from './decorators';
 import { LifeScope } from '../LifeScope';
-import { DecoratorType, CoreActions } from '../core/index';
+import { DecoratorType, CoreActions } from '../core';
 import { AopActionFactory } from './actions/AopActionFactory';
 import { IocState } from '../types';
 
@@ -42,11 +42,13 @@ export function registerAops(container: IContainer) {
 
     let factory = new AopActionFactory();
     lifeScope.addAction(factory.create(AopActions.registAspect), DecoratorType.Class, IocState.design);
-
+    lifeScope.addAction(factory.create(AopActions.matchPointcut), DecoratorType.Class, IocState.runtime);
     lifeScope.addAction(factory.create(AopActions.bindMethodPointcut), DecoratorType.Method);
     // lifeScope.addAction(factory.create(AopActions.bindPropertyPointcut), DecoratorType.Property);
-    lifeScope.addAction(factory.create(CoreActions.beforeConstructor), DecoratorType.Class, IocState.runtime);
-    lifeScope.addAction(factory.create(CoreActions.afterConstructor), DecoratorType.Class, IocState.runtime);
+
+    lifeScope.addAction(factory.create(AopActions.invokeBeforeConstructorAdvices), DecoratorType.Class, CoreActions.beforeConstructor);
+    lifeScope.addAction(factory.create(AopActions.invokeAfterConstructorAdvices), DecoratorType.Class, CoreActions.afterConstructor);
+
     lifeScope.registerDecorator(Aspect, AopActions.registAspect);
 
 }

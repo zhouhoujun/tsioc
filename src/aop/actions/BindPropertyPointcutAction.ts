@@ -17,7 +17,7 @@ export interface BindPropertyPointcutActionData extends ActionData<AdviceMetadat
 export class BindPropertyPointcutAction extends ActionComposite {
 
     constructor() {
-        super(AopActions.registAspect);
+        super(AopActions.bindPropertyPointcut);
     }
 
     protected working(container: IContainer, data: BindPropertyPointcutActionData) {

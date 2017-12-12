@@ -12,6 +12,7 @@ export enum AopActions {
      */
     registAspect = 'registAspect',
 
+    matchPointcut = 'matchPointcut',
     /**
      * bind property pointcut.
      */
@@ -19,6 +20,10 @@ export enum AopActions {
     /**
      * bind method pointcut for instance.
      */
-    bindMethodPointcut = 'bindMethodPointcut'
+    bindMethodPointcut = 'bindMethodPointcut',
+
+    invokeBeforeConstructorAdvices = 'invokeBeforeConstructorAdvices',
+
+    invokeAfterConstructorAdvices = 'invokeAfterConstructorAdvices'
 
 }

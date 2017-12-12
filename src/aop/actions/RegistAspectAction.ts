@@ -1,4 +1,3 @@
-
 import { DecoratorType, ActionData, ClassMetadata, ActionComposite, getTypeMetadata } from '../../core';
 import { IContainer } from '../../IContainer';
 import { AspectSet } from '../AspectSet';
@@ -13,7 +12,7 @@ export interface RegistAspectActionData extends ActionData<ClassMetadata> {
 export class RegistAspectAction extends ActionComposite {
 
     constructor() {
-        super(AopActions.registAspect.toString());
+        super(AopActions.registAspect);
     }
 
     protected working(container: IContainer, data: RegistAspectActionData) {

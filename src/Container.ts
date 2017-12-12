@@ -5,13 +5,13 @@ import { Registration } from './Registration';
 import { Type, AbstractType } from './Type';
 import { isClass, isFunction, symbols } from './utils';
 import { isSymbol, isString, isUndefined, isArray } from 'util';
-import { AspectSet, registerAops, AopActions, RegistAspectActionData, BeforeConstructorActionData } from './aop';
+import { registerAops } from './aop';
 import { MethodAccessor } from './MethodAccessor';
 import { IMethodAccessor } from './IMethodAccessor';
 import { ParamProvider, AsyncParamProvider } from './ParamProvider';
 import { ActionComponent, DecoratorType, registerCores, CoreActions, TypeMetadata, BindProviderActionData, ClassMetadata, Singleton, PropertyMetadata, BindPropertyTypeActionData, getMethodMetadata, getPropertyMetadata, BindPropertyActionData } from './core';
 import { LifeScope } from './LifeScope';
-import { IocState } from './index';
+import { IocState } from './types';
 
 
 export const NOT_FOUND = new Object();
@@ -276,18 +276,24 @@ export class Container implements IContainer {
                 return this.singleton.get(key);
             }
 
+            lifeScope.execute(DecoratorType.Class, {
+                targetType: ClassT
+            }, IocState.runtime);
+
             let paramInstances = parameters.map((type, index) => this.get(type));
 
             lifeScope.execute(DecoratorType.Class, {
-                targetType: ClassT
-            }, IocState.runtime, CoreActions.beforeConstructor);
+                targetType: ClassT,
+                args: paramInstances,
+                argsTypes: parameters
+            }, CoreActions.beforeConstructor);
 
             let instance = new ClassT(...paramInstances);
 
             lifeScope.execute(DecoratorType.Class, {
                 target: instance,
                 targetType: ClassT
-            }, IocState.runtime, CoreActions.afterConstructor);
+            }, CoreActions.afterConstructor);
 
             lifeScope.execute(DecoratorType.Property, {
                 target: instance,

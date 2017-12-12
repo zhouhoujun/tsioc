@@ -32,8 +32,8 @@ export function registerCores(container: IContainer) {
     let factory = new ActionFactory();
 
     let lifeScope = container.get<LifeScope>(symbols.LifeScope);
-    // lifeScope.addAction(factory.create(CoreActions.beforeConstructor), DecoratorType.Class);
-    // lifeScope.addAction(factory.create(CoreActions.afterConstructor), DecoratorType.Class);
+    lifeScope.addAction(factory.create(CoreActions.beforeConstructor), DecoratorType.Class);
+    lifeScope.addAction(factory.create(CoreActions.afterConstructor), DecoratorType.Class);
     lifeScope.addAction(factory.create(CoreActions.bindProvider), DecoratorType.Class, IocState.design);
     lifeScope.addAction(factory.create(CoreActions.bindPropertyType), DecoratorType.Property);
     lifeScope.addAction(factory.create(CoreActions.injectProperty), DecoratorType.Property);

@@ -1,4 +1,4 @@
-import { ObjectMap } from '../types';
+import { ObjectMap, Token } from '../types';
 import { IContainer } from '../IContainer';
 import { Type } from '../Type';
 
@@ -11,6 +11,22 @@ import { Type } from '../Type';
  * @template T
  */
 export interface ActionData<T> {
+
+    /**
+     * the args.
+     *
+     * @type {any[]}
+     * @memberof ActionData
+     */
+    args?: any[];
+
+    /**
+     * args types.
+     *
+     * @type {Token<any>[]}
+     * @memberof ActionData
+     */
+    argsTypes?: Token<any>[];
 
     /**
      * target instance.

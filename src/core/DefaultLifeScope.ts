@@ -1,5 +1,5 @@
 import { LifeScope, DecorSummary } from '../LifeScope';
-import { ObjectMap, Token } from '../types';
+import { ObjectMap, Token, IocState } from '../types';
 import { Type } from '../Type';
 import { isClass } from '../utils';
 import { Singleton } from './decorators';
@@ -11,7 +11,6 @@ import { DecoratorType } from './factories';
 import { Express } from 'development-core';
 import { ActionData } from './ActionData';
 import { ActionFactory } from './ActionFactory';
-import { IocState } from '../index';
 
 export class DefaultLifeScope implements LifeScope {
 
@@ -28,11 +27,12 @@ export class DefaultLifeScope implements LifeScope {
         let types = this.toActionType(type);
         types.split(',').forEach(name => {
             let parent = this.getAtionByName(name);
-            nodepaths.forEach(name => {
-                parent = parent.find(act => act.name === name);
+            nodepaths.forEach(pathname => {
+                parent = parent.find(act => act.name === pathname);
             });
-
-            parent.add(action);
+            if (parent) {
+                parent.add(action);
+            }
         });
         return this;
     }
@@ -192,7 +192,7 @@ export class DefaultLifeScope implements LifeScope {
 
         let action = factory.create('');
         action.add(factory.create(this.toActionType(DecoratorType.Class))
-            .add(factory.create(IocState.design)
+                .add(factory.create(IocState.design)
                 .add(factory.create(IocState.runtime))))
             .add(factory.create(this.toActionType(DecoratorType.Method)))
             .add(factory.create(this.toActionType(DecoratorType.Property)))

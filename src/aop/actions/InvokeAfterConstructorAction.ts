@@ -1,35 +1,29 @@
 import { DecoratorType, ActionData, ActionComposite, getMethodMetadata } from '../../core';
 import { IContainer } from '../../IContainer';
 import { AspectSet } from '../AspectSet';
-import { isClass } from '../../utils';
+import { isClass, symbols } from '../../utils';
 import { AopActions } from './AopActions';
-import { Aspect } from '../decorators';
+import { Aspect, Advice } from '../decorators';
 import { AdviceMetadata } from '../metadatas'
-import { Token } from '../../types';
-import { Advice, symbols } from '../../index';
 import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IMethodAccessor } from '../../IMethodAccessor';
 import { Advices } from '../Advices';
 import { Joinpoint, JoinpointState } from '../Joinpoint';
 
-
-export interface BeforeConstructorActionData extends ActionData<AdviceMetadata> {
-    paramTypes: Token<any>[];
-    params: any[];
+export interface InvokeAfterConstructorActionData extends ActionData<AdviceMetadata> {
 }
 
-export class BeforeConstructorAction extends ActionComposite {
+export class InvokeAfterConstructorAction extends ActionComposite {
 
     constructor() {
-        super(AopActions.registAspect);
+        super(AopActions.invokeAfterConstructorAdvices);
     }
 
-    protected working(container: IContainer, data: BeforeConstructorActionData) {
+    protected working(container: IContainer, data: InvokeAfterConstructorActionData) {
         // aspect class do nothing.
         if (Reflect.hasMetadata(Aspect.toString(), data.targetType)) {
             return;
         }
-
         let aspects = container.get(AspectSet);
 
         let advices = aspects.getAdvices(data.targetType.name + '.constructor');
@@ -38,7 +32,7 @@ export class BeforeConstructorAction extends ActionComposite {
         }
 
         let access = container.get<IMethodAccessor>(symbols.IMethodAccessor);
-        advices.Before.forEach(advicer => {
+        advices.After.forEach(advicer => {
             let joinPoint = {
                 name: 'constructor',
                 fullName: data.targetType.name + '.constructor',
@@ -50,10 +44,10 @@ export class BeforeConstructorAction extends ActionComposite {
                 index: 0
             });
         });
+
         advices.Around.forEach(advicer => {
             let joinPoint = {
-                args: data.params,
-                state: JoinpointState.Before,
+                state: JoinpointState.After,
                 name: 'constructor',
                 fullName: data.targetType.name + '.constructor',
                 target: data.target,
