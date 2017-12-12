@@ -632,18 +632,20 @@ export const Controller: IControllerDecorator<ControllerMetadata> =
         });
     }) as IControllerDecorator<ControllerMetadata>;
 
+export const Aspect: IClassDecorator<ClassMetadata> = createClassDecorator<ClassMetadata>('Aspect', null, (metadata) => {
+    metadata.singleton = true;
+    return metadata;
+});
 
-// 2. create decorator action
-let builder = new ActionBuilder();
-let actionComponent = builder.build(Controller.toString(), this.getDecoratorType(Controller),
-    ActionType.provider);
-actionComponent.add(...);
+
+// 2. add decorator action
+ let lifeScope = container.get<LifeScope>(symbols.LifeScope);
+ let factory = new AopActionFactory();
+ lifeScope.addAction(factory.create(AopActions.registAspect), DecoratorType.Class, IocState.design);
+
 
 // 3. register decorator
-let container = builder.create();
-container.registerDecorator<ControllerMetadata>(
-    Controller,
-    actionComponent);
+lifeScope.registerDecorator(Aspect, AopActions.registAspect);
 
 ```
 
