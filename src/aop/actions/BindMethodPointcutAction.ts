@@ -105,7 +105,7 @@ export class BindMethodPointcutAction extends ActionComposite {
                                 let hasReturn = ['AfterReturning', 'Around'].indexOf(propertyKey) >= 0;
                                 advices[propertyKey].forEach((advicer: Advicer) => {
                                     val = val.then(async (value) => {
-                                        await adviceAction(advicer, state, true, hasReturn ? val : undefined, throwError);
+                                        await adviceAction(advicer, state, true, hasReturn ? value : undefined, throwError);
                                         return value;
                                     });
                                 });
