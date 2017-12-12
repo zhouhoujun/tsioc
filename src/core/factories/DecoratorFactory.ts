@@ -66,17 +66,14 @@ export function createDecorator<T>(name: string, adapter?: MetadataAdapter, meta
             }
         }
         metadata = argsToMetadata(args, adapter);
-        // console.log('metadata: ', args, metadata);
         if (metadata) {
             return (...args: any[]) => {
-                // console.log('some1 metadata: ', args, metadata);
                 return storeMetadata(name, metaName, args, metadata, metadataExtends);
             }
         } else {
             if (args.length === 1) {
                 if (!isClass(args[0])) {
                     return (...args: any[]) => {
-                        // console.log('some2 metadata: ', args, metadata);
                         return storeMetadata(name, metaName, args, metadata, metadataExtends);
                     };
                 }
@@ -111,7 +108,6 @@ function storeMetadata<T>(name: string, metaName: string, args: any[], metadata?
     switch (args.length) {
         case 1:
             target = args[0];
-            // console.log('package:', target.name);
             setTypeMetadata(name, metaName, target, metadata, metadataExtends);
             return target;
         case 2:
@@ -194,8 +190,6 @@ function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: str
     let meta = getMethodMetadata(metaName, target);
     meta[propertyKey] = meta[propertyKey] || [];
 
-    // let designParams = Reflect.getMetadata('design:paramtypes', target, propertyKey);
-    // console.log('setMethodMetadata', propertyKey, designParams);
     let methodMeadata = (metadata || {}) as T;
     methodMeadata.decorator = name;
     methodMeadata.propertyKey = propertyKey;

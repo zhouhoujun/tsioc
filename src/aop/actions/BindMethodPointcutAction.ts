@@ -36,7 +36,6 @@ export class BindMethodPointcutAction extends ActionComposite {
         aspects.forEach((type, aspect) => {
             let adviceMaps = getMethodMetadata<AdviceMetadata>(Advice, type);
             let matchpoints = matcher.match(adviceMaps, data.targetType, data.target);
-            // console.log('matchpoints:', matchpoints);
             matchpoints.forEach(mpt => {
                 if (mpt.name !== 'constructor') {
                     if (isFunction(data.target[mpt.name])) {
@@ -141,12 +140,10 @@ export class BindMethodPointcutAction extends ActionComposite {
 
                         if (advice.adviceName === 'Before') {
                             if (!advices.Before.some(a => a.advice === advice && a.aspect === aspect)) {
-                                // console.log('add Before:', advice);
                                 advices.Before.push({ advice: advice, aspect: aspect });
                             }
                         } else if (advice.adviceName === 'Around') {
                             if (!advices.Around.some(a => a.advice === advice && a.aspect === aspect)) {
-                                console.log('add Around:', advice);
                                 advices.Around.push({ advice: advice, aspect: aspect });
                             }
                         } else if (advice.adviceName === 'After') {

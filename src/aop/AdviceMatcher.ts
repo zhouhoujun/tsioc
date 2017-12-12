@@ -38,8 +38,6 @@ export class AdviceMatcher implements IAdviceMatcher {
             });
         });
 
-
-        // console.log('all method or property:', points);
         let matched: MatchPointcut[] = [];
         Object.keys(adviceMaps).forEach(name => {
             let advices = adviceMaps[name];
