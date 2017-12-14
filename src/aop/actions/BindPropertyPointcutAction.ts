@@ -23,7 +23,7 @@ export class BindPropertyPointcutAction extends ActionComposite {
 
     protected working(container: IContainer, data: BindPropertyPointcutActionData) {
         // aspect class do nothing.
-        if (!isValideAspectTarget(data.targetType) && !data.target) {
+        if (!data.target || !isValideAspectTarget(data.targetType)) {
             return;
         }
         let aspects = container.get(AspectSet);

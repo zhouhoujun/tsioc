@@ -28,7 +28,7 @@ export class BindMethodPointcutAction extends ActionComposite {
 
     protected working(container: IContainer, data: BindPointcutActionData) {
         // aspect class do nothing.
-        if (!isValideAspectTarget(data.targetType) && !data.target) {
+        if (!data.target || !isValideAspectTarget(data.targetType)) {
             return;
         }
         let aspects = container.get(AspectSet);
@@ -130,13 +130,13 @@ export class BindMethodPointcutAction extends ActionComposite {
 
                     try {
                         val = propertyMethod(...args);
-                        val = asResult(['Around', 'After'], JoinpointState.After, val);
+                        asResult(['Around', 'After'], JoinpointState.After, val);
                     } catch (err) {
                         asResult(['After', 'Around', 'AfterThrowing'], JoinpointState.After, val, err);
                         throw err;
                     }
 
-                    asResult(['AfterReturning', 'Around'], JoinpointState.AfterReturning, val);
+                    val = asResult(['AfterReturning', 'Around'], JoinpointState.AfterReturning, val);
                     return val;
                 });
             }
