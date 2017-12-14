@@ -9,6 +9,7 @@ import { AdviceMetadata } from '../metadatas';
 import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IMethodAccessor } from '../../IMethodAccessor';
 import { isValideAspectTarget } from '../isValideAspectTarget';
+import { Pointcut } from '../Pointcut';
 
 
 export interface BindPropertyPointcutActionData extends ActionData<AdviceMetadata> {
@@ -22,34 +23,44 @@ export class BindPropertyPointcutAction extends ActionComposite {
 
     protected working(container: IContainer, data: BindPropertyPointcutActionData) {
         // aspect class do nothing.
-        if (!isValideAspectTarget(data.targetType)) {
+        if (!isValideAspectTarget(data.targetType) && !data.target) {
             return;
         }
         let aspects = container.get(AspectSet);
-        let matcher = container.get<IAdviceMatcher>(symbols.IAdviceMatcher);
         let access = container.get<IMethodAccessor>(symbols.IMethodAccessor);
-        aspects.forEach((type, aspect) => {
-            let adviceMaps = getMethodMetadata<AdviceMetadata>(Advice, type);
-            let matchpoints = matcher.match(adviceMaps, data.targetType, data.target);
-            matchpoints.forEach(mpt => {
-                // TODO: property work.
 
-                // if (mpt.name !== 'constructor' && data.target) {
-                //     let propertyMethod = data.target[mpt.name];
-                //     if (!isFunction(propertyMethod)) {
-                //         // TODO: set
-                //         Object.defineProperty(data.target, mpt.name, {
-                //             value: undefined,
-                //             get() {
-                //                 this.value;
-                //             },
-                //             set(val: any) {
-                //                 this.value = val;
-                //             }
-                //         })
-                //     }
-                // }
+        let className = data.targetType.name;
+        let properties: Pointcut[] = [];
+
+        let target = data.target;
+        Object.getOwnPropertyNames(target).forEach(name => {
+            properties.push({
+                name: name,
+                fullName: `${className}.${name}`
             });
+        });
+
+        properties.forEach(pointcut => {
+            let fullName = pointcut.fullName;
+            let propertyName = pointcut.name;
+            let advices = aspects.getAdvices(fullName);
+            if (advices) {
+                var descriptor = Object.getOwnPropertyDescriptor(target, propertyName);
+                Object.defineProperty(target, propertyName, {
+                    get() {
+                        return this.value;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+                if (descriptor.writable) {
+                    Object.defineProperty(target, propertyName, {
+                        set(value) {
+                            this.value = value;
+                        }
+                    });
+                }
+            }
         });
     }
 }

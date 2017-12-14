@@ -28,7 +28,7 @@ export class BindMethodPointcutAction extends ActionComposite {
 
     protected working(container: IContainer, data: BindPointcutActionData) {
         // aspect class do nothing.
-        if (!isValideAspectTarget(data.targetType)) {
+        if (!isValideAspectTarget(data.targetType) && !data.target) {
             return;
         }
         let aspects = container.get(AspectSet);
@@ -105,8 +105,12 @@ export class BindMethodPointcutAction extends ActionComposite {
                                 let hasReturn = ['AfterReturning', 'Around'].indexOf(propertyKey) >= 0;
                                 advices[propertyKey].forEach((advicer: Advicer) => {
                                     val = val.then(async (value) => {
-                                        await adviceAction(advicer, state, true, hasReturn ? value : undefined, throwError);
-                                        return value;
+                                        let retval = await adviceAction(advicer, state, true, hasReturn ? value : undefined, throwError);
+                                        if (hasReturn && !isUndefined(retval)) {
+                                            return retval
+                                        } else {
+                                            return value;
+                                        }
                                     });
                                 });
                             });
@@ -114,15 +118,19 @@ export class BindMethodPointcutAction extends ActionComposite {
                             propertyKeys.forEach(propertyKey => {
                                 let hasReturn = ['AfterReturning', 'Around'].indexOf(propertyKey) >= 0;
                                 advices[propertyKey].forEach((advicer: Advicer) => {
-                                    adviceAction(advicer, state, false, hasReturn ? val : undefined, throwError)
+                                    let retval = adviceAction(advicer, state, false, hasReturn ? val : undefined, throwError);
+                                    if (hasReturn && !isUndefined(retval)) {
+                                        val = retval
+                                    }
                                 });
                             });
                         }
+                        return val;
                     }
 
                     try {
                         val = propertyMethod(...args);
-                        asResult(['Around', 'After'], JoinpointState.After, val);
+                        val = asResult(['Around', 'After'], JoinpointState.After, val);
                     } catch (err) {
                         asResult(['After', 'Around', 'AfterThrowing'], JoinpointState.After, val, err);
                         throw err;
