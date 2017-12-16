@@ -9,7 +9,7 @@ import { AdviceMetadata } from '../metadatas';
 import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IMethodAccessor } from '../../IMethodAccessor';
 import { isValideAspectTarget } from '../isValideAspectTarget';
-import { Pointcut } from '../Pointcut';
+import { IPointcut } from '../IPointcut';
 
 
 export interface BindPropertyPointcutActionData extends ActionData<AdviceMetadata> {
@@ -30,7 +30,7 @@ export class BindPropertyPointcutAction extends ActionComposite {
         let access = container.get<IMethodAccessor>(symbols.IMethodAccessor);
 
         let className = data.targetType.name;
-        let properties: Pointcut[] = [];
+        let properties: IPointcut[] = [];
 
         let target = data.target;
         Object.getOwnPropertyNames(target).forEach(name => {

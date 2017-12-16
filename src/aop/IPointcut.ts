@@ -5,7 +5,7 @@
  * @export
  * @interface Pointcut
  */
-export interface Pointcut {
+export interface IPointcut {
     /**
      * property or method name.
      *

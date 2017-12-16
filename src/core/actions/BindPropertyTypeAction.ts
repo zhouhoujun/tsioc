@@ -1,10 +1,9 @@
 import { ActionComposite } from './ActionComposite';
 import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
-import { DecoratorType } from '../factories';
+import { DecoratorType, getPropertyMetadata } from '../factories';
 import { PropertyMetadata } from '../metadatas';
 import { IContainer } from '../../IContainer';
-import { getPropertyMetadata } from '../index';
 
 
 export interface BindPropertyTypeActionData extends ActionData<PropertyMetadata[]> {

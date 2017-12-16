@@ -6,6 +6,7 @@ export * from './types';
 export * from './Registration';
 export * from './IContainerBuilder';
 export * from './ContainerBuilder';
+export * from './IParameter';
 export * from './ParamProvider';
 export * from './IMethodAccessor';
 export * from './MethodAccessor';

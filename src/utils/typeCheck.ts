@@ -3,7 +3,6 @@ import { Token } from '../types';
 import { isString } from 'util';
 import { isSymbol } from 'lodash';
 import { Registration } from '../Registration';
-import { Promise } from 'q';
 
 
 /**

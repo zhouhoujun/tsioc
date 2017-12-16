@@ -4,7 +4,6 @@ import { NullComponent, NullNode } from './NullComponent';
 import { IComponent } from './IComponent';
 import { isString } from 'util';
 import { isFunction } from '../utils';
-import { equal, fail } from 'assert';
 
 /**
  * compoiste.

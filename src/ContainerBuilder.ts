@@ -1,10 +1,9 @@
 import { IContainer } from './IContainer';
 import { Container } from './Container';
-import { isFunction, isClass } from './utils';
+import { isFunction, isClass, toAbsoluteSrc, symbols } from './utils';
 import { request } from 'https';
 import { Type } from './Type';
 import { isString } from 'util';
-import { toAbsoluteSrc, symbols } from './index';
 import { IContainerBuilder, AsyncLoadOptions, LoadOptions } from './IContainerBuilder';
 const globby = require('globby');
 

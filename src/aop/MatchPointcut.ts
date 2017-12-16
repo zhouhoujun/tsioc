@@ -1,7 +1,7 @@
-import { Pointcut } from './Pointcut';
+import { IPointcut } from './IPointcut';
 import { AdviceMetadata } from './metadatas';
 
-export interface MatchPointcut extends Pointcut {
+export interface MatchPointcut extends IPointcut {
 
     /**
      * advice for pointcut.

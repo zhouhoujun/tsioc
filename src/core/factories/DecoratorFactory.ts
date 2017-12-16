@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { Type, } from '../../Type';
-import { PropertyMetadata, TypeMetadata, MethodMetadata, ParameterMetadata, Metadate } from '../metadatas';
+import { PropertyMetadata, MethodMetadata, ParameterMetadata, Metadate, ClassMetadata } from '../metadatas';
 import { DecoratorType } from './DecoratorType';
 import { isUndefined, isFunction, isNumber, isArray, isSymbol } from 'util';
 import { ArgsIterator } from './ArgsIterator';
@@ -9,6 +9,7 @@ import { ObjectMap } from '../../types';
 import { IClassDecorator } from './ClassDecoratorFactory';
 
 
+export const ParamerterName = 'paramerter_names';
 
 export interface MetadataAdapter {
     (args: ArgsIterator);
@@ -154,7 +155,7 @@ export function getTypeMetadata<T>(decorator: string | Function, target: Type<an
 }
 
 
-function setTypeMetadata<T extends TypeMetadata>(name: string, metaName: string, target: Type<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
+function setTypeMetadata<T extends ClassMetadata>(name: string, metaName: string, target: Type<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
     let annotations = getTypeMetadata(metaName, target);
     // let designParams = Reflect.getMetadata('design:paramtypes', target) || [];
     let typeMetadata = (metadata || {}) as T;
@@ -162,10 +163,13 @@ function setTypeMetadata<T extends TypeMetadata>(name: string, metaName: string,
         typeMetadata.type = target;
     }
     typeMetadata.decorator = name;
+
     if (metadataExtends) {
         typeMetadata = metadataExtends(typeMetadata);
     }
     annotations.push(typeMetadata);
+
+    setParamerterNames(target);
     Reflect.defineMetadata(metaName, annotations, target);
 }
 
@@ -178,7 +182,7 @@ function setTypeMetadata<T extends TypeMetadata>(name: string, metaName: string,
  * @param {Type<any>} target
  * @returns {ObjectMap<T[]>}
  */
-export function getMethodMetadata<T>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
+export function getMethodMetadata<T extends MethodMetadata>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
     let meta = Reflect.getMetadata(isFunction(decorator) ? decorator.toString() : decorator, target);
     if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
         meta = Reflect.getMetadata(isFunction(decorator) ? decorator.toString() : decorator, target.constructor);
@@ -193,12 +197,39 @@ function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: str
     let methodMeadata = (metadata || {}) as T;
     methodMeadata.decorator = name;
     methodMeadata.propertyKey = propertyKey;
-    methodMeadata.descriptor = descriptor;
+    // methodMeadata.descriptor = descriptor;
+
     if (metadataExtends) {
         methodMeadata = metadataExtends(methodMeadata);
     }
     meta[propertyKey].unshift(methodMeadata);
+    setParamerterNames(target, propertyKey);
     Reflect.defineMetadata(metaName, meta, target.constructor);
+}
+
+export function getParamerterNames(target: Type<any>): ObjectMap<string[]> {
+    let meta = Reflect.getMetadata(ParamerterName, target);
+    if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
+        meta = Reflect.getMetadata(ParamerterName, target.constructor);
+    }
+    return isArray(meta) ? {} : (meta || {});
+}
+
+export function setParamerterNames(target: Type<any>, propertyKey?: string | symbol) {
+    let meta = getParamerterNames(target);
+    meta[propertyKey || 'constructor'] = getParamNames(propertyKey ? (target[propertyKey] || target.prototype[propertyKey]) : target.constructor)
+    Reflect.defineMetadata(ParamerterName, meta, target.constructor);
+}
+
+const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
+const ARGUMENT_NAMES = /([^\s,]+)/g;
+function getParamNames(func) {
+    let fnStr = func.toString().replace(STRIP_COMMENTS, '');
+    let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
+    if (result === null) {
+        result = [];
+    }
+    return result;
 }
 
 
@@ -211,7 +242,7 @@ function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: str
  * @param {Type<any>} target
  * @returns {ObjectMap<T[]>}
  */
-export function getPropertyMetadata<T>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
+export function getPropertyMetadata<T extends PropertyMetadata>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
     let meta = Reflect.getMetadata(isFunction(decorator) ? decorator.toString() : decorator, target);
     if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
         meta = Reflect.getMetadata(isFunction(decorator) ? decorator.toString() : decorator, target.constructor);
@@ -254,13 +285,13 @@ function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName:
  * @param {(string | symbol)} propertyKey
  * @returns {T[][]}
  */
-export function getParamMetadata<T>(decorator: string | Function, target: Type<any> | object, propertyKey: string | symbol): T[][] {
+export function getParamMetadata<T extends ParameterMetadata>(decorator: string | Function, target: Type<any> | object, propertyKey: string | symbol): T[][] {
     let parameters = Reflect.getMetadata(isFunction(decorator) ? decorator.toString() : decorator, target, propertyKey);
     parameters = isArray(parameters) ? parameters : [];
     return parameters;
 }
 
-function setParamMetadata<T>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, parameterIndex: number, metadata?: T, metadataExtends?: MetadataExtends<any>) {
+function setParamMetadata<T extends ParameterMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, parameterIndex: number, metadata?: T, metadataExtends?: MetadataExtends<any>) {
 
     let parameters: any[][] = getParamMetadata(metaName, target, propertyKey);
     parameters = isArray(parameters) ? parameters : [];

@@ -7,7 +7,7 @@ export * from './AspectSet';
 export * from './IAdviceMatcher';
 export * from './AdviceMatcher';
 export * from './MatchPointcut';
-export * from './Pointcut';
+export * from './IPointcut';
 export * from './Joinpoint';
 export * from './isValideAspectTarget';
 
@@ -24,6 +24,7 @@ import { LifeScope } from '../LifeScope';
 import { DecoratorType, CoreActions } from '../core';
 import { AopActionFactory } from './actions/AopActionFactory';
 import { IocState } from '../types';
+import { Joinpoint } from './Joinpoint';
 
 /**
  * register aop for container.
@@ -37,6 +38,7 @@ export function registerAops(container: IContainer) {
         return new AspectSet(container);
     });
     container.register(AdviceMatcher);
+    container.register(Joinpoint);
 
     let lifeScope = container.get<LifeScope>(symbols.LifeScope);
 

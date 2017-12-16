@@ -1,6 +1,7 @@
 import { Metadate, ProviderMetadata, ActionComponent, ActionData, DecoratorType } from './core';
 import { Type } from './Type';
 import { Token, Express } from './types';
+import { IParameter } from './index';
 
 /**
  * Decorator summary.
@@ -175,10 +176,10 @@ export interface LifeScope {
      *
      * @template T
      * @param {Type<T>} type
-     * @returns {Token<any>>[]}
+     * @returns {IParameter[]}
      * @memberof IContainer
      */
-    getConstructorParameters<T>(type: Type<T>): Token<any>[];
+    getConstructorParameters<T>(type: Type<T>): IParameter[];
 
     /**
      * get method params metadata.
@@ -187,8 +188,8 @@ export interface LifeScope {
      * @param {Type<T>} type
      * @param {T} instance
      * @param {(string | symbol)} propertyKey
-     * @returns {Token<any>[]}
+     * @returns {IParameter[]}
      * @memberof IContainer
      */
-    getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): Token<any>[];
+    getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): IParameter[];
 }

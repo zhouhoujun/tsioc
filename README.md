@@ -16,6 +16,8 @@ npm install tsioc
 
 # Documentation
 
+* >0.6.12,  support Method paramerter name opertor.  Method Invoker ParamProvider can setting  index  as  paramerter name.
+
 If you want use `ts-node` to run, need config `tsconfig.json` target gt than `es6`, eg.
 
 ``` json
@@ -767,6 +769,40 @@ export interface IContainer extends IMethodAccessor {
 }
 
 
+import { Metadate, ProviderMetadata, ActionComponent, ActionData, DecoratorType } from './core';
+import { Type } from './Type';
+import { Token, Express } from './types';
+import { IParameter } from './index';
+
+/**
+ * Decorator summary.
+ *
+ * @export
+ * @interface DecorSummary
+ */
+export interface DecorSummary {
+    /**
+     * decorator name.
+     *
+     * @type {string}
+     * @memberof DecorSummary
+     */
+    name: string;
+    /**
+     * decorator types.
+     *
+     * @type {string}
+     * @memberof DecorSummary
+     */
+    types: string;
+    /**
+     * decorator registed actions.
+     *
+     * @type {string[]}
+     * @memberof DecorSummary
+     */
+    actions: string[];
+}
 
 /**
  * life scope of decorator.
@@ -911,10 +947,10 @@ export interface LifeScope {
      *
      * @template T
      * @param {Type<T>} type
-     * @returns {Token<any>>[]}
+     * @returns {IParameter[]}
      * @memberof IContainer
      */
-    getConstructorParameters<T>(type: Type<T>): Token<any>[];
+    getConstructorParameters<T>(type: Type<T>): IParameter[];
 
     /**
      * get method params metadata.
@@ -923,11 +959,12 @@ export interface LifeScope {
      * @param {Type<T>} type
      * @param {T} instance
      * @param {(string | symbol)} propertyKey
-     * @returns {Token<any>[]}
+     * @returns {IParameter[]}
      * @memberof IContainer
      */
-    getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): Token<any>[];
+    getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): IParameter[];
 }
+
 
 
 

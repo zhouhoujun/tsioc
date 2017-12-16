@@ -1,6 +1,4 @@
-import { ActionComponent, CoreActions, BindParameterTypeAction, BindPropertyTypeAction, InjectPropertyAction, BindParameterProviderAction, BindProviderAction } from './actions';
-import { ActionComposite } from './index';
-
+import { ActionComponent, ActionComposite, CoreActions, BindParameterTypeAction, BindPropertyTypeAction, InjectPropertyAction, BindParameterProviderAction, BindProviderAction } from './actions';
 
 export class ActionFactory {
 

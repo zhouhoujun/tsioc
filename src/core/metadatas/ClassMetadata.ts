@@ -1,4 +1,5 @@
 import { ProviderMetadata } from './ProviderMetadata';
+import { ObjectMap } from '../../index';
 
 
 /**
@@ -22,5 +23,13 @@ export interface ClassMetadata extends ProviderMetadata {
      * @memberof ClassMetadata
      */
     package?: string;
+
+    // /**
+    //  * constructor parameter names
+    //  *
+    //  * @type {string[]}
+    //  * @memberof ClassMetadata
+    //  */
+    // parameterNames?: string[];
 }
 

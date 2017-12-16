@@ -280,12 +280,12 @@ export class Container implements IContainer {
                 targetType: ClassT
             }, IocState.runtime);
 
-            let paramInstances = parameters.map((type, index) => this.get(type));
+            let paramInstances = parameters.map((param, index) => this.get(param.type));
 
             lifeScope.execute(DecoratorType.Class, {
                 targetType: ClassT,
                 args: paramInstances,
-                argsTypes: parameters
+                params: parameters
             }, CoreActions.beforeConstructor);
 
             let instance = new ClassT(...paramInstances);

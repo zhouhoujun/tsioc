@@ -11,6 +11,8 @@ import { DecoratorType } from './factories';
 import { Express } from 'development-core';
 import { ActionData } from './ActionData';
 import { ActionFactory } from './ActionFactory';
+import { IParameter } from '../IParameter';
+import { getParamerterNames } from './index';
 
 export class DefaultLifeScope implements LifeScope {
 
@@ -127,10 +129,10 @@ export class DefaultLifeScope implements LifeScope {
      *
      * @template T
      * @param {Type<T>} type
-     * @returns {Token<any>>[]}
+     * @returns {IParameter[]}
      * @memberof IContainer
      */
-    getConstructorParameters<T>(type: Type<T>): Token<any>[] {
+    getConstructorParameters<T>(type: Type<T>): IParameter[] {
         return this.getParameterMetadata(type);
     }
 
@@ -141,10 +143,10 @@ export class DefaultLifeScope implements LifeScope {
      * @param {Type<T>} type
      * @param {T} instance
      * @param {(string | symbol)} propertyKey
-     * @returns {Token<any>[]}
+     * @returns {IParameter[]}
      * @memberof IContainer
      */
-    getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): Token<any>[] {
+    getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): IParameter[] {
         return this.getParameterMetadata(type, instance, propertyKey);
     }
 
@@ -166,14 +168,22 @@ export class DefaultLifeScope implements LifeScope {
         return this.decorators.filter(express);
     }
 
-    protected getParameterMetadata<T>(type: Type<T>, instance?: T, propertyKey?: string | symbol): Token<any>[] {
+    protected getParameterMetadata<T>(type: Type<T>, instance?: T, propertyKey?: string | symbol): IParameter[] {
         let data = {
             target: instance,
             targetType: type,
             propertyKey: propertyKey
         } as ActionData<Token<any>[]>;
         this.execute(DecoratorType.Parameter, data, CoreActions.bindParameterType);
-        return data.execResult;
+        let metadata = getParamerterNames(type);
+        let paramNames = metadata[propertyKey || 'constructor'];
+        // console.log('paramNames', propertyKey || 'constructor',  paramNames);
+        return data.execResult.map((typ, idx) => {
+            return {
+                type: typ,
+                name: paramNames[idx]
+            }
+        })
 
     }
 
@@ -192,7 +202,7 @@ export class DefaultLifeScope implements LifeScope {
 
         let action = factory.create('');
         action.add(factory.create(this.toActionType(DecoratorType.Class))
-                .add(factory.create(IocState.design)
+            .add(factory.create(IocState.design)
                 .add(factory.create(IocState.runtime))))
             .add(factory.create(this.toActionType(DecoratorType.Method)))
             .add(factory.create(this.toActionType(DecoratorType.Property)))

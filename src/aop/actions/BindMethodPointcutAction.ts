@@ -9,12 +9,14 @@ import { AdviceMetadata } from '../metadatas'
 import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IMethodAccessor } from '../../IMethodAccessor';
 import { isFunction } from '../../utils';
-import { Joinpoint, JoinpointState } from '../Joinpoint';
+import { Joinpoint, JoinpointState, IJoinpoint } from '../Joinpoint';
 import { isValideAspectTarget } from '../isValideAspectTarget';
 import { isUndefined } from 'util';
-import { stat } from 'fs';
 import { Advices, Advicer } from '../Advices';
-import { Pointcut } from '../Pointcut';
+import { IPointcut } from '../IPointcut';
+import { Token } from '../../types';
+import { ParamProvider, AroundMetadata, AfterReturningMetadata, AfterThrowingMetadata } from '../../index';
+import { stat } from 'fs';
 
 
 export interface BindPointcutActionData extends ActionData<Joinpoint> {
@@ -35,7 +37,7 @@ export class BindMethodPointcutAction extends ActionComposite {
         let access = container.get<IMethodAccessor>(symbols.IMethodAccessor);
 
         let className = data.targetType.name;
-        let methods: Pointcut[] = [];
+        let methods: IPointcut[] = [];
         for (let name in Object.getOwnPropertyDescriptors(data.targetType.prototype)) {
             methods.push({
                 name: name,
@@ -59,50 +61,81 @@ export class BindMethodPointcutAction extends ActionComposite {
                         fullName: fullName,
                         target: target,
                         targetType: data.targetType
-                    } as Joinpoint;
+                    } as IJoinpoint;
 
-                    advices.Before.forEach(advicer => {
-                        joinPoint.state = JoinpointState.Before;
-                        access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, {
-                            value: joinPoint,
-                            index: 0
-                        });
-                    });
+                    let adviceAction = (advicer: Advicer, state: JoinpointState, isAsync = false, returnValue?: any, throwError?: any) => {
+                        let index = '';
+                        let value;
+                        joinPoint.state = state;
+                        if (advicer.advice.adviceName === 'Around') {
+                            joinPoint.args = args;
+                            let metadata = advicer.advice as AroundMetadata;
+                            if (state === JoinpointState.Before) {
+                                index = metadata.args;
+                            } else if (state === JoinpointState.AfterReturning) {
+                                index = metadata.returning;
+                                value = returnValue;
+                            } else if (state === JoinpointState.AfterThrowing) {
+                                index = metadata.throwing;
+                                value = throwError;
+                            }
+                        }
+
+                        if (advicer.advice.adviceName === 'Around') {
+                            joinPoint.args = args;
+                            joinPoint.returning = returnValue;
+                            joinPoint.throwing = throwError;
+                            let metadata = advicer.advice as AroundMetadata;
+                            if (state === JoinpointState.Before) {
+                                index = metadata.args;
+                                value = args;
+                            } else if (state === JoinpointState.AfterReturning) {
+                                index = metadata.returning;
+                                value = returnValue;
+                            } else if (state === JoinpointState.AfterThrowing) {
+                                index = metadata.throwing;
+                                value = throwError;
+                            }
+                        }
+
+                        if (advicer.advice.adviceName === 'AfterReturning') {
+                            joinPoint.returning = returnValue;
+                            let metadata = advicer.advice as AfterReturningMetadata;
+                            index = metadata.returning;
+                            value = returnValue;
+                        }
+
+                        if (advicer.advice.adviceName === 'AfterThrowing') {
+                            joinPoint.throwing = throwError;
+                            let metadata = advicer.advice as AfterThrowingMetadata;
+                            index = metadata.throwing;
+                            value = throwError;
+                        }
+
+                        let provider = {
+                            value: index ? value : joinPoint,
+                            index: index || 0
+                        };
+
+                        if (isAsync) {
+                            return access.invoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, provider);
+                        } else {
+                            return access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, provider);
+                        }
+                    };
 
                     advices.Around.forEach(advicer => {
-                        joinPoint.state = JoinpointState.Before;
-                        joinPoint.args = args;
-                        access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, {
-                            value: joinPoint,
-                            index: 0
-                        });
+                        adviceAction(advicer, JoinpointState.Before);
                     });
 
-                    let adviceAction = (advicer: Advicer, state: JoinpointState, isAsync: boolean, returnValue?: any, throwError?: any) => {
-                        joinPoint.state = state;
-                        if (!isUndefined(returnValue)) {
-                            joinPoint.returning = returnValue;
-                        }
-                        if (!isUndefined(throwError)) {
-                            joinPoint.throwing = throwError;
-                        }
-                        if (isAsync) {
-                            return access.invoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, {
-                                value: joinPoint,
-                                index: 0
-                            });
-                        } else {
-                            return access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, {
-                                value: joinPoint,
-                                index: 0
-                            });
-                        }
-                    }
+                    advices.Before.forEach(advicer => {
+                        adviceAction(advicer, JoinpointState.Before);
+                    });
 
                     let asResult = (propertyKeys: string[], state: JoinpointState, val, throwError?: any) => {
                         if (isPromise(val)) {
                             propertyKeys.forEach(propertyKey => {
-                                let hasReturn = ['AfterReturning', 'Around'].indexOf(propertyKey) >= 0;
+                                let hasReturn = ['Around', 'AfterReturning'].indexOf(propertyKey) >= 0;
                                 advices[propertyKey].forEach((advicer: Advicer) => {
                                     val = val.then(async (value) => {
                                         let retval = await adviceAction(advicer, state, true, hasReturn ? value : undefined, throwError);
@@ -116,7 +149,7 @@ export class BindMethodPointcutAction extends ActionComposite {
                             });
                         } else {
                             propertyKeys.forEach(propertyKey => {
-                                let hasReturn = ['AfterReturning', 'Around'].indexOf(propertyKey) >= 0;
+                                let hasReturn = ['Around', 'AfterReturning'].indexOf(propertyKey) >= 0;
                                 advices[propertyKey].forEach((advicer: Advicer) => {
                                     let retval = adviceAction(advicer, state, false, hasReturn ? val : undefined, throwError);
                                     if (hasReturn && !isUndefined(retval)) {
@@ -131,13 +164,14 @@ export class BindMethodPointcutAction extends ActionComposite {
                     try {
                         val = propertyMethod(...args);
                         asResult(['Around', 'After'], JoinpointState.After, val);
+                        val = asResult(['Around', 'AfterReturning'], JoinpointState.AfterReturning, val);
+                        return val;
                     } catch (err) {
-                        asResult(['After', 'Around', 'AfterThrowing'], JoinpointState.After, val, err);
+                        asResult(['Around', 'AfterThrowing'], JoinpointState.AfterThrowing, val, err);
                         throw err;
+                    } finally {
+                        asResult(['After'], JoinpointState.After, val);
                     }
-
-                    val = asResult(['AfterReturning', 'Around'], JoinpointState.AfterReturning, val);
-                    return val;
                 });
             }
         });

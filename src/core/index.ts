@@ -4,8 +4,9 @@ import { Injectable, AutoWired, Inject, Singleton, Param, Method } from './decor
 import { CoreActions } from './actions';
 import { DefaultLifeScope } from './DefaultLifeScope';
 import { LifeScope } from '../LifeScope';
-import { DecoratorType, IocState } from '../index';
+import { IocState } from '../types';
 import { ActionFactory } from './ActionFactory';
+import { DecoratorType } from './factories';
 
 
 export * from './actions';

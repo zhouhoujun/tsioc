@@ -1,22 +1,23 @@
-import { Pointcut } from './Pointcut';
+import { IPointcut } from './IPointcut';
 import { Token } from '../index';
+import { Injectable } from '../core/index';
 
 
 export enum JoinpointState {
     Before = 'Before',
-    After =  'After',
+    After = 'After',
     AfterReturning = 'AfterReturning',
     AfterThrowing = 'AfterThrowing'
 }
 
 /**
- * Joinpoint
+ * Joinpoint interface
  *
  * @export
- * @interface Joinpoint
- * @extends {Pointcut}
+ * @interface IJoinpoint
+ * @extends {IPointcut}
  */
-export interface Joinpoint extends Pointcut {
+export interface IJoinpoint extends IPointcut {
     state: JoinpointState;
     args: any[];
     /**
@@ -32,4 +33,27 @@ export interface Joinpoint extends Pointcut {
     returning?: any;
 
     throwing?: any;
+}
+
+/**
+ * Join point.
+ *
+ * @export
+ * @class Joinpoint
+ * @implements {IJoinpoint}
+ */
+@Injectable
+ export class Joinpoint implements IJoinpoint {
+    name: string;
+    fullName: string;
+    state: JoinpointState;
+    args: any[];
+    target?: any;
+    targetType?: Token<any>;
+    returning?: any;
+    throwing?: any;
+
+    constructor() {
+
+    }
 }

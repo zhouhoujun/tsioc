@@ -10,6 +10,7 @@ export interface IAdviceDecorator<T extends AdviceMetadata> extends IMethodDecor
 
 export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: string,
     adapter?: MetadataAdapter,
+    afteradapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IAdviceDecorator<T> {
 
     return createMethodDecorator<AdviceMetadata>('Advice',
@@ -24,6 +25,9 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
                     metadata.pointcut = arg;
                 }
             });
+            if (afteradapter) {
+                afteradapter(args);
+            }
         },
         metadata => {
             if (metadataExtends) {

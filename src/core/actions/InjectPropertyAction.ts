@@ -4,7 +4,7 @@ import { IContainer } from '../../IContainer';
 import { PropertyMetadata } from '../metadatas';
 import { CoreActions } from './CoreActions';
 import { ActionComposite } from './ActionComposite';
-import { ActionComponent } from '../index';
+import { ActionComponent } from './ActionComponent';
 
 
 export interface BindPropertyActionData extends BindPropertyTypeActionData {

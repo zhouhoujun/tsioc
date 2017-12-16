@@ -1,6 +1,7 @@
 import { ObjectMap, Token } from '../types';
 import { IContainer } from '../IContainer';
 import { Type } from '../Type';
+import { IParameter } from '../index';
 
 
 /**
@@ -21,12 +22,12 @@ export interface ActionData<T> {
     args?: any[];
 
     /**
-     * args types.
+     * args params types.
      *
-     * @type {Token<any>[]}
+     * @type {IParameter[]}
      * @memberof ActionData
      */
-    argsTypes?: Token<any>[];
+    params?: IParameter[];
 
     /**
      * target instance.

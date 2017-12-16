@@ -1,13 +1,11 @@
 import { ActionComposite } from './ActionComposite';
 import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
-import { DecoratorType } from '../factories';
+import { DecoratorType, getMethodMetadata } from '../factories';
 import { MethodMetadata } from '../metadatas';
 import { IContainer } from '../../IContainer';
 import { ParamProvider } from '../../ParamProvider';
 import { isArray } from 'util';
-import { match } from 'minimatch';
-import { getMethodMetadata } from '../index';
 
 export interface BindParameterProviderActionData extends ActionData<ParamProvider[]> {
 

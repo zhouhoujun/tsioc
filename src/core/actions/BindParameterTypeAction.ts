@@ -1,13 +1,11 @@
 import { ActionComposite } from './ActionComposite';
 import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
-import { DecoratorType } from '../factories';
+import { DecoratorType, getParamMetadata } from '../factories';
 import { ParameterMetadata } from '../metadatas';
 import { IContainer } from '../../IContainer';
 import { Type } from '../../Type';
-import { Token } from '../../index';
-import { match } from 'minimatch';
-import { getParamMetadata } from '../index';
+import { Token } from '../../types';
 import { isArray } from 'util';
 
 
@@ -72,7 +70,7 @@ export class BindParameterTypeAction extends ActionComposite {
                     }
                 });
             }
-        })
+        });
 
 
         data.execResult = designParams;

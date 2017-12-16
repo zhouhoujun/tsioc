@@ -3,11 +3,12 @@ import { AfterReturningMetadata } from '../metadatas';
 import { isString } from 'util';
 
 export interface IAfterReturningDecorator<T extends AfterReturningMetadata> extends IAdviceDecorator<T> {
-    (returning?: string, pointcut?: string | RegExp): MethodDecorator;
+    (pointcut?: string | RegExp, returning?: string): MethodDecorator;
 }
 export const AfterReturning: IAfterReturningDecorator<AfterReturningMetadata> =
     createAdviceDecorator<AfterReturningMetadata>(
         'AfterReturning',
+        null,
         args => {
             args.next<AfterReturningMetadata>({
                 match: (arg) => isString(arg),

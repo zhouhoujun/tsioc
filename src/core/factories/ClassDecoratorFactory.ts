@@ -7,7 +7,6 @@ import { Registration } from '../../Registration';
 import { isClass, isToken, isClassMetadata } from '../../utils';
 import { isString, isSymbol, isObject } from 'util';
 import { ArgsIterator } from './ArgsIterator';
-import { fail } from 'assert';
 
 
 /**

@@ -13,7 +13,7 @@ export interface ParamProvider {
      *
      * @memberof ParamProvider
      */
-    value?: any | ((container?: IContainer) => any)
+    value?: any | ((container?: IContainer, type?: Token<any>) => any)
     /**
      * param value is instance of type.
      *
@@ -29,12 +29,12 @@ export interface ParamProvider {
      */
     method?: string;
     /**
-     * param index.
+     * param index or param name.
      *
      * @type {number}
      * @memberof ParamProvider
      */
-    index: number;
+    index: number | string;
 }
 
 /**

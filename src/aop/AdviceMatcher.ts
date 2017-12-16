@@ -4,7 +4,7 @@ import { DecoratorType, Singleton } from '../core';
 import { Type } from '../Type';
 import { isString, isRegExp } from 'util';
 import { symbols } from '../utils';
-import { Pointcut } from './Pointcut';
+import { IPointcut } from './IPointcut';
 import { ObjectMap } from '../types';
 import { MatchPointcut } from './MatchPointcut';
 import { Minimatch } from 'minimatch';
@@ -19,7 +19,7 @@ export class AdviceMatcher implements IAdviceMatcher {
     match(adviceMaps: ObjectMap<AdviceMetadata[]>, type: Type<any>, instance?: any): MatchPointcut[] {
 
         let className = type.name;
-        let points: Pointcut[] = [];
+        let points: IPointcut[] = [];
 
         // match method.
         for (let name in Object.getOwnPropertyDescriptors(type.prototype)) {
@@ -50,7 +50,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
     }
 
-    filterPointcut(points: Pointcut[], metadata: AdviceMetadata): MatchPointcut[] {
+    filterPointcut(points: IPointcut[], metadata: AdviceMetadata): MatchPointcut[] {
         if (!metadata.pointcut) {
             return [];
         }

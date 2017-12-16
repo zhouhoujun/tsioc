@@ -10,5 +10,12 @@ import { ParamProvider } from '../../ParamProvider';
 export interface MethodMetadata extends Metadate {
     providers?: ParamProvider[];
     propertyKey?: string | symbol;
-    descriptor?: TypedPropertyDescriptor<any>
+    // /**
+    //  * method parameter names
+    //  *
+    //  * @type {string[]}
+    //  * @memberof ClassMetadata
+    //  */
+    // parameterNames?: string[];
+    // descriptor?: TypedPropertyDescriptor<any>;
 }

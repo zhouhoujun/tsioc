@@ -1,12 +1,10 @@
 import { ActionComposite } from './ActionComposite';
 import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
-import { DecoratorType } from '../factories';
+import { DecoratorType, getTypeMetadata } from '../factories';
 import { IContainer } from '../../IContainer';
 import { Token, SymbolType } from '../../types';
-import { TypeMetadata, ProviderMetadata } from '../metadatas';
-import { match } from 'minimatch';
-import { getTypeMetadata, ClassMetadata } from '../index';
+import { TypeMetadata, ProviderMetadata, ClassMetadata } from '../metadatas';
 
 export interface BindProviderActionData extends ActionData<Token<any>[]> {
 }

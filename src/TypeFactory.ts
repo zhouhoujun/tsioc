@@ -1,6 +1,6 @@
 import { ActionComponent } from './core';
 import { LifeScope } from './LifeScope';
-import { Type } from './index';
+import { Type } from './Type';
 
 
 /**

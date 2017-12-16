@@ -1,5 +1,5 @@
 import * as path from 'path';
-import * as _ from 'lodash';
+import { isString } from 'util';
 
 /**
  * convert path to absolute path.
@@ -25,10 +25,10 @@ export function toAbsolutePath(root: string, pathstr: string): string {
  * @returns {(string|string[])}
  */
 export function toAbsoluteSrc(root: string, src: string | string[]): string | string[] {
-    if (_.isString(src)) {
+    if (isString(src)) {
         return prefixSrc(root, src);
     } else {
-        return _.map(src, p => prefixSrc(root, p));
+        return src.map(p => prefixSrc(root, p));
     }
 }
 

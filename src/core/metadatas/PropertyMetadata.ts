@@ -1,5 +1,5 @@
 import { TypeMetadata } from './TypeMetadata';
-import { ProvideMetadata } from './index';
+import { ProvideMetadata } from './ProvideMetadata';
 
 
 /**
