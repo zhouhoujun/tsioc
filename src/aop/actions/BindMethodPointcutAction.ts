@@ -5,7 +5,7 @@ import { AspectSet } from '../AspectSet';
 import { isClass, symbols, isPromise } from '../../utils';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators';
-import { AdviceMetadata } from '../metadatas'
+import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AroundMetadata } from '../metadatas'
 import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IMethodAccessor } from '../../IMethodAccessor';
 import { isFunction } from '../../utils';
@@ -15,9 +15,7 @@ import { isUndefined } from 'util';
 import { Advices, Advicer } from '../Advices';
 import { IPointcut } from '../IPointcut';
 import { Token } from '../../types';
-import { ParamProvider, AroundMetadata, AfterReturningMetadata, AfterThrowingMetadata } from '../../index';
-import { stat } from 'fs';
-
+import { ParamProvider  } from '../../ParamProvider';
 
 export interface BindPointcutActionData extends ActionData<Joinpoint> {
 }
