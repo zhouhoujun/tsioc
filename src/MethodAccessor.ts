@@ -8,14 +8,10 @@ import { symbols } from './utils';
 import { isToken, Token, getMethodMetadata, IParameter } from './index';
 import { Container } from './Container';
 import { IContainerBuilder } from './IContainerBuilder';
-import { match } from 'minimatch';
 
-@Singleton(symbols.IMethodAccessor)
 export class MethodAccessor implements IMethodAccessor {
 
-
-
-    constructor( @Inject(symbols.IContainer) private container: IContainer) {
+    constructor(private container: IContainer) {
 
     }
 
@@ -32,21 +28,8 @@ export class MethodAccessor implements IMethodAccessor {
             providers = providers.concat(actionData.execResult);
 
             let parameters = lifeScope.getMethodParameters(targetType, target, propertyKey);
-            let paramInstances = await Promise.all(parameters.map(async (param, index) => {
 
-                return this.createParamProvder(param, index, providers, async (provider: AsyncParamProvider) => {
-
-                    let buider = this.container.get<IContainerBuilder>(symbols.IContainerBuilder);
-                    let modules = await buider.loadModule(this.container, {
-                        files: provider.files
-                    });
-                    let params = modules.map(async (mdl) => {
-                        return this.container.invoke(mdl, provider.execution)
-                    });
-
-                    return modules.length === 1 ? params[0] : params;
-                });
-            }));
+            let paramInstances = await this.createParams(parameters, ...providers);
 
             return target[propertyKey](...paramInstances) as T;
         } else {
@@ -68,9 +51,7 @@ export class MethodAccessor implements IMethodAccessor {
 
             providers = providers.concat(actionData.execResult);
             let parameters = lifeScope.getMethodParameters(targetType, target, propertyKey);
-            let paramInstances = parameters.map((param, index) => {
-                return this.createParamProvder(param, index, providers);
-            });
+            let paramInstances = this.createSyncParams(parameters, ...providers);
 
             return target[propertyKey](...paramInstances) as T;
         } else {
@@ -78,20 +59,43 @@ export class MethodAccessor implements IMethodAccessor {
         }
     }
 
-    createParamProvder(param: IParameter, index: number, providers: ParamProvider[], extensds?: (provider: ParamProvider) => any) {
-        let provider: ParamProvider = null;
+    createSyncParams(params: IParameter[], ...providers: ParamProvider[]): any[] {
+        return params.map((param, index) => {
+            return this.createParam(param, index, providers);
+        });
+    }
+
+    createParams(params: IParameter[], ...providers: AsyncParamProvider[]): Promise<any[]> {
+        return Promise.all(params.map(async (param, index) => {
+
+            return this.createParam(param, index, providers, async (provider: AsyncParamProvider) => {
+
+                let buider = this.container.get<IContainerBuilder>(symbols.IContainerBuilder);
+                let modules = await buider.loadModule(this.container, {
+                    files: provider.files
+                });
+                let params = await Promise.all(modules.map((mdl) => {
+                    return this.container.invoke<any>(mdl, provider.execution)
+                }));
+
+                return modules.length === 1 ? params[0] : params;
+            });
+        }));
+    }
+
+    protected createParam(param: IParameter, index: number, providers: ParamProvider[], extensds?: (provider: ParamProvider) => any) {
         if (providers.length) {
-            provider = providers.find(p => p && (isString(p.index) ? p.index === param.name : p.index === index));
-        }
-        if (provider) {
-            if (!isUndefined(provider.value)) {
-                return isFunction(provider.value) ? provider.value(this.container) : provider.value;
-            }
-            if (provider.type) {
-                this.container.get(provider.type);
-            }
-            if (extensds && provider['files'] && provider['execution']) {
-                return extensds(provider);
+            let provider = providers.find(p => p && (isString(p.index) ? p.index === param.name : p.index === index));
+            if (provider) {
+                if (!isUndefined(provider.value)) {
+                    return isFunction(provider.value) ? provider.value(this.container) : provider.value;
+                }
+                if (provider.type) {
+                    return this.container.get(provider.type);
+                }
+                if (extensds && provider['files'] && provider['execution']) {
+                    return extensds(provider);
+                }
             }
         }
         return this.container.get(param.type);

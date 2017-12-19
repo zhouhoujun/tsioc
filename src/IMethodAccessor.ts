@@ -2,6 +2,7 @@ import { Type } from './Type';
 import { Token } from './index';
 import { IContainer } from './IContainer';
 import { ParamProvider, AsyncParamProvider } from './ParamProvider';
+import { IParameter } from './IParameter';
 
 
 /**
@@ -36,6 +37,27 @@ export interface IMethodAccessor {
      * @returns {T}
      * @memberof IMethodAccessor
      */
-    syncInvoke<T>(targetType: Type<any>, propertyKey: string | symbol, target?: any, ...providers: ParamProvider[]): T
+    syncInvoke<T>(targetType: Type<any>, propertyKey: string | symbol, target?: any, ...providers: ParamProvider[]): T;
+
+
+    /**
+     * create params instances with IParameter and provider.
+     *
+     * @param {IParameter[]} params
+     * @param {...ParamProvider[]} providers
+     * @returns {any[]}
+     * @memberof IMethodAccessor
+     */
+    createSyncParams(params: IParameter[], ...providers: ParamProvider[]): any[];
+
+    /**
+     * create params instances with IParameter and provider
+     *
+     * @param {IParameter[]} params
+     * @param {...AsyncParamProvider[]} providers
+     * @returns {Promise<any[]>}
+     * @memberof IMethodAccessor
+     */
+    createParams(params: IParameter[], ...providers: AsyncParamProvider[]): Promise<any[]>;
 
 }

@@ -17,6 +17,9 @@ npm install tsioc
 # Documentation
 
 * >0.6.12,  support Method paramerter name opertor.  Method Invoker ParamProvider can setting  index  as  paramerter name.
+* >0.6.15
+    1. add resolve. support resolve instance with providers. `resolve<T>(token: Token<T>, notFoundValue?: T, ...providers: ParamProvider[]);`
+    2. add `createSyncParams(params: IParameter[], ...providers: ParamProvider[]): any[]` and `createParams(params: IParameter[], ...providers: AsyncParamProvider[]): Promise<any[]>`
 
 If you want use `ts-node` to run, need config `tsconfig.json` target gt than `es6`, eg.
 
@@ -967,8 +970,6 @@ export interface LifeScope {
 
 
 
-
-
 /**
  * execution, invoke some type method
  *
@@ -981,30 +982,50 @@ export interface IMethodAccessor {
      * try to async invoke the method of intance,  if no instance will create by type.
      *
      * @template T
-     * @param {Type<any>} type  type of object
+     * @param {Type<any>} targetType  type of object
      * @param {(string | symbol)} propertyKey method name
-     * @param {*} [instance] instance of type.
+     * @param {*} [target] instance of type.
      * @param {...AsyncParamProvider[]} providers param provider.
      * @returns {Promise<T>}
      * @memberof IMethodAccessor
      */
-    invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: AsyncParamProvider[]): Promise<T>;
+    invoke<T>(targetType: Type<any>, propertyKey: string | symbol, target?: any, ...providers: AsyncParamProvider[]): Promise<T>;
 
     /**
      * try to invoke the method of intance,  if no instance will create by type.
      *
      * @template T
-     * @param {Type<any>} type
+     * @param {Type<any>} targetType
      * @param {(string | symbol)} propertyKey
-     * @param {*} [instance]
+     * @param {*} [target]
      * @param {...ParamProvider[]} providers
      * @returns {T}
      * @memberof IMethodAccessor
      */
-    syncInvoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: ParamProvider[]): T
+    syncInvoke<T>(targetType: Type<any>, propertyKey: string | symbol, target?: any, ...providers: ParamProvider[]): T;
+
+
+    /**
+     * create params instances with IParameter and provider.
+     *
+     * @param {IParameter[]} params
+     * @param {...ParamProvider[]} providers
+     * @returns {any[]}
+     * @memberof IMethodAccessor
+     */
+    createSyncParams(params: IParameter[], ...providers: ParamProvider[]): any[];
+
+    /**
+     * create params instances with IParameter and provider
+     *
+     * @param {IParameter[]} params
+     * @param {...AsyncParamProvider[]} providers
+     * @returns {Promise<any[]>}
+     * @memberof IMethodAccessor
+     */
+    createParams(params: IParameter[], ...providers: AsyncParamProvider[]): Promise<any[]>;
 
 }
-
 
 ```
 

@@ -12,6 +12,7 @@ import { ParamProvider, AsyncParamProvider } from './ParamProvider';
 import { ActionComponent, DecoratorType, registerCores, CoreActions, TypeMetadata, BindProviderActionData, ClassMetadata, Singleton, PropertyMetadata, BindPropertyTypeActionData, getMethodMetadata, getPropertyMetadata, BindPropertyActionData } from './core';
 import { LifeScope } from './LifeScope';
 import { IocState } from './types';
+import { IParameter } from './IParameter';
 
 
 export const NOT_FOUND = new Object();
@@ -37,12 +38,16 @@ export class Container implements IContainer {
      * @memberof Container
      */
     get<T>(token: Token<T>, alias?: string, notFoundValue?: T): T {
-        let key = this.getTokenKey<T>(token, alias);
+        return this.resolve(alias ? this.getTokenKey<T>(token, alias) : token, notFoundValue);
+    }
+
+    resolve<T>(token: Token<T>, notFoundValue?: T, ...providers: ParamProvider[]): T {
+        let key = this.getTokenKey<T>(token);
         if (!this.hasRegister(key)) {
             return notFoundValue === undefined ? (NOT_FOUND as T) : notFoundValue;
         }
         let factory = this.factories.get(key);
-        return factory() as T;
+        return factory(...providers) as T;
     }
 
 
@@ -197,6 +202,14 @@ export class Container implements IContainer {
         return this.get<IMethodAccessor>(symbols.IMethodAccessor).syncInvoke(type, propertyKey, instance, ...providers);
     }
 
+    createSyncParams(params: IParameter[], ...providers: ParamProvider[]): any[] {
+        return this.get<IMethodAccessor>(symbols.IMethodAccessor).createSyncParams(params, ...providers);
+    }
+
+    createParams(params: IParameter[], ...providers: AsyncParamProvider[]): Promise<any[]> {
+        return this.get<IMethodAccessor>(symbols.IMethodAccessor).createParams(params, ...providers);
+    }
+
 
     protected cacheDecorator<T>(map: Map<string, ActionComponent>, action: ActionComponent) {
         if (!map.has(action.name)) {
@@ -207,12 +220,11 @@ export class Container implements IContainer {
     protected init() {
         this.factories = new Map<Token<any>, any>();
         this.singleton = new Map<Token<any>, any>();
+        this.registerSingleton(symbols.IMethodAccessor, () => new MethodAccessor(this));
+        this.bindProvider(symbols.IContainer, () => this);
 
         registerCores(this);
         registerAops(this);
-
-        this.register(MethodAccessor);
-        this.bindProvider(symbols.IContainer, () => this);
     }
 
     protected registerFactory<T>(token: Token<T>, value?: Factory<T>, singleton?: boolean) {
@@ -248,15 +260,15 @@ export class Container implements IContainer {
 
     protected createCustomFactory<T>(key: SymbolType<T>, factory?: ToInstance<T>, singleton?: boolean) {
         return singleton ?
-            () => {
+            (...providers: ParamProvider[]) => {
                 if (this.singleton.has(key)) {
                     return this.singleton.get(key);
                 }
-                let instance = factory(this);
+                let instance = factory(this, ...providers);
                 this.singleton.set(key, instance);
                 return instance;
             }
-            : () => factory(this);
+            : (...providers: ParamProvider[]) => factory(this, ...providers);
     }
 
     protected createTypeFactory<T>(key: SymbolType<T>, ClassT?: Type<T>, singleton?: boolean) {
@@ -267,11 +279,12 @@ export class Container implements IContainer {
         let lifeScope = this.getLifeScope();
 
         let parameters = lifeScope.getConstructorParameters(ClassT);
+
         if (!singleton) {
             singleton = lifeScope.isSingletonType<T>(ClassT);
         }
 
-        let factory = () => {
+        let factory = (...providers: ParamProvider[]) => {
             if (singleton && this.singleton.has(key)) {
                 return this.singleton.get(key);
             }
@@ -280,15 +293,15 @@ export class Container implements IContainer {
                 targetType: ClassT
             }, IocState.runtime);
 
-            let paramInstances = parameters.map((param, index) => this.get(param.type));
+            let args = this.createSyncParams(parameters, ...providers);
 
             lifeScope.execute(DecoratorType.Class, {
                 targetType: ClassT,
-                args: paramInstances,
+                args: args,
                 params: parameters
             }, CoreActions.beforeConstructor);
 
-            let instance = new ClassT(...paramInstances);
+            let instance = new ClassT(...args);
 
             lifeScope.execute(DecoratorType.Class, {
                 target: instance,

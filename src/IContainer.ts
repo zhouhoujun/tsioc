@@ -3,6 +3,7 @@ import { ActionComponent, DecoratorType } from './core';
 import { Type } from './Type';
 import { IMethodAccessor } from './IMethodAccessor';
 import { LifeScope } from './LifeScope';
+import { ParamProvider } from './ParamProvider';
 
 
 /**
@@ -23,6 +24,7 @@ export interface IContainer extends IMethodAccessor {
      * @memberof IContainer
      */
     has<T>(token: Token<T>, alias?: string): boolean;
+
     /**
      * Retrieves an instance from the container based on the provided token.
      *
@@ -35,6 +37,16 @@ export interface IContainer extends IMethodAccessor {
      */
     get<T>(token: Token<T>, alias?: string, notFoundValue?: T): T;
 
+    /**
+     * resolve type instance with token and param provider.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {T} [notFoundValue]
+     * @param {...ParamProvider[]} providers
+     * @memberof IContainer
+     */
+    resolve<T>(token: Token<T>, notFoundValue?: T, ...providers: ParamProvider[]);
 
     /**
      * get token.
