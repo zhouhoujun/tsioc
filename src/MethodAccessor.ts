@@ -4,10 +4,11 @@ import { IMethodAccessor } from './IMethodAccessor';
 import { Type } from './Type';
 import { isFunction, isUndefined, isString } from 'util';
 import { Singleton, Inject, MethodMetadata, BindParameterProviderActionData, ActionComponent, CoreActions, DecoratorType } from './core';
-import { symbols } from './utils';
-import { isToken, Token, getMethodMetadata, IParameter } from './index';
+import { symbols, isToken } from './utils';
+import { Token } from './types';
 import { Container } from './Container';
 import { IContainerBuilder } from './IContainerBuilder';
+import { IParameter } from './IParameter';
 
 export class MethodAccessor implements IMethodAccessor {
 
