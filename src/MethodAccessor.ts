@@ -3,7 +3,7 @@ import { ParamProvider, AsyncParamProvider } from './ParamProvider';
 import { IMethodAccessor } from './IMethodAccessor';
 import { Type } from './Type';
 import { isFunction, isUndefined, isString } from 'util';
-import { Singleton, Inject, MethodMetadata, BindParameterProviderActionData, ActionComponent, CoreActions, DecoratorType } from './core';
+import { BindParameterProviderActionData, CoreActions, DecoratorType } from './core';
 import { symbols, isToken } from './utils';
 import { Token } from './types';
 import { Container } from './Container';
