@@ -2,7 +2,7 @@ import { Aspect } from './decorators';
 import { Type } from '../Type';
 import { AspectSet } from './AspectSet';
 import { AdviceMatcher } from './AdviceMatcher';
-import { MethodAccessor } from '../MethodAccessor';
+import { MethodAccessor } from '../core';
 
 
 export function isValideAspectTarget(targetType: Type<any>) {

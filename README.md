@@ -16,26 +16,16 @@ npm install tsioc
 
 # Documentation
 
-* >0.6.12,  support Method paramerter name opertor.  Method Invoker ParamProvider can setting  index  as  paramerter name.
-* >0.6.15
+class name First char must be UpperCase.
+
+* >0.6.18, new features
+    1. complie src to es5, support in browser. fix class check bug in es5 model. class name First char must be UpperCase.
+* >0.6.15, new features
     1. add resolve. support resolve instance with providers. `resolve<T>(token: Token<T>, notFoundValue?: T, ...providers: ParamProvider[]);`
     2. add `createSyncParams(params: IParameter[], ...providers: ParamProvider[]): any[]` and `createParams(params: IParameter[], ...providers: AsyncParamProvider[]): Promise<any[]>`
+* >0.6.12, new features
+    1. support Method paramerter name opertor.  Method Invoker ParamProvider can setting  index  as  paramerter name.
 
-If you want use `ts-node` to run, need config `tsconfig.json` target gt than `es6`, eg.
-
-``` json
-{
-        "compilerOptions": {
-        "module": "commonjs",
-        "target": "es6",
-        "lib": ["dom", "es2015", "es2017"],
-        "emitDecoratorMetadata": true,
-        "experimentalDecorators": true,
-        "declaration": true,
-        ...
-    },
-}
-```
 
 ## Ioc
 

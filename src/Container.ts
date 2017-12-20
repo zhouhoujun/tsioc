@@ -6,7 +6,6 @@ import { Type } from './Type';
 import { isClass, isFunction, symbols } from './utils';
 import { isSymbol, isString, isUndefined, isArray } from 'util';
 import { registerAops } from './aop';
-import { MethodAccessor } from './MethodAccessor';
 import { IMethodAccessor } from './IMethodAccessor';
 import { ParamProvider, AsyncParamProvider } from './ParamProvider';
 import { ActionComponent, DecoratorType, registerCores, CoreActions, Singleton, PropertyMetadata } from './core';
@@ -220,7 +219,6 @@ export class Container implements IContainer {
     protected init() {
         this.factories = new Map<Token<any>, any>();
         this.singleton = new Map<Token<any>, any>();
-        this.registerSingleton(symbols.IMethodAccessor, () => new MethodAccessor(this));
         this.bindProvider(symbols.IContainer, () => this);
 
         registerCores(this);
@@ -277,7 +275,6 @@ export class Container implements IContainer {
         }
 
         let lifeScope = this.getLifeScope();
-
         let parameters = lifeScope.getConstructorParameters(ClassT);
 
         if (!singleton) {

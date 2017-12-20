@@ -3,6 +3,7 @@ import { Token } from '../types';
 import { isString } from 'util';
 import { isSymbol } from 'lodash';
 import { Registration } from '../Registration';
+import { fail } from 'assert';
 
 
 /**
@@ -33,6 +34,12 @@ export function isClass(target: any): target is Type<any> {
     }
 
     if (target.prototype) {
+        if (!target.name) {
+            return false;
+        }
+        if (!/^[A-Z,@]/.test(target.name)) {
+            return false;
+        }
         try {
             target.arguments && target.caller;
             return false;

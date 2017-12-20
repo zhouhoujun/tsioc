@@ -9,7 +9,6 @@ export * from './ContainerBuilder';
 export * from './IParameter';
 export * from './ParamProvider';
 export * from './IMethodAccessor';
-export * from './MethodAccessor';
 
 export * from './LifeScope';
 export * from './TypeFactory';

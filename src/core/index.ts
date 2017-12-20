@@ -7,6 +7,7 @@ import { LifeScope } from '../LifeScope';
 import { IocState } from '../types';
 import { ActionFactory } from './ActionFactory';
 import { DecoratorType } from './factories';
+import { MethodAccessor } from './MethodAccessor';
 
 
 export * from './actions';
@@ -17,6 +18,7 @@ export * from './ActionData';
 export * from './ActionFactory';
 export * from './DefaultLifeScope';
 export * from './IExecutable';
+export * from './MethodAccessor';
 
 /**
  * register core for container.
@@ -26,9 +28,8 @@ export * from './IExecutable';
  */
 export function registerCores(container: IContainer) {
 
-
     container.registerSingleton(symbols.LifeScope, () => new DefaultLifeScope(container));
-
+    container.registerSingleton(symbols.IMethodAccessor, () => new MethodAccessor(container));
 
     let factory = new ActionFactory();
 
