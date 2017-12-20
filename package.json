@@ -1,6 +1,6 @@
 {
   "name": "tsioc",
-  "version": "0.6.18",
+  "version": "0.6.19",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",

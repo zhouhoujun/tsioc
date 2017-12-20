@@ -1,12 +1,11 @@
 import { DecoratorType, ActionData, ActionComposite, getMethodMetadata } from '../../core';
 import { IContainer } from '../../IContainer';
 import { AspectSet } from '../AspectSet';
-import { isClass } from '../../utils';
+import { isClass, symbols } from '../../utils';
 import { AopActions } from './AopActions';
-import { Aspect } from '../decorators';
+import { Advice, Aspect } from '../decorators';
 import { AdviceMetadata } from '../metadatas'
 import { Token } from '../../types';
-import { Advice, symbols } from '../../index';
 import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IMethodAccessor } from '../../IMethodAccessor';
 import { Advices } from '../Advices';

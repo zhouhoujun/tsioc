@@ -1,5 +1,5 @@
 import { Type } from './Type';
-import { Token } from './index';
+import { Token } from './types';
 import { IContainer } from './IContainer';
 import { ParamProvider, AsyncParamProvider } from './ParamProvider';
 import { IParameter } from './IParameter';

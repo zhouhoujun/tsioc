@@ -2,13 +2,12 @@
 import { DecoratorType, ActionData, ActionComposite, getMethodMetadata } from '../../core';
 import { IContainer } from '../../IContainer';
 import { AspectSet } from '../AspectSet';
-import { isClass, symbols, isPromise } from '../../utils';
+import { isClass, symbols, isPromise, isFunction } from '../../utils';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators';
 import { AdviceMetadata } from '../metadatas'
 import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IMethodAccessor } from '../../IMethodAccessor';
-import { isFunction } from '../../utils';
 import { Joinpoint, JoinpointState } from '../Joinpoint';
 import { isValideAspectTarget } from '../isValideAspectTarget';
 import { isUndefined } from 'util';

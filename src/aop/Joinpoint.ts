@@ -1,6 +1,6 @@
 import { IPointcut } from './IPointcut';
-import { Token } from '../index';
-import { Injectable } from '../core/index';
+import { Token } from '../types';
+import { Injectable } from '../core';
 
 
 export enum JoinpointState {

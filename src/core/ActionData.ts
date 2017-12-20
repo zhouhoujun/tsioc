@@ -1,7 +1,7 @@
 import { ObjectMap, Token } from '../types';
 import { IContainer } from '../IContainer';
 import { Type } from '../Type';
-import { IParameter } from '../index';
+import { IParameter } from '../IParameter';
 
 
 /**

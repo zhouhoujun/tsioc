@@ -1,7 +1,7 @@
 import { Metadate, ProviderMetadata, ActionComponent, ActionData, DecoratorType } from './core';
 import { Type } from './Type';
 import { Token, Express } from './types';
-import { IParameter } from './index';
+import { IParameter } from './IParameter';
 
 /**
  * Decorator summary.

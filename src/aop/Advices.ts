@@ -1,5 +1,5 @@
 import { AdviceMetadata } from './metadatas';
-import { Type } from '../index';
+import { Type } from '../Type';
 
 
 export interface Advices {

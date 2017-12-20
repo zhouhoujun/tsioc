@@ -7,13 +7,11 @@ import { ClassMetadata } from './metadatas';
 import { isArray, isString } from 'util';
 import { IContainer } from '../IContainer';
 import { CoreActions, ActionComponent, ActionComposite } from './actions';
-import { DecoratorType } from './factories';
-import { Express } from 'development-core';
+import { DecoratorType, getParamerterNames } from './factories';
+import { Express } from '../types';
 import { ActionData } from './ActionData';
 import { ActionFactory } from './ActionFactory';
 import { IParameter } from '../IParameter';
-import { getParamerterNames } from './index';
-
 export class DefaultLifeScope implements LifeScope {
 
 

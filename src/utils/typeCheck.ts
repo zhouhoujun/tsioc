@@ -1,9 +1,7 @@
 import { Type } from '../Type';
 import { Token } from '../types';
-import { isString } from 'util';
-import { isSymbol } from 'lodash';
+import { isString, isSymbol } from 'util';
 import { Registration } from '../Registration';
-import { fail } from 'assert';
 
 
 /**

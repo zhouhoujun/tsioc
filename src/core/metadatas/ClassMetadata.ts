@@ -1,5 +1,5 @@
 import { ProviderMetadata } from './ProviderMetadata';
-import { ObjectMap } from '../../index';
+import { ObjectMap } from '../../types';
 
 
 /**
