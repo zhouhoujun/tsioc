@@ -14,8 +14,6 @@ import { IocState } from './types';
 import { IParameter } from './IParameter';
 
 
-export const NOT_FOUND = new Object();
-
 /**
  * Container.
  */
@@ -43,7 +41,8 @@ export class Container implements IContainer {
     resolve<T>(token: Token<T>, notFoundValue?: T, ...providers: ParamProvider[]): T {
         let key = this.getTokenKey<T>(token);
         if (!this.hasRegister(key)) {
-            return notFoundValue === undefined ? (NOT_FOUND as T) : notFoundValue;
+            console.error('have not register', key);
+            return notFoundValue === undefined ? null : notFoundValue;
         }
         let factory = this.factories.get(key);
         return factory(...providers) as T;
