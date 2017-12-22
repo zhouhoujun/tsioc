@@ -17,9 +17,10 @@ npm install tsioc
 # Documentation
 
 class name First char must be UpperCase.
-* >0.6.20, new features
+* > 0.6.21, new features
     1. improvement method invoker, ParamProvider match name and index faild, will match provider via type of param is equal.
     2. improvement AOP advice invoker, add more param provider.
+    3. have not register Type, container.get now will return null;
 * >0.6.18, new features
     1. complie src to es5, support in browser. fix class check bug in es5 model. class name First char must be UpperCase.
 * >0.6.15, new features
