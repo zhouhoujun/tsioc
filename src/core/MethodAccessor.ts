@@ -88,6 +88,9 @@ export class MethodAccessor implements IMethodAccessor {
     protected createParam(param: IParameter, index: number, providers: ParamProvider[], extensds?: (provider: ParamProvider) => any) {
         if (providers.length) {
             let provider = providers.find(p => p && (isString(p.index) ? p.index === param.name : p.index === index));
+            if (!provider) {
+                provider = providers.find(p => p && p.type && p.value && p.type === param.type);
+            }
             if (provider) {
                 if (!isUndefined(provider.value)) {
                     return isFunction(provider.value) ? provider.value(this.container) : provider.value;

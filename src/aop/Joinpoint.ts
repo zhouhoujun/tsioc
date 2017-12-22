@@ -43,7 +43,7 @@ export interface IJoinpoint extends IPointcut {
  * @implements {IJoinpoint}
  */
 @Injectable
- export class Joinpoint implements IJoinpoint {
+export class Joinpoint implements IJoinpoint {
     name: string;
     fullName: string;
     state: JoinpointState;
@@ -56,4 +56,20 @@ export interface IJoinpoint extends IPointcut {
     constructor() {
 
     }
+
+    static parse(json: IJoinpoint): Joinpoint {
+        let jp = new Joinpoint();
+        if (json) {
+            jp.name = json.name;
+            jp.fullName = json.fullName;
+            jp.args = json.args;
+            jp.returning = json.returning;
+            jp.state = json.state;
+            jp.target = json.target;
+            jp.targetType = json.targetType;
+            jp.throwing = json.throwing;
+        }
+        return jp;
+    }
+
 }

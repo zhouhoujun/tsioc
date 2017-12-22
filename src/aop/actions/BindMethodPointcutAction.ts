@@ -53,29 +53,38 @@ export class BindMethodPointcutAction extends ActionComposite {
                 let propertyMethod = target[methodName].bind(target);
                 target[methodName] = ((...args: any[]) => {
                     let val;
-                    let joinPoint = {
-                        name: methodName,
-                        fullName: fullName,
-                        target: target,
-                        targetType: data.targetType
-                    } as IJoinpoint;
 
                     let adviceAction = (advicer: Advicer, state: JoinpointState, isAsync = false, returnValue?: any, throwError?: any) => {
+                        let joinPoint = {
+                            name: methodName,
+                            fullName: fullName,
+                            state: state,
+                            target: target,
+                            targetType: data.targetType
+                        } as IJoinpoint;
                         let index = '';
                         let value;
-                        joinPoint.state = state;
-                        if (advicer.advice.adviceName === 'Around') {
-                            joinPoint.args = args;
-                            let metadata = advicer.advice as AroundMetadata;
-                            if (state === JoinpointState.Before) {
-                                index = metadata.args;
-                            } else if (state === JoinpointState.AfterReturning) {
-                                index = metadata.returning;
-                                value = returnValue;
-                            } else if (state === JoinpointState.AfterThrowing) {
-                                index = metadata.throwing;
-                                value = throwError;
-                            }
+                        let providers = [];
+
+
+                        let metadata: any = advicer.advice;
+
+                        if (metadata.args) {
+                            providers.push({
+                                value: args,
+                                index: metadata.args
+                            } as ParamProvider);
+                        }
+                        if (metadata.returning) {
+                            providers.push({
+                                value: returnValue,
+                                index: metadata.returning
+                            } as ParamProvider);
+                        } else if (metadata.throwing) {
+                            providers.push({
+                                value: throwError,
+                                index: metadata.throwing
+                            } as ParamProvider);
                         }
 
                         if (advicer.advice.adviceName === 'Around') {
@@ -108,16 +117,16 @@ export class BindMethodPointcutAction extends ActionComposite {
                             index = metadata.throwing;
                             value = throwError;
                         }
+                        providers.push({
+                            type: Joinpoint,
+                            value: Joinpoint.parse(joinPoint)
+                        } as ParamProvider)
 
-                        let provider = {
-                            value: index ? value : joinPoint,
-                            index: index || 0
-                        };
 
                         if (isAsync) {
-                            return access.invoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, provider);
+                            return access.invoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, ...providers);
                         } else {
-                            return access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, provider);
+                            return access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, ...providers);
                         }
                     };
 

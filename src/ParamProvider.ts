@@ -34,7 +34,7 @@ export interface ParamProvider {
      * @type {number}
      * @memberof ParamProvider
      */
-    index: number | string;
+    index?: number | string;
 }
 
 /**
