@@ -1,6 +1,6 @@
 {
   "name": "tsioc",
-  "version": "0.6.21",
+  "version": "0.6.22",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -15,14 +15,14 @@
     "e2e.live": "protractor --elementExplorer"
   },
   "keywords": [
-    "Ioc",
+    "ioc",
     "AOP",
-    "type",
     "di",
-    "Inject",
-    "Container",
-    "decorator",
     "autofac",
+    "Inject",
+    "container",
+    "decorator",
+    "type",
     "typescript"
   ],
   "author": "houjun",
