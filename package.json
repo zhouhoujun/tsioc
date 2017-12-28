@@ -16,12 +16,12 @@
   },
   "keywords": [
     "ioc",
-    "AOP",
     "di",
-    "autofac",
-    "Inject",
+    "AOP",
     "container",
     "decorator",
+    "autofac",
+    "Inject",
     "type",
     "typescript"
   ],
