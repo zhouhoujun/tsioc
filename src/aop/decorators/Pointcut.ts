@@ -1,8 +1,7 @@
 
-// import { MethodMetadata, createMethodPropDecorator, IMethodPropDecorator, MetadataAdapter, MetadataExtends } from '../../core';
-// import { isClassMetadata } from '../../utils';
-// import { isString } from 'util';
-// import { AdviceMetadata, PointcutMetadata } from '../metadatas';
+// import { MethodMetadata, createMethodPropDecorator, IMethodPropDecorator, MetadataAdapter, MetadataExtends } from '../../core/index';
+// import { isString, isClassMetadata } from '../../utils/index';
+// import { AdviceMetadata, PointcutMetadata } from '../metadatas/index';
 
 // export interface IPointcutDecorator<T extends PointcutMetadata> extends IMethodPropDecorator<T> {
 //     (pointcut?: string): any;

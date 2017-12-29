@@ -1,9 +1,8 @@
 import 'reflect-metadata';
-import { PropertyMetadata } from '../metadatas';
+import { PropertyMetadata } from '../metadatas/index';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isClass, isToken, isPropertyMetadata } from '../../utils';
-import { isString, isSymbol } from 'util';
+import { isClass, isToken, isString, isSymbol, isPropertyMetadata } from '../../utils/index';
 import { ArgsIterator } from './ArgsIterator';
 import { Token } from '../../types';
 import { Registration } from '../../Registration';

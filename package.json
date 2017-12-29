@@ -35,7 +35,7 @@
     "url": "git+https://github.com/zhouhoujun/tsioc.git"
   },
   "dependencies": {
-    "globby": "^6.1.0",
+    "minimatch": "^3.0.4",
     "reflect-metadata": "^0.1.10"
   },
   "devDependencies": {

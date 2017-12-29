@@ -1,6 +1,6 @@
-import { Singleton, Inject } from '../core';
+import { Singleton, Inject } from '../core/index';
 import { IContainer } from '../IContainer';
-import { symbols } from '../utils';
+import { symbols } from '../utils/index';
 import { Token } from '../types';
 import { Type } from '../Type';
 import { Advices } from './Advices';

@@ -1,6 +1,6 @@
 import { IAdviceDecorator, createAdviceDecorator } from './Advice';
-import { isString } from 'util';
-import { AdviceMetadata, AfterThrowingMetadata } from '../metadatas';
+import { isString } from '../../utils/index';
+import { AdviceMetadata, AfterThrowingMetadata } from '../metadatas/index';
 
 
 export interface IAfterThrowingDecorator<T extends AfterThrowingMetadata> extends IAdviceDecorator<T> {

@@ -1,7 +1,7 @@
 import { BindPropertyTypeActionData, BindPropertyTypeAction } from './BindPropertyTypeAction';
-import { DecoratorType } from '../factories';
+import { DecoratorType } from '../factories/index';
 import { IContainer } from '../../IContainer';
-import { PropertyMetadata } from '../metadatas';
+import { PropertyMetadata } from '../metadatas/index';
 import { CoreActions } from './CoreActions';
 import { ActionComposite } from './ActionComposite';
 import { ActionComponent } from './ActionComponent';

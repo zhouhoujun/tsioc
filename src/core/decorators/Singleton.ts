@@ -1,6 +1,6 @@
 import { Type } from '../../Type';
-import { createClassDecorator, IClassDecorator } from '../factories';
-import { ClassMetadata } from '../metadatas';
+import { createClassDecorator, IClassDecorator } from '../factories/index';
+import { ClassMetadata } from '../metadatas/index';
 
 /**
  * Singleton decorator and metadata. define a class.

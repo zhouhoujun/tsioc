@@ -1,10 +1,9 @@
 import 'reflect-metadata';
 import { Type, } from '../../Type';
-import { PropertyMetadata, MethodMetadata, ParameterMetadata, Metadate, ClassMetadata } from '../metadatas';
+import { PropertyMetadata, MethodMetadata, ParameterMetadata, Metadate, ClassMetadata } from '../metadatas/index';
 import { DecoratorType } from './DecoratorType';
-import { isUndefined, isFunction, isNumber, isArray, isSymbol } from 'util';
 import { ArgsIterator } from './ArgsIterator';
-import { isClass, isToken, isClassMetadata, isMetadataObject } from '../../utils';
+import { isClass, isToken, isClassMetadata, isMetadataObject, isUndefined, isFunction, isNumber, isArray, isSymbol } from '../../utils/index';
 import { ObjectMap } from '../../types';
 import { IClassDecorator } from './ClassDecoratorFactory';
 

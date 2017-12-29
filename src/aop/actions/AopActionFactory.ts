@@ -1,11 +1,11 @@
-import { DecoratorType, ActionComposite, ActionComponent, Singleton, CoreActions } from '../../core';
+import { DecoratorType, ActionComposite, ActionComponent, Singleton, CoreActions } from '../../core/index';
 import { AopActions } from './AopActions';
 import { RegistAspectAction } from './RegistAspectAction';
 import {
     InvokeBeforeConstructorAction, InvokeAfterConstructorAction,
     BindMethodPointcutAction, BindPropertyPointcutAction, MatchPointcutAction
-} from '../actions';
-import { symbols } from '../../utils';
+} from '../actions/index';
+import { symbols } from '../../utils/index';
 
 
 export class AopActionFactory {

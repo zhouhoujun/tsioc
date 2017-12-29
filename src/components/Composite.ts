@@ -2,8 +2,7 @@
 import { Mode, Express } from '../types';
 import { NullComponent, NullNode } from './NullComponent';
 import { IComponent } from './IComponent';
-import { isString } from 'util';
-import { isFunction } from '../utils';
+import { isFunction, isString } from '../utils/index';
 
 /**
  * compoiste.

@@ -22,8 +22,9 @@ export interface ActionComponent extends IComponent, IExecutable {
     /**
      * insert ActionComponent
      *
-     * @param {IComponent} node
-     * @returns {IComponent}
+     * @param {ActionComponent} node
+     * @param {number} index
+     * @returns {ActionComponent}
      * @memberof ActionComponent
      */
     insert(node: ActionComponent, index: number): ActionComponent;

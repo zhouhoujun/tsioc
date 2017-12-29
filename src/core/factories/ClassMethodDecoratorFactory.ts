@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { Type } from '../../Type';
-import { TypeMetadata } from '../metadatas';
+import { TypeMetadata } from '../metadatas/index';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory'
 import { DecoratorType } from './DecoratorType';
 

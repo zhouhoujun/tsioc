@@ -1,8 +1,8 @@
 import { ActionComposite } from './ActionComposite';
 import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
-import { DecoratorType, getPropertyMetadata } from '../factories';
-import { PropertyMetadata } from '../metadatas';
+import { DecoratorType, getPropertyMetadata } from '../factories/index';
+import { PropertyMetadata } from '../metadatas/index';
 import { IContainer } from '../../IContainer';
 
 

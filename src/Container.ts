@@ -1,16 +1,14 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
-import { Token, Factory, ObjectMap, SymbolType, ToInstance } from './types';
+import { Token, Factory, ObjectMap, SymbolType, ToInstance, IocState } from './types';
 import { Registration } from './Registration';
 import { Type } from './Type';
-import { isClass, isFunction, symbols } from './utils';
-import { isSymbol, isString, isUndefined, isArray } from 'util';
-import { registerAops } from './aop';
+import { isClass, isFunction, symbols, isSymbol, isString, isUndefined, isArray } from './utils/index';
+import { registerAops } from './aop/index';
 import { IMethodAccessor } from './IMethodAccessor';
 import { ParamProvider, AsyncParamProvider } from './ParamProvider';
-import { ActionComponent, DecoratorType, registerCores, CoreActions, Singleton, PropertyMetadata } from './core';
+import { ActionComponent, DecoratorType, registerCores, CoreActions, Singleton, PropertyMetadata } from './core/index';
 import { LifeScope } from './LifeScope';
-import { IocState } from './types';
 import { IParameter } from './IParameter';
 
 
@@ -38,6 +36,16 @@ export class Container implements IContainer {
         return this.resolve(alias ? this.getTokenKey<T>(token, alias) : token, notFoundValue);
     }
 
+
+    /**
+     * resolve type instance with token and param provider.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {T} [notFoundValue]
+     * @param {...ParamProvider[]} providers
+     * @memberof Container
+     */
     resolve<T>(token: Token<T>, notFoundValue?: T, ...providers: ParamProvider[]): T {
         let key = this.getTokenKey<T>(token);
         if (!this.hasRegister(key)) {
@@ -49,6 +57,15 @@ export class Container implements IContainer {
     }
 
 
+    /**
+     * get token.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {string} [alias]
+     * @returns {Token<T>}
+     * @memberof Container
+     */
     getToken<T>(token: Token<T>, alias?: string): Token<T> {
         if (token instanceof Registration) {
             return token;
@@ -60,6 +77,16 @@ export class Container implements IContainer {
         }
     }
 
+
+    /**
+     * get tocken key.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {string} [alias]
+     * @returns {SymbolType<T>}
+     * @memberof Container
+     */
     getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
         if (token instanceof Registration) {
             return token.toString();
@@ -167,6 +194,12 @@ export class Container implements IContainer {
         this.factories.set(provideKey, factory);
     }
 
+     /**
+     * get life scope of container.
+     *
+     * @returns {LifeScope}
+     * @memberof IContainer
+     */
     getLifeScope(): LifeScope {
         return this.get<LifeScope>(symbols.LifeScope);
     }

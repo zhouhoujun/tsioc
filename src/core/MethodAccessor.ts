@@ -2,14 +2,13 @@ import { IContainer } from '../IContainer';
 import { ParamProvider, AsyncParamProvider } from '../ParamProvider';
 import { IMethodAccessor } from '../IMethodAccessor';
 import { Type } from '../Type';
-import { isFunction, isUndefined, isString } from 'util';
-import { BindParameterProviderActionData, CoreActions } from './actions';
-import { symbols, isToken } from '../utils';
+import { BindParameterProviderActionData, CoreActions } from './actions/index';
+import { symbols, isToken, isFunction, isUndefined, isString  } from '../utils/index';
 import { Token } from '../types';
 import { Container } from '../Container';
 import { IContainerBuilder } from '../IContainerBuilder';
 import { IParameter } from '../IParameter';
-import { DecoratorType } from './factories';
+import { DecoratorType } from './factories/index';
 
 export class MethodAccessor implements IMethodAccessor {
 

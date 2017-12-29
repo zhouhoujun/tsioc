@@ -1,5 +1,4 @@
-import * as path from 'path';
-import { isString } from 'util';
+import { isString } from '../utils/index';
 
 /**
  * convert path to absolute path.
@@ -10,6 +9,7 @@ import { isString } from 'util';
  * @returns {string}
  */
 export function toAbsolutePath(root: string, pathstr: string): string {
+    let path = require('path');
     if (!root || path.isAbsolute(pathstr)) {
         return pathstr;
     }

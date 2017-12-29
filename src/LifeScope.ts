@@ -1,4 +1,4 @@
-import { Metadate, ProviderMetadata, ActionComponent, ActionData, DecoratorType } from './core';
+import { Metadate, ProviderMetadata, ActionComponent, ActionData, DecoratorType } from './core/index';
 import { Type } from './Type';
 import { Token, Express } from './types';
 import { IParameter } from './IParameter';
@@ -91,12 +91,41 @@ export interface LifeScope {
      */
     filerDecorators(express: Express<DecorSummary, boolean>): DecorSummary[];
 
+
+    /**
+     * get class decorators
+     *
+     * @param {Express<DecorSummary, boolean>} [match]
+     * @returns {DecorSummary[]}
+     * @memberof LifeScope
+     */
     getClassDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[];
 
+    /**
+     * get method decorators
+     *
+     * @param {Express<DecorSummary, boolean>} [match]
+     * @returns {DecorSummary[]}
+     * @memberof LifeScope
+     */
     getMethodDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[];
 
+    /**
+     * get property decorators
+     *
+     * @param {Express<DecorSummary, boolean>} [match]
+     * @returns {DecorSummary[]}
+     * @memberof LifeScope
+     */
     getPropertyDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[];
 
+    /**
+     * get parameter decorators
+     *
+     * @param {Express<DecorSummary, boolean>} [match]
+     * @returns {DecorSummary[]}
+     * @memberof LifeScope
+     */
     getParameterDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[];
 
 

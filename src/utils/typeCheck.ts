@@ -1,6 +1,5 @@
 import { Type } from '../Type';
 import { Token } from '../types';
-import { isString, isSymbol } from 'util';
 import { Registration } from '../Registration';
 
 
@@ -172,40 +171,81 @@ export function isPropertyMetadata(target, extendsProps?: string[]): boolean {
 }
 
 
+/**
+ * check target is string or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is string}
+ */
+export function isString(target: any): target is string {
+    return typeof target === 'string';
+}
+
+/**
+ * check target is number or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is number}
+ */
+export function isNumber(target: any): target is number {
+    return typeof target === 'number';
+}
 
 
-// use util
+/**
+ * check target is undefined or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is undefined}
+ */
+export function isUndefined(target: any): target is undefined {
+    return typeof target === 'undefined';
+}
 
-// /**
-//  * check target is function or not.
-//  *
-//  * @export
-//  * @param {*} target
-//  * @returns
-//  */
-// export function isString(target: any): target is string {
-//     return typeof target === 'string';
-// }
+/**
+ * check target is array or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is Array<any>}
+ */
+export function isArray(target: any): target is Array<any> {
+    return Array.isArray(target);
+}
 
+/**
+ * check target is object or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is object}
+ */
+export function isObject(target: any): target is object {
+    var type = typeof target;
+    return target != null && (type === 'object' || type === 'function');
+}
 
-// /**
-//  * check target is undefined or not.
-//  *
-//  * @export
-//  * @param {*} target
-//  * @returns {target is undefined}
-//  */
-// export function isUndefined(target: any): target is undefined {
-//     return typeof target === 'undefined';
-// }
+/**
+ * check target is symbol or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is Symbol}
+ */
+export function isSymbol(target: any): target is Symbol {
+    return typeof target === 'symbol';
+}
 
-// /**
-//  * check target is symbol or not.
-//  *
-//  * @export
-//  * @param {*} target
-//  * @returns {target is Symbol}
-//  */
-// export function isSymbol(target: any): target is Symbol {
-//     return typeof target === 'symbol';
-// }
+/**
+ * check target is regexp or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is RegExp}
+ */
+export function isRegExp(target: any): target is RegExp {
+    return target && target instanceof RegExp;
+}

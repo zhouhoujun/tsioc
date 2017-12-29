@@ -1,8 +1,7 @@
 
-import { MethodMetadata, createMethodDecorator, IMethodDecorator, MetadataAdapter, MetadataExtends } from '../../core';
-import { AdviceMetadata } from '../metadatas';
-import { isClassMetadata } from '../../utils';
-import { isString, isRegExp } from 'util';
+import { MethodMetadata, createMethodDecorator, IMethodDecorator, MetadataAdapter, MetadataExtends } from '../../core/index';
+import { AdviceMetadata } from '../metadatas/index';
+import { isClassMetadata, isString, isRegExp } from '../../utils/index';
 
 export interface IAdviceDecorator<T extends AdviceMetadata> extends IMethodDecorator<T> {
     (pointcut?: string | RegExp): MethodDecorator;

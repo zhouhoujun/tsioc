@@ -1,4 +1,4 @@
-export * from './utils';
+
 export * from './IContainer';
 export * from './Container';
 export * from './Type';
@@ -13,7 +13,13 @@ export * from './IMethodAccessor';
 export * from './LifeScope';
 export * from './TypeFactory';
 
-export * from './components';
-export * from './core';
-export * from './aop';
+export * from './LoadOptions';
+export * from './IModuleLoader';
+export * from './NodeModuleLoader';
+export * from './BrowserModuleLoader';
+
+export * from './utils/index';
+export * from './components/index';
+export * from './core/index';
+export * from './aop/index';
 

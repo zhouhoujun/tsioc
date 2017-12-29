@@ -1,4 +1,4 @@
-import { Metadate } from '../metadatas';
+import { Metadate } from '../metadatas/index';
 
 
 export interface CheckExpress<T extends Metadate> {

@@ -1,4 +1,4 @@
-import { AdviceMetadata } from './metadatas';
+import { AdviceMetadata } from './metadatas/index';
 import { Type } from '../Type';
 import { MatchPointcut } from './MatchPointcut';
 import { ObjectMap } from '../types';
