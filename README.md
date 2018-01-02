@@ -17,6 +17,11 @@ npm install tsioc
 # Documentation
 
 class name First char must be UpperCase.
+
+* > 1.1.0, new features
+    1. refactor.
+    2. support browse, use `bundles/tsioc.umd.js`.
+
 * > 0.6.21, new features
     1. improvement method invoker, ParamProvider match name and index faild, will match provider via type of param is equal.
     2. improvement AOP advice invoker, add more param provider.
@@ -37,6 +42,11 @@ class name First char must be UpperCase.
 2. get Instance can auto create constructor param.  (must has a class decorator or register in container).
 
 ### create Container
+
+* in browser can not:
+    1. use syncBuild
+    2. syncLoadModule
+    3. can not use minimatch to match file.
 
 ```ts
 let builder = new ContainerBuilder();

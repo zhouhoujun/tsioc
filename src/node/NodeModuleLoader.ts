@@ -1,7 +1,7 @@
-import { IModuleLoader } from './IModuleLoader';
-import { Type } from './Type';
-import { toAbsolutePath } from './utils/index';
-import { AsyncLoadOptions } from './LoadOptions';
+import { IModuleLoader } from '../IModuleLoader';
+import { Type } from '../Type';
+import { toAbsolutePath } from './toAbsolute';
+import { AsyncLoadOptions } from '../LoadOptions';
 
 
 

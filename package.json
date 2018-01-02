@@ -1,6 +1,6 @@
 {
   "name": "tsioc",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -35,7 +35,7 @@
     "url": "git+https://github.com/zhouhoujun/tsioc.git"
   },
   "dependencies": {
-    "minimatch": "^3.0.4",
+    "globby": "^7.1.1",
     "reflect-metadata": "^0.1.10"
   },
   "devDependencies": {
@@ -48,9 +48,15 @@
     "gulp": "^3.9.1",
     "gulp-html-replace": "^1.6.1",
     "gulp-mocha": "^4.3.0",
+    "gulp-rename": "^1.2.2",
     "gulp-replace": "^0.5.4",
+    "gulp-rollup": "^2.15.0",
     "gulp-uglify": "^1.5.4",
     "lodash": "^4.13.1",
+    "rollup": "^0.53.2",
+    "rollup-plugin-commonjs": "^8.2.6",
+    "rollup-plugin-node-resolve": "^3.0.0",
+    "rollup-plugin-sourcemaps": "^0.4.2",
     "through2": "^2.0.3",
     "ts-node": "^3.3.0",
     "tslint": "^5.8.0",
@@ -58,7 +64,6 @@
     "typescript": "^2.5.3",
     "vinyl-buffer": "^1.0.0",
     "vinyl-paths": "^2.1.0",
-    "vinyl-source-stream": "^1.1.0",
     "zone.js": "^0.8.5"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme"

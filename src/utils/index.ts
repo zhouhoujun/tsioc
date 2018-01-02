@@ -1,6 +1,5 @@
 
 export * from './typeCheck';
-export * from './toAbsolute';
 
 import * as allsym from './symbols';
 

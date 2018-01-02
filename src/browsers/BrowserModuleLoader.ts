@@ -1,7 +1,6 @@
-import { IModuleLoader } from './IModuleLoader';
-import { Type } from './Type';
-import { toAbsolutePath } from './utils/index';
-import { AsyncLoadOptions } from './LoadOptions';
+import { IModuleLoader } from '../IModuleLoader';
+import { Type } from '../Type';
+import { AsyncLoadOptions } from '../LoadOptions';
 
 declare let System: any;
 declare let require: any;

@@ -2,11 +2,10 @@ import { IAdviceMatcher } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadatas/index';
 import { DecoratorType, Singleton } from '../core/index';
 import { Type } from '../Type';
-import { symbols,  isString, isRegExp } from '../utils/index';
+import { symbols, isString, isRegExp } from '../utils/index';
 import { IPointcut } from './IPointcut';
 import { ObjectMap } from '../types';
 import { MatchPointcut } from './MatchPointcut';
-import { Minimatch } from 'minimatch';
 
 @Singleton(symbols.IAdviceMatcher)
 export class AdviceMatcher implements IAdviceMatcher {
@@ -60,12 +59,20 @@ export class AdviceMatcher implements IAdviceMatcher {
             if (/^execution\(\S+\)$/.test(pointcut)) {
                 pointcut = pointcut.substring(10, pointcut.length - 1);
             }
-            let matcher = new Minimatch(pointcut);
+
             return points.filter(a => {
                 if (pointcut === '*') {
                     return true;
                 }
-                return matcher.match(a.fullName);
+                if (pointcut === '*.*') {
+                    return true;
+                }
+                pointcut = pointcut.replace(/\*\*/gi, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+                    .replace(/\*/gi, '\\\w+')
+                    .replace(/\./gi, '\\\.')
+                    .replace(/\//gi, '\\\/');
+                let matcher = new RegExp(pointcut + '$');
+                return matcher.test(a.fullName);
             }).map(p => {
                 return Object.assign({}, p, { advice: metadata });
             });

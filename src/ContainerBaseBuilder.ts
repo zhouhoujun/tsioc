@@ -1,23 +1,15 @@
 import { IContainer } from './IContainer';
 import { Container } from './Container';
-import { isFunction, isClass, toAbsoluteSrc, symbols, isString, isNodejsEnv } from './utils/index';
+import { isFunction, isClass, symbols, isString, isNodejsEnv } from './utils/index';
 import { Type } from './Type';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IModuleLoader } from './IModuleLoader';
 import { AsyncLoadOptions, LoadOptions } from './LoadOptions';
-import { BrowserModuleLoader } from './BrowserModuleLoader';
-import { NodeModuleLoader } from './NodeModuleLoader';
 
-export class ContainerBuilder implements IContainerBuilder {
+export class ContainerBaseBuilder implements IContainerBuilder {
 
     constructor(private loader?: IModuleLoader) {
-        if (!loader) {
-            if (isNodejsEnv()) {
-                this.loader = new NodeModuleLoader();
-            } else {
-                this.loader = new BrowserModuleLoader();
-            }
-        }
+
     }
     create(): IContainer {
         let container = new Container();
