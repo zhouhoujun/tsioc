@@ -1,8 +1,6 @@
-import { isClass, isString, isSymbol } from './typeCheck';
+import { isClass, isString, isSymbol, isFunction, isUndefined } from './typeCheck';
 import { Type } from '../Type';
 import { Registration } from '../Registration';
-import { isUndefined } from '../utils/index';
-import { isFunction } from '../index';
 
 /**
  * object map set.
@@ -26,15 +24,15 @@ export class ObjectMapSet<TKey, TVal> {
     }
 
     getTypeKey(key: TKey) {
+        let strKey = '';
         if (isString(key)) {
-            return key;
+            strKey = key;
         } else if (isFunction(key)) {
-            return new Registration(key, ' Type').toString();
-        } else if (isSymbol(key)) {
-            let syx = Symbol('xxxx');
-            return key.toString();
+            strKey = key.name;
+        } else {
+            strKey = key.toString();
         }
-        return key.toString();
+        return strKey;
     }
 
     delete(key: TKey): boolean {
@@ -62,12 +60,10 @@ export class ObjectMapSet<TKey, TVal> {
     }
     set(key: TKey, value: TVal): this {
         let strKey = this.getTypeKey(key);
-        if (!this.keyMap[strKey]) {
-            this.keyMap[strKey] = key;
-            this.valueMap[strKey] = value;
-        } else {
-            throw new Error('ObjMap has key ' + strKey);
-        }
+
+        this.keyMap[strKey] = key;
+        this.valueMap[strKey] = value;
+
         return this;
     }
 
