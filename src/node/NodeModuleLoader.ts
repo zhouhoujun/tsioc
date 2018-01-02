@@ -1,8 +1,8 @@
 import { IModuleLoader } from '../IModuleLoader';
 import { Type } from '../Type';
-import { toAbsolutePath } from './toAbsolute';
+import { toAbsoluteSrc } from './toAbsolute';
 import { AsyncLoadOptions } from '../LoadOptions';
-
+const globby = require('globby');
 
 
 export class NodeModuleLoader implements IModuleLoader {
@@ -11,19 +11,12 @@ export class NodeModuleLoader implements IModuleLoader {
 
     }
 
-    private _glob: (patterns: string | string[]) => Promise<string[]>;
-    getGlob() {
-        if (!this._glob) {
-            this._glob = require('globby');
-        }
-        return this._glob;
-    }
+
     load(options: AsyncLoadOptions): Promise<(Type<any> | object)[]> {
-        let glob = this.getGlob();
         if (options.files) {
-            return glob(options.files).then(flies => {
+            return globby(toAbsoluteSrc(options.basePath, options.files)).then(flies => {
                 return flies.map(fp => {
-                    return this.loadModule(toAbsolutePath(options.basePath, fp));
+                    return this.loadModule(fp);
                 });
             })
         } else {
