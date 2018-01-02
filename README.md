@@ -20,7 +20,7 @@ class name First char must be UpperCase.
 
 * > 1.1.0, new features
     1. refactor.
-    2. support browse, use `bundles/tsioc.umd.js`.
+    2. support browser, use `bundles/tsioc.umd.js`.
 
 * > 0.6.21, new features
     1. improvement method invoker, ParamProvider match name and index faild, will match provider via type of param is equal.
