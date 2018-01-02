@@ -1,6 +1,6 @@
 import { Singleton, Inject } from '../core/index';
 import { IContainer } from '../IContainer';
-import { symbols } from '../utils/index';
+import { symbols, MapSet } from '../utils/index';
 import { Token } from '../types';
 import { Type } from '../Type';
 import { Advices } from './Advices';
@@ -14,11 +14,11 @@ import { Advices } from './Advices';
  */
 @Singleton
 export class AspectSet {
-    private aspects: Map<Type<any>, Function>;
-    private advicesMap: Map<string, Advices>;
+    private aspects: MapSet<Type<any>, Function>;
+    private advicesMap: MapSet<string, Advices>;
     constructor(private container: IContainer) {
-        this.aspects = new Map<Type<any>, Function>();
-        this.advicesMap = new Map();
+        this.aspects = new MapSet<Type<any>, Function>();
+        this.advicesMap = new MapSet<string, Advices>();
     }
 
     setAdvices(key: string, advices: Advices) {

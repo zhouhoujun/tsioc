@@ -3,7 +3,7 @@ import { IContainer } from './IContainer';
 import { Token, Factory, ObjectMap, SymbolType, ToInstance, IocState } from './types';
 import { Registration } from './Registration';
 import { Type } from './Type';
-import { isClass, isFunction, symbols, isSymbol, isString, isUndefined, isArray } from './utils/index';
+import { isClass, isFunction, symbols, isSymbol, isString, isUndefined, isArray, MapSet } from './utils/index';
 import { registerAops } from './aop/index';
 import { IMethodAccessor } from './IMethodAccessor';
 import { ParamProvider, AsyncParamProvider } from './ParamProvider';
@@ -16,8 +16,8 @@ import { IParameter } from './IParameter';
  * Container.
  */
 export class Container implements IContainer {
-    protected factories: Map<Token<any>, any>;
-    protected singleton: Map<Token<any>, any>;
+    protected factories: MapSet<Token<any>, Function>;
+    protected singleton: MapSet<Token<any>, any>;
     constructor() {
         this.init();
     }
@@ -249,8 +249,8 @@ export class Container implements IContainer {
     }
 
     protected init() {
-        this.factories = new Map<Token<any>, any>();
-        this.singleton = new Map<Token<any>, any>();
+        this.factories = new MapSet<Token<any>, Function>();
+        this.singleton = new MapSet<Token<any>, any>();
         this.bindProvider(symbols.IContainer, () => this);
 
         registerCores(this);

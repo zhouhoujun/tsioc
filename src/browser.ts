@@ -5,7 +5,6 @@ export * from './Type';
 export * from './types';
 export * from './Registration';
 export * from './IContainerBuilder';
-export * from './browsers/ContainerBuilder';
 export * from './IParameter';
 export * from './ParamProvider';
 export * from './IMethodAccessor';
@@ -15,6 +14,8 @@ export * from './TypeFactory';
 
 export * from './LoadOptions';
 export * from './IModuleLoader';
+
+export * from './browsers/ContainerBuilder';
 export * from './browsers/BrowserModuleLoader';
 
 export * from './utils/index';
