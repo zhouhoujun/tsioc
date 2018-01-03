@@ -38,7 +38,7 @@ export function registerAops(container: IContainer) {
     container.registerSingleton(AspectSet, () => {
         return new AspectSet(container);
     });
-    container.register(AdviceMatcher);
+    container.registerSingleton(symbols.IAdviceMatcher, AdviceMatcher);
     container.register(Joinpoint);
 
     let lifeScope = container.get<LifeScope>(symbols.LifeScope);

@@ -37,6 +37,9 @@ export function isClass(target: any): target is Type<any> {
         if (!/^[A-Z@]/.test(target.name)) {
             return false;
         }
+        if (!isNodejsEnv() && /MSIE [6-9]/.test(navigator.userAgent)) {
+            return true;
+        }
         try {
             target.arguments && target.caller;
             return false;
@@ -46,6 +49,17 @@ export function isClass(target: any): target is Type<any> {
     }
 
     return false;
+}
+
+
+/**
+ * is run in nodejs or not.
+ *
+ * @export
+ * @returns {boolean}
+ */
+export function isNodejsEnv(): boolean {
+    return (typeof process !== 'undefined') && (typeof process.versions.node !== 'undefined')
 }
 
 /**
@@ -236,7 +250,7 @@ export function isObject(target: any): target is object {
  * @returns {target is Symbol}
  */
 export function isSymbol(target: any): target is Symbol {
-    return typeof target === 'symbol';
+    return typeof target === 'symbol' || (isObject(target) && /^Symbol\(/.test(target.toString()));
 }
 
 /**

@@ -7,7 +7,6 @@ import { IPointcut } from './IPointcut';
 import { ObjectMap } from '../types';
 import { MatchPointcut } from './MatchPointcut';
 
-@Singleton(symbols.IAdviceMatcher)
 export class AdviceMatcher implements IAdviceMatcher {
 
     constructor() {
