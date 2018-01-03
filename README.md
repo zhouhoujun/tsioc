@@ -17,7 +17,7 @@ npm install tsioc
 # Documentation
 
 class name First char must be UpperCase.
-* > 1.1.0, new features
+* > 1.1.2, new features
     
     1. add custom MapSet to support browser without Map.
 
