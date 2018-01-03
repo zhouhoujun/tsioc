@@ -21,7 +21,7 @@ class name First char must be UpperCase.
     
     1. add custom MapSet to support browser without Map.
 
-* > 1.1.0, new features
+* > 1.1.1, new features
     1. refactor.
     2. support browser, use `bundles/tsioc.umd.js`.
 
