@@ -7,6 +7,7 @@ const commonjs = require('rollup-plugin-commonjs');
 // import { rollup } from 'rollup';
 const rollup = require('gulp-rollup');
 const rename = require('gulp-rename');
+const uglify = require('gulp-uglify');
 const del = require('del');
 
 Development.create(gulp, __dirname, [
@@ -45,7 +46,8 @@ Development.create(gulp, __dirname, [
                             input: './lib/browser.js'
                         })
                     },
-                    () => rename('tsioc.umd.js')
+                    () => rename('tsioc.umd.js'),
+                    () => uglify()
                 ]
             }
         ]
