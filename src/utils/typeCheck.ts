@@ -197,7 +197,7 @@ export function isString(target: any): target is string {
 }
 
 /**
- * check target is string or not.
+ * check target is boolean or not.
  *
  * @export
  * @param {*} target
