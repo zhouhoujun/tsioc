@@ -46,8 +46,8 @@ Development.create(gulp, __dirname, [
                             input: './lib/browser.js'
                         })
                     },
-                    () => rename('tsioc.umd.js'),
-                    () => uglify()
+                    () => rename('tsioc.umd.js')
+                    // () => uglify()
                 ]
             }
         ]

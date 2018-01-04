@@ -21,7 +21,7 @@ class name First char must be UpperCase.
 ## New Features
 
 * 1.1.5
-    1. add isBoolean isNull isDate check.  update task uglify tsioc.umd.js
+    1. add isBoolean isNull isDate check. now uglify tsioc.umd.js later.
 * 1.1.3
     1. update Symbol Class Check, to support IE9+
     2. `IE9 or lower only check name of class first word is UpperCase.`

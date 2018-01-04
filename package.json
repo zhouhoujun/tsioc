@@ -1,6 +1,6 @@
 {
   "name": "tsioc",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -51,7 +51,7 @@
     "gulp-rename": "^1.2.2",
     "gulp-replace": "^0.5.4",
     "gulp-rollup": "^2.15.0",
-    "gulp-uglify": "^1.5.4",
+    "gulp-uglify": "^3.0.0",
     "lodash": "^4.13.1",
     "rollup": "^0.53.2",
     "rollup-plugin-commonjs": "^8.2.6",
