@@ -197,6 +197,17 @@ export function isString(target: any): target is string {
 }
 
 /**
+ * check target is string or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is string}
+ */
+export function isBoolea(target: any): target is boolean {
+    return typeof target === 'boolean' || (target === true || target === false);
+}
+
+/**
  * check target is number or not.
  *
  * @export
