@@ -201,9 +201,9 @@ export function isString(target: any): target is string {
  *
  * @export
  * @param {*} target
- * @returns {target is string}
+ * @returns {target is boolean}
  */
-export function isBoolea(target: any): target is boolean {
+export function isBoolean(target: any): target is boolean {
     return typeof target === 'boolean' || (target === true || target === false);
 }
 
@@ -227,7 +227,18 @@ export function isNumber(target: any): target is number {
  * @returns {target is undefined}
  */
 export function isUndefined(target: any): target is undefined {
-    return typeof target === 'undefined';
+    return typeof target === 'undefined' || target === undefined;
+}
+
+/**
+ * check target is unll or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is null}
+ */
+export function isNull(target: any): target is null {
+    return typeof target === null;
 }
 
 /**
@@ -251,6 +262,17 @@ export function isArray(target: any): target is Array<any> {
 export function isObject(target: any): target is object {
     var type = typeof target;
     return target != null && (type === 'object' || type === 'function');
+}
+
+/**
+ * check target is date or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is Date}
+ */
+export function isDate(target: any): target is Date {
+    return isObject(target) && target instanceof Date;
 }
 
 /**
