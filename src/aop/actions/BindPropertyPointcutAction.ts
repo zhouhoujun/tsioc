@@ -1,7 +1,7 @@
 
 import { DecoratorType, ActionData, ActionComposite, getMethodMetadata } from '../../core/index';
 import { IContainer } from '../../IContainer';
-import { AspectSet } from '../AspectSet';
+import { IAspectSet } from '../AspectSet';
 import { isClass, symbols, isFunction } from '../../utils/index';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';
@@ -26,7 +26,7 @@ export class BindPropertyPointcutAction extends ActionComposite {
         if (!data.target || !isValideAspectTarget(data.targetType)) {
             return;
         }
-        let aspects = container.get(AspectSet);
+        let aspects = container.get<IAspectSet>(symbols.IAspectSet);
         let access = container.get<IMethodAccessor>(symbols.IMethodAccessor);
 
         let className = data.targetType.name;

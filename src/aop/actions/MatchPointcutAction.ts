@@ -1,7 +1,7 @@
 
 import { DecoratorType, ActionData, ActionComposite, getMethodMetadata } from '../../core/index';
 import { IContainer } from '../../IContainer';
-import { AspectSet } from '../AspectSet';
+import { IAspectSet } from '../AspectSet';
 import { isClass, symbols, isPromise, isFunction, isUndefined } from '../../utils/index';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';
@@ -27,7 +27,7 @@ export class MatchPointcutAction extends ActionComposite {
         if (!isValideAspectTarget(data.targetType)) {
             return;
         }
-        let aspects = container.get(AspectSet);
+        let aspects = container.get<IAspectSet>(symbols.IAspectSet);
         let matcher = container.get<IAdviceMatcher>(symbols.IAdviceMatcher);
         aspects.forEach((type, aspect) => {
             let adviceMaps = getMethodMetadata<AdviceMetadata>(Advice, type);

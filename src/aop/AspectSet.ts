@@ -5,6 +5,44 @@ import { Token } from '../types';
 import { Type } from '../Type';
 import { Advices } from './Advices';
 
+/**
+ * aspect set.
+ *
+ * @export
+ * @interface IAspectSet
+ */
+export interface IAspectSet {
+    /**
+     * set advices.
+     *
+     * @param {string} key
+     * @param {Advices} advices
+     * @memberof IAspectSet
+     */
+    setAdvices(key: string, advices: Advices);
+    /**
+     * get advices.
+     *
+     * @param {string} key
+     * @returns {Advices}
+     * @memberof IAspectSet
+     */
+    getAdvices(key: string): Advices;
+    /**
+     * add aspect.
+     *
+     * @param {Type<any>} aspect
+     * @memberof IAspectSet
+     */
+    add(aspect: Type<any>);
+    /**
+     * iterate eache asoect.
+     *
+     * @param {(type: Type<any>, instance) => void} express
+     * @memberof IAspectSet
+     */
+    forEach(express: (type: Type<any>, instance) => void);
+}
 
 /**
  * for global aspect mamager.
@@ -12,8 +50,7 @@ import { Advices } from './Advices';
  * @export
  * @class AspectSet
  */
-@Singleton
-export class AspectSet {
+export class AspectSet implements IAspectSet {
     private aspects: MapSet<Type<any>, Function>;
     private advicesMap: MapSet<string, Advices>;
     constructor(private container: IContainer) {

@@ -1,6 +1,6 @@
 import { DecoratorType, ActionData, ActionComposite, getMethodMetadata } from '../../core/index';
 import { IContainer } from '../../IContainer';
-import { AspectSet } from '../AspectSet';
+import { IAspectSet } from '../AspectSet';
 import { isClass, symbols } from '../../utils/index';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';
@@ -24,8 +24,8 @@ export class InvokeAfterConstructorAction extends ActionComposite {
         if (Reflect.hasMetadata(Aspect.toString(), data.targetType)) {
             return;
         }
-        let aspects = container.get(AspectSet);
 
+        let aspects = container.get<IAspectSet>(symbols.IAspectSet);
         let advices = aspects.getAdvices(data.targetType.name + '.constructor');
         if (!advices) {
             return;

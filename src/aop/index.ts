@@ -35,7 +35,7 @@ import { Joinpoint } from './Joinpoint';
  */
 export function registerAops(container: IContainer) {
 
-    container.registerSingleton(AspectSet, () => {
+    container.registerSingleton(symbols.IAspectSet, () => {
         return new AspectSet(container);
     });
     container.registerSingleton(symbols.IAdviceMatcher, AdviceMatcher);
