@@ -14,7 +14,7 @@ import { IProviderMatcher } from '../IProviderMatcher';
 import { NonePointcut } from './decorators/index';
 
 
-@NonePointcut
+@NonePointcut()
 export class MethodAccessor implements IMethodAccessor {
 
     constructor(private container: IContainer) {

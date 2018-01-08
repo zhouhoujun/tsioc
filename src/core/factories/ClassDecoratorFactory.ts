@@ -45,14 +45,14 @@ export function createClassDecorator<T extends ClassMetadata>(name: string, adap
         }
         args.next<T>({
             isMetadata: (arg) => isClassMetadata(arg),
-            match: (arg) => isSymbol(arg) || isString(arg) || (isObject(arg) && arg instanceof Registration),
+            match: (arg) => arg && (isSymbol(arg) || isString(arg) || (isObject(arg) && arg instanceof Registration)),
             setMetadata: (metadata, arg) => {
                 metadata.provide = arg;
             }
         });
 
         args.next<T>({
-            match: (arg) => (isString(arg)),
+            match: (arg) => isString(arg),
             setMetadata: (metadata, arg) => {
                 metadata.alias = arg;
             }

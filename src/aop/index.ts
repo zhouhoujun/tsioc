@@ -35,10 +35,9 @@ import { Joinpoint } from './Joinpoint';
  */
 export function registerAops(container: IContainer) {
 
-    container.registerSingleton(symbols.IAspectSet, () => {
-        return new AspectSet(container);
-    });
-    container.registerSingleton(symbols.IAdviceMatcher, AdviceMatcher);
+    container.registerSingleton(symbols.IAspectSet, () => new AspectSet(container));
+
+    container.registerSingleton(symbols.IAdviceMatcher, () => new AdviceMatcher());
     container.register(Joinpoint);
 
     let lifeScope = container.get<LifeScope>(symbols.LifeScope);

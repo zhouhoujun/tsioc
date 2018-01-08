@@ -1,13 +1,13 @@
 import { IAdviceMatcher } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadatas/index';
-import { DecoratorType, Singleton, NonePointcut } from '../core/index';
+import { DecoratorType, NonePointcut } from '../core/index';
 import { Type } from '../Type';
 import { symbols, isString, isRegExp } from '../utils/index';
 import { IPointcut } from './IPointcut';
 import { ObjectMap } from '../types';
 import { MatchPointcut } from './MatchPointcut';
 
-@NonePointcut
+@NonePointcut()
 export class AdviceMatcher implements IAdviceMatcher {
 
     constructor() {

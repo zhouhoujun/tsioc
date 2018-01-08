@@ -33,7 +33,7 @@ Development.create(gulp, __dirname, [
                             name: 'tsioc.umd.js',
                             format: 'umd',
                             plugins: [
-                                resolve({ jsnext: true }),
+                                resolve(),
                                 commonjs(),
                                 rollupSourcemaps()
                             ],

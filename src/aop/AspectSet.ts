@@ -50,7 +50,7 @@ export interface IAspectSet {
  * @export
  * @class AspectSet
  */
-@NonePointcut
+@NonePointcut()
 export class AspectSet implements IAspectSet {
     private aspects: MapSet<Type<any>, Function>;
     private advicesMap: MapSet<string, Advices>;

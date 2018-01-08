@@ -2,7 +2,7 @@ import { ActionComponent, ActionComposite, CoreActions, BindParameterTypeAction,
 import { NonePointcut } from './decorators/index';
 
 
-@NonePointcut
+@NonePointcut()
 export class ActionFactory {
 
     /**

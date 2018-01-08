@@ -8,7 +8,7 @@ import { IParameter } from '../IParameter';
 import { IProviderMatcher } from '../IProviderMatcher';
 import { NonePointcut } from './decorators/index';
 
-@NonePointcut
+@NonePointcut()
 export class ProviderMatcher implements IProviderMatcher {
 
     constructor() {

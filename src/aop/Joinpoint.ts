@@ -42,8 +42,8 @@ export interface IJoinpoint extends IPointcut {
  * @class Joinpoint
  * @implements {IJoinpoint}
  */
-@Injectable
-@NonePointcut
+@Injectable()
+@NonePointcut()
 export class Joinpoint implements IJoinpoint {
     name: string;
     fullName: string;

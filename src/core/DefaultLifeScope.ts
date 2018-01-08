@@ -14,7 +14,7 @@ import { IParameter } from '../IParameter';
 import { NonePointcut } from './decorators/index';
 
 
-@NonePointcut
+@NonePointcut()
 export class DefaultLifeScope implements LifeScope {
 
 

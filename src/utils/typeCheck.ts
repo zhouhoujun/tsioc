@@ -73,7 +73,7 @@ export function isToken(target: any): target is Token<any> {
     if (!target) {
         return false;
     }
-    if (isString(target) || isSymbol(target) || isClass(target) || target instanceof Registration) {
+    if (isString(target) || isSymbol(target) || isClass(target) || (isObject(target) && target instanceof Registration)) {
         return true
     }
     return false;

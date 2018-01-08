@@ -49,7 +49,7 @@ export function registerCores(container: IContainer) {
     lifeScope.registerDecorator(Injectable, CoreActions.bindProvider);
     lifeScope.registerDecorator(Component, CoreActions.bindProvider);
     lifeScope.registerDecorator(Singleton, CoreActions.bindProvider);
-    lifeScope.registerDecorator(NonePointcut, CoreActions.bindProvider);
+    // lifeScope.registerDecorator(NonePointcut, CoreActions.bindProvider);
     lifeScope.registerDecorator(AutoWired, CoreActions.bindParameterType, CoreActions.bindPropertyType);
     lifeScope.registerDecorator(Inject, CoreActions.bindParameterType, CoreActions.bindPropertyType);
     lifeScope.registerDecorator(Param, CoreActions.bindParameterType, CoreActions.bindPropertyType);

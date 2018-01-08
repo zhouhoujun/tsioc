@@ -3,7 +3,7 @@ import { LifeScope } from '../LifeScope';
 import { NonePointcut } from './decorators/index';
 
 
-@NonePointcut
+@NonePointcut()
 export class DefaultTypeFactory implements TypeFactory {
 
     steps: StepWork<any>[];
