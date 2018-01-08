@@ -263,6 +263,8 @@ export class DebugLog {
 ```
 
 ## New Features
+* 1.2.2
+    fix @NonePointcut zip error in tsioc.umd.js
 * 1.2.1
     1. Refactor service provider, add ProviderMap, enable to config provider map options.
     eg. 
