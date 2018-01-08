@@ -11,6 +11,10 @@ import { Express } from '../types';
 import { ActionData } from './ActionData';
 import { ActionFactory } from './ActionFactory';
 import { IParameter } from '../IParameter';
+import { NonePointcut } from './decorators/index';
+
+
+@NonePointcut
 export class DefaultLifeScope implements LifeScope {
 
 

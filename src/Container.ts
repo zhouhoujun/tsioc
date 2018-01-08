@@ -1,12 +1,11 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
-import { Token, Factory, ObjectMap, SymbolType, ToInstance, IocState } from './types';
+import { Token, Factory, ObjectMap, SymbolType, ToInstance, IocState, Providers } from './types';
 import { Registration } from './Registration';
 import { Type } from './Type';
 import { isClass, isFunction, symbols, isSymbol, isString, isUndefined, isArray, MapSet } from './utils/index';
 import { registerAops } from './aop/index';
 import { IMethodAccessor } from './IMethodAccessor';
-import { ParamProvider, AsyncParamProvider } from './ParamProvider';
 import { ActionComponent, DecoratorType, registerCores, CoreActions, Singleton, PropertyMetadata } from './core/index';
 import { LifeScope } from './LifeScope';
 import { IParameter } from './IParameter';
@@ -43,10 +42,10 @@ export class Container implements IContainer {
      * @template T
      * @param {Token<T>} token
      * @param {T} [notFoundValue]
-     * @param {...ParamProvider[]} providers
+     * @param {...Providers[]} providers
      * @memberof Container
      */
-    resolve<T>(token: Token<T>, ...providers: ParamProvider[]): T {
+    resolve<T>(token: Token<T>, ...providers: Providers[]): T {
         let key = this.getTokenKey<T>(token);
         if (!this.hasRegister(key)) {
             console.error('have not register', key);
@@ -211,10 +210,11 @@ export class Container implements IContainer {
      * @param {Type<any>} type
      * @param {(string | symbol)} propertyKey
      * @param {*} [instance]
+     * @param {...Providers[]} providers
      * @returns {Promise<T>}
      * @memberof Container
      */
-    invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: AsyncParamProvider[]): Promise<T> {
+    invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: Providers[]): Promise<T> {
         return this.get<IMethodAccessor>(symbols.IMethodAccessor).invoke(type, propertyKey, instance, ...providers);
     }
 
@@ -225,19 +225,19 @@ export class Container implements IContainer {
      * @param {Type<any>} type
      * @param {(string | symbol)} propertyKey
      * @param {*} [instance]
-     * @param {...ParamProvider[]} providers
+     * @param {...Providers[]} providers
      * @returns {T}
      * @memberof Container
      */
-    syncInvoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: ParamProvider[]): T {
+    syncInvoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: Providers[]): T {
         return this.get<IMethodAccessor>(symbols.IMethodAccessor).syncInvoke(type, propertyKey, instance, ...providers);
     }
 
-    createSyncParams(params: IParameter[], ...providers: ParamProvider[]): any[] {
+    createSyncParams(params: IParameter[], ...providers: Providers[]): any[] {
         return this.get<IMethodAccessor>(symbols.IMethodAccessor).createSyncParams(params, ...providers);
     }
 
-    createParams(params: IParameter[], ...providers: AsyncParamProvider[]): Promise<any[]> {
+    createParams(params: IParameter[], ...providers: Providers[]): Promise<any[]> {
         return this.get<IMethodAccessor>(symbols.IMethodAccessor).createParams(params, ...providers);
     }
 
@@ -290,7 +290,7 @@ export class Container implements IContainer {
 
     protected createCustomFactory<T>(key: SymbolType<T>, factory?: ToInstance<T>, singleton?: boolean) {
         return singleton ?
-            (...providers: ParamProvider[]) => {
+            (...providers: Providers[]) => {
                 if (this.singleton.has(key)) {
                     return this.singleton.get(key);
                 }
@@ -298,7 +298,7 @@ export class Container implements IContainer {
                 this.singleton.set(key, instance);
                 return instance;
             }
-            : (...providers: ParamProvider[]) => factory(this, ...providers);
+            : (...providers: Providers[]) => factory(this, ...providers);
     }
 
     protected createTypeFactory<T>(key: SymbolType<T>, ClassT?: Type<T>, singleton?: boolean) {
@@ -313,7 +313,7 @@ export class Container implements IContainer {
             singleton = lifeScope.isSingletonType<T>(ClassT);
         }
 
-        let factory = (...providers: ParamProvider[]) => {
+        let factory = (...providers: Providers[]) => {
             if (singleton && this.singleton.has(key)) {
                 return this.singleton.get(key);
             }

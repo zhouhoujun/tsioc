@@ -1,5 +1,8 @@
 import { ActionComponent, ActionComposite, CoreActions, BindParameterTypeAction, BindPropertyTypeAction, InjectPropertyAction, BindParameterProviderAction, BindProviderAction } from './actions/index';
+import { NonePointcut } from './decorators/index';
 
+
+@NonePointcut
 export class ActionFactory {
 
     /**

@@ -1,5 +1,6 @@
 import { IContainer } from './IContainer';
 import { Token } from './types';
+import { Provider } from './Provider';
 
 /**
  * param provider.
@@ -7,27 +8,7 @@ import { Token } from './types';
  * @export
  * @interface ParamProvider
  */
-export interface ParamProvider {
-    /**
-     * param value provider is value or value factory.
-     *
-     * @memberof ParamProvider
-     */
-    value?: any | ((container?: IContainer, type?: Token<any>) => any)
-    /**
-     * param value is instance of type.
-     *
-     * @type {Token<any>}
-     * @memberof ParamProvider
-     */
-    type?: Token<any>;
-    /**
-     * param value is the result of type instance invoke the method return value.
-     *
-     * @type {string}
-     * @memberof ParamProvider
-     */
-    method?: string;
+export interface ParamProvider extends Provider {
     /**
      * param index or param name.
      *

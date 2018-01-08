@@ -1,4 +1,4 @@
-import { Singleton, Inject } from '../core/index';
+import { Singleton, Inject, NonePointcut } from '../core/index';
 import { IContainer } from '../IContainer';
 import { symbols, MapSet } from '../utils/index';
 import { Token } from '../types';
@@ -50,6 +50,7 @@ export interface IAspectSet {
  * @export
  * @class AspectSet
  */
+@NonePointcut
 export class AspectSet implements IAspectSet {
     private aspects: MapSet<Type<any>, Function>;
     private advicesMap: MapSet<string, Advices>;

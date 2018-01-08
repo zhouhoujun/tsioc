@@ -1,8 +1,9 @@
 import { TypeFactory, StepWork } from '../TypeFactory';
 import { LifeScope } from '../LifeScope';
+import { NonePointcut } from './decorators/index';
 
 
-
+@NonePointcut
 export class DefaultTypeFactory implements TypeFactory {
 
     steps: StepWork<any>[];

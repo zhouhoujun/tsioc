@@ -1,7 +1,6 @@
 import { Type } from './Type';
-import { Token } from './types';
+import { Token, Providers } from './types';
 import { IContainer } from './IContainer';
-import { ParamProvider, AsyncParamProvider } from './ParamProvider';
 import { IParameter } from './IParameter';
 
 
@@ -20,11 +19,11 @@ export interface IMethodAccessor {
      * @param {Type<any>} targetType  type of object
      * @param {(string | symbol)} propertyKey method name
      * @param {*} [target] instance of type.
-     * @param {...AsyncParamProvider[]} providers param provider.
+     * @param {...Providers[]} providers param provider.
      * @returns {Promise<T>}
      * @memberof IMethodAccessor
      */
-    invoke<T>(targetType: Type<any>, propertyKey: string | symbol, target?: any, ...providers: AsyncParamProvider[]): Promise<T>;
+    invoke<T>(targetType: Type<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): Promise<T>;
 
     /**
      * try to invoke the method of intance,  if no instance will create by type.
@@ -37,7 +36,7 @@ export interface IMethodAccessor {
      * @returns {T}
      * @memberof IMethodAccessor
      */
-    syncInvoke<T>(targetType: Type<any>, propertyKey: string | symbol, target?: any, ...providers: ParamProvider[]): T;
+    syncInvoke<T>(targetType: Type<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): T;
 
 
     /**
@@ -48,7 +47,7 @@ export interface IMethodAccessor {
      * @returns {any[]}
      * @memberof IMethodAccessor
      */
-    createSyncParams(params: IParameter[], ...providers: ParamProvider[]): any[];
+    createSyncParams(params: IParameter[], ...providers: Providers[]): any[];
 
     /**
      * create params instances with IParameter and provider
@@ -58,6 +57,6 @@ export interface IMethodAccessor {
      * @returns {Promise<any[]>}
      * @memberof IMethodAccessor
      */
-    createParams(params: IParameter[], ...providers: AsyncParamProvider[]): Promise<any[]>;
+    createParams(params: IParameter[], ...providers: Providers[]): Promise<any[]>;
 
 }

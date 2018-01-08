@@ -1,6 +1,6 @@
 import { IContainer } from '../IContainer';
 import { symbols } from '../utils/index';
-import { Injectable, AutoWired, Inject, Singleton, Param, Method } from './decorators/index';
+import { Injectable, Component, AutoWired, Inject, Singleton, Param, Method, NonePointcut } from './decorators/index';
 import { CoreActions } from './actions/index';
 import { DefaultLifeScope } from './DefaultLifeScope';
 import { LifeScope } from '../LifeScope';
@@ -8,6 +8,7 @@ import { IocState } from '../types';
 import { ActionFactory } from './ActionFactory';
 import { DecoratorType } from './factories/index';
 import { MethodAccessor } from './MethodAccessor';
+import { ProviderMatcher } from './ProviderMatcher';
 
 
 export * from './actions/index';
@@ -19,6 +20,7 @@ export * from './ActionData';
 export * from './ActionFactory';
 export * from './DefaultLifeScope';
 export * from './IExecutable';
+export * from './ProviderMatcher';
 export * from './MethodAccessor';
 
 /**
@@ -30,6 +32,7 @@ export * from './MethodAccessor';
 export function registerCores(container: IContainer) {
 
     container.registerSingleton(symbols.LifeScope, () => new DefaultLifeScope(container));
+    container.registerSingleton(symbols.IProviderMatcher, () => new ProviderMatcher());
     container.registerSingleton(symbols.IMethodAccessor, () => new MethodAccessor(container));
 
     let factory = new ActionFactory();
@@ -43,8 +46,10 @@ export function registerCores(container: IContainer) {
     lifeScope.addAction(factory.create(CoreActions.bindParameterType), DecoratorType.Parameter);
     lifeScope.addAction(factory.create(CoreActions.bindParameterProviders), DecoratorType.Parameter);
 
-    lifeScope.registerDecorator(Singleton, CoreActions.bindProvider);
     lifeScope.registerDecorator(Injectable, CoreActions.bindProvider);
+    lifeScope.registerDecorator(Component, CoreActions.bindProvider);
+    lifeScope.registerDecorator(Singleton, CoreActions.bindProvider);
+    lifeScope.registerDecorator(NonePointcut, CoreActions.bindProvider);
     lifeScope.registerDecorator(AutoWired, CoreActions.bindParameterType, CoreActions.bindPropertyType);
     lifeScope.registerDecorator(Inject, CoreActions.bindParameterType, CoreActions.bindPropertyType);
     lifeScope.registerDecorator(Param, CoreActions.bindParameterType, CoreActions.bindPropertyType);

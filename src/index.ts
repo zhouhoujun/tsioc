@@ -6,7 +6,10 @@ export * from './types';
 export * from './Registration';
 export * from './IContainerBuilder';
 export * from './IParameter';
+export * from './Provider';
+export * from './ProviderMap';
 export * from './ParamProvider';
+export * from './IProviderMatcher';
 export * from './IMethodAccessor';
 
 export * from './LifeScope';

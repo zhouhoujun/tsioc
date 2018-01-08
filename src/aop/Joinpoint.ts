@@ -1,6 +1,6 @@
 import { IPointcut } from './IPointcut';
 import { Token } from '../types';
-import { Injectable } from '../core/index';
+import { Injectable, NonePointcut } from '../core/index';
 
 
 export enum JoinpointState {
@@ -43,6 +43,7 @@ export interface IJoinpoint extends IPointcut {
  * @implements {IJoinpoint}
  */
 @Injectable
+@NonePointcut
 export class Joinpoint implements IJoinpoint {
     name: string;
     fullName: string;

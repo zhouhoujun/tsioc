@@ -1,9 +1,8 @@
-import { Token, Factory, SymbolType } from './types';
+import { Token, Factory, SymbolType, Providers } from './types';
 import { ActionComponent, DecoratorType } from './core/index';
 import { Type } from './Type';
 import { IMethodAccessor } from './IMethodAccessor';
 import { LifeScope } from './LifeScope';
-import { ParamProvider } from './ParamProvider';
 
 
 /**
@@ -41,10 +40,10 @@ export interface IContainer extends IMethodAccessor {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {...ParamProvider[]} providers
+     * @param {...Providers[]} providers
      * @memberof IContainer
      */
-    resolve<T>(token: Token<T>, ...providers: ParamProvider[]);
+    resolve<T>(token: Token<T>, ...providers: Providers[]);
 
     /**
      * get token.

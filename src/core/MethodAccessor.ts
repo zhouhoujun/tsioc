@@ -3,21 +3,33 @@ import { ParamProvider, AsyncParamProvider } from '../ParamProvider';
 import { IMethodAccessor } from '../IMethodAccessor';
 import { Type } from '../Type';
 import { BindParameterProviderActionData, CoreActions } from './actions/index';
-import { symbols, isToken, isFunction, isUndefined, isString  } from '../utils/index';
-import { Token } from '../types';
+import { symbols, isToken, isFunction, isUndefined, isString } from '../utils/index';
+import { Token, Providers } from '../types';
 import { Container } from '../Container';
 import { IContainerBuilder } from '../IContainerBuilder';
 import { IParameter } from '../IParameter';
 import { DecoratorType } from './factories/index';
+import { ProviderMap } from '../ProviderMap';
+import { IProviderMatcher } from '../IProviderMatcher';
+import { NonePointcut } from './decorators/index';
 
+
+@NonePointcut
 export class MethodAccessor implements IMethodAccessor {
 
     constructor(private container: IContainer) {
 
     }
 
-    async invoke<T>(targetType: Type<any>, propertyKey: string | symbol, target?: any, ...providers: AsyncParamProvider[]): Promise<T> {
-        target = target || this.container.get(targetType);
+    getMatcher(): IProviderMatcher {
+        return this.container.get<IProviderMatcher>(symbols.IProviderMatcher);
+    }
+
+    async invoke<T>(targetType: Type<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): Promise<T> {
+        if (!target) {
+            target = this.container.resolve(targetType, ...providers);
+        }
+
         if (target && isFunction(target[propertyKey])) {
             let actionData = {
                 target: target,
@@ -38,8 +50,10 @@ export class MethodAccessor implements IMethodAccessor {
         }
     }
 
-    syncInvoke<T>(targetType: Type<any>, propertyKey: string | symbol, target?: any, ...providers: ParamProvider[]): T {
-        target = target || this.container.get(targetType);
+    syncInvoke<T>(targetType: Type<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): T {
+        if (!target) {
+            target = this.container.resolve(targetType, ...providers);
+        }
         if (target && isFunction(target[propertyKey])) {
             let actionData = {
                 target: target,
@@ -60,16 +74,17 @@ export class MethodAccessor implements IMethodAccessor {
         }
     }
 
-    createSyncParams(params: IParameter[], ...providers: ParamProvider[]): any[] {
+    createSyncParams(params: IParameter[], ...providers: Providers[]): any[] {
+        let providerMap = this.getMatcher().match(params, ...providers);
         return params.map((param, index) => {
-            return this.createParam(param, index, providers);
+            return this.createParam(param, index, providerMap);
         });
     }
 
-    createParams(params: IParameter[], ...providers: AsyncParamProvider[]): Promise<any[]> {
+    createParams(params: IParameter[], ...providers: Providers[]): Promise<any[]> {
+        let providerMap = this.getMatcher().match(params, ...providers);
         return Promise.all(params.map(async (param, index) => {
-
-            return this.createParam(param, index, providers, async (provider: AsyncParamProvider) => {
+            return this.createParam(param, index, providerMap, async (provider: AsyncParamProvider) => {
 
                 let buider = this.container.get<IContainerBuilder>(symbols.IContainerBuilder);
                 let modules = await buider.loadModule(this.container, {
@@ -84,13 +99,18 @@ export class MethodAccessor implements IMethodAccessor {
         }));
     }
 
-    protected createParam(param: IParameter, index: number, providers: ParamProvider[], extensds?: (provider: ParamProvider) => any) {
-        if (providers.length) {
-            let provider = providers.find(p => p && (isString(p.index) ? p.index === param.name : p.index === index));
-            if (!provider) {
-                provider = providers.find(p => p && p.type && p.value && p.type === param.type);
-            }
-            if (provider) {
+    protected createParam(param: IParameter, index: number, providers: ProviderMap, extensds?: (provider: ParamProvider) => any) {
+        if (providers) {
+            let provider = providers[param.name];
+            // providers.find(p => p && (isString(p.index) ? p.index === param.name : p.index === index));
+            // if (!provider) {
+            //     provider = Object.values(providers).find(p => p && p.type && p.value && p.type === param.type);
+            // }
+            if (!isUndefined(provider)) {
+                if (isFunction(provider)) {
+                    return provider(this.container);
+                }
+
                 if (!isUndefined(provider.value)) {
                     return isFunction(provider.value) ? provider.value(this.container) : provider.value;
                 }
@@ -100,6 +120,7 @@ export class MethodAccessor implements IMethodAccessor {
                 if (extensds && provider['files'] && provider['execution']) {
                     return extensds(provider);
                 }
+                return provider;
             }
         }
         return this.container.get(param.type);

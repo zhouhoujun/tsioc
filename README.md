@@ -18,37 +18,6 @@ npm install tsioc
 
 class name First char must be UpperCase.
 
-## New Features
-
-* 1.2.0
-    remove unused `notFoundValue` param in `get`, `resolve` method in container. if not register the token will return `null`.
-    
-* 1.1.7
-    1. add isBoolean isNull isDate check. fix zip error, uglify tsioc.umd.js.
-* 1.1.3
-    1. update Symbol Class Check, to support IE9+
-    2. `IE9 or lower only check name of class first word is UpperCase.`
-
-* 1.1.2
-    1. add custom MapSet to support browser without Map.
-
-* 1.1.1
-    1. refactor.
-    2. support browser, use `bundles/tsioc.umd.js`.
-
-* 0.6.21
-    1. improvement method invoker, ParamProvider match name and index faild, will match provider via type of param is equal.
-    2. improvement AOP advice invoker, add more param provider.
-    3. have not register Type, container.get now will return null;
-* 0.6.18
-    1. complie src to es5, support in browser. fix class check bug in es5 model. class name First char must be UpperCase.
-* 0.6.15
-    1. add `resolve`. support `resolve` instance with `providers`. `resolve<T>(token: Token<T>, ...providers: ParamProvider[]);`
-    2. add `createSyncParams(params: IParameter[], ...providers: ParamProvider[]): any[]` and `createParams(params: IParameter[], ...providers: AsyncParamProvider[]): Promise<any[]>`
-* 0.6.12
-    1. support Method paramerter name opertor.  Method Invoker ParamProvider can setting  index  as  paramerter name.
-
-
 ## Ioc
 
 1. Register one class will auto register depdence class (must has a class decorator).
@@ -83,6 +52,8 @@ let container = builder.syncBuild({
 ```
 
 ### init & register Container
+
+see interface [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/src/IContainer.ts)
 
 ```ts
 // 1.  you can load modules by self
@@ -140,35 +111,9 @@ container.resolve(Person, ...providers);
 
 ### Invoke method
 
-you can use yourself `MethodAccessor` by implement IMethodAccessor, register `symbols.IMethodAccessor` with your `MethodAccessor` in container,   see below.
+you can use yourself `MethodAccessor` by implement IMethodAccessor, register `symbols.IMethodAccessor` with your `MethodAccessor` in container,   see interface [IMethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/src/IMethodAccessor.ts).
 
 ```ts
-/**
- * try to invoke the method of intance,  if no instance will create by type.
- *
- * @template T
- * @param {Type<any>} type  type of object
- * @param {(string | symbol)} propertyKey method name
- * @param {*} [instance] instance of type.
- * @param {...AsyncParamProvider[]} providers param provider.
- * @returns {Promise<T>}
- * @memberof IMethodAccessor
- */
-invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: AsyncParamProvider[]): Promise<T>;
-
-/**
- * try to invoke the method of intance,  if no instance will create by type.
- *
- * @template T
- * @param {Type<any>} type
- * @param {(string | symbol)} propertyKey
- * @param {*} [instance]
- * @param {...ParamProvider[]} providers
- * @returns {T}
- * @memberof IMethodAccessor
- */
-syncInvoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: ParamProvider[]): T
-
 
 @Injectable
 class Person {
@@ -223,6 +168,34 @@ class MethodTest3 {
     }
 }
 
+@Injectable
+class Geet {
+    constructor(private name: string){
+
+    }
+
+    print(hi?:string){
+        return `${hi}, from ${this.name}`;
+    }
+}
+
+container.register(Geet);
+
+container.invoke(Geet, 'print', null,
+{hi: 'How are you.', name:'zhou' },
+{ hi: (container: IContainer)=> 'How are you.' }, ... },
+{ hi:{type: Token<any>, value: any |(container: IContainer)=>any }},
+{index:'name', value：'zhou'},
+{index:'hi', value:'Hello'}
+...
+)
+
+container.resolve(Geet,
+{name: 'zhou' },
+{ name: (container: IContainer)=>any } },
+{name:{type: Token<any>, value: any|(container: IContainer)=>any }})
+
+
 
 container.register(MethodTest);
 container.invoke(MethodTest, 'sayHello')
@@ -241,6 +214,9 @@ container.invoke(MethodTest3, 'sayHello')
     .then(data =>{
         console.log(data);
     });
+
+
+
 
 ```
 
@@ -284,8 +260,59 @@ export class DebugLog {
 }
 
 
-
 ```
+
+## New Features
+* 1.2.1
+    1. Refactor service provider, add ProviderMap, enable to config provider map options.
+    eg. 
+        `container.invoke(Geet, 'print', null,
+        {hi: 'How are you.', name:'zhou' },
+        { hi: (container: IContainer)=> 'How are you.' }, ... },
+        { hi:{type: Token<any>, value: any |(container: IContainer)=>any }},
+        {index:'name', value：'zhou'},
+        {index:'hi', value:'Hello'}
+        ...
+        )
+
+        container.resolve(Geet,
+        {name: 'zhou' },
+        { name: (container: IContainer)=>any } },
+        {name:{type: Token<any>, value: any|(container: IContainer)=>any }})`
+        
+    2. add @NonePointcut decorator for class, to skip Aop aspect advice work.
+
+    3. add @Component decorator for class.
+
+* 1.2.0
+    remove unused `notFoundValue` param in `get`, `resolve` method in container. if not register the token will return `null`.
+    
+* 1.1.7
+    1. add isBoolean isNull isDate check. fix zip error, uglify tsioc.umd.js.
+* 1.1.3
+    1. update Symbol Class Check, to support IE9+
+    2. `IE9 or lower only check name of class first word is UpperCase.`
+
+* 1.1.2
+    1. add custom MapSet to support browser without Map.
+
+* 1.1.1
+    1. refactor.
+    2. support browser, use `bundles/tsioc.umd.js`.
+
+* 0.6.21
+    1. improvement method invoker, ParamProvider match name and index faild, will match provider via type of param is equal.
+    2. improvement AOP advice invoker, add more param provider.
+    3. have not register Type, container.get now will return null;
+* 0.6.18
+    1. complie src to es5, support in browser. fix class check bug in es5 model. class name First char must be UpperCase.
+* 0.6.15
+    1. add `resolve`. support `resolve` instance with `providers`. `resolve<T>(token: Token<T>, ...providers: ParamProvider[]);`
+    2. add `createSyncParams(params: IParameter[], ...providers: ParamProvider[]): any[]` and `createParams(params: IParameter[], ...providers: AsyncParamProvider[]): Promise<any[]>`
+* 0.6.12
+    1. support Method paramerter name opertor.  Method Invoker ParamProvider can setting  index  as  paramerter name.
+
+
 
 ## Use Demo
 

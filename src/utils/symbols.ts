@@ -13,6 +13,12 @@ export const IContainer = Symbol('IContainer');
 export const LifeScope = Symbol('LifeScope');
 
 /**
+ * Providers match interface symbol.
+ * it is a symbol id, you can register yourself MethodAccessor for this.
+ */
+export const IProviderMatcher = Symbol('IProviderMatcher');
+
+/**
  * IMethodAccessor interface symbol.
  * it is a symbol id, you can register yourself MethodAccessor for this.
  */
