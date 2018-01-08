@@ -20,6 +20,9 @@ class name First char must be UpperCase.
 
 ## New Features
 
+* 1.2.0
+    remove unused `notFoundValue` param in `get`, `resolve` method in container. if not register the token will return `null`.
+    
 * 1.1.7
     1. add isBoolean isNull isDate check. fix zip error, uglify tsioc.umd.js.
 * 1.1.3
@@ -40,7 +43,7 @@ class name First char must be UpperCase.
 * 0.6.18
     1. complie src to es5, support in browser. fix class check bug in es5 model. class name First char must be UpperCase.
 * 0.6.15
-    1. add resolve. support resolve instance with providers. `resolve<T>(token: Token<T>, notFoundValue?: T, ...providers: ParamProvider[]);`
+    1. add `resolve`. support `resolve` instance with `providers`. `resolve<T>(token: Token<T>, ...providers: ParamProvider[]);`
     2. add `createSyncParams(params: IParameter[], ...providers: ParamProvider[]): any[]` and `createParams(params: IParameter[], ...providers: AsyncParamProvider[]): Promise<any[]>`
 * 0.6.12
     1. support Method paramerter name opertor.  Method Invoker ParamProvider can setting  index  as  paramerter name.
@@ -129,6 +132,9 @@ get<T>(token: Token<T>, alias?: string, notFoundValue?: T): T;
 let person = container.get(Person);
 //get colloge person
 let person = container.get(Person, 'Colloge');
+
+// resolve with providers
+container.resolve(Person, ...providers);
 
 ```
 
@@ -701,18 +707,27 @@ export interface IContainer extends IMethodAccessor {
      * @memberof IContainer
      */
     has<T>(token: Token<T>, alias?: string): boolean;
+
     /**
      * Retrieves an instance from the container based on the provided token.
      *
      * @template T
      * @param {Token<T>} token
      * @param {string} [alias]
-     * @param {T} [notFoundValue]
      * @returns {T}
      * @memberof IContainer
      */
-    get<T>(token: Token<T>, alias?: string, notFoundValue?: T): T;
+    get<T>(token: Token<T>, alias?: string): T;
 
+    /**
+     * resolve type instance with token and param provider.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {...ParamProvider[]} providers
+     * @memberof IContainer
+     */
+    resolve<T>(token: Token<T>, ...providers: ParamProvider[]);
 
     /**
      * get token.
@@ -784,6 +799,7 @@ export interface IContainer extends IMethodAccessor {
     getLifeScope(): LifeScope;
 
 }
+
 
 
 import { Metadate, ProviderMetadata, ActionComponent, ActionData, DecoratorType } from './core';

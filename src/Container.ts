@@ -32,8 +32,8 @@ export class Container implements IContainer {
      * @returns {T}
      * @memberof Container
      */
-    get<T>(token: Token<T>, alias?: string, notFoundValue?: T): T {
-        return this.resolve(alias ? this.getTokenKey<T>(token, alias) : token, notFoundValue);
+    get<T>(token: Token<T>, alias?: string): T {
+        return this.resolve(alias ? this.getTokenKey<T>(token, alias) : token);
     }
 
 
@@ -46,11 +46,11 @@ export class Container implements IContainer {
      * @param {...ParamProvider[]} providers
      * @memberof Container
      */
-    resolve<T>(token: Token<T>, notFoundValue?: T, ...providers: ParamProvider[]): T {
+    resolve<T>(token: Token<T>, ...providers: ParamProvider[]): T {
         let key = this.getTokenKey<T>(token);
         if (!this.hasRegister(key)) {
             console.error('have not register', key);
-            return notFoundValue === undefined ? null : notFoundValue;
+            return null;
         }
         let factory = this.factories.get(key);
         return factory(...providers) as T;
