@@ -31,7 +31,7 @@ export function isClass(target: any): target is Type<any> {
     }
 
     if (target.prototype) {
-        if (!target.name) {
+        if (!target.name || target.name === 'Object') {
             return false;
         }
         if (!/^[A-Z@]/.test(target.name)) {

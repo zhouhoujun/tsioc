@@ -10,6 +10,7 @@ import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IMethodAccessor } from '../../IMethodAccessor';
 import { Advices } from '../Advices';
 import { Joinpoint, JoinpointState } from '../Joinpoint';
+import { isValideAspectTarget } from '../isValideAspectTarget';
 
 
 export interface InvokeBeforeConstructorActionData extends ActionData<AdviceMetadata> {
@@ -24,7 +25,7 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
 
     protected working(container: IContainer, data: InvokeBeforeConstructorActionData) {
         // aspect class do nothing.
-        if (Reflect.hasMetadata(Aspect.toString(), data.targetType)) {
+        if (!isValideAspectTarget(data.targetType)) {
             return;
         }
 
@@ -36,29 +37,27 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
 
         let access = container.get<IMethodAccessor>(symbols.IMethodAccessor);
         advices.Before.forEach(advicer => {
-            let joinPoint = {
-                name: 'constructor',
-                fullName: data.targetType.name + '.constructor',
-                target: data.target,
-                targetType: data.targetType
-            } as Joinpoint;
             access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, {
-                value: joinPoint,
-                index: 0
+                type: Joinpoint,
+                value: {
+                    name: 'constructor',
+                    fullName: data.targetType.name + '.constructor',
+                    target: data.target,
+                    targetType: data.targetType
+                } // new Joinpoint(joinPoint) // container.resolve(Joinpoint, { json: joinPoint })
             });
         });
         advices.Around.forEach(advicer => {
-            let joinPoint = {
-                args: data.args,
-                state: JoinpointState.Before,
-                name: 'constructor',
-                fullName: data.targetType.name + '.constructor',
-                target: data.target,
-                targetType: data.targetType
-            } as Joinpoint;
             access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, {
-                value: joinPoint,
-                index: 0
+                type: Joinpoint,
+                value: {
+                    args: data.args,
+                    state: JoinpointState.Before,
+                    name: 'constructor',
+                    fullName: data.targetType.name + '.constructor',
+                    target: data.target,
+                    targetType: data.targetType
+                }
             });
         });
     }

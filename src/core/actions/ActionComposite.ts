@@ -9,7 +9,6 @@ import { IContainer } from '../../IContainer';
 import { isFunction, isString } from '../../utils/index';
 import { Composite, IComponent } from '../../components/index';
 
-
 export class ActionComposite extends Composite implements ActionComponent {
 
     parent: ActionComponent;

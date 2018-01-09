@@ -12,6 +12,7 @@ import { isArray } from '../../utils/index';
 export interface BindParameterTypeActionData extends ActionData<Token<any>[]> {
 }
 
+
 export class BindParameterTypeAction extends ActionComposite {
 
     constructor() {

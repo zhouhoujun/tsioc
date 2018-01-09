@@ -5,7 +5,6 @@ import { ActionData } from '../ActionData';
 import { IContainer } from '../../IContainer';
 import { NullComponent } from '../../components/index';
 
-
 class NullActionClass extends NullComponent implements ActionComponent {
     name: string;
     insert(action: ActionComponent): ActionComponent {

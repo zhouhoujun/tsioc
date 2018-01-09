@@ -100,12 +100,15 @@ export class MethodAccessor implements IMethodAccessor {
     }
 
     protected createParam(param: IParameter, index: number, providers: ProviderMap, extensds?: (provider: ParamProvider) => any) {
-        if (providers) {
+        if (providers && param.name) {
             let provider = providers[param.name];
-            // providers.find(p => p && (isString(p.index) ? p.index === param.name : p.index === index));
-            // if (!provider) {
+            // if (isUndefined(provider)) {
+            //     Object.values(providers).find(p => p && (isString(p.index) ? p.index === param.name : p.index === index));
+            // }
+            // if (isUndefined(provider)) {
             //     provider = Object.values(providers).find(p => p && p.type && p.value && p.type === param.type);
             // }
+
             if (!isUndefined(provider)) {
                 if (isFunction(provider)) {
                     return provider(this.container);
@@ -120,9 +123,14 @@ export class MethodAccessor implements IMethodAccessor {
                 if (extensds && provider['files'] && provider['execution']) {
                     return extensds(provider);
                 }
+
                 return provider;
             }
         }
-        return this.container.get(param.type);
+
+        if (isToken(param.type)) {
+            return this.container.get(param.type);
+        }
+        return undefined;
     }
 }

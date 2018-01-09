@@ -3,10 +3,9 @@ import { AopActions } from './AopActions';
 import { RegistAspectAction } from './RegistAspectAction';
 import {
     InvokeBeforeConstructorAction, InvokeAfterConstructorAction,
-    BindMethodPointcutAction, BindPropertyPointcutAction, MatchPointcutAction
+    BindMethodPointcutAction, MatchPointcutAction
 } from '../actions/index';
 import { symbols } from '../../utils/index';
-
 
 export class AopActionFactory {
 
@@ -33,9 +32,9 @@ export class AopActionFactory {
                 action = new BindMethodPointcutAction();
                 break;
 
-            case AopActions.bindPropertyPointcut:
-                action = new BindPropertyPointcutAction();
-                break;
+            // case AopActions.bindPropertyPointcut:
+            //     action = new BindPropertyPointcutAction();
+            //     break;
 
         }
         return action;

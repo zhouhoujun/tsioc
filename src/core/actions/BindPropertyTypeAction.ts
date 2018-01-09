@@ -5,7 +5,6 @@ import { DecoratorType, getPropertyMetadata } from '../factories/index';
 import { PropertyMetadata } from '../metadatas/index';
 import { IContainer } from '../../IContainer';
 
-
 export interface BindPropertyTypeActionData extends ActionData<PropertyMetadata[]> {
 
 }

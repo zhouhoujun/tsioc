@@ -54,23 +54,16 @@ export class Joinpoint implements IJoinpoint {
     returning?: any;
     throwing?: any;
 
-    constructor() {
-
+    constructor(json?: IJoinpoint) {
+        // if (json) {
+            this.name = json.name;
+            this.fullName = json.fullName;
+            this.args = json.args;
+            this.returning = json.returning;
+            this.state = json.state;
+            this.target = json.target;
+            this.targetType = json.targetType;
+            this.throwing = json.throwing;
+        // }
     }
-
-    static parse(json: IJoinpoint): Joinpoint {
-        let jp = new Joinpoint();
-        if (json) {
-            jp.name = json.name;
-            jp.fullName = json.fullName;
-            jp.args = json.args;
-            jp.returning = json.returning;
-            jp.state = json.state;
-            jp.target = json.target;
-            jp.targetType = json.targetType;
-            jp.throwing = json.throwing;
-        }
-        return jp;
-    }
-
 }

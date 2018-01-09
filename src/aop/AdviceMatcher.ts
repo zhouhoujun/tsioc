@@ -61,6 +61,9 @@ export class AdviceMatcher implements IAdviceMatcher {
             }
 
             return points.filter(a => {
+                if (!a.name) {
+                    return false;
+                }
                 if (pointcut === '*') {
                     return true;
                 }
@@ -78,7 +81,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             });
         } else if (isRegExp(metadata.pointcut)) {
             let pointcut = metadata.pointcut;
-            return points.filter(m => pointcut.test(m.fullName))
+            return points.filter(m => m.fullName && pointcut.test(m.fullName))
                 .map(p => {
                     return Object.assign({}, p, { advice: metadata });
                 });

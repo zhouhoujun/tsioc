@@ -18,6 +18,7 @@ import { ParamProvider } from '../../ParamProvider';
 export interface BindPointcutActionData extends ActionData<Joinpoint> {
 }
 
+
 export class BindMethodPointcutAction extends ActionComposite {
 
     constructor() {
@@ -35,10 +36,12 @@ export class BindMethodPointcutAction extends ActionComposite {
         let className = data.targetType.name;
         let methods: IPointcut[] = [];
         for (let name in Object.getOwnPropertyDescriptors(data.targetType.prototype)) {
-            methods.push({
-                name: name,
-                fullName: `${className}.${name}`
-            })
+            if (name) {
+                methods.push({
+                    name: name,
+                    fullName: `${className}.${name}`
+                });
+            }
         }
 
         let target = data.target;
@@ -48,7 +51,7 @@ export class BindMethodPointcutAction extends ActionComposite {
             let methodName = pointcut.name;
             let advices = aspects.getAdvices(fullName);
 
-            if (advices && methodName !== 'constructor') {
+            if (advices && methodName !== 'constructor' && isFunction(target[methodName])) {
                 let propertyMethod = target[methodName].bind(target);
                 target[methodName] = ((...args: any[]) => {
                     let val;
@@ -116,9 +119,10 @@ export class BindMethodPointcutAction extends ActionComposite {
                             index = metadata.throwing;
                             value = throwError;
                         }
+
                         providers.push({
                             type: Joinpoint,
-                            value: Joinpoint.parse(joinPoint)
+                            value: joinPoint// container.resolve(Joinpoint, { json: joinPoint })
                         } as ParamProvider)
 
 

@@ -23,11 +23,12 @@ export class ProviderMatcher implements IProviderMatcher {
         providers.forEach(p => {
             if (p) {
                 if (this.isMap(p)) {
-                    Object.keys(p).forEach(name => {
+                    params.forEach(parma => {
+                        let name = parma.name;
                         if (name && !map[name] && !isUndefined(p[name])) {
                             map[name] = p[name];
                         }
-                    })
+                    });
                 } else {
                     let name;
                     let paramProvider = p as ParamProvider;
