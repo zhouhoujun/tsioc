@@ -122,7 +122,7 @@ export class BindMethodPointcutAction extends ActionComposite {
 
                         providers.push({
                             type: Joinpoint,
-                            value: joinPoint// container.resolve(Joinpoint, { json: joinPoint })
+                            value: container.resolve(Joinpoint, { json: joinPoint })
                         } as ParamProvider)
 
 

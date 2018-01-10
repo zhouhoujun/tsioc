@@ -178,7 +178,10 @@ export class DefaultLifeScope implements LifeScope {
         this.execute(DecoratorType.Parameter, data, CoreActions.bindParameterType);
         let metadata = getParamerterNames(type);
         let paramNames = metadata[propertyKey || 'constructor'];
-        // console.log('paramNames', propertyKey || 'constructor',  paramNames);
+        if (!isArray(paramNames)) {
+            paramNames = [];
+        }
+        // console.log(metadata, propertyKey || 'constructor', paramNames, 'params:', data.execResult);
         return data.execResult.map((typ, idx) => {
             return {
                 type: typ,

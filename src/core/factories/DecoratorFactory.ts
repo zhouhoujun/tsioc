@@ -108,8 +108,11 @@ function storeMetadata<T>(name: string, metaName: string, args: any[], metadata?
     switch (args.length) {
         case 1:
             target = args[0];
-            setTypeMetadata(name, metaName, target, metadata, metadataExtends);
-            return target;
+            if (isClass(target)) {
+                setTypeMetadata(name, metaName, target, metadata, metadataExtends);
+                return target;
+            }
+            break;
         case 2:
             target = args[0];
             let propertyKey = args[1];
@@ -203,7 +206,6 @@ function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: str
         methodMeadata = metadataExtends(methodMeadata);
     }
     meta[propertyKey].unshift(methodMeadata);
-    setParamerterNames(target, propertyKey);
     Reflect.defineMetadata(metaName, meta, target.constructor);
 }
 
@@ -212,19 +214,29 @@ export function getParamerterNames(target: Type<any>): ObjectMap<string[]> {
     if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
         meta = Reflect.getMetadata(ParamerterName, target.constructor);
     }
+    // console.log(target, '\n params:', meta);
     return isArray(meta) ? {} : (meta || {});
 }
 
-export function setParamerterNames(target: Type<any>, propertyKey?: string | symbol) {
+export function setParamerterNames(target: Type<any>) {
     let meta = getParamerterNames(target);
-    meta[propertyKey || 'constructor'] = getParamNames(propertyKey ? (target[propertyKey] || target.prototype[propertyKey]) : target.constructor)
-    Reflect.defineMetadata(ParamerterName, meta, target.constructor);
+    Object.keys(target.prototype).forEach(name => {
+        if (name !== 'constructor') {
+            meta[name] = getParamNames(target.prototype[name])
+        }
+    });
+
+    meta['constructor'] = getParamNames(target.prototype.constructor);
+
+
+    Reflect.defineMetadata(ParamerterName, meta, target);
 }
 
 const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
 const ARGUMENT_NAMES = /([^\s,]+)/g;
 function getParamNames(func) {
     let fnStr = func.toString().replace(STRIP_COMMENTS, '');
+    // console.log(fnStr);
     let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
     if (result === null) {
         result = [];

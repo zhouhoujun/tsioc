@@ -36,25 +36,29 @@ export class InvokeAfterConstructorAction extends ActionComposite {
         advices.After.forEach(advicer => {
             access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, {
                 type: Joinpoint,
-                value: {
-                    name: 'constructor',
-                    fullName: data.targetType.name + '.constructor',
-                    target: data.target,
-                    targetType: data.targetType
-                }
+                value: container.resolve(Joinpoint, {
+                    json: {
+                        name: 'constructor',
+                        fullName: data.targetType.name + '.constructor',
+                        target: data.target,
+                        targetType: data.targetType
+                    }
+                })
             });
         });
 
         advices.Around.forEach(advicer => {
             access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, {
                 type: Joinpoint,
-                value: {
-                    state: JoinpointState.After,
-                    name: 'constructor',
-                    fullName: data.targetType.name + '.constructor',
-                    target: data.target,
-                    targetType: data.targetType
-                }
+                value: container.resolve(Joinpoint, {
+                    json: {
+                        state: JoinpointState.After,
+                        name: 'constructor',
+                        fullName: data.targetType.name + '.constructor',
+                        target: data.target,
+                        targetType: data.targetType
+                    }
+                })
             });
         });
     }
