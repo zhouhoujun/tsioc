@@ -263,6 +263,9 @@ export class DebugLog {
 ```
 
 ## New Features
+* 1.2.6
+    1. fix bug metadata covered, use same decorator on method, property and paramerter.
+    2. add `hasClassMetadata`, `hasMethodMetadata`, `hasPropertyMetadata` and `hasParamMetadata` to check if has decorator metadata.
 * 1.2.5
     1. fix get invok when get method name.
     2. add get set advice aop.
