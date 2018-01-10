@@ -1,4 +1,4 @@
-import { DecoratorType, ActionData, ClassMetadata, ActionComposite, getTypeMetadata } from '../../core/index';
+import { DecoratorType, ActionData, ClassMetadata, ActionComposite, hasClassMetadata, getTypeMetadata } from '../../core/index';
 import { IContainer } from '../../IContainer';
 import { IAspectSet } from '../AspectSet';
 import { isClass, symbols } from '../../utils/index';
@@ -21,7 +21,7 @@ export class RegistAspectAction extends ActionComposite {
         let propertyKey = data.propertyKey;
         let lifeScope = container.getLifeScope();
 
-        let matchs = lifeScope.getClassDecorators(surm => surm.actions.includes(AopActions.registAspect) && Reflect.hasMetadata(surm.name, type));
+        let matchs = lifeScope.getClassDecorators(surm => surm.actions.includes(AopActions.registAspect) && hasClassMetadata(surm.name, type));
 
         let aspects = container.get<IAspectSet>(symbols.IAspectSet);
         matchs.forEach(surm => {

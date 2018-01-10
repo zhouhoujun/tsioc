@@ -157,6 +157,19 @@ export function getTypeMetadata<T>(decorator: string | Function, target: Type<an
     return annotations;
 }
 
+/**
+ * has class decorator metadata.
+ *
+ * @export
+ * @param {(string | Function)} decorator
+ * @param {(Type<any> | object)} target
+ * @returns {boolean}
+ */
+export function hasClassMetadata(decorator: string | Function, target: Type<any> | object): boolean {
+    let name = isFunction(decorator) ? decorator.toString() : decorator;
+    return Reflect.hasMetadata(name, target);
+}
+
 
 function setTypeMetadata<T extends ClassMetadata>(name: string, metaName: string, target: Type<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
     let annotations = getTypeMetadata(metaName, target);
@@ -176,6 +189,7 @@ function setTypeMetadata<T extends ClassMetadata>(name: string, metaName: string
     Reflect.defineMetadata(metaName, annotations, target);
 }
 
+let methodMetadataExt = '__method';
 /**
  * get all method metadata of one specail decorator in target type.
  *
@@ -186,11 +200,25 @@ function setTypeMetadata<T extends ClassMetadata>(name: string, metaName: string
  * @returns {ObjectMap<T[]>}
  */
 export function getMethodMetadata<T extends MethodMetadata>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
-    let meta = Reflect.getMetadata(isFunction(decorator) ? decorator.toString() : decorator, target);
+    let name = isFunction(decorator) ? decorator.toString() : decorator;
+    let meta = Reflect.getMetadata(name + methodMetadataExt, target);
     if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
-        meta = Reflect.getMetadata(isFunction(decorator) ? decorator.toString() : decorator, target.constructor);
+        meta = Reflect.getMetadata(name + methodMetadataExt, target.constructor);
     }
     return isArray(meta) ? {} : (meta || {});
+}
+
+/**
+ * has method decorator metadata.
+ *
+ * @export
+ * @param {(string | Function)} decorator
+ * @param {(Type<any> | object)} target
+ * @returns {boolean}
+ */
+export function hasMethodMetadata(decorator: string | Function, target: Type<any> | object): boolean {
+    let name = isFunction(decorator) ? decorator.toString() : decorator;
+    return Reflect.hasMetadata(name + methodMetadataExt, target);
 }
 
 function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
@@ -206,8 +234,131 @@ function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: str
         methodMeadata = metadataExtends(methodMeadata);
     }
     meta[propertyKey].unshift(methodMeadata);
-    Reflect.defineMetadata(metaName, meta, target.constructor);
+    Reflect.defineMetadata(metaName + methodMetadataExt, meta, target.constructor);
 }
+
+let propertyMetadataExt = '__props';
+/**
+ * get all property metadata of one specail decorator in target type.
+ *
+ * @export
+ * @template T
+ * @param {(string | Function)} decorator
+ * @param {Type<any>} target
+ * @returns {ObjectMap<T[]>}
+ */
+export function getPropertyMetadata<T extends PropertyMetadata>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
+    let name = isFunction(decorator) ? decorator.toString() : decorator;
+    let meta = Reflect.getMetadata(name + propertyMetadataExt, target);
+    if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
+        meta = Reflect.getMetadata(name + propertyMetadataExt, target.constructor);
+    }
+    return isArray(meta) ? {} : (meta || {});
+}
+
+/**
+ * has property decorator metadata.
+ *
+ * @export
+ * @param {(string | Function)} decorator
+ * @param {(Type<any> | object)} target
+ * @returns {boolean}
+ */
+export function hasPropertyMetadata(decorator: string | Function, target: Type<any> | object): boolean {
+    let name = isFunction(decorator) ? decorator.toString() : decorator;
+    return Reflect.hasMetadata(name + propertyMetadataExt, target);
+}
+
+function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, metadata?: T, metadataExtends?: MetadataExtends<any>) {
+    let meta = getPropertyMetadata(metaName, target);
+    let propmetadata = (metadata || {}) as T;
+
+    propmetadata.propertyKey = propertyKey;
+    propmetadata.decorator = name;
+    if (!propmetadata.type) {
+        let t = Reflect.getMetadata('design:type', target, propertyKey);
+        if (!t) {
+            // Needed to support react native inheritance
+            t = Reflect.getMetadata('design:type', target.constructor, propertyKey);
+        }
+        propmetadata.type = t;
+    }
+
+    if (metadataExtends) {
+        propmetadata = metadataExtends(propmetadata);
+    }
+
+    meta[propertyKey] = meta.hasOwnProperty(propertyKey) && meta[propertyKey] || [];
+    meta[propertyKey].unshift(propmetadata);
+    Reflect.defineMetadata(metaName + propertyMetadataExt, meta, target.constructor);
+}
+
+
+let paramsMetadataExt = '__params';
+/**
+ * get paramerter metadata of one specail decorator in target method.
+ *
+ * @export
+ * @template T
+ * @param {(string | Function)} decorator
+ * @param {(Type<any> | object)} target
+ * @param {(string | symbol)} propertyKey
+ * @returns {T[][]}
+ */
+export function getParamMetadata<T extends ParameterMetadata>(decorator: string | Function, target: Type<any> | object, propertyKey?: string | symbol): T[][] {
+    let name = isFunction(decorator) ? decorator.toString() : decorator;
+    let parameters = Reflect.getMetadata(name + paramsMetadataExt, target, propertyKey);
+    parameters = isArray(parameters) ? parameters : [];
+    return parameters;
+}
+
+/**
+ * has param decorator metadata.
+ *
+ * @export
+ * @param {(string | Function)} decorator
+ * @param {(Type<any> | object)} target
+ * @param {(string | symbol)} propertyKey
+ * @returns {boolean}
+ */
+export function hasParamMetadata(decorator: string | Function, target: Type<any> | object, propertyKey?: string | symbol): boolean {
+    let name = isFunction(decorator) ? decorator.toString() : decorator;
+    return Reflect.hasMetadata(name + paramsMetadataExt, target, propertyKey);
+}
+
+function setParamMetadata<T extends ParameterMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, parameterIndex: number, metadata?: T, metadataExtends?: MetadataExtends<any>) {
+
+    let parameters: any[][] = getParamMetadata(metaName, target, propertyKey);
+    parameters = isArray(parameters) ? parameters : [];
+    // there might be gaps if some in between parameters do not have annotations.
+    // we pad with nulls.
+    while (parameters.length <= parameterIndex) {
+        parameters.push(null);
+    }
+
+    parameters[parameterIndex] = parameters[parameterIndex] || [];
+
+    let paramMeadata = (metadata || {}) as ParameterMetadata;
+
+    if (!paramMeadata.type) {
+        let t = Reflect.getOwnMetadata('design:type', target, propertyKey);
+        if (!t) {
+            // Needed to support react native inheritance
+            t = Reflect.getOwnMetadata('design:type', target.constructor, propertyKey);
+        }
+        paramMeadata.type = t;
+    }
+    paramMeadata.propertyKey = propertyKey;
+    paramMeadata.decorator = name;
+    paramMeadata.index = parameterIndex;
+    if (metadataExtends) {
+        paramMeadata = metadataExtends(paramMeadata);
+    }
+    parameters[parameterIndex].push(paramMeadata);
+    Reflect.defineMetadata(metaName + paramsMetadataExt, parameters, target, propertyKey);
+}
+
+
 
 export function getParamerterNames(target: Type<any>): ObjectMap<string[]> {
     let meta = Reflect.getMetadata(ParamerterName, target);
@@ -253,93 +404,3 @@ function getParamNames(func) {
     return result;
 }
 
-
-/**
- * get all property metadata of one specail decorator in target type.
- *
- * @export
- * @template T
- * @param {(string | Function)} decorator
- * @param {Type<any>} target
- * @returns {ObjectMap<T[]>}
- */
-export function getPropertyMetadata<T extends PropertyMetadata>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
-    let meta = Reflect.getMetadata(isFunction(decorator) ? decorator.toString() : decorator, target);
-    if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
-        meta = Reflect.getMetadata(isFunction(decorator) ? decorator.toString() : decorator, target.constructor);
-    }
-    return isArray(meta) ? {} : (meta || {});
-}
-
-function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let meta = getPropertyMetadata(metaName, target);
-    let propmetadata = (metadata || {}) as T;
-
-    propmetadata.propertyKey = propertyKey;
-    propmetadata.decorator = name;
-    if (!propmetadata.type) {
-        let t = Reflect.getMetadata('design:type', target, propertyKey);
-        if (!t) {
-            // Needed to support react native inheritance
-            t = Reflect.getMetadata('design:type', target.constructor, propertyKey);
-        }
-        propmetadata.type = t;
-    }
-
-    if (metadataExtends) {
-        propmetadata = metadataExtends(propmetadata);
-    }
-
-    meta[propertyKey] = meta.hasOwnProperty(propertyKey) && meta[propertyKey] || [];
-    meta[propertyKey].unshift(propmetadata);
-    Reflect.defineMetadata(metaName, meta, target.constructor);
-}
-
-
-/**
- * get paramerter metadata of one specail decorator in target method.
- *
- * @export
- * @template T
- * @param {(string | Function)} decorator
- * @param {(Type<any> | object)} target
- * @param {(string | symbol)} propertyKey
- * @returns {T[][]}
- */
-export function getParamMetadata<T extends ParameterMetadata>(decorator: string | Function, target: Type<any> | object, propertyKey: string | symbol): T[][] {
-    let parameters = Reflect.getMetadata(isFunction(decorator) ? decorator.toString() : decorator, target, propertyKey);
-    parameters = isArray(parameters) ? parameters : [];
-    return parameters;
-}
-
-function setParamMetadata<T extends ParameterMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, parameterIndex: number, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-
-    let parameters: any[][] = getParamMetadata(metaName, target, propertyKey);
-    parameters = isArray(parameters) ? parameters : [];
-    // there might be gaps if some in between parameters do not have annotations.
-    // we pad with nulls.
-    while (parameters.length <= parameterIndex) {
-        parameters.push(null);
-    }
-
-    parameters[parameterIndex] = parameters[parameterIndex] || [];
-
-    let paramMeadata = (metadata || {}) as ParameterMetadata;
-
-    if (!paramMeadata.type) {
-        let t = Reflect.getOwnMetadata('design:type', target, propertyKey);
-        if (!t) {
-            // Needed to support react native inheritance
-            t = Reflect.getOwnMetadata('design:type', target.constructor, propertyKey);
-        }
-        paramMeadata.type = t;
-    }
-    paramMeadata.propertyKey = propertyKey;
-    paramMeadata.decorator = name;
-    paramMeadata.index = parameterIndex;
-    if (metadataExtends) {
-        paramMeadata = metadataExtends(paramMeadata);
-    }
-    parameters[parameterIndex].push(paramMeadata);
-    Reflect.defineMetadata(metaName, parameters, target, propertyKey);
-}

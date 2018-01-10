@@ -6,12 +6,13 @@ import { Singleton } from './decorators/index';
 import { ClassMetadata } from './metadatas/index';
 import { IContainer } from '../IContainer';
 import { CoreActions, ActionComponent, ActionComposite } from './actions/index';
-import { DecoratorType, getParamerterNames } from './factories/index';
+import { DecoratorType, getTypeMetadata, getParamerterNames, hasClassMetadata } from './factories/index';
 import { Express } from '../types';
 import { ActionData } from './ActionData';
 import { ActionFactory } from './ActionFactory';
 import { IParameter } from '../IParameter';
 import { NonePointcut } from './decorators/index';
+
 
 
 @NonePointcut()
@@ -103,7 +104,7 @@ export class DefaultLifeScope implements LifeScope {
         if (!isClass(target)) {
             return false;
         }
-        return this.getClassDecorators().some(act => Reflect.hasMetadata(act.name, target));
+        return this.getClassDecorators().some(act => hasClassMetadata(act.name, target));
 
     }
 
@@ -152,12 +153,12 @@ export class DefaultLifeScope implements LifeScope {
     }
 
     isSingletonType<T>(type: Type<T>): boolean {
-        if (Reflect.hasMetadata(Singleton.toString(), type)) {
+        if (hasClassMetadata(Singleton, type)) {
             return true;
         }
 
         return this.getClassDecorators().some(surm => {
-            let metadatas = Reflect.getMetadata(surm.name, type) as ClassMetadata[] || [];
+            let metadatas = getTypeMetadata(surm.name, type) as ClassMetadata[] || [];
             if (isArray(metadatas)) {
                 return metadatas.some(m => m.singleton === true);
             }

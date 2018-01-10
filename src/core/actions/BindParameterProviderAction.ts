@@ -1,7 +1,7 @@
 import { ActionComposite } from './ActionComposite';
 import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
-import { DecoratorType, getMethodMetadata } from '../factories/index';
+import { DecoratorType, getMethodMetadata, hasMethodMetadata } from '../factories/index';
 import { MethodMetadata } from '../metadatas/index';
 import { IContainer } from '../../IContainer';
 import { ParamProvider } from '../../ParamProvider';
@@ -25,7 +25,7 @@ export class BindParameterProviderAction extends ActionComposite {
         let propertyKey = data.propertyKey;
         let lifeScope = container.getLifeScope();
 
-        let matchs = lifeScope.getMethodDecorators(surm => surm.actions.includes(CoreActions.bindParameterProviders) && Reflect.hasMetadata(surm.name, type));
+        let matchs = lifeScope.getMethodDecorators(surm => surm.actions.includes(CoreActions.bindParameterProviders) && hasMethodMetadata(surm.name, type));
 
         let providers: ParamProvider[] = [];
         matchs.forEach(surm => {

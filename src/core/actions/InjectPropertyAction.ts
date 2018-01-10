@@ -33,7 +33,6 @@ export class InjectPropertyAction extends ActionComposite {
             data.execResult.forEach((prop, idx) => {
                 if (prop) {
                     let token = prop.provider ? container.getToken(prop.provider, prop.alias) : prop.type;
-                    console.log('inject Property', prop.propertyKey, token)
                     if (container.has(token)) {
                         data.target[prop.propertyKey] = container.get(token);
                     }
