@@ -263,6 +263,9 @@ export class DebugLog {
 ```
 
 ## New Features
+* 1.2.5
+    1. fix get invok when get method name.
+    2. add get set advice aop.
 * 1.2.4
     1. fix aop bugs.
     2. fix param name match bug.

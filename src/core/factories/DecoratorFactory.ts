@@ -220,9 +220,15 @@ export function getParamerterNames(target: Type<any>): ObjectMap<string[]> {
 
 export function setParamerterNames(target: Type<any>) {
     let meta = getParamerterNames(target);
-    Object.keys(target.prototype).forEach(name => {
+    let descriptors = Object.getOwnPropertyDescriptors(target.prototype);
+    Object.keys(descriptors).forEach(name => {
         if (name !== 'constructor') {
-            meta[name] = getParamNames(target.prototype[name])
+            if (descriptors[name].value) {
+                meta[name] = getParamNames(descriptors[name].value)
+            }
+            if (descriptors[name].set) {
+                meta[name] = getParamNames(descriptors[name].set);
+            }
         }
     });
 

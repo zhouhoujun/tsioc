@@ -21,4 +21,11 @@ export interface IPointcut {
      */
     fullName: string;
 
+    /**
+     * method
+     *
+     * @type {(TypedPropertyDescriptor<any> | PropertyDescriptor)}
+     * @memberof IPointcut
+     */
+    descriptor?: TypedPropertyDescriptor<any> | PropertyDescriptor;
 }
