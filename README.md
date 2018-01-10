@@ -263,10 +263,10 @@ export class DebugLog {
 ```
 
 ## New Features
-* 1.2.3
+* 1.2.4
     1. fix aop bugs.
     2. fix param name match bug.
-    
+
 * 1.2.2
     fix @NonePointcut zip error in tsioc.umd.js
 * 1.2.1
