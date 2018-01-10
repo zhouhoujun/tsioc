@@ -170,6 +170,7 @@ export class DefaultLifeScope implements LifeScope {
     }
 
     protected getParameterMetadata<T>(type: Type<T>, instance?: T, propertyKey?: string | symbol): IParameter[] {
+        propertyKey = propertyKey || 'constructor';
         let data = {
             target: instance,
             targetType: type,
@@ -177,7 +178,11 @@ export class DefaultLifeScope implements LifeScope {
         } as ActionData<Token<any>[]>;
         this.execute(DecoratorType.Parameter, data, CoreActions.bindParameterType);
         let metadata = getParamerterNames(type);
-        let paramNames = metadata[propertyKey || 'constructor'];
+
+        let paramNames = [];
+        if (metadata && metadata.hasOwnProperty(propertyKey)) {
+            paramNames = metadata[propertyKey]
+        }
         if (!isArray(paramNames)) {
             paramNames = [];
         }

@@ -1,4 +1,4 @@
-import { AutoWired, Injectable, Param, Singleton, Registration, Inject, Aspect, AfterReturning, AfterThrowing, Before, After } from '../src';
+import { AutoWired, Injectable, Param, Singleton, Registration, Inject, Aspect, AfterReturning, AfterThrowing, Before, After, IContainer, symbols } from '../src';
 import { Around } from '../src/aop/decorators/Around';
 
 export class SimppleAutoWried {
@@ -156,7 +156,11 @@ export class SymbolCollegeClassRoom {
 export class SymbolIdest {
     @Inject(CollClassRoom)
     public room: IClassRoom
-    constructor() {
+
+    @Inject(symbols.IContainer)
+    public container: IContainer
+    constructor(@Inject('StringClassRoom')
+    public room2: IClassRoom) {
 
     }
 }

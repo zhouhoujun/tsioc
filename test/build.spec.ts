@@ -86,6 +86,7 @@ describe('auto register with build', () => {
 
         let instance = container.get(SymbolIdest);
         expect(instance).not.undefined;
+        expect(instance.container).not.undefined;
         expect(instance.room).not.undefined;
         expect(instance.room.leader).not.undefined;
         expect(instance.room.leader.sayHi()).eq('I am a college student');
