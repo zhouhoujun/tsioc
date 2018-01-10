@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Type, } from '../../Type';
+import { Type } from '../../Type';
 import { PropertyMetadata, MethodMetadata, ParameterMetadata, Metadate, ClassMetadata } from '../metadatas/index';
 import { DecoratorType } from './DecoratorType';
 import { ArgsIterator } from './ArgsIterator';
@@ -235,6 +235,9 @@ export function setParamerterNames(target: Type<any>) {
 const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
 const ARGUMENT_NAMES = /([^\s,]+)/g;
 function getParamNames(func) {
+    if (!isFunction(func)) {
+        return [];
+    }
     let fnStr = func.toString().replace(STRIP_COMMENTS, '');
     // console.log(fnStr);
     let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
