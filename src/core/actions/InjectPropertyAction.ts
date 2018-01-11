@@ -34,7 +34,7 @@ export class InjectPropertyAction extends ActionComposite {
                 if (prop) {
                     let token = prop.provider ? container.getToken(prop.provider, prop.alias) : prop.type;
                     if (container.has(token)) {
-                        data.target[prop.propertyKey] = container.get(token);
+                        data.target[prop.propertyKey] = container.resolve(token, ...(data.providers || []));
                     }
                 }
             });

@@ -175,13 +175,13 @@ export class Container implements IContainer {
         let provideKey = this.getTokenKey(provide);
         let factory;
         if (isClass(provider) || isString(provider) || provider instanceof Registration || isSymbol(provider)) {
-            factory = () => {
-                return this.get(provider);
+            factory = (...providers: Providers[]) => {
+                return this.resolve(provider, ...providers);
             };
         } else {
             if (isFunction(provider)) {
-                factory = () => {
-                    return (<ToInstance<any>>provider)(this);
+                factory = (...providers: Providers[]) => {
+                    return (<ToInstance<any>>provider)(this, ...providers);
                 };
             } else {
                 factory = () => {
@@ -327,24 +327,28 @@ export class Container implements IContainer {
             lifeScope.execute(DecoratorType.Class, {
                 targetType: ClassT,
                 args: args,
-                params: parameters
+                params: parameters,
+                providers: providers
             }, CoreActions.beforeConstructor);
 
             let instance = new ClassT(...args);
 
             lifeScope.execute(DecoratorType.Class, {
                 target: instance,
-                targetType: ClassT
+                targetType: ClassT,
+                providers: providers
             }, CoreActions.afterConstructor);
 
             lifeScope.execute(DecoratorType.Property, {
                 target: instance,
-                targetType: ClassT
+                targetType: ClassT,
+                providers: providers
             });
 
             lifeScope.execute(DecoratorType.Method, {
                 target: instance,
-                targetType: ClassT
+                targetType: ClassT,
+                providers: providers
             });
 
 

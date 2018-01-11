@@ -32,6 +32,10 @@ export class ClassRoom {
 }
 
 export abstract class Student {
+    @Inject(symbols.IContainer)
+    container: IContainer;
+    @Inject(Date)
+    join: any;
     constructor() {
     }
     abstract sayHi(): string;
@@ -159,7 +163,7 @@ export class SymbolIdest {
 
     @Inject(symbols.IContainer)
     public container: IContainer
-    constructor(@Inject('StringClassRoom')
+    constructor( @Inject('StringClassRoom')
     public room2: IClassRoom) {
 
     }

@@ -263,6 +263,12 @@ export class DebugLog {
 ```
 
 ## New Features
+
+* 1.2.8
+    1. fix bug inherit decorator metadata from base with same decorator.
+    2. add `getOwnTypeMetadata`, `getOwnMethodMetadata`,`getOwnPropertyMetadata`, `getOwnParamMetadata`.
+    3. add feature, inject property and bindProvider can resolve with providers.
+
 * 1.2.6
     1. fix bug metadata covered, use same decorator on method, property and paramerter.
     2. add `hasClassMetadata`, `hasMethodMetadata`, `hasPropertyMetadata` and `hasParamMetadata` to check if has decorator metadata.

@@ -158,6 +158,21 @@ export function getTypeMetadata<T>(decorator: string | Function, target: Type<an
 }
 
 /**
+ * get own class metadata of one specail decorator in target type.
+ *
+ * @export
+ * @template T
+ * @param {(string | Function)} decorator
+ * @param {Type<any>} target
+ * @returns
+ */
+export function getOwnTypeMetadata<T>(decorator: string | Function, target: Type<any>): T[] {
+    let annotations = Reflect.getOwnMetadata(isFunction(decorator) ? decorator.toString() : decorator, target);
+    annotations = isArray(annotations) ? annotations : [];
+    return annotations;
+}
+
+/**
  * has class decorator metadata.
  *
  * @export
@@ -172,7 +187,7 @@ export function hasClassMetadata(decorator: string | Function, target: Type<any>
 
 
 function setTypeMetadata<T extends ClassMetadata>(name: string, metaName: string, target: Type<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let annotations = getTypeMetadata(metaName, target);
+    let annotations = getOwnTypeMetadata(metaName, target);
     // let designParams = Reflect.getMetadata('design:paramtypes', target) || [];
     let typeMetadata = (metadata || {}) as T;
     if (!typeMetadata.type) {
@@ -183,7 +198,7 @@ function setTypeMetadata<T extends ClassMetadata>(name: string, metaName: string
     if (metadataExtends) {
         typeMetadata = metadataExtends(typeMetadata);
     }
-    annotations.push(typeMetadata);
+    annotations.unshift(typeMetadata);
 
     setParamerterNames(target);
     Reflect.defineMetadata(metaName, annotations, target);
@@ -209,6 +224,24 @@ export function getMethodMetadata<T extends MethodMetadata>(decorator: string | 
 }
 
 /**
+ * get own method metadata of one specail decorator in target type.
+ *
+ * @export
+ * @template T
+ * @param {(string | Function)} decorator
+ * @param {Type<any>} target
+ * @returns {ObjectMap<T[]>}
+ */
+export function getOwnMethodMetadata<T extends MethodMetadata>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
+    let name = isFunction(decorator) ? decorator.toString() : decorator;
+    let meta = Reflect.getOwnMetadata(name + methodMetadataExt, target);
+    if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
+        meta = Reflect.getOwnMetadata(name + methodMetadataExt, target.constructor);
+    }
+    return isArray(meta) ? {} : (meta || {});
+}
+
+/**
  * has method decorator metadata.
  *
  * @export
@@ -222,7 +255,7 @@ export function hasMethodMetadata(decorator: string | Function, target: Type<any
 }
 
 function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let meta = getMethodMetadata(metaName, target);
+    let meta = getOwnMethodMetadata(metaName, target);
     meta[propertyKey] = meta[propertyKey] || [];
 
     let methodMeadata = (metadata || {}) as T;
@@ -257,6 +290,25 @@ export function getPropertyMetadata<T extends PropertyMetadata>(decorator: strin
 }
 
 /**
+ * get own property metadata of one specail decorator in target type.
+ *
+ * @export
+ * @template T
+ * @param {(string | Function)} decorator
+ * @param {Type<any>} target
+ * @returns {ObjectMap<T[]>}
+ */
+export function getOwnPropertyMetadata<T extends PropertyMetadata>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
+    let name = isFunction(decorator) ? decorator.toString() : decorator;
+    let meta = Reflect.getOwnMetadata(name + propertyMetadataExt, target);
+    if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
+        meta = Reflect.getOwnMetadata(name + propertyMetadataExt, target.constructor);
+    }
+    return isArray(meta) ? {} : (meta || {});
+}
+
+
+/**
  * has property decorator metadata.
  *
  * @export
@@ -270,7 +322,7 @@ export function hasPropertyMetadata(decorator: string | Function, target: Type<a
 }
 
 function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let meta = getPropertyMetadata(metaName, target);
+    let meta = getOwnPropertyMetadata(metaName, target);
     let propmetadata = (metadata || {}) as T;
 
     propmetadata.propertyKey = propertyKey;
@@ -288,7 +340,10 @@ function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName:
         propmetadata = metadataExtends(propmetadata);
     }
 
-    meta[propertyKey] = meta.hasOwnProperty(propertyKey) && meta[propertyKey] || [];
+    if (!meta[propertyKey] || !isArray(meta[propertyKey])) {
+        meta[propertyKey] = [];
+    }
+
     meta[propertyKey].unshift(propmetadata);
     Reflect.defineMetadata(metaName + propertyMetadataExt, meta, target.constructor);
 }
@@ -313,6 +368,23 @@ export function getParamMetadata<T extends ParameterMetadata>(decorator: string 
 }
 
 /**
+ * get own paramerter metadata of one specail decorator in target method.
+ *
+ * @export
+ * @template T
+ * @param {(string | Function)} decorator
+ * @param {(Type<any> | object)} target
+ * @param {(string | symbol)} propertyKey
+ * @returns {T[][]}
+ */
+export function getOwnParamMetadata<T extends ParameterMetadata>(decorator: string | Function, target: Type<any> | object, propertyKey?: string | symbol): T[][] {
+    let name = isFunction(decorator) ? decorator.toString() : decorator;
+    let parameters = Reflect.getMetadata(name + paramsMetadataExt, target, propertyKey);
+    parameters = isArray(parameters) ? parameters : [];
+    return parameters;
+}
+
+/**
  * has param decorator metadata.
  *
  * @export
@@ -328,7 +400,7 @@ export function hasParamMetadata(decorator: string | Function, target: Type<any>
 
 function setParamMetadata<T extends ParameterMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, parameterIndex: number, metadata?: T, metadataExtends?: MetadataExtends<any>) {
 
-    let parameters: any[][] = getParamMetadata(metaName, target, propertyKey);
+    let parameters: any[][] = getOwnParamMetadata(metaName, target, propertyKey);
     parameters = isArray(parameters) ? parameters : [];
     // there might be gaps if some in between parameters do not have annotations.
     // we pad with nulls.
@@ -354,7 +426,7 @@ function setParamMetadata<T extends ParameterMetadata>(name: string, metaName: s
     if (metadataExtends) {
         paramMeadata = metadataExtends(paramMeadata);
     }
-    parameters[parameterIndex].push(paramMeadata);
+    parameters[parameterIndex].unshift(paramMeadata);
     Reflect.defineMetadata(metaName + paramsMetadataExt, parameters, target, propertyKey);
 }
 
