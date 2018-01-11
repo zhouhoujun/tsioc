@@ -264,6 +264,9 @@ export class DebugLog {
 
 ## New Features
 
+* 1.2.11
+    1. improvement `hasPropertyMetadata`, `hasMethodMetadata`  has metadata check special propertyKey
+    
 * 1.2.10
     1. add `getTokenImpl` in `IContainer`, to get implement class Type for token.
     2. method invoke can use token, `invoke<T>(token: Token<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): Promise<T>; syncInvoke<T>(token: Token<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): T;`
