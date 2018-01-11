@@ -25,39 +25,48 @@ export class MethodAccessor implements IMethodAccessor {
         return this.container.get<IProviderMatcher>(symbols.IProviderMatcher);
     }
 
-    async invoke<T>(targetType: Type<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): Promise<T> {
+    async invoke<T>(token: Token<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): Promise<T> {
         if (!target) {
-            target = this.container.resolve(targetType, ...providers);
+            target = this.container.resolve(token, ...providers);
         }
 
+        let targetClass = this.container.getTokenImpl(token);
+        if (!targetClass) {
+            throw Error(token.toString() + 'is not implements by any class.');
+        }
         if (target && isFunction(target[propertyKey])) {
             let actionData = {
                 target: target,
-                targetType: targetType,
+                targetType: targetClass,
                 propertyKey: propertyKey,
             } as BindParameterProviderActionData;
             let lifeScope = this.container.getLifeScope();
             lifeScope.execute(DecoratorType.Parameter, actionData, CoreActions.bindParameterProviders);
             providers = providers.concat(actionData.execResult);
 
-            let parameters = lifeScope.getMethodParameters(targetType, target, propertyKey);
+            let parameters = lifeScope.getMethodParameters(targetClass, target, propertyKey);
 
             let paramInstances = await this.createParams(parameters, ...providers);
 
             return target[propertyKey](...paramInstances) as T;
         } else {
-            throw new Error(`type: ${targetType} has no method ${propertyKey}.`)
+            throw new Error(`type: ${targetClass} has no method ${propertyKey}.`)
         }
     }
 
-    syncInvoke<T>(targetType: Type<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): T {
+    syncInvoke<T>(token: Token<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): T {
         if (!target) {
-            target = this.container.resolve(targetType, ...providers);
+            target = this.container.resolve(token, ...providers);
         }
+        let targetClass = this.container.getTokenImpl(token);
+        if (!targetClass) {
+            throw Error(token.toString() + 'is not implements by any class.')
+        }
+
         if (target && isFunction(target[propertyKey])) {
             let actionData = {
                 target: target,
-                targetType: targetType,
+                targetType: targetClass,
                 propertyKey: propertyKey,
             } as BindParameterProviderActionData;
             let lifeScope = this.container.getLifeScope();
@@ -65,12 +74,12 @@ export class MethodAccessor implements IMethodAccessor {
 
 
             providers = providers.concat(actionData.execResult);
-            let parameters = lifeScope.getMethodParameters(targetType, target, propertyKey);
+            let parameters = lifeScope.getMethodParameters(targetClass, target, propertyKey);
             let paramInstances = this.createSyncParams(parameters, ...providers);
 
             return target[propertyKey](...paramInstances) as T;
         } else {
-            throw new Error(`type: ${targetType} has no method ${propertyKey}.`)
+            throw new Error(`type: ${targetClass} has no method ${propertyKey}.`)
         }
     }
 

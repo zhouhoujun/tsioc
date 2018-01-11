@@ -16,27 +16,27 @@ export interface IMethodAccessor {
      * try to async invoke the method of intance,  if no instance will create by type.
      *
      * @template T
-     * @param {Type<any>} targetType  type of object
+     * @param {Token<any>} token  type of object
      * @param {(string | symbol)} propertyKey method name
      * @param {*} [target] instance of type.
      * @param {...Providers[]} providers param provider.
      * @returns {Promise<T>}
      * @memberof IMethodAccessor
      */
-    invoke<T>(targetType: Type<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): Promise<T>;
+    invoke<T>(token: Token<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): Promise<T>;
 
     /**
      * try to invoke the method of intance,  if no instance will create by type.
      *
      * @template T
-     * @param {Type<any>} targetType
+     * @param {Token<any>} token
      * @param {(string | symbol)} propertyKey
      * @param {*} [target]
      * @param {...ParamProvider[]} providers
      * @returns {T}
      * @memberof IMethodAccessor
      */
-    syncInvoke<T>(targetType: Type<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): T;
+    syncInvoke<T>(token: Token<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): T;
 
 
     /**

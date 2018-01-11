@@ -9,12 +9,14 @@ import { IMethodAccessor } from './IMethodAccessor';
 import { ActionComponent, DecoratorType, registerCores, CoreActions, Singleton, PropertyMetadata } from './core/index';
 import { LifeScope } from './LifeScope';
 import { IParameter } from './IParameter';
+import { isToken } from './browser';
 
 
 /**
  * Container.
  */
 export class Container implements IContainer {
+    protected provideTypes: MapSet<Token<any>, Type<any>>;
     protected factories: MapSet<Token<any>, Function>;
     protected singleton: MapSet<Token<any>, any>;
     constructor() {
@@ -189,16 +191,46 @@ export class Container implements IContainer {
                 };
             }
         }
+        if (isClass(provider)) {
+            this.provideTypes.set(provide, provider);
+        } else if (isToken(provider)) {
+            let token = provider;
+            while (this.provideTypes.has(token) && !isClass(token)) {
+                token = this.provideTypes.get(token);
+                if (isClass(token)) {
+                    this.provideTypes.set(provide, token);
+                    break;
+                }
+            }
+        }
 
         this.factories.set(provideKey, factory);
     }
 
-     /**
-     * get life scope of container.
+    /**
+     * get token implements class type.
      *
-     * @returns {LifeScope}
-     * @memberof IContainer
+     * @template T
+     * @param {Token<T>} token
+     * @returns {Type<T>}
+     * @memberof Container
      */
+    getTokenImpl<T>(token: Token<T>): Type<T> {
+        if (isClass(token)) {
+            return token;
+        }
+        if (this.provideTypes.has(token)) {
+            return this.provideTypes.get(token);
+        }
+        return null;
+    }
+
+    /**
+    * get life scope of container.
+    *
+    * @returns {LifeScope}
+    * @memberof IContainer
+    */
     getLifeScope(): LifeScope {
         return this.get<LifeScope>(symbols.LifeScope);
     }
@@ -207,30 +239,30 @@ export class Container implements IContainer {
      * invoke method async.
      *
      * @template T
-     * @param {Type<any>} type
+     * @param {Token<any>} token
      * @param {(string | symbol)} propertyKey
      * @param {*} [instance]
      * @param {...Providers[]} providers
      * @returns {Promise<T>}
      * @memberof Container
      */
-    invoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: Providers[]): Promise<T> {
-        return this.get<IMethodAccessor>(symbols.IMethodAccessor).invoke(type, propertyKey, instance, ...providers);
+    invoke<T>(token: Token<any>, propertyKey: string | symbol, instance?: any, ...providers: Providers[]): Promise<T> {
+        return this.get<IMethodAccessor>(symbols.IMethodAccessor).invoke(token, propertyKey, instance, ...providers);
     }
 
     /**
      * invoke method.
      *
      * @template T
-     * @param {Type<any>} type
+     * @param {Token<any>} token
      * @param {(string | symbol)} propertyKey
      * @param {*} [instance]
      * @param {...Providers[]} providers
      * @returns {T}
      * @memberof Container
      */
-    syncInvoke<T>(type: Type<any>, propertyKey: string | symbol, instance?: any, ...providers: Providers[]): T {
-        return this.get<IMethodAccessor>(symbols.IMethodAccessor).syncInvoke(type, propertyKey, instance, ...providers);
+    syncInvoke<T>(token: Token<any>, propertyKey: string | symbol, instance?: any, ...providers: Providers[]): T {
+        return this.get<IMethodAccessor>(symbols.IMethodAccessor).syncInvoke(token, propertyKey, instance, ...providers);
     }
 
     createSyncParams(params: IParameter[], ...providers: Providers[]): any[] {
@@ -251,6 +283,7 @@ export class Container implements IContainer {
     protected init() {
         this.factories = new MapSet<Token<any>, Function>();
         this.singleton = new MapSet<Token<any>, any>();
+        this.provideTypes = new MapSet<Token<any>, Type<any>>();
         this.bindProvider(symbols.IContainer, () => this);
 
         registerCores(this);

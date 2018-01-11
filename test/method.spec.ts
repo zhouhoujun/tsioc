@@ -49,6 +49,7 @@ describe('method exec test', () => {
         }
     }
 
+    @Injectable('Test3')
     class MethodTest3 {
         constructor() {
 
@@ -86,6 +87,13 @@ describe('method exec test', () => {
         // container.register(Person);
         container.register(MethodTest3);
         expect(await container.invoke(MethodTest3, 'sayHello')).eq('Mama, I love you.');
+
+    });
+
+    it('show exec with many params and invoke with string', async () => {
+        // container.register(Person);
+        container.register(MethodTest3);
+        expect(await container.invoke('Test3', 'sayHello')).eq('Mama, I love you.');
 
     });
 });
