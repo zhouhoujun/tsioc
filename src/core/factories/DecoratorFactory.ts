@@ -246,12 +246,18 @@ export function getOwnMethodMetadata<T extends MethodMetadata>(decorator: string
  *
  * @export
  * @param {(string | Function)} decorator
- * @param {(Type<any> | object)} target
+ * @param {Type<any>} target
+ * @param {(string | symbol)} [propertyKey]
  * @returns {boolean}
  */
-export function hasMethodMetadata(decorator: string | Function, target: Type<any> | object): boolean {
+export function hasMethodMetadata(decorator: string | Function, target: Type<any>, propertyKey?: string | symbol): boolean {
     let name = isFunction(decorator) ? decorator.toString() : decorator;
-    return Reflect.hasMetadata(name + methodMetadataExt, target);
+    if (propertyKey) {
+        let meta = getMethodMetadata<any>(name, target);
+        return meta && meta.hasOwnProperty(propertyKey);
+    } else {
+        return Reflect.hasMetadata(name + methodMetadataExt, target);
+    }
 }
 
 function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
@@ -313,12 +319,18 @@ export function getOwnPropertyMetadata<T extends PropertyMetadata>(decorator: st
  *
  * @export
  * @param {(string | Function)} decorator
- * @param {(Type<any> | object)} target
+ * @param {Type<any>} target
+ * @param {(string | symbol)} [propertyKey]
  * @returns {boolean}
  */
-export function hasPropertyMetadata(decorator: string | Function, target: Type<any> | object): boolean {
+export function hasPropertyMetadata(decorator: string | Function, target: Type<any>, propertyKey?: string | symbol): boolean {
     let name = isFunction(decorator) ? decorator.toString() : decorator;
-    return Reflect.hasMetadata(name + propertyMetadataExt, target);
+    if (propertyKey) {
+        let meta = getPropertyMetadata<any>(name, target);
+        return meta && meta.hasOwnProperty(propertyKey);
+    } else {
+        return Reflect.hasMetadata(name + propertyMetadataExt, target);
+    }
 }
 
 function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, metadata?: T, metadataExtends?: MetadataExtends<any>) {

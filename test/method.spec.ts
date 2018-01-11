@@ -1,7 +1,7 @@
 import 'mocha';
 import { expect } from 'chai';
 import { Method, Inject, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Aspect, isFunction } from '../src';
-import { async } from 'q';
+import { hasMethodMetadata, hasPropertyMetadata } from '../src/browser';
 
 
 describe('method exec test', () => {
@@ -39,6 +39,11 @@ describe('method exec test', () => {
     }
 
     class MethodTest2 {
+
+        tester: string;
+
+        @Inject
+        testAt: Date;
         constructor() {
 
         }
@@ -47,6 +52,7 @@ describe('method exec test', () => {
         sayHello( @Inject(Child) person: Person) {
             return person.say();
         }
+
     }
 
     @Injectable('Test3')
@@ -57,7 +63,11 @@ describe('method exec test', () => {
 
         @Method
         sayHello( @Inject(Child) personA: Person, personB: Person) {
-            return personA.say() + ', '  + personB.say();
+            return personA.say() + ', ' + personB.say();
+        }
+
+        sayHello2() {
+
         }
     }
 
@@ -65,6 +75,19 @@ describe('method exec test', () => {
     beforeEach(() => {
         let builder = new ContainerBuilder();
         container = builder.create();
+    });
+
+    it('show has prop metadata', () => {
+        expect(hasPropertyMetadata(Inject, MethodTest2)).to.be.true;
+        expect(hasPropertyMetadata(Inject, MethodTest2, 'testAt')).to.be.true;
+        expect(hasPropertyMetadata(Inject, MethodTest2, 'tester')).to.be.false;
+        expect(hasMethodMetadata(Inject, MethodTest3)).to.be.false;
+    });
+
+    it('show has method metadata', () => {
+        expect(hasMethodMetadata(Method, MethodTest3)).to.be.true;
+        expect(hasMethodMetadata(Method, MethodTest3, 'sayHello')).to.be.true;
+        expect(hasMethodMetadata(Method, MethodTest3, 'sayHello2')).to.be.false;
     });
 
     it('show exec with type and instance', async () => {
