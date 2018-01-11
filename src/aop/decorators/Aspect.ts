@@ -9,8 +9,5 @@ import { createClassDecorator, IClassDecorator, ClassMetadata } from '../../core
  *
  * @Aspect
  */
-export const Aspect: IClassDecorator<ClassMetadata> = createClassDecorator<ClassMetadata>('Aspect', null, (metadata) => {
-    metadata.singleton = true;
-    return metadata;
-});
+export const Aspect: IClassDecorator<ClassMetadata> = createClassDecorator<ClassMetadata>('Aspect');
 

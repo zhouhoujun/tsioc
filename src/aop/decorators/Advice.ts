@@ -4,7 +4,7 @@ import { AdviceMetadata } from '../metadatas/index';
 import { isClassMetadata, isString, isRegExp } from '../../utils/index';
 
 export interface IAdviceDecorator<T extends AdviceMetadata> extends IMethodDecorator<T> {
-    (pointcut?: string | RegExp): MethodDecorator;
+    (value?: string | RegExp): MethodDecorator;
 }
 
 export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: string,
@@ -18,10 +18,14 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
                 adapter(args);
             }
             args.next<AdviceMetadata>({
-                isMetadata: (arg) => isClassMetadata(arg, ['pointcut']),
+                isMetadata: (arg) => isClassMetadata(arg, ['pointcut', 'annotation']),
                 match: (arg) => isString(arg) || isRegExp(arg),
                 setMetadata: (metadata, arg) => {
-                    metadata.pointcut = arg;
+                    if (isString(arg) && /^@annotation\(\S+\)$/.test(arg.trim())) {
+                        metadata.annotation = arg;
+                    } else {
+                        metadata.pointcut = arg;
+                    }
                 }
             });
             if (afteradapter) {
