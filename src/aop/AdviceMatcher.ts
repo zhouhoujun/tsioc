@@ -1,12 +1,12 @@
 import { IAdviceMatcher } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadatas/index';
-import { DecoratorType, NonePointcut } from '../core/index';
+import { DecoratorType, NonePointcut, getMethodMetadata, hasMethodMetadata, hasClassMetadata } from '../core/index';
 import { Type } from '../Type';
 import { symbols, isString, isRegExp } from '../utils/index';
 import { IPointcut } from './IPointcut';
-import { ObjectMap } from '../types';
+import { ObjectMap, Express2 } from '../types';
 import { MatchPointcut } from './MatchPointcut';
-import { hasMethodMetadata } from '../browser';
+import { Aspect, Advice } from './decorators/index';
 
 @NonePointcut()
 export class AdviceMatcher implements IAdviceMatcher {
@@ -15,87 +15,90 @@ export class AdviceMatcher implements IAdviceMatcher {
 
     }
 
-    match(adviceMaps: ObjectMap<AdviceMetadata[]>, type: Type<any>, instance?: any): MatchPointcut[] {
+    match(aspectType: Type<any>, type: Type<any>, adviceMetas?: ObjectMap<AdviceMetadata[]>, instance?: any): MatchPointcut[] {
 
         let className = type.name;
-        let points: IPointcut[] = [];
 
-        // match method.
-        for (let name in Object.getOwnPropertyDescriptors(type.prototype)) {
-            points.push({
-                name: name,
-                fullName: `${className}.${name}`
+        adviceMetas = adviceMetas || getMethodMetadata<AdviceMetadata>(Advice, type);
+        let matched: MatchPointcut[] = [];
+
+        if (type === aspectType) {
+            let adviceNames = Object.keys(adviceMetas);
+            if (adviceNames.length > 1) {
+                let advices: AdviceMetadata[] = [];
+                adviceNames.forEach(n => {
+                    advices = advices.concat(adviceMetas[n]);
+                });
+
+                adviceNames.forEach(n => {
+                    advices.forEach(adv => {
+                        if (adv.propertyKey !== n) {
+                            if (this.matchAspectSelf(n, adv)) {
+                                matched.push({
+                                    name: n,
+                                    fullName: `${aspectType.name}.${n}`,
+                                    advice: adv
+                                });
+                            }
+                        }
+                    })
+                });
+            }
+        } else {
+            let points: IPointcut[] = [];
+            // match method.
+            for (let name in Object.getOwnPropertyDescriptors(type.prototype)) {
+                points.push({
+                    name: name,
+                    fullName: `${className}.${name}`
+                });
+            }
+
+            // match property
+            Object.getOwnPropertyNames(instance || type.prototype).forEach(name => {
+                points.push({
+                    name: name,
+                    fullName: `${className}.${name}`
+                });
+            });
+
+            Object.keys(adviceMetas).forEach(name => {
+                let advices = adviceMetas[name];
+                advices.forEach(metadata => {
+                    matched = matched.concat(this.filterPointcut(type, points, metadata));
+                });
+
             });
         }
 
-
-        // match property
-        Object.getOwnPropertyNames(instance || type.prototype).forEach(name => {
-            points.push({
-                name: name,
-                fullName: `${className}.${name}`
-            });
-        });
-
-        let matched: MatchPointcut[] = [];
-        Object.keys(adviceMaps).forEach(name => {
-            let advices = adviceMaps[name];
-            advices.forEach(metadata => {
-                matched.push(...this.filterPointcut(type, points, metadata));
-            });
-        });
-
         return matched;
 
+    }
+
+    protected matchAspectSelf(name: string, metadata: AdviceMetadata): boolean {
+        if (metadata.pointcut) {
+            let pointcut = metadata.pointcut;
+
+            if (isString(pointcut)) {
+                if (/^execution\(\S+\)$/.test(pointcut)) {
+                    pointcut = pointcut.substring(10, pointcut.length - 1);
+                    return pointcut === name;
+                }
+            } else if (isRegExp(pointcut)) {
+                return pointcut.test(name);
+            }
+        }
+        return false;
     }
 
     filterPointcut(type: Type<any>, points: IPointcut[], metadata: AdviceMetadata): MatchPointcut[] {
         if (!metadata.pointcut) {
             return [];
         }
-        let matchedPointcut = [];
+        let matchedPointcut;
         if (metadata.pointcut) {
-            if (isString(metadata.pointcut)) {
-                let pointcut = metadata.pointcut;
-                pointcut = (pointcut || '').trim();
-                if (/^execution\(\S+\)$/.test(pointcut)) {
-                    pointcut = pointcut.substring(10, pointcut.length - 1);
-                }
-
-                matchedPointcut = points.filter(a => {
-                    if (!a.name) {
-                        return false;
-                    }
-                    if (pointcut === '*') {
-                        return true;
-                    }
-                    if (pointcut === '*.*') {
-                        return true;
-                    }
-                    pointcut = pointcut.replace(/\*\*/gi, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
-                        .replace(/\*/gi, '\\\w+')
-                        .replace(/\./gi, '\\\.')
-                        .replace(/\//gi, '\\\/');
-                    let matcher = new RegExp(pointcut + '$');
-                    return matcher.test(a.fullName);
-                });
-            } else if (isRegExp(metadata.pointcut)) {
-                let pointcut = metadata.pointcut;
-                matchedPointcut = points.filter(m => m.fullName && pointcut.test(m.fullName))
-                    .map(p => {
-                        return Object.assign({}, p, { advice: metadata });
-                    });
-            }
-        }
-
-        if (metadata.annotation) {
-            let annotation = metadata.annotation.trim();
-            if (/^@annotation\(\S+\)$/.test(annotation)) {
-                annotation = annotation.substring(11, annotation.length - 1)
-                matchedPointcut = points.filter(a => {
-                    return hasMethodMetadata('@' + annotation, type, a.name)
-                })
-            }
+            let match = this.matchTypeFactory(type, metadata.pointcut);
+            matchedPointcut = points.filter(p => match(p.name, p.fullName))
         }
 
         matchedPointcut = matchedPointcut || [];
@@ -103,5 +106,47 @@ export class AdviceMatcher implements IAdviceMatcher {
             return Object.assign({}, p, { advice: metadata });
         });
     }
+
+
+    protected matchTypeFactory(type: Type<any>, pointcut: string | RegExp): Express2<string, string, boolean> {
+        if (isString(pointcut)) {
+            pointcut = (pointcut || '').trim();
+            if (/^@annotation\(\S+\)$/.test(pointcut)) {
+                pointcut = pointcut.substring(12, pointcut.length - 1);
+                let annotation = /^@/.test(pointcut) ? pointcut : ('@' + pointcut);
+                // console.log('@annotation:', annotation);
+                return (name: string, fullName: string) => hasMethodMetadata(annotation, type, name) && !hasClassMetadata(Aspect, type);
+            } else {
+                if (pointcut === '*' || pointcut === '*.*') {
+                    return (name: string, fullName: string) => !!name;
+                }
+
+                if (/^execution\(\S+\)$/.test(pointcut)) {
+                    pointcut = pointcut.substring(10, pointcut.length - 1);
+                }
+                pointcut = pointcut.replace(/\*\*/gi, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+                    .replace(/\*/gi, '\\\w+')
+                    .replace(/\./gi, '\\\.')
+                    .replace(/\//gi, '\\\/');
+                let matcher = new RegExp(pointcut + '$');
+
+                return (name: string, fullName: string) => matcher.test(fullName);
+            }
+        } else if (isRegExp(pointcut)) {
+            let pointcutReg = pointcut;
+            if (/^\^?@\w+/.test(pointcutReg.source)) {
+                return (name: string, fullName: string) => {
+                    let decName = Reflect.getMetadataKeys(type, name);
+                    return decName.some(n => isString(n) && pointcutReg.test(n));
+                }
+
+            } else {
+                return (name: string, fullName: string) => pointcutReg.test(fullName);
+            }
+        }
+        return null;
+    }
+
+
 
 }

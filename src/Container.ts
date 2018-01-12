@@ -3,13 +3,12 @@ import { IContainer } from './IContainer';
 import { Token, Factory, ObjectMap, SymbolType, ToInstance, IocState, Providers } from './types';
 import { Registration } from './Registration';
 import { Type } from './Type';
-import { isClass, isFunction, symbols, isSymbol, isString, isUndefined, isArray, MapSet } from './utils/index';
+import { isClass, isFunction, symbols, isSymbol, isToken, isString, isUndefined, isArray, MapSet } from './utils/index';
 import { registerAops } from './aop/index';
 import { IMethodAccessor } from './IMethodAccessor';
 import { ActionComponent, DecoratorType, registerCores, CoreActions, Singleton, PropertyMetadata } from './core/index';
 import { LifeScope } from './LifeScope';
 import { IParameter } from './IParameter';
-import { isToken } from './browser';
 
 
 /**

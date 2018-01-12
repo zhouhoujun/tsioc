@@ -38,7 +38,7 @@ export const IContainerBuilder = Symbol('IContainerBuilder');
 export const IAdviceMatcher = Symbol('IAdviceMatcher');
 
 /**
- * Aop AspectSet interface symbol.
+ * Aop AspectManager interface symbol.
  * it is a symbol id, you can register yourself IActionBuilder for this.
  */
-export const IAspectSet = Symbol('IAspectSet');
+export const IAspectManager = Symbol('IAspectManager');

@@ -1,7 +1,7 @@
 
 import { DecoratorType, ActionData, ActionComposite, getMethodMetadata } from '../../core/index';
 import { IContainer } from '../../IContainer';
-import { IAspectSet } from '../AspectSet';
+import { IAspectManager } from '../AspectManager';
 import { isClass, symbols, isPromise, isFunction, isUndefined } from '../../utils/index';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';
@@ -28,46 +28,50 @@ export class MatchPointcutAction extends ActionComposite {
         if (!isValideAspectTarget(data.targetType)) {
             return;
         }
-        let aspects = container.get<IAspectSet>(symbols.IAspectSet);
+        let aspectmgr = container.get<IAspectManager>(symbols.IAspectManager);
         let matcher = container.get<IAdviceMatcher>(symbols.IAdviceMatcher);
-        aspects.forEach((type, aspect) => {
-            let adviceMaps = getMethodMetadata<AdviceMetadata>(Advice, type);
-            let matchpoints = matcher.match(adviceMaps, data.targetType);
+        aspectmgr.aspects.forEach((adviceMetas, type) => {
+            let matchpoints = matcher.match(type, data.targetType, adviceMetas);
             matchpoints.forEach(mpt => {
                 let fullName = mpt.fullName;
                 let advice = mpt.advice;
 
-                let advices = aspects.getAdvices(fullName);
+                let advices = aspectmgr.getAdvices(fullName);
                 if (!advices) {
                     advices = {
                         Before: [],
+                        Pointcut: [],
                         After: [],
                         Around: [],
                         AfterThrowing: [],
                         AfterReturning: []
                     } as Advices;
-                    aspects.setAdvices(fullName, advices);
+                    aspectmgr.setAdvices(fullName, advices);
                 }
 
                 if (advice.adviceName === 'Before') {
-                    if (!advices.Before.some(a => this.isAdviceEquals(a.advice, advice) && a.aspect === aspect)) {
-                        advices.Before.push({ advice: advice, aspect: aspect, aspectType: type });
+                    if (!advices.Before.some(a => this.isAdviceEquals(a.advice, advice))) {
+                        advices.Before.push({ advice: advice, aspectType: type });
+                    }
+                } else if (advice.adviceName === 'Pointcut') {
+                    if (!advices.Pointcut.some(a => this.isAdviceEquals(a.advice, advice))) {
+                        advices.Pointcut.push({ advice: advice, aspectType: type });
                     }
                 } else if (advice.adviceName === 'Around') {
-                    if (!advices.Around.some(a => this.isAdviceEquals(a.advice, advice) && a.aspect === aspect)) {
-                        advices.Around.push({ advice: advice, aspect: aspect, aspectType: type });
+                    if (!advices.Around.some(a => this.isAdviceEquals(a.advice, advice))) {
+                        advices.Around.push({ advice: advice, aspectType: type });
                     }
                 } else if (advice.adviceName === 'After') {
-                    if (!advices.After.some(a => this.isAdviceEquals(a.advice, advice) && a.aspect === aspect)) {
-                        advices.After.push({ advice: advice, aspect: aspect, aspectType: type });
+                    if (!advices.After.some(a => this.isAdviceEquals(a.advice, advice))) {
+                        advices.After.push({ advice: advice, aspectType: type });
                     }
                 } else if (advice.adviceName === 'AfterThrowing') {
-                    if (!advices.AfterThrowing.some(a => this.isAdviceEquals(a.advice, advice) && a.aspect === aspect)) {
-                        advices.AfterThrowing.push({ advice: advice, aspect: aspect, aspectType: type });
+                    if (!advices.AfterThrowing.some(a => this.isAdviceEquals(a.advice, advice))) {
+                        advices.AfterThrowing.push({ advice: advice, aspectType: type });
                     }
                 } else if (advice.adviceName === 'AfterReturning') {
-                    if (!advices.AfterReturning.some(a => this.isAdviceEquals(a.advice, advice) && a.aspect === aspect)) {
-                        advices.AfterReturning.push({ advice: advice, aspect: aspect, aspectType: type });
+                    if (!advices.AfterReturning.some(a => this.isAdviceEquals(a.advice, advice))) {
+                        advices.AfterReturning.push({ advice: advice, aspectType: type });
                     }
                 }
 

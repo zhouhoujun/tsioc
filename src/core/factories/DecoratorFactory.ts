@@ -137,7 +137,6 @@ function storeMetadata<T>(name: string, metaName: string, args: any[], metadata?
             }
             break;
         default:
-            console.log('args:', args);
             throw new Error(`Invalid @${name} Decorator declaration.`);
     }
 }

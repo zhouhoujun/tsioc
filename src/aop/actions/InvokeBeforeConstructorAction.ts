@@ -1,6 +1,6 @@
 import { DecoratorType, ActionData, ActionComposite, getMethodMetadata } from '../../core/index';
 import { IContainer } from '../../IContainer';
-import { IAspectSet } from '../AspectSet';
+import { IAspectManager } from '../AspectManager';
 import { isClass, symbols } from '../../utils/index';
 import { AopActions } from './AopActions';
 import { Advice, Aspect } from '../decorators/index';
@@ -29,7 +29,7 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
             return;
         }
 
-        let aspects = container.get<IAspectSet>(symbols.IAspectSet);
+        let aspects = container.get<IAspectManager>(symbols.IAspectManager);
         let advices = aspects.getAdvices(data.targetType.name + '.constructor');
         if (!advices) {
             return;
@@ -37,7 +37,7 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
 
         let access = container.get<IMethodAccessor>(symbols.IMethodAccessor);
         advices.Before.forEach(advicer => {
-            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, {
+            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, {
                 type: Joinpoint,
                 value: container.resolve(Joinpoint, {
                     json: {
@@ -50,7 +50,7 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
             });
         });
         advices.Around.forEach(advicer => {
-            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, {
+            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, {
                 type: Joinpoint,
                 value: container.resolve(Joinpoint, {
                     json: {

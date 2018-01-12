@@ -3,11 +3,12 @@ import { Type } from '../Type';
 
 
 export interface Advices {
-    Before: Advicer[]
-    After: Advicer[],
-    Around: Advicer[],
-    AfterThrowing: Advicer[],
-    AfterReturning: Advicer[]
+    Pointcut: Advicer[];
+    Before: Advicer[];
+    After: Advicer[];
+    Around: Advicer[];
+    AfterThrowing: Advicer[];
+    AfterReturning: Advicer[];
 }
 
 
@@ -19,6 +20,5 @@ export interface Advices {
  */
 export interface Advicer {
     advice: AdviceMetadata;
-    aspect: any;
     aspectType: Type<any>;
 }

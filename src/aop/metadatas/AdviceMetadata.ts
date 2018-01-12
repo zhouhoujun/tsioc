@@ -4,15 +4,10 @@ export interface AdviceMetadata extends MethodMetadata {
     /**
      * path or module name, match express
      * execution(moduelName.*.*(..)")
+     * match method with a decorator annotation.
+     * @annotation(DecoratorName)
      */
     pointcut?: string | RegExp;
-    /**
-     * match point with a decorator annotationl
-     * eg. @annotation(DecoratorName)
-     * @type {string}
-     * @memberof AdviceMetadata
-     */
-    annotation?: string;
 
     adviceName?: string;
 }

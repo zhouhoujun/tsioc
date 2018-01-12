@@ -1,5 +1,6 @@
 import * as gulp from 'gulp';
 import { ITaskOption, Development } from 'development-tool';
+import { Operation } from 'development-core';
 // import 'development-tool-node';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -20,6 +21,7 @@ Development.create(gulp, __dirname, [
     <ITaskOption>{
         src: ['lib/**/*.js', '!lib/node/**', '!lib/index.js'],
         dist: 'bundles',
+        oper: Operation.release | Operation.deploy,
         loader: [
             {
                 name: 'delbundles',

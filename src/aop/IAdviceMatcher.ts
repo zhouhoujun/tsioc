@@ -5,5 +5,5 @@ import { ObjectMap } from '../types';
 
 export interface IAdviceMatcher {
 
-    match(metadata: ObjectMap<AdviceMetadata[]>, type: Type<any>, instance?: any): MatchPointcut[]
+    match(aspectType: Type<any>, type: Type<any>, adviceMetas?: ObjectMap<AdviceMetadata[]>, instance?: any): MatchPointcut[]
 }

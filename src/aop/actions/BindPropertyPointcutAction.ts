@@ -1,7 +1,7 @@
 
 // import { DecoratorType, ActionData, ActionComposite, getMethodMetadata } from '../../core/index';
 // import { IContainer } from '../../IContainer';
-// import { IAspectSet } from '../AspectSet';
+// import { IAspectManager } from '../AspectManager';
 // import { isClass, symbols, isFunction } from '../../utils/index';
 // import { AopActions } from './AopActions';
 // import { Aspect, Advice } from '../decorators/index';
@@ -28,7 +28,7 @@
 //         if (!data.target || !isValideAspectTarget(data.targetType)) {
 //             return;
 //         }
-//         let aspects = container.get<IAspectSet>(symbols.IAspectSet);
+//         let aspects = container.get<IAspectManager>(symbols.IAspectManager);
 //         let access = container.get<IMethodAccessor>(symbols.IMethodAccessor);
 
 //         let className = data.targetType.name;

@@ -265,7 +265,11 @@ export class DebugLog {
 ## New Features
 
 * 1.3.0
-    1. support @annotation pointcut, add Pointcut decorator, Aspect is not default singleton.
+    1. support @annotation pointcut, add Pointcut decorator
+    2. Aspect is not default singleton.
+    3. add Pointcut decorator.
+    4. Aspect can advice Aspect method or self pointcut method.
+    
 
 * 1.2.11
     1. improvement `hasPropertyMetadata`, `hasMethodMetadata`  has metadata check special propertyKey

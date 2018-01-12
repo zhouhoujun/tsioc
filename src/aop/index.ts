@@ -4,7 +4,7 @@ export * from './decorators/index';
 export * from './metadatas/index';
 
 export * from './Advices';
-export * from './AspectSet';
+export * from './AspectManager';
 export * from './IAdviceMatcher';
 export * from './AdviceMatcher';
 export * from './MatchPointcut';
@@ -16,7 +16,7 @@ export * from './isValideAspectTarget';
 
 import { IContainer } from '../IContainer';
 import { Aspect } from './decorators/index';
-import { AspectSet } from './AspectSet';
+import { AspectManager } from './AspectManager';
 import { symbols } from '../utils/index';
 import { AopActions } from './actions/index';
 import { AdviceMatcher } from './AdviceMatcher';
@@ -35,7 +35,7 @@ import { Joinpoint } from './Joinpoint';
  */
 export function registerAops(container: IContainer) {
     container.register(Joinpoint);
-    container.registerSingleton(symbols.IAspectSet, () => new AspectSet(container));
+    container.registerSingleton(symbols.IAspectManager, () => new AspectManager(container));
     container.registerSingleton(symbols.IAdviceMatcher, () => new AdviceMatcher());
 
     let lifeScope = container.get<LifeScope>(symbols.LifeScope);

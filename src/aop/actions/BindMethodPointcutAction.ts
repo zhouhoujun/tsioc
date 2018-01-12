@@ -1,7 +1,7 @@
 
 import { DecoratorType, ActionData, ActionComposite, getMethodMetadata } from '../../core/index';
 import { IContainer } from '../../IContainer';
-import { IAspectSet } from '../AspectSet';
+import { IAspectManager } from '../AspectManager';
 import { isClass, symbols, isPromise, isFunction, isUndefined } from '../../utils/index';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';
@@ -14,6 +14,7 @@ import { Advices, Advicer } from '../Advices';
 import { IPointcut } from '../IPointcut';
 import { Token } from '../../types';
 import { ParamProvider } from '../../ParamProvider';
+import { isArray } from '../../browser';
 
 export interface BindPointcutActionData extends ActionData<Joinpoint> {
 }
@@ -30,7 +31,7 @@ export class BindMethodPointcutAction extends ActionComposite {
         if (!data.target || !isValideAspectTarget(data.targetType)) {
             return;
         }
-        let aspects = container.get<IAspectSet>(symbols.IAspectSet);
+        let aspects = container.get<IAspectManager>(symbols.IAspectManager);
         let access = container.get<IMethodAccessor>(symbols.IMethodAccessor);
 
         let className = data.targetType.name;
@@ -129,19 +130,27 @@ export class BindMethodPointcutAction extends ActionComposite {
 
 
                             if (isAsync) {
-                                return access.invoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, ...providers);
+                                return access.invoke(advicer.aspectType, advicer.advice.propertyKey, undefined, ...providers);
                             } else {
-                                return access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, advicer.aspect, ...providers);
+                                return access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, ...providers);
                             }
                         };
 
-                        advices.Around.forEach(advicer => {
-                            adviceAction(advicer, JoinpointState.Before);
-                        });
 
-                        advices.Before.forEach(advicer => {
-                            adviceAction(advicer, JoinpointState.Before);
-                        });
+                        let asBefore = (propertyKeys: string[], state: JoinpointState, args: any[]) => {
+
+                            propertyKeys.forEach(propertyKey => {
+                                let canModify = ['Around', 'Pointcut'].indexOf(propertyKey) >= 0;
+                                advices[propertyKey].forEach((advicer: Advicer) => {
+                                    let retargs = adviceAction(advicer, state, false, canModify ? args : undefined) as any[];
+                                    if (canModify && isArray(retargs)) {
+                                        args = retargs;
+                                    }
+                                });
+                            });
+
+                            return args;
+                        }
 
                         let asResult = (propertyKeys: string[], state: JoinpointState, val, throwError?: any) => {
                             if (isPromise(val)) {
@@ -172,7 +181,10 @@ export class BindMethodPointcutAction extends ActionComposite {
                             return val;
                         }
 
+
                         try {
+                            args = asBefore(['Around', 'Before'], JoinpointState.Before, args);
+                            args = asBefore(['Pointcut'], JoinpointState.Pointcut, args);
                             val = propertyMethod(...args);
                             asResult(['Around', 'After'], JoinpointState.After, val);
                             val = asResult(['Around', 'AfterReturning'], JoinpointState.AfterReturning, val);

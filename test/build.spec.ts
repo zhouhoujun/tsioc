@@ -2,7 +2,7 @@ import 'mocha';
 import { expect } from 'chai';
 import { ContainerBuilder, AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom, StringIdTest, SymbolIdest } from './debug';
-import { IocDebug } from './IocDebug';
+import { IocLog } from './aop/IocLog';
 
 describe('auto register with build', () => {
 
@@ -12,7 +12,7 @@ describe('auto register with build', () => {
         container = await builder.build({
             files: __dirname + '/debug.ts'
         });
-        container.register(IocDebug);
+        container.register(IocLog);
     });
 
     it('should auto wried property', () => {
