@@ -1,5 +1,8 @@
 import { AdviceMetadata } from './metadatas/index';
 import { Type } from '../Type';
+import { MethodMetadata } from '../core/index';
+import { IParameter } from '../IParameter';
+import { MatchPointcut } from './MatchPointcut';
 
 
 export interface Advices {
@@ -18,7 +21,13 @@ export interface Advices {
  * @export
  * @interface Advicer
  */
-export interface Advicer {
-    advice: AdviceMetadata;
+export interface Advicer extends MatchPointcut {
+    /**
+     * aspect type.
+     *
+     * @type {Type<any>}
+     * @memberof Advicer
+     */
     aspectType: Type<any>;
+
 }

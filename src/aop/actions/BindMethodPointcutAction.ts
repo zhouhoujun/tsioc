@@ -48,7 +48,7 @@ export class BindMethodPointcutAction extends ActionComposite {
         }
 
         let target = data.target;
-
+        let targetType = data.targetType;
         methods.forEach(pointcut => {
             let fullName = pointcut.fullName;
             let methodName = pointcut.name;
@@ -58,14 +58,16 @@ export class BindMethodPointcutAction extends ActionComposite {
                 let methodAdapter = (propertyMethod: Function) => {
                     return (...args: any[]) => {
                         let val;
-
                         let adviceAction = (advicer: Advicer, state: JoinpointState, isAsync = false, returnValue?: any, throwError?: any) => {
                             let joinPoint = {
                                 name: methodName,
                                 fullName: fullName,
+                                args: args,
+                                params: container.getLifeScope().getMethodParameters(targetType, target, methodName),
                                 state: state,
+                                annotation: advicer.annotation,
                                 target: target,
-                                targetType: data.targetType
+                                targetType: targetType
                             } as IJoinpoint;
                             let index = '';
                             let value;
@@ -80,12 +82,22 @@ export class BindMethodPointcutAction extends ActionComposite {
                                     index: metadata.args
                                 } as ParamProvider);
                             }
+
+                            if (metadata.annotation) {
+                                providers.push({
+                                    value: advicer.annotation,
+                                    index: metadata.annotation
+                                } as ParamProvider);
+                            }
+
                             if (metadata.returning) {
                                 providers.push({
                                     value: returnValue,
                                     index: metadata.returning
                                 } as ParamProvider);
-                            } else if (metadata.throwing) {
+                            }
+
+                            if (metadata.throwing) {
                                 providers.push({
                                     value: throwError,
                                     index: metadata.throwing
@@ -125,7 +137,7 @@ export class BindMethodPointcutAction extends ActionComposite {
 
                             providers.push({
                                 type: Joinpoint,
-                                value: container.resolve(Joinpoint, { json: joinPoint })
+                                value: container.resolve(Joinpoint, { options: joinPoint })
                             } as ParamProvider)
 
 
@@ -207,7 +219,7 @@ export class BindMethodPointcutAction extends ActionComposite {
                         pointcut.descriptor.set = methodAdapter(setMethod);
                     }
                     Object.defineProperty(target, methodName, pointcut.descriptor);
-                } else {
+                } else if (isFunction(pointcut.descriptor.value)) {
                     let propertyMethod = target[methodName].bind(target);
                     target[methodName] = methodAdapter(propertyMethod);
                 }

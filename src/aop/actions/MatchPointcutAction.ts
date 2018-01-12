@@ -48,33 +48,35 @@ export class MatchPointcutAction extends ActionComposite {
                     } as Advices;
                     aspectmgr.setAdvices(fullName, advices);
                 }
+                let advicer = Object.assign(mpt, {
+                    aspectType: type
+                }) as Advicer;
 
                 if (advice.adviceName === 'Before') {
                     if (!advices.Before.some(a => this.isAdviceEquals(a.advice, advice))) {
-                        advices.Before.push({ advice: advice, aspectType: type });
+                        advices.Before.push(advicer);
                     }
                 } else if (advice.adviceName === 'Pointcut') {
                     if (!advices.Pointcut.some(a => this.isAdviceEquals(a.advice, advice))) {
-                        advices.Pointcut.push({ advice: advice, aspectType: type });
+                        advices.Pointcut.push(advicer);
                     }
                 } else if (advice.adviceName === 'Around') {
                     if (!advices.Around.some(a => this.isAdviceEquals(a.advice, advice))) {
-                        advices.Around.push({ advice: advice, aspectType: type });
+                        advices.Around.push(advicer);
                     }
                 } else if (advice.adviceName === 'After') {
                     if (!advices.After.some(a => this.isAdviceEquals(a.advice, advice))) {
-                        advices.After.push({ advice: advice, aspectType: type });
+                        advices.After.push(advicer);
                     }
                 } else if (advice.adviceName === 'AfterThrowing') {
                     if (!advices.AfterThrowing.some(a => this.isAdviceEquals(a.advice, advice))) {
-                        advices.AfterThrowing.push({ advice: advice, aspectType: type });
+                        advices.AfterThrowing.push(advicer);
                     }
                 } else if (advice.adviceName === 'AfterReturning') {
                     if (!advices.AfterReturning.some(a => this.isAdviceEquals(a.advice, advice))) {
-                        advices.AfterReturning.push({ advice: advice, aspectType: type });
+                        advices.AfterReturning.push(advicer);
                     }
                 }
-
             });
         });
     }

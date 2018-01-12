@@ -40,7 +40,7 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
             access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, {
                 type: Joinpoint,
                 value: container.resolve(Joinpoint, {
-                    json: {
+                    options: {
                         name: 'constructor',
                         fullName: data.targetType.name + '.constructor',
                         target: data.target,
@@ -53,7 +53,7 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
             access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, {
                 type: Joinpoint,
                 value: container.resolve(Joinpoint, {
-                    json: {
+                    options: {
                         args: data.args,
                         state: JoinpointState.Before,
                         name: 'constructor',

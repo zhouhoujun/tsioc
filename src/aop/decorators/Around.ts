@@ -4,7 +4,7 @@ import { isString } from '../../utils/index';
 
 
 export interface IAroundDecorator<T extends AroundMetadata> extends IAdviceDecorator<T> {
-    (pointcut?: string | RegExp, args?: string, returning?: string, throwing?: string): MethodDecorator
+    (pointcut?: string | RegExp, args?: string, returning?: string, throwing?: string, annotation?: string): MethodDecorator
 }
 
 export const Around: IAroundDecorator<AroundMetadata> =
@@ -32,4 +32,4 @@ export const Around: IAroundDecorator<AroundMetadata> =
                     metadata.throwing = arg;
                 }
             });
-        });
+        }) as IAroundDecorator<AroundMetadata>;

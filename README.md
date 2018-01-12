@@ -240,10 +240,34 @@ define advice decorator have
 
 * AfterReturning(matchstring|RegExp)
 
+see [simples](https://github.com/zhouhoujun/tsioc/tree/master/test/aop)
+
 ```ts
-import { Joinpoint, Around, Aspect } from 'tsioc';
+import { Joinpoint, Around, Aspect , Pointcut, TypeMetadata, IClassMethodDecorator, createClassMethodDecorator} from 'tsioc';
 
+export const Authorization: IClassMethodDecorator<TypeMetadata> = createClassMethodDecorator<TypeMetadata>('Authorization');
 
+// auth check simple.
+@Aspect
+export class AuthAspect {
+    // pointcut for method has @Authorization decorator.
+    @Pointcut('@annotation(Authorization)')
+    auth(joinPoint: Joinpoint) {
+        console.log('aspect annotation Before log, method name:', joinPoint.fullName, ' state:', joinPoint.state, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
+    }
+}
+
+@Aspect
+export class SecrityAspect {
+    // before AuthAspect.auth check some.
+    @Before('execution(AuthAspect.auth)')
+    sessionCheck(joinPoint: Joinpoint) {
+        console.log('aspect execution check session secrity Before AnnotationAspect.auth, method name:', joinPoint.fullName, ' state:', joinPoint.state, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
+    }
+}
+
+// Log simple
+@Singleton
 @Aspect
 export class DebugLog {
 

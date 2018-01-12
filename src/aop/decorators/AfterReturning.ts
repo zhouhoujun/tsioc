@@ -3,7 +3,7 @@ import { AfterReturningMetadata } from '../metadatas/index';
 import { isString } from '../../utils/index';
 
 export interface IAfterReturningDecorator<T extends AfterReturningMetadata> extends IAdviceDecorator<T> {
-    (pointcut?: string | RegExp, returning?: string): MethodDecorator;
+    (pointcut?: string | RegExp, returning?: string, annotation?: string): MethodDecorator;
 }
 export const AfterReturning: IAfterReturningDecorator<AfterReturningMetadata> =
     createAdviceDecorator<AfterReturningMetadata>(
@@ -17,4 +17,4 @@ export const AfterReturning: IAfterReturningDecorator<AfterReturningMetadata> =
                 }
             })
         }
-    );
+    ) as IAfterReturningDecorator<AfterReturningMetadata>;

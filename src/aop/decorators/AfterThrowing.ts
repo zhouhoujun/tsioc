@@ -4,7 +4,7 @@ import { AdviceMetadata, AfterThrowingMetadata } from '../metadatas/index';
 
 
 export interface IAfterThrowingDecorator<T extends AfterThrowingMetadata> extends IAdviceDecorator<T> {
-    (pointcut?: string | RegExp, throwing?: string): MethodDecorator
+    (pointcut?: string | RegExp, throwing?: string, annotation?: string): MethodDecorator
 }
 export const AfterThrowing: IAfterThrowingDecorator<AfterThrowingMetadata> =
     createAdviceDecorator<AfterThrowingMetadata>(
@@ -18,4 +18,4 @@ export const AfterThrowing: IAfterThrowingDecorator<AfterThrowingMetadata> =
                 }
             })
         }
-    );
+    ) as IAfterThrowingDecorator<AfterThrowingMetadata>;

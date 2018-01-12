@@ -1,3 +1,5 @@
+import { IParameter } from '../IParameter';
+import { MethodMetadata } from '../core/index';
 
 /**
  * pointcut.
@@ -10,16 +12,24 @@ export interface IPointcut {
      * property or method name.
      *
      * @type {string}
-     * @memberof MatchAdvice
+     * @memberof IPointcut
      */
     name: string;
     /**
      * full name of property or method
      *
      * @type {string}
-     * @memberof MatchAdvice
+     * @memberof IPointcut
      */
     fullName: string;
+
+    /**
+     * annotation metadatas.
+     *
+     * @type {any[]}
+     * @memberof IPointcut
+     */
+    annotation?: MethodMetadata[];
 
     /**
      * method

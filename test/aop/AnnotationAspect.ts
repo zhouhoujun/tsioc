@@ -1,11 +1,12 @@
-import { Joinpoint, Pointcut, Around, Aspect, Before, Singleton } from '../../src';
+import { Joinpoint, Pointcut, Around, Aspect, Before, Singleton, MethodMetadata } from '../../src';
 
 
 @Aspect
 export class AnnotationAspect {
     // pointcut for method has @Method decorator.
-    @Pointcut('@annotation(Method)')
-    auth(joinPoint: Joinpoint) {
+    @Pointcut('@annotation(Method)', 'authMetas')
+    auth(joinPoint: Joinpoint, authMetas: MethodMetadata[]) {
+        console.log('authMetas:', authMetas);
         console.log('aspect annotation Before log, method name:', joinPoint.fullName, ' state:', joinPoint.state, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
     }
 
