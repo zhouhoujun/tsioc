@@ -1,5 +1,5 @@
 import { Metadate } from './Metadate';
-import { ParamProvider } from '../../ParamProvider';
+import { Providers } from '../../types';
 
 /**
  * method metadata
@@ -8,8 +8,21 @@ import { ParamProvider } from '../../ParamProvider';
  * @interface PropMetadata
  */
 export interface MethodMetadata extends Metadate {
-    providers?: ParamProvider[];
+    /**
+     * param providers
+     *
+     * @type {ParamProvider[]}
+     * @memberof MethodMetadata
+     */
+    providers?: Providers[];
+    /**
+     * method property key
+     *
+     * @type {(string | symbol)}
+     * @memberof MethodMetadata
+     */
     propertyKey?: string | symbol;
+
     // /**
     //  * method parameter names
     //  *
