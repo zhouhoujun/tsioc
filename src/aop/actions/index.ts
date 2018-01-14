@@ -6,3 +6,4 @@ export * from './InvokeAfterConstructorAction';
 // export * from './BindPropertyPointcutAction';
 export * from './MatchPointcutAction';
 export * from './AopActionFactory';
+export * from './ExetndsInstanceAction'

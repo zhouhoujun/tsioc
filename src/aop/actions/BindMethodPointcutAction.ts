@@ -1,8 +1,8 @@
 
-import { DecoratorType, ActionData, ActionComposite, getMethodMetadata } from '../../core/index';
+import { DecoratorType, ActionData, ActionComposite, hasClassMetadata, hasMethodMetadata, getMethodMetadata } from '../../core/index';
 import { IContainer } from '../../IContainer';
-import { IAspectManager } from '../AspectManager';
-import { isClass, symbols, isPromise, isFunction, isUndefined } from '../../utils/index';
+import { IAspectManager } from '../IAspectManager';
+import { isClass, isArray, symbols, isPromise, isFunction, isUndefined } from '../../utils/index';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AroundMetadata } from '../metadatas/index'
@@ -12,9 +12,8 @@ import { Joinpoint, JoinpointState, IJoinpoint } from '../Joinpoint';
 import { isValideAspectTarget } from '../isValideAspectTarget';
 import { Advices, Advicer } from '../Advices';
 import { IPointcut } from '../IPointcut';
-import { Token } from '../../types';
+import { Token, ObjectMap } from '../../types';
 import { ParamProvider } from '../../ParamProvider';
-import { isArray } from '../../browser';
 
 export interface BindPointcutActionData extends ActionData<Joinpoint> {
 }
@@ -31,8 +30,9 @@ export class BindMethodPointcutAction extends ActionComposite {
         if (!data.target || !isValideAspectTarget(data.targetType)) {
             return;
         }
-        let aspects = container.get<IAspectManager>(symbols.IAspectManager);
+        let aspectMgr = container.get<IAspectManager>(symbols.IAspectManager);
         let access = container.get<IMethodAccessor>(symbols.IMethodAccessor);
+        let liefScope = container.getLifeScope();
 
         let className = data.targetType.name;
         let methods: IPointcut[] = [];
@@ -49,112 +49,111 @@ export class BindMethodPointcutAction extends ActionComposite {
 
         let target = data.target;
         let targetType = data.targetType;
+
         methods.forEach(pointcut => {
             let fullName = pointcut.fullName;
             let methodName = pointcut.name;
-            let advices = aspects.getAdvices(fullName);
-
+            let provJoinpoint: Joinpoint = target['_cache_JoinPoint'];
+            let advices = aspectMgr.getAdvices(fullName);
             if (advices && pointcut.descriptor) {
                 let methodAdapter = (propertyMethod: Function) => {
+
                     return (...args: any[]) => {
-                        let val;
-                        let adviceAction = (advicer: Advicer, state: JoinpointState, isAsync = false, returnValue?: any, throwError?: any) => {
-                            let joinPoint = {
+                        let joinPoint = container.resolve(Joinpoint, {
+                            options: {
                                 name: methodName,
                                 fullName: fullName,
+                                provJoinpoint: provJoinpoint,
+                                annotations: provJoinpoint ? null : liefScope.getMethodMetadatas(targetType, methodName),
+                                params: liefScope.getMethodParameters(targetType, target, methodName),
                                 args: args,
-                                params: container.getLifeScope().getMethodParameters(targetType, target, methodName),
-                                state: state,
-                                annotation: advicer.annotation,
                                 target: target,
                                 targetType: targetType
-                            } as IJoinpoint;
-                            let index = '';
-                            let value;
+                            }
+                        });
+                        let val;
+                        let adviceAction = (advicer: Advicer, state: JoinpointState, isAsync = false, returnValue?: any, throwError?: any) => {
+                            joinPoint.state = state;
+                            joinPoint.advicer = advicer;
+                            joinPoint.returning = returnValue;
+                            joinPoint.throwing = throwError;
+
                             let providers = [];
 
+                            providers.push({
+                                type: Joinpoint,
+                                value: joinPoint,
+                                extendsTarget: (inst) => {
+                                    inst._cache_JoinPoint = joinPoint;
+                                }
+                            } as ParamProvider)
 
                             let metadata: any = advicer.advice;
 
-                            if (metadata.args) {
+                            if (!isUndefined(returnValue) && metadata.args) {
                                 providers.push({
                                     value: args,
                                     index: metadata.args
                                 } as ParamProvider);
                             }
 
-                            if (metadata.annotation) {
+
+                            if (metadata.annotationArgName) {
                                 providers.push({
-                                    value: advicer.annotation,
-                                    index: metadata.annotation
+                                    value: () => {
+                                        let curj = joinPoint;
+                                        let annotations = curj.annotations;
+                                        while (!annotations && joinPoint.provJoinpoint) {
+                                            curj = joinPoint.provJoinpoint;
+                                            if (curj && curj.annotations) {
+                                                annotations = curj.annotations;
+                                                break;
+                                            }
+                                        }
+
+                                        if (isArray(annotations)) {
+                                            if (metadata.annotation) {
+                                                let d: string = metadata.annotation;
+                                                d = /^@/.test(d) ? d : `@${d}`;
+                                                return annotations.filter(a => a.decorator === d);
+                                            }
+                                            return annotations;
+                                        } else {
+                                            return [];
+                                        }
+                                    },
+                                    index: metadata.annotationArgName
                                 } as ParamProvider);
                             }
 
-                            if (metadata.returning) {
+                            if (!isUndefined(returnValue) && metadata.returning) {
                                 providers.push({
                                     value: returnValue,
                                     index: metadata.returning
                                 } as ParamProvider);
                             }
 
-                            if (metadata.throwing) {
+                            if (throwError && metadata.throwing) {
                                 providers.push({
                                     value: throwError,
                                     index: metadata.throwing
                                 } as ParamProvider);
                             }
 
-                            if (advicer.advice.adviceName === 'Around') {
-                                joinPoint.args = args;
-                                joinPoint.returning = returnValue;
-                                joinPoint.throwing = throwError;
-                                let metadata = advicer.advice as AroundMetadata;
-                                if (state === JoinpointState.Before) {
-                                    index = metadata.args;
-                                    value = args;
-                                } else if (state === JoinpointState.AfterReturning) {
-                                    index = metadata.returning;
-                                    value = returnValue;
-                                } else if (state === JoinpointState.AfterThrowing) {
-                                    index = metadata.throwing;
-                                    value = throwError;
-                                }
-                            }
-
-                            if (advicer.advice.adviceName === 'AfterReturning') {
-                                joinPoint.returning = returnValue;
-                                let metadata = advicer.advice as AfterReturningMetadata;
-                                index = metadata.returning;
-                                value = returnValue;
-                            }
-
-                            if (advicer.advice.adviceName === 'AfterThrowing') {
-                                joinPoint.throwing = throwError;
-                                let metadata = advicer.advice as AfterThrowingMetadata;
-                                index = metadata.throwing;
-                                value = throwError;
-                            }
-
-                            providers.push({
-                                type: Joinpoint,
-                                value: container.resolve(Joinpoint, { options: joinPoint })
-                            } as ParamProvider)
-
-
                             if (isAsync) {
-                                return access.invoke(advicer.aspectType, advicer.advice.propertyKey, undefined, ...providers);
+                                return access.invoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
                             } else {
-                                return access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, ...providers);
+                                return access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
                             }
                         };
 
 
-                        let asBefore = (propertyKeys: string[], state: JoinpointState, args: any[]) => {
+                        let asBefore = (propertyKeys: string[], state: JoinpointState) => {
 
                             propertyKeys.forEach(propertyKey => {
                                 let canModify = ['Around', 'Pointcut'].indexOf(propertyKey) >= 0;
                                 advices[propertyKey].forEach((advicer: Advicer) => {
-                                    let retargs = adviceAction(advicer, state, false, canModify ? args : undefined) as any[];
+                                    let retargs = adviceAction(advicer, state, false) as any[];
                                     if (canModify && isArray(retargs)) {
                                         args = retargs;
                                     }
@@ -195,10 +194,10 @@ export class BindMethodPointcutAction extends ActionComposite {
 
 
                         try {
-                            args = asBefore(['Around', 'Before'], JoinpointState.Before, args);
-                            args = asBefore(['Pointcut'], JoinpointState.Pointcut, args);
+                            args = asBefore(['Around', 'Before'], JoinpointState.Before);
+                            args = asBefore(['Pointcut'], JoinpointState.Pointcut);
                             val = propertyMethod(...args);
-                            asResult(['Around', 'After'], JoinpointState.After, val);
+                            asResult(['Around'], JoinpointState.After, val);
                             val = asResult(['Around', 'AfterReturning'], JoinpointState.AfterReturning, val);
                             return val;
                         } catch (err) {

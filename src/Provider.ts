@@ -29,4 +29,12 @@ export interface Provider {
      * @memberof Provider
      */
     method?: string;
+
+    /**
+     * custome exnteds target.
+     *
+     * @param {*} target
+     * @memberof Provider
+     */
+    extendsTarget?(target: any);
 }

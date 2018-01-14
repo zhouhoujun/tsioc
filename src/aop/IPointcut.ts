@@ -24,14 +24,6 @@ export interface IPointcut {
     fullName: string;
 
     /**
-     * annotation metadatas.
-     *
-     * @type {any[]}
-     * @memberof IPointcut
-     */
-    annotation?: MethodMetadata[];
-
-    /**
      * method
      *
      * @type {(TypedPropertyDescriptor<any> | PropertyDescriptor)}

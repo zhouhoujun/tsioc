@@ -1,7 +1,7 @@
 import { Providers, Token } from '../types';
 import { ProviderMap } from '../ProviderMap';
 import { Provider } from '../Provider';
-import { isString, isNumber, isUndefined, isToken } from '../utils/index';
+import { isString, isNumber, isUndefined, isToken, isProviderMap } from '../utils/index';
 import { ParamProvider } from '../ParamProvider';
 import { Type } from '../Type';
 import { IParameter } from '../IParameter';
@@ -68,12 +68,6 @@ export class ProviderMatcher implements IProviderMatcher {
     }
 
     protected isMap(p: Providers) {
-
-        if ((isString(p['index']) || isNumber(p['index']) || isToken(p['type']))
-            && (!isUndefined(p['value']) || !isUndefined(p['method']))) {
-            return false;
-        }
-
-        return true;
+        return isProviderMap(p);
     }
 }

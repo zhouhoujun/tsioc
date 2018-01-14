@@ -12,6 +12,13 @@ export enum AopActions {
      */
     registAspect = 'registAspect',
 
+    /**
+     * extends intstance.
+     */
+    exetndsInstance = 'exetndsInstance',
+    /**
+     * match pointcut.
+     */
     matchPointcut = 'matchPointcut',
     /**
      * bind property pointcut.

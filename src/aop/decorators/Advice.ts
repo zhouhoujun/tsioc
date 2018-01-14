@@ -31,6 +31,13 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
             args.next<AdviceMetadata>({
                 match: (arg) => isString(arg),
                 setMetadata: (metadata, arg) => {
+                    metadata.annotationArgName = arg;
+                }
+            });
+
+            args.next<AdviceMetadata>({
+                match: (arg) => isString(arg),
+                setMetadata: (metadata, arg) => {
                     metadata.annotation = arg;
                 }
             });

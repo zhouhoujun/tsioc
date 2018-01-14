@@ -1,8 +1,10 @@
 import { IPointcut } from './IPointcut';
-import { Token } from '../types';
-import { Injectable, NonePointcut } from '../core/index';
+import { Type } from '../Type';
+import { Injectable, Inject, NonePointcut, MethodMetadata } from '../core/index';
 import { IParameter } from '../IParameter';
-import { MethodMetadata } from '../core/index';
+import { Advicer } from './Advices';
+import { IContainer } from '../IContainer';
+import { Advice } from './decorators/index';
 
 export enum JoinpointState {
     Before = 'Before',
@@ -21,12 +23,20 @@ export enum JoinpointState {
  */
 export interface IJoinpoint extends IPointcut {
 
-     /**
-     * join point state.
+    /**
+     * prov joinpoint.
      *
-     * @type {JoinpointState}
-     * @memberof IJoinpoint
+     * @type {IJoinpoint}
+     * @memberof Joinpoint
      */
+    provJoinpoint: IJoinpoint;
+
+    /**
+    * join point state.
+    *
+    * @type {JoinpointState}
+    * @memberof IJoinpoint
+    */
     state: JoinpointState;
     /**
      * params of pointcut.
@@ -58,19 +68,35 @@ export interface IJoinpoint extends IPointcut {
     throwing?: any;
 
     /**
+     * Advicer of joinpoint.
+     *
+     * @type {Advicer}
+     * @memberof IJoinpoint
+     */
+    advicer: Advicer;
+
+    /**
+     * orgin pointcut method metadatas.
+     *
+     * @type {MethodMetadata[]}
+     * @memberof IJoinpoint
+     */
+    annotations: MethodMetadata[];
+
+    /**
      * pointcut target instance
      *
      * @type {*}
      * @memberof IJoinpoint
      */
-    target?: any;
+    target: any;
     /**
      * pointcut target type.
      *
      * @type {Token<any>}
      * @memberof IJoinpoint
      */
-    targetType?: Token<any>;
+    targetType: Type<any>;
 
 }
 
@@ -91,6 +117,14 @@ export class Joinpoint implements IJoinpoint {
      * @memberof Joinpoint
      */
     name: string;
+
+    /**
+     * prov joinpoint.
+     *
+     * @type {IJoinpoint}
+     * @memberof Joinpoint
+     */
+    provJoinpoint: IJoinpoint;
     /**
      * full name.
      *
@@ -135,39 +169,50 @@ export class Joinpoint implements IJoinpoint {
     throwing?: any;
 
     /**
+     * advicer of joinpoint
+     *
+     * @type {Advicer}
+     * @memberof Joinpoint
+     */
+    advicer: Advicer;
+
+    /**
+     * orgin pointcut method metadatas.
+     *
+     * @type {MethodMetadata[]}
+     * @memberof Joinpoint
+     */
+    annotations: MethodMetadata[];
+
+    /**
      * pointcut target instance
      *
      * @type {*}
      * @memberof Joinpoint
      */
-    target?: any;
+    target: any;
     /**
      * pointcut target type.
      *
-     * @type {Token<any>}
+     * @type {Type<any>}
      * @memberof Joinpoint
      */
-    targetType?: Token<any>;
-
-    /**
-     * annotation metadatas.
-     *
-     * @type {MethodMetadata[]}
-     * @memberof Joinpoint
-     */
-    annotation?: MethodMetadata[];
+    targetType: Type<any>;
 
 
     constructor(options: IJoinpoint) {
+        this.provJoinpoint = options.provJoinpoint;
         this.name = options.name;
         this.fullName = options.fullName;
         this.params = options.params || [];
         this.args = options.args;
         this.returning = options.returning;
+        this.throwing = options.throwing;
         this.state = options.state;
+        this.advicer = options.advicer;
+        this.annotations = options.annotations;
         this.target = options.target;
         this.targetType = options.targetType;
-        this.throwing = options.throwing;
-        this.annotation = options.annotation || [];
     }
+
 }

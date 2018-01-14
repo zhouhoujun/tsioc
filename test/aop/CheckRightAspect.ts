@@ -1,4 +1,5 @@
-import { Joinpoint, Around, Aspect, Before, Singleton, MethodMetadata } from '../../src';
+import { Joinpoint, Around, Aspect, Before, Singleton, MethodMetadata, After} from '../../src';
+
 
 
 @Aspect

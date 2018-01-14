@@ -114,14 +114,8 @@ export class AdviceMatcher implements IAdviceMatcher {
             if (/^@annotation\(\S+\)$/.test(pointcut)) {
                 pointcut = pointcut.substring(12, pointcut.length - 1);
                 let annotation = /^@/.test(pointcut) ? pointcut : ('@' + pointcut);
-                // console.log('@annotation:', annotation);
-                return (name: string, fullName: string, pointcut: IPointcut) => {
-                    let flag = hasMethodMetadata(annotation, type, name) && !hasClassMetadata(Aspect, type);
-                    if (flag) {
-                        pointcut.annotation = getMethodMetadata<MethodMetadata>(annotation, type)[name];
-                    }
-                    return flag;
-                }
+                return (name: string, fullName: string) => hasMethodMetadata(annotation, type, name) && !hasClassMetadata(Aspect, type);
+
             } else {
                 if (pointcut === '*' || pointcut === '*.*') {
                     return (name: string, fullName: string, pointcut: IPointcut) => !!name;
@@ -143,17 +137,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             if (/^\^?@\w+/.test(pointcutReg.source)) {
                 return (name: string, fullName: string, pointcut: IPointcut) => {
                     let decName = Reflect.getMetadataKeys(type, name);
-                    let annotation = decName.find(n => isString(n) && pointcutReg.test(n));
-                    if (isString(annotation)) {
-                        if (/_method$/.test(annotation)) {
-                            annotation = annotation.substring(0, annotation.length - 8);
-                        }
-                        pointcut.annotation = getMethodMetadata<MethodMetadata>(annotation, type)[name];
-                        return true;
-
-                    } else {
-                        return false;
-                    }
+                    return decName.some(n => isString(n) && pointcutReg.test(n));
                 }
 
             } else {

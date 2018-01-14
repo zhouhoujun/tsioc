@@ -448,7 +448,6 @@ export function getParamerterNames(target: Type<any>): ObjectMap<string[]> {
     if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
         meta = Reflect.getMetadata(ParamerterName, target.constructor);
     }
-    // console.log(target, '\n params:', meta);
     return isArray(meta) ? {} : (meta || {});
 }
 
@@ -479,7 +478,6 @@ function getParamNames(func) {
         return [];
     }
     let fnStr = func.toString().replace(STRIP_COMMENTS, '');
-    // console.log(fnStr);
     let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
     if (result === null) {
         result = [];

@@ -11,7 +11,7 @@ export interface MethodMetadata extends Metadate {
     /**
      * param providers
      *
-     * @type {ParamProvider[]}
+     * @type {Providers[]}
      * @memberof MethodMetadata
      */
     providers?: Providers[];

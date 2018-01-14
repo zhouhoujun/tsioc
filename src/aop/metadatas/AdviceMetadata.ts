@@ -10,12 +10,20 @@ export interface AdviceMetadata extends MethodMetadata {
     pointcut: string | RegExp;
 
     /**
-     * set name provider of annotation metadata for annotation advices.
+     * annotation name, special annotation metadata for annotation advices.
      *
      * @type {string}
      * @memberof AdviceMetadata
      */
     annotation?: string;
+
+    /**
+     * set name provider of annotation metadata for annotation advices.
+     *
+     * @type {string}
+     * @memberof AdviceMetadata
+     */
+    annotationArgName?: string;
 
     /**
      * advice name.

@@ -3,16 +3,15 @@ import { ObjectMap, Token, IocState } from '../types';
 import { Type } from '../Type';
 import { isClass, isArray, isString } from '../utils/index';
 import { Singleton } from './decorators/index';
-import { ClassMetadata } from './metadatas/index';
+import { ClassMetadata, MethodMetadata } from './metadatas/index';
 import { IContainer } from '../IContainer';
 import { CoreActions, ActionComponent, ActionComposite } from './actions/index';
-import { DecoratorType, getTypeMetadata, getParamerterNames, hasClassMetadata } from './factories/index';
+import { DecoratorType, getTypeMetadata, getParamerterNames, getMethodMetadata, hasClassMetadata } from './factories/index';
 import { Express } from '../types';
 import { ActionData } from './ActionData';
 import { ActionFactory } from './ActionFactory';
 import { IParameter } from '../IParameter';
 import { NonePointcut } from './decorators/index';
-
 
 
 @NonePointcut()
@@ -135,7 +134,7 @@ export class DefaultLifeScope implements LifeScope {
      * @memberof IContainer
      */
     getConstructorParameters<T>(type: Type<T>): IParameter[] {
-        return this.getParameterMetadata(type);
+        return this.getParameters(type);
     }
 
     /**
@@ -149,7 +148,28 @@ export class DefaultLifeScope implements LifeScope {
      * @memberof IContainer
      */
     getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): IParameter[] {
-        return this.getParameterMetadata(type, instance, propertyKey);
+        return this.getParameters(type, instance, propertyKey);
+    }
+
+    /**
+     * get paramerter names.
+     *
+     * @template T
+     * @param {Type<T>} type
+     * @param {(string | symbol)} propertyKey
+     * @returns {string[]}
+     * @memberof DefaultLifeScope
+     */
+    getParamerterNames<T>(type: Type<T>, propertyKey: string | symbol): string[] {
+        let metadata = getParamerterNames(type);
+        let paramNames = [];
+        if (metadata && metadata.hasOwnProperty(propertyKey)) {
+            paramNames = metadata[propertyKey]
+        }
+        if (!isArray(paramNames)) {
+            paramNames = [];
+        }
+        return paramNames;
     }
 
     isSingletonType<T>(type: Type<T>): boolean {
@@ -166,11 +186,24 @@ export class DefaultLifeScope implements LifeScope {
         })
     }
 
+    getMethodMetadatas<T>(type: Type<T>, propertyKey: string | symbol): MethodMetadata[] {
+        let metadatas = [];
+        this.getMethodDecorators().forEach(dec => {
+            let metas: ObjectMap<MethodMetadata[]> = getMethodMetadata<MethodMetadata>(dec.name, type);
+            if (metas.hasOwnProperty(propertyKey)) {
+                metadatas = metadatas.concat(metas[propertyKey] || []);
+            }
+        });
+        return metadatas;
+    }
+
+
+
     filerDecorators(express?: Express<DecorSummary, boolean>): DecorSummary[] {
         return this.decorators.filter(express);
     }
 
-    protected getParameterMetadata<T>(type: Type<T>, instance?: T, propertyKey?: string | symbol): IParameter[] {
+    protected getParameters<T>(type: Type<T>, instance?: T, propertyKey?: string | symbol): IParameter[] {
         propertyKey = propertyKey || 'constructor';
         let data = {
             target: instance,
@@ -178,16 +211,8 @@ export class DefaultLifeScope implements LifeScope {
             propertyKey: propertyKey
         } as ActionData<Token<any>[]>;
         this.execute(DecoratorType.Parameter, data, CoreActions.bindParameterType);
-        let metadata = getParamerterNames(type);
 
-        let paramNames = [];
-        if (metadata && metadata.hasOwnProperty(propertyKey)) {
-            paramNames = metadata[propertyKey]
-        }
-        if (!isArray(paramNames)) {
-            paramNames = [];
-        }
-        // console.log(metadata, propertyKey || 'constructor', paramNames, 'params:', data.execResult);
+        let paramNames = this.getParamerterNames(type, propertyKey);
         return data.execResult.map((typ, idx) => {
             return {
                 type: typ,

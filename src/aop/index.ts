@@ -47,8 +47,10 @@ export function registerAops(container: IContainer) {
     // lifeScope.addAction(factory.create(AopActions.bindPropertyPointcut), DecoratorType.Property);
 
     lifeScope.addAction(factory.create(AopActions.invokeBeforeConstructorAdvices), DecoratorType.Class, CoreActions.beforeConstructor);
+    lifeScope.addAction(factory.create(AopActions.exetndsInstance), DecoratorType.Class, CoreActions.afterConstructor);
     lifeScope.addAction(factory.create(AopActions.invokeAfterConstructorAdvices), DecoratorType.Class, CoreActions.afterConstructor);
 
-    lifeScope.registerDecorator(Aspect, AopActions.registAspect);
+
+    lifeScope.registerDecorator(Aspect, AopActions.registAspect, AopActions.exetndsInstance);
 
 }

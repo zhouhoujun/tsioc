@@ -236,9 +236,11 @@ define advice decorator have
 
 * @Around(matchstring|RegExp)
 
-* AfterThrowing(matchstring|RegExp)
+* @AfterThrowing(matchstring|RegExp)
 
-* AfterReturning(matchstring|RegExp)
+* @AfterReturning(matchstring|RegExp)
+
+* @Pointcut(matchstring|RegExp)
 
 see [simples](https://github.com/zhouhoujun/tsioc/tree/master/test/aop)
 
@@ -251,8 +253,8 @@ export const Authorization: IClassMethodDecorator<TypeMetadata> = createClassMet
 @Aspect
 export class AuthAspect {
     // pointcut for method has @Authorization decorator.
-    @Pointcut('@annotation(Authorization)')
-    auth(joinPoint: Joinpoint) {
+    @Pointcut('@annotation(Authorization)', 'authAnnotation')
+    auth(joinPoint: Joinpoint, authAnnotation:MethodMetadata[]) {
         console.log('aspect annotation Before log, method name:', joinPoint.fullName, ' state:', joinPoint.state, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
     }
 }
@@ -260,8 +262,8 @@ export class AuthAspect {
 @Aspect
 export class SecrityAspect {
     // before AuthAspect.auth check some.
-    @Before('execution(AuthAspect.auth)')
-    sessionCheck(joinPoint: Joinpoint) {
+    @Before('execution(AuthAspect.auth)', 'authAnnotation')
+    sessionCheck(authAnnotation:MethodMetadata[],joinPoint: Joinpoint) {
         console.log('aspect execution check session secrity Before AnnotationAspect.auth, method name:', joinPoint.fullName, ' state:', joinPoint.state, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
     }
 }
@@ -289,10 +291,11 @@ export class DebugLog {
 ## New Features
 
 * 1.3.0
-    1. support @annotation pointcut, add Pointcut decorator
-    2. Aspect is not default singleton.
-    3. add Pointcut decorator.
-    4. Aspect can advice Aspect method or self pointcut method.
+    1. refactor AOP. add Object instance entends action.
+    2. support @annotation pointcut, add Pointcut decorator
+    3. Aspect is not default singleton.
+    4. add Pointcut decorator.
+    5. Aspect can advice Aspect method or self pointcut method.
     
 
 * 1.2.11
