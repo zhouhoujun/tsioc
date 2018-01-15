@@ -9,13 +9,16 @@ import { ActionFactory } from './ActionFactory';
 import { DecoratorType } from './factories/index';
 import { MethodAccessor } from './MethodAccessor';
 import { ProviderMatcher } from './ProviderMatcher';
+import { ProviderMap } from './providers/index';
 
 
 export * from './actions/index';
 export * from './decorators/index';
 export * from './metadatas/index';
 export * from './factories/index';
+export * from './providers/index';
 
+export * from './IProviderMatcher';
 export * from './ActionData';
 export * from './ActionFactory';
 export * from './DefaultLifeScope';
@@ -32,7 +35,8 @@ export * from './MethodAccessor';
 export function registerCores(container: IContainer) {
 
     container.registerSingleton(symbols.LifeScope, () => new DefaultLifeScope(container));
-    container.registerSingleton(symbols.IProviderMatcher, () => new ProviderMatcher());
+    container.registerSingleton(ProviderMap, () => new ProviderMap(container));
+    container.registerSingleton(symbols.IProviderMatcher, () => new ProviderMatcher(container));
     container.registerSingleton(symbols.IMethodAccessor, () => new MethodAccessor(container));
 
     let factory = new ActionFactory();

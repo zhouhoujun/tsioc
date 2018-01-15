@@ -1,7 +1,7 @@
 import { Type, AbstractType } from './Type';
 import { Registration } from './Registration';
 import { IContainer } from './IContainer';
-import { ParamProvider, ProviderMap, Provider } from './providers/index';
+import { ParamProvider, ProviderMap, Provider } from './core/index';
 
 /**
  * symbol type
@@ -16,8 +16,12 @@ export type Token<T> = Registration<T> | SymbolType<T>;
 /**
  * providers
  */
-export type Providers = ProviderMap | Provider;
+export type Providers = any | ProviderMap | Provider;
 
+/**
+ * instance factory.
+ */
+export type InstanceFactory<T> = (...providers: Providers[]) => T
 
 /**
  * to instance via container.

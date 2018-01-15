@@ -1,4 +1,4 @@
-import { DecoratorType, ActionData, ActionComposite, getMethodMetadata } from '../../core/index';
+import { DecoratorType, ActionData, ActionComposite, Provider, getMethodMetadata } from '../../core/index';
 import { IContainer } from '../../IContainer';
 import { IAspectManager } from '../IAspectManager';
 import { isClass, symbols } from '../../utils/index';
@@ -37,32 +37,30 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
 
         let access = container.get<IMethodAccessor>(symbols.IMethodAccessor);
         advices.Before.forEach(advicer => {
-            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, {
-                type: Joinpoint,
-                value: container.resolve(Joinpoint, {
-                    options: {
+            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined,
+                Provider.create(
+                    Joinpoint,
+                    () => container.resolve(Joinpoint, Provider.createParam('options', {
                         name: 'constructor',
                         fullName: data.targetType.name + '.constructor',
                         target: data.target,
                         targetType: data.targetType
-                    }
-                }) // new Joinpoint(joinPoint) // container.resolve(Joinpoint, { json: joinPoint })
-            });
+                    })))); // new Joinpoint(joinPoint) // container.resolve(Joinpoint, { json: joinPoint })
         });
+
         advices.Around.forEach(advicer => {
-            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, {
-                type: Joinpoint,
-                value: container.resolve(Joinpoint, {
-                    options: {
+            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined,
+                Provider.create(
+                    Joinpoint,
+                    () => container.resolve(Joinpoint, Provider.createParam('options', {
                         args: data.args,
                         state: JoinpointState.Before,
                         name: 'constructor',
                         fullName: data.targetType.name + '.constructor',
                         target: data.target,
                         targetType: data.targetType
-                    }
-                })
-            });
+                    }))))
         });
+
     }
 }

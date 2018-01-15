@@ -37,6 +37,7 @@ export class ActionFactory {
 
             default:
                 action = new ActionComposite(type);
+                break;
 
         }
 

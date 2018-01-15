@@ -1,5 +1,5 @@
 import { IContainer } from '../IContainer';
-import { ParamProvider, AsyncParamProvider, ProviderMap } from '../providers/index';
+import { ParamProvider, AsyncParamProvider, ProviderMap } from './providers/index';
 import { IMethodAccessor } from '../IMethodAccessor';
 import { Type } from '../Type';
 import { BindParameterProviderActionData, CoreActions } from './actions/index';
@@ -9,7 +9,7 @@ import { Container } from '../Container';
 import { IContainerBuilder } from '../IContainerBuilder';
 import { IParameter } from '../IParameter';
 import { DecoratorType } from './factories/index';
-import { IProviderMatcher } from '../IProviderMatcher';
+import { IProviderMatcher } from './IProviderMatcher';
 import { NonePointcut } from './decorators/index';
 
 
@@ -83,56 +83,59 @@ export class MethodAccessor implements IMethodAccessor {
     }
 
     createSyncParams(params: IParameter[], ...providers: Providers[]): any[] {
-        let providerMap = this.getMatcher().match(params, ...providers);
+        let providerMap = this.getMatcher().matchProviders(params, ...providers);
         return params.map((param, index) => {
-            return this.createParam(param, index, providerMap, providers);
+            return providerMap.resolve(param.name);
         });
     }
 
     createParams(params: IParameter[], ...providers: Providers[]): Promise<any[]> {
-        let providerMap = this.getMatcher().match(params, ...providers);
-        return Promise.all(params.map(async (param, index) => {
-            return this.createParam(param, index, providerMap, providers, async (provider: AsyncParamProvider) => {
-
-                let buider = this.container.get<IContainerBuilder>(symbols.IContainerBuilder);
-                let modules = await buider.loadModule(this.container, {
-                    files: provider.files
-                });
-                let params = await Promise.all(modules.map((mdl) => {
-                    return this.container.invoke<any>(mdl, provider.execution)
-                }));
-
-                return modules.length === 1 ? params[0] : params;
-            });
+        let providerMap = this.getMatcher().matchProviders(params, ...providers);
+        return Promise.all(params.map((param, index) => {
+            return providerMap.resolve(param.name);
         }));
     }
+        //     return this.createParam(param, index, providerMap, providers, async (provider: AsyncParamProvider) => {
 
-    protected createParam(param: IParameter, index: number, providerMap: ProviderMap, providers: Providers[], extensds?: (provider: ParamProvider) => any) {
-        if (providerMap && param.name) {
-            let provider = providerMap[param.name];
+        //         let buider = this.container.get<IContainerBuilder>(symbols.IContainerBuilder);
+        //         let modules = await buider.loadModule(this.container, {
+        //             files: provider.files
+        //         });
+        //         let params = await Promise.all(modules.map((mdl) => {
+        //             return this.container.invoke<any>(mdl, provider.execution)
+        //         }));
 
-            if (!isUndefined(provider)) {
-                if (isFunction(provider)) {
-                    return provider(this.container);
-                }
+        //         return modules.length === 1 ? params[0] : params;
+        //     });
+        // }));
+    // }
 
-                if (!isUndefined(provider.value)) {
-                    return isFunction(provider.value) ? provider.value(this.container) : provider.value;
-                }
-                if (provider.type) {
-                    return this.container.resolve(provider.type, ...providers);
-                }
-                if (extensds && provider['files'] && provider['execution']) {
-                    return extensds(provider);
-                }
+    // protected createParam(param: IParameter, index: number, providerMap: ProviderMap, providers: Providers[], extensds?: (provider: ParamProvider) => any) {
+    //     if (providerMap && param.name) {
+    //         let provider = providerMap[param.name];
 
-                return provider;
-            }
-        }
+    //         if (!isUndefined(provider)) {
+    //             if (isFunction(provider)) {
+    //                 return provider(this.container);
+    //             }
 
-        if (isToken(param.type)) {
-            return this.container.resolve(param.type, ...providers);
-        }
-        return undefined;
-    }
+    //             if (!isUndefined(provider.value)) {
+    //                 return isFunction(provider.value) ? provider.value(this.container) : provider.value;
+    //             }
+    //             if (provider.type) {
+    //                 return this.container.resolve(provider.type, ...providers);
+    //             }
+    //             if (extensds && provider['files'] && provider['execution']) {
+    //                 return extensds(provider);
+    //             }
+
+    //             return provider;
+    //         }
+    //     }
+
+    //     if (isToken(param.type)) {
+    //         return this.container.resolve(param.type, ...providers);
+    //     }
+    //     return undefined;
+    // }
 }

@@ -6,7 +6,6 @@ export * from './types';
 export * from './Registration';
 export * from './IContainerBuilder';
 export * from './IParameter';
-export * from './IProviderMatcher';
 export * from './IMethodAccessor';
 
 export * from './LifeScope';
@@ -19,7 +18,6 @@ export * from './browsers/ContainerBuilder';
 export * from './browsers/BrowserModuleLoader';
 
 export * from './utils/index';
-export * from './providers/index';
 export * from './components/index';
 export * from './core/index';
 export * from './aop/index';

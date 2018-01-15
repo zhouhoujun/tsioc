@@ -1,68 +1,61 @@
-import { Providers, Token, ObjectMap } from '../types';
-import { Provider, ProviderMap, ParamProvider } from '../providers/index';
-import { isString, isNumber, isUndefined, isToken, isProviderMap } from '../utils/index';
+import { Providers, Token, ObjectMap, InstanceFactory } from '../types';
+import { Provider, ProviderMap, ParamProvider, isProviderMap } from './providers/index';
+import { isString, isNumber, isUndefined, isNull, isToken } from '../utils/index';
 import { Type } from '../Type';
 import { IParameter } from '../IParameter';
-import { IProviderMatcher } from '../IProviderMatcher';
+import { IProviderMatcher } from './IProviderMatcher';
 import { NonePointcut } from './decorators/index';
+import { IContainer } from '../IContainer';
 
 @NonePointcut()
 export class ProviderMatcher implements IProviderMatcher {
 
-    constructor() {
+    constructor(private container: IContainer) {
 
     }
 
-    match(params: IParameter[], ...providers: Providers[]): ObjectMap<any> {
-        let map = {};
-        if (!params.length) {
-            return map;
-        }
-        providers.forEach(p => {
-            if (p) {
-                if (isProviderMap(p)) {
-                    params.forEach(parma => {
-                        let name = parma.name;
-                        if (name && !map[name] && p.has(name)) {
-                            map[name] = p.resolve(name);
-                        }
-                    });
+    toProviderMap(...providers: Providers[]): ProviderMap {
+        let map = this.container.resolve(ProviderMap);
+        providers.forEach((p, index) => {
+            if (isUndefined(p) || isNull(p)) {
+                return;
+            }
+            if (isProviderMap(p)) {
+                map.copy(p);
+            } else if (p instanceof Provider) {
+                if (p instanceof ParamProvider) {
+                    map.add(isUndefined(p.index) ? p.index : p.type, (...providers: Providers[]) => p.resolve(this.container, ...providers));
                 } else {
-                    let name;
-                    let paramProvider = p as ParamProvider;
-                    if (isUndefined(paramProvider.index)) {
-                        if (isToken(paramProvider.type)) {
-                            name = this.matchType(params, paramProvider.type);
-                        }
-                    } else {
-                        if (isString(paramProvider.index)) {
-                            name = paramProvider.index;
-                        } else if (isNumber(paramProvider.index)) {
-                            name = this.matchIndex(params, paramProvider.index);
-                        }
-                    }
-
-                    if (name && !map[name]) {
-                        map[name] = p;
-                    }
+                    map.add(p.type, (...providers: Providers[]) => p.resolve(this.container, ...providers));
                 }
+            } else {
+                map.add(index, p);
             }
         });
 
         return map;
     }
 
-    protected matchIndex(params: IParameter[], idx: number): string {
-        if (idx && idx < params.length) {
-            let param = params[idx];
-            return param ? param.name : '';
-        }
-        return '';
+    matchProviders(params: IParameter[], ...providers: Providers[]): ProviderMap {
+        return this.match(params, this.toProviderMap(...providers));
     }
 
-    protected matchType(params: IParameter[], type: Token<any>): string {
-        let param = params.find(p => p && p.type === type);
-        return param ? param.name : '';
+    match(params: IParameter[], providerMap: ProviderMap): ProviderMap {
+        let map = this.container.resolve(ProviderMap);
+        if (!params.length) {
+            return map;
+        }
+        params.forEach((param, index) => {
+            if (providerMap.has(param.name)) {
+                map.add(param.name, providerMap.get(param.name));
+            } else if (param.type && providerMap.has(param.type)) {
+                map.add(param.name, providerMap.get(param.type));
+            } else if (providerMap.has(index)) {
+                map.add(param.name, providerMap.get(index));
+            }
+        });
+
+        return map;
     }
 
 }

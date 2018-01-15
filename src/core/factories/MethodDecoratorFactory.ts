@@ -5,7 +5,7 @@ import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFa
 import { DecoratorType } from './DecoratorType';
 import { ArgsIterator } from './ArgsIterator';
 import { isArray } from '../../utils/index';
-import { ParamProvider } from '../../ParamProvider';
+import { Providers } from '../../types';
 
 
 /**
@@ -15,7 +15,7 @@ import { ParamProvider } from '../../ParamProvider';
  * @interface IMethodDecorator
  */
 export interface IMethodDecorator<T extends MethodMetadata> {
-    (providers?: ParamProvider[]): MethodDecorator;
+    (providers?: Providers[]): MethodDecorator;
     (metadata?: T): MethodDecorator;
     (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>): void;
 }

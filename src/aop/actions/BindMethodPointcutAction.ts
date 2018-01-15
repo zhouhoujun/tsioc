@@ -1,5 +1,5 @@
 
-import { DecoratorType, ActionData, ActionComposite, hasClassMetadata, hasMethodMetadata, getMethodMetadata } from '../../core/index';
+import { DecoratorType, ActionData, ActionComposite, Provider, hasClassMetadata, hasMethodMetadata, getMethodMetadata } from '../../core/index';
 import { IContainer } from '../../IContainer';
 import { IAspectManager } from '../IAspectManager';
 import { isClass, isArray, symbols, isPromise, isFunction, isUndefined } from '../../utils/index';
@@ -13,7 +13,6 @@ import { isValideAspectTarget } from '../isValideAspectTarget';
 import { Advices, Advicer } from '../Advices';
 import { IPointcut } from '../IPointcut';
 import { Token, ObjectMap } from '../../types';
-import { ParamProvider } from '../../ParamProvider';
 
 export interface BindPointcutActionData extends ActionData<Joinpoint> {
 }
@@ -59,18 +58,16 @@ export class BindMethodPointcutAction extends ActionComposite {
                 let methodAdapter = (propertyMethod: Function) => {
 
                     return (...args: any[]) => {
-                        let joinPoint = container.resolve(Joinpoint, {
-                            options: {
-                                name: methodName,
-                                fullName: fullName,
-                                provJoinpoint: provJoinpoint,
-                                annotations: provJoinpoint ? null : liefScope.getMethodMetadatas(targetType, methodName),
-                                params: liefScope.getMethodParameters(targetType, target, methodName),
-                                args: args,
-                                target: target,
-                                targetType: targetType
-                            }
-                        });
+                        let joinPoint = container.resolve(Joinpoint, Provider.createParam('options', {
+                            name: methodName,
+                            fullName: fullName,
+                            provJoinpoint: provJoinpoint,
+                            annotations: provJoinpoint ? null : liefScope.getMethodMetadatas(targetType, methodName),
+                            params: liefScope.getMethodParameters(targetType, target, methodName),
+                            args: args,
+                            target: target,
+                            targetType: targetType
+                        }));
                         let val;
                         let adviceAction = (advicer: Advicer, state: JoinpointState, isAsync = false, returnValue?: any, throwError?: any) => {
                             joinPoint.state = state;
@@ -80,27 +77,21 @@ export class BindMethodPointcutAction extends ActionComposite {
 
                             let providers = [];
 
-                            providers.push({
-                                type: Joinpoint,
-                                value: joinPoint,
-                                extendsTarget: (inst) => {
-                                    inst._cache_JoinPoint = joinPoint;
-                                }
-                            } as ParamProvider)
+                            providers.push(Provider.createExtends(Joinpoint, joinPoint, (inst, provider) => {
+                                inst._cache_JoinPoint = provider.resolve(container);
+                            }));
 
                             let metadata: any = advicer.advice;
 
                             if (!isUndefined(returnValue) && metadata.args) {
-                                providers.push({
-                                    value: args,
-                                    index: metadata.args
-                                } as ParamProvider);
+                                providers.push(Provider.createParam(metadata.args, args))
                             }
 
 
                             if (metadata.annotationArgName) {
-                                providers.push({
-                                    value: () => {
+                                providers.push(Provider.createParam(
+                                    metadata.annotationArgName,
+                                    () => {
                                         let curj = joinPoint;
                                         let annotations = curj.annotations;
                                         while (!annotations && joinPoint.provJoinpoint) {
@@ -121,23 +112,16 @@ export class BindMethodPointcutAction extends ActionComposite {
                                         } else {
                                             return [];
                                         }
-                                    },
-                                    index: metadata.annotationArgName
-                                } as ParamProvider);
+                                    }
+                                ));
                             }
 
                             if (!isUndefined(returnValue) && metadata.returning) {
-                                providers.push({
-                                    value: returnValue,
-                                    index: metadata.returning
-                                } as ParamProvider);
+                                providers.push(Provider.createParam(metadata.returning, returnValue))
                             }
 
                             if (throwError && metadata.throwing) {
-                                providers.push({
-                                    value: throwError,
-                                    index: metadata.throwing
-                                } as ParamProvider);
+                                providers.push(Provider.createParam(metadata.throwing, throwError));
                             }
 
                             if (isAsync) {
@@ -218,7 +202,7 @@ export class BindMethodPointcutAction extends ActionComposite {
                         pointcut.descriptor.set = methodAdapter(setMethod);
                     }
                     Object.defineProperty(target, methodName, pointcut.descriptor);
-                } else if (isFunction(pointcut.descriptor.value)) {
+                } else if (isFunction(target[methodName])) {
                     let propertyMethod = target[methodName].bind(target);
                     target[methodName] = methodAdapter(propertyMethod);
                 }
