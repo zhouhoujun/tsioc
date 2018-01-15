@@ -58,19 +58,20 @@ export interface LifeScope {
      * @param {ActionComponent} action the action.
      * @param {DecoratorType} type action for decorator type.
      * @param {...string[]} express the path  of action point to add the action.
-     * @returns {LifeScope}
+     * @returns {this}
      * @memberof LifeScope
      */
-    addAction(action: ActionComponent, type: DecoratorType, ...nodepaths: string[]): LifeScope;
+    addAction(action: ActionComponent, type: DecoratorType, ...nodepaths: string[]): this;
 
     /**
      * register decorator.
      *
      * @param {Function} decorator decorator
      * @param {...string[]} actions action names.
+     * @returns {this}
      * @memberof LifeScope
      */
-    registerDecorator(decorator: Function, ...actions: string[]): LifeScope;
+    registerDecorator(decorator: Function, ...actions: string[]): this;
 
     /**
      * register decorator.
@@ -78,9 +79,10 @@ export interface LifeScope {
      * @param {Function} decorator decorator
      * @param {DecoratorType} type  custom set decorator type.
      * @param {...string[]} actions action names.
+     * @returns {this}
      * @memberof LifeScope
      */
-    registerCustomDecorator(decorator: Function, type: DecoratorType, ...actions: string[]): LifeScope;
+    registerCustomDecorator(decorator: Function, type: DecoratorType, ...actions: string[]): this;
 
     /**
      * filter match decorators.

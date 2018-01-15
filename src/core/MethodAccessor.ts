@@ -1,5 +1,5 @@
 import { IContainer } from '../IContainer';
-import { ParamProvider, AsyncParamProvider } from '../ParamProvider';
+import { ParamProvider, AsyncParamProvider, ProviderMap } from '../providers/index';
 import { IMethodAccessor } from '../IMethodAccessor';
 import { Type } from '../Type';
 import { BindParameterProviderActionData, CoreActions } from './actions/index';
@@ -9,7 +9,6 @@ import { Container } from '../Container';
 import { IContainerBuilder } from '../IContainerBuilder';
 import { IParameter } from '../IParameter';
 import { DecoratorType } from './factories/index';
-import { ProviderMap } from '../ProviderMap';
 import { IProviderMatcher } from '../IProviderMatcher';
 import { NonePointcut } from './decorators/index';
 

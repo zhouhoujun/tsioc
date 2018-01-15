@@ -83,18 +83,20 @@ export interface IContainer extends IMethodAccessor {
      * @template T
      * @param {Token<T>} token
      * @param {Factory<T>} [value]
-     * @memberOf IContainer
+     * @returns {this}
+     * @memberof IContainer
      */
-    register<T>(token: Token<T>, value?: Factory<T>);
+    register<T>(token: Token<T>, value?: Factory<T>): this;
 
     /**
      * unregister the token
      *
      * @template T
      * @param {Token<T>} token
+     * @returns {this}
      * @memberof IContainer
      */
-    unregister<T>(token: Token<T>);
+    unregister<T>(token: Token<T>): this;
 
     /**
      * bind provider
@@ -102,9 +104,10 @@ export interface IContainer extends IMethodAccessor {
      * @template T
      * @param {Token<T>} provide
      * @param {Token<T> | Factory<T>} provider
+     * @returns {this}
      * @memberof IContainer
      */
-    bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>);
+    bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this;
 
     /**
      * register stingleton type.

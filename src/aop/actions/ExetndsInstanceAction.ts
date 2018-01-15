@@ -34,13 +34,13 @@ export class ExetndsInstanceAction extends ActionComposite {
         data.providers.forEach(p => {
             if (isProviderMap(p)) {
                 Object.values(p).forEach((pdr: Provider) => {
-                    if (isFunction(pdr.extendsTarget)) {
+                    if (pdr &&  isFunction(pdr.extendsTarget)) {
                         pdr.extendsTarget(data.target);
                     }
                 });
             } else {
                 let pdr = p as Provider;
-                if (isFunction(pdr.extendsTarget)) {
+                if (pdr && isFunction(pdr.extendsTarget)) {
                     pdr.extendsTarget(data.target);
                 }
             }

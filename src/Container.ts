@@ -105,10 +105,12 @@ export class Container implements IContainer {
      * @template T
      * @param {Token<T>} token
      * @param {T} [value]
+     * @returns {this}
      * @memberOf Container
      */
-    register<T>(token: Token<T>, value?: Factory<T>) {
+    register<T>(token: Token<T>, value?: Factory<T>): this {
         this.registerFactory(token, value);
+        return this;
     }
 
     /**
@@ -142,13 +144,15 @@ export class Container implements IContainer {
      *
      * @template T
      * @param {Token<T>} token
+     * @returns {this}
      * @memberof Container
      */
-    unregister<T>(token: Token<T>) {
+    unregister<T>(token: Token<T>): this {
         let key = this.getTokenKey(token);
         if (this.hasRegister(key)) {
             this.factories.delete(key);
         }
+        return this;
     }
 
     /**
@@ -157,11 +161,12 @@ export class Container implements IContainer {
      * @template T
      * @param {Token<T>} token
      * @param {Factory<T>} [value]
-     *
+     * @returns {this}
      * @memberOf Container
      */
-    registerSingleton<T>(token: Token<T>, value?: Factory<T>) {
+    registerSingleton<T>(token: Token<T>, value?: Factory<T>): this {
         this.registerFactory(token, value, true);
+        return this;
     }
 
     /**
@@ -170,9 +175,10 @@ export class Container implements IContainer {
      * @template T
      * @param {Token<T>} provide
      * @param {Token<T>} provider
+     * @returns {this}
      * @memberof Container
      */
-    bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>) {
+    bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this {
         let provideKey = this.getTokenKey(provide);
         let factory;
         if (isClass(provider) || isString(provider) || provider instanceof Registration || isSymbol(provider)) {
@@ -204,6 +210,7 @@ export class Container implements IContainer {
         }
 
         this.factories.set(provideKey, factory);
+        return this;
     }
 
     /**

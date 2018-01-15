@@ -1,8 +1,6 @@
-import { Providers, Token } from '../types';
-import { ProviderMap } from '../ProviderMap';
-import { Provider } from '../Provider';
+import { Providers, Token, ObjectMap } from '../types';
+import { Provider, ProviderMap, ParamProvider } from '../providers/index';
 import { isString, isNumber, isUndefined, isToken, isProviderMap } from '../utils/index';
-import { ParamProvider } from '../ParamProvider';
 import { Type } from '../Type';
 import { IParameter } from '../IParameter';
 import { IProviderMatcher } from '../IProviderMatcher';
@@ -15,18 +13,18 @@ export class ProviderMatcher implements IProviderMatcher {
 
     }
 
-    match(params: IParameter[], ...providers: Providers[]): ProviderMap {
+    match(params: IParameter[], ...providers: Providers[]): ObjectMap<any> {
         let map = {};
         if (!params.length) {
             return map;
         }
         providers.forEach(p => {
             if (p) {
-                if (this.isMap(p)) {
+                if (isProviderMap(p)) {
                     params.forEach(parma => {
                         let name = parma.name;
-                        if (name && !map[name] && !isUndefined(p[name])) {
-                            map[name] = p[name];
+                        if (name && !map[name] && p.has(name)) {
+                            map[name] = p.resolve(name);
                         }
                     });
                 } else {
@@ -67,7 +65,4 @@ export class ProviderMatcher implements IProviderMatcher {
         return param ? param.name : '';
     }
 
-    protected isMap(p: Providers) {
-        return isProviderMap(p);
-    }
 }

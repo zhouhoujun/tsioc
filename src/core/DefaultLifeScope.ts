@@ -26,7 +26,7 @@ export class DefaultLifeScope implements LifeScope {
     }
 
 
-    addAction(action: ActionComponent, type: DecoratorType, ...nodepaths: string[]): LifeScope {
+    addAction(action: ActionComponent, type: DecoratorType, ...nodepaths: string[]): this {
         let types = this.toActionType(type);
         types.split(',').forEach(name => {
             let parent = this.getAtionByName(name);
@@ -40,12 +40,12 @@ export class DefaultLifeScope implements LifeScope {
         return this;
     }
 
-    registerDecorator(decorator: Function, ...actions: string[]) {
+    registerDecorator(decorator: Function, ...actions: string[]): this {
         let type = this.getDecoratorType(decorator);
         return this.registerCustomDecorator(decorator, type, ...actions);
     }
 
-    registerCustomDecorator(decorator: Function, type: DecoratorType, ...actions: string[]) {
+    registerCustomDecorator(decorator: Function, type: DecoratorType, ...actions: string[]): this {
         let types = this.toActionType(type);
         let name = decorator.toString();
         if (!this.decorators.some(d => d.name === name)) {

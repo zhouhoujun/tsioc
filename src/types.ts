@@ -1,8 +1,7 @@
 import { Type, AbstractType } from './Type';
 import { Registration } from './Registration';
 import { IContainer } from './IContainer';
-import { ParamProvider } from './ParamProvider';
-import { ProviderMap } from './ProviderMap';
+import { ParamProvider, ProviderMap, Provider } from './providers/index';
 
 /**
  * symbol type
@@ -14,7 +13,10 @@ export type SymbolType<T> = Type<T> | AbstractType<T> | string | symbol;
  */
 export type Token<T> = Registration<T> | SymbolType<T>;
 
-export type Providers = ProviderMap | ParamProvider;
+/**
+ * providers
+ */
+export type Providers = ProviderMap | Provider;
 
 
 /**

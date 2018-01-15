@@ -1,6 +1,7 @@
 import { Type } from '../Type';
 import { Token, Providers } from '../types';
 import { Registration } from '../Registration';
+import { ProviderMap } from '../providers/index';
 
 
 /**
@@ -55,18 +56,14 @@ export function isClass(target: any): target is Type<any> {
  * object is provider map or not.
  *
  * @export
- * @param {object} p
- * @returns {boolean}
+ * @param {object} target
+ * @returns {target is ProviderMap}
  */
-export function isProviderMap(p: Providers): boolean {
-    if (!p) {
+export function isProviderMap(target: object): target is ProviderMap {
+    if (!isObject(target)) {
         return false;
     }
-    if ((isString(p['index']) || isNumber(p['index']) || isToken(p['type']))
-        && (!isUndefined(p['value']) || !isUndefined(p['method']))) {
-        return false;
-    }
-    return true;
+    return target instanceof ProviderMap;
 }
 
 
