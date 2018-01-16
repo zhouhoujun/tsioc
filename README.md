@@ -290,6 +290,9 @@ export class DebugLog {
 ```
 
 ## New Features
+
+* 1.3.3
+    1. param provider name type match first. last with index order.
 * 1.3.2
     1. refactor provider. improve to better code in browser.
     2. improve class check.
