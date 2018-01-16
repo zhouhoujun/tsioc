@@ -1,6 +1,6 @@
 import { IContainer } from '../IContainer';
 import { symbols } from '../utils/index';
-import { Injectable, Component, AutoWired, Inject, Singleton, Param, Method, NonePointcut } from './decorators/index';
+import { Injectable, Component, AutoWired, Inject, Singleton, Param, Method, NonePointcut, Abstract } from './decorators/index';
 import { CoreActions } from './actions/index';
 import { DefaultLifeScope } from './DefaultLifeScope';
 import { LifeScope } from '../LifeScope';
@@ -10,7 +10,6 @@ import { DecoratorType } from './factories/index';
 import { MethodAccessor } from './MethodAccessor';
 import { ProviderMatcher } from './ProviderMatcher';
 import { ProviderMap } from './providers/index';
-
 
 export * from './actions/index';
 export * from './decorators/index';
@@ -53,7 +52,7 @@ export function registerCores(container: IContainer) {
     lifeScope.registerDecorator(Injectable, CoreActions.bindProvider);
     lifeScope.registerDecorator(Component, CoreActions.bindProvider);
     lifeScope.registerDecorator(Singleton, CoreActions.bindProvider);
-    // lifeScope.registerDecorator(NonePointcut, CoreActions.bindProvider);
+    lifeScope.registerDecorator(Abstract, CoreActions.bindProvider);
     lifeScope.registerDecorator(AutoWired, CoreActions.bindParameterType, CoreActions.bindPropertyType);
     lifeScope.registerDecorator(Inject, CoreActions.bindParameterType, CoreActions.bindPropertyType);
     lifeScope.registerDecorator(Param, CoreActions.bindParameterType, CoreActions.bindPropertyType);

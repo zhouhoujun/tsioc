@@ -1,6 +1,7 @@
 import { Type } from '../Type';
 import { Token, Providers } from '../types';
 import { Registration } from '../Registration';
+import { AbstractType } from '../browser';
 
 
 /**
@@ -17,6 +18,24 @@ export function isFunction(target: any): target is Function {
     return typeof target === 'function';
 }
 
+/**
+ * check Abstract class with @Abstract or not
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is AbstractType<any>}
+ */
+export function isAbstractDecoratorClass(target: any): target is AbstractType<any> {
+    if (!isFunction(target)) {
+        return false;
+    }
+
+    if (Reflect.hasOwnMetadata('@Abstract', target)) {
+        return true;
+    }
+
+    return false;
+}
 
 /**
  * check target is class or not.
@@ -32,6 +51,10 @@ export function isClass(target: any): target is Type<any> {
 
     if (target.prototype) {
         if (!target.name || target.name === 'Object') {
+            return false;
+        }
+
+        if (Reflect.hasOwnMetadata('@Abstract', target)) {
             return false;
         }
 

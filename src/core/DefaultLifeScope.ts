@@ -1,8 +1,8 @@
 import { LifeScope, DecorSummary } from '../LifeScope';
 import { ObjectMap, Token, IocState } from '../types';
 import { Type } from '../Type';
-import { isClass, isArray, isString } from '../utils/index';
-import { Singleton } from './decorators/index';
+import { isClass, isAbstractDecoratorClass, isArray, isString } from '../utils/index';
+import { Singleton, Abstract } from './decorators/index';
 import { ClassMetadata, MethodMetadata } from './metadatas/index';
 import { IContainer } from '../IContainer';
 import { CoreActions, ActionComponent, ActionComposite } from './actions/index';
@@ -101,6 +101,10 @@ export class DefaultLifeScope implements LifeScope {
             return false;
         }
         if (!isClass(target)) {
+            return false;
+        }
+
+        if (isAbstractDecoratorClass(target)) {
             return false;
         }
         return this.getClassDecorators().some(act => hasClassMetadata(act.name, target));

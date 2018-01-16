@@ -185,8 +185,9 @@ container.invoke(Geet, 'print', null,
 {hi: 'How are you.', name:'zhou' },
 { hi: (container: IContainer)=> 'How are you.' }, ... },
 { hi:{type: Token<any>, value: any |(container: IContainer)=>any }},
-{index:'name', value：'zhou'},
-{index:'hi', value:'Hello'}
+Provider.createParam('name', 'zhou'),
+Provider.create('hi', value:'Hello'),
+// or use ProviderMap.
 ...
 )
 
@@ -289,6 +290,10 @@ export class DebugLog {
 ```
 
 ## New Features
+* 1.3.2
+    1. refactor provider. improve to better code in browser.
+    2. improve class check.
+    3. add @Abstract decorator to declare Abstract class.
 
 * 1.3.0
     1. refactor AOP. add Object instance entends action.

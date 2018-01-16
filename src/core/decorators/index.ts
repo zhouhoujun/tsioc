@@ -5,4 +5,5 @@ export * from './AutoWried';
 export * from './Param';
 export * from './Method';
 export * from './Singleton';
+export * from './Abstract';
 export * from './NonePointcut';
