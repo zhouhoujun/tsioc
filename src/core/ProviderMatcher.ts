@@ -27,7 +27,12 @@ export class ProviderMatcher implements IProviderMatcher {
                 map.copy(p);
             } else if (p instanceof Provider) {
                 if (p instanceof ParamProvider) {
-                    map.add(isNumber(p.index) ? p.index : p.type, (...providers: Providers[]) => p.resolve(this.container, ...providers));
+                    if (!p.type && isNumber(p.index)) {
+                        map.add(p.index, (...providers: Providers[]) => p.resolve(this.container, ...providers));
+                    } else {
+                        map.add(p.type, (...providers: Providers[]) => p.resolve(this.container, ...providers));
+                    }
+
                 } else {
                     map.add(p.type, (...providers: Providers[]) => p.resolve(this.container, ...providers));
                 }
