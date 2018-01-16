@@ -85,29 +85,41 @@ export class MethodAccessor implements IMethodAccessor {
     createSyncParams(params: IParameter[], ...providers: Providers[]): any[] {
         let providerMap = this.getMatcher().matchProviders(params, ...providers);
         return params.map((param, index) => {
-            return providerMap.resolve(param.name);
+            if (param.name && providerMap.has(param.name)) {
+                return providerMap.resolve(param.name);
+            } else if (isToken(param.type)) {
+                return this.container.resolve(param.type, ...providers);
+            } else {
+                return undefined;
+            }
         });
     }
 
     createParams(params: IParameter[], ...providers: Providers[]): Promise<any[]> {
         let providerMap = this.getMatcher().matchProviders(params, ...providers);
         return Promise.all(params.map((param, index) => {
-            return providerMap.resolve(param.name);
+            if (param.name && providerMap.has(param.name)) {
+                return providerMap.resolve(param.name);
+            } else if (isToken(param.type)) {
+                return this.container.resolve(param.type, ...providers);
+            } else {
+                return undefined;
+            }
         }));
     }
-        //     return this.createParam(param, index, providerMap, providers, async (provider: AsyncParamProvider) => {
+    //     return this.createParam(param, index, providerMap, providers, async (provider: AsyncParamProvider) => {
 
-        //         let buider = this.container.get<IContainerBuilder>(symbols.IContainerBuilder);
-        //         let modules = await buider.loadModule(this.container, {
-        //             files: provider.files
-        //         });
-        //         let params = await Promise.all(modules.map((mdl) => {
-        //             return this.container.invoke<any>(mdl, provider.execution)
-        //         }));
+    //         let buider = this.container.get<IContainerBuilder>(symbols.IContainerBuilder);
+    //         let modules = await buider.loadModule(this.container, {
+    //             files: provider.files
+    //         });
+    //         let params = await Promise.all(modules.map((mdl) => {
+    //             return this.container.invoke<any>(mdl, provider.execution)
+    //         }));
 
-        //         return modules.length === 1 ? params[0] : params;
-        //     });
-        // }));
+    //         return modules.length === 1 ? params[0] : params;
+    //     });
+    // }));
     // }
 
     // protected createParam(param: IParameter, index: number, providerMap: ProviderMap, providers: Providers[], extensds?: (provider: ParamProvider) => any) {

@@ -9,7 +9,7 @@ import { Token } from '../../types';
 import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IMethodAccessor } from '../../IMethodAccessor';
 import { Advices } from '../Advices';
-import { Joinpoint, JoinpointState } from '../Joinpoint';
+import { Joinpoint, JoinpointState, IJoinpoint } from '../Joinpoint';
 import { isValideAspectTarget } from '../isValideAspectTarget';
 
 
@@ -35,31 +35,25 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
             return;
         }
 
+        let targetType = data.targetType;
+        let target = data.target;
+
+        let joinPoint = container.resolve(Joinpoint, Provider.createParam('options', <IJoinpoint>{
+            name: 'constructor',
+            state: JoinpointState.Before,
+            fullName: targetType.name + '.constructor',
+            target: target,
+            targetType: targetType
+        }));
+        let providers = [Provider.create(Joinpoint, joinPoint)];
+
         let access = container.get<IMethodAccessor>(symbols.IMethodAccessor);
         advices.Before.forEach(advicer => {
-            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined,
-                Provider.create(
-                    Joinpoint,
-                    () => container.resolve(Joinpoint, Provider.createParam('options', {
-                        name: 'constructor',
-                        fullName: data.targetType.name + '.constructor',
-                        target: data.target,
-                        targetType: data.targetType
-                    })))); // new Joinpoint(joinPoint) // container.resolve(Joinpoint, { json: joinPoint })
+            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, ...providers); // new Joinpoint(joinPoint) // container.resolve(Joinpoint, { json: joinPoint })
         });
 
         advices.Around.forEach(advicer => {
-            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined,
-                Provider.create(
-                    Joinpoint,
-                    () => container.resolve(Joinpoint, Provider.createParam('options', {
-                        args: data.args,
-                        state: JoinpointState.Before,
-                        name: 'constructor',
-                        fullName: data.targetType.name + '.constructor',
-                        target: data.target,
-                        targetType: data.targetType
-                    }))))
+            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, ...providers);
         });
 
     }

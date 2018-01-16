@@ -34,9 +34,13 @@ export function isClass(target: any): target is Type<any> {
         if (!target.name || target.name === 'Object') {
             return false;
         }
-        if (!/^[A-Z@]/.test(target.name)) {
+
+        if (target.constructor && !/^[A-Z@]/.test(target.constructor.name)) {
             return false;
+        } else if (!/^[A-Z@]/.test(target.name)) {
+            return false
         }
+
         if (!isNodejsEnv() && /MSIE [6-9]/.test(navigator.userAgent)) {
             return true;
         }
@@ -96,6 +100,22 @@ export function isPromise(target: any): target is Promise<any> {
     return false;
 }
 
+/**
+ * is target base object or not.
+ * eg. {}, have not self constructor;
+ * @export
+ * @param {*} target
+ * @returns {target is Promise<any>}
+ */
+export function isBaseObject(target: any): target is object {
+    if (!target) {
+        return false;
+    }
+    if (target.constructor && target.constructor.name === 'Object') {
+        return true;
+    }
+    return false;
+}
 
 /**
  * is metadata object or not.

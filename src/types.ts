@@ -16,7 +16,7 @@ export type Token<T> = Registration<T> | SymbolType<T>;
 /**
  * providers
  */
-export type Providers = any | ProviderMap | Provider;
+export type Providers = any | ObjectMap<any> | ProviderMap | Provider;
 
 /**
  * instance factory.

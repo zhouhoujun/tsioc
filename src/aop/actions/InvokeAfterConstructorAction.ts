@@ -10,6 +10,7 @@ import { IMethodAccessor } from '../../IMethodAccessor';
 import { Advices } from '../Advices';
 import { Joinpoint, JoinpointState } from '../Joinpoint';
 import { isValideAspectTarget } from '../isValideAspectTarget';
+import { IJoinpoint } from '../../index';
 
 export interface InvokeAfterConstructorActionData extends ActionData<AdviceMetadata> {
 }
@@ -31,31 +32,25 @@ export class InvokeAfterConstructorAction extends ActionComposite {
         if (!advices) {
             return;
         }
+        let targetType = data.targetType;
+        let target = data.target;
+
+        let joinPoint = container.resolve(Joinpoint, Provider.createParam('options', <IJoinpoint>{
+            name: 'constructor',
+            state: JoinpointState.After,
+            fullName: targetType.name + '.constructor',
+            target: target,
+            targetType: targetType
+        }));
+        let providers = [Provider.create(Joinpoint, joinPoint)];
 
         let access = container.get<IMethodAccessor>(symbols.IMethodAccessor);
         advices.After.forEach(advicer => {
-            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined,
-                Provider.create(
-                    Joinpoint,
-                    () => container.resolve(Joinpoint, Provider.createParam('options', {
-                        name: 'constructor',
-                        fullName: data.targetType.name + '.constructor',
-                        target: data.target,
-                        targetType: data.targetType
-                    }))));
+            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, ...providers);
         });
 
         advices.Around.forEach(advicer => {
-            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined,
-                Provider.create(
-                    Joinpoint,
-                    () => container.resolve(Joinpoint, Provider.createParam('options', {
-                        state: JoinpointState.After,
-                        name: 'constructor',
-                        fullName: data.targetType.name + '.constructor',
-                        target: data.target,
-                        targetType: data.targetType
-                    }))));
+            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, ...providers);
         });
     }
 }

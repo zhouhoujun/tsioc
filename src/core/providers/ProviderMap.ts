@@ -1,4 +1,4 @@
-import { MapSet, symbols, isClass, isSymbol, isString, isNumber, isFunction } from '../../utils/index';
+import { MapSet, symbols, isToken, isNumber, isFunction, isUndefined } from '../../utils/index';
 import { Type } from '../../Type';
 import { Token, Factory, Providers, ToInstance, Express2 } from '../../types';
 import { IContainer } from '../../IContainer';
@@ -23,12 +23,15 @@ export class ProviderMap {
     }
 
     get<T>(provide: Token<T> | number): Token<T> | Factory<T> {
-        return this.get(provide);
+        return this.maps.get(provide);
     }
 
     add<T>(provide: Token<T> | number, provider: Token<T> | Factory<T>): this {
+        if (isUndefined(provide)) {
+            return this;
+        }
         let factory;
-        if (isClass(provider) || isString(provider) || provider instanceof Registration || isSymbol(provider)) {
+        if (isToken(provider) && this.container.has(provider)) {
             factory = (...providers: Providers[]) => {
                 return this.container.resolve(provider, ...providers);
             };
@@ -43,7 +46,7 @@ export class ProviderMap {
                 };
             }
         }
-        this.maps.set(provide, provider);
+        this.maps.set(provide, factory);
         return this;
     }
 
@@ -58,8 +61,9 @@ export class ProviderMap {
         if (!this.maps.has(provide)) {
             return (!isNumber(provide) && this.container.has(provide)) ? this.container.resolve(provide, ...providers) : null;
         }
+
         let provider = this.maps.get(provide);
-        return provider(...providers);
+        return isToken(provider) ? this.container.resolve(provider, ...providers) : provider(...providers);
     }
 
     forEach(express: Express2<Factory<any>, Token<any> | number, void | boolean>) {

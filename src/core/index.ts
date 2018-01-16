@@ -35,7 +35,7 @@ export * from './MethodAccessor';
 export function registerCores(container: IContainer) {
 
     container.registerSingleton(symbols.LifeScope, () => new DefaultLifeScope(container));
-    container.registerSingleton(ProviderMap, () => new ProviderMap(container));
+    container.register(ProviderMap, () => new ProviderMap(container));
     container.registerSingleton(symbols.IProviderMatcher, () => new ProviderMatcher(container));
     container.registerSingleton(symbols.IMethodAccessor, () => new MethodAccessor(container));
 

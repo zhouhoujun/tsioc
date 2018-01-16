@@ -1,6 +1,6 @@
 import { Providers, Token, ObjectMap, InstanceFactory } from '../types';
-import { Provider, ProviderMap, ParamProvider, isProviderMap } from './providers/index';
-import { isString, isNumber, isUndefined, isNull, isToken } from '../utils/index';
+import { Provider, ProviderMap, ParamProvider, InvokeProvider, ExtendsProvider, AsyncParamProvider, isProviderMap } from './providers/index';
+import { isString, isNumber, isUndefined, isNull, isToken, isBaseObject } from '../utils/index';
 import { Type } from '../Type';
 import { IParameter } from '../IParameter';
 import { IProviderMatcher } from './IProviderMatcher';
@@ -15,6 +15,9 @@ export class ProviderMatcher implements IProviderMatcher {
     }
 
     toProviderMap(...providers: Providers[]): ProviderMap {
+        if (providers.length === 1 && isProviderMap(providers[0])) {
+            return providers[0];
+        }
         let map = this.container.resolve(ProviderMap);
         providers.forEach((p, index) => {
             if (isUndefined(p) || isNull(p)) {
@@ -24,12 +27,20 @@ export class ProviderMatcher implements IProviderMatcher {
                 map.copy(p);
             } else if (p instanceof Provider) {
                 if (p instanceof ParamProvider) {
-                    map.add(isUndefined(p.index) ? p.index : p.type, (...providers: Providers[]) => p.resolve(this.container, ...providers));
+                    map.add(isNumber(p.index) ? p.index : p.type, (...providers: Providers[]) => p.resolve(this.container, ...providers));
                 } else {
                     map.add(p.type, (...providers: Providers[]) => p.resolve(this.container, ...providers));
                 }
             } else {
-                map.add(index, p);
+                if (isBaseObject(p)) {
+                    Object.keys(p).forEach(name => {
+                        if (!isUndefined(p[name])) {
+                            map.add(name, p[name]);
+                        }
+                    })
+                } else {
+                    map.add(index, p);
+                }
             }
         });
 
@@ -40,18 +51,25 @@ export class ProviderMatcher implements IProviderMatcher {
         return this.match(params, this.toProviderMap(...providers));
     }
 
-    match(params: IParameter[], providerMap: ProviderMap): ProviderMap {
+    match(params: IParameter[], providers: ProviderMap): ProviderMap {
         let map = this.container.resolve(ProviderMap);
         if (!params.length) {
             return map;
         }
         params.forEach((param, index) => {
-            if (providerMap.has(param.name)) {
-                map.add(param.name, providerMap.get(param.name));
-            } else if (param.type && providerMap.has(param.type)) {
-                map.add(param.name, providerMap.get(param.type));
-            } else if (providerMap.has(index)) {
-                map.add(param.name, providerMap.get(index));
+            if (!param.name) {
+                return;
+            }
+            if (providers.has(param.name)) {
+                map.add(param.name, providers.get(param.name));
+            } else if (isToken(param.type)) {
+                if (providers.has(param.type)) {
+                    map.add(param.name, providers.get(param.type));
+                } else if (this.container.has(param.type)) {
+                    map.add(param.name, param.type);
+                }
+            } else if (providers.has(index)) {
+                map.add(param.name, providers.get(index));
             }
         });
 
