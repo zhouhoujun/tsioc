@@ -1,5 +1,5 @@
 
-import { DecoratorType, ActionData, ActionComposite, Provider, hasMethodMetadata, getMethodMetadata } from '../../core/index';
+import { DecoratorType, ActionData, ActionComposite, Provider, hasOwnMethodMetadata, getOwnMethodMetadata } from '../../core/index';
 import { IContainer } from '../../IContainer';
 import { IAspectManager } from '../IAspectManager';
 import { isClass, isArray, symbols, isPromise, isFunction, isUndefined } from '../../utils/index';

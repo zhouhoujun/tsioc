@@ -1,4 +1,4 @@
-import { Singleton, Inject, NonePointcut, MethodMetadata, getMethodMetadata } from '../core/index';
+import { Singleton, Inject, NonePointcut, MethodMetadata, getOwnMethodMetadata } from '../core/index';
 import { IContainer } from '../IContainer';
 import { symbols, MapSet } from '../utils/index';
 import { Token, ObjectMap, Express } from '../types';
@@ -52,7 +52,7 @@ export class AspectManager implements IAspectManager {
 
     add(aspect: Type<any>) {
         if (!this.aspects.has(aspect)) {
-            let metas = getMethodMetadata<AdviceMetadata>(Advice, aspect);
+            let metas = getOwnMethodMetadata<AdviceMetadata>(Advice, aspect);
             this.aspects.set(aspect, metas);
         }
     }

@@ -257,6 +257,25 @@ export function getOwnMethodMetadata<T extends MethodMetadata>(decorator: string
 }
 
 /**
+ * has own method decorator metadata.
+ *
+ * @export
+ * @param {(string | Function)} decorator
+ * @param {Type<any>} target
+ * @param {(string | symbol)} [propertyKey]
+ * @returns {boolean}
+ */
+export function hasOwnMethodMetadata(decorator: string | Function, target: Type<any>, propertyKey?: string | symbol): boolean {
+    let name = isFunction(decorator) ? decorator.toString() : decorator;
+    if (propertyKey) {
+        let meta = getOwnMethodMetadata<any>(name, target);
+        return meta && meta.hasOwnProperty(propertyKey);
+    } else {
+        return Reflect.hasOwnMetadata(name + methodMetadataExt, target);
+    }
+}
+
+/**
  * has method decorator metadata.
  *
  * @export

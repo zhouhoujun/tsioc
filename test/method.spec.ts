@@ -1,7 +1,7 @@
 import 'mocha';
 import { expect } from 'chai';
 import { Method, Inject, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Aspect, isFunction } from '../src';
-import { hasMethodMetadata, hasPropertyMetadata } from '../src/browser';
+import { hasOwnMethodMetadata, hasPropertyMetadata } from '../src/browser';
 import { AnnotationAspect } from './aop/AnnotationAspect';
 import { CheckRightAspect } from './aop/CheckRightAspect';
 
@@ -83,13 +83,13 @@ describe('method exec test', () => {
         expect(hasPropertyMetadata(Inject, MethodTest2)).to.be.true;
         expect(hasPropertyMetadata(Inject, MethodTest2, 'testAt')).to.be.true;
         expect(hasPropertyMetadata(Inject, MethodTest2, 'tester')).to.be.false;
-        expect(hasMethodMetadata(Inject, MethodTest3)).to.be.false;
+        expect(hasOwnMethodMetadata(Inject, MethodTest3)).to.be.false;
     });
 
     it('show has method metadata', () => {
-        expect(hasMethodMetadata(Method, MethodTest3)).to.be.true;
-        expect(hasMethodMetadata(Method, MethodTest3, 'sayHello')).to.be.true;
-        expect(hasMethodMetadata(Method, MethodTest3, 'sayHello2')).to.be.false;
+        expect(hasOwnMethodMetadata(Method, MethodTest3)).to.be.true;
+        expect(hasOwnMethodMetadata(Method, MethodTest3, 'sayHello')).to.be.true;
+        expect(hasOwnMethodMetadata(Method, MethodTest3, 'sayHello2')).to.be.false;
     });
 
     it('show exec with type and instance', async () => {

@@ -6,7 +6,7 @@ import { Singleton, Abstract } from './decorators/index';
 import { ClassMetadata, MethodMetadata } from './metadatas/index';
 import { IContainer } from '../IContainer';
 import { CoreActions, ActionComponent, ActionComposite } from './actions/index';
-import { DecoratorType, getOwnTypeMetadata, getParamerterNames, getMethodMetadata, hasOwnClassMetadata } from './factories/index';
+import { DecoratorType, getOwnTypeMetadata, getParamerterNames, getOwnMethodMetadata, hasOwnClassMetadata } from './factories/index';
 import { Express } from '../types';
 import { ActionData } from './ActionData';
 import { ActionFactory } from './ActionFactory';
@@ -193,7 +193,7 @@ export class DefaultLifeScope implements LifeScope {
     getMethodMetadatas<T>(type: Type<T>, propertyKey: string | symbol): MethodMetadata[] {
         let metadatas = [];
         this.getMethodDecorators().forEach(dec => {
-            let metas: ObjectMap<MethodMetadata[]> = getMethodMetadata<MethodMetadata>(dec.name, type);
+            let metas: ObjectMap<MethodMetadata[]> = getOwnMethodMetadata<MethodMetadata>(dec.name, type);
             if (metas.hasOwnProperty(propertyKey)) {
                 metadatas = metadatas.concat(metas[propertyKey] || []);
             }

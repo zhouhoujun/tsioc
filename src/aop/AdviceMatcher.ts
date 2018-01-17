@@ -1,6 +1,6 @@
 import { IAdviceMatcher } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadatas/index';
-import { DecoratorType, NonePointcut, MethodMetadata, getMethodMetadata, hasMethodMetadata, hasOwnClassMetadata } from '../core/index';
+import { DecoratorType, NonePointcut, MethodMetadata, getOwnMethodMetadata, hasOwnMethodMetadata, hasOwnClassMetadata } from '../core/index';
 import { Type } from '../Type';
 import { symbols, isString, isRegExp } from '../utils/index';
 import { IPointcut } from './IPointcut';
@@ -19,7 +19,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
         let className = type.name;
 
-        adviceMetas = adviceMetas || getMethodMetadata<AdviceMetadata>(Advice, type);
+        adviceMetas = adviceMetas || getOwnMethodMetadata<AdviceMetadata>(Advice, type);
         let matched: MatchPointcut[] = [];
 
         if (type === aspectType) {
@@ -114,7 +114,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             if (/^@annotation\(\S+\)$/.test(pointcut)) {
                 pointcut = pointcut.substring(12, pointcut.length - 1);
                 let annotation = /^@/.test(pointcut) ? pointcut : ('@' + pointcut);
-                return (name: string, fullName: string) => hasMethodMetadata(annotation, type, name) && !hasOwnClassMetadata(Aspect, type);
+                return (name: string, fullName: string) => hasOwnMethodMetadata(annotation, type, name) && !hasOwnClassMetadata(Aspect, type);
 
             } else {
                 if (pointcut === '*' || pointcut === '*.*') {
