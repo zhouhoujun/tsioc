@@ -425,7 +425,7 @@ export function getParamMetadata<T extends ParameterMetadata>(decorator: string 
  */
 export function getOwnParamMetadata<T extends ParameterMetadata>(decorator: string | Function, target: Type<any> | object, propertyKey?: string | symbol): T[][] {
     let name = isFunction(decorator) ? decorator.toString() : decorator;
-    let parameters = Reflect.getMetadata(name + paramsMetadataExt, target, propertyKey);
+    let parameters = Reflect.getOwnMetadata(name + paramsMetadataExt, target, propertyKey);
     parameters = isArray(parameters) ? parameters : [];
     return parameters;
 }
