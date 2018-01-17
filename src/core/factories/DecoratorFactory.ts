@@ -182,8 +182,10 @@ export function getOwnTypeMetadata<T>(decorator: string | Function, target: Type
  */
 export function hasClassMetadata(decorator: string | Function, target: Type<any> | object): boolean {
     let name = isFunction(decorator) ? decorator.toString() : decorator;
-    return Reflect.hasOwnMetadata(name, target);
+    return Reflect.hasMetadata(name, target);
 }
+
+
 
 /**
  * has own class decorator metadata.

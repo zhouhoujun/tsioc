@@ -1,7 +1,7 @@
 import { ActionComposite } from './ActionComposite';
 import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
-import { DecoratorType, getTypeMetadata, hasClassMetadata } from '../factories/index';
+import { DecoratorType, getOwnTypeMetadata, hasOwnClassMetadata } from '../factories/index';
 import { IContainer } from '../../IContainer';
 import { Token, SymbolType } from '../../types';
 import { TypeMetadata, ProviderMetadata, ClassMetadata } from '../metadatas/index';
@@ -22,11 +22,11 @@ export class BindProviderAction extends ActionComposite {
         let propertyKey = data.propertyKey;
         let lifeScope = container.getLifeScope();
 
-        let matchs = lifeScope.getClassDecorators(surm => surm.actions.includes(CoreActions.bindProvider) &&  hasClassMetadata(surm.name, type));
+        let matchs = lifeScope.getClassDecorators(surm => surm.actions.includes(CoreActions.bindProvider) &&  hasOwnClassMetadata(surm.name, type));
 
         let provides = [];
         matchs.forEach(surm => {
-            let metadata = getTypeMetadata<ClassMetadata>(surm.name, type);
+            let metadata = getOwnTypeMetadata<ClassMetadata>(surm.name, type);
             if (Array.isArray(metadata) && metadata.length > 0) {
                 let jcfg = metadata.find(c => c && !!c.provide);
                 if (jcfg) {

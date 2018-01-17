@@ -1,4 +1,4 @@
-import { Singleton, Inject, NonePointcut, MethodMetadata, hasClassMetadata, getMethodMetadata } from '../core/index';
+import { Singleton, Inject, NonePointcut, MethodMetadata, getMethodMetadata } from '../core/index';
 import { IContainer } from '../IContainer';
 import { symbols, MapSet } from '../utils/index';
 import { Token, ObjectMap, Express } from '../types';

@@ -1,4 +1,4 @@
-import { DecoratorType, ActionData, ActionComposite, ExtendsProvider, hasClassMetadata, getMethodMetadata } from '../../core/index';
+import { DecoratorType, ActionData, ActionComposite, ExtendsProvider } from '../../core/index';
 import { IContainer } from '../../IContainer';
 import { IAspectManager } from '../IAspectManager';
 import { isClass, symbols, isFunction } from '../../utils/index';

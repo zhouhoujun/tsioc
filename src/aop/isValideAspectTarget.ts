@@ -1,5 +1,5 @@
 import { Type } from '../Type';
-import { hasClassMetadata, NonePointcut } from '../core/index';
+import { hasOwnClassMetadata, NonePointcut } from '../core/index';
 import { isClass, isObject } from '../utils/index';
 // import { Aspect } from './decorators/index';
 
@@ -12,7 +12,7 @@ export function isValideAspectTarget(targetType: Type<any>) {
         return false;
     }
 
-    if (hasClassMetadata(NonePointcut, targetType)) {
+    if (hasOwnClassMetadata(NonePointcut, targetType)) {
         return false;
     }
 
