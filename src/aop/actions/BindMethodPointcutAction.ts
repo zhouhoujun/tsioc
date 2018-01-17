@@ -58,7 +58,7 @@ export class BindMethodPointcutAction extends ActionComposite {
                 let methodAdapter = (propertyMethod: Function) => {
 
                     return (...args: any[]) => {
-                        let joinPoint = container.resolve(Joinpoint, Provider.createParam('options', {
+                        let joinPoint = container.resolve(Joinpoint, Provider.create('options', {
                             name: methodName,
                             fullName: fullName,
                             provJoinpoint: provJoinpoint,
@@ -84,12 +84,12 @@ export class BindMethodPointcutAction extends ActionComposite {
                             let metadata: any = advicer.advice;
 
                             if (!isUndefined(returnValue) && metadata.args) {
-                                providers.push(Provider.createParam(metadata.args, args))
+                                providers.push(Provider.create(metadata.args, args))
                             }
 
 
                             if (metadata.annotationArgName) {
-                                providers.push(Provider.createParam(
+                                providers.push(Provider.create(
                                     metadata.annotationArgName,
                                     () => {
                                         let curj = joinPoint;
@@ -117,11 +117,11 @@ export class BindMethodPointcutAction extends ActionComposite {
                             }
 
                             if (!isUndefined(returnValue) && metadata.returning) {
-                                providers.push(Provider.createParam(metadata.returning, returnValue))
+                                providers.push(Provider.create(metadata.returning, returnValue))
                             }
 
                             if (throwError && metadata.throwing) {
-                                providers.push(Provider.createParam(metadata.throwing, throwError));
+                                providers.push(Provider.create(metadata.throwing, throwError));
                             }
 
                             if (isAsync) {

@@ -35,7 +35,7 @@ export class InvokeAfterConstructorAction extends ActionComposite {
         let targetType = data.targetType;
         let target = data.target;
 
-        let joinPoint = container.resolve(Joinpoint, Provider.createParam('options', <IJoinpoint>{
+        let joinPoint = container.resolve(Joinpoint, Provider.create('options', <IJoinpoint>{
             name: 'constructor',
             state: JoinpointState.After,
             fullName: targetType.name + '.constructor',

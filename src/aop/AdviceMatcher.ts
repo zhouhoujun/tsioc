@@ -7,22 +7,25 @@ import { IPointcut } from './IPointcut';
 import { ObjectMap, Express3 } from '../types';
 import { MatchPointcut } from './MatchPointcut';
 import { Aspect, Advice } from './decorators/index';
+import { IContainer } from '../browser';
+import { IAspectManager } from './IAspectManager';
 
 @NonePointcut()
 export class AdviceMatcher implements IAdviceMatcher {
 
-    constructor() {
+    constructor(private container: IContainer) {
 
     }
 
-    match(aspectType: Type<any>, type: Type<any>, adviceMetas?: ObjectMap<AdviceMetadata[]>, instance?: any): MatchPointcut[] {
+    match(aspectType: Type<any>, targetType: Type<any>, adviceMetas?: ObjectMap<AdviceMetadata[]>, instance?: any): MatchPointcut[] {
 
-        let className = type.name;
+        let className = targetType.name;
 
-        adviceMetas = adviceMetas || getOwnMethodMetadata<AdviceMetadata>(Advice, type);
+        adviceMetas = adviceMetas || getOwnMethodMetadata<AdviceMetadata>(Advice, targetType);
+        let aspectMgr = this.container.get<IAspectManager>(symbols.IAspectManager);
         let matched: MatchPointcut[] = [];
 
-        if (type === aspectType) {
+        if (targetType === aspectType) {
             let adviceNames = Object.keys(adviceMetas);
             if (adviceNames.length > 1) {
                 let advices: AdviceMetadata[] = [];
@@ -44,10 +47,10 @@ export class AdviceMatcher implements IAdviceMatcher {
                     })
                 });
             }
-        } else {
+        } else if (!aspectMgr.hasRegisterAdvices(targetType)) {
             let points: IPointcut[] = [];
             // match method.
-            for (let name in Object.getOwnPropertyDescriptors(type.prototype)) {
+            for (let name in Object.getOwnPropertyDescriptors(targetType.prototype)) {
                 points.push({
                     name: name,
                     fullName: `${className}.${name}`
@@ -55,17 +58,17 @@ export class AdviceMatcher implements IAdviceMatcher {
             }
 
             // match property
-            Object.getOwnPropertyNames(instance || type.prototype).forEach(name => {
-                points.push({
-                    name: name,
-                    fullName: `${className}.${name}`
-                });
-            });
+            // Object.getOwnPropertyNames(instance || type.prototype).forEach(name => {
+            //     points.push({
+            //         name: name,
+            //         fullName: `${className}.${name}`
+            //     });
+            // });
 
-            Object.keys(adviceMetas).forEach(name => {
+            Object.getOwnPropertyNames(adviceMetas).forEach(name => {
                 let advices = adviceMetas[name];
                 advices.forEach(metadata => {
-                    matched = matched.concat(this.filterPointcut(type, points, metadata));
+                    matched = matched.concat(this.filterPointcut(targetType, points, metadata));
                 });
 
             });

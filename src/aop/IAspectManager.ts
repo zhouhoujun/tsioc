@@ -30,6 +30,14 @@ export interface IAspectManager {
     advices: MapSet<string, Advices>;
 
     /**
+     * has register advices or not.
+     *
+     * @param {Type<any>} targetType
+     * @returns {boolean}
+     * @memberof IAspectManager
+     */
+    hasRegisterAdvices(targetType: Type<any>): boolean;
+    /**
      * set advices.
      *
      * @param {string} key

@@ -50,6 +50,12 @@ export class AspectManager implements IAspectManager {
         return this.advices.get(key);
     }
 
+    hasRegisterAdvices(targetType: Type<any>): boolean {
+        let methods = Object.keys(Object.getOwnPropertyDescriptors(targetType.prototype));
+        let className = targetType.name || targetType.constructor.name;
+        return methods.some(m => this.advices.has(`${className}.${m}`));
+    }
+
     add(aspect: Type<any>) {
         if (!this.aspects.has(aspect)) {
             let metas = getOwnMethodMetadata<AdviceMetadata>(Advice, aspect);
