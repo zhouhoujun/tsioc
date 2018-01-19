@@ -291,6 +291,9 @@ export class DebugLog {
 
 ## New Features
 
+* 1.3.4
+    1. class, method metadata only get own
+    2. fix bug two dectorator match  * infinite loop error,  * only match class without @Aspcet.
 * 1.3.3
     1. param provider name type match first. last with index order.
 * 1.3.2
