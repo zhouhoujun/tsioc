@@ -47,7 +47,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                     })
                 });
             }
-        } else if (!aspectMgr.hasRegisterAdvices(targetType)) {
+        } else {// if (!aspectMgr.hasRegisterAdvices(targetType)) {
             let points: IPointcut[] = [];
             // match method.
             for (let name in Object.getOwnPropertyDescriptors(targetType.prototype)) {
@@ -120,13 +120,14 @@ export class AdviceMatcher implements IAdviceMatcher {
                 return (name: string, fullName: string) => hasOwnMethodMetadata(annotation, type, name) && !hasOwnClassMetadata(Aspect, type);
 
             } else {
-                if (pointcut === '*' || pointcut === '*.*') {
-                    return (name: string, fullName: string, pointcut: IPointcut) => !!name;
-                }
-
                 if (/^execution\(\S+\)$/.test(pointcut)) {
                     pointcut = pointcut.substring(10, pointcut.length - 1);
                 }
+
+                if (pointcut === '*' || pointcut === '*.*') {
+                    return (name: string, fullName: string, pointcut: IPointcut) => !!name && !hasOwnClassMetadata(Aspect, type);
+                }
+
                 pointcut = pointcut.replace(/\*\*/gi, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
                     .replace(/\*/gi, '\\\w+')
                     .replace(/\./gi, '\\\.')
