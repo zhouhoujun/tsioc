@@ -30,52 +30,50 @@ export interface IComponent {
      * add node to this component and return self.
      *
      * @param {IComponent} node the node to add.
-     * @returns {IComponent} self.
+     * @returns {this} self.
      * @memberof IComponent
      */
-    add(node: IComponent): IComponent;
+    add(node: IComponent): this;
 
     /**
      * remove node from this component.
      *
      * @param {(IComponent | string)} node
-     * @returns {IComponent}
+     * @returns {this}
      * @memberof IComponent
      */
-    remove(node: IComponent | string): IComponent;
+    remove(node: IComponent | string): this;
 
 
     /**
      * find sub context via express.
      *
-     * @template T
-     * @param {(T | Express<T, boolean>)} express
+     * @param {(IComponent | Express<IComponent, boolean>)} express
      * @param {Mode} [mode]
-     * @returns {T}
+     * @returns {IComponent}
      * @memberof IComponent
      */
-    find<T extends IComponent>(express: T | Express<T, boolean>, mode?: Mode): T
+    find(express: IComponent | Express<IComponent, boolean>, mode?: Mode): IComponent
 
     /**
-     * filter<T extends IComponent>(express: Express<IComponent, void | boolean>, mode?: Mode): T[]
+     * filter in component.
      *
-     * @template T
-     * @param {(Express<T, void | boolean>)} express
+
+     * @param {(Express<IComponent, void | boolean>)} express
      * @param {Mode} [mode]
-     * @returns {T[]}
+     * @returns {IComponent[]}
      * @memberof IComponent
      */
-    filter<T extends IComponent>(express: Express<T, void | boolean>, mode?: Mode): T[]
+    filter(express: Express<IComponent, void | boolean>, mode?: Mode): IComponent[]
 
     /**
      * iteration context with express.
      *
-     * @template T
-     * @param {(Express<T, void | boolean>)} express
+     * @param {(Express<IComponent, void | boolean>)} express
      * @param {Mode} [mode]
      * @memberof IComponent
      */
-    each<T extends IComponent>(express: Express<T, void | boolean>, mode?: Mode);
+    each(express: Express<IComponent, void | boolean>, mode?: Mode);
 
     /**
      * trans all sub nodes. node first iteration.

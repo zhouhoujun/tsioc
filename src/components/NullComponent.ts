@@ -1,5 +1,6 @@
 import { IComponent } from './IComponent';
 import { Mode, Express } from '../types';
+import { GComponent } from './GComponent';
 
 
 /**
@@ -9,39 +10,39 @@ import { Mode, Express } from '../types';
  * @class NullComponent
  * @implements {IComponent}
  */
-export class NullComponent implements IComponent {
+export class NullComponent implements GComponent<any> {
 
     isEmpty(): boolean {
         return true;
     }
     name: string;
-    parent?: IComponent;
-    add(action: IComponent): IComponent {
+    parent?: any;
+    add(action: any): this {
         return this;
     }
-    remove(action: string | IComponent): IComponent {
+    remove(action: string | any): this {
         return this;
     }
-    find<T extends IComponent>(express: T | Express<T, boolean>, mode?: Mode): T {
-        return NullNode as T;
+    find(express: any | Express<any, boolean>, mode?: Mode): any {
+        return NullNode;
     }
-    filter<T extends IComponent>(express: Express<T, boolean | void>, mode?: Mode): T[] {
+    filter(express: Express<any, boolean | void>, mode?: Mode): any[] {
         return [];
     }
-    each<T extends IComponent>(express: Express<T, boolean | void>, mode?: Mode) {
+    each(express: Express<any, boolean | void>, mode?: Mode) {
     }
 
-    trans(express: Express<IComponent, boolean | void>) {
+    trans(express: Express<any, boolean | void>) {
     }
 
-    transAfter(express: Express<IComponent, boolean | void>) {
+    transAfter(express: Express<any, boolean | void>) {
     }
 
-    routeUp(express: Express<IComponent, boolean | void>) {
+    routeUp(express: Express<any, boolean | void>) {
 
     }
 
-    equals(node: IComponent): boolean {
+    equals(node: any): boolean {
         return node === NullNode;
     }
 
@@ -50,4 +51,4 @@ export class NullComponent implements IComponent {
     }
 }
 
-export const NullNode: IComponent = new NullComponent();
+export const NullNode: GComponent<any> = new NullComponent();

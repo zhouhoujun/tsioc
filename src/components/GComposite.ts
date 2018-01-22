@@ -1,60 +1,53 @@
-
 import { Mode, Express } from '../types';
 import { NullComponent, NullNode } from './NullComponent';
 import { IComponent } from './IComponent';
 import { isFunction, isString } from '../utils/index';
+import { GComponent } from './GComponent';
 
-/**
- * compoiste.
- *
- * @export
- * @class Composite
- * @implements {IComponent}
- */
-export class Composite implements IComponent {
 
-    parent: IComponent;
-    protected children: IComponent[];
+export class GComposite<T extends IComponent> implements GComponent<T> {
+
+    parent: T;
+    protected children: T[];
     constructor(public name: string) {
         this.children = [];
     }
 
-    add(node: IComponent): this {
-        node.parent = this;
+    add(node: T): this {
+        node.parent = this as IComponent;
         this.children.push(node);
         return this;
 
     }
-
-    remove(node?: string | IComponent): this {
+    remove(node?: string | T): this {
         let component: IComponent;
         if (isString(node)) {
             component = this.find(cmp => isString(node) ? cmp.name === node : cmp.equals(node));
         } else if (node) {
             component = node;
         } else {
-            component = this;
+            component = this as IComponent;
         }
 
         if (!component.parent) {
             return this;
-        } else if (this.equals(component.parent)) {
-            this.children.splice(this.children.indexOf(component), 1);
+        } else if (this.equals(component.parent as T)) {
+            this.children.splice(this.children.indexOf(component as T), 1);
             component.parent = null;
             return this;
         } else {
             component.parent.remove(component);
-            return this;
+            return null;
         }
     }
 
-    find<T extends IComponent>(express: T | Express<T, boolean>, mode?: Mode): T {
-        let component: IComponent;
-        this.each<T>(item => {
+    find(express: T | Express<T, boolean>, mode?: Mode): T {
+        let component: any;
+        this.each(item => {
             if (component) {
                 return false;
             }
-            let isFinded = isFunction(express) ? express(item) : (<IComponent>express) === item;
+            let isFinded = isFunction(express) ? express(item) : express === (item);
             if (isFinded) {
                 component = item;
                 return false;
@@ -63,42 +56,44 @@ export class Composite implements IComponent {
         }, mode);
         return (component || this.empty()) as T;
     }
-    filter<T extends IComponent>(express: Express<T, boolean | void>, mode?: Mode): T[] {
+
+    filter(express: Express<T, void | boolean>, mode?: Mode): T[] {
         let nodes: IComponent[] = [];
-        this.each<T>(item => {
+        this.each(item => {
             if (express(item)) {
                 nodes.push(item);
             }
         }, mode);
         return nodes as T[];
     }
-    each<T extends IComponent>(express: Express<T, boolean | void>, mode?: Mode) {
+
+    each(iterate: Express<T, boolean | void>, mode?: Mode) {
         mode = mode || Mode.traverse;
         let r;
         switch (mode) {
             case Mode.route:
-                r = this.routeUp(express);
+                r = this.routeUp(iterate);
                 break;
             case Mode.children:
-                r = this.eachChildren(express);
+                r = this.eachChildren(iterate);
                 break;
 
             case Mode.traverse:
-                r = this.trans(express);
+                r = this.trans(iterate);
                 break;
             case Mode.traverseLast:
-                r = this.transAfter(express);
+                r = this.transAfter(iterate);
                 break;
             default:
-                r = this.trans(express);
+                r = this.trans(iterate);
                 break;
         }
         return r;
     }
 
-    eachChildren<T extends IComponent>(express: Express<T, void | boolean>) {
+    eachChildren(iterate: Express<T, void | boolean>) {
         (this.children || []).forEach(item => {
-            return express(item as T);
+            return iterate(item as T);
         });
     }
 
@@ -109,23 +104,26 @@ export class Composite implements IComponent {
      *
      *@memberOf IComponent
      */
-    routeUp(express: Express<IComponent, void | boolean>) {
-        if (express(this) === false) {
+    routeUp(iterate: Express<T, void | boolean>) {
+        let curr = this as IComponent;
+        if (iterate(curr as T) === false) {
             return false;
         };
         if (this.parent && this.parent.routeUp) {
-            return this.parent.routeUp(express);
+            return this.parent.routeUp(iterate);
         }
     }
+
     /**
      *translate all sub context to do express work.
      *
-     *@param {Express<IComponent, void | boolean>} express
+     *@param {Express<T, void | boolean>} express
      *
      *@memberOf IComponent
      */
-    trans(express: Express<IComponent, void | boolean>) {
-        if (express(this) === false) {
+    trans(express: Express<T, void | boolean>) {
+        let curr = this as IComponent;
+        if (express(curr as T) === false) {
             return false;
         }
         let children = this.children || [];
@@ -138,7 +136,7 @@ export class Composite implements IComponent {
         return true;
     }
 
-    transAfter(express: Express<IComponent, void | boolean>) {
+    transAfter(express: Express<T, void | boolean>) {
         let children = this.children || []
         for (let i = 0; i < children.length; i++) {
             let result = children[i].transAfter(express);
@@ -146,22 +144,22 @@ export class Composite implements IComponent {
                 return false;
             }
         }
-
-        if (express(this) === false) {
+        let curr = this as IComponent;
+        if (express(curr as T) === false) {
             return false;
         }
         return true;
     }
 
-    equals(node: IComponent): boolean {
-        return this === node;
+    equals(node: T): boolean {
+        return this === node as IComponent;
     }
 
-    empty() {
-        return NullNode as IComponent;
+    empty(): T {
+        return NullNode as T;
     }
 
     isEmpty(): boolean {
-        return this.equals(this.empty());
+        return this.equals(this.empty() as T);
     }
 }

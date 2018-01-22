@@ -4,7 +4,6 @@ import { IContainer } from '../../IContainer';
 import { PropertyMetadata } from '../metadatas/index';
 import { CoreActions } from './CoreActions';
 import { ActionComposite } from './ActionComposite';
-import { ActionComponent } from './ActionComponent';
 
 
 export interface BindPropertyActionData extends BindPropertyTypeActionData {
@@ -26,7 +25,7 @@ export class InjectPropertyAction extends ActionComposite {
 
     protected working(container: IContainer, data: BindPropertyTypeActionData) {
         if (!data.execResult) {
-            this.parent.find<ActionComponent>(act => act.name === CoreActions.bindPropertyType).execute(container, data);
+            this.parent.find(act => act.name === CoreActions.bindPropertyType).execute(container, data);
         }
 
         if (data.target && data.execResult && data.execResult.length) {

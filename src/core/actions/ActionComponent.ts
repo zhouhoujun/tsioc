@@ -5,7 +5,7 @@ import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
 import { Metadate } from '../metadatas';
 import { IContainer } from '../../IContainer';
-import { IComponent } from '../../components';
+import { IComponent, GComponent } from '../../components';
 import { IExecutable } from '../IExecutable';
 
 
@@ -15,18 +15,18 @@ import { IExecutable } from '../IExecutable';
  *
  * @export
  * @interface ActionComponent
- * @extends {IComponent}
+ * @extends {GComponent<ActionComponent>}
  */
-export interface ActionComponent extends IComponent, IExecutable {
+export interface ActionComponent extends GComponent<ActionComponent>, IExecutable {
 
     /**
      * insert ActionComponent
      *
      * @param {ActionComponent} node
      * @param {number} index
-     * @returns {ActionComponent}
+     * @returns {this}
      * @memberof ActionComponent
      */
-    insert(node: ActionComponent, index: number): ActionComponent;
+    insert(node: ActionComponent, index: number): this;
 
 }

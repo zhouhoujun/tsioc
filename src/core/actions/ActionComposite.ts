@@ -7,9 +7,9 @@ import { ActionComponent } from './ActionComponent';
 import { Metadate } from '../metadatas/index';
 import { IContainer } from '../../IContainer';
 import { isFunction, isString } from '../../utils/index';
-import { Composite, IComponent } from '../../components/index';
+import { GComposite, IComponent } from '../../components/index';
 
-export class ActionComposite extends Composite implements ActionComponent {
+export class ActionComposite extends GComposite<ActionComponent> implements ActionComponent {
 
     parent: ActionComponent;
     protected children: ActionComponent[];
@@ -18,7 +18,7 @@ export class ActionComposite extends Composite implements ActionComponent {
         this.children = [];
     }
 
-    insert(node: ActionComponent, index: number): ActionComponent {
+    insert(node: ActionComponent, index: number): this {
         node.parent = this;
         if (index < 0) {
             index = 0;
@@ -31,7 +31,7 @@ export class ActionComposite extends Composite implements ActionComponent {
 
     execute(container: IContainer, data: ActionData<Metadate>, name?: string) {
         if (name) {
-            this.find<ActionComponent>(it => it.name === name)
+            this.find(it => it.name === name)
                 .execute(container, data);
         } else {
             this.trans(action => {

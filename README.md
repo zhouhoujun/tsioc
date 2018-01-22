@@ -290,6 +290,10 @@ export class DebugLog {
 ```
 
 ## New Features
+
+* 1.3.6
+    1. refactor components, add generic type. `GComponent<T extends IComponent>`, `GComposite<T extends IComponent>` for extends easy.
+    
 * 1.3.5
     1. fix bug inherit property not auto inject in browser.  set param, method and property metadata will store all metadata include base class.
 * 1.3.4

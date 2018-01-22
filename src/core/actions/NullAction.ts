@@ -6,8 +6,8 @@ import { IContainer } from '../../IContainer';
 import { NullComponent } from '../../components/index';
 
 class NullActionClass extends NullComponent implements ActionComponent {
-    name: string;
-    insert(action: ActionComponent): ActionComponent {
+
+    insert(action: ActionComponent, index: number): this {
         return this;
     }
     execute<T>(container: IContainer, data: ActionData<T>, name?: string) {

@@ -5,7 +5,7 @@ import { isClass, isAbstractDecoratorClass, isArray, isString } from '../utils/i
 import { Singleton, Abstract } from './decorators/index';
 import { ClassMetadata, MethodMetadata } from './metadatas/index';
 import { IContainer } from '../IContainer';
-import { CoreActions, ActionComponent, ActionComposite } from './actions/index';
+import { CoreActions, ActionComponent } from './actions/index';
 import { DecoratorType, getOwnTypeMetadata, getParamerterNames, getOwnMethodMetadata, hasOwnClassMetadata } from './factories/index';
 import { Express } from '../types';
 import { ActionData } from './ActionData';
@@ -60,7 +60,7 @@ export class DefaultLifeScope implements LifeScope {
 
     execute<T>(type: DecoratorType, data: ActionData<T>, ...names: string[]) {
         let types = this.toActionType(type).split(',');
-        return this.action.filter<ActionComponent>(act => types.indexOf(act.name) >= 0).forEach(act => {
+        return this.action.filter(act => types.indexOf(act.name) >= 0).forEach(act => {
             names.forEach(name => {
                 act = act.find(itm => itm.name === name);
             });
