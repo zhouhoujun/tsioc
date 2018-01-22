@@ -368,7 +368,7 @@ export function hasPropertyMetadata(decorator: string | Function, target: Type<a
 }
 
 function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let meta = getOwnPropertyMetadata(metaName, target);
+    let meta = getPropertyMetadata(metaName, target);
     let propmetadata = (metadata || {}) as T;
 
     propmetadata.propertyKey = propertyKey;
@@ -446,7 +446,7 @@ export function hasParamMetadata(decorator: string | Function, target: Type<any>
 
 function setParamMetadata<T extends ParameterMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, parameterIndex: number, metadata?: T, metadataExtends?: MetadataExtends<any>) {
 
-    let parameters: any[][] = getOwnParamMetadata(metaName, target, propertyKey);
+    let parameters: any[][] = getParamMetadata(metaName, target, propertyKey);
     parameters = isArray(parameters) ? parameters : [];
     // there might be gaps if some in between parameters do not have annotations.
     // we pad with nulls.

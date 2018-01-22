@@ -290,7 +290,8 @@ export class DebugLog {
 ```
 
 ## New Features
-
+* 1.3.5
+    1. fix bug inherit property not auto inject in browser.  set param and property metadata will store all metadata include base class.
 * 1.3.4
     1. class, method metadata only get own
     2. fix bug two dectorator match  * infinite loop error,  * only match class without @Aspcet.
