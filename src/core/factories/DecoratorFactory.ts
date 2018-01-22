@@ -295,7 +295,7 @@ export function hasMethodMetadata(decorator: string | Function, target: Type<any
 }
 
 function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let meta = getOwnMethodMetadata(metaName, target);
+    let meta = getMethodMetadata(metaName, target);
     meta[propertyKey] = meta[propertyKey] || [];
 
     let methodMeadata = (metadata || {}) as T;
