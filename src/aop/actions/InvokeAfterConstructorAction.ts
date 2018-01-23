@@ -8,9 +8,9 @@ import { AdviceMetadata } from '../metadatas/index'
 import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IMethodAccessor } from '../../IMethodAccessor';
 import { Advices } from '../Advices';
-import { Joinpoint, JoinpointState } from '../Joinpoint';
+import { IJoinpoint, Joinpoint, JoinpointState } from '../Joinpoint';
 import { isValideAspectTarget } from '../isValideAspectTarget';
-import { IJoinpoint } from '../../index';
+
 
 export interface InvokeAfterConstructorActionData extends ActionData<AdviceMetadata> {
 }

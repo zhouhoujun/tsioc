@@ -7,7 +7,7 @@ import { IPointcut } from './IPointcut';
 import { ObjectMap, Express3 } from '../types';
 import { MatchPointcut } from './MatchPointcut';
 import { Aspect, Advice } from './decorators/index';
-import { IContainer } from '../browser';
+import { IContainer } from '../IContainer';
 import { IAspectManager } from './IAspectManager';
 
 @NonePointcut()
@@ -57,8 +57,8 @@ export class AdviceMatcher implements IAdviceMatcher {
                 });
             }
 
-            // match property
-            // Object.getOwnPropertyNames(instance || type.prototype).forEach(name => {
+            // // match property
+            // Object.getOwnPropertyNames(instance || targetType.prototype).forEach(name => {
             //     points.push({
             //         name: name,
             //         fullName: `${className}.${name}`

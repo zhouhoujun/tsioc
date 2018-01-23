@@ -1,12 +1,11 @@
 import 'reflect-metadata';
-import { Type } from '../../Type';
+import { Type, AbstractType } from '../../Type';
 import { PropertyMetadata, MethodMetadata, ParameterMetadata, Metadate, ClassMetadata } from '../metadatas/index';
 import { DecoratorType } from './DecoratorType';
 import { ArgsIterator } from './ArgsIterator';
 import { isClass, isAbstractDecoratorClass, isToken, isClassMetadata, isMetadataObject, isUndefined, isFunction, isNumber, isArray, isSymbol } from '../../utils/index';
 import { ObjectMap } from '../../types';
 import { IClassDecorator } from './ClassDecoratorFactory';
-import { AbstractType } from '../../browser';
 
 
 export const ParamerterName = 'paramerter_names';

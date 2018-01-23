@@ -1,7 +1,6 @@
-import { Type } from '../Type';
+import { Type, AbstractType } from '../Type';
 import { Token, Providers } from '../types';
 import { Registration } from '../Registration';
-import { AbstractType } from '../browser';
 
 
 /**

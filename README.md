@@ -291,6 +291,8 @@ export class DebugLog {
 
 ## New Features
 
+* 1.3.7
+    1. fix error import
 * 1.3.6
     1. refactor components, add generic type. `GComponent<T extends IComponent>`, `GComposite<T extends IComponent>` for extends easy.
     
