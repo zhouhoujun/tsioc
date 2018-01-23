@@ -107,47 +107,4 @@ export class MethodAccessor implements IMethodAccessor {
             }
         }));
     }
-    //     return this.createParam(param, index, providerMap, providers, async (provider: AsyncParamProvider) => {
-
-    //         let buider = this.container.get<IContainerBuilder>(symbols.IContainerBuilder);
-    //         let modules = await buider.loadModule(this.container, {
-    //             files: provider.files
-    //         });
-    //         let params = await Promise.all(modules.map((mdl) => {
-    //             return this.container.invoke<any>(mdl, provider.execution)
-    //         }));
-
-    //         return modules.length === 1 ? params[0] : params;
-    //     });
-    // }));
-    // }
-
-    // protected createParam(param: IParameter, index: number, providerMap: ProviderMap, providers: Providers[], extensds?: (provider: ParamProvider) => any) {
-    //     if (providerMap && param.name) {
-    //         let provider = providerMap[param.name];
-
-    //         if (!isUndefined(provider)) {
-    //             if (isFunction(provider)) {
-    //                 return provider(this.container);
-    //             }
-
-    //             if (!isUndefined(provider.value)) {
-    //                 return isFunction(provider.value) ? provider.value(this.container) : provider.value;
-    //             }
-    //             if (provider.type) {
-    //                 return this.container.resolve(provider.type, ...providers);
-    //             }
-    //             if (extensds && provider['files'] && provider['execution']) {
-    //                 return extensds(provider);
-    //             }
-
-    //             return provider;
-    //         }
-    //     }
-
-    //     if (isToken(param.type)) {
-    //         return this.container.resolve(param.type, ...providers);
-    //     }
-    //     return undefined;
-    // }
 }
