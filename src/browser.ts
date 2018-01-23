@@ -9,7 +9,6 @@ export * from './IParameter';
 export * from './IMethodAccessor';
 
 export * from './LifeScope';
-export * from './TypeFactory';
 
 export * from './LoadOptions';
 export * from './IModuleLoader';
