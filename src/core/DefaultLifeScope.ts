@@ -217,12 +217,22 @@ export class DefaultLifeScope implements LifeScope {
         this.execute(DecoratorType.Parameter, data, CoreActions.bindParameterType);
 
         let paramNames = this.getParamerterNames(type, propertyKey);
-        return data.execResult.map((typ, idx) => {
-            return {
-                type: typ,
-                name: paramNames[idx]
-            }
-        })
+
+        if (data.execResult.length) {
+            return data.execResult.map((typ, idx) => {
+                return {
+                    type: typ,
+                    name: paramNames[idx]
+                }
+            });
+        } else {
+            return paramNames.map(name => {
+                return {
+                    name: name,
+                    type: undefined
+                }
+            });
+        }
 
     }
 
