@@ -31,7 +31,7 @@ export class MethodAccessor implements IMethodAccessor {
 
         let targetClass = this.container.getTokenImpl(token);
         if (!targetClass) {
-            throw Error(token.toString() + 'is not implements by any class.');
+            throw Error(token.toString() + ' is not implements by any class.');
         }
         if (target && isFunction(target[propertyKey])) {
             let actionData = {
@@ -59,7 +59,7 @@ export class MethodAccessor implements IMethodAccessor {
         }
         let targetClass = this.container.getTokenImpl(token);
         if (!targetClass) {
-            throw Error(token.toString() + 'is not implements by any class.')
+            throw Error(token.toString() + ' is not implements by any class.')
         }
 
         if (target && isFunction(target[propertyKey])) {
