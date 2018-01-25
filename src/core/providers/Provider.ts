@@ -20,7 +20,7 @@ export class Provider {
      *
      * @memberof Provider
      */
-    protected value?: any | ToInstance<any>
+    protected value?: any
     /**
      * service is instance of type.
      *
@@ -29,7 +29,7 @@ export class Provider {
      */
     type?: Token<any>;
 
-    constructor(type?: Token<any>, value?: any | ToInstance<any>) {
+    constructor(type?: Token<any>, value?: any) {
         this.type = type;
         this.value = value;
     }
@@ -47,7 +47,7 @@ export class Provider {
         if (isUndefined(this.value)) {
             return container.has(this.type) ? container.resolve(this.type, ...providers) : null;
         } else {
-            return isFunction(this.value) ? this.value(container) : this.value;
+            return this.value; // isFunction(this.value) ? this.value(container) : this.value;
         }
     }
 
@@ -56,11 +56,11 @@ export class Provider {
      *
      * @static
      * @param {Token<any>} type
-     * @param {(any | ToInstance<any>)} value
+     * @param {(any)} value
      * @returns Provider
      * @memberof Provider
      */
-    static create(type: Token<any>, value: any | ToInstance<any>): Provider {
+    static create(type: Token<any>, value: any): Provider {
         return new Provider(type, value);
     }
 
@@ -69,13 +69,27 @@ export class Provider {
      *
      * @static
      * @param {Token<any>} token
-     * @param {(any | ToInstance<any>)} value
+     * @param {(any)} value
      * @param {Express2<any, ExtendsProvider, void>} [extendsTarget]
      * @returns {ExtendsProvider}
      * @memberof Provider
      */
-    static createExtends(token: Token<any>, value: any | ToInstance<any>, extendsTarget?: Express2<any, ExtendsProvider, void>): ExtendsProvider {
+    static createExtends(token: Token<any>, value: any, extendsTarget?: Express2<any, ExtendsProvider, void>): ExtendsProvider {
         return new ExtendsProvider(token, value, extendsTarget);
+    }
+
+    /**
+     * create custom provider.
+     *
+     * @static
+     * @param {Token<any>} [type]
+     * @param {ToInstance<any>} [toInstance]
+     * @param {*} [value]
+     * @returns {CustomProvider}
+     * @memberof Provider
+     */
+    static createCustom(type?: Token<any>, toInstance?: ToInstance<any>, value?: any): CustomProvider {
+        return new CustomProvider(type, toInstance, value);
     }
 
     /**
@@ -84,11 +98,11 @@ export class Provider {
      * @static
      * @param {Token<any>} token
      * @param {string} method
-     * @param {(any | ToInstance<any>)} [value]
+     * @param {(any)} [value]
      * @returns {InvokeProvider}
      * @memberof Provider
      */
-    static createInvoke(token: Token<any>, method: string, value?: any | ToInstance<any>): InvokeProvider {
+    static createInvoke(token: Token<any>, method: string, value?: any): InvokeProvider {
         return new InvokeProvider(token, method, value);
     }
 
@@ -97,13 +111,13 @@ export class Provider {
      *
      * @static
      * @param {Token<any>} token
-     * @param {(any | ToInstance<any>)} value
+     * @param {(any)} value
      * @param {number} [index]
      * @param {string} [method]
      * @returns {ParamProvider}
      * @memberof Provider
      */
-    static createParam(token: Token<any>, value: any | ToInstance<any>, index?: number, method?: string): ParamProvider {
+    static createParam(token: Token<any>, value: any, index?: number, method?: string): ParamProvider {
         return new ParamProvider(token, value, index, method);
     }
 
@@ -115,14 +129,36 @@ export class Provider {
      * @param {Token<any>} token
      * @param {number} [index]
      * @param {string} [method]
-     * @param {(any | ToInstance<any>)} [value]
+     * @param {(any)} [value]
      * @returns {AsyncParamProvider}
      * @memberof Provider
      */
-    static createAsyncParam(files: string | string[], token: Token<any>, index?: number, method?: string, value?: any | ToInstance<any>): AsyncParamProvider {
+    static createAsyncParam(files: string | string[], token: Token<any>, index?: number, method?: string, value?: any): AsyncParamProvider {
         return new AsyncParamProvider(files, token, index, method, value)
     }
 
+}
+
+export class CustomProvider extends Provider {
+    /**
+     * service value is the result of type instance invoke the method return value.
+     *
+     * @type {string}
+     * @memberof Provider
+     */
+    protected toInstance?: ToInstance<any>;
+
+    constructor(type?: Token<any>, toInstance?: ToInstance<any>, value?: any) {
+        super(type, value);
+        this.toInstance = toInstance;
+    }
+
+    resolve<T>(container: IContainer, ...providers: Providers[]): T {
+        if (this.toInstance) {
+            return this.toInstance(container, ...providers);
+        }
+        return super.resolve(container, ...providers);
+    }
 }
 
 
@@ -142,7 +178,7 @@ export class InvokeProvider extends Provider {
      */
     protected method?: string;
 
-    constructor(type?: Token<any>, method?: string, value?: any | ToInstance<any>) {
+    constructor(type?: Token<any>, method?: string, value?: any) {
         super(type, value);
         this.method = method;
     }
@@ -171,7 +207,7 @@ export class ParamProvider extends InvokeProvider {
      */
     index?: number;
 
-    constructor(token?: Token<any>, value?: any | ToInstance<any>, index?: number, method?: string) {
+    constructor(token?: Token<any>, value?: any, index?: number, method?: string) {
         super(token, method, value);
         this.index = index;
     }
@@ -191,7 +227,7 @@ export class ParamProvider extends InvokeProvider {
 export class ExtendsProvider extends Provider {
 
 
-    constructor(token: Token<any>, value?: any | ToInstance<any>, private extendsTarget?: Express2<any, ExtendsProvider, void>) {
+    constructor(token: Token<any>, value?: any, private extendsTarget?: Express2<any, ExtendsProvider, void>) {
         super(token, value);
     }
 
@@ -225,7 +261,7 @@ export class AsyncParamProvider extends ParamProvider {
      */
     protected files?: string | string[];
 
-    constructor(files: string | string[], token: Token<any>, index?: number, method?: string, value?: any | ToInstance<any>) {
+    constructor(files: string | string[], token: Token<any>, index?: number, method?: string, value?: any) {
         super(token, value, index, method);
         this.files = files;
     }

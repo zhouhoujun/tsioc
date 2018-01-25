@@ -1,6 +1,6 @@
 import { Providers, Token, ObjectMap, InstanceFactory } from '../types';
 import { Provider, ProviderMap, ParamProvider, InvokeProvider, ExtendsProvider, AsyncParamProvider, isProviderMap } from './providers/index';
-import { isString, isNumber, isUndefined, isNull, isToken, isBaseObject } from '../utils/index';
+import { isString, isClass, isFunction, isNumber, isUndefined, isNull, isToken, isBaseObject } from '../utils/index';
 import { Type } from '../Type';
 import { IParameter } from '../IParameter';
 import { IProviderMatcher } from './IProviderMatcher';
@@ -40,9 +40,17 @@ export class ProviderMatcher implements IProviderMatcher {
                 if (isBaseObject(p)) {
                     Object.keys(p).forEach(name => {
                         if (!isUndefined(p[name])) {
-                            map.add(name, p[name]);
+                            if (isClass(p[name])) {
+                                map.add(name, p[name]);
+                            } else if (isFunction(p[name])) {
+                                map.add(name, () => p[name]);
+                            } else {
+                                map.add(name, p[name]);
+                            }
                         }
                     })
+                } else if (isFunction(p)) {
+                    map.add(name, () => p);
                 } else {
                     map.add(index, p);
                 }

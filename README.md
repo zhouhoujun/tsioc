@@ -291,6 +291,10 @@ export class DebugLog {
 
 ## New Features
 
+* 1.3.8
+    1. fix bug of method params not match with providers when have not method decorator.
+    2. fix function param can not invoke bug.
+    
 * 1.3.7
     1. fix error imports. remove unused code.
 * 1.3.6
