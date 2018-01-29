@@ -11,18 +11,16 @@ export interface ComponentLifecycle {
     /**
      * component before init hooks. after constructor befor property inject.
      *
-     * @param {ClassMetadata[]} [metas]
      * @memberof ComponentLifecycle
      */
-    beforeInit?(metas?: ClassMetadata[]);
+    beforeInit?();
 
     /**
      * component on init hooks. after property inject
      *
-     * @param {ClassMetadata[]} [metas]
      * @memberof ComponentLifecycle
      */
-    onInit(metas?: ClassMetadata[]);
+    onInit();
 
     /**
      * component on destroy hooks.

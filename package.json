@@ -1,5 +1,5 @@
 {
-  "name": "tsioc",
+  "name": "type-autofac",
   "version": "1.3.10",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./lib/index.js",

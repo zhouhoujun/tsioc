@@ -2,8 +2,6 @@ import { ActionData } from '../ActionData';
 import { ClassMetadata } from '../metadatas/index';
 import { ActionComposite } from './ActionComposite';
 import { IContainer } from '../../IContainer';
-import { Component } from '../decorators/index';
-import { hasClassMetadata, getTypeMetadata } from '../factories/index';
 import { ComponentLifecycle } from '../ComponentLifecycle';
 import { isFunction } from '../../utils/index';
 import { CoreActions } from './CoreActions';
@@ -31,9 +29,8 @@ export class ComponentBeforeInitAction extends ActionComposite {
 
     protected working(container: IContainer, data: ComponentBeforeInitActionData) {
 
-        if (data.targetType && data.target && hasClassMetadata(Component, data.targetType)) {
+        if (data.targetType && data.target) {
             let component = data.target as ComponentLifecycle;
-            let metas = getTypeMetadata<ClassMetadata>(Component, data.targetType);
             if (isFunction(component.beforeInit)) {
                 component.beforeInit();
             }
