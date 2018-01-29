@@ -2,9 +2,8 @@ import {
     ActionComponent, ActionComposite,
     CoreActions, BindParameterTypeAction,
     BindPropertyTypeAction, InjectPropertyAction,
-    BindParameterProviderAction,
-    BindProviderAction,
-    ComponentInitAction
+    BindParameterProviderAction, BindProviderAction,
+    ComponentInitAction, ComponentBeforeInitAction
 } from './actions/index';
 import { NonePointcut } from './decorators/index';
 import { } from '../index';
@@ -45,6 +44,10 @@ export class ActionFactory {
 
             case CoreActions.componentInit:
                 action = new ComponentInitAction();
+                break;
+
+            case CoreActions.componentBeforeInit:
+                action = new ComponentBeforeInitAction();
                 break;
 
             default:

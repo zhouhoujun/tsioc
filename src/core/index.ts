@@ -50,10 +50,11 @@ export function registerCores(container: IContainer) {
     lifeScope.addAction(factory.create(CoreActions.bindParameterType), DecoratorType.Parameter);
     lifeScope.addAction(factory.create(CoreActions.bindParameterProviders), DecoratorType.Parameter);
 
-    lifeScope.addAction(factory.create(CoreActions.componentInit), DecoratorType.Class, CoreActions.afterConstructor);
+    lifeScope.addAction(factory.create(CoreActions.componentBeforeInit), DecoratorType.Class, CoreActions.afterConstructor);
+    lifeScope.addAction(factory.create(CoreActions.componentInit), DecoratorType.Property);
 
     lifeScope.registerDecorator(Injectable, CoreActions.bindProvider);
-    lifeScope.registerDecorator(Component, CoreActions.bindProvider, CoreActions.componentInit);
+    lifeScope.registerDecorator(Component, CoreActions.bindProvider, CoreActions.componentBeforeInit, CoreActions.componentInit);
     lifeScope.registerDecorator(Singleton, CoreActions.bindProvider);
     lifeScope.registerDecorator(Abstract, CoreActions.bindProvider);
     lifeScope.registerDecorator(AutoWired, CoreActions.bindParameterType, CoreActions.bindPropertyType);

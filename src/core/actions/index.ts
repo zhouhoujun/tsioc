@@ -8,5 +8,7 @@ export * from './BindParameterTypeAction';
 export * from './BindPropertyTypeAction';
 export * from './InjectPropertyAction';
 export * from './BindParameterProviderAction';
+export * from './ComponentBeforeInitAction';
 export * from './ComponentInitAction';
+
 

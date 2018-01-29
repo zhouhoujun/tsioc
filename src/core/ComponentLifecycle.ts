@@ -7,13 +7,23 @@ import { ClassMetadata } from './metadatas/index';
  * @interface ComponentLifecycle
  */
 export interface ComponentLifecycle {
+
     /**
-     * component on init hooks.
+     * component before init hooks. after constructor befor property inject.
      *
      * @param {ClassMetadata[]} [metas]
      * @memberof ComponentLifecycle
      */
-    onInit?(metas?: ClassMetadata[]);
+    beforeInit?(metas?: ClassMetadata[]);
+
+    /**
+     * component on init hooks. after property inject
+     *
+     * @param {ClassMetadata[]} [metas]
+     * @memberof ComponentLifecycle
+     */
+    onInit(metas?: ClassMetadata[]);
+
     /**
      * component on destroy hooks.
      *

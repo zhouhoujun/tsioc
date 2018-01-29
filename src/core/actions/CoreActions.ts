@@ -28,7 +28,7 @@ export enum CoreActions {
     /**
      * inject property.
      */
-    injectProperty =  'injectProperty',
+    injectProperty = 'injectProperty',
 
     /**
      * class provider bind action.
@@ -41,7 +41,13 @@ export enum CoreActions {
     bindParameterProviders = 'bindParameterProviders',
 
     /**
-     * component init action.
+     * component init action.  after constructor befor property inject.
+     */
+    componentBeforeInit = 'componentBeforeInit',
+
+
+    /**
+     * component on init hooks. after property inject.
      */
     componentInit = 'componentInit'
 
