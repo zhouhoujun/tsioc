@@ -291,6 +291,10 @@ export class DebugLog {
 
 ## New Features
 
+* 1.3.9
+    1. fix isNull type check bug.
+    2. add [`ComponentLifecycle`]((https://github.com/zhouhoujun/tsioc/blob/master/src/core/ComponentLifecycle.ts)) lifecycle hooks for @Component decorator class to invoke auto. now only implement `onInit` hooks.
+
 * 1.3.8
     1. fix bug of method params not match with providers when have not method decorator.
     2. fix function param can not invoke bug.

@@ -1,5 +1,13 @@
-import { ActionComponent, ActionComposite, CoreActions, BindParameterTypeAction, BindPropertyTypeAction, InjectPropertyAction, BindParameterProviderAction, BindProviderAction } from './actions/index';
+import {
+    ActionComponent, ActionComposite,
+    CoreActions, BindParameterTypeAction,
+    BindPropertyTypeAction, InjectPropertyAction,
+    BindParameterProviderAction,
+    BindProviderAction,
+    ComponentInitAction
+} from './actions/index';
 import { NonePointcut } from './decorators/index';
+import { } from '../index';
 
 
 @NonePointcut()
@@ -33,6 +41,10 @@ export class ActionFactory {
 
             case CoreActions.bindParameterProviders:
                 action = new BindParameterProviderAction();
+                break;
+
+            case CoreActions.componentInit:
+                action = new ComponentInitAction();
                 break;
 
             default:

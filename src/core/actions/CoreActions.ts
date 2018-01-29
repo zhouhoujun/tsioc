@@ -38,6 +38,11 @@ export enum CoreActions {
     /**
      * access method.
      */
-    bindParameterProviders = 'bindParameterProviders'
+    bindParameterProviders = 'bindParameterProviders',
+
+    /**
+     * component init action.
+     */
+    componentInit = 'componentInit'
 
 }

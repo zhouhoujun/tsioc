@@ -280,7 +280,7 @@ export function isUndefined(target: any): target is undefined {
  * @returns {target is null}
  */
 export function isNull(target: any): target is null {
-    return typeof target === null;
+    return target === null;
 }
 
 /**

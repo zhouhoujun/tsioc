@@ -24,6 +24,7 @@ export * from './DefaultLifeScope';
 export * from './IExecutable';
 export * from './ProviderMatcher';
 export * from './MethodAccessor';
+export * from './ComponentLifecycle';
 
 /**
  * register core for container.
@@ -49,8 +50,10 @@ export function registerCores(container: IContainer) {
     lifeScope.addAction(factory.create(CoreActions.bindParameterType), DecoratorType.Parameter);
     lifeScope.addAction(factory.create(CoreActions.bindParameterProviders), DecoratorType.Parameter);
 
+    lifeScope.addAction(factory.create(CoreActions.componentInit), DecoratorType.Class, CoreActions.afterConstructor);
+
     lifeScope.registerDecorator(Injectable, CoreActions.bindProvider);
-    lifeScope.registerDecorator(Component, CoreActions.bindProvider);
+    lifeScope.registerDecorator(Component, CoreActions.bindProvider, CoreActions.componentInit);
     lifeScope.registerDecorator(Singleton, CoreActions.bindProvider);
     lifeScope.registerDecorator(Abstract, CoreActions.bindProvider);
     lifeScope.registerDecorator(AutoWired, CoreActions.bindParameterType, CoreActions.bindPropertyType);
