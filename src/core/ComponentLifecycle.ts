@@ -20,7 +20,7 @@ export interface ComponentLifecycle {
      *
      * @memberof ComponentLifecycle
      */
-    onInit();
+    onInit?();
 
     /**
      * component on destroy hooks.
