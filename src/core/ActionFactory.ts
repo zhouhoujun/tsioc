@@ -3,10 +3,10 @@ import {
     CoreActions, BindParameterTypeAction,
     BindPropertyTypeAction, InjectPropertyAction,
     BindParameterProviderAction, BindProviderAction,
-    ComponentInitAction, ComponentBeforeInitAction
+    ComponentInitAction, ComponentBeforeInitAction,
+    ComponentCacheAction
 } from './actions/index';
 import { NonePointcut } from './decorators/index';
-import { } from '../index';
 
 
 @NonePointcut()
@@ -48,6 +48,10 @@ export class ActionFactory {
 
             case CoreActions.componentBeforeInit:
                 action = new ComponentBeforeInitAction();
+                break;
+
+            case CoreActions.componentCache:
+                action = new ComponentCacheAction();
                 break;
 
             default:

@@ -10,5 +10,6 @@ export * from './InjectPropertyAction';
 export * from './BindParameterProviderAction';
 export * from './ComponentBeforeInitAction';
 export * from './ComponentInitAction';
+export * from './ComponentCacheAction';
 
 

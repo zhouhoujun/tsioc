@@ -32,7 +32,7 @@ export class ComponentBeforeInitAction extends ActionComposite {
         if (data.targetType && data.target) {
             let component = data.target as ComponentLifecycle;
             if (isFunction(component.beforeInit)) {
-                component.beforeInit();
+                container.syncInvoke(data.targetType, 'beforeInit', data.target);
             }
         }
     }

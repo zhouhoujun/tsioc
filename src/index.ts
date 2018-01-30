@@ -7,6 +7,7 @@ export * from './Registration';
 export * from './IContainerBuilder';
 export * from './IParameter';
 export * from './IMethodAccessor';
+export * from './ICacheManager';
 
 export * from './LifeScope';
 

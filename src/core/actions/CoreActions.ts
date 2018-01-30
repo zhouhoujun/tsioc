@@ -40,6 +40,8 @@ export enum CoreActions {
      */
     bindParameterProviders = 'bindParameterProviders',
 
+
+    componentCache = 'componentCache',
     /**
      * component init action.  after constructor befor property inject.
      */

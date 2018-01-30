@@ -6,9 +6,10 @@ import { Type } from './Type';
 import { isClass, isFunction, symbols, isSymbol, isToken, isString, isUndefined, MapSet } from './utils/index';
 import { registerAops } from './aop/index';
 import { IMethodAccessor } from './IMethodAccessor';
-import { ActionComponent, DecoratorType, registerCores, CoreActions, Singleton, PropertyMetadata } from './core/index';
+import { ActionComponent, DecoratorType, registerCores, CoreActions, Singleton, PropertyMetadata, ComponentLifecycle, ComponentCacheActionData } from './core/index';
 import { LifeScope } from './LifeScope';
 import { IParameter } from './IParameter';
+import { ICacheManager } from './ICacheManager';
 
 
 /**
@@ -56,6 +57,15 @@ export class Container implements IContainer {
         return factory(...providers) as T;
     }
 
+    /**
+     * clear cache.
+     *
+     * @param {Type<any>} targetType
+     * @memberof IContainer
+     */
+    clearCache(targetType: Type<any>) {
+        this.get<ICacheManager>(symbols.ICacheManager).destroy(targetType);
+    }
 
     /**
      * get token.
@@ -357,6 +367,16 @@ export class Container implements IContainer {
                 return this.singleton.get(key);
             }
 
+            if (providers.length < 1) {
+                let lifecycleData: ComponentCacheActionData = {
+                    targetType: ClassT
+                };
+                lifeScope.execute(DecoratorType.Class, lifecycleData, CoreActions.componentCache);
+                if (lifecycleData.execResult && lifecycleData.execResult instanceof ClassT) {
+                    return lifecycleData.execResult;
+                }
+            }
+
             lifeScope.execute(DecoratorType.Class, {
                 targetType: ClassT
             }, IocState.runtime);
@@ -393,6 +413,11 @@ export class Container implements IContainer {
 
             if (singleton) {
                 this.singleton.set(key, instance);
+            } else if (providers.length < 1) {
+                lifeScope.execute(DecoratorType.Class, {
+                    target: instance,
+                    targetType: ClassT
+                }, CoreActions.componentCache);
             }
             return instance;
         };

@@ -33,6 +33,7 @@ export interface DecorSummary {
     actions: string[];
 }
 
+
 /**
  * life scope of decorator.
  *

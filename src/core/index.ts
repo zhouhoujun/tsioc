@@ -10,6 +10,7 @@ import { DecoratorType } from './factories/index';
 import { MethodAccessor } from './MethodAccessor';
 import { ProviderMatcher } from './ProviderMatcher';
 import { ProviderMap } from './providers/index';
+import { CacheManager } from './CacheManager';
 
 export * from './actions/index';
 export * from './decorators/index';
@@ -25,6 +26,7 @@ export * from './IExecutable';
 export * from './ProviderMatcher';
 export * from './MethodAccessor';
 export * from './ComponentLifecycle';
+export * from './CacheManager';
 
 /**
  * register core for container.
@@ -36,6 +38,7 @@ export function registerCores(container: IContainer) {
 
     container.registerSingleton(symbols.LifeScope, () => new DefaultLifeScope(container));
     container.register(ProviderMap, () => new ProviderMap(container));
+    container.registerSingleton(symbols.ICacheManager, () => new CacheManager(container));
     container.registerSingleton(symbols.IProviderMatcher, () => new ProviderMatcher(container));
     container.registerSingleton(symbols.IMethodAccessor, () => new MethodAccessor(container));
 
@@ -53,10 +56,13 @@ export function registerCores(container: IContainer) {
     lifeScope.addAction(factory.create(CoreActions.componentBeforeInit), DecoratorType.Class, CoreActions.afterConstructor);
     lifeScope.addAction(factory.create(CoreActions.componentInit), DecoratorType.Property);
 
-    lifeScope.registerDecorator(Injectable, CoreActions.bindProvider);
-    lifeScope.registerDecorator(Component, CoreActions.bindProvider, CoreActions.componentBeforeInit, CoreActions.componentInit);
+    let cacheAction = factory.create(CoreActions.componentCache);
+    lifeScope.addAction(cacheAction, DecoratorType.Class, CoreActions.componentCache);
+
+    lifeScope.registerDecorator(Injectable, CoreActions.bindProvider, CoreActions.componentCache, CoreActions.componentBeforeInit, CoreActions.componentInit);
+    lifeScope.registerDecorator(Component, CoreActions.bindProvider, CoreActions.componentCache, CoreActions.componentBeforeInit, CoreActions.componentInit);
     lifeScope.registerDecorator(Singleton, CoreActions.bindProvider);
-    lifeScope.registerDecorator(Abstract, CoreActions.bindProvider);
+    lifeScope.registerDecorator(Abstract, CoreActions.bindProvider, CoreActions.componentCache, CoreActions.componentBeforeInit, CoreActions.componentInit);
     lifeScope.registerDecorator(AutoWired, CoreActions.bindParameterType, CoreActions.bindPropertyType);
     lifeScope.registerDecorator(Inject, CoreActions.bindParameterType, CoreActions.bindPropertyType);
     lifeScope.registerDecorator(Param, CoreActions.bindParameterType, CoreActions.bindPropertyType);

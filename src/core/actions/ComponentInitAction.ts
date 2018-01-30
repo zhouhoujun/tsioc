@@ -28,11 +28,10 @@ export class ComponentInitAction extends ActionComposite {
     }
 
     protected working(container: IContainer, data: ComponentInitActionData) {
-
         if (data.targetType && data.target) {
             let component = data.target as ComponentLifecycle;
             if (isFunction(component.onInit)) {
-                component.onInit();
+                container.syncInvoke(data.targetType, 'onInit', data.target);
             }
         }
     }

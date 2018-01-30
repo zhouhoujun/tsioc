@@ -291,6 +291,11 @@ export class DebugLog {
 
 ## New Features
 
+* 1.3.12
+    1. add cache able features. Class metadata add `expires` to set class instance cache timeout when not used, via `CacheManager`.
+    2. implement `ComponentLifecycle` `onDestory` hook for cache class instance.
+    3. `@Injectable`, `@Component` and `@Abstract` decorator have bind `CoreActions.componentCache, CoreActions.componentBeforeInit, CoreActions.componentInit` actions.
+
 * 1.3.11
     1. fix isNull type check bug.
     2. add [`ComponentLifecycle`](https://github.com/zhouhoujun/tsioc/blob/master/src/core/ComponentLifecycle.ts) lifecycle hooks for decorator (the decorator had bind liefcycle action) class to invoke auto. now only implement `beforeInit`, `onInit` hooks.

@@ -24,12 +24,12 @@ export interface ClassMetadata extends ProviderMetadata {
      */
     package?: string;
 
-    // /**
-    //  * constructor parameter names
-    //  *
-    //  * @type {string[]}
-    //  * @memberof ClassMetadata
-    //  */
-    // parameterNames?: string[];
+    /**
+     * class cache timeout when not used.
+     *
+     * @type {number}
+     * @memberof ClassMetadata
+     */
+    expires?: number;
 }
 

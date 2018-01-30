@@ -25,6 +25,12 @@ export const IProviderMatcher = Symbol('IProviderMatcher');
 export const IMethodAccessor = Symbol('IMethodAccessor');
 
 /**
+ * ICacheManager interface symbol.
+ * it is a symbol id, you can register yourself ICacheManager for this.
+ */
+export const ICacheManager = Symbol('ICacheManager');
+
+/**
  * ContainerBuilder interface symbol.
  * it is a symbol id, you can register yourself IContainerBuilder for this.
  */

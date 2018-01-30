@@ -47,6 +47,14 @@ export interface IContainer extends IMethodAccessor {
     resolve<T>(token: Token<T>, ...providers: Providers[]): T;
 
     /**
+     * clear cache.
+     *
+     * @param {Type<any>} targetType
+     * @memberof IContainer
+     */
+    clearCache(targetType: Type<any>);
+
+    /**
      * get token.
      *
      * @template T
