@@ -291,6 +291,9 @@ export class DebugLog {
 
 ## New Features
 
+* 1.3.13
+    1. fix inherit sub class constructor and method param type and param name match error bug, confuse with the parent class param.
+
 * 1.3.12
     1. add cache able features. Class metadata add `expires` to set class instance cache timeout when not used, via `CacheManager`.
     2. implement `ComponentLifecycle` `onDestory` hook for cache class instance.

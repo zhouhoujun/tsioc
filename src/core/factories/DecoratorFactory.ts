@@ -201,7 +201,7 @@ export function hasOwnClassMetadata(decorator: string | Function, target: Type<a
 
 
 function setTypeMetadata<T extends ClassMetadata>(name: string, metaName: string, target: Type<T> | AbstractType<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let annotations = getOwnTypeMetadata(metaName, target);
+    let annotations = getOwnTypeMetadata(metaName, target).slice(0);
     // let designParams = Reflect.getMetadata('design:paramtypes', target) || [];
     let typeMetadata = (metadata || {}) as T;
     if (!typeMetadata.type) {
@@ -294,7 +294,7 @@ export function hasMethodMetadata(decorator: string | Function, target: Type<any
 }
 
 function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let meta = getMethodMetadata(metaName, target);
+    let meta = Object.assign({}, getMethodMetadata(metaName, target));
     meta[propertyKey] = meta[propertyKey] || [];
 
     let methodMeadata = (metadata || {}) as T;
@@ -367,7 +367,7 @@ export function hasPropertyMetadata(decorator: string | Function, target: Type<a
 }
 
 function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let meta = getPropertyMetadata(metaName, target);
+    let meta = Object.assign({}, getPropertyMetadata(metaName, target));
     let propmetadata = (metadata || {}) as T;
 
     propmetadata.propertyKey = propertyKey;
@@ -443,10 +443,24 @@ export function hasParamMetadata(decorator: string | Function, target: Type<any>
     return Reflect.hasMetadata(name + paramsMetadataExt, target, propertyKey);
 }
 
+/**
+ * has param decorator metadata.
+ *
+ * @export
+ * @param {(string | Function)} decorator
+ * @param {(Type<any> | object)} target
+ * @param {(string | symbol)} propertyKey
+ * @returns {boolean}
+ */
+export function hasOwnParamMetadata(decorator: string | Function, target: Type<any> | object, propertyKey?: string | symbol): boolean {
+    let name = isFunction(decorator) ? decorator.toString() : decorator;
+    return Reflect.hasOwnMetadata(name + paramsMetadataExt, target, propertyKey);
+}
+
+
 function setParamMetadata<T extends ParameterMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, parameterIndex: number, metadata?: T, metadataExtends?: MetadataExtends<any>) {
 
-    let parameters: any[][] = getParamMetadata(metaName, target, propertyKey);
-    parameters = isArray(parameters) ? parameters : [];
+    let parameters: any[][] = getOwnParamMetadata(metaName, target, propertyKey).slice(0);
     // there might be gaps if some in between parameters do not have annotations.
     // we pad with nulls.
     while (parameters.length <= parameterIndex) {
@@ -485,8 +499,17 @@ export function getParamerterNames(target: Type<any> | AbstractType<any>): Objec
     return isArray(meta) ? {} : (meta || {});
 }
 
+export function getOwnParamerterNames(target: Type<any> | AbstractType<any>): ObjectMap<string[]> {
+    let meta = Reflect.getOwnMetadata(ParamerterName, target);
+    if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
+        meta = Reflect.getOwnMetadata(ParamerterName, target.constructor);
+    }
+    return isArray(meta) ? {} : (meta || {});
+}
+
+
 export function setParamerterNames(target: Type<any> | AbstractType<any>) {
-    let meta = getParamerterNames(target);
+    let meta = Object.assign({}, getParamerterNames(target));
     let descriptors = Object.getOwnPropertyDescriptors(target.prototype);
     Object.keys(descriptors).forEach(name => {
         if (name !== 'constructor') {
@@ -500,7 +523,6 @@ export function setParamerterNames(target: Type<any> | AbstractType<any>) {
     });
 
     meta['constructor'] = getParamNames(target.prototype.constructor);
-
 
     Reflect.defineMetadata(ParamerterName, meta, target);
 }

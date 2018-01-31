@@ -6,7 +6,7 @@ import { Singleton, Abstract } from './decorators/index';
 import { ClassMetadata, MethodMetadata } from './metadatas/index';
 import { IContainer } from '../IContainer';
 import { CoreActions, ActionComponent } from './actions/index';
-import { DecoratorType, getOwnTypeMetadata, getParamerterNames, getOwnMethodMetadata, hasOwnClassMetadata } from './factories/index';
+import { DecoratorType, getOwnTypeMetadata, getOwnParamerterNames, getParamerterNames, getOwnMethodMetadata, hasOwnClassMetadata } from './factories/index';
 import { Express } from '../types';
 import { ActionData } from './ActionData';
 import { ActionFactory } from './ActionFactory';
@@ -165,7 +165,7 @@ export class DefaultLifeScope implements LifeScope {
      * @memberof DefaultLifeScope
      */
     getParamerterNames<T>(type: Type<T>, propertyKey: string | symbol): string[] {
-        let metadata = getParamerterNames(type);
+        let metadata = getOwnParamerterNames(type);
         let paramNames = [];
         if (metadata && metadata.hasOwnProperty(propertyKey)) {
             paramNames = metadata[propertyKey]

@@ -1,7 +1,7 @@
 import { ActionComposite } from './ActionComposite';
 import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
-import { DecoratorType, getParamMetadata, hasParamMetadata } from '../factories/index';
+import { DecoratorType, getParamMetadata, getOwnParamMetadata, hasParamMetadata, hasOwnParamMetadata } from '../factories/index';
 import { ParameterMetadata } from '../metadatas/index';
 import { IContainer } from '../../IContainer';
 import { Type } from '../../Type';
@@ -44,12 +44,12 @@ export class BindParameterTypeAction extends ActionComposite {
 
 
         let matchs = lifeScope.getParameterDecorators((surm => {
-            return surm.actions.includes(CoreActions.bindParameterType) && (target ? hasParamMetadata(surm.name, target, propertyKey)
-                : hasParamMetadata(surm.name, type));
+            return surm.actions.includes(CoreActions.bindParameterType) && ((target || propertyKey !== 'constructor') ? hasParamMetadata(surm.name, target, propertyKey)
+                : hasOwnParamMetadata(surm.name, type));
         }));
 
         matchs.forEach(surm => {
-            let parameters = target ? getParamMetadata<ParameterMetadata>(surm.name, target, propertyKey) : getParamMetadata<ParameterMetadata>(surm.name, type);
+            let parameters = (target || propertyKey !== 'constructor') ? getParamMetadata<ParameterMetadata>(surm.name, target, propertyKey) : getOwnParamMetadata<ParameterMetadata>(surm.name, type);
             if (isArray(parameters) && parameters.length) {
                 parameters.forEach(params => {
                     let parm = (isArray(params) && params.length > 0) ? params[0] : null;
