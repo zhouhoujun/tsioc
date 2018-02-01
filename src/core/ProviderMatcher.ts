@@ -42,7 +42,7 @@ export class ProviderMatcher implements IProviderMatcher {
                         if (!isUndefined(p[name])) {
                             if (isClass(p[name])) {
                                 map.add(name, p[name]);
-                            } else if (isFunction(p[name])) {
+                            } else if (isFunction(p[name]) || isString(p[name])) {
                                 map.add(name, () => p[name]);
                             } else {
                                 map.add(name, p[name]);

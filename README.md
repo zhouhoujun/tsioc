@@ -291,6 +291,9 @@ export class DebugLog {
 
 ## New Features
 
+* 1.3.14
+    1. fix bug, object provider `{xxx:'MyClassName'}` string val equals to class alias will auto create Class instance. if want create the class instance, use Provider.create ...
+
 * 1.3.13
     1. fix inherit sub class constructor and method param type and param name match error bug, confuse with the parent class param.
 
