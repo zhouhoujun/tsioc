@@ -93,11 +93,21 @@ container.register(new Registration(Person, aliasname));
  * @template T
  * @param {Token<T>} token
  * @param {string} [alias]
- * @param {T} [notFoundValue]
  * @returns {T}
  * @memberof IContainer
  */
-get<T>(token: Token<T>, alias?: string, notFoundValue?: T): T;
+get<T>(token: Token<T>, alias?: string): T;
+
+/**
+ * resolve type instance with token and param provider.
+ *
+ * @template T
+ * @param {Token<T>} token
+ * @param {...Providers[]} providers
+ * @returns {T}
+ * @memberof IContainer
+ */
+resolve<T>(token: Token<T>, ...providers: Providers[]): T;
 
 //get simple person
 let person = container.get(Person);
