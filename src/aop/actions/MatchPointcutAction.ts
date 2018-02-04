@@ -2,7 +2,7 @@
 import { DecoratorType, ActionData, ActionComposite, getOwnMethodMetadata } from '../../core/index';
 import { IContainer } from '../../IContainer';
 import { IAspectManager } from '../IAspectManager';
-import { isClass, symbols, isPromise, isFunction, isUndefined } from '../../utils/index';
+import { symbols, isPromise, isFunction, isUndefined } from '../../utils/index';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';
 import { AdviceMetadata } from '../metadatas/index'

@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { ParameterMetadata } from '../metadatas/index';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isClass, isToken, isParamMetadata, isString, isSymbol } from '../../utils/index';
+import { isToken, isParamMetadata, isString } from '../../utils/index';
 import { ArgsIterator } from './ArgsIterator';
 import { Registration } from '../../Registration';
 import { Token } from '../../types';
