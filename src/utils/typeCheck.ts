@@ -57,9 +57,8 @@ export function isClass(target: any): target is Type<any> {
             return false;
         }
 
-        if (target.constructor && !/^[A-Z@]/.test(target.constructor.name)) {
-            return false;
-        } else if (!/^[A-Z@]/.test(target.name)) {
+        // for uglify
+        if (!/^[a-z]$/.test(target.name) && !/^[A-Z@]/.test(target.name)) {
             return false
         }
 
