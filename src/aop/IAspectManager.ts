@@ -1,8 +1,7 @@
 import { AdviceMetadata } from './metadatas/index';
 import { MethodMetadata } from '../core/index';
-import { Type } from '../Type';
 import { symbols, isString, isRegExp, MapSet } from '../utils/index';
-import { ObjectMap, Express } from '../types';
+import { Type, ObjectMap, Express } from '../types';
 import { Advice } from './decorators/index';
 import { Advices } from './Advices';
 

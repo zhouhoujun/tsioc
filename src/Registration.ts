@@ -1,4 +1,4 @@
-import { Type, AbstractType } from './Type';
+import { Type, AbstractType } from './types';
 
 /**
  * injecto token.

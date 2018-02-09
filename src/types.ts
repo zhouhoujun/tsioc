@@ -1,4 +1,3 @@
-import { Type, AbstractType } from './Type';
 import { Registration } from './Registration';
 import { IContainer } from './IContainer';
 import { ParamProvider, ProviderMap, Provider } from './core/index';
@@ -43,6 +42,54 @@ export type Factory<T> = T | Type<T> | ToInstance<T>;
 export interface ObjectMap<T> {
     [index: string]: T
 }
+
+/**
+ * class Annations
+ *
+ * @export
+ * @interface ClassAnnations
+ */
+export interface ClassAnnations {
+    /**
+     * class name
+     *
+     * @type {string}
+     * @memberof ClassAnnations
+     */
+    name: string;
+    /**
+     * class params declaration.
+     *
+     * @type {ObjectMap<string[]>}
+     * @memberof ClassAnnations
+     */
+    params: ObjectMap<string[]>;
+}
+/**
+ * class type
+ * @export
+ * @interface Type
+ * @extends {Function}
+ * @template T
+ */
+export interface Type<T> extends Function {
+    new(...args: any[]): T;
+    classAnnations?: ClassAnnations;
+}
+
+/**
+ * abstract type
+ *
+ * @export
+ * @interface AbstractType
+ * @extends {Function}
+ * @template T
+ */
+export interface AbstractType<T> extends Function {
+    new?(...args: any[]): T;
+    classAnnations?: ClassAnnations;
+}
+
 
 /**
  * express.

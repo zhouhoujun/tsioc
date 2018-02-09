@@ -1,5 +1,5 @@
 import { IContainer } from './IContainer';
-import { Type } from './Type';
+import { Type } from './types';
 import { AsyncLoadOptions, LoadOptions } from './LoadOptions';
 
 /**

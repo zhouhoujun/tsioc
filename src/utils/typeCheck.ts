@@ -1,5 +1,4 @@
-import { Type, AbstractType } from '../Type';
-import { Token, Providers } from '../types';
+import { Type, AbstractType, Token, Providers } from '../types';
 import { Registration } from '../Registration';
 
 
@@ -57,11 +56,27 @@ export function isClass(target: any): target is Type<any> {
             return false;
         }
 
+        let type = target as Type<any>;
+
         // for uglify
-        if (!/^[a-z]$/.test(target.name) && !/^[A-Z@]/.test(target.name)) {
-            return false
+        if (/^[a-z]$/.test(type.name)) {
+            if (type.classAnnations && type.classAnnations.name) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            if (type.classAnnations && type.classAnnations.name) {
+                return true
+            }
+
+            if (!/^[A-Z@]/.test(target.name)) {
+                return false;
+            }
+
         }
 
+        // for IE 8, 9
         if (!isNodejsEnv() && /MSIE [6-9]/.test(navigator.userAgent)) {
             return true;
         }
@@ -147,7 +162,7 @@ export function isBaseObject(target: any): target is object {
  * @param {string[]} [extendsProps]
  * @returns {boolean}
  */
-export function isMetadataObject(target, props?: string[], extendsProps?: string[]): boolean {
+export function isMetadataObject(target: any, props?: string[], extendsProps?: string[]): boolean {
     if (!target) {
         return false;
     }

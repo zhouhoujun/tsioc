@@ -1,6 +1,5 @@
 import { Metadate, ProviderMetadata, MethodMetadata, ActionComponent, ActionData, DecoratorType } from './core/index';
-import { Type } from './Type';
-import { Token, Express } from './types';
+import { Type, Token, Express } from './types';
 import { IParameter } from './IParameter';
 
 /**

@@ -1,6 +1,7 @@
 import * as gulp from 'gulp';
 import { ITaskOption, Development } from 'development-tool';
 import { Operation } from 'development-core';
+import { classAnnotations } from 'typescript-class-annotations'
 // import 'development-tool-node';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -10,6 +11,7 @@ const rollup = require('gulp-rollup');
 const rename = require('gulp-rename');
 const uglify = require('gulp-uglify');
 const del = require('del');
+
 
 Development.create(gulp, __dirname, [
     <ITaskOption>{

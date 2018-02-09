@@ -1,6 +1,5 @@
 import { MapSet, symbols, isToken, isNumber, isFunction, isUndefined } from '../../utils/index';
-import { Type } from '../../Type';
-import { Token, Factory, Providers, ToInstance, Express2 } from '../../types';
+import { Type, Token, Factory, Providers, ToInstance, Express2 } from '../../types';
 import { IContainer } from '../../IContainer';
 import { Registration } from '../../Registration';
 import { NonePointcut } from '../decorators/index';

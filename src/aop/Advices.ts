@@ -1,5 +1,5 @@
 import { AdviceMetadata } from './metadatas/index';
-import { Type } from '../Type';
+import { Type } from '../types';
 import { MethodMetadata } from '../core/index';
 import { IParameter } from '../IParameter';
 import { MatchPointcut } from './MatchPointcut';

@@ -4,8 +4,7 @@ import { CoreActions } from './CoreActions';
 import { DecoratorType, getParamMetadata, getOwnParamMetadata, hasParamMetadata, hasOwnParamMetadata } from '../factories/index';
 import { ParameterMetadata } from '../metadatas/index';
 import { IContainer } from '../../IContainer';
-import { Type } from '../../Type';
-import { Token } from '../../types';
+import { Type, Token } from '../../types';
 import { isArray } from '../../utils/index';
 
 

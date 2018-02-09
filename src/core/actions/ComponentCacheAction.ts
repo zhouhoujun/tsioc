@@ -4,7 +4,7 @@ import { ActionComposite } from './ActionComposite';
 import { IContainer } from '../../IContainer';
 import { isFunction, isNumber, isClass, MapSet, symbols } from '../../utils/index';
 import { CoreActions } from './CoreActions';
-import { Type } from '../../Type';
+import { Type } from '../../types';
 import { DecoratorType, getOwnTypeMetadata, hasOwnClassMetadata } from '../factories/index';
 import { ComponentLifecycle } from '../ComponentLifecycle';
 import { ICacheManager } from '../../ICacheManager';

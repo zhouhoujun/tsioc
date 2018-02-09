@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { ClassMetadata } from '../metadatas/index';
-import { Type } from '../../Type';
+import { Type } from '../../types';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
 import { Registration } from '../../Registration';

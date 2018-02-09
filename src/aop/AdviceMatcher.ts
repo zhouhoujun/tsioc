@@ -1,10 +1,9 @@
 import { IAdviceMatcher } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadatas/index';
 import { DecoratorType, NonePointcut, MethodMetadata, getOwnMethodMetadata, hasOwnMethodMetadata, hasOwnClassMetadata } from '../core/index';
-import { Type } from '../Type';
 import { symbols, isString, isRegExp } from '../utils/index';
 import { IPointcut } from './IPointcut';
-import { ObjectMap, Express3 } from '../types';
+import { Type, ObjectMap, Express3 } from '../types';
 import { MatchPointcut } from './MatchPointcut';
 import { Aspect, Advice } from './decorators/index';
 import { IContainer } from '../IContainer';

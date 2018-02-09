@@ -1,4 +1,4 @@
-import { Type } from './Type';
+import { Type } from './types';
 import { AsyncLoadOptions } from './LoadOptions';
 
 /**

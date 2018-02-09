@@ -1,5 +1,5 @@
 import { IModuleLoader } from '../IModuleLoader';
-import { Type } from '../Type';
+import { Type } from '../types';
 import { AsyncLoadOptions } from '../LoadOptions';
 
 declare let System: any;

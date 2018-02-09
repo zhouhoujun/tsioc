@@ -1,5 +1,5 @@
 import { IModuleLoader } from '../IModuleLoader';
-import { Type } from '../Type';
+import { Type } from '../types';
 import { toAbsoluteSrc } from './toAbsolute';
 import { AsyncLoadOptions } from '../LoadOptions';
 const globby = require('globby');

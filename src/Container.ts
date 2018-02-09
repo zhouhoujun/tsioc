@@ -1,8 +1,7 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
-import { Token, Factory, ObjectMap, SymbolType, ToInstance, IocState, Providers } from './types';
+import { Type, Token, Factory, ObjectMap, SymbolType, ToInstance, IocState, Providers } from './types';
 import { Registration } from './Registration';
-import { Type } from './Type';
 import { isClass, isFunction, symbols, isSymbol, isToken, isString, isUndefined, MapSet } from './utils/index';
 import { registerAops } from './aop/index';
 import { IMethodAccessor } from './IMethodAccessor';

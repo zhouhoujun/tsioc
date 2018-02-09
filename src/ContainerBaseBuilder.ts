@@ -1,7 +1,7 @@
 import { IContainer } from './IContainer';
 import { Container } from './Container';
 import { isFunction, isClass, symbols, isString, isNodejsEnv } from './utils/index';
-import { Type } from './Type';
+import { Type } from './types';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IModuleLoader } from './IModuleLoader';
 import { AsyncLoadOptions, LoadOptions } from './LoadOptions';

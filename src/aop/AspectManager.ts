@@ -1,8 +1,7 @@
 import { Singleton, Inject, NonePointcut, MethodMetadata, getOwnMethodMetadata } from '../core/index';
 import { IContainer } from '../IContainer';
 import { symbols, MapSet } from '../utils/index';
-import { Token, ObjectMap, Express } from '../types';
-import { Type } from '../Type';
+import { Type, Token, ObjectMap, Express } from '../types';
 import { Advices, Advicer } from './Advices';
 import { Aspect, Advice } from './decorators/index';
 import { AdviceMetadata } from './metadatas/index';

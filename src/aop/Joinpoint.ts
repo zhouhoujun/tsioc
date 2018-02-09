@@ -1,5 +1,5 @@
 import { IPointcut } from './IPointcut';
-import { Type } from '../Type';
+import { Type } from '../types';
 import { Injectable, Inject, NonePointcut, MethodMetadata } from '../core/index';
 import { IParameter } from '../IParameter';
 import { Advicer } from './Advices';

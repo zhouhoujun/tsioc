@@ -1,7 +1,6 @@
-import { Type } from '../Type';
+import { Type } from '../types';
 import { hasOwnClassMetadata, NonePointcut } from '../core/index';
 import { isClass, isObject } from '../utils/index';
-// import { Aspect } from './decorators/index';
 
 export function isValideAspectTarget(targetType: Type<any>) {
 

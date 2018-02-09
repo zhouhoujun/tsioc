@@ -1,10 +1,9 @@
 import { IContainer } from '../IContainer';
 import { ParamProvider, AsyncParamProvider, ProviderMap } from './providers/index';
 import { IMethodAccessor } from '../IMethodAccessor';
-import { Type } from '../Type';
 import { BindParameterProviderActionData, CoreActions } from './actions/index';
 import { symbols, isToken, isFunction, isUndefined, isString } from '../utils/index';
-import { Token, Providers } from '../types';
+import { Type, Token, Providers } from '../types';
 import { Container } from '../Container';
 import { IContainerBuilder } from '../IContainerBuilder';
 import { IParameter } from '../IParameter';

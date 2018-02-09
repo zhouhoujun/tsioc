@@ -30,6 +30,7 @@ class name First char must be UpperCase.
     1. use syncBuild
     2. syncLoadModule
     3. can not use minimatch to match file.
+    4. support es5 uglify, use [typescript-class-annotations](https://www.npmjs.com/package/typescript-class-annotations) to get class annotations before typescript compile.
 
 ```ts
 let builder = new ContainerBuilder();
@@ -300,6 +301,9 @@ export class DebugLog {
 ```
 
 ## New Features
+
+* 1.3.15
+    1. support es5 uglify.  modify isClass  check  way to support uglify min js.  use [typescript-class-annotations](https://www.npmjs.com/package/typescript-class-annotations) to get class annotations before typescript compile.
 
 * 1.3.14
     1. fix bug, object provider `{xxx:'MyClassName'}` string val equals to class alias will auto create Class instance. if want create the class instance, use Provider.create ...

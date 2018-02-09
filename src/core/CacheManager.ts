@@ -1,6 +1,6 @@
 
 import { isFunction, isNumber, MapSet } from '../utils/index';
-import { Type } from '../Type';
+import { Type } from '../types';
 import { IContainer } from '../IContainer';
 import { ComponentLifecycle } from './ComponentLifecycle';
 import { ICacheManager } from '../ICacheManager';

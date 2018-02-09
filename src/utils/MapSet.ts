@@ -1,5 +1,5 @@
 import { isClass, isString, isSymbol, isFunction, isUndefined } from './typeCheck';
-import { Type } from '../Type';
+import { Type } from '../types';
 import { Registration } from '../Registration';
 
 /**
