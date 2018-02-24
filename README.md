@@ -302,6 +302,9 @@ export class DebugLog {
 
 ## New Features
 
+* 1.3.16
+    1. set only with `@Component` decorator have bind `CoreActions.componentBeforeInit, CoreActions.componentInit` actions. auto invoke `beforeInit`, `onInit` hooks
+
 * 1.3.15
     1. support es5 uglify.  modify isClass  check  way to support uglify min js.  use [typescript-class-annotations](https://www.npmjs.com/package/typescript-class-annotations) to get class annotations before typescript compile.
 
@@ -314,7 +317,7 @@ export class DebugLog {
 * 1.3.12
     1. add cache able features. Class metadata add `expires` to set class instance cache timeout when not used, via `CacheManager`.
     2. implement `ComponentLifecycle` `onDestory` hook for cache class instance.
-    3. `@Injectable`, `@Component` and `@Abstract` decorator have bind `CoreActions.componentCache, CoreActions.componentBeforeInit, CoreActions.componentInit` actions.
+    3. `@Injectable`, `@Component` and `@Abstract` decorator have bind `CoreActions.componentCache` actions.
 
 * 1.3.11
     1. fix isNull type check bug.

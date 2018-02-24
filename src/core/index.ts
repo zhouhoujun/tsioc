@@ -59,10 +59,10 @@ export function registerCores(container: IContainer) {
     let cacheAction = factory.create(CoreActions.componentCache);
     lifeScope.addAction(cacheAction, DecoratorType.Class, CoreActions.componentCache);
 
-    lifeScope.registerDecorator(Injectable, CoreActions.bindProvider, CoreActions.componentCache, CoreActions.componentBeforeInit, CoreActions.componentInit);
+    lifeScope.registerDecorator(Injectable, CoreActions.bindProvider, CoreActions.componentCache);
     lifeScope.registerDecorator(Component, CoreActions.bindProvider, CoreActions.componentCache, CoreActions.componentBeforeInit, CoreActions.componentInit);
     lifeScope.registerDecorator(Singleton, CoreActions.bindProvider);
-    lifeScope.registerDecorator(Abstract, CoreActions.bindProvider, CoreActions.componentCache, CoreActions.componentBeforeInit, CoreActions.componentInit);
+    lifeScope.registerDecorator(Abstract, CoreActions.bindProvider, CoreActions.componentCache);
     lifeScope.registerDecorator(AutoWired, CoreActions.bindParameterType, CoreActions.bindPropertyType);
     lifeScope.registerDecorator(Inject, CoreActions.bindParameterType, CoreActions.bindPropertyType);
     lifeScope.registerDecorator(Param, CoreActions.bindParameterType, CoreActions.bindPropertyType);
