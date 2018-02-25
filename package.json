@@ -58,10 +58,11 @@
     "rollup-plugin-node-resolve": "^3.0.0",
     "rollup-plugin-sourcemaps": "^0.4.2",
     "through2": "^2.0.3",
-    "ts-node": "^5.0.0",
+    "ts-node": "^3.3.0",
     "tslint": "^5.8.0",
     "tslint-stylish": "^2.1.0",
-    "typescript": "^2.7.1",
+    "typescript": "^2.7.2",
+    "typescript-class-annotations": "^0.1.0",
     "vinyl-buffer": "^1.0.0",
     "vinyl-paths": "^2.1.0",
     "zone.js": "^0.8.5"
