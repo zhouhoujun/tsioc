@@ -70,4 +70,6 @@ export function registerCores(container: IContainer) {
 
     container.register(Date, () => new Date());
     container.register(String, () => '');
+    container.register(Number, () => Number.NaN);
+
 }
