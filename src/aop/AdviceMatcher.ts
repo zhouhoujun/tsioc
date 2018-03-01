@@ -1,7 +1,7 @@
 import { IAdviceMatcher } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadatas/index';
-import { DecoratorType, NonePointcut, MethodMetadata, getOwnMethodMetadata, hasOwnMethodMetadata, hasOwnClassMetadata } from '../core/index';
-import { symbols, isString, isRegExp } from '../utils/index';
+import { DecoratorType, NonePointcut, MethodMetadata, getParamerterNames, getOwnMethodMetadata, hasOwnMethodMetadata, hasOwnClassMetadata } from '../core/index';
+import { symbols, isString, isRegExp, isUndefined, isFunction } from '../utils/index';
 import { IPointcut } from './IPointcut';
 import { Type, ObjectMap, Express3 } from '../types';
 import { MatchPointcut } from './MatchPointcut';
@@ -48,28 +48,33 @@ export class AdviceMatcher implements IAdviceMatcher {
             }
         } else {// if (!aspectMgr.hasRegisterAdvices(targetType)) {
             let points: IPointcut[] = [];
+            let decorators = Object.getOwnPropertyDescriptors(targetType.prototype);
             // match method.
-            for (let name in Object.getOwnPropertyDescriptors(targetType.prototype)) {
+            for (let name in decorators) {
                 points.push({
                     name: name,
                     fullName: `${className}.${name}`
                 });
             }
 
-            // // match property
-            // Object.getOwnPropertyNames(instance || targetType.prototype).forEach(name => {
-            //     points.push({
-            //         name: name,
-            //         fullName: `${className}.${name}`
-            //     });
-            // });
+            let allmethods = getParamerterNames(targetType);
+            Object.keys(allmethods).forEach(name => {
+                if (name === 'constructor') {
+                    return;
+                }
+                if (isUndefined(decorators[name])) {
+                    points.push({
+                        name: name,
+                        fullName: `${className}.${name}`
+                    });
+                }
+            });
 
             Object.getOwnPropertyNames(adviceMetas).forEach(name => {
                 let advices = adviceMetas[name];
                 advices.forEach(metadata => {
                     matched = matched.concat(this.filterPointcut(targetType, points, metadata));
                 });
-
             });
         }
 

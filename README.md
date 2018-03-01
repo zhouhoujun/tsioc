@@ -302,6 +302,10 @@ export class DebugLog {
 
 ## New Features
 
+* 1.3.18
+    1. fix aop advice order bug.
+    2. fix aop advice not match inherit method bug.
+
 * 1.3.16
     1. set only with `@Component` decorator have bind `CoreActions.componentBeforeInit, CoreActions.componentInit` actions. auto invoke `beforeInit`, `onInit` hooks
 

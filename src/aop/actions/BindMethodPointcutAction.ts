@@ -1,5 +1,5 @@
 
-import { DecoratorType, ActionData, ActionComposite, Provider, hasOwnMethodMetadata, getOwnMethodMetadata } from '../../core/index';
+import { DecoratorType, ActionData, ActionComposite, Provider, hasOwnMethodMetadata, getOwnMethodMetadata, getParamerterNames } from '../../core/index';
 import { IContainer } from '../../IContainer';
 import { IAspectManager } from '../IAspectManager';
 import { isArray, symbols, isPromise, isFunction, isUndefined } from '../../utils/index';
@@ -33,28 +33,44 @@ export class BindMethodPointcutAction extends ActionComposite {
         let access = container.get<IMethodAccessor>(symbols.IMethodAccessor);
         let liefScope = container.getLifeScope();
 
-        let className = data.targetType.name;
-        let methods: IPointcut[] = [];
-        let decorators = Object.getOwnPropertyDescriptors(data.targetType.prototype);
-        for (let name in decorators) {
-            if (name && name !== 'constructor') {
-                methods.push({
-                    name: name,
-                    fullName: `${className}.${name}`,
-                    descriptor: decorators[name]
-                });
-            }
-        }
-
         let target = data.target;
         let targetType = data.targetType;
+
+        let className = targetType.name;
+        let methods: IPointcut[] = [];
+        let decorators = Object.getOwnPropertyDescriptors(targetType.prototype);
+
+        Object.keys(decorators).forEach(name => {
+            if (name === 'constructor') {
+                return;
+            }
+            methods.push({
+                name: name,
+                fullName: `${className}.${name}`,
+                descriptor: decorators[name]
+            });
+        });
+
+        let allmethods = getParamerterNames(targetType);
+        Object.keys(allmethods).forEach(name => {
+            if (name === 'constructor') {
+                return;
+            }
+            if (isUndefined(decorators[name])) {
+                methods.push({
+                    name: name,
+                    fullName: `${className}.${name}`
+                });
+            }
+        });
+
 
         methods.forEach(pointcut => {
             let fullName = pointcut.fullName;
             let methodName = pointcut.name;
             let provJoinpoint: Joinpoint = target['_cache_JoinPoint'];
             let advices = aspectMgr.getAdvices(fullName);
-            if (advices && pointcut.descriptor) {
+            if (advices && pointcut) {
                 let methodAdapter = (propertyMethod: Function) => {
 
                     return (...args: any[]) => {
@@ -69,7 +85,7 @@ export class BindMethodPointcutAction extends ActionComposite {
                             targetType: targetType
                         }));
                         let val;
-                        let adviceAction = (advicer: Advicer, state: JoinpointState, isAsync = false, returnValue?: any, throwError?: any) => {
+                        let adviceAction = (advicer: Advicer, state: JoinpointState, returnValue?: any, throwError?: any) => {
                             joinPoint.state = state;
                             joinPoint.advicer = advicer;
                             joinPoint.returning = returnValue;
@@ -86,7 +102,6 @@ export class BindMethodPointcutAction extends ActionComposite {
                             if (!isUndefined(returnValue) && metadata.args) {
                                 providers.push(Provider.create(metadata.args, args))
                             }
-
 
                             if (metadata.annotationArgName) {
                                 providers.push(Provider.create(
@@ -124,11 +139,8 @@ export class BindMethodPointcutAction extends ActionComposite {
                                 providers.push(Provider.create(metadata.throwing, throwError));
                             }
 
-                            if (isAsync) {
-                                return access.invoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
-                            } else {
-                                return access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
-                            }
+                            return access.syncInvoke<any>(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
+
                         };
 
 
@@ -137,7 +149,7 @@ export class BindMethodPointcutAction extends ActionComposite {
                             propertyKeys.forEach(propertyKey => {
                                 let canModify = ['Around', 'Pointcut'].indexOf(propertyKey) >= 0;
                                 advices[propertyKey].forEach((advicer: Advicer) => {
-                                    let retargs = adviceAction(advicer, state, false) as any[];
+                                    let retargs = adviceAction(advicer, state) as any[];
                                     if (canModify && isArray(retargs)) {
                                         args = retargs;
                                     }
@@ -152,12 +164,22 @@ export class BindMethodPointcutAction extends ActionComposite {
                                 propertyKeys.forEach(propertyKey => {
                                     let hasReturn = ['Around', 'AfterReturning'].indexOf(propertyKey) >= 0;
                                     advices[propertyKey].forEach((advicer: Advicer) => {
-                                        val = val.then(async (value) => {
-                                            let retval = await adviceAction(advicer, state, true, hasReturn ? value : undefined, throwError);
-                                            if (hasReturn && !isUndefined(retval)) {
-                                                return retval
+                                        val = val.then((value) => {
+                                            let retval = adviceAction(advicer, state, hasReturn ? value : undefined, throwError);
+                                            if (isPromise(retval)) {
+                                                return retval.then(val => {
+                                                    if (hasReturn && !isUndefined(val)) {
+                                                        return val
+                                                    } else {
+                                                        return value;
+                                                    }
+                                                });
                                             } else {
-                                                return value;
+                                                if (hasReturn && !isUndefined(retval)) {
+                                                    return retval
+                                                } else {
+                                                    return value;
+                                                }
                                             }
                                         });
                                     });
@@ -166,7 +188,7 @@ export class BindMethodPointcutAction extends ActionComposite {
                                 propertyKeys.forEach(propertyKey => {
                                     let hasReturn = ['Around', 'AfterReturning'].indexOf(propertyKey) >= 0;
                                     advices[propertyKey].forEach((advicer: Advicer) => {
-                                        let retval = adviceAction(advicer, state, false, hasReturn ? val : undefined, throwError);
+                                        let retval = adviceAction(advicer, state, hasReturn ? val : undefined, throwError);
                                         if (hasReturn && !isUndefined(retval)) {
                                             val = retval
                                         }
@@ -176,23 +198,25 @@ export class BindMethodPointcutAction extends ActionComposite {
                             return val;
                         }
 
-
+                        args = asBefore(['Around', 'Before'], JoinpointState.Before);
+                        args = asBefore(['Pointcut'], JoinpointState.Pointcut);
+                        let exeErr;
                         try {
-                            args = asBefore(['Around', 'Before'], JoinpointState.Before);
-                            args = asBefore(['Pointcut'], JoinpointState.Pointcut);
                             val = propertyMethod(...args);
-                            asResult(['Around'], JoinpointState.After, val);
+                        } catch (err) {
+                            exeErr = err;
+                        }
+
+                        asResult(['Around', 'After'], JoinpointState.After, val);
+                        if (exeErr) {
+                            asResult(['Around', 'AfterThrowing'], JoinpointState.AfterThrowing, val, exeErr);
+                        } else {
                             val = asResult(['Around', 'AfterReturning'], JoinpointState.AfterReturning, val);
                             return val;
-                        } catch (err) {
-                            asResult(['Around', 'AfterThrowing'], JoinpointState.AfterThrowing, val, err);
-                            throw err;
-                        } finally {
-                            asResult(['After'], JoinpointState.After, val);
                         }
                     };
                 }
-                if (pointcut.descriptor.get || pointcut.descriptor.set) {
+                if (pointcut.descriptor && (pointcut.descriptor.get || pointcut.descriptor.set)) {
                     if (pointcut.descriptor.get) {
                         let getMethod = pointcut.descriptor.get.bind(target);
                         pointcut.descriptor.get = methodAdapter(getMethod);
