@@ -48,3 +48,9 @@ export const IAdviceMatcher = Symbol('IAdviceMatcher');
  * it is a symbol id, you can register yourself IActionBuilder for this.
  */
 export const IAspectManager = Symbol('IAspectManager');
+
+/**
+ * Log configure interface symbol.
+ * it is a symbol id, you can register yourself IActionBuilder for this.
+ */
+export const LogConfigure = Symbol('LogConfigure');
