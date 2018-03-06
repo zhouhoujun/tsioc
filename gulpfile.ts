@@ -42,10 +42,12 @@ Development.create(gulp, __dirname, [
                                 rollupSourcemaps()
                             ],
                             external: [
-                                'reflect-metadata'
+                                'reflect-metadata',
+                                'log4js'
                             ],
                             globals: {
-                                'reflect-metadata': 'Reflect'
+                                'reflect-metadata': 'Reflect',
+                                'log4js': 'log4js'
                             },
                             input: './lib/browser.js'
                         })

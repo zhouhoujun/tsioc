@@ -1,4 +1,4 @@
-import { TypeMetadata, IClassMethodDecorator, createClassMethodDecorator, ClassMethodDecorator } from '../../core';
+import { TypeMetadata, IClassMethodDecorator, createClassMethodDecorator, ClassMethodDecorator } from '../../core/index';
 import { isClassMetadata, isString, isFunction } from '../../utils/index';
 import { Express } from '../../types';
 

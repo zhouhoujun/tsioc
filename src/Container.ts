@@ -9,6 +9,7 @@ import { ActionComponent, DecoratorType, registerCores, CoreActions, Singleton, 
 import { LifeScope } from './LifeScope';
 import { IParameter } from './IParameter';
 import { ICacheManager } from './ICacheManager';
+import { registerLogs } from './logs';
 
 
 /**
@@ -303,6 +304,7 @@ export class Container implements IContainer {
 
         registerCores(this);
         registerAops(this);
+        registerLogs(this);
     }
 
     protected registerFactory<T>(token: Token<T>, value?: Factory<T>, singleton?: boolean) {

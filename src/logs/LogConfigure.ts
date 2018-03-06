@@ -31,7 +31,7 @@ export interface LogConfigure {
      *
      * @memberof LogConfigure
      */
-    format?: string | ((joinPoint?: Joinpoint, logger?: ILogger) => string);
+    format?(joinPoint?: Joinpoint, logger?: ILogger): string;
 
     /**
      * format args.
