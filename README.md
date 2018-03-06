@@ -302,6 +302,9 @@ export class DebugLog {
 
 ## New Features
 
+* 1.4.0
+    1. add logger aspect, logger adapter and logger services.
+
 * 1.3.18
     1. fix aop advice order bug.
     2. fix aop advice not match inherit method bug.
