@@ -13,8 +13,8 @@ export abstract class LoggerAspect {
     private _logger: ILogger;
     private _logManger: ILoggerManger;
     private _config: LogConfigure;
-    constructor(protected container: IContainer) {
-
+    constructor(protected container: IContainer, config?: LogConfigure) {
+        this._config = config;
     }
 
     get config(): LogConfigure {
