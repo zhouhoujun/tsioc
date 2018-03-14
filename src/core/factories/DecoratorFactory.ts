@@ -510,20 +510,24 @@ export function getOwnParamerterNames(target: Type<any> | AbstractType<any>): Ob
 export function setParamerterNames(target: Type<any> | AbstractType<any>) {
     let meta = Object.assign({}, getParamerterNames(target));
     let descriptors = Object.getOwnPropertyDescriptors(target.prototype);
-    Object.keys(descriptors).forEach(name => {
-        if (name !== 'constructor') {
-            if (descriptors[name].value) {
-                meta[name] = getParamNames(descriptors[name].value)
-            }
-            if (descriptors[name].set) {
-                meta[name] = getParamNames(descriptors[name].set);
-            }
-        }
-    });
-
-    meta['constructor'] = getParamNames(target.prototype.constructor);
+    let isUglify = /^[a-z]/.test(target.name);
+    let anName = '';
     if (target.classAnnations && target.classAnnations.params) {
+        anName = target.classAnnations.name;
         meta = Object.assign(meta, target.classAnnations.params);
+    }
+    if (!isUglify && target.name !== anName) {
+        Object.keys(descriptors).forEach(name => {
+            if (name !== 'constructor') {
+                if (descriptors[name].value) {
+                    meta[name] = getParamNames(descriptors[name].value)
+                }
+                if (descriptors[name].set) {
+                    meta[name] = getParamNames(descriptors[name].set);
+                }
+            }
+        });
+        meta['constructor'] = getParamNames(target.prototype.constructor);
     }
 
     Reflect.defineMetadata(ParamerterName, meta, target);

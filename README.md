@@ -302,6 +302,9 @@ export class DebugLog {
 
 ## New Features
 
+* 1.4.2
+    1. fix bug, inherit sub class with `classAnnations` overrid error method params.
+
 * 1.4.0
     1. add logger aspect, logger adapter and logger services.
 
