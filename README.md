@@ -302,6 +302,9 @@ export class DebugLog {
 
 ## New Features
 
+* 1.4.3
+    1. remove `log4js` adapter for fix browser load log4js error.
+    2. update task for uglify `tsioc.umd.js` smaller.
 * 1.4.2
     1. fix bug, inherit sub class with `classAnnations` overrid error method params.
 
