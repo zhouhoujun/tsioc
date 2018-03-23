@@ -137,6 +137,23 @@ export function isPromise(target: any): target is Promise<any> {
 }
 
 /**
+ * is target rxjs observable or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {boolean}
+ */
+export function isObservable(target: any): boolean {
+    if (!target && !isObject(target)) {
+        return false;
+    }
+    if (isFunction(target.subscribe) && isFunction(target.toPromise)) {
+        return true;
+    }
+    return false;
+}
+
+/**
  * is target base object or not.
  * eg. {}, have not self constructor;
  * @export

@@ -2,7 +2,7 @@
 import { DecoratorType, ActionData, ActionComposite, Provider, hasOwnMethodMetadata, getOwnMethodMetadata, getParamerterNames } from '../../core/index';
 import { IContainer } from '../../IContainer';
 import { IAspectManager } from '../IAspectManager';
-import { isArray, symbols, isPromise, isFunction, isUndefined } from '../../utils/index';
+import { isArray, symbols, isPromise, isFunction, isUndefined, isObservable } from '../../utils/index';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AroundMetadata } from '../metadatas/index'
@@ -182,6 +182,40 @@ export class BindMethodPointcutAction extends ActionComposite {
                                                 }
                                             }
                                         });
+                                    });
+                                });
+                            } else if (isObservable(val)) {
+                                propertyKeys.forEach(propertyKey => {
+                                    let hasReturn = ['Around', 'AfterReturning'].indexOf(propertyKey) >= 0;
+                                    advices[propertyKey].forEach((advicer: Advicer) => {
+                                        if (isFunction(val.flatMap) && isFunction(val.map)) {
+                                            val = val.flatMap((value) => {
+                                                let retval = adviceAction(advicer, state, hasReturn ? value : undefined, throwError);
+                                                if (isPromise(retval)) {
+                                                    return retval.then(val => {
+                                                        if (hasReturn && !isUndefined(val)) {
+                                                            return val
+                                                        } else {
+                                                            return value;
+                                                        }
+                                                    });
+                                                } else if (isObservable(retval)) {
+                                                    return retval.map(val => {
+                                                        if (hasReturn && !isUndefined(val)) {
+                                                            return val
+                                                        } else {
+                                                            return value;
+                                                        }
+                                                    });
+                                                } else {
+                                                    if (hasReturn && !isUndefined(retval)) {
+                                                        return retval
+                                                    } else {
+                                                        return value;
+                                                    }
+                                                }
+                                            });
+                                        }
                                     });
                                 });
                             } else {
