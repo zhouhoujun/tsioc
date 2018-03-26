@@ -35,11 +35,13 @@ import { ProxyMethod } from './access/index';
  */
 export function registerAops(container: IContainer) {
     container.register(Joinpoint);
-    container.register(ProxyMethod);
-    container.register(Advisor);
-    container.register(AdviceMatcher);
-    // container.registerSingleton(Advisor);
-    // container.registerSingleton(symbols.IAdviceMatcher, () => new AdviceMatcher(container));
+    // container.register(ProxyMethod);
+    // container.register(Advisor);
+    // container.register(AdviceMatcher);
+
+    container.registerSingleton(symbols.IProxyMethod, () => new ProxyMethod(container));
+    container.registerSingleton(symbols.IAdvisor, () => new Advisor(container));
+    container.registerSingleton(symbols.IAdviceMatcher, () => new AdviceMatcher(container));
 
     let lifeScope = container.get<LifeScope>(symbols.LifeScope);
 

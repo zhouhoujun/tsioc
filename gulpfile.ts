@@ -20,6 +20,14 @@ Development.create(gulp, __dirname, [
         dist: 'lib',
         testSrc: 'test/**/*.spec.ts',
         loader: 'development-tool-node'
+        // asserts: {
+        //     ts: {
+        //         tsPipes: [
+        //             () => classAnnotations()
+        //         ],
+        //         loader: 'development-assert-ts'
+        //     }
+        // }
     },
     <ITaskOption>{
         src: ['lib/**/*.js', '!lib/node/**', '!lib/index.js'],

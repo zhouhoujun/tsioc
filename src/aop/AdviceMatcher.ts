@@ -10,10 +10,10 @@ import { IContainer } from '../IContainer';
 import { IAdvisor } from './IAdvisor';
 
 @NonePointcut()
-@Singleton(symbols.IAdviceMatcher)
+// @Singleton(symbols.IAdviceMatcher)
 export class AdviceMatcher implements IAdviceMatcher {
 
-    constructor(@Inject(symbols.IContainer) private container: IContainer) {
+    constructor(private container: IContainer) {
 
     }
 

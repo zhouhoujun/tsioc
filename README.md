@@ -302,7 +302,7 @@ export class DebugLog {
 
 ## New Features
 
-* 1.4.4
+* 1.4.5
     1. refactor tsioc aop
     2. fix import bug for web debug.
     <!-- 1. add rxjs observable object check.

@@ -14,7 +14,7 @@ import { IAdvisor } from './IAdvisor';
  * @class Advisor
  */
 @NonePointcut()
-@Singleton(symbols.IAdvisor)
+// @Singleton(symbols.IAdvisor)
 export class Advisor implements IAdvisor {
     /**
      * aspects.
@@ -32,7 +32,7 @@ export class Advisor implements IAdvisor {
     advices: MapSet<string, Advices>;
 
 
-    constructor(@Inject(symbols.IContainer) private container: IContainer) {
+    constructor(private container: IContainer) {
         this.aspects = new MapSet<Type<any>, ObjectMap<AdviceMetadata[]>>();
         this.advices = new MapSet<string, Advices>();
     }

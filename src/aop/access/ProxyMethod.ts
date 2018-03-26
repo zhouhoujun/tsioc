@@ -11,9 +11,9 @@ import { IProxyMethod } from './IProxyMethod';
 import { IMethodAccessor } from '../../IMethodAccessor';
 
 @NonePointcut()
-@Singleton(symbols.IProxyMethod)
+// @Singleton(symbols.IProxyMethod)
 export class ProxyMethod implements IProxyMethod {
-    constructor(@Inject(symbols.IContainer) private container: IContainer) {
+    constructor(private container: IContainer) {
 
     }
 
