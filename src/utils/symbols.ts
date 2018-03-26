@@ -38,16 +38,22 @@ export const IContainerBuilder = Symbol('IContainerBuilder');
 
 
 /**
+ * Aop proxy method interface symbol.
+ * it is a symbol id, you can register yourself IProxyMethod for this.
+ */
+export const IProxyMethod = Symbol('IProxyMethod');
+
+/**
  * Aop advice matcher interface symbol.
  * it is a symbol id, you can register yourself IActionBuilder for this.
  */
 export const IAdviceMatcher = Symbol('IAdviceMatcher');
 
 /**
- * Aop AspectManager interface symbol.
- * it is a symbol id, you can register yourself IActionBuilder for this.
+ * Aop IAdvisor interface symbol.
+ * it is a symbol id, you can register yourself IAdvisor for this.
  */
-export const IAspectManager = Symbol('IAspectManager');
+export const IAdvisor = Symbol('IAdvisor');
 
 /**
  * Log configure interface symbol.

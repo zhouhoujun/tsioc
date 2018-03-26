@@ -1,16 +1,17 @@
 
 import { DecoratorType, ActionData, ActionComposite, getOwnMethodMetadata } from '../../core/index';
 import { IContainer } from '../../IContainer';
-import { IAspectManager } from '../IAspectManager';
+import { IAdvisor } from '../IAdvisor';
 import { symbols, isPromise, isFunction, isUndefined } from '../../utils/index';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';
 import { AdviceMetadata } from '../metadatas/index'
 import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IMethodAccessor } from '../../IMethodAccessor';
-import { Joinpoint, JoinpointState } from '../Joinpoint';
+import { IPointcut, Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints/index';
+import { Advices, Advicer } from '../advices/index';
 import { isValideAspectTarget } from '../isValideAspectTarget';
-import { Advices, Advicer } from '../Advices';
+
 
 
 export interface MatchPointcutActionData extends ActionData<Joinpoint> {
@@ -28,7 +29,7 @@ export class MatchPointcutAction extends ActionComposite {
         if (!isValideAspectTarget(data.targetType)) {
             return;
         }
-        let aspectmgr = container.get<IAspectManager>(symbols.IAspectManager);
+        let aspectmgr = container.get<IAdvisor>(symbols.IAdvisor);
         let matcher = container.get<IAdviceMatcher>(symbols.IAdviceMatcher);
         aspectmgr.aspects.forEach((adviceMetas, type) => {
             let matchpoints = matcher.match(type, data.targetType, adviceMetas);

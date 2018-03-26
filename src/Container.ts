@@ -9,7 +9,7 @@ import { ActionComponent, DecoratorType, registerCores, CoreActions, Singleton, 
 import { LifeScope } from './LifeScope';
 import { IParameter } from './IParameter';
 import { ICacheManager } from './ICacheManager';
-import { registerLogs } from './logs';
+import { registerLogs } from './logs/index';
 
 
 /**

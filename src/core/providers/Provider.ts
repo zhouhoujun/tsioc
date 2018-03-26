@@ -2,11 +2,7 @@ import { Token, ToInstance, Providers, Express2 } from '../../types';
 import { IContainer } from '../../IContainer';
 import { isFunction, isObject, symbols, isUndefined } from '../../utils/index';
 import { IContainerBuilder } from '../../IContainerBuilder';
-
-// import { InvokeProvider } from './InvokeProvider';
-// import { ParamProvider } from './ParamProvider';
-// import { AsyncParamProvider } from './AsyncParamProvider';
-// import { ExtendsProvider } from './ExtendsProvider';
+import { NonePointcut } from '../decorators/index';
 
 /**
  *  provider, to dynamic resovle instance of params in run time.
@@ -14,6 +10,7 @@ import { IContainerBuilder } from '../../IContainerBuilder';
  * @export
  * @class Provider
  */
+@NonePointcut()
 export class Provider {
     /**
      * service provider is value or value factory.
@@ -139,6 +136,7 @@ export class Provider {
 
 }
 
+@NonePointcut()
 export class CustomProvider extends Provider {
     /**
      * service value is the result of type instance invoke the method return value.
@@ -169,6 +167,7 @@ export class CustomProvider extends Provider {
  * @class InvokeProvider
  * @extends {Provider}
  */
+@NonePointcut()
 export class InvokeProvider extends Provider {
     /**
      * service value is the result of type instance invoke the method return value.
@@ -198,6 +197,7 @@ export class InvokeProvider extends Provider {
  * @export
  * @interface ParamProvider
  */
+@NonePointcut()
 export class ParamProvider extends InvokeProvider {
     /**
      * param index, param name.
@@ -224,6 +224,7 @@ export class ParamProvider extends InvokeProvider {
  * @class ExtendsProvider
  * @extends {Provider}
  */
+@NonePointcut()
 export class ExtendsProvider extends Provider {
 
 
@@ -252,6 +253,7 @@ export class ExtendsProvider extends Provider {
  * @interface AsyncParamProvider
  * @extends {ParamProvider}
  */
+@NonePointcut()
 export class AsyncParamProvider extends ParamProvider {
     /**
      * match ref files.

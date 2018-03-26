@@ -1,6 +1,6 @@
 import { DecoratorType, ActionData, ClassMetadata, ActionComposite, hasOwnClassMetadata, getOwnTypeMetadata } from '../../core/index';
 import { IContainer } from '../../IContainer';
-import { IAspectManager } from '../IAspectManager';
+import { IAdvisor } from '../IAdvisor';
 import { isClass, symbols } from '../../utils/index';
 import { AopActions } from './AopActions';
 
@@ -23,7 +23,7 @@ export class RegistAspectAction extends ActionComposite {
 
         let matchs = lifeScope.getClassDecorators(surm => surm.actions.includes(AopActions.registAspect) && hasOwnClassMetadata(surm.name, type));
 
-        let aspectMgr = container.get<IAspectManager>(symbols.IAspectManager);
+        let aspectMgr = container.get<IAdvisor>(symbols.IAdvisor);
         matchs.forEach(surm => {
             let metadata = getOwnTypeMetadata<ClassMetadata>(surm.name, type);
             if (Array.isArray(metadata) && metadata.length > 0) {

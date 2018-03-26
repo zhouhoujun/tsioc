@@ -2,19 +2,20 @@ import { Singleton, Inject, NonePointcut, MethodMetadata, getOwnMethodMetadata }
 import { IContainer } from '../IContainer';
 import { symbols, MapSet } from '../utils/index';
 import { Type, Token, ObjectMap, Express } from '../types';
-import { Advices, Advicer } from './Advices';
+import { Advices, Advicer } from './advices/index';
 import { Aspect, Advice } from './decorators/index';
 import { AdviceMetadata } from './metadatas/index';
-import { IAspectManager } from './IAspectManager';
+import { IAdvisor } from './IAdvisor';
 
 /**
- * for global aspect mamager.
+ * for global aop advisor.
  *
  * @export
- * @class AspectManager
+ * @class Advisor
  */
 @NonePointcut()
-export class AspectManager implements IAspectManager {
+@Singleton(symbols.IAdvisor)
+export class Advisor implements IAdvisor {
     /**
      * aspects.
      *
@@ -31,7 +32,7 @@ export class AspectManager implements IAspectManager {
     advices: MapSet<string, Advices>;
 
 
-    constructor(private container: IContainer) {
+    constructor(@Inject(symbols.IContainer) private container: IContainer) {
         this.aspects = new MapSet<Type<any>, ObjectMap<AdviceMetadata[]>>();
         this.advices = new MapSet<string, Advices>();
     }

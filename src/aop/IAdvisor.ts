@@ -3,28 +3,28 @@ import { MethodMetadata } from '../core/index';
 import { symbols, isString, isRegExp, MapSet } from '../utils/index';
 import { Type, ObjectMap, Express } from '../types';
 import { Advice } from './decorators/index';
-import { Advices } from './Advices';
+import { Advices } from './advices/index';
 
 
 /**
  * aspect set.
  *
  * @export
- * @interface IAspectManager
+ * @interface IAdvisor
  */
-export interface IAspectManager {
+export interface IAdvisor {
     /**
      * aspects
      *
      * @type {MapSet<Type<any>, ObjectMap<AdviceMetadata[]>>}
-     * @memberof IAspectManager
+     * @memberof IAdvisor
      */
     aspects: MapSet<Type<any>, ObjectMap<AdviceMetadata[]>>;
     /**
      * advices
      *
      * @type {MapSet<string, Advices>}
-     * @memberof IAspectManager
+     * @memberof IAdvisor
      */
     advices: MapSet<string, Advices>;
 
@@ -33,7 +33,7 @@ export interface IAspectManager {
      *
      * @param {Type<any>} targetType
      * @returns {boolean}
-     * @memberof IAspectManager
+     * @memberof IAdvisor
      */
     hasRegisterAdvices(targetType: Type<any>): boolean;
     /**
@@ -41,7 +41,7 @@ export interface IAspectManager {
      *
      * @param {string} key
      * @param {Advices} advices
-     * @memberof IAspectManager
+     * @memberof IAdvisor
      */
     setAdvices(key: string, advices: Advices);
     /**
@@ -49,14 +49,14 @@ export interface IAspectManager {
      *
      * @param {string} key
      * @returns {Advices}
-     * @memberof IAspectManager
+     * @memberof IAdvisor
      */
     getAdvices(key: string): Advices;
     /**
      * add aspect.
      *
      * @param {Type<any>} aspect
-     * @memberof IAspectManager
+     * @memberof IAdvisor
      */
     add(aspect: Type<any>);
 }

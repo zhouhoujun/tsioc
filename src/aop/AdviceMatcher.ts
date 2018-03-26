@@ -1,18 +1,19 @@
 import { IAdviceMatcher } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadatas/index';
-import { DecoratorType, NonePointcut, MethodMetadata, getParamerterNames, getOwnMethodMetadata, hasOwnMethodMetadata, hasOwnClassMetadata } from '../core/index';
+import { DecoratorType, NonePointcut, Inject, MethodMetadata, getParamerterNames, getOwnMethodMetadata, hasOwnMethodMetadata, hasOwnClassMetadata, Singleton } from '../core/index';
 import { symbols, isString, isRegExp, isUndefined, isFunction } from '../utils/index';
-import { IPointcut } from './IPointcut';
+import { IPointcut, MatchPointcut } from './joinpoints/index';
+import { Advices, Advicer } from './advices/index';
 import { Type, ObjectMap, Express3 } from '../types';
-import { MatchPointcut } from './MatchPointcut';
 import { Aspect, Advice } from './decorators/index';
 import { IContainer } from '../IContainer';
-import { IAspectManager } from './IAspectManager';
+import { IAdvisor } from './IAdvisor';
 
 @NonePointcut()
+@Singleton(symbols.IAdviceMatcher)
 export class AdviceMatcher implements IAdviceMatcher {
 
-    constructor(private container: IContainer) {
+    constructor(@Inject(symbols.IContainer) private container: IContainer) {
 
     }
 
@@ -21,7 +22,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         let className = targetType.name;
 
         adviceMetas = adviceMetas || getOwnMethodMetadata<AdviceMetadata>(Advice, targetType);
-        let aspectMgr = this.container.get<IAspectManager>(symbols.IAspectManager);
+        let aspectMgr = this.container.get<IAdvisor>(symbols.IAdvisor);
         let matched: MatchPointcut[] = [];
 
         if (targetType === aspectType) {

@@ -19,4 +19,4 @@ export * from './utils/index';
 export * from './components/index';
 export * from './core/index';
 export * from './aop/index';
-
+export * from './logs/index';

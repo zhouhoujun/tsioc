@@ -1,5 +1,5 @@
 import { AdviceMetadata } from './metadatas/index';
-import { MatchPointcut } from './MatchPointcut';
+import { MatchPointcut } from './joinpoints/index';
 import { Type, ObjectMap } from '../types';
 
 export interface IAdviceMatcher {

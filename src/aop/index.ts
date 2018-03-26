@@ -2,21 +2,20 @@
 export * from './actions/index';
 export * from './decorators/index';
 export * from './metadatas/index';
+export * from './joinpoints/index';
+export * from './advices/index';
+export * from './access/index';
 
-export * from './Advices';
-export * from './AspectManager';
-export * from './IAdviceMatcher';
+export * from './IAdvisor';
+export * from './Advisor';
 export * from './AdviceMatcher';
-export * from './MatchPointcut';
-export * from './IPointcut';
-export * from './Joinpoint';
 export * from './isValideAspectTarget';
 
 
 
 import { IContainer } from '../IContainer';
 import { Aspect } from './decorators/index';
-import { AspectManager } from './AspectManager';
+import { Advisor } from './Advisor';
 import { symbols } from '../utils/index';
 import { AopActions } from './actions/index';
 import { AdviceMatcher } from './AdviceMatcher';
@@ -25,7 +24,8 @@ import { LifeScope } from '../LifeScope';
 import { DecoratorType, CoreActions } from '../core/index';
 import { AopActionFactory } from './actions/AopActionFactory';
 import { IocState } from '../types';
-import { Joinpoint } from './Joinpoint';
+import { Joinpoint } from './joinpoints/index';
+import { ProxyMethod } from './access/index';
 
 /**
  * register aop for container.
@@ -35,8 +35,11 @@ import { Joinpoint } from './Joinpoint';
  */
 export function registerAops(container: IContainer) {
     container.register(Joinpoint);
-    container.registerSingleton(symbols.IAspectManager, () => new AspectManager(container));
-    container.registerSingleton(symbols.IAdviceMatcher, () => new AdviceMatcher(container));
+    container.register(ProxyMethod);
+    container.register(Advisor);
+    container.register(AdviceMatcher);
+    // container.registerSingleton(Advisor);
+    // container.registerSingleton(symbols.IAdviceMatcher, () => new AdviceMatcher(container));
 
     let lifeScope = container.get<LifeScope>(symbols.LifeScope);
 

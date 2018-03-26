@@ -1,14 +1,14 @@
 import { DecoratorType, ActionData, ActionComposite, Provider, getOwnMethodMetadata } from '../../core/index';
 import { IContainer } from '../../IContainer';
-import { IAspectManager } from '../IAspectManager';
+import { IAdvisor } from '../IAdvisor';
 import { symbols } from '../../utils/index';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';
 import { AdviceMetadata } from '../metadatas/index'
 import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IMethodAccessor } from '../../IMethodAccessor';
-import { Advices } from '../Advices';
-import { IJoinpoint, Joinpoint, JoinpointState } from '../Joinpoint';
+import { IPointcut, Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints/index';
+import { Advices, Advicer } from '../advices/index';
 import { isValideAspectTarget } from '../isValideAspectTarget';
 
 
@@ -27,7 +27,7 @@ export class InvokeAfterConstructorAction extends ActionComposite {
             return;
         }
 
-        let aspectMgr = container.get<IAspectManager>(symbols.IAspectManager);
+        let aspectMgr = container.get<IAdvisor>(symbols.IAdvisor);
         let advices = aspectMgr.getAdvices(data.targetType.name + '.constructor');
         if (!advices) {
             return;

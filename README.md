@@ -303,8 +303,10 @@ export class DebugLog {
 ## New Features
 
 * 1.4.4
-    1. add rxjs observable object check.
-    2. enable rxjs observable reuturning value of method for aop After, Around, AfterReturning advive opter.
+    1. refactor tsioc aop
+    2. fix import bug for web debug.
+    <!-- 1. add rxjs observable object check.
+    2. enable rxjs observable reuturning value of method for aop After, Around, AfterReturning advive opter. -->
 
 * 1.4.3
     1. remove `log4js` adapter for fix browser load log4js error.
