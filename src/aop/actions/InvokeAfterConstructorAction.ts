@@ -40,6 +40,7 @@ export class InvokeAfterConstructorAction extends ActionComposite {
             state: JoinpointState.After,
             fullName: targetType.name + '.constructor',
             target: target,
+            args: data.args,
             targetType: targetType
         }));
         let providers = [Provider.create(Joinpoint, joinPoint)];

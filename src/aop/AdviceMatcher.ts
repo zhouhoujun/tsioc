@@ -10,10 +10,10 @@ import { IContainer } from '../IContainer';
 import { IAdvisor } from './IAdvisor';
 
 @NonePointcut()
-// @Singleton(symbols.IAdviceMatcher)
+@Singleton(symbols.IAdviceMatcher)
 export class AdviceMatcher implements IAdviceMatcher {
 
-    constructor(private container: IContainer) {
+    constructor(@Inject(symbols.IContainer) private container: IContainer) {
 
     }
 
@@ -137,6 +137,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                     .replace(/\*/gi, '\\\w+')
                     .replace(/\./gi, '\\\.')
                     .replace(/\//gi, '\\\/');
+
                 let matcher = new RegExp(pointcut + '$');
 
                 return (name: string, fullName: string, pointcut: IPointcut) => matcher.test(fullName);
@@ -155,7 +156,5 @@ export class AdviceMatcher implements IAdviceMatcher {
         }
         return null;
     }
-
-
 
 }

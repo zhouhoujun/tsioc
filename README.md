@@ -302,6 +302,9 @@ export class DebugLog {
 
 ## New Features
 
+* 1.5.0
+   1. refactor aop, add AdvisorChain to control advices invoke when target method invoking.
+
 * 1.4.5
     1. refactor tsioc aop
     2. fix import bug for web debug.

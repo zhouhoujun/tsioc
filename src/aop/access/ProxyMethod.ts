@@ -9,11 +9,13 @@ import { Type } from '../../types';
 import { LifeScope } from '../../LifeScope';
 import { IProxyMethod } from './IProxyMethod';
 import { IMethodAccessor } from '../../IMethodAccessor';
+import { IAdvisorChainFactory } from './IAdvisorChainFactory';
 
 @NonePointcut()
-// @Singleton(symbols.IProxyMethod)
+@Singleton(symbols.IProxyMethod)
 export class ProxyMethod implements IProxyMethod {
-    constructor(private container: IContainer) {
+
+    constructor(@Inject(symbols.IContainer) private container: IContainer) {
 
     }
 
@@ -76,134 +78,23 @@ export class ProxyMethod implements IProxyMethod {
                 target: target,
                 targetType: targetType
             }));
-            let val;
-            let adviceAction = (advicer: Advicer, state: JoinpointState, returnValue?: any, throwError?: any) => {
-                joinPoint.state = state;
-                joinPoint.advicer = advicer;
-                joinPoint.returning = returnValue;
-                joinPoint.throwing = throwError;
 
-                let providers = [];
-
-                providers.push(Provider.createExtends(Joinpoint, joinPoint, (inst, provider) => {
-                    inst._cache_JoinPoint = provider.resolve(container);
-                }));
-
-                let metadata: any = advicer.advice;
-
-                if (!isUndefined(returnValue) && metadata.args) {
-                    providers.push(Provider.create(metadata.args, args))
-                }
-
-                if (metadata.annotationArgName) {
-                    providers.push(Provider.create(
-                        metadata.annotationArgName,
-                        () => {
-                            let curj = joinPoint;
-                            let annotations = curj.annotations;
-                            while (!annotations && joinPoint.provJoinpoint) {
-                                curj = joinPoint.provJoinpoint;
-                                if (curj && curj.annotations) {
-                                    annotations = curj.annotations;
-                                    break;
-                                }
-                            }
-
-                            if (isArray(annotations)) {
-                                if (metadata.annotation) {
-                                    let d: string = metadata.annotation;
-                                    d = /^@/.test(d) ? d : `@${d}`;
-                                    return annotations.filter(a => a.decorator === d);
-                                }
-                                return annotations;
-                            } else {
-                                return [];
-                            }
-                        }
-                    ));
-                }
-
-                if (!isUndefined(returnValue) && metadata.returning) {
-                    providers.push(Provider.create(metadata.returning, returnValue))
-                }
-
-                if (throwError && metadata.throwing) {
-                    providers.push(Provider.create(metadata.throwing, throwError));
-                }
-
-                return this.container.syncInvoke<any>(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
-
-            };
-
-            let asBefore = (propertyKeys: string[], state: JoinpointState) => {
-
-                propertyKeys.forEach(propertyKey => {
-                    let canModify = ['Around', 'Pointcut'].indexOf(propertyKey) >= 0;
-                    advices[propertyKey].forEach((advicer: Advicer) => {
-                        let retargs = adviceAction(advicer, state) as any[];
-                        if (canModify && isArray(retargs)) {
-                            args = retargs;
-                        }
-                    });
-                });
-
-                return args;
-            }
-
-            let asResult = (propertyKeys: string[], state: JoinpointState, val, throwError?: any) => {
-                if (isPromise(val)) {
-                    propertyKeys.forEach(propertyKey => {
-                        let hasReturn = ['Around', 'AfterReturning'].indexOf(propertyKey) >= 0;
-                        advices[propertyKey].forEach((advicer: Advicer) => {
-                            val = val.then((value) => {
-                                let retval = adviceAction(advicer, state, hasReturn ? value : undefined, throwError);
-                                if (isPromise(retval)) {
-                                    return retval.then(val => {
-                                        if (hasReturn && !isUndefined(val)) {
-                                            return val
-                                        } else {
-                                            return value;
-                                        }
-                                    });
-                                } else {
-                                    if (hasReturn && !isUndefined(retval)) {
-                                        return retval
-                                    } else {
-                                        return value;
-                                    }
-                                }
-                            });
-                        });
-                    });
-                } else {
-                    propertyKeys.forEach(propertyKey => {
-                        let hasReturn = ['Around', 'AfterReturning'].indexOf(propertyKey) >= 0;
-                        advices[propertyKey].forEach((advicer: Advicer) => {
-                            let retval = adviceAction(advicer, state, hasReturn ? val : undefined, throwError);
-                            if (hasReturn && !isUndefined(retval)) {
-                                val = retval
-                            }
-                        });
-                    });
-                }
-                return val;
-            }
-
-            args = asBefore(['Around', 'Before'], JoinpointState.Before);
-            args = asBefore(['Pointcut'], JoinpointState.Pointcut);
-            let exeErr;
+            let adChain = container.resolve<IAdvisorChainFactory>(symbols.IAdvisorChainFactory, { container: container, advices: advices });
+            adChain.invoaction(joinPoint, JoinpointState.Before);
+            adChain.invoaction(joinPoint, JoinpointState.Pointcut);
+            let val, exeErr;
             try {
-                val = propertyMethod(...args);
+                val = propertyMethod(...joinPoint.args);
             } catch (err) {
                 exeErr = err;
             }
 
-            asResult(['Around', 'After'], JoinpointState.After, val);
+            adChain.invoaction(joinPoint, JoinpointState.After, val);
             if (exeErr) {
-                asResult(['Around', 'AfterThrowing'], JoinpointState.AfterThrowing, val, exeErr);
+                adChain.invoaction(joinPoint, JoinpointState.AfterThrowing, exeErr);
             } else {
-                val = asResult(['Around', 'AfterReturning'], JoinpointState.AfterReturning, val);
-                return val;
+                adChain.invoaction(joinPoint, JoinpointState.AfterReturning, val);
+                return joinPoint.returning;
             }
         }
     }

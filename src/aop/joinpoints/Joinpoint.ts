@@ -65,6 +65,15 @@ export class Joinpoint implements IJoinpoint {
      * @memberof Joinpoint
      */
     returning?: any;
+
+    /**
+     * the result value of returing.
+     *
+     * @type {*}
+     * @memberof Joinpoint
+     */
+    returningValue?: any;
+
     /**
      * pointcut throwing error.
      *

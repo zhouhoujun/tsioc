@@ -2,7 +2,7 @@ import * as gulp from 'gulp';
 import { ITaskOption, Development } from 'development-tool';
 import { Operation } from 'development-core';
 const through = require('through2');
-// import { classAnnotations } from 'typescript-class-annotations'
+import { classAnnotations } from 'typescript-class-annotations'
 // import 'development-tool-node';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -19,15 +19,32 @@ Development.create(gulp, __dirname, [
         src: 'src',
         dist: 'lib',
         testSrc: 'test/**/*.spec.ts',
-        loader: 'development-tool-node'
-        // asserts: {
-        //     ts: {
-        //         tsPipes: [
-        //             () => classAnnotations()
-        //         ],
-        //         loader: 'development-assert-ts'
-        //     }
-        // }
+        loader: 'development-tool-node',
+        asserts: {
+            core: {
+                name: 'core',
+                src: ['src/**/*.ts', '!src/aop/', '!src/logs'],
+                loader: 'development-assert-ts'
+            },
+            aop: {
+                name: 'aop',
+                src: 'src/aop/**/*.ts',
+                tsPipes: [
+                    () => classAnnotations()
+                ],
+                dist: 'lib/aop',
+                loader: 'development-assert-ts'
+            },
+            logs: {
+                name: 'logs',
+                src: 'src/logs/**/*.ts',
+                tsPipes: [
+                    () => classAnnotations()
+                ],
+                dist: 'lib/logs',
+                loader: 'development-assert-ts'
+            }
+        }
     },
     <ITaskOption>{
         src: ['lib/**/*.js', '!lib/node/**', '!lib/index.js'],

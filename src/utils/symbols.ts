@@ -56,6 +56,19 @@ export const IAdviceMatcher = Symbol('IAdviceMatcher');
 export const IAdvisor = Symbol('IAdvisor');
 
 /**
+ * Aop IAdvisorChainFactory interface symbol.
+ * it is a symbol id, you can register yourself IAdvisorChainFactory for this.
+ */
+export const IAdvisorChainFactory = Symbol('IAdvisorChainFactory');
+
+/**
+ * Aop IAdvisorChain interface symbol.
+ * it is a symbol id, you can register yourself IAdvisorChain for this.
+ */
+export const IAdvisorChain = Symbol('IAdvisorChain');
+
+
+/**
  * Log configure interface symbol.
  * it is a symbol id, you can register yourself IActionBuilder for this.
  */

@@ -45,33 +45,9 @@ export class DefaultLogConfigure implements LogConfigure {
                 return [joinPoint.state, joinPoint.fullName];
 
             case JoinpointState.AfterReturning:
-                // let returnArg: string;
-                // if (isString(joinPoint.returning)) {
-                //     returnArg = joinPoint.returning;
-                // } else if (isBoolean(joinPoint.returning)) {
-                //     returnArg = joinPoint.returning ? 'true' : 'false';
-                // // } else if (isNumber(joinPoint.returning) || isDate(joinPoint.returning) || isFunction(joinPoint.returning)) {
-                // //     returnArg = joinPoint.returning.toString();
-                // // } else if (isPromise(joinPoint.returning)) {
-                // //     returnArg = joinPoint.returning.toString();
-                // } else if (isBaseObject(joinPoint.returning)) {
-                //     returnArg = JSON.stringify(joinPoint.returning);
-                // }  else if (isFunction(joinPoint.returning)) {
-                //     returnArg = joinPoint.returning.toString();
-                // }
-
-                return [joinPoint.fullName, joinPoint.returning || ''];
+                return [joinPoint.fullName, joinPoint.returningValue || ''];
 
             case JoinpointState.AfterThrowing:
-                // let errorMsg: string;
-                // if (joinPoint.throwing instanceof Error) {
-                //     errorMsg = joinPoint.throwing.stack || joinPoint.throwing.message;
-                // } else if (isFunction(joinPoint.throwing.toString)) {
-                //     errorMsg = joinPoint.throwing.toString();
-                // } else {
-                //     errorMsg = JSON.stringify(joinPoint.throwing);
-                // }
-
                 return [joinPoint.fullName, joinPoint.throwing || ''];
 
             default:

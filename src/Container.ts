@@ -396,6 +396,8 @@ export class Container implements IContainer {
             lifeScope.execute(DecoratorType.Class, {
                 target: instance,
                 targetType: ClassT,
+                args: args,
+                params: parameters,
                 providers: providers
             }, CoreActions.afterConstructor);
 

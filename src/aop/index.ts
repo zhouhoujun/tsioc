@@ -25,7 +25,7 @@ import { DecoratorType, CoreActions } from '../core/index';
 import { AopActionFactory } from './actions/AopActionFactory';
 import { IocState } from '../types';
 import { Joinpoint } from './joinpoints/index';
-import { ProxyMethod } from './access/index';
+import { ProxyMethod, AdvisorChainFactory, AdvisorChain } from './access/index';
 
 /**
  * register aop for container.
@@ -35,13 +35,15 @@ import { ProxyMethod } from './access/index';
  */
 export function registerAops(container: IContainer) {
     container.register(Joinpoint);
-    // container.register(ProxyMethod);
-    // container.register(Advisor);
-    // container.register(AdviceMatcher);
+    container.register(AdvisorChainFactory);
+    container.register(AdvisorChain);
+    container.register(ProxyMethod);
+    container.register(Advisor);
+    container.register(AdviceMatcher);
 
-    container.registerSingleton(symbols.IProxyMethod, () => new ProxyMethod(container));
-    container.registerSingleton(symbols.IAdvisor, () => new Advisor(container));
-    container.registerSingleton(symbols.IAdviceMatcher, () => new AdviceMatcher(container));
+    // container.registerSingleton(symbols.IProxyMethod, () => new ProxyMethod(container));
+    // container.registerSingleton(symbols.IAdvisor, () => new Advisor(container));
+    // container.registerSingleton(symbols.IAdviceMatcher, () => new AdviceMatcher(container));
 
     let lifeScope = container.get<LifeScope>(symbols.LifeScope);
 

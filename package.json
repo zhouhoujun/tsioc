@@ -1,6 +1,6 @@
 {
   "name": "tsioc",
-  "version": "1.4.5",
+  "version": "1.5.0",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -15,9 +15,11 @@
     "e2e.live": "protractor --elementExplorer"
   },
   "keywords": [
-    "ioc",
+    "IoC",
     "di",
     "AOP",
+    "dependency",
+    "injection",
     "container",
     "decorator",
     "autofac",
@@ -62,7 +64,7 @@
     "tslint": "^5.8.0",
     "tslint-stylish": "^2.1.0",
     "typescript": "^2.7.2",
-    "typescript-class-annotations": "^0.1.0",
+    "typescript-class-annotations": "^0.1.1",
     "vinyl-buffer": "^1.0.0",
     "vinyl-paths": "^2.1.0",
     "zone.js": "^0.8.5"

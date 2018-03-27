@@ -51,6 +51,15 @@ export interface IJoinpoint extends IPointcut {
      * @memberof IJoinpoint
      */
     returning?: any;
+
+    /**
+     * the result value of returing.
+     *
+     * @type {*}
+     * @memberof Joinpoint
+     */
+    returningValue?: any;
+
     /**
      * pointcut throwing error.
      *
