@@ -1,14 +1,20 @@
-import { NonePointcut, Provider, Injectable, Singleton, Inject } from '../../core/index';
+import { NonePointcut, Provider, Injectable, Singleton, Inject, IRecognizer } from '../../core/index';
 import { Express } from '../../types';
 import { Joinpoint, JoinpointState } from '../joinpoints/index';
-import { symbols, isPromise, isArray, isObservable } from '../../utils/index';
+import { symbols, isPromise, isArray, isObservable, isFunction } from '../../utils/index';
 import { IAdvisorChain } from './IAdvisorChain';
+import { IContainer } from '../..';
+import { IAdvisorProceeding } from './IAdvisorProceeding';
 
 @NonePointcut()
 @Injectable(symbols.IAdvisorChain)
 export class AdvisorChain implements IAdvisorChain {
 
+    @Inject(symbols.IContainer)
+    container: IContainer;
+
     protected actions: Express<Joinpoint, any>[];
+    
     constructor(protected joinPoint: Joinpoint) {
         this.actions = [];
     }
@@ -17,55 +23,14 @@ export class AdvisorChain implements IAdvisorChain {
         this.actions.push(action);
     }
 
-    isAsync() {
-        return isPromise(this.joinPoint.returning) || isObservable(this.joinPoint.returning);
+    getRecognizer(): IRecognizer {
+        return this.container.get(symbols.IRecognizer, this.joinPoint.state);
     }
-
 
     process(): void {
-        if (this.isAsync()) {
-            this.asyncProcess();
-        } else {
-            this.syncProcess();
-        }
+        let alias = this.getRecognizer().recognize(this.joinPoint.returning);
+        this.container.get<IAdvisorProceeding>(symbols.IAdvisorProceeding, alias)
+            .proceeding(this.joinPoint, ...this.actions);
     }
 
-
-    protected asyncProcess() {
-        if (isPromise(this.joinPoint.returning)) {
-            this.promiseProcess();
-        } else if (isObservable(this.joinPoint.returning)) {
-            this.observableProcess();
-        }
-    }
-
-    protected promiseProcess() {
-        this.actions.forEach((action => {
-            this.joinPoint.returning = this.joinPoint.returning.then((val) => {
-                this.joinPoint.returningValue = val;
-                return Promise.resolve(action(this.joinPoint))
-                    .then(() => {
-                        return this.joinPoint.returningValue !== val ? this.joinPoint.returningValue :
-                            this.joinPoint.returning;
-                    });
-            });
-        }));
-    }
-
-    protected observableProcess() {
-        this.actions.forEach((action => {
-            this.joinPoint.returning = this.joinPoint.returning.map((val) => {
-                this.joinPoint.returningValue = val;
-                action(this.joinPoint);
-                return this.joinPoint.returningValue;
-            });
-        }));
-    }
-
-    protected syncProcess() {
-        this.joinPoint.returningValue = this.joinPoint.returning;
-        this.actions.forEach((action => {
-            action(this.joinPoint);
-        }))
-    }
 }

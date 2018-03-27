@@ -18,6 +18,7 @@ export * from './metadatas/index';
 export * from './factories/index';
 export * from './providers/index';
 
+export * from './IRecognizer';
 export * from './IProviderMatcher';
 export * from './ActionData';
 export * from './ActionFactory';

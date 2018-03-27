@@ -25,7 +25,7 @@ import { DecoratorType, CoreActions } from '../core/index';
 import { AopActionFactory } from './actions/AopActionFactory';
 import { IocState } from '../types';
 import { Joinpoint } from './joinpoints/index';
-import { ProxyMethod, AdvisorChainFactory, AdvisorChain } from './access/index';
+import { ProxyMethod, AdvisorChainFactory, AdvisorChain, SyncProceeding, AsyncObservableProceeding, AsyncPromiseProceeding, ReturningRecognizer } from './access/index';
 
 /**
  * register aop for container.
@@ -36,6 +36,10 @@ import { ProxyMethod, AdvisorChainFactory, AdvisorChain } from './access/index';
 export function registerAops(container: IContainer) {
     container.register(Joinpoint);
     container.register(AdvisorChainFactory);
+    container.register(ReturningRecognizer);
+    container.register(SyncProceeding);
+    container.register(AsyncPromiseProceeding);
+    container.register(AsyncObservableProceeding);
     container.register(AdvisorChain);
     container.register(ProxyMethod);
     container.register(Advisor);

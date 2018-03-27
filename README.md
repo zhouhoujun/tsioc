@@ -302,6 +302,9 @@ export class DebugLog {
 
 ## New Features
 
+* 1.5.1
+   1. refactor aop, add IAdvisorProceeding ... to control advices invoke way when target method return value with sync, async. can custom define invoke way.
+
 * 1.5.0
    1. refactor aop, add AdvisorChain to control advices invoke when target method invoking.
 

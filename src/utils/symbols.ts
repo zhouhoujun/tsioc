@@ -36,6 +36,11 @@ export const ICacheManager = Symbol('ICacheManager');
  */
 export const IContainerBuilder = Symbol('IContainerBuilder');
 
+/**
+ * IRecognizer interface symbol.
+ * it is a symbol id, you can register yourself IRecognizer for this.
+ */
+export const IRecognizer = Symbol('IRecognizer');
 
 /**
  * Aop proxy method interface symbol.
@@ -67,6 +72,11 @@ export const IAdvisorChainFactory = Symbol('IAdvisorChainFactory');
  */
 export const IAdvisorChain = Symbol('IAdvisorChain');
 
+/**
+ * Aop IAdvisorProceeding interface symbol.
+ * it is a symbol id, you can register yourself IAdvisorProceeding for this.
+ */
+export const IAdvisorProceeding = Symbol('IAdvisorProceeding');
 
 /**
  * Log configure interface symbol.
