@@ -1,7 +1,7 @@
 import { Singleton, IRecognizer, NonePointcut } from '../../core/index';
 import { symbols, isPromise, isObservable } from '../../utils/index';
 import { ReturningType } from './ReturningType';
-import { JoinpointState } from '..';
+import { JoinpointState } from '../joinpoints/index';
 
 @NonePointcut()
 @Singleton(symbols.IRecognizer, JoinpointState.AfterReturning)

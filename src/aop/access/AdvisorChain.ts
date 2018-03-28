@@ -3,7 +3,7 @@ import { Express } from '../../types';
 import { Joinpoint, JoinpointState } from '../joinpoints/index';
 import { symbols, isPromise, isArray, isObservable, isFunction } from '../../utils/index';
 import { IAdvisorChain } from './IAdvisorChain';
-import { IContainer } from '../..';
+import { IContainer } from '../../IContainer';
 import { IAdvisorProceeding } from './IAdvisorProceeding';
 
 @NonePointcut()
@@ -14,7 +14,7 @@ export class AdvisorChain implements IAdvisorChain {
     container: IContainer;
 
     protected actions: Express<Joinpoint, any>[];
-    
+
     constructor(protected joinPoint: Joinpoint) {
         this.actions = [];
     }

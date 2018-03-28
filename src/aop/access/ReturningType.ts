@@ -1,7 +1,7 @@
 
 /**
  * Returning Type
- * 
+ *
  * @export
  * @enum {number}
  */
@@ -12,11 +12,11 @@ export enum ReturningType {
     sync = 'sync',
 
     /**
-     * it is promise asyce returning 
+     * it is promise asyce returning
      */
     promise = 'promise',
     /**
-     * it is observable asyce returning 
+     * it is observable asyce returning
      */
     observable = 'observable'
 }
