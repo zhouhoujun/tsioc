@@ -20,8 +20,7 @@ export class AsyncPromiseProceeding implements IAdvisorProceeding {
                     joinPoint.returningValue = val;
                     return Promise.resolve(action(joinPoint))
                         .then(() => {
-                            return joinPoint.returningValue !== val ? joinPoint.returningValue :
-                                joinPoint.returning;
+                            return joinPoint.returningValue;
                         });
                 });
             }));

@@ -59,7 +59,7 @@ export class Joinpoint implements IJoinpoint {
      */
     args: any[];
     /**
-     * pointcut returing data
+     * pointcut returing
      *
      * @type {*}
      * @memberof Joinpoint

@@ -10,6 +10,7 @@ import { ReturningType } from './ReturningType';
 export class SyncProceeding implements IAdvisorProceeding {
 
     proceeding(joinPoint: Joinpoint, ...actions: Express<Joinpoint, any>[]) {
+        console.log('sync Proceeding...');
         joinPoint.returningValue = joinPoint.returning;
         actions.forEach((action => {
             action(joinPoint);

@@ -110,21 +110,21 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
         let advChain = this.container.resolve<IAdvisorChain>(symbols.IAdvisorChain, { joinPoint: cloneJp });
         this.getAdvicers('Around')
             .forEach(advicer => {
-                advChain.next((cloneJp) => {
-                    return this.invokeAdvice(cloneJp, advicer);
+                advChain.next((jp) => {
+                    return this.invokeAdvice(jp, advicer);
                 });
             });
 
         this.getAdvicers('AfterReturning')
             .forEach(advicer => {
-                advChain.next((cloneJp) => {
-                    return this.invokeAdvice(cloneJp, advicer);
+                advChain.next((jp) => {
+                    return this.invokeAdvice(jp, advicer);
                 });
             });
 
-        advChain.next((cloneJp) => {
-            if (!isUndefined(cloneJp.returning)) {
-                joinPoint.returning = cloneJp.returning;
+        advChain.next((jp) => {
+            if (!isUndefined(jp.returning)) {
+                joinPoint.returning = jp.returning;
             }
             return joinPoint;
         });

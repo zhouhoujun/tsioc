@@ -101,7 +101,7 @@ export class Container implements IContainer {
         if (token instanceof Registration) {
             return token.toString();
         } else {
-            if (alias && isFunction(token)) {
+            if (alias) {
                 return new Registration(token, alias).toString();
             }
             return token;

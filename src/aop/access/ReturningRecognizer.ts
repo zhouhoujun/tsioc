@@ -20,6 +20,5 @@ export class ReturningRecognizer implements IRecognizer {
         }
 
         return ReturningType.sync;
-
     }
 }

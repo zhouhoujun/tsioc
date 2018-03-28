@@ -1,4 +1,5 @@
 import { Type, AbstractType } from './types';
+import { isClass, isFunction } from './utils/index';
 
 /**
  * injecto token.
@@ -15,7 +16,7 @@ export class Registration<T> {
      * @param {string} desc
      * @memberof Registration
      */
-    constructor(protected classType: Type<T> | AbstractType<T>, protected desc: string) {
+    constructor(protected classType: Type<T> | AbstractType<T> | symbol | string, protected desc: string) {
     }
 
 
@@ -25,8 +26,11 @@ export class Registration<T> {
      * @returns
      * @memberof Registration
      */
-    getClass() {
-        return this.classType
+    getClass(): Type<T> | AbstractType<T> {
+        if (isClass(this.classType)) {
+            return this.classType;
+        }
+        return null;
     }
 
     /**
@@ -46,6 +50,12 @@ export class Registration<T> {
      * @memberof Registration
      */
     toString(): string {
-        return `${this.type} ${this.classType.name} ${this.desc}`;
+        let name = '';
+        if (isFunction(this.classType)) {
+            name = this.classType.classAnnations ? this.classType.classAnnations.name : this.classType.name;
+        } else {
+            name = this.classType.toString();
+        }
+        return `${this.type} ${name} ${this.desc}`;
     }
 }
