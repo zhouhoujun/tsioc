@@ -117,7 +117,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
 
         this.getAdvicers('AfterReturning')
             .forEach(advicer => {
-                advChain.next((jp) => {
+                advChain.next(jp => {
                     return this.invokeAdvice(jp, advicer);
                 });
             });

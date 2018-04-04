@@ -16,10 +16,10 @@
   },
   "keywords": [
     "IoC",
-    "di",
     "AOP",
     "dependency",
     "injection",
+    "framework",
     "container",
     "decorator",
     "autofac",

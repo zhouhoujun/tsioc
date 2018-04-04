@@ -17,25 +17,20 @@ export class AsyncObservableProceeding implements IAdvisorProceeding {
             actions.forEach(action => {
                 joinPoint.returning = joinPoint.returning.flatMap((val) => {
                     joinPoint.returningValue = val;
-                    let retval = action(joinPoint);
-                    if (isObservable(retval)) {
-                        return retval.flatMap(() => {
-                            return Promise.resolve(joinPoint.returningValue);
-                        });
-                    } else if (isPromise(retval)) {
-                        return retval.then(() => {
-                            return Promise.resolve(joinPoint.returningValue);
-                        });
+                    action(joinPoint);
+                    if (isObservable(joinPoint.returningValue)) {
+                        return joinPoint.returningValue;
+                    } else if (isPromise(joinPoint.returningValue)) {
+                        return joinPoint.returningValue;
                     } else {
                         return Promise.resolve(joinPoint.returningValue);
                     }
                 });
             });
         } else {
-            joinPoint.returningValue = joinPoint.returning;
-            actions.forEach((action => {
+            actions.forEach(action => {
                 action(joinPoint);
-            }))
+            });
         }
     }
 }
