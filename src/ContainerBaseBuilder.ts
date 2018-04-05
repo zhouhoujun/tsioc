@@ -1,11 +1,18 @@
 import { IContainer } from './IContainer';
 import { Container } from './Container';
-import { isFunction, isClass, symbols, isString, isNodejsEnv } from './utils/index';
+import { isFunction, isClass, symbols, isString } from './utils/index';
 import { Type } from './types';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IModuleLoader } from './IModuleLoader';
 import { AsyncLoadOptions, LoadOptions } from './LoadOptions';
 
+/**
+ * base container builder.
+ * 
+ * @export
+ * @class ContainerBaseBuilder
+ * @implements {IContainerBuilder}
+ */
 export class ContainerBaseBuilder implements IContainerBuilder {
 
     constructor(private loader?: IModuleLoader) {
