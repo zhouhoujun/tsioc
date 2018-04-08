@@ -2,15 +2,12 @@
   "name": "tsioc",
   "version": "1.5.4",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
-  "main": "./lib/index.js",
-  "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",
     "start": "gulp start",
     "test": "gulp start --test",
     "debug": "gulp start && node lib/debug.js",
-    "prepublish": "gulp start --release",
     "e2e": "protractor",
     "e2e.live": "protractor --elementExplorer"
   },

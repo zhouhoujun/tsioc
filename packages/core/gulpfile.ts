@@ -16,34 +16,10 @@ const del = require('del');
 
 Development.create(gulp, __dirname, [
     <ITaskOption>{
+        src: 'src',
         dist: 'lib',
         testSrc: 'test/**/*.spec.ts',
-        loader: 'development-tool-node',
-        asserts: {
-            core: {
-                name: 'core',
-                src: ['packages/core/**/*.ts'],
-                loader: 'development-assert-ts'
-            },
-            aop: {
-                name: 'aop',
-                src: 'src/aop/**/*.ts',
-                tsPipes: [
-                    () => classAnnotations()
-                ],
-                dist: 'lib/aop',
-                loader: 'development-assert-ts'
-            },
-            logs: {
-                name: 'logs',
-                src: 'src/logs/**/*.ts',
-                tsPipes: [
-                    () => classAnnotations()
-                ],
-                dist: 'lib/logs',
-                loader: 'development-assert-ts'
-            }
-        }
+        loader: 'development-tool-node'
     },
     <ITaskOption>{
         src: ['lib/**/*.js', '!lib/node/**', '!lib/index.js'],
@@ -55,7 +31,7 @@ Development.create(gulp, __dirname, [
                 task: () => del('bundles')
             },
             {
-                name: 'browser',
+                name: 'rollup',
                 pipes: [
                     (ctx) => {
                         return rollup({
@@ -74,7 +50,7 @@ Development.create(gulp, __dirname, [
                                 'reflect-metadata': 'Reflect',
                                 'log4js': 'log4js'
                             },
-                            input: './lib/browser.js'
+                            input: './lib/index.js'
                         })
                     },
                     ctx => through.obj(function (file, encoding, callback) {

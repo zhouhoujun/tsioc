@@ -20,33 +20,19 @@ Development.create(gulp, __dirname, [
         testSrc: 'test/**/*.spec.ts',
         loader: 'development-tool-node',
         asserts: {
-            core: {
-                name: 'core',
-                src: ['packages/core/**/*.ts'],
-                loader: 'development-assert-ts'
-            },
             aop: {
                 name: 'aop',
-                src: 'src/aop/**/*.ts',
+                src: 'src/**/*.ts',
                 tsPipes: [
                     () => classAnnotations()
                 ],
-                dist: 'lib/aop',
-                loader: 'development-assert-ts'
-            },
-            logs: {
-                name: 'logs',
-                src: 'src/logs/**/*.ts',
-                tsPipes: [
-                    () => classAnnotations()
-                ],
-                dist: 'lib/logs',
+                dist: 'lib',
                 loader: 'development-assert-ts'
             }
         }
     },
     <ITaskOption>{
-        src: ['lib/**/*.js', '!lib/node/**', '!lib/index.js'],
+        src: ['lib/**/*.js'],
         dist: 'bundles',
         oper: Operation.release | Operation.deploy,
         loader: [
@@ -55,11 +41,11 @@ Development.create(gulp, __dirname, [
                 task: () => del('bundles')
             },
             {
-                name: 'browser',
+                name: 'rollup',
                 pipes: [
                     (ctx) => {
                         return rollup({
-                            name: 'tsioc.umd.js',
+                            name: 'platform-browser.umd.js',
                             format: 'umd',
                             plugins: [
                                 resolve(),
@@ -74,7 +60,7 @@ Development.create(gulp, __dirname, [
                                 'reflect-metadata': 'Reflect',
                                 'log4js': 'log4js'
                             },
-                            input: './lib/browser.js'
+                            input: './lib/index.js'
                         })
                     },
                     ctx => through.obj(function (file, encoding, callback) {
@@ -132,7 +118,7 @@ Development.create(gulp, __dirname, [
                         this.push(file);
                         callback();
                     }),
-                    () => rename('tsioc.umd.js'),
+                    () => rename('platform-browser.umd.js'),
                     () => uglify()
                 ]
             }

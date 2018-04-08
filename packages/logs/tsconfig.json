@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": ".",
+    "paths": {
+      "@tsioc/core": [
+        "../core/src"
+      ],
+      "@tsioc/aop": [
+        "../aop/src"
+      ]
+    },
+    "module": "commonjs",
+    "target": "es5",
+    "lib": [
+      "dom",
+      "es2015",
+      "es2017"
+    ],
+    "declaration": true,
+    "allowSyntheticDefaultImports": true,
+    "removeComments": false,
+    "noLib": false,
+    "jsx": "preserve",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "pretty": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "noImplicitAny": false,
+    "noImplicitReturns": true,
+    "noImplicitUseStrict": false,
+    "noFallthroughCasesInSwitch": true,
+    "moduleResolution": "node",
+    "suppressImplicitAnyIndexErrors": true
+  },
+  "exclude": [
+    "lib",
+    "node_modules"
+  ],
+  "compileOnSave": false
+}
