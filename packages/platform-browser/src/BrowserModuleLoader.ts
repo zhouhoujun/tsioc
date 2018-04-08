@@ -1,51 +1,31 @@
-import { Type, IModuleLoader, AsyncLoadOptions } from '@tsioc/core';
+import { Type, IModuleLoader, AsyncLoadOptions, DefaultModuleLoader } from '@tsioc/core';
 
 declare let System: any;
 declare let require: any;
-export class BrowserModuleLoader implements IModuleLoader {
+export class BrowserModuleLoader extends DefaultModuleLoader implements IModuleLoader {
 
     constructor() {
-
+        super()
     }
 
-    private _loader: (modulepath: string) => Promise<string[]>;
-    getLoader() {
-        if (!this._loader) {
-            if (typeof System !== 'undefined') {
-                this._loader = (modulepath: string) => {
-                    return System.import(modulepath);
-                }
-            } else if (typeof require !== 'undefined') {
-                this._loader = (modulepath: string) => {
-                    return new Promise((resolve, reject) => {
-                        require([modulepath], (mud) => {
-                            resolve(mud);
-                        }, err => {
-                            reject(err);
-                        })
-                    });
-                }
-            } else {
-                throw new Error('has not module loader');
+    protected createLoader(){
+        if (typeof System !== 'undefined') {
+            return (modulepath: string) => {
+                return System.import(modulepath);
             }
-        }
-        return this._loader;
-    }
-    load(options: AsyncLoadOptions): Promise<(Type<any> | object)[]> {
-        if (options.files) {
-            return Promise.all(options.files).then(flies => {
-                return flies.map(fp => {
-                    return this.loadModule(fp);
+        } else if (typeof require !== 'undefined') {
+            return (modulepath: string) => {
+                return new Promise((resolve, reject) => {
+                    require([modulepath], (mud) => {
+                        resolve(mud);
+                    }, err => {
+                        reject(err);
+                    })
                 });
-            })
+            }
         } else {
-            return Promise.resolve([]);
+            throw new Error('has not module loader');
         }
-    }
-
-    loadModule(file: string): Type<any> | object | Promise<Type<any> | object> {
-        let loader = this.getLoader();
-        return loader(file);
     }
 
 }

@@ -1,6 +1,6 @@
 import 'mocha';
 import { expect } from 'chai';
-import { Method, Inject, ContainerBaseBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, isFunction } from '../src';
+import { Method, Inject, DefaultContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, isFunction } from '../src';
 import { hasOwnMethodMetadata, hasPropertyMetadata } from '../src';
 // import { AnnotationAspect } from './aop/AnnotationAspect';
 // import { CheckRightAspect } from './aop/CheckRightAspect';
@@ -75,7 +75,7 @@ describe('method exec test', () => {
 
     let container: IContainer;
     beforeEach(() => {
-        let builder = new ContainerBaseBuilder();
+        let builder = new DefaultContainerBuilder();
         container = builder.create();
     });
 

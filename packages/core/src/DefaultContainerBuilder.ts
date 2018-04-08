@@ -5,18 +5,21 @@ import { Type } from './types';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IModuleLoader } from './IModuleLoader';
 import { AsyncLoadOptions, LoadOptions } from './LoadOptions';
+import { DefaultModuleLoader } from './DefaultModuleLoader';
 
 /**
- * base container builder.
+ * default container builder.
  *
  * @export
- * @class ContainerBaseBuilder
+ * @class DefaultContainerBuilder
  * @implements {IContainerBuilder}
  */
-export class ContainerBaseBuilder implements IContainerBuilder {
+export class DefaultContainerBuilder implements IContainerBuilder {
 
     constructor(private loader?: IModuleLoader) {
-
+        if(!loader){
+            this.loader = new DefaultModuleLoader();
+        }
     }
     create(): IContainer {
         let container = new Container();

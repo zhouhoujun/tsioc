@@ -22,7 +22,7 @@ Development.create(gulp, __dirname, [
         loader: 'development-tool-node'
     },
     <ITaskOption>{
-        src: ['lib/**/*.js', '!lib/node/**', '!lib/index.js'],
+        src: ['lib/**/*.js'],
         dist: 'bundles',
         oper: Operation.release | Operation.deploy,
         loader: [
@@ -35,7 +35,7 @@ Development.create(gulp, __dirname, [
                 pipes: [
                     (ctx) => {
                         return rollup({
-                            name: 'tsioc.umd.js',
+                            name: 'core.umd.js',
                             format: 'umd',
                             plugins: [
                                 resolve(),
@@ -108,7 +108,7 @@ Development.create(gulp, __dirname, [
                         this.push(file);
                         callback();
                     }),
-                    () => rename('tsioc.umd.js'),
+                    () => rename('core.umd.js'),
                     () => uglify()
                 ]
             }

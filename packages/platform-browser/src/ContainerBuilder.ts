@@ -1,4 +1,4 @@
-import { IModuleLoader, ContainerBaseBuilder } from '@tsioc/core';
+import { IModuleLoader, DefaultContainerBuilder } from '@tsioc/core';
 import { BrowserModuleLoader } from './BrowserModuleLoader';
 
 
@@ -7,9 +7,9 @@ import { BrowserModuleLoader } from './BrowserModuleLoader';
  *
  * @export
  * @class ContainerBuilder
- * @extends {ContainerBaseBuilder}
+ * @extends {DefaultContainerBuilder}
  */
-export class ContainerBuilder extends ContainerBaseBuilder {
+export class ContainerBuilder extends DefaultContainerBuilder {
     constructor(loader?: IModuleLoader) {
         super(loader || new BrowserModuleLoader())
     }

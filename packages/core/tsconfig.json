@@ -1,5 +1,7 @@
 {
     "compilerOptions": {
+        "baseUrl": ".",
+        "rootDir": ".",
         "module": "commonjs",
         "target":"es5",
         "lib": ["dom", "es2015", "es2017"],
@@ -22,7 +24,6 @@
         "suppressImplicitAnyIndexErrors": true
       },
       "exclude": [
-        "lib",
         "node_modules"    
       ],
       "compileOnSave": false

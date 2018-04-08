@@ -12,7 +12,8 @@ export * from './LifeScope';
 
 export * from './LoadOptions';
 export * from './IModuleLoader';
-export * from './ContainerBaseBuilder';
+export * from './DefaultModuleLoader';
+export * from './DefaultContainerBuilder';
 
 export * from './utils/index';
 export * from './components/index';

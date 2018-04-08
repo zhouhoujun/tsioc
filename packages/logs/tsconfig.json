@@ -4,9 +4,11 @@
     "rootDir": ".",
     "paths": {
       "@tsioc/core": [
+        "../core/lib",
         "../core/src"
       ],
       "@tsioc/aop": [
+        "../core/lib",
         "../aop/src"
       ]
     },
@@ -36,7 +38,6 @@
     "suppressImplicitAnyIndexErrors": true
   },
   "exclude": [
-    "lib",
     "node_modules"
   ],
   "compileOnSave": false

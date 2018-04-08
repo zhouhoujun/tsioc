@@ -1,5 +1,5 @@
-import { IParameter } from '../../IParameter';
-import { MethodMetadata } from '../../core/index';
+import { IParameter, MethodMetadata } from '@tsioc/core'
+
 
 /**
  * pointcut.

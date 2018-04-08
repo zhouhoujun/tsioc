@@ -1,9 +1,8 @@
 import { IJoinpoint } from './IJoinpoint';
-import { Type } from '../../types';
-import { Injectable, NonePointcut, MethodMetadata } from '../../core/index';
+import { Type, Injectable, MethodMetadata, IParameter } from '@tsioc/core';
 import { JoinpointState } from './JoinpointState';
-import { IParameter } from '../../IParameter';
 import { Advicer } from '../advices/index';
+import { NonePointcut } from '../decorators/index';
 
 /**
  * Join point data.

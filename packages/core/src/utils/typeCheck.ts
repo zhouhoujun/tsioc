@@ -1,6 +1,7 @@
 import { Type, AbstractType, Token, Providers } from '../types';
 import { Registration } from '../Registration';
 
+declare let process:any;
 
 /**
  * check target is function or not.

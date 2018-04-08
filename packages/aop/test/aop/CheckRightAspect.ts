@@ -1,4 +1,5 @@
-import { Joinpoint, Around, Aspect, Before, Singleton, MethodMetadata, After} from '../../src';
+import { Singleton, MethodMetadata } from '@tsioc/core';
+import { Joinpoint, Around, Aspect, Before, After} from '../../src';
 
 
 
