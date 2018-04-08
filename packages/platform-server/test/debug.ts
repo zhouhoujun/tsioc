@@ -1,5 +1,4 @@
-import { AutoWired, Injectable, Param, Singleton, Inject, Registration, ContainerBuilder, Aspect, Method } from '../../src';
-
+import { AutoWired, Injectable, Param, Singleton, Registration, Inject, IContainer, symbols } from '@tsioc/core';
 
 export class SimppleAutoWried {
     constructor() {
@@ -15,7 +14,7 @@ export class Person {
 }
 
 @Singleton
-@Injectable
+// @Injectable
 export class RoomService {
     constructor() {
 
@@ -32,6 +31,10 @@ export class ClassRoom {
 }
 
 export abstract class Student {
+    @Inject(symbols.IContainer)
+    container: IContainer;
+    @Inject(Date)
+    join: any;
     constructor() {
     }
     abstract sayHi(): string;
@@ -49,7 +52,7 @@ export class MiddleSchoolStudent extends Student {
 
 @Injectable()
 export class MClassRoom {
-    @AutoWired({ type: MiddleSchoolStudent })
+    @AutoWired(MiddleSchoolStudent)
     leader: Student;
     constructor() {
 
@@ -80,13 +83,14 @@ export class CollegeClassRoom {
 
 @Injectable
 export class InjMClassRoom {
-    @Inject // @Inject({ type: MiddleSchoolStudent })
+    // @Inject(MiddleSchoolStudent)
+    @Inject
+    // @Inject({ type: MiddleSchoolStudent })
     leader: Student;
     constructor() {
 
     }
 }
-
 
 export interface IClassRoom {
     leader: Student;
@@ -135,7 +139,7 @@ export class StingMClassRoom {
 }
 
 export class StringIdTest {
-    constructor(@Inject('StringClassRoom') public room: IClassRoom) {
+    constructor( @Inject('StringClassRoom') public room: IClassRoom) {
 
     }
 }
@@ -155,107 +159,41 @@ export class SymbolCollegeClassRoom {
 export class SymbolIdest {
     @Inject(CollClassRoom)
     public room: IClassRoom
-    constructor() {
+
+    @Inject(symbols.IContainer)
+    public container: IContainer
+    constructor( @Inject('StringClassRoom')
+    public room2: IClassRoom) {
 
     }
 }
 
-@Injectable
-class People {
-    constructor() {
+// @Aspect
+// export class AspectTest {
 
-    }
-    say() {
-        return 'I love you.'
-    }
-}
+//     @Around('execution()')
+//     public doLog() {
 
-@Injectable
-class Child extends People {
-    constructor() {
-        super();
-    }
-    say() {
-        return 'Mama';
-    }
-}
+//     }
 
-class MethodTest {
-    constructor() {
+//     @Before('execution(**/model/*.dowork(...))')
+//     beforCheck() {
 
-    }
+//     }
 
-    @Method
-    sayHello(person: People) {
-        return person.say();
-    }
-}
+//     @After('execution(**/model/*.dowork(...))')
+//     afterCheck() {
 
-class MethodTest2 {
-    constructor() {
+//     }
 
-    }
+//     @AfterReturning('xxx', 'execution(**/model/*.dowork(...))')
+//     public returnCheck() {
 
-    @Method()
-    sayHello( @Inject(Child) person: People) {
-        return person.say();
-    }
-}
+//     }
 
-class MethodTest3 {
-    constructor() {
+//     @AfterThrowing('xxx', 'execution(**/model/*.dowork(...))')
+//     public throwingCheck() {
 
-    }
+//     }
 
-    @Method
-    sayHello( @Inject(Child) personA: People, personB: People) {
-        return personA.say() + ', '  + personB.say();
-    }
-}
-
-
-let builder = new ContainerBuilder();
-let container = builder.create();
-
-container.register(SimppleAutoWried);
-let instance = container.get(SimppleAutoWried);
-console.log(instance.dateProperty);
-
-
-container.register(ClassRoom);
-let room = container.get(ClassRoom);
-console.log(room.service.current);
-
-container.register(MiddleSchoolStudent);
-container.register(CollegeStudent);
-
-let student = container.get(Student);
-console.log(student.sayHi());
-
-let student2 = container.get(new Registration(Student, 'college'));
-
-console.log(student2.sayHi());
-
-
-container.register(StingMClassRoom);
-container.register(StringIdTest);
-let stringIdTest = container.get(StringIdTest);
-console.log(stringIdTest.room.leader.sayHi());
-
-
-container.register(SymbolCollegeClassRoom);
-container.register(SymbolIdest);
-let symbolIdest = container.get(SymbolIdest);
-console.log(symbolIdest.room.leader.sayHi());
-
-
-builder.build({
-    files: __dirname + '/*{.ts,.js}'
-})
-    .then(container => {
-        let instance = container.get(Student);
-        console.log(instance.sayHi());
-
-        let instance2 = container.get(new Registration(Student, 'college'));
-        console.log(instance2.sayHi())
-    });
+// }

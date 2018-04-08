@@ -1,4 +1,5 @@
-import { Joinpoint, Around, Aspect, Before, Singleton } from '../../src';
+import { Joinpoint, Around, Aspect, Before } from '../../src';
+import { Singleton } from '@tsioc/core';
 
 @Singleton
 @Aspect

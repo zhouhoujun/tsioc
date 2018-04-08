@@ -1,5 +1,4 @@
-import { AutoWired, Injectable, Param, Singleton, Registration, Inject, Aspect, AfterReturning, AfterThrowing, Before, After, IContainer, symbols } from '../src';
-import { Around } from '../src/aop/decorators/Around';
+import { AutoWired, Injectable, Param, Singleton, Registration, Inject, IContainer, symbols } from '../src';
 
 export class SimppleAutoWried {
     constructor() {

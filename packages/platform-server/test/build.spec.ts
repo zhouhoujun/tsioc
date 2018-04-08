@@ -1,8 +1,9 @@
 import 'mocha';
 import { expect } from 'chai';
-import { ContainerBuilder, AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration } from '../src';
-import * as debuModules from './debug';
+import { AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration } from '@tsioc/core';
+
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom, StringIdTest, SymbolIdest } from './debug';
+import { ContainerBuilder } from '../src';
 
 describe('auto register with build', () => {
 
@@ -10,8 +11,9 @@ describe('auto register with build', () => {
     before(async () => {
         let builder = new ContainerBuilder();
         container = await builder.build({
-            modules: [debuModules]
+            files: __dirname + '/debug.ts'
         });
+        // container.register(IocLog);
     });
 
     it('should auto wried property', () => {
@@ -33,6 +35,7 @@ describe('auto register with build', () => {
         let instance = container.get(MClassRoom);
         expect(instance).not.undefined;
         expect(instance.leader).not.undefined;
+        expect(instance.leader.join).instanceOf(Date);
         expect(instance.leader.sayHi()).eq('I am a middle school student');
     });
 
@@ -40,6 +43,7 @@ describe('auto register with build', () => {
         let instance = container.get(CollegeClassRoom);
         expect(instance).not.undefined;
         expect(instance.leader).not.undefined;
+        expect(instance.leader.join).instanceOf(Date);
         expect(instance.leader.sayHi()).eq('I am a college student');
     });
 
@@ -47,6 +51,7 @@ describe('auto register with build', () => {
         let instance = container.get(InjMClassRoom);
         expect(instance).not.undefined;
         expect(instance.leader).not.undefined;
+        expect(instance.leader.join).instanceOf(Date);
         expect(instance.leader.sayHi()).eq('I am a middle school student');
     });
 
@@ -54,6 +59,7 @@ describe('auto register with build', () => {
         let instance = container.get(InjCollegeClassRoom);
         expect(instance).not.undefined;
         expect(instance.leader).not.undefined;
+        expect(instance.leader.join).instanceOf(Date);
         expect(instance.leader.sayHi()).eq('I am a college student');
     });
 
@@ -62,11 +68,13 @@ describe('auto register with build', () => {
         let instance = container.get(Student);
         expect(instance).not.undefined;
         // console.log(instance.sayHi());
+        expect(instance.join).instanceOf(Date);
         expect(instance.sayHi()).eq('I am a middle school student');
 
         let instance2 = container.get(Student, 'college');
         // console.log(instance2);
         expect(instance2).not.undefined;
+        expect(instance2.join).instanceOf(Date);
         expect(instance2.sayHi()).eq('I am a college student');
     });
 
@@ -77,6 +85,7 @@ describe('auto register with build', () => {
         expect(instance).not.undefined;
         expect(instance.room).not.undefined;
         expect(instance.room.leader).not.undefined;
+        expect(instance.room.leader.join).instanceOf(Date);
         expect(instance.room.leader.sayHi()).eq('I am a middle school student');
 
     });
@@ -85,8 +94,11 @@ describe('auto register with build', () => {
 
         let instance = container.get(SymbolIdest);
         expect(instance).not.undefined;
+        expect(instance.container).not.undefined;
         expect(instance.room).not.undefined;
         expect(instance.room.leader).not.undefined;
+        expect(instance.room.leader.join).instanceOf(Date);
+        expect(instance.room.leader.container).not.undefined;
         expect(instance.room.leader.sayHi()).eq('I am a college student');
 
     });
