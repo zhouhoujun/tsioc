@@ -1,4 +1,8 @@
-import { Type, hasOwnClassMetadata, isClass, isObject } from '@tsioc/core';
+import {
+    Type, hasOwnClassMetadata, isClass, isObject,
+    DefaultLifeScope, CacheManager, ActionFactory,
+    MethodAccessor, ProviderMatcher, Provider, CustomProvider, InvokeProvider, ParamProvider, ExtendsProvider, AsyncParamProvider, ProviderMap
+} from '@tsioc/core';
 import { NonePointcut } from './decorators/index';
 
 export function isValideAspectTarget(targetType: Type<any>) {
@@ -10,7 +14,24 @@ export function isValideAspectTarget(targetType: Type<any>) {
         return false;
     }
 
+
     if (hasOwnClassMetadata(NonePointcut, targetType)) {
+        return false;
+    }
+
+    if (!isClass(targetType)
+        || targetType === ActionFactory
+        || targetType === CacheManager
+        || targetType === DefaultLifeScope
+        || targetType === MethodAccessor
+        || targetType === ProviderMatcher
+        || targetType === Provider
+        || targetType === CustomProvider
+        || targetType === InvokeProvider
+        || targetType === ParamProvider
+        || targetType === ExtendsProvider
+        || targetType === AsyncParamProvider
+        || targetType === ProviderMap) {
         return false;
     }
 

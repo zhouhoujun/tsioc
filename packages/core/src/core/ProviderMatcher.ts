@@ -3,10 +3,8 @@ import { Provider, ProviderMap, ParamProvider, InvokeProvider, ExtendsProvider, 
 import { isString, isClass, isFunction, isNumber, isUndefined, isNull, isToken, isBaseObject } from '../utils/index';
 import { IParameter } from '../IParameter';
 import { IProviderMatcher } from './IProviderMatcher';
-import { NonePointcut } from './decorators/index';
 import { IContainer } from '../IContainer';
 
-@NonePointcut()
 export class ProviderMatcher implements IProviderMatcher {
 
     constructor(private container: IContainer) {

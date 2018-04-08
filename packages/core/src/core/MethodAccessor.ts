@@ -9,10 +9,8 @@ import { IContainerBuilder } from '../IContainerBuilder';
 import { IParameter } from '../IParameter';
 import { DecoratorType } from './factories/index';
 import { IProviderMatcher } from './IProviderMatcher';
-import { NonePointcut } from './decorators/index';
 
 
-@NonePointcut()
 export class MethodAccessor implements IMethodAccessor {
 
     constructor(private container: IContainer) {

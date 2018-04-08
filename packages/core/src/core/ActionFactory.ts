@@ -6,10 +6,8 @@ import {
     ComponentInitAction, ComponentBeforeInitAction,
     ComponentCacheAction
 } from './actions/index';
-import { NonePointcut } from './decorators/index';
 
 
-@NonePointcut()
 export class ActionFactory {
 
     /**

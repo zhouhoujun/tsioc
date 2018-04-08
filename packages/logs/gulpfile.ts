@@ -54,7 +54,9 @@ Development.create(gulp, __dirname, [
                             ],
                             external: [
                                 'reflect-metadata',
-                                'log4js'
+                                'log4js',
+                                '@tsioc/core',
+                                '@tsioc/aop'
                             ],
                             globals: {
                                 'reflect-metadata': 'Reflect',

@@ -1,6 +1,6 @@
 import { IContainer } from '../IContainer';
 import { symbols } from '../utils/index';
-import { Injectable, Component, AutoWired, Inject, Singleton, Param, Method, NonePointcut, Abstract } from './decorators/index';
+import { Injectable, Component, AutoWired, Inject, Singleton, Param, Method, Abstract } from './decorators/index';
 import { CoreActions } from './actions/index';
 import { DefaultLifeScope } from './DefaultLifeScope';
 import { LifeScope } from '../LifeScope';
