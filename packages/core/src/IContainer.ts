@@ -1,4 +1,4 @@
-import { Type, Token, Factory, SymbolType, Providers } from './types';
+import { Type, Token, Factory, SymbolType, Providers, ModuleType } from './types';
 import { ActionComponent, DecoratorType } from './core/index';
 import { IMethodAccessor } from './IMethodAccessor';
 import { LifeScope } from './LifeScope';
@@ -134,5 +134,14 @@ export interface IContainer extends IMethodAccessor {
      * @memberof IContainer
      */
     getLifeScope(): LifeScope;
+
+    /**
+     * use modules.
+     *
+     * @param {...ModuleType[]} modules
+     * @returns {this}
+     * @memberof IContainer
+     */
+    use(...modules: ModuleType[]): this;
 
 }

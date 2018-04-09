@@ -11,7 +11,7 @@ export class DefaultModuleLoader implements IModuleLoader {
     private _loader: (modulepath: string) => Promise<string[]>;
     getLoader() {
         if (!this._loader) {
-           this._loader = this.createLoader();
+            this._loader = this.createLoader();
         }
         return this._loader;
     }
@@ -33,7 +33,7 @@ export class DefaultModuleLoader implements IModuleLoader {
         return loader(file);
     }
 
-    protected createLoader(): (modulepath: string) => Promise<string[]>{
+    protected createLoader(): (modulepath: string) => Promise<string[]> {
         if (typeof require !== 'undefined') {
             return (modulepath: string) => {
                 return new Promise<string[]>((resolve, reject) => {

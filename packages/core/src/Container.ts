@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
-import { Type, Token, Factory, ObjectMap, SymbolType, ToInstance, IocState, Providers } from './types';
+import { Type, Token, Factory, ObjectMap, SymbolType, ToInstance, IocState, Providers, ModuleType } from './types';
 import { Registration } from './Registration';
 import { isClass, isFunction, symbols, isSymbol, isToken, isString, isUndefined, MapSet } from './utils/index';
 
@@ -9,6 +9,7 @@ import { ActionComponent, DecoratorType, registerCores, CoreActions, Singleton, 
 import { LifeScope } from './LifeScope';
 import { IParameter } from './IParameter';
 import { ICacheManager } from './ICacheManager';
+import { IContainerBuilder } from './IContainerBuilder';
 
 /**
  * Container.
@@ -247,6 +248,18 @@ export class Container implements IContainer {
     */
     getLifeScope(): LifeScope {
         return this.get<LifeScope>(symbols.LifeScope);
+    }
+
+    /**
+     * use modules.
+     *
+     * @param {...ModuleType[]} modules
+     * @returns {this}
+     * @memberof Container
+     */
+    use(...modules: ModuleType[]): this {
+        this.get<IContainerBuilder>(symbols.IContainerBuilder).syncLoadTypes({modules: modules});
+        return this;
     }
 
     /**

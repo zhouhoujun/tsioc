@@ -1,4 +1,4 @@
-import { Type } from './types';
+import { Type, ModuleType } from './types';
 
 
 export interface LoadOptions {
@@ -7,10 +7,10 @@ export interface LoadOptions {
     /**
      * node modules.
      *
-     * @type {((string | Type<any> | object)[])}
+     * @type {(ModuleType[])}
      * @memberof BuilderOptions
      */
-    modules?: (string | Type<any> | object)[];
+    modules?: ModuleType[];
 }
 
 export interface AsyncLoadOptions extends LoadOptions {

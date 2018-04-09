@@ -17,7 +17,7 @@ import { DefaultModuleLoader } from './DefaultModuleLoader';
 export class DefaultContainerBuilder implements IContainerBuilder {
 
     constructor(private loader?: IModuleLoader) {
-        if(!loader){
+        if (!loader) {
             this.loader = new DefaultModuleLoader();
         }
     }
@@ -51,6 +51,32 @@ export class DefaultContainerBuilder implements IContainerBuilder {
      * @memberof ContainerBuilder
      */
     async loadModule(container: IContainer, options: AsyncLoadOptions): Promise<Type<any>[]> {
+        let regModules = await this.getTypes(options);
+        return this.registers(container, regModules);
+    }
+
+
+    syncBuild(options: LoadOptions): IContainer {
+        let container: IContainer = this.create();
+        if (options) {
+            this.syncLoadModule(container, options);
+        }
+        return container;
+    }
+
+    syncLoadModule(container: IContainer, options: LoadOptions): Type<any>[] {
+        let regModules = this.syncLoadTypes(options);
+        return this.registers(container, regModules);
+    }
+
+    /**
+     * load types from module.
+     *
+     * @param {LoadOptions} options
+     * @returns {Promise<Type<any>[]>}
+     * @memberof IContainerBuilder
+     */
+    async loadTypes(options: LoadOptions): Promise<Type<any>[]> {
         let regModules: Type<any>[] = [];
         if (options) {
             let modules = await this.loader.load(options);
@@ -62,51 +88,53 @@ export class DefaultContainerBuilder implements IContainerBuilder {
             }
 
             modules.forEach(m => {
-                regModules.push(...this.registerModule(container, m));
+                regModules.push(...this.getTypes(m));
             })
         }
-
         return regModules;
     }
 
-
-    syncBuild(options: LoadOptions): IContainer {
-        let container: IContainer = this.create();
-        if (options) {
-            this.snycLoadModule(container, options);
-        }
-        return container;
-    }
-    snycLoadModule(container: IContainer, options: LoadOptions): Type<any>[] {
+    /**
+     * sync load types from module.
+     *
+     * @param {LoadOptions} options
+     * @returns {Type<any>[]}
+     * @memberof IContainerBuilder
+     */
+    syncLoadTypes(options: LoadOptions): Type<any>[] {
         let regModules: Type<any>[] = [];
         if (options && options.modules && options.modules.length > 0) {
             options.modules.forEach(nmd => {
                 let regModule = isString(nmd) ? this.loader.loadModule(nmd) : nmd;
-                let modules2 = this.registerModule(container, regModule);
+                let modules2 = this.getTypes(regModule);
                 regModules = regModules.concat(modules2);
             });
         }
         return regModules;
     }
 
-    protected registerModule(container: IContainer, regModule: Type<any> | object): Type<any>[] {
+    protected registers(container: IContainer, types: Type<any>[]): Type<any>[] {
+        types = types || [];
+        types.forEach(typ => {
+            container.register(typ);
+        });
+        return types;
+    }
+
+    protected getTypes(regModule: Type<any> | object): Type<any>[] {
         let regModules: Type<any>[] = [];
-        try {
-            if (isClass(regModule)) {
-                regModules.push(regModule);
-                container.register(regModule);
-            } else {
-                let rmodules = regModule['exports'] ? regModule['exports'] : regModule;
-                for (let p in rmodules) {
-                    if (isClass(rmodules[p])) {
-                        regModules.push(rmodules[p]);
-                        container.register(rmodules[p]);
-                    }
+
+        if (isClass(regModule)) {
+            regModules.push(regModule);
+        } else {
+            let rmodules = regModule['exports'] ? regModule['exports'] : regModule;
+            for (let p in rmodules) {
+                if (isClass(rmodules[p])) {
+                    regModules.push(rmodules[p]);
                 }
             }
-        } catch {
-
         }
+
         return regModules;
     }
 }

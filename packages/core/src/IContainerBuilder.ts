@@ -33,6 +33,7 @@ export interface IContainerBuilder {
      * @memberof IContainerBuilder
      */
     syncBuild(options: LoadOptions): IContainer;
+
     /**
      * load modules for container.
      *
@@ -51,5 +52,24 @@ export interface IContainerBuilder {
      * @returns {Type<any>[]}
      * @memberof IContainerBuilder
      */
-    snycLoadModule(container: IContainer, options: LoadOptions): Type<any>[];
+    syncLoadModule(container: IContainer, options: LoadOptions): Type<any>[];
+
+    /**
+     * load types from module.
+     *
+     * @param {LoadOptions} options
+     * @returns {Promise<Type<any>[]>}
+     * @memberof IContainerBuilder
+     */
+    loadTypes(options: LoadOptions): Promise<Type<any>[]>;
+
+    /**
+     * sync load types from module.
+     *
+     * @param {LoadOptions} options
+     * @returns {Type<any>[]}
+     * @memberof IContainerBuilder
+     */
+    syncLoadTypes(options: LoadOptions): Type<any>[];
+
 }
