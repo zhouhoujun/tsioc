@@ -20,13 +20,11 @@ Development.create(gulp, __dirname, [
         testSrc: 'test/**/*.spec.ts',
         loader: 'development-tool-node',
         asserts: {
-            aop: {
-                name: 'aop',
+            ts: {
                 src: 'src/**/*.ts',
                 tsPipes: [
                     () => classAnnotations()
                 ],
-                dist: 'lib',
                 loader: 'development-assert-ts'
             }
         }
@@ -54,7 +52,8 @@ Development.create(gulp, __dirname, [
                             ],
                             external: [
                                 'reflect-metadata',
-                                'log4js'
+                                'log4js',
+                                '@tsioc/core'
                             ],
                             globals: {
                                 'reflect-metadata': 'Reflect',

@@ -4,6 +4,7 @@
     "rootDir": ".",
     "paths": {
       "@tsioc/core": [
+        "../core/lib",
         "../core/src"
       ]
     },

@@ -47,6 +47,12 @@ Development.create(gulp, __dirname, [
                         src: ['packages/core/**', '!packages/core/test/**', '!packages/core/src/**', '!packages/core/node_modules/**'],
                         dist: 'packages/logs/node_modules/@tsioc/core',
                         pipes: []
+                    },
+                    {
+                        name: 'copy-to-server',
+                        src: ['packages/core/**', '!packages/core/test/**', '!packages/core/src/**', '!packages/core/node_modules/**'],
+                        dist: 'packages/platform-server/node_modules/@tsioc/core',
+                        pipes: []
                     }
                 ]
             }
@@ -77,6 +83,18 @@ Development.create(gulp, __dirname, [
             {
                 name: 'logs',
                 path: (ctx) => 'packages/logs',
+                cmd: (ctx) => (ctx.oper & Operation.deploy) ? 'npm publish' : 'gulp start',
+                args: argFactory
+            },
+            {
+                name: 'platform-browser',
+                path: (ctx) => 'packages/platform-browser',
+                cmd: (ctx) => (ctx.oper & Operation.deploy) ? 'npm publish' : 'gulp start',
+                args: argFactory
+            },
+            {
+                name: 'platform-server',
+                path: (ctx) => 'packages/platform-server',
                 cmd: (ctx) => (ctx.oper & Operation.deploy) ? 'npm publish' : 'gulp start',
                 args: argFactory
             }
