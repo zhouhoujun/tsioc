@@ -31,13 +31,41 @@ Development.create(gulp, __dirname, [
                 path: (ctx) => 'packages/core',
                 cmd: (ctx) => (ctx.oper & Operation.deploy) ? 'npm publish' : 'gulp start',
                 args: argFactory
-            },
+            }
+        ],
+        tasks: [
+            {
+                loader: [{
+                    name: 'copy',
+                    src: ['packages/core/**', '!packages/core/test/**', '!packages/core/node_modules/**'],
+                    dist: ['packages/aop/node_modules/@tsioc/core', 'packages/logs/node_modules/@tsioc/core'],
+                    pipes: []
+                }]
+            }
+        ]
+    },
+    <ITaskOption>{
+        refs: [
             {
                 name: (ctx) => 'aop',
                 path: (ctx) => 'packages/aop',
                 cmd: (ctx) => (ctx.oper & Operation.deploy) ? 'npm publish' : 'gulp start',
                 args: argFactory
             },
+        ],
+        tasks: [
+            {
+                loader: [{
+                    name: 'copy',
+                    src: ['packages/aop/**', '!packages/aop/test/**', '!packages/aop/node_modules/**'],
+                    dist: ['packages/logs/node_modules/@tsioc/core'],
+                    pipes: []
+                }]
+            }
+        ]
+    },
+    {
+        refs: [
             {
                 name: (ctx) => 'logs',
                 path: (ctx) => 'packages/logs',

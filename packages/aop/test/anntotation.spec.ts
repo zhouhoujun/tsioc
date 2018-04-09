@@ -1,6 +1,9 @@
 import 'mocha';
 import { expect } from 'chai';
-import { Method, Inject, DefaultContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, isFunction, hasOwnMethodMetadata, hasPropertyMetadata } from '@tsioc/core';
+import {
+    Method, Inject, DefaultContainerBuilder, AutoWired, Injectable, Singleton, IContainer,
+    ParameterMetadata, Param, isFunction, hasOwnMethodMetadata, hasPropertyMetadata
+} from '@tsioc/core';
 import { AnnotationAspect } from './aop/AnnotationAspect';
 import { CheckRightAspect } from './aop/CheckRightAspect';
 import { IocLog } from './aop/IocLog';
@@ -51,7 +54,7 @@ describe('method exec test', () => {
         }
 
         @Method()
-        sayHello( @Inject(Child) person: Person) {
+        sayHello(@Inject(Child) person: Person) {
             return person.say();
         }
 
@@ -64,7 +67,7 @@ describe('method exec test', () => {
         }
 
         @Method
-        sayHello( @Inject(Child) personA: Person, personB: Person) {
+        sayHello(@Inject(Child) personA: Person, personB: Person) {
             return personA.say() + ', ' + personB.say();
         }
 

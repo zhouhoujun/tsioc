@@ -20,8 +20,7 @@ Development.create(gulp, __dirname, [
         testSrc: 'test/**/*.spec.ts',
         loader: 'development-tool-node',
         asserts: {
-            logs: {
-                name: 'logs',
+            ts: {
                 src: 'src/**/*.ts',
                 tsPipes: [
                     () => classAnnotations()

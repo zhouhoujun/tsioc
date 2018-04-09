@@ -1,7 +1,8 @@
 import { Type, Token, ObjectMap } from '@tsioc/core';
+import { Joinpoint } from '@tsioc/aop';
 import { ILoggerManger } from './ILoggerManger';
 import { ILogger } from './ILogger';
-import { Joinpoint } from '@tsioc/aop';
+
 
 /**
  * log configure.

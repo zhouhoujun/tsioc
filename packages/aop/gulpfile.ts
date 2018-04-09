@@ -17,11 +17,12 @@ const del = require('del');
 Development.create(gulp, __dirname, [
     <ITaskOption>{
         dist: 'lib',
+        src: 'src',
         testSrc: 'test/**/*.spec.ts',
+        // test: false,
         loader: 'development-tool-node',
         asserts: {
-            aop: {
-                name: 'aop',
+            ts: {
                 src: 'src/**/*.ts',
                 tsPipes: [
                     () => classAnnotations()
@@ -61,7 +62,7 @@ Development.create(gulp, __dirname, [
                                 'reflect-metadata': 'Reflect',
                                 'log4js': 'log4js'
                             },
-                            input: './lib/browser.js'
+                            input: './lib/index.js'
                         })
                     },
                     ctx => through.obj(function (file, encoding, callback) {

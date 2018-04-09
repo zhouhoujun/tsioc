@@ -8,7 +8,7 @@
         "../core/src"
       ],
       "@tsioc/aop": [
-        "../core/lib",
+        "../aop/lib",
         "../aop/src"
       ]
     },
