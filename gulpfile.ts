@@ -27,7 +27,7 @@ Development.create(gulp, __dirname, [
     <ITaskOption>{
         refs: [
             {
-                name: (ctx) => 'core',
+                name: 'core',
                 path: (ctx) => 'packages/core',
                 cmd: (ctx) => (ctx.oper & Operation.deploy) ? 'npm publish' : 'gulp start',
                 args: argFactory
@@ -35,19 +35,27 @@ Development.create(gulp, __dirname, [
         ],
         tasks: [
             {
-                loader: [{
-                    name: 'copy',
-                    src: ['packages/core/**', '!packages/core/test/**', '!packages/core/node_modules/**'],
-                    dist: ['packages/aop/node_modules/@tsioc/core', 'packages/logs/node_modules/@tsioc/core'],
-                    pipes: []
-                }]
+                loader: [
+                    {
+                        name: 'copy-to-aop',
+                        src: ['packages/core/**', '!packages/core/test/**', '!packages/core/src/**', '!packages/core/node_modules/**'],
+                        dist: 'packages/aop/node_modules/@tsioc/core',
+                        pipes: []
+                    },
+                    {
+                        name: 'copy-to-logs',
+                        src: ['packages/core/**', '!packages/core/test/**', '!packages/core/src/**', '!packages/core/node_modules/**'],
+                        dist: 'packages/logs/node_modules/@tsioc/core',
+                        pipes: []
+                    }
+                ]
             }
         ]
     },
     <ITaskOption>{
         refs: [
             {
-                name: (ctx) => 'aop',
+                name: 'aop',
                 path: (ctx) => 'packages/aop',
                 cmd: (ctx) => (ctx.oper & Operation.deploy) ? 'npm publish' : 'gulp start',
                 args: argFactory
@@ -57,8 +65,8 @@ Development.create(gulp, __dirname, [
             {
                 loader: [{
                     name: 'copy',
-                    src: ['packages/aop/**', '!packages/aop/test/**', '!packages/aop/node_modules/**'],
-                    dist: ['packages/logs/node_modules/@tsioc/core'],
+                    src: ['packages/aop/**', '!packages/aop/test/**', '!packages/aop/src/**', '!packages/aop/node_modules/**'],
+                    dist: 'packages/logs/node_modules/@tsioc/aop',
                     pipes: []
                 }]
             }
@@ -67,7 +75,7 @@ Development.create(gulp, __dirname, [
     {
         refs: [
             {
-                name: (ctx) => 'logs',
+                name: 'logs',
                 path: (ctx) => 'packages/logs',
                 cmd: (ctx) => (ctx.oper & Operation.deploy) ? 'npm publish' : 'gulp start',
                 args: argFactory
