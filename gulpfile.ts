@@ -15,7 +15,7 @@ const del = require('del');
 
 let argFactory = (ctx: IContext) => {
     if (ctx.oper & Operation.deploy) {
-        return '';
+        return [];
     } else if (ctx.oper & Operation.release) {
         return '--release';
     } else {
