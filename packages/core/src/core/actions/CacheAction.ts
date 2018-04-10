@@ -14,7 +14,7 @@ import { ICacheManager } from '../../ICacheManager';
 
 
 
-export interface ComponentCacheActionData extends ActionData<ClassMetadata> {
+export interface CacheActionData extends ActionData<ClassMetadata> {
 
 }
 
@@ -25,15 +25,15 @@ export interface ComponentCacheActionData extends ActionData<ClassMetadata> {
  * @class SetPropAction
  * @extends {ActionComposite}
  */
-export class ComponentCacheAction extends ActionComposite {
+export class CacheAction extends ActionComposite {
 
     constructor() {
-        super(CoreActions.componentCache)
+        super(CoreActions.cache)
     }
 
-    protected working(container: IContainer, data: ComponentCacheActionData) {
+    protected working(container: IContainer, data: CacheActionData) {
 
-        if (!data.targetType || !isClass(data.targetType)) {
+        if (data.singleton || !data.targetType || !isClass(data.targetType)) {
             return data;
         }
         let cacheManager = container.get<ICacheManager>(symbols.ICacheManager);
@@ -57,7 +57,7 @@ export class ComponentCacheAction extends ActionComposite {
         return data;
     }
 
-    getCacheMetadata(container: IContainer, data: ComponentCacheActionData): ClassMetadata {
+    getCacheMetadata(container: IContainer, data: CacheActionData): ClassMetadata {
         let lifeScope = container.getLifeScope();
         let matchs = lifeScope.getClassDecorators(surm => hasOwnClassMetadata(surm.name, data.targetType));
         let cacheMetadata: ClassMetadata;

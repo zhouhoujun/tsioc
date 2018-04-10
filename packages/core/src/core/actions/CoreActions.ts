@@ -6,16 +6,6 @@
 export enum CoreActions {
 
     /**
-     * before constructor advice action.
-     */
-    beforeConstructor = 'beforeConstructor',
-
-    /**
-     * after constructor advice action.
-     */
-    afterConstructor = 'afterConstructor',
-
-    /**
      * set param type form metadata.
      */
     bindParameterType = 'bindParameterType',
@@ -41,12 +31,12 @@ export enum CoreActions {
     bindParameterProviders = 'bindParameterProviders',
 
 
-    componentCache = 'componentCache',
+    cache = 'cache',
+
     /**
      * component init action.  after constructor befor property inject.
      */
     componentBeforeInit = 'componentBeforeInit',
-
 
     /**
      * component on init hooks. after property inject.
@@ -54,8 +44,10 @@ export enum CoreActions {
     componentInit = 'componentInit',
 
     /**
-     * component after init.
+     * singleton action.
      */
-    componentAfterInit = 'componentAfterInit'
+    singletion = 'singletion'
+
+
 
 }

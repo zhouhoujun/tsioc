@@ -45,6 +45,14 @@ export interface ActionData<T> {
     targetType?: Type<any>;
 
     /**
+     * resolve token.
+     *
+     * @type {Token<any>}
+     * @memberof ActionData
+     */
+    tokenKey?: Token<any>;
+
+    /**
      * is target singleton or not.
      *
      * @type {boolean}

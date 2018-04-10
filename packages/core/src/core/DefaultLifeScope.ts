@@ -4,7 +4,7 @@ import { isClass, isAbstractDecoratorClass, isArray, isString } from '../utils/i
 import { Singleton, Abstract } from './decorators/index';
 import { ClassMetadata, MethodMetadata } from './metadatas/index';
 import { IContainer } from '../IContainer';
-import { CoreActions, ActionComponent } from './actions/index';
+import { CoreActions, ActionComponent, LifeState } from './actions/index';
 import { DecoratorType, getOwnTypeMetadata, getOwnParamerterNames, getParamerterNames, getOwnMethodMetadata, hasOwnClassMetadata } from './factories/index';
 import { ActionData } from './ActionData';
 import { ActionFactory } from './ActionFactory';
@@ -53,14 +53,15 @@ export class DefaultLifeScope implements LifeScope {
         return this;
     }
 
-    execute<T>(type: DecoratorType, data: ActionData<T>, ...names: string[]) {
-        let types = this.toActionType(type).split(',');
-        return this.action.filter(act => types.indexOf(act.name) >= 0).forEach(act => {
-            names.forEach(name => {
-                act = act.find(itm => itm.name === name);
-            });
-            act.execute(this.container, data);
+    execute<T>(data: ActionData<T>, ...names: string[]) {
+        names = names.filter(n => !!n);
+        let act: ActionComponent = this.action;
+        names.forEach(name => {
+            act = act.find(itm => itm.name === name);
         });
+        if (act) {
+            act.execute(this.container, data);
+        }
     }
 
     getClassDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[] {
@@ -209,7 +210,7 @@ export class DefaultLifeScope implements LifeScope {
             targetType: type,
             propertyKey: propertyKey
         } as ActionData<Token<any>[]>;
-        this.execute(DecoratorType.Parameter, data, CoreActions.bindParameterType);
+        this.execute(data, CoreActions.bindParameterType);
 
         let paramNames = this.getParamerterNames(type, propertyKey);
 
@@ -245,12 +246,32 @@ export class DefaultLifeScope implements LifeScope {
         let factory = new ActionFactory();
 
         let action = factory.create('');
-        action.add(factory.create(this.toActionType(DecoratorType.Class))
+        action
             .add(factory.create(IocState.design)
-                .add(factory.create(IocState.runtime))))
-            .add(factory.create(this.toActionType(DecoratorType.Method)))
-            .add(factory.create(this.toActionType(DecoratorType.Property)))
-            .add(factory.create(this.toActionType(DecoratorType.Parameter)));
+                .add(factory.create(this.toActionType(DecoratorType.Class))
+                    .add(factory.create(CoreActions.bindProvider)))
+            )
+            .add(factory.create(IocState.runtime)
+                .add(factory.create(LifeState.beforeConstructor))
+                .add(factory.create(LifeState.afterConstructor))
+                .add(factory.create(LifeState.onInit)
+                    .add(factory.create(CoreActions.componentBeforeInit))
+                    .add(factory.create(this.toActionType(DecoratorType.Class)))
+                    .add(factory.create(this.toActionType(DecoratorType.Method)))
+                    .add(factory.create(this.toActionType(DecoratorType.Property))
+                        .add(factory.create(CoreActions.bindPropertyType))
+                        .add(factory.create(CoreActions.injectProperty)))
+                    .add(factory.create(this.toActionType(DecoratorType.Parameter))
+                        .add(factory.create(CoreActions.bindParameterType))
+                        .add(factory.create(CoreActions.bindParameterProviders)))
+                    .add(factory.create(CoreActions.componentInit))
+                )
+                .add(factory.create(LifeState.AfterInit)
+                    .add(factory.create(CoreActions.singletion)))
+            )
+            .add(factory.create(CoreActions.cache));
+
+
         this.action = action;
 
     }

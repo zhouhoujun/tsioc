@@ -1,7 +1,7 @@
 import { IContainer } from '../IContainer';
 import { ParamProvider, AsyncParamProvider, ProviderMap } from './providers/index';
 import { IMethodAccessor } from '../IMethodAccessor';
-import { BindParameterProviderActionData, CoreActions } from './actions/index';
+import { BindParameterProviderActionData, CoreActions, LifeState } from './actions/index';
 import { symbols, isToken, isFunction, isUndefined, isString } from '../utils/index';
 import { Type, Token, Providers } from '../types';
 import { Container } from '../Container';
@@ -37,7 +37,7 @@ export class MethodAccessor implements IMethodAccessor {
                 propertyKey: propertyKey,
             } as BindParameterProviderActionData;
             let lifeScope = this.container.getLifeScope();
-            lifeScope.execute(DecoratorType.Parameter, actionData, CoreActions.bindParameterProviders);
+            lifeScope.execute(actionData, LifeState.onInit, CoreActions.bindParameterProviders);
             providers = providers.concat(actionData.execResult);
 
             let parameters = lifeScope.getMethodParameters(targetClass, target, propertyKey);
@@ -66,7 +66,7 @@ export class MethodAccessor implements IMethodAccessor {
                 propertyKey: propertyKey,
             } as BindParameterProviderActionData;
             let lifeScope = this.container.getLifeScope();
-            lifeScope.execute(DecoratorType.Parameter, actionData, CoreActions.bindParameterProviders);
+            lifeScope.execute(actionData, LifeState.onInit, CoreActions.bindParameterProviders);
 
 
             providers = providers.concat(actionData.execResult);

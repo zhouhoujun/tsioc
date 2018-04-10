@@ -122,10 +122,21 @@ export interface IContainer extends IMethodAccessor {
      * @template T
      * @param {Token<T>} token
      * @param {Factory<T>} value
-     *
+     * @returns {this}
      * @memberOf IContainer
      */
-    registerSingleton<T>(token: Token<T>, value?: Factory<T>);
+    registerSingleton<T>(token: Token<T>, value?: Factory<T>): this;
+
+    /**
+     * register value.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {T} value
+     * @returns {this}
+     * @memberof IContainer
+     */
+    registerValue<T>(token: Token<T>, value: T): this;
 
     /**
      * get life scope of container.

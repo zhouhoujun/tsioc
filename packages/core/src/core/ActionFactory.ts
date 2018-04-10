@@ -4,7 +4,7 @@ import {
     BindPropertyTypeAction, InjectPropertyAction,
     BindParameterProviderAction, BindProviderAction,
     ComponentInitAction, ComponentBeforeInitAction,
-    ComponentCacheAction
+    CacheAction, SingletionAction
 } from './actions/index';
 
 
@@ -48,10 +48,13 @@ export class ActionFactory {
                 action = new ComponentBeforeInitAction();
                 break;
 
-            case CoreActions.componentCache:
-                action = new ComponentCacheAction();
+            case CoreActions.cache:
+                action = new CacheAction();
                 break;
 
+            case CoreActions.singletion:
+                action = new SingletionAction();
+                break;
             default:
                 action = new ActionComposite(type);
                 break;

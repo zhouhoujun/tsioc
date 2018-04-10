@@ -1,5 +1,6 @@
 export * from './ActionComponent';
 export * from './ActionComposite';
+export * from './LifeState';
 export * from './CoreActions';
 
 export * from './NullAction';
@@ -10,6 +11,6 @@ export * from './InjectPropertyAction';
 export * from './BindParameterProviderAction';
 export * from './ComponentBeforeInitAction';
 export * from './ComponentInitAction';
-export * from './ComponentCacheAction';
-
+export * from './CacheAction';
+export * from './SingletonAction';
 

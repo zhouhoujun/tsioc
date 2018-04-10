@@ -45,12 +45,11 @@ export interface LifeScope {
      * execute the action work.
      *
      * @template T
-     * @param {DecoratorType} type action for decorator type.
      * @param {ActionData<T>} data execute data;
      * @param {string} names execute action name.
      * @memberof ActionComponent
      */
-    execute<T>(type: DecoratorType, data: ActionData<T>, ...names: string[]);
+    execute<T>(data: ActionData<T>, ...names: string[]);
 
     /**
      * register action.

@@ -5,7 +5,7 @@ import { Registration } from './Registration';
 import { isClass, isFunction, symbols, isSymbol, isToken, isString, isUndefined, MapSet } from './utils/index';
 
 import { IMethodAccessor } from './IMethodAccessor';
-import { ActionComponent, DecoratorType, registerCores, CoreActions, Singleton, PropertyMetadata, ComponentLifecycle, ComponentCacheActionData } from './core/index';
+import { ActionComponent, DecoratorType, registerCores, CoreActions, Singleton, PropertyMetadata, ComponentLifecycle, CacheActionData, LifeState } from './core/index';
 import { LifeScope } from './LifeScope';
 import { IParameter } from './IParameter';
 import { ICacheManager } from './ICacheManager';
@@ -179,6 +179,28 @@ export class Container implements IContainer {
     }
 
     /**
+     * register value.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {T} value
+     * @returns {this}
+     * @memberof Container
+     */
+    registerValue<T>(token: Token<T>, value: T): this {
+        let key = this.getTokenKey(token);
+
+        this.singleton.set(key, value);
+        if (!this.factories.has(key)) {
+            this.factories.set(key, () => {
+                return this.singleton.get(key);
+            });
+        }
+
+        return this;
+    }
+
+    /**
      * bind provider.
      *
      * @template T
@@ -258,7 +280,7 @@ export class Container implements IContainer {
      * @memberof Container
      */
     use(...modules: ModuleType[]): this {
-        this.get<IContainerBuilder>(symbols.IContainerBuilder).syncLoadTypes({modules: modules});
+        this.get<IContainerBuilder>(symbols.IContainerBuilder).syncLoadTypes({ modules: modules });
         return this;
     }
 
@@ -378,76 +400,69 @@ export class Container implements IContainer {
             }
 
             if (providers.length < 1) {
-                let lifecycleData: ComponentCacheActionData = {
+                let lifecycleData: CacheActionData = {
+                    tokenKey: key,
                     targetType: ClassT,
                     singleton: singleton
                 };
-                lifeScope.execute(DecoratorType.Class, lifecycleData, CoreActions.componentCache);
+                lifeScope.execute(lifecycleData, CoreActions.cache);
                 if (lifecycleData.execResult && lifecycleData.execResult instanceof ClassT) {
                     return lifecycleData.execResult;
                 }
             }
 
-            lifeScope.execute(DecoratorType.Class, {
+            lifeScope.execute({
+                tokenKey: key,
                 targetType: ClassT,
                 singleton: singleton
-            }, IocState.runtime);
+            }, IocState.runtime, LifeState.beforeConstructor);
 
             let args = this.createSyncParams(parameters, ...providers);
 
-            lifeScope.execute(DecoratorType.Class, {
+            lifeScope.execute({
+                tokenKey: key,
                 targetType: ClassT,
                 args: args,
                 params: parameters,
                 providers: providers,
                 singleton: singleton
-            }, CoreActions.beforeConstructor);
+            }, IocState.runtime, LifeState.beforeConstructor);
 
             let instance = new ClassT(...args);
 
-            lifeScope.execute(DecoratorType.Class, {
+            lifeScope.execute({
+                tokenKey: key,
                 target: instance,
                 targetType: ClassT,
                 args: args,
                 params: parameters,
                 providers: providers,
                 singleton: singleton
-            }, CoreActions.afterConstructor);
+            }, IocState.runtime, LifeState.onInit);
 
-            lifeScope.execute(DecoratorType.Property, {
+
+            lifeScope.execute({
+                tokenKey: key,
                 target: instance,
                 targetType: ClassT,
+                args: args,
+                params: parameters,
                 providers: providers,
                 singleton: singleton
-            });
+            }, IocState.runtime, LifeState.AfterInit);
 
-            lifeScope.execute(DecoratorType.Method, {
+
+            lifeScope.execute({
+                tokenKey: key,
                 target: instance,
-                targetType: ClassT,
-                providers: providers,
-                singleton: singleton
-            });
+                targetType: ClassT
+            }, CoreActions.cache);
 
-
-            lifeScope.execute(DecoratorType.Class, {
-                target: instance,
-                targetType: ClassT,
-                providers: providers,
-                singleton: singleton
-            }, CoreActions.componentAfterInit);
-
-            if (singleton) {
-                this.singleton.set(key, instance);
-            } else if (providers.length < 1) {
-                lifeScope.execute(DecoratorType.Class, {
-                    target: instance,
-                    targetType: ClassT
-                }, CoreActions.componentCache);
-            }
             return instance;
         };
 
-        lifeScope.execute(DecoratorType.Class, {
+        lifeScope.execute({
+            tokenKey: key,
             targetType: ClassT
         }, IocState.design);
 
