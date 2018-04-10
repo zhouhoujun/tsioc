@@ -43,5 +43,10 @@
   },
   "peerDependencies": {
     "@tsioc/core": "^2.0.0"
-  }
+  },
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "devDependencies": {}
 }

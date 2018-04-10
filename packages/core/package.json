@@ -27,10 +27,7 @@
     "type",
     "typescript"
   ],
-  "author": {
-    "name": "houjun",
-    "email": "freebirds8281@hotmail.com"
-  },
+  "author": "houjun",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/zhouhoujun/tsioc/issues"
@@ -43,5 +40,9 @@
   "dependencies": {
     "globby": "^7.1.1",
     "reflect-metadata": "^0.1.12"
+  },
+  "directories": {
+    "lib": "lib",
+    "test": "test"
   }
 }

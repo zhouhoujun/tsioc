@@ -1,5 +1,5 @@
 {
-  "name": "@tsioc/core",
+  "name": "@tsioc/aop",
   "version": "2.0.0",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./bundles/aop.umd.js",
@@ -43,5 +43,10 @@
   },
   "peerDependencies": {
     "@tsioc/core": "^2.0.0"
-  }
+  },
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "devDependencies": {}
 }
