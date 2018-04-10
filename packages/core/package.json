@@ -27,7 +27,10 @@
     "type",
     "typescript"
   ],
-  "author": "houjun",
+  "author": {
+    "name": "houjun",
+    "email": "freebirds8281@hotmail.com"
+  },
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/zhouhoujun/tsioc/issues"

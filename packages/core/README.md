@@ -1,11 +1,11 @@
-# packaged @@tsioc/core/core
+# packaged @tsioc/core
 
 This repo is for distribution on `npm`. The source for this module is in the
-[main repo](https://github.com/zhouhoujun/@@tsioc/core/core).
+[main repo](https://github.com/zhouhoujun/tsioc).
 
 `@tsioc/core` is AOP, Ioc container, via typescript decorator.
 
-now package rename as [`@tsioc/core`](https://www.npmjs.com/package/@tsioc/core)
+now package rename as [`@tsioc/core`](https://www.npmjs.com/zhouhoujun/package/@tsioc/core)
 # Install
 
 ```shell
