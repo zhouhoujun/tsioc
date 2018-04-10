@@ -10,6 +10,7 @@ import { LifeScope } from './LifeScope';
 import { IParameter } from './IParameter';
 import { ICacheManager } from './ICacheManager';
 import { IContainerBuilder } from './IContainerBuilder';
+import { AbstractType } from 'lib';
 
 /**
  * Container.
@@ -280,7 +281,7 @@ export class Container implements IContainer {
      * @memberof Container
      */
     use(...modules: ModuleType[]): this {
-        this.get<IContainerBuilder>(symbols.IContainerBuilder).syncLoadTypes({ modules: modules });
+        this.get<IContainerBuilder>(symbols.IContainerBuilder).loadModule(this, { modules: modules });
         return this;
     }
 
@@ -346,6 +347,7 @@ export class Container implements IContainer {
         }
 
         let classFactory;
+        let ClassT: Type<T> | AbstractType<T>;
         if (!isUndefined(value)) {
             if (isFunction(value)) {
                 if (isClass(value)) {
@@ -358,7 +360,7 @@ export class Container implements IContainer {
             }
 
         } else if (!isString(token) && !isSymbol(token)) {
-            let ClassT = (token instanceof Registration) ? token.getClass() : token;
+            ClassT = (token instanceof Registration) ? token.getClass() : token;
             if (isClass(ClassT)) {
                 classFactory = this.createTypeFactory(key, ClassT as Type<T>, singleton);
             }
@@ -366,6 +368,13 @@ export class Container implements IContainer {
 
         if (classFactory) {
             this.factories.set(key, classFactory);
+            if (isClass(ClassT)) {
+                let lifeScope = this.getLifeScope();
+                lifeScope.execute({
+                    tokenKey: key,
+                    targetType: ClassT
+                }, IocState.design);
+            }
         }
     }
 
@@ -460,12 +469,6 @@ export class Container implements IContainer {
 
             return instance;
         };
-
-        lifeScope.execute({
-            tokenKey: key,
-            targetType: ClassT
-        }, IocState.design);
-
 
         return factory;
     }

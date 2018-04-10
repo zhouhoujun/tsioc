@@ -4,7 +4,7 @@ import {
     BindPropertyTypeAction, InjectPropertyAction,
     BindParameterProviderAction, BindProviderAction,
     ComponentInitAction, ComponentBeforeInitAction,
-    CacheAction, SingletionAction
+    CacheAction, SingletionAction, AutorunAction
 } from './actions/index';
 
 
@@ -54,6 +54,10 @@ export class ActionFactory {
 
             case CoreActions.singletion:
                 action = new SingletionAction();
+                break;
+
+            case CoreActions.autorun:
+                action = new AutorunAction();
                 break;
             default:
                 action = new ActionComposite(type);

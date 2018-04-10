@@ -8,6 +8,7 @@ export * from './ProvideMetadata';
 export * from './ProviderMetadata';
 export * from './TypeMetadata';
 export * from './AutoWiredMetadata';
+export * from './AutorunMetadata';
 export * from './InjectMetadata';
 export * from './InjectableMetadata';
 export * from './ClassMetadata';

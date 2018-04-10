@@ -1,4 +1,4 @@
-import { Type } from './types';
+import { Type, ModuleType } from './types';
 import { AsyncLoadOptions } from './LoadOptions';
 
 /**
@@ -12,18 +12,18 @@ export interface IModuleLoader {
      * load modules by patterns
      *
      * @param {AsyncLoadOptions} options
-     * @returns {Promise<(Type<any> | object)[]>}
+     * @returns {Promise<ModuleType[]>}
      * @memberof IModuleLoader
      */
-    load(options: AsyncLoadOptions): Promise<(Type<any> | object)[]>;
+    load(options: AsyncLoadOptions): Promise<ModuleType[]>;
 
     /**
      * load module from file.
      *
      * @param {string} file
-     * @returns {(Type<any> | object | Promise<Type<any> | object>)}
+     * @returns {(ModuleType | Promise<ModuleType)}
      * @memberof IModuleLoader
      */
-    loadModule(file: string): Type<any> | object | Promise<Type<any> | object>;
+    loadModule(file: string): ModuleType | Promise<ModuleType>;
 
 }

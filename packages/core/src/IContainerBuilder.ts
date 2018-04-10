@@ -45,16 +45,6 @@ export interface IContainerBuilder {
     loadModule(container: IContainer, options: AsyncLoadOptions): Promise<Type<any>[]>;
 
     /**
-     * sync load  module for container.
-     *
-     * @param {IContainer} container
-     * @param {LoadOptions} options
-     * @returns {Type<any>[]}
-     * @memberof IContainerBuilder
-     */
-    syncLoadModule(container: IContainer, options: LoadOptions): Type<any>[];
-
-    /**
      * load types from module.
      *
      * @param {LoadOptions} options
@@ -62,14 +52,5 @@ export interface IContainerBuilder {
      * @memberof IContainerBuilder
      */
     loadTypes(options: LoadOptions): Promise<Type<any>[]>;
-
-    /**
-     * sync load types from module.
-     *
-     * @param {LoadOptions} options
-     * @returns {Type<any>[]}
-     * @memberof IContainerBuilder
-     */
-    syncLoadTypes(options: LoadOptions): Type<any>[];
 
 }

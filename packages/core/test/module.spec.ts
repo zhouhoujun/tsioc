@@ -15,6 +15,7 @@ describe('auto register with build', () => {
     });
 
     it('should auto wried property', () => {
+        expect(container.has(SimppleAutoWried)).is.true;
         let instance = container.get(SimppleAutoWried);
         expect(instance).not.undefined;
         expect(instance.dateProperty).not.undefined;

@@ -2,7 +2,7 @@ import { Registration } from './Registration';
 import { IContainer } from './IContainer';
 import { ParamProvider, ProviderMap, Provider } from './core/index';
 
-export type ModuleType = string | Type<any> | object;
+export type ModuleType = Type<any> | object;
 /**
  * symbol type
  */

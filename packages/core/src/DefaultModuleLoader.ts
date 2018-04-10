@@ -1,4 +1,4 @@
-import { Type } from './types';
+import { Type, ModuleType } from './types';
 import { IModuleLoader, AsyncLoadOptions } from '.';
 
 declare let require: any;
@@ -16,7 +16,7 @@ export class DefaultModuleLoader implements IModuleLoader {
         return this._loader;
     }
 
-    load(options: AsyncLoadOptions): Promise<(Type<any> | object)[]> {
+    load(options: AsyncLoadOptions): Promise<ModuleType[]> {
         if (options.files) {
             return Promise.all(options.files).then(flies => {
                 return flies.map(fp => {
@@ -28,7 +28,7 @@ export class DefaultModuleLoader implements IModuleLoader {
         }
     }
 
-    loadModule(file: string): Type<any> | object | Promise<Type<any> | object> {
+    loadModule(file: string): ModuleType | Promise<ModuleType> {
         let loader = this.getLoader();
         return loader(file);
     }

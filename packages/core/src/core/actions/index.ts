@@ -13,4 +13,5 @@ export * from './ComponentBeforeInitAction';
 export * from './ComponentInitAction';
 export * from './CacheAction';
 export * from './SingletonAction';
+export * from './AutorunAction';
 

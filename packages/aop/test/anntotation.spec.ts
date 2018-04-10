@@ -7,6 +7,7 @@ import {
 import { AnnotationAspect } from './aop/AnnotationAspect';
 import { CheckRightAspect } from './aop/CheckRightAspect';
 import { IocLog } from './aop/IocLog';
+import { AopModule } from '../src';
 
 
 describe('method exec test', () => {
@@ -77,9 +78,10 @@ describe('method exec test', () => {
     }
 
     let container: IContainer;
-    beforeEach(() => {
+    beforeEach(async () => {
         let builder = new DefaultContainerBuilder();
-        container = builder.create();
+        container = await builder.build({ modules: [AopModule] });
+        // container.use(AopModule);
         container.register(IocLog);
     });
 

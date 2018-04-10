@@ -1,11 +1,9 @@
 import { IContainer } from '../IContainer';
 import { symbols } from '../utils/index';
-import { Injectable, Component, AutoWired, Inject, Singleton, Param, Method, Abstract } from './decorators/index';
+import { Injectable, Component, AutoWired, Inject, Singleton, Param, Method, Abstract, Autorun, IocModule } from './decorators/index';
 import { CoreActions } from './actions/index';
 import { DefaultLifeScope } from './DefaultLifeScope';
 import { LifeScope } from '../LifeScope';
-import { IocState } from '../types';
-import { DecoratorType } from './factories/index';
 import { MethodAccessor } from './MethodAccessor';
 import { ProviderMatcher } from './ProviderMatcher';
 import { ProviderMap } from './providers/index';
@@ -52,6 +50,9 @@ export function registerCores(container: IContainer) {
     lifeScope.registerDecorator(Inject, CoreActions.bindParameterType, CoreActions.bindPropertyType);
     lifeScope.registerDecorator(Param, CoreActions.bindParameterType, CoreActions.bindPropertyType);
     lifeScope.registerDecorator(Method, CoreActions.bindParameterProviders);
+
+    lifeScope.registerDecorator(Autorun, CoreActions.autorun);
+    lifeScope.registerDecorator(IocModule, CoreActions.autorun, CoreActions.componentBeforeInit, CoreActions.componentInit);
 
     container.register(Date, () => new Date());
     container.register(String, () => '');

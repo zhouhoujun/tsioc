@@ -248,8 +248,8 @@ export class DefaultLifeScope implements LifeScope {
         let action = factory.create('');
         action
             .add(factory.create(IocState.design)
-                .add(factory.create(this.toActionType(DecoratorType.Class))
-                    .add(factory.create(CoreActions.bindProvider)))
+                .add(factory.create(CoreActions.bindProvider))
+                .add(factory.create(CoreActions.autorun))
             )
             .add(factory.create(IocState.runtime)
                 .add(factory.create(LifeState.beforeConstructor))

@@ -6,6 +6,7 @@ import { IContainerBuilder } from './IContainerBuilder';
 import { IModuleLoader } from './IModuleLoader';
 import { AsyncLoadOptions, LoadOptions } from './LoadOptions';
 import { DefaultModuleLoader } from './DefaultModuleLoader';
+import { hasOwnClassMetadata, IocModule } from './core/index';
 
 /**
  * default container builder.
@@ -51,7 +52,7 @@ export class DefaultContainerBuilder implements IContainerBuilder {
      * @memberof ContainerBuilder
      */
     async loadModule(container: IContainer, options: AsyncLoadOptions): Promise<Type<any>[]> {
-        let regModules = await this.getTypes(options);
+        let regModules = await this.loadTypes(options);
         return this.registers(container, regModules);
     }
 
@@ -59,14 +60,9 @@ export class DefaultContainerBuilder implements IContainerBuilder {
     syncBuild(options: LoadOptions): IContainer {
         let container: IContainer = this.create();
         if (options) {
-            this.syncLoadModule(container, options);
+            this.loadModule(container, options);
         }
         return container;
-    }
-
-    syncLoadModule(container: IContainer, options: LoadOptions): Type<any>[] {
-        let regModules = this.syncLoadTypes(options);
-        return this.registers(container, regModules);
     }
 
     /**
@@ -78,6 +74,7 @@ export class DefaultContainerBuilder implements IContainerBuilder {
      */
     async loadTypes(options: LoadOptions): Promise<Type<any>[]> {
         let regModules: Type<any>[] = [];
+        let iocModule: Type<any>;
         if (options) {
             let modules = await this.loader.load(options);
             if (options.modules && options.modules.length) {
@@ -88,29 +85,14 @@ export class DefaultContainerBuilder implements IContainerBuilder {
             }
 
             modules.forEach(m => {
-                regModules.push(...this.getTypes(m));
-            })
-        }
-        return regModules;
-    }
-
-    /**
-     * sync load types from module.
-     *
-     * @param {LoadOptions} options
-     * @returns {Type<any>[]}
-     * @memberof IContainerBuilder
-     */
-    syncLoadTypes(options: LoadOptions): Type<any>[] {
-        let regModules: Type<any>[] = [];
-        if (options && options.modules && options.modules.length > 0) {
-            options.modules.forEach(nmd => {
-                let regModule = isString(nmd) ? this.loader.loadModule(nmd) : nmd;
-                let modules2 = this.getTypes(regModule);
-                regModules = regModules.concat(modules2);
+                if (!iocModule) {
+                    let types = this.getTypes(m);
+                    iocModule = types.find(it => hasOwnClassMetadata(IocModule, it));
+                    regModules.push(...this.getTypes(m));
+                }
             });
         }
-        return regModules;
+        return iocModule ? [iocModule] : regModules;
     }
 
     protected registers(container: IContainer, types: Type<any>[]): Type<any>[] {

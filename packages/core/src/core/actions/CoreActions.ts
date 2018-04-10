@@ -46,8 +46,12 @@ export enum CoreActions {
     /**
      * singleton action.
      */
-    singletion = 'singletion'
+    singletion = 'singletion',
 
 
+    /**
+     * autorun action.
+     */
+    autorun = 'autorun'
 
 }
