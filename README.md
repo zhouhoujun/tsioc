@@ -10,9 +10,61 @@ now package rename as [`tsioc`](https://www.npmjs.com/package/tsioc)
 
 ```shell
 
-npm install tsioc
+npm install @tsioc/core
+
+// in browser
+npm install @tsioc/platform-browser
+
+// in server
+npm install @tsioc/platform-server
+```
+
+## add extends modules
+
+### use aop
+
+```shell
+
+// install aop
+npm install @tsioc/aop
 
 ```
+
+```ts
+// in server
+import { ContainerBuilder } from '@tsioc/platform-server'
+// in browser
+import { ContainerBuilder } from '@tsioc/platform-browser'
+
+let builder = new ContainerBuilder();
+
+let container = build.create();
+
+container.use('@tsioc/aop');
+
+```
+
+### use aop logs
+
+```shell
+// install aop logs
+npm install @tsioc/logs
+```
+
+```ts
+// in server
+import { ContainerBuilder } from '@tsioc/platform-server'
+// in browser
+import { ContainerBuilder } from '@tsioc/platform-browser'
+
+let builder = new ContainerBuilder();
+
+let container = build.create();
+
+container.use('@tsioc/logs');
+
+```
+
 
 # Documentation
 
@@ -54,7 +106,7 @@ let container = builder.syncBuild({
 
 ### init & register Container
 
-see interface [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/src/IContainer.ts)
+see interface [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IContainer.ts)
 
 ```ts
 // 1.  you can load modules by self
@@ -67,19 +119,22 @@ builder.syncLoadModule(container, {
   moudles:['node-modules-name', ClassType]
 });
 
-// 3. register a class
+// 3. use modules
+container.use(...modules);
+
+// 4. register a class
 container.register(Person);
 
-// 4. register a factory;
+// 5. register a factory;
 container.register(Person, (container)=> {
     ...
     return new Person(...);
 });
 
-// 5. register with keyword
+// 6. register with keyword
 container.register('keyword', Perosn);
 
-// 7. register with alais
+// 8. register with alais
 container.register(new Registration(Person, aliasname));
 
 ```
@@ -257,7 +312,9 @@ define advice decorator have
 see [simples](https://github.com/zhouhoujun/tsioc/tree/master/test/aop)
 
 ```ts
-import { Joinpoint, Around, Aspect , Pointcut, TypeMetadata, IClassMethodDecorator, createClassMethodDecorator} from 'tsioc';
+import { TypeMetadata, IClassMethodDecorator, createClassMethodDecorator} from '@tsioc/core';
+
+import { Joinpoint, Around, Aspect , Pointcut } from '@tsioc/aop';
 
 export const Authorization: IClassMethodDecorator<TypeMetadata> = createClassMethodDecorator<TypeMetadata>('Authorization');
 

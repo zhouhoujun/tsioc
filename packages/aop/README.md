@@ -14,6 +14,20 @@ npm install @tsioc/aop
 
 ```
 
+```ts
+// in server
+import { ContainerBuilder } from '@tsioc/platform-server'
+// in browser
+import { ContainerBuilder } from '@tsioc/platform-browser'
+
+let builder = new ContainerBuilder();
+
+let container = build.create();
+
+container.use('@tsioc/aop');
+
+```
+
 # Documentation
 
 ## AOP
@@ -41,7 +55,10 @@ define advice decorator have
 see [simples](https://github.com/zhouhoujun/@tsioc/aop/tree/master/test/aop)
 
 ```ts
-import { Joinpoint, Around, Aspect , Pointcut, TypeMetadata, IClassMethodDecorator, createClassMethodDecorator} from '@tsioc/aop';
+
+import { TypeMetadata, IClassMethodDecorator, createClassMethodDecorator} from '@tsioc/core';
+
+import { Joinpoint, Around, Aspect , Pointcut } from '@tsioc/aop';
 
 export const Authorization: IClassMethodDecorator<TypeMetadata> = createClassMethodDecorator<TypeMetadata>('Authorization');
 
