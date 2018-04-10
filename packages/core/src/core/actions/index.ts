@@ -11,6 +11,7 @@ export * from './InjectPropertyAction';
 export * from './BindParameterProviderAction';
 export * from './ComponentBeforeInitAction';
 export * from './ComponentInitAction';
+export * from './ComponentAfterInitAction';
 export * from './CacheAction';
 export * from './SingletonAction';
 export * from './AutorunAction';

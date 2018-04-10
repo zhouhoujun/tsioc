@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
-import { Type, Token, Factory, ObjectMap, SymbolType, ToInstance, IocState, Providers, ModuleType } from './types';
+import { Type, AbstractType, Token, Factory, ObjectMap, SymbolType, ToInstance, IocState, Providers, ModuleType } from './types';
 import { Registration } from './Registration';
 import { isClass, isFunction, symbols, isSymbol, isToken, isString, isUndefined, MapSet } from './utils/index';
 
@@ -10,7 +10,6 @@ import { LifeScope } from './LifeScope';
 import { IParameter } from './IParameter';
 import { ICacheManager } from './ICacheManager';
 import { IContainerBuilder } from './IContainerBuilder';
-import { AbstractType } from 'lib';
 
 /**
  * Container.

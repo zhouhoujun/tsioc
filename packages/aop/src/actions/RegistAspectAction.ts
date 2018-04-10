@@ -17,19 +17,19 @@ export class RegistAspectAction extends ActionComposite {
     }
 
     protected working(container: IContainer, data: RegistAspectActionData) {
-        let target = data.target
         let type = data.targetType;
         let propertyKey = data.propertyKey;
         let lifeScope = container.getLifeScope();
 
         let matchs = lifeScope.getClassDecorators(surm => surm.actions.includes(AopActions.registAspect) && hasOwnClassMetadata(surm.name, type));
-
+        console.log('match decorators:', matchs)
         let aspectMgr = container.get<IAdvisor>(symbols.IAdvisor);
         matchs.forEach(surm => {
             let metadata = getOwnTypeMetadata<ClassMetadata>(surm.name, type);
             if (Array.isArray(metadata) && metadata.length > 0) {
                 metadata.forEach(meta => {
                     if (isClass(meta.type)) {
+                        console.log('--------------------------\nadd aspect:', meta.type)
                         aspectMgr.add(meta.type);
                     }
                 });

@@ -23,6 +23,13 @@ export interface ComponentLifecycle {
     onInit?();
 
     /**
+     * after component init.
+     * 
+     * @memberof ComponentLifecycle
+     */
+    afterInit?();
+
+    /**
      * component on destroy hooks.
      *
      * @memberof ComponentLifecycle

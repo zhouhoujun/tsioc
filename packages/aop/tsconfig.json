@@ -1,10 +1,9 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
-    "rootDir": ".",
+    "rootDir": "../../packages",
     "paths": {
       "@tsioc/core": [
-        "../core/lib",
         "../core/src"
       ]
     },

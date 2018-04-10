@@ -22,7 +22,7 @@ export class DefaultLifeScope implements LifeScope {
 
 
     addAction(action: ActionComponent, type: DecoratorType, ...nodepaths: string[]): this {
-        let types = this.toActionType(type);
+        let types = this.toActionName(type);
         types.split(',').forEach(name => {
             let parent = this.getAtionByName(name);
             nodepaths.forEach(pathname => {
@@ -41,7 +41,7 @@ export class DefaultLifeScope implements LifeScope {
     }
 
     registerCustomDecorator(decorator: Function, type: DecoratorType, ...actions: string[]): this {
-        let types = this.toActionType(type);
+        let types = this.toActionName(type);
         let name = decorator.toString();
         if (!this.decorators.some(d => d.name === name)) {
             this.decorators.push({
@@ -65,19 +65,19 @@ export class DefaultLifeScope implements LifeScope {
     }
 
     getClassDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[] {
-        return this.getTypeDecorators(this.toActionType(DecoratorType.Class), match);
+        return this.getTypeDecorators(this.toActionName(DecoratorType.Class), match);
     }
 
     getMethodDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[] {
-        return this.getTypeDecorators(this.toActionType(DecoratorType.Method), match);
+        return this.getTypeDecorators(this.toActionName(DecoratorType.Method), match);
     }
 
     getPropertyDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[] {
-        return this.getTypeDecorators(this.toActionType(DecoratorType.Property), match);
+        return this.getTypeDecorators(this.toActionName(DecoratorType.Property), match);
     }
 
     getParameterDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[] {
-        return this.getTypeDecorators(this.toActionType(DecoratorType.Parameter), match);
+        return this.getTypeDecorators(this.toActionName(DecoratorType.Parameter), match);
     }
 
     getDecoratorType(decirator: any): DecoratorType {
@@ -112,17 +112,17 @@ export class DefaultLifeScope implements LifeScope {
     }
 
     getClassAction(): ActionComponent {
-        return this.getAtionByName(this.toActionType(DecoratorType.Class));
+        return this.getAtionByName(this.toActionName(DecoratorType.Class));
     }
     getMethodAction(): ActionComponent {
-        return this.getAtionByName(this.toActionType(DecoratorType.Method));
+        return this.getAtionByName(this.toActionName(DecoratorType.Method));
     }
 
     getPropertyAction(): ActionComponent {
-        return this.getAtionByName(this.toActionType(DecoratorType.Property));
+        return this.getAtionByName(this.toActionName(DecoratorType.Property));
     }
     getParameterAction(): ActionComponent {
-        return this.getAtionByName(this.toActionType(DecoratorType.Parameter));
+        return this.getAtionByName(this.toActionName(DecoratorType.Parameter));
     }
 
     /**
@@ -256,28 +256,27 @@ export class DefaultLifeScope implements LifeScope {
                 .add(factory.create(LifeState.afterConstructor))
                 .add(factory.create(LifeState.onInit)
                     .add(factory.create(CoreActions.componentBeforeInit))
-                    .add(factory.create(this.toActionType(DecoratorType.Class)))
-                    .add(factory.create(this.toActionType(DecoratorType.Method)))
-                    .add(factory.create(this.toActionType(DecoratorType.Property))
+                    .add(factory.create(this.toActionName(DecoratorType.Class)))
+                    .add(factory.create(this.toActionName(DecoratorType.Method)))
+                    .add(factory.create(this.toActionName(DecoratorType.Property))
                         .add(factory.create(CoreActions.bindPropertyType))
                         .add(factory.create(CoreActions.injectProperty)))
-                    .add(factory.create(this.toActionType(DecoratorType.Parameter))
+                    .add(factory.create(this.toActionName(DecoratorType.Parameter))
                         .add(factory.create(CoreActions.bindParameterType))
                         .add(factory.create(CoreActions.bindParameterProviders)))
                     .add(factory.create(CoreActions.componentInit))
                 )
                 .add(factory.create(LifeState.AfterInit)
-                    .add(factory.create(CoreActions.singletion)))
+                    .add(factory.create(CoreActions.singletion))
+                    .add(factory.create(CoreActions.componentAfterInit)))
             )
             .add(factory.create(CoreActions.cache));
 
-
         this.action = action;
-
     }
 
 
-    protected toActionType(type: DecoratorType) {
+    toActionName(type: DecoratorType): string {
         let types = [];
         if (type & DecoratorType.Class) {
             types.push('ClassDecorator');

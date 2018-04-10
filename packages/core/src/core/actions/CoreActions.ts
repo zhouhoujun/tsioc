@@ -44,6 +44,11 @@ export enum CoreActions {
     componentInit = 'componentInit',
 
     /**
+     * component after init hooks. after component init.
+     */
+    componentAfterInit = 'componentAfterInit',
+
+    /**
      * singleton action.
      */
     singletion = 'singletion',

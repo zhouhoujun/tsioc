@@ -43,7 +43,7 @@ export function registerCores(container: IContainer) {
     let lifeScope = container.get<LifeScope>(symbols.LifeScope);
 
     lifeScope.registerDecorator(Injectable, CoreActions.bindProvider, CoreActions.cache);
-    lifeScope.registerDecorator(Component, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit);
+    lifeScope.registerDecorator(Component, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
     lifeScope.registerDecorator(Singleton, CoreActions.bindProvider);
     lifeScope.registerDecorator(Abstract, CoreActions.bindProvider, CoreActions.cache);
     lifeScope.registerDecorator(AutoWired, CoreActions.bindParameterType, CoreActions.bindPropertyType);
@@ -52,7 +52,7 @@ export function registerCores(container: IContainer) {
     lifeScope.registerDecorator(Method, CoreActions.bindParameterProviders);
 
     lifeScope.registerDecorator(Autorun, CoreActions.autorun);
-    lifeScope.registerDecorator(IocModule, CoreActions.autorun, CoreActions.componentBeforeInit, CoreActions.componentInit);
+    lifeScope.registerDecorator(IocModule, CoreActions.autorun, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
 
     container.register(Date, () => new Date());
     container.register(String, () => '');

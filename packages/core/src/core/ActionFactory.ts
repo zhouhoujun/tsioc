@@ -3,7 +3,7 @@ import {
     CoreActions, BindParameterTypeAction,
     BindPropertyTypeAction, InjectPropertyAction,
     BindParameterProviderAction, BindProviderAction,
-    ComponentInitAction, ComponentBeforeInitAction,
+    ComponentInitAction, ComponentBeforeInitAction, ComponentAfterInitAction,
     CacheAction, SingletionAction, AutorunAction
 } from './actions/index';
 
@@ -46,6 +46,10 @@ export class ActionFactory {
 
             case CoreActions.componentBeforeInit:
                 action = new ComponentBeforeInitAction();
+                break;
+
+            case CoreActions.componentAfterInit:
+                action = new ComponentAfterInitAction();
                 break;
 
             case CoreActions.cache:

@@ -244,4 +244,13 @@ export interface LifeScope {
      * @memberof LifeScope
      */
     getMethodMetadatas<T>(type: Type<T>, propertyKey: string | symbol): MethodMetadata[];
+
+    /**
+     * convert decorator type to action name.
+     * 
+     * @param {DecoratorType} type 
+     * @returns {string} 
+     * @memberof LifeScope
+     */
+    toActionName(type: DecoratorType): string;
 }
