@@ -210,7 +210,7 @@ export class DefaultLifeScope implements LifeScope {
             targetType: type,
             propertyKey: propertyKey
         } as ActionData<Token<any>[]>;
-        this.execute(data, CoreActions.bindParameterType);
+        this.execute(data, LifeState.onInit, CoreActions.bindParameterType);
 
         let paramNames = this.getParamerterNames(type, propertyKey);
 

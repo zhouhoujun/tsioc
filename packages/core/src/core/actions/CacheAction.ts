@@ -49,8 +49,10 @@ export class CacheAction extends ActionComposite {
             let target = cacheManager.get(data.targetType);
             if (target) {
                 let cacheMetadata = this.getCacheMetadata(container, data);
-                cacheManager.cache(data.targetType, target, cacheMetadata.expires);
-                data.execResult = target;
+                if (cacheMetadata) {
+                    cacheManager.cache(data.targetType, target, cacheMetadata.expires);
+                    data.execResult = target;
+                }
             }
         }
 

@@ -26,7 +26,7 @@ export interface CacheTarget {
 export class CacheManager implements ICacheManager {
     cacheTokens: MapSet<Type<any>, CacheTarget>;
     constructor(private container: IContainer) {
-
+        this.cacheTokens = new MapSet();
     }
 
     isChecking() {
@@ -56,6 +56,9 @@ export class CacheManager implements ICacheManager {
 
     get(targetType: Type<any>, expires?: number) {
         let result = null;
+        if (!this.cacheTokens.has(targetType)) {
+            return null;
+        }
         let cache = this.cacheTokens.get(targetType);
         if (cache.expires <= Date.now()) {
             result = cache.target;
