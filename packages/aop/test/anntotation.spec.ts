@@ -78,15 +78,15 @@ describe('method exec test', () => {
     }
 
     let container: IContainer;
-    before(async () => {
+    beforeEach(async () => {
         let builder = new DefaultContainerBuilder();
         container = await builder.build({ modules: [AopModule] });
         // container.use(AopModule);
-        
+        container.register(IocLog);
     });
 
     it('Aop anntotation test', () => {
-        container.register(IocLog);
+        
         container.register(AnnotationAspect);
         container.register(CheckRightAspect);
         container.register(MethodTest3);

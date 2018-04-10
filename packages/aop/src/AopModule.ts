@@ -39,16 +39,16 @@ export class AopModule {
         let lifeScope = container.get<LifeScope>(symbols.LifeScope);
 
         let factory = new AopActionFactory();
-        lifeScope.addAction(factory.create(AopActions.registAspect), DecoratorType.Class, IocState.design);
-        lifeScope.addAction(factory.create(AopActions.matchPointcut), DecoratorType.Class, IocState.design);
-        lifeScope.addAction(factory.create(AopActions.bindMethodPointcut), DecoratorType.Method, IocState.runtime, LifeState.AfterInit) //, lifeScope.toActionName(DecoratorType.Method));
+        lifeScope.addAction(factory.create(AopActions.registAspect), IocState.design);
+        lifeScope.addAction(factory.create(AopActions.matchPointcut), IocState.runtime, LifeState.beforeConstructor);
+        lifeScope.addAction(factory.create(AopActions.bindMethodPointcut), IocState.runtime, LifeState.AfterInit) //, lifeScope.toActionName(DecoratorType.Method));
 
-        lifeScope.addAction(factory.create(AopActions.invokeBeforeConstructorAdvices), DecoratorType.Class, IocState.runtime, LifeState.onInit, LifeState.beforeConstructor);
-        lifeScope.addAction(factory.create(AopActions.exetndsInstance), DecoratorType.Class, IocState.runtime, LifeState.onInit, LifeState.AfterInit);
-        lifeScope.addAction(factory.create(AopActions.invokeAfterConstructorAdvices), DecoratorType.Class, IocState.runtime, LifeState.onInit, LifeState.afterConstructor);
+        lifeScope.addAction(factory.create(AopActions.invokeBeforeConstructorAdvices), IocState.runtime, LifeState.onInit, LifeState.beforeConstructor);
+        lifeScope.addAction(factory.create(AopActions.exetndsInstance), IocState.runtime, LifeState.onInit, LifeState.AfterInit);
+        lifeScope.addAction(factory.create(AopActions.invokeAfterConstructorAdvices), IocState.runtime, LifeState.onInit, LifeState.afterConstructor);
 
 
         lifeScope.registerDecorator(Aspect, AopActions.registAspect, AopActions.exetndsInstance);
-        console.log('-----------------Setup Aop---------------------');
+
     }
 }

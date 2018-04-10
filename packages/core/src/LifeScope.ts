@@ -55,12 +55,11 @@ export interface LifeScope {
      * register action.
      *
      * @param {ActionComponent} action the action.
-     * @param {DecoratorType} type action for decorator type.
      * @param {...string[]} express the path  of action point to add the action.
      * @returns {this}
      * @memberof LifeScope
      */
-    addAction(action: ActionComponent, type: DecoratorType, ...nodepaths: string[]): this;
+    addAction(action: ActionComponent, ...nodepaths: string[]): this;
 
     /**
      * register decorator.

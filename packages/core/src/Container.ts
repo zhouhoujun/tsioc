@@ -346,11 +346,10 @@ export class Container implements IContainer {
         }
 
         let classFactory;
-        let ClassT: Type<T> | AbstractType<T>;
         if (!isUndefined(value)) {
             if (isFunction(value)) {
                 if (isClass(value)) {
-                    classFactory = this.createTypeFactory(key, value as Type<T>, singleton);
+                    this.bindTypeFactory(key, value as Type<T>, singleton);
                 } else {
                     classFactory = this.createCustomFactory(key, value as ToInstance<T>, singleton);
                 }
@@ -359,21 +358,14 @@ export class Container implements IContainer {
             }
 
         } else if (!isString(token) && !isSymbol(token)) {
-            ClassT = (token instanceof Registration) ? token.getClass() : token;
+            let ClassT = (token instanceof Registration) ? token.getClass() : token;
             if (isClass(ClassT)) {
-                classFactory = this.createTypeFactory(key, ClassT as Type<T>, singleton);
+                this.bindTypeFactory(key, ClassT as Type<T>, singleton);
             }
         }
 
         if (classFactory) {
             this.factories.set(key, classFactory);
-            if (isClass(ClassT)) {
-                let lifeScope = this.getLifeScope();
-                lifeScope.execute({
-                    tokenKey: key,
-                    targetType: ClassT
-                }, IocState.design);
-            }
         }
     }
 
@@ -390,9 +382,9 @@ export class Container implements IContainer {
             : (...providers: Providers[]) => factory(this, ...providers);
     }
 
-    protected createTypeFactory<T>(key: SymbolType<T>, ClassT?: Type<T>, singleton?: boolean) {
+    protected bindTypeFactory<T>(key: SymbolType<T>, ClassT?: Type<T>, singleton?: boolean) {
         if (!Reflect.isExtensible(ClassT)) {
-            return null;
+            return;
         }
 
         let lifeScope = this.getLifeScope();
@@ -469,7 +461,13 @@ export class Container implements IContainer {
             return instance;
         };
 
-        return factory;
+        this.factories.set(key, factory);
+
+        lifeScope.execute({
+            tokenKey: key,
+            targetType: ClassT
+        }, IocState.design);
+
     }
 
 }

@@ -21,17 +21,15 @@ export class DefaultLifeScope implements LifeScope {
     }
 
 
-    addAction(action: ActionComponent, type: DecoratorType, ...nodepaths: string[]): this {
-        let types = this.toActionName(type);
-        types.split(',').forEach(name => {
-            let parent = this.getAtionByName(name);
-            nodepaths.forEach(pathname => {
-                parent = parent.find(act => act.name === pathname);
-            });
-            if (parent) {
-                parent.add(action);
-            }
+    addAction(action: ActionComponent, ...nodepaths: string[]): this {
+        let parent = this.action;
+        nodepaths.forEach(pathname => {
+            parent = parent.find(act => act.name === pathname);
         });
+        if (parent) {
+            parent.add(action);
+        }
+
         return this;
     }
 
