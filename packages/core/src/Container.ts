@@ -379,7 +379,8 @@ export class Container implements IContainer {
 
             if (providers.length < 1) {
                 let lifecycleData: ComponentCacheActionData = {
-                    targetType: ClassT
+                    targetType: ClassT,
+                    singleton: singleton
                 };
                 lifeScope.execute(DecoratorType.Class, lifecycleData, CoreActions.componentCache);
                 if (lifecycleData.execResult && lifecycleData.execResult instanceof ClassT) {
@@ -388,7 +389,8 @@ export class Container implements IContainer {
             }
 
             lifeScope.execute(DecoratorType.Class, {
-                targetType: ClassT
+                targetType: ClassT,
+                singleton: singleton
             }, IocState.runtime);
 
             let args = this.createSyncParams(parameters, ...providers);
@@ -397,7 +399,8 @@ export class Container implements IContainer {
                 targetType: ClassT,
                 args: args,
                 params: parameters,
-                providers: providers
+                providers: providers,
+                singleton: singleton
             }, CoreActions.beforeConstructor);
 
             let instance = new ClassT(...args);
@@ -407,21 +410,31 @@ export class Container implements IContainer {
                 targetType: ClassT,
                 args: args,
                 params: parameters,
-                providers: providers
+                providers: providers,
+                singleton: singleton
             }, CoreActions.afterConstructor);
 
             lifeScope.execute(DecoratorType.Property, {
                 target: instance,
                 targetType: ClassT,
-                providers: providers
+                providers: providers,
+                singleton: singleton
             });
 
             lifeScope.execute(DecoratorType.Method, {
                 target: instance,
                 targetType: ClassT,
-                providers: providers
+                providers: providers,
+                singleton: singleton
             });
 
+
+            lifeScope.execute(DecoratorType.Class, {
+                target: instance,
+                targetType: ClassT,
+                providers: providers,
+                singleton: singleton
+            }, CoreActions.componentAfterInit);
 
             if (singleton) {
                 this.singleton.set(key, instance);

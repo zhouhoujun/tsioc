@@ -51,6 +51,11 @@ export enum CoreActions {
     /**
      * component on init hooks. after property inject.
      */
-    componentInit = 'componentInit'
+    componentInit = 'componentInit',
+
+    /**
+     * component after init.
+     */
+    componentAfterInit = 'componentAfterInit'
 
 }

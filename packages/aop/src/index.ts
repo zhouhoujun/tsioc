@@ -41,9 +41,6 @@ export function registerAops(container: IContainer) {
     container.register(Advisor);
     container.register(AdviceMatcher);
 
-    // container.registerSingleton(symbols.IProxyMethod, () => new ProxyMethod(container));
-    // container.registerSingleton(symbols.IAdvisor, () => new Advisor(container));
-    // container.registerSingleton(symbols.IAdviceMatcher, () => new AdviceMatcher(container));
 
     let lifeScope = container.get<LifeScope>(symbols.LifeScope);
 
@@ -51,7 +48,6 @@ export function registerAops(container: IContainer) {
     lifeScope.addAction(factory.create(AopActions.registAspect), DecoratorType.Class, IocState.design);
     lifeScope.addAction(factory.create(AopActions.matchPointcut), DecoratorType.Class, IocState.runtime);
     lifeScope.addAction(factory.create(AopActions.bindMethodPointcut), DecoratorType.Method);
-    // lifeScope.addAction(factory.create(AopActions.bindPropertyPointcut), DecoratorType.Property);
 
     lifeScope.addAction(factory.create(AopActions.invokeBeforeConstructorAdvices), DecoratorType.Class, CoreActions.beforeConstructor);
     lifeScope.addAction(factory.create(AopActions.exetndsInstance), DecoratorType.Class, CoreActions.afterConstructor);

@@ -45,6 +45,14 @@ export interface ActionData<T> {
     targetType?: Type<any>;
 
     /**
+     * is target singleton or not.
+     *
+     * @type {boolean}
+     * @memberof ActionData
+     */
+    singleton?: boolean;
+
+    /**
      * property or method name of type.
      *
      * @type {string}
