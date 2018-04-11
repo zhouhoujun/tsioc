@@ -1,6 +1,6 @@
 import { IContainer, Provider, Injectable, Singleton, Inject, IRecognizer, Express,
     symbols, isPromise, isArray, isObservable, isFunction
-} from '@tsioc/core';
+} from '@ts-ioc/core';
 
 import { Joinpoint, JoinpointState } from '../joinpoints/index';
 import { IAdvisorChain } from './IAdvisorChain';

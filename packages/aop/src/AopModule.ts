@@ -1,6 +1,6 @@
 
 
-import { IContainer, LifeScope, DecoratorType, CoreActions, symbols, IocState, LifeState, Inject, IocModule } from '@tsioc/core';
+import { IContainer, LifeScope, DecoratorType, CoreActions, symbols, IocState, LifeState, Inject, IocModule } from '@ts-ioc/core';
 import { Aspect } from './decorators/index';
 import { Advisor } from './Advisor';
 import { AopActions } from './actions/index';
@@ -41,7 +41,7 @@ export class AopModule {
         let factory = new AopActionFactory();
         lifeScope.addAction(factory.create(AopActions.registAspect), IocState.design);
         lifeScope.addAction(factory.create(AopActions.matchPointcut), IocState.runtime, LifeState.beforeConstructor);
-        lifeScope.addAction(factory.create(AopActions.bindMethodPointcut), IocState.runtime, LifeState.AfterInit) //, lifeScope.toActionName(DecoratorType.Method));
+        lifeScope.addAction(factory.create(AopActions.bindMethodPointcut), IocState.runtime, LifeState.AfterInit);
 
         lifeScope.addAction(factory.create(AopActions.invokeBeforeConstructorAdvices), IocState.runtime, LifeState.onInit, LifeState.beforeConstructor);
         lifeScope.addAction(factory.create(AopActions.exetndsInstance), IocState.runtime, LifeState.onInit, LifeState.AfterInit);

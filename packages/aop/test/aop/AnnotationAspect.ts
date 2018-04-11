@@ -1,4 +1,4 @@
-import { Singleton, MethodMetadata } from '@tsioc/core';
+import { Singleton, MethodMetadata } from '@ts-ioc/core';
 import { Joinpoint, Pointcut, Around, Aspect, Before, After} from '../../src';
 
 @Aspect

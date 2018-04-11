@@ -39,19 +39,19 @@ Development.create(gulp, __dirname, [
                     {
                         name: 'copy-to-aop',
                         src: ['packages/core/**', '!packages/core/test/**', '!packages/core/src/**', '!packages/core/node_modules/**'],
-                        dist: 'packages/aop/node_modules/@tsioc/core',
+                        dist: 'packages/aop/node_modules/@ts-ioc/core',
                         pipes: []
                     },
                     {
                         name: 'copy-to-logs',
                         src: ['packages/core/**', '!packages/core/test/**', '!packages/core/src/**', '!packages/core/node_modules/**'],
-                        dist: 'packages/logs/node_modules/@tsioc/core',
+                        dist: 'packages/logs/node_modules/@ts-ioc/core',
                         pipes: []
                     },
                     {
                         name: 'copy-to-server',
                         src: ['packages/core/**', '!packages/core/test/**', '!packages/core/src/**', '!packages/core/node_modules/**'],
-                        dist: 'packages/platform-server/node_modules/@tsioc/core',
+                        dist: 'packages/platform-server/node_modules/@ts-ioc/core',
                         pipes: []
                     }
                 ]
@@ -72,7 +72,7 @@ Development.create(gulp, __dirname, [
                 loader: [{
                     name: 'copy',
                     src: ['packages/aop/**', '!packages/aop/test/**', '!packages/aop/src/**', '!packages/aop/node_modules/**'],
-                    dist: 'packages/logs/node_modules/@tsioc/aop',
+                    dist: 'packages/logs/node_modules/@ts-ioc/aop',
                     pipes: []
                 }]
             }

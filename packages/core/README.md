@@ -1,22 +1,22 @@
-# packaged @tsioc/core
+# packaged @ts-ioc/core
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@tsioc/core` is AOP, Ioc container, via typescript decorator.
+`@ts-ioc/core` is AOP, Ioc container, via typescript decorator.
 
-now package rename as [`@tsioc/core`](https://www.npmjs.com/zhouhoujun/package/@tsioc/core)
+now package rename as [`@ts-ioc/core`](https://www.npmjs.com/zhouhoujun/package/@ts-ioc/core)
 # Install
 
 ```shell
 
-npm install @tsioc/core
+npm install @ts-ioc/core
 
 // in browser
-npm install @tsioc/platform-browser
+npm install @ts-ioc/platform-browser
 
 // in server
-npm install @tsioc/platform-server
+npm install @ts-ioc/platform-server
 ```
 
 ## add extends modules
@@ -26,21 +26,21 @@ npm install @tsioc/platform-server
 ```shell
 
 // install aop
-npm install @tsioc/aop
+npm install @ts-ioc/aop
 
 ```
 
 ```ts
 // in server
-import { ContainerBuilder } from '@tsioc/platform-server'
+import { ContainerBuilder } from '@ts-ioc/platform-server'
 // in browser
-import { ContainerBuilder } from '@tsioc/platform-browser'
+import { ContainerBuilder } from '@ts-ioc/platform-browser'
 
 let builder = new ContainerBuilder();
 
 let container = build.create();
 
-container.use('@tsioc/aop');
+container.use('@ts-ioc/aop');
 
 ```
 
@@ -48,20 +48,20 @@ container.use('@tsioc/aop');
 
 ```shell
 // install aop logs
-npm install @tsioc/logs
+npm install @ts-ioc/logs
 ```
 
 ```ts
 // in server
-import { ContainerBuilder } from '@tsioc/platform-server'
+import { ContainerBuilder } from '@ts-ioc/platform-server'
 // in browser
-import { ContainerBuilder } from '@tsioc/platform-browser'
+import { ContainerBuilder } from '@ts-ioc/platform-browser'
 
 let builder = new ContainerBuilder();
 
 let container = build.create();
 
-container.use('@tsioc/logs');
+container.use('@ts-ioc/logs');
 
 ```
 
@@ -176,7 +176,7 @@ container.resolve(Person, ...providers);
 
 ### Invoke method
 
-you can use yourself `MethodAccessor` by implement IMethodAccessor, register `symbols.IMethodAccessor` with your `MethodAccessor` in container,   see interface [IMethodAccessor](https://github.com/zhouhoujun/@tsioc/core/blob/master/src/IMethodAccessor.ts).
+you can use yourself `MethodAccessor` by implement IMethodAccessor, register `symbols.IMethodAccessor` with your `MethodAccessor` in container,   see interface [IMethodAccessor](https://github.com/zhouhoujun/@ts-ioc/core/blob/master/src/IMethodAccessor.ts).
 
 ```ts
 
@@ -290,7 +290,7 @@ container.invoke(MethodTest3, 'sayHello')
 
 ```ts
 
-import { Method, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Aspect } from '@tsioc/core';
+import { Method, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Aspect } from '@ts-ioc/core';
 
 
 export class SimppleAutoWried {
@@ -527,7 +527,7 @@ builder.build({
 
 ## Extend decorator
 
-see interface [LifeScope](https://github.com/zhouhoujun/@tsioc/core/blob/master/src/LifeScope.ts)
+see interface [LifeScope](https://github.com/zhouhoujun/@ts-ioc/core/blob/master/src/LifeScope.ts)
 You can extend yourself decorator via:
 
 1. `createClassDecorator`
@@ -692,7 +692,7 @@ see more interface. all document is typescript .d.ts.
 * [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/src/LifeScope.ts)
 
 Documentation is available on the
-[@tsioc/core docs site](https://github.com/zhouhoujun/tsioc).
+[@ts-ioc/core docs site](https://github.com/zhouhoujun/tsioc).
 
 ## License
 

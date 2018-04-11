@@ -1,6 +1,6 @@
 import { IContainer, Provider, Injectable, Singleton, Inject, Type, LifeScope,
     IMethodAccessor, isFunction, symbols
-} from '@tsioc/core';
+} from '@ts-ioc/core';
 import { Advicer, Advices } from '../advices/index';
 import { JoinpointState, IPointcut } from '../joinpoints/index';
 import { Joinpoint } from '../joinpoints/index';

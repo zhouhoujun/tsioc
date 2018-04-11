@@ -1,6 +1,6 @@
 import { IContainer, Singleton, Inject, MethodMetadata, getOwnMethodMetadata,
     symbols, MapSet, Type, ObjectMap
-} from '@tsioc/core';
+} from '@ts-ioc/core';
 import { Advices, Advicer } from './advices/index';
 import { Aspect, Advice, NonePointcut } from './decorators/index';
 import { AdviceMetadata } from './metadatas/index';

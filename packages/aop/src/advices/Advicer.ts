@@ -1,4 +1,4 @@
-import { Type } from '@tsioc/core';
+import { Type } from '@ts-ioc/core';
 import { MatchPointcut } from '../joinpoints/MatchPointcut';
 /**
  * AdviceInvokerData

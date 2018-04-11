@@ -1,5 +1,5 @@
 
-import { IContainer, LifeScope, symbols, CoreActions } from '@tsioc/core';
+import { IContainer, LifeScope, symbols, CoreActions } from '@ts-ioc/core';
 import { Logger } from './decorators/Logger';
 import { AnnotationLogerAspect } from './AnnotationLogerAspect';
 import { ConsoleLogManager } from './ConsoleLog';

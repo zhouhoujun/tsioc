@@ -1,7 +1,7 @@
 
 import {
     IContainer, ActionData, ActionComposite, symbols
-} from '@tsioc/core';
+} from '@ts-ioc/core';
 import { IAdvisor } from '../IAdvisor';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';

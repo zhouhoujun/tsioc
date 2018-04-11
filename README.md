@@ -10,13 +10,13 @@ now package rename as [`tsioc`](https://www.npmjs.com/package/tsioc)
 
 ```shell
 
-npm install @tsioc/core
+npm install @ts-ioc/core
 
 // in browser
-npm install @tsioc/platform-browser
+npm install @ts-ioc/platform-browser
 
 // in server
-npm install @tsioc/platform-server
+npm install @ts-ioc/platform-server
 ```
 
 ## add extends modules
@@ -26,21 +26,21 @@ npm install @tsioc/platform-server
 ```shell
 
 // install aop
-npm install @tsioc/aop
+npm install @ts-ioc/aop
 
 ```
 
 ```ts
 // in server
-import { ContainerBuilder } from '@tsioc/platform-server'
+import { ContainerBuilder } from '@ts-ioc/platform-server'
 // in browser
-import { ContainerBuilder } from '@tsioc/platform-browser'
+import { ContainerBuilder } from '@ts-ioc/platform-browser'
 
 let builder = new ContainerBuilder();
 
 let container = build.create();
 
-container.use('@tsioc/aop');
+container.use('@ts-ioc/aop');
 
 ```
 
@@ -48,20 +48,20 @@ container.use('@tsioc/aop');
 
 ```shell
 // install aop logs
-npm install @tsioc/logs
+npm install @ts-ioc/logs
 ```
 
 ```ts
 // in server
-import { ContainerBuilder } from '@tsioc/platform-server'
+import { ContainerBuilder } from '@ts-ioc/platform-server'
 // in browser
-import { ContainerBuilder } from '@tsioc/platform-browser'
+import { ContainerBuilder } from '@ts-ioc/platform-browser'
 
 let builder = new ContainerBuilder();
 
 let container = build.create();
 
-container.use('@tsioc/logs');
+container.use('@ts-ioc/logs');
 
 ```
 
@@ -312,9 +312,9 @@ define advice decorator have
 see [simples](https://github.com/zhouhoujun/tsioc/tree/master/test/aop)
 
 ```ts
-import { TypeMetadata, IClassMethodDecorator, createClassMethodDecorator} from '@tsioc/core';
+import { TypeMetadata, IClassMethodDecorator, createClassMethodDecorator} from '@ts-ioc/core';
 
-import { Joinpoint, Around, Aspect , Pointcut } from '@tsioc/aop';
+import { Joinpoint, Around, Aspect , Pointcut } from '@ts-ioc/aop';
 
 export const Authorization: IClassMethodDecorator<TypeMetadata> = createClassMethodDecorator<TypeMetadata>('Authorization');
 

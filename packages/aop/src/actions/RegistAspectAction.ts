@@ -1,7 +1,7 @@
 import {
     IContainer, ActionData, ClassMetadata,
     ActionComposite, hasOwnClassMetadata, getOwnTypeMetadata, isClass, symbols
-} from '@tsioc/core';
+} from '@ts-ioc/core';
 import { IAdvisor } from '../IAdvisor';
 import { AopActions } from './AopActions';
 

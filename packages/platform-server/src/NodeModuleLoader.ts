@@ -1,4 +1,4 @@
-import { Type, IModuleLoader, AsyncLoadOptions } from '@tsioc/core';
+import { Type, IModuleLoader, AsyncLoadOptions } from '@ts-ioc/core';
 import { toAbsoluteSrc } from './toAbsolute';
 const globby = require('globby');
 

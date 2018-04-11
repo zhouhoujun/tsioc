@@ -1,4 +1,4 @@
-import { Type, IModuleLoader, AsyncLoadOptions, DefaultModuleLoader } from '@tsioc/core';
+import { Type, IModuleLoader, AsyncLoadOptions, DefaultModuleLoader } from '@ts-ioc/core';
 
 declare let System: any;
 declare let require: any;

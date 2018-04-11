@@ -3,10 +3,10 @@
     "baseUrl": ".",
     "rootDir": "../../packages",
     "paths": {
-      "@tsioc/core": [
+      "@ts-ioc/core": [
         "../core/src"
       ],
-      "@tsioc/aop": [
+      "@ts-ioc/aop": [
         "../aop/src"
       ]
     },

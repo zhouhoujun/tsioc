@@ -1,6 +1,6 @@
 import { AdviceMetadata } from './metadatas/index';
 import { MatchPointcut } from './joinpoints/index';
-import { Type, ObjectMap } from '@tsioc/core';
+import { Type, ObjectMap } from '@ts-ioc/core';
 
 export interface IAdviceMatcher {
 

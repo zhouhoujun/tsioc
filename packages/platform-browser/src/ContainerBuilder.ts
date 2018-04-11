@@ -1,4 +1,4 @@
-import { IModuleLoader, DefaultContainerBuilder } from '@tsioc/core';
+import { IModuleLoader, DefaultContainerBuilder } from '@ts-ioc/core';
 import { BrowserModuleLoader } from './BrowserModuleLoader';
 
 

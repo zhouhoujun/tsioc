@@ -1,30 +1,30 @@
-# packaged @tsioc/aop
+# packaged @ts-ioc/aop
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@tsioc/aop` is AOP, Ioc container, via typescript decorator.
+`@ts-ioc/aop` is AOP, Ioc container, via typescript decorator.
 
-now package rename as [`@tsioc/aop`](https://www.npmjs.com/package/@tsioc/aop)
+now package rename as [`@ts-ioc/aop`](https://www.npmjs.com/package/@ts-ioc/aop)
 # Install
 
 ```shell
 
-npm install @tsioc/aop
+npm install @ts-ioc/aop
 
 ```
 
 ```ts
 // in server
-import { ContainerBuilder } from '@tsioc/platform-server'
+import { ContainerBuilder } from '@ts-ioc/platform-server'
 // in browser
-import { ContainerBuilder } from '@tsioc/platform-browser'
+import { ContainerBuilder } from '@ts-ioc/platform-browser'
 
 let builder = new ContainerBuilder();
 
 let container = build.create();
 
-container.use('@tsioc/aop');
+container.use('@ts-ioc/aop');
 
 ```
 
@@ -52,13 +52,13 @@ define advice decorator have
 
 * @Pointcut(matchstring|RegExp)
 
-see [simples](https://github.com/zhouhoujun/@tsioc/aop/tree/master/test/aop)
+see [simples](https://github.com/zhouhoujun/@ts-ioc/aop/tree/master/test/aop)
 
 ```ts
 
-import { TypeMetadata, IClassMethodDecorator, createClassMethodDecorator} from '@tsioc/core';
+import { TypeMetadata, IClassMethodDecorator, createClassMethodDecorator} from '@ts-ioc/core';
 
-import { Joinpoint, Around, Aspect , Pointcut } from '@tsioc/aop';
+import { Joinpoint, Around, Aspect , Pointcut } from '@ts-ioc/aop';
 
 export const Authorization: IClassMethodDecorator<TypeMetadata> = createClassMethodDecorator<TypeMetadata>('Authorization');
 
@@ -110,7 +110,7 @@ see more interface. all document is typescript .d.ts.
 * [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/src/LifeScope.ts)
 
 Documentation is available on the
-[@tsioc/aop docs site](https://github.com/zhouhoujun/tsioc).
+[@ts-ioc/aop docs site](https://github.com/zhouhoujun/tsioc).
 
 ## License
 

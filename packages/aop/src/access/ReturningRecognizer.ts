@@ -1,4 +1,4 @@
-import { Singleton, IRecognizer, symbols, isPromise, isObservable } from '@tsioc/core';
+import { Singleton, IRecognizer, symbols, isPromise, isObservable } from '@ts-ioc/core';
 import { ReturningType } from './ReturningType';
 import { JoinpointState } from '../joinpoints/index';
 import { NonePointcut } from '../decorators/index';

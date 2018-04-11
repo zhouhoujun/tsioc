@@ -1,4 +1,4 @@
-import { IContainer, ActionData, ActionComposite, ExtendsProvider } from '@tsioc/core';
+import { IContainer, ActionData, ActionComposite, ExtendsProvider } from '@ts-ioc/core';
 import { AopActions } from './AopActions';
 import { Advice, Aspect } from '../decorators/index';
 import { AdviceMetadata } from '../metadatas/index';

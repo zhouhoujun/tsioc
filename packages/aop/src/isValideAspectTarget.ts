@@ -2,7 +2,7 @@ import {
     Type, hasOwnClassMetadata, isClass, isObject,
     DefaultLifeScope, CacheManager, ActionFactory,
     MethodAccessor, ProviderMatcher, Provider, CustomProvider, InvokeProvider, ParamProvider, ExtendsProvider, AsyncParamProvider, ProviderMap
-} from '@tsioc/core';
+} from '@ts-ioc/core';
 import { NonePointcut } from './decorators/index';
 
 export function isValideAspectTarget(targetType: Type<any>) {

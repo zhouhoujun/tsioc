@@ -1,5 +1,5 @@
 {
-    "name": "type-autofac",
+    "name": "ts-ioc",
     "compilerOptions": {
         "module": "commonjs",
         "target":"es5",

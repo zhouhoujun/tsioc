@@ -1,5 +1,5 @@
-import { IContainer, Singleton, Inject, symbols } from '@tsioc/core';
-import { Aspect, Joinpoint, Pointcut } from '@tsioc/aop';
+import { IContainer, Singleton, Inject, symbols } from '@ts-ioc/core';
+import { Aspect, Joinpoint, Pointcut } from '@ts-ioc/aop';
 import { LoggerMetadata } from './decorators/Logger';
 import { LoggerAspect } from './LoggerAspect';
 

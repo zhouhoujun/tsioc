@@ -1,4 +1,4 @@
-import { symbols, isFunction, isObservable, isPromise, Express, Singleton } from '@tsioc/core';
+import { symbols, isFunction, isObservable, isPromise, Express, Singleton } from '@ts-ioc/core';
 import { IAdvisorProceeding } from './IAdvisorProceeding';
 import { Joinpoint } from '../joinpoints/index';
 import { ReturningType } from './ReturningType';

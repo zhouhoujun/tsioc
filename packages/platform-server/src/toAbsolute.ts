@@ -1,4 +1,4 @@
-import { isString } from '@tsioc/core';
+import { isString } from '@ts-ioc/core';
 
 /**
  * convert path to absolute path.

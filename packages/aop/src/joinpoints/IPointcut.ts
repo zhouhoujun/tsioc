@@ -1,4 +1,4 @@
-import { IParameter, MethodMetadata } from '@tsioc/core'
+import { IParameter, MethodMetadata } from '@ts-ioc/core'
 
 
 /**

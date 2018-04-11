@@ -1,6 +1,6 @@
 import { IAdviceDecorator, createAdviceDecorator } from './Advice';
 import { AfterReturningMetadata } from '../metadatas/index';
-import { isString } from '@tsioc/core';
+import { isString } from '@ts-ioc/core';
 
 export interface IAfterReturningDecorator<T extends AfterReturningMetadata> extends IAdviceDecorator<T> {
     (pointcut?: string | RegExp, returning?: string, annotation?: string): MethodDecorator;

@@ -1,5 +1,5 @@
-import { Type, Token, ObjectMap } from '@tsioc/core';
-import { Joinpoint } from '@tsioc/aop';
+import { Type, Token, ObjectMap } from '@ts-ioc/core';
+import { Joinpoint } from '@ts-ioc/aop';
 import { ILoggerManger } from './ILoggerManger';
 import { ILogger } from './ILogger';
 

@@ -1,7 +1,7 @@
 import { IPointcut } from './IPointcut';
 import { JoinpointState } from './JoinpointState';
 import { Advicer } from '../advices/index';
-import { IParameter, MethodMetadata, Type } from '@tsioc/core';
+import { IParameter, MethodMetadata, Type } from '@ts-ioc/core';
 
 
 /**

@@ -4,7 +4,7 @@ import {
     Inject, MethodMetadata, getParamerterNames, getOwnMethodMetadata,
     hasOwnMethodMetadata, hasOwnClassMetadata, Singleton,
     IContainer, symbols, isString, isRegExp, isUndefined, Type, ObjectMap, Express3
-} from '@tsioc/core';
+} from '@ts-ioc/core';
 import { IPointcut, MatchPointcut } from './joinpoints/index';
 import { Advices, Advicer } from './advices/index';
 import { Aspect, Advice, NonePointcut } from './decorators/index';

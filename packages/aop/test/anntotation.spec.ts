@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import {
     Method, Inject, DefaultContainerBuilder, AutoWired, Injectable, Singleton, IContainer,
     ParameterMetadata, Param, isFunction, hasOwnMethodMetadata, hasPropertyMetadata
-} from '@tsioc/core';
+} from '@ts-ioc/core';
 import { AnnotationAspect } from './aop/AnnotationAspect';
 import { CheckRightAspect } from './aop/CheckRightAspect';
 import { IocLog } from './aop/IocLog';

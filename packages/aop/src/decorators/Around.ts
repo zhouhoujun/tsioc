@@ -1,6 +1,6 @@
 import { AroundMetadata } from '../metadatas/index';
 import { IAdviceDecorator, createAdviceDecorator } from './Advice';
-import { isString } from '@tsioc/core';
+import { isString } from '@ts-ioc/core';
 
 
 export interface IAroundDecorator<T extends AroundMetadata> extends IAdviceDecorator<T> {

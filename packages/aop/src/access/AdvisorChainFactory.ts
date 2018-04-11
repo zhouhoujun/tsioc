@@ -1,4 +1,4 @@
-import { IContainer, Provider, Injectable, Singleton, Inject, symbols, isUndefined, isArray } from '@tsioc/core';
+import { IContainer, Provider, Injectable, Singleton, Inject, symbols, isUndefined, isArray } from '@ts-ioc/core';
 import { Joinpoint, JoinpointState } from '../joinpoints/index';
 import { Advicer, Advices } from '../advices/index';
 import { IAdvisorChainFactory } from './IAdvisorChainFactory';

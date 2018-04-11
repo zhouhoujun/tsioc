@@ -58,13 +58,13 @@ Development.create(gulp, __dirname, [
                                 'fs',
                                 'minimatch',
                                 'inherits',
-                                '@tsioc/core'
+                                '@ts-ioc/core'
                             ],
                             globals: {
                                 'reflect-metadata': 'Reflect',
                                 'log4js': 'log4js',
-                                '@tsioc/core': '@tsioc/core',
-                                '@tsioc/aop': '@tsioc/aop'
+                                '@ts-ioc/core': '@ts-ioc/core',
+                                '@ts-ioc/aop': '@ts-ioc/aop'
                             },
                             input: './lib/index.js'
                         })

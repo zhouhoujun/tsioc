@@ -1,5 +1,5 @@
 
-import { IContainer, ActionData, ActionComposite, getParamerterNames, symbols, isUndefined } from '@tsioc/core';
+import { IContainer, ActionData, ActionComposite, getParamerterNames, symbols, isUndefined } from '@ts-ioc/core';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AroundMetadata } from '../metadatas/index'

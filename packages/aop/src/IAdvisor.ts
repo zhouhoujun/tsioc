@@ -1,5 +1,5 @@
 import { AdviceMetadata } from './metadatas/index';
-import { Type, ObjectMap, MapSet } from '@tsioc/core';
+import { Type, ObjectMap, MapSet } from '@ts-ioc/core';
 import { Advice } from './decorators/index';
 import { Advices } from './advices/index';
 

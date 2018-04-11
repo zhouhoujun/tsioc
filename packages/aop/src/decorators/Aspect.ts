@@ -1,4 +1,4 @@
-import { createClassDecorator, IClassDecorator, ClassMetadata } from '@tsioc/core';
+import { createClassDecorator, IClassDecorator, ClassMetadata } from '@ts-ioc/core';
 
 
 /**

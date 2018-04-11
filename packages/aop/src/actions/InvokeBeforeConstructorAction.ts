@@ -1,4 +1,4 @@
-import { IContainer, ActionData, ActionComposite, Provider, symbols, IMethodAccessor } from '@tsioc/core';
+import { IContainer, ActionData, ActionComposite, Provider, symbols, IMethodAccessor } from '@ts-ioc/core';
 import { IAdvisor } from '../IAdvisor';
 import { AopActions } from './AopActions';
 import { Advice, Aspect } from '../decorators/index';

@@ -1,4 +1,4 @@
-import { IocModule, Inject, symbols, IContainer, LifeScope, LifeState, CoreActions } from '@tsioc/core';
+import { IocModule, Inject, symbols, IContainer, LifeScope, LifeState, CoreActions } from '@ts-ioc/core';
 import { Logger } from './decorators/Logger';
 import { AnnotationLogerAspect } from './AnnotationLogerAspect';
 import { ConsoleLogManager } from './ConsoleLog';

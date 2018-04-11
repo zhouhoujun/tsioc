@@ -1,4 +1,4 @@
-import { MethodMetadata } from '@tsioc/core';
+import { MethodMetadata } from '@ts-ioc/core';
 
 export interface AdviceMetadata extends MethodMetadata {
     /**

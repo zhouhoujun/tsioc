@@ -1,4 +1,4 @@
-import { Type } from '@tsioc/core';
+import { Type } from '@ts-ioc/core';
 import { IPointcut, Joinpoint } from '../joinpoints/index';
 
 export interface IProxyMethod {

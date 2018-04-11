@@ -1,6 +1,6 @@
 import { LogConfigure } from './LogConfigure';
-import { Token, Singleton, isString, isBoolean, isNumber, isDate, isFunction, isBaseObject, symbols, isPromise } from '@tsioc/core';
-import { Joinpoint, JoinpointState, NonePointcut } from '@tsioc/aop';
+import { Token, Singleton, isString, isBoolean, isNumber, isDate, isFunction, isBaseObject, symbols, isPromise } from '@ts-ioc/core';
+import { Joinpoint, JoinpointState, NonePointcut } from '@ts-ioc/aop';
 import { ILogger } from './ILogger';
 import { ILoggerManger } from './ILoggerManger';
 

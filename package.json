@@ -1,5 +1,5 @@
 {
-  "name": "tsioc",
+  "name": "tsioc-srcs",
   "version": "2.0.0",
   "private": true,
   "description": "tsioc is AOP, Ioc container, via typescript decorator",

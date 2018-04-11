@@ -1,4 +1,4 @@
-import { Express, Singleton, symbols } from '@tsioc/core';
+import { Express, Singleton, symbols } from '@ts-ioc/core';
 import { IAdvisorProceeding } from './IAdvisorProceeding';
 import { Joinpoint } from '../joinpoints/index';
 import { ReturningType } from './ReturningType';
