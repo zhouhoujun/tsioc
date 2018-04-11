@@ -43,9 +43,9 @@ export class AopModule {
         lifeScope.addAction(factory.create(AopActions.matchPointcut), IocState.runtime, LifeState.beforeConstructor);
         lifeScope.addAction(factory.create(AopActions.bindMethodPointcut), IocState.runtime, LifeState.AfterInit);
 
-        lifeScope.addAction(factory.create(AopActions.invokeBeforeConstructorAdvices), IocState.runtime, LifeState.onInit, LifeState.beforeConstructor);
+        lifeScope.addAction(factory.create(AopActions.invokeBeforeConstructorAdvices), IocState.runtime, LifeState.beforeConstructor);
         lifeScope.addAction(factory.create(AopActions.exetndsInstance), IocState.runtime, LifeState.onInit, LifeState.AfterInit);
-        lifeScope.addAction(factory.create(AopActions.invokeAfterConstructorAdvices), IocState.runtime, LifeState.onInit, LifeState.afterConstructor);
+        lifeScope.addAction(factory.create(AopActions.invokeAfterConstructorAdvices), IocState.runtime, LifeState.afterConstructor);
 
 
         lifeScope.registerDecorator(Aspect, AopActions.registAspect, AopActions.exetndsInstance);
