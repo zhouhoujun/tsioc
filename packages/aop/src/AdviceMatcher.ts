@@ -23,7 +23,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         let className = targetType.name;
 
         adviceMetas = adviceMetas || getOwnMethodMetadata<AdviceMetadata>(Advice, targetType);
-        let aspectMgr = this.container.get<IAdvisor>(symbols.IAdvisor);
+        let advisor = this.container.get<IAdvisor>(symbols.IAdvisor);
         let matched: MatchPointcut[] = [];
 
         if (targetType === aspectType) {
@@ -48,7 +48,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                     })
                 });
             }
-        } else {// if (!aspectMgr.hasRegisterAdvices(targetType)) {
+        } else { //if (!advisor.hasRegisterAdvices(targetType)) {
             let points: IPointcut[] = [];
             let decorators = Object.getOwnPropertyDescriptors(targetType.prototype);
             // match method.

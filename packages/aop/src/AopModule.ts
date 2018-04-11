@@ -40,11 +40,11 @@ export class AopModule {
 
         let factory = new AopActionFactory();
         lifeScope.addAction(factory.create(AopActions.registAspect), IocState.design);
-        lifeScope.addAction(factory.create(AopActions.matchPointcut), IocState.runtime, LifeState.beforeConstructor);
+        lifeScope.addAction(factory.create(AopActions.matchPointcut), IocState.runtime, LifeState.beforeCreateArgs);
         lifeScope.addAction(factory.create(AopActions.bindMethodPointcut), IocState.runtime, LifeState.AfterInit);
 
         lifeScope.addAction(factory.create(AopActions.invokeBeforeConstructorAdvices), IocState.runtime, LifeState.beforeConstructor);
-        lifeScope.addAction(factory.create(AopActions.exetndsInstance), IocState.runtime, LifeState.onInit, LifeState.AfterInit);
+        lifeScope.addAction(factory.create(AopActions.exetndsInstance), IocState.runtime, LifeState.onInit, LifeState.afterConstructor);
         lifeScope.addAction(factory.create(AopActions.invokeAfterConstructorAdvices), IocState.runtime, LifeState.afterConstructor);
 
 

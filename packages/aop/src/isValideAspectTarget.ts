@@ -1,7 +1,5 @@
 import {
-    Type, hasOwnClassMetadata, isClass, isObject,
-    DefaultLifeScope, CacheManager, ActionFactory,
-    MethodAccessor, ProviderMatcher, Provider, CustomProvider, InvokeProvider, ParamProvider, ExtendsProvider, AsyncParamProvider, ProviderMap
+    Type, hasOwnClassMetadata, isClass, IocCore
 } from '@ts-ioc/core';
 import { NonePointcut } from './decorators/index';
 
@@ -19,18 +17,7 @@ export function isValideAspectTarget(targetType: Type<any>) {
         return false;
     }
 
-    if (targetType === ActionFactory
-        || targetType === CacheManager
-        || targetType === DefaultLifeScope
-        || targetType === MethodAccessor
-        || targetType === ProviderMatcher
-        || targetType === Provider
-        || targetType === CustomProvider
-        || targetType === InvokeProvider
-        || targetType === ParamProvider
-        || targetType === ExtendsProvider
-        || targetType === AsyncParamProvider
-        || targetType === ProviderMap) {
+    if (hasOwnClassMetadata(IocCore, targetType)) {
         return false;
     }
 

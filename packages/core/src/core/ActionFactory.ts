@@ -6,8 +6,9 @@ import {
     ComponentInitAction, ComponentBeforeInitAction, ComponentAfterInitAction,
     CacheAction, SingletionAction, AutorunAction
 } from './actions/index';
+import { IocCore } from './decorators/index';
 
-
+@IocCore()
 export class ActionFactory {
 
     /**

@@ -4,7 +4,9 @@ import { isString, isClass, isFunction, isNumber, isUndefined, isNull, isToken, 
 import { IParameter } from '../IParameter';
 import { IProviderMatcher } from './IProviderMatcher';
 import { IContainer } from '../IContainer';
+import { IocCore } from './decorators/index';
 
+@IocCore()
 export class ProviderMatcher implements IProviderMatcher {
 
     constructor(private container: IContainer) {

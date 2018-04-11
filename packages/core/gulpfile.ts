@@ -53,6 +53,13 @@ Development.create(gulp, __dirname, [
                             input: './lib/index.js'
                         })
                     },
+                    () => rename('core.umd.js')
+                ]
+            },
+            {
+                name: 'zip',
+                src: 'bundles/core.umd.js',
+                pipes:[
                     ctx => through.obj(function (file, encoding, callback) {
                         if (file.isNull()) {
                             return callback(null, file);
@@ -108,7 +115,7 @@ Development.create(gulp, __dirname, [
                         this.push(file);
                         callback();
                     }),
-                    () => rename('core.umd.js'),
+                    () => rename('core.umd.min.js'),
                     () => uglify()
                 ]
             }

@@ -64,6 +64,13 @@ Development.create(gulp, __dirname, [
                             input: './lib/index.js'
                         })
                     },
+                    () => rename('platform-browser.umd.js')
+                ]
+            },
+            {
+                name: 'zip',
+                src: 'bundles/platform-browser.umd.js',
+                pipes:[
                     ctx => through.obj(function (file, encoding, callback) {
                         if (file.isNull()) {
                             return callback(null, file);
@@ -119,7 +126,7 @@ Development.create(gulp, __dirname, [
                         this.push(file);
                         callback();
                     }),
-                    () => rename('platform-browser.umd.js'),
+                    () => rename('platform-browser.umd.min.js'),
                     () => uglify()
                 ]
             }

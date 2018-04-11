@@ -4,6 +4,7 @@ import { Type } from '../types';
 import { IContainer } from '../IContainer';
 import { ComponentLifecycle } from './ComponentLifecycle';
 import { ICacheManager } from '../ICacheManager';
+import { IocCore } from './decorators/index';
 
 /**
  * cache target.
@@ -23,6 +24,7 @@ export interface CacheTarget {
  * @class CacheManager
  * @implements {ICacheManager}
  */
+@IocCore()
 export class CacheManager implements ICacheManager {
     cacheTokens: MapSet<Type<any>, CacheTarget>;
     constructor(private container: IContainer) {

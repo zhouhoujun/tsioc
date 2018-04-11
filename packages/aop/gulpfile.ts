@@ -65,6 +65,13 @@ Development.create(gulp, __dirname, [
                             input: './lib/index.js'
                         })
                     },
+                    () => rename('aop.umd.js')
+                ]
+            },
+            {
+                name: 'zip',
+                src: 'bundles/aop.umd.js',
+                pipes:[
                     ctx => through.obj(function (file, encoding, callback) {
                         if (file.isNull()) {
                             return callback(null, file);
@@ -120,7 +127,7 @@ Development.create(gulp, __dirname, [
                         this.push(file);
                         callback();
                     }),
-                    () => rename('aop.umd.js'),
+                    () => rename('aop.umd.min.js'),
                     () => uglify()
                 ]
             }

@@ -28,15 +28,15 @@ export class MatchPointcutAction extends ActionComposite {
         if (!isValideAspectTarget(data.targetType)) {
             return;
         }
-        let aspectmgr = container.get<IAdvisor>(symbols.IAdvisor);
+        let advisor = container.get<IAdvisor>(symbols.IAdvisor);
         let matcher = container.get<IAdviceMatcher>(symbols.IAdviceMatcher);
-        aspectmgr.aspects.forEach((adviceMetas, type) => {
+        advisor.aspects.forEach((adviceMetas, type) => {
             let matchpoints = matcher.match(type, data.targetType, adviceMetas);
             matchpoints.forEach(mpt => {
                 let fullName = mpt.fullName;
                 let advice = mpt.advice;
 
-                let advices = aspectmgr.getAdvices(fullName);
+                let advices = advisor.getAdvices(fullName);
                 if (!advices) {
                     advices = {
                         Before: [],
@@ -46,7 +46,7 @@ export class MatchPointcutAction extends ActionComposite {
                         AfterThrowing: [],
                         AfterReturning: []
                     } as Advices;
-                    aspectmgr.setAdvices(fullName, advices);
+                    advisor.setAdvices(fullName, advices);
                 }
                 let advicer = Object.assign(mpt, {
                     aspectType: type
