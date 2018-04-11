@@ -55,6 +55,7 @@
     "lodash": "^4.13.1",
     "rollup": "^0.53.2",
     "rollup-plugin-commonjs": "^8.2.6",
+    "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-resolve": "^3.0.0",
     "rollup-plugin-sourcemaps": "^0.4.2",
     "through2": "^2.0.3",

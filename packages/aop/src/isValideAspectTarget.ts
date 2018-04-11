@@ -19,8 +19,7 @@ export function isValideAspectTarget(targetType: Type<any>) {
         return false;
     }
 
-    if (!isClass(targetType)
-        || targetType === ActionFactory
+    if (targetType === ActionFactory
         || targetType === CacheManager
         || targetType === DefaultLifeScope
         || targetType === MethodAccessor

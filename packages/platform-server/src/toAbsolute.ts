@@ -1,4 +1,5 @@
 import { isString } from '@ts-ioc/core';
+import * as path from 'path';
 
 /**
  * convert path to absolute path.
@@ -9,7 +10,6 @@ import { isString } from '@ts-ioc/core';
  * @returns {string}
  */
 export function toAbsolutePath(root: string, pathstr: string): string {
-    let path = require('path');
     if (!root || path.isAbsolute(pathstr)) {
         return pathstr;
     }

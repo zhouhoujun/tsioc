@@ -38,7 +38,6 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "globby": "^7.1.1",
     "reflect-metadata": "^0.1.12"
   },
   "peerDependencies": {
