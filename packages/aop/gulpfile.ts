@@ -27,7 +27,6 @@ Development.create(gulp, __dirname, [
                 tsPipes: [
                     () => classAnnotations()
                 ],
-                dist: 'lib',
                 loader: 'development-assert-ts'
             }
         }
