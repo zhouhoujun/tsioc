@@ -45,7 +45,7 @@ export class AutorunAction extends ActionComposite {
                     if (meta) {
                         let instance = container.get(data.tokenKey);
                         if (instance && meta.autorun && isFunction(instance[meta.autorun])) {
-                            container.invoke(data.tokenKey, meta.autorun, instance);
+                            container.syncInvoke(data.tokenKey, meta.autorun, instance);
                         }
                     }
                 } else if (hasMethodMetadata(decorator, data.targetType)) {
@@ -59,7 +59,7 @@ export class AutorunAction extends ActionComposite {
                     });
 
                     if (meta && meta.autorun) {
-                        container.invoke(data.tokenKey, meta.autorun);
+                        container.syncInvoke(data.tokenKey, meta.autorun);
                     }
                 }
             });

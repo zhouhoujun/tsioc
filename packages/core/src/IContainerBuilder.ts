@@ -1,6 +1,6 @@
 import { IContainer } from './IContainer';
-import { Type } from './types';
-import { AsyncLoadOptions, LoadOptions } from './LoadOptions';
+import { Type, ModuleType } from './types';
+import { AsyncLoadOptions } from './LoadOptions';
 
 /**
  * container builder.
@@ -32,7 +32,7 @@ export interface IContainerBuilder {
      * @returns {IContainer}
      * @memberof IContainerBuilder
      */
-    syncBuild(options: LoadOptions): IContainer;
+    syncBuild(...modules: ModuleType[]): IContainer;
 
     /**
      * load modules for container.
@@ -45,12 +45,12 @@ export interface IContainerBuilder {
     loadModule(container: IContainer, options: AsyncLoadOptions): Promise<Type<any>[]>;
 
     /**
-     * load types from module.
+     * sync load modules
      *
-     * @param {LoadOptions} options
-     * @returns {Promise<Type<any>[]>}
+     * @param {IContainer} container
+     * @param {...ModuleType[]} modules
      * @memberof IContainerBuilder
      */
-    loadTypes(options: LoadOptions): Promise<Type<any>[]>;
+    syncLoadModule(container: IContainer, ...modules: ModuleType[]);
 
 }

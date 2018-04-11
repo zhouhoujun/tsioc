@@ -7,7 +7,7 @@ import { DefaultLogConfigure } from './DefaultLogConfigure';
 import { ILogger } from './ILogger';
 import { ILoggerManger } from './ILoggerManger';
 
-export abstract class LoggerAspect {
+export class LoggerAspect {
 
     private _logger: ILogger;
     private _logManger: ILoggerManger;
@@ -42,8 +42,6 @@ export abstract class LoggerAspect {
         }
         return this._logManger;
     }
-
-    abstract logging(joinPoint: Joinpoint, annotation?: LoggerMetadata[]);
 
     protected processLog(joinPoint: Joinpoint, annotation?: LoggerMetadata[]) {
         if (annotation && annotation.length) {

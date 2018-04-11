@@ -1,31 +1,13 @@
 import { Type, ModuleType } from './types';
 
-/**
- * load options.
- *
- * @export
- * @interface LoadOptions
- */
-export interface LoadOptions {
-
-    /**
-     * modules
-     *
-     * @type {((ModuleType | string)[])}
-     * @memberof AsyncLoadOptions
-     */
-    modules?: (ModuleType | string)[];
-
-}
 
 /**
  * async load options.
  *
  * @export
  * @interface AsyncLoadOptions
- * @extends {LoadOptions}
  */
-export interface AsyncLoadOptions extends LoadOptions {
+export interface AsyncLoadOptions {
     /**
      * fire express base on the root path.
      *
@@ -41,5 +23,13 @@ export interface AsyncLoadOptions extends LoadOptions {
      * @memberof BuilderOptions
      */
     files?: string | string[];
+
+    /**
+     * modules
+     *
+     * @type {((ModuleType | string)[])}
+     * @memberof AsyncLoadOptions
+     */
+    modules?: (ModuleType | string)[];
 
 }

@@ -1,10 +1,10 @@
 import { IContainer } from './IContainer';
 import { Container } from './Container';
 import { isFunction, isClass, symbols, isString } from './utils/index';
-import { Type } from './types';
+import { Type, ModuleType } from './types';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IModuleLoader } from './IModuleLoader';
-import { AsyncLoadOptions, LoadOptions } from './LoadOptions';
+import { AsyncLoadOptions } from './LoadOptions';
 import { DefaultModuleLoader } from './DefaultModuleLoader';
 import { hasOwnClassMetadata, IocModule } from './core/index';
 
@@ -57,12 +57,17 @@ export class DefaultContainerBuilder implements IContainerBuilder {
     }
 
 
-    syncBuild(options: LoadOptions): IContainer {
+    syncBuild(...modules: ModuleType[]): IContainer {
         let container: IContainer = this.create();
-        if (options) {
-            this.loadModule(container, options);
+        if (modules.length) {
+            this.syncLoadModule(container, ...modules);
         }
         return container;
+    }
+
+    syncLoadModule(container: IContainer, ...modules: ModuleType[]) {
+        let regModules = this.getModules(...modules);
+        return this.registers(container, regModules);
     }
 
     /**
@@ -72,11 +77,10 @@ export class DefaultContainerBuilder implements IContainerBuilder {
      * @returns {Promise<Type<any>[]>}
      * @memberof IContainerBuilder
      */
-    async loadTypes(options: LoadOptions): Promise<Type<any>[]> {
-        let regModules: Type<any>[] = [];
-        let iocModule: Type<any>;
+    protected async loadTypes(options: AsyncLoadOptions): Promise<Type<any>[]> {
+        let modules: ModuleType[];
         if (options) {
-            let modules = await this.loader.load(options);
+            modules = await this.loader.load(options);
             if (options.modules && options.modules.length) {
                 let mds = await Promise.all(options.modules.map(nmd => {
                     return isString(nmd) ? this.loader.loadModule(nmd) : nmd;
@@ -84,15 +88,9 @@ export class DefaultContainerBuilder implements IContainerBuilder {
                 modules = modules.concat(mds);
             }
 
-            modules.forEach(m => {
-                if (!iocModule) {
-                    let types = this.getTypes(m);
-                    iocModule = types.find(it => hasOwnClassMetadata(IocModule, it));
-                    regModules.push(...this.getTypes(m));
-                }
-            });
+
         }
-        return iocModule ? [iocModule] : regModules;
+        return this.getModules(...modules);
     }
 
     protected registers(container: IContainer, types: Type<any>[]): Type<any>[] {
@@ -103,7 +101,24 @@ export class DefaultContainerBuilder implements IContainerBuilder {
         return types;
     }
 
-    protected getTypes(regModule: Type<any> | object): Type<any>[] {
+    protected getModules(...modules: ModuleType[]): Type<any>[] {
+        let regModules: Type<any>[] = [];
+        modules.forEach(m => {
+
+            let types = this.getTypes(m);
+            let iocModule = types.find(it => hasOwnClassMetadata(IocModule, it));
+            if (iocModule) {
+                regModules.push(iocModule);
+            } else {
+                regModules.push(...types);
+            }
+
+        });
+
+        return regModules;
+    }
+
+    protected getTypes(regModule: ModuleType): Type<any>[] {
         let regModules: Type<any>[] = [];
 
         if (isClass(regModule)) {

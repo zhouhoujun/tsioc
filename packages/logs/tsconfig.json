@@ -36,6 +36,7 @@
     "suppressImplicitAnyIndexErrors": true
   },
   "exclude": [
+    "lib",
     "node_modules"
   ],
   "compileOnSave": false

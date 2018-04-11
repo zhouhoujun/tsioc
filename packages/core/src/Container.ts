@@ -280,7 +280,7 @@ export class Container implements IContainer {
      * @memberof Container
      */
     use(...modules: ModuleType[]): this {
-        this.get<IContainerBuilder>(symbols.IContainerBuilder).loadModule(this, { modules: modules });
+        this.get<IContainerBuilder>(symbols.IContainerBuilder).syncLoadModule(this, ...modules);
         return this;
     }
 

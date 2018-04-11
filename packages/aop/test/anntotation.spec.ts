@@ -10,7 +10,7 @@ import { IocLog } from './aop/IocLog';
 import { AopModule } from '../src';
 
 
-describe('method exec test', () => {
+describe('aop test', () => {
 
 
     @Injectable
@@ -80,13 +80,13 @@ describe('method exec test', () => {
     let container: IContainer;
     beforeEach(async () => {
         let builder = new DefaultContainerBuilder();
-        container = await builder.build({ modules: [AopModule] });
-        // container.use(AopModule);
+        container = await builder.create();
+        container.use(AopModule);
         container.register(IocLog);
     });
 
     it('Aop anntotation test', () => {
-        
+
         container.register(AnnotationAspect);
         container.register(CheckRightAspect);
         container.register(MethodTest3);
