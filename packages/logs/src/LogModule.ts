@@ -5,7 +5,7 @@ import { ConsoleLogManager } from './ConsoleLog';
 
 
 @IocModule('setup')
-export class AopModule {
+export class LogModule {
 
     constructor(@Inject(symbols.IContainer) private container: IContainer) {
 
