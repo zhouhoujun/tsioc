@@ -250,6 +250,7 @@ export class DefaultLifeScope implements LifeScope {
                 .add(factory.create(CoreActions.autorun))
             )
             .add(factory.create(IocState.runtime)
+                .add(factory.create(LifeState.beforeCreateArgs))
                 .add(factory.create(LifeState.beforeConstructor))
                 .add(factory.create(LifeState.afterConstructor))
                 .add(factory.create(LifeState.onInit)

@@ -8,6 +8,11 @@
 export enum LifeState {
 
     /**
+     * before create constructor Args
+     */
+    beforeCreateArgs = 'beforeCreateArgs',
+
+    /**
      * before constructor advice action.
      */
     beforeConstructor = 'beforeConstructor',

@@ -246,9 +246,9 @@ export interface LifeScope {
 
     /**
      * convert decorator type to action name.
-     * 
-     * @param {DecoratorType} type 
-     * @returns {string} 
+     *
+     * @param {DecoratorType} type
+     * @returns {string}
      * @memberof LifeScope
      */
     toActionName(type: DecoratorType): string;

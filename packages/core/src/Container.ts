@@ -414,15 +414,27 @@ export class Container implements IContainer {
             lifeScope.execute({
                 tokenKey: key,
                 targetType: ClassT,
+                params: parameters,
+                providers: providers,
                 singleton: singleton
-            }, IocState.runtime, LifeState.beforeConstructor);
+            }, IocState.runtime, LifeState.beforeCreateArgs);
 
             let args = this.createSyncParams(parameters, ...providers);
+
+            lifeScope.execute({
+                tokenKey: key,
+                targetType: ClassT,
+                args: args,
+                params: parameters,
+                providers: providers,
+                singleton: singleton
+            }, IocState.runtime, LifeState.beforeConstructor);
 
             let instance = new ClassT(...args);
 
             lifeScope.execute({
                 tokenKey: key,
+                target: instance,
                 targetType: ClassT,
                 args: args,
                 params: parameters,
