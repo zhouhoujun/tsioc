@@ -54,7 +54,7 @@ npm install @ts-ioc/logs
 
 ```ts
 
-import { ContainerBuilder } from '@ts-ioc/logs'
+import { LogModule } from '@ts-ioc/logs'
 // in server
 import { ContainerBuilder } from '@ts-ioc/platform-server'
 // in browser
