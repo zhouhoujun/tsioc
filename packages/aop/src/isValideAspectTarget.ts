@@ -8,7 +8,9 @@ export function isValideAspectTarget(targetType: Type<any>) {
     if (!isClass(targetType)
         || targetType === Object
         || targetType === String
-        || targetType === Date) {
+        || targetType === Date
+        || targetType === Boolean
+        || targetType === Number) {
         return false;
     }
 

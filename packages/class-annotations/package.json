@@ -1,0 +1,55 @@
+{
+    "name": "@ts-ioc/class-annotations",
+    "version": "0.1.1",
+    "description": "typescript class annotations is a solution for typescript class compile to es5 uglify.  for project used tsioc to es5 uglify",
+    "main": "./lib/index.js",
+    "typings": "./lib/index.d.ts",
+    "scripts": {
+        "gulp": "gulp",
+        "reinstall": "npm cache clean && npm install",
+        "test": "gulp start test",
+        "prepublish": "gulp start --release",
+        "e2e": "protractor",
+        "e2e.live": "protractor --elementExplorer"
+    },
+    "keywords": ["typescript", "class", "annotations", "gulp"],
+    "author": "houjun",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/zhouhoujun/typescript-class-annotations/issues"
+    },
+    "registry": "jspm",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/zhouhoujun/typescript-class-annotations.git"
+    },
+    "dependencies": {
+        "through2": "^2.0.1",
+        "typescript": "^2.7.1"
+    },
+    "devDependencies": {
+        "@types/chai": "^3.4.34",
+        "@types/gulp": "^3.8.32",
+        "@types/gulp-mocha": "0.0.29",
+        "@types/minimist": "^1.2.0",
+        "development-assert-ts": "^2.0.7",
+        "development-core": "^2.0.1",
+        "development-tool": "^2.0.3",
+        "development-tool-node": "^2.0.0",
+        "bluebird": "^3.4.1",
+        "chai": "^3.5.0",
+        "chalk": "^1.1.3",
+        "checksum": "^0.1.1",
+        "del": "^2.2.1",
+        "gulp": "^3.9.1",
+        "gulp-mocha": "^3.0.1",
+        "minimatch": "^3.0.2",
+        "through2": "^2.0.1",
+        "ts-node": "*",
+        "tslint": "*",
+        "tslint-stylish": "*",
+        "zone.js": "*"
+    },
+    "homepage": "https://github.com/zhouhoujun/typescript-class-annotations#readme",
+    "false": {}
+}

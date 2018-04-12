@@ -1,4 +1,5 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
     "rootDir": "../../packages",
@@ -6,35 +7,6 @@
       "@ts-ioc/core": [
         "../core/src"
       ]
-    },
-    "module": "commonjs",
-    "target": "es5",
-    "lib": [
-      "dom",
-      "es2015",
-      "es2017"
-    ],
-    "declaration": true,
-    "allowSyntheticDefaultImports": true,
-    "removeComments": false,
-    "noLib": false,
-    "jsx": "preserve",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "sourceMap": true,
-    "pretty": true,
-    "allowUnreachableCode": false,
-    "allowUnusedLabels": false,
-    "noImplicitAny": false,
-    "noImplicitReturns": true,
-    "noImplicitUseStrict": false,
-    "noFallthroughCasesInSwitch": true,
-    "moduleResolution": "node",
-    "suppressImplicitAnyIndexErrors": true
-  },
-  "exclude": [
-    "lib",
-    "node_modules"
-  ],
-  "compileOnSave": false
+    }
+  }
 }
