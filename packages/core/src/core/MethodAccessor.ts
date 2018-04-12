@@ -9,9 +9,8 @@ import { IContainerBuilder } from '../IContainerBuilder';
 import { IParameter } from '../IParameter';
 import { DecoratorType } from './factories/index';
 import { IProviderMatcher } from './IProviderMatcher';
-import { IocCore } from './decorators/index';
 
-@IocCore()
+
 export class MethodAccessor implements IMethodAccessor {
 
     constructor(private container: IContainer) {

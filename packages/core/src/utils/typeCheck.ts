@@ -83,7 +83,7 @@ export function isClass(target: any): target is Type<any> {
                 return false;
             }
         } else {
-            if (type.classAnnations && type.classAnnations.name) {
+            if (type.classAnnations && isString(type.classAnnations.name)) {
                 return true
             }
 

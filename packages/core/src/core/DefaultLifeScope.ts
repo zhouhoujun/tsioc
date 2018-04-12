@@ -1,7 +1,7 @@
 import { LifeScope, DecorSummary } from '../LifeScope';
 import { Type, ObjectMap, Token, IocState, Express } from '../types';
 import { isClass, isAbstractDecoratorClass, isArray, isString } from '../utils/index';
-import { Singleton, Abstract, IocCore } from './decorators/index';
+import { Singleton, Abstract } from './decorators/index';
 import { ClassMetadata, MethodMetadata } from './metadatas/index';
 import { IContainer } from '../IContainer';
 import { CoreActions, ActionComponent, LifeState } from './actions/index';
@@ -10,7 +10,7 @@ import { ActionData } from './ActionData';
 import { ActionFactory } from './ActionFactory';
 import { IParameter } from '../IParameter';
 
-@IocCore()
+
 export class DefaultLifeScope implements LifeScope {
 
     decorators: DecorSummary[];

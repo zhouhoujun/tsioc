@@ -2,7 +2,6 @@ import { Token, ToInstance, Providers, Express2 } from '../../types';
 import { IContainer } from '../../IContainer';
 import { isFunction, isObject, symbols, isUndefined } from '../../utils/index';
 import { IContainerBuilder } from '../../IContainerBuilder';
-import { IocCore } from '../decorators/index';
 
 /**
  *  provider, to dynamic resovle instance of params in run time.
@@ -10,7 +9,6 @@ import { IocCore } from '../decorators/index';
  * @export
  * @class Provider
  */
-@IocCore()
 export class Provider {
     /**
      * service provider is value or value factory.
@@ -136,7 +134,6 @@ export class Provider {
 
 }
 
-@IocCore()
 export class CustomProvider extends Provider {
     /**
      * service value is the result of type instance invoke the method return value.
@@ -167,7 +164,6 @@ export class CustomProvider extends Provider {
  * @class InvokeProvider
  * @extends {Provider}
  */
-@IocCore()
 export class InvokeProvider extends Provider {
     /**
      * service value is the result of type instance invoke the method return value.
@@ -197,7 +193,6 @@ export class InvokeProvider extends Provider {
  * @export
  * @interface ParamProvider
  */
-@IocCore()
 export class ParamProvider extends InvokeProvider {
     /**
      * param index, param name.
@@ -224,7 +219,6 @@ export class ParamProvider extends InvokeProvider {
  * @class ExtendsProvider
  * @extends {Provider}
  */
-@IocCore()
 export class ExtendsProvider extends Provider {
 
 
@@ -253,7 +247,6 @@ export class ExtendsProvider extends Provider {
  * @interface AsyncParamProvider
  * @extends {ParamProvider}
  */
-@IocCore()
 export class AsyncParamProvider extends ParamProvider {
     /**
      * match ref files.

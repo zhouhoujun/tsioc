@@ -1,5 +1,5 @@
 import { Type, AbstractType } from './types';
-import { isClass, isFunction } from './utils/index';
+import { isClass, isFunction, getClassName } from './utils/index';
 
 /**
  * injecto token.
@@ -52,7 +52,7 @@ export class Registration<T> {
     toString(): string {
         let name = '';
         if (isFunction(this.classType)) {
-            name = this.classType.classAnnations ? this.classType.classAnnations.name : this.classType.name;
+            name = getClassName(this.classType);
         } else {
             name = this.classType.toString();
         }

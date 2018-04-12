@@ -2,7 +2,6 @@ import { MapSet, symbols, isToken, isNumber, isFunction, isUndefined } from '../
 import { Type, Token, Factory, Providers, ToInstance, Express2 } from '../../types';
 import { IContainer } from '../../IContainer';
 import { Registration } from '../../Registration';
-import { IocCore } from '../decorators/index';
 
 /**
  * Provider Map
@@ -10,7 +9,6 @@ import { IocCore } from '../decorators/index';
  * @export
  * @class Providers
  */
-@IocCore()
 export class ProviderMap {
     private maps: MapSet<Token<any> | number, Factory<any>>;
     constructor(private container: IContainer) {

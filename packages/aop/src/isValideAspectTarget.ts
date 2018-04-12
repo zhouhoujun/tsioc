@@ -1,5 +1,5 @@
 import {
-    Type, hasOwnClassMetadata, isClass, IocCore
+    Type, hasOwnClassMetadata, isClass
 } from '@ts-ioc/core';
 import { NonePointcut } from './decorators/index';
 
@@ -14,10 +14,6 @@ export function isValideAspectTarget(targetType: Type<any>) {
 
 
     if (hasOwnClassMetadata(NonePointcut, targetType)) {
-        return false;
-    }
-
-    if (hasOwnClassMetadata(IocCore, targetType)) {
         return false;
     }
 
