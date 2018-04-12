@@ -65,6 +65,53 @@ Development.create(gulp, __dirname, [
     <ITaskOption>{
         refs: [
             {
+                name: 'class-annotations',
+                path: (ctx) => 'packages/class-annotations',
+                cmd: (ctx) => (ctx.oper & Operation.deploy) ? 'npm publish' : 'gulp start',
+                args: argFactory
+            }
+        ],
+        tasks: [
+            {
+                name: 'annotation',
+                loader: [
+                    {
+                        name: 'copy-to-core',
+                        src: ['packages/class-annotations/**', '!packages/class-annotations/test/**', '!packages/class-annotations/src/**', '!packages/class-annotations/node_modules/**'],
+                        dist: 'packages/core/node_modules/@ts-ioc/class-annotations',
+                        pipes: []
+                    },
+                    {
+                        name: 'copy-to-aop',
+                        src: ['packages/class-annotations/**', '!packages/class-annotations/test/**', '!packages/class-annotations/src/**', '!packages/class-annotations/node_modules/**'],
+                        dist: 'packages/aop/node_modules/@ts-ioc/class-annotations',
+                        pipes: []
+                    },
+                    {
+                        name: 'copy-to-logs',
+                        src: ['packages/class-annotations/**', '!packages/class-annotations/test/**', '!packages/class-annotations/src/**', '!packages/class-annotations/node_modules/**'],
+                        dist: 'packages/logs/node_modules/@ts-ioc/class-annotations',
+                        pipes: []
+                    },
+                    {
+                        name: 'copy-to-browser',
+                        src: ['packages/class-annotations/**', '!packages/class-annotations/test/**', '!packages/class-annotations/src/**', '!packages/class-annotations/node_modules/**'],
+                        dist: 'packages/platform-browser/node_modules/@ts-ioc/class-annotations',
+                        pipes: []
+                    },
+                    {
+                        name: 'copy-to-server',
+                        src: ['packages/class-annotations/**', '!packages/class-annotations/test/**', '!packages/class-annotations/src/**', '!packages/class-annotations/node_modules/**'],
+                        dist: 'packages/platform-server/node_modules/@ts-ioc/class-annotations',
+                        pipes: []
+                    }
+                ]
+            }
+        ]
+    },
+    <ITaskOption>{
+        refs: [
+            {
                 name: 'core',
                 path: (ctx) => 'packages/core',
                 cmd: (ctx) => (ctx.oper & Operation.deploy) ? 'npm publish' : 'gulp start',
@@ -73,6 +120,7 @@ Development.create(gulp, __dirname, [
         ],
         tasks: [
             {
+                name: 'core',
                 loader: [
                     {
                         name: 'copy-to-aop',
@@ -84,6 +132,12 @@ Development.create(gulp, __dirname, [
                         name: 'copy-to-logs',
                         src: ['packages/core/**', '!packages/core/test/**', '!packages/core/src/**', '!packages/core/node_modules/**'],
                         dist: 'packages/logs/node_modules/@ts-ioc/core',
+                        pipes: []
+                    },
+                    {
+                        name: 'copy-to-browser',
+                        src: ['packages/core/**', '!packages/core/test/**', '!packages/core/src/**', '!packages/core/node_modules/**'],
+                        dist: 'packages/platform-browser/node_modules/@ts-ioc/core',
                         pipes: []
                     },
                     {
@@ -107,6 +161,7 @@ Development.create(gulp, __dirname, [
         ],
         tasks: [
             {
+                name: 'aop',
                 loader: [{
                     name: 'copy',
                     src: ['packages/aop/**', '!packages/aop/test/**', '!packages/aop/src/**', '!packages/aop/node_modules/**'],

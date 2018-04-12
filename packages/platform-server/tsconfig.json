@@ -6,6 +6,9 @@
     "paths": {
       "@ts-ioc/core": [
         "../core/src"
+      ],
+      "@ts-ioc/class-annotations":[
+        "../class-annotations/src"
       ]
     }
   }
