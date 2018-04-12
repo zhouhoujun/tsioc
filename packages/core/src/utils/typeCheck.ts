@@ -48,7 +48,11 @@ export function getClassName(classType: AbstractType<any>): string {
     if (!isFunction(classType)) {
         return '';
     }
-    return classType.classAnnations ? classType.classAnnations.name : classType.name;
+    if(/^[a-z]$/.test(classType.name)){
+        return classType.classAnnations ? classType.classAnnations.name : classType.name;
+    }
+
+    return classType.name;
 }
 
 
