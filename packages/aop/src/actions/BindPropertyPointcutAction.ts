@@ -31,7 +31,7 @@
 //         let aspects = container.get<IAspectManager>(symbols.IAspectManager);
 //         let access = container.get<IMethodAccessor>(symbols.IMethodAccessor);
 
-//         let className = data.targetType.name;
+//         let className = getClassName(data.targetType);
 //         let properties: IPointcut[] = [];
 
 //         let target = data.target;

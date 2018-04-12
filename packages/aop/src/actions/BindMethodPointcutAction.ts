@@ -1,5 +1,5 @@
 
-import { IContainer, ActionData, ActionComposite, getParamerterNames, symbols, isUndefined } from '@ts-ioc/core';
+import { IContainer, ActionData, ActionComposite, getParamerterNames, symbols, isUndefined, getClassName } from '@ts-ioc/core';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AroundMetadata } from '../metadatas/index'
@@ -28,7 +28,7 @@ export class BindMethodPointcutAction extends ActionComposite {
         let target = data.target;
         let targetType = data.targetType;
 
-        let className = targetType.name;
+        let className = getClassName(targetType);
         let methods: IPointcut[] = [];
         let decorators = Object.getOwnPropertyDescriptors(targetType.prototype);
 

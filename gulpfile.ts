@@ -1,10 +1,11 @@
 import * as gulp from 'gulp';
 import { ITaskOption, Development, IContext } from 'development-tool';
-import { Operation } from 'development-core';
+import { Operation, ITaskContext } from 'development-core';
 const through = require('through2');
 import { classAnnotations } from 'typescript-class-annotations'
 import { version } from 'punycode';
 // import 'development-tool-node';
+const jeditor = require('gulp-json-editor');
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
@@ -14,7 +15,7 @@ const rename = require('gulp-rename');
 const uglify = require('gulp-uglify');
 const del = require('del');
 
-let argFactory = (ctx: IContext) => {
+let argFactory = (ctx: ITaskContext) => {
     if (ctx.oper & Operation.deploy) {
         return '--access=public';
     } else if (ctx.oper & Operation.release) {
@@ -24,7 +25,43 @@ let argFactory = (ctx: IContext) => {
     }
 }
 
+let versionSetting = (ctx: ITaskContext) => {
+    return jeditor((json: any) => {
+        let version = ctx.env['version'] || '';
+        if (version) {
+            json.version = version;
+            if (json.peerDependencies) {
+                Object.keys(json.peerDependencies).forEach(key => {
+                    json.peerDependencies[key] = version;
+                })
+            }
+        }
+        return json;
+    })
+}
+
 Development.create(gulp, __dirname, [
+    {
+        oper: Operation.release,
+        loader: [
+            {
+                name: 'packages-version',
+                src: ['packages/**/package.json', '!node_modules/**/package.json'],
+                dist: 'packages',
+                pipes: [
+                    (ctx) => versionSetting(ctx)
+                ]
+            },
+            {
+                name: 'main-version',
+                src: 'package.json',
+                dist: './',
+                pipes: [
+                    (ctx) => versionSetting(ctx)
+                ]
+            }
+        ]
+    },
     <ITaskOption>{
         refs: [
             {

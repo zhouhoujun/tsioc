@@ -36,6 +36,22 @@ export function isAbstractDecoratorClass(target: any): target is AbstractType<an
     return false;
 }
 
+
+/**
+ * get class name.
+ *
+ * @export
+ * @param {AbstractType<any>} classType
+ * @returns {string}
+ */
+export function getClassName(classType: AbstractType<any>): string {
+    if (!isFunction(classType)) {
+        return '';
+    }
+    return classType.classAnnations ? classType.classAnnations.name : classType.name;
+}
+
+
 /**
  * check target is class or not.
  *

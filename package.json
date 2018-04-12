@@ -1,6 +1,6 @@
 {
   "name": "tsioc-srcs",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "private": true,
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
@@ -12,19 +12,7 @@
     "e2e": "protractor",
     "e2e.live": "protractor --elementExplorer"
   },
-  "keywords": [
-    "IoC",
-    "AOP",
-    "dependency",
-    "injection",
-    "framework",
-    "container",
-    "decorator",
-    "autofac",
-    "Inject",
-    "type",
-    "typescript"
-  ],
+  "keywords": ["IoC", "AOP", "dependency", "injection", "framework", "container", "decorator", "autofac", "Inject", "type", "typescript"],
   "author": "houjun <freebirds8281@hotmail.com>",
   "license": "MIT",
   "bugs": {
@@ -47,6 +35,7 @@
     "development-tool-node": "^2.1.0",
     "gulp": "^3.9.1",
     "gulp-html-replace": "^1.6.1",
+    "gulp-json-editor": "^2.3.0",
     "gulp-mocha": "^4.3.0",
     "gulp-rename": "^1.2.2",
     "gulp-replace": "^0.5.4",

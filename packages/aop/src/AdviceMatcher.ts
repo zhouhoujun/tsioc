@@ -3,7 +3,7 @@ import { AdviceMetadata } from './metadatas/index';
 import {
     Inject, MethodMetadata, getParamerterNames, getOwnMethodMetadata,
     hasOwnMethodMetadata, hasOwnClassMetadata, Singleton,
-    IContainer, symbols, isString, isRegExp, isUndefined, Type, ObjectMap, Express3
+    IContainer, symbols, isString, isRegExp, isUndefined, Type, ObjectMap, Express3, getClassName
 } from '@ts-ioc/core';
 import { IPointcut, MatchPointcut } from './joinpoints/index';
 import { Advices, Advicer } from './advices/index';
@@ -20,7 +20,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
     match(aspectType: Type<any>, targetType: Type<any>, adviceMetas?: ObjectMap<AdviceMetadata[]>, instance?: any): MatchPointcut[] {
 
-        let className = targetType.name;
+        let className =  getClassName(targetType);
 
         adviceMetas = adviceMetas || getOwnMethodMetadata<AdviceMetadata>(Advice, targetType);
         let advisor = this.container.get<IAdvisor>(symbols.IAdvisor);
@@ -40,7 +40,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                             if (this.matchAspectSelf(n, adv)) {
                                 matched.push({
                                     name: n,
-                                    fullName: `${aspectType.name}.${n}`,
+                                    fullName: `${className}.${n}`,
                                     advice: adv
                                 });
                             }
@@ -48,7 +48,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                     })
                 });
             }
-        } else { //if (!advisor.hasRegisterAdvices(targetType)) {
+        } else { // if (!advisor.hasRegisterAdvices(targetType)) {
             let points: IPointcut[] = [];
             let decorators = Object.getOwnPropertyDescriptors(targetType.prototype);
             // match method.

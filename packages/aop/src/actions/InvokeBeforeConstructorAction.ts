@@ -1,4 +1,4 @@
-import { IContainer, ActionData, ActionComposite, Provider, symbols, IMethodAccessor } from '@ts-ioc/core';
+import { IContainer, ActionData, ActionComposite, Provider, symbols, IMethodAccessor, getClassName } from '@ts-ioc/core';
 import { IAdvisor } from '../IAdvisor';
 import { AopActions } from './AopActions';
 import { Advice, Aspect } from '../decorators/index';
@@ -25,8 +25,9 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
             return;
         }
 
-        let aspectMgr = container.get<IAdvisor>(symbols.IAdvisor);
-        let advices = aspectMgr.getAdvices(data.targetType.name + '.constructor');
+        let advisor = container.get<IAdvisor>(symbols.IAdvisor);
+        let className = getClassName(data.targetType);
+        let advices = advisor.getAdvices(className + '.constructor');
         if (!advices) {
             return;
         }
@@ -37,7 +38,7 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
         let joinPoint = container.resolve(Joinpoint, Provider.create('options', <IJoinpoint>{
             name: 'constructor',
             state: JoinpointState.Before,
-            fullName: targetType.name + '.constructor',
+            fullName: className + '.constructor',
             target: target,
             args: data.args,
             targetType: targetType

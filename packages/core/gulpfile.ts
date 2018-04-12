@@ -19,7 +19,16 @@ Development.create(gulp, __dirname, [
         src: 'src',
         dist: 'lib',
         testSrc: 'test/**/*.spec.ts',
-        loader: 'development-tool-node'
+        loader: 'development-tool-node',
+        asserts: {
+            ts: {
+                src: 'src/**/*.ts',
+                tsPipes: [
+                    () => classAnnotations()
+                ],
+                loader: 'development-assert-ts'
+            }
+        }
     },
     <ITaskOption>{
         src: ['lib/**/*.js'],
@@ -59,7 +68,7 @@ Development.create(gulp, __dirname, [
             {
                 name: 'zip',
                 src: 'bundles/core.umd.js',
-                pipes:[
+                pipes: [
                     ctx => through.obj(function (file, encoding, callback) {
                         if (file.isNull()) {
                             return callback(null, file);
