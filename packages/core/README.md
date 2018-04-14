@@ -5,7 +5,7 @@ This repo is for distribution on `npm`. The source for this module is in the
 
 `@ts-ioc/core` is AOP, Ioc container, via typescript decorator.
 
-now package rename as [`@ts-ioc/core`](https://www.npmjs.com/zhouhoujun/package/@ts-ioc/core)
+version 2+ of [`tsioc`](https://www.npmjs.com/zhouhoujun/package/tsioc)
 # Install
 
 ```shell
@@ -180,7 +180,7 @@ container.resolve(Person, ...providers);
 
 ### Invoke method
 
-you can use yourself `MethodAccessor` by implement IMethodAccessor, register `symbols.IMethodAccessor` with your `MethodAccessor` in container,   see interface [IMethodAccessor](https://github.com/zhouhoujun/@ts-ioc/core/blob/master/src/IMethodAccessor.ts).
+you can use yourself `MethodAccessor` by implement IMethodAccessor, register `symbols.IMethodAccessor` with your `MethodAccessor` in container,   see interface [IMethodAccessor](https://github.com/zhouhoujun/@ts-ioc/core/blob/master/packages/core/src/IMethodAccessor.ts).
 
 ```ts
 
@@ -691,9 +691,9 @@ lifeScope.registerDecorator(Aspect, AopActions.registAspect);
 
 see more interface. all document is typescript .d.ts.
 
-* [IMethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/src/IMethodAccessor.ts).
-* [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/src/IContainer.ts)
-* [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/src/LifeScope.ts)
+* [IMethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IMethodAccessor.ts).
+* [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IContainer.ts)
+* [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/LifeScope.ts)
 
 Documentation is available on the
 [@ts-ioc/core docs site](https://github.com/zhouhoujun/tsioc).

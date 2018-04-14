@@ -3,9 +3,8 @@
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@ts-ioc/aop` is AOP, Ioc container, via typescript decorator.
+`@ts-ioc/aop` is AOP base on Ioc container, via [@ts-ioc/core](https://www.npmjs.com/package/@ts-ioc/core), typescript decorator.
 
-now package rename as [`@ts-ioc/aop`](https://www.npmjs.com/package/@ts-ioc/aop)
 # Install
 
 ```shell
@@ -53,7 +52,7 @@ define advice decorator have
 
 * @Pointcut(matchstring|RegExp)
 
-see [simples](https://github.com/zhouhoujun/@ts-ioc/aop/tree/master/test/aop)
+see [simples](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop/test/aop)
 
 ```ts
 
@@ -106,9 +105,9 @@ export class DebugLog {
 
 see more interface. all document is typescript .d.ts.
 
-* [IMethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/src/IMethodAccessor.ts).
-* [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/src/IContainer.ts)
-* [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/src/LifeScope.ts)
+* [IMethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IMethodAccessor.ts).
+* [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IContainer.ts)
+* [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/LifeScope.ts)
 
 Documentation is available on the
 [@ts-ioc/aop docs site](https://github.com/zhouhoujun/tsioc).

@@ -6,6 +6,18 @@ This repo is for distribution on `npm`. The source for this module is in the
 `tsioc` is AOP, Ioc container, via typescript decorator.
 
 now package rename as [`tsioc`](https://www.npmjs.com/package/tsioc)
+
+# builder
+
+```shell
+//release version
+gulp start --release --version x.x.x
+
+// publish
+gulp start --deploy
+
+```
+
 # Install
 
 ```shell
@@ -312,7 +324,7 @@ define advice decorator have
 
 * @Pointcut(matchstring|RegExp)
 
-see [simples](https://github.com/zhouhoujun/tsioc/tree/master/test/aop)
+see [simples](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop/test/aop)
 
 ```ts
 import { TypeMetadata, IClassMethodDecorator, createClassMethodDecorator} from '@ts-ioc/core';
@@ -914,9 +926,9 @@ lifeScope.registerDecorator(Aspect, AopActions.registAspect);
 
 see more interface. all document is typescript .d.ts.
 
-* [IMethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/src/IMethodAccessor.ts).
-* [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/src/IContainer.ts)
-* [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/src/LifeScope.ts)
+* [IMethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IMethodAccessor.ts).
+* [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IContainer.ts)
+* [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/LifeScope.ts)
 
 Documentation is available on the
 [tsioc docs site](https://github.com/zhouhoujun/tsioc).
