@@ -25,6 +25,8 @@
   "dependencies": {
   },
   "devDependencies": {
+    "globby": "^7.1.1",
+    "reflect-metadata": "^0.1.12",
     "bluebird": "^3.4.1",
     "checksum": "^0.1.1",
     "development-assert-ts": "^2.1.3",
