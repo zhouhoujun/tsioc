@@ -3,7 +3,6 @@
 node_modules
 lib
 build
-bundles
 package-lock.json
 
 
