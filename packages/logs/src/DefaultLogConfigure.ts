@@ -3,9 +3,10 @@ import { Token, Singleton, isString, isBoolean, isNumber, isDate, isFunction, is
 import { Joinpoint, JoinpointState, NonePointcut } from '@ts-ioc/aop';
 import { ILogger } from './ILogger';
 import { ILoggerManger } from './ILoggerManger';
+import { LogSymbols } from './symbols';
 
 @NonePointcut
-@Singleton(symbols.LogConfigure)
+@Singleton(LogSymbols.LogConfigure)
 export class DefaultLogConfigure implements LogConfigure {
 
     adapter: Token<ILoggerManger>;

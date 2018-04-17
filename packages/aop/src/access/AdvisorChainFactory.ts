@@ -4,9 +4,10 @@ import { Advicer, Advices } from '../advices/index';
 import { IAdvisorChainFactory } from './IAdvisorChainFactory';
 import { IAdvisorChain } from './IAdvisorChain';
 import { NonePointcut } from '../decorators/index';
+import { AopSymbols } from '../symbols';
 
 @NonePointcut()
-@Injectable(symbols.IAdvisorChainFactory)
+@Injectable(AopSymbols.IAdvisorChainFactory)
 export class AdvisorChainFactory implements IAdvisorChainFactory {
 
     constructor(@Inject(symbols.IContainer) private container: IContainer, private advices: Advices) {
@@ -106,7 +107,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
 
     afterReturning(joinPoint: Joinpoint) {
         let cloneJp = Object.assign({}, joinPoint);
-        let advChain = this.container.resolve<IAdvisorChain>(symbols.IAdvisorChain, { joinPoint: cloneJp });
+        let advChain = this.container.resolve<IAdvisorChain>(AopSymbols.IAdvisorChain, { joinPoint: cloneJp });
         this.getAdvicers('Around')
             .forEach(advicer => {
                 advChain.next((jp) => {

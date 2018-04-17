@@ -2,15 +2,24 @@ import { IocModule, Inject, symbols, IContainer, LifeScope, LifeState, CoreActio
 import { AopModule } from '@ts-ioc/aop';
 import { Logger } from './decorators/Logger';
 import { AnnotationLogerAspect } from './AnnotationLogerAspect';
-import { ConsoleLogManager } from './ConsoleLog';
+import { ConsoleLogManager } from './ConsoleLogManager';
+import { LogSymbols } from './symbols';
+import { ConfigureLoggerManger } from './ConfigureLoggerManger';
 
-
+/**
+ * aop logs bootstrap main. auto run setup after registered.
+ * with @IocModule('setup') decorator.
+ * @export
+ * @class LogModule
+ */
 @IocModule('setup')
 export class LogModule {
 
     constructor(@Inject(symbols.IContainer) private container: IContainer) {
 
     }
+
+    static symbols = LogSymbols;
 
     /**
      * register aop for container.
@@ -24,7 +33,7 @@ export class LogModule {
         }
         let lifeScope = container.get<LifeScope>(symbols.LifeScope);
         lifeScope.registerDecorator(Logger, LifeState.onInit, CoreActions.bindParameterProviders);
-
+        container.register(ConfigureLoggerManger);
         container.register(AnnotationLogerAspect);
         container.register(ConsoleLogManager);
     }

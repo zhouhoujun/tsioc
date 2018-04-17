@@ -1,6 +1,6 @@
 {
   "name": "tsioc-srcs",
-  "version": "2.0.6",
+  "version": "2.0.9",
   "private": true,
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
@@ -22,11 +22,10 @@
     "type": "git",
     "url": "git+https://github.com/zhouhoujun/tsioc.git"
   },
-  "dependencies": {
-    "globby": "^7.1.1",
-    "reflect-metadata": "^0.1.12"
-  },
+  "dependencies": {},
   "devDependencies": {
+    "globby": "^7.1.1",
+    "reflect-metadata": "^0.1.12",
     "bluebird": "^3.4.1",
     "checksum": "^0.1.1",
     "development-assert-ts": "^2.1.3",

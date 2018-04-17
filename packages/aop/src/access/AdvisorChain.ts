@@ -6,9 +6,10 @@ import { Joinpoint, JoinpointState } from '../joinpoints/index';
 import { IAdvisorChain } from './IAdvisorChain';
 import { IAdvisorProceeding } from './IAdvisorProceeding';
 import { NonePointcut } from '../decorators/index';
+import { AopSymbols } from '../symbols';
 
 @NonePointcut()
-@Injectable(symbols.IAdvisorChain)
+@Injectable(AopSymbols.IAdvisorChain)
 export class AdvisorChain implements IAdvisorChain {
 
     @Inject(symbols.IContainer)
@@ -30,7 +31,7 @@ export class AdvisorChain implements IAdvisorChain {
 
     process(): void {
         let alias = this.getRecognizer().recognize(this.joinPoint.returning);
-        this.container.get<IAdvisorProceeding>(symbols.IAdvisorProceeding, alias)
+        this.container.get<IAdvisorProceeding>(AopSymbols.IAdvisorProceeding, alias)
             .proceeding(this.joinPoint, ...this.actions);
     }
 

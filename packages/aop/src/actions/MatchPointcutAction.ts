@@ -10,6 +10,7 @@ import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IPointcut, Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints/index';
 import { Advices, Advicer } from '../advices/index';
 import { isValideAspectTarget } from '../isValideAspectTarget';
+import { AopSymbols } from '../symbols';
 
 
 
@@ -28,8 +29,8 @@ export class MatchPointcutAction extends ActionComposite {
         if (!isValideAspectTarget(data.targetType)) {
             return;
         }
-        let advisor = container.get<IAdvisor>(symbols.IAdvisor);
-        let matcher = container.get<IAdviceMatcher>(symbols.IAdviceMatcher);
+        let advisor = container.get<IAdvisor>(AopSymbols.IAdvisor);
+        let matcher = container.get<IAdviceMatcher>(AopSymbols.IAdviceMatcher);
         advisor.aspects.forEach((adviceMetas, type) => {
             let matchpoints = matcher.match(type, data.targetType, adviceMetas);
             matchpoints.forEach(mpt => {

@@ -11,5 +11,8 @@
         "../class-annotations/src"
       ]
     }
-  }
+  },
+  "exclude": [
+    "lib"  
+  ]
 }

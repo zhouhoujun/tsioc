@@ -1,11 +1,12 @@
-import { symbols, isFunction, isObservable, isPromise, Express, Singleton } from '@ts-ioc/core';
+import { isFunction, isObservable, isPromise, Express, Singleton } from '@ts-ioc/core';
 import { IAdvisorProceeding } from './IAdvisorProceeding';
 import { Joinpoint } from '../joinpoints/index';
 import { ReturningType } from './ReturningType';
 import { NonePointcut } from '../decorators/index';
+import { AopSymbols } from '../symbols';
 
 @NonePointcut()
-@Singleton(symbols.IAdvisorProceeding, ReturningType.observable)
+@Singleton(AopSymbols.IAdvisorProceeding, ReturningType.observable)
 export class AsyncObservableProceeding implements IAdvisorProceeding {
     constructor() {
 

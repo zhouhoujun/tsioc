@@ -2,10 +2,11 @@ import { Injectable, Singleton } from '@ts-ioc/core';
 import { ILoggerManger } from './ILoggerManger';
 import { ILogger } from './ILogger';
 import { NonePointcut } from '@ts-ioc/aop';
+import { LogSymbols } from './symbols';
 
 @NonePointcut
 @Singleton
-@Injectable('console')
+@Injectable(LogSymbols.ILoggerManager, 'console')
 export class ConsoleLogManager implements ILoggerManger {
     private logger: ILogger;
     constructor() {

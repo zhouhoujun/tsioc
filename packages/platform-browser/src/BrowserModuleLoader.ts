@@ -8,7 +8,7 @@ export class BrowserModuleLoader extends DefaultModuleLoader implements IModuleL
         super()
     }
 
-    protected createLoader(){
+    protected createLoader() {
         if (typeof System !== 'undefined') {
             return (modulepath: string) => {
                 return System.import(modulepath);

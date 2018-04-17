@@ -1,11 +1,12 @@
-import { Express, Singleton, symbols } from '@ts-ioc/core';
+import { Express, Singleton } from '@ts-ioc/core';
 import { IAdvisorProceeding } from './IAdvisorProceeding';
 import { Joinpoint } from '../joinpoints/index';
 import { ReturningType } from './ReturningType';
 import { NonePointcut } from '../decorators/index';
+import { AopSymbols } from '../symbols';
 
 @NonePointcut()
-@Singleton(symbols.IAdvisorProceeding, ReturningType.promise)
+@Singleton(AopSymbols.IAdvisorProceeding, ReturningType.promise)
 export class AsyncPromiseProceeding implements IAdvisorProceeding {
 
     constructor() {
