@@ -1,4 +1,4 @@
-import { Injectable, IContainer, symbols, Inject, isUndefined, Token, Registration } from '@ts-ioc/core';
+import { Injectable, IContainer, symbols, Inject, isString, isUndefined, Token, Registration } from '@ts-ioc/core';
 import { ILoggerManger } from './ILoggerManger';
 import { LogSymbols } from './symbols';
 import { LogConfigure } from './LogConfigure';
@@ -6,7 +6,6 @@ import { ILogger } from './ILogger';
 import { DefaultLogConfigure } from './DefaultLogConfigure';
 import { IConfigureLoggerManager } from './IConfigureLoggerManager';
 import { NonePointcut } from '@ts-ioc/aop';
-import { isString } from 'util';
 
 /**
  * Configure logger manger.

@@ -23,8 +23,7 @@
   },
   "exclude": [
     "test",
-    "lib",
-    "node_modules"    
+    "lib"   
   ],
   "compileOnSave": false
 }
