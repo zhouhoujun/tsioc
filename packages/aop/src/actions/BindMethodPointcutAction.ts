@@ -1,11 +1,12 @@
 
-import { IContainer, ActionData, ActionComposite, getParamerterNames, symbols, isUndefined, getClassName } from '@ts-ioc/core';
+import { IContainer, ActionData, ActionComposite, getParamerterNames, isUndefined, getClassName } from '@ts-ioc/core';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AroundMetadata } from '../metadatas/index'
 import { IPointcut, Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints/index';
 import { isValideAspectTarget } from '../isValideAspectTarget';
 import { IProxyMethod, ProxyMethod } from '../access/index';
+import { AopSymbols } from '../symbols';
 
 export interface BindPointcutActionData extends ActionData<Joinpoint> {
 }
@@ -23,7 +24,7 @@ export class BindMethodPointcutAction extends ActionComposite {
             return;
         }
 
-        let proxy = container.get<IProxyMethod>(symbols.IProxyMethod);
+        let proxy = container.get<IProxyMethod>(AopSymbols.IProxyMethod);
 
         let target = data.target;
         let targetType = data.targetType;

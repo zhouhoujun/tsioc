@@ -7,6 +7,7 @@ import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IPointcut, Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints/index';
 import { Advices, Advicer } from '../advices/index';
 import { isValideAspectTarget } from '../isValideAspectTarget';
+import { AopSymbols } from '../symbols';
 
 
 export interface InvokeBeforeConstructorActionData extends ActionData<AdviceMetadata> {
@@ -25,7 +26,7 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
             return;
         }
 
-        let advisor = container.get<IAdvisor>(symbols.IAdvisor);
+        let advisor = container.get<IAdvisor>(AopSymbols.IAdvisor);
         let className = getClassName(data.targetType);
         let advices = advisor.getAdvices(className + '.constructor');
         if (!advices) {

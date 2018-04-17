@@ -1,10 +1,12 @@
-import { IContainer, Singleton, Inject, MethodMetadata, getOwnMethodMetadata,
-    symbols, MapSet, Type, ObjectMap, getClassName
+import {
+    IContainer, Singleton, Inject, MethodMetadata, getOwnMethodMetadata,
+    MapSet, Type, ObjectMap, getClassName, symbols
 } from '@ts-ioc/core';
 import { Advices, Advicer } from './advices/index';
 import { Aspect, Advice, NonePointcut } from './decorators/index';
 import { AdviceMetadata } from './metadatas/index';
 import { IAdvisor } from './IAdvisor';
+import { AopSymbols } from './symbols';
 
 /**
  * for global aop advisor.
@@ -13,7 +15,7 @@ import { IAdvisor } from './IAdvisor';
  * @class Advisor
  */
 @NonePointcut()
-@Singleton(symbols.IAdvisor)
+@Singleton(AopSymbols.IAdvisor)
 export class Advisor implements IAdvisor {
     /**
      * aspects.
@@ -51,7 +53,7 @@ export class Advisor implements IAdvisor {
 
     hasRegisterAdvices(targetType: Type<any>): boolean {
         let methods = Object.keys(Object.getOwnPropertyDescriptors(targetType.prototype));
-        let className =  getClassName(targetType);
+        let className = getClassName(targetType);
         return methods.some(m => this.advices.has(`${className}.${m}`));
     }
 

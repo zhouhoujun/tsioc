@@ -8,9 +8,10 @@ import { IAdvisor } from '../IAdvisor';
 import { IProxyMethod } from './IProxyMethod';
 import { IAdvisorChainFactory } from './IAdvisorChainFactory';
 import { NonePointcut } from '../decorators/index';
+import { AopSymbols } from '../symbols';
 
 @NonePointcut()
-@Singleton(symbols.IProxyMethod)
+@Singleton(AopSymbols.IProxyMethod)
 export class ProxyMethod implements IProxyMethod {
 
     constructor(@Inject(symbols.IContainer) private container: IContainer) {
@@ -20,7 +21,7 @@ export class ProxyMethod implements IProxyMethod {
     _aspectMgr: IAdvisor;
     get aspectMgr(): IAdvisor {
         if (!this._aspectMgr) {
-            this._aspectMgr = this.container.get<IAdvisor>(symbols.IAdvisor);
+            this._aspectMgr = this.container.get<IAdvisor>(AopSymbols.IAdvisor);
         }
         return this._aspectMgr;
     }
@@ -77,7 +78,7 @@ export class ProxyMethod implements IProxyMethod {
                 targetType: targetType
             }));
 
-            let adChain = container.resolve<IAdvisorChainFactory>(symbols.IAdvisorChainFactory, { container: container, advices: advices });
+            let adChain = container.resolve<IAdvisorChainFactory>(AopSymbols.IAdvisorChainFactory, { container: container, advices: advices });
             adChain.invoaction(joinPoint, JoinpointState.Before);
             adChain.invoaction(joinPoint, JoinpointState.Pointcut);
             let val, exeErr;

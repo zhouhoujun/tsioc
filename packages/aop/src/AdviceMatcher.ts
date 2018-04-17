@@ -9,9 +9,17 @@ import { IPointcut, MatchPointcut } from './joinpoints/index';
 import { Advices, Advicer } from './advices/index';
 import { Aspect, Advice, NonePointcut } from './decorators/index';
 import { IAdvisor } from './IAdvisor';
+import { AopSymbols } from './symbols';
 
+/**
+ * advice matcher, use to match advice when a registered create instance.
+ *
+ * @export
+ * @class AdviceMatcher
+ * @implements {IAdviceMatcher}
+ */
 @NonePointcut()
-@Singleton(symbols.IAdviceMatcher)
+@Singleton(AopSymbols.IAdviceMatcher)
 export class AdviceMatcher implements IAdviceMatcher {
 
     constructor(@Inject(symbols.IContainer) private container: IContainer) {
@@ -23,7 +31,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         let className =  getClassName(targetType);
 
         adviceMetas = adviceMetas || getOwnMethodMetadata<AdviceMetadata>(Advice, targetType);
-        let advisor = this.container.get<IAdvisor>(symbols.IAdvisor);
+        let advisor = this.container.get<IAdvisor>(AopSymbols.IAdvisor);
         let matched: MatchPointcut[] = [];
 
         if (targetType === aspectType) {

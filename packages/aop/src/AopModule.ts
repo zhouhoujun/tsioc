@@ -9,13 +9,28 @@ import { Advice } from './decorators/index';
 import { AopActionFactory } from './actions/AopActionFactory';
 import { Joinpoint } from './joinpoints/index';
 import { ProxyMethod, AdvisorChainFactory, AdvisorChain, SyncProceeding, AsyncObservableProceeding, AsyncPromiseProceeding, ReturningRecognizer } from './access/index';
+import { AopSymbols } from './symbols';
 
+/**
+ * aop bootstrap main. auto run setup after registered.
+ * with @IocModule('setup') decorator.
+ * @export
+ * @class AopModule
+ */
 @IocModule('setup')
 export class AopModule {
 
     constructor(@Inject(symbols.IContainer) private container: IContainer) {
 
     }
+
+    /**
+     * symbols of aop.
+     *
+     * @static
+     * @memberof AopModule
+     */
+    static symbols = AopSymbols;
 
     /**
      * register aop for container.

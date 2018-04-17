@@ -5,7 +5,7 @@ import { Advices } from './advices/index';
 
 
 /**
- * aspect set.
+ * aspect and advices manager.
  *
  * @export
  * @interface IAdvisor
