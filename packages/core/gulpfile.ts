@@ -90,6 +90,7 @@ Development.create(gulp, __dirname, [
                             contents = contents.replace(/\"use strict\";/gi, '').replace(/\s+/gi, ' ');
 
                             let prefixs = [
+                                `Object.defineProperty(exports, "__esModule", { value: true });`,
                                 `var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
                                     var extendStatics = Object.setPrototypeOf ||
                                         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
