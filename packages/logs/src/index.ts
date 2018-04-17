@@ -1,6 +1,7 @@
 export * from './symbols';
 export * from './ILogger';
 export * from './ILoggerManger';
+export * from './ConfigureLoggerManger';
 export * from './ConsoleLogManager';
 export * from './LogConfigure';
 export * from './DefaultLogConfigure';

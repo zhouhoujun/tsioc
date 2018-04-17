@@ -2,7 +2,7 @@ import { Type, AbstractType } from './types';
 import { isClass, isFunction, getClassName } from './utils/index';
 
 /**
- * injecto token.
+ * inject token.
  * @export
  * @class Registration
  * @template T

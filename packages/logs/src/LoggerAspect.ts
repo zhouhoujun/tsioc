@@ -3,28 +3,18 @@ import { IContainer, Singleton, Inject, Abstract, isFunction } from '@ts-ioc/cor
 
 import { LoggerMetadata } from './decorators/Logger';
 import { LogConfigure } from './LogConfigure';
-import { DefaultLogConfigure } from './DefaultLogConfigure';
 import { ILogger } from './ILogger';
 import { ILoggerManger } from './ILoggerManger';
 import { LogSymbols } from './symbols';
+import { IConfigureLoggerManager } from './IConfigureLoggerManager';
 
 export class LoggerAspect {
 
     private _logger: ILogger;
-    private _logManger: ILoggerManger;
-    private _config: LogConfigure;
-    constructor(protected container: IContainer, config?: LogConfigure) {
-        this._config = config;
-    }
+    private _logManger: IConfigureLoggerManager;
 
-    get config(): LogConfigure {
-        if (!this._config) {
-            if (!this.container.has(LogSymbols.LogConfigure)) {
-                this.container.register(DefaultLogConfigure);
-            }
-            this._config = this.container.resolve<LogConfigure>(LogSymbols.LogConfigure);
-        }
-        return this._config;
+    constructor(protected container: IContainer, private config?: LogConfigure) {
+
     }
 
     get logger(): ILogger {
@@ -34,12 +24,9 @@ export class LoggerAspect {
         return this._logger;
     }
 
-    get logManger(): ILoggerManger {
+    get logManger(): IConfigureLoggerManager {
         if (!this._logManger) {
-            this._logManger = this.container.resolve<ILoggerManger>(this.config.adapter || 'console');
-            if (this.config.config) {
-                this._logManger.configure(this.config.config);
-            }
+            this._logManger = this.container.resolve<IConfigureLoggerManager>(LogSymbols.IConfigureLoggerManager, { config: this.config });
         }
         return this._logManger;
     }
@@ -64,20 +51,21 @@ export class LoggerAspect {
 
     protected writeLog(logger: ILogger, joinPoint: Joinpoint, message?: string) {
 
-        let isCustom = isFunction(this.config.customFormat);
+        let config = this.logManger.config;
+        let isCustom = isFunction(config.customFormat);
 
         if (message) {
             logger.info(message);
         }
 
         if (isCustom) {
-            this.config.customFormat(joinPoint, logger);
-        } else if (this.config.format) {
-            let formatStr = isFunction(this.config.format) ? this.config.format(joinPoint, logger) : '';
+            config.customFormat(joinPoint, logger);
+        } else if (config.format) {
+            let formatStr = isFunction(config.format) ? config.format(joinPoint, logger) : '';
             if (!formatStr) {
                 return;
             }
-            let formatArgs = isFunction(this.config.formatArgs) ? this.config.formatArgs(joinPoint, logger) : [];
+            let formatArgs = isFunction(config.formatArgs) ? config.formatArgs(joinPoint, logger) : [];
             switch (joinPoint.state) {
                 case JoinpointState.Before:
                 case JoinpointState.After:

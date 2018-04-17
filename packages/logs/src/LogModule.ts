@@ -4,6 +4,7 @@ import { Logger } from './decorators/Logger';
 import { AnnotationLogerAspect } from './AnnotationLogerAspect';
 import { ConsoleLogManager } from './ConsoleLogManager';
 import { LogSymbols } from './symbols';
+import { ConfigureLoggerManger } from './ConfigureLoggerManger';
 
 /**
  * aop logs bootstrap main. auto run setup after registered.
@@ -32,7 +33,7 @@ export class LogModule {
         }
         let lifeScope = container.get<LifeScope>(symbols.LifeScope);
         lifeScope.registerDecorator(Logger, LifeState.onInit, CoreActions.bindParameterProviders);
-
+        container.register(ConfigureLoggerManger);
         container.register(AnnotationLogerAspect);
         container.register(ConsoleLogManager);
     }

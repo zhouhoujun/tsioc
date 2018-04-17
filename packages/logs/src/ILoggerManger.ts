@@ -13,7 +13,7 @@ export interface ILoggerManger {
      * @param {*} config
      * @memberof ILoggerManger
      */
-    configure(config: any);
+    configure(config: any): void;
     /**
      * get logger.
      *

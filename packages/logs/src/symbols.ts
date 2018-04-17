@@ -5,7 +5,19 @@
 export const LogSymbols = {
     /**
      * Log configure interface symbol.
-     * it is a symbol id, you can register yourself IActionBuilder for this.
+     * it is a symbol id, you can register yourself LogConfigure for this.
      */
-    LogConfigure: Symbol('LogConfigure')
+    LogConfigure: Symbol('LogConfigure'),
+
+    /**
+     * LoggerManger interface symbol.
+     * it is a symbol id, you can register yourself LoggerManger for this.
+     */
+    ILoggerManager: Symbol('ILoggerManager'),
+
+    /**
+     * IConfigureLoggerManager interface symbol.
+     * it is a symbol id, you can register yourself IConfigureLoggerManager for this.
+     */
+    IConfigureLoggerManager: Symbol('IConfigureLoggerManager')
 }
