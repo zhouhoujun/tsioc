@@ -1,7 +1,12 @@
 import { IContainer } from '../IContainer';
 import { ActionData } from './ActionData';
 
-
+/**
+ * execute action
+ * 
+ * @export
+ * @interface IExecutable
+ */
 export interface IExecutable {
 
     /**

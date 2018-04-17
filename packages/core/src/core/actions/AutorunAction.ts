@@ -10,7 +10,13 @@ import { Autorun, IocModule } from '../decorators/index';
 
 
 
-
+/**
+ * auto run action data.
+ * 
+ * @export
+ * @interface AutorunActionData
+ * @extends {ActionData<AutorunMetadata>}
+ */
 export interface AutorunActionData extends ActionData<AutorunMetadata> {
 
 }
