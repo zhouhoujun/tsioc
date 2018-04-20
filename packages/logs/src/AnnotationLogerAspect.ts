@@ -4,8 +4,8 @@ import { LoggerMetadata } from './decorators/Logger';
 import { LoggerAspect } from './LoggerAspect';
 
 
-@Singleton
-@Aspect
+@Singleton()
+@Aspect()
 export class AnnotationLogerAspect extends LoggerAspect {
 
     constructor(@Inject(symbols.IContainer) container: IContainer) {

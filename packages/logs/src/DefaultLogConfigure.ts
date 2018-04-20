@@ -5,7 +5,7 @@ import { ILogger } from './ILogger';
 import { ILoggerManger } from './ILoggerManger';
 import { LogSymbols } from './symbols';
 
-@NonePointcut
+@NonePointcut()
 @Singleton(LogSymbols.LogConfigure)
 export class DefaultLogConfigure implements LogConfigure {
 

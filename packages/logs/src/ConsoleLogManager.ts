@@ -4,8 +4,8 @@ import { ILogger } from './ILogger';
 import { NonePointcut } from '@ts-ioc/aop';
 import { LogSymbols } from './symbols';
 
-@NonePointcut
-@Singleton
+@NonePointcut()
+@Singleton()
 @Injectable(LogSymbols.ILoggerManager, 'console')
 export class ConsoleLogManager implements ILoggerManger {
     private logger: ILogger;

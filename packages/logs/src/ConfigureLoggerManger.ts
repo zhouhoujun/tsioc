@@ -14,8 +14,8 @@ import { NonePointcut } from '@ts-ioc/aop';
  * @class LoggerManger
  * @implements {IConfigureLoggerManager}
  */
+@NonePointcut()
 @Injectable(LogSymbols.IConfigureLoggerManager)
-@NonePointcut
 export class ConfigureLoggerManger implements IConfigureLoggerManager {
 
     private _config: LogConfigure;

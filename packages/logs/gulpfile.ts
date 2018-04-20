@@ -71,7 +71,7 @@ Development.create(gulp, __dirname, [
             {
                 name: 'zip',
                 src: 'bundles/logs.umd.js',
-                pipes:[
+                pipes: [
                     ctx => through.obj(function (file, encoding, callback) {
                         if (file.isNull()) {
                             return callback(null, file);

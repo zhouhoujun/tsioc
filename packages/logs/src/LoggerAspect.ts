@@ -12,9 +12,12 @@ export class LoggerAspect {
 
     private _logger: ILogger;
     private _logManger: IConfigureLoggerManager;
+    private _config?: LogConfigure;
 
-    constructor(protected container: IContainer, private config?: LogConfigure) {
-
+    constructor(protected container: IContainer, config?: LogConfigure) {
+        if (config) {
+            this._config = config;
+        }
     }
 
     get logger(): ILogger {
@@ -26,7 +29,7 @@ export class LoggerAspect {
 
     get logManger(): IConfigureLoggerManager {
         if (!this._logManger) {
-            this._logManger = this.container.resolve<IConfigureLoggerManager>(LogSymbols.IConfigureLoggerManager, { config: this.config });
+            this._logManger = this.container.resolve<IConfigureLoggerManager>(LogSymbols.IConfigureLoggerManager, { config: this._config });
         }
         return this._logManger;
     }
