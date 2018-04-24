@@ -1,5 +1,5 @@
 import { Aspect, Joinpoint, JoinpointState, Pointcut } from '@ts-ioc/aop';
-import { IContainer, Singleton, Inject, Abstract, isFunction } from '@ts-ioc/core';
+import { IContainer, Singleton, Inject, Abstract, isFunction, Type } from '@ts-ioc/core';
 
 import { LoggerMetadata } from './decorators/Logger';
 import { LogConfigure } from './LogConfigure';
@@ -12,12 +12,9 @@ export class LoggerAspect {
 
     private _logger: ILogger;
     private _logManger: IConfigureLoggerManager;
-    private _config?: LogConfigure;
 
-    constructor(protected container: IContainer, config?: LogConfigure) {
-        if (config) {
-            this._config = config;
-        }
+    constructor(protected container: IContainer, private config?: LogConfigure | Type<LogConfigure>) {
+
     }
 
     get logger(): ILogger {
@@ -29,7 +26,7 @@ export class LoggerAspect {
 
     get logManger(): IConfigureLoggerManager {
         if (!this._logManger) {
-            this._logManger = this.container.resolve<IConfigureLoggerManager>(LogSymbols.IConfigureLoggerManager, { config: this._config });
+            this._logManger = this.container.resolve<IConfigureLoggerManager>(LogSymbols.IConfigureLoggerManager, { config: this.config });
         }
         return this._logManger;
     }

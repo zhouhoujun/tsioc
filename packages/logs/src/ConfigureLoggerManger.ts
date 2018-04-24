@@ -1,4 +1,4 @@
-import { Injectable, IContainer, symbols, Inject, isString, isUndefined, Token, Registration } from '@ts-ioc/core';
+import { Injectable, IContainer, symbols, Inject, isString, isUndefined, Token, Registration, Type, isClass } from '@ts-ioc/core';
 import { ILoggerManger } from './ILoggerManger';
 import { LogSymbols } from './symbols';
 import { LogConfigure } from './LogConfigure';
@@ -21,10 +21,8 @@ export class ConfigureLoggerManger implements IConfigureLoggerManager {
     private _config: LogConfigure;
     private _logManger: ILoggerManger;
 
-    constructor(@Inject(symbols.IContainer) protected container: IContainer, config?: LogConfigure) {
-        if (config) {
-            this._config = config;
-        }
+    constructor(@Inject(symbols.IContainer) protected container: IContainer, config?: LogConfigure | Type<LogConfigure>) {
+        this.setLogConfigure(config);
     }
 
 
@@ -36,6 +34,25 @@ export class ConfigureLoggerManger implements IConfigureLoggerManager {
             this._config = this.container.resolve<LogConfigure>(LogSymbols.LogConfigure);
         }
         return this._config;
+    }
+
+    setLogConfigure(config: LogConfigure | Type<LogConfigure>) {
+        if (!config) {
+            return;
+        }
+        if (isClass(config)) {
+            if (!this.container.has(LogSymbols.LogConfigure)) {
+                this.container.register(LogSymbols.LogConfigure, config);
+                this._config = this.container.get<LogConfigure>(LogSymbols.LogConfigure);
+            } else if (!this.container.has(config)) {
+                this.container.register(config);
+                this._config = this.container.get<LogConfigure>(config);
+            }
+        } else {
+            this._config = config;
+        }
+        this._logManger = null;
+
     }
 
 
