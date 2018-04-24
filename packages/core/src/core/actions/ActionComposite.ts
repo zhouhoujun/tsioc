@@ -9,6 +9,14 @@ import { IContainer } from '../../IContainer';
 import { isFunction, isString } from '../../utils/index';
 import { GComposite, IComponent } from '../../components/index';
 
+/**
+ * action composite
+ * 
+ * @export
+ * @class ActionComposite
+ * @extends {GComposite<ActionComponent>}
+ * @implements {ActionComponent}
+ */
 export class ActionComposite extends GComposite<ActionComponent> implements ActionComponent {
 
     parent: ActionComponent;

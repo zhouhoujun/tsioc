@@ -5,7 +5,13 @@ import { IParameter } from '../IParameter';
 import { IProviderMatcher } from './IProviderMatcher';
 import { IContainer } from '../IContainer';
 
-
+/**
+ * provider matcher. use to find custome providers in resolve.
+ * 
+ * @export
+ * @class ProviderMatcher
+ * @implements {IProviderMatcher}
+ */
 export class ProviderMatcher implements IProviderMatcher {
 
     constructor(private container: IContainer) {

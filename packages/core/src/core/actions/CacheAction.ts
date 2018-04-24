@@ -10,19 +10,22 @@ import { ComponentLifecycle } from '../ComponentLifecycle';
 import { ICacheManager } from '../../ICacheManager';
 
 
-
-
-
-
+/**
+ * cache action data.
+ * 
+ * @export
+ * @interface CacheActionData
+ * @extends {ActionData<ClassMetadata>}
+ */
 export interface CacheActionData extends ActionData<ClassMetadata> {
 
 }
 
 /**
- * Inject DrawType action.
- *
+ * cache action. To cache instance of Token. define cache expires in decorator.
+ * 
  * @export
- * @class SetPropAction
+ * @class CacheAction
  * @extends {ActionComposite}
  */
 export class CacheAction extends ActionComposite {

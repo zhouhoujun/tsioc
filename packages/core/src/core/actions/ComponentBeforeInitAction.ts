@@ -8,17 +8,22 @@ import { CoreActions } from './CoreActions';
 
 
 
-
-
+/**
+ * component before init action data.
+ * 
+ * @export
+ * @interface ComponentBeforeInitActionData
+ * @extends {ActionData<ClassMetadata>}
+ */
 export interface ComponentBeforeInitActionData extends ActionData<ClassMetadata> {
 
 }
 
 /**
- * Inject DrawType action.
- *
+ * component before init action, to run @Component decorator class before init hooks.
+ * 
  * @export
- * @class SetPropAction
+ * @class ComponentBeforeInitAction
  * @extends {ActionComposite}
  */
 export class ComponentBeforeInitAction extends ActionComposite {

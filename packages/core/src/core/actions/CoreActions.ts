@@ -6,17 +6,17 @@
 export enum CoreActions {
 
     /**
-     * set param type form metadata.
+     * the action bind parameter type form metadata.
      */
     bindParameterType = 'bindParameterType',
 
     /**
-     * set Property type from metadata.
+     * the action bind Property type from metadata.
      */
     bindPropertyType = 'bindPropertyType',
 
     /**
-     * inject property.
+     * inject property action.
      */
     injectProperty = 'injectProperty',
 
@@ -26,11 +26,14 @@ export enum CoreActions {
     bindProvider = 'bindProvider',
 
     /**
-     * access method.
+     * bind parameter provider action.
      */
     bindParameterProviders = 'bindParameterProviders',
 
 
+    /**
+     * cache action.
+     */
     cache = 'cache',
 
     /**

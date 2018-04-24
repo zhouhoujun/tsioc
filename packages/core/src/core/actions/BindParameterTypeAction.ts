@@ -7,11 +7,23 @@ import { IContainer } from '../../IContainer';
 import { Type, Token } from '../../types';
 import { isArray } from '../../utils/index';
 
-
+/**
+ * bind parameter type action data.
+ * 
+ * @export
+ * @interface BindParameterTypeActionData
+ * @extends {ActionData<Token<any>[]>}
+ */
 export interface BindParameterTypeActionData extends ActionData<Token<any>[]> {
 }
 
-
+/**
+ * bind parameter type action.
+ * 
+ * @export
+ * @class BindParameterTypeAction
+ * @extends {ActionComposite}
+ */
 export class BindParameterTypeAction extends ActionComposite {
 
     constructor() {

@@ -8,17 +8,22 @@ import { CoreActions } from './CoreActions';
 
 
 
-
-
+/**
+ * singleton action data.
+ * 
+ * @export
+ * @interface SingletionActionData
+ * @extends {ActionData<ClassMetadata>}
+ */
 export interface SingletionActionData extends ActionData<ClassMetadata> {
 
 }
 
 /**
- * Inject DrawType action.
- *
+ * singleton action, to set the factory of Token as singleton.
+ * 
  * @export
- * @class SetPropAction
+ * @class SingletionAction
  * @extends {ActionComposite}
  */
 export class SingletionAction extends ActionComposite {

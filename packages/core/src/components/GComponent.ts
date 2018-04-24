@@ -2,7 +2,14 @@ import { Express, Mode } from '../types';
 import { IComponent } from './IComponent';
 
 
-
+/**
+ * generics component.
+ * 
+ * @export
+ * @interface GComponent
+ * @extends {IComponent}
+ * @template T 
+ */
 export interface GComponent<T extends IComponent> extends IComponent {
     /**
      * the node name.

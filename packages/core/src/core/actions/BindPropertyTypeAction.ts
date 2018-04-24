@@ -5,12 +5,19 @@ import { DecoratorType, getPropertyMetadata, hasPropertyMetadata } from '../fact
 import { PropertyMetadata } from '../metadatas/index';
 import { IContainer } from '../../IContainer';
 
+/**
+ * bind property type action data.
+ * 
+ * @export
+ * @interface BindPropertyTypeActionData
+ * @extends {ActionData<PropertyMetadata[]>}
+ */
 export interface BindPropertyTypeActionData extends ActionData<PropertyMetadata[]> {
 
 }
 
 /**
- * set property type action.
+ * bind property type action. to get the property autowride token of Type calss.  
  *
  * @export
  * @class SetPropAction

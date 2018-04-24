@@ -6,12 +6,19 @@ import { CoreActions } from './CoreActions';
 import { ActionComposite } from './ActionComposite';
 
 
-export interface BindPropertyActionData extends BindPropertyTypeActionData {
+/**
+ * inject property action data.
+ * 
+ * @export
+ * @interface InjectPropertyActionData
+ * @extends {BindPropertyTypeActionData}
+ */
+export interface InjectPropertyActionData extends BindPropertyTypeActionData {
 
 }
 
 /**
- * bind property vaule action.
+ * inject property value action, to inject property value for resolve instance. 
  *
  * @export
  * @class SetPropAction
@@ -23,7 +30,7 @@ export class InjectPropertyAction extends ActionComposite {
         super(CoreActions.injectProperty)
     }
 
-    protected working(container: IContainer, data: BindPropertyTypeActionData) {
+    protected working(container: IContainer, data: InjectPropertyActionData) {
         if (!data.execResult) {
             this.parent.find(act => act.name === CoreActions.bindPropertyType).execute(container, data);
         }

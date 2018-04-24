@@ -10,7 +10,13 @@ import { IParameter } from '../IParameter';
 import { DecoratorType } from './factories/index';
 import { IProviderMatcher } from './IProviderMatcher';
 
-
+/**
+ * method accessor 
+ * 
+ * @export
+ * @class MethodAccessor
+ * @implements {IMethodAccessor}
+ */
 export class MethodAccessor implements IMethodAccessor {
 
     constructor(private container: IContainer) {

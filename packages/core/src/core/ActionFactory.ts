@@ -8,6 +8,12 @@ import {
 } from './actions/index';
 
 
+/**
+ * action factory.
+ * 
+ * @export
+ * @class ActionFactory
+ */
 export class ActionFactory {
 
     /**

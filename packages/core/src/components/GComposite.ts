@@ -4,7 +4,14 @@ import { IComponent } from './IComponent';
 import { isFunction, isString } from '../utils/index';
 import { GComponent } from './GComponent';
 
-
+/**
+ * generics composite
+ * 
+ * @export
+ * @class GComposite
+ * @implements {GComponent<T>}
+ * @template T 
+ */
 export class GComposite<T extends IComponent> implements GComponent<T> {
 
     parent: T;

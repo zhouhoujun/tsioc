@@ -7,18 +7,22 @@ import { isFunction } from '../../utils/index';
 import { CoreActions } from './CoreActions';
 
 
-
-
-
+/**
+ * component after init action data.
+ * 
+ * @export
+ * @interface ComponentAfterInitActionData
+ * @extends {ActionData<ClassMetadata>}
+ */
 export interface ComponentAfterInitActionData extends ActionData<ClassMetadata> {
 
 }
 
 /**
- * Inject DrawType action.
- *
+ * component after init action, to run @Component decorator class after init hooks.
+ * 
  * @export
- * @class SetPropAction
+ * @class ComponentAfterInitAction
  * @extends {ActionComposite}
  */
 export class ComponentAfterInitAction extends ActionComposite {

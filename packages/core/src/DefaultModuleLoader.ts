@@ -2,6 +2,14 @@ import { Type, ModuleType } from './types';
 import { IModuleLoader, AsyncLoadOptions } from '.';
 
 declare let require: any;
+
+/**
+ * default module loader.
+ * 
+ * @export
+ * @class DefaultModuleLoader
+ * @implements {IModuleLoader}
+ */
 export class DefaultModuleLoader implements IModuleLoader {
 
     constructor() {

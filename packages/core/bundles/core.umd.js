@@ -2039,6 +2039,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+/**
+ * generics composite
+ *
+ * @export
+ * @class GComposite
+ * @implements {GComponent<T>}
+ * @template T
+ */
 var GComposite = /** @class */ (function () {
     function GComposite(name) {
         this.name = name;
@@ -2240,6 +2248,9 @@ var NullActionClass = /** @class */ (function (_super) {
     NullActionClass.classAnnations = { "name": "NullActionClass", "params": { "insert": ["action", "index"], "execute": ["container", "data", "name"], "empty": [] } };
     return NullActionClass;
 }(components.NullComponent));
+/**
+ * Null Action
+ */
 exports.NullAction = new NullActionClass();
 
 
@@ -2262,6 +2273,14 @@ var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
+/**
+ * action composite
+ *
+ * @export
+ * @class ActionComposite
+ * @extends {GComposite<ActionComponent>}
+ * @implements {ActionComponent}
+ */
 var ActionComposite = /** @class */ (function (_super) {
     __extends(ActionComposite, _super);
     function ActionComposite(name) {
@@ -2358,15 +2377,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var CoreActions;
 (function (CoreActions) {
     /**
-     * set param type form metadata.
+     * the action bind parameter type form metadata.
      */
     CoreActions["bindParameterType"] = "bindParameterType";
     /**
-     * set Property type from metadata.
+     * the action bind Property type from metadata.
      */
     CoreActions["bindPropertyType"] = "bindPropertyType";
     /**
-     * inject property.
+     * inject property action.
      */
     CoreActions["injectProperty"] = "injectProperty";
     /**
@@ -2374,9 +2393,12 @@ var CoreActions;
      */
     CoreActions["bindProvider"] = "bindProvider";
     /**
-     * access method.
+     * bind parameter provider action.
      */
     CoreActions["bindParameterProviders"] = "bindParameterProviders";
+    /**
+     * cache action.
+     */
     CoreActions["cache"] = "cache";
     /**
      * component init action.  after constructor befor property inject.
@@ -2421,6 +2443,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+/**
+ * bind provider action. for binding a factory to an token.
+ *
+ * @export
+ * @class BindProviderAction
+ * @extends {ActionComposite}
+ */
 var BindProviderAction = /** @class */ (function (_super) {
     __extends(BindProviderAction, _super);
     function BindProviderAction() {
@@ -2471,6 +2500,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+/**
+ * bind parameter type action.
+ *
+ * @export
+ * @class BindParameterTypeAction
+ * @extends {ActionComposite}
+ */
 var BindParameterTypeAction = /** @class */ (function (_super) {
     __extends(BindParameterTypeAction, _super);
     function BindParameterTypeAction() {
@@ -2553,7 +2589,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 /**
- * set property type action.
+ * bind property type action. to get the property autowride token of Type calss.
  *
  * @export
  * @class SetPropAction
@@ -2616,7 +2652,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 /**
- * bind property vaule action.
+ * inject property value action, to inject property value for resolve instance.
  *
  * @export
  * @class SetPropAction
@@ -2669,6 +2705,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+/**
+ * bind parameters action.
+ *
+ * @export
+ * @class BindParameterProviderAction
+ * @extends {ActionComposite}
+ */
 var BindParameterProviderAction = /** @class */ (function (_super) {
     __extends(BindParameterProviderAction, _super);
     function BindParameterProviderAction() {
@@ -2720,10 +2763,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 /**
- * Inject DrawType action.
+ * component before init action, to run @Component decorator class before init hooks.
  *
  * @export
- * @class SetPropAction
+ * @class ComponentBeforeInitAction
  * @extends {ActionComposite}
  */
 var ComponentBeforeInitAction = /** @class */ (function (_super) {
@@ -2766,10 +2809,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 /**
- * Inject DrawType action.
+ * component before init action, to run @Component decorator class before init hooks.
  *
  * @export
- * @class SetPropAction
+ * @class ComponentInitAction
  * @extends {ActionComposite}
  */
 var ComponentInitAction = /** @class */ (function (_super) {
@@ -2812,10 +2855,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 /**
- * Inject DrawType action.
+ * component after init action, to run @Component decorator class after init hooks.
  *
  * @export
- * @class SetPropAction
+ * @class ComponentAfterInitAction
  * @extends {ActionComposite}
  */
 var ComponentAfterInitAction = /** @class */ (function (_super) {
@@ -2859,10 +2902,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 /**
- * Inject DrawType action.
+ * cache action. To cache instance of Token. define cache expires in decorator.
  *
  * @export
- * @class SetPropAction
+ * @class CacheAction
  * @extends {ActionComposite}
  */
 var CacheAction = /** @class */ (function (_super) {
@@ -2937,10 +2980,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 /**
- * Inject DrawType action.
+ * singleton action, to set the factory of Token as singleton.
  *
  * @export
- * @class SetPropAction
+ * @class SingletionAction
  * @extends {ActionComposite}
  */
 var SingletionAction = /** @class */ (function (_super) {
@@ -3070,6 +3113,12 @@ var ActionFactory_1 = createCommonjsModule(function (module, exports) {
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
+/**
+ * action factory.
+ *
+ * @export
+ * @class ActionFactory
+ */
 var ActionFactory = /** @class */ (function () {
     function ActionFactory() {
     }
@@ -3141,6 +3190,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+/**
+ * default implement life scope.
+ *
+ * @export
+ * @class DefaultLifeScope
+ * @implements {LifeScope}
+ */
 var DefaultLifeScope = /** @class */ (function () {
     function DefaultLifeScope(container) {
         this.container = container;
@@ -3447,6 +3503,13 @@ var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (th
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
+/**
+ * method accessor
+ *
+ * @export
+ * @class MethodAccessor
+ * @implements {IMethodAccessor}
+ */
 var MethodAccessor = /** @class */ (function () {
     function MethodAccessor(container) {
         this.container = container;
@@ -3980,6 +4043,13 @@ var ProviderMatcher_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
+/**
+ * provider matcher. use to find custome providers in resolve.
+ *
+ * @export
+ * @class ProviderMatcher
+ * @implements {IProviderMatcher}
+ */
 var ProviderMatcher = /** @class */ (function () {
     function ProviderMatcher(container) {
         this.container = container;
@@ -4766,6 +4836,13 @@ unwrapExports(Container_1);
 var DefaultModuleLoader_1 = createCommonjsModule(function (module, exports) {
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * default module loader.
+ *
+ * @export
+ * @class DefaultModuleLoader
+ * @implements {IModuleLoader}
+ */
 var DefaultModuleLoader = /** @class */ (function () {
     function DefaultModuleLoader() {
     }

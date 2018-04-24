@@ -6,10 +6,24 @@ import { IContainer } from '../../IContainer';
 import { Token, SymbolType } from '../../types';
 import { TypeMetadata, ProviderMetadata, ClassMetadata } from '../metadatas/index';
 
-
+/**
+ * bind provider action data.
+ * 
+ * @export
+ * @interface BindProviderActionData
+ * @extends {ActionData<Token<any>[]>}
+ */
 export interface BindProviderActionData extends ActionData<Token<any>[]> {
+
 }
 
+/**
+ * bind provider action. for binding a factory to an token. 
+ * 
+ * @export
+ * @class BindProviderAction
+ * @extends {ActionComposite}
+ */
 export class BindProviderAction extends ActionComposite {
 
     constructor() {
@@ -22,7 +36,7 @@ export class BindProviderAction extends ActionComposite {
         let propertyKey = data.propertyKey;
         let lifeScope = container.getLifeScope();
 
-        let matchs = lifeScope.getClassDecorators(surm => surm.actions.includes(CoreActions.bindProvider) &&  hasOwnClassMetadata(surm.name, type));
+        let matchs = lifeScope.getClassDecorators(surm => surm.actions.includes(CoreActions.bindProvider) && hasOwnClassMetadata(surm.name, type));
 
         let provides = [];
         matchs.forEach(surm => {

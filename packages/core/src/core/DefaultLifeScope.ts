@@ -11,6 +11,13 @@ import { ActionFactory } from './ActionFactory';
 import { IParameter } from '../IParameter';
 
 
+/**
+ * default implement life scope.
+ * 
+ * @export
+ * @class DefaultLifeScope
+ * @implements {LifeScope}
+ */
 export class DefaultLifeScope implements LifeScope {
 
     decorators: DecorSummary[];

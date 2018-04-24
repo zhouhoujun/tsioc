@@ -99,7 +99,7 @@ var DefaultLogConfigure = /** @class */ (function () {
     };
     DefaultLogConfigure.classAnnations = { "name": "DefaultLogConfigure", "params": { "constructor": ["adapter"], "format": ["joinPoint", "logger"], "formatArgs": ["joinPoint", "logger"] } };
     DefaultLogConfigure = __decorate([
-        aop_1.NonePointcut,
+        aop_1.NonePointcut(),
         core_1.Singleton(symbols.LogSymbols.LogConfigure),
         __metadata("design:paramtypes", [Object])
     ], DefaultLogConfigure);
@@ -141,9 +141,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var ConfigureLoggerManger = /** @class */ (function () {
     function ConfigureLoggerManger(container, config) {
         this.container = container;
-        if (config) {
-            this._config = config;
-        }
+        this.setLogConfigure(config);
     }
     Object.defineProperty(ConfigureLoggerManger.prototype, "config", {
         get: function () {
@@ -158,6 +156,25 @@ var ConfigureLoggerManger = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
+    ConfigureLoggerManger.prototype.setLogConfigure = function (config) {
+        if (!config) {
+            return;
+        }
+        if (core_1.isClass(config)) {
+            if (!this.container.has(symbols.LogSymbols.LogConfigure)) {
+                this.container.register(symbols.LogSymbols.LogConfigure, config);
+                this._config = this.container.get(symbols.LogSymbols.LogConfigure);
+            }
+            else if (!this.container.has(config)) {
+                this.container.register(config);
+                this._config = this.container.get(config);
+            }
+        }
+        else {
+            this._config = config;
+        }
+        this._logManger = null;
+    };
     Object.defineProperty(ConfigureLoggerManger.prototype, "logManger", {
         get: function () {
             if (!this._logManger) {
@@ -186,10 +203,10 @@ var ConfigureLoggerManger = /** @class */ (function () {
     ConfigureLoggerManger.prototype.getLogger = function (name) {
         return this.logManger.getLogger(name);
     };
-    ConfigureLoggerManger.classAnnations = { "name": "ConfigureLoggerManger", "params": { "constructor": ["container", "config"], "configure": ["config"], "getLogger": ["name"] } };
+    ConfigureLoggerManger.classAnnations = { "name": "ConfigureLoggerManger", "params": { "constructor": ["container", "config"], "setLogConfigure": ["config"], "configure": ["config"], "getLogger": ["name"] } };
     ConfigureLoggerManger = __decorate([
+        aop_1.NonePointcut(),
         core_1.Injectable(symbols.LogSymbols.IConfigureLoggerManager),
-        aop_1.NonePointcut,
         __param(0, core_1.Inject(core_1.symbols.IContainer)),
         __metadata("design:paramtypes", [Object, Object])
     ], ConfigureLoggerManger);
@@ -228,8 +245,8 @@ var ConsoleLogManager = /** @class */ (function () {
     };
     ConsoleLogManager.classAnnations = { "name": "ConsoleLogManager", "params": { "constructor": [], "configure": ["config"], "getLogger": ["name"] } };
     ConsoleLogManager = __decorate([
-        aop_1.NonePointcut,
-        core_1.Singleton,
+        aop_1.NonePointcut(),
+        core_1.Singleton(),
         core_1.Injectable(symbols.LogSymbols.ILoggerManager, 'console'),
         __metadata("design:paramtypes", [])
     ], ConsoleLogManager);
@@ -434,8 +451,8 @@ var AnnotationLogerAspect = /** @class */ (function (_super) {
         __metadata("design:returntype", void 0)
     ], AnnotationLogerAspect.prototype, "logging", null);
     AnnotationLogerAspect = __decorate([
-        core_1.Singleton,
-        aop_1.Aspect,
+        core_1.Singleton(),
+        aop_1.Aspect(),
         __param(0, core_1.Inject(core_1.symbols.IContainer)),
         __metadata("design:paramtypes", [Object])
     ], AnnotationLogerAspect);

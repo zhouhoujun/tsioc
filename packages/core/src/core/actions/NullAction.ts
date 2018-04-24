@@ -20,4 +20,7 @@ class NullActionClass extends NullComponent implements ActionComponent {
 
 }
 
+/**
+ * Null Action
+ */
 export const NullAction: ActionComponent = new NullActionClass();
