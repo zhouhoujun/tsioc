@@ -20,7 +20,6 @@ function createCommonjsModule(fn, module) {
 }
 
 var symbols = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 /**
  * symbols of aop log module.
@@ -47,9 +46,9 @@ exports.LogSymbols = {
 });
 
 unwrapExports(symbols);
+var symbols_1 = symbols.LogSymbols;
 
 var DefaultLogConfigure_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -111,9 +110,9 @@ exports.DefaultLogConfigure = DefaultLogConfigure;
 });
 
 unwrapExports(DefaultLogConfigure_1);
+var DefaultLogConfigure_2 = DefaultLogConfigure_1.DefaultLogConfigure;
 
 var ConfigureLoggerManger_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -218,9 +217,9 @@ exports.ConfigureLoggerManger = ConfigureLoggerManger;
 });
 
 unwrapExports(ConfigureLoggerManger_1);
+var ConfigureLoggerManger_2 = ConfigureLoggerManger_1.ConfigureLoggerManger;
 
 var ConsoleLogManager_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -315,9 +314,10 @@ exports.ConsoleLog = ConsoleLog;
 });
 
 unwrapExports(ConsoleLogManager_1);
+var ConsoleLogManager_2 = ConsoleLogManager_1.ConsoleLogManager;
+var ConsoleLogManager_3 = ConsoleLogManager_1.ConsoleLog;
 
 var LoggerAspect_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
@@ -406,9 +406,9 @@ exports.LoggerAspect = LoggerAspect;
 });
 
 unwrapExports(LoggerAspect_1);
+var LoggerAspect_2 = LoggerAspect_1.LoggerAspect;
 
 var AnnotationLogerAspect_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -464,9 +464,9 @@ exports.AnnotationLogerAspect = AnnotationLogerAspect;
 });
 
 unwrapExports(AnnotationLogerAspect_1);
+var AnnotationLogerAspect_2 = AnnotationLogerAspect_1.AnnotationLogerAspect;
 
 var Logger = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
 exports.Logger = core_1.createClassMethodDecorator('Logger', function (adapter) {
@@ -495,9 +495,9 @@ exports.Logger = core_1.createClassMethodDecorator('Logger', function (adapter) 
 });
 
 unwrapExports(Logger);
+var Logger_1 = Logger.Logger;
 
 var LogModule_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -559,9 +559,9 @@ exports.LogModule = LogModule;
 });
 
 unwrapExports(LogModule_1);
+var LogModule_2 = LogModule_1.LogModule;
 
-var D__Workspace_Projects_modules_tsioc_packages_logs_lib = createCommonjsModule(function (module, exports) {
-"use strict";
+var D__workspace_source_tsioc_packages_logs_lib = createCommonjsModule(function (module, exports) {
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
@@ -578,7 +578,7 @@ __export(LogModule_1);
 
 });
 
-var index = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_logs_lib);
+var index = unwrapExports(D__workspace_source_tsioc_packages_logs_lib);
 
 return index;
 

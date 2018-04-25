@@ -56,8 +56,7 @@ Development.create(gulp, __dirname, [
                                 'log4js'
                             ],
                             globals: {
-                                'reflect-metadata': 'Reflect',
-                                'log4js': 'log4js'
+                                'reflect-metadata': 'Reflect'
                             },
                             input: './lib/index.js'
                         })
@@ -115,12 +114,15 @@ Development.create(gulp, __dirname, [
                                 };`.replace(/\s+/gi, ' ')
                             ];
                             prefixs.forEach(itm => {
-                                prefix = prefix + '\n' + itm;
-                                contents = contents.split(itm).join('\n');
+                                let splits = contents.split(itm);
+                                if (splits.length > 2) {
+                                    contents = splits[0] + itm + '\n' + splits.slice(1).join('\n');
+                                }
                             });
 
                             contents = prefix + contents;
                         }
+
                         file.contents = new Buffer(contents);
                         this.push(file);
                         callback();

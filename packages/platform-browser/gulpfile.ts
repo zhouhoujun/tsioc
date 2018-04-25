@@ -117,8 +117,10 @@ Development.create(gulp, __dirname, [
                                 };`.replace(/\s+/gi, ' ')
                             ];
                             prefixs.forEach(itm => {
-                                prefix = prefix + '\n' + itm;
-                                contents = contents.split(itm).join('\n');
+                                let splits = contents.split(itm);
+                                if (splits.length > 2) {
+                                    contents = splits[0] + itm + '\n' + splits.slice(1).join('\n');
+                                }
                             });
 
                             contents = prefix + contents;

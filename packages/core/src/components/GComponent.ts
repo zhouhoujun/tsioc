@@ -4,11 +4,11 @@ import { IComponent } from './IComponent';
 
 /**
  * generics component.
- * 
+ *
  * @export
  * @interface GComponent
  * @extends {IComponent}
- * @template T 
+ * @template T
  */
 export interface GComponent<T extends IComponent> extends IComponent {
     /**

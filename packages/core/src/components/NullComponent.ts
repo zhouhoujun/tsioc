@@ -51,4 +51,7 @@ export class NullComponent implements GComponent<any> {
     }
 }
 
+/**
+ * Null node
+ */
 export const NullNode: GComponent<any> = new NullComponent();
