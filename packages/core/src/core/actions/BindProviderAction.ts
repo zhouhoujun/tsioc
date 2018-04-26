@@ -8,7 +8,7 @@ import { TypeMetadata, ProviderMetadata, ClassMetadata } from '../metadatas/inde
 
 /**
  * bind provider action data.
- * 
+ *
  * @export
  * @interface BindProviderActionData
  * @extends {ActionData<Token<any>[]>}
@@ -18,8 +18,8 @@ export interface BindProviderActionData extends ActionData<Token<any>[]> {
 }
 
 /**
- * bind provider action. for binding a factory to an token. 
- * 
+ * bind provider action. for binding a factory to an token.
+ *
  * @export
  * @class BindProviderAction
  * @extends {ActionComposite}

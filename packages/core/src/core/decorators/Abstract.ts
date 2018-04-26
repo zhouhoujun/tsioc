@@ -5,7 +5,7 @@ import { ClassMetadata } from '../metadatas/index';
 
 
 /**
- * Abstract decorator and metadata. define a class.
+ * Abstract decorator. define for class.
  *
  * @Abstract
  */

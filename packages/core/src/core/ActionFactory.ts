@@ -10,7 +10,7 @@ import {
 
 /**
  * action factory.
- * 
+ *
  * @export
  * @class ActionFactory
  */

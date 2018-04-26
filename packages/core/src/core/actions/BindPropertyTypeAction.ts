@@ -7,7 +7,7 @@ import { IContainer } from '../../IContainer';
 
 /**
  * bind property type action data.
- * 
+ *
  * @export
  * @interface BindPropertyTypeActionData
  * @extends {ActionData<PropertyMetadata[]>}
@@ -17,7 +17,7 @@ export interface BindPropertyTypeActionData extends ActionData<PropertyMetadata[
 }
 
 /**
- * bind property type action. to get the property autowride token of Type calss.  
+ * bind property type action. to get the property autowride token of Type calss.
  *
  * @export
  * @class SetPropAction

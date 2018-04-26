@@ -10,7 +10,7 @@ import { CoreActions } from './CoreActions';
 
 /**
  * component init action data.
- * 
+ *
  * @export
  * @interface ComponentInitActionData
  * @extends {ActionData<ClassMetadata>}
@@ -21,7 +21,7 @@ export interface ComponentInitActionData extends ActionData<ClassMetadata> {
 
 /**
  * component before init action, to run @Component decorator class before init hooks.
- * 
+ *
  * @export
  * @class ComponentInitAction
  * @extends {ActionComposite}

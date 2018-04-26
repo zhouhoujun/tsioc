@@ -24,7 +24,7 @@ export interface ComponentLifecycle {
 
     /**
      * after component init.
-     * 
+     *
      * @memberof ComponentLifecycle
      */
     afterInit?();

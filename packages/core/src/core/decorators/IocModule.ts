@@ -9,7 +9,7 @@ export interface IocModuleDecorator extends IClassDecorator<AutorunMetadata> {
 }
 
 /**
- * IocModule decorator and metadata. define a class.
+ * IocModule decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
  *
  * @IocModule
  */

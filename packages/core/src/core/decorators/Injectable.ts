@@ -5,7 +5,7 @@ import { InjectableMetadata } from '../metadatas/index';
 
 
 /**
- * Injectable decorator and metadata. define a class.
+ * Injectable decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.
  *
  * @Injectable
  */

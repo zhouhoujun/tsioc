@@ -5,7 +5,7 @@ declare let require: any;
 
 /**
  * default module loader.
- * 
+ *
  * @export
  * @class DefaultModuleLoader
  * @implements {IModuleLoader}

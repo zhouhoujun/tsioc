@@ -9,7 +9,7 @@ import { isArray } from '../../utils/index';
 
 /**
  * bind parameter provider action data.
- * 
+ *
  * @export
  * @interface BindParameterProviderActionData
  * @extends {ActionData<Providers[]>}
@@ -20,7 +20,7 @@ export interface BindParameterProviderActionData extends ActionData<Providers[]>
 
 /**
  * bind parameters action.
- * 
+ *
  * @export
  * @class BindParameterProviderAction
  * @extends {ActionComposite}

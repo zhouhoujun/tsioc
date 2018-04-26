@@ -3,7 +3,7 @@ import { ActionData } from './ActionData';
 
 /**
  * execute action
- * 
+ *
  * @export
  * @interface IExecutable
  */

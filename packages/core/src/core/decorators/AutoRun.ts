@@ -4,13 +4,19 @@ import { isClassMetadata, isString } from '../../utils/index';
 import { Type } from '../../types';
 
 
-
+/**
+ * autorun decorator inteface
+ *
+ * @export
+ * @interface IAutorunDecorator
+ * @extends {IClassMethodDecorator<AutorunMetadata>}
+ */
 export interface IAutorunDecorator extends IClassMethodDecorator<AutorunMetadata> {
     (autorun?: string): ClassMethodDecorator;
 }
 
 /**
- * Autorun decorator and metadata. define a class.
+ * Autorun decorator, for class or method.  use to define the class auto run (via a method or not) after registered.
  *
  * @Autorun
  */

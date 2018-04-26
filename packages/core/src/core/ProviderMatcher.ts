@@ -7,7 +7,7 @@ import { IContainer } from '../IContainer';
 
 /**
  * provider matcher. use to find custome providers in resolve.
- * 
+ *
  * @export
  * @class ProviderMatcher
  * @implements {IProviderMatcher}

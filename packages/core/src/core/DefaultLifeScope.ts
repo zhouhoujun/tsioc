@@ -13,7 +13,7 @@ import { IParameter } from '../IParameter';
 
 /**
  * default implement life scope.
- * 
+ *
  * @export
  * @class DefaultLifeScope
  * @implements {LifeScope}

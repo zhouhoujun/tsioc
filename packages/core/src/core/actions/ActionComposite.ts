@@ -11,7 +11,7 @@ import { GComposite, IComponent } from '../../components/index';
 
 /**
  * action composite
- * 
+ *
  * @export
  * @class ActionComposite
  * @extends {GComposite<ActionComponent>}

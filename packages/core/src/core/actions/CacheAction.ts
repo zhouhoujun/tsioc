@@ -12,7 +12,7 @@ import { ICacheManager } from '../../ICacheManager';
 
 /**
  * cache action data.
- * 
+ *
  * @export
  * @interface CacheActionData
  * @extends {ActionData<ClassMetadata>}
@@ -23,7 +23,7 @@ export interface CacheActionData extends ActionData<ClassMetadata> {
 
 /**
  * cache action. To cache instance of Token. define cache expires in decorator.
- * 
+ *
  * @export
  * @class CacheAction
  * @extends {ActionComposite}

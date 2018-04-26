@@ -3,7 +3,7 @@ import { createClassDecorator, IClassDecorator } from '../factories/index';
 import { ClassMetadata } from '../metadatas/index';
 
 /**
- * Singleton decorator and metadata. define a class.
+ * Singleton decorator, for class. use to define the class is singleton.
  *
  * @Singleton
  */

@@ -11,8 +11,8 @@ import { DecoratorType } from './factories/index';
 import { IProviderMatcher } from './IProviderMatcher';
 
 /**
- * method accessor 
- * 
+ * method accessor
+ *
  * @export
  * @class MethodAccessor
  * @implements {IMethodAccessor}
