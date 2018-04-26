@@ -1,6 +1,5 @@
-import { createClassDecorator, IClassDecorator } from '../factories/index';
+import { createClassDecorator, ITypeDecorator } from '../factories/index';
 import { ClassMetadata } from '../metadatas/index';
-
 
 
 
@@ -9,5 +8,5 @@ import { ClassMetadata } from '../metadatas/index';
  *
  * @Abstract
  */
-export const Abstract: IClassDecorator<ClassMetadata> = createClassDecorator<ClassMetadata>('Abstract');
+export const Abstract: ITypeDecorator<ClassMetadata> = createClassDecorator<ClassMetadata>('Abstract');
 

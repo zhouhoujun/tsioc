@@ -7,24 +7,14 @@ import { Registration } from '../../Registration';
 import { isClass, isToken, isClassMetadata, isString, isSymbol, isObject, isNumber, isBoolean } from '../../utils/index';
 import { ArgsIterator } from './ArgsIterator';
 
-
 /**
- * class decorator.
- *
+ * type decorator.
+ * 
  * @export
- * @interface IClassDecorator
+ * @interface ITypeDecorator
+ * @template T 
  */
-export interface IClassDecorator<T extends ClassMetadata> {
-    /**
-     * define class decorator setting with params.
-     * 
-     * @param {(Registration<any> | symbol | string)} provide define this class provider for provide.
-     * @param {string} [alias] define this class provider with alias for provide.
-     * @param {boolean} [singlton] define this class as singlton.
-     * @param {number} [cache]  define class cahce expris when is not singlton. 
-     */
-    (provide: Registration<any> | symbol | string, alias?: string, singlton?: boolean, cache?: number): ClassDecorator;
-    
+export interface ITypeDecorator<T extends ClassMetadata> {
     /**
      * define class decorator setting with metadata map.
      * 
@@ -35,6 +25,25 @@ export interface IClassDecorator<T extends ClassMetadata> {
      * not allow abstract to decorator with out metadata.
      */
     (target: Type<any>): void;
+}
+
+/**
+ * class decorator.
+ *
+ * @export
+ * @interface IClassDecorator
+ */
+export interface IClassDecorator<T extends ClassMetadata> extends ITypeDecorator<T> {
+    /**
+     * define class decorator setting with params.
+     * 
+     * @param {(Registration<any> | symbol | string)} provide define this class provider for provide.
+     * @param {string} [alias] define this class provider with alias for provide.
+     * @param {boolean} [singlton] define this class as singlton.
+     * @param {number} [cache]  define class cahce expris when is not singlton. 
+     */
+    (provide: Registration<any> | symbol | string, alias?: string, singlton?: boolean, cache?: number): ClassDecorator;
+
 }
 
 
