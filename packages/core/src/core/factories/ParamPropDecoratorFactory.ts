@@ -17,7 +17,16 @@ export type PropParamDecorator = (target: Object, propertyKey: string | symbol, 
  * @interface IParamPropDecorator
  */
 export interface IParamPropDecorator<T extends ParamPropMetadata> {
+    /**
+     * define parameter or property decorator with param.
+     * 
+     * @param {Token<T>} provider define provider to resolve value to the parameter or property.  
+     */
     (provider: Token<any>): PropParamDecorator;
+    /**
+     * define parameter or property decorator with metadata map.
+     * @param {T} [metadata] define matadata map to resolve value to the parameter or property.
+     */
     (metadata?: T): PropParamDecorator;
     (target: object, propertyKey: string | symbol, parameterIndex?: number): void;
 }

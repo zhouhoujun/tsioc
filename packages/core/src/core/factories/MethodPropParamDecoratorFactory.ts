@@ -14,12 +14,16 @@ export type MethodPropParamDecorator = (target: Object, propertyKey: string | sy
  * @interface IMethodPropParamDecorator
  */
 export interface IMethodPropParamDecorator<T extends TypeMetadata> {
+    /**
+     * define method or property decorator with metadata map.
+     * @param {T} [metadata] metadata map
+     */
     (metadata?: T): MethodPropParamDecorator;
     (target: object, propertyKey: string | symbol, descriptor?: number | TypedPropertyDescriptor<any>): void;
 }
 
 /**
- * create method or property decorator
+ * define method or property decorator
  *
  * @export
  * @template T

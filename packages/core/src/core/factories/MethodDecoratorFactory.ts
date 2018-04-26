@@ -14,8 +14,18 @@ import { isArray } from '../../utils/index';
  * @interface IMethodDecorator
  */
 export interface IMethodDecorator<T extends MethodMetadata> {
+    /**
+     * create method decorator with providers.
+     * 
+     * @param  {Providers[]} [providers]
+     */
     (providers?: Providers[]): MethodDecorator;
+    /**
+     * create method decorator with metadata map.
+     * @param {T} [metadata]
+     */
     (metadata?: T): MethodDecorator;
+    
     (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>): void;
 }
 

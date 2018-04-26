@@ -14,7 +14,13 @@ export type ClassMethodDecorator = (target: Object | Type<any>, propertyKey?: st
  * @template T
  */
 export interface IClassMethodDecorator<T extends TypeMetadata> {
+    /**
+     * create decorator with metadata map. for class or method decorator. 
+     * 
+     * @param {T} [metadata] metadata map.
+     */
     (metadata?: T): ClassMethodDecorator;
+ 
     (target: Type<any>): void;
     (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>): void;
 }

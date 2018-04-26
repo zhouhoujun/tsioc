@@ -2,8 +2,23 @@ import { AroundMetadata } from '../metadatas/index';
 import { IAdviceDecorator, createAdviceDecorator } from './Advice';
 import { isString } from '@ts-ioc/core';
 
-
+/**
+ * aop around decorator.
+ * 
+ * @export
+ * @interface IAroundDecorator
+ * @extends {IAdviceDecorator<T>}
+ * @template T 
+ */
 export interface IAroundDecorator<T extends AroundMetadata> extends IAdviceDecorator<T> {
+    /** 
+     * define aop around advice.
+     * 
+     * @param {(string | RegExp)} [pointcut] define advice match express for pointcut.
+     * @param {string} [returning] set name provider of pointcut returing data for advices.
+     * @param {string} [throwing] set name provider of pointcut throwing error for advices.
+     * @param {string} [annotation] annotation name, special annotation metadata for annotation advices. 
+     */ 
     (pointcut?: string | RegExp, args?: string, returning?: string, throwing?: string, annotation?: string): MethodDecorator
 }
 

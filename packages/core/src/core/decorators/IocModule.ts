@@ -3,8 +3,19 @@ import { ClassMetadata, AutorunMetadata } from '../metadatas/index';
 import { isClassMetadata, isString } from '../../utils/index';
 import { Type } from '../../types';
 
-
+/**
+ * IocModule decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
+ *
+ * @IocModule
+ */
 export interface IocModuleDecorator extends IClassDecorator<AutorunMetadata> {
+    /**
+     * IocModule decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
+     *
+     * @IocModule
+     * 
+     * @param {string} [autorun] auto run special method.
+     */
     (autorun?: string): ClassDecorator;
 }
 

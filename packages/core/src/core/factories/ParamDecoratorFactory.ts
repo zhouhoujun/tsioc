@@ -15,7 +15,16 @@ import { Token } from '../../types';
  * @interface IParameterDecorator
  */
 export interface IParameterDecorator<T extends ParameterMetadata> {
+    /**
+     * define parameter decorator with param.
+     * 
+     * @param {Token<T>} provider define provider to resolve value to the parameter.  
+     */
     (provider: Token<T>): ParameterDecorator;
+    /**
+     * define parameter decorator with metadata map.
+     * @param {T} [metadata] define matadata map to resolve value to the parameter.
+     */
     (metadata?: T): ParameterDecorator;
     (target: object, propertyKey: string | symbol, parameterIndex: number): void;
 }

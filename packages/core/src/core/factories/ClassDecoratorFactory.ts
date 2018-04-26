@@ -15,7 +15,21 @@ import { ArgsIterator } from './ArgsIterator';
  * @interface IClassDecorator
  */
 export interface IClassDecorator<T extends ClassMetadata> {
+    /**
+     * define class decorator setting with with params.
+     * 
+     * @param {(Registration<any> | symbol | string)} provide define this class provider for provide.
+     * @param {string} [alias] define this class provider with alias for provide.
+     * @param {boolean} [singlton] define this class as singlton.
+     * @param {number} [cache]  define class cahce expris when is not singlton. 
+     */
     (provide: Registration<any> | symbol | string, alias?: string, singlton?: boolean, cache?: number): ClassDecorator;
+    
+    /**
+     * define class decorator setting with with metadata map.
+     * 
+     * @param {T} [metadata] metadata map.
+     */
     (metadata?: T): ClassDecorator;
     /**
      * not allow abstract to decorator with out metadata.

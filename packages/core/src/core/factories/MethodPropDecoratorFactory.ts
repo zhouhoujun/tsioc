@@ -14,6 +14,10 @@ export type MethodPropDecorator = (target: Object, propertyKey: string | symbol,
  * @interface IMethodPropDecorator
  */
 export interface IMethodPropDecorator<T extends MethodPropMetadata> {
+    /**
+     * create method decorator with metadata map.
+     * @param {T} [metadata]
+     */
     (metadata?: T): MethodPropDecorator;
     (target: object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>): void;
 }

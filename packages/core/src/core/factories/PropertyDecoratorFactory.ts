@@ -14,7 +14,16 @@ import { Registration } from '../../Registration';
  * @interface IPropertyDecorator
  */
 export interface IPropertyDecorator<T extends PropertyMetadata> {
+    /**
+     * define property decorator with param.
+     * 
+     * @param {Token<T>} provider define provider to resolve value to the property.  
+     */
     (provider: Token<any>): PropertyDecorator;
+    /**
+     * define property decorator with metadata map.
+     * @param {T} [metadata] define matadata map to resolve value to the property.
+     */
     (metadata?: T): PropertyDecorator;
     (target: object, propertyKey: string | symbol): void;
 }
