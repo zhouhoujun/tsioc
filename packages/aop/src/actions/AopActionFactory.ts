@@ -6,6 +6,12 @@ import {
     BindMethodPointcutAction, MatchPointcutAction, ExetndsInstanceAction
 } from '../actions/index';
 
+/**
+ * aop action factory.
+ *
+ * @export
+ * @class AopActionFactory
+ */
 export class AopActionFactory {
 
     create(type: string): ActionComponent {

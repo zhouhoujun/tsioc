@@ -10,6 +10,11 @@ export interface ILoggerMetadata<T extends LoggerMetadata> extends IClassMethodD
     (logname?: string, express?: Express<any, boolean>, message?: string): ClassMethodDecorator;
 }
 
+/**
+ * Logger decorator, for method or class.
+ *
+ * @Logger
+ */
 export const Logger: ILoggerMetadata<LoggerMetadata> = createClassMethodDecorator<TypeMetadata>('Logger',
     adapter => {
         adapter.next<LoggerMetadata>({

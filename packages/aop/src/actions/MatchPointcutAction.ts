@@ -13,11 +13,23 @@ import { isValideAspectTarget } from '../isValideAspectTarget';
 import { AopSymbols } from '../symbols';
 
 
-
+/**
+ * match pointcut action data.
+ *
+ * @export
+ * @interface MatchPointcutActionData
+ * @extends {ActionData<Joinpoint>}
+ */
 export interface MatchPointcutActionData extends ActionData<Joinpoint> {
 }
 
-
+/**
+ *  match pointcut action.
+ *
+ * @export
+ * @class MatchPointcutAction
+ * @extends {ActionComposite}
+ */
 export class MatchPointcutAction extends ActionComposite {
 
     constructor() {

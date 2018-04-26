@@ -2,9 +2,16 @@ import { ILoggerManger } from './ILoggerManger';
 import { LogConfigure } from './LogConfigure';
 import { Type } from '@ts-ioc/core';
 
+/**
+ * Configure logger manger. use to get configed logger manger.
+ *
+ * @export
+ * @interface IConfigureLoggerManager
+ * @extends {ILoggerManger}
+ */
 export interface IConfigureLoggerManager extends ILoggerManger {
     /**
-     * readonly config
+     * readonly config.
      *
      * @type {LogConfigure}
      * @memberof IConfigureLoggerManager

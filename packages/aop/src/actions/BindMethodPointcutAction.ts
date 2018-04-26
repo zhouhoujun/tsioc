@@ -8,10 +8,24 @@ import { isValideAspectTarget } from '../isValideAspectTarget';
 import { IProxyMethod, ProxyMethod } from '../access/index';
 import { AopSymbols } from '../symbols';
 
+
+/**
+ * bind pointcut action data.
+ *
+ * @export
+ * @interface BindPointcutActionData
+ * @extends {ActionData<Joinpoint>}
+ */
 export interface BindPointcutActionData extends ActionData<Joinpoint> {
 }
 
-
+/**
+ * bind method pointcut action.
+ *
+ * @export
+ * @class BindMethodPointcutAction
+ * @extends {ActionComposite}
+ */
 export class BindMethodPointcutAction extends ActionComposite {
 
     constructor() {

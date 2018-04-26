@@ -6,11 +6,24 @@ import { IAdvisor } from '../IAdvisor';
 import { AopActions } from './AopActions';
 import { AopSymbols } from '../symbols';
 
-
+/**
+ * regist aspect action data.
+ *
+ * @export
+ * @interface RegistAspectActionData
+ * @extends {ActionData<ClassMetadata>}
+ */
 export interface RegistAspectActionData extends ActionData<ClassMetadata> {
 
 }
 
+/**
+ * regist aspect action.
+ *
+ * @export
+ * @class RegistAspectAction
+ * @extends {ActionComposite}
+ */
 export class RegistAspectAction extends ActionComposite {
 
     constructor() {

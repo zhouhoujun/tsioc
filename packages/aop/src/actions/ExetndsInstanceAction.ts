@@ -7,11 +7,24 @@ import { IPointcut, Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints/
 import { Advices, Advicer } from '../advices/index';
 import { isValideAspectTarget } from '../isValideAspectTarget';
 
-
+/**
+ * extends instance action data.
+ *
+ * @export
+ * @interface ExetndsInstanceActionData
+ * @extends {ActionData<AdviceMetadata>}
+ */
 export interface ExetndsInstanceActionData extends ActionData<AdviceMetadata> {
 
 }
 
+/**
+ * extends instance action.
+ *
+ * @export
+ * @class ExetndsInstanceAction
+ * @extends {ActionComposite}
+ */
 export class ExetndsInstanceAction extends ActionComposite {
 
     constructor() {

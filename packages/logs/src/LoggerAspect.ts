@@ -8,6 +8,12 @@ import { ILoggerManger } from './ILoggerManger';
 import { LogSymbols } from './symbols';
 import { IConfigureLoggerManager } from './IConfigureLoggerManager';
 
+/**
+ * base looger aspect. for extends your logger aspect.
+ *
+ * @export
+ * @class LoggerAspect
+ */
 export class LoggerAspect {
 
     private _logger: ILogger;

@@ -5,7 +5,7 @@ import { ILogger } from './ILogger';
 
 
 /**
- * log configure.
+ * log configure. config logger format, looger adapter.
  *
  * @export
  * @interface LogConfigure

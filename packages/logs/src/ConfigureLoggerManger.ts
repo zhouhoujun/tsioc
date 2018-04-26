@@ -8,7 +8,7 @@ import { IConfigureLoggerManager } from './IConfigureLoggerManager';
 import { NonePointcut } from '@ts-ioc/aop';
 
 /**
- * Configure logger manger.
+ * Configure logger manger. use to get configed logger manger.
  *
  * @export
  * @class LoggerManger

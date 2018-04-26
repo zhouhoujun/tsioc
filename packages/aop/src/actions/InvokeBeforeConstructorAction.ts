@@ -9,11 +9,24 @@ import { Advices, Advicer } from '../advices/index';
 import { isValideAspectTarget } from '../isValideAspectTarget';
 import { AopSymbols } from '../symbols';
 
-
+/**
+ * action data for invoke before constructor action.
+ *
+ * @export
+ * @interface InvokeBeforeConstructorActionData
+ * @extends {ActionData<AdviceMetadata>}
+ */
 export interface InvokeBeforeConstructorActionData extends ActionData<AdviceMetadata> {
 
 }
 
+/**
+ * actions invoke before constructor.
+ *
+ * @export
+ * @class InvokeBeforeConstructorAction
+ * @extends {ActionComposite}
+ */
 export class InvokeBeforeConstructorAction extends ActionComposite {
 
     constructor() {
