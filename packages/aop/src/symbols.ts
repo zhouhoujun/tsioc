@@ -1,7 +1,55 @@
 /**
  * symboles of aop.
  */
-export const AopSymbols = {
+export interface AopSymbols {
+    /**
+     * Aop proxy method interface symbol.
+     * it is a symbol id, you can register yourself IProxyMethod for this.
+     */
+    IProxyMethod: symbol;
+
+    /**
+     * Aop advice matcher interface symbol.
+     * it is a symbol id, you can register yourself IActionBuilder for this.
+     */
+    IAdviceMatcher: symbol;
+
+    /**
+     * Aop IAdvisor interface symbol.
+     * it is a symbol id, you can register yourself IAdvisor for this.
+     */
+    IAdvisor: symbol;
+
+    /**
+     * Aop IAdvisorChainFactory interface symbol.
+     * it is a symbol id, you can register yourself IAdvisorChainFactory for this.
+     */
+    IAdvisorChainFactory: symbol;
+
+    /**
+     * Aop IAdvisorChain interface symbol.
+     * it is a symbol id, you can register yourself IAdvisorChain for this.
+     */
+    IAdvisorChain: symbol;
+
+    /**
+     * Aop IAdvisorProceeding interface symbol.
+     * it is a symbol id, you can register yourself IAdvisorProceeding for this.
+     */
+    IAdvisorProceeding: symbol;
+
+    /**
+     * joinpoint symbol.
+     */
+    IJoinpoint: symbol;
+
+}
+
+
+/**
+ * symboles of aop.
+ */
+export const AopSymbols: AopSymbols = {
     /**
      * Aop proxy method interface symbol.
      * it is a symbol id, you can register yourself IProxyMethod for this.
