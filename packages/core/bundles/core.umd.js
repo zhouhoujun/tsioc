@@ -1677,7 +1677,7 @@ var Component = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 /**
- * Component decorator and metadata. define a class.
+ * Component decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`ComponentLifecycle`]
  *
  * @Component
  */
@@ -1693,7 +1693,7 @@ var Injectable = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 /**
- * Injectable decorator and metadata. define a class.
+ * Injectable decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.
  *
  * @Injectable
  */
@@ -1708,6 +1708,11 @@ var Injectable_1 = Injectable.Injectable;
 var Inject = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
+/**
+ * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+ *
+ * @Inject
+ */
 exports.Inject = factories.createParamPropDecorator('Inject');
 
 
@@ -1719,6 +1724,11 @@ var Inject_1 = Inject.Inject;
 var AutoWried = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
+/**
+ * AutoWired decorator, for property or param. use to auto wried type instance or value to the instance of one class with the decorator.
+ *
+ * @AutoWired
+ */
 exports.AutoWired = factories.createParamPropDecorator('AutoWired');
 
 
@@ -1730,6 +1740,11 @@ var AutoWried_1 = AutoWried.AutoWired;
 var Param = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
+/**
+ * param decorator, define for parameter. use to auto wried type instance or value to the instance of one class with the decorator.
+ *
+ * @Param
+ */
 exports.Param = factories.createParamDecorator('Param');
 
 
@@ -1741,6 +1756,11 @@ var Param_1 = Param.Param;
 var Method = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
+/**
+ * method decorator.
+ *
+ * @Method
+ */
 exports.Method = factories.createMethodDecorator('Method');
 
 
@@ -1753,7 +1773,7 @@ var Singleton = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 /**
- * Singleton decorator and metadata. define a class.
+ * Singleton decorator, for class. use to define the class is singleton.
  *
  * @Singleton
  */
@@ -1772,7 +1792,7 @@ var Abstract = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 /**
- * Abstract decorator and metadata. define a class.
+ * Abstract decorator. define for class.
  *
  * @Abstract
  */
@@ -1789,7 +1809,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 /**
- * Autorun decorator and metadata. define a class.
+ * Autorun decorator, for class or method.  use to define the class auto run (via a method or not) after registered.
  *
  * @Autorun
  */
@@ -1814,7 +1834,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 /**
- * IocModule decorator and metadata. define a class.
+ * IocModule decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
  *
  * @IocModule
  */

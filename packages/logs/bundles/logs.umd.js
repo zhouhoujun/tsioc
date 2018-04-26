@@ -131,7 +131,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 /**
- * Configure logger manger.
+ * Configure logger manger. use to get configed logger manger.
  *
  * @export
  * @class LoggerManger
@@ -322,6 +322,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+/**
+ * base looger aspect. for extends your logger aspect.
+ *
+ * @export
+ * @class LoggerAspect
+ */
 var LoggerAspect = /** @class */ (function () {
     function LoggerAspect(container, config) {
         this.container = container;
@@ -435,6 +441,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+/**
+ * Annotation logger aspect. log for class or method with @Logger decorator.
+ *
+ * @export
+ * @class AnnotationLogerAspect
+ * @extends {LoggerAspect}
+ */
 var AnnotationLogerAspect = /** @class */ (function (_super) {
     __extends(AnnotationLogerAspect, _super);
     function AnnotationLogerAspect(container) {
@@ -469,6 +482,11 @@ var AnnotationLogerAspect_2 = AnnotationLogerAspect_1.AnnotationLogerAspect;
 var Logger = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
+/**
+ * Logger decorator, for method or class.
+ *
+ * @Logger
+ */
 exports.Logger = core_1.createClassMethodDecorator('Logger', function (adapter) {
     adapter.next({
         isMetadata: function (arg) { return core_1.isClassMetadata(arg, ['logname']); },

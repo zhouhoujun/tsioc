@@ -121,6 +121,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+/**
+ * regist aspect action.
+ *
+ * @export
+ * @class RegistAspectAction
+ * @extends {ActionComposite}
+ */
 var RegistAspectAction = /** @class */ (function (_super) {
     __extends(RegistAspectAction, _super);
     function RegistAspectAction() {
@@ -405,6 +412,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+/**
+ * bind method pointcut action.
+ *
+ * @export
+ * @class BindMethodPointcutAction
+ * @extends {ActionComposite}
+ */
 var BindMethodPointcutAction = /** @class */ (function (_super) {
     __extends(BindMethodPointcutAction, _super);
     function BindMethodPointcutAction() {
@@ -557,6 +571,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+/**
+ * actions invoke before constructor.
+ *
+ * @export
+ * @class InvokeBeforeConstructorAction
+ * @extends {ActionComposite}
+ */
 var InvokeBeforeConstructorAction = /** @class */ (function (_super) {
     __extends(InvokeBeforeConstructorAction, _super);
     function InvokeBeforeConstructorAction() {
@@ -620,6 +641,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+/**
+ * invoke after constructor action.
+ *
+ * @export
+ * @class InvokeAfterConstructorAction
+ * @extends {ActionComposite}
+ */
 var InvokeAfterConstructorAction = /** @class */ (function (_super) {
     __extends(InvokeAfterConstructorAction, _super);
     function InvokeAfterConstructorAction() {
@@ -682,6 +710,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+/**
+ *  match pointcut action.
+ *
+ * @export
+ * @class MatchPointcutAction
+ * @extends {ActionComposite}
+ */
 var MatchPointcutAction = /** @class */ (function (_super) {
     __extends(MatchPointcutAction, _super);
     function MatchPointcutAction() {
@@ -775,6 +810,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+/**
+ * aop action factory.
+ *
+ * @export
+ * @class AopActionFactory
+ */
 var AopActionFactory = /** @class */ (function () {
     function AopActionFactory() {
     }
@@ -830,6 +871,13 @@ var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
+/**
+ * extends instance action.
+ *
+ * @export
+ * @class ExetndsInstanceAction
+ * @extends {ActionComposite}
+ */
 var ExetndsInstanceAction = /** @class */ (function (_super) {
     __extends(ExetndsInstanceAction, _super);
     function ExetndsInstanceAction() {
