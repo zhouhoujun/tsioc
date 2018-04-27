@@ -13,7 +13,7 @@ export interface IocModuleDecorator extends ITypeDecorator<AutorunMetadata> {
      * IocModule decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
      *
      * @IocModule
-     * 
+     *
      * @param {string} [autorun] auto run special method.
      */
     (autorun?: string): ClassDecorator;
@@ -22,7 +22,7 @@ export interface IocModuleDecorator extends ITypeDecorator<AutorunMetadata> {
      * IocModule decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
      *
      * @IocModule
-     * 
+     *
      * @param {AutorunMetadata} [metadata] metadata map.
      */
     (metadata?: AutorunMetadata): ClassDecorator;

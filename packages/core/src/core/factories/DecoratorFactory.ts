@@ -38,14 +38,14 @@ export interface MetadataTarget<T> {
 export interface IDecorator<T extends Metadate> {
     /**
      * define decorator setting with params.
-     * 
+     *
      * @param {(Registration<any> | symbol | string)} provide define this class provider for provide.
-     * @param {string} [alias] define this class provider with alias for provide. 
+     * @param {string} [alias] define this class provider with alias for provide.
      */
     (provider: string | Type<any>, alias?: string): any;
     /**
      * define decorator setting with metadata map.
-     * 
+     *
      * @param {T} [metadata] metadata map.
      */
     (metadata?: T): any;

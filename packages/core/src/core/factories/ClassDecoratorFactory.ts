@@ -8,16 +8,16 @@ import { isClass, isToken, isClassMetadata, isString, isSymbol, isObject, isNumb
 import { ArgsIterator } from './ArgsIterator';
 
 /**
- * type decorator.
- * 
+ * Type decorator.
+ *
  * @export
  * @interface ITypeDecorator
- * @template T 
+ * @template T
  */
 export interface ITypeDecorator<T extends ClassMetadata> {
     /**
      * define class decorator setting with metadata map.
-     * 
+     *
      * @param {T} [metadata] metadata map.
      */
     (metadata?: T): ClassDecorator;
@@ -36,11 +36,11 @@ export interface ITypeDecorator<T extends ClassMetadata> {
 export interface IClassDecorator<T extends ClassMetadata> extends ITypeDecorator<T> {
     /**
      * define class decorator setting with params.
-     * 
+     *
      * @param {(Registration<any> | symbol | string)} provide define this class provider for provide.
      * @param {string} [alias] define this class provider with alias for provide.
      * @param {boolean} [singlton] define this class as singlton.
-     * @param {number} [cache]  define class cahce expris when is not singlton. 
+     * @param {number} [cache]  define class cahce expris when is not singlton.
      */
     (provide: Registration<any> | symbol | string, alias?: string, singlton?: boolean, cache?: number): ClassDecorator;
 

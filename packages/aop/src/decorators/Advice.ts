@@ -4,18 +4,18 @@ import { AdviceMetadata } from '../metadatas/index';
 
 /**
  * advice decorator for method.
- * 
+ *
  * @export
  * @interface IAdviceDecorator
  * @extends {IMethodDecorator<T>}
- * @template T 
+ * @template T
  */
 export interface IAdviceDecorator<T extends AdviceMetadata> extends IMethodDecorator<T> {
     /**
      * define advice with params.
-     * 
+     *
      * @param {(string | RegExp)} [pointcut] define advice match express for pointcut.
-     * @param { string } [annotation] annotation name, special annotation metadata for annotation advices.  
+     * @param { string } [annotation] annotation name, special annotation metadata for annotation advices.
      */
     (pointcut?: string | RegExp, annotation?: string): MethodDecorator;
 }

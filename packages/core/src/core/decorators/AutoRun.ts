@@ -15,15 +15,15 @@ export interface IAutorunDecorator extends IClassMethodDecorator<AutorunMetadata
     /**
      * Autorun decorator, for class or method.  use to define the class auto run (via a method or not) after registered.
      * @Autorun
-     * 
-     * @param {string} [autorun] the special method name when define to class. 
+     *
+     * @param {string} [autorun] the special method name when define to class.
      */
     (autorun?: string): ClassMethodDecorator;
 
     /**
      * Autorun decorator, for class or method. use to define the class auto run (via a method or not) after registered.
      * @Autorun
-     * 
+     *
      * @param {AutorunMetadata} [metadata] metadata map.
      */
     (metadata?: AutorunMetadata): ClassMethodDecorator;
