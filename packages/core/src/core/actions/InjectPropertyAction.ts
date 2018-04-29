@@ -36,7 +36,7 @@ export class InjectPropertyAction extends ActionComposite {
         }
 
         if (data.target && data.execResult && data.execResult.length) {
-            data.execResult.forEach((prop, idx) => {
+            data.execResult.reverse().forEach((prop, idx) => {
                 if (prop) {
                     let token = prop.provider ? container.getToken(prop.provider, prop.alias) : prop.type;
                     if (container.has(token)) {

@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/platform-server",
-  "version": "v2.0.13",
+  "version": "v2.0.14",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -30,7 +30,7 @@
     "reflect-metadata": "^0.1.12"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "v2.0.13"
+    "@ts-ioc/core": "v2.0.14"
   },
   "directories": {
     "lib": "lib",

@@ -43,15 +43,15 @@ export class BindPropertyTypeAction extends ActionComposite {
                 list = list.concat(propMetadata[n]);
             }
             list = list.filter(n => !!n);
-            list.forEach(parm => {
-                if (lifeScope.isVaildDependence(parm.provider)) {
-                    if (!container.has(parm.provider, parm.alias)) {
-                        container.register(container.getToken(parm.provider, parm.alias));
+            list.forEach(prop => {
+                if (lifeScope.isVaildDependence(prop.provider)) {
+                    if (!container.has(prop.provider, prop.alias)) {
+                        container.register(container.getToken(prop.provider, prop.alias));
                     }
                 }
-                if (lifeScope.isVaildDependence(parm.type)) {
-                    if (!container.has(parm.type)) {
-                        container.register(parm.type);
+                if (lifeScope.isVaildDependence(prop.type)) {
+                    if (!container.has(prop.type)) {
+                        container.register(prop.type);
                     }
                 }
             });
