@@ -387,6 +387,12 @@ export class DebugLog {
 
 ## New Features
 
+* 2.0.14
+   1. fix extends class same property  different  Inject  not override bug
+
+* 2.x
+   1. v2 refactor.
+
 * 1.5.3
    1. refactor aop, add IAdvisorProceeding ... to control advices invoke way when target method return value with sync, async. can custom define invoke way.
    2. refactor Registration to support symbol keywords with desc
