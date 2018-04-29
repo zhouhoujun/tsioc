@@ -22,7 +22,7 @@ export class ConsoleLogManager implements ILoggerManger {
 }
 
 
-export class ConsoleLog implements ILogger {
+class ConsoleLog implements ILogger {
 
     level: string;
 

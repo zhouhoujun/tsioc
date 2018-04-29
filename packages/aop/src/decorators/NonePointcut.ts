@@ -1,8 +1,24 @@
-import { createClassDecorator, IClassDecorator, ClassMetadata } from '@ts-ioc/core';
+import { createClassDecorator, ClassMetadata, ITypeDecorator, Type } from '@ts-ioc/core';
+
+export interface INonePointcutDecorator extends ITypeDecorator<ClassMetadata> {
+    /**
+     * NonePointcut decorator, define class not work with aop.
+     *
+     * @NonePointcut
+     *
+     */
+    (): ClassDecorator;
+    /**
+     * NonePointcut decorator, define class not work with aop.
+     *
+     * @NonePointcut
+     */
+    (target: Type<any>): void;
+}
 
 /**
  * NonePointcut decorator, define class not work with aop.
  *
  * @NonePointcut
  */
-export const NonePointcut: IClassDecorator<ClassMetadata> = createClassDecorator<ClassMetadata>('NonePointcut');
+export const NonePointcut: INonePointcutDecorator = createClassDecorator<ClassMetadata>('NonePointcut');
