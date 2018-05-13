@@ -1,6 +1,7 @@
 import { isClass, isString, isSymbol, isFunction, isUndefined } from './typeCheck';
 import { Type } from '../types';
 import { Registration } from '../Registration';
+import { keys, forIn } from './lang';
 
 /**
  * object map set.
@@ -46,8 +47,8 @@ export class ObjectMapSet<TKey, TVal> {
         }
     }
     forEach(callbackfn: (value: TVal, key: TKey, map: any) => void, thisArg?: any): void {
-        Object.keys(this.keyMap).forEach(name => {
-            callbackfn(this.valueMap[name], this.keyMap[name], this);
+        forIn<TKey>(this.keyMap, (val, name) => {
+            callbackfn(this.valueMap[name], val, this);
         });
     }
     get(key: TKey): TVal {
@@ -68,10 +69,18 @@ export class ObjectMapSet<TKey, TVal> {
     }
 
     get size(): number {
-        return Object.keys(this.keyMap).length;
+        return keys(this.keyMap).length;
     }
 }
 
+/**
+ * map set.
+ * 
+ * @export
+ * @class MapSet
+ * @template TKey 
+ * @template TVal 
+ */
 export class MapSet<TKey, TVal> {
 
     private map: ObjectMapSet<TKey, TVal> | Map<TKey, TVal>;

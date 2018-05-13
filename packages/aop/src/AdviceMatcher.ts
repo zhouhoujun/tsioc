@@ -3,7 +3,7 @@ import { AdviceMetadata } from './metadatas/index';
 import {
     Inject, MethodMetadata, getParamerterNames, getOwnMethodMetadata,
     hasOwnMethodMetadata, hasOwnClassMetadata, Singleton,
-    IContainer, symbols, isString, isRegExp, isUndefined, Type, ObjectMap, Express3, getClassName
+    IContainer, symbols, isString, isRegExp, isUndefined, Type, ObjectMap, Express3, getClassName, lang
 } from '@ts-ioc/core';
 import { IPointcut, MatchPointcut } from './joinpoints/index';
 import { Advices, Advicer } from './advices/index';
@@ -35,7 +35,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         let matched: MatchPointcut[] = [];
 
         if (targetType === aspectType) {
-            let adviceNames = Object.keys(adviceMetas);
+            let adviceNames = lang.keys(adviceMetas);
             if (adviceNames.length > 1) {
                 let advices: AdviceMetadata[] = [];
                 adviceNames.forEach(n => {
@@ -68,7 +68,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             }
 
             let allmethods = getParamerterNames(targetType);
-            Object.keys(allmethods).forEach(name => {
+            lang.forIn(allmethods, (item, name:string) => {
                 if (name === 'constructor') {
                     return;
                 }
@@ -120,7 +120,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
         matchedPointcut = matchedPointcut || [];
         return matchedPointcut.map(p => {
-            return Object.assign({}, p, { advice: metadata });
+            return lang.assign({}, p, { advice: metadata });
         });
     }
 

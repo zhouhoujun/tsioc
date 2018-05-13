@@ -1,5 +1,5 @@
 
-import { IContainer, ActionData, ActionComposite, getParamerterNames, isUndefined, getClassName } from '@ts-ioc/core';
+import { IContainer, ActionData, ActionComposite, getParamerterNames, isUndefined, getClassName, lang } from '@ts-ioc/core';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AroundMetadata } from '../metadatas/index'
@@ -47,19 +47,19 @@ export class BindMethodPointcutAction extends ActionComposite {
         let methods: IPointcut[] = [];
         let decorators = Object.getOwnPropertyDescriptors(targetType.prototype);
 
-        Object.keys(decorators).forEach(name => {
+        lang.forIn(decorators, (item, name: string) => {
             if (name === 'constructor') {
                 return;
             }
             methods.push({
                 name: name,
                 fullName: `${className}.${name}`,
-                descriptor: decorators[name]
+                descriptor: item
             });
         });
 
         let allmethods = getParamerterNames(targetType);
-        Object.keys(allmethods).forEach(name => {
+        lang.forIn(allmethods,(item, name:string) => {
             if (name === 'constructor') {
                 return;
             }

@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { PropertyMetadata, MethodMetadata, ParameterMetadata, Metadate, ClassMetadata } from '../metadatas/index';
 import { DecoratorType } from './DecoratorType';
 import { ArgsIterator } from './ArgsIterator';
-import { isClass, isAbstractDecoratorClass, isToken, isClassMetadata, isMetadataObject, isUndefined, isFunction, isNumber, isArray, isSymbol } from '../../utils/index';
+import { isClass, isAbstractDecoratorClass, isToken, isClassMetadata, isMetadataObject, isUndefined, isFunction, isNumber, isArray, isSymbol, lang } from '../../utils/index';
 import { Type, AbstractType, ObjectMap } from '../../types';
 import { IClassDecorator } from './ClassDecoratorFactory';
 
@@ -241,7 +241,7 @@ let methodMetadataExt = '__method';
 export function getMethodMetadata<T extends MethodMetadata>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
     let name = isFunction(decorator) ? decorator.toString() : decorator;
     let meta = Reflect.getMetadata(name + methodMetadataExt, target);
-    if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
+    if (!meta || isArray(meta) || !lang.hasField(meta)) {
         meta = Reflect.getMetadata(name + methodMetadataExt, target.constructor);
     }
     return isArray(meta) ? {} : (meta || {});
@@ -259,7 +259,7 @@ export function getMethodMetadata<T extends MethodMetadata>(decorator: string | 
 export function getOwnMethodMetadata<T extends MethodMetadata>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
     let name = isFunction(decorator) ? decorator.toString() : decorator;
     let meta = Reflect.getOwnMetadata(name + methodMetadataExt, target);
-    if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
+    if (!meta || isArray(meta) || !lang.hasField(meta)) {
         meta = Reflect.getOwnMetadata(name + methodMetadataExt, target.constructor);
     }
     return isArray(meta) ? {} : (meta || {});
@@ -304,7 +304,7 @@ export function hasMethodMetadata(decorator: string | Function, target: Type<any
 }
 
 function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let meta = Object.assign({}, getMethodMetadata(metaName, target));
+    let meta = lang.assign({}, getMethodMetadata(metaName, target));
     meta[propertyKey] = meta[propertyKey] || [];
 
     let methodMeadata = (metadata || {}) as T;
@@ -332,7 +332,7 @@ let propertyMetadataExt = '__props';
 export function getPropertyMetadata<T extends PropertyMetadata>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
     let name = isFunction(decorator) ? decorator.toString() : decorator;
     let meta = Reflect.getMetadata(name + propertyMetadataExt, target);
-    if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
+    if (!meta || isArray(meta) || !lang.hasField(meta)) {
         meta = Reflect.getMetadata(name + propertyMetadataExt, target.constructor);
     }
     return isArray(meta) ? {} : (meta || {});
@@ -350,7 +350,7 @@ export function getPropertyMetadata<T extends PropertyMetadata>(decorator: strin
 export function getOwnPropertyMetadata<T extends PropertyMetadata>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
     let name = isFunction(decorator) ? decorator.toString() : decorator;
     let meta = Reflect.getOwnMetadata(name + propertyMetadataExt, target);
-    if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
+    if (!meta || isArray(meta) || !lang.hasField(meta)) {
         meta = Reflect.getOwnMetadata(name + propertyMetadataExt, target.constructor);
     }
     return isArray(meta) ? {} : (meta || {});
@@ -377,7 +377,7 @@ export function hasPropertyMetadata(decorator: string | Function, target: Type<a
 }
 
 function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let meta = Object.assign({}, getPropertyMetadata(metaName, target));
+    let meta = lang.assign({}, getPropertyMetadata(metaName, target));
     let propmetadata = (metadata || {}) as T;
 
     propmetadata.propertyKey = propertyKey;
@@ -503,7 +503,7 @@ function setParamMetadata<T extends ParameterMetadata>(name: string, metaName: s
 
 export function getParamerterNames(target: Type<any> | AbstractType<any>): ObjectMap<string[]> {
     let meta = Reflect.getMetadata(ParamerterName, target);
-    if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
+    if (!meta || isArray(meta) || !lang.hasField(meta)) {
         meta = Reflect.getMetadata(ParamerterName, target.constructor);
     }
     return isArray(meta) ? {} : (meta || {});
@@ -511,7 +511,7 @@ export function getParamerterNames(target: Type<any> | AbstractType<any>): Objec
 
 export function getOwnParamerterNames(target: Type<any> | AbstractType<any>): ObjectMap<string[]> {
     let meta = Reflect.getOwnMetadata(ParamerterName, target);
-    if (!meta || isArray(meta) || Object.keys(meta).length < 0) {
+    if (!meta || isArray(meta) || !lang.hasField(meta)) {
         meta = Reflect.getOwnMetadata(ParamerterName, target.constructor);
     }
     return isArray(meta) ? {} : (meta || {});
@@ -519,22 +519,22 @@ export function getOwnParamerterNames(target: Type<any> | AbstractType<any>): Ob
 
 
 export function setParamerterNames(target: Type<any> | AbstractType<any>) {
-    let meta = Object.assign({}, getParamerterNames(target));
+    let meta = lang.assign({}, getParamerterNames(target));
     let descriptors = Object.getOwnPropertyDescriptors(target.prototype);
     let isUglify = /^[a-z]/.test(target.name);
     let anName = '';
     if (target.classAnnations && target.classAnnations.params) {
         anName = target.classAnnations.name;
-        meta = Object.assign(meta, target.classAnnations.params);
+        meta = lang.assign(meta, target.classAnnations.params);
     }
     if (!isUglify && target.name !== anName) {
-        Object.keys(descriptors).forEach(name => {
+        lang.forIn(descriptors, (item, name) => {
             if (name !== 'constructor') {
-                if (descriptors[name].value) {
-                    meta[name] = getParamNames(descriptors[name].value)
+                if (item.value) {
+                    meta[name] = getParamNames(item.value)
                 }
-                if (descriptors[name].set) {
-                    meta[name] = getParamNames(descriptors[name].set);
+                if (item.set) {
+                    meta[name] = getParamNames(item.set);
                 }
             }
         });

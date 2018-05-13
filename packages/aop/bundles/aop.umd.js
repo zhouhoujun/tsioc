@@ -19,7 +19,6 @@ function createCommonjsModule(fn, module) {
 }
 
 var symbols = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 /**
  * symboles of aop.
@@ -65,9 +64,9 @@ exports.AopSymbols = {
 });
 
 unwrapExports(symbols);
+var symbols_1 = symbols.AopSymbols;
 
 var AopActions_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 /**
  * aop actions.
@@ -105,9 +104,9 @@ var AopActions;
 });
 
 unwrapExports(AopActions_1);
+var AopActions_2 = AopActions_1.AopActions;
 
 var RegistAspectAction_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -136,6 +135,7 @@ var RegistAspectAction = /** @class */ (function (_super) {
     }
     RegistAspectAction.prototype.working = function (container, data) {
         var type = data.targetType;
+        var propertyKey = data.propertyKey;
         var lifeScope = container.getLifeScope();
         var matchs = lifeScope.getClassDecorators(function (surm) { return surm.actions.includes(AopActions_1.AopActions.registAspect) && core_1.hasOwnClassMetadata(surm.name, type); });
         var aspectMgr = container.get(symbols.AopSymbols.IAdvisor);
@@ -159,9 +159,9 @@ exports.RegistAspectAction = RegistAspectAction;
 });
 
 unwrapExports(RegistAspectAction_1);
+var RegistAspectAction_2 = RegistAspectAction_1.RegistAspectAction;
 
 var Advice = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
 function createAdviceDecorator(adviceName, adapter, afterPointcutAdapter, metadataExtends) {
@@ -206,9 +206,10 @@ exports.Advice = createAdviceDecorator('Advice');
 });
 
 unwrapExports(Advice);
+var Advice_1 = Advice.createAdviceDecorator;
+var Advice_2 = Advice.Advice;
 
 var Aspect = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
 /**
@@ -222,9 +223,9 @@ exports.Aspect = core_1.createClassDecorator('Aspect');
 });
 
 unwrapExports(Aspect);
+var Aspect_1 = Aspect.Aspect;
 
 var After = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
 exports.After = Advice.createAdviceDecorator('After');
@@ -233,9 +234,9 @@ exports.After = Advice.createAdviceDecorator('After');
 });
 
 unwrapExports(After);
+var After_1 = After.After;
 
 var AfterReturning = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
@@ -252,9 +253,9 @@ exports.AfterReturning = Advice.createAdviceDecorator('AfterReturning', null, fu
 });
 
 unwrapExports(AfterReturning);
+var AfterReturning_1 = AfterReturning.AfterReturning;
 
 var AfterThrowing = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
@@ -271,9 +272,9 @@ exports.AfterThrowing = Advice.createAdviceDecorator('AfterThrowing', null, func
 });
 
 unwrapExports(AfterThrowing);
+var AfterThrowing_1 = AfterThrowing.AfterThrowing;
 
 var Around = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
@@ -302,9 +303,9 @@ exports.Around = Advice.createAdviceDecorator('Around', null, function (args) {
 });
 
 unwrapExports(Around);
+var Around_1 = Around.Around;
 
 var Before = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
 exports.Before = Advice.createAdviceDecorator('Before');
@@ -313,9 +314,9 @@ exports.Before = Advice.createAdviceDecorator('Before');
 });
 
 unwrapExports(Before);
+var Before_1 = Before.Before;
 
 var Pointcut = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
 exports.Pointcut = Advice.createAdviceDecorator('Pointcut');
@@ -324,9 +325,9 @@ exports.Pointcut = Advice.createAdviceDecorator('Pointcut');
 });
 
 unwrapExports(Pointcut);
+var Pointcut_1 = Pointcut.Pointcut;
 
 var NonePointcut = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
 /**
@@ -340,9 +341,9 @@ exports.NonePointcut = core_1.createClassDecorator('NonePointcut');
 });
 
 unwrapExports(NonePointcut);
+var NonePointcut_1 = NonePointcut.NonePointcut;
 
 var decorators = createCommonjsModule(function (module, exports) {
-"use strict";
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
@@ -363,7 +364,6 @@ __export(NonePointcut);
 unwrapExports(decorators);
 
 var isValideAspectTarget_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
@@ -394,9 +394,9 @@ exports.isValideAspectTarget = isValideAspectTarget;
 });
 
 unwrapExports(isValideAspectTarget_1);
+var isValideAspectTarget_2 = isValideAspectTarget_1.isValideAspectTarget;
 
 var BindMethodPointcutAction_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -435,18 +435,18 @@ var BindMethodPointcutAction = /** @class */ (function (_super) {
         var className = core_1.getClassName(targetType);
         var methods = [];
         var decorators = Object.getOwnPropertyDescriptors(targetType.prototype);
-        Object.keys(decorators).forEach(function (name) {
+        core_1.lang.forIn(decorators, function (item, name) {
             if (name === 'constructor') {
                 return;
             }
             methods.push({
                 name: name,
                 fullName: className + "." + name,
-                descriptor: decorators[name]
+                descriptor: item
             });
         });
         var allmethods = core_1.getParamerterNames(targetType);
-        Object.keys(allmethods).forEach(function (name) {
+        core_1.lang.forIn(allmethods, function (item, name) {
             if (name === 'constructor') {
                 return;
             }
@@ -470,9 +470,9 @@ exports.BindMethodPointcutAction = BindMethodPointcutAction;
 });
 
 unwrapExports(BindMethodPointcutAction_1);
+var BindMethodPointcutAction_2 = BindMethodPointcutAction_1.BindMethodPointcutAction;
 
 var JoinpointState_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var JoinpointState;
 (function (JoinpointState) {
@@ -487,9 +487,9 @@ var JoinpointState;
 });
 
 unwrapExports(JoinpointState_1);
+var JoinpointState_2 = JoinpointState_1.JoinpointState;
 
 var Joinpoint_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators$$2, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators$$2, target, key, desc);
@@ -539,9 +539,9 @@ exports.Joinpoint = Joinpoint;
 });
 
 unwrapExports(Joinpoint_1);
+var Joinpoint_2 = Joinpoint_1.Joinpoint;
 
 var joinpoints = createCommonjsModule(function (module, exports) {
-"use strict";
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
@@ -555,7 +555,6 @@ __export(Joinpoint_1);
 unwrapExports(joinpoints);
 
 var InvokeBeforeConstructorAction_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -623,9 +622,9 @@ exports.InvokeBeforeConstructorAction = InvokeBeforeConstructorAction;
 });
 
 unwrapExports(InvokeBeforeConstructorAction_1);
+var InvokeBeforeConstructorAction_2 = InvokeBeforeConstructorAction_1.InvokeBeforeConstructorAction;
 
 var InvokeAfterConstructorAction_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -693,9 +692,9 @@ exports.InvokeAfterConstructorAction = InvokeAfterConstructorAction;
 });
 
 unwrapExports(InvokeAfterConstructorAction_1);
+var InvokeAfterConstructorAction_2 = InvokeAfterConstructorAction_1.InvokeAfterConstructorAction;
 
 var MatchPointcutAction_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -748,7 +747,7 @@ var MatchPointcutAction = /** @class */ (function (_super) {
                     };
                     advisor.setAdvices(fullName, advices);
                 }
-                var advicer = Object.assign(mpt, {
+                var advicer = core_1.lang.assign(mpt, {
                     aspectType: type
                 });
                 if (advice.adviceName === 'Before') {
@@ -804,9 +803,9 @@ exports.MatchPointcutAction = MatchPointcutAction;
 });
 
 unwrapExports(MatchPointcutAction_1);
+var MatchPointcutAction_2 = MatchPointcutAction_1.MatchPointcutAction;
 
 var AopActionFactory_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
@@ -856,9 +855,9 @@ exports.AopActionFactory = AopActionFactory;
 });
 
 unwrapExports(AopActionFactory_1);
+var AopActionFactory_2 = AopActionFactory_1.AopActionFactory;
 
 var ExetndsInstanceAction_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -904,9 +903,9 @@ exports.ExetndsInstanceAction = ExetndsInstanceAction;
 });
 
 unwrapExports(ExetndsInstanceAction_1);
+var ExetndsInstanceAction_2 = ExetndsInstanceAction_1.ExetndsInstanceAction;
 
 var actions = createCommonjsModule(function (module, exports) {
-"use strict";
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
@@ -927,7 +926,6 @@ __export(ExetndsInstanceAction_1);
 unwrapExports(actions);
 
 var AdvisorChainFactory_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators$$2, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators$$2, target, key, desc);
@@ -980,7 +978,7 @@ var AdvisorChainFactory = /** @class */ (function () {
     };
     AdvisorChainFactory.prototype.before = function (joinPoint) {
         var _this = this;
-        var cloneJp = Object.assign({}, joinPoint);
+        var cloneJp = core_1.lang.assign({}, joinPoint);
         this.getAdvicers('Around')
             .forEach(function (advicer) {
             _this.invokeAdvice(cloneJp, advicer);
@@ -995,7 +993,7 @@ var AdvisorChainFactory = /** @class */ (function () {
     };
     AdvisorChainFactory.prototype.pointcut = function (joinPoint) {
         var _this = this;
-        var cloneJp = Object.assign({}, joinPoint);
+        var cloneJp = core_1.lang.assign({}, joinPoint);
         this.getAdvicers('Pointcut')
             .forEach(function (advicer) {
             _this.invokeAdvice(cloneJp, advicer);
@@ -1006,7 +1004,7 @@ var AdvisorChainFactory = /** @class */ (function () {
     };
     AdvisorChainFactory.prototype.after = function (joinPoint) {
         var _this = this;
-        var cloneJp = Object.assign({}, joinPoint);
+        var cloneJp = core_1.lang.assign({}, joinPoint);
         this.getAdvicers('Around')
             .forEach(function (advicer) {
             _this.invokeAdvice(cloneJp, advicer);
@@ -1018,7 +1016,7 @@ var AdvisorChainFactory = /** @class */ (function () {
     };
     AdvisorChainFactory.prototype.afterThrowing = function (joinPoint) {
         var _this = this;
-        var cloneJp = Object.assign({}, joinPoint);
+        var cloneJp = core_1.lang.assign({}, joinPoint);
         this.getAdvicers('Around')
             .forEach(function (advicer) {
             _this.invokeAdvice(cloneJp, advicer);
@@ -1030,7 +1028,7 @@ var AdvisorChainFactory = /** @class */ (function () {
     };
     AdvisorChainFactory.prototype.afterReturning = function (joinPoint) {
         var _this = this;
-        var cloneJp = Object.assign({}, joinPoint);
+        var cloneJp = core_1.lang.assign({}, joinPoint);
         var advChain = this.container.resolve(symbols.AopSymbols.IAdvisorChain, { joinPoint: cloneJp });
         this.getAdvicers('Around')
             .forEach(function (advicer) {
@@ -1110,9 +1108,9 @@ exports.AdvisorChainFactory = AdvisorChainFactory;
 });
 
 unwrapExports(AdvisorChainFactory_1);
+var AdvisorChainFactory_2 = AdvisorChainFactory_1.AdvisorChainFactory;
 
 var AdvisorChain_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators$$2, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators$$2, target, key, desc);
@@ -1161,9 +1159,9 @@ exports.AdvisorChain = AdvisorChain;
 });
 
 unwrapExports(AdvisorChain_1);
+var AdvisorChain_2 = AdvisorChain_1.AdvisorChain;
 
 var ProxyMethod_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators$$2, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators$$2, target, key, desc);
@@ -1231,6 +1229,7 @@ var ProxyMethod = /** @class */ (function () {
     };
     ProxyMethod.prototype.proxy = function (propertyMethod, advices, target, targetType, pointcut, provJoinpoint) {
         var _this = this;
+        var aspectMgr = this.aspectMgr;
         var fullName = pointcut.fullName;
         var methodName = pointcut.name;
         var liefScope = this.liefScope;
@@ -1285,9 +1284,9 @@ exports.ProxyMethod = ProxyMethod;
 });
 
 unwrapExports(ProxyMethod_1);
+var ProxyMethod_2 = ProxyMethod_1.ProxyMethod;
 
 var ReturningType_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 /**
  * Returning Type
@@ -1315,9 +1314,9 @@ var ReturningType;
 });
 
 unwrapExports(ReturningType_1);
+var ReturningType_2 = ReturningType_1.ReturningType;
 
 var AsyncPromiseProceeding_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators$$2, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators$$2, target, key, desc);
@@ -1366,9 +1365,9 @@ exports.AsyncPromiseProceeding = AsyncPromiseProceeding;
 });
 
 unwrapExports(AsyncPromiseProceeding_1);
+var AsyncPromiseProceeding_2 = AsyncPromiseProceeding_1.AsyncPromiseProceeding;
 
 var AsyncObservableProceeding_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators$$2, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators$$2, target, key, desc);
@@ -1428,9 +1427,9 @@ exports.AsyncObservableProceeding = AsyncObservableProceeding;
 });
 
 unwrapExports(AsyncObservableProceeding_1);
+var AsyncObservableProceeding_2 = AsyncObservableProceeding_1.AsyncObservableProceeding;
 
 var ReturningRecognizer_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators$$2, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators$$2, target, key, desc);
@@ -1471,9 +1470,9 @@ exports.ReturningRecognizer = ReturningRecognizer;
 });
 
 unwrapExports(ReturningRecognizer_1);
+var ReturningRecognizer_2 = ReturningRecognizer_1.ReturningRecognizer;
 
 var SyncProceeding_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators$$2, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators$$2, target, key, desc);
@@ -1511,9 +1510,9 @@ exports.SyncProceeding = SyncProceeding;
 });
 
 unwrapExports(SyncProceeding_1);
+var SyncProceeding_2 = SyncProceeding_1.SyncProceeding;
 
 var access = createCommonjsModule(function (module, exports) {
-"use strict";
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
@@ -1533,7 +1532,6 @@ __export(SyncProceeding_1);
 unwrapExports(access);
 
 var Advisor_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators$$2, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators$$2, target, key, desc);
@@ -1575,7 +1573,7 @@ var Advisor = /** @class */ (function () {
     };
     Advisor.prototype.hasRegisterAdvices = function (targetType) {
         var _this = this;
-        var methods = Object.keys(Object.getOwnPropertyDescriptors(targetType.prototype));
+        var methods = core_1.lang.keys(Object.getOwnPropertyDescriptors(targetType.prototype));
         var className = core_1.getClassName(targetType);
         return methods.some(function (m) { return _this.advices.has(className + "." + m); });
     };
@@ -1600,9 +1598,9 @@ exports.Advisor = Advisor;
 });
 
 unwrapExports(Advisor_1);
+var Advisor_2 = Advisor_1.Advisor;
 
 var AdviceMatcher_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators$$2, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators$$2, target, key, desc);
@@ -1637,7 +1635,7 @@ var AdviceMatcher = /** @class */ (function () {
         var advisor = this.container.get(symbols.AopSymbols.IAdvisor);
         var matched = [];
         if (targetType === aspectType) {
-            var adviceNames = Object.keys(adviceMetas);
+            var adviceNames = core_1.lang.keys(adviceMetas);
             if (adviceNames.length > 1) {
                 var advices_1 = [];
                 adviceNames.forEach(function (n) {
@@ -1658,7 +1656,7 @@ var AdviceMatcher = /** @class */ (function () {
                 });
             }
         }
-        else {
+        else { // if (!advisor.hasRegisterAdvices(targetType)) {
             var points_1 = [];
             var decorators_1 = Object.getOwnPropertyDescriptors(targetType.prototype);
             // match method.
@@ -1669,7 +1667,7 @@ var AdviceMatcher = /** @class */ (function () {
                 });
             }
             var allmethods = core_1.getParamerterNames(targetType);
-            Object.keys(allmethods).forEach(function (name) {
+            core_1.lang.forIn(allmethods, function (item, name) {
                 if (name === 'constructor') {
                     return;
                 }
@@ -1715,7 +1713,7 @@ var AdviceMatcher = /** @class */ (function () {
         }
         matchedPointcut = matchedPointcut || [];
         return matchedPointcut.map(function (p) {
-            return Object.assign({}, p, { advice: metadata });
+            return core_1.lang.assign({}, p, { advice: metadata });
         });
     };
     AdviceMatcher.prototype.matchTypeFactory = function (type, pointcut) {
@@ -1770,9 +1768,9 @@ exports.AdviceMatcher = AdviceMatcher;
 });
 
 unwrapExports(AdviceMatcher_1);
+var AdviceMatcher_2 = AdviceMatcher_1.AdviceMatcher;
 
 var AopModule_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators$$2, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators$$2, target, key, desc);
@@ -1853,9 +1851,9 @@ exports.AopModule = AopModule;
 });
 
 unwrapExports(AopModule_1);
+var AopModule_2 = AopModule_1.AopModule;
 
 var D__Workspace_Projects_modules_tsioc_packages_aop_lib = createCommonjsModule(function (module, exports) {
-"use strict";
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
@@ -1873,8 +1871,8 @@ __export(AopModule_1);
 
 });
 
-var index = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_aop_lib);
+var index$4 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_aop_lib);
 
-return index;
+return index$4;
 
 })));

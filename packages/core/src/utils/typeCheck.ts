@@ -1,5 +1,6 @@
 import { Type, AbstractType, Token, Providers } from '../types';
 import { Registration } from '../Registration';
+import { keys } from './lang';
 
 declare let process: any;
 
@@ -221,7 +222,7 @@ export function isMetadataObject(target: any, props?: string[], extendsProps?: s
         props = extendsProps.concat(props);
     }
 
-    return Object.keys(target).some(n => props.indexOf(n) > 0)
+    return keys(target).some(n => props.indexOf(n) > 0)
 }
 
 

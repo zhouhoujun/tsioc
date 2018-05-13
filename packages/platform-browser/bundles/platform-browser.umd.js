@@ -2,9 +2,9 @@
 	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('@ts-ioc/core')) :
 	typeof define === 'function' && define.amd ? define(['@ts-ioc/core'], factory) :
 	(global['platform-browser'] = global['platform-browser'] || {}, global['platform-browser'].umd = global['platform-browser'].umd || {}, global['platform-browser'].umd.js = factory(global['@ts-ioc/core']));
-}(this, (function (core) { 'use strict';
+}(this, (function (core_1) { 'use strict';
 
-core = core && core.hasOwnProperty('default') ? core['default'] : core;
+core_1 = core_1 && core_1.hasOwnProperty('default') ? core_1['default'] : core_1;
 
 var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -21,7 +21,6 @@ function createCommonjsModule(fn, module) {
 }
 
 var BrowserModuleLoader_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -62,16 +61,16 @@ var BrowserModuleLoader = /** @class */ (function (_super) {
     };
     BrowserModuleLoader.classAnnations = { "name": "BrowserModuleLoader", "params": { "constructor": [], "createLoader": [] } };
     return BrowserModuleLoader;
-}(core.DefaultModuleLoader));
+}(core_1.DefaultModuleLoader));
 exports.BrowserModuleLoader = BrowserModuleLoader;
 
 
 });
 
 unwrapExports(BrowserModuleLoader_1);
+var BrowserModuleLoader_2 = BrowserModuleLoader_1.BrowserModuleLoader;
 
 var ContainerBuilder_1 = createCommonjsModule(function (module, exports) {
-"use strict";
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -99,16 +98,16 @@ var ContainerBuilder = /** @class */ (function (_super) {
     }
     ContainerBuilder.classAnnations = { "name": "ContainerBuilder", "params": { "constructor": ["loader"] } };
     return ContainerBuilder;
-}(core.DefaultContainerBuilder));
+}(core_1.DefaultContainerBuilder));
 exports.ContainerBuilder = ContainerBuilder;
 
 
 });
 
 unwrapExports(ContainerBuilder_1);
+var ContainerBuilder_2 = ContainerBuilder_1.ContainerBuilder;
 
 var D__Workspace_Projects_modules_tsioc_packages_platformBrowser_lib = createCommonjsModule(function (module, exports) {
-"use strict";
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }

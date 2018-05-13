@@ -1,6 +1,6 @@
 
 import {
-    IContainer, ActionData, ActionComposite, symbols
+    IContainer, ActionData, ActionComposite, symbols, lang
 } from '@ts-ioc/core';
 import { IAdvisor } from '../IAdvisor';
 import { AopActions } from './AopActions';
@@ -61,7 +61,7 @@ export class MatchPointcutAction extends ActionComposite {
                     } as Advices;
                     advisor.setAdvices(fullName, advices);
                 }
-                let advicer = Object.assign(mpt, {
+                let advicer = lang.assign(mpt, {
                     aspectType: type
                 }) as Advicer;
 

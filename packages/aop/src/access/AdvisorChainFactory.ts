@@ -1,4 +1,4 @@
-import { IContainer, Provider, Injectable, Singleton, Inject, symbols, isUndefined, isArray } from '@ts-ioc/core';
+import { IContainer, Provider, Injectable, Singleton, Inject, symbols, isUndefined, isArray, lang } from '@ts-ioc/core';
 import { Joinpoint, JoinpointState } from '../joinpoints/index';
 import { Advicer, Advices } from '../advices/index';
 import { IAdvisorChainFactory } from './IAdvisorChainFactory';
@@ -49,7 +49,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
     }
 
     before(joinPoint: Joinpoint) {
-        let cloneJp = Object.assign({}, joinPoint);
+        let cloneJp = lang.assign({}, joinPoint);
         this.getAdvicers('Around')
             .forEach(advicer => {
                 this.invokeAdvice(cloneJp, advicer);
@@ -67,7 +67,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
     }
 
     pointcut(joinPoint: Joinpoint) {
-        let cloneJp = Object.assign({}, joinPoint);
+        let cloneJp = lang.assign({}, joinPoint);
         this.getAdvicers('Pointcut')
             .forEach(advicer => {
                 this.invokeAdvice(cloneJp, advicer);
@@ -79,7 +79,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
     }
 
     after(joinPoint: Joinpoint) {
-        let cloneJp = Object.assign({}, joinPoint);
+        let cloneJp = lang.assign({}, joinPoint);
         this.getAdvicers('Around')
             .forEach(advicer => {
                 this.invokeAdvice(cloneJp, advicer);
@@ -93,7 +93,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
     }
 
     afterThrowing(joinPoint: Joinpoint) {
-        let cloneJp = Object.assign({}, joinPoint);
+        let cloneJp = lang.assign({}, joinPoint);
         this.getAdvicers('Around')
             .forEach(advicer => {
                 this.invokeAdvice(cloneJp, advicer);
@@ -106,7 +106,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
     }
 
     afterReturning(joinPoint: Joinpoint) {
-        let cloneJp = Object.assign({}, joinPoint);
+        let cloneJp = lang.assign({}, joinPoint);
         let advChain = this.container.resolve<IAdvisorChain>(AopSymbols.IAdvisorChain, { joinPoint: cloneJp });
         this.getAdvicers('Around')
             .forEach(advicer => {
