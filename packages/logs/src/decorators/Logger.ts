@@ -1,3 +1,4 @@
+import { Level } from './../Level';
 import { Express, TypeMetadata, IClassMethodDecorator, createClassMethodDecorator, ClassMethodDecorator, isClassMetadata, isString, isFunction } from '@ts-ioc/core';
 
 
@@ -9,6 +10,12 @@ export interface LoggerMetadata extends TypeMetadata {
      * @memberof LoggerMetadata
      */
     logname?: string;
+
+    /**
+     * log level
+     */
+    level?: Level;
+
     /**
      * only match express condition can do loging.
      *
@@ -43,8 +50,9 @@ export interface ILoggerDecorator<T extends LoggerMetadata> extends IClassMethod
      * @param {string} [logname] set the special name to get logger from logger manager.
      * @param {Express<any, boolean>} [express] only match express condition can do logging.
      * @param {string} [message] set special message to logging.
+     * @param {Level} [level] set log level to this message.
      */
-    (logname?: string, express?: Express<any, boolean>, message?: string): ClassMethodDecorator;
+    (logname?: string, express?: Express<any, boolean>, message?: string, level?: Level): ClassMethodDecorator;
 }
 
 /**
@@ -71,6 +79,13 @@ export const Logger: ILoggerDecorator<LoggerMetadata> = createClassMethodDecorat
             match: (arg) => isString(arg),
             setMetadata: (metadata, arg) => {
                 metadata.message = arg;
+            }
+        });
+
+        adapter.next<LoggerMetadata>({
+            match: (arg) => isString(arg),
+            setMetadata: (metadata, arg: string) => {
+                metadata.level = Level[arg];
             }
         });
     }) as ILoggerDecorator<LoggerMetadata>;

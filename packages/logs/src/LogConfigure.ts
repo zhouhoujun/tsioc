@@ -1,3 +1,4 @@
+import { Level } from './Level';
 import { Type, Token, ObjectMap } from '@ts-ioc/core';
 import { Joinpoint } from '@ts-ioc/aop';
 import { ILoggerManger } from './ILoggerManger';
@@ -49,7 +50,9 @@ export interface LogConfigure {
      *
      * @param {Joinpoint} joinPoint
      * @param {ILogger} logger
+     * @param {string} [message] special message.
+     * @param {Level} [level]
      * @memberof LogConfigure
      */
-    customFormat?(joinPoint: Joinpoint, logger: ILogger);
+    customFormat?(joinPoint: Joinpoint, logger: ILogger, message?: string, level?: Level);
 }

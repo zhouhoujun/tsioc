@@ -1,4 +1,5 @@
 export * from './symbols';
+export * from './Level';
 export * from './ILogger';
 export * from './ILoggerManger';
 export * from './IConfigureLoggerManager';

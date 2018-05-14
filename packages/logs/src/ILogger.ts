@@ -19,63 +19,64 @@ export interface ILogger {
     /**
      * log, base log.
      *
+     * @param {*} message
      * @param {...any[]} args
      * @memberof ILogger
      */
-    log(...args: any[]): void;
+    log(message: any, ...args: any[]): void;
 
     /**
      * trace log.
      *
-     * @param {string} message
+     * @param {any} message
      * @param {...any[]} args
      * @memberof ILogger
      */
-    trace(message: string, ...args: any[]): void;
+    trace(message: any, ...args: any[]): void;
 
     /**
      * debg log.
      *
-     * @param {string} message
+     * @param {any} message
      * @param {...any[]} args
      * @memberof ILogger
      */
-    debug(message: string, ...args: any[]): void;
+    debug(message: any, ...args: any[]): void;
 
     /**
      * info log.
      *
-     * @param {string} message
+     * @param {any} message
      * @param {...any[]} args
      * @memberof ILogger
      */
-    info(message: string, ...args: any[]): void;
+    info(message: any, ...args: any[]): void;
 
     /**
      * warn log.
      *
-     * @param {string} message
+     * @param {any} message
      * @param {...any[]} args
      * @memberof ILogger
      */
-    warn(message: string, ...args: any[]): void;
+    warn(message: any, ...args: any[]): void;
 
     /**
      * error log.
      *
-     * @param {string} message
+     * @param {any} message
      * @param {...any[]} args
      * @memberof ILogger
      */
-    error(message: string, ...args: any[]): void;
+    error(message: any, ...args: any[]): void;
 
     /**
      * fatal error log.
      *
-     * @param {string} message
+     * @param {any} message
      * @param {...any[]} args
      * @memberof ILogger
      */
-    fatal(message: string, ...args: any[]): void;
+    fatal(message: any, ...args: any[]): void;
 
 }

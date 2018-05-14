@@ -1,8 +1,20 @@
-import { Injectable, Singleton } from '@ts-ioc/core';
-import { ILoggerManger } from './ILoggerManger';
+import { Injectable, Singleton, isString } from '@ts-ioc/core';
+import { ILoggerManger, LoggerConfig } from './ILoggerManger';
 import { ILogger } from './ILogger';
 import { NonePointcut } from '@ts-ioc/aop';
 import { LogSymbols } from './symbols';
+import { Levels } from './Level';
+
+/**
+ * console logger configuration.
+ *
+ * @export
+ * @interface ConsoleLoggerConfig
+ * @extends {LoggerConfig}
+ */
+export interface ConsoleLoggerConfig extends LoggerConfig {
+    level?: string;
+}
 
 @NonePointcut()
 @Singleton()
@@ -12,8 +24,10 @@ export class ConsoleLogManager implements ILoggerManger {
     constructor() {
         this.logger = new ConsoleLog();
     }
-    configure(config: any) {
-
+    configure(config: ConsoleLoggerConfig) {
+        if (config && config.level) {
+            this.logger.level = config.level;
+        }
     }
     getLogger(name?: string): ILogger {
         return this.logger;
@@ -26,26 +40,42 @@ class ConsoleLog implements ILogger {
 
     level: string;
 
-    log(...args: any[]): void {
-        console.log(...args);
+    constructor() {
+
     }
-    trace(message: string, ...args: any[]): void {
-        console.trace(message, ...args);
+
+    log(message: any, ...args: any[]): void {
+        console.log(message, ...args);
     }
-    debug(message: string, ...args: any[]): void {
+    trace(message: any, ...args: any[]): void {
+        if (!this.level || Levels[this.level] === 0) {
+            console.trace(message, ...args);
+        }
+    }
+    debug(message: any, ...args: any[]): void {
         // console.debug in nuix will not console.
-        console.debug(message, ...args);
+        if (!this.level || Levels[this.level] <= 1) {
+            console.debug(message, ...args);
+        }
     }
-    info(message: string, ...args: any[]): void {
-        console.info(message, ...args);
+    info(message: any, ...args: any[]): void {
+        if (!this.level || Levels[this.level] <= 2) {
+            console.info(message, ...args);
+        }
     }
-    warn(message: string, ...args: any[]): void {
-        console.warn(message, ...args);
+    warn(message: any, ...args: any[]): void {
+        if (!this.level || Levels[this.level] <= 3) {
+            console.warn(message, ...args);
+        }
     }
-    error(message: string, ...args: any[]): void {
-        console.error(message, ...args);
+    error(message: any, ...args: any[]): void {
+        if (!this.level || Levels[this.level] <= 4) {
+            console.error(message, ...args);
+        }
     }
-    fatal(message: string, ...args: any[]): void {
-        console.error(message, ...args);
+    fatal(message: any, ...args: any[]): void {
+        if (!this.level || Levels[this.level] <= 5) {
+            console.error(message, ...args);
+        }
     }
 }

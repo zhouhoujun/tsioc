@@ -1,4 +1,16 @@
+import { ObjectMap } from '@ts-ioc/core';
+import { Level } from './Level';
 import { ILogger } from './ILogger';
+
+/**
+ * logger configuation.
+ *
+ * @export
+ * @interface LoggerConfig
+ * @extends {ObjectMap<any>}
+ */
+export interface LoggerConfig extends ObjectMap<any> {
+}
 
 /**
  * logger manager.
@@ -10,10 +22,10 @@ export interface ILoggerManger {
     /**
      * config logger context.
      *
-     * @param {*} config
+     * @param {LoggerConfig} config
      * @memberof ILoggerManger
      */
-    configure(config: any): void;
+    configure(config: LoggerConfig): void;
     /**
      * get logger.
      *

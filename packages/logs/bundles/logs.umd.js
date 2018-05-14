@@ -48,6 +48,47 @@ exports.LogSymbols = {
 unwrapExports(symbols);
 var symbols_1 = symbols.LogSymbols;
 
+var Level_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * log level items.
+ *
+ * @export
+ * @enum {number}
+ */
+var Level;
+(function (Level) {
+    Level["log"] = "log";
+    Level["trace"] = "trace";
+    Level["debug"] = "debug";
+    Level["info"] = "info";
+    Level["warn"] = "warn";
+    Level["error"] = "error";
+    Level["fatal"] = "fatal";
+})(Level = exports.Level || (exports.Level = {}));
+/**
+ * log levels
+ *
+ * @export
+ * @enum {number}
+ */
+var Levels;
+(function (Levels) {
+    Levels[Levels["trace"] = 0] = "trace";
+    Levels[Levels["debug"] = 1] = "debug";
+    Levels[Levels["info"] = 2] = "info";
+    Levels[Levels["warn"] = 3] = "warn";
+    Levels[Levels["error"] = 4] = "error";
+    Levels[Levels["fatal"] = 5] = "fatal";
+})(Levels = exports.Levels || (exports.Levels = {}));
+
+
+});
+
+unwrapExports(Level_1);
+var Level_2 = Level_1.Level;
+var Level_3 = Level_1.Levels;
+
 var DefaultLogConfigure_1 = createCommonjsModule(function (module, exports) {
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -233,11 +274,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
 var ConsoleLogManager = /** @class */ (function () {
     function ConsoleLogManager() {
         this.logger = new ConsoleLog();
     }
     ConsoleLogManager.prototype.configure = function (config) {
+        if (config && config.level) {
+            this.logger.level = config.level;
+        }
     };
     ConsoleLogManager.prototype.getLogger = function (name) {
         return this.logger;
@@ -255,19 +300,21 @@ exports.ConsoleLogManager = ConsoleLogManager;
 var ConsoleLog = /** @class */ (function () {
     function ConsoleLog() {
     }
-    ConsoleLog.prototype.log = function () {
+    ConsoleLog.prototype.log = function (message) {
         var args = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            args[_i] = arguments[_i];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            args[_i - 1] = arguments[_i];
         }
-        console.log.apply(console, args);
+        console.log.apply(console, [message].concat(args));
     };
     ConsoleLog.prototype.trace = function (message) {
         var args = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             args[_i - 1] = arguments[_i];
         }
-        console.trace.apply(console, [message].concat(args));
+        if (!this.level || Level_1.Levels[this.level] === 0) {
+            console.trace.apply(console, [message].concat(args));
+        }
     };
     ConsoleLog.prototype.debug = function (message) {
         var args = [];
@@ -275,37 +322,47 @@ var ConsoleLog = /** @class */ (function () {
             args[_i - 1] = arguments[_i];
         }
         // console.debug in nuix will not console.
-        console.debug.apply(console, [message].concat(args));
+        if (!this.level || Level_1.Levels[this.level] <= 1) {
+            console.debug.apply(console, [message].concat(args));
+        }
     };
     ConsoleLog.prototype.info = function (message) {
         var args = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             args[_i - 1] = arguments[_i];
         }
-        console.info.apply(console, [message].concat(args));
+        if (!this.level || Level_1.Levels[this.level] <= 2) {
+            console.info.apply(console, [message].concat(args));
+        }
     };
     ConsoleLog.prototype.warn = function (message) {
         var args = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             args[_i - 1] = arguments[_i];
         }
-        console.warn.apply(console, [message].concat(args));
+        if (!this.level || Level_1.Levels[this.level] <= 3) {
+            console.warn.apply(console, [message].concat(args));
+        }
     };
     ConsoleLog.prototype.error = function (message) {
         var args = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             args[_i - 1] = arguments[_i];
         }
-        console.error.apply(console, [message].concat(args));
+        if (!this.level || Level_1.Levels[this.level] <= 4) {
+            console.error.apply(console, [message].concat(args));
+        }
     };
     ConsoleLog.prototype.fatal = function (message) {
         var args = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             args[_i - 1] = arguments[_i];
         }
-        console.error.apply(console, [message].concat(args));
+        if (!this.level || Level_1.Levels[this.level] <= 5) {
+            console.error.apply(console, [message].concat(args));
+        }
     };
-    ConsoleLog.classAnnations = { "name": "ConsoleLog", "params": { "log": ["args"], "trace": ["message", "args"], "debug": ["message", "args"], "info": ["message", "args"], "warn": ["message", "args"], "error": ["message", "args"], "fatal": ["message", "args"] } };
+    ConsoleLog.classAnnations = { "name": "ConsoleLog", "params": { "constructor": [], "log": ["message", "args"], "trace": ["message", "args"], "debug": ["message", "args"], "info": ["message", "args"], "warn": ["message", "args"], "error": ["message", "args"], "fatal": ["message", "args"] } };
     return ConsoleLog;
 }());
 
@@ -351,7 +408,7 @@ var LoggerAspect = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
-    LoggerAspect.prototype.processLog = function (joinPoint, annotation) {
+    LoggerAspect.prototype.processLog = function (joinPoint, annotation, message, level) {
         var _this = this;
         if (annotation && annotation.length) {
             annotation.forEach(function (logmeta) {
@@ -363,45 +420,51 @@ var LoggerAspect = /** @class */ (function () {
                     canlog = true;
                 }
                 if (canlog) {
-                    _this.writeLog(logmeta.logname ? _this.logManger.getLogger(logmeta.logname) : _this.logger, joinPoint, logmeta.message);
+                    _this.writeLog(logmeta.logname ? _this.logManger.getLogger(logmeta.logname) : _this.logger, joinPoint, _this.joinMessage(message, logmeta.message), logmeta.level || level);
                 }
             });
         }
         else {
-            this.writeLog(this.logger, joinPoint);
+            this.writeLog(this.logger, joinPoint, message, level);
         }
     };
-    LoggerAspect.prototype.writeLog = function (logger, joinPoint, message) {
+    LoggerAspect.prototype.joinMessage = function () {
+        var messgs = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            messgs[_i] = arguments[_i];
+        }
+        return messgs.filter(function (a) { return a; }).map(function (a) { return core_1.isString(a) ? a : a.toString(); }).join(', ');
+    };
+    LoggerAspect.prototype.writeLog = function (logger, joinPoint, message, level) {
         var config = this.logManger.config;
         var isCustom = core_1.isFunction(config.customFormat);
-        if (message) {
-            logger.info(message);
-        }
         if (isCustom) {
-            config.customFormat(joinPoint, logger);
+            config.customFormat(joinPoint, logger, message, level);
         }
-        else if (config.format) {
-            var formatStr = core_1.isFunction(config.format) ? config.format(joinPoint, logger) : '';
-            if (!formatStr) {
-                return;
-            }
+        else {
+            var formatStr = this.joinMessage(core_1.isFunction(config.format) ? config.format(joinPoint, logger) : '', message);
             var formatArgs = core_1.isFunction(config.formatArgs) ? config.formatArgs(joinPoint, logger) : [];
-            switch (joinPoint.state) {
-                case aop_1.JoinpointState.Before:
-                case aop_1.JoinpointState.After:
-                case aop_1.JoinpointState.AfterReturning:
-                    logger.debug.apply(logger, [formatStr].concat(formatArgs));
-                    break;
-                case aop_1.JoinpointState.Pointcut:
-                    logger.info.apply(logger, [formatStr].concat(formatArgs));
-                    break;
-                case aop_1.JoinpointState.AfterThrowing:
-                    logger.error.apply(logger, [formatStr].concat(formatArgs));
-                    break;
+            if (level) {
+                logger[level].apply(logger, [formatStr].concat(formatArgs));
+            }
+            else {
+                switch (joinPoint.state) {
+                    case aop_1.JoinpointState.Before:
+                    case aop_1.JoinpointState.After:
+                    case aop_1.JoinpointState.AfterReturning:
+                        logger.debug.apply(logger, [formatStr].concat(formatArgs));
+                        break;
+                    case aop_1.JoinpointState.Pointcut:
+                        logger.info.apply(logger, [formatStr].concat(formatArgs));
+                        break;
+                    case aop_1.JoinpointState.AfterThrowing:
+                        logger.error.apply(logger, [formatStr].concat(formatArgs));
+                        break;
+                }
             }
         }
     };
-    LoggerAspect.classAnnations = { "name": "LoggerAspect", "params": { "constructor": ["container", "config"], "processLog": ["joinPoint", "annotation"], "writeLog": ["logger", "joinPoint", "message"] } };
+    LoggerAspect.classAnnations = { "name": "LoggerAspect", "params": { "constructor": ["container", "config"], "processLog": ["joinPoint", "annotation", "message", "level"], "joinMessage": ["messgs"], "writeLog": ["logger", "joinPoint", "message", "level"] } };
     return LoggerAspect;
 }());
 exports.LoggerAspect = LoggerAspect;
@@ -480,6 +543,7 @@ var AnnotationLogerAspect_2 = AnnotationLogerAspect_1.AnnotationLogerAspect;
 var Logger = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
+
 /**
  * Logger decorator, for method or class.
  *
@@ -503,6 +567,12 @@ exports.Logger = core_1.createClassMethodDecorator('Logger', function (adapter) 
         match: function (arg) { return core_1.isString(arg); },
         setMetadata: function (metadata, arg) {
             metadata.message = arg;
+        }
+    });
+    adapter.next({
+        match: function (arg) { return core_1.isString(arg); },
+        setMetadata: function (metadata, arg) {
+            metadata.level = Level_1.Level[arg];
         }
     });
 });
@@ -577,12 +647,13 @@ exports.LogModule = LogModule;
 unwrapExports(LogModule_1);
 var LogModule_2 = LogModule_1.LogModule;
 
-var D__Workspace_Projects_modules_tsioc_packages_logs_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_logs_lib = createCommonjsModule(function (module, exports) {
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(symbols);
+__export(Level_1);
 __export(ConfigureLoggerManger_1);
 __export(ConsoleLogManager_1);
 __export(DefaultLogConfigure_1);
@@ -594,7 +665,7 @@ __export(LogModule_1);
 
 });
 
-var index = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_logs_lib);
+var index = unwrapExports(D__workspace_github_tsioc_packages_logs_lib);
 
 return index;
 
