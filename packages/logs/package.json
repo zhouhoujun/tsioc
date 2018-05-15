@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/logs",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./bundles/logs.umd.js",
   "typings": "./lib/index.d.ts",
@@ -29,8 +29,8 @@
     "reflect-metadata": "^0.1.12"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "2.1.1",
-    "@ts-ioc/aop": "2.1.1"
+    "@ts-ioc/core": "2.1.2",
+    "@ts-ioc/aop": "2.1.2"
   },
   "directories": {
     "lib": "lib"
