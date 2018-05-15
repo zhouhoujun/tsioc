@@ -1,4 +1,4 @@
-import { Token, Singleton, isString, isSymbol, isBoolean, IParameter, isNumber, isDate, isFunction, symbols, isPromise, isArray, isObject, isBaseType, getClassName, isClass } from '@ts-ioc/core';
+import { Token, Singleton, isString, isSymbol, isBoolean, IParameter, isNumber, isDate, isFunction, symbols, isPromise, isArray, isObject, isBaseType, getClassName, isClass, isBaseObject } from '@ts-ioc/core';
 import { Joinpoint, JoinpointState, NonePointcut } from '@ts-ioc/aop';
 import { ILogger } from './ILogger';
 import { LogSymbols } from './symbols';
@@ -95,7 +95,13 @@ export class LogFormater {
         } else if (isFunction(target) || isDate(target) || isSymbol(target)) {
             return target.toString();
         } else if (isObject(target)) {
-            return JSON.stringify(target);
+            try {
+                return JSON.stringify(target);
+            } catch {
+                if (isFunction(target.toString)) {
+                    return target.toString();
+                }
+            }
         }
 
         return '';

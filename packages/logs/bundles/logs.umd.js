@@ -394,7 +394,14 @@ var LogFormater = /** @class */ (function () {
             return target.toString();
         }
         else if (core_1.isObject(target)) {
-            return JSON.stringify(target);
+            try {
+                return JSON.stringify(target);
+            }
+            catch (_a) {
+                if (core_1.isFunction(target.toString)) {
+                    return target.toString();
+                }
+            }
         }
         return '';
     };
