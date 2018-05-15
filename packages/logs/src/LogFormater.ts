@@ -1,6 +1,4 @@
-import { IParameter } from './../../core/src/IParameter';
-
-import { Token, Singleton, isString, isSymbol, isBoolean, isNumber, isDate, isFunction, symbols, isPromise, isArray, isObject, isBaseType, getClassName, isClass } from '@ts-ioc/core';
+import { Token, Singleton, isString, isSymbol, isBoolean, IParameter, isNumber, isDate, isFunction, symbols, isPromise, isArray, isObject, isBaseType, getClassName, isClass } from '@ts-ioc/core';
 import { Joinpoint, JoinpointState, NonePointcut } from '@ts-ioc/aop';
 import { ILogger } from './ILogger';
 import { LogSymbols } from './symbols';
