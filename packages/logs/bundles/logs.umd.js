@@ -359,7 +359,12 @@ var LogFormater = /** @class */ (function () {
             var arg = args.length >= idx ? args[idx] : null;
             return "<param name: \"" + (p.name || '') + "\", param type: \"" + _this.stringify(p.type) + "\"> " + _this.stringify(arg);
         }).join(', ');
-        return this.joinMessage(['[', argsStr, ']'], ' ');
+        if (argsStr) {
+            return this.joinMessage(['[', argsStr, ']'], ' ');
+        }
+        else {
+            return '[]';
+        }
     };
     LogFormater.prototype.joinMessage = function (messgs, separator) {
         if (separator === void 0) { separator = '; '; }
