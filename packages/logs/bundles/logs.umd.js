@@ -26,20 +26,25 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 exports.LogSymbols = {
     /**
+     * Log formater interface symbol.
+     * it is a symbol id, you can register yourself formater for log.
+     */
+    LogFormater: Symbol('__IOC_LogFormater'),
+    /**
      * Log configure interface symbol.
      * it is a symbol id, you can register yourself LogConfigure for this.
      */
-    LogConfigure: Symbol('LogConfigure'),
+    LogConfigure: Symbol('__IOC_LogConfigure'),
     /**
      * LoggerManger interface symbol.
      * it is a symbol id, you can register yourself LoggerManger for this.
      */
-    ILoggerManager: Symbol('ILoggerManager'),
+    ILoggerManager: Symbol('__IOC_ILoggerManager'),
     /**
      * IConfigureLoggerManager interface symbol.
      * it is a symbol id, you can register yourself IConfigureLoggerManager for this.
      */
-    IConfigureLoggerManager: Symbol('IConfigureLoggerManager')
+    IConfigureLoggerManager: Symbol('__IOC_IConfigureLoggerManager')
 };
 
 
@@ -89,70 +94,6 @@ unwrapExports(Level_1);
 var Level_2 = Level_1.Level;
 var Level_3 = Level_1.Levels;
 
-var DefaultLogConfigure_1 = createCommonjsModule(function (module, exports) {
-var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (commonjsGlobal && commonjsGlobal.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-var DefaultLogConfigure = /** @class */ (function () {
-    function DefaultLogConfigure(adapter) {
-        this.adapter = adapter || 'console';
-    }
-    DefaultLogConfigure.prototype.format = function (joinPoint, logger) {
-        switch (joinPoint.state) {
-            case aop_1.JoinpointState.Before:
-            case aop_1.JoinpointState.Pointcut:
-                return '%s invoke method "%s" with args %o.';
-            case aop_1.JoinpointState.After:
-                return '%s  invoke method "%s".';
-            case aop_1.JoinpointState.AfterReturning:
-                return 'Invoke method "%s" returning value %o.';
-            case aop_1.JoinpointState.AfterThrowing:
-                return 'Invoke method "%s" throw error %o.';
-            default:
-                return '';
-        }
-    };
-    DefaultLogConfigure.prototype.formatArgs = function (joinPoint, logger) {
-        switch (joinPoint.state) {
-            case aop_1.JoinpointState.Before:
-            case aop_1.JoinpointState.Pointcut:
-                return [joinPoint.state, joinPoint.fullName, joinPoint.args];
-            case aop_1.JoinpointState.After:
-                return [joinPoint.state, joinPoint.fullName];
-            case aop_1.JoinpointState.AfterReturning:
-                return [joinPoint.fullName, joinPoint.returningValue || ''];
-            case aop_1.JoinpointState.AfterThrowing:
-                return [joinPoint.fullName, joinPoint.throwing || ''];
-            default:
-                return [];
-        }
-    };
-    DefaultLogConfigure.classAnnations = { "name": "DefaultLogConfigure", "params": { "constructor": ["adapter"], "format": ["joinPoint", "logger"], "formatArgs": ["joinPoint", "logger"] } };
-    DefaultLogConfigure = __decorate([
-        aop_1.NonePointcut(),
-        core_1.Singleton(symbols.LogSymbols.LogConfigure),
-        __metadata("design:paramtypes", [Object])
-    ], DefaultLogConfigure);
-    return DefaultLogConfigure;
-}());
-exports.DefaultLogConfigure = DefaultLogConfigure;
-
-
-});
-
-unwrapExports(DefaultLogConfigure_1);
-var DefaultLogConfigure_2 = DefaultLogConfigure_1.DefaultLogConfigure;
-
 var ConfigureLoggerManger_1 = createCommonjsModule(function (module, exports) {
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -167,7 +108,6 @@ var __param = (commonjsGlobal && commonjsGlobal.__param) || function (paramIndex
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-
 
 
 
@@ -186,10 +126,12 @@ var ConfigureLoggerManger = /** @class */ (function () {
     Object.defineProperty(ConfigureLoggerManger.prototype, "config", {
         get: function () {
             if (!this._config) {
-                if (!this.container.has(symbols.LogSymbols.LogConfigure)) {
-                    this.container.register(DefaultLogConfigure_1.DefaultLogConfigure);
+                if (this.container.has(symbols.LogSymbols.LogConfigure)) {
+                    this._config = this.container.resolve(symbols.LogSymbols.LogConfigure);
                 }
-                this._config = this.container.resolve(symbols.LogSymbols.LogConfigure);
+                else {
+                    this._config = { adapter: 'console' };
+                }
             }
             return this._config;
         },
@@ -313,7 +255,7 @@ var ConsoleLog = /** @class */ (function () {
             args[_i - 1] = arguments[_i];
         }
         if (!this.level || Level_1.Levels[this.level] === 0) {
-            console.trace.apply(console, [message].concat(args));
+            console.debug.apply(console, [message].concat(args));
         }
     };
     ConsoleLog.prototype.debug = function (message) {
@@ -372,6 +314,101 @@ var ConsoleLog = /** @class */ (function () {
 unwrapExports(ConsoleLogManager_1);
 var ConsoleLogManager_2 = ConsoleLogManager_1.ConsoleLogManager;
 
+var LogFormater_1 = createCommonjsModule(function (module, exports) {
+var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (commonjsGlobal && commonjsGlobal.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+var LogFormater = /** @class */ (function () {
+    function LogFormater() {
+    }
+    LogFormater.prototype.format = function (joinPoint, message) {
+        var pointMsg;
+        switch (joinPoint.state) {
+            case aop_1.JoinpointState.Before:
+            case aop_1.JoinpointState.Pointcut:
+                pointMsg = joinPoint.state + " invoke method \"" + joinPoint.fullName + "\" with args " + this.stringifyArgs(joinPoint.params, joinPoint.args) + ".";
+                break;
+            case aop_1.JoinpointState.After:
+                pointMsg = joinPoint.state + "  invoke method \"" + joinPoint.fullName + "\".";
+                break;
+            case aop_1.JoinpointState.AfterReturning:
+                pointMsg = "Invoke method \"" + joinPoint.fullName + "\" returning value " + this.stringify(joinPoint.returningValue) + ".";
+                break;
+            case aop_1.JoinpointState.AfterThrowing:
+                pointMsg = "Invoke method \"" + joinPoint.fullName + "\" throw error " + this.stringify(joinPoint.throwing) + ".";
+                break;
+            default:
+                pointMsg = '';
+                break;
+        }
+        return this.joinMessage([pointMsg, message]);
+    };
+    LogFormater.prototype.stringifyArgs = function (params, args) {
+        var _this = this;
+        var argsStr = params.map(function (p, idx) {
+            var arg = args.length >= idx ? args[idx] : null;
+            return "<param name: \"" + (p.name || '') + "\", param type: \"" + _this.stringify(p.type) + "\"> " + _this.stringify(arg);
+        }).join(', ');
+        return this.joinMessage(['[', argsStr, ']'], ' ');
+    };
+    LogFormater.prototype.joinMessage = function (messgs, separator) {
+        if (separator === void 0) { separator = '; '; }
+        return messgs.filter(function (a) { return a; }).map(function (a) { return core_1.isString(a) ? a : a.toString(); }).join(separator);
+    };
+    LogFormater.prototype.stringifyArray = function (args) {
+        var _this = this;
+        if (!args.length) {
+            return '[]';
+        }
+        return '[ ' + args.map(function (arg) { return _this.stringify(arg); }).join(', ') + ' ]';
+    };
+    LogFormater.prototype.stringify = function (target) {
+        if (core_1.isString(target)) {
+            return target;
+        }
+        else if (core_1.isArray(target)) {
+            return this.stringifyArray(target);
+        }
+        else if (core_1.isBaseType(target)) {
+            return target;
+        }
+        else if (core_1.isClass(target)) {
+            return "[class " + core_1.getClassName(target) + "]";
+        }
+        else if (core_1.isFunction(target) || core_1.isDate(target) || core_1.isSymbol(target)) {
+            return target.toString();
+        }
+        else if (core_1.isObject(target)) {
+            return JSON.stringify(target);
+        }
+        return '';
+    };
+    LogFormater.classAnnations = { "name": "LogFormater", "params": { "constructor": [], "format": ["joinPoint", "message"], "stringifyArgs": ["params", "args"], "joinMessage": ["messgs", "separator"], "stringifyArray": ["args"], "stringify": ["target"] } };
+    LogFormater = __decorate([
+        aop_1.NonePointcut(),
+        core_1.Singleton(symbols.LogSymbols.LogFormater, 'default'),
+        __metadata("design:paramtypes", [])
+    ], LogFormater);
+    return LogFormater;
+}());
+exports.LogFormater = LogFormater;
+
+
+});
+
+unwrapExports(LogFormater_1);
+var LogFormater_2 = LogFormater_1.LogFormater;
+
 var LoggerAspect_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -428,43 +465,58 @@ var LoggerAspect = /** @class */ (function () {
             this.writeLog(this.logger, joinPoint, message, level);
         }
     };
+    LoggerAspect.prototype.formatMessage = function (joinPoint, message) {
+        var config = this.logManger.config;
+        if (core_1.isClass(config.format)) {
+            if (!this.container.has(config.format)) {
+                this.container.register(config.format);
+            }
+            return this.container.resolve(config.format).format(joinPoint, message);
+        }
+        else if (core_1.isFunction(config.format)) {
+            return config.format(joinPoint, message);
+        }
+        else if (core_1.isObject(config.format) && core_1.isFunction(config.format)) {
+            return config.format.format(joinPoint, message);
+        }
+        else {
+            var token = core_1.isString(config.format) ? config.format : '';
+            var foramter = this.container.resolve(new core_1.Registration(symbols.LogSymbols.LogFormater, token || 'default'));
+            if (foramter) {
+                return foramter.format(joinPoint, message);
+            }
+        }
+        return '';
+    };
     LoggerAspect.prototype.joinMessage = function () {
         var messgs = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             messgs[_i] = arguments[_i];
         }
-        return messgs.filter(function (a) { return a; }).map(function (a) { return core_1.isString(a) ? a : a.toString(); }).join(', ');
+        return messgs.filter(function (a) { return a; }).map(function (a) { return core_1.isString(a) ? a : a.toString(); }).join('; ');
     };
     LoggerAspect.prototype.writeLog = function (logger, joinPoint, message, level) {
-        var config = this.logManger.config;
-        var isCustom = core_1.isFunction(config.customFormat);
-        if (isCustom) {
-            config.customFormat(joinPoint, logger, message, level);
+        var formatStr = this.formatMessage(joinPoint, message);
+        if (level) {
+            logger[level](formatStr);
         }
         else {
-            var formatStr = this.joinMessage(core_1.isFunction(config.format) ? config.format(joinPoint, logger) : '', message);
-            var formatArgs = core_1.isFunction(config.formatArgs) ? config.formatArgs(joinPoint, logger) : [];
-            if (level) {
-                logger[level].apply(logger, [formatStr].concat(formatArgs));
-            }
-            else {
-                switch (joinPoint.state) {
-                    case aop_1.JoinpointState.Before:
-                    case aop_1.JoinpointState.After:
-                    case aop_1.JoinpointState.AfterReturning:
-                        logger.debug.apply(logger, [formatStr].concat(formatArgs));
-                        break;
-                    case aop_1.JoinpointState.Pointcut:
-                        logger.info.apply(logger, [formatStr].concat(formatArgs));
-                        break;
-                    case aop_1.JoinpointState.AfterThrowing:
-                        logger.error.apply(logger, [formatStr].concat(formatArgs));
-                        break;
-                }
+            switch (joinPoint.state) {
+                case aop_1.JoinpointState.Before:
+                case aop_1.JoinpointState.After:
+                case aop_1.JoinpointState.AfterReturning:
+                    logger.debug(formatStr);
+                    break;
+                case aop_1.JoinpointState.Pointcut:
+                    logger.info(formatStr);
+                    break;
+                case aop_1.JoinpointState.AfterThrowing:
+                    logger.error(formatStr);
+                    break;
             }
         }
     };
-    LoggerAspect.classAnnations = { "name": "LoggerAspect", "params": { "constructor": ["container", "config"], "processLog": ["joinPoint", "annotation", "message", "level"], "joinMessage": ["messgs"], "writeLog": ["logger", "joinPoint", "message", "level"] } };
+    LoggerAspect.classAnnations = { "name": "LoggerAspect", "params": { "constructor": ["container", "config"], "processLog": ["joinPoint", "annotation", "message", "level"], "formatMessage": ["joinPoint", "message"], "joinMessage": ["messgs"], "writeLog": ["logger", "joinPoint", "message", "level"] } };
     return LoggerAspect;
 }());
 exports.LoggerAspect = LoggerAspect;
@@ -604,6 +656,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
 /**
  * aop logs bootstrap main. auto run setup after registered.
  * with @IocModule('setup') decorator.
@@ -628,6 +681,7 @@ var LogModule = /** @class */ (function () {
         lifeScope.registerDecorator(Logger.Logger, core_1.LifeState.onInit, core_1.CoreActions.bindParameterProviders);
         container.register(ConfigureLoggerManger_1.ConfigureLoggerManger);
         container.register(AnnotationLogerAspect_1.AnnotationLogerAspect);
+        container.register(LogFormater_1.LogFormater);
         container.register(ConsoleLogManager_1.ConsoleLogManager);
     };
     LogModule.symbols = symbols.LogSymbols;
@@ -656,7 +710,7 @@ __export(symbols);
 __export(Level_1);
 __export(ConfigureLoggerManger_1);
 __export(ConsoleLogManager_1);
-__export(DefaultLogConfigure_1);
+__export(LogFormater_1);
 __export(LoggerAspect_1);
 __export(AnnotationLogerAspect_1);
 __export(Logger);

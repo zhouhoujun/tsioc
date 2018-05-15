@@ -49,7 +49,7 @@ class ConsoleLog implements ILogger {
     }
     trace(message: any, ...args: any[]): void {
         if (!this.level || Levels[this.level] === 0) {
-            console.trace(message, ...args);
+            console.debug(message, ...args);
         }
     }
     debug(message: any, ...args: any[]): void {

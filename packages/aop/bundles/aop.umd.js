@@ -602,6 +602,7 @@ var InvokeBeforeConstructorAction = /** @class */ (function (_super) {
             fullName: className + '.constructor',
             target: target,
             args: data.args,
+            params: data.params,
             targetType: targetType
         }));
         var providers = [core_1.Provider.create(joinpoints.Joinpoint, joinPoint)];
@@ -672,6 +673,7 @@ var InvokeAfterConstructorAction = /** @class */ (function (_super) {
             fullName: className + '.constructor',
             target: target,
             args: data.args,
+            params: data.params,
             targetType: targetType
         }));
         var providers = [core_1.Provider.create(joinpoints.Joinpoint, joinPoint)];

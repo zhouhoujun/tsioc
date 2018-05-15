@@ -391,3 +391,14 @@ export function isSymbol(target: any): target is Symbol {
 export function isRegExp(target: any): target is RegExp {
     return target && target instanceof RegExp;
 }
+
+/**
+ * is base type or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {boolean}
+ */
+export function isBaseType(target: any): boolean {
+    return isNull(target) || isUndefined(target) || isBoolean(target) || isString(target) || isNumber(target);
+}

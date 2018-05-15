@@ -5,6 +5,7 @@ import { AnnotationLogerAspect } from './AnnotationLogerAspect';
 import { ConsoleLogManager } from './ConsoleLogManager';
 import { LogSymbols } from './symbols';
 import { ConfigureLoggerManger } from './ConfigureLoggerManger';
+import { LogFormater } from './LogFormater';
 
 /**
  * aop logs bootstrap main. auto run setup after registered.
@@ -35,6 +36,7 @@ export class LogModule {
         lifeScope.registerDecorator(Logger, LifeState.onInit, CoreActions.bindParameterProviders);
         container.register(ConfigureLoggerManger);
         container.register(AnnotationLogerAspect);
+        container.register(LogFormater);
         container.register(ConsoleLogManager);
     }
 }

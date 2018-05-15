@@ -3,7 +3,7 @@ import { ILoggerManger } from './ILoggerManger';
 import { LogSymbols } from './symbols';
 import { LogConfigure } from './LogConfigure';
 import { ILogger } from './ILogger';
-import { DefaultLogConfigure } from './DefaultLogConfigure';
+import { LogFormater } from './LogFormater';
 import { IConfigureLoggerManager } from './IConfigureLoggerManager';
 import { NonePointcut } from '@ts-ioc/aop';
 
@@ -28,10 +28,11 @@ export class ConfigureLoggerManger implements IConfigureLoggerManager {
 
     get config(): LogConfigure {
         if (!this._config) {
-            if (!this.container.has(LogSymbols.LogConfigure)) {
-                this.container.register(DefaultLogConfigure);
+            if (this.container.has(LogSymbols.LogConfigure)) {
+                this._config = this.container.resolve<LogConfigure>(LogSymbols.LogConfigure);
+            } else {
+                this._config = { adapter: 'console' };
             }
-            this._config = this.container.resolve<LogConfigure>(LogSymbols.LogConfigure);
         }
         return this._config;
     }

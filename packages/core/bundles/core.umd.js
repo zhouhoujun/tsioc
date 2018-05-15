@@ -569,6 +569,17 @@ function isRegExp(target) {
     return target && target instanceof RegExp;
 }
 exports.isRegExp = isRegExp;
+/**
+ * is base type or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {boolean}
+ */
+function isBaseType(target) {
+    return isNull(target) || isUndefined(target) || isBoolean(target) || isString(target) || isNumber(target);
+}
+exports.isBaseType = isBaseType;
 
 
 });
@@ -598,6 +609,7 @@ var typeCheck_21 = typeCheck.isObject;
 var typeCheck_22 = typeCheck.isDate;
 var typeCheck_23 = typeCheck.isSymbol;
 var typeCheck_24 = typeCheck.isRegExp;
+var typeCheck_25 = typeCheck.isBaseType;
 
 var MapSet_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });

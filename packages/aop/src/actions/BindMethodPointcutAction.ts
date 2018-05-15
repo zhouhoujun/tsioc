@@ -59,7 +59,7 @@ export class BindMethodPointcutAction extends ActionComposite {
         });
 
         let allmethods = getParamerterNames(targetType);
-        lang.forIn(allmethods,(item, name:string) => {
+        lang.forIn(allmethods, (item, name: string) => {
             if (name === 'constructor') {
                 return;
             }

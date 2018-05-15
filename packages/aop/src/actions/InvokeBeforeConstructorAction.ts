@@ -55,6 +55,7 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
             fullName: className + '.constructor',
             target: target,
             args: data.args,
+            params: data.params,
             targetType: targetType
         }));
         let providers = [Provider.create(Joinpoint, joinPoint)];

@@ -6,7 +6,7 @@ export * from './IConfigureLoggerManager';
 export * from './ConfigureLoggerManger';
 export * from './ConsoleLogManager';
 export * from './LogConfigure';
-export * from './DefaultLogConfigure';
+export * from './LogFormater';
 export * from './LoggerAspect';
 export * from './AnnotationLogerAspect';
 export * from './decorators/Logger';

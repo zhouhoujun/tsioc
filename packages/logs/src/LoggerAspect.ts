@@ -1,6 +1,6 @@
 import { Level } from './Level';
 import { Aspect, Joinpoint, JoinpointState, Pointcut } from '@ts-ioc/aop';
-import { IContainer, Singleton, Inject, Abstract, isFunction, Type, isString } from '@ts-ioc/core';
+import { IContainer, Singleton, Inject, Abstract, isFunction, Type, isString, isClass, isObject, Registration } from '@ts-ioc/core';
 
 import { LoggerMetadata } from './decorators/Logger';
 import { LogConfigure } from './LogConfigure';
@@ -8,6 +8,7 @@ import { ILogger } from './ILogger';
 import { ILoggerManger } from './ILoggerManger';
 import { LogSymbols } from './symbols';
 import { IConfigureLoggerManager } from './IConfigureLoggerManager';
+import { ILogFormater } from '.';
 
 /**
  * base looger aspect. for extends your logger aspect.
@@ -60,40 +61,55 @@ export class LoggerAspect {
         }
     }
 
+    protected formatMessage(joinPoint: Joinpoint, message?: string) {
+        let config = this.logManger.config;
+        if (isClass(config.format)) {
+            if (!this.container.has(config.format)) {
+                this.container.register(config.format);
+            }
+            return this.container.resolve<ILogFormater>(config.format).format(joinPoint, message);
+        } else if (isFunction(config.format)) {
+            return config.format(joinPoint, message);
+        } else if (isObject(config.format) && isFunction(config.format)) {
+            return config.format.format(joinPoint, message);
+        } else {
+            let token = isString(config.format) ? config.format : '';
+            let foramter = this.container.resolve<ILogFormater>(new Registration(LogSymbols.LogFormater, token || 'default'));
+            if (foramter) {
+                return foramter.format(joinPoint, message);
+            }
+        }
+
+        return '';
+    }
+
     protected joinMessage(...messgs: any[]) {
-        return messgs.filter(a => a).map(a => isString(a) ? a : a.toString()).join(', ');
+        return messgs.filter(a => a).map(a => isString(a) ? a : a.toString()).join('; ');
     }
 
     protected writeLog(logger: ILogger, joinPoint: Joinpoint, message?: string, level?: Level) {
 
-        let config = this.logManger.config;
-        let isCustom = isFunction(config.customFormat);
+        let formatStr = this.formatMessage(joinPoint, message);
 
-        if (isCustom) {
-            config.customFormat(joinPoint, logger, message, level);
+        if (level) {
+            logger[level](formatStr);
         } else {
-            let formatStr = this.joinMessage(isFunction(config.format) ? config.format(joinPoint, logger) : '', message);
+            switch (joinPoint.state) {
+                case JoinpointState.Before:
+                case JoinpointState.After:
+                case JoinpointState.AfterReturning:
+                    logger.debug(formatStr);
+                    break;
+                case JoinpointState.Pointcut:
+                    logger.info(formatStr);
+                    break;
 
-            let formatArgs = isFunction(config.formatArgs) ? config.formatArgs(joinPoint, logger) : [];
-            if (level) {
-                logger[level](formatStr, ...formatArgs);
-            } else {
-                switch (joinPoint.state) {
-                    case JoinpointState.Before:
-                    case JoinpointState.After:
-                    case JoinpointState.AfterReturning:
-                        logger.debug(formatStr, ...formatArgs);
-                        break;
-                    case JoinpointState.Pointcut:
-                        logger.info(formatStr, ...formatArgs);
-                        break;
+                case JoinpointState.AfterThrowing:
+                    logger.error(formatStr);
+                    break;
 
-                    case JoinpointState.AfterThrowing:
-                        logger.error(formatStr, ...formatArgs);
-                        break;
-
-                }
             }
         }
+
     }
 }
