@@ -54,41 +54,41 @@ export const AopSymbols: AopSymbols = {
      * Aop proxy method interface symbol.
      * it is a symbol id, you can register yourself IProxyMethod for this.
      */
-    IProxyMethod: Symbol('IProxyMethod'),
+    IProxyMethod: Symbol('__IOC_IProxyMethod'),
 
     /**
      * Aop advice matcher interface symbol.
      * it is a symbol id, you can register yourself IActionBuilder for this.
      */
-    IAdviceMatcher: Symbol('IAdviceMatcher'),
+    IAdviceMatcher: Symbol('__IOC_IAdviceMatcher'),
 
     /**
      * Aop IAdvisor interface symbol.
      * it is a symbol id, you can register yourself IAdvisor for this.
      */
-    IAdvisor: Symbol('IAdvisor'),
+    IAdvisor: Symbol('__IOC_IAdvisor'),
 
     /**
      * Aop IAdvisorChainFactory interface symbol.
      * it is a symbol id, you can register yourself IAdvisorChainFactory for this.
      */
-    IAdvisorChainFactory: Symbol('IAdvisorChainFactory'),
+    IAdvisorChainFactory: Symbol('__IOC_IAdvisorChainFactory'),
 
     /**
      * Aop IAdvisorChain interface symbol.
      * it is a symbol id, you can register yourself IAdvisorChain for this.
      */
-    IAdvisorChain: Symbol('IAdvisorChain'),
+    IAdvisorChain: Symbol('__IOC_IAdvisorChain'),
 
     /**
      * Aop IAdvisorProceeding interface symbol.
      * it is a symbol id, you can register yourself IAdvisorProceeding for this.
      */
-    IAdvisorProceeding: Symbol('IAdvisorProceeding'),
+    IAdvisorProceeding: Symbol('__IOC_IAdvisorProceeding'),
 
     /**
      * joinpoint symbol.
      */
-    IJoinpoint: Symbol('IJoinpoint')
+    IJoinpoint: Symbol('__IOC_IJoinpoint')
 
 }
