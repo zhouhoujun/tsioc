@@ -2,6 +2,11 @@ import { IContainer, Type, Defer, lang, isString, IContainerBuilder, AsyncLoadOp
 import { AppConfiguration, defaultAppConfig, AppConfigurationToken } from './AppConfiguration';
 import { ContainerBuilder } from './ContainerBuilder';
 
+
+
+export type CustomDefineModule = (container: IContainer, config?: AppConfiguration) => any | Promise<any>;
+
+
 declare let System: any;
 /**
  * server app bootstrap
@@ -15,8 +20,10 @@ export class PlatformBrowser {
     private configDefer: Defer<AppConfiguration>;
     private builder: IContainerBuilder;
     private usedModules: (ModuleType | string)[];
+    private customs: CustomDefineModule[];
     constructor(public rootdir: string) {
         this.usedModules = [];
+        this.customs = [];
     }
 
     static create(rootdir: string) {
@@ -132,6 +139,11 @@ export class PlatformBrowser {
         return this;
     }
 
+    useCustom(...customs: CustomDefineModule[]): this {
+        this.customs = this.customs.concat(customs);
+        return this;
+    }
+
     async bootstrap(modules: Type<any>) {
         let cfg: AppConfiguration = await this.getConfiguration();
         let container: IContainer = await this.getContainer();
@@ -154,7 +166,11 @@ export class PlatformBrowser {
             });
         }
 
-        await builder.loadModule(container, { modules: ['@ts-ioc/aop'] });
+        if (this.customs.length) {
+            await Promise.all(this.customs.map(cs => {
+                return cs(container, config);
+            }));
+        }
 
         container.resolve(AppConfigurationToken);
         return container;

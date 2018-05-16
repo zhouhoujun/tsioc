@@ -15,6 +15,7 @@ import { ILogFormater, LogFormaterToken } from './LogFormater';
  * @export
  * @class LoggerAspect
  */
+@Abstract()
 export class LoggerAspect {
 
     private _logger: ILogger;

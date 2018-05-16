@@ -5,6 +5,9 @@ import * as path from 'path';
 import { ContainerBuilder } from './ContainerBuilder';
 import { toAbsolutePath } from './toAbsolute';
 
+
+export type CustomDefineModule = (container: IContainer, config?: AppConfiguration) => any | Promise<any>;
+
 /**
  * server app bootstrap
  *
@@ -17,8 +20,10 @@ export class PlatformServer {
     private configDefer: Defer<AppConfiguration>;
     private builder: IContainerBuilder;
     private usedModules: (ModuleType | string)[];
+    private customs: CustomDefineModule[];
     constructor(public rootdir: string) {
         this.usedModules = [];
+        this.customs = [];
     }
 
     static create(rootdir: string) {
@@ -148,6 +153,11 @@ export class PlatformServer {
         return this;
     }
 
+    useCustom(...customs: CustomDefineModule[]): this {
+        this.customs = this.customs.concat(customs);
+        return this;
+    }
+
     async bootstrap(modules: Type<any>) {
         let cfg: AppConfiguration = await this.getConfiguration();
         let container: IContainer = await this.getContainer();
@@ -179,6 +189,12 @@ export class PlatformServer {
             });
 
             config.usedAops = aops;
+        }
+
+        if (this.customs.length) {
+            await Promise.all(this.customs.map(cs => {
+                return cs(container, config);
+            }));
         }
 
         container.resolve(AppConfigurationToken);

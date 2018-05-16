@@ -473,6 +473,138 @@ var ConsoleLog = /** @class */ (function () {
 unwrapExports(ConsoleLogManager_1);
 var ConsoleLogManager_2 = ConsoleLogManager_1.ConsoleLogManager;
 
+var LoggerAspect_1 = createCommonjsModule(function (module, exports) {
+var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (commonjsGlobal && commonjsGlobal.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+/**
+ * base looger aspect. for extends your logger aspect.
+ *
+ * @export
+ * @class LoggerAspect
+ */
+var LoggerAspect = /** @class */ (function () {
+    function LoggerAspect(container, config) {
+        this.container = container;
+        this.config = config;
+    }
+    Object.defineProperty(LoggerAspect.prototype, "logger", {
+        get: function () {
+            if (!this._logger) {
+                this._logger = this.logManger.getLogger();
+            }
+            return this._logger;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(LoggerAspect.prototype, "logManger", {
+        get: function () {
+            if (!this._logManger) {
+                this._logManger = this.container.resolve(IConfigureLoggerManager.ConfigureLoggerManagerToken, { config: this.config });
+            }
+            return this._logManger;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    LoggerAspect.prototype.processLog = function (joinPoint, annotation, message, level) {
+        var _this = this;
+        if (annotation && annotation.length) {
+            annotation.forEach(function (logmeta) {
+                var canlog = false;
+                if (logmeta.express && logmeta.express(joinPoint)) {
+                    canlog = true;
+                }
+                else if (!logmeta.express) {
+                    canlog = true;
+                }
+                if (canlog) {
+                    _this.writeLog(logmeta.logname ? _this.logManger.getLogger(logmeta.logname) : _this.logger, joinPoint, _this.joinMessage(message, logmeta.message), logmeta.level || level);
+                }
+            });
+        }
+        else {
+            this.writeLog(this.logger, joinPoint, message, level);
+        }
+    };
+    LoggerAspect.prototype.formatMessage = function (joinPoint, message) {
+        var config = this.logManger.config;
+        if (core_1.isClass(config.format)) {
+            if (!this.container.has(config.format)) {
+                this.container.register(config.format);
+            }
+            return this.container.resolve(config.format).format(joinPoint, message);
+        }
+        else if (core_1.isFunction(config.format)) {
+            return config.format(joinPoint, message);
+        }
+        else if (core_1.isObject(config.format) && core_1.isFunction(config.format)) {
+            return config.format.format(joinPoint, message);
+        }
+        else {
+            var token = core_1.isString(config.format) ? config.format : '';
+            var foramter = this.container.resolve(new core_1.Registration(LogFormater_1.LogFormaterToken, token || 'default'));
+            if (foramter) {
+                return foramter.format(joinPoint, message);
+            }
+        }
+        return '';
+    };
+    LoggerAspect.prototype.joinMessage = function () {
+        var messgs = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            messgs[_i] = arguments[_i];
+        }
+        return messgs.filter(function (a) { return a; }).map(function (a) { return core_1.isString(a) ? a : a.toString(); }).join('; ');
+    };
+    LoggerAspect.prototype.writeLog = function (logger, joinPoint, message, level) {
+        var formatStr = this.formatMessage(joinPoint, message);
+        if (level) {
+            logger[level](formatStr);
+        }
+        else {
+            switch (joinPoint.state) {
+                case aop_1.JoinpointState.Before:
+                case aop_1.JoinpointState.After:
+                case aop_1.JoinpointState.AfterReturning:
+                    logger.debug(formatStr);
+                    break;
+                case aop_1.JoinpointState.Pointcut:
+                    logger.info(formatStr);
+                    break;
+                case aop_1.JoinpointState.AfterThrowing:
+                    logger.error(formatStr);
+                    break;
+            }
+        }
+    };
+    LoggerAspect.classAnnations = { "name": "LoggerAspect", "params": { "constructor": ["container", "config"], "processLog": ["joinPoint", "annotation", "message", "level"], "formatMessage": ["joinPoint", "message"], "joinMessage": ["messgs"], "writeLog": ["logger", "joinPoint", "message", "level"] } };
+    LoggerAspect = __decorate([
+        core_1.Abstract(),
+        __metadata("design:paramtypes", [Object, Object])
+    ], LoggerAspect);
+    return LoggerAspect;
+}());
+exports.LoggerAspect = LoggerAspect;
+
+
+});
+
+unwrapExports(LoggerAspect_1);
+var LoggerAspect_2 = LoggerAspect_1.LoggerAspect;
+
 var AnnotationLogerAspect_1 = createCommonjsModule(function (module, exports) {
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -525,7 +657,7 @@ var AnnotationLogerAspect = /** @class */ (function (_super) {
     AnnotationLogerAspect = __decorate([
         core_1.Singleton(),
         aop_1.Aspect(),
-        __param(0, core_1.Inject(core_1.symbols.IContainer)),
+        __param(0, core_1.Inject(core_1.ContainerToken)),
         __metadata("design:paramtypes", [Object])
     ], AnnotationLogerAspect);
     return AnnotationLogerAspect;
@@ -645,148 +777,6 @@ exports.LogModule = LogModule;
 unwrapExports(LogModule_1);
 var LogModule_2 = LogModule_1.LogModule;
 
-var lib = createCommonjsModule(function (module, exports) {
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
-Object.defineProperty(exports, "__esModule", { value: true });
-__export(tokens);
-__export(Level_1);
-__export(ILoggerManager);
-__export(IConfigureLoggerManager);
-__export(ConfigureLoggerManger_1);
-__export(ConsoleLogManager_1);
-__export(LogConfigure);
-__export(LogFormater_1);
-__export(LoggerAspect_1);
-__export(AnnotationLogerAspect_1);
-__export(Logger);
-__export(LogModule_1);
-
-
-});
-
-unwrapExports(lib);
-
-var LoggerAspect_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-
-/**
- * base looger aspect. for extends your logger aspect.
- *
- * @export
- * @class LoggerAspect
- */
-var LoggerAspect = /** @class */ (function () {
-    function LoggerAspect(container, config) {
-        this.container = container;
-        this.config = config;
-    }
-    Object.defineProperty(LoggerAspect.prototype, "logger", {
-        get: function () {
-            if (!this._logger) {
-                this._logger = this.logManger.getLogger();
-            }
-            return this._logger;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(LoggerAspect.prototype, "logManger", {
-        get: function () {
-            if (!this._logManger) {
-                this._logManger = this.container.resolve(IConfigureLoggerManager.ConfigureLoggerManagerToken, { config: this.config });
-            }
-            return this._logManger;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    LoggerAspect.prototype.processLog = function (joinPoint, annotation, message, level) {
-        var _this = this;
-        if (annotation && annotation.length) {
-            annotation.forEach(function (logmeta) {
-                var canlog = false;
-                if (logmeta.express && logmeta.express(joinPoint)) {
-                    canlog = true;
-                }
-                else if (!logmeta.express) {
-                    canlog = true;
-                }
-                if (canlog) {
-                    _this.writeLog(logmeta.logname ? _this.logManger.getLogger(logmeta.logname) : _this.logger, joinPoint, _this.joinMessage(message, logmeta.message), logmeta.level || level);
-                }
-            });
-        }
-        else {
-            this.writeLog(this.logger, joinPoint, message, level);
-        }
-    };
-    LoggerAspect.prototype.formatMessage = function (joinPoint, message) {
-        var config = this.logManger.config;
-        if (core_1.isClass(config.format)) {
-            if (!this.container.has(config.format)) {
-                this.container.register(config.format);
-            }
-            return this.container.resolve(config.format).format(joinPoint, message);
-        }
-        else if (core_1.isFunction(config.format)) {
-            return config.format(joinPoint, message);
-        }
-        else if (core_1.isObject(config.format) && core_1.isFunction(config.format)) {
-            return config.format.format(joinPoint, message);
-        }
-        else {
-            var token = core_1.isString(config.format) ? config.format : '';
-            var foramter = this.container.resolve(new core_1.Registration(lib.LogFormaterToken, token || 'default'));
-            if (foramter) {
-                return foramter.format(joinPoint, message);
-            }
-        }
-        return '';
-    };
-    LoggerAspect.prototype.joinMessage = function () {
-        var messgs = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            messgs[_i] = arguments[_i];
-        }
-        return messgs.filter(function (a) { return a; }).map(function (a) { return core_1.isString(a) ? a : a.toString(); }).join('; ');
-    };
-    LoggerAspect.prototype.writeLog = function (logger, joinPoint, message, level) {
-        var formatStr = this.formatMessage(joinPoint, message);
-        if (level) {
-            logger[level](formatStr);
-        }
-        else {
-            switch (joinPoint.state) {
-                case aop_1.JoinpointState.Before:
-                case aop_1.JoinpointState.After:
-                case aop_1.JoinpointState.AfterReturning:
-                    logger.debug(formatStr);
-                    break;
-                case aop_1.JoinpointState.Pointcut:
-                    logger.info(formatStr);
-                    break;
-                case aop_1.JoinpointState.AfterThrowing:
-                    logger.error(formatStr);
-                    break;
-            }
-        }
-    };
-    LoggerAspect.classAnnations = { "name": "LoggerAspect", "params": { "constructor": ["container", "config"], "processLog": ["joinPoint", "annotation", "message", "level"], "formatMessage": ["joinPoint", "message"], "joinMessage": ["messgs"], "writeLog": ["logger", "joinPoint", "message", "level"] } };
-    return LoggerAspect;
-}());
-exports.LoggerAspect = LoggerAspect;
-
-
-});
-
-unwrapExports(LoggerAspect_1);
-var LoggerAspect_2 = LoggerAspect_1.LoggerAspect;
-
 var D__workspace_github_tsioc_packages_logs_lib = createCommonjsModule(function (module, exports) {
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
@@ -808,8 +798,8 @@ __export(LogModule_1);
 
 });
 
-var index$1 = unwrapExports(D__workspace_github_tsioc_packages_logs_lib);
+var index = unwrapExports(D__workspace_github_tsioc_packages_logs_lib);
 
-return index$1;
+return index;
 
 })));
