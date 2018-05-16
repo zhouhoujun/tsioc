@@ -1,15 +1,14 @@
-import { IAdviceMatcher } from './IAdviceMatcher';
+import { IAdviceMatcher, AdviceMatcherToken } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadatas/index';
 import {
     Inject, MethodMetadata, getParamerterNames, getOwnMethodMetadata,
     hasOwnMethodMetadata, hasOwnClassMetadata, Singleton,
-    IContainer, symbols, isString, isRegExp, isUndefined, Type, ObjectMap, Express3, getClassName, lang
+    IContainer, isString, isRegExp, isUndefined, Type, ObjectMap, Express3, getClassName, lang, ContainerToken
 } from '@ts-ioc/core';
 import { IPointcut, MatchPointcut } from './joinpoints/index';
 import { Advices, Advicer } from './advices/index';
 import { Aspect, Advice, NonePointcut } from './decorators/index';
-import { IAdvisor } from './IAdvisor';
-import { AopSymbols } from './symbols';
+import { IAdvisor, AdvisorToken } from './IAdvisor';
 
 /**
  * advice matcher, use to match advice when a registered create instance.
@@ -19,19 +18,19 @@ import { AopSymbols } from './symbols';
  * @implements {IAdviceMatcher}
  */
 @NonePointcut()
-@Singleton(AopSymbols.IAdviceMatcher)
+@Singleton(AdviceMatcherToken)
 export class AdviceMatcher implements IAdviceMatcher {
 
-    constructor(@Inject(symbols.IContainer) private container: IContainer) {
+    constructor(@Inject(ContainerToken) private container: IContainer) {
 
     }
 
     match(aspectType: Type<any>, targetType: Type<any>, adviceMetas?: ObjectMap<AdviceMetadata[]>, instance?: any): MatchPointcut[] {
 
-        let className =  getClassName(targetType);
+        let className = getClassName(targetType);
 
         adviceMetas = adviceMetas || getOwnMethodMetadata<AdviceMetadata>(Advice, targetType);
-        let advisor = this.container.get<IAdvisor>(AopSymbols.IAdvisor);
+        let advisor = this.container.get(AdvisorToken);
         let matched: MatchPointcut[] = [];
 
         if (targetType === aspectType) {
@@ -68,7 +67,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             }
 
             let allmethods = getParamerterNames(targetType);
-            lang.forIn(allmethods, (item, name:string) => {
+            lang.forIn(allmethods, (item, name: string) => {
                 if (name === 'constructor') {
                     return;
                 }

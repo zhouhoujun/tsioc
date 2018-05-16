@@ -1,5 +1,5 @@
-import { IContainer, ActionData, ActionComposite, Provider, symbols, IMethodAccessor, getClassName } from '@ts-ioc/core';
-import { IAdvisor } from '../IAdvisor';
+import { IContainer, ActionData, ActionComposite, Provider, IMethodAccessor, getClassName, MethodAccessorToken } from '@ts-ioc/core';
+import { IAdvisor, AdvisorToken } from '../IAdvisor';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';
 import { AdviceMetadata } from '../metadatas/index'
@@ -7,7 +7,6 @@ import { IAdviceMatcher } from '../IAdviceMatcher';
 import { IPointcut, Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints/index';
 import { Advices, Advicer } from '../advices/index';
 import { isValideAspectTarget } from '../isValideAspectTarget';
-import { AopSymbols } from '../symbols';
 
 /**
  * invoke after constructor action data.
@@ -38,7 +37,7 @@ export class InvokeAfterConstructorAction extends ActionComposite {
             return;
         }
 
-        let advisor = container.get<IAdvisor>(AopSymbols.IAdvisor);
+        let advisor = container.get(AdvisorToken);
         let className = getClassName(data.targetType);
         let advices = advisor.getAdvices(className + '.constructor');
         if (!advices) {
@@ -58,7 +57,7 @@ export class InvokeAfterConstructorAction extends ActionComposite {
         }));
         let providers = [Provider.create(Joinpoint, joinPoint)];
 
-        let access = container.get<IMethodAccessor>(symbols.IMethodAccessor);
+        let access = container.get(MethodAccessorToken);
         advices.After.forEach(advicer => {
             access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, ...providers);
         });

@@ -1,5 +1,5 @@
 import { Type, Providers, Token, ObjectMap, InstanceFactory } from '../types';
-import { Provider, ProviderMap, ParamProvider, InvokeProvider, ExtendsProvider, AsyncParamProvider, isProviderMap } from './providers/index';
+import { Provider, ProviderMap, ParamProvider, InvokeProvider, ExtendsProvider, AsyncParamProvider, isProviderMap, ProviderMapToken } from './providers/index';
 import { isString, isClass, isFunction, isNumber, isUndefined, isNull, isToken, isBaseObject, lang } from '../utils/index';
 import { IParameter } from '../IParameter';
 import { IProviderMatcher } from './IProviderMatcher';
@@ -22,7 +22,7 @@ export class ProviderMatcher implements IProviderMatcher {
         if (providers.length === 1 && isProviderMap(providers[0])) {
             return providers[0];
         }
-        let map = this.container.resolve(ProviderMap);
+        let map = this.container.resolve(ProviderMapToken);
         providers.forEach((p, index) => {
             if (isUndefined(p) || isNull(p)) {
                 return;
@@ -69,7 +69,7 @@ export class ProviderMatcher implements IProviderMatcher {
     }
 
     match(params: IParameter[], providers: ProviderMap): ProviderMap {
-        let map = this.container.resolve(ProviderMap);
+        let map = this.container.resolve(ProviderMapToken);
         if (!params.length) {
             return map;
         }

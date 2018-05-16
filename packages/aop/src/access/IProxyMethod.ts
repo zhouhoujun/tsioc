@@ -1,5 +1,11 @@
-import { Type } from '@ts-ioc/core';
+import { Type, InjectToken } from '@ts-ioc/core';
 import { IPointcut, Joinpoint } from '../joinpoints/index';
+
+/**
+ * Aop proxy method interface token.
+ * it is a token id, you can register yourself IProxyMethod for this.
+ */
+export const ProxyMethodToken = new InjectToken<IProxyMethod>('__IOC_IProxyMethod');
 
 /**
  * proxy method, for proxy advice method.

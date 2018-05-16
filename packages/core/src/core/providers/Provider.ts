@@ -1,7 +1,7 @@
 import { Token, ToInstance, Providers, Express2 } from '../../types';
 import { IContainer } from '../../IContainer';
-import { isFunction, isObject, symbols, isUndefined } from '../../utils/index';
-import { IContainerBuilder } from '../../IContainerBuilder';
+import { isFunction, isObject, isUndefined } from '../../utils/index';
+import { IContainerBuilder, ContainerBuilderToken } from '../../IContainerBuilder';
 
 /**
  *  provider, to dynamic resovle instance of params in run time.
@@ -262,7 +262,7 @@ export class AsyncParamProvider extends ParamProvider {
     }
 
     resolve<T>(container: IContainer, ...providers: Providers[]): any {
-        let buider = container.get<IContainerBuilder>(symbols.IContainerBuilder);
+        let buider = container.get(ContainerBuilderToken);
         return buider.loadModule(container, {
             files: this.files
         })

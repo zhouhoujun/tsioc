@@ -5,7 +5,13 @@ declare let require: any;
 
 
 
-
+/**
+ * server nodule loader.
+ *
+ * @export
+ * @class NodeModuleLoader
+ * @implements {IModuleLoader}
+ */
 export class NodeModuleLoader implements IModuleLoader {
 
     constructor() {

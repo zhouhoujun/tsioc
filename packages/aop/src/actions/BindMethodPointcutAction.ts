@@ -5,8 +5,7 @@ import { Aspect, Advice } from '../decorators/index';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AroundMetadata } from '../metadatas/index'
 import { IPointcut, Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints/index';
 import { isValideAspectTarget } from '../isValideAspectTarget';
-import { IProxyMethod, ProxyMethod } from '../access/index';
-import { AopSymbols } from '../symbols';
+import { IProxyMethod, ProxyMethod, ProxyMethodToken } from '../access/index';
 
 
 /**
@@ -38,7 +37,7 @@ export class BindMethodPointcutAction extends ActionComposite {
             return;
         }
 
-        let proxy = container.get<IProxyMethod>(AopSymbols.IProxyMethod);
+        let proxy = container.get(ProxyMethodToken);
 
         let target = data.target;
         let targetType = data.targetType;

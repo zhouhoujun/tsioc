@@ -1,12 +1,11 @@
 import {
     IContainer, Singleton, Inject, MethodMetadata, getOwnMethodMetadata,
-    MapSet, Type, ObjectMap, getClassName, symbols, lang
+    MapSet, Type, ObjectMap, getClassName, lang, ContainerToken
 } from '@ts-ioc/core';
 import { Advices, Advicer } from './advices/index';
 import { Aspect, Advice, NonePointcut } from './decorators/index';
 import { AdviceMetadata } from './metadatas/index';
-import { IAdvisor } from './IAdvisor';
-import { AopSymbols } from './symbols';
+import { IAdvisor, AdvisorToken } from './IAdvisor';
 
 /**
  * for global aop advisor.
@@ -15,7 +14,7 @@ import { AopSymbols } from './symbols';
  * @class Advisor
  */
 @NonePointcut()
-@Singleton(AopSymbols.IAdvisor)
+@Singleton(AdvisorToken)
 export class Advisor implements IAdvisor {
     /**
      * aspects.
@@ -33,7 +32,7 @@ export class Advisor implements IAdvisor {
     advices: MapSet<string, Advices>;
 
 
-    constructor(@Inject(symbols.IContainer) private container: IContainer) {
+    constructor(@Inject(ContainerToken) private container: IContainer) {
         this.aspects = new MapSet<Type<any>, ObjectMap<AdviceMetadata[]>>();
         this.advices = new MapSet<string, Advices>();
     }

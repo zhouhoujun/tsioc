@@ -1,4 +1,8 @@
-import { LogFormater } from './LogFormater';
+import { LogFormaterToken, ILogFormater } from './LogFormater';
+import { InjectToken } from '@ts-ioc/core';
+import { LogConfigure, LogConfigureToken } from './LogConfigure';
+import { ILoggerManager, ILoggerManagerToken } from './ILoggerManager';
+import { IConfigureLoggerManager, ConfigureLoggerManagerToken } from './IConfigureLoggerManager';
 
 /**
 * symbols of aop log module.
@@ -9,25 +13,25 @@ export interface LogSymbols {
      * Log formater interface symbol.
      * it is a symbol id, you can register yourself formater for log.
      */
-    LogFormater: symbol,
+    LogFormater: InjectToken<ILogFormater>,
 
     /**
      * Log configure interface symbol.
      * it is a symbol id, you can register yourself LogConfigure for this.
      */
-    LogConfigure: symbol;
+    LogConfigure: InjectToken<LogConfigure>;
 
     /**
      * LoggerManger interface symbol.
      * it is a symbol id, you can register yourself LoggerManger for this.
      */
-    ILoggerManager: symbol;
+    ILoggerManager: InjectToken<ILoggerManager>;
 
     /**
      * IConfigureLoggerManager interface symbol.
      * it is a symbol id, you can register yourself IConfigureLoggerManager for this.
      */
-    IConfigureLoggerManager: symbol;
+    IConfigureLoggerManager: InjectToken<IConfigureLoggerManager>;
 }
 
 
@@ -40,23 +44,23 @@ export const LogSymbols: LogSymbols = {
      * Log formater interface symbol.
      * it is a symbol id, you can register yourself formater for log.
      */
-    LogFormater: Symbol('__IOC_LogFormater'),
+    LogFormater: LogFormaterToken,
 
     /**
      * Log configure interface symbol.
      * it is a symbol id, you can register yourself LogConfigure for this.
      */
-    LogConfigure: Symbol('__IOC_LogConfigure'),
+    LogConfigure: LogConfigureToken,
 
     /**
      * LoggerManger interface symbol.
      * it is a symbol id, you can register yourself LoggerManger for this.
      */
-    ILoggerManager: Symbol('__IOC_ILoggerManager'),
+    ILoggerManager: ILoggerManagerToken,
 
     /**
      * IConfigureLoggerManager interface symbol.
      * it is a symbol id, you can register yourself IConfigureLoggerManager for this.
      */
-    IConfigureLoggerManager: Symbol('__IOC_IConfigureLoggerManager')
+    IConfigureLoggerManager: ConfigureLoggerManagerToken
 }

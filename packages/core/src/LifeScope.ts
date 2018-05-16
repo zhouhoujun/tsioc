@@ -1,6 +1,7 @@
 import { Metadate, ProviderMetadata, MethodMetadata, ActionComponent, ActionData, DecoratorType } from './core/index';
 import { Type, Token, Express } from './types';
 import { IParameter } from './IParameter';
+import { InjectToken } from './InjectToken';
 
 /**
  * Decorator summary.
@@ -32,6 +33,11 @@ export interface DecorSummary {
     actions: string[];
 }
 
+/**
+ * life scope interface symbol.
+ * it is a symbol id, you can register yourself MethodAccessor for this.
+ */
+export const LifeScopeToken = new InjectToken<LifeScope>('__IOC_LifeScope');
 
 /**
  * life scope of decorator.

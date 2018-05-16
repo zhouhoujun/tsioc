@@ -1,15 +1,15 @@
 import 'reflect-metadata';
-import { IContainer } from './IContainer';
+import { IContainer, ContainerToken } from './IContainer';
 import { Type, AbstractType, Token, Factory, ObjectMap, SymbolType, ToInstance, IocState, Providers, ModuleType } from './types';
 import { Registration } from './Registration';
-import { isClass, isFunction, symbols, isSymbol, isToken, isString, isUndefined, MapSet } from './utils/index';
+import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet } from './utils/index';
 
-import { IMethodAccessor } from './IMethodAccessor';
+import { IMethodAccessor, MethodAccessorToken } from './IMethodAccessor';
 import { ActionComponent, DecoratorType, registerCores, CoreActions, Singleton, PropertyMetadata, ComponentLifecycle, CacheActionData, LifeState } from './core/index';
-import { LifeScope } from './LifeScope';
+import { LifeScope, LifeScopeToken } from './LifeScope';
 import { IParameter } from './IParameter';
-import { ICacheManager } from './ICacheManager';
-import { IContainerBuilder } from './IContainerBuilder';
+import { ICacheManager, CacheManagerToken } from './ICacheManager';
+import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 
 /**
  * Container.
@@ -63,7 +63,7 @@ export class Container implements IContainer {
      * @memberof IContainer
      */
     clearCache(targetType: Type<any>) {
-        this.get<ICacheManager>(symbols.ICacheManager).destroy(targetType);
+        this.get(CacheManagerToken).destroy(targetType);
     }
 
     /**
@@ -76,14 +76,10 @@ export class Container implements IContainer {
      * @memberof Container
      */
     getToken<T>(token: Token<T>, alias?: string): Token<T> {
-        if (token instanceof Registration) {
-            return token;
-        } else {
-            if (alias && isFunction(token)) {
-                return new Registration(token, alias);
-            }
-            return token;
+        if (alias) {
+            return new Registration(token, alias);
         }
+        return token;
     }
 
 
@@ -97,16 +93,13 @@ export class Container implements IContainer {
      * @memberof Container
      */
     getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
-        if (token instanceof Registration) {
+        if (alias) {
+            return new Registration(token, alias).toString();
+        } else if (token instanceof Registration) {
             return token.toString();
-        } else {
-            if (alias) {
-                return new Registration(token, alias).toString();
-            }
-            return token;
         }
+        return token;
     }
-
 
     /**
      * register type.
@@ -269,7 +262,7 @@ export class Container implements IContainer {
     * @memberof IContainer
     */
     getLifeScope(): LifeScope {
-        return this.get<LifeScope>(symbols.LifeScope);
+        return this.get(LifeScopeToken);
     }
 
     /**
@@ -280,7 +273,7 @@ export class Container implements IContainer {
      * @memberof Container
      */
     use(...modules: ModuleType[]): this {
-        this.get<IContainerBuilder>(symbols.IContainerBuilder).syncLoadModule(this, ...modules);
+        this.get<IContainerBuilder>(ContainerBuilderToken).syncLoadModule(this, ...modules);
         return this;
     }
 
@@ -296,7 +289,7 @@ export class Container implements IContainer {
      * @memberof Container
      */
     invoke<T>(token: Token<any>, propertyKey: string | symbol, instance?: any, ...providers: Providers[]): Promise<T> {
-        return this.get<IMethodAccessor>(symbols.IMethodAccessor).invoke(token, propertyKey, instance, ...providers);
+        return this.get(MethodAccessorToken).invoke(token, propertyKey, instance, ...providers);
     }
 
     /**
@@ -311,15 +304,15 @@ export class Container implements IContainer {
      * @memberof Container
      */
     syncInvoke<T>(token: Token<any>, propertyKey: string | symbol, instance?: any, ...providers: Providers[]): T {
-        return this.get<IMethodAccessor>(symbols.IMethodAccessor).syncInvoke(token, propertyKey, instance, ...providers);
+        return this.get(MethodAccessorToken).syncInvoke(token, propertyKey, instance, ...providers);
     }
 
     createSyncParams(params: IParameter[], ...providers: Providers[]): any[] {
-        return this.get<IMethodAccessor>(symbols.IMethodAccessor).createSyncParams(params, ...providers);
+        return this.get(MethodAccessorToken).createSyncParams(params, ...providers);
     }
 
     createParams(params: IParameter[], ...providers: Providers[]): Promise<any[]> {
-        return this.get<IMethodAccessor>(symbols.IMethodAccessor).createParams(params, ...providers);
+        return this.get(MethodAccessorToken).createParams(params, ...providers);
     }
 
 
@@ -333,7 +326,7 @@ export class Container implements IContainer {
         this.factories = new MapSet<Token<any>, Function>();
         this.singleton = new MapSet<Token<any>, any>();
         this.provideTypes = new MapSet<Token<any>, Type<any>>();
-        this.bindProvider(symbols.IContainer, () => this);
+        this.bindProvider(ContainerToken, () => this);
 
         registerCores(this);
     }

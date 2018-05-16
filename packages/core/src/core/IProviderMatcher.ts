@@ -1,7 +1,13 @@
 import { IParameter } from '../IParameter';
 import { Providers } from '../types';
 import { ProviderMap } from '../core/index';
+import { InjectToken } from '../InjectToken';
 
+/**
+ * Providers match interface symbol.
+ * it is a symbol id, you can register yourself MethodAccessor for this.
+ */
+export const ProviderMatcherToken = new InjectToken<IProviderMatcher>('__IOC_IProviderMatcher');
 
 /**
  * Providers Convert

@@ -1,4 +1,4 @@
-import { DecoratorType, ActionComposite, ActionComponent, Singleton, symbols, CoreActions } from '@ts-ioc/core';
+import { DecoratorType, ActionComposite, ActionComponent, Singleton, CoreActions } from '@ts-ioc/core';
 import { AopActions } from './AopActions';
 import { RegistAspectAction } from './RegistAspectAction';
 import {

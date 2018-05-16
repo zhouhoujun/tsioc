@@ -5,10 +5,9 @@ import { IContainer, Singleton, Inject, Abstract, isFunction, Type, isString, is
 import { LoggerMetadata } from './decorators/Logger';
 import { LogConfigure } from './LogConfigure';
 import { ILogger } from './ILogger';
-import { ILoggerManger } from './ILoggerManger';
-import { LogSymbols } from './symbols';
-import { IConfigureLoggerManager } from './IConfigureLoggerManager';
-import { ILogFormater } from '.';
+import { ILoggerManager } from './ILoggerManager';
+import { IConfigureLoggerManager, ConfigureLoggerManagerToken } from './IConfigureLoggerManager';
+import { ILogFormater, LogFormaterToken } from '.';
 
 /**
  * base looger aspect. for extends your logger aspect.
@@ -34,7 +33,7 @@ export class LoggerAspect {
 
     get logManger(): IConfigureLoggerManager {
         if (!this._logManger) {
-            this._logManger = this.container.resolve<IConfigureLoggerManager>(LogSymbols.IConfigureLoggerManager, { config: this.config });
+            this._logManger = this.container.resolve(ConfigureLoggerManagerToken, { config: this.config });
         }
         return this._logManger;
     }
@@ -74,7 +73,7 @@ export class LoggerAspect {
             return config.format.format(joinPoint, message);
         } else {
             let token = isString(config.format) ? config.format : '';
-            let foramter = this.container.resolve<ILogFormater>(new Registration(LogSymbols.LogFormater, token || 'default'));
+            let foramter = this.container.resolve<ILogFormater>(new Registration(LogFormaterToken, token || 'default'));
             if (foramter) {
                 return foramter.format(joinPoint, message);
             }

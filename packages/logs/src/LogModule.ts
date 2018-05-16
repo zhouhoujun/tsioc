@@ -3,7 +3,6 @@ import { AopModule } from '@ts-ioc/aop';
 import { Logger } from './decorators/Logger';
 import { AnnotationLogerAspect } from './AnnotationLogerAspect';
 import { ConsoleLogManager } from './ConsoleLogManager';
-import { LogSymbols } from './symbols';
 import { ConfigureLoggerManger } from './ConfigureLoggerManger';
 import { LogFormater } from './LogFormater';
 
@@ -19,8 +18,6 @@ export class LogModule {
     constructor(@Inject(symbols.IContainer) private container: IContainer) {
 
     }
-
-    static symbols = LogSymbols;
 
     /**
      * register aop for container.

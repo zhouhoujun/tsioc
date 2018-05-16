@@ -2,7 +2,6 @@ import 'reflect-metadata';
 import { ParamPropMetadata, TypeMetadata } from '../metadatas/index';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { Registration } from '../../Registration';
 import { isClass, isToken, isParamPropMetadata, isString, isSymbol } from '../../utils/index';
 import { ArgsIterator } from './ArgsIterator';
 import { Token } from '../../types';
@@ -19,8 +18,8 @@ export type PropParamDecorator = (target: Object, propertyKey: string | symbol, 
 export interface IParamPropDecorator<T extends ParamPropMetadata> {
     /**
      * define parameter or property decorator with param.
-     * 
-     * @param {Token<T>} provider define provider to resolve value to the parameter or property.  
+     *
+     * @param {Token<T>} provider define provider to resolve value to the parameter or property.
      */
     (provider: Token<any>): PropParamDecorator;
     /**

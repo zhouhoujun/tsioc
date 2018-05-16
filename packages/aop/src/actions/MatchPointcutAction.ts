@@ -1,16 +1,15 @@
 
 import {
-    IContainer, ActionData, ActionComposite, symbols, lang
+    IContainer, ActionData, ActionComposite, lang
 } from '@ts-ioc/core';
-import { IAdvisor } from '../IAdvisor';
+import { IAdvisor, AdvisorToken } from '../IAdvisor';
 import { AopActions } from './AopActions';
 import { Aspect, Advice } from '../decorators/index';
 import { AdviceMetadata } from '../metadatas/index'
-import { IAdviceMatcher } from '../IAdviceMatcher';
+import { IAdviceMatcher, AdviceMatcherToken } from '../IAdviceMatcher';
 import { IPointcut, Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints/index';
 import { Advices, Advicer } from '../advices/index';
 import { isValideAspectTarget } from '../isValideAspectTarget';
-import { AopSymbols } from '../symbols';
 
 
 /**
@@ -41,8 +40,8 @@ export class MatchPointcutAction extends ActionComposite {
         if (!isValideAspectTarget(data.targetType)) {
             return;
         }
-        let advisor = container.get<IAdvisor>(AopSymbols.IAdvisor);
-        let matcher = container.get<IAdviceMatcher>(AopSymbols.IAdviceMatcher);
+        let advisor = container.get(AdvisorToken);
+        let matcher = container.get(AdviceMatcherToken);
         advisor.aspects.forEach((adviceMetas, type) => {
             let matchpoints = matcher.match(type, data.targetType, adviceMetas);
             matchpoints.forEach(mpt => {

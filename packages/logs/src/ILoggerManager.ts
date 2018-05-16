@@ -1,4 +1,4 @@
-import { ObjectMap } from '@ts-ioc/core';
+import { ObjectMap, InjectToken } from '@ts-ioc/core';
 import { Level } from './Level';
 import { ILogger } from './ILogger';
 
@@ -12,13 +12,15 @@ import { ILogger } from './ILogger';
 export interface LoggerConfig extends ObjectMap<any> {
 }
 
+
+export const ILoggerManagerToken = new InjectToken<ILoggerManager>('__IOC_ILoggerManager');
 /**
  * logger manager.
  *
  * @export
  * @interface ILoggerManger
  */
-export interface ILoggerManger {
+export interface ILoggerManager {
     /**
      * config logger context.
      *

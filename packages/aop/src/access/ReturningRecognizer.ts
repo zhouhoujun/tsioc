@@ -1,10 +1,10 @@
-import { Singleton, IRecognizer, symbols, isPromise, isObservable } from '@ts-ioc/core';
+import { Singleton, IRecognizer, isPromise, isObservable, RecognizerToken } from '@ts-ioc/core';
 import { ReturningType } from './ReturningType';
 import { JoinpointState } from '../joinpoints/index';
 import { NonePointcut } from '../decorators/index';
 
 @NonePointcut()
-@Singleton(symbols.IRecognizer, JoinpointState.AfterReturning)
+@Singleton(RecognizerToken, JoinpointState.AfterReturning)
 export class ReturningRecognizer implements IRecognizer {
     constructor() {
 

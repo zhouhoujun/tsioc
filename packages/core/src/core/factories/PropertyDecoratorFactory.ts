@@ -4,7 +4,6 @@ import { DecoratorType } from './DecoratorType';
 import { isToken, isString, isPropertyMetadata } from '../../utils/index';
 import { ArgsIterator } from './ArgsIterator';
 import { Token } from '../../types';
-import { Registration } from '../../Registration';
 
 
 /**
@@ -16,8 +15,8 @@ import { Registration } from '../../Registration';
 export interface IPropertyDecorator<T extends PropertyMetadata> {
     /**
      * define property decorator with param.
-     * 
-     * @param {Token<T>} provider define provider to resolve value to the property.  
+     *
+     * @param {Token<T>} provider define provider to resolve value to the property.
      */
     (provider: Token<any>): PropertyDecorator;
     /**

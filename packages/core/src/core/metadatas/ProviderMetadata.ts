@@ -1,4 +1,4 @@
-import { SymbolType } from '../../types';
+import { Token } from '../../types';
 import { TypeMetadata } from './TypeMetadata';
 
 /**
@@ -15,6 +15,6 @@ export interface ProviderMetadata extends TypeMetadata {
      * @type {SymbolType<any>}
      * @memberof Provider
      */
-    provide?:  SymbolType<any>;
+    provide?:  Token<any>;
     alias?: string;
 }

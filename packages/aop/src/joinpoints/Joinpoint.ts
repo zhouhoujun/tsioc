@@ -1,9 +1,8 @@
-import { IJoinpoint } from './IJoinpoint';
+import { IJoinpoint, JoinpointToken } from './IJoinpoint';
 import { Type, Injectable, MethodMetadata, IParameter } from '@ts-ioc/core';
 import { JoinpointState } from './JoinpointState';
 import { Advicer } from '../advices/index';
 import { NonePointcut } from '../decorators/index';
-import { AopSymbols } from '../symbols';
 
 /**
  * Join point data.
@@ -12,7 +11,7 @@ import { AopSymbols } from '../symbols';
  * @class Joinpoint
  * @implements {IJoinpoint}
  */
-@Injectable(AopSymbols.IJoinpoint)
+@Injectable(JoinpointToken)
 @NonePointcut()
 export class Joinpoint implements IJoinpoint {
     /**

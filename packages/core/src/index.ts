@@ -3,11 +3,13 @@ export * from './IContainer';
 export * from './Container';
 export * from './types';
 export * from './Registration';
+export * from './InjectToken';
 export * from './IContainerBuilder';
 export * from './IParameter';
 export * from './IMethodAccessor';
 export * from './ICacheManager';
 
+export * from './tokens';
 export * from './LifeScope';
 
 export * from './LoadOptions';

@@ -1,27 +1,26 @@
 import { IContainer, Provider, Injectable, Singleton, Inject, Type, LifeScope,
-    IMethodAccessor, isFunction, symbols
+    IMethodAccessor, isFunction, ContainerToken
 } from '@ts-ioc/core';
 import { Advicer, Advices } from '../advices/index';
 import { JoinpointState, IPointcut } from '../joinpoints/index';
 import { Joinpoint } from '../joinpoints/index';
-import { IAdvisor } from '../IAdvisor';
-import { IProxyMethod } from './IProxyMethod';
-import { IAdvisorChainFactory } from './IAdvisorChainFactory';
+import { IAdvisor, AdvisorToken } from '../IAdvisor';
+import { IProxyMethod, ProxyMethodToken } from './IProxyMethod';
+import { IAdvisorChainFactory, AdvisorChainFactoryToken } from './IAdvisorChainFactory';
 import { NonePointcut } from '../decorators/index';
-import { AopSymbols } from '../symbols';
 
 @NonePointcut()
-@Singleton(AopSymbols.IProxyMethod)
+@Singleton(ProxyMethodToken)
 export class ProxyMethod implements IProxyMethod {
 
-    constructor(@Inject(symbols.IContainer) private container: IContainer) {
+    constructor(@Inject(ContainerToken) private container: IContainer) {
 
     }
 
     _aspectMgr: IAdvisor;
     get aspectMgr(): IAdvisor {
         if (!this._aspectMgr) {
-            this._aspectMgr = this.container.get<IAdvisor>(AopSymbols.IAdvisor);
+            this._aspectMgr = this.container.get(AdvisorToken);
         }
         return this._aspectMgr;
     }
@@ -78,7 +77,7 @@ export class ProxyMethod implements IProxyMethod {
                 targetType: targetType
             }));
 
-            let adChain = container.resolve<IAdvisorChainFactory>(AopSymbols.IAdvisorChainFactory, { container: container, advices: advices });
+            let adChain = container.resolve(AdvisorChainFactoryToken, { container: container, advices: advices });
             adChain.invoaction(joinPoint, JoinpointState.Before);
             adChain.invoaction(joinPoint, JoinpointState.Pointcut);
             let val, exeErr;

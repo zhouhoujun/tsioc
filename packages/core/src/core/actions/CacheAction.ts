@@ -2,12 +2,12 @@ import { ActionData } from '../ActionData';
 import { ClassMetadata } from '../metadatas/index';
 import { ActionComposite } from './ActionComposite';
 import { IContainer } from '../../IContainer';
-import { isFunction, isNumber, isClass, MapSet, symbols } from '../../utils/index';
+import { isFunction, isNumber, isClass, MapSet } from '../../utils/index';
 import { CoreActions } from './CoreActions';
 import { Type } from '../../types';
 import { DecoratorType, getOwnTypeMetadata, hasOwnClassMetadata } from '../factories/index';
 import { ComponentLifecycle } from '../ComponentLifecycle';
-import { ICacheManager } from '../../ICacheManager';
+import { ICacheManager, CacheManagerToken } from '../../ICacheManager';
 
 
 /**
@@ -39,7 +39,7 @@ export class CacheAction extends ActionComposite {
         if (data.singleton || !data.targetType || !isClass(data.targetType)) {
             return data;
         }
-        let cacheManager = container.get<ICacheManager>(symbols.ICacheManager);
+        let cacheManager = container.get(CacheManagerToken);
 
         if (data.target) {
             if (!cacheManager.hasCache(data.targetType)) {

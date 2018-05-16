@@ -4,7 +4,6 @@ import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFa
 import { DecoratorType } from './DecoratorType';
 import { isToken, isParamMetadata, isString } from '../../utils/index';
 import { ArgsIterator } from './ArgsIterator';
-import { Registration } from '../../Registration';
 import { Token } from '../../types';
 
 
@@ -17,8 +16,8 @@ import { Token } from '../../types';
 export interface IParameterDecorator<T extends ParameterMetadata> {
     /**
      * define parameter decorator with param.
-     * 
-     * @param {Token<T>} provider define provider to resolve value to the parameter.  
+     *
+     * @param {Token<T>} provider define provider to resolve value to the parameter.
      */
     (provider: Token<T>): ParameterDecorator;
     /**

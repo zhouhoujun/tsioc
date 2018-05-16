@@ -4,9 +4,9 @@ import { isArray, isObject } from './typeCheck';
 
 /**
  * get object keys.
- * 
- * @param {*} target 
- * @returns {string[]} 
+ *
+ * @param {*} target
+ * @returns {string[]}
  */
 export function keys(target: any): string[] {
     if (isObject(target)) {
@@ -17,12 +17,12 @@ export function keys(target: any): string[] {
 
 /**
  * assign
- * 
+ *
  * @export
- * @template T 
- * @param {T} target 
- * @param {...any[]} source 
- * @returns {T} 
+ * @template T
+ * @param {T} target
+ * @param {...any[]} source
+ * @returns {T}
  */
 export function assign<T, U, V>(target: T, source1: U, source2?: V, sources?: any[]): (T & U & V) | (T & U) {
     if (sources && sources.length) {
@@ -38,11 +38,11 @@ export function assign<T, U, V>(target: T, source1: U, source2?: V, sources?: an
 
 /**
  * create an new object from target object omit some field.
- * 
+ *
  * @export
- * @param {ObjectMap<any>} target 
- * @param {...string[]} fields 
- * @returns {*} 
+ * @param {ObjectMap<any>} target
+ * @param {...string[]} fields
+ * @returns {*}
  */
 export function omit(target: ObjectMap<any>, ...fields: string[]): any {
     if (isObject(target)) {
@@ -60,10 +60,10 @@ export function omit(target: ObjectMap<any>, ...fields: string[]): any {
 
 /**
  * object has field or not.
- * 
+ *
  * @export
- * @param {ObjectMap<any>} target 
- * @returns 
+ * @param {ObjectMap<any>} target
+ * @returns
  */
 export function hasField(target: ObjectMap<any>) {
     if (isObject(target)) {
@@ -74,11 +74,11 @@ export function hasField(target: ObjectMap<any>) {
 
 /**
  * for in opter for object or array.
- * 
+ *
  * @export
- * @template T 
- * @param {(ObjectMap<T> | T[])} target 
- * @param {(item: T, idx?: number|string) => void|boolean} iterator 
+ * @template T
+ * @param {(ObjectMap<T> | T[])} target
+ * @param {(item: T, idx?: number|string) => void|boolean} iterator
  */
 export function forIn<T>(target: ObjectMap<T> | T[], iterator: (item: T, idx?: number | string) => void | boolean) {
     if (isArray(target)) {
@@ -92,10 +92,10 @@ export function forIn<T>(target: ObjectMap<T> | T[], iterator: (item: T, idx?: n
 
 /**
  * find
- * 
- * @template T 
- * @param {(ObjectMap<T> | T[])} target 
- * @param {((item: T, idx?: number | string) => boolean)} express 
+ *
+ * @template T
+ * @param {(ObjectMap<T> | T[])} target
+ * @param {((item: T, idx?: number | string) => boolean)} express
  */
 export function find<T>(target: ObjectMap<T> | T[], express: (item: T, idx?: number | string) => boolean) {
     let item: T;

@@ -1,6 +1,14 @@
 import { IContainer } from './IContainer';
 import { Type, ModuleType } from './types';
 import { AsyncLoadOptions } from './LoadOptions';
+import { InjectToken } from './InjectToken';
+import { IModuleLoader } from './IModuleLoader';
+
+/**
+ * ContainerBuilder interface token.
+ * it is a token id, you can register yourself IContainerBuilder for this.
+ */
+export const ContainerBuilderToken = new InjectToken<IContainerBuilder>('__IOC_IContainerBuilder');
 
 /**
  * container builder.
@@ -9,6 +17,15 @@ import { AsyncLoadOptions } from './LoadOptions';
  * @interface IContainerBuilder
  */
 export interface IContainerBuilder {
+
+    /**
+     * loader
+     *
+     * @type {IModuleLoader}
+     * @memberof IContainerBuilder
+     */
+    loader: IModuleLoader;
+
     /**
      * create a new container.
      *

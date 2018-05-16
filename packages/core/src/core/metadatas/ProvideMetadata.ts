@@ -1,4 +1,4 @@
-import { SymbolType } from '../../types';
+import { Token } from '../../types';
 import { TypeMetadata } from './TypeMetadata';
 
 /**
@@ -12,10 +12,10 @@ export interface ProvideMetadata extends TypeMetadata {
     /**
      * this type provide from.
      *
-     * @type {SymbolType<any>}
+     * @type {Token<any>}
      * @memberof Provide
      */
-    provider?:  SymbolType<any>;
+    provider?:  Token<any>;
 
     /**
      * alias name. use to create Registration with provider.

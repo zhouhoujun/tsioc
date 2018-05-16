@@ -1,13 +1,15 @@
 import { IContainer } from '../IContainer';
-import { symbols } from '../utils/index';
 import { Injectable, Component, AutoWired, Inject, Singleton, Param, Method, Abstract, Autorun, IocModule } from './decorators/index';
 import { CoreActions } from './actions/index';
 import { DefaultLifeScope } from './DefaultLifeScope';
-import { LifeScope } from '../LifeScope';
+import { LifeScope, LifeScopeToken } from '../LifeScope';
 import { MethodAccessor } from './MethodAccessor';
 import { ProviderMatcher } from './ProviderMatcher';
-import { ProviderMap } from './providers/index';
+import { ProviderMap, ProviderMapToken } from './providers/index';
 import { CacheManager } from './CacheManager';
+import { CacheManagerToken } from '../ICacheManager';
+import { ProviderMatcherToken } from './IProviderMatcher';
+import { MethodAccessorToken } from '../IMethodAccessor';
 
 export * from './actions/index';
 export * from './decorators/index';
@@ -34,13 +36,14 @@ export * from './CacheManager';
  */
 export function registerCores(container: IContainer) {
 
-    container.registerSingleton(symbols.LifeScope, () => new DefaultLifeScope(container));
-    container.register(ProviderMap, () => new ProviderMap(container));
-    container.registerSingleton(symbols.ICacheManager, () => new CacheManager(container));
-    container.registerSingleton(symbols.IProviderMatcher, () => new ProviderMatcher(container));
-    container.registerSingleton(symbols.IMethodAccessor, () => new MethodAccessor(container));
+    container.registerSingleton(LifeScopeToken, () => new DefaultLifeScope(container));
+    container.registerSingleton(CacheManagerToken, () => new CacheManager(container));
+    container.register(ProviderMapToken, () => new ProviderMap(container));
+    container.bindProvider(ProviderMap, ProviderMapToken);
+    container.registerSingleton(ProviderMatcherToken, () => new ProviderMatcher(container));
+    container.registerSingleton(MethodAccessorToken, () => new MethodAccessor(container));
 
-    let lifeScope = container.get<LifeScope>(symbols.LifeScope);
+    let lifeScope = container.get(LifeScopeToken);
 
     lifeScope.registerDecorator(Injectable, CoreActions.bindProvider, CoreActions.cache);
     lifeScope.registerDecorator(Component, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);

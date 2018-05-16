@@ -1,7 +1,9 @@
-import { MapSet, symbols, isToken, isNumber, isFunction, isUndefined } from '../../utils/index';
+import { MapSet, isToken, isNumber, isFunction, isUndefined } from '../../utils/index';
 import { Type, Token, Factory, Providers, ToInstance, Express2 } from '../../types';
 import { IContainer } from '../../IContainer';
-import { Registration } from '../../Registration';
+import { InjectToken } from '../../InjectToken';
+
+export const ProviderMapToken = new InjectToken<ProviderMap>('__IOC_ProviderMap');
 
 /**
  * Provider Map

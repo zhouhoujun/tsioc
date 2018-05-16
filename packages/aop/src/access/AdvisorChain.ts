@@ -1,18 +1,17 @@
 import { IContainer, Provider, Injectable, Singleton, Inject, IRecognizer, Express,
-    symbols, isPromise, isArray, isObservable, isFunction
+    isPromise, isArray, isObservable, isFunction, ContainerToken, RecognizerToken
 } from '@ts-ioc/core';
 
 import { Joinpoint, JoinpointState } from '../joinpoints/index';
-import { IAdvisorChain } from './IAdvisorChain';
-import { IAdvisorProceeding } from './IAdvisorProceeding';
+import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
+import { IAdvisorProceeding, AdvisorProceedingToken } from './IAdvisorProceeding';
 import { NonePointcut } from '../decorators/index';
-import { AopSymbols } from '../symbols';
 
 @NonePointcut()
-@Injectable(AopSymbols.IAdvisorChain)
+@Injectable(AdvisorChainToken)
 export class AdvisorChain implements IAdvisorChain {
 
-    @Inject(symbols.IContainer)
+    @Inject(ContainerToken)
     container: IContainer;
 
     protected actions: Express<Joinpoint, any>[];
@@ -26,12 +25,12 @@ export class AdvisorChain implements IAdvisorChain {
     }
 
     getRecognizer(): IRecognizer {
-        return this.container.get(symbols.IRecognizer, this.joinPoint.state);
+        return this.container.get(RecognizerToken, this.joinPoint.state);
     }
 
     process(): void {
         let alias = this.getRecognizer().recognize(this.joinPoint.returning);
-        this.container.get<IAdvisorProceeding>(AopSymbols.IAdvisorProceeding, alias)
+        this.container.get(AdvisorProceedingToken, alias)
             .proceeding(this.joinPoint, ...this.actions);
     }
 

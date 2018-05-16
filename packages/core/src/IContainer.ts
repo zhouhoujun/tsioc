@@ -2,7 +2,13 @@ import { Type, Token, Factory, SymbolType, Providers, ModuleType } from './types
 import { ActionComponent, DecoratorType } from './core/index';
 import { IMethodAccessor } from './IMethodAccessor';
 import { LifeScope } from './LifeScope';
+import { InjectToken } from './InjectToken';
 
+/**
+ * IContainer token.
+ * it is a symbol id, you can use  @Inject, @Autowried or @Param to get container instance in yourself class.
+ */
+export const ContainerToken = new InjectToken<IContainer>('__IOC_IContainer');
 
 /**
  * container interface.
@@ -57,12 +63,12 @@ export interface IContainer extends IMethodAccessor {
      * get token.
      *
      * @template T
-     * @param {SymbolType<T>} target
+     * @param {Token<T>} target
      * @param {string} [alias]
      * @returns {Token<T>}
      * @memberof IContainer
      */
-    getToken<T>(target: SymbolType<T>, alias?: string): Token<T>;
+    getToken<T>(target: Token<T>, alias?: string): Token<T>;
     /**
      * get tocken key.
      *

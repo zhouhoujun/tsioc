@@ -1,5 +1,12 @@
 import { Joinpoint } from '../joinpoints/index';
-import { Express } from '@ts-ioc/core';
+import { Express, InjectToken } from '@ts-ioc/core';
+
+
+/**
+ * Aop IAdvisorProceeding interface token.
+ * it is a token id, you can register yourself IAdvisorProceeding for this.
+ */
+export const AdvisorProceedingToken = new InjectToken<IAdvisorProceeding>('__IOC_IAdvisorProceeding');
 
 /**
  * advisor proceeding.

@@ -1,8 +1,8 @@
 import { IContainer } from './IContainer';
 import { Container } from './Container';
-import { isFunction, isClass, symbols, isString } from './utils/index';
+import { isFunction, isClass, isString } from './utils/index';
 import { Type, ModuleType } from './types';
-import { IContainerBuilder } from './IContainerBuilder';
+import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { IModuleLoader } from './IModuleLoader';
 import { AsyncLoadOptions } from './LoadOptions';
 import { DefaultModuleLoader } from './DefaultModuleLoader';
@@ -16,15 +16,16 @@ import { hasOwnClassMetadata, IocModule } from './core/index';
  * @implements {IContainerBuilder}
  */
 export class DefaultContainerBuilder implements IContainerBuilder {
+    public loader: IModuleLoader;
 
-    constructor(private loader?: IModuleLoader) {
+    constructor(loader?: IModuleLoader) {
         if (!loader) {
             this.loader = new DefaultModuleLoader();
         }
     }
     create(): IContainer {
         let container = new Container();
-        container.bindProvider(symbols.IContainerBuilder, () => this);
+        container.bindProvider(ContainerBuilderToken, () => this);
         return container;
     }
 

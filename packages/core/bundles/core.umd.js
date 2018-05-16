@@ -20,52 +20,6 @@ function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
-var types = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * State of type in ioc.
- *
- * @export
- * @enum {number}
- */
-var IocState;
-(function (IocState) {
-    IocState["design"] = "design";
-    IocState["runtime"] = "runtime";
-})(IocState = exports.IocState || (exports.IocState = {}));
-/**
- * iterate way.
- *
- * @export
- * @enum {number}
- */
-var Mode;
-(function (Mode) {
-    /**
-     * route up. iterate in parents.
-     */
-    Mode[Mode["route"] = 1] = "route";
-    /**
-     * iterate in children.
-     */
-    Mode[Mode["children"] = 2] = "children";
-    /**
-     * iterate as tree map. node first
-     */
-    Mode[Mode["traverse"] = 3] = "traverse";
-    /**
-     * iterate as tree map. node last
-     */
-    Mode[Mode["traverseLast"] = 4] = "traverseLast";
-})(Mode = exports.Mode || (exports.Mode = {}));
-
-
-});
-
-unwrapExports(types);
-var types_1 = types.IocState;
-var types_2 = types.Mode;
-
 var lang = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -738,54 +692,43 @@ unwrapExports(MapSet_1);
 var MapSet_2 = MapSet_1.ObjectMapSet;
 var MapSet_3 = MapSet_1.MapSet;
 
-var symbols = createCommonjsModule(function (module, exports) {
+var Defer_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 /**
- * symbols of ioc module.
+ * defer
+ *
+ * @export
+ * @class Defer
+ * @template T
  */
-exports.symbols = {
-    /**
-     * IContainer interface symbol.
-     * it is a symbol id, you can use  @Inject, @Autowried or @Param to get container instance in yourself class.
-     */
-    IContainer: Symbol('IContainer'),
-    /**
-     * life scope interface symbol.
-     * it is a symbol id, you can register yourself MethodAccessor for this.
-     */
-    LifeScope: Symbol('LifeScope'),
-    /**
-     * Providers match interface symbol.
-     * it is a symbol id, you can register yourself MethodAccessor for this.
-     */
-    IProviderMatcher: Symbol('IProviderMatcher'),
-    /**
-     * IMethodAccessor interface symbol.
-     * it is a symbol id, you can register yourself MethodAccessor for this.
-     */
-    IMethodAccessor: Symbol('IMethodAccessor'),
-    /**
-     * ICacheManager interface symbol.
-     * it is a symbol id, you can register yourself ICacheManager for this.
-     */
-    ICacheManager: Symbol('ICacheManager'),
-    /**
-     * ContainerBuilder interface symbol.
-     * it is a symbol id, you can register yourself IContainerBuilder for this.
-     */
-    IContainerBuilder: Symbol('IContainerBuilder'),
-    /**
-     * IRecognizer interface symbol.
-     * it is a symbol id, you can register yourself IRecognizer for this.
-     */
-    IRecognizer: Symbol('IRecognizer')
-};
+var Defer = /** @class */ (function () {
+    function Defer() {
+        var _this = this;
+        this.promise = new Promise(function (resolve, reject) {
+            _this.resolve = resolve;
+            _this.reject = reject;
+        });
+    }
+    Defer.create = function (then) {
+        var defer = new Defer();
+        if (then) {
+            defer.promise = defer.promise.then(then);
+            return defer;
+        }
+        else {
+            return defer;
+        }
+    };
+    Defer.classAnnations = { "name": "Defer", "params": { "create": ["then"], "constructor": [] } };
+    return Defer;
+}());
+exports.Defer = Defer;
 
 
 });
 
-unwrapExports(symbols);
-var symbols_1 = symbols.symbols;
+unwrapExports(Defer_1);
+var Defer_2 = Defer_1.Defer;
 
 var utils = createCommonjsModule(function (module, exports) {
 function __export(m) {
@@ -794,9 +737,9 @@ function __export(m) {
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(typeCheck);
 __export(MapSet_1);
-__export(symbols);
 
 exports.lang = lang;
+__export(Defer_1);
 
 
 });
@@ -816,14 +759,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var Registration = /** @class */ (function () {
     /**
      * Creates an instance of Registration.
-     * @param {Type<T> | AbstractType<T>} classType
+     * @param {(provideType: Type<T> | AbstractType<T> | symbol | string | Registration<T>)} provideType
      * @param {string} desc
      * @memberof Registration
      */
-    function Registration(classType, desc) {
-        this.classType = classType;
-        this.desc = desc;
+    function Registration(provideType, desc) {
         this.type = 'Registration';
+        if (provideType instanceof Registration) {
+            this.classType = provideType.classType;
+            var pdec = provideType.getDesc();
+            if (pdec && desc && pdec !== desc) {
+                this.desc = pdec + '_' + desc;
+            }
+            else {
+                this.desc = desc;
+            }
+        }
+        else {
+            this.classType = provideType;
+            this.desc = desc;
+        }
     }
     /**
      * get class.
@@ -857,12 +812,12 @@ var Registration = /** @class */ (function () {
         if (utils.isFunction(this.classType)) {
             name = utils.getClassName(this.classType);
         }
-        else {
+        else if (this.classType) {
             name = this.classType.toString();
         }
         return this.type + " " + name + " " + this.desc;
     };
-    Registration.classAnnations = { "name": "Registration", "params": { "constructor": ["classType", "desc"], "getClass": [], "getDesc": [], "toString": [] } };
+    Registration.classAnnations = { "name": "Registration", "params": { "constructor": ["provideType", "desc"], "getClass": [], "getDesc": [], "toString": [] } };
     return Registration;
 }());
 exports.Registration = Registration;
@@ -872,6 +827,111 @@ exports.Registration = Registration;
 
 unwrapExports(Registration_1);
 var Registration_2 = Registration_1.Registration;
+
+var InjectToken_1 = createCommonjsModule(function (module, exports) {
+var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+
+var InjectToken = /** @class */ (function (_super) {
+    __extends(InjectToken, _super);
+    function InjectToken(desc) {
+        return _super.call(this, desc, '') || this;
+    }
+    InjectToken.classAnnations = { "name": "InjectToken", "params": { "constructor": ["desc"] } };
+    return InjectToken;
+}(Registration_1.Registration));
+exports.InjectToken = InjectToken;
+
+
+});
+
+unwrapExports(InjectToken_1);
+var InjectToken_2 = InjectToken_1.InjectToken;
+
+var IContainer = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * IContainer token.
+ * it is a symbol id, you can use  @Inject, @Autowried or @Param to get container instance in yourself class.
+ */
+exports.ContainerToken = new InjectToken_1.InjectToken('__IOC_IContainer');
+
+
+});
+
+unwrapExports(IContainer);
+var IContainer_1 = IContainer.ContainerToken;
+
+var types = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * State of type in ioc.
+ *
+ * @export
+ * @enum {number}
+ */
+var IocState;
+(function (IocState) {
+    IocState["design"] = "design";
+    IocState["runtime"] = "runtime";
+})(IocState = exports.IocState || (exports.IocState = {}));
+/**
+ * iterate way.
+ *
+ * @export
+ * @enum {number}
+ */
+var Mode;
+(function (Mode) {
+    /**
+     * route up. iterate in parents.
+     */
+    Mode[Mode["route"] = 1] = "route";
+    /**
+     * iterate in children.
+     */
+    Mode[Mode["children"] = 2] = "children";
+    /**
+     * iterate as tree map. node first
+     */
+    Mode[Mode["traverse"] = 3] = "traverse";
+    /**
+     * iterate as tree map. node last
+     */
+    Mode[Mode["traverseLast"] = 4] = "traverseLast";
+})(Mode = exports.Mode || (exports.Mode = {}));
+
+
+});
+
+unwrapExports(types);
+var types_1 = types.IocState;
+var types_2 = types.Mode;
+
+var IMethodAccessor = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * IMethodAccessor interface symbol.
+ * it is a symbol id, you can register yourself MethodAccessor for this.
+ */
+exports.MethodAccessorToken = new InjectToken_1.InjectToken('__IOC_IMethodAccessor');
+
+
+});
+
+unwrapExports(IMethodAccessor);
+var IMethodAccessor_1 = IMethodAccessor.MethodAccessorToken;
 
 var ArgsIterator_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -3111,6 +3171,21 @@ exports.ComponentAfterInitAction = ComponentAfterInitAction;
 unwrapExports(ComponentAfterInitAction_1);
 var ComponentAfterInitAction_2 = ComponentAfterInitAction_1.ComponentAfterInitAction;
 
+var ICacheManager = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * ICacheManager interface token.
+ * it is a token id, you can register yourself ICacheManager for this.
+ */
+exports.CacheManagerToken = new InjectToken_1.InjectToken('__IOC_ICacheManager');
+
+
+});
+
+unwrapExports(ICacheManager);
+var ICacheManager_1 = ICacheManager.CacheManagerToken;
+
 var CacheAction_1 = createCommonjsModule(function (module, exports) {
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -3123,6 +3198,7 @@ var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -3143,7 +3219,7 @@ var CacheAction = /** @class */ (function (_super) {
         if (data.singleton || !data.targetType || !utils.isClass(data.targetType)) {
             return data;
         }
-        var cacheManager = container.get(utils.symbols.ICacheManager);
+        var cacheManager = container.get(ICacheManager.CacheManagerToken);
         if (data.target) {
             if (!cacheManager.hasCache(data.targetType)) {
                 var cacheMetadata = this.getCacheMetadata(container, data);
@@ -3688,6 +3764,36 @@ exports.DefaultLifeScope = DefaultLifeScope;
 unwrapExports(DefaultLifeScope_1);
 var DefaultLifeScope_2 = DefaultLifeScope_1.DefaultLifeScope;
 
+var LifeScope = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * life scope interface symbol.
+ * it is a symbol id, you can register yourself MethodAccessor for this.
+ */
+exports.LifeScopeToken = new InjectToken_1.InjectToken('__IOC_LifeScope');
+
+
+});
+
+unwrapExports(LifeScope);
+var LifeScope_1 = LifeScope.LifeScopeToken;
+
+var IProviderMatcher = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * Providers match interface symbol.
+ * it is a symbol id, you can register yourself MethodAccessor for this.
+ */
+exports.ProviderMatcherToken = new InjectToken_1.InjectToken('__IOC_IProviderMatcher');
+
+
+});
+
+unwrapExports(IProviderMatcher);
+var IProviderMatcher_1 = IProviderMatcher.ProviderMatcherToken;
+
 var MethodAccessor_1 = createCommonjsModule(function (module, exports) {
 var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -3727,6 +3833,7 @@ var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (th
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
+
 /**
  * method accessor
  *
@@ -3739,7 +3846,7 @@ var MethodAccessor = /** @class */ (function () {
         this.container = container;
     }
     MethodAccessor.prototype.getMatcher = function () {
-        return this.container.get(utils.symbols.IProviderMatcher);
+        return this.container.get(IProviderMatcher.ProviderMatcherToken);
     };
     MethodAccessor.prototype.invoke = function (token, propertyKey, target) {
         var providers = [];
@@ -3864,6 +3971,8 @@ var MethodAccessor_2 = MethodAccessor_1.MethodAccessor;
 var ProviderMap_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
+
+exports.ProviderMapToken = new InjectToken_1.InjectToken('__IOC_ProviderMap');
 /**
  * Provider Map
  *
@@ -3955,7 +4064,23 @@ exports.ProviderMap = ProviderMap;
 });
 
 unwrapExports(ProviderMap_1);
-var ProviderMap_2 = ProviderMap_1.ProviderMap;
+var ProviderMap_2 = ProviderMap_1.ProviderMapToken;
+var ProviderMap_3 = ProviderMap_1.ProviderMap;
+
+var IContainerBuilder = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * ContainerBuilder interface token.
+ * it is a token id, you can register yourself IContainerBuilder for this.
+ */
+exports.ContainerBuilderToken = new InjectToken_1.InjectToken('__IOC_IContainerBuilder');
+
+
+});
+
+unwrapExports(IContainerBuilder);
+var IContainerBuilder_1 = IContainerBuilder.ContainerBuilderToken;
 
 var Provider_1 = createCommonjsModule(function (module, exports) {
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
@@ -3969,6 +4094,7 @@ var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 /**
  *  provider, to dynamic resovle instance of params in run time.
@@ -4210,7 +4336,7 @@ var AsyncParamProvider = /** @class */ (function (_super) {
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
-        var buider = container.get(utils.symbols.IContainerBuilder);
+        var buider = container.get(IContainerBuilder.ContainerBuilderToken);
         return buider.loadModule(container, {
             files: this.files
         })
@@ -4292,7 +4418,7 @@ var ProviderMatcher = /** @class */ (function () {
         if (providers$$1.length === 1 && providers.isProviderMap(providers$$1[0])) {
             return providers$$1[0];
         }
-        var map = this.container.resolve(providers.ProviderMap);
+        var map = this.container.resolve(providers.ProviderMapToken);
         providers$$1.forEach(function (p, index) {
             if (utils.isUndefined(p) || utils.isNull(p)) {
                 return;
@@ -4366,7 +4492,7 @@ var ProviderMatcher = /** @class */ (function () {
     };
     ProviderMatcher.prototype.match = function (params, providers$$1) {
         var _this = this;
-        var map = this.container.resolve(providers.ProviderMap);
+        var map = this.container.resolve(providers.ProviderMapToken);
         if (!params.length) {
             return map;
         }
@@ -4510,6 +4636,21 @@ exports.CacheManager = CacheManager;
 unwrapExports(CacheManager_1);
 var CacheManager_2 = CacheManager_1.CacheManager;
 
+var IRecognizer = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * IRecognizer interface token.
+ * it is a token id, you can register yourself IRecognizer for this.
+ */
+exports.RecognizerToken = new InjectToken_1.InjectToken('__IOC_IRecognizer');
+
+
+});
+
+unwrapExports(IRecognizer);
+var IRecognizer_1 = IRecognizer.RecognizerToken;
+
 var core = createCommonjsModule(function (module, exports) {
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
@@ -4523,10 +4664,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
+
+
 __export(actions);
 __export(decorators);
 __export(factories);
 __export(providers);
+__export(IRecognizer);
+__export(IProviderMatcher);
 __export(ActionFactory_1);
 __export(DefaultLifeScope_1);
 __export(ProviderMatcher_1);
@@ -4539,12 +4685,13 @@ __export(CacheManager_1);
  * @param {IContainer} container
  */
 function registerCores(container) {
-    container.registerSingleton(utils.symbols.LifeScope, function () { return new DefaultLifeScope_1.DefaultLifeScope(container); });
-    container.register(providers.ProviderMap, function () { return new providers.ProviderMap(container); });
-    container.registerSingleton(utils.symbols.ICacheManager, function () { return new CacheManager_1.CacheManager(container); });
-    container.registerSingleton(utils.symbols.IProviderMatcher, function () { return new ProviderMatcher_1.ProviderMatcher(container); });
-    container.registerSingleton(utils.symbols.IMethodAccessor, function () { return new MethodAccessor_1.MethodAccessor(container); });
-    var lifeScope = container.get(utils.symbols.LifeScope);
+    container.registerSingleton(LifeScope.LifeScopeToken, function () { return new DefaultLifeScope_1.DefaultLifeScope(container); });
+    container.registerSingleton(ICacheManager.CacheManagerToken, function () { return new CacheManager_1.CacheManager(container); });
+    container.register(providers.ProviderMapToken, function () { return new providers.ProviderMap(container); });
+    container.bindProvider(providers.ProviderMap, providers.ProviderMapToken);
+    container.registerSingleton(IProviderMatcher.ProviderMatcherToken, function () { return new ProviderMatcher_1.ProviderMatcher(container); });
+    container.registerSingleton(IMethodAccessor.MethodAccessorToken, function () { return new MethodAccessor_1.MethodAccessor(container); });
+    var lifeScope = container.get(LifeScope.LifeScopeToken);
     lifeScope.registerDecorator(decorators.Injectable, actions.CoreActions.bindProvider, actions.CoreActions.cache);
     lifeScope.registerDecorator(decorators.Component, actions.CoreActions.bindProvider, actions.CoreActions.cache, actions.CoreActions.componentBeforeInit, actions.CoreActions.componentInit, actions.CoreActions.componentAfterInit);
     lifeScope.registerDecorator(decorators.Singleton, actions.CoreActions.bindProvider);
@@ -4570,6 +4717,11 @@ var core_1 = core.registerCores;
 
 var Container_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+
 
 
 
@@ -4624,7 +4776,7 @@ var Container = /** @class */ (function () {
      * @memberof IContainer
      */
     Container.prototype.clearCache = function (targetType) {
-        this.get(utils.symbols.ICacheManager).destroy(targetType);
+        this.get(ICacheManager.CacheManagerToken).destroy(targetType);
     };
     /**
      * get token.
@@ -4636,15 +4788,10 @@ var Container = /** @class */ (function () {
      * @memberof Container
      */
     Container.prototype.getToken = function (token, alias) {
-        if (token instanceof Registration_1.Registration) {
-            return token;
+        if (alias) {
+            return new Registration_1.Registration(token, alias);
         }
-        else {
-            if (alias && utils.isFunction(token)) {
-                return new Registration_1.Registration(token, alias);
-            }
-            return token;
-        }
+        return token;
     };
     /**
      * get tocken key.
@@ -4656,15 +4803,13 @@ var Container = /** @class */ (function () {
      * @memberof Container
      */
     Container.prototype.getTokenKey = function (token, alias) {
-        if (token instanceof Registration_1.Registration) {
+        if (alias) {
+            return new Registration_1.Registration(token, alias).toString();
+        }
+        else if (token instanceof Registration_1.Registration) {
             return token.toString();
         }
-        else {
-            if (alias) {
-                return new Registration_1.Registration(token, alias).toString();
-            }
-            return token;
-        }
+        return token;
     };
     /**
      * register type.
@@ -4829,7 +4974,7 @@ var Container = /** @class */ (function () {
     * @memberof IContainer
     */
     Container.prototype.getLifeScope = function () {
-        return this.get(utils.symbols.LifeScope);
+        return this.get(LifeScope.LifeScopeToken);
     };
     /**
      * use modules.
@@ -4843,7 +4988,7 @@ var Container = /** @class */ (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             modules[_i] = arguments[_i];
         }
-        (_a = this.get(utils.symbols.IContainerBuilder)).syncLoadModule.apply(_a, [this].concat(modules));
+        (_a = this.get(IContainerBuilder.ContainerBuilderToken)).syncLoadModule.apply(_a, [this].concat(modules));
         return this;
         var _a;
     };
@@ -4863,7 +5008,7 @@ var Container = /** @class */ (function () {
         for (var _i = 3; _i < arguments.length; _i++) {
             providers[_i - 3] = arguments[_i];
         }
-        return (_a = this.get(utils.symbols.IMethodAccessor)).invoke.apply(_a, [token, propertyKey, instance].concat(providers));
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).invoke.apply(_a, [token, propertyKey, instance].concat(providers));
         var _a;
     };
     /**
@@ -4882,7 +5027,7 @@ var Container = /** @class */ (function () {
         for (var _i = 3; _i < arguments.length; _i++) {
             providers[_i - 3] = arguments[_i];
         }
-        return (_a = this.get(utils.symbols.IMethodAccessor)).syncInvoke.apply(_a, [token, propertyKey, instance].concat(providers));
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).syncInvoke.apply(_a, [token, propertyKey, instance].concat(providers));
         var _a;
     };
     Container.prototype.createSyncParams = function (params) {
@@ -4890,7 +5035,7 @@ var Container = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
-        return (_a = this.get(utils.symbols.IMethodAccessor)).createSyncParams.apply(_a, [params].concat(providers));
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createSyncParams.apply(_a, [params].concat(providers));
         var _a;
     };
     Container.prototype.createParams = function (params) {
@@ -4898,7 +5043,7 @@ var Container = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
-        return (_a = this.get(utils.symbols.IMethodAccessor)).createParams.apply(_a, [params].concat(providers));
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createParams.apply(_a, [params].concat(providers));
         var _a;
     };
     Container.prototype.cacheDecorator = function (map, action) {
@@ -4911,7 +5056,7 @@ var Container = /** @class */ (function () {
         this.factories = new utils.MapSet();
         this.singleton = new utils.MapSet();
         this.provideTypes = new utils.MapSet();
-        this.bindProvider(utils.symbols.IContainer, function () { return _this; });
+        this.bindProvider(IContainer.ContainerToken, function () { return _this; });
         core.registerCores(this);
     };
     Container.prototype.registerFactory = function (token, value, singleton) {
@@ -5063,6 +5208,66 @@ exports.Container = Container;
 unwrapExports(Container_1);
 var Container_2 = Container_1.Container;
 
+var tokens = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+
+
+/**
+ * tokens of ioc module.
+ */
+exports.symbols = {
+    /**
+     * IContainer interface token.
+     * it is a token id, you can use  @Inject, @Autowried or @Param to get container instance in yourself class.
+     */
+    IContainer: IContainer.ContainerToken,
+    /**
+     * life scope interface token.
+     * it is a token id, you can register yourself MethodAccessor for this.
+     */
+    LifeScope: LifeScope.LifeScopeToken,
+    /**
+     * Providers match interface token.
+     * it is a token id, you can register yourself MethodAccessor for this.
+     */
+    IProviderMatcher: core.ProviderMatcherToken,
+    /**
+     * IMethodAccessor interface token.
+     * it is a token id, you can register yourself MethodAccessor for this.
+     */
+    IMethodAccessor: IMethodAccessor.MethodAccessorToken,
+    /**
+     * ICacheManager interface token.
+     * it is a token id, you can register yourself ICacheManager for this.
+     */
+    ICacheManager: ICacheManager.CacheManagerToken,
+    /**
+     * ContainerBuilder interface token.
+     * it is a token id, you can register yourself IContainerBuilder for this.
+     */
+    IContainerBuilder: IContainerBuilder.ContainerBuilderToken,
+    /**
+     * IRecognizer interface token.
+     * it is a token id, you can register yourself IRecognizer for this.
+     */
+    IRecognizer: core.RecognizerToken
+};
+/**
+ * tokens of ioc module.
+ */
+exports.IocTokens = exports.symbols;
+
+
+});
+
+unwrapExports(tokens);
+var tokens_1 = tokens.symbols;
+var tokens_2 = tokens.IocTokens;
+
 var DefaultModuleLoader_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 /**
@@ -5166,6 +5371,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
 /**
  * default container builder.
  *
@@ -5183,7 +5389,7 @@ var DefaultContainerBuilder = /** @class */ (function () {
     DefaultContainerBuilder.prototype.create = function () {
         var _this = this;
         var container = new Container_1.Container();
-        container.bindProvider(utils.symbols.IContainerBuilder, function () { return _this; });
+        container.bindProvider(IContainerBuilder.ContainerBuilderToken, function () { return _this; });
         return container;
     };
     /**
@@ -5338,9 +5544,16 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
+__export(IContainer);
 __export(Container_1);
 __export(types);
 __export(Registration_1);
+__export(InjectToken_1);
+__export(IContainerBuilder);
+__export(IMethodAccessor);
+__export(ICacheManager);
+__export(tokens);
+__export(LifeScope);
 __export(DefaultModuleLoader_1);
 __export(DefaultContainerBuilder_1);
 __export(utils);

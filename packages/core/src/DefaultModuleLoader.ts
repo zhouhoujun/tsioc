@@ -1,5 +1,6 @@
 import { Type, ModuleType } from './types';
-import { IModuleLoader, AsyncLoadOptions } from '.';
+import { IModuleLoader } from './IModuleLoader';
+import { AsyncLoadOptions } from './LoadOptions';
 
 declare let require: any;
 

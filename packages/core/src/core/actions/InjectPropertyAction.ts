@@ -8,7 +8,7 @@ import { ActionComposite } from './ActionComposite';
 
 /**
  * inject property action data.
- * 
+ *
  * @export
  * @interface InjectPropertyActionData
  * @extends {BindPropertyTypeActionData}
@@ -18,7 +18,7 @@ export interface InjectPropertyActionData extends BindPropertyTypeActionData {
 }
 
 /**
- * inject property value action, to inject property value for resolve instance. 
+ * inject property value action, to inject property value for resolve instance.
  *
  * @export
  * @class SetPropAction

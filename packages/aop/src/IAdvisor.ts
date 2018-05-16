@@ -1,8 +1,13 @@
 import { AdviceMetadata } from './metadatas/index';
-import { Type, ObjectMap, MapSet } from '@ts-ioc/core';
+import { Type, ObjectMap, MapSet, InjectToken } from '@ts-ioc/core';
 import { Advice } from './decorators/index';
 import { Advices } from './advices/index';
 
+/**
+ * Aop IAdvisor interface token.
+ * it is a token id, you can register yourself IAdvisor for this.
+ */
+export const AdvisorToken = new InjectToken<IAdvisor>('__IOC_IAdvisor');
 
 /**
  * aspect and advices manager.

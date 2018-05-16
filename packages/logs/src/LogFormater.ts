@@ -1,7 +1,11 @@
-import { Token, Singleton, isString, isSymbol, isBoolean, IParameter, isNumber, isDate, isFunction, symbols, isPromise, isArray, isObject, isBaseType, getClassName, isClass, isBaseObject } from '@ts-ioc/core';
+import { Token, Singleton, isString, isSymbol, isBoolean, IParameter, isNumber, isDate, isFunction, symbols, isPromise, isArray, isObject, isBaseType, getClassName, isClass, isBaseObject, InjectToken } from '@ts-ioc/core';
 import { Joinpoint, JoinpointState, NonePointcut } from '@ts-ioc/aop';
 import { ILogger } from './ILogger';
-import { LogSymbols } from './symbols';
+/**
+ * Log formater interface token.
+ * it is a token id, you can register yourself formater for log.
+ */
+export const LogFormaterToken = new InjectToken<ILogFormater>('__IOC_LogFormater');
 
 /**
  * log formater logs
@@ -28,7 +32,7 @@ export type LOGFormater = ILogFormater | ((joinPoint?: Joinpoint, message?: stri
 
 
 @NonePointcut()
-@Singleton(LogSymbols.LogFormater, 'default')
+@Singleton(LogFormaterToken, 'default')
 export class LogFormater {
 
     constructor() {

@@ -1,6 +1,6 @@
 
 
-import { IContainer, LifeScope, DecoratorType, CoreActions, symbols, IocState, LifeState, Inject, IocModule } from '@ts-ioc/core';
+import { IContainer, LifeScope, DecoratorType, CoreActions, IocState, LifeState, Inject, IocModule, ContainerToken, LifeScopeToken } from '@ts-ioc/core';
 import { Aspect } from './decorators/index';
 import { Advisor } from './Advisor';
 import { AopActions } from './actions/index';
@@ -9,8 +9,6 @@ import { Advice } from './decorators/index';
 import { AopActionFactory } from './actions/AopActionFactory';
 import { Joinpoint } from './joinpoints/index';
 import { ProxyMethod, AdvisorChainFactory, AdvisorChain, SyncProceeding, AsyncObservableProceeding, AsyncPromiseProceeding, ReturningRecognizer } from './access/index';
-import { AopSymbols } from './symbols';
-
 /**
  * aop bootstrap main. auto run setup after registered.
  * with @IocModule('setup') decorator.
@@ -20,17 +18,9 @@ import { AopSymbols } from './symbols';
 @IocModule('setup')
 export class AopModule {
 
-    constructor(@Inject(symbols.IContainer) private container: IContainer) {
+    constructor(@Inject(ContainerToken) private container: IContainer) {
 
     }
-
-    /**
-     * symbols of aop.
-     *
-     * @static
-     * @memberof AopModule
-     */
-    static symbols = AopSymbols;
 
     /**
      * register aop for container.
@@ -51,7 +41,7 @@ export class AopModule {
         container.register(AdviceMatcher);
 
 
-        let lifeScope = container.get<LifeScope>(symbols.LifeScope);
+        let lifeScope = container.get(LifeScopeToken);
 
         let factory = new AopActionFactory();
         lifeScope.addAction(factory.create(AopActions.registAspect), IocState.design);

@@ -1,6 +1,13 @@
 import { Type, Token, Providers } from './types';
 import { IContainer } from './IContainer';
 import { IParameter } from './IParameter';
+import { InjectToken } from './InjectToken';
+
+/**
+ * IMethodAccessor interface symbol.
+ * it is a symbol id, you can register yourself MethodAccessor for this.
+ */
+export const MethodAccessorToken = new InjectToken<IMethodAccessor>('__IOC_IMethodAccessor');
 
 
 /**

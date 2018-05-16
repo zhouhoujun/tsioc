@@ -1,16 +1,15 @@
-import { IContainer, Provider, Injectable, Singleton, Inject, symbols, isUndefined, isArray, lang } from '@ts-ioc/core';
+import { IContainer, Provider, Injectable, Singleton, Inject, isUndefined, isArray, lang, ContainerToken } from '@ts-ioc/core';
 import { Joinpoint, JoinpointState } from '../joinpoints/index';
 import { Advicer, Advices } from '../advices/index';
-import { IAdvisorChainFactory } from './IAdvisorChainFactory';
-import { IAdvisorChain } from './IAdvisorChain';
+import { IAdvisorChainFactory, AdvisorChainFactoryToken } from './IAdvisorChainFactory';
+import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
 import { NonePointcut } from '../decorators/index';
-import { AopSymbols } from '../symbols';
 
 @NonePointcut()
-@Injectable(AopSymbols.IAdvisorChainFactory)
+@Injectable(AdvisorChainFactoryToken)
 export class AdvisorChainFactory implements IAdvisorChainFactory {
 
-    constructor(@Inject(symbols.IContainer) private container: IContainer, private advices: Advices) {
+    constructor(@Inject(ContainerToken) private container: IContainer, private advices: Advices) {
 
     }
 
@@ -107,7 +106,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
 
     afterReturning(joinPoint: Joinpoint) {
         let cloneJp = lang.assign({}, joinPoint);
-        let advChain = this.container.resolve<IAdvisorChain>(AopSymbols.IAdvisorChain, { joinPoint: cloneJp });
+        let advChain = this.container.resolve<IAdvisorChain>(AdvisorChainToken, { joinPoint: cloneJp });
         this.getAdvicers('Around')
             .forEach(advicer => {
                 advChain.next((jp) => {

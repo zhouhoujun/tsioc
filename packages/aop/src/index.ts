@@ -1,4 +1,4 @@
-export * from './symbols';
+export * from './tokens';
 export * from './actions/index';
 export * from './decorators/index';
 export * from './metadatas/index';

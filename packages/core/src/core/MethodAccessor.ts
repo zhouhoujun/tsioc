@@ -2,13 +2,13 @@ import { IContainer } from '../IContainer';
 import { ParamProvider, AsyncParamProvider, ProviderMap } from './providers/index';
 import { IMethodAccessor } from '../IMethodAccessor';
 import { BindParameterProviderActionData, CoreActions, LifeState } from './actions/index';
-import { symbols, isToken, isFunction, isUndefined, isString } from '../utils/index';
+import { isToken, isFunction, isUndefined, isString } from '../utils/index';
 import { Type, Token, Providers } from '../types';
 import { Container } from '../Container';
 import { IContainerBuilder } from '../IContainerBuilder';
 import { IParameter } from '../IParameter';
 import { DecoratorType } from './factories/index';
-import { IProviderMatcher } from './IProviderMatcher';
+import { IProviderMatcher, ProviderMatcherToken } from './IProviderMatcher';
 
 /**
  * method accessor
@@ -24,7 +24,7 @@ export class MethodAccessor implements IMethodAccessor {
     }
 
     getMatcher(): IProviderMatcher {
-        return this.container.get<IProviderMatcher>(symbols.IProviderMatcher);
+        return this.container.get(ProviderMatcherToken);
     }
 
     async invoke<T>(token: Token<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): Promise<T> {

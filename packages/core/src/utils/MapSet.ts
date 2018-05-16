@@ -1,6 +1,5 @@
 import { isClass, isString, isSymbol, isFunction, isUndefined } from './typeCheck';
 import { Type } from '../types';
-import { Registration } from '../Registration';
 import { keys, forIn } from './lang';
 
 /**
@@ -75,11 +74,11 @@ export class ObjectMapSet<TKey, TVal> {
 
 /**
  * map set.
- * 
+ *
  * @export
  * @class MapSet
- * @template TKey 
- * @template TVal 
+ * @template TKey
+ * @template TVal
  */
 export class MapSet<TKey, TVal> {
 
