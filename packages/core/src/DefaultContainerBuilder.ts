@@ -16,13 +16,21 @@ import { hasOwnClassMetadata, IocModule } from './core/index';
  * @implements {IContainerBuilder}
  */
 export class DefaultContainerBuilder implements IContainerBuilder {
-    public loader: IModuleLoader;
 
+
+    private _loader: IModuleLoader;
     constructor(loader?: IModuleLoader) {
-        if (!loader) {
-            this.loader = new DefaultModuleLoader();
-        }
+        this._loader = loader;
     }
+
+    get loader(): IModuleLoader {
+        if (!this._loader) {
+            this._loader = new DefaultModuleLoader();
+        }
+
+        return this._loader;
+    }
+
     create(): IContainer {
         let container = new Container();
         container.bindProvider(ContainerBuilderToken, () => this);

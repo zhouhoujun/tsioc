@@ -7,7 +7,7 @@ import { LogConfigure } from './LogConfigure';
 import { ILogger } from './ILogger';
 import { ILoggerManager } from './ILoggerManager';
 import { IConfigureLoggerManager, ConfigureLoggerManagerToken } from './IConfigureLoggerManager';
-import { ILogFormater, LogFormaterToken } from '.';
+import { ILogFormater, LogFormaterToken } from './LogFormater';
 
 /**
  * base looger aspect. for extends your logger aspect.

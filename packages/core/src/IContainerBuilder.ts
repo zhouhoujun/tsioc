@@ -24,7 +24,7 @@ export interface IContainerBuilder {
      * @type {IModuleLoader}
      * @memberof IContainerBuilder
      */
-    loader: IModuleLoader;
+    readonly loader: IModuleLoader;
 
     /**
      * create a new container.

@@ -5381,11 +5381,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 var DefaultContainerBuilder = /** @class */ (function () {
     function DefaultContainerBuilder(loader) {
-        this.loader = loader;
-        if (!loader) {
-            this.loader = new DefaultModuleLoader_1.DefaultModuleLoader();
-        }
+        this._loader = loader;
     }
+    Object.defineProperty(DefaultContainerBuilder.prototype, "loader", {
+        get: function () {
+            if (!this._loader) {
+                this._loader = new DefaultModuleLoader_1.DefaultModuleLoader();
+            }
+            return this._loader;
+        },
+        enumerable: true,
+        configurable: true
+    });
     DefaultContainerBuilder.prototype.create = function () {
         var _this = this;
         var container = new Container_1.Container();
