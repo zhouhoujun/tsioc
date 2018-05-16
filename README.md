@@ -205,7 +205,7 @@ container.resolve(Person, ...providers);
 
 ### Invoke method
 
-you can use yourself `MethodAccessor` by implement IMethodAccessor, register `symbols.IMethodAccessor` with your `MethodAccessor` in container,   see interface [IMethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/src/IMethodAccessor.ts).
+you can use yourself `MethodAccessor` by implement IMethodAccessor, register `MethodAccessorToken` with your `MethodAccessor` in container,   see interface [IMethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/src/IMethodAccessor.ts).
 
 ```ts
 
@@ -931,7 +931,7 @@ export const Aspect: IClassDecorator<ClassMetadata> = createClassDecorator<Class
 
 
 // 2. add decorator action
- let lifeScope = container.get<LifeScope>(symbols.LifeScope);
+ let lifeScope = container.get(LifeScopeToken);
  let factory = new AopActionFactory();
  lifeScope.addAction(factory.create(AopActions.registAspect), DecoratorType.Class, IocState.design);
 

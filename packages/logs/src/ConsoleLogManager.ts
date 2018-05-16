@@ -1,5 +1,5 @@
 import { Injectable, Singleton, isString } from '@ts-ioc/core';
-import { ILoggerManager, LoggerConfig, ILoggerManagerToken } from './ILoggerManager';
+import { ILoggerManager, LoggerConfig, LoggerManagerToken } from './ILoggerManager';
 import { ILogger } from './ILogger';
 import { NonePointcut } from '@ts-ioc/aop';
 import { Levels } from './Level';
@@ -17,7 +17,7 @@ export interface ConsoleLoggerConfig extends LoggerConfig {
 
 @NonePointcut()
 @Singleton()
-@Injectable(ILoggerManagerToken, 'console')
+@Injectable(LoggerManagerToken, 'console')
 export class ConsoleLogManager implements ILoggerManager {
     private logger: ILogger;
     constructor() {

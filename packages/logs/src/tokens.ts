@@ -1,7 +1,7 @@
 import { LogFormaterToken, ILogFormater } from './LogFormater';
 import { InjectToken } from '@ts-ioc/core';
 import { LogConfigure, LogConfigureToken } from './LogConfigure';
-import { ILoggerManager, ILoggerManagerToken } from './ILoggerManager';
+import { ILoggerManager, LoggerManagerToken } from './ILoggerManager';
 import { IConfigureLoggerManager, ConfigureLoggerManagerToken } from './IConfigureLoggerManager';
 
 /**
@@ -10,26 +10,26 @@ import { IConfigureLoggerManager, ConfigureLoggerManagerToken } from './IConfigu
 export interface LogSymbols {
 
     /**
-     * Log formater interface symbol.
-     * it is a symbol id, you can register yourself formater for log.
+     * Log formater interface token.
+     * it is a token id, you can register yourself formater for log.
      */
     LogFormater: InjectToken<ILogFormater>,
 
     /**
-     * Log configure interface symbol.
-     * it is a symbol id, you can register yourself LogConfigure for this.
+     * Log configure interface token.
+     * it is a token id, you can register yourself LogConfigure for this.
      */
     LogConfigure: InjectToken<LogConfigure>;
 
     /**
-     * LoggerManger interface symbol.
-     * it is a symbol id, you can register yourself LoggerManger for this.
+     * LoggerManger interface token.
+     * it is a token id, you can register yourself LoggerManger for this.
      */
     ILoggerManager: InjectToken<ILoggerManager>;
 
     /**
-     * IConfigureLoggerManager interface symbol.
-     * it is a symbol id, you can register yourself IConfigureLoggerManager for this.
+     * IConfigureLoggerManager interface token.
+     * it is a token id, you can register yourself IConfigureLoggerManager for this.
      */
     IConfigureLoggerManager: InjectToken<IConfigureLoggerManager>;
 }
@@ -41,26 +41,26 @@ export interface LogSymbols {
 export const LogSymbols: LogSymbols = {
 
     /**
-     * Log formater interface symbol.
-     * it is a symbol id, you can register yourself formater for log.
+     * Log formater interface token.
+     * it is a token id, you can register yourself formater for log.
      */
     LogFormater: LogFormaterToken,
 
     /**
-     * Log configure interface symbol.
-     * it is a symbol id, you can register yourself LogConfigure for this.
+     * Log configure interface token.
+     * it is a token id, you can register yourself LogConfigure for this.
      */
     LogConfigure: LogConfigureToken,
 
     /**
-     * LoggerManger interface symbol.
-     * it is a symbol id, you can register yourself LoggerManger for this.
+     * LoggerManger interface token.
+     * it is a token id, you can register yourself LoggerManger for this.
      */
-    ILoggerManager: ILoggerManagerToken,
+    ILoggerManager: LoggerManagerToken,
 
     /**
-     * IConfigureLoggerManager interface symbol.
-     * it is a symbol id, you can register yourself IConfigureLoggerManager for this.
+     * IConfigureLoggerManager interface token.
+     * it is a token id, you can register yourself IConfigureLoggerManager for this.
      */
     IConfigureLoggerManager: ConfigureLoggerManagerToken
 }

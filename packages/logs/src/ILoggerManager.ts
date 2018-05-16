@@ -12,8 +12,11 @@ import { ILogger } from './ILogger';
 export interface LoggerConfig extends ObjectMap<any> {
 }
 
-
-export const ILoggerManagerToken = new InjectToken<ILoggerManager>('__IOC_ILoggerManager');
+/**
+ * LoggerManger interface token.
+ * it is a token id, you can register yourself LoggerManger for this.
+ */
+export const LoggerManagerToken = new InjectToken<ILoggerManager>('__IOC_ILoggerManager');
 /**
  * logger manager.
  *

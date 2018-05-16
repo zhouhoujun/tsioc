@@ -1,4 +1,4 @@
-import { IContainer, Type, Defer, lang, isString, IContainerBuilder, AsyncLoadOptions, ModuleType, hasClassMetadata, Autorun } from '@ts-ioc/core';
+import { IContainer, Type, Defer, lang, isString, IContainerBuilder, AsyncLoadOptions, ModuleType, hasClassMetadata, Autorun, isClass, isFunction } from '@ts-ioc/core';
 import { AppConfiguration, defaultAppConfig, AppConfigurationToken } from './AppConfiguration';
 import { existsSync } from 'fs';
 import * as path from 'path';
@@ -148,13 +148,21 @@ export class PlatformServer {
         return this.builder;
     }
 
-    use(...modules: (ModuleType | string)[]): this {
-        this.usedModules = this.usedModules.concat(modules);
-        return this;
-    }
-
-    useCustom(...customs: CustomDefineModule[]): this {
-        this.customs = this.customs.concat(customs);
+    /**
+     * use module, custom module.
+     *
+     * @param {(...(ModuleType | string | CustomDefineModule)[])} modules
+     * @returns {this}
+     * @memberof PlatformServer
+     */
+    use(...modules: (ModuleType | string | CustomDefineModule)[]): this {
+        modules.forEach(m=>{
+            if(isFunction(m) && !isClass(m)){
+                this.customs.push(m);
+            } else {
+                this.usedModules.push(m);
+            }
+        });
         return this;
     }
 

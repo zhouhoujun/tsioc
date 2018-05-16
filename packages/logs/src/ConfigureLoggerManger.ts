@@ -1,5 +1,5 @@
 import { Injectable, IContainer, symbols, Inject, isString, isUndefined, Token, Registration, Type, isClass } from '@ts-ioc/core';
-import { ILoggerManager, ILoggerManagerToken } from './ILoggerManager';
+import { ILoggerManager, LoggerManagerToken } from './ILoggerManager';
 import { LogConfigure, LogConfigureToken } from './LogConfigure';
 import { ILogger } from './ILogger';
 import { LogFormater } from './LogFormater';
@@ -62,7 +62,7 @@ export class ConfigureLoggerManger implements IConfigureLoggerManager {
             let adapter = cfg.adapter || 'console';
             let token: Token<any>;
             if (isString(adapter)) {
-                token = new Registration(ILoggerManagerToken, adapter);
+                token = new Registration(LoggerManagerToken, adapter);
             } else {
                 token = adapter;
             }

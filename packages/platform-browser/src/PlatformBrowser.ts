@@ -1,4 +1,4 @@
-import { IContainer, Type, Defer, lang, isString, IContainerBuilder, AsyncLoadOptions, ModuleType, hasClassMetadata, Autorun, isUndefined } from '@ts-ioc/core';
+import { IContainer, Type, Defer, lang, isString, isFunction, isClass, IContainerBuilder, AsyncLoadOptions, ModuleType, hasClassMetadata, Autorun, isUndefined } from '@ts-ioc/core';
 import { AppConfiguration, defaultAppConfig, AppConfigurationToken } from './AppConfiguration';
 import { ContainerBuilder } from './ContainerBuilder';
 
@@ -134,13 +134,21 @@ export class PlatformBrowser {
         return this.builder;
     }
 
-    use(...modules: (ModuleType | string)[]): this {
-        this.usedModules = this.usedModules.concat(modules);
-        return this;
-    }
-
-    useCustom(...customs: CustomDefineModule[]): this {
-        this.customs = this.customs.concat(customs);
+    /**
+     * use module, custom module.
+     *
+     * @param {(...(ModuleType | string | CustomDefineModule)[])} modules
+     * @returns {this}
+     * @memberof PlatformServer
+     */
+    use(...modules: (ModuleType | string | CustomDefineModule)[]): this {
+        modules.forEach(m=>{
+            if(isFunction(m) && !isClass(m)){
+                this.customs.push(m);
+            } else {
+                this.usedModules.push(m);
+            }
+        });
         return this;
     }
 

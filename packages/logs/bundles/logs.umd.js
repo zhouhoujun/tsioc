@@ -149,13 +149,17 @@ var LogConfigure_1 = LogConfigure.LogConfigureToken;
 var ILoggerManager = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
-exports.ILoggerManagerToken = new core_1.InjectToken('__IOC_ILoggerManager');
+/**
+ * LoggerManger interface token.
+ * it is a token id, you can register yourself LoggerManger for this.
+ */
+exports.LoggerManagerToken = new core_1.InjectToken('__IOC_ILoggerManager');
 
 
 });
 
 unwrapExports(ILoggerManager);
-var ILoggerManager_1 = ILoggerManager.ILoggerManagerToken;
+var ILoggerManager_1 = ILoggerManager.LoggerManagerToken;
 
 var IConfigureLoggerManager = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -183,23 +187,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 exports.LogSymbols = {
     /**
-     * Log formater interface symbol.
-     * it is a symbol id, you can register yourself formater for log.
+     * Log formater interface token.
+     * it is a token id, you can register yourself formater for log.
      */
     LogFormater: LogFormater_1.LogFormaterToken,
     /**
-     * Log configure interface symbol.
-     * it is a symbol id, you can register yourself LogConfigure for this.
+     * Log configure interface token.
+     * it is a token id, you can register yourself LogConfigure for this.
      */
     LogConfigure: LogConfigure.LogConfigureToken,
     /**
-     * LoggerManger interface symbol.
-     * it is a symbol id, you can register yourself LoggerManger for this.
+     * LoggerManger interface token.
+     * it is a token id, you can register yourself LoggerManger for this.
      */
-    ILoggerManager: ILoggerManager.ILoggerManagerToken,
+    ILoggerManager: ILoggerManager.LoggerManagerToken,
     /**
-     * IConfigureLoggerManager interface symbol.
-     * it is a symbol id, you can register yourself IConfigureLoggerManager for this.
+     * IConfigureLoggerManager interface token.
+     * it is a token id, you can register yourself IConfigureLoggerManager for this.
      */
     IConfigureLoggerManager: IConfigureLoggerManager.ConfigureLoggerManagerToken
 };
@@ -323,7 +327,7 @@ var ConfigureLoggerManger = /** @class */ (function () {
                 var adapter = cfg.adapter || 'console';
                 var token = void 0;
                 if (core_1.isString(adapter)) {
-                    token = new core_1.Registration(ILoggerManager.ILoggerManagerToken, adapter);
+                    token = new core_1.Registration(ILoggerManager.LoggerManagerToken, adapter);
                 }
                 else {
                     token = adapter;
@@ -392,7 +396,7 @@ var ConsoleLogManager = /** @class */ (function () {
     ConsoleLogManager = __decorate([
         aop_1.NonePointcut(),
         core_1.Singleton(),
-        core_1.Injectable(ILoggerManager.ILoggerManagerToken, 'console'),
+        core_1.Injectable(ILoggerManager.LoggerManagerToken, 'console'),
         __metadata("design:paramtypes", [])
     ], ConsoleLogManager);
     return ConsoleLogManager;
@@ -777,7 +781,7 @@ exports.LogModule = LogModule;
 unwrapExports(LogModule_1);
 var LogModule_2 = LogModule_1.LogModule;
 
-var D__workspace_github_tsioc_packages_logs_lib = createCommonjsModule(function (module, exports) {
+var D__Workspace_Projects_modules_tsioc_packages_logs_lib = createCommonjsModule(function (module, exports) {
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
@@ -798,7 +802,7 @@ __export(LogModule_1);
 
 });
 
-var index = unwrapExports(D__workspace_github_tsioc_packages_logs_lib);
+var index = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_logs_lib);
 
 return index;
 
