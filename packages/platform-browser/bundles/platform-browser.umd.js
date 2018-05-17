@@ -107,18 +107,75 @@ exports.ContainerBuilder = ContainerBuilder;
 unwrapExports(ContainerBuilder_1);
 var ContainerBuilder_2 = ContainerBuilder_1.ContainerBuilder;
 
-var D__Workspace_Projects_modules_tsioc_packages_platformBrowser_lib = createCommonjsModule(function (module, exports) {
+var PlatformBrowser_1 = createCommonjsModule(function (module, exports) {
+var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * server app bootstrap
+ *
+ * @export
+ * @class Bootstrap
+ */
+var PlatformBrowser = /** @class */ (function (_super) {
+    __extends(PlatformBrowser, _super);
+    function PlatformBrowser(baseURL) {
+        var _this = _super.call(this) || this;
+        _this.baseURL = baseURL || !core_1.isUndefined(System) ? System.baseURL : location.href;
+        return _this;
+    }
+    PlatformBrowser.create = function (rootdir) {
+        return new PlatformBrowser(rootdir);
+    };
+    /**
+     * get container builder.
+     *
+     * @returns
+     * @memberof Bootstrap
+     */
+    PlatformBrowser.prototype.getContainerBuilder = function () {
+        if (!this.builder) {
+            this.builder = new ContainerBuilder_1.ContainerBuilder();
+        }
+        return this.builder;
+    };
+    PlatformBrowser.prototype.setRootdir = function (config) {
+        config.rootdir = this.baseURL;
+    };
+    PlatformBrowser.classAnnations = { "name": "PlatformBrowser", "params": { "constructor": ["baseURL"], "create": ["rootdir"], "getContainerBuilder": [], "setRootdir": ["config"] } };
+    return PlatformBrowser;
+}(core_1.Platform));
+exports.PlatformBrowser = PlatformBrowser;
+
+
+});
+
+unwrapExports(PlatformBrowser_1);
+var PlatformBrowser_2 = PlatformBrowser_1.PlatformBrowser;
+
+var D__workspace_github_tsioc_packages_platformBrowser_lib = createCommonjsModule(function (module, exports) {
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(BrowserModuleLoader_1);
 __export(ContainerBuilder_1);
+__export(PlatformBrowser_1);
 
 
 });
 
-var index = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_platformBrowser_lib);
+var index = unwrapExports(D__workspace_github_tsioc_packages_platformBrowser_lib);
 
 return index;
 

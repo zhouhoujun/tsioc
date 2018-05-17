@@ -1,12 +1,33 @@
-import { IContainer, Type, Defer, lang, isString, IContainerBuilder, AsyncLoadOptions, ModuleType, hasClassMetadata, Autorun, isClass, isFunction } from '@ts-ioc/core';
-import { AppConfiguration, defaultAppConfig, AppConfigurationToken } from './AppConfiguration';
+import { IContainer, Type, Defer, lang, isString, IContainerBuilder, AsyncLoadOptions, ModuleType, hasClassMetadata, Autorun, isClass, isFunction, Platform, CustomDefineModule, AppConfiguration, AppConfigurationToken, defaultAppConfig, IPlatform } from '@ts-ioc/core';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { ContainerBuilder } from './ContainerBuilder';
 import { toAbsolutePath } from './toAbsolute';
 
 
-export type CustomDefineModule = (container: IContainer, config?: AppConfiguration) => any | Promise<any>;
+/**
+ * server platform.
+ *
+ * @export
+ * @interface IPlatformServer
+ * @extends {IPlatform}
+ */
+export interface IPlatformServer extends IPlatform {
+    /**
+     * root url
+     *
+     * @type {string}
+     * @memberof IPlatformServer
+     */
+    rootdir: string;
+    /**
+     * load module from dir
+     *
+     * @param {...string[]} matchPaths
+     * @memberof IPlatformServer
+     */
+    loadDir(...matchPaths: string[]): this;
+}
 
 /**
  * server app bootstrap
@@ -14,43 +35,16 @@ export type CustomDefineModule = (container: IContainer, config?: AppConfigurati
  * @export
  * @class Bootstrap
  */
-export class PlatformServer {
+export class PlatformServer extends Platform {
 
-    private container: Defer<IContainer>;
-    private configDefer: Defer<AppConfiguration>;
-    private builder: IContainerBuilder;
-    private usedModules: (ModuleType | string)[];
-    private customs: CustomDefineModule[];
+    private dirMatchs: string[][];
     constructor(public rootdir: string) {
-        this.usedModules = [];
-        this.customs = [];
+        super();
+        this.dirMatchs = [];
     }
 
     static create(rootdir: string) {
         return new PlatformServer(rootdir);
-    }
-
-    useContainer(container: IContainer | Promise<IContainer>) {
-        if (container) {
-            if (!this.container) {
-                this.container = Defer.create<IContainer>();
-            }
-            this.container.resolve(container);
-        }
-        return this;
-    }
-
-    /**
-     * get container of bootstrap.
-     *
-     * @returns
-     * @memberof Bootstrap
-     */
-    getContainer() {
-        if (!this.container) {
-            this.useContainer(this.createContainer());
-        }
-        return this.container.promise;
     }
 
     /**
@@ -106,36 +100,6 @@ export class PlatformServer {
     }
 
     /**
-     * get configuration.
-     *
-     * @returns {Promise<AppConfiguration>}
-     * @memberof Bootstrap
-     */
-    getConfiguration(): Promise<AppConfiguration> {
-        if (!this.configDefer) {
-            this.useConfiguration();
-        }
-        return this.configDefer.promise;
-    }
-
-    protected createContainer(option?: AsyncLoadOptions): Promise<IContainer> {
-        return this.getContainerBuilder().build(option);
-    }
-
-
-    /**
-     * use container builder
-     *
-     * @param {IContainerBuilder} builder
-     * @returns
-     * @memberof Bootstrap
-     */
-    useContainerBuilder(builder: IContainerBuilder) {
-        this.builder = builder;
-        return this;
-    }
-
-    /**
      * get container builder.
      *
      * @returns
@@ -148,64 +112,27 @@ export class PlatformServer {
         return this.builder;
     }
 
-    /**
-     * use module, custom module.
-     *
-     * @param {(...(ModuleType | string | CustomDefineModule)[])} modules
-     * @returns {this}
-     * @memberof PlatformServer
-     */
-    use(...modules: (ModuleType | string | CustomDefineModule)[]): this {
-        modules.forEach(m=>{
-            if(isFunction(m) && !isClass(m)){
-                this.customs.push(m);
-            } else {
-                this.usedModules.push(m);
-            }
-        });
+    loadDir(...matchPaths: string[]): this {
+        this.dirMatchs.push(matchPaths);
         return this;
     }
 
-    async bootstrap(modules: Type<any>) {
-        let cfg: AppConfiguration = await this.getConfiguration();
-        let container: IContainer = await this.getContainer();
-        container = await this.initIContainer(cfg, container);
-        if (!container.has(modules)) {
-            container.register(modules);
-        }
-        if (!hasClassMetadata(Autorun, modules)) {
-            container.resolve(modules);
-        }
+
+    protected setRootdir(config: AppConfiguration) {
+        config.rootdir = this.rootdir;
     }
 
+
     protected async initIContainer(config: AppConfiguration, container: IContainer): Promise<IContainer> {
-        config.rootdir = config.rootdir ? toAbsolutePath(this.rootdir, config.rootdir) : this.rootdir;
-        container.registerSingleton(AppConfigurationToken, config);
+        await super.initIContainer(config, container);
         let builder = this.getContainerBuilder();
-        if (this.usedModules.length) {
-            await builder.loadModule(container, {
-                modules: this.usedModules
-            });
-        }
-
-        await builder.loadModule(container, { modules: ['@ts-ioc/aop'] });
-
-        if (config.aop) {
-            let aops = await builder.loadModule(container, {
+        await Promise.all(this.dirMatchs.map(dirs => {
+            return builder.loadModule(container, {
                 basePath: config.rootdir,
-                files: config.aop
+                files: dirs
             });
+        }));
 
-            config.usedAops = aops;
-        }
-
-        if (this.customs.length) {
-            await Promise.all(this.customs.map(cs => {
-                return cs(container, config);
-            }));
-        }
-
-        container.resolve(AppConfigurationToken);
         return container;
     }
 }

@@ -5,6 +5,7 @@ import { IProviderMatcher, IRecognizer, ProviderMatcherToken, RecognizerToken } 
 import { IMethodAccessor, MethodAccessorToken } from './IMethodAccessor';
 import { ICacheManager, CacheManagerToken } from './ICacheManager';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
+import { AppConfiguration, AppConfigurationToken } from './IPlatform';
 
 
 /**
@@ -53,6 +54,12 @@ export interface IocSymbols {
      * it is a token id, you can register yourself IRecognizer for this.
      */
     IRecognizer: InjectToken<IRecognizer>;
+
+    /**
+     * AppConfiguration interface token.
+     * it is a token id, you can register yourself AppConfiguration for this.
+     */
+    AppConfiguration: InjectToken<AppConfiguration>;
 }
 
 
@@ -101,7 +108,13 @@ export const symbols: IocSymbols = {
      * IRecognizer interface token.
      * it is a token id, you can register yourself IRecognizer for this.
      */
-    IRecognizer: RecognizerToken
+    IRecognizer: RecognizerToken,
+
+    /**
+     * AppConfiguration interface token.
+     * it is a token id, you can register yourself AppConfiguration for this.
+     */
+    AppConfiguration: AppConfigurationToken
 }
 
 /**

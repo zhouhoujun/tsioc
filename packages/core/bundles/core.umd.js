@@ -5208,8 +5208,35 @@ exports.Container = Container;
 unwrapExports(Container_1);
 var Container_2 = Container_1.Container;
 
+var IPlatform = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * AppConfiguration token.
+ */
+exports.AppConfigurationToken = new InjectToken_1.InjectToken('__IOC_AppConfiguration');
+/**
+ * default app configuration.
+ */
+exports.defaultAppConfig = {
+    rootdir: '',
+    debug: false,
+    aop: './aop',
+    usedAops: [],
+    connections: {},
+    setting: {}
+};
+
+
+});
+
+unwrapExports(IPlatform);
+var IPlatform_1 = IPlatform.AppConfigurationToken;
+var IPlatform_2 = IPlatform.defaultAppConfig;
+
 var tokens = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -5254,7 +5281,12 @@ exports.symbols = {
      * IRecognizer interface token.
      * it is a token id, you can register yourself IRecognizer for this.
      */
-    IRecognizer: core.RecognizerToken
+    IRecognizer: core.RecognizerToken,
+    /**
+     * AppConfiguration interface token.
+     * it is a token id, you can register yourself AppConfiguration for this.
+     */
+    AppConfiguration: IPlatform.AppConfigurationToken
 };
 /**
  * tokens of ioc module.
@@ -5546,7 +5578,244 @@ exports.DefaultContainerBuilder = DefaultContainerBuilder;
 unwrapExports(DefaultContainerBuilder_1);
 var DefaultContainerBuilder_2 = DefaultContainerBuilder_1.DefaultContainerBuilder;
 
-var D__Workspace_Projects_modules_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
+var Platform_1 = createCommonjsModule(function (module, exports) {
+var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+/**
+ * server app bootstrap
+ *
+ * @export
+ * @class Bootstrap
+ */
+var Platform = /** @class */ (function () {
+    function Platform() {
+        this.usedModules = [];
+        this.customs = [];
+    }
+    Platform.prototype.useContainer = function (container) {
+        if (container) {
+            if (!this.container) {
+                this.container = utils.Defer.create();
+            }
+            this.container.resolve(container);
+        }
+        return this;
+    };
+    /**
+     * get container of bootstrap.
+     *
+     * @returns
+     * @memberof Bootstrap
+     */
+    Platform.prototype.getContainer = function () {
+        if (!this.container) {
+            this.useContainer(this.createContainer());
+        }
+        return this.container.promise;
+    };
+    /**
+     * use custom configuration.
+     *
+     * @param {(string | AppConfiguration)} [config]
+     * @returns {this}
+     * @memberof Bootstrap
+     */
+    Platform.prototype.useConfiguration = function (config) {
+        if (!this.configDefer) {
+            this.configDefer = utils.Defer.create();
+            this.configDefer.resolve(utils.lang.assign({}, IPlatform.defaultAppConfig));
+        }
+        var cfgmodeles;
+        var builder = this.getContainerBuilder();
+        if (utils.isString(config)) {
+            cfgmodeles = builder.loader.load({ files: [config] })
+                .then(function (rs) {
+                return rs.length ? rs[0] : null;
+            });
+        }
+        else if (config) {
+            cfgmodeles = Promise.resolve(config);
+        }
+        if (cfgmodeles) {
+            this.configDefer.promise = this.configDefer.promise
+                .then(function (cfg) {
+                return cfgmodeles.then(function (rcfg) {
+                    var excfg = (rcfg['default'] ? rcfg['default'] : rcfg);
+                    cfg = utils.lang.assign(cfg || {}, excfg || {});
+                    return cfg;
+                });
+            });
+        }
+        return this;
+    };
+    /**
+     * get configuration.
+     *
+     * @returns {Promise<AppConfiguration>}
+     * @memberof Bootstrap
+     */
+    Platform.prototype.getConfiguration = function () {
+        if (!this.configDefer) {
+            this.useConfiguration();
+        }
+        return this.configDefer.promise;
+    };
+    Platform.prototype.createContainer = function (option) {
+        return this.getContainerBuilder().build(option);
+    };
+    /**
+     * use container builder
+     *
+     * @param {IContainerBuilder} builder
+     * @returns
+     * @memberof Bootstrap
+     */
+    Platform.prototype.useContainerBuilder = function (builder) {
+        this.builder = builder;
+        return this;
+    };
+    /**
+     * get container builder.
+     *
+     * @returns
+     * @memberof Bootstrap
+     */
+    Platform.prototype.getContainerBuilder = function () {
+        if (!this.builder) {
+            this.builder = new DefaultContainerBuilder_1.DefaultContainerBuilder();
+        }
+        return this.builder;
+    };
+    /**
+     * use module, custom module.
+     *
+     * @param {(...(ModuleType | string | CustomDefineModule)[])} modules
+     * @returns {this}
+     * @memberof PlatformServer
+     */
+    Platform.prototype.use = function () {
+        var _this = this;
+        var modules = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            modules[_i] = arguments[_i];
+        }
+        modules.forEach(function (m) {
+            if (utils.isFunction(m) && !utils.isClass(m)) {
+                _this.customs.push(m);
+            }
+            else {
+                _this.usedModules.push(m);
+            }
+        });
+        return this;
+    };
+    Platform.prototype.bootstrap = function (modules) {
+        return __awaiter(this, void 0, void 0, function () {
+            var cfg, container;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.getConfiguration()];
+                    case 1:
+                        cfg = _a.sent();
+                        return [4 /*yield*/, this.getContainer()];
+                    case 2:
+                        container = _a.sent();
+                        return [4 /*yield*/, this.initIContainer(cfg, container)];
+                    case 3:
+                        container = _a.sent();
+                        if (!container.has(modules)) {
+                            container.register(modules);
+                        }
+                        if (!core.hasClassMetadata(core.Autorun, modules)) {
+                            container.resolve(modules);
+                        }
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Platform.prototype.setRootdir = function (config) {
+    };
+    Platform.prototype.initIContainer = function (config, container) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            var builder;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        this.setRootdir(config);
+                        container.registerSingleton(IPlatform.AppConfigurationToken, config);
+                        builder = this.getContainerBuilder();
+                        if (!this.usedModules.length) return [3 /*break*/, 2];
+                        return [4 /*yield*/, builder.loadModule(container, {
+                                modules: this.usedModules
+                            })];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        if (!this.customs.length) return [3 /*break*/, 4];
+                        return [4 /*yield*/, Promise.all(this.customs.map(function (cs) {
+                                return cs(container, config, _this);
+                            }))];
+                    case 3:
+                        _a.sent();
+                        _a.label = 4;
+                    case 4: return [2 /*return*/, container];
+                }
+            });
+        });
+    };
+    Platform.classAnnations = { "name": "Platform", "params": { "constructor": [], "useContainer": ["container"], "getContainer": [], "useConfiguration": ["config"], "getConfiguration": [], "createContainer": ["option"], "useContainerBuilder": ["builder"], "getContainerBuilder": [], "use": ["modules"], "bootstrap": ["modules"], "setRootdir": ["config"], "initIContainer": ["config", "container"] } };
+    return Platform;
+}());
+exports.Platform = Platform;
+
+
+});
+
+unwrapExports(Platform_1);
+var Platform_2 = Platform_1.Platform;
+
+var D__workspace_github_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
@@ -5566,11 +5835,13 @@ __export(DefaultContainerBuilder_1);
 __export(utils);
 __export(components);
 __export(core);
+__export(IPlatform);
+__export(Platform_1);
 
 
 });
 
-var index$7 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_core_lib);
+var index$7 = unwrapExports(D__workspace_github_tsioc_packages_core_lib);
 
 return index$7;
 

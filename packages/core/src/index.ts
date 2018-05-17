@@ -1,6 +1,7 @@
 
 export * from './IContainer';
 export * from './Container';
+
 export * from './types';
 export * from './Registration';
 export * from './InjectToken';
@@ -21,3 +22,5 @@ export * from './utils/index';
 export * from './components/index';
 export * from './core/index';
 
+export * from './IPlatform';
+export * from './Platform';
