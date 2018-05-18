@@ -387,6 +387,11 @@ export class DebugLog {
 
 ## New Features
 
+
+* 2.2.1
+   1. refactor all symbols to generics token.
+   2. add [PlatformServer](https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-server/src/PlatformServer.ts),[PlatformBroser](https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-browser/src/PlatformBrowser.ts) to help start applction.
+
 * 2.0.14
    1. fix extends class same property  different  Inject  not override bug
 
