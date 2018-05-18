@@ -5,7 +5,7 @@ This repo is for distribution on `npm`. The source for this module is in the
 
 `tsioc` is AOP, Ioc container, via typescript decorator.
 
-now package rename as [`tsioc`](https://www.npmjs.com/package/tsioc)
+now package rename as [`@ts-ioc`](https://www.npmjs.com/search?q=%40ts-ioc)
 
 # builder
 
