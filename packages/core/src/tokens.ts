@@ -9,9 +9,9 @@ import { AppConfiguration, AppConfigurationToken } from './IPlatform';
 
 
 /**
- * symbols of ioc module.
+ * ioc tokens.
  */
-export interface IocSymbols {
+export interface IocTokens {
 
     /**
      * IContainer interface token.
@@ -66,7 +66,7 @@ export interface IocSymbols {
 /**
  * tokens of ioc module.
  */
-export const symbols: IocSymbols = {
+export const symbols: IocTokens = {
 
     /**
      * IContainer interface token.
