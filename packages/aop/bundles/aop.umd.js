@@ -18,52 +18,115 @@ function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
-var IAdvisorChainFactory = createCommonjsModule(function (module, exports) {
+var AopActions_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
-
 /**
- * Aop IAdvisorChainFactory interface token.
- * it is a token id, you can register yourself IAdvisorChainFactory for this.
+ * aop actions.
+ *
+ * @export
+ * @enum {number}
  */
-exports.AdvisorChainFactoryToken = new core_1.InjectToken('__IOC_IAdvisorChainFactory');
+var AopActions;
+(function (AopActions) {
+    /**
+     * register aspect service.
+     */
+    AopActions["registAspect"] = "registAspect";
+    /**
+     * extends intstance.
+     */
+    AopActions["exetndsInstance"] = "exetndsInstance";
+    /**
+     * match pointcut.
+     */
+    AopActions["matchPointcut"] = "matchPointcut";
+    /**
+     * bind property pointcut.
+     */
+    AopActions["bindPropertyPointcut"] = "bindPropertyPointcut";
+    /**
+     * bind method pointcut for instance.
+     */
+    AopActions["bindMethodPointcut"] = "bindMethodPointcut";
+    AopActions["invokeBeforeConstructorAdvices"] = "invokeBeforeConstructorAdvices";
+    AopActions["invokeAfterConstructorAdvices"] = "invokeAfterConstructorAdvices";
+})(AopActions = exports.AopActions || (exports.AopActions = {}));
 
 
 });
 
-unwrapExports(IAdvisorChainFactory);
-var IAdvisorChainFactory_1 = IAdvisorChainFactory.AdvisorChainFactoryToken;
+unwrapExports(AopActions_1);
+var AopActions_2 = AopActions_1.AopActions;
 
-var JoinpointState_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-var JoinpointState;
-(function (JoinpointState) {
-    JoinpointState["Before"] = "Before";
-    JoinpointState["Pointcut"] = "Pointcut";
-    JoinpointState["After"] = "After";
-    JoinpointState["AfterReturning"] = "AfterReturning";
-    JoinpointState["AfterThrowing"] = "AfterThrowing";
-})(JoinpointState = exports.JoinpointState || (exports.JoinpointState = {}));
-
-
-});
-
-unwrapExports(JoinpointState_1);
-var JoinpointState_2 = JoinpointState_1.JoinpointState;
-
-var IJoinpoint = createCommonjsModule(function (module, exports) {
+var IAdvisor = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 /**
-* Aop IJoinpoint interface token.
-* it is a token id, you can register yourself IJoinpoint for this.
-*/
-exports.JoinpointToken = new core_1.InjectToken('__IOC_IJoinpoint');
+ * Aop IAdvisor interface token.
+ * it is a token id, you can register yourself IAdvisor for this.
+ */
+exports.AdvisorToken = new core_1.InjectToken('__IOC_IAdvisor');
 
 
 });
 
-unwrapExports(IJoinpoint);
-var IJoinpoint_1 = IJoinpoint.JoinpointToken;
+unwrapExports(IAdvisor);
+var IAdvisor_1 = IAdvisor.AdvisorToken;
+
+var RegistAspectAction_1 = createCommonjsModule(function (module, exports) {
+var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+/**
+ * regist aspect action.
+ *
+ * @export
+ * @class RegistAspectAction
+ * @extends {ActionComposite}
+ */
+var RegistAspectAction = /** @class */ (function (_super) {
+    __extends(RegistAspectAction, _super);
+    function RegistAspectAction() {
+        return _super.call(this, AopActions_1.AopActions.registAspect) || this;
+    }
+    RegistAspectAction.prototype.working = function (container, data) {
+        var type = data.targetType;
+        var propertyKey = data.propertyKey;
+        var lifeScope = container.getLifeScope();
+        var matchs = lifeScope.getClassDecorators(function (surm) { return surm.actions.includes(AopActions_1.AopActions.registAspect) && core_1.hasOwnClassMetadata(surm.name, type); });
+        var aspectMgr = container.get(IAdvisor.AdvisorToken);
+        matchs.forEach(function (surm) {
+            var metadata = core_1.getOwnTypeMetadata(surm.name, type);
+            if (Array.isArray(metadata) && metadata.length > 0) {
+                metadata.forEach(function (meta) {
+                    if (core_1.isClass(meta.type)) {
+                        aspectMgr.add(meta.type);
+                    }
+                });
+            }
+        });
+    };
+    RegistAspectAction.classAnnations = { "name": "RegistAspectAction", "params": { "constructor": [], "working": ["container", "data"] } };
+    return RegistAspectAction;
+}(core_1.ActionComposite));
+exports.RegistAspectAction = RegistAspectAction;
+
+
+});
+
+unwrapExports(RegistAspectAction_1);
+var RegistAspectAction_2 = RegistAspectAction_1.RegistAspectAction;
 
 var Advice = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -267,11 +330,91 @@ __export(NonePointcut);
 
 unwrapExports(decorators);
 
+var isValideAspectTarget_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * is target can aspect or not.
+ *
+ * @export
+ * @param {Type<any>} targetType
+ * @returns {boolean}
+ */
+function isValideAspectTarget(targetType) {
+    if (!core_1.isClass(targetType)
+        || targetType === Object
+        || targetType === String
+        || targetType === Date
+        || targetType === Boolean
+        || targetType === Number) {
+        return false;
+    }
+    if (core_1.hasOwnClassMetadata(decorators.NonePointcut, targetType)) {
+        return false;
+    }
+    return true;
+}
+exports.isValideAspectTarget = isValideAspectTarget;
+
+
+});
+
+unwrapExports(isValideAspectTarget_1);
+var isValideAspectTarget_2 = isValideAspectTarget_1.isValideAspectTarget;
+
+var IAdvisorChainFactory = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * Aop IAdvisorChainFactory interface token.
+ * it is a token id, you can register yourself IAdvisorChainFactory for this.
+ */
+exports.AdvisorChainFactoryToken = new core_1.InjectToken('__IOC_IAdvisorChainFactory');
+
+
+});
+
+unwrapExports(IAdvisorChainFactory);
+var IAdvisorChainFactory_1 = IAdvisorChainFactory.AdvisorChainFactoryToken;
+
+var JoinpointState_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+var JoinpointState;
+(function (JoinpointState) {
+    JoinpointState["Before"] = "Before";
+    JoinpointState["Pointcut"] = "Pointcut";
+    JoinpointState["After"] = "After";
+    JoinpointState["AfterReturning"] = "AfterReturning";
+    JoinpointState["AfterThrowing"] = "AfterThrowing";
+})(JoinpointState = exports.JoinpointState || (exports.JoinpointState = {}));
+
+
+});
+
+unwrapExports(JoinpointState_1);
+var JoinpointState_2 = JoinpointState_1.JoinpointState;
+
+var IJoinpoint = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+* Aop IJoinpoint interface token.
+* it is a token id, you can register yourself IJoinpoint for this.
+*/
+exports.JoinpointToken = new core_1.InjectToken('__IOC_IJoinpoint');
+
+
+});
+
+unwrapExports(IJoinpoint);
+var IJoinpoint_1 = IJoinpoint.JoinpointToken;
+
 var Joinpoint_1 = createCommonjsModule(function (module, exports) {
-var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators$$1, target, key, desc) {
+var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators$$2, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators$$1, target, key, desc);
-    else for (var i = decorators$$1.length - 1; i >= 0; i--) if (d = decorators$$1[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators$$2, target, key, desc);
+    else for (var i = decorators$$2.length - 1; i >= 0; i--) if (d = decorators$$2[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 var __metadata = (commonjsGlobal && commonjsGlobal.__metadata) || function (k, v) {
@@ -349,10 +492,10 @@ unwrapExports(IAdvisorChain);
 var IAdvisorChain_1 = IAdvisorChain.AdvisorChainToken;
 
 var AdvisorChainFactory_1 = createCommonjsModule(function (module, exports) {
-var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators$$1, target, key, desc) {
+var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators$$2, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators$$1, target, key, desc);
-    else for (var i = decorators$$1.length - 1; i >= 0; i--) if (d = decorators$$1[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators$$2, target, key, desc);
+    else for (var i = decorators$$2.length - 1; i >= 0; i--) if (d = decorators$$2[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 var __metadata = (commonjsGlobal && commonjsGlobal.__metadata) || function (k, v) {
@@ -615,21 +758,6 @@ exports.ProxyMethodToken = new core_1.InjectToken('__IOC_IProxyMethod');
 
 unwrapExports(IProxyMethod);
 var IProxyMethod_1 = IProxyMethod.ProxyMethodToken;
-
-var IAdvisor = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * Aop IAdvisor interface token.
- * it is a token id, you can register yourself IAdvisor for this.
- */
-exports.AdvisorToken = new core_1.InjectToken('__IOC_IAdvisor');
-
-
-});
-
-unwrapExports(IAdvisor);
-var IAdvisor_1 = IAdvisor.AdvisorToken;
 
 var ProxyMethod_1 = createCommonjsModule(function (module, exports) {
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators$$2, target, key, desc) {
@@ -1007,207 +1135,6 @@ __export(SyncProceeding_1);
 
 unwrapExports(access);
 
-var IAdviceMatcher = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * Aop advice matcher interface token.
- * it is a token id, you can register yourself IActionBuilder for this.
- */
-exports.AdviceMatcherToken = new core_1.InjectToken('__IOC_IAdviceMatcher');
-
-
-});
-
-unwrapExports(IAdviceMatcher);
-var IAdviceMatcher_1 = IAdviceMatcher.AdviceMatcherToken;
-
-var tokens = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-
-/**
- * tokens of aop.
- */
-exports.AopTokens = {
-    /**
-     * Aop proxy method interface token.
-     * it is a token id, you can register yourself IProxyMethod for this.
-     */
-    IProxyMethod: access.ProxyMethodToken,
-    /**
-     * Aop advice matcher interface token.
-     * it is a token id, you can register yourself IActionBuilder for this.
-     */
-    IAdviceMatcher: IAdviceMatcher.AdviceMatcherToken,
-    /**
-     * Aop IAdvisor interface token.
-     * it is a token id, you can register yourself IAdvisor for this.
-     */
-    IAdvisor: IAdvisor.AdvisorToken,
-    /**
-     * Aop IAdvisorChainFactory interface token.
-     * it is a token id, you can register yourself IAdvisorChainFactory for this.
-     */
-    IAdvisorChainFactory: access.AdvisorChainFactoryToken,
-    /**
-     * Aop IAdvisorChain interface token.
-     * it is a token id, you can register yourself IAdvisorChain for this.
-     */
-    IAdvisorChain: access.AdvisorChainToken,
-    /**
-     * Aop IAdvisorProceeding interface token.
-     * it is a token id, you can register yourself IAdvisorProceeding for this.
-     */
-    IAdvisorProceeding: access.AdvisorProceedingToken,
-    /**
-     * Aop IJoinpoint interface token.
-     * it is a token id, you can register yourself IJoinpoint for this.
-     */
-    IJoinpoint: joinpoints.JoinpointToken
-};
-/**
- * tokens of aop.
- */
-exports.AopSymbols = exports.AopTokens;
-
-
-});
-
-unwrapExports(tokens);
-var tokens_1 = tokens.AopTokens;
-var tokens_2 = tokens.AopSymbols;
-
-var AopActions_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * aop actions.
- *
- * @export
- * @enum {number}
- */
-var AopActions;
-(function (AopActions) {
-    /**
-     * register aspect service.
-     */
-    AopActions["registAspect"] = "registAspect";
-    /**
-     * extends intstance.
-     */
-    AopActions["exetndsInstance"] = "exetndsInstance";
-    /**
-     * match pointcut.
-     */
-    AopActions["matchPointcut"] = "matchPointcut";
-    /**
-     * bind property pointcut.
-     */
-    AopActions["bindPropertyPointcut"] = "bindPropertyPointcut";
-    /**
-     * bind method pointcut for instance.
-     */
-    AopActions["bindMethodPointcut"] = "bindMethodPointcut";
-    AopActions["invokeBeforeConstructorAdvices"] = "invokeBeforeConstructorAdvices";
-    AopActions["invokeAfterConstructorAdvices"] = "invokeAfterConstructorAdvices";
-})(AopActions = exports.AopActions || (exports.AopActions = {}));
-
-
-});
-
-unwrapExports(AopActions_1);
-var AopActions_2 = AopActions_1.AopActions;
-
-var RegistAspectAction_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-/**
- * regist aspect action.
- *
- * @export
- * @class RegistAspectAction
- * @extends {ActionComposite}
- */
-var RegistAspectAction = /** @class */ (function (_super) {
-    __extends(RegistAspectAction, _super);
-    function RegistAspectAction() {
-        return _super.call(this, AopActions_1.AopActions.registAspect) || this;
-    }
-    RegistAspectAction.prototype.working = function (container, data) {
-        var type = data.targetType;
-        var propertyKey = data.propertyKey;
-        var lifeScope = container.getLifeScope();
-        var matchs = lifeScope.getClassDecorators(function (surm) { return surm.actions.includes(AopActions_1.AopActions.registAspect) && core_1.hasOwnClassMetadata(surm.name, type); });
-        var aspectMgr = container.get(IAdvisor.AdvisorToken);
-        matchs.forEach(function (surm) {
-            var metadata = core_1.getOwnTypeMetadata(surm.name, type);
-            if (Array.isArray(metadata) && metadata.length > 0) {
-                metadata.forEach(function (meta) {
-                    if (core_1.isClass(meta.type)) {
-                        aspectMgr.add(meta.type);
-                    }
-                });
-            }
-        });
-    };
-    RegistAspectAction.classAnnations = { "name": "RegistAspectAction", "params": { "constructor": [], "working": ["container", "data"] } };
-    return RegistAspectAction;
-}(core_1.ActionComposite));
-exports.RegistAspectAction = RegistAspectAction;
-
-
-});
-
-unwrapExports(RegistAspectAction_1);
-var RegistAspectAction_2 = RegistAspectAction_1.RegistAspectAction;
-
-var isValideAspectTarget_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-/**
- * is target can aspect or not.
- *
- * @export
- * @param {Type<any>} targetType
- * @returns {boolean}
- */
-function isValideAspectTarget(targetType) {
-    if (!core_1.isClass(targetType)
-        || targetType === Object
-        || targetType === String
-        || targetType === Date
-        || targetType === Boolean
-        || targetType === Number) {
-        return false;
-    }
-    if (core_1.hasOwnClassMetadata(decorators.NonePointcut, targetType)) {
-        return false;
-    }
-    return true;
-}
-exports.isValideAspectTarget = isValideAspectTarget;
-
-
-});
-
-unwrapExports(isValideAspectTarget_1);
-var isValideAspectTarget_2 = isValideAspectTarget_1.isValideAspectTarget;
-
 var BindMethodPointcutAction_1 = createCommonjsModule(function (module, exports) {
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -1425,6 +1352,21 @@ exports.InvokeAfterConstructorAction = InvokeAfterConstructorAction;
 
 unwrapExports(InvokeAfterConstructorAction_1);
 var InvokeAfterConstructorAction_2 = InvokeAfterConstructorAction_1.InvokeAfterConstructorAction;
+
+var IAdviceMatcher = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * Aop advice matcher interface token.
+ * it is a token id, you can register yourself IActionBuilder for this.
+ */
+exports.AdviceMatcherToken = new core_1.InjectToken('__IOC_IAdviceMatcher');
+
+
+});
+
+unwrapExports(IAdviceMatcher);
+var IAdviceMatcher_1 = IAdviceMatcher.AdviceMatcherToken;
 
 var MatchPointcutAction_1 = createCommonjsModule(function (module, exports) {
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
@@ -1978,7 +1920,7 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(tokens);
+// export * from './tokens';
 __export(actions);
 __export(decorators);
 __export(joinpoints);

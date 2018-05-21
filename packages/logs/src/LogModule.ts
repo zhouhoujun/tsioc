@@ -1,4 +1,4 @@
-import { IocModule, Inject, symbols, IContainer, LifeScope, LifeState, CoreActions } from '@ts-ioc/core';
+import { IocModule, Inject, IContainer, LifeScope, LifeState, CoreActions, ContainerToken, LifeScopeToken } from '@ts-ioc/core';
 import { AopModule } from '@ts-ioc/aop';
 import { Logger } from './decorators/Logger';
 import { AnnotationLogerAspect } from './AnnotationLogerAspect';
@@ -15,7 +15,7 @@ import { LogFormater } from './LogFormater';
 @IocModule('setup')
 export class LogModule {
 
-    constructor(@Inject(symbols.IContainer) private container: IContainer) {
+    constructor(@Inject(ContainerToken) private container: IContainer) {
 
     }
 
@@ -29,7 +29,7 @@ export class LogModule {
         if (!container.has(AopModule)) {
             container.register(AopModule);
         }
-        let lifeScope = container.get<LifeScope>(symbols.LifeScope);
+        let lifeScope = container.get(LifeScopeToken);
         lifeScope.registerDecorator(Logger, LifeState.onInit, CoreActions.bindParameterProviders);
         container.register(ConfigureLoggerManger);
         container.register(AnnotationLogerAspect);

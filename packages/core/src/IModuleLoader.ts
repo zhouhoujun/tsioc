@@ -1,5 +1,11 @@
-import { Type, ModuleType } from './types';
-import { AsyncLoadOptions } from './LoadOptions';
+import { Type, ModuleType, LoadType } from './types';
+import { InjectToken } from './InjectToken';
+
+/**
+ * module loader token.
+ */
+export const ModuleLoaderToken = new InjectToken<IModuleLoader>('__IOC_ModuleLoader');
+
 
 /**
  * module loader interface for ioc.
@@ -9,21 +15,30 @@ import { AsyncLoadOptions } from './LoadOptions';
  */
 export interface IModuleLoader {
     /**
-     * load modules by patterns
+     * load modules by files patterns, module name or modules.
      *
-     * @param {AsyncLoadOptions} options
+     * @param {...LoadType[]} modules
      * @returns {Promise<ModuleType[]>}
      * @memberof IModuleLoader
      */
-    load(options: AsyncLoadOptions): Promise<ModuleType[]>;
+    load(...modules: LoadType[]): Promise<ModuleType[]>;
 
     /**
-     * load module from file.
+     * load all class types in modules, load by files patterns, module name or modules.
      *
-     * @param {string} file
-     * @returns {(ModuleType | Promise<ModuleType)}
+     * @param {...LoadType[]} modules
+     * @returns {Promise<Type<any>[]>}
      * @memberof IModuleLoader
      */
-    loadModule(file: string): ModuleType | Promise<ModuleType>;
+    loadTypes(...modules: LoadType[]): Promise<Type<any>[]>;
+
+    /**
+     * get all class type in modules.
+     *
+     * @param {...ModuleType[]} modules
+     * @returns {Type<any>[]}
+     * @memberof IModuleLoader
+     */
+    getTypes(...modules: ModuleType[]): Type<any>[];
 
 }

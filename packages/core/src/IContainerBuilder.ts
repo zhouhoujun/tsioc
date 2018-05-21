@@ -1,6 +1,5 @@
 import { IContainer } from './IContainer';
-import { Type, ModuleType } from './types';
-import { AsyncLoadOptions } from './LoadOptions';
+import { Type, ModuleType, LoadType } from './types';
 import { InjectToken } from './InjectToken';
 import { IModuleLoader } from './IModuleLoader';
 
@@ -36,11 +35,12 @@ export interface IContainerBuilder {
     /**
      * create a new container and load module via options.
      *
-     * @param {AsyncLoadOptions} [options]
+     * @param {...LoadType[]} modules
+     * @param {string} [basePath]
      * @returns {Promise<IContainer>}
      * @memberof IContainerBuilder
      */
-    build(options?: AsyncLoadOptions): Promise<IContainer>;
+    build(...modules: LoadType[]): Promise<IContainer>;
 
     /**
      * build container in sync.
@@ -55,11 +55,11 @@ export interface IContainerBuilder {
      * load modules for container.
      *
      * @param {IContainer} container
-     * @param {AsyncLoadOptions} options
+     * @param {...LoadType[]} modules
      * @returns {Promise<Type<any>[]>}
      * @memberof IContainerBuilder
      */
-    loadModule(container: IContainer, options: AsyncLoadOptions): Promise<Type<any>[]>;
+    loadModule(container: IContainer, ...modules: LoadType[]): Promise<Type<any>[]>;
 
     /**
      * sync load modules

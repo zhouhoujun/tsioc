@@ -1,4 +1,4 @@
-import { Type, IModuleLoader, AsyncLoadOptions } from '@ts-ioc/core';
+import { Type, IModuleLoader, ModuleType, DefaultModuleLoader } from '@ts-ioc/core';
 import { toAbsoluteSrc } from './toAbsolute';
 
 declare let require: any;
@@ -12,28 +12,23 @@ declare let require: any;
  * @class NodeModuleLoader
  * @implements {IModuleLoader}
  */
-export class NodeModuleLoader implements IModuleLoader {
+export class NodeModuleLoader extends DefaultModuleLoader implements IModuleLoader {
 
     constructor() {
-
+        super();
     }
 
-
-    load(options: AsyncLoadOptions): Promise<(Type<any> | object)[]> {
-        if (options.files) {
-            let globby = require('globby');
-            return globby(toAbsoluteSrc(options.basePath, options.files)).then(flies => {
-                return flies.map(fp => {
-                    return this.loadModule(fp);
-                });
-            })
-        } else {
-            return Promise.resolve([]);
-        }
+    protected loadFile(files: string | string[], basePath?: string): Promise<ModuleType[]> {
+        let globby = require('globby');
+        return globby(toAbsoluteSrc(basePath, files)).then((mflies: string[]) => {
+            return mflies.map(fp => {
+                return require(fp);
+            });
+        });
     }
 
-    loadModule(file: string): Type<any> | object {
-        return require(file);
+    protected createLoader(): (modulepath: string) => Promise<ModuleType[]> {
+        return (modulepath: string) => Promise.resolve(require(modulepath));
     }
 
 }

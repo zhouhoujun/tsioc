@@ -1,4 +1,4 @@
-import { IContainer, Type, Defer, lang, isString, IContainerBuilder, AsyncLoadOptions, ModuleType, hasClassMetadata, Autorun, isClass, isFunction, Platform, CustomDefineModule, AppConfiguration, AppConfigurationToken, defaultAppConfig, IPlatform } from '@ts-ioc/core';
+import { IContainer, Type, Defer, lang, isString, IContainerBuilder, ModuleType, hasClassMetadata, Autorun, isClass, isFunction, Platform, CustomDefineModule, AppConfiguration, AppConfigurationToken, defaultAppConfig, IPlatform } from '@ts-ioc/core';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { ContainerBuilder } from './ContainerBuilder';

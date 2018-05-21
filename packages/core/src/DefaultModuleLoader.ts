@@ -1,6 +1,7 @@
-import { Type, ModuleType } from './types';
+import { Type, ModuleType, LoadType, PathModules } from './types';
 import { IModuleLoader } from './IModuleLoader';
-import { AsyncLoadOptions } from './LoadOptions';
+import { isString, isClass, isObject, isArray } from './utils/index';
+import { hasOwnClassMetadata, IocModule } from './core/index';
 
 declare let require: any;
 
@@ -17,7 +18,7 @@ export class DefaultModuleLoader implements IModuleLoader {
 
     }
 
-    private _loader: (modulepath: string) => Promise<string[]>;
+    private _loader: (modulepath: string) => Promise<ModuleType[]>;
     getLoader() {
         if (!this._loader) {
             this._loader = this.createLoader();
@@ -25,27 +26,126 @@ export class DefaultModuleLoader implements IModuleLoader {
         return this._loader;
     }
 
-    load(options: AsyncLoadOptions): Promise<ModuleType[]> {
-        if (options.files) {
-            return Promise.all(options.files).then(flies => {
-                return flies.map(fp => {
-                    return this.loadModule(fp);
+    /**
+     * load module.
+     *
+     * @param {...LoadType[]} modules
+     * @returns {Promise<ModuleType[]>}
+     * @memberof DefaultModuleLoader
+     */
+    load(...modules: LoadType[]): Promise<ModuleType[]> {
+        if (modules.length) {
+            return Promise.all(modules.map(mdty => {
+                if (isString(mdty)) {
+                    return this.isFile(mdty) ? this.loadFile(mdty) : this.loadModule(mdty);
+                } else if (isObject(mdty) && (mdty['modules'] || mdty['files'])) {
+                    return this.loadPathModule(mdty as PathModules);
+                } else {
+                    return mdty ? [mdty] : [];
+                }
+            }))
+                .then(allms => {
+                    let rmodules: ModuleType[] = [];
+                    allms.forEach(ms => {
+                        rmodules = rmodules.concat(ms);
+                    })
+                    return rmodules;
                 });
-            })
         } else {
             return Promise.resolve([]);
         }
     }
 
-    loadModule(file: string): ModuleType | Promise<ModuleType> {
-        let loader = this.getLoader();
-        return loader(file);
+    /**
+     * load types from module.
+     *
+     * @param {...LoadType[]} modules
+     * @returns {Promise<Type<any>[]>}
+     * @memberof IContainerBuilder
+     */
+    async loadTypes(...modules: LoadType[]): Promise<Type<any>[]> {
+        let mdls = await this.load(...modules);
+        return this.getTypes(...mdls);
     }
 
-    protected createLoader(): (modulepath: string) => Promise<string[]> {
+    /**
+     * get all class type in modules.
+     *
+     * @param {...ModuleType[]} modules
+     * @returns {Type<any>[]}
+     * @memberof DefaultModuleLoader
+     */
+    getTypes(...modules: ModuleType[]): Type<any>[] {
+        let regModules: Type<any>[] = [];
+        modules.forEach(m => {
+            let types = this.getContentTypes(m);
+            let iocModule = types.find(it => hasOwnClassMetadata(IocModule, it));
+            if (iocModule) {
+                regModules.push(iocModule);
+            } else {
+                regModules.push(...types);
+            }
+        });
+
+        return regModules;
+    }
+
+    protected loadFile(files: string | string[], basePath?: string): Promise<ModuleType[]> {
+        let loader = this.getLoader();
+        let fRes: Promise<ModuleType[]>;
+        if (isArray(files)) {
+            fRes = Promise.all(files.map(f => loader(f)))
+                .then(allms => {
+                    let rms = [];
+                    allms.forEach(ms => {
+                        rms = rms.concat(ms);
+                    });
+                    return rms;
+                });
+        } else {
+            fRes = loader(files);
+        }
+        return fRes.then(ms => ms.filter(it => !!it));
+    }
+
+    protected isFile(str: string) {
+        return str && /\/((\w|%|\.))+\.\w+$/.test(str.replace(/\\\\/gi, '/'));
+    }
+
+
+    protected loadModule(moduleName: string): Promise<ModuleType[]> {
+        let loader = this.getLoader();
+        return loader(moduleName).then(ms => ms.filter(it => !!it));
+    }
+
+    protected async loadPathModule(pmd: PathModules): Promise<ModuleType[]> {
+        let loader = this.getLoader();
+        let modules: ModuleType[] = [];
+        if (pmd.files) {
+            await this.loadFile(pmd.files, pmd.basePath)
+                .then(allmoduls => {
+                    allmoduls.forEach(ms => {
+                        modules = modules.concat(ms);
+                    });
+                    return modules;
+                })
+        }
+        if (pmd.modules) {
+            await Promise.all(pmd.modules.map(nmd => {
+                return isString(nmd) ? this.loadModule(nmd) : nmd;
+            })).then(ms => {
+                modules = modules.concat(ms);
+                return modules;
+            });
+        }
+
+        return modules;
+    }
+
+    protected createLoader(): (modulepath: string) => Promise<ModuleType[]> {
         if (typeof require !== 'undefined') {
             return (modulepath: string) => {
-                return new Promise<string[]>((resolve, reject) => {
+                return new Promise<ModuleType[]>((resolve, reject) => {
                     require([modulepath], (mud) => {
                         resolve(mud);
                     }, err => {
@@ -56,6 +156,23 @@ export class DefaultModuleLoader implements IModuleLoader {
         } else {
             throw new Error('has not module loader');
         }
+    }
+
+    protected getContentTypes(regModule: ModuleType): Type<any>[] {
+        let regModules: Type<any>[] = [];
+
+        if (isClass(regModule)) {
+            regModules.push(regModule);
+        } else {
+            let rmodules = regModule['exports'] ? regModule['exports'] : regModule;
+            for (let p in rmodules) {
+                if (isClass(rmodules[p])) {
+                    regModules.push(rmodules[p]);
+                }
+            }
+        }
+
+        return regModules;
     }
 
 }

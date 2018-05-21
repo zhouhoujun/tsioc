@@ -1,7 +1,6 @@
 import { IContainer } from './IContainer';
 import { InjectToken } from './InjectToken';
-import { ObjectMap, Token, ModuleType, Type } from './types';
-import { AsyncLoadOptions } from './LoadOptions';
+import { ObjectMap, Token, ModuleType, Type, LoadType } from './types';
 import { IContainerBuilder } from './IContainerBuilder';
 
 /**
@@ -146,11 +145,11 @@ export interface IPlatform {
     /**
      * use module, custom module.
      *
-     * @param {(...(ModuleType | string | CustomDefineModule)[])} modules
+     * @param {(...(LoadType | CustomDefineModule)[])} modules
      * @returns {this}
      * @memberof PlatformServer
      */
-    use(...modules: (ModuleType | string | CustomDefineModule)[]): this;
+    use(...modules: (LoadType | CustomDefineModule)[]): this;
 
     /**
      * bootstrap app via main module.

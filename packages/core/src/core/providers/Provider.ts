@@ -256,6 +256,8 @@ export class AsyncParamProvider extends ParamProvider {
      */
     protected files?: string | string[];
 
+    protected basePath?: string;
+
     constructor(files: string | string[], token: Token<any>, index?: number, method?: string, value?: any) {
         super(token, value, index, method);
         this.files = files;
@@ -264,6 +266,7 @@ export class AsyncParamProvider extends ParamProvider {
     resolve<T>(container: IContainer, ...providers: Providers[]): any {
         let buider = container.get(ContainerBuilderToken);
         return buider.loadModule(container, {
+            basePath: this.basePath,
             files: this.files
         })
             .then(() => {

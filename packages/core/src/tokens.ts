@@ -1,123 +1,137 @@
-import { InjectToken } from './InjectToken';
-import { IContainer, ContainerToken } from './IContainer';
-import { LifeScope, LifeScopeToken } from './LifeScope';
-import { IProviderMatcher, IRecognizer, ProviderMatcherToken, RecognizerToken } from './core/index';
-import { IMethodAccessor, MethodAccessorToken } from './IMethodAccessor';
-import { ICacheManager, CacheManagerToken } from './ICacheManager';
-import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { AppConfiguration, AppConfigurationToken } from './IPlatform';
+// import { InjectToken } from './InjectToken';
+// import { IContainer, ContainerToken } from './IContainer';
+// import { LifeScope, LifeScopeToken } from './LifeScope';
+// import { IProviderMatcher, IRecognizer, ProviderMatcherToken, RecognizerToken } from './core/index';
+// import { IMethodAccessor, MethodAccessorToken } from './IMethodAccessor';
+// import { ICacheManager, CacheManagerToken } from './ICacheManager';
+// import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
+// import { AppConfiguration, AppConfigurationToken } from './IPlatform';
+// import { IModuleLoader, ModuleLoaderToken } from './IModuleLoader';
 
 
-/**
- * ioc tokens.
- */
-export interface IocTokens {
+// /**
+//  * ioc tokens.
+//  */
+// export interface IocTokens {
 
-    /**
-     * IContainer interface token.
-     * it is a token id, you can use  @Inject, @Autowried or @Param to get container instance in yourself class.
-     */
-    IContainer: InjectToken<IContainer>;
+//     /**
+//      * module lodaer token.
+//      *
+//      * @type {InjectToken<IModuleLoader>}
+//      * @memberof IocTokens
+//      */
+//     ModuleLoaderToken: InjectToken<IModuleLoader>;
 
-    /**
-     * life scope interface token.
-     * it is a token id, you can register yourself MethodAccessor for this.
-     */
-    LifeScope: InjectToken<LifeScope>;
+//     /**
+//      * IContainer interface token.
+//      * it is a token id, you can use  @Inject, @Autowried or @Param to get container instance in yourself class.
+//      */
+//     IContainer: InjectToken<IContainer>;
 
-    /**
-     * Providers match interface token.
-     * it is a token id, you can register yourself MethodAccessor for this.
-     */
-    IProviderMatcher: InjectToken<IProviderMatcher>;
+//     /**
+//      * life scope interface token.
+//      * it is a token id, you can register yourself MethodAccessor for this.
+//      */
+//     LifeScope: InjectToken<LifeScope>;
 
-    /**
-     * IMethodAccessor interface token.
-     * it is a token id, you can register yourself MethodAccessor for this.
-     */
-    IMethodAccessor: InjectToken<IMethodAccessor>;
+//     /**
+//      * Providers match interface token.
+//      * it is a token id, you can register yourself MethodAccessor for this.
+//      */
+//     IProviderMatcher: InjectToken<IProviderMatcher>;
 
-    /**
-     * ICacheManager interface token.
-     * it is a token id, you can register yourself ICacheManager for this.
-     */
-    ICacheManager: InjectToken<ICacheManager>;
+//     /**
+//      * IMethodAccessor interface token.
+//      * it is a token id, you can register yourself MethodAccessor for this.
+//      */
+//     IMethodAccessor: InjectToken<IMethodAccessor>;
 
-    /**
-     * ContainerBuilder interface token.
-     * it is a token id, you can register yourself IContainerBuilder for this.
-     */
-    IContainerBuilder: InjectToken<IContainerBuilder>;
+//     /**
+//      * ICacheManager interface token.
+//      * it is a token id, you can register yourself ICacheManager for this.
+//      */
+//     ICacheManager: InjectToken<ICacheManager>;
 
-    /**
-     * IRecognizer interface token.
-     * it is a token id, you can register yourself IRecognizer for this.
-     */
-    IRecognizer: InjectToken<IRecognizer>;
+//     /**
+//      * ContainerBuilder interface token.
+//      * it is a token id, you can register yourself IContainerBuilder for this.
+//      */
+//     IContainerBuilder: InjectToken<IContainerBuilder>;
 
-    /**
-     * AppConfiguration interface token.
-     * it is a token id, you can register yourself AppConfiguration for this.
-     */
-    AppConfiguration: InjectToken<AppConfiguration>;
-}
+//     /**
+//      * IRecognizer interface token.
+//      * it is a token id, you can register yourself IRecognizer for this.
+//      */
+//     IRecognizer: InjectToken<IRecognizer>;
+
+//     /**
+//      * AppConfiguration interface token.
+//      * it is a token id, you can register yourself AppConfiguration for this.
+//      */
+//     AppConfiguration: InjectToken<AppConfiguration>;
+// }
 
 
-/**
- * tokens of ioc module.
- */
-export const symbols: IocTokens = {
+// /**
+//  * tokens of ioc module.
+//  */
+// export const symbols: IocTokens = {
 
-    /**
-     * IContainer interface token.
-     * it is a token id, you can use  @Inject, @Autowried or @Param to get container instance in yourself class.
-     */
-    IContainer: ContainerToken,
+//     /**
+//      * module lodaer token.
+//      */
+//     ModuleLoaderToken: ModuleLoaderToken,
 
-    /**
-     * life scope interface token.
-     * it is a token id, you can register yourself MethodAccessor for this.
-     */
-    LifeScope: LifeScopeToken,
+//     /**
+//      * IContainer interface token.
+//      * it is a token id, you can use  @Inject, @Autowried or @Param to get container instance in yourself class.
+//      */
+//     IContainer: ContainerToken,
 
-    /**
-     * Providers match interface token.
-     * it is a token id, you can register yourself MethodAccessor for this.
-     */
-    IProviderMatcher: ProviderMatcherToken,
+//     /**
+//      * life scope interface token.
+//      * it is a token id, you can register yourself MethodAccessor for this.
+//      */
+//     LifeScope: LifeScopeToken,
 
-    /**
-     * IMethodAccessor interface token.
-     * it is a token id, you can register yourself MethodAccessor for this.
-     */
-    IMethodAccessor: MethodAccessorToken,
+//     /**
+//      * Providers match interface token.
+//      * it is a token id, you can register yourself MethodAccessor for this.
+//      */
+//     IProviderMatcher: ProviderMatcherToken,
 
-    /**
-     * ICacheManager interface token.
-     * it is a token id, you can register yourself ICacheManager for this.
-     */
-    ICacheManager: CacheManagerToken,
+//     /**
+//      * IMethodAccessor interface token.
+//      * it is a token id, you can register yourself MethodAccessor for this.
+//      */
+//     IMethodAccessor: MethodAccessorToken,
 
-    /**
-     * ContainerBuilder interface token.
-     * it is a token id, you can register yourself IContainerBuilder for this.
-     */
-    IContainerBuilder: ContainerBuilderToken,
+//     /**
+//      * ICacheManager interface token.
+//      * it is a token id, you can register yourself ICacheManager for this.
+//      */
+//     ICacheManager: CacheManagerToken,
 
-    /**
-     * IRecognizer interface token.
-     * it is a token id, you can register yourself IRecognizer for this.
-     */
-    IRecognizer: RecognizerToken,
+//     /**
+//      * ContainerBuilder interface token.
+//      * it is a token id, you can register yourself IContainerBuilder for this.
+//      */
+//     IContainerBuilder: ContainerBuilderToken,
 
-    /**
-     * AppConfiguration interface token.
-     * it is a token id, you can register yourself AppConfiguration for this.
-     */
-    AppConfiguration: AppConfigurationToken
-}
+//     /**
+//      * IRecognizer interface token.
+//      * it is a token id, you can register yourself IRecognizer for this.
+//      */
+//     IRecognizer: RecognizerToken,
 
-/**
- * tokens of ioc module.
- */
-export const IocTokens = symbols;
+//     /**
+//      * AppConfiguration interface token.
+//      * it is a token id, you can register yourself AppConfiguration for this.
+//      */
+//     AppConfiguration: AppConfigurationToken
+// }
+
+// /**
+//  * tokens of ioc module.
+//  */
+// export const IocTokens = symbols;

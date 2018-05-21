@@ -1,4 +1,4 @@
-import { IContainer, Type, Defer, lang, isString, isFunction, isClass, IContainerBuilder, AsyncLoadOptions, ModuleType, hasClassMetadata, Autorun, isUndefined, Platform, AppConfiguration, IPlatform } from '@ts-ioc/core';
+import { IContainer, Type, Defer, lang, isString, isFunction, isClass, IContainerBuilder, ModuleType, hasClassMetadata, Autorun, isUndefined, Platform, AppConfiguration, IPlatform } from '@ts-ioc/core';
 import { ContainerBuilder } from './ContainerBuilder';
 
 /**

@@ -1,4 +1,4 @@
-import { Singleton, Inject, symbols, IContainer, MethodMetadata } from '@ts-ioc/core';
+import { Singleton, Inject, IContainer, MethodMetadata, ContainerToken } from '@ts-ioc/core';
 import { Aspect, Around, Joinpoint, Pointcut } from '@ts-ioc/aop';
 import { LoggerAspect } from '../src';
 
@@ -6,7 +6,7 @@ import { LoggerAspect } from '../src';
 @Aspect
 export class AnntotationLogAspect extends LoggerAspect {
 
-    constructor(@Inject(symbols.IContainer) container: IContainer) {
+    constructor(@Inject(ContainerToken) container: IContainer) {
         super(container);
     }
 

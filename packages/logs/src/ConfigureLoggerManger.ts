@@ -1,4 +1,4 @@
-import { Injectable, IContainer, symbols, Inject, isString, isUndefined, Token, Registration, Type, isClass } from '@ts-ioc/core';
+import { Injectable, IContainer, Inject, isString, isUndefined, Token, Registration, Type, isClass, ContainerToken } from '@ts-ioc/core';
 import { ILoggerManager, LoggerManagerToken } from './ILoggerManager';
 import { LogConfigure, LogConfigureToken } from './LogConfigure';
 import { ILogger } from './ILogger';
@@ -20,7 +20,7 @@ export class ConfigureLoggerManger implements IConfigureLoggerManager {
     private _config: LogConfigure;
     private _logManger: ILoggerManager;
 
-    constructor(@Inject(symbols.IContainer) protected container: IContainer, config?: LogConfigure | Type<LogConfigure>) {
+    constructor(@Inject(ContainerToken) protected container: IContainer, config?: LogConfigure | Type<LogConfigure>) {
         this.setLogConfigure(config);
     }
 

@@ -2,7 +2,47 @@ import { Registration } from './Registration';
 import { IContainer } from './IContainer';
 import { ParamProvider, ProviderMap, Provider } from './core/index';
 
+/**
+ * module types.
+ */
 export type ModuleType = Type<any> | ObjectMap<any>;
+
+/**
+ * load modules in base on an path.
+ *
+ * @export
+ * @interface PathModules
+ */
+export interface PathModules {
+    /**
+     * fire express base on the root path.
+     *
+     * @type {string}
+     * @memberof LoadOptions
+     */
+    basePath?: string;
+    /**
+     * script files match express.
+     * see: https://github.com/isaacs/node-glob
+     *
+     * @type {(string | string[])}
+     * @memberof BuilderOptions
+     */
+    files?: string | string[];
+
+    /**
+     * modules
+     *
+     * @type {((ModuleType | string)[])}
+     * @memberof AsyncLoadOptions
+     */
+    modules?: (ModuleType | string)[];
+}
+
+/**
+ * load module type.
+ */
+export type LoadType = ModuleType | string | PathModules;
 /**
  * symbol type
  */

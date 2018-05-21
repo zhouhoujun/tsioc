@@ -1,12 +1,11 @@
 import { IContainer } from './IContainer';
 import { Container } from './Container';
 import { isFunction, isClass, isString } from './utils/index';
-import { Type, ModuleType } from './types';
+import { Type, ModuleType, LoadType } from './types';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { IModuleLoader } from './IModuleLoader';
-import { AsyncLoadOptions } from './LoadOptions';
+import { IModuleLoader, ModuleLoaderToken } from './IModuleLoader';
 import { DefaultModuleLoader } from './DefaultModuleLoader';
-import { hasOwnClassMetadata, IocModule } from './core/index';
+// import { hasOwnClassMetadata, IocModule } from './core/index';
 
 /**
  * default container builder.
@@ -16,7 +15,6 @@ import { hasOwnClassMetadata, IocModule } from './core/index';
  * @implements {IContainerBuilder}
  */
 export class DefaultContainerBuilder implements IContainerBuilder {
-
 
     private _loader: IModuleLoader;
     constructor(loader?: IModuleLoader) {
@@ -31,23 +29,25 @@ export class DefaultContainerBuilder implements IContainerBuilder {
         return this._loader;
     }
 
+
     create(): IContainer {
         let container = new Container();
         container.bindProvider(ContainerBuilderToken, () => this);
+        container.bindProvider(ModuleLoaderToken, () => this.loader);
         return container;
     }
 
     /**
      * build container.
      *
-     * @param {AsyncLoadOptions} [options]
-     * @returns { Promise<IContainer>}
-     * @memberof ContainerBuilder
+     * @param {...LoadType[]} [modules]
+     * @returns
+     * @memberof DefaultContainerBuilder
      */
-    async build(options?: AsyncLoadOptions) {
+    async build(...modules: LoadType[]) {
         let container: IContainer = this.create();
-        if (options) {
-            await this.loadModule(container, options);
+        if (modules.length) {
+            await this.loadModule(container, ...modules);
         }
         return container;
     }
@@ -56,12 +56,12 @@ export class DefaultContainerBuilder implements IContainerBuilder {
      * load modules for container.
      *
      * @param {IContainer} container
-     * @param {AsyncLoadOptions} options
+     * @param {...LoadType[]} modules
      * @returns {Promise<Type<any>[]>}
-     * @memberof ContainerBuilder
+     * @memberof DefaultContainerBuilder
      */
-    async loadModule(container: IContainer, options: AsyncLoadOptions): Promise<Type<any>[]> {
-        let regModules = await this.loadTypes(options);
+    async loadModule(container: IContainer, ...modules: LoadType[]): Promise<Type<any>[]> {
+        let regModules = await this.loader.loadTypes(...modules);
         return this.registers(container, regModules);
     }
 
@@ -75,31 +75,8 @@ export class DefaultContainerBuilder implements IContainerBuilder {
     }
 
     syncLoadModule(container: IContainer, ...modules: ModuleType[]) {
-        let regModules = this.getModules(...modules);
+        let regModules = this.loader.getTypes(...modules);
         return this.registers(container, regModules);
-    }
-
-    /**
-     * load types from module.
-     *
-     * @param {LoadOptions} options
-     * @returns {Promise<Type<any>[]>}
-     * @memberof IContainerBuilder
-     */
-    protected async loadTypes(options: AsyncLoadOptions): Promise<Type<any>[]> {
-        let modules: ModuleType[];
-        if (options) {
-            modules = await this.loader.load(options);
-            if (options.modules && options.modules.length) {
-                let mds = await Promise.all(options.modules.map(nmd => {
-                    return isString(nmd) ? this.loader.loadModule(nmd) : nmd;
-                }));
-                modules = modules.concat(mds);
-            }
-
-
-        }
-        return this.getModules(...modules);
     }
 
     protected registers(container: IContainer, types: Type<any>[]): Type<any>[] {
@@ -110,37 +87,4 @@ export class DefaultContainerBuilder implements IContainerBuilder {
         return types;
     }
 
-    protected getModules(...modules: ModuleType[]): Type<any>[] {
-        let regModules: Type<any>[] = [];
-        modules.forEach(m => {
-
-            let types = this.getTypes(m);
-            let iocModule = types.find(it => hasOwnClassMetadata(IocModule, it));
-            if (iocModule) {
-                regModules.push(iocModule);
-            } else {
-                regModules.push(...types);
-            }
-
-        });
-
-        return regModules;
-    }
-
-    protected getTypes(regModule: ModuleType): Type<any>[] {
-        let regModules: Type<any>[] = [];
-
-        if (isClass(regModule)) {
-            regModules.push(regModule);
-        } else {
-            let rmodules = regModule['exports'] ? regModule['exports'] : regModule;
-            for (let p in rmodules) {
-                if (isClass(rmodules[p])) {
-                    regModules.push(rmodules[p]);
-                }
-            }
-        }
-
-        return regModules;
-    }
 }

@@ -19,201 +19,6 @@ function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
-var LogFormater_1 = createCommonjsModule(function (module, exports) {
-var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (commonjsGlobal && commonjsGlobal.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-/**
- * Log formater interface token.
- * it is a token id, you can register yourself formater for log.
- */
-exports.LogFormaterToken = new core_1.InjectToken('__IOC_LogFormater');
-var LogFormater = /** @class */ (function () {
-    function LogFormater() {
-    }
-    LogFormater.prototype.format = function (joinPoint, message) {
-        var pointMsg;
-        switch (joinPoint.state) {
-            case aop_1.JoinpointState.Before:
-            case aop_1.JoinpointState.Pointcut:
-                pointMsg = joinPoint.state + " invoke method \"" + joinPoint.fullName + "\" with args " + this.stringifyArgs(joinPoint.params, joinPoint.args) + ".";
-                break;
-            case aop_1.JoinpointState.After:
-                pointMsg = joinPoint.state + "  invoke method \"" + joinPoint.fullName + "\".";
-                break;
-            case aop_1.JoinpointState.AfterReturning:
-                pointMsg = "Invoke method \"" + joinPoint.fullName + "\" returning value " + this.stringify(joinPoint.returningValue) + ".";
-                break;
-            case aop_1.JoinpointState.AfterThrowing:
-                pointMsg = "Invoke method \"" + joinPoint.fullName + "\" throw error " + this.stringify(joinPoint.throwing) + ".";
-                break;
-            default:
-                pointMsg = '';
-                break;
-        }
-        return this.joinMessage([pointMsg, message]);
-    };
-    LogFormater.prototype.stringifyArgs = function (params, args) {
-        var _this = this;
-        var argsStr = params.map(function (p, idx) {
-            var arg = args.length >= idx ? args[idx] : null;
-            return "<param name: \"" + (p.name || '') + "\", param type: \"" + _this.stringify(p.type) + "\"> " + _this.stringify(arg);
-        }).join(', ');
-        if (argsStr) {
-            return this.joinMessage(['[', argsStr, ']'], ' ');
-        }
-        else {
-            return '[]';
-        }
-    };
-    LogFormater.prototype.joinMessage = function (messgs, separator) {
-        if (separator === void 0) { separator = '; '; }
-        return messgs.filter(function (a) { return a; }).map(function (a) { return core_1.isString(a) ? a : a.toString(); }).join(separator);
-    };
-    LogFormater.prototype.stringifyArray = function (args) {
-        var _this = this;
-        if (!args.length) {
-            return '[]';
-        }
-        return '[ ' + args.map(function (arg) { return _this.stringify(arg); }).join(', ') + ' ]';
-    };
-    LogFormater.prototype.stringify = function (target) {
-        if (core_1.isString(target)) {
-            return target;
-        }
-        else if (core_1.isArray(target)) {
-            return this.stringifyArray(target);
-        }
-        else if (core_1.isBaseType(target)) {
-            return target;
-        }
-        else if (core_1.isClass(target)) {
-            return "[class " + core_1.getClassName(target) + "]";
-        }
-        else if (core_1.isFunction(target) || core_1.isDate(target) || core_1.isSymbol(target)) {
-            return target.toString();
-        }
-        else if (core_1.isObject(target)) {
-            try {
-                return JSON.stringify(target);
-            }
-            catch (_a) {
-                if (core_1.isFunction(target.toString)) {
-                    return target.toString();
-                }
-            }
-        }
-        return '';
-    };
-    LogFormater.classAnnations = { "name": "LogFormater", "params": { "constructor": [], "format": ["joinPoint", "message"], "stringifyArgs": ["params", "args"], "joinMessage": ["messgs", "separator"], "stringifyArray": ["args"], "stringify": ["target"] } };
-    LogFormater = __decorate([
-        aop_1.NonePointcut(),
-        core_1.Singleton(exports.LogFormaterToken, 'default'),
-        __metadata("design:paramtypes", [])
-    ], LogFormater);
-    return LogFormater;
-}());
-exports.LogFormater = LogFormater;
-
-
-});
-
-unwrapExports(LogFormater_1);
-var LogFormater_2 = LogFormater_1.LogFormaterToken;
-var LogFormater_3 = LogFormater_1.LogFormater;
-
-var LogConfigure = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * Log configure interface symbol.
- * it is a symbol id, you can register yourself LogConfigure for this.
- */
-exports.LogConfigureToken = new core_1.InjectToken('__IOC_LogConfigure');
-
-
-});
-
-unwrapExports(LogConfigure);
-var LogConfigure_1 = LogConfigure.LogConfigureToken;
-
-var ILoggerManager = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * LoggerManger interface token.
- * it is a token id, you can register yourself LoggerManger for this.
- */
-exports.LoggerManagerToken = new core_1.InjectToken('__IOC_ILoggerManager');
-
-
-});
-
-unwrapExports(ILoggerManager);
-var ILoggerManager_1 = ILoggerManager.LoggerManagerToken;
-
-var IConfigureLoggerManager = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * IConfigureLoggerManager interface token.
- * it is a token id, you can register yourself IConfigureLoggerManager for this.
- */
-exports.ConfigureLoggerManagerToken = new core_1.InjectToken('__IOC_IConfigureLoggerManager');
-
-
-});
-
-unwrapExports(IConfigureLoggerManager);
-var IConfigureLoggerManager_1 = IConfigureLoggerManager.ConfigureLoggerManagerToken;
-
-var tokens = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-
-/**
- * symbols of aop log module.
- */
-exports.LogSymbols = {
-    /**
-     * Log formater interface token.
-     * it is a token id, you can register yourself formater for log.
-     */
-    LogFormater: LogFormater_1.LogFormaterToken,
-    /**
-     * Log configure interface token.
-     * it is a token id, you can register yourself LogConfigure for this.
-     */
-    LogConfigure: LogConfigure.LogConfigureToken,
-    /**
-     * LoggerManger interface token.
-     * it is a token id, you can register yourself LoggerManger for this.
-     */
-    ILoggerManager: ILoggerManager.LoggerManagerToken,
-    /**
-     * IConfigureLoggerManager interface token.
-     * it is a token id, you can register yourself IConfigureLoggerManager for this.
-     */
-    IConfigureLoggerManager: IConfigureLoggerManager.ConfigureLoggerManagerToken
-};
-
-
-});
-
-unwrapExports(tokens);
-var tokens_1 = tokens.LogSymbols;
-
 var Level_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 /**
@@ -254,6 +59,51 @@ var Levels;
 unwrapExports(Level_1);
 var Level_2 = Level_1.Level;
 var Level_3 = Level_1.Levels;
+
+var ILoggerManager = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * LoggerManger interface token.
+ * it is a token id, you can register yourself LoggerManger for this.
+ */
+exports.LoggerManagerToken = new core_1.InjectToken('__IOC_ILoggerManager');
+
+
+});
+
+unwrapExports(ILoggerManager);
+var ILoggerManager_1 = ILoggerManager.LoggerManagerToken;
+
+var IConfigureLoggerManager = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * IConfigureLoggerManager interface token.
+ * it is a token id, you can register yourself IConfigureLoggerManager for this.
+ */
+exports.ConfigureLoggerManagerToken = new core_1.InjectToken('__IOC_IConfigureLoggerManager');
+
+
+});
+
+unwrapExports(IConfigureLoggerManager);
+var IConfigureLoggerManager_1 = IConfigureLoggerManager.ConfigureLoggerManagerToken;
+
+var LogConfigure = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * Log configure interface symbol.
+ * it is a symbol id, you can register yourself LogConfigure for this.
+ */
+exports.LogConfigureToken = new core_1.InjectToken('__IOC_LogConfigure');
+
+
+});
+
+unwrapExports(LogConfigure);
+var LogConfigure_1 = LogConfigure.LogConfigureToken;
 
 var ConfigureLoggerManger_1 = createCommonjsModule(function (module, exports) {
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
@@ -352,7 +202,7 @@ var ConfigureLoggerManger = /** @class */ (function () {
     ConfigureLoggerManger = __decorate([
         aop_1.NonePointcut(),
         core_1.Injectable(IConfigureLoggerManager.ConfigureLoggerManagerToken),
-        __param(0, core_1.Inject(core_1.symbols.IContainer)),
+        __param(0, core_1.Inject(core_1.ContainerToken)),
         __metadata("design:paramtypes", [Object, Object])
     ], ConfigureLoggerManger);
     return ConfigureLoggerManger;
@@ -476,6 +326,118 @@ var ConsoleLog = /** @class */ (function () {
 
 unwrapExports(ConsoleLogManager_1);
 var ConsoleLogManager_2 = ConsoleLogManager_1.ConsoleLogManager;
+
+var LogFormater_1 = createCommonjsModule(function (module, exports) {
+var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (commonjsGlobal && commonjsGlobal.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * Log formater interface token.
+ * it is a token id, you can register yourself formater for log.
+ */
+exports.LogFormaterToken = new core_1.InjectToken('__IOC_LogFormater');
+var LogFormater = /** @class */ (function () {
+    function LogFormater() {
+    }
+    LogFormater.prototype.format = function (joinPoint, message) {
+        var pointMsg;
+        switch (joinPoint.state) {
+            case aop_1.JoinpointState.Before:
+            case aop_1.JoinpointState.Pointcut:
+                pointMsg = joinPoint.state + " invoke method \"" + joinPoint.fullName + "\" with args " + this.stringifyArgs(joinPoint.params, joinPoint.args) + ".";
+                break;
+            case aop_1.JoinpointState.After:
+                pointMsg = joinPoint.state + "  invoke method \"" + joinPoint.fullName + "\".";
+                break;
+            case aop_1.JoinpointState.AfterReturning:
+                pointMsg = "Invoke method \"" + joinPoint.fullName + "\" returning value " + this.stringify(joinPoint.returningValue) + ".";
+                break;
+            case aop_1.JoinpointState.AfterThrowing:
+                pointMsg = "Invoke method \"" + joinPoint.fullName + "\" throw error " + this.stringify(joinPoint.throwing) + ".";
+                break;
+            default:
+                pointMsg = '';
+                break;
+        }
+        return this.joinMessage([pointMsg, message]);
+    };
+    LogFormater.prototype.stringifyArgs = function (params, args) {
+        var _this = this;
+        var argsStr = params.map(function (p, idx) {
+            var arg = args.length >= idx ? args[idx] : null;
+            return "<param name: \"" + (p.name || '') + "\", param type: \"" + _this.stringify(p.type) + "\"> " + _this.stringify(arg);
+        }).join(', ');
+        if (argsStr) {
+            return this.joinMessage(['[', argsStr, ']'], ' ');
+        }
+        else {
+            return '[]';
+        }
+    };
+    LogFormater.prototype.joinMessage = function (messgs, separator) {
+        if (separator === void 0) { separator = '; '; }
+        return messgs.filter(function (a) { return a; }).map(function (a) { return core_1.isString(a) ? a : a.toString(); }).join(separator);
+    };
+    LogFormater.prototype.stringifyArray = function (args) {
+        var _this = this;
+        if (!args.length) {
+            return '[]';
+        }
+        return '[ ' + args.map(function (arg) { return _this.stringify(arg); }).join(', ') + ' ]';
+    };
+    LogFormater.prototype.stringify = function (target) {
+        if (core_1.isString(target)) {
+            return target;
+        }
+        else if (core_1.isArray(target)) {
+            return this.stringifyArray(target);
+        }
+        else if (core_1.isBaseType(target)) {
+            return target;
+        }
+        else if (core_1.isClass(target)) {
+            return "[class " + core_1.getClassName(target) + "]";
+        }
+        else if (core_1.isFunction(target) || core_1.isDate(target) || core_1.isSymbol(target)) {
+            return target.toString();
+        }
+        else if (core_1.isObject(target)) {
+            try {
+                return JSON.stringify(target);
+            }
+            catch (_a) {
+                if (core_1.isFunction(target.toString)) {
+                    return target.toString();
+                }
+            }
+        }
+        return '';
+    };
+    LogFormater.classAnnations = { "name": "LogFormater", "params": { "constructor": [], "format": ["joinPoint", "message"], "stringifyArgs": ["params", "args"], "joinMessage": ["messgs", "separator"], "stringifyArray": ["args"], "stringify": ["target"] } };
+    LogFormater = __decorate([
+        aop_1.NonePointcut(),
+        core_1.Singleton(exports.LogFormaterToken, 'default'),
+        __metadata("design:paramtypes", [])
+    ], LogFormater);
+    return LogFormater;
+}());
+exports.LogFormater = LogFormater;
+
+
+});
+
+unwrapExports(LogFormater_1);
+var LogFormater_2 = LogFormater_1.LogFormaterToken;
+var LogFormater_3 = LogFormater_1.LogFormater;
 
 var LoggerAspect_1 = createCommonjsModule(function (module, exports) {
 var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
@@ -758,7 +720,7 @@ var LogModule = /** @class */ (function () {
         if (!container.has(aop_1.AopModule)) {
             container.register(aop_1.AopModule);
         }
-        var lifeScope = container.get(core_1.symbols.LifeScope);
+        var lifeScope = container.get(core_1.LifeScopeToken);
         lifeScope.registerDecorator(Logger.Logger, core_1.LifeState.onInit, core_1.CoreActions.bindParameterProviders);
         container.register(ConfigureLoggerManger_1.ConfigureLoggerManger);
         container.register(AnnotationLogerAspect_1.AnnotationLogerAspect);
@@ -768,7 +730,7 @@ var LogModule = /** @class */ (function () {
     LogModule.classAnnations = { "name": "LogModule", "params": { "constructor": ["container"], "setup": [] } };
     LogModule = __decorate([
         core_1.IocModule('setup'),
-        __param(0, core_1.Inject(core_1.symbols.IContainer)),
+        __param(0, core_1.Inject(core_1.ContainerToken)),
         __metadata("design:paramtypes", [Object])
     ], LogModule);
     return LogModule;
@@ -786,7 +748,7 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(tokens);
+// export * from './tokens';
 __export(Level_1);
 __export(ILoggerManager);
 __export(IConfigureLoggerManager);

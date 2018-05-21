@@ -10,10 +10,9 @@ export * from './IParameter';
 export * from './IMethodAccessor';
 export * from './ICacheManager';
 
-export * from './tokens';
+// export * from './tokens';
 export * from './LifeScope';
 
-export * from './LoadOptions';
 export * from './IModuleLoader';
 export * from './DefaultModuleLoader';
 export * from './DefaultContainerBuilder';

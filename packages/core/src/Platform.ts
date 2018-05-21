@@ -1,10 +1,9 @@
-import { Type, ModuleType } from './types';
+import { Type, ModuleType, LoadType } from './types';
 import { AppConfiguration, CustomDefineModule, defaultAppConfig, AppConfigurationToken, IPlatform } from './IPlatform';
 import { IContainer } from './IContainer';
 import { hasClassMetadata, Autorun } from './core/index';
 import { Defer, isString, lang, isFunction, isClass, isUndefined } from './utils/index';
 import { IContainerBuilder } from './IContainerBuilder';
-import { AsyncLoadOptions } from './LoadOptions';
 import { DefaultContainerBuilder } from './DefaultContainerBuilder';
 
 /**
@@ -18,7 +17,7 @@ export class Platform implements IPlatform {
     protected container: Defer<IContainer>;
     protected configDefer: Defer<AppConfiguration>;
     protected builder: IContainerBuilder;
-    protected usedModules: (ModuleType | string)[];
+    protected usedModules: (LoadType)[];
     protected customs: CustomDefineModule[];
     constructor() {
         this.usedModules = [];
@@ -64,7 +63,7 @@ export class Platform implements IPlatform {
         let cfgmodeles: Promise<AppConfiguration>;
         let builder = this.getContainerBuilder();
         if (isString(config)) {
-            cfgmodeles = builder.loader.load({ files: [config] })
+            cfgmodeles = builder.loader.load(config)
                 .then(rs => {
                     return rs.length ? rs[0] : null;
                 })
@@ -99,8 +98,8 @@ export class Platform implements IPlatform {
         return this.configDefer.promise;
     }
 
-    protected createContainer(option?: AsyncLoadOptions): Promise<IContainer> {
-        return this.getContainerBuilder().build(option);
+    protected createContainer(modules?: LoadType | LoadType[], basePath?: string): Promise<IContainer> {
+        return this.getContainerBuilder().build(modules, basePath);
     }
 
 
@@ -132,11 +131,11 @@ export class Platform implements IPlatform {
     /**
      * use module, custom module.
      *
-     * @param {(...(ModuleType | string | CustomDefineModule)[])} modules
+     * @param {(...(LoadType | CustomDefineModule)[])} modules
      * @returns {this}
      * @memberof PlatformServer
      */
-    use(...modules: (ModuleType | string | CustomDefineModule)[]): this {
+    use(...modules: (LoadType | CustomDefineModule)[]): this {
         modules.forEach(m => {
             if (isFunction(m) && !isClass(m)) {
                 this.customs.push(m);
@@ -168,9 +167,7 @@ export class Platform implements IPlatform {
         container.registerSingleton(AppConfigurationToken, config);
         let builder = this.getContainerBuilder();
         if (this.usedModules.length) {
-            await builder.loadModule(container, {
-                modules: this.usedModules
-            });
+            await builder.loadModule(container, ...this.usedModules);
         }
 
         if (this.customs.length) {
