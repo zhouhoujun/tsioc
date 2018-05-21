@@ -1,5 +1,5 @@
 import { Type, ModuleType, LoadType } from './types';
-import { AppConfiguration, CustomDefineModule, defaultAppConfig, AppConfigurationToken, IPlatform } from './IPlatform';
+import { ModuleConfiguration, CustomDefineModule, ModuleConfigurationToken, IModuleBuilder } from './IModuleBuilder';
 import { IContainer } from './IContainer';
 import { hasClassMetadata, Autorun } from './core/index';
 import { Defer, isString, lang, isFunction, isClass, isUndefined } from './utils/index';
@@ -12,10 +12,10 @@ import { DefaultContainerBuilder } from './DefaultContainerBuilder';
  * @export
  * @class Bootstrap
  */
-export class Platform implements IPlatform {
+export class ModuleBuilder implements IModuleBuilder {
 
     protected container: Defer<IContainer>;
-    protected configDefer: Defer<AppConfiguration>;
+    protected configDefer: Defer<ModuleConfiguration>;
     protected builder: IContainerBuilder;
     protected usedModules: (LoadType)[];
     protected customs: CustomDefineModule[];
@@ -51,21 +51,21 @@ export class Platform implements IPlatform {
     /**
      * use custom configuration.
      *
-     * @param {(string | AppConfiguration)} [config]
+     * @param {(string | ModuleConfiguration)} [config]
      * @returns {this}
      * @memberof Bootstrap
      */
-    useConfiguration(config?: string | AppConfiguration): this {
+    useConfiguration(config?: string | ModuleConfiguration): this {
         if (!this.configDefer) {
-            this.configDefer = Defer.create<AppConfiguration>();
-            this.configDefer.resolve(lang.assign({}, defaultAppConfig));
+            this.configDefer = Defer.create<ModuleConfiguration>();
+            this.configDefer.resolve(<ModuleConfiguration>{ debug: false });
         }
-        let cfgmodeles: Promise<AppConfiguration>;
+        let cfgmodeles: Promise<ModuleConfiguration>;
         let builder = this.getContainerBuilder();
         if (isString(config)) {
             cfgmodeles = builder.loader.load(config)
                 .then(rs => {
-                    return rs.length ? rs[0] : null;
+                    return rs.length ? rs[0] as ModuleConfiguration : null;
                 })
         } else if (config) {
             cfgmodeles = Promise.resolve(config);
@@ -75,8 +75,8 @@ export class Platform implements IPlatform {
             this.configDefer.promise = this.configDefer.promise
                 .then(cfg => {
                     return cfgmodeles.then(rcfg => {
-                        let excfg = (rcfg['default'] ? rcfg['default'] : rcfg) as AppConfiguration;
-                        cfg = lang.assign(cfg || {}, excfg || {});
+                        let excfg = (rcfg['default'] ? rcfg['default'] : rcfg) as ModuleConfiguration;
+                        cfg = lang.assign(cfg || {}, excfg || {}) as ModuleConfiguration;
                         return cfg;
                     });
                 });
@@ -88,10 +88,10 @@ export class Platform implements IPlatform {
     /**
      * get configuration.
      *
-     * @returns {Promise<AppConfiguration>}
+     * @returns {Promise<ModuleConfiguration>}
      * @memberof Bootstrap
      */
-    getConfiguration(): Promise<AppConfiguration> {
+    getConfiguration(): Promise<ModuleConfiguration> {
         if (!this.configDefer) {
             this.useConfiguration();
         }
@@ -146,10 +146,15 @@ export class Platform implements IPlatform {
         return this;
     }
 
-    async bootstrap(modules: Type<any>) {
-        let cfg: AppConfiguration = await this.getConfiguration();
+    async build() {
+        let cfg: ModuleConfiguration = await this.getConfiguration();
         let container: IContainer = await this.getContainer();
         container = await this.initIContainer(cfg, container);
+        return container;
+    }
+
+    async bootstrap(modules: Type<any>) {
+        let container = await this.build();
         if (!container.has(modules)) {
             container.register(modules);
         }
@@ -158,13 +163,13 @@ export class Platform implements IPlatform {
         }
     }
 
-    protected setRootdir(config: AppConfiguration) {
+    protected setRootdir(config: ModuleConfiguration) {
 
     }
 
-    protected async initIContainer(config: AppConfiguration, container: IContainer): Promise<IContainer> {
+    protected async initIContainer(config: ModuleConfiguration, container: IContainer): Promise<IContainer> {
         this.setRootdir(config);
-        container.registerSingleton(AppConfigurationToken, config);
+        container.registerSingleton(ModuleConfigurationToken, config);
         let builder = this.getContainerBuilder();
         if (this.usedModules.length) {
             await builder.loadModule(container, ...this.usedModules);

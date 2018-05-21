@@ -1,4 +1,4 @@
-import { IContainer, Type, Defer, lang, isString, IContainerBuilder, ModuleType, hasClassMetadata, Autorun, isClass, isFunction, Platform, CustomDefineModule, AppConfiguration, AppConfigurationToken, defaultAppConfig, IPlatform } from '@ts-ioc/core';
+import { IContainer, Type, Defer, lang, isString, IContainerBuilder, ModuleType, hasClassMetadata, Autorun, isClass, isFunction, ModuleBuilder, CustomDefineModule, ModuleConfiguration, ModuleConfigurationToken, IModuleBuilder } from '@ts-ioc/core';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { ContainerBuilder } from './ContainerBuilder';
@@ -12,7 +12,7 @@ import { toAbsolutePath } from './toAbsolute';
  * @interface IPlatformServer
  * @extends {IPlatform}
  */
-export interface IPlatformServer extends IPlatform {
+export interface IPlatformServer extends IModuleBuilder {
     /**
      * root url
      *
@@ -35,7 +35,7 @@ export interface IPlatformServer extends IPlatform {
  * @export
  * @class Bootstrap
  */
-export class PlatformServer extends Platform {
+export class PlatformServer extends ModuleBuilder {
 
     private dirMatchs: string[][];
     constructor(public rootdir: string) {
@@ -50,21 +50,21 @@ export class PlatformServer extends Platform {
     /**
      * use custom configuration.
      *
-     * @param {(string | AppConfiguration)} [config]
+     * @param {(string | ModuleConfiguration)} [config]
      * @returns {this}
      * @memberof Bootstrap
      */
-    useConfiguration(config?: string | AppConfiguration): this {
+    useConfiguration(config?: string | ModuleConfiguration): this {
         if (!this.configDefer) {
-            this.configDefer = Defer.create<AppConfiguration>();
-            this.configDefer.resolve(lang.assign({}, defaultAppConfig));
+            this.configDefer = Defer.create<ModuleConfiguration>();
+            this.configDefer.resolve({} as ModuleConfiguration);
         }
-        let cfgmodeles: AppConfiguration;
+        let cfgmodeles: ModuleConfiguration;
         if (isString(config)) {
             if (existsSync(config)) {
-                cfgmodeles = require(config) as AppConfiguration;
+                cfgmodeles = require(config) as ModuleConfiguration;
             } else if (existsSync(path.join(this.rootdir, config))) {
-                cfgmodeles = require(path.join(this.rootdir, config)) as AppConfiguration;
+                cfgmodeles = require(path.join(this.rootdir, config)) as ModuleConfiguration;
             } else {
                 console.log(`config file: ${config} not exists.`)
             }
@@ -88,10 +88,10 @@ export class PlatformServer extends Platform {
         }
 
         if (cfgmodeles) {
-            let excfg = (cfgmodeles['default'] ? cfgmodeles['default'] : cfgmodeles) as AppConfiguration;
+            let excfg = (cfgmodeles['default'] ? cfgmodeles['default'] : cfgmodeles) as ModuleConfiguration;
             this.configDefer.promise = this.configDefer.promise
                 .then(cfg => {
-                    cfg = lang.assign(cfg || {}, excfg || {});
+                    cfg = lang.assign(cfg || {}, excfg || {}) as ModuleConfiguration;
                     return cfg;
                 });
         }
@@ -118,12 +118,12 @@ export class PlatformServer extends Platform {
     }
 
 
-    protected setRootdir(config: AppConfiguration) {
+    protected setRootdir(config: ModuleConfiguration) {
         config.rootdir = this.rootdir;
     }
 
 
-    protected async initIContainer(config: AppConfiguration, container: IContainer): Promise<IContainer> {
+    protected async initIContainer(config: ModuleConfiguration, container: IContainer): Promise<IContainer> {
         await super.initIContainer(config, container);
         let builder = this.getContainerBuilder();
         await Promise.all(this.dirMatchs.map(dirs => {

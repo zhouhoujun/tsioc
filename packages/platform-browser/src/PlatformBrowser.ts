@@ -1,4 +1,4 @@
-import { IContainer, Type, Defer, lang, isString, isFunction, isClass, IContainerBuilder, ModuleType, hasClassMetadata, Autorun, isUndefined, Platform, AppConfiguration, IPlatform } from '@ts-ioc/core';
+import { IContainer, Type, Defer, lang, isString, isFunction, isClass, IContainerBuilder, ModuleType, hasClassMetadata, Autorun, isUndefined, ModuleBuilder, ModuleConfiguration, IModuleBuilder } from '@ts-ioc/core';
 import { ContainerBuilder } from './ContainerBuilder';
 
 /**
@@ -8,7 +8,7 @@ import { ContainerBuilder } from './ContainerBuilder';
  * @interface IPlatformBrowser
  * @extends {IPlatform}
  */
-export interface IPlatformBrowser extends IPlatform {
+export interface IPlatformBrowser extends IModuleBuilder {
     /**
      * base url.
      *
@@ -25,7 +25,7 @@ declare let System: any;
  * @export
  * @class Bootstrap
  */
-export class PlatformBrowser extends Platform {
+export class PlatformBrowser extends ModuleBuilder {
 
     baseURL: string;
     constructor(baseURL?: string) {
@@ -50,7 +50,7 @@ export class PlatformBrowser extends Platform {
         return this.builder;
     }
 
-    protected setRootdir(config: AppConfiguration) {
+    protected setRootdir(config: ModuleConfiguration) {
         config.rootdir = this.baseURL
     }
 

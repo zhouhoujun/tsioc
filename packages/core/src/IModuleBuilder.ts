@@ -6,53 +6,43 @@ import { IContainerBuilder } from './IContainerBuilder';
 /**
  * AppConfiguration token.
  */
-export const AppConfigurationToken = new InjectToken<AppConfiguration>('__IOC_AppConfiguration');
+export const ModuleConfigurationToken = new InjectToken<ModuleConfiguration>('__IOC_AppConfiguration');
+
 
 /**
- * app configuration.
+ * module configuration.
  *
  * @export
- * @interface AppConfiguration
+ * @interface ModuleConfiguration
  * @extends {ObjectMap<any>}
  */
-export interface AppConfiguration extends ObjectMap<any> {
+export interface ModuleConfiguration extends ObjectMap<any> {
     /**
      * system file root directory.
      */
     rootdir?: string;
 
+    providers?: any[];
+
+    imports: LoadType[];
+
+    exports: Type<any>[];
     /**
-     * custom config key value setting.
+     * set this module bootstrap start with.
      *
-     * @type {IMap<any>}
-     * @memberOf AppConfiguration
+     * @type {Token<any>}
+     * @memberof ModuleConfiguration
      */
-    setting?: ObjectMap<any>;
+    bootstrap?: Token<any>;
+
 
     /**
-     * custom config connections.
+     * debug log.
      *
-     * @type {ObjectMap<any>}
+     * @type {boolean}
      * @memberof AppConfiguration
      */
-    connections?: ObjectMap<any>;
-
-
-    /**
-     * aspect service path. default: './aop'
-     *
-     * @type {(string | string[])}
-     * @memberof AppConfiguration
-     */
-    aop?: string | string[];
-
-    /**
-     * used aop aspect.
-     *
-     * @type {Token<any>[]}
-     * @memberof AppConfiguration
-     */
-    usedAops?: Token<any>[];
+    debug?: boolean;
 
     /**
      * log config.
@@ -64,23 +54,11 @@ export interface AppConfiguration extends ObjectMap<any> {
 
 }
 
-/**
- * default app configuration.
- */
-export const defaultAppConfig: AppConfiguration = <AppConfiguration>{
-    rootdir: '',
-    debug: false,
-    aop: './aop',
-    usedAops: [],
-    connections: {},
-    setting: {}
-}
-
 
 /**
  * custom define module.
  */
-export type CustomDefineModule = (container: IContainer, config?: AppConfiguration, platform?: IPlatform) => any | Promise<any>;
+export type CustomDefineModule = (container: IContainer, config?: ModuleConfiguration, platform?: IModuleBuilder) => any | Promise<any>;
 
 /**
  * server app bootstrap
@@ -88,7 +66,7 @@ export type CustomDefineModule = (container: IContainer, config?: AppConfigurati
  * @export
  * @class Bootstrap
  */
-export interface IPlatform {
+export interface IModuleBuilder {
 
     /**
      * use an exist container for platform.
@@ -110,19 +88,19 @@ export interface IPlatform {
     /**
      * use custom configuration.
      *
-     * @param {(string | AppConfiguration)} [config]
+     * @param {(string | ModuleConfiguration)} [config]
      * @returns {this}
      * @memberof Bootstrap
      */
-    useConfiguration(config?: string | AppConfiguration): this;
+    useConfiguration(config?: string | ModuleConfiguration): this;
 
     /**
      * get configuration.
      *
-     * @returns {Promise<AppConfiguration>}
+     * @returns {Promise<ModuleConfiguration>}
      * @memberof Bootstrap
      */
-    getConfiguration(): Promise<AppConfiguration>;
+    getConfiguration(): Promise<ModuleConfiguration>;
 
 
     /**

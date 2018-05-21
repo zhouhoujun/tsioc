@@ -21,5 +21,5 @@ export * from './utils/index';
 export * from './components/index';
 export * from './core/index';
 
-export * from './IPlatform';
-export * from './Platform';
+export * from './IModuleBuilder';
+export * from './ModuleBuilder';

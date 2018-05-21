@@ -1,4 +1,4 @@
-import { Token, ToInstance, Providers, Express2 } from '../../types';
+import { Token, ToInstance, Providers, Express2, Type } from '../../types';
 import { IContainer } from '../../IContainer';
 import { isFunction, isObject, isUndefined } from '../../utils/index';
 import { IContainerBuilder, ContainerBuilderToken } from '../../IContainerBuilder';
@@ -275,3 +275,76 @@ export class AsyncParamProvider extends ParamProvider {
     }
 
 }
+
+export interface TypeProvider extends Type<any> {
+
+}
+
+
+/**
+ * @usageNotes
+ * ```
+ * @Injectable()
+ * class MyService {}
+ *
+ * const provider: ClassProvider = {provide: 'someToken', useClass: MyService};
+ * ```
+ *
+ * @description
+ * Configures the `Injector` to return an instance of `useClass` for a token.
+ *
+ */
+export interface ClassProvider {
+    provide: Token<any>,
+    useClass: any;
+}
+
+export interface ValueProvider {
+    provide: Token<any>,
+    useValue: any;
+}
+
+/**
+ * @usageNotes
+ * ```
+ * function serviceFactory() { ... }
+ *
+ * const provider: FactoryProvider = {provide: 'someToken', useFactory: serviceFactory, deps: []};
+ * ```
+ *
+ * @description
+ * Configures the `Injector` to return a value by invoking a `useFactory` function.
+ *
+ * For more details, see the {@linkDocs guide/dependency-injection "Dependency Injection Guide"}.
+ *
+ * ### Example
+ *
+ * {@example core/di/ts/provider_spec.ts region='FactoryProvider'}
+ *
+ * Dependencies can also be marked as optional:
+ * {@example core/di/ts/provider_spec.ts region='FactoryProviderOptionalDeps'}
+ *
+ *
+ */
+export interface FactoryProvider {
+    provide: Token<any>;
+    /**
+   * A function to invoke to create a value for this `token`. The function is invoked with
+   * resolved values of `token`s in the `deps` field.
+   */
+    useFactory: Function;
+
+    /**
+     * A list of `token`s which need to be resolved by the injector. The list of values is then
+     * used as arguments to the `useFactory` function.
+     */
+    deps?: any[];
+}
+
+export interface ExistingProvider {
+    provide: Token<any>;
+    useExisting: Token<any>
+}
+
+export type IocProvider =
+    TypeProvider | ValueProvider | ClassProvider | ExistingProvider | FactoryProvider | Provider;
