@@ -231,7 +231,7 @@ unwrapExports(PlatformBrowser_1);
 var PlatformBrowser_2 = PlatformBrowser_1.AppConfigurationToken;
 var PlatformBrowser_3 = PlatformBrowser_1.PlatformBrowser;
 
-var D__workspace_github_tsioc_packages_platformBrowser_lib = createCommonjsModule(function (module, exports) {
+var D__Workspace_Projects_modules_tsioc_packages_platformBrowser_lib = createCommonjsModule(function (module, exports) {
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
@@ -243,7 +243,7 @@ __export(PlatformBrowser_1);
 
 });
 
-var index = unwrapExports(D__workspace_github_tsioc_packages_platformBrowser_lib);
+var index = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_platformBrowser_lib);
 
 return index;
 
