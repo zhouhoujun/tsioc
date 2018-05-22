@@ -701,8 +701,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 /**
- * aop logs bootstrap main. auto run setup after registered.
- * with @IocModule('setup') decorator.
+ * aop logs ext for Ioc. auto run setup after registered.
+ * with @IocExt('setup') decorator.
  * @export
  * @class LogModule
  */
@@ -729,7 +729,7 @@ var LogModule = /** @class */ (function () {
     };
     LogModule.classAnnations = { "name": "LogModule", "params": { "constructor": ["container"], "setup": [] } };
     LogModule = __decorate([
-        core_1.IocModule('setup'),
+        core_1.IocExt('setup'),
         __param(0, core_1.Inject(core_1.ContainerToken)),
         __metadata("design:paramtypes", [Object])
     ], LogModule);

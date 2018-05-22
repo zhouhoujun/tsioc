@@ -5,7 +5,7 @@ import { IContainer } from '../../IContainer';
 import { isFunction, lang } from '../../utils/index';
 import { CoreActions } from './CoreActions';
 import { hasClassMetadata, hasMethodMetadata, getTypeMetadata, getMethodMetadata } from '../factories/index';
-import { Autorun, IocModule } from '../decorators/index';
+import { Autorun, IocExt } from '../decorators/index';
 
 
 
@@ -35,7 +35,7 @@ export class AutorunAction extends ActionComposite {
     }
 
     protected getDecorator(): Function[] {
-        return [IocModule, Autorun];
+        return [IocExt, Autorun];
     }
 
     protected working(container: IContainer, data: AutorunActionData) {

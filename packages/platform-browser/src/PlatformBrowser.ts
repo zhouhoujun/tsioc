@@ -1,5 +1,75 @@
-import { IContainer, Type, Defer, lang, isString, isFunction, isClass, IContainerBuilder, ModuleType, hasClassMetadata, Autorun, isUndefined, ModuleBuilder, ModuleConfiguration, IModuleBuilder } from '@ts-ioc/core';
+import { IContainer, Type, Defer, lang, isString, isFunction, isClass, IContainerBuilder, ModuleType, hasClassMetadata, Autorun, isUndefined, ModuleBuilder, ModuleConfiguration, IModuleBuilder, InjectToken, ObjectMap, Token } from '@ts-ioc/core';
 import { ContainerBuilder } from './ContainerBuilder';
+
+
+/**
+ * App configuration token.
+ */
+export const AppConfigurationToken = new InjectToken<AppConfiguration>('__IOC_AppConfiguration');
+
+/**
+ * app configuration.
+ *
+ * @export
+ * @interface AppConfiguration
+ * @extends {ObjectMap<any>}
+ */
+export interface AppConfiguration extends ModuleConfiguration {
+
+    /**
+     * custom config key value setting.
+     *
+     * @type {IMap<any>}
+     * @memberOf AppConfiguration
+     */
+    setting?: ObjectMap<any>;
+
+    /**
+     * custom config connections.
+     *
+     * @type {ObjectMap<any>}
+     * @memberof AppConfiguration
+     */
+    connections?: ObjectMap<any>;
+
+
+    /**
+     * aspect service path. default: './aop'
+     *
+     * @type {(string | string[])}
+     * @memberof AppConfiguration
+     */
+    aop?: string | string[];
+
+    /**
+     * used aop aspect.
+     *
+     * @type {Token<any>[]}
+     * @memberof AppConfiguration
+     */
+    usedAops?: Token<any>[];
+
+    /**
+     * log config.
+     *
+     * @type {*}
+     * @memberof AppConfiguration
+     */
+    logConfig?: any;
+
+}
+
+/**
+ * default app configuration.
+ */
+const defaultAppConfig: AppConfiguration = <AppConfiguration>{
+    rootdir: '',
+    debug: false,
+    aop: './aop',
+    usedAops: [],
+    connections: {},
+    setting: {}
+}
 
 /**
  * browser platform.
@@ -8,7 +78,7 @@ import { ContainerBuilder } from './ContainerBuilder';
  * @interface IPlatformBrowser
  * @extends {IPlatform}
  */
-export interface IPlatformBrowser extends IModuleBuilder {
+export interface IPlatformBrowser extends IModuleBuilder<AppConfiguration> {
     /**
      * base url.
      *
@@ -25,7 +95,7 @@ declare let System: any;
  * @export
  * @class Bootstrap
  */
-export class PlatformBrowser extends ModuleBuilder {
+export class PlatformBrowser extends ModuleBuilder<AppConfiguration> {
 
     baseURL: string;
     constructor(baseURL?: string) {
@@ -50,8 +120,18 @@ export class PlatformBrowser extends ModuleBuilder {
         return this.builder;
     }
 
-    protected setRootdir(config: ModuleConfiguration) {
+    protected getDefaultConfig(): AppConfiguration {
+        return lang.assign({}, defaultAppConfig);
+    }
+
+    protected setRootdir(config: AppConfiguration) {
         config.rootdir = this.baseURL
+    }
+
+    protected async initIContainer(config: AppConfiguration, container: IContainer): Promise<IContainer> {
+        container.bindProvider(AppConfigurationToken, config);
+        await super.initIContainer(config, container);
+        return container;
     }
 
 }

@@ -1,5 +1,5 @@
 import { IContainer } from '../IContainer';
-import { ParamProvider, AsyncParamProvider, ProviderMap } from './providers/index';
+import { ParamProvider, ProviderMap } from './providers/index';
 import { IMethodAccessor } from '../IMethodAccessor';
 import { BindParameterProviderActionData, CoreActions, LifeState } from './actions/index';
 import { isToken, isFunction, isUndefined, isString } from '../utils/index';

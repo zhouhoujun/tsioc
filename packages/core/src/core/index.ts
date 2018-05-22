@@ -1,5 +1,5 @@
 import { IContainer } from '../IContainer';
-import { Injectable, Component, AutoWired, Inject, Singleton, Param, Method, Abstract, Autorun, IocModule } from './decorators/index';
+import { Injectable, Component, AutoWired, Inject, Singleton, Param, Method, Abstract, Autorun, IocExt } from './decorators/index';
 import { CoreActions } from './actions/index';
 import { DefaultLifeScope } from './DefaultLifeScope';
 import { LifeScope, LifeScopeToken } from '../LifeScope';
@@ -55,7 +55,7 @@ export function registerCores(container: IContainer) {
     lifeScope.registerDecorator(Method, CoreActions.bindParameterProviders);
 
     lifeScope.registerDecorator(Autorun, CoreActions.autorun);
-    lifeScope.registerDecorator(IocModule, CoreActions.autorun, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
+    lifeScope.registerDecorator(IocExt, CoreActions.autorun, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
 
     container.register(Date, () => new Date());
     container.register(String, () => '');

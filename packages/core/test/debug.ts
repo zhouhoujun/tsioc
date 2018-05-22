@@ -1,4 +1,4 @@
-import { AutoWired, Injectable, Param, Singleton, Registration, Inject, IContainer, ContainerToken } from '../src';
+import { AutoWired, Injectable, Param, Singleton, Registration, Inject, IContainer, ContainerToken, DefModule } from '../src';
 
 export class SimppleAutoWried {
     constructor() {

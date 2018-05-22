@@ -1,6 +1,6 @@
 
 
-import { IContainer, LifeScope, DecoratorType, CoreActions, IocState, LifeState, Inject, IocModule, ContainerToken, LifeScopeToken } from '@ts-ioc/core';
+import { IContainer, LifeScope, DecoratorType, CoreActions, IocState, LifeState, Inject, ContainerToken, LifeScopeToken, IocExt } from '@ts-ioc/core';
 import { Aspect } from './decorators/index';
 import { Advisor } from './Advisor';
 import { AopActions } from './actions/index';
@@ -10,12 +10,12 @@ import { AopActionFactory } from './actions/AopActionFactory';
 import { Joinpoint } from './joinpoints/index';
 import { ProxyMethod, AdvisorChainFactory, AdvisorChain, SyncProceeding, AsyncObservableProceeding, AsyncPromiseProceeding, ReturningRecognizer } from './access/index';
 /**
- * aop bootstrap main. auto run setup after registered.
- * with @IocModule('setup') decorator.
+ * aop ext for ioc. auto run setup after registered.
+ * with @IocExt('setup') decorator.
  * @export
  * @class AopModule
  */
-@IocModule('setup')
+@IocExt('setup')
 export class AopModule {
 
     constructor(@Inject(ContainerToken) private container: IContainer) {

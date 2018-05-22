@@ -1,7 +1,7 @@
 import { Type, ModuleType, LoadType, PathModules } from './types';
 import { IModuleLoader } from './IModuleLoader';
 import { isString, isClass, isObject, isArray } from './utils/index';
-import { hasOwnClassMetadata, IocModule } from './core/index';
+import { hasOwnClassMetadata, IocExt } from './core/index';
 
 declare let require: any;
 
@@ -79,9 +79,9 @@ export class DefaultModuleLoader implements IModuleLoader {
         let regModules: Type<any>[] = [];
         modules.forEach(m => {
             let types = this.getContentTypes(m);
-            let iocModule = types.find(it => hasOwnClassMetadata(IocModule, it));
-            if (iocModule) {
-                regModules.push(iocModule);
+            let iocExt = types.find(it => hasOwnClassMetadata(IocExt, it));
+            if (iocExt) {
+                regModules.push(iocExt);
             } else {
                 regModules.push(...types);
             }

@@ -84,13 +84,14 @@ class name First char must be UpperCase.
 1. `@Abstract`  abstract class decorator.
 2. `@AutoRun`   class, method decorator, use to define the class auto run (via a method or not) after registered.
 3. `@AutoWried`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
-4. `@Component` class decortator, use to define the class. it can setting provider to some token, singleton or not. it will execute  [`ComponentLifecycle`](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/core/ComponentLifecycle.ts) hooks when create a instance .
+4. `@Component` class decortator, use to define the class. it can setting provider to some token, singleton or not. it will execute [`ComponentLifecycle`](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/core/ComponentLifecycle.ts) hooks when create a instance .
 5. `@Inject`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
 6. `@Injectable` class decortator, use to define the class. it can setting provider to some token, singleton or not.
-7. `@IocModule` class decortator, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
+7. `@IocExt` class decortator, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
 8. `@Method` method decorator.
 9. `@Param`   param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
 10. `@Singleton` class decortator, use to define the class is singleton.
+11. `@DefModule` class decortator, use to define the class as module. to config module configuration.
 
 ### create Container
 

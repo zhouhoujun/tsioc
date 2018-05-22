@@ -1,72 +1,27 @@
 import { IContainer } from './IContainer';
-import { InjectToken } from './InjectToken';
-import { ObjectMap, Token, ModuleType, Type, LoadType } from './types';
+import { Type, LoadType } from './types';
 import { IContainerBuilder } from './IContainerBuilder';
+import { ModuleConfiguration } from './ModuleConfiguration';
+import { InjectToken } from '.';
 
 /**
- * AppConfiguration token.
+ * module builder token.
  */
-export const ModuleConfigurationToken = new InjectToken<ModuleConfiguration>('__IOC_AppConfiguration');
-
-
-/**
- * module configuration.
- *
- * @export
- * @interface ModuleConfiguration
- * @extends {ObjectMap<any>}
- */
-export interface ModuleConfiguration extends ObjectMap<any> {
-    /**
-     * system file root directory.
-     */
-    rootdir?: string;
-
-    providers?: any[];
-
-    imports: LoadType[];
-
-    exports: Type<any>[];
-    /**
-     * set this module bootstrap start with.
-     *
-     * @type {Token<any>}
-     * @memberof ModuleConfiguration
-     */
-    bootstrap?: Token<any>;
-
-
-    /**
-     * debug log.
-     *
-     * @type {boolean}
-     * @memberof AppConfiguration
-     */
-    debug?: boolean;
-
-    /**
-     * log config.
-     *
-     * @type {*}
-     * @memberof AppConfiguration
-     */
-    logConfig?: any;
-
-}
-
+export const ModuleBuilderToken = new InjectToken<IModuleBuilder<ModuleConfiguration>>('__IOC_ModuleBuilder');
 
 /**
  * custom define module.
  */
-export type CustomDefineModule = (container: IContainer, config?: ModuleConfiguration, platform?: IModuleBuilder) => any | Promise<any>;
+export type CustomDefineModule<T extends ModuleConfiguration> = (container: IContainer, config?: ModuleConfiguration, builder?: IModuleBuilder<T>) => any | Promise<any>;
 
 /**
- * server app bootstrap
+ * module builder
  *
  * @export
- * @class Bootstrap
+ * @interface IModuleBuilder
+ * @template T
  */
-export interface IModuleBuilder {
+export interface IModuleBuilder<T extends ModuleConfiguration> {
 
     /**
      * use an exist container for platform.
@@ -88,19 +43,19 @@ export interface IModuleBuilder {
     /**
      * use custom configuration.
      *
-     * @param {(string | ModuleConfiguration)} [config]
+     * @param {(string | T)} [config]
      * @returns {this}
      * @memberof Bootstrap
      */
-    useConfiguration(config?: string | ModuleConfiguration): this;
+    useConfiguration(config?: string | T): this;
 
     /**
      * get configuration.
      *
-     * @returns {Promise<ModuleConfiguration>}
+     * @returns {Promise<T>}
      * @memberof Bootstrap
      */
-    getConfiguration(): Promise<ModuleConfiguration>;
+    getConfiguration(): Promise<T>;
 
 
     /**
@@ -123,11 +78,20 @@ export interface IModuleBuilder {
     /**
      * use module, custom module.
      *
-     * @param {(...(LoadType | CustomDefineModule)[])} modules
+     * @param {(...(LoadType | CustomDefineModule<T>)[])} modules
      * @returns {this}
      * @memberof PlatformServer
      */
-    use(...modules: (LoadType | CustomDefineModule)[]): this;
+    use(...modules: (LoadType | CustomDefineModule<T>)[]): this;
+
+    /**
+     * build module.
+     *
+     * @param {T} [cfg]
+     * @returns {Promise<IContainer>}
+     * @memberof IModuleBuilder
+     */
+    build(cfg?: T): Promise<IContainer>;
 
     /**
      * bootstrap app via main module.

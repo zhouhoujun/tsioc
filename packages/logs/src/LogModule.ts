@@ -1,4 +1,4 @@
-import { IocModule, Inject, IContainer, LifeScope, LifeState, CoreActions, ContainerToken, LifeScopeToken } from '@ts-ioc/core';
+import { Inject, IContainer, LifeScope, LifeState, CoreActions, ContainerToken, LifeScopeToken, IocExt } from '@ts-ioc/core';
 import { AopModule } from '@ts-ioc/aop';
 import { Logger } from './decorators/Logger';
 import { AnnotationLogerAspect } from './AnnotationLogerAspect';
@@ -7,12 +7,12 @@ import { ConfigureLoggerManger } from './ConfigureLoggerManger';
 import { LogFormater } from './LogFormater';
 
 /**
- * aop logs bootstrap main. auto run setup after registered.
- * with @IocModule('setup') decorator.
+ * aop logs ext for Ioc. auto run setup after registered.
+ * with @IocExt('setup') decorator.
  * @export
  * @class LogModule
  */
-@IocModule('setup')
+@IocExt('setup')
 export class LogModule {
 
     constructor(@Inject(ContainerToken) private container: IContainer) {

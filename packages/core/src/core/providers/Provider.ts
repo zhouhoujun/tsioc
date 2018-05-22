@@ -3,6 +3,77 @@ import { IContainer } from '../../IContainer';
 import { isFunction, isObject, isUndefined } from '../../utils/index';
 import { IContainerBuilder, ContainerBuilderToken } from '../../IContainerBuilder';
 
+
+export interface TypeProvider extends Type<any> {
+
+}
+
+
+/**
+ * @usageNotes
+ * ```
+ * @Injectable()
+ * class MyService {}
+ *
+ * const provider: ClassProvider = {provide: 'someToken', useClass: MyService};
+ * ```
+ *
+ * @description
+ * Configures the `Injector` to return an instance of `useClass` for a token.
+ *
+ */
+export interface ClassProvider {
+    provide: Token<any>,
+    useClass: Type<any>;
+    /**
+     * A list of `token`s which need to be resolved by the injector. The list of values is then
+     * used as arguments to the `useFactory` function.
+     */
+    deps?: any[];
+}
+
+export interface ValueProvider {
+    provide: Token<any>,
+    useValue: any;
+}
+
+/**
+ * @usageNotes
+ * ```
+ * function serviceFactory() { ... }
+ *
+ * const provider: FactoryProvider = {provide: 'someToken', useFactory: serviceFactory, deps: []};
+ * ```
+ *
+ * @description
+ * Configures the `Injector` to return a value by invoking a `useFactory` function.
+ *
+ *
+ */
+export interface FactoryProvider {
+    provide: Token<any>;
+    /**
+   * A function to invoke to create a value for this `token`. The function is invoked with
+   * resolved values of `token`s in the `deps` field.
+   */
+    useFactory: Function;
+
+    /**
+     * A list of `token`s which need to be resolved by the injector. The list of values is then
+     * used as arguments to the `useFactory` function.
+     */
+    deps?: any[];
+}
+
+export interface ExistingProvider {
+    provide: Token<any>;
+    useExisting: Token<any>
+}
+
+export type ProviderType =
+    TypeProvider | ValueProvider | ClassProvider | ExistingProvider | FactoryProvider | Provider;
+
+
 /**
  *  provider, to dynamic resovle instance of params in run time.
  *
@@ -73,19 +144,19 @@ export class Provider {
         return new ExtendsProvider(token, value, extendsTarget);
     }
 
-    /**
-     * create custom provider.
-     *
-     * @static
-     * @param {Token<any>} [type]
-     * @param {ToInstance<any>} [toInstance]
-     * @param {*} [value]
-     * @returns {CustomProvider}
-     * @memberof Provider
-     */
-    static createCustom(type?: Token<any>, toInstance?: ToInstance<any>, value?: any): CustomProvider {
-        return new CustomProvider(type, toInstance, value);
-    }
+    // /**
+    //  * create custom provider.
+    //  *
+    //  * @static
+    //  * @param {Token<any>} [type]
+    //  * @param {ToInstance<any>} [toInstance]
+    //  * @param {*} [value]
+    //  * @returns {CustomProvider}
+    //  * @memberof Provider
+    //  */
+    // static createCustom(type?: Token<any>, toInstance?: ToInstance<any>, value?: any): CustomProvider {
+    //     return new CustomProvider(type, toInstance, value);
+    // }
 
     /**
      * create invoked provider.
@@ -116,45 +187,45 @@ export class Provider {
         return new ParamProvider(token, value, index, method);
     }
 
-    /**
-     * create async param provider.
-     *
-     * @static
-     * @param {(string | string[])} files
-     * @param {Token<any>} token
-     * @param {number} [index]
-     * @param {string} [method]
-     * @param {(any)} [value]
-     * @returns {AsyncParamProvider}
-     * @memberof Provider
-     */
-    static createAsyncParam(files: string | string[], token: Token<any>, index?: number, method?: string, value?: any): AsyncParamProvider {
-        return new AsyncParamProvider(files, token, index, method, value)
-    }
+    // /**
+    //  * create async param provider.
+    //  *
+    //  * @static
+    //  * @param {(string | string[])} files
+    //  * @param {Token<any>} token
+    //  * @param {number} [index]
+    //  * @param {string} [method]
+    //  * @param {(any)} [value]
+    //  * @returns {AsyncParamProvider}
+    //  * @memberof Provider
+    //  */
+    // static createAsyncParam(files: string | string[], token: Token<any>, index?: number, method?: string, value?: any): AsyncParamProvider {
+    //     return new AsyncParamProvider(files, token, index, method, value)
+    // }
 
 }
 
-export class CustomProvider extends Provider {
-    /**
-     * service value is the result of type instance invoke the method return value.
-     *
-     * @type {string}
-     * @memberof Provider
-     */
-    protected toInstance?: ToInstance<any>;
+// export class CustomProvider extends Provider {
+//     /**
+//      * service value is the result of type instance invoke the method return value.
+//      *
+//      * @type {string}
+//      * @memberof Provider
+//      */
+//     protected toInstance?: ToInstance<any>;
 
-    constructor(type?: Token<any>, toInstance?: ToInstance<any>, value?: any) {
-        super(type, value);
-        this.toInstance = toInstance;
-    }
+//     constructor(type?: Token<any>, toInstance?: ToInstance<any>, value?: any) {
+//         super(type, value);
+//         this.toInstance = toInstance;
+//     }
 
-    resolve<T>(container: IContainer, ...providers: Providers[]): T {
-        if (this.toInstance) {
-            return this.toInstance(container, ...providers);
-        }
-        return super.resolve(container, ...providers);
-    }
-}
+//     resolve<T>(container: IContainer, ...providers: Providers[]): T {
+//         if (this.toInstance) {
+//             return this.toInstance(container, ...providers);
+//         }
+//         return super.resolve(container, ...providers);
+//     }
+// }
 
 
 /**
@@ -239,112 +310,39 @@ export class ExtendsProvider extends Provider {
 
 
 
-/**
- * async param provider.
- * async load source file and execution as param value.
- *
- * @export
- * @interface AsyncParamProvider
- * @extends {ParamProvider}
- */
-export class AsyncParamProvider extends ParamProvider {
-    /**
-     * match ref files.
-     *
-     * @type {(string | string[])}
-     * @memberof AsyncParamProvider
-     */
-    protected files?: string | string[];
+// /**
+//  * async param provider.
+//  * async load source file and execution as param value.
+//  *
+//  * @export
+//  * @interface AsyncParamProvider
+//  * @extends {ParamProvider}
+//  */
+// export class AsyncParamProvider extends ParamProvider {
+//     /**
+//      * match ref files.
+//      *
+//      * @type {(string | string[])}
+//      * @memberof AsyncParamProvider
+//      */
+//     protected files?: string | string[];
 
-    protected basePath?: string;
+//     protected basePath?: string;
 
-    constructor(files: string | string[], token: Token<any>, index?: number, method?: string, value?: any) {
-        super(token, value, index, method);
-        this.files = files;
-    }
+//     constructor(files: string | string[], token: Token<any>, index?: number, method?: string, value?: any) {
+//         super(token, value, index, method);
+//         this.files = files;
+//     }
 
-    resolve<T>(container: IContainer, ...providers: Providers[]): any {
-        let buider = container.get(ContainerBuilderToken);
-        return buider.loadModule(container, {
-            basePath: this.basePath,
-            files: this.files
-        })
-            .then(() => {
-                return super.resolve(container, ...providers);
-            });
-    }
+//     resolve<T>(container: IContainer, ...providers: Providers[]): any {
+//         let buider = container.get(ContainerBuilderToken);
+//         return buider.loadModule(container, {
+//             basePath: this.basePath,
+//             files: this.files
+//         })
+//             .then(() => {
+//                 return super.resolve(container, ...providers);
+//             });
+//     }
 
-}
-
-export interface TypeProvider extends Type<any> {
-
-}
-
-
-/**
- * @usageNotes
- * ```
- * @Injectable()
- * class MyService {}
- *
- * const provider: ClassProvider = {provide: 'someToken', useClass: MyService};
- * ```
- *
- * @description
- * Configures the `Injector` to return an instance of `useClass` for a token.
- *
- */
-export interface ClassProvider {
-    provide: Token<any>,
-    useClass: any;
-}
-
-export interface ValueProvider {
-    provide: Token<any>,
-    useValue: any;
-}
-
-/**
- * @usageNotes
- * ```
- * function serviceFactory() { ... }
- *
- * const provider: FactoryProvider = {provide: 'someToken', useFactory: serviceFactory, deps: []};
- * ```
- *
- * @description
- * Configures the `Injector` to return a value by invoking a `useFactory` function.
- *
- * For more details, see the {@linkDocs guide/dependency-injection "Dependency Injection Guide"}.
- *
- * ### Example
- *
- * {@example core/di/ts/provider_spec.ts region='FactoryProvider'}
- *
- * Dependencies can also be marked as optional:
- * {@example core/di/ts/provider_spec.ts region='FactoryProviderOptionalDeps'}
- *
- *
- */
-export interface FactoryProvider {
-    provide: Token<any>;
-    /**
-   * A function to invoke to create a value for this `token`. The function is invoked with
-   * resolved values of `token`s in the `deps` field.
-   */
-    useFactory: Function;
-
-    /**
-     * A list of `token`s which need to be resolved by the injector. The list of values is then
-     * used as arguments to the `useFactory` function.
-     */
-    deps?: any[];
-}
-
-export interface ExistingProvider {
-    provide: Token<any>;
-    useExisting: Token<any>
-}
-
-export type IocProvider =
-    TypeProvider | ValueProvider | ClassProvider | ExistingProvider | FactoryProvider | Provider;
+// }

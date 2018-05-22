@@ -1,9 +1,77 @@
-import { IContainer, Type, Defer, lang, isString, IContainerBuilder, ModuleType, hasClassMetadata, Autorun, isClass, isFunction, ModuleBuilder, CustomDefineModule, ModuleConfiguration, ModuleConfigurationToken, IModuleBuilder } from '@ts-ioc/core';
+import { IContainer, Type, Defer, lang, isString, IContainerBuilder, ModuleType, hasClassMetadata, Autorun, isClass, isFunction, ModuleBuilder, CustomDefineModule, ModuleConfiguration, ModuleConfigurationToken, IModuleBuilder, ObjectMap, Token, InjectToken } from '@ts-ioc/core';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { ContainerBuilder } from './ContainerBuilder';
 import { toAbsolutePath } from './toAbsolute';
 
+/**
+ * App configuration token.
+ */
+export const AppConfigurationToken = new InjectToken<AppConfiguration>('__IOC_AppConfiguration');
+
+/**
+ * app configuration.
+ *
+ * @export
+ * @interface AppConfiguration
+ * @extends {ObjectMap<any>}
+ */
+export interface AppConfiguration extends ModuleConfiguration {
+
+    /**
+     * custom config key value setting.
+     *
+     * @type {IMap<any>}
+     * @memberOf AppConfiguration
+     */
+    setting?: ObjectMap<any>;
+
+    /**
+     * custom config connections.
+     *
+     * @type {ObjectMap<any>}
+     * @memberof AppConfiguration
+     */
+    connections?: ObjectMap<any>;
+
+
+    /**
+     * aspect service path. default: './aop'
+     *
+     * @type {(string | string[])}
+     * @memberof AppConfiguration
+     */
+    aop?: string | string[];
+
+    /**
+     * used aop aspect.
+     *
+     * @type {Token<any>[]}
+     * @memberof AppConfiguration
+     */
+    usedAops?: Token<any>[];
+
+    /**
+     * log config.
+     *
+     * @type {*}
+     * @memberof AppConfiguration
+     */
+    logConfig?: any;
+
+}
+
+/**
+ * default app configuration.
+ */
+const defaultAppConfig: AppConfiguration = <AppConfiguration>{
+    rootdir: '',
+    debug: false,
+    aop: './aop',
+    usedAops: [],
+    connections: {},
+    setting: {}
+}
 
 /**
  * server platform.
@@ -12,7 +80,7 @@ import { toAbsolutePath } from './toAbsolute';
  * @interface IPlatformServer
  * @extends {IPlatform}
  */
-export interface IPlatformServer extends IModuleBuilder {
+export interface IPlatformServer extends IModuleBuilder<AppConfiguration> {
     /**
      * root url
      *
@@ -35,7 +103,7 @@ export interface IPlatformServer extends IModuleBuilder {
  * @export
  * @class Bootstrap
  */
-export class PlatformServer extends ModuleBuilder {
+export class PlatformServer extends ModuleBuilder<AppConfiguration> {
 
     private dirMatchs: string[][];
     constructor(public rootdir: string) {
@@ -50,21 +118,21 @@ export class PlatformServer extends ModuleBuilder {
     /**
      * use custom configuration.
      *
-     * @param {(string | ModuleConfiguration)} [config]
+     * @param {(string | AppConfiguration)} [config]
      * @returns {this}
      * @memberof Bootstrap
      */
-    useConfiguration(config?: string | ModuleConfiguration): this {
+    useConfiguration(config?: string | AppConfiguration): this {
         if (!this.configDefer) {
-            this.configDefer = Defer.create<ModuleConfiguration>();
-            this.configDefer.resolve({} as ModuleConfiguration);
+            this.configDefer = Defer.create<AppConfiguration>();
+            this.configDefer.resolve(lang.assign({}, defaultAppConfig));
         }
-        let cfgmodeles: ModuleConfiguration;
+        let cfgmodeles: AppConfiguration;
         if (isString(config)) {
             if (existsSync(config)) {
-                cfgmodeles = require(config) as ModuleConfiguration;
+                cfgmodeles = require(config) as AppConfiguration;
             } else if (existsSync(path.join(this.rootdir, config))) {
-                cfgmodeles = require(path.join(this.rootdir, config)) as ModuleConfiguration;
+                cfgmodeles = require(path.join(this.rootdir, config)) as AppConfiguration;
             } else {
                 console.log(`config file: ${config} not exists.`)
             }
@@ -88,10 +156,10 @@ export class PlatformServer extends ModuleBuilder {
         }
 
         if (cfgmodeles) {
-            let excfg = (cfgmodeles['default'] ? cfgmodeles['default'] : cfgmodeles) as ModuleConfiguration;
+            let excfg = (cfgmodeles['default'] ? cfgmodeles['default'] : cfgmodeles) as AppConfiguration;
             this.configDefer.promise = this.configDefer.promise
                 .then(cfg => {
-                    cfg = lang.assign(cfg || {}, excfg || {}) as ModuleConfiguration;
+                    cfg = lang.assign(cfg || {}, excfg || {}) as AppConfiguration;
                     return cfg;
                 });
         }
@@ -118,12 +186,13 @@ export class PlatformServer extends ModuleBuilder {
     }
 
 
-    protected setRootdir(config: ModuleConfiguration) {
+    protected setRootdir(config: AppConfiguration) {
         config.rootdir = this.rootdir;
     }
 
 
-    protected async initIContainer(config: ModuleConfiguration, container: IContainer): Promise<IContainer> {
+    protected async initIContainer(config: AppConfiguration, container: IContainer): Promise<IContainer> {
+        container.bindProvider(AppConfigurationToken, config);
         await super.initIContainer(config, container);
         let builder = this.getContainerBuilder();
         await Promise.all(this.dirMatchs.map(dirs => {

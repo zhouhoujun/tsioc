@@ -2056,16 +2056,16 @@ exports.Autorun = factories.createClassMethodDecorator('Autorun', function (args
 unwrapExports(AutoRun);
 var AutoRun_1 = AutoRun.Autorun;
 
-var IocModule = createCommonjsModule(function (module, exports) {
+var IocExt = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
 /**
- * IocModule decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
+ * IocExt decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
  *
- * @IocModule
+ * @IocExt
  */
-exports.IocModule = factories.createClassDecorator('IocModule', function (args) {
+exports.IocExt = factories.createClassDecorator('IocExt', function (args) {
     args.next({
         isMetadata: function (arg) { return utils.isClassMetadata(arg, ['autorun']); },
         match: function (arg) { return utils.isString(arg); },
@@ -2074,12 +2074,30 @@ exports.IocModule = factories.createClassDecorator('IocModule', function (args) 
         }
     });
 });
+exports.IocModule = exports.IocExt;
 
 
 });
 
-unwrapExports(IocModule);
-var IocModule_1 = IocModule.IocModule;
+unwrapExports(IocExt);
+var IocExt_1 = IocExt.IocExt;
+var IocExt_2 = IocExt.IocModule;
+
+var DefModule = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * Module decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.
+ *
+ * @DefModule
+ */
+exports.DefModule = factories.createClassDecorator('DefModule');
+
+
+});
+
+unwrapExports(DefModule);
+var DefModule_1 = DefModule.DefModule;
 
 var decorators = createCommonjsModule(function (module, exports) {
 function __export(m) {
@@ -2095,7 +2113,8 @@ __export(Method);
 __export(Singleton);
 __export(Abstract);
 __export(AutoRun);
-__export(IocModule);
+__export(IocExt);
+__export(DefModule);
 
 
 });
@@ -3347,7 +3366,7 @@ var AutorunAction = /** @class */ (function (_super) {
         return _super.call(this, CoreActions_1.CoreActions.autorun) || this;
     }
     AutorunAction.prototype.getDecorator = function () {
-        return [decorators.IocModule, decorators.Autorun];
+        return [decorators.IocExt, decorators.Autorun];
     };
     AutorunAction.prototype.working = function (container, data) {
         if (data.tokenKey && data.targetType) {
@@ -4075,21 +4094,6 @@ unwrapExports(ProviderMap_1);
 var ProviderMap_2 = ProviderMap_1.ProviderMapToken;
 var ProviderMap_3 = ProviderMap_1.ProviderMap;
 
-var IContainerBuilder = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * ContainerBuilder interface token.
- * it is a token id, you can register yourself IContainerBuilder for this.
- */
-exports.ContainerBuilderToken = new InjectToken_1.InjectToken('__IOC_IContainerBuilder');
-
-
-});
-
-unwrapExports(IContainerBuilder);
-var IContainerBuilder_1 = IContainerBuilder.ContainerBuilderToken;
-
 var Provider_1 = createCommonjsModule(function (module, exports) {
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -4102,7 +4106,6 @@ var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-
 
 /**
  *  provider, to dynamic resovle instance of params in run time.
@@ -4161,19 +4164,19 @@ var Provider = /** @class */ (function () {
     Provider.createExtends = function (token, value, extendsTarget) {
         return new ExtendsProvider(token, value, extendsTarget);
     };
-    /**
-     * create custom provider.
-     *
-     * @static
-     * @param {Token<any>} [type]
-     * @param {ToInstance<any>} [toInstance]
-     * @param {*} [value]
-     * @returns {CustomProvider}
-     * @memberof Provider
-     */
-    Provider.createCustom = function (type, toInstance, value) {
-        return new CustomProvider(type, toInstance, value);
-    };
+    // /**
+    //  * create custom provider.
+    //  *
+    //  * @static
+    //  * @param {Token<any>} [type]
+    //  * @param {ToInstance<any>} [toInstance]
+    //  * @param {*} [value]
+    //  * @returns {CustomProvider}
+    //  * @memberof Provider
+    //  */
+    // static createCustom(type?: Token<any>, toInstance?: ToInstance<any>, value?: any): CustomProvider {
+    //     return new CustomProvider(type, toInstance, value);
+    // }
     /**
      * create invoked provider.
      *
@@ -4201,46 +4204,44 @@ var Provider = /** @class */ (function () {
     Provider.createParam = function (token, value, index, method) {
         return new ParamProvider(token, value, index, method);
     };
-    /**
-     * create async param provider.
-     *
-     * @static
-     * @param {(string | string[])} files
-     * @param {Token<any>} token
-     * @param {number} [index]
-     * @param {string} [method]
-     * @param {(any)} [value]
-     * @returns {AsyncParamProvider}
-     * @memberof Provider
-     */
-    Provider.createAsyncParam = function (files, token, index, method, value) {
-        return new AsyncParamProvider(files, token, index, method, value);
-    };
-    Provider.classAnnations = { "name": "Provider", "params": { "constructor": ["type", "value"], "resolve": ["container", "providers"], "create": ["type", "value"], "createExtends": ["token", "value", "extendsTarget"], "createCustom": ["type", "toInstance", "value"], "createInvoke": ["token", "method", "value"], "createParam": ["token", "value", "index", "method"], "createAsyncParam": ["files", "token", "index", "method", "value"] } };
+    // /**
+    //  * create async param provider.
+    //  *
+    //  * @static
+    //  * @param {(string | string[])} files
+    //  * @param {Token<any>} token
+    //  * @param {number} [index]
+    //  * @param {string} [method]
+    //  * @param {(any)} [value]
+    //  * @returns {AsyncParamProvider}
+    //  * @memberof Provider
+    //  */
+    // static createAsyncParam(files: string | string[], token: Token<any>, index?: number, method?: string, value?: any): AsyncParamProvider {
+    //     return new AsyncParamProvider(files, token, index, method, value)
+    // }
+    Provider.classAnnations = { "name": "Provider", "params": { "constructor": ["type", "value"], "resolve": ["container", "providers"], "create": ["type", "value"], "createExtends": ["token", "value", "extendsTarget"], "createInvoke": ["token", "method", "value"], "createParam": ["token", "value", "index", "method"] } };
     return Provider;
 }());
 exports.Provider = Provider;
-var CustomProvider = /** @class */ (function (_super) {
-    __extends(CustomProvider, _super);
-    function CustomProvider(type, toInstance, value) {
-        var _this = _super.call(this, type, value) || this;
-        _this.toInstance = toInstance;
-        return _this;
-    }
-    CustomProvider.prototype.resolve = function (container) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        if (this.toInstance) {
-            return this.toInstance.apply(this, [container].concat(providers));
-        }
-        return _super.prototype.resolve.apply(this, [container].concat(providers));
-    };
-    CustomProvider.classAnnations = { "name": "CustomProvider", "params": { "constructor": ["type", "toInstance", "value"], "resolve": ["container", "providers"] } };
-    return CustomProvider;
-}(Provider));
-exports.CustomProvider = CustomProvider;
+// export class CustomProvider extends Provider {
+//     /**
+//      * service value is the result of type instance invoke the method return value.
+//      *
+//      * @type {string}
+//      * @memberof Provider
+//      */
+//     protected toInstance?: ToInstance<any>;
+//     constructor(type?: Token<any>, toInstance?: ToInstance<any>, value?: any) {
+//         super(type, value);
+//         this.toInstance = toInstance;
+//     }
+//     resolve<T>(container: IContainer, ...providers: Providers[]): T {
+//         if (this.toInstance) {
+//             return this.toInstance(container, ...providers);
+//         }
+//         return super.resolve(container, ...providers);
+//     }
+// }
 /**
  * InvokeProvider
  *
@@ -4323,51 +4324,47 @@ var ExtendsProvider = /** @class */ (function (_super) {
     return ExtendsProvider;
 }(Provider));
 exports.ExtendsProvider = ExtendsProvider;
-/**
- * async param provider.
- * async load source file and execution as param value.
- *
- * @export
- * @interface AsyncParamProvider
- * @extends {ParamProvider}
- */
-var AsyncParamProvider = /** @class */ (function (_super) {
-    __extends(AsyncParamProvider, _super);
-    function AsyncParamProvider(files, token, index, method, value) {
-        var _this = _super.call(this, token, value, index, method) || this;
-        _this.files = files;
-        return _this;
-    }
-    AsyncParamProvider.prototype.resolve = function (container) {
-        var _this = this;
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        var buider = container.get(IContainerBuilder.ContainerBuilderToken);
-        return buider.loadModule(container, {
-            basePath: this.basePath,
-            files: this.files
-        })
-            .then(function () {
-            return _super.prototype.resolve.apply(_this, [container].concat(providers));
-        });
-    };
-    AsyncParamProvider.classAnnations = { "name": "AsyncParamProvider", "params": { "constructor": ["files", "token", "index", "method", "value"], "resolve": ["container", "providers"] } };
-    return AsyncParamProvider;
-}(ParamProvider));
-exports.AsyncParamProvider = AsyncParamProvider;
+// /**
+//  * async param provider.
+//  * async load source file and execution as param value.
+//  *
+//  * @export
+//  * @interface AsyncParamProvider
+//  * @extends {ParamProvider}
+//  */
+// export class AsyncParamProvider extends ParamProvider {
+//     /**
+//      * match ref files.
+//      *
+//      * @type {(string | string[])}
+//      * @memberof AsyncParamProvider
+//      */
+//     protected files?: string | string[];
+//     protected basePath?: string;
+//     constructor(files: string | string[], token: Token<any>, index?: number, method?: string, value?: any) {
+//         super(token, value, index, method);
+//         this.files = files;
+//     }
+//     resolve<T>(container: IContainer, ...providers: Providers[]): any {
+//         let buider = container.get(ContainerBuilderToken);
+//         return buider.loadModule(container, {
+//             basePath: this.basePath,
+//             files: this.files
+//         })
+//             .then(() => {
+//                 return super.resolve(container, ...providers);
+//             });
+//     }
+// }
 
 
 });
 
 unwrapExports(Provider_1);
 var Provider_2 = Provider_1.Provider;
-var Provider_3 = Provider_1.CustomProvider;
-var Provider_4 = Provider_1.InvokeProvider;
-var Provider_5 = Provider_1.ParamProvider;
-var Provider_6 = Provider_1.ExtendsProvider;
-var Provider_7 = Provider_1.AsyncParamProvider;
+var Provider_3 = Provider_1.InvokeProvider;
+var Provider_4 = Provider_1.ParamProvider;
+var Provider_5 = Provider_1.ExtendsProvider;
 
 var providers = createCommonjsModule(function (module, exports) {
 function __export(m) {
@@ -4466,8 +4463,64 @@ var ProviderMatcher = /** @class */ (function () {
                     });
                 }
             }
-            else {
-                if (utils.isBaseObject(p)) {
+            else if (utils.isClass(p)) {
+                if (!_this.container.has(p)) {
+                    _this.container.register(p);
+                }
+                map.add(p, p);
+            }
+            else if (utils.isBaseObject(p)) {
+                var pr_1 = p;
+                var isobjMap = false;
+                if (utils.isToken(pr_1.provide)) {
+                    if (utils.isArray(pr_1.deps) && pr_1.deps.length) {
+                        pr_1.deps.forEach(function (d) {
+                            if (utils.isClass(d) && !_this.container.has(d)) {
+                                _this.container.register(d);
+                            }
+                        });
+                    }
+                    if (!utils.isUndefined(pr_1.useValue)) {
+                        map.add(pr_1.provide, function () { return pr_1.useValue; });
+                    }
+                    else if (utils.isClass(pr_1.useClass)) {
+                        if (!_this.container.has(pr_1.useClass)) {
+                            _this.container.register(pr_1.useClass);
+                        }
+                        map.add(pr_1.provide, pr_1.useClass);
+                    }
+                    else if (utils.isFunction(pr_1.useFactory)) {
+                        map.add(pr_1.provide, function () {
+                            var args = [];
+                            if (utils.isArray(pr_1.deps) && pr_1.deps.length) {
+                                args = pr_1.deps.map(function (d) {
+                                    if (utils.isClass(d)) {
+                                        return _this.container.get(d);
+                                    }
+                                    else {
+                                        return d;
+                                    }
+                                });
+                            }
+                            return pr_1.useFactory.apply(pr_1, args);
+                        });
+                    }
+                    else if (utils.isToken(pr_1.useExisting)) {
+                        if (_this.container.has(pr_1.useExisting)) {
+                            map.add(pr_1.provide, function () { return _this.container.resolve(pr_1.useExisting); });
+                        }
+                        else {
+                            console.log('has not register:', pr_1.useExisting);
+                        }
+                    }
+                    else {
+                        isobjMap = true;
+                    }
+                }
+                else {
+                    isobjMap = true;
+                }
+                if (isobjMap) {
                     utils.lang.forIn(p, function (val, name) {
                         if (!utils.isUndefined(val)) {
                             if (utils.isClass(val)) {
@@ -4482,12 +4535,12 @@ var ProviderMatcher = /** @class */ (function () {
                         }
                     });
                 }
-                else if (utils.isFunction(p)) {
-                    map.add(name, function () { return p; });
-                }
-                else {
-                    map.add(index, p);
-                }
+            }
+            else if (utils.isFunction(p)) {
+                map.add(name, function () { return p; });
+            }
+            else {
+                map.add(index, p);
             }
         });
         return map;
@@ -4710,7 +4763,7 @@ function registerCores(container) {
     lifeScope.registerDecorator(decorators.Param, actions.CoreActions.bindParameterType, actions.CoreActions.bindPropertyType);
     lifeScope.registerDecorator(decorators.Method, actions.CoreActions.bindParameterProviders);
     lifeScope.registerDecorator(decorators.Autorun, actions.CoreActions.autorun);
-    lifeScope.registerDecorator(decorators.IocModule, actions.CoreActions.autorun, actions.CoreActions.componentBeforeInit, actions.CoreActions.componentInit, actions.CoreActions.componentAfterInit);
+    lifeScope.registerDecorator(decorators.IocExt, actions.CoreActions.autorun, actions.CoreActions.componentBeforeInit, actions.CoreActions.componentInit, actions.CoreActions.componentAfterInit);
     container.register(Date, function () { return new Date(); });
     container.register(String, function () { return ''; });
     container.register(Number, function () { return Number.NaN; });
@@ -4723,6 +4776,21 @@ exports.registerCores = registerCores;
 
 unwrapExports(core);
 var core_1 = core.registerCores;
+
+var IContainerBuilder = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * ContainerBuilder interface token.
+ * it is a token id, you can register yourself IContainerBuilder for this.
+ */
+exports.ContainerBuilderToken = new InjectToken_1.InjectToken('__IOC_IContainerBuilder');
+
+
+});
+
+unwrapExports(IContainerBuilder);
+var IContainerBuilder_1 = IContainerBuilder.ContainerBuilderToken;
 
 var Container_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -5363,9 +5431,9 @@ var DefaultModuleLoader = /** @class */ (function () {
         var regModules = [];
         modules.forEach(function (m) {
             var types = _this.getContentTypes(m);
-            var iocModule = types.find(function (it) { return core.hasOwnClassMetadata(core.IocModule, it); });
-            if (iocModule) {
-                regModules.push(iocModule);
+            var iocExt = types.find(function (it) { return core.hasOwnClassMetadata(core.IocExt, it); });
+            if (iocExt) {
+                regModules.push(iocExt);
             }
             else {
                 regModules.push.apply(regModules, types);
@@ -5637,33 +5705,21 @@ exports.DefaultContainerBuilder = DefaultContainerBuilder;
 unwrapExports(DefaultContainerBuilder_1);
 var DefaultContainerBuilder_2 = DefaultContainerBuilder_1.DefaultContainerBuilder;
 
-var IPlatform = createCommonjsModule(function (module, exports) {
+var ModuleConfiguration = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 /**
  * AppConfiguration token.
  */
-exports.AppConfigurationToken = new InjectToken_1.InjectToken('__IOC_AppConfiguration');
-/**
- * default app configuration.
- */
-exports.defaultAppConfig = {
-    rootdir: '',
-    debug: false,
-    aop: './aop',
-    usedAops: [],
-    connections: {},
-    setting: {}
-};
+exports.ModuleConfigurationToken = new InjectToken_1.InjectToken('__IOC_ModuleConfiguration');
 
 
 });
 
-unwrapExports(IPlatform);
-var IPlatform_1 = IPlatform.AppConfigurationToken;
-var IPlatform_2 = IPlatform.defaultAppConfig;
+unwrapExports(ModuleConfiguration);
+var ModuleConfiguration_1 = ModuleConfiguration.ModuleConfigurationToken;
 
-var Platform_1 = createCommonjsModule(function (module, exports) {
+var ModuleBuilder_1 = createCommonjsModule(function (module, exports) {
 var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -5704,18 +5760,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
 /**
  * server app bootstrap
  *
  * @export
  * @class Bootstrap
  */
-var Platform = /** @class */ (function () {
-    function Platform() {
+var ModuleBuilder = /** @class */ (function () {
+    function ModuleBuilder() {
         this.usedModules = [];
         this.customs = [];
     }
-    Platform.prototype.useContainer = function (container) {
+    ModuleBuilder.prototype.useContainer = function (container) {
         if (container) {
             if (!this.container) {
                 this.container = utils.Defer.create();
@@ -5730,23 +5787,26 @@ var Platform = /** @class */ (function () {
      * @returns
      * @memberof Bootstrap
      */
-    Platform.prototype.getContainer = function () {
+    ModuleBuilder.prototype.getContainer = function () {
         if (!this.container) {
             this.useContainer(this.createContainer());
         }
         return this.container.promise;
     };
+    ModuleBuilder.prototype.getDefaultConfig = function () {
+        return { debug: false };
+    };
     /**
      * use custom configuration.
      *
-     * @param {(string | AppConfiguration)} [config]
+     * @param {(string | T)} [config]
      * @returns {this}
      * @memberof Bootstrap
      */
-    Platform.prototype.useConfiguration = function (config) {
+    ModuleBuilder.prototype.useConfiguration = function (config) {
         if (!this.configDefer) {
             this.configDefer = utils.Defer.create();
-            this.configDefer.resolve(utils.lang.assign({}, IPlatform.defaultAppConfig));
+            this.configDefer.resolve(this.getDefaultConfig());
         }
         var cfgmodeles;
         var builder = this.getContainerBuilder();
@@ -5774,16 +5834,16 @@ var Platform = /** @class */ (function () {
     /**
      * get configuration.
      *
-     * @returns {Promise<AppConfiguration>}
+     * @returns {Promise<T>}
      * @memberof Bootstrap
      */
-    Platform.prototype.getConfiguration = function () {
+    ModuleBuilder.prototype.getConfiguration = function () {
         if (!this.configDefer) {
             this.useConfiguration();
         }
         return this.configDefer.promise;
     };
-    Platform.prototype.createContainer = function (modules, basePath) {
+    ModuleBuilder.prototype.createContainer = function (modules, basePath) {
         return this.getContainerBuilder().build(modules, basePath);
     };
     /**
@@ -5793,7 +5853,7 @@ var Platform = /** @class */ (function () {
      * @returns
      * @memberof Bootstrap
      */
-    Platform.prototype.useContainerBuilder = function (builder) {
+    ModuleBuilder.prototype.useContainerBuilder = function (builder) {
         this.builder = builder;
         return this;
     };
@@ -5803,7 +5863,7 @@ var Platform = /** @class */ (function () {
      * @returns
      * @memberof Bootstrap
      */
-    Platform.prototype.getContainerBuilder = function () {
+    ModuleBuilder.prototype.getContainerBuilder = function () {
         if (!this.builder) {
             this.builder = new DefaultContainerBuilder_1.DefaultContainerBuilder();
         }
@@ -5812,11 +5872,11 @@ var Platform = /** @class */ (function () {
     /**
      * use module, custom module.
      *
-     * @param {(...(LoadType | CustomDefineModule)[])} modules
+     * @param {(...(LoadType | CustomDefineModule<T>)[])} modules
      * @returns {this}
      * @memberof PlatformServer
      */
-    Platform.prototype.use = function () {
+    ModuleBuilder.prototype.use = function () {
         var _this = this;
         var modules = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -5832,34 +5892,69 @@ var Platform = /** @class */ (function () {
         });
         return this;
     };
-    Platform.prototype.bootstrap = function (modules) {
+    ModuleBuilder.prototype.build = function (cfg) {
         return __awaiter(this, void 0, void 0, function () {
-            var cfg, container;
+            var container;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getConfiguration()];
+                    case 0:
+                        if (!!cfg) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.getConfiguration()];
                     case 1:
                         cfg = _a.sent();
-                        return [4 /*yield*/, this.getContainer()];
-                    case 2:
-                        container = _a.sent();
-                        return [4 /*yield*/, this.initIContainer(cfg, container)];
+                        _a.label = 2;
+                    case 2: return [4 /*yield*/, this.getContainer()];
                     case 3:
                         container = _a.sent();
-                        if (!container.has(modules)) {
-                            container.register(modules);
+                        return [4 /*yield*/, this.initIContainer(cfg, container)];
+                    case 4:
+                        container = _a.sent();
+                        return [2 /*return*/, container];
+                }
+            });
+        });
+    };
+    ModuleBuilder.prototype.bootstrap = function (bootModule) {
+        return __awaiter(this, void 0, void 0, function () {
+            var meta, cfg, container, token;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (utils.isClass(bootModule)) {
+                            if (core.hasClassMetadata(core.DefModule, bootModule)) {
+                                meta = core.getTypeMetadata(core.DefModule, bootModule);
+                                if (meta && meta.length) {
+                                    this.useConfiguration(meta[0]);
+                                }
+                            }
                         }
-                        if (!core.hasClassMetadata(core.Autorun, modules)) {
-                            container.resolve(modules);
+                        return [4 /*yield*/, this.getConfiguration()];
+                    case 1:
+                        cfg = _a.sent();
+                        return [4 /*yield*/, this.build(cfg)];
+                    case 2:
+                        container = _a.sent();
+                        token = cfg.bootstrap || bootModule;
+                        if (utils.isClass(token)) {
+                            if (core.hasClassMetadata(core.Autorun, token)) {
+                                return [2 /*return*/, Promise.reject('Autorun class not need bootstrap.')];
+                            }
+                            if (!container.has(token)) {
+                                container.register(token);
+                            }
+                            return [2 /*return*/, container.resolve(token)];
+                        }
+                        else {
+                            return [2 /*return*/, container.resolve(token)];
                         }
                         return [2 /*return*/];
                 }
             });
         });
     };
-    Platform.prototype.setRootdir = function (config) {
+    ModuleBuilder.prototype.setRootdir = function (config) {
     };
-    Platform.prototype.initIContainer = function (config, container) {
+    ModuleBuilder.prototype.initIContainer = function (config, container) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             var builder;
@@ -5867,7 +5962,8 @@ var Platform = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         this.setRootdir(config);
-                        container.registerSingleton(IPlatform.AppConfigurationToken, config);
+                        container.bindProvider(IModuleBuilder.ModuleBuilderToken, function () { return _this; });
+                        container.registerSingleton(ModuleConfiguration.ModuleConfigurationToken, config);
                         builder = this.getContainerBuilder();
                         if (!this.usedModules.length) return [3 /*break*/, 2];
                         return [4 /*yield*/, builder.loadModule.apply(builder, [container].concat(this.usedModules))];
@@ -5875,28 +5971,177 @@ var Platform = /** @class */ (function () {
                         _a.sent();
                         _a.label = 2;
                     case 2:
-                        if (!this.customs.length) return [3 /*break*/, 4];
-                        return [4 /*yield*/, Promise.all(this.customs.map(function (cs) {
-                                return cs(container, config, _this);
-                            }))];
+                        if (!(utils.isArray(config.imports) && config.imports.length)) return [3 /*break*/, 4];
+                        return [4 /*yield*/, builder.loadModule.apply(builder, [container].concat(config.imports))];
                     case 3:
                         _a.sent();
                         _a.label = 4;
-                    case 4: return [2 /*return*/, container];
+                    case 4:
+                        if (utils.isArray(config.providers) && config.providers.length) {
+                            this.bindProvider(container, config.providers);
+                        }
+                        if (!this.customs.length) return [3 /*break*/, 6];
+                        return [4 /*yield*/, Promise.all(this.customs.map(function (cs) {
+                                return cs(container, config, _this);
+                            }))];
+                    case 5:
+                        _a.sent();
+                        _a.label = 6;
+                    case 6: return [2 /*return*/, container];
                 }
             });
         });
     };
-    Platform.classAnnations = { "name": "Platform", "params": { "constructor": [], "useContainer": ["container"], "getContainer": [], "useConfiguration": ["config"], "getConfiguration": [], "createContainer": ["modules", "basePath"], "useContainerBuilder": ["builder"], "getContainerBuilder": [], "use": ["modules"], "bootstrap": ["modules"], "setRootdir": ["config"], "initIContainer": ["config", "container"] } };
-    return Platform;
+    ModuleBuilder.prototype.bindProvider = function (container, providers) {
+        providers.forEach(function (p, index) {
+            if (utils.isUndefined(p) || utils.isNull(p)) {
+                return;
+            }
+            if (core.isProviderMap(p)) {
+                p.forEach(function (k, f) {
+                    container.bindProvider(k, f);
+                });
+            }
+            else if (p instanceof core.Provider) {
+                container.bindProvider(p.type, function () {
+                    var providers = [];
+                    for (var _i = 0; _i < arguments.length; _i++) {
+                        providers[_i] = arguments[_i];
+                    }
+                    return p.resolve.apply(p, [container].concat(providers));
+                });
+            }
+            else if (utils.isClass(p)) {
+                if (!container.has(p)) {
+                    container.register(p);
+                }
+            }
+            else if (utils.isBaseObject(p)) {
+                var pr_1 = p;
+                var isobjMap = false;
+                if (utils.isToken(pr_1.provide)) {
+                    if (utils.isArray(pr_1.deps) && pr_1.deps.length) {
+                        pr_1.deps.forEach(function (d) {
+                            if (utils.isClass(d) && !container.has(d)) {
+                                container.register(d);
+                            }
+                        });
+                    }
+                    if (!utils.isUndefined(pr_1.useValue)) {
+                        container.bindProvider(pr_1.provide, function () { return pr_1.useValue; });
+                    }
+                    else if (utils.isClass(pr_1.useClass)) {
+                        if (!container.has(pr_1.useClass)) {
+                            container.register(pr_1.useClass);
+                        }
+                        container.bindProvider(pr_1.provide, pr_1.useClass);
+                    }
+                    else if (utils.isFunction(pr_1.useFactory)) {
+                        container.bindProvider(pr_1.provide, function () {
+                            var args = [];
+                            if (utils.isArray(pr_1.deps) && pr_1.deps.length) {
+                                args = pr_1.deps.map(function (d) {
+                                    if (utils.isClass(d)) {
+                                        return container.get(d);
+                                    }
+                                    else {
+                                        return d;
+                                    }
+                                });
+                            }
+                            return pr_1.useFactory.apply(pr_1, args);
+                        });
+                    }
+                    else if (utils.isToken(pr_1.useExisting)) {
+                        if (container.has(pr_1.useExisting)) {
+                            container.bindProvider(pr_1.provide, pr_1.useExisting);
+                        }
+                        else {
+                            console.log('has not register:', pr_1.useExisting);
+                        }
+                    }
+                    else {
+                        isobjMap = true;
+                    }
+                }
+                else {
+                    isobjMap = true;
+                }
+                if (isobjMap) {
+                    utils.lang.forIn(p, function (val, name) {
+                        if (!utils.isUndefined(val)) {
+                            if (utils.isClass(val)) {
+                                container.bindProvider(name, val);
+                            }
+                            else if (utils.isFunction(val) || utils.isString(val)) {
+                                container.bindProvider(name, function () { return val; });
+                            }
+                            else {
+                                container.bindProvider(name, val);
+                            }
+                        }
+                    });
+                }
+            }
+            else if (utils.isFunction(p)) {
+                container.bindProvider(name, function () { return p; });
+            }
+        });
+    };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "useContainer": ["container"], "getContainer": [], "getDefaultConfig": [], "useConfiguration": ["config"], "getConfiguration": [], "createContainer": ["modules", "basePath"], "useContainerBuilder": ["builder"], "getContainerBuilder": [], "use": ["modules"], "build": ["cfg"], "bootstrap": ["bootModule"], "setRootdir": ["config"], "initIContainer": ["config", "container"], "bindProvider": ["container", "providers"] } };
+    return ModuleBuilder;
 }());
-exports.Platform = Platform;
+exports.ModuleBuilder = ModuleBuilder;
 
 
 });
 
-unwrapExports(Platform_1);
-var Platform_2 = Platform_1.Platform;
+unwrapExports(ModuleBuilder_1);
+var ModuleBuilder_2 = ModuleBuilder_1.ModuleBuilder;
+
+var lib = createCommonjsModule(function (module, exports) {
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+Object.defineProperty(exports, "__esModule", { value: true });
+__export(IContainer);
+__export(Container_1);
+__export(types);
+__export(Registration_1);
+__export(InjectToken_1);
+__export(IContainerBuilder);
+__export(IMethodAccessor);
+__export(ICacheManager);
+// export * from './tokens';
+__export(LifeScope);
+__export(IModuleLoader);
+__export(DefaultModuleLoader_1);
+__export(DefaultContainerBuilder_1);
+__export(utils);
+__export(components);
+__export(core);
+__export(IModuleBuilder);
+__export(ModuleBuilder_1);
+__export(ModuleConfiguration);
+
+
+});
+
+unwrapExports(lib);
+
+var IModuleBuilder = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * module builder token.
+ */
+exports.ModuleBuilderToken = new lib.InjectToken('__IOC_ModuleBuilder');
+
+
+});
+
+unwrapExports(IModuleBuilder);
+var IModuleBuilder_1 = IModuleBuilder.ModuleBuilderToken;
 
 var D__workspace_github_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
 function __export(m) {
@@ -5919,14 +6164,15 @@ __export(DefaultContainerBuilder_1);
 __export(utils);
 __export(components);
 __export(core);
-__export(IPlatform);
-__export(Platform_1);
+__export(IModuleBuilder);
+__export(ModuleBuilder_1);
+__export(ModuleConfiguration);
 
 
 });
 
-var index$7 = unwrapExports(D__workspace_github_tsioc_packages_core_lib);
+var index$8 = unwrapExports(D__workspace_github_tsioc_packages_core_lib);
 
-return index$7;
+return index$8;
 
 })));

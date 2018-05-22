@@ -99,11 +99,11 @@ class name First char must be UpperCase.
 4. `@Component` class decortator, use to define the class. it can setting provider to some token, singleton or not. it will execute [`ComponentLifecycle`](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/core/ComponentLifecycle.ts) hooks when create a instance .
 5. `@Inject`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
 6. `@Injectable` class decortator, use to define the class. it can setting provider to some token, singleton or not.
-7. `@IocModule` class decortator, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
+7. `@IocExt` class decortator, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
 8. `@Method` method decorator.
 9. `@Param`   param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
 10. `@Singleton` class decortator, use to define the class is singleton.
-
+11. `@DefModule` class decortator, use to define the class as module. to config module configuration.
 ### create Container
 
 * in browser can not:
@@ -387,6 +387,9 @@ export class DebugLog {
 
 ## New Features
 
+* 2.3.1
+   1. remove all symbols replace with token for interface.
+   2. add @DefModule, moduble builder.
 
 * 2.2.1
    1. refactor all symbols to generics token.

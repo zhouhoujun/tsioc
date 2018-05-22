@@ -1,6 +1,6 @@
 import { Type, Providers, Token, ObjectMap, InstanceFactory } from '../types';
-import { Provider, ProviderMap, ParamProvider, InvokeProvider, ExtendsProvider, AsyncParamProvider, isProviderMap, ProviderMapToken } from './providers/index';
-import { isString, isClass, isFunction, isNumber, isUndefined, isNull, isToken, isBaseObject, lang } from '../utils/index';
+import { Provider, ProviderMap, ParamProvider, InvokeProvider, ExtendsProvider, isProviderMap, ProviderMapToken } from './providers/index';
+import { isString, isClass, isArray, isFunction, isNumber, isUndefined, isNull, isToken, isBaseObject, lang } from '../utils/index';
 import { IParameter } from '../IParameter';
 import { IProviderMatcher } from './IProviderMatcher';
 import { IContainer } from '../IContainer';
@@ -20,7 +20,7 @@ export class ProviderMatcher implements IProviderMatcher {
 
     toProviderMap(...providers: Providers[]): ProviderMap {
         if (providers.length === 1 && isProviderMap(providers[0])) {
-            return providers[0];
+            return providers[0] as ProviderMap;
         }
         let map = this.container.resolve(ProviderMapToken);
         providers.forEach((p, index) => {
@@ -40,8 +40,57 @@ export class ProviderMatcher implements IProviderMatcher {
                 } else {
                     map.add(p.type, (...providers: Providers[]) => p.resolve(this.container, ...providers));
                 }
-            } else {
-                if (isBaseObject(p)) {
+            } else if (isClass(p)) {
+                if (!this.container.has(p)) {
+                    this.container.register(p);
+                }
+                map.add(p, p);
+            } else if (isBaseObject(p)) {
+                let pr: any = p;
+                let isobjMap = false;
+                if (isToken(pr.provide)) {
+                    if (isArray(pr.deps) && pr.deps.length) {
+                        pr.deps.forEach(d => {
+                            if (isClass(d) && !this.container.has(d)) {
+                                this.container.register(d);
+                            }
+                        });
+                    }
+                    if (!isUndefined(pr.useValue)) {
+                        map.add(pr.provide, () => pr.useValue);
+                    } else if (isClass(pr.useClass)) {
+                        if (!this.container.has(pr.useClass)) {
+                            this.container.register(pr.useClass);
+                        }
+                        map.add(pr.provide, pr.useClass);
+                    } else if (isFunction(pr.useFactory)) {
+                        map.add(pr.provide, () => {
+                            let args = [];
+                            if (isArray(pr.deps) && pr.deps.length) {
+                                args = pr.deps.map(d => {
+                                    if (isClass(d)) {
+                                        return this.container.get(d);
+                                    } else {
+                                        return d;
+                                    }
+                                });
+                            }
+                            return pr.useFactory.apply(pr, args);
+                        });
+                    } else if (isToken(pr.useExisting)) {
+                        if (this.container.has(pr.useExisting)) {
+                            map.add(pr.provide, () => this.container.resolve(pr.useExisting));
+                        } else {
+                            console.log('has not register:', pr.useExisting);
+                        }
+                    } else {
+                        isobjMap = true;
+                    }
+                } else {
+                    isobjMap = true;
+                }
+
+                if (isobjMap) {
                     lang.forIn<any>(p, (val, name) => {
                         if (!isUndefined(val)) {
                             if (isClass(val)) {
@@ -52,13 +101,15 @@ export class ProviderMatcher implements IProviderMatcher {
                                 map.add(name, val);
                             }
                         }
-                    })
-                } else if (isFunction(p)) {
-                    map.add(name, () => p);
-                } else {
-                    map.add(index, p);
+                    });
                 }
+
+            } else if (isFunction(p)) {
+                map.add(name, () => p);
+            } else {
+                map.add(index, p);
             }
+
         });
 
         return map;

@@ -1863,8 +1863,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 /**
- * aop bootstrap main. auto run setup after registered.
- * with @IocModule('setup') decorator.
+ * aop ext for ioc. auto run setup after registered.
+ * with @IocExt('setup') decorator.
  * @export
  * @class AopModule
  */
@@ -1901,7 +1901,7 @@ var AopModule = /** @class */ (function () {
     };
     AopModule.classAnnations = { "name": "AopModule", "params": { "constructor": ["container"], "setup": [] } };
     AopModule = __decorate([
-        core_1.IocModule('setup'),
+        core_1.IocExt('setup'),
         __param(0, core_1.Inject(core_1.ContainerToken)),
         __metadata("design:paramtypes", [Object])
     ], AopModule);
