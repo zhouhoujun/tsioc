@@ -25,10 +25,9 @@
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
-  "dependencies": {
-    "reflect-metadata": "^0.1.12"
-  },
+  "dependencies": {},
   "peerDependencies": {
+    "reflect-metadata": "^0.1.12",
     "@ts-ioc/core": "2.3.2"
   },
   "directories": {
