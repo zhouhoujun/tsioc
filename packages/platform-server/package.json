@@ -27,7 +27,7 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {},
   "peerDependencies": {
-    "globby": "^7.1.1",
+    "globby": "^8.0.1",
     "reflect-metadata": "^0.1.12",
     "@ts-ioc/core": "2.3.2"
   },
