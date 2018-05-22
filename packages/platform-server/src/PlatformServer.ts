@@ -103,7 +103,7 @@ export interface IPlatformServer extends IModuleBuilder<AppConfiguration> {
  * @export
  * @class Bootstrap
  */
-export class PlatformServer extends ModuleBuilder<AppConfiguration> {
+export class PlatformServer<T extends AppConfiguration> extends ModuleBuilder<T> {
 
     private dirMatchs: string[][];
     constructor(public rootdir: string) {
@@ -112,27 +112,27 @@ export class PlatformServer extends ModuleBuilder<AppConfiguration> {
     }
 
     static create(rootdir: string) {
-        return new PlatformServer(rootdir);
+        return new PlatformServer<AppConfiguration>(rootdir);
     }
 
     /**
      * use custom configuration.
      *
-     * @param {(string | AppConfiguration)} [config]
+     * @param {(string | T)} [config]
      * @returns {this}
      * @memberof Bootstrap
      */
-    useConfiguration(config?: string | AppConfiguration): this {
+    useConfiguration(config?: string | T): this {
         if (!this.configDefer) {
-            this.configDefer = Defer.create<AppConfiguration>();
-            this.configDefer.resolve(lang.assign({}, defaultAppConfig));
+            this.configDefer = Defer.create<T>();
+            this.configDefer.resolve(this.getDefaultConfig());
         }
-        let cfgmodeles: AppConfiguration;
+        let cfgmodeles: T;
         if (isString(config)) {
             if (existsSync(config)) {
-                cfgmodeles = require(config) as AppConfiguration;
+                cfgmodeles = require(config) as T;
             } else if (existsSync(path.join(this.rootdir, config))) {
-                cfgmodeles = require(path.join(this.rootdir, config)) as AppConfiguration;
+                cfgmodeles = require(path.join(this.rootdir, config)) as T;
             } else {
                 console.log(`config file: ${config} not exists.`)
             }
@@ -156,14 +156,26 @@ export class PlatformServer extends ModuleBuilder<AppConfiguration> {
         }
 
         if (cfgmodeles) {
-            let excfg = (cfgmodeles['default'] ? cfgmodeles['default'] : cfgmodeles) as AppConfiguration;
+            let excfg = (cfgmodeles['default'] ? cfgmodeles['default'] : cfgmodeles) as T;
             this.configDefer.promise = this.configDefer.promise
                 .then(cfg => {
-                    cfg = lang.assign(cfg || {}, excfg || {}) as AppConfiguration;
+                    cfg = lang.assign(cfg || {}, excfg || {}) as T;
                     return cfg;
                 });
         }
 
+        return this;
+    }
+
+    /**
+     * load module from dirs.
+     *
+     * @param {...string[]} matchPaths
+     * @returns {this}
+     * @memberof PlatformServer
+     */
+    loadDir(...matchPaths: string[]): this {
+        this.dirMatchs.push(matchPaths);
         return this;
     }
 
@@ -173,25 +185,24 @@ export class PlatformServer extends ModuleBuilder<AppConfiguration> {
      * @returns
      * @memberof Bootstrap
      */
-    getContainerBuilder() {
+    protected getContainerBuilder() {
         if (!this.builder) {
             this.builder = new ContainerBuilder();
         }
         return this.builder;
     }
 
-    loadDir(...matchPaths: string[]): this {
-        this.dirMatchs.push(matchPaths);
-        return this;
+    protected getDefaultConfig(): T {
+        return lang.assign({}, defaultAppConfig as T);
     }
 
 
-    protected setRootdir(config: AppConfiguration) {
+    protected setRootdir(config: T) {
         config.rootdir = this.rootdir;
     }
 
 
-    protected async initIContainer(config: AppConfiguration, container: IContainer): Promise<IContainer> {
+    protected async initIContainer(config: T, container: IContainer): Promise<IContainer> {
         container.bindProvider(AppConfigurationToken, config);
         await super.initIContainer(config, container);
         let builder = this.getContainerBuilder();

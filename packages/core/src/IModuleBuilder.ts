@@ -33,14 +33,6 @@ export interface IModuleBuilder<T extends ModuleConfiguration> {
     useContainer(container: IContainer | Promise<IContainer>): this;
 
     /**
-     * get container of bootstrap.
-     *
-     * @returns
-     * @memberof Bootstrap
-     */
-    getContainer(): Promise<IContainer>;
-
-    /**
      * use custom configuration.
      *
      * @param {(string | T)} [config]
@@ -50,15 +42,6 @@ export interface IModuleBuilder<T extends ModuleConfiguration> {
     useConfiguration(config?: string | T): this;
 
     /**
-     * get configuration.
-     *
-     * @returns {Promise<T>}
-     * @memberof Bootstrap
-     */
-    getConfiguration(): Promise<T>;
-
-
-    /**
      * use container builder
      *
      * @param {IContainerBuilder} builder
@@ -66,14 +49,6 @@ export interface IModuleBuilder<T extends ModuleConfiguration> {
      * @memberof Bootstrap
      */
     useContainerBuilder(builder: IContainerBuilder);
-
-    /**
-     * get container builder.
-     *
-     * @returns
-     * @memberof Bootstrap
-     */
-    getContainerBuilder(): IContainerBuilder;
 
     /**
      * use module, custom module.

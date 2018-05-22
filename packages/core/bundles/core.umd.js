@@ -5782,21 +5782,6 @@ var ModuleBuilder = /** @class */ (function () {
         return this;
     };
     /**
-     * get container of bootstrap.
-     *
-     * @returns
-     * @memberof Bootstrap
-     */
-    ModuleBuilder.prototype.getContainer = function () {
-        if (!this.container) {
-            this.useContainer(this.createContainer());
-        }
-        return this.container.promise;
-    };
-    ModuleBuilder.prototype.getDefaultConfig = function () {
-        return { debug: false };
-    };
-    /**
      * use custom configuration.
      *
      * @param {(string | T)} [config]
@@ -5832,21 +5817,6 @@ var ModuleBuilder = /** @class */ (function () {
         return this;
     };
     /**
-     * get configuration.
-     *
-     * @returns {Promise<T>}
-     * @memberof Bootstrap
-     */
-    ModuleBuilder.prototype.getConfiguration = function () {
-        if (!this.configDefer) {
-            this.useConfiguration();
-        }
-        return this.configDefer.promise;
-    };
-    ModuleBuilder.prototype.createContainer = function (modules, basePath) {
-        return this.getContainerBuilder().build(modules, basePath);
-    };
-    /**
      * use container builder
      *
      * @param {IContainerBuilder} builder
@@ -5856,18 +5826,6 @@ var ModuleBuilder = /** @class */ (function () {
     ModuleBuilder.prototype.useContainerBuilder = function (builder) {
         this.builder = builder;
         return this;
-    };
-    /**
-     * get container builder.
-     *
-     * @returns
-     * @memberof Bootstrap
-     */
-    ModuleBuilder.prototype.getContainerBuilder = function () {
-        if (!this.builder) {
-            this.builder = new DefaultContainerBuilder_1.DefaultContainerBuilder();
-        }
-        return this.builder;
     };
     /**
      * use module, custom module.
@@ -5951,6 +5909,48 @@ var ModuleBuilder = /** @class */ (function () {
                 }
             });
         });
+    };
+    /**
+     * get configuration.
+     *
+     * @returns {Promise<T>}
+     * @memberof Bootstrap
+     */
+    ModuleBuilder.prototype.getConfiguration = function () {
+        if (!this.configDefer) {
+            this.useConfiguration();
+        }
+        return this.configDefer.promise;
+    };
+    /**
+     * get container builder.
+     *
+     * @returns
+     * @memberof Bootstrap
+     */
+    ModuleBuilder.prototype.getContainerBuilder = function () {
+        if (!this.builder) {
+            this.builder = new DefaultContainerBuilder_1.DefaultContainerBuilder();
+        }
+        return this.builder;
+    };
+    ModuleBuilder.prototype.createContainer = function (modules, basePath) {
+        return this.getContainerBuilder().build(modules, basePath);
+    };
+    /**
+     * get container of bootstrap.
+     *
+     * @returns
+     * @memberof Bootstrap
+     */
+    ModuleBuilder.prototype.getContainer = function () {
+        if (!this.container) {
+            this.useContainer(this.createContainer());
+        }
+        return this.container.promise;
+    };
+    ModuleBuilder.prototype.getDefaultConfig = function () {
+        return { debug: false };
     };
     ModuleBuilder.prototype.setRootdir = function (config) {
     };
@@ -6088,7 +6088,7 @@ var ModuleBuilder = /** @class */ (function () {
             }
         });
     };
-    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "useContainer": ["container"], "getContainer": [], "getDefaultConfig": [], "useConfiguration": ["config"], "getConfiguration": [], "createContainer": ["modules", "basePath"], "useContainerBuilder": ["builder"], "getContainerBuilder": [], "use": ["modules"], "build": ["cfg"], "bootstrap": ["bootModule"], "setRootdir": ["config"], "initIContainer": ["config", "container"], "bindProvider": ["container", "providers"] } };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "useContainer": ["container"], "useConfiguration": ["config"], "useContainerBuilder": ["builder"], "use": ["modules"], "build": ["cfg"], "bootstrap": ["bootModule"], "getConfiguration": [], "getContainerBuilder": [], "createContainer": ["modules", "basePath"], "getContainer": [], "getDefaultConfig": [], "setRootdir": ["config"], "initIContainer": ["config", "container"], "bindProvider": ["container", "providers"] } };
     return ModuleBuilder;
 }());
 exports.ModuleBuilder = ModuleBuilder;

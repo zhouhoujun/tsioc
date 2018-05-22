@@ -37,22 +37,6 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
     }
 
     /**
-     * get container of bootstrap.
-     *
-     * @returns
-     * @memberof Bootstrap
-     */
-    getContainer() {
-        if (!this.container) {
-            this.useContainer(this.createContainer());
-        }
-        return this.container.promise;
-    }
-
-    protected getDefaultConfig(): T {
-        return { debug: false } as T;
-    }
-    /**
      * use custom configuration.
      *
      * @param {(string | T)} [config]
@@ -90,24 +74,6 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
     }
 
     /**
-     * get configuration.
-     *
-     * @returns {Promise<T>}
-     * @memberof Bootstrap
-     */
-    getConfiguration(): Promise<T> {
-        if (!this.configDefer) {
-            this.useConfiguration();
-        }
-        return this.configDefer.promise;
-    }
-
-    protected createContainer(modules?: LoadType | LoadType[], basePath?: string): Promise<IContainer> {
-        return this.getContainerBuilder().build(modules, basePath);
-    }
-
-
-    /**
      * use container builder
      *
      * @param {IContainerBuilder} builder
@@ -117,19 +83,6 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
     useContainerBuilder(builder: IContainerBuilder) {
         this.builder = builder;
         return this;
-    }
-
-    /**
-     * get container builder.
-     *
-     * @returns
-     * @memberof Bootstrap
-     */
-    getContainerBuilder() {
-        if (!this.builder) {
-            this.builder = new DefaultContainerBuilder();
-        }
-        return this.builder;
     }
 
     /**
@@ -159,7 +112,7 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
         return container;
     }
 
-    async bootstrap<TModule>(bootModule?: Token<TModule>): Promise<TModule> {
+    async bootstrap(bootModule?: Token<any>): Promise<any> {
         if (isClass(bootModule)) {
             if (hasClassMetadata(DefModule, bootModule)) {
                 let meta = getTypeMetadata<T>(DefModule, bootModule);
@@ -170,7 +123,7 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
         }
         let cfg: ModuleConfiguration = await this.getConfiguration();
         let container = await this.build(cfg);
-        let token: Token<TModule> = cfg.bootstrap || bootModule;
+        let token: Token<any> = cfg.bootstrap || bootModule;
 
         if (isClass(token)) {
             if (hasClassMetadata(Autorun, token)) {
@@ -183,6 +136,54 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
         } else {
             return container.resolve(token);
         }
+    }
+
+    /**
+     * get configuration.
+     *
+     * @returns {Promise<T>}
+     * @memberof Bootstrap
+     */
+    protected getConfiguration(): Promise<T> {
+        if (!this.configDefer) {
+            this.useConfiguration();
+        }
+        return this.configDefer.promise;
+    }
+
+    /**
+     * get container builder.
+     *
+     * @returns
+     * @memberof Bootstrap
+     */
+    protected getContainerBuilder() {
+        if (!this.builder) {
+            this.builder = new DefaultContainerBuilder();
+        }
+        return this.builder;
+    }
+
+    protected createContainer(modules?: LoadType | LoadType[], basePath?: string): Promise<IContainer> {
+        return this.getContainerBuilder().build(modules, basePath);
+    }
+
+
+    /**
+     * get container of bootstrap.
+     *
+     * @returns
+     * @memberof Bootstrap
+     */
+    protected getContainer() {
+        if (!this.container) {
+            this.useContainer(this.createContainer());
+        }
+        return this.container.promise;
+    }
+
+    protected getDefaultConfig(): T {
+        return { debug: false } as T;
     }
 
     protected setRootdir(config: ModuleConfiguration) {

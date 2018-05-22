@@ -95,7 +95,7 @@ declare let System: any;
  * @export
  * @class Bootstrap
  */
-export class PlatformBrowser extends ModuleBuilder<AppConfiguration> {
+export class PlatformBrowser<T extends AppConfiguration> extends ModuleBuilder<T> {
 
     baseURL: string;
     constructor(baseURL?: string) {
@@ -104,7 +104,7 @@ export class PlatformBrowser extends ModuleBuilder<AppConfiguration> {
     }
 
     static create(rootdir?: string) {
-        return new PlatformBrowser(rootdir);
+        return new PlatformBrowser<AppConfiguration>(rootdir);
     }
 
     /**
@@ -113,22 +113,22 @@ export class PlatformBrowser extends ModuleBuilder<AppConfiguration> {
      * @returns
      * @memberof Bootstrap
      */
-    getContainerBuilder() {
+    protected getContainerBuilder() {
         if (!this.builder) {
             this.builder = new ContainerBuilder();
         }
         return this.builder;
     }
 
-    protected getDefaultConfig(): AppConfiguration {
-        return lang.assign({}, defaultAppConfig);
+    protected getDefaultConfig(): T {
+        return lang.assign({}, defaultAppConfig as T);
     }
 
-    protected setRootdir(config: AppConfiguration) {
+    protected setRootdir(config: T) {
         config.rootdir = this.baseURL
     }
 
-    protected async initIContainer(config: AppConfiguration, container: IContainer): Promise<IContainer> {
+    protected async initIContainer(config: T, container: IContainer): Promise<IContainer> {
         container.bindProvider(AppConfigurationToken, config);
         await super.initIContainer(config, container);
         return container;

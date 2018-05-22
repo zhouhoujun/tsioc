@@ -1,4 +1,5 @@
 import { AutoWired, Injectable, Param, Singleton, Registration, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
+import { PlatformServer } from 'src';
 
 export class SimppleAutoWried {
     constructor() {
