@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/core",
-  "version": "2.3.1",
+  "version": "2.3.2",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./bundles/core.umd.js",
   "typings": "./lib/index.d.ts",
@@ -25,7 +25,7 @@
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
-  "dependencies": {
+  "peerDependencies": {
     "reflect-metadata": "^0.1.12"
   },
   "directories": {

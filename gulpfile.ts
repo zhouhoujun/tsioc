@@ -32,7 +32,9 @@ let versionSetting = (ctx: ITaskContext) => {
             json.version = version;
             if (json.peerDependencies) {
                 Object.keys(json.peerDependencies).forEach(key => {
-                    json.peerDependencies[key] = version;
+                    if (/^@ts-ioc/.test(key)) {
+                        json.peerDependencies[key] = version;
+                    }
                 })
             }
         }

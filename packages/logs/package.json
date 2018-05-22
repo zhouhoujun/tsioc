@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/logs",
-  "version": "2.3.1",
+  "version": "2.3.2",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./bundles/logs.umd.js",
   "typings": "./lib/index.d.ts",
@@ -25,12 +25,10 @@
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
-  "dependencies": {
-    "reflect-metadata": "^0.1.12"
-  },
   "peerDependencies": {
-    "@ts-ioc/core": "2.3.1",
-    "@ts-ioc/aop": "2.3.1"
+    "reflect-metadata": "^0.1.12",
+    "@ts-ioc/core": "2.3.2",
+    "@ts-ioc/aop": "2.3.2"
   },
   "directories": {
     "lib": "lib"
