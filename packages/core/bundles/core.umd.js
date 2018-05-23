@@ -1100,13 +1100,13 @@ exports.createDecorator = createDecorator;
 function argsToMetadata(args, adapter) {
     var metadata = null;
     if (args.length) {
-        if (args.length === 1 && utils.isMetadataObject(args[0])) {
-            metadata = args[0];
-        }
-        else if (adapter) {
+        if (adapter) {
             var iterator = new ArgsIterator_1.ArgsIterator(args);
             adapter(iterator);
             metadata = iterator.getMetadata();
+        }
+        else if (args.length === 1 && utils.isMetadataObject(args[0])) {
+            metadata = args[0];
         }
     }
     return metadata;

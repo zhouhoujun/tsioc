@@ -101,12 +101,12 @@ export function createDecorator<T>(name: string, adapter?: MetadataAdapter, meta
 function argsToMetadata<T>(args: any[], adapter?: MetadataAdapter): T {
     let metadata: T = null;
     if (args.length) {
-        if (args.length === 1 && isMetadataObject(args[0])) {
-            metadata = args[0];
-        } else if (adapter) {
+        if (adapter) {
             let iterator = new ArgsIterator(args);
             adapter(iterator);
             metadata = iterator.getMetadata() as T;
+        } else if (args.length === 1 && isMetadataObject(args[0])) {
+            metadata = args[0];
         }
     }
     return metadata;
