@@ -348,20 +348,20 @@ function isMetadataObject(target, props, extendsProps) {
     if (!target) {
         return false;
     }
-    if (isToken(target)) {
-        return false;
-    }
-    if (target instanceof RegExp || target instanceof Date) {
+    if (isBaseType(target) || isSymbol(target) || target instanceof Registration_1.Registration || target instanceof RegExp || target instanceof Date) {
         return false;
     }
     if (target.constructor && target.constructor.name !== 'Object') {
         return false;
     }
-    props = props || ['type'];
+    props = props || [];
     if (extendsProps) {
         props = extendsProps.concat(props);
     }
-    return lang.keys(target).some(function (n) { return props.indexOf(n) > 0; });
+    if (props.length) {
+        return lang.keys(target).some(function (n) { return props.indexOf(n) > 0; });
+    }
+    return true;
 }
 exports.isMetadataObject = isMetadataObject;
 /**
@@ -943,6 +943,7 @@ var IMethodAccessor_1 = IMethodAccessor.MethodAccessorToken;
 
 var ArgsIterator_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
 var ArgsIterator = /** @class */ (function () {
     function ArgsIterator(args) {
         this.args = args;
@@ -956,16 +957,13 @@ var ArgsIterator = /** @class */ (function () {
         this.idx = this.args.length;
     };
     ArgsIterator.prototype.next = function (express) {
-        if (this.isCompeted()) {
-            return null;
-        }
         this.idx++;
         if (this.isCompeted()) {
             return null;
         }
         var arg = this.args[this.idx];
-        if (express.isMetadata && express.isMetadata(arg)) {
-            this.metadata = arg;
+        if ((express.isMetadata && express.isMetadata(arg)) || utils.isMetadataObject(arg)) {
+            this.metadata = utils.lang.assign(this.metadata || {}, arg);
             this.end();
         }
         else if (express.match(arg)) {
@@ -1580,7 +1578,7 @@ function createClassDecorator(name, adapter, metadataExtends) {
             adapter(args);
         }
         args.next({
-            isMetadata: function (arg) { return utils.isClassMetadata(arg); },
+            // isMetadata: (arg) => isClassMetadata(arg),
             match: function (arg) { return arg && (utils.isSymbol(arg) || utils.isString(arg) || (utils.isObject(arg) && arg instanceof Registration_1.Registration)); },
             setMetadata: function (metadata, arg) {
                 metadata.provide = arg;
