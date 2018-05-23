@@ -3,7 +3,6 @@ import { ActionComponent, DecoratorType } from './core/index';
 import { IMethodAccessor } from './IMethodAccessor';
 import { LifeScope } from './LifeScope';
 import { InjectToken } from './InjectToken';
-import { AsyncResource } from 'async_hooks';
 
 /**
  * IContainer token.
