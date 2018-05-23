@@ -1,8 +1,9 @@
-import { Type, Token, Factory, SymbolType, Providers, ModuleType } from './types';
+import { Type, Token, Factory, SymbolType, Providers, ModuleType, LoadType } from './types';
 import { ActionComponent, DecoratorType } from './core/index';
 import { IMethodAccessor } from './IMethodAccessor';
 import { LifeScope } from './LifeScope';
 import { InjectToken } from './InjectToken';
+import { AsyncResource } from 'async_hooks';
 
 /**
  * IContainer token.
@@ -161,4 +162,12 @@ export interface IContainer extends IMethodAccessor {
      */
     use(...modules: ModuleType[]): this;
 
+    /**
+     * load modules.
+     *
+     * @param {...LoadType[]} modules load modules.
+     * @returns {Promise<Type<any>[]>}  types loaded.
+     * @memberof IContainer
+     */
+    loadModule(...modules: LoadType[]): Promise<Type<any>[]>;
 }

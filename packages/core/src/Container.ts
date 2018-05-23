@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
-import { Type, AbstractType, Token, Factory, ObjectMap, SymbolType, ToInstance, IocState, Providers, ModuleType } from './types';
+import { Type, AbstractType, Token, Factory, ObjectMap, SymbolType, ToInstance, IocState, Providers, ModuleType, LoadType } from './types';
 import { Registration } from './Registration';
 import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet } from './utils/index';
 
@@ -275,6 +275,17 @@ export class Container implements IContainer {
     use(...modules: ModuleType[]): this {
         this.get<IContainerBuilder>(ContainerBuilderToken).syncLoadModule(this, ...modules);
         return this;
+    }
+
+    /**
+     * async use modules.
+     *
+     * @param {...LoadType[]} modules load modules.
+     * @returns {Promise<Type<any>[]>}  types loaded.
+     * @memberof IContainer
+     */
+    loadModule(...modules: LoadType[]): Promise<Type<any>[]> {
+        return this.get<IContainerBuilder>(ContainerBuilderToken).loadModule(this, ...modules);
     }
 
     /**
