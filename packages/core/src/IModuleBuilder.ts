@@ -63,11 +63,11 @@ export interface IModuleBuilder<T extends ModuleConfiguration> {
     /**
      * bootstrap app via main module.
      *
-     * @param {Token<any>} modules bootstrap module.
+     * @param {(Token<any>|T)} modules bootstrap module.
      * @returns {Promise<any>}
      * @memberof IPlatform
      */
-    bootstrap(modules: Token<any>): Promise<any>;
+    bootstrap(modules: Token<any> | T): Promise<any>;
 
 }
 

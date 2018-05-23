@@ -2,7 +2,7 @@ import { Token, Type, ModuleType, LoadType, Providers } from './types';
 import { CustomDefineModule, IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import { IContainer } from './IContainer';
 import { hasClassMetadata, Autorun, isProviderMap, Provider, ParamProvider, DefModule, getTypeMetadata } from './core/index';
-import { Defer, isString, lang, isFunction, isClass, isUndefined, isNull, isNumber, isBaseObject, isToken, isArray } from './utils/index';
+import { Defer, isString, lang, isFunction, isClass, isUndefined, isNull, isNumber, isBaseObject, isToken, isArray, isMetadataObject } from './utils/index';
 import { IContainerBuilder } from './IContainerBuilder';
 import { DefaultContainerBuilder } from './DefaultContainerBuilder';
 import { ModuleConfiguration, ModuleConfigurationToken } from './ModuleConfiguration';
@@ -100,24 +100,31 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
     }
 
     /**
-     * bootstrap app via main module.
+     * bootstrap module.
      *
-     * @param {Token<any>} [boot]
+     * @param {(Token<any>|T)} [boot]
      * @returns {Promise<any>}
      * @memberof ModuleBuilder
      */
-    async bootstrap(boot?: Token<any>): Promise<any> {
+    async bootstrap(boot?: Token<any> | T): Promise<any> {
         if (isClass(boot)) {
             let metaCfg = this.getMetaConfig(boot);
             if (metaCfg) {
                 this.useConfiguration(metaCfg);
             }
+        } else if (isMetadataObject(boot)) {
+            this.useConfiguration(boot as T);
+            boot = null;
         }
+
         let cfg: T = await this.getConfiguration();
         let container: IContainer = await this.getContainer();
         container = await this.initContainer(cfg, container);
 
-        let token: Token<any> = cfg.bootstrap || boot;
+        let token: Token<any> = cfg.bootstrap || (boot as Token<T>);
+        if (!token) {
+            return Promise.reject('not find bootstrap token.');
+        }
         if (isClass(token)) {
             if (hasClassMetadata(Autorun, token)) {
                 return Promise.reject('Autorun class not need bootstrap.');

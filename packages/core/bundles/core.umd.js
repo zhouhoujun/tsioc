@@ -5880,7 +5880,7 @@ var ModuleBuilder = /** @class */ (function () {
     /**
      * bootstrap app via main module.
      *
-     * @param {Token<any>} [boot]
+     * @param {(Token<any>|T)} [boot]
      * @returns {Promise<any>}
      * @memberof ModuleBuilder
      */
@@ -5896,6 +5896,10 @@ var ModuleBuilder = /** @class */ (function () {
                                 this.useConfiguration(metaCfg);
                             }
                         }
+                        else if (utils.isMetadataObject(boot)) {
+                            this.useConfiguration(boot);
+                            boot = null;
+                        }
                         return [4 /*yield*/, this.getConfiguration()];
                     case 1:
                         cfg = _a.sent();
@@ -5906,6 +5910,9 @@ var ModuleBuilder = /** @class */ (function () {
                     case 3:
                         container = _a.sent();
                         token = cfg.bootstrap || boot;
+                        if (!token) {
+                            return [2 /*return*/, Promise.reject('not find bootstrap token.')];
+                        }
                         if (utils.isClass(token)) {
                             if (core.hasClassMetadata(core.Autorun, token)) {
                                 return [2 /*return*/, Promise.reject('Autorun class not need bootstrap.')];
