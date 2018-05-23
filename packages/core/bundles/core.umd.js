@@ -962,13 +962,17 @@ var ArgsIterator = /** @class */ (function () {
             return null;
         }
         var arg = this.args[this.idx];
-        if ((express.isMetadata && express.isMetadata(arg)) || utils.isMetadataObject(arg)) {
+        if (express.isMetadata && express.isMetadata(arg)) {
             this.metadata = utils.lang.assign(this.metadata || {}, arg);
             this.end();
         }
         else if (express.match(arg)) {
             this.metadata = this.metadata || {};
             express.setMetadata(this.metadata, arg);
+        }
+        else if (utils.isMetadataObject(arg)) { // when match failed then check is base metadata.
+            this.metadata = utils.lang.assign(this.metadata || {}, arg);
+            this.end();
         }
         else {
             this.end();
