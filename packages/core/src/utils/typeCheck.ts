@@ -205,11 +205,7 @@ export function isMetadataObject(target: any, props?: string[], extendsProps?: s
     if (!target) {
         return false;
     }
-    if (isToken(target)) {
-        return false;
-    }
-
-    if (target instanceof RegExp || target instanceof Date) {
+    if (isBaseType(target) || isSymbol(target) || target instanceof Registration || target instanceof RegExp || target instanceof Date) {
         return false;
     }
 
@@ -217,12 +213,16 @@ export function isMetadataObject(target: any, props?: string[], extendsProps?: s
         return false;
     }
 
-    props = props || ['type'];
+    props = props || [];
     if (extendsProps) {
         props = extendsProps.concat(props);
     }
 
-    return keys(target).some(n => props.indexOf(n) > 0)
+    if (props.length) {
+        return keys(target).some(n => props.indexOf(n) > 0)
+    }
+
+    return true;
 }
 
 

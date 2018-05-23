@@ -9,9 +9,7 @@ describe('auto register with build', () => {
     let container: IContainer;
     before(async () => {
         let builder = new DefaultContainerBuilder();
-        container = await builder.build({
-            modules: [debuModules]
-        });
+        container = await builder.build(debuModules);
     });
 
     it('should auto wried property', () => {

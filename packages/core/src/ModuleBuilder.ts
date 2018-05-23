@@ -15,23 +15,20 @@ import { ModuleConfiguration, ModuleConfigurationToken } from './ModuleConfigura
  */
 export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuilder<T> {
 
-    protected container: Defer<IContainer>;
-    protected configDefer: Defer<T>;
+    protected container: Promise<IContainer>;
+    protected configuration: Promise<T>;
     protected builder: IContainerBuilder;
     protected usedModules: (LoadType)[];
     protected customs: CustomDefineModule<T>[];
     constructor() {
         this.usedModules = [];
         this.customs = [];
-    }
 
+    }
 
     useContainer(container: IContainer | Promise<IContainer>) {
         if (container) {
-            if (!this.container) {
-                this.container = Defer.create<IContainer>();
-            }
-            this.container.resolve(container);
+            this.container = Promise.resolve(container);
         }
         return this;
     }
@@ -44,25 +41,24 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
      * @memberof Bootstrap
      */
     useConfiguration(config?: string | T): this {
-        if (!this.configDefer) {
-            this.configDefer = Defer.create<T>();
-            this.configDefer.resolve(this.getDefaultConfig());
+        if (!this.configuration) {
+            this.configuration = Promise.resolve(this.getDefaultConfig());
         }
-        let cfgmodeles: Promise<T>;
+        let pcfg: Promise<T>;
         let builder = this.getContainerBuilder();
         if (isString(config)) {
-            cfgmodeles = builder.loader.load(config)
+            pcfg = builder.loader.load(config)
                 .then(rs => {
                     return rs.length ? rs[0] as T : null;
                 })
         } else if (config) {
-            cfgmodeles = Promise.resolve(config);
+            pcfg = Promise.resolve(config);
         }
 
-        if (cfgmodeles) {
-            this.configDefer.promise = this.configDefer.promise
+        if (pcfg) {
+            this.configuration = this.configuration
                 .then(cfg => {
-                    return cfgmodeles.then(rcfg => {
+                    return pcfg.then(rcfg => {
                         let excfg = (rcfg['default'] ? rcfg['default'] : rcfg) as T;
                         cfg = lang.assign(cfg || {}, excfg || {}) as T;
                         return cfg;
@@ -92,7 +88,7 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
      * @returns {this}
      * @memberof PlatformServer
      */
-    use(...modules: (LoadType | CustomDefineModule<T>)[]): this {
+    useModules(...modules: (LoadType | CustomDefineModule<T>)[]): this {
         modules.forEach(m => {
             if (isFunction(m) && !isClass(m)) {
                 this.customs.push(m);
@@ -103,28 +99,25 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
         return this;
     }
 
-    async build(cfg?: ModuleConfiguration) {
-        if (!cfg) {
-            cfg = await this.getConfiguration();
-        }
-        let container: IContainer = await this.getContainer();
-        container = await this.initIContainer(cfg, container);
-        return container;
-    }
-
-    async bootstrap(bootModule?: Token<any>): Promise<any> {
-        if (isClass(bootModule)) {
-            if (hasClassMetadata(DefModule, bootModule)) {
-                let meta = getTypeMetadata<T>(DefModule, bootModule);
-                if (meta && meta.length) {
-                    this.useConfiguration(meta[0]);
-                }
+    /**
+     * bootstrap app via main module.
+     *
+     * @param {Token<any>} [boot]
+     * @returns {Promise<any>}
+     * @memberof ModuleBuilder
+     */
+    async bootstrap(boot?: Token<any>): Promise<any> {
+        if (isClass(boot)) {
+            let metaCfg = this.getMetaConfig(boot);
+            if (metaCfg) {
+                this.useConfiguration(metaCfg);
             }
         }
-        let cfg: ModuleConfiguration = await this.getConfiguration();
-        let container = await this.build(cfg);
-        let token: Token<any> = cfg.bootstrap || bootModule;
+        let cfg: T = await this.getConfiguration();
+        let container: IContainer = await this.getContainer();
+        container = await this.initContainer(cfg, container);
 
+        let token: Token<any> = cfg.bootstrap || boot;
         if (isClass(token)) {
             if (hasClassMetadata(Autorun, token)) {
                 return Promise.reject('Autorun class not need bootstrap.');
@@ -138,18 +131,6 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
         }
     }
 
-    /**
-     * get configuration.
-     *
-     * @returns {Promise<T>}
-     * @memberof Bootstrap
-     */
-    protected getConfiguration(): Promise<T> {
-        if (!this.configDefer) {
-            this.useConfiguration();
-        }
-        return this.configDefer.promise;
-    }
 
     /**
      * get container builder.
@@ -164,39 +145,55 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
         return this.builder;
     }
 
-    protected createContainer(modules?: LoadType | LoadType[], basePath?: string): Promise<IContainer> {
-        return this.getContainerBuilder().build(modules, basePath);
+    protected getContainer(...modules: LoadType[]) {
+        if (!this.container) {
+            this.container = this.getContainerBuilder().build(...modules);
+        }
+        return this.container;
     }
 
+    protected getMetaConfig(bootModule: Type<any>): T {
+        if (hasClassMetadata(DefModule, bootModule)) {
+            let meta = getTypeMetadata<T>(DefModule, bootModule);
+            if (meta && meta.length) {
+                return meta[0];
+            }
+        }
+        return null;
+    }
 
     /**
-     * get container of bootstrap.
+     * get configuration.
      *
-     * @returns
+     * @returns {Promise<T>}
      * @memberof Bootstrap
      */
-    protected getContainer() {
-        if (!this.container) {
-            this.useContainer(this.createContainer());
+    protected getConfiguration(): Promise<T> {
+        if (!this.configuration) {
+            this.useConfiguration();
         }
-        return this.container.promise;
+        return this.configuration;
     }
+
+
 
     protected getDefaultConfig(): T {
         return { debug: false } as T;
     }
 
-    protected setRootdir(config: ModuleConfiguration) {
+    protected setConfigRoot(config: T) {
 
     }
 
-    protected async initIContainer(config: ModuleConfiguration, container: IContainer): Promise<IContainer> {
-        this.setRootdir(config);
+    protected async initContainer(config: T, container: IContainer): Promise<IContainer> {
+        this.setConfigRoot(config);
         container.bindProvider(ModuleBuilderToken, () => this);
         container.registerSingleton(ModuleConfigurationToken, config);
         let builder = this.getContainerBuilder();
         if (this.usedModules.length) {
-            await builder.loadModule(container, ...this.usedModules);
+            let usedModules = this.usedModules;
+            this.usedModules = [];
+            await builder.loadModule(container, ...usedModules);
         }
 
         if (isArray(config.imports) && config.imports.length) {
@@ -208,7 +205,9 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
         }
 
         if (this.customs.length) {
-            await Promise.all(this.customs.map(cs => {
+            let customs = this.customs;
+            this.customs = [];
+            await Promise.all(customs.map(cs => {
                 return cs(container, config, this);
             }));
         }

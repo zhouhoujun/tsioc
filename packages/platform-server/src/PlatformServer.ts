@@ -123,9 +123,8 @@ export class PlatformServer<T extends AppConfiguration> extends ModuleBuilder<T>
      * @memberof Bootstrap
      */
     useConfiguration(config?: string | T): this {
-        if (!this.configDefer) {
-            this.configDefer = Defer.create<T>();
-            this.configDefer.resolve(this.getDefaultConfig());
+        if (!this.configuration) {
+            this.configuration = Promise.resolve(this.getDefaultConfig());
         }
         let cfgmodeles: T;
         if (isString(config)) {
@@ -157,7 +156,7 @@ export class PlatformServer<T extends AppConfiguration> extends ModuleBuilder<T>
 
         if (cfgmodeles) {
             let excfg = (cfgmodeles['default'] ? cfgmodeles['default'] : cfgmodeles) as T;
-            this.configDefer.promise = this.configDefer.promise
+            this.configuration = this.configuration
                 .then(cfg => {
                     cfg = lang.assign(cfg || {}, excfg || {}) as T;
                     return cfg;
@@ -197,14 +196,14 @@ export class PlatformServer<T extends AppConfiguration> extends ModuleBuilder<T>
     }
 
 
-    protected setRootdir(config: T) {
+    protected setConfigRoot(config: T) {
         config.rootdir = this.rootdir;
     }
 
 
-    protected async initIContainer(config: T, container: IContainer): Promise<IContainer> {
+    protected async initContainer(config: T, container: IContainer): Promise<IContainer> {
         container.bindProvider(AppConfigurationToken, config);
-        await super.initIContainer(config, container);
+        await super.initContainer(config, container);
         let builder = this.getContainerBuilder();
         await Promise.all(this.dirMatchs.map(dirs => {
             return builder.loadModule(container, {

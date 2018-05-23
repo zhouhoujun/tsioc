@@ -124,13 +124,13 @@ export class PlatformBrowser<T extends AppConfiguration> extends ModuleBuilder<T
         return lang.assign({}, defaultAppConfig as T);
     }
 
-    protected setRootdir(config: T) {
+    protected setConfigRoot(config: T) {
         config.rootdir = this.baseURL
     }
 
-    protected async initIContainer(config: T, container: IContainer): Promise<IContainer> {
+    protected async initContainer(config: T, container: IContainer): Promise<IContainer> {
         container.bindProvider(AppConfigurationToken, config);
-        await super.initIContainer(config, container);
+        await super.initContainer(config, container);
         return container;
     }
 

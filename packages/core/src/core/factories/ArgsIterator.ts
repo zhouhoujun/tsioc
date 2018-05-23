@@ -1,4 +1,5 @@
 import { Metadate } from '../metadatas/index';
+import { lang, isMetadataObject } from '../../utils/index';
 
 
 export interface CheckExpress<T extends Metadate> {
@@ -24,9 +25,6 @@ export class ArgsIterator {
     }
 
     next<T>(express: CheckExpress<T>) {
-        if (this.isCompeted()) {
-            return null;
-        }
         this.idx++;
         if (this.isCompeted()) {
             return null;
@@ -34,11 +32,14 @@ export class ArgsIterator {
 
         let arg = this.args[this.idx];
         if (express.isMetadata && express.isMetadata(arg)) {
-            this.metadata = arg;
-            this.end()
+            this.metadata = lang.assign(this.metadata || {}, arg);
+            this.end();
         } else if (express.match(arg)) {
             this.metadata = this.metadata || {};
             express.setMetadata(this.metadata as T, arg);
+        } else if (isMetadataObject(arg)) { // when match failed then check is base metadata.
+            this.metadata = lang.assign(this.metadata || {}, arg);
+            this.end();
         } else {
             this.end();
         }
