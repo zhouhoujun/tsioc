@@ -1,8 +1,8 @@
 import { IContainer } from './IContainer';
-import { Type, LoadType } from './types';
+import { Type, LoadType, Token } from './types';
 import { IContainerBuilder } from './IContainerBuilder';
 import { ModuleConfiguration } from './ModuleConfiguration';
-import { InjectToken } from '.';
+import { InjectToken } from './InjectToken';
 
 /**
  * module builder token.
@@ -57,25 +57,17 @@ export interface IModuleBuilder<T extends ModuleConfiguration> {
      * @returns {this}
      * @memberof PlatformServer
      */
-    use(...modules: (LoadType | CustomDefineModule<T>)[]): this;
+    useModules(...modules: (LoadType | CustomDefineModule<T>)[]): this;
 
-    /**
-     * build module.
-     *
-     * @param {T} [cfg]
-     * @returns {Promise<IContainer>}
-     * @memberof IModuleBuilder
-     */
-    build(cfg?: T): Promise<IContainer>;
 
     /**
      * bootstrap app via main module.
      *
-     * @param {Type<any>} modules bootstrap module.
+     * @param {Token<any>} modules bootstrap module.
      * @returns {Promise<any>}
      * @memberof IPlatform
      */
-    bootstrap(modules: Type<any>): Promise<any>;
+    bootstrap(modules: Token<any>): Promise<any>;
 
 }
 

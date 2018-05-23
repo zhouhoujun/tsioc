@@ -202,16 +202,16 @@ var PlatformBrowser = /** @class */ (function (_super) {
     PlatformBrowser.prototype.getDefaultConfig = function () {
         return core_1.lang.assign({}, defaultAppConfig);
     };
-    PlatformBrowser.prototype.setRootdir = function (config) {
+    PlatformBrowser.prototype.setConfigRoot = function (config) {
         config.rootdir = this.baseURL;
     };
-    PlatformBrowser.prototype.initIContainer = function (config, container) {
+    PlatformBrowser.prototype.initContainer = function (config, container) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         container.bindProvider(exports.AppConfigurationToken, config);
-                        return [4 /*yield*/, _super.prototype.initIContainer.call(this, config, container)];
+                        return [4 /*yield*/, _super.prototype.initContainer.call(this, config, container)];
                     case 1:
                         _a.sent();
                         return [2 /*return*/, container];
@@ -219,7 +219,7 @@ var PlatformBrowser = /** @class */ (function (_super) {
             });
         });
     };
-    PlatformBrowser.classAnnations = { "name": "PlatformBrowser", "params": { "constructor": ["baseURL"], "create": ["rootdir"], "getContainerBuilder": [], "getDefaultConfig": [], "setRootdir": ["config"], "initIContainer": ["config", "container"] } };
+    PlatformBrowser.classAnnations = { "name": "PlatformBrowser", "params": { "constructor": ["baseURL"], "create": ["rootdir"], "getContainerBuilder": [], "getDefaultConfig": [], "setConfigRoot": ["config"], "initContainer": ["config", "container"] } };
     return PlatformBrowser;
 }(core_1.ModuleBuilder));
 exports.PlatformBrowser = PlatformBrowser;
