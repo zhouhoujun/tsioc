@@ -274,7 +274,8 @@ export class DefaultLifeScope implements LifeScope {
                 )
                 .add(factory.create(LifeState.AfterInit)
                     .add(factory.create(CoreActions.singletion))
-                    .add(factory.create(CoreActions.componentAfterInit)))
+                    .add(factory.create(CoreActions.componentAfterInit))
+                    .add(factory.create(CoreActions.methodAutorun)))
             )
             .add(factory.create(CoreActions.cache));
 

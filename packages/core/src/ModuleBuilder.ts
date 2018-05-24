@@ -5,18 +5,18 @@ import { hasClassMetadata, Autorun, isProviderMap, Provider, ParamProvider, DefM
 import { Defer, isString, lang, isFunction, isClass, isUndefined, isNull, isNumber, isBaseObject, isToken, isArray, isMetadataObject } from './utils/index';
 import { IContainerBuilder } from './IContainerBuilder';
 import { DefaultContainerBuilder } from './DefaultContainerBuilder';
-import { ModuleConfiguration, ModuleConfigurationToken } from './ModuleConfiguration';
+import { ModuleConfiguration } from './ModuleConfiguration';
 
 /**
  * server app bootstrap
  *
  * @export
- * @class Bootstrap
+ * @class ModuleBuilder
  */
-export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuilder<T> {
+export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     protected container: Promise<IContainer>;
-    protected configuration: Promise<T>;
+
     protected builder: IContainerBuilder;
     protected usedModules: (LoadType)[];
     protected customs: CustomDefineModule<T>[];
@@ -34,47 +34,11 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
     }
 
     /**
-     * use custom configuration.
-     *
-     * @param {(string | T)} [config]
-     * @returns {this}
-     * @memberof Bootstrap
-     */
-    useConfiguration(config?: string | T): this {
-        if (!this.configuration) {
-            this.configuration = Promise.resolve(this.getDefaultConfig());
-        }
-        let pcfg: Promise<T>;
-        let builder = this.getContainerBuilder();
-        if (isString(config)) {
-            pcfg = builder.loader.load(config)
-                .then(rs => {
-                    return rs.length ? rs[0] as T : null;
-                })
-        } else if (config) {
-            pcfg = Promise.resolve(config);
-        }
-
-        if (pcfg) {
-            this.configuration = this.configuration
-                .then(cfg => {
-                    return pcfg.then(rcfg => {
-                        let excfg = (rcfg['default'] ? rcfg['default'] : rcfg) as T;
-                        cfg = lang.assign(cfg || {}, excfg || {}) as T;
-                        return cfg;
-                    });
-                });
-        }
-
-        return this;
-    }
-
-    /**
      * use container builder
      *
      * @param {IContainerBuilder} builder
      * @returns
-     * @memberof Bootstrap
+     * @memberof ModuleBuilder
      */
     useContainerBuilder(builder: IContainerBuilder) {
         this.builder = builder;
@@ -100,35 +64,22 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
     }
 
     /**
-     * bootstrap module.
+     * build module.
      *
-     * @param {(Token<any>|T)} [boot]
+     * @param {(Token<T>| ModuleConfiguration<T>)} [boot]
      * @returns {Promise<any>}
      * @memberof ModuleBuilder
      */
-    async bootstrap(boot?: Token<any> | T): Promise<any> {
-        if (isClass(boot)) {
-            let metaCfg = this.getMetaConfig(boot);
-            if (metaCfg) {
-                this.useConfiguration(metaCfg);
-            }
-        } else if (isMetadataObject(boot)) {
-            this.useConfiguration(boot as T);
-            boot = null;
-        }
-
-        let cfg: T = await this.getConfiguration();
-        let container: IContainer = await this.getContainer();
-        container = await this.initContainer(cfg, container);
-
-        let token: Token<any> = cfg.bootstrap || (boot as Token<T>);
+    async build(boot: Token<T> | Type<any> | ModuleConfiguration<T>): Promise<T> {
+        let cfg = await this.getConfiguration(boot);
+        let token = cfg.bootstrap || (isToken(boot) ? boot : null);
         if (!token) {
             return Promise.reject('not find bootstrap token.');
         }
+
+        let container: IContainer = await this.getContainer();
+        container = await this.initContainer(cfg, container);
         if (isClass(token)) {
-            if (hasClassMetadata(Autorun, token)) {
-                return Promise.reject('Autorun class not need bootstrap.');
-            }
             if (!container.has(token)) {
                 container.register(token);
             }
@@ -138,12 +89,28 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
         }
     }
 
+    /**
+     * get configuration.
+     *
+     * @returns {Promise<T>}
+     * @memberof ModuleBuilder
+     */
+    protected getConfiguration(boot?: Token<any> | ModuleConfiguration<T>): Promise<ModuleConfiguration<T>> {
+        let cfg: ModuleConfiguration<T>;
+        if (isClass(boot)) {
+            cfg = this.getMetaConfig(boot);
+        } else {
+            cfg = (isMetadataObject(boot) ? boot : {}) as ModuleConfiguration<T>;
+        }
+
+        return Promise.resolve(cfg);
+    }
 
     /**
      * get container builder.
      *
      * @returns
-     * @memberof Bootstrap
+     * @memberof ModuleBuilder
      */
     protected getContainerBuilder() {
         if (!this.builder) {
@@ -159,7 +126,7 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
         return this.container;
     }
 
-    protected getMetaConfig(bootModule: Type<any>): T {
+    protected getMetaConfig(bootModule: Type<any>): ModuleConfiguration<T> {
         if (hasClassMetadata(DefModule, bootModule)) {
             let meta = getTypeMetadata<T>(DefModule, bootModule);
             if (meta && meta.length) {
@@ -169,33 +136,10 @@ export class ModuleBuilder<T extends ModuleConfiguration> implements IModuleBuil
         return null;
     }
 
-    /**
-     * get configuration.
-     *
-     * @returns {Promise<T>}
-     * @memberof Bootstrap
-     */
-    protected getConfiguration(): Promise<T> {
-        if (!this.configuration) {
-            this.useConfiguration();
-        }
-        return this.configuration;
-    }
 
+    protected async initContainer(config: ModuleConfiguration<T>, container: IContainer): Promise<IContainer> {
 
-
-    protected getDefaultConfig(): T {
-        return { debug: false } as T;
-    }
-
-    protected setConfigRoot(config: T) {
-
-    }
-
-    protected async initContainer(config: T, container: IContainer): Promise<IContainer> {
-        this.setConfigRoot(config);
         container.bindProvider(ModuleBuilderToken, () => this);
-        container.registerSingleton(ModuleConfigurationToken, config);
         let builder = this.getContainerBuilder();
         if (this.usedModules.length) {
             let usedModules = this.usedModules;

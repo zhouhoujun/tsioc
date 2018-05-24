@@ -3,23 +3,13 @@ import { Token, Type, LoadType, Providers, ObjectMap, ModuleType } from './types
 import { InjectToken } from './InjectToken';
 
 /**
- * AppConfiguration token.
- */
-export const ModuleConfigurationToken = new InjectToken<ModuleConfiguration>('__IOC_ModuleConfiguration');
-
-
-/**
  * module configuration.
  *
  * @export
  * @interface ModuleConfiguration
  * @extends {ObjectMap<any>}
  */
-export interface ModuleConfiguration extends ObjectMap<any> {
-    /**
-     * system file root directory.
-     */
-    rootdir?: string;
+export interface ModuleConfiguration<T> extends ObjectMap<any> {
 
     /**
      * providers
@@ -47,27 +37,10 @@ export interface ModuleConfiguration extends ObjectMap<any> {
     /**
      * set this module bootstrap start with.
      *
-     * @type {Token<any>}
+     * @type {Token<T>}
      * @memberof ModuleConfiguration
      */
-    bootstrap?: Token<any>;
-
-
-    /**
-     * debug log.
-     *
-     * @type {boolean}
-     * @memberof AppConfiguration
-     */
-    debug?: boolean;
-
-    /**
-     * log config.
-     *
-     * @type {*}
-     * @memberof AppConfiguration
-     */
-    logConfig?: any;
+    bootstrap?: Token<T>;
 
 }
 

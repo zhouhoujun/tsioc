@@ -24,3 +24,5 @@ export * from './core/index';
 export * from './IModuleBuilder';
 export * from './ModuleBuilder';
 export * from './ModuleConfiguration';
+export * from './AppConfiguration';
+export * from './ApplicationBuilder';

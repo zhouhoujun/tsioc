@@ -54,18 +54,6 @@ export class AutorunAction extends ActionComposite {
                             container.syncInvoke(data.tokenKey, meta.autorun, instance);
                         }
                     }
-                } else if (hasMethodMetadata(decorator, data.targetType)) {
-                    let metas = getMethodMetadata<AutorunMetadata>(decorator, data.targetType);
-                    let meta: AutorunMetadata;
-                    lang.forIn(metas, mm => {
-                        if (mm && !meta) {
-                            meta = mm.find(it => !!it.autorun);
-                        }
-                    });
-
-                    if (meta && meta.autorun) {
-                        container.syncInvoke(data.tokenKey, meta.autorun);
-                    }
                 }
             });
 

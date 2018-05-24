@@ -60,6 +60,11 @@ export enum CoreActions {
     /**
      * autorun action.
      */
-    autorun = 'autorun'
+    autorun = 'autorun',
+
+    /**
+     * method autorun action.
+     */
+    methodAutorun = 'methodAutorun'
 
 }

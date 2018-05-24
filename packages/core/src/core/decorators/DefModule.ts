@@ -4,7 +4,7 @@ import { Registration } from '../../Registration';
 import { ModuleConfiguration } from '../../ModuleConfiguration';
 
 
-export interface IModuleMetadata extends ClassMetadata, ModuleConfiguration {
+export interface IModuleMetadata extends ClassMetadata, ModuleConfiguration<any> {
 
 }
 

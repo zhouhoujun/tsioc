@@ -11,4 +11,6 @@ import { TypeMetadata } from './TypeMetadata';
  */
 export interface AutorunMetadata extends TypeMetadata {
     autorun?: string;
+    singleton?: boolean;
+    order?: number;
 }

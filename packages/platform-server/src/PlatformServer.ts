@@ -1,86 +1,28 @@
-import { IContainer, Type, Defer, lang, isString, IContainerBuilder, ModuleType, hasClassMetadata, Autorun, isClass, isFunction, ModuleBuilder, CustomDefineModule, ModuleConfiguration, ModuleConfigurationToken, IModuleBuilder, ObjectMap, Token, InjectToken } from '@ts-ioc/core';
+import { IContainer, Type, Defer, lang, isString, IContainerBuilder, ModuleType, hasClassMetadata, Autorun, isClass, isFunction, ModuleBuilder, CustomDefineModule, IModuleBuilder, ObjectMap, Token, InjectToken, AppConfiguration, ApplicationBuilder, IApplicationBuilder } from '@ts-ioc/core';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { ContainerBuilder } from './ContainerBuilder';
 import { toAbsolutePath } from './toAbsolute';
 
 /**
- * App configuration token.
- */
-export const AppConfigurationToken = new InjectToken<AppConfiguration>('__IOC_AppConfiguration');
-
-/**
- * app configuration.
- *
- * @export
- * @interface AppConfiguration
- * @extends {ObjectMap<any>}
- */
-export interface AppConfiguration extends ModuleConfiguration {
-
-    /**
-     * custom config key value setting.
-     *
-     * @type {IMap<any>}
-     * @memberOf AppConfiguration
-     */
-    setting?: ObjectMap<any>;
-
-    /**
-     * custom config connections.
-     *
-     * @type {ObjectMap<any>}
-     * @memberof AppConfiguration
-     */
-    connections?: ObjectMap<any>;
-
-
-    /**
-     * aspect service path. default: './aop'
-     *
-     * @type {(string | string[])}
-     * @memberof AppConfiguration
-     */
-    aop?: string | string[];
-
-    /**
-     * used aop aspect.
-     *
-     * @type {Token<any>[]}
-     * @memberof AppConfiguration
-     */
-    usedAops?: Token<any>[];
-
-    /**
-     * log config.
-     *
-     * @type {*}
-     * @memberof AppConfiguration
-     */
-    logConfig?: any;
-
-}
-
-/**
  * default app configuration.
  */
-const defaultAppConfig: AppConfiguration = <AppConfiguration>{
+const defaultAppConfig: AppConfiguration<any> = {
     rootdir: '',
     debug: false,
-    aop: './aop',
-    usedAops: [],
     connections: {},
     setting: {}
 }
 
 /**
- * server platform.
+ * server application builder.
  *
  * @export
- * @interface IPlatformServer
- * @extends {IPlatform}
+ * @interface IServerApplicationBuilder
+ * @extends {IModuleBuilder<T>}
+ * @template T
  */
-export interface IPlatformServer extends IModuleBuilder<AppConfiguration> {
+export interface IServerApplicationBuilder<T> extends IApplicationBuilder<T> {
     /**
      * root url
      *
@@ -97,41 +39,39 @@ export interface IPlatformServer extends IModuleBuilder<AppConfiguration> {
     loadDir(...matchPaths: string[]): this;
 }
 
+
+
 /**
  * server app bootstrap
  *
  * @export
  * @class Bootstrap
  */
-export class PlatformServer<T extends AppConfiguration> extends ModuleBuilder<T> {
+export class ServerApplicationBuilder<T> extends ApplicationBuilder<T> implements IServerApplicationBuilder<T> {
 
     private dirMatchs: string[][];
     constructor(public rootdir: string) {
-        super();
+        super(rootdir);
         this.dirMatchs = [];
-    }
-
-    static create(rootdir: string) {
-        return new PlatformServer<AppConfiguration>(rootdir);
     }
 
     /**
      * use custom configuration.
      *
-     * @param {(string | T)} [config]
+     * @param {(string | AppConfiguration<T>)} [config]
      * @returns {this}
      * @memberof Bootstrap
      */
-    useConfiguration(config?: string | T): this {
+    useConfiguration(config?: string | AppConfiguration<T>): this {
         if (!this.configuration) {
             this.configuration = Promise.resolve(this.getDefaultConfig());
         }
-        let cfgmodeles: T;
+        let cfgmodeles: AppConfiguration<T>;
         if (isString(config)) {
             if (existsSync(config)) {
-                cfgmodeles = require(config) as T;
+                cfgmodeles = require(config) as AppConfiguration<T>;
             } else if (existsSync(path.join(this.rootdir, config))) {
-                cfgmodeles = require(path.join(this.rootdir, config)) as T;
+                cfgmodeles = require(path.join(this.rootdir, config)) as AppConfiguration<T>;
             } else {
                 console.log(`config file: ${config} not exists.`)
             }
@@ -155,10 +95,10 @@ export class PlatformServer<T extends AppConfiguration> extends ModuleBuilder<T>
         }
 
         if (cfgmodeles) {
-            let excfg = (cfgmodeles['default'] ? cfgmodeles['default'] : cfgmodeles) as T;
+            let excfg = (cfgmodeles['default'] ? cfgmodeles['default'] : cfgmodeles) as AppConfiguration<T>;
             this.configuration = this.configuration
                 .then(cfg => {
-                    cfg = lang.assign(cfg || {}, excfg || {}) as T;
+                    cfg = lang.assign(cfg || {}, excfg || {}) as AppConfiguration<T>;
                     return cfg;
                 });
         }
@@ -191,18 +131,17 @@ export class PlatformServer<T extends AppConfiguration> extends ModuleBuilder<T>
         return this.builder;
     }
 
-    protected getDefaultConfig(): T {
-        return lang.assign({}, defaultAppConfig as T);
+    protected getDefaultConfig(): AppConfiguration<T> {
+        return lang.assign({}, defaultAppConfig as AppConfiguration<T>);
     }
 
 
-    protected setConfigRoot(config: T) {
+    protected setConfigRoot(config: AppConfiguration<T>) {
+        super.setConfigRoot(config);
         config.rootdir = this.rootdir;
     }
 
-
-    protected async initContainer(config: T, container: IContainer): Promise<IContainer> {
-        container.bindProvider(AppConfigurationToken, config);
+    protected async initContainer(config: AppConfiguration<T>, container: IContainer): Promise<IContainer> {
         await super.initContainer(config, container);
         let builder = this.getContainerBuilder();
         await Promise.all(this.dirMatchs.map(dirs => {
@@ -213,5 +152,38 @@ export class PlatformServer<T extends AppConfiguration> extends ModuleBuilder<T>
         }));
 
         return container;
+    }
+}
+
+
+/**
+ * server platform.
+ *
+ * @export
+ * @interface IPlatformServer
+ * @extends {IPlatform}
+ */
+export interface IPlatformServer extends IServerApplicationBuilder<any> {
+
+}
+
+/**
+ * server app bootstrap
+ *
+ * @export
+ * @class Bootstrap
+ */
+export class PlatformServer extends ServerApplicationBuilder<any> implements IPlatformServer {
+
+    constructor(public rootdir: string) {
+        super(rootdir);
+    }
+
+    static create(rootdir: string) {
+        return new PlatformServer(rootdir);
+    }
+
+    bootstrap<T>(boot: Token<T> | Type<any>): Promise<T> {
+        return super.bootstrap(boot);
     }
 }

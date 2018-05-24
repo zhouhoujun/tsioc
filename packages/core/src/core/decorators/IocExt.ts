@@ -42,6 +42,9 @@ export const IocExt: IocExtDecorator = createClassDecorator<AutorunMetadata>('Io
                 metadata.autorun = arg;
             }
         })
+    }, (metadata) => {
+        metadata.singleton = true;
+        return metadata;
     }) as IocExtDecorator;
 
 export const IocModule = IocExt;

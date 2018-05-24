@@ -7,12 +7,12 @@ import { InjectToken } from './InjectToken';
 /**
  * module builder token.
  */
-export const ModuleBuilderToken = new InjectToken<IModuleBuilder<ModuleConfiguration>>('__IOC_ModuleBuilder');
+export const ModuleBuilderToken = new InjectToken<IModuleBuilder<any>>('__IOC_ModuleBuilder');
 
 /**
  * custom define module.
  */
-export type CustomDefineModule<T extends ModuleConfiguration> = (container: IContainer, config?: ModuleConfiguration, builder?: IModuleBuilder<T>) => any | Promise<any>;
+export type CustomDefineModule<T> = (container: IContainer, config?: ModuleConfiguration<T>, builder?: IModuleBuilder<T>) => any | Promise<any>;
 
 /**
  * module builder
@@ -21,7 +21,7 @@ export type CustomDefineModule<T extends ModuleConfiguration> = (container: ICon
  * @interface IModuleBuilder
  * @template T
  */
-export interface IModuleBuilder<T extends ModuleConfiguration> {
+export interface IModuleBuilder<T> {
 
     /**
      * use an exist container for platform.
@@ -31,15 +31,6 @@ export interface IModuleBuilder<T extends ModuleConfiguration> {
      * @memberof IPlatform
      */
     useContainer(container: IContainer | Promise<IContainer>): this;
-
-    /**
-     * use custom configuration.
-     *
-     * @param {(string | T)} [config]
-     * @returns {this}
-     * @memberof Bootstrap
-     */
-    useConfiguration(config?: string | T): this;
 
     /**
      * use container builder
@@ -61,13 +52,13 @@ export interface IModuleBuilder<T extends ModuleConfiguration> {
 
 
     /**
-     * bootstrap app via main module.
+     * build module instacne.
      *
-     * @param {(Token<any>|T)} modules bootstrap module.
+     * @param {(Token<T> | ModuleConfiguration<T>)} modules build module.
      * @returns {Promise<any>}
      * @memberof IPlatform
      */
-    bootstrap(modules: Token<any> | T): Promise<any>;
+    build(modules: Token<T> | ModuleConfiguration<T>): Promise<T>;
 
 }
 

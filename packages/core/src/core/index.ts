@@ -54,7 +54,7 @@ export function registerCores(container: IContainer) {
     lifeScope.registerDecorator(Param, CoreActions.bindParameterType, CoreActions.bindPropertyType);
     lifeScope.registerDecorator(Method, CoreActions.bindParameterProviders);
 
-    lifeScope.registerDecorator(Autorun, CoreActions.autorun);
+    lifeScope.registerDecorator(Autorun, CoreActions.autorun, CoreActions.methodAutorun);
     lifeScope.registerDecorator(IocExt, CoreActions.autorun, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
 
     container.register(Date, () => new Date());

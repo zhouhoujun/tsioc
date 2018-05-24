@@ -6,6 +6,7 @@ import {
     ComponentInitAction, ComponentBeforeInitAction, ComponentAfterInitAction,
     CacheAction, SingletionAction, AutorunAction
 } from './actions/index';
+import { MethodAutorun } from './actions/MethodAutorun';
 
 
 /**
@@ -68,6 +69,9 @@ export class ActionFactory {
 
             case CoreActions.autorun:
                 action = new AutorunAction();
+                break;
+            case CoreActions.methodAutorun:
+                action = new MethodAutorun();
                 break;
             default:
                 action = new ActionComposite(type);

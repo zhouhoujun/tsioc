@@ -1,4 +1,4 @@
-import { AutoWired, Injectable, Param, Singleton, Registration, Inject, IContainer, ContainerToken, DefModule } from '../src';
+import { AutoWired, Injectable, Param, Singleton, Registration, Inject, IContainer, ContainerToken, DefModule, Autorun } from '../src';
 
 export class SimppleAutoWried {
     constructor() {
@@ -45,6 +45,7 @@ export class MiddleSchoolStudent extends Student {
     constructor() {
         super();
     }
+
     sayHi() {
         return 'I am a middle school student';
     }

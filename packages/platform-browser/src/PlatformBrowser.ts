@@ -1,110 +1,36 @@
-import { IContainer, Type, Defer, lang, isString, isFunction, isClass, IContainerBuilder, ModuleType, hasClassMetadata, Autorun, isUndefined, ModuleBuilder, ModuleConfiguration, IModuleBuilder, InjectToken, ObjectMap, Token } from '@ts-ioc/core';
+import { IContainer, Type, Defer, lang, isString, isFunction, isClass, IContainerBuilder, ModuleType, hasClassMetadata, Autorun, isUndefined, ModuleBuilder, ModuleConfiguration, IModuleBuilder, InjectToken, ObjectMap, Token, AppConfiguration, IApplicationBuilder, ApplicationBuilder } from '@ts-ioc/core';
 import { ContainerBuilder } from './ContainerBuilder';
 
-
-/**
- * App configuration token.
- */
-export const AppConfigurationToken = new InjectToken<AppConfiguration>('__IOC_AppConfiguration');
-
-/**
- * app configuration.
- *
- * @export
- * @interface AppConfiguration
- * @extends {ObjectMap<any>}
- */
-export interface AppConfiguration extends ModuleConfiguration {
-
-    /**
-     * custom config key value setting.
-     *
-     * @type {IMap<any>}
-     * @memberOf AppConfiguration
-     */
-    setting?: ObjectMap<any>;
-
-    /**
-     * custom config connections.
-     *
-     * @type {ObjectMap<any>}
-     * @memberof AppConfiguration
-     */
-    connections?: ObjectMap<any>;
-
-
-    /**
-     * aspect service path. default: './aop'
-     *
-     * @type {(string | string[])}
-     * @memberof AppConfiguration
-     */
-    aop?: string | string[];
-
-    /**
-     * used aop aspect.
-     *
-     * @type {Token<any>[]}
-     * @memberof AppConfiguration
-     */
-    usedAops?: Token<any>[];
-
-    /**
-     * log config.
-     *
-     * @type {*}
-     * @memberof AppConfiguration
-     */
-    logConfig?: any;
-
-}
-
+declare let System: any;
 /**
  * default app configuration.
  */
-const defaultAppConfig: AppConfiguration = <AppConfiguration>{
+const defaultAppConfig: AppConfiguration<any> = {
     rootdir: '',
     debug: false,
-    aop: './aop',
-    usedAops: [],
     connections: {},
     setting: {}
 }
 
-/**
- * browser platform.
- *
- * @export
- * @interface IPlatformBrowser
- * @extends {IPlatform}
- */
-export interface IPlatformBrowser extends IModuleBuilder<AppConfiguration> {
-    /**
-     * base url.
-     *
-     * @type {string}
-     * @memberof IPlatformBrowser
-     */
-    baseURL: string;
+export interface IBroserApplicationBuilder<T> extends IApplicationBuilder<T> {
+
 }
 
-declare let System: any;
+
 /**
  * server app bootstrap
  *
  * @export
  * @class Bootstrap
  */
-export class PlatformBrowser<T extends AppConfiguration> extends ModuleBuilder<T> {
+export class BroserApplicationBuilder<T> extends ApplicationBuilder<T> implements IBroserApplicationBuilder<T> {
 
-    baseURL: string;
     constructor(baseURL?: string) {
-        super();
-        this.baseURL = baseURL || !isUndefined(System) ? System.baseURL : location.href;
+        super(baseURL || !isUndefined(System) ? System.baseURL : location.href);
     }
 
-    static create(rootdir?: string) {
-        return new PlatformBrowser<AppConfiguration>(rootdir);
+    bootstrap(boot: Token<T> | Type<any>): Promise<T> {
+        return super.bootstrap(boot)
     }
 
     /**
@@ -120,18 +46,43 @@ export class PlatformBrowser<T extends AppConfiguration> extends ModuleBuilder<T
         return this.builder;
     }
 
-    protected getDefaultConfig(): T {
-        return lang.assign({}, defaultAppConfig as T);
+    protected getDefaultConfig(): AppConfiguration<T> {
+        return lang.assign({}, defaultAppConfig as AppConfiguration<T>);
     }
 
-    protected setConfigRoot(config: T) {
-        config.rootdir = this.baseURL
+}
+
+
+/**
+ * browser platform.
+ *
+ * @export
+ * @interface IPlatformBrowser
+ * @extends {IPlatform}
+ */
+export interface IPlatformBrowser extends IBroserApplicationBuilder<AppConfiguration<any>> {
+
+}
+
+
+/**
+ * server app bootstrap
+ *
+ * @export
+ * @class Bootstrap
+ */
+export class PlatformBrowser extends BroserApplicationBuilder<any> implements IPlatformBrowser {
+
+    constructor(baseURL?: string) {
+        super(baseURL);
     }
 
-    protected async initContainer(config: T, container: IContainer): Promise<IContainer> {
-        container.bindProvider(AppConfigurationToken, config);
-        await super.initContainer(config, container);
-        return container;
+    static create(rootdir?: string) {
+        return new PlatformBrowser(rootdir);
+    }
+
+    bootstrap<T>(boot: Token<T> | Type<any>): Promise<T> {
+        return super.bootstrap(boot)
     }
 
 }
