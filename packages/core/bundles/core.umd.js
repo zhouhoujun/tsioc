@@ -941,6 +941,626 @@ exports.MethodAccessorToken = new InjectToken_1.InjectToken('__IOC_IMethodAccess
 unwrapExports(IMethodAccessor);
 var IMethodAccessor_1 = IMethodAccessor.MethodAccessorToken;
 
+var NullComponent_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * null component.
+ *
+ * @export
+ * @class NullComponent
+ * @implements {IComponent}
+ */
+var NullComponent = /** @class */ (function () {
+    function NullComponent() {
+    }
+    NullComponent.prototype.isEmpty = function () {
+        return true;
+    };
+    NullComponent.prototype.add = function (action) {
+        return this;
+    };
+    NullComponent.prototype.remove = function (action) {
+        return this;
+    };
+    NullComponent.prototype.find = function (express, mode) {
+        return exports.NullNode;
+    };
+    NullComponent.prototype.filter = function (express, mode) {
+        return [];
+    };
+    NullComponent.prototype.each = function (express, mode) {
+    };
+    NullComponent.prototype.trans = function (express) {
+    };
+    NullComponent.prototype.transAfter = function (express) {
+    };
+    NullComponent.prototype.routeUp = function (express) {
+    };
+    NullComponent.prototype.equals = function (node) {
+        return node === exports.NullNode;
+    };
+    NullComponent.prototype.empty = function () {
+        return exports.NullNode;
+    };
+    NullComponent.classAnnations = { "name": "NullComponent", "params": { "isEmpty": [], "add": ["action"], "remove": ["action"], "find": ["express", "mode"], "filter": ["express", "mode"], "each": ["express", "mode"], "trans": ["express"], "transAfter": ["express"], "routeUp": ["express"], "equals": ["node"], "empty": [] } };
+    return NullComponent;
+}());
+exports.NullComponent = NullComponent;
+/**
+ * Null node
+ */
+exports.NullNode = new NullComponent();
+
+
+});
+
+unwrapExports(NullComponent_1);
+var NullComponent_2 = NullComponent_1.NullComponent;
+var NullComponent_3 = NullComponent_1.NullNode;
+
+var Composite_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+/**
+ * compoiste.
+ *
+ * @export
+ * @class Composite
+ * @implements {IComponent}
+ */
+var Composite = /** @class */ (function () {
+    function Composite(name) {
+        this.name = name;
+        this.children = [];
+    }
+    Composite.prototype.add = function (node) {
+        node.parent = this;
+        this.children.push(node);
+        return this;
+    };
+    Composite.prototype.remove = function (node) {
+        var component;
+        if (utils.isString(node)) {
+            component = this.find(function (cmp) { return utils.isString(node) ? cmp.name === node : cmp.equals(node); });
+        }
+        else if (node) {
+            component = node;
+        }
+        else {
+            component = this;
+        }
+        if (!component.parent) {
+            return this;
+        }
+        else if (this.equals(component.parent)) {
+            this.children.splice(this.children.indexOf(component), 1);
+            component.parent = null;
+            return this;
+        }
+        else {
+            component.parent.remove(component);
+            return this;
+        }
+    };
+    Composite.prototype.find = function (express, mode) {
+        var component;
+        this.each(function (item) {
+            if (component) {
+                return false;
+            }
+            var isFinded = utils.isFunction(express) ? express(item) : express === item;
+            if (isFinded) {
+                component = item;
+                return false;
+            }
+            return true;
+        }, mode);
+        return (component || this.empty());
+    };
+    Composite.prototype.filter = function (express, mode) {
+        var nodes = [];
+        this.each(function (item) {
+            if (express(item)) {
+                nodes.push(item);
+            }
+        }, mode);
+        return nodes;
+    };
+    Composite.prototype.each = function (express, mode) {
+        mode = mode || types.Mode.traverse;
+        var r;
+        switch (mode) {
+            case types.Mode.route:
+                r = this.routeUp(express);
+                break;
+            case types.Mode.children:
+                r = this.eachChildren(express);
+                break;
+            case types.Mode.traverse:
+                r = this.trans(express);
+                break;
+            case types.Mode.traverseLast:
+                r = this.transAfter(express);
+                break;
+            default:
+                r = this.trans(express);
+                break;
+        }
+        return r;
+    };
+    Composite.prototype.eachChildren = function (express) {
+        (this.children || []).forEach(function (item) {
+            return express(item);
+        });
+    };
+    /**
+     *do express work in routing.
+     *
+     *@param {Express<T, void | boolean>} express
+     *
+     *@memberOf IComponent
+     */
+    Composite.prototype.routeUp = function (express) {
+        if (express(this) === false) {
+            return false;
+        }
+        
+        if (this.parent && this.parent.routeUp) {
+            return this.parent.routeUp(express);
+        }
+    };
+    /**
+     *translate all sub context to do express work.
+     *
+     *@param {Express<IComponent, void | boolean>} express
+     *
+     *@memberOf IComponent
+     */
+    Composite.prototype.trans = function (express) {
+        if (express(this) === false) {
+            return false;
+        }
+        var children = this.children || [];
+        for (var i = 0; i < children.length; i++) {
+            var result = children[i].trans(express);
+            if (result === false) {
+                return result;
+            }
+        }
+        return true;
+    };
+    Composite.prototype.transAfter = function (express) {
+        var children = this.children || [];
+        for (var i = 0; i < children.length; i++) {
+            var result = children[i].transAfter(express);
+            if (result === false) {
+                return false;
+            }
+        }
+        if (express(this) === false) {
+            return false;
+        }
+        return true;
+    };
+    Composite.prototype.equals = function (node) {
+        return this === node;
+    };
+    Composite.prototype.empty = function () {
+        return NullComponent_1.NullNode;
+    };
+    Composite.prototype.isEmpty = function () {
+        return this.equals(this.empty());
+    };
+    Composite.classAnnations = { "name": "Composite", "params": { "constructor": ["name"], "add": ["node"], "remove": ["node"], "find": ["express", "mode"], "filter": ["express", "mode"], "each": ["express", "mode"], "eachChildren": ["express"], "routeUp": ["express"], "trans": ["express"], "transAfter": ["express"], "equals": ["node"], "empty": [], "isEmpty": [] } };
+    return Composite;
+}());
+exports.Composite = Composite;
+
+
+});
+
+unwrapExports(Composite_1);
+var Composite_2 = Composite_1.Composite;
+
+var GComposite_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+/**
+ * generics composite
+ *
+ * @export
+ * @class GComposite
+ * @implements {GComponent<T>}
+ * @template T
+ */
+var GComposite = /** @class */ (function () {
+    function GComposite(name) {
+        this.name = name;
+        this.children = [];
+    }
+    GComposite.prototype.add = function (node) {
+        node.parent = this;
+        this.children.push(node);
+        return this;
+    };
+    GComposite.prototype.remove = function (node) {
+        var component;
+        if (utils.isString(node)) {
+            component = this.find(function (cmp) { return utils.isString(node) ? cmp.name === node : cmp.equals(node); });
+        }
+        else if (node) {
+            component = node;
+        }
+        else {
+            component = this;
+        }
+        if (!component.parent) {
+            return this;
+        }
+        else if (this.equals(component.parent)) {
+            this.children.splice(this.children.indexOf(component), 1);
+            component.parent = null;
+            return this;
+        }
+        else {
+            component.parent.remove(component);
+            return null;
+        }
+    };
+    GComposite.prototype.find = function (express, mode) {
+        var component;
+        this.each(function (item) {
+            if (component) {
+                return false;
+            }
+            var isFinded = utils.isFunction(express) ? express(item) : express === (item);
+            if (isFinded) {
+                component = item;
+                return false;
+            }
+            return true;
+        }, mode);
+        return (component || this.empty());
+    };
+    GComposite.prototype.filter = function (express, mode) {
+        var nodes = [];
+        this.each(function (item) {
+            if (express(item)) {
+                nodes.push(item);
+            }
+        }, mode);
+        return nodes;
+    };
+    GComposite.prototype.each = function (iterate, mode) {
+        mode = mode || types.Mode.traverse;
+        var r;
+        switch (mode) {
+            case types.Mode.route:
+                r = this.routeUp(iterate);
+                break;
+            case types.Mode.children:
+                r = this.eachChildren(iterate);
+                break;
+            case types.Mode.traverse:
+                r = this.trans(iterate);
+                break;
+            case types.Mode.traverseLast:
+                r = this.transAfter(iterate);
+                break;
+            default:
+                r = this.trans(iterate);
+                break;
+        }
+        return r;
+    };
+    GComposite.prototype.eachChildren = function (iterate) {
+        (this.children || []).forEach(function (item) {
+            return iterate(item);
+        });
+    };
+    /**
+     *do express work in routing.
+     *
+     *@param {Express<T, void | boolean>} express
+     *
+     *@memberOf IComponent
+     */
+    GComposite.prototype.routeUp = function (iterate) {
+        var curr = this;
+        if (iterate(curr) === false) {
+            return false;
+        }
+        
+        if (this.parent && this.parent.routeUp) {
+            return this.parent.routeUp(iterate);
+        }
+    };
+    /**
+     *translate all sub context to do express work.
+     *
+     *@param {Express<T, void | boolean>} express
+     *
+     *@memberOf IComponent
+     */
+    GComposite.prototype.trans = function (express) {
+        var curr = this;
+        if (express(curr) === false) {
+            return false;
+        }
+        var children = this.children || [];
+        for (var i = 0; i < children.length; i++) {
+            var result = children[i].trans(express);
+            if (result === false) {
+                return result;
+            }
+        }
+        return true;
+    };
+    GComposite.prototype.transAfter = function (express) {
+        var children = this.children || [];
+        for (var i = 0; i < children.length; i++) {
+            var result = children[i].transAfter(express);
+            if (result === false) {
+                return false;
+            }
+        }
+        var curr = this;
+        if (express(curr) === false) {
+            return false;
+        }
+        return true;
+    };
+    GComposite.prototype.equals = function (node) {
+        return this === node;
+    };
+    GComposite.prototype.empty = function () {
+        return NullComponent_1.NullNode;
+    };
+    GComposite.prototype.isEmpty = function () {
+        return this.equals(this.empty());
+    };
+    GComposite.classAnnations = { "name": "GComposite", "params": { "constructor": ["name"], "add": ["node"], "remove": ["node"], "find": ["express", "mode"], "filter": ["express", "mode"], "each": ["iterate", "mode"], "eachChildren": ["iterate"], "routeUp": ["iterate"], "trans": ["express"], "transAfter": ["express"], "equals": ["node"], "empty": [], "isEmpty": [] } };
+    return GComposite;
+}());
+exports.GComposite = GComposite;
+
+
+});
+
+unwrapExports(GComposite_1);
+var GComposite_2 = GComposite_1.GComposite;
+
+var components = createCommonjsModule(function (module, exports) {
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+Object.defineProperty(exports, "__esModule", { value: true });
+__export(Composite_1);
+__export(GComposite_1);
+__export(NullComponent_1);
+
+
+});
+
+unwrapExports(components);
+
+var NullAction = createCommonjsModule(function (module, exports) {
+var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+
+var NullActionClass = /** @class */ (function (_super) {
+    __extends(NullActionClass, _super);
+    function NullActionClass() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    NullActionClass.prototype.insert = function (action, index) {
+        return this;
+    };
+    NullActionClass.prototype.execute = function (container, data, name) {
+    };
+    NullActionClass.prototype.empty = function () {
+        return exports.NullAction;
+    };
+    NullActionClass.classAnnations = { "name": "NullActionClass", "params": { "insert": ["action", "index"], "execute": ["container", "data", "name"], "empty": [] } };
+    return NullActionClass;
+}(components.NullComponent));
+/**
+ * Null Action
+ */
+exports.NullAction = new NullActionClass();
+
+
+});
+
+unwrapExports(NullAction);
+var NullAction_1 = NullAction.NullAction;
+
+var ActionComposite_1 = createCommonjsModule(function (module, exports) {
+var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * action composite
+ *
+ * @export
+ * @class ActionComposite
+ * @extends {GComposite<ActionComponent>}
+ * @implements {ActionComponent}
+ */
+var ActionComposite = /** @class */ (function (_super) {
+    __extends(ActionComposite, _super);
+    function ActionComposite(name) {
+        var _this = _super.call(this, name) || this;
+        _this.children = [];
+        return _this;
+    }
+    ActionComposite.prototype.insert = function (node, index) {
+        node.parent = this;
+        if (index < 0) {
+            index = 0;
+        }
+        else if (index >= this.children.length) {
+            index = this.children.length - 1;
+        }
+        this.children.splice(index, 0, node);
+        return this;
+    };
+    ActionComposite.prototype.execute = function (container, data, name) {
+        if (name) {
+            this.find(function (it) { return it.name === name; })
+                .execute(container, data);
+        }
+        else {
+            this.trans(function (action) {
+                if (action instanceof ActionComposite) {
+                    action.working(container, data);
+                }
+            });
+        }
+    };
+    ActionComposite.prototype.empty = function () {
+        return NullAction.NullAction;
+    };
+    ActionComposite.prototype.working = function (container, data) {
+        // do nothing.
+    };
+    ActionComposite.classAnnations = { "name": "ActionComposite", "params": { "constructor": ["name"], "insert": ["node", "index"], "execute": ["container", "data", "name"], "empty": [], "working": ["container", "data"] } };
+    return ActionComposite;
+}(components.GComposite));
+exports.ActionComposite = ActionComposite;
+
+
+});
+
+unwrapExports(ActionComposite_1);
+var ActionComposite_2 = ActionComposite_1.ActionComposite;
+
+var LifeState_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * life state.
+ *
+ * @export
+ * @enum {number}
+ */
+var LifeState;
+(function (LifeState) {
+    /**
+     * before create constructor Args
+     */
+    LifeState["beforeCreateArgs"] = "beforeCreateArgs";
+    /**
+     * before constructor advice action.
+     */
+    LifeState["beforeConstructor"] = "beforeConstructor";
+    /**
+     * after constructor advice action.
+     */
+    LifeState["afterConstructor"] = "afterConstructor";
+    /**
+     * on init.
+     */
+    LifeState["onInit"] = "onInit";
+    /**
+     * after init.
+     */
+    LifeState["AfterInit"] = "AfterInit";
+})(LifeState = exports.LifeState || (exports.LifeState = {}));
+
+
+});
+
+unwrapExports(LifeState_1);
+var LifeState_2 = LifeState_1.LifeState;
+
+var CoreActions_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * cores decorator actions
+ *
+ * @export
+ */
+var CoreActions;
+(function (CoreActions) {
+    /**
+     * the action bind parameter type form metadata.
+     */
+    CoreActions["bindParameterType"] = "bindParameterType";
+    /**
+     * the action bind Property type from metadata.
+     */
+    CoreActions["bindPropertyType"] = "bindPropertyType";
+    /**
+     * inject property action.
+     */
+    CoreActions["injectProperty"] = "injectProperty";
+    /**
+     * class provider bind action.
+     */
+    CoreActions["bindProvider"] = "bindProvider";
+    /**
+     * bind parameter provider action.
+     */
+    CoreActions["bindParameterProviders"] = "bindParameterProviders";
+    /**
+     * cache action.
+     */
+    CoreActions["cache"] = "cache";
+    /**
+     * component init action.  after constructor befor property inject.
+     */
+    CoreActions["componentBeforeInit"] = "componentBeforeInit";
+    /**
+     * component on init hooks. after property inject.
+     */
+    CoreActions["componentInit"] = "componentInit";
+    /**
+     * component after init hooks. after component init.
+     */
+    CoreActions["componentAfterInit"] = "componentAfterInit";
+    /**
+     * singleton action.
+     */
+    CoreActions["singletion"] = "singletion";
+    /**
+     * autorun action.
+     */
+    CoreActions["autorun"] = "autorun";
+    /**
+     * method autorun action.
+     */
+    CoreActions["methodAutorun"] = "methodAutorun";
+})(CoreActions = exports.CoreActions || (exports.CoreActions = {}));
+
+
+});
+
+unwrapExports(CoreActions_1);
+var CoreActions_2 = CoreActions_1.CoreActions;
+
 var ArgsIterator_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -1902,858 +2522,6 @@ __export(MethodPropParamDecoratorFactory);
 
 unwrapExports(factories);
 
-var Component = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * Component decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`ComponentLifecycle`]
- *
- * @Component
- */
-exports.Component = factories.createClassDecorator('Component');
-
-
-});
-
-unwrapExports(Component);
-var Component_1 = Component.Component;
-
-var Injectable = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * Injectable decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.
- *
- * @Injectable
- */
-exports.Injectable = factories.createClassDecorator('Injectable');
-
-
-});
-
-unwrapExports(Injectable);
-var Injectable_1 = Injectable.Injectable;
-
-var Inject = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
- *
- * @Inject
- */
-exports.Inject = factories.createParamPropDecorator('Inject');
-
-
-});
-
-unwrapExports(Inject);
-var Inject_1 = Inject.Inject;
-
-var AutoWried = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * AutoWired decorator, for property or param. use to auto wried type instance or value to the instance of one class with the decorator.
- *
- * @AutoWired
- */
-exports.AutoWired = factories.createParamPropDecorator('AutoWired');
-
-
-});
-
-unwrapExports(AutoWried);
-var AutoWried_1 = AutoWried.AutoWired;
-
-var Param = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * param decorator, define for parameter. use to auto wried type instance or value to the instance of one class with the decorator.
- *
- * @Param
- */
-exports.Param = factories.createParamDecorator('Param');
-
-
-});
-
-unwrapExports(Param);
-var Param_1 = Param.Param;
-
-var Method = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * method decorator.
- *
- * @Method
- */
-exports.Method = factories.createMethodDecorator('Method');
-
-
-});
-
-unwrapExports(Method);
-var Method_1 = Method.Method;
-
-var Singleton = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * Singleton decorator, for class. use to define the class is singleton.
- *
- * @Singleton
- */
-exports.Singleton = factories.createClassDecorator('Singleton', null, function (metadata) {
-    metadata.singleton = true;
-    return metadata;
-});
-
-
-});
-
-unwrapExports(Singleton);
-var Singleton_1 = Singleton.Singleton;
-
-var Abstract = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * Abstract decorator. define for class.
- *
- * @Abstract
- */
-exports.Abstract = factories.createClassDecorator('Abstract');
-
-
-});
-
-unwrapExports(Abstract);
-var Abstract_1 = Abstract.Abstract;
-
-var AutoRun = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-/**
- * Autorun decorator, for class or method.  use to define the class auto run (via a method or not) after registered.
- *
- * @Autorun
- */
-exports.Autorun = factories.createClassMethodDecorator('Autorun', function (args) {
-    args.next({
-        isMetadata: function (arg) { return utils.isClassMetadata(arg, ['autorun']); },
-        match: function (arg) { return utils.isString(arg) || utils.isNumber(arg); },
-        setMetadata: function (metadata, arg) {
-            if (utils.isString(arg)) {
-                metadata.autorun = arg;
-            }
-            else {
-                metadata.order = arg;
-            }
-        }
-    });
-}, function (metadata) {
-    metadata.singleton = true;
-    return metadata;
-});
-
-
-});
-
-unwrapExports(AutoRun);
-var AutoRun_1 = AutoRun.Autorun;
-
-var IocExt = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-/**
- * IocExt decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
- *
- * @IocExt
- */
-exports.IocExt = factories.createClassDecorator('IocExt', function (args) {
-    args.next({
-        isMetadata: function (arg) { return utils.isClassMetadata(arg, ['autorun']); },
-        match: function (arg) { return utils.isString(arg); },
-        setMetadata: function (metadata, arg) {
-            metadata.autorun = arg;
-        }
-    });
-}, function (metadata) {
-    metadata.singleton = true;
-    return metadata;
-});
-exports.IocModule = exports.IocExt;
-
-
-});
-
-unwrapExports(IocExt);
-var IocExt_1 = IocExt.IocExt;
-var IocExt_2 = IocExt.IocModule;
-
-var DefModule = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * Module decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.
- *
- * @DefModule
- */
-exports.DefModule = factories.createClassDecorator('DefModule');
-
-
-});
-
-unwrapExports(DefModule);
-var DefModule_1 = DefModule.DefModule;
-
-var decorators = createCommonjsModule(function (module, exports) {
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
-Object.defineProperty(exports, "__esModule", { value: true });
-__export(Component);
-__export(Injectable);
-__export(Inject);
-__export(AutoWried);
-__export(Param);
-__export(Method);
-__export(Singleton);
-__export(Abstract);
-__export(AutoRun);
-__export(IocExt);
-__export(DefModule);
-
-
-});
-
-unwrapExports(decorators);
-
-var NullComponent_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * null component.
- *
- * @export
- * @class NullComponent
- * @implements {IComponent}
- */
-var NullComponent = /** @class */ (function () {
-    function NullComponent() {
-    }
-    NullComponent.prototype.isEmpty = function () {
-        return true;
-    };
-    NullComponent.prototype.add = function (action) {
-        return this;
-    };
-    NullComponent.prototype.remove = function (action) {
-        return this;
-    };
-    NullComponent.prototype.find = function (express, mode) {
-        return exports.NullNode;
-    };
-    NullComponent.prototype.filter = function (express, mode) {
-        return [];
-    };
-    NullComponent.prototype.each = function (express, mode) {
-    };
-    NullComponent.prototype.trans = function (express) {
-    };
-    NullComponent.prototype.transAfter = function (express) {
-    };
-    NullComponent.prototype.routeUp = function (express) {
-    };
-    NullComponent.prototype.equals = function (node) {
-        return node === exports.NullNode;
-    };
-    NullComponent.prototype.empty = function () {
-        return exports.NullNode;
-    };
-    NullComponent.classAnnations = { "name": "NullComponent", "params": { "isEmpty": [], "add": ["action"], "remove": ["action"], "find": ["express", "mode"], "filter": ["express", "mode"], "each": ["express", "mode"], "trans": ["express"], "transAfter": ["express"], "routeUp": ["express"], "equals": ["node"], "empty": [] } };
-    return NullComponent;
-}());
-exports.NullComponent = NullComponent;
-/**
- * Null node
- */
-exports.NullNode = new NullComponent();
-
-
-});
-
-unwrapExports(NullComponent_1);
-var NullComponent_2 = NullComponent_1.NullComponent;
-var NullComponent_3 = NullComponent_1.NullNode;
-
-var Composite_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-/**
- * compoiste.
- *
- * @export
- * @class Composite
- * @implements {IComponent}
- */
-var Composite = /** @class */ (function () {
-    function Composite(name) {
-        this.name = name;
-        this.children = [];
-    }
-    Composite.prototype.add = function (node) {
-        node.parent = this;
-        this.children.push(node);
-        return this;
-    };
-    Composite.prototype.remove = function (node) {
-        var component;
-        if (utils.isString(node)) {
-            component = this.find(function (cmp) { return utils.isString(node) ? cmp.name === node : cmp.equals(node); });
-        }
-        else if (node) {
-            component = node;
-        }
-        else {
-            component = this;
-        }
-        if (!component.parent) {
-            return this;
-        }
-        else if (this.equals(component.parent)) {
-            this.children.splice(this.children.indexOf(component), 1);
-            component.parent = null;
-            return this;
-        }
-        else {
-            component.parent.remove(component);
-            return this;
-        }
-    };
-    Composite.prototype.find = function (express, mode) {
-        var component;
-        this.each(function (item) {
-            if (component) {
-                return false;
-            }
-            var isFinded = utils.isFunction(express) ? express(item) : express === item;
-            if (isFinded) {
-                component = item;
-                return false;
-            }
-            return true;
-        }, mode);
-        return (component || this.empty());
-    };
-    Composite.prototype.filter = function (express, mode) {
-        var nodes = [];
-        this.each(function (item) {
-            if (express(item)) {
-                nodes.push(item);
-            }
-        }, mode);
-        return nodes;
-    };
-    Composite.prototype.each = function (express, mode) {
-        mode = mode || types.Mode.traverse;
-        var r;
-        switch (mode) {
-            case types.Mode.route:
-                r = this.routeUp(express);
-                break;
-            case types.Mode.children:
-                r = this.eachChildren(express);
-                break;
-            case types.Mode.traverse:
-                r = this.trans(express);
-                break;
-            case types.Mode.traverseLast:
-                r = this.transAfter(express);
-                break;
-            default:
-                r = this.trans(express);
-                break;
-        }
-        return r;
-    };
-    Composite.prototype.eachChildren = function (express) {
-        (this.children || []).forEach(function (item) {
-            return express(item);
-        });
-    };
-    /**
-     *do express work in routing.
-     *
-     *@param {Express<T, void | boolean>} express
-     *
-     *@memberOf IComponent
-     */
-    Composite.prototype.routeUp = function (express) {
-        if (express(this) === false) {
-            return false;
-        }
-        
-        if (this.parent && this.parent.routeUp) {
-            return this.parent.routeUp(express);
-        }
-    };
-    /**
-     *translate all sub context to do express work.
-     *
-     *@param {Express<IComponent, void | boolean>} express
-     *
-     *@memberOf IComponent
-     */
-    Composite.prototype.trans = function (express) {
-        if (express(this) === false) {
-            return false;
-        }
-        var children = this.children || [];
-        for (var i = 0; i < children.length; i++) {
-            var result = children[i].trans(express);
-            if (result === false) {
-                return result;
-            }
-        }
-        return true;
-    };
-    Composite.prototype.transAfter = function (express) {
-        var children = this.children || [];
-        for (var i = 0; i < children.length; i++) {
-            var result = children[i].transAfter(express);
-            if (result === false) {
-                return false;
-            }
-        }
-        if (express(this) === false) {
-            return false;
-        }
-        return true;
-    };
-    Composite.prototype.equals = function (node) {
-        return this === node;
-    };
-    Composite.prototype.empty = function () {
-        return NullComponent_1.NullNode;
-    };
-    Composite.prototype.isEmpty = function () {
-        return this.equals(this.empty());
-    };
-    Composite.classAnnations = { "name": "Composite", "params": { "constructor": ["name"], "add": ["node"], "remove": ["node"], "find": ["express", "mode"], "filter": ["express", "mode"], "each": ["express", "mode"], "eachChildren": ["express"], "routeUp": ["express"], "trans": ["express"], "transAfter": ["express"], "equals": ["node"], "empty": [], "isEmpty": [] } };
-    return Composite;
-}());
-exports.Composite = Composite;
-
-
-});
-
-unwrapExports(Composite_1);
-var Composite_2 = Composite_1.Composite;
-
-var GComposite_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-/**
- * generics composite
- *
- * @export
- * @class GComposite
- * @implements {GComponent<T>}
- * @template T
- */
-var GComposite = /** @class */ (function () {
-    function GComposite(name) {
-        this.name = name;
-        this.children = [];
-    }
-    GComposite.prototype.add = function (node) {
-        node.parent = this;
-        this.children.push(node);
-        return this;
-    };
-    GComposite.prototype.remove = function (node) {
-        var component;
-        if (utils.isString(node)) {
-            component = this.find(function (cmp) { return utils.isString(node) ? cmp.name === node : cmp.equals(node); });
-        }
-        else if (node) {
-            component = node;
-        }
-        else {
-            component = this;
-        }
-        if (!component.parent) {
-            return this;
-        }
-        else if (this.equals(component.parent)) {
-            this.children.splice(this.children.indexOf(component), 1);
-            component.parent = null;
-            return this;
-        }
-        else {
-            component.parent.remove(component);
-            return null;
-        }
-    };
-    GComposite.prototype.find = function (express, mode) {
-        var component;
-        this.each(function (item) {
-            if (component) {
-                return false;
-            }
-            var isFinded = utils.isFunction(express) ? express(item) : express === (item);
-            if (isFinded) {
-                component = item;
-                return false;
-            }
-            return true;
-        }, mode);
-        return (component || this.empty());
-    };
-    GComposite.prototype.filter = function (express, mode) {
-        var nodes = [];
-        this.each(function (item) {
-            if (express(item)) {
-                nodes.push(item);
-            }
-        }, mode);
-        return nodes;
-    };
-    GComposite.prototype.each = function (iterate, mode) {
-        mode = mode || types.Mode.traverse;
-        var r;
-        switch (mode) {
-            case types.Mode.route:
-                r = this.routeUp(iterate);
-                break;
-            case types.Mode.children:
-                r = this.eachChildren(iterate);
-                break;
-            case types.Mode.traverse:
-                r = this.trans(iterate);
-                break;
-            case types.Mode.traverseLast:
-                r = this.transAfter(iterate);
-                break;
-            default:
-                r = this.trans(iterate);
-                break;
-        }
-        return r;
-    };
-    GComposite.prototype.eachChildren = function (iterate) {
-        (this.children || []).forEach(function (item) {
-            return iterate(item);
-        });
-    };
-    /**
-     *do express work in routing.
-     *
-     *@param {Express<T, void | boolean>} express
-     *
-     *@memberOf IComponent
-     */
-    GComposite.prototype.routeUp = function (iterate) {
-        var curr = this;
-        if (iterate(curr) === false) {
-            return false;
-        }
-        
-        if (this.parent && this.parent.routeUp) {
-            return this.parent.routeUp(iterate);
-        }
-    };
-    /**
-     *translate all sub context to do express work.
-     *
-     *@param {Express<T, void | boolean>} express
-     *
-     *@memberOf IComponent
-     */
-    GComposite.prototype.trans = function (express) {
-        var curr = this;
-        if (express(curr) === false) {
-            return false;
-        }
-        var children = this.children || [];
-        for (var i = 0; i < children.length; i++) {
-            var result = children[i].trans(express);
-            if (result === false) {
-                return result;
-            }
-        }
-        return true;
-    };
-    GComposite.prototype.transAfter = function (express) {
-        var children = this.children || [];
-        for (var i = 0; i < children.length; i++) {
-            var result = children[i].transAfter(express);
-            if (result === false) {
-                return false;
-            }
-        }
-        var curr = this;
-        if (express(curr) === false) {
-            return false;
-        }
-        return true;
-    };
-    GComposite.prototype.equals = function (node) {
-        return this === node;
-    };
-    GComposite.prototype.empty = function () {
-        return NullComponent_1.NullNode;
-    };
-    GComposite.prototype.isEmpty = function () {
-        return this.equals(this.empty());
-    };
-    GComposite.classAnnations = { "name": "GComposite", "params": { "constructor": ["name"], "add": ["node"], "remove": ["node"], "find": ["express", "mode"], "filter": ["express", "mode"], "each": ["iterate", "mode"], "eachChildren": ["iterate"], "routeUp": ["iterate"], "trans": ["express"], "transAfter": ["express"], "equals": ["node"], "empty": [], "isEmpty": [] } };
-    return GComposite;
-}());
-exports.GComposite = GComposite;
-
-
-});
-
-unwrapExports(GComposite_1);
-var GComposite_2 = GComposite_1.GComposite;
-
-var components = createCommonjsModule(function (module, exports) {
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
-Object.defineProperty(exports, "__esModule", { value: true });
-__export(Composite_1);
-__export(GComposite_1);
-__export(NullComponent_1);
-
-
-});
-
-unwrapExports(components);
-
-var NullAction = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-
-var NullActionClass = /** @class */ (function (_super) {
-    __extends(NullActionClass, _super);
-    function NullActionClass() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    NullActionClass.prototype.insert = function (action, index) {
-        return this;
-    };
-    NullActionClass.prototype.execute = function (container, data, name) {
-    };
-    NullActionClass.prototype.empty = function () {
-        return exports.NullAction;
-    };
-    NullActionClass.classAnnations = { "name": "NullActionClass", "params": { "insert": ["action", "index"], "execute": ["container", "data", "name"], "empty": [] } };
-    return NullActionClass;
-}(components.NullComponent));
-/**
- * Null Action
- */
-exports.NullAction = new NullActionClass();
-
-
-});
-
-unwrapExports(NullAction);
-var NullAction_1 = NullAction.NullAction;
-
-var ActionComposite_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-/**
- * action composite
- *
- * @export
- * @class ActionComposite
- * @extends {GComposite<ActionComponent>}
- * @implements {ActionComponent}
- */
-var ActionComposite = /** @class */ (function (_super) {
-    __extends(ActionComposite, _super);
-    function ActionComposite(name) {
-        var _this = _super.call(this, name) || this;
-        _this.children = [];
-        return _this;
-    }
-    ActionComposite.prototype.insert = function (node, index) {
-        node.parent = this;
-        if (index < 0) {
-            index = 0;
-        }
-        else if (index >= this.children.length) {
-            index = this.children.length - 1;
-        }
-        this.children.splice(index, 0, node);
-        return this;
-    };
-    ActionComposite.prototype.execute = function (container, data, name) {
-        if (name) {
-            this.find(function (it) { return it.name === name; })
-                .execute(container, data);
-        }
-        else {
-            this.trans(function (action) {
-                if (action instanceof ActionComposite) {
-                    action.working(container, data);
-                }
-            });
-        }
-    };
-    ActionComposite.prototype.empty = function () {
-        return NullAction.NullAction;
-    };
-    ActionComposite.prototype.working = function (container, data) {
-        // do nothing.
-    };
-    ActionComposite.classAnnations = { "name": "ActionComposite", "params": { "constructor": ["name"], "insert": ["node", "index"], "execute": ["container", "data", "name"], "empty": [], "working": ["container", "data"] } };
-    return ActionComposite;
-}(components.GComposite));
-exports.ActionComposite = ActionComposite;
-
-
-});
-
-unwrapExports(ActionComposite_1);
-var ActionComposite_2 = ActionComposite_1.ActionComposite;
-
-var LifeState_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * life state.
- *
- * @export
- * @enum {number}
- */
-var LifeState;
-(function (LifeState) {
-    /**
-     * before create constructor Args
-     */
-    LifeState["beforeCreateArgs"] = "beforeCreateArgs";
-    /**
-     * before constructor advice action.
-     */
-    LifeState["beforeConstructor"] = "beforeConstructor";
-    /**
-     * after constructor advice action.
-     */
-    LifeState["afterConstructor"] = "afterConstructor";
-    /**
-     * on init.
-     */
-    LifeState["onInit"] = "onInit";
-    /**
-     * after init.
-     */
-    LifeState["AfterInit"] = "AfterInit";
-})(LifeState = exports.LifeState || (exports.LifeState = {}));
-
-
-});
-
-unwrapExports(LifeState_1);
-var LifeState_2 = LifeState_1.LifeState;
-
-var CoreActions_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * cores decorator actions
- *
- * @export
- */
-var CoreActions;
-(function (CoreActions) {
-    /**
-     * the action bind parameter type form metadata.
-     */
-    CoreActions["bindParameterType"] = "bindParameterType";
-    /**
-     * the action bind Property type from metadata.
-     */
-    CoreActions["bindPropertyType"] = "bindPropertyType";
-    /**
-     * inject property action.
-     */
-    CoreActions["injectProperty"] = "injectProperty";
-    /**
-     * class provider bind action.
-     */
-    CoreActions["bindProvider"] = "bindProvider";
-    /**
-     * bind parameter provider action.
-     */
-    CoreActions["bindParameterProviders"] = "bindParameterProviders";
-    /**
-     * cache action.
-     */
-    CoreActions["cache"] = "cache";
-    /**
-     * component init action.  after constructor befor property inject.
-     */
-    CoreActions["componentBeforeInit"] = "componentBeforeInit";
-    /**
-     * component on init hooks. after property inject.
-     */
-    CoreActions["componentInit"] = "componentInit";
-    /**
-     * component after init hooks. after component init.
-     */
-    CoreActions["componentAfterInit"] = "componentAfterInit";
-    /**
-     * singleton action.
-     */
-    CoreActions["singletion"] = "singletion";
-    /**
-     * autorun action.
-     */
-    CoreActions["autorun"] = "autorun";
-    /**
-     * method autorun action.
-     */
-    CoreActions["methodAutorun"] = "methodAutorun";
-})(CoreActions = exports.CoreActions || (exports.CoreActions = {}));
-
-
-});
-
-unwrapExports(CoreActions_1);
-var CoreActions_2 = CoreActions_1.CoreActions;
-
 var BindProviderAction_1 = createCommonjsModule(function (module, exports) {
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -3353,6 +3121,238 @@ exports.SingletionAction = SingletionAction;
 unwrapExports(SingletonAction);
 var SingletonAction_1 = SingletonAction.SingletionAction;
 
+var Component = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * Component decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`ComponentLifecycle`]
+ *
+ * @Component
+ */
+exports.Component = factories.createClassDecorator('Component');
+
+
+});
+
+unwrapExports(Component);
+var Component_1 = Component.Component;
+
+var Injectable = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * Injectable decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.
+ *
+ * @Injectable
+ */
+exports.Injectable = factories.createClassDecorator('Injectable');
+
+
+});
+
+unwrapExports(Injectable);
+var Injectable_1 = Injectable.Injectable;
+
+var Inject = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+ *
+ * @Inject
+ */
+exports.Inject = factories.createParamPropDecorator('Inject');
+
+
+});
+
+unwrapExports(Inject);
+var Inject_1 = Inject.Inject;
+
+var AutoWried = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * AutoWired decorator, for property or param. use to auto wried type instance or value to the instance of one class with the decorator.
+ *
+ * @AutoWired
+ */
+exports.AutoWired = factories.createParamPropDecorator('AutoWired');
+
+
+});
+
+unwrapExports(AutoWried);
+var AutoWried_1 = AutoWried.AutoWired;
+
+var Param = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * param decorator, define for parameter. use to auto wried type instance or value to the instance of one class with the decorator.
+ *
+ * @Param
+ */
+exports.Param = factories.createParamDecorator('Param');
+
+
+});
+
+unwrapExports(Param);
+var Param_1 = Param.Param;
+
+var Method = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * method decorator.
+ *
+ * @Method
+ */
+exports.Method = factories.createMethodDecorator('Method');
+
+
+});
+
+unwrapExports(Method);
+var Method_1 = Method.Method;
+
+var Singleton = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * Singleton decorator, for class. use to define the class is singleton.
+ *
+ * @Singleton
+ */
+exports.Singleton = factories.createClassDecorator('Singleton', null, function (metadata) {
+    metadata.singleton = true;
+    return metadata;
+});
+
+
+});
+
+unwrapExports(Singleton);
+var Singleton_1 = Singleton.Singleton;
+
+var Abstract = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * Abstract decorator. define for class.
+ *
+ * @Abstract
+ */
+exports.Abstract = factories.createClassDecorator('Abstract');
+
+
+});
+
+unwrapExports(Abstract);
+var Abstract_1 = Abstract.Abstract;
+
+var AutoRun = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * Autorun decorator, for class or method.  use to define the class auto run (via a method or not) after registered.
+ *
+ * @Autorun
+ */
+exports.Autorun = factories.createClassMethodDecorator('Autorun', function (args) {
+    args.next({
+        isMetadata: function (arg) { return utils.isClassMetadata(arg, ['autorun']); },
+        match: function (arg) { return utils.isString(arg) || utils.isNumber(arg); },
+        setMetadata: function (metadata, arg) {
+            if (utils.isString(arg)) {
+                metadata.autorun = arg;
+            }
+            else {
+                metadata.order = arg;
+            }
+        }
+    });
+}, function (metadata) {
+    metadata.singleton = true;
+    return metadata;
+});
+
+
+});
+
+unwrapExports(AutoRun);
+var AutoRun_1 = AutoRun.Autorun;
+
+var IocExt = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * IocExt decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
+ *
+ * @IocExt
+ */
+exports.IocExt = factories.createClassDecorator('IocExt', function (args) {
+    args.next({
+        isMetadata: function (arg) { return utils.isClassMetadata(arg, ['autorun']); },
+        match: function (arg) { return utils.isString(arg); },
+        setMetadata: function (metadata, arg) {
+            metadata.autorun = arg;
+        }
+    });
+}, function (metadata) {
+    metadata.singleton = true;
+    return metadata;
+});
+exports.IocModule = exports.IocExt;
+
+
+});
+
+unwrapExports(IocExt);
+var IocExt_1 = IocExt.IocExt;
+var IocExt_2 = IocExt.IocModule;
+
+var DefModule = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * Module decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.
+ *
+ * @DefModule
+ */
+exports.DefModule = factories.createClassDecorator('DefModule');
+
+
+});
+
+unwrapExports(DefModule);
+var DefModule_1 = DefModule.DefModule;
+
+var decorators = createCommonjsModule(function (module, exports) {
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+Object.defineProperty(exports, "__esModule", { value: true });
+__export(Component);
+__export(Injectable);
+__export(Inject);
+__export(AutoWried);
+__export(Param);
+__export(Method);
+__export(Singleton);
+__export(Abstract);
+__export(AutoRun);
+__export(IocExt);
+__export(DefModule);
+
+
+});
+
+unwrapExports(decorators);
+
 var AutorunAction_1 = createCommonjsModule(function (module, exports) {
 var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -3441,634 +3441,6 @@ __export(AutorunAction_1);
 });
 
 unwrapExports(actions);
-
-var MethodAutorun_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-
-
-/**
- * Inject DrawType action.
- *
- * @export
- * @class SetPropAction
- * @extends {ActionComposite}
- */
-var MethodAutorun = /** @class */ (function (_super) {
-    __extends(MethodAutorun, _super);
-    function MethodAutorun() {
-        return _super.call(this, CoreActions_1.CoreActions.methodAutorun) || this;
-    }
-    MethodAutorun.prototype.working = function (container, data) {
-        if (data.target && data.targetType) {
-            if (factories.hasMethodMetadata(decorators.Autorun, data.targetType)) {
-                var metas = factories.getMethodMetadata(decorators.Autorun, data.targetType);
-                var lastmetas_1 = [];
-                var idx_1 = utils.lang.keys(metas).length;
-                utils.lang.forIn(metas, function (mm, key) {
-                    if (mm && mm.length) {
-                        var m = mm[0];
-                        m.autorun = key;
-                        idx_1++;
-                        if (!utils.isNumber(m.order)) {
-                            m.order = idx_1;
-                        }
-                        lastmetas_1.push(m);
-                    }
-                });
-                lastmetas_1.sort(function (au1, au2) {
-                    return au1.order - au1.order;
-                }).forEach(function (aut) {
-                    container.syncInvoke(data.targetType, aut.autorun, data.target);
-                });
-            }
-        }
-    };
-    MethodAutorun.classAnnations = { "name": "MethodAutorun", "params": { "constructor": [], "working": ["container", "data"] } };
-    return MethodAutorun;
-}(ActionComposite_1.ActionComposite));
-exports.MethodAutorun = MethodAutorun;
-
-
-});
-
-unwrapExports(MethodAutorun_1);
-var MethodAutorun_2 = MethodAutorun_1.MethodAutorun;
-
-var ActionFactory_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-/**
- * action factory.
- *
- * @export
- * @class ActionFactory
- */
-var ActionFactory = /** @class */ (function () {
-    function ActionFactory() {
-    }
-    /**
-     * create action by action type. type in 'CoreActions'
-     *
-     * @param {string} type
-     * @returns {ActionComponent}
-     * @memberof ActionFactory
-     */
-    ActionFactory.prototype.create = function (type) {
-        var action;
-        switch (type) {
-            case actions.CoreActions.bindParameterType:
-                action = new actions.BindParameterTypeAction();
-                break;
-            case actions.CoreActions.bindPropertyType:
-                action = new actions.BindPropertyTypeAction();
-                break;
-            case actions.CoreActions.injectProperty:
-                action = new actions.InjectPropertyAction();
-                break;
-            case actions.CoreActions.bindProvider:
-                action = new actions.BindProviderAction();
-                break;
-            case actions.CoreActions.bindParameterProviders:
-                action = new actions.BindParameterProviderAction();
-                break;
-            case actions.CoreActions.componentInit:
-                action = new actions.ComponentInitAction();
-                break;
-            case actions.CoreActions.componentBeforeInit:
-                action = new actions.ComponentBeforeInitAction();
-                break;
-            case actions.CoreActions.componentAfterInit:
-                action = new actions.ComponentAfterInitAction();
-                break;
-            case actions.CoreActions.cache:
-                action = new actions.CacheAction();
-                break;
-            case actions.CoreActions.singletion:
-                action = new actions.SingletionAction();
-                break;
-            case actions.CoreActions.autorun:
-                action = new actions.AutorunAction();
-                break;
-            case actions.CoreActions.methodAutorun:
-                action = new MethodAutorun_1.MethodAutorun();
-                break;
-            default:
-                action = new actions.ActionComposite(type);
-                break;
-        }
-        return action;
-    };
-    ActionFactory.classAnnations = { "name": "ActionFactory", "params": { "create": ["type"] } };
-    return ActionFactory;
-}());
-exports.ActionFactory = ActionFactory;
-
-
-});
-
-unwrapExports(ActionFactory_1);
-var ActionFactory_2 = ActionFactory_1.ActionFactory;
-
-var DefaultLifeScope_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-
-
-
-/**
- * default implement life scope.
- *
- * @export
- * @class DefaultLifeScope
- * @implements {LifeScope}
- */
-var DefaultLifeScope = /** @class */ (function () {
-    function DefaultLifeScope(container) {
-        this.container = container;
-        this.decorators = [];
-        this.buildAction();
-    }
-    DefaultLifeScope.prototype.addAction = function (action) {
-        var nodepaths = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            nodepaths[_i - 1] = arguments[_i];
-        }
-        var parent = this.action;
-        nodepaths.forEach(function (pathname) {
-            parent = parent.find(function (act) { return act.name === pathname; });
-        });
-        if (parent) {
-            parent.add(action);
-        }
-        return this;
-    };
-    DefaultLifeScope.prototype.registerDecorator = function (decorator) {
-        var actions$$1 = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            actions$$1[_i - 1] = arguments[_i];
-        }
-        var type = this.getDecoratorType(decorator);
-        return this.registerCustomDecorator.apply(this, [decorator, type].concat(actions$$1));
-    };
-    DefaultLifeScope.prototype.registerCustomDecorator = function (decorator, type) {
-        var actions$$1 = [];
-        for (var _i = 2; _i < arguments.length; _i++) {
-            actions$$1[_i - 2] = arguments[_i];
-        }
-        var types$$2 = this.toActionName(type);
-        var name = decorator.toString();
-        if (!this.decorators.some(function (d) { return d.name === name; })) {
-            this.decorators.push({
-                name: name,
-                types: types$$2,
-                actions: actions$$1
-            });
-        }
-        return this;
-    };
-    DefaultLifeScope.prototype.execute = function (data) {
-        var names = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            names[_i - 1] = arguments[_i];
-        }
-        names = names.filter(function (n) { return !!n; });
-        var act = this.action;
-        names.forEach(function (name) {
-            act = act.find(function (itm) { return itm.name === name; });
-        });
-        if (act) {
-            act.execute(this.container, data);
-        }
-    };
-    DefaultLifeScope.prototype.getClassDecorators = function (match) {
-        return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Class), match);
-    };
-    DefaultLifeScope.prototype.getMethodDecorators = function (match) {
-        return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Method), match);
-    };
-    DefaultLifeScope.prototype.getPropertyDecorators = function (match) {
-        return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Property), match);
-    };
-    DefaultLifeScope.prototype.getParameterDecorators = function (match) {
-        return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Parameter), match);
-    };
-    DefaultLifeScope.prototype.getDecoratorType = function (decirator) {
-        return decirator.decoratorType || factories.DecoratorType.All;
-    };
-    /**
-     * is vaildate dependence type or not. dependence type must with class decorator.
-     *
-     * @template T
-     * @param {Type<T>} target
-     * @returns {boolean}
-     * @memberof Container
-     */
-    DefaultLifeScope.prototype.isVaildDependence = function (target) {
-        if (!target) {
-            return false;
-        }
-        if (!utils.isClass(target)) {
-            return false;
-        }
-        if (utils.isAbstractDecoratorClass(target)) {
-            return false;
-        }
-        return this.getClassDecorators().some(function (act) { return factories.hasOwnClassMetadata(act.name, target); });
-    };
-    DefaultLifeScope.prototype.getAtionByName = function (name) {
-        return this.action.find(function (action) { return action.name === name; });
-    };
-    DefaultLifeScope.prototype.getClassAction = function () {
-        return this.getAtionByName(this.toActionName(factories.DecoratorType.Class));
-    };
-    DefaultLifeScope.prototype.getMethodAction = function () {
-        return this.getAtionByName(this.toActionName(factories.DecoratorType.Method));
-    };
-    DefaultLifeScope.prototype.getPropertyAction = function () {
-        return this.getAtionByName(this.toActionName(factories.DecoratorType.Property));
-    };
-    DefaultLifeScope.prototype.getParameterAction = function () {
-        return this.getAtionByName(this.toActionName(factories.DecoratorType.Parameter));
-    };
-    /**
-     * get constructor parameters metadata.
-     *
-     * @template T
-     * @param {Type<T>} type
-     * @returns {IParameter[]}
-     * @memberof IContainer
-     */
-    DefaultLifeScope.prototype.getConstructorParameters = function (type) {
-        return this.getParameters(type);
-    };
-    /**
-     * get method params metadata.
-     *
-     * @template T
-     * @param {Type<T>} type
-     * @param {T} instance
-     * @param {(string | symbol)} propertyKey
-     * @returns {IParameter[]}
-     * @memberof IContainer
-     */
-    DefaultLifeScope.prototype.getMethodParameters = function (type, instance, propertyKey) {
-        return this.getParameters(type, instance, propertyKey);
-    };
-    /**
-     * get paramerter names.
-     *
-     * @template T
-     * @param {Type<T>} type
-     * @param {(string | symbol)} propertyKey
-     * @returns {string[]}
-     * @memberof DefaultLifeScope
-     */
-    DefaultLifeScope.prototype.getParamerterNames = function (type, propertyKey) {
-        var metadata = factories.getOwnParamerterNames(type);
-        var paramNames = [];
-        if (metadata && metadata.hasOwnProperty(propertyKey)) {
-            paramNames = metadata[propertyKey];
-        }
-        if (!utils.isArray(paramNames)) {
-            paramNames = [];
-        }
-        return paramNames;
-    };
-    DefaultLifeScope.prototype.isSingletonType = function (type) {
-        if (factories.hasOwnClassMetadata(decorators.Singleton, type)) {
-            return true;
-        }
-        return this.getClassDecorators().some(function (surm) {
-            var metadatas = factories.getOwnTypeMetadata(surm.name, type) || [];
-            if (utils.isArray(metadatas)) {
-                return metadatas.some(function (m) { return m.singleton === true; });
-            }
-            return false;
-        });
-    };
-    DefaultLifeScope.prototype.getMethodMetadatas = function (type, propertyKey) {
-        var metadatas = [];
-        this.getMethodDecorators().forEach(function (dec) {
-            var metas = factories.getOwnMethodMetadata(dec.name, type);
-            if (metas.hasOwnProperty(propertyKey)) {
-                metadatas = metadatas.concat(metas[propertyKey] || []);
-            }
-        });
-        return metadatas;
-    };
-    DefaultLifeScope.prototype.filerDecorators = function (express) {
-        return this.decorators.filter(express);
-    };
-    DefaultLifeScope.prototype.getParameters = function (type, instance, propertyKey) {
-        propertyKey = propertyKey || 'constructor';
-        var data = {
-            target: instance,
-            targetType: type,
-            propertyKey: propertyKey
-        };
-        this.execute(data, actions.LifeState.onInit, actions.CoreActions.bindParameterType);
-        var paramNames = this.getParamerterNames(type, propertyKey);
-        if (data.execResult.length) {
-            return data.execResult.map(function (typ, idx) {
-                return {
-                    type: typ,
-                    name: paramNames[idx]
-                };
-            });
-        }
-        else {
-            return paramNames.map(function (name) {
-                return {
-                    name: name,
-                    type: undefined
-                };
-            });
-        }
-    };
-    DefaultLifeScope.prototype.getTypeDecorators = function (decType, match) {
-        return this.filerDecorators(function (value) {
-            var flag = (value.types || '').indexOf(decType) >= 0;
-            if (flag && match) {
-                flag = match(value);
-            }
-            return flag;
-        });
-    };
-    DefaultLifeScope.prototype.buildAction = function () {
-        var factory = new ActionFactory_1.ActionFactory();
-        var action = factory.create('');
-        action
-            .add(factory.create(types.IocState.design)
-            .add(factory.create(actions.CoreActions.bindProvider))
-            .add(factory.create(actions.CoreActions.autorun)))
-            .add(factory.create(types.IocState.runtime)
-            .add(factory.create(actions.LifeState.beforeCreateArgs))
-            .add(factory.create(actions.LifeState.beforeConstructor))
-            .add(factory.create(actions.LifeState.afterConstructor))
-            .add(factory.create(actions.LifeState.onInit)
-            .add(factory.create(actions.CoreActions.componentBeforeInit))
-            .add(factory.create(this.toActionName(factories.DecoratorType.Class)))
-            .add(factory.create(this.toActionName(factories.DecoratorType.Method)))
-            .add(factory.create(this.toActionName(factories.DecoratorType.Property))
-            .add(factory.create(actions.CoreActions.bindPropertyType))
-            .add(factory.create(actions.CoreActions.injectProperty)))
-            .add(factory.create(this.toActionName(factories.DecoratorType.Parameter))
-            .add(factory.create(actions.CoreActions.bindParameterType))
-            .add(factory.create(actions.CoreActions.bindParameterProviders)))
-            .add(factory.create(actions.CoreActions.componentInit)))
-            .add(factory.create(actions.LifeState.AfterInit)
-            .add(factory.create(actions.CoreActions.singletion))
-            .add(factory.create(actions.CoreActions.componentAfterInit))
-            .add(factory.create(actions.CoreActions.methodAutorun))))
-            .add(factory.create(actions.CoreActions.cache));
-        this.action = action;
-    };
-    DefaultLifeScope.prototype.toActionName = function (type) {
-        var types$$2 = [];
-        if (type & factories.DecoratorType.Class) {
-            types$$2.push('ClassDecorator');
-        }
-        if (type & factories.DecoratorType.Method) {
-            types$$2.push('MethodDecorator');
-        }
-        if (type & factories.DecoratorType.Property) {
-            types$$2.push('PropertyDecorator');
-        }
-        if (type & factories.DecoratorType.Parameter) {
-            types$$2.push('ParameterDecorator');
-        }
-        return types$$2.join(',');
-    };
-    DefaultLifeScope.classAnnations = { "name": "DefaultLifeScope", "params": { "constructor": ["container"], "addAction": ["action", "nodepaths"], "registerDecorator": ["decorator", "actions"], "registerCustomDecorator": ["decorator", "type", "actions"], "execute": ["data", "names"], "getClassDecorators": ["match"], "getMethodDecorators": ["match"], "getPropertyDecorators": ["match"], "getParameterDecorators": ["match"], "getDecoratorType": ["decirator"], "isVaildDependence": ["target"], "getAtionByName": ["name"], "getClassAction": [], "getMethodAction": [], "getPropertyAction": [], "getParameterAction": [], "getConstructorParameters": ["type"], "getMethodParameters": ["type", "instance", "propertyKey"], "getParamerterNames": ["type", "propertyKey"], "isSingletonType": ["type"], "getMethodMetadatas": ["type", "propertyKey"], "filerDecorators": ["express"], "getParameters": ["type", "instance", "propertyKey"], "getTypeDecorators": ["decType", "match"], "buildAction": [], "toActionName": ["type"] } };
-    return DefaultLifeScope;
-}());
-exports.DefaultLifeScope = DefaultLifeScope;
-
-
-});
-
-unwrapExports(DefaultLifeScope_1);
-var DefaultLifeScope_2 = DefaultLifeScope_1.DefaultLifeScope;
-
-var LifeScope = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * life scope interface symbol.
- * it is a symbol id, you can register yourself MethodAccessor for this.
- */
-exports.LifeScopeToken = new InjectToken_1.InjectToken('__IOC_LifeScope');
-
-
-});
-
-unwrapExports(LifeScope);
-var LifeScope_1 = LifeScope.LifeScopeToken;
-
-var IProviderMatcher = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * Providers match interface symbol.
- * it is a symbol id, you can register yourself MethodAccessor for this.
- */
-exports.ProviderMatcherToken = new InjectToken_1.InjectToken('__IOC_IProviderMatcher');
-
-
-});
-
-unwrapExports(IProviderMatcher);
-var IProviderMatcher_1 = IProviderMatcher.ProviderMatcherToken;
-
-var MethodAccessor_1 = createCommonjsModule(function (module, exports) {
-var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-/**
- * method accessor
- *
- * @export
- * @class MethodAccessor
- * @implements {IMethodAccessor}
- */
-var MethodAccessor = /** @class */ (function () {
-    function MethodAccessor(container) {
-        this.container = container;
-    }
-    MethodAccessor.prototype.getMatcher = function () {
-        return this.container.get(IProviderMatcher.ProviderMatcherToken);
-    };
-    MethodAccessor.prototype.invoke = function (token, propertyKey, target) {
-        var providers = [];
-        for (var _i = 3; _i < arguments.length; _i++) {
-            providers[_i - 3] = arguments[_i];
-        }
-        return __awaiter(this, void 0, void 0, function () {
-            var targetClass, actionData, lifeScope, parameters, paramInstances, _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        if (!target) {
-                            target = (_a = this.container).resolve.apply(_a, [token].concat(providers));
-                        }
-                        targetClass = this.container.getTokenImpl(token);
-                        if (!targetClass) {
-                            throw Error(token.toString() + ' is not implements by any class.');
-                        }
-                        if (!(target && utils.isFunction(target[propertyKey]))) return [3 /*break*/, 2];
-                        actionData = {
-                            target: target,
-                            targetType: targetClass,
-                            propertyKey: propertyKey,
-                        };
-                        lifeScope = this.container.getLifeScope();
-                        lifeScope.execute(actionData, actions.LifeState.onInit, actions.CoreActions.bindParameterProviders);
-                        providers = providers.concat(actionData.execResult);
-                        parameters = lifeScope.getMethodParameters(targetClass, target, propertyKey);
-                        return [4 /*yield*/, this.createParams.apply(this, [parameters].concat(providers))];
-                    case 1:
-                        paramInstances = _b.sent();
-                        return [2 /*return*/, target[propertyKey].apply(target, paramInstances)];
-                    case 2: throw new Error("type: " + targetClass + " has no method " + propertyKey + ".");
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    MethodAccessor.prototype.syncInvoke = function (token, propertyKey, target) {
-        var providers = [];
-        for (var _i = 3; _i < arguments.length; _i++) {
-            providers[_i - 3] = arguments[_i];
-        }
-        if (!target) {
-            target = (_a = this.container).resolve.apply(_a, [token].concat(providers));
-        }
-        var targetClass = this.container.getTokenImpl(token);
-        if (!targetClass) {
-            throw Error(token.toString() + ' is not implements by any class.');
-        }
-        if (target && utils.isFunction(target[propertyKey])) {
-            var actionData = {
-                target: target,
-                targetType: targetClass,
-                propertyKey: propertyKey,
-            };
-            var lifeScope = this.container.getLifeScope();
-            lifeScope.execute(actionData, actions.LifeState.onInit, actions.CoreActions.bindParameterProviders);
-            providers = providers.concat(actionData.execResult);
-            var parameters = lifeScope.getMethodParameters(targetClass, target, propertyKey);
-            var paramInstances = this.createSyncParams.apply(this, [parameters].concat(providers));
-            return target[propertyKey].apply(target, paramInstances);
-        }
-        else {
-            throw new Error("type: " + targetClass + " has no method " + propertyKey + ".");
-        }
-        var _a;
-    };
-    MethodAccessor.prototype.createSyncParams = function (params) {
-        var _this = this;
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        var providerMap = (_a = this.getMatcher()).matchProviders.apply(_a, [params].concat(providers));
-        return params.map(function (param, index) {
-            if (param.name && providerMap.has(param.name)) {
-                return providerMap.resolve(param.name);
-            }
-            else if (utils.isToken(param.type)) {
-                return (_a = _this.container).resolve.apply(_a, [param.type].concat(providers));
-            }
-            else {
-                return undefined;
-            }
-            var _a;
-        });
-        var _a;
-    };
-    MethodAccessor.prototype.createParams = function (params) {
-        var _this = this;
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        var providerMap = (_a = this.getMatcher()).matchProviders.apply(_a, [params].concat(providers));
-        return Promise.all(params.map(function (param, index) {
-            if (param.name && providerMap.has(param.name)) {
-                return providerMap.resolve(param.name);
-            }
-            else if (utils.isToken(param.type)) {
-                return (_a = _this.container).resolve.apply(_a, [param.type].concat(providers));
-            }
-            else {
-                return undefined;
-            }
-            var _a;
-        }));
-        var _a;
-    };
-    MethodAccessor.classAnnations = { "name": "MethodAccessor", "params": { "constructor": ["container"], "getMatcher": [], "invoke": ["token", "propertyKey", "target", "providers"], "syncInvoke": ["token", "propertyKey", "target", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"] } };
-    return MethodAccessor;
-}());
-exports.MethodAccessor = MethodAccessor;
-
-
-});
-
-unwrapExports(MethodAccessor_1);
-var MethodAccessor_2 = MethodAccessor_1.MethodAccessor;
 
 var ProviderMap_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -4475,6 +3847,460 @@ exports.isProviderMap = isProviderMap;
 unwrapExports(providers);
 var providers_1 = providers.isProviderMap;
 
+var IRecognizer = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * IRecognizer interface token.
+ * it is a token id, you can register yourself IRecognizer for this.
+ */
+exports.RecognizerToken = new InjectToken_1.InjectToken('__IOC_IRecognizer');
+
+
+});
+
+unwrapExports(IRecognizer);
+var IRecognizer_1 = IRecognizer.RecognizerToken;
+
+var IProviderMatcher = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * Providers match interface symbol.
+ * it is a symbol id, you can register yourself MethodAccessor for this.
+ */
+exports.ProviderMatcherToken = new InjectToken_1.InjectToken('__IOC_IProviderMatcher');
+
+
+});
+
+unwrapExports(IProviderMatcher);
+var IProviderMatcher_1 = IProviderMatcher.ProviderMatcherToken;
+
+var MethodAutorun_1 = createCommonjsModule(function (module, exports) {
+var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+
+/**
+ * Inject DrawType action.
+ *
+ * @export
+ * @class SetPropAction
+ * @extends {ActionComposite}
+ */
+var MethodAutorun = /** @class */ (function (_super) {
+    __extends(MethodAutorun, _super);
+    function MethodAutorun() {
+        return _super.call(this, CoreActions_1.CoreActions.methodAutorun) || this;
+    }
+    MethodAutorun.prototype.working = function (container, data) {
+        if (data.target && data.targetType) {
+            if (factories.hasMethodMetadata(decorators.Autorun, data.targetType)) {
+                var metas = factories.getMethodMetadata(decorators.Autorun, data.targetType);
+                var lastmetas_1 = [];
+                var idx_1 = utils.lang.keys(metas).length;
+                utils.lang.forIn(metas, function (mm, key) {
+                    if (mm && mm.length) {
+                        var m = mm[0];
+                        m.autorun = key;
+                        idx_1++;
+                        if (!utils.isNumber(m.order)) {
+                            m.order = idx_1;
+                        }
+                        lastmetas_1.push(m);
+                    }
+                });
+                lastmetas_1.sort(function (au1, au2) {
+                    return au1.order - au1.order;
+                }).forEach(function (aut) {
+                    container.syncInvoke(data.targetType, aut.autorun, data.target);
+                });
+            }
+        }
+    };
+    MethodAutorun.classAnnations = { "name": "MethodAutorun", "params": { "constructor": [], "working": ["container", "data"] } };
+    return MethodAutorun;
+}(ActionComposite_1.ActionComposite));
+exports.MethodAutorun = MethodAutorun;
+
+
+});
+
+unwrapExports(MethodAutorun_1);
+var MethodAutorun_2 = MethodAutorun_1.MethodAutorun;
+
+var ActionFactory_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * action factory.
+ *
+ * @export
+ * @class ActionFactory
+ */
+var ActionFactory = /** @class */ (function () {
+    function ActionFactory() {
+    }
+    /**
+     * create action by action type. type in 'CoreActions'
+     *
+     * @param {string} type
+     * @returns {ActionComponent}
+     * @memberof ActionFactory
+     */
+    ActionFactory.prototype.create = function (type) {
+        var action;
+        switch (type) {
+            case actions.CoreActions.bindParameterType:
+                action = new actions.BindParameterTypeAction();
+                break;
+            case actions.CoreActions.bindPropertyType:
+                action = new actions.BindPropertyTypeAction();
+                break;
+            case actions.CoreActions.injectProperty:
+                action = new actions.InjectPropertyAction();
+                break;
+            case actions.CoreActions.bindProvider:
+                action = new actions.BindProviderAction();
+                break;
+            case actions.CoreActions.bindParameterProviders:
+                action = new actions.BindParameterProviderAction();
+                break;
+            case actions.CoreActions.componentInit:
+                action = new actions.ComponentInitAction();
+                break;
+            case actions.CoreActions.componentBeforeInit:
+                action = new actions.ComponentBeforeInitAction();
+                break;
+            case actions.CoreActions.componentAfterInit:
+                action = new actions.ComponentAfterInitAction();
+                break;
+            case actions.CoreActions.cache:
+                action = new actions.CacheAction();
+                break;
+            case actions.CoreActions.singletion:
+                action = new actions.SingletionAction();
+                break;
+            case actions.CoreActions.autorun:
+                action = new actions.AutorunAction();
+                break;
+            case actions.CoreActions.methodAutorun:
+                action = new MethodAutorun_1.MethodAutorun();
+                break;
+            default:
+                action = new actions.ActionComposite(type);
+                break;
+        }
+        return action;
+    };
+    ActionFactory.classAnnations = { "name": "ActionFactory", "params": { "create": ["type"] } };
+    return ActionFactory;
+}());
+exports.ActionFactory = ActionFactory;
+
+
+});
+
+unwrapExports(ActionFactory_1);
+var ActionFactory_2 = ActionFactory_1.ActionFactory;
+
+var DefaultLifeScope_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+
+
+/**
+ * default implement life scope.
+ *
+ * @export
+ * @class DefaultLifeScope
+ * @implements {LifeScope}
+ */
+var DefaultLifeScope = /** @class */ (function () {
+    function DefaultLifeScope(container) {
+        this.container = container;
+        this.decorators = [];
+        this.buildAction();
+    }
+    DefaultLifeScope.prototype.addAction = function (action) {
+        var nodepaths = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            nodepaths[_i - 1] = arguments[_i];
+        }
+        var parent = this.action;
+        nodepaths.forEach(function (pathname) {
+            parent = parent.find(function (act) { return act.name === pathname; });
+        });
+        if (parent) {
+            parent.add(action);
+        }
+        return this;
+    };
+    DefaultLifeScope.prototype.registerDecorator = function (decorator) {
+        var actions$$2 = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            actions$$2[_i - 1] = arguments[_i];
+        }
+        var type = this.getDecoratorType(decorator);
+        return this.registerCustomDecorator.apply(this, [decorator, type].concat(actions$$2));
+    };
+    DefaultLifeScope.prototype.registerCustomDecorator = function (decorator, type) {
+        var actions$$2 = [];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            actions$$2[_i - 2] = arguments[_i];
+        }
+        var types$$2 = this.toActionName(type);
+        var name = decorator.toString();
+        if (!this.decorators.some(function (d) { return d.name === name; })) {
+            this.decorators.push({
+                name: name,
+                types: types$$2,
+                actions: actions$$2
+            });
+        }
+        return this;
+    };
+    DefaultLifeScope.prototype.execute = function (data) {
+        var names = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            names[_i - 1] = arguments[_i];
+        }
+        names = names.filter(function (n) { return !!n; });
+        var act = this.action;
+        names.forEach(function (name) {
+            act = act.find(function (itm) { return itm.name === name; });
+        });
+        if (act) {
+            act.execute(this.container, data);
+        }
+    };
+    DefaultLifeScope.prototype.getClassDecorators = function (match) {
+        return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Class), match);
+    };
+    DefaultLifeScope.prototype.getMethodDecorators = function (match) {
+        return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Method), match);
+    };
+    DefaultLifeScope.prototype.getPropertyDecorators = function (match) {
+        return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Property), match);
+    };
+    DefaultLifeScope.prototype.getParameterDecorators = function (match) {
+        return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Parameter), match);
+    };
+    DefaultLifeScope.prototype.getDecoratorType = function (decirator) {
+        return decirator.decoratorType || factories.DecoratorType.All;
+    };
+    /**
+     * is vaildate dependence type or not. dependence type must with class decorator.
+     *
+     * @template T
+     * @param {Type<T>} target
+     * @returns {boolean}
+     * @memberof Container
+     */
+    DefaultLifeScope.prototype.isVaildDependence = function (target) {
+        if (!target) {
+            return false;
+        }
+        if (!utils.isClass(target)) {
+            return false;
+        }
+        if (utils.isAbstractDecoratorClass(target)) {
+            return false;
+        }
+        return this.getClassDecorators().some(function (act) { return factories.hasOwnClassMetadata(act.name, target); });
+    };
+    DefaultLifeScope.prototype.getAtionByName = function (name) {
+        return this.action.find(function (action) { return action.name === name; });
+    };
+    DefaultLifeScope.prototype.getClassAction = function () {
+        return this.getAtionByName(this.toActionName(factories.DecoratorType.Class));
+    };
+    DefaultLifeScope.prototype.getMethodAction = function () {
+        return this.getAtionByName(this.toActionName(factories.DecoratorType.Method));
+    };
+    DefaultLifeScope.prototype.getPropertyAction = function () {
+        return this.getAtionByName(this.toActionName(factories.DecoratorType.Property));
+    };
+    DefaultLifeScope.prototype.getParameterAction = function () {
+        return this.getAtionByName(this.toActionName(factories.DecoratorType.Parameter));
+    };
+    /**
+     * get constructor parameters metadata.
+     *
+     * @template T
+     * @param {Type<T>} type
+     * @returns {IParameter[]}
+     * @memberof IContainer
+     */
+    DefaultLifeScope.prototype.getConstructorParameters = function (type) {
+        return this.getParameters(type);
+    };
+    /**
+     * get method params metadata.
+     *
+     * @template T
+     * @param {Type<T>} type
+     * @param {T} instance
+     * @param {(string | symbol)} propertyKey
+     * @returns {IParameter[]}
+     * @memberof IContainer
+     */
+    DefaultLifeScope.prototype.getMethodParameters = function (type, instance, propertyKey) {
+        return this.getParameters(type, instance, propertyKey);
+    };
+    /**
+     * get paramerter names.
+     *
+     * @template T
+     * @param {Type<T>} type
+     * @param {(string | symbol)} propertyKey
+     * @returns {string[]}
+     * @memberof DefaultLifeScope
+     */
+    DefaultLifeScope.prototype.getParamerterNames = function (type, propertyKey) {
+        var metadata = factories.getOwnParamerterNames(type);
+        var paramNames = [];
+        if (metadata && metadata.hasOwnProperty(propertyKey)) {
+            paramNames = metadata[propertyKey];
+        }
+        if (!utils.isArray(paramNames)) {
+            paramNames = [];
+        }
+        return paramNames;
+    };
+    DefaultLifeScope.prototype.isSingletonType = function (type) {
+        if (factories.hasOwnClassMetadata(decorators.Singleton, type)) {
+            return true;
+        }
+        return this.getClassDecorators().some(function (surm) {
+            var metadatas = factories.getOwnTypeMetadata(surm.name, type) || [];
+            if (utils.isArray(metadatas)) {
+                return metadatas.some(function (m) { return m.singleton === true; });
+            }
+            return false;
+        });
+    };
+    DefaultLifeScope.prototype.getMethodMetadatas = function (type, propertyKey) {
+        var metadatas = [];
+        this.getMethodDecorators().forEach(function (dec) {
+            var metas = factories.getOwnMethodMetadata(dec.name, type);
+            if (metas.hasOwnProperty(propertyKey)) {
+                metadatas = metadatas.concat(metas[propertyKey] || []);
+            }
+        });
+        return metadatas;
+    };
+    DefaultLifeScope.prototype.filerDecorators = function (express) {
+        return this.decorators.filter(express);
+    };
+    DefaultLifeScope.prototype.getParameters = function (type, instance, propertyKey) {
+        propertyKey = propertyKey || 'constructor';
+        var data = {
+            target: instance,
+            targetType: type,
+            propertyKey: propertyKey
+        };
+        this.execute(data, actions.LifeState.onInit, actions.CoreActions.bindParameterType);
+        var paramNames = this.getParamerterNames(type, propertyKey);
+        if (data.execResult.length) {
+            return data.execResult.map(function (typ, idx) {
+                return {
+                    type: typ,
+                    name: paramNames[idx]
+                };
+            });
+        }
+        else {
+            return paramNames.map(function (name) {
+                return {
+                    name: name,
+                    type: undefined
+                };
+            });
+        }
+    };
+    DefaultLifeScope.prototype.getTypeDecorators = function (decType, match) {
+        return this.filerDecorators(function (value) {
+            var flag = (value.types || '').indexOf(decType) >= 0;
+            if (flag && match) {
+                flag = match(value);
+            }
+            return flag;
+        });
+    };
+    DefaultLifeScope.prototype.buildAction = function () {
+        var factory = new ActionFactory_1.ActionFactory();
+        var action = factory.create('');
+        action
+            .add(factory.create(types.IocState.design)
+            .add(factory.create(actions.CoreActions.bindProvider))
+            .add(factory.create(actions.CoreActions.autorun)))
+            .add(factory.create(types.IocState.runtime)
+            .add(factory.create(actions.LifeState.beforeCreateArgs))
+            .add(factory.create(actions.LifeState.beforeConstructor))
+            .add(factory.create(actions.LifeState.afterConstructor))
+            .add(factory.create(actions.LifeState.onInit)
+            .add(factory.create(actions.CoreActions.componentBeforeInit))
+            .add(factory.create(this.toActionName(factories.DecoratorType.Class)))
+            .add(factory.create(this.toActionName(factories.DecoratorType.Method)))
+            .add(factory.create(this.toActionName(factories.DecoratorType.Property))
+            .add(factory.create(actions.CoreActions.bindPropertyType))
+            .add(factory.create(actions.CoreActions.injectProperty)))
+            .add(factory.create(this.toActionName(factories.DecoratorType.Parameter))
+            .add(factory.create(actions.CoreActions.bindParameterType))
+            .add(factory.create(actions.CoreActions.bindParameterProviders)))
+            .add(factory.create(actions.CoreActions.componentInit)))
+            .add(factory.create(actions.LifeState.AfterInit)
+            .add(factory.create(actions.CoreActions.singletion))
+            .add(factory.create(actions.CoreActions.componentAfterInit))
+            .add(factory.create(actions.CoreActions.methodAutorun))))
+            .add(factory.create(actions.CoreActions.cache));
+        this.action = action;
+    };
+    DefaultLifeScope.prototype.toActionName = function (type) {
+        var types$$2 = [];
+        if (type & factories.DecoratorType.Class) {
+            types$$2.push('ClassDecorator');
+        }
+        if (type & factories.DecoratorType.Method) {
+            types$$2.push('MethodDecorator');
+        }
+        if (type & factories.DecoratorType.Property) {
+            types$$2.push('PropertyDecorator');
+        }
+        if (type & factories.DecoratorType.Parameter) {
+            types$$2.push('ParameterDecorator');
+        }
+        return types$$2.join(',');
+    };
+    DefaultLifeScope.classAnnations = { "name": "DefaultLifeScope", "params": { "constructor": ["container"], "addAction": ["action", "nodepaths"], "registerDecorator": ["decorator", "actions"], "registerCustomDecorator": ["decorator", "type", "actions"], "execute": ["data", "names"], "getClassDecorators": ["match"], "getMethodDecorators": ["match"], "getPropertyDecorators": ["match"], "getParameterDecorators": ["match"], "getDecoratorType": ["decirator"], "isVaildDependence": ["target"], "getAtionByName": ["name"], "getClassAction": [], "getMethodAction": [], "getPropertyAction": [], "getParameterAction": [], "getConstructorParameters": ["type"], "getMethodParameters": ["type", "instance", "propertyKey"], "getParamerterNames": ["type", "propertyKey"], "isSingletonType": ["type"], "getMethodMetadatas": ["type", "propertyKey"], "filerDecorators": ["express"], "getParameters": ["type", "instance", "propertyKey"], "getTypeDecorators": ["decType", "match"], "buildAction": [], "toActionName": ["type"] } };
+    return DefaultLifeScope;
+}());
+exports.DefaultLifeScope = DefaultLifeScope;
+
+
+});
+
+unwrapExports(DefaultLifeScope_1);
+var DefaultLifeScope_2 = DefaultLifeScope_1.DefaultLifeScope;
+
 var ProviderMatcher_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -4665,6 +4491,180 @@ exports.ProviderMatcher = ProviderMatcher;
 unwrapExports(ProviderMatcher_1);
 var ProviderMatcher_2 = ProviderMatcher_1.ProviderMatcher;
 
+var MethodAccessor_1 = createCommonjsModule(function (module, exports) {
+var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+/**
+ * method accessor
+ *
+ * @export
+ * @class MethodAccessor
+ * @implements {IMethodAccessor}
+ */
+var MethodAccessor = /** @class */ (function () {
+    function MethodAccessor(container) {
+        this.container = container;
+    }
+    MethodAccessor.prototype.getMatcher = function () {
+        return this.container.get(IProviderMatcher.ProviderMatcherToken);
+    };
+    MethodAccessor.prototype.invoke = function (token, propertyKey, target) {
+        var providers = [];
+        for (var _i = 3; _i < arguments.length; _i++) {
+            providers[_i - 3] = arguments[_i];
+        }
+        return __awaiter(this, void 0, void 0, function () {
+            var targetClass, actionData, lifeScope, parameters, paramInstances, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        if (!target) {
+                            target = (_a = this.container).resolve.apply(_a, [token].concat(providers));
+                        }
+                        targetClass = this.container.getTokenImpl(token);
+                        if (!targetClass) {
+                            throw Error(token.toString() + ' is not implements by any class.');
+                        }
+                        if (!(target && utils.isFunction(target[propertyKey]))) return [3 /*break*/, 2];
+                        actionData = {
+                            target: target,
+                            targetType: targetClass,
+                            propertyKey: propertyKey,
+                        };
+                        lifeScope = this.container.getLifeScope();
+                        lifeScope.execute(actionData, actions.LifeState.onInit, actions.CoreActions.bindParameterProviders);
+                        providers = providers.concat(actionData.execResult);
+                        parameters = lifeScope.getMethodParameters(targetClass, target, propertyKey);
+                        return [4 /*yield*/, this.createParams.apply(this, [parameters].concat(providers))];
+                    case 1:
+                        paramInstances = _b.sent();
+                        return [2 /*return*/, target[propertyKey].apply(target, paramInstances)];
+                    case 2: throw new Error("type: " + targetClass + " has no method " + propertyKey + ".");
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    MethodAccessor.prototype.syncInvoke = function (token, propertyKey, target) {
+        var providers = [];
+        for (var _i = 3; _i < arguments.length; _i++) {
+            providers[_i - 3] = arguments[_i];
+        }
+        if (!target) {
+            target = (_a = this.container).resolve.apply(_a, [token].concat(providers));
+        }
+        var targetClass = this.container.getTokenImpl(token);
+        if (!targetClass) {
+            throw Error(token.toString() + ' is not implements by any class.');
+        }
+        if (target && utils.isFunction(target[propertyKey])) {
+            var actionData = {
+                target: target,
+                targetType: targetClass,
+                propertyKey: propertyKey,
+            };
+            var lifeScope = this.container.getLifeScope();
+            lifeScope.execute(actionData, actions.LifeState.onInit, actions.CoreActions.bindParameterProviders);
+            providers = providers.concat(actionData.execResult);
+            var parameters = lifeScope.getMethodParameters(targetClass, target, propertyKey);
+            var paramInstances = this.createSyncParams.apply(this, [parameters].concat(providers));
+            return target[propertyKey].apply(target, paramInstances);
+        }
+        else {
+            throw new Error("type: " + targetClass + " has no method " + propertyKey + ".");
+        }
+        var _a;
+    };
+    MethodAccessor.prototype.createSyncParams = function (params) {
+        var _this = this;
+        var providers = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            providers[_i - 1] = arguments[_i];
+        }
+        var providerMap = (_a = this.getMatcher()).matchProviders.apply(_a, [params].concat(providers));
+        return params.map(function (param, index) {
+            if (param.name && providerMap.has(param.name)) {
+                return providerMap.resolve(param.name);
+            }
+            else if (utils.isToken(param.type)) {
+                return (_a = _this.container).resolve.apply(_a, [param.type].concat(providers));
+            }
+            else {
+                return undefined;
+            }
+            var _a;
+        });
+        var _a;
+    };
+    MethodAccessor.prototype.createParams = function (params) {
+        var _this = this;
+        var providers = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            providers[_i - 1] = arguments[_i];
+        }
+        var providerMap = (_a = this.getMatcher()).matchProviders.apply(_a, [params].concat(providers));
+        return Promise.all(params.map(function (param, index) {
+            if (param.name && providerMap.has(param.name)) {
+                return providerMap.resolve(param.name);
+            }
+            else if (utils.isToken(param.type)) {
+                return (_a = _this.container).resolve.apply(_a, [param.type].concat(providers));
+            }
+            else {
+                return undefined;
+            }
+            var _a;
+        }));
+        var _a;
+    };
+    MethodAccessor.classAnnations = { "name": "MethodAccessor", "params": { "constructor": ["container"], "getMatcher": [], "invoke": ["token", "propertyKey", "target", "providers"], "syncInvoke": ["token", "propertyKey", "target", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"] } };
+    return MethodAccessor;
+}());
+exports.MethodAccessor = MethodAccessor;
+
+
+});
+
+unwrapExports(MethodAccessor_1);
+var MethodAccessor_2 = MethodAccessor_1.MethodAccessor;
+
 var CacheManager_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -4773,37 +4773,11 @@ exports.CacheManager = CacheManager;
 unwrapExports(CacheManager_1);
 var CacheManager_2 = CacheManager_1.CacheManager;
 
-var IRecognizer = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * IRecognizer interface token.
- * it is a token id, you can register yourself IRecognizer for this.
- */
-exports.RecognizerToken = new InjectToken_1.InjectToken('__IOC_IRecognizer');
-
-
-});
-
-unwrapExports(IRecognizer);
-var IRecognizer_1 = IRecognizer.RecognizerToken;
-
 var core = createCommonjsModule(function (module, exports) {
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-
-
-
-
-
-
-
-
 __export(actions);
 __export(decorators);
 __export(factories);
@@ -4815,42 +4789,26 @@ __export(DefaultLifeScope_1);
 __export(ProviderMatcher_1);
 __export(MethodAccessor_1);
 __export(CacheManager_1);
-/**
- * register core for container.
- *
- * @export
- * @param {IContainer} container
- */
-function registerCores(container) {
-    container.registerSingleton(LifeScope.LifeScopeToken, function () { return new DefaultLifeScope_1.DefaultLifeScope(container); });
-    container.registerSingleton(ICacheManager.CacheManagerToken, function () { return new CacheManager_1.CacheManager(container); });
-    container.register(providers.ProviderMapToken, function () { return new providers.ProviderMap(container); });
-    container.bindProvider(providers.ProviderMap, providers.ProviderMapToken);
-    container.registerSingleton(IProviderMatcher.ProviderMatcherToken, function () { return new ProviderMatcher_1.ProviderMatcher(container); });
-    container.registerSingleton(IMethodAccessor.MethodAccessorToken, function () { return new MethodAccessor_1.MethodAccessor(container); });
-    var lifeScope = container.get(LifeScope.LifeScopeToken);
-    lifeScope.registerDecorator(decorators.Injectable, actions.CoreActions.bindProvider, actions.CoreActions.cache);
-    lifeScope.registerDecorator(decorators.Component, actions.CoreActions.bindProvider, actions.CoreActions.cache, actions.CoreActions.componentBeforeInit, actions.CoreActions.componentInit, actions.CoreActions.componentAfterInit);
-    lifeScope.registerDecorator(decorators.Singleton, actions.CoreActions.bindProvider);
-    lifeScope.registerDecorator(decorators.Abstract, actions.CoreActions.bindProvider, actions.CoreActions.cache);
-    lifeScope.registerDecorator(decorators.AutoWired, actions.CoreActions.bindParameterType, actions.CoreActions.bindPropertyType);
-    lifeScope.registerDecorator(decorators.Inject, actions.CoreActions.bindParameterType, actions.CoreActions.bindPropertyType);
-    lifeScope.registerDecorator(decorators.Param, actions.CoreActions.bindParameterType, actions.CoreActions.bindPropertyType);
-    lifeScope.registerDecorator(decorators.Method, actions.CoreActions.bindParameterProviders);
-    lifeScope.registerDecorator(decorators.Autorun, actions.CoreActions.autorun, actions.CoreActions.methodAutorun);
-    lifeScope.registerDecorator(decorators.IocExt, actions.CoreActions.autorun, actions.CoreActions.componentBeforeInit, actions.CoreActions.componentInit, actions.CoreActions.componentAfterInit);
-    container.register(Date, function () { return new Date(); });
-    container.register(String, function () { return ''; });
-    container.register(Number, function () { return Number.NaN; });
-    container.register(Boolean, function () { return undefined; });
-}
-exports.registerCores = registerCores;
 
 
 });
 
 unwrapExports(core);
-var core_1 = core.registerCores;
+
+var LifeScope = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * life scope interface symbol.
+ * it is a symbol id, you can register yourself MethodAccessor for this.
+ */
+exports.LifeScopeToken = new InjectToken_1.InjectToken('__IOC_LifeScope');
+
+
+});
+
+unwrapExports(LifeScope);
+var LifeScope_1 = LifeScope.LifeScopeToken;
 
 var IContainerBuilder = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -4866,514 +4824,6 @@ exports.ContainerBuilderToken = new InjectToken_1.InjectToken('__IOC_IContainerB
 
 unwrapExports(IContainerBuilder);
 var IContainerBuilder_1 = IContainerBuilder.ContainerBuilderToken;
-
-var Container_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-
-
-
-
-
-
-
-/**
- * Container.
- */
-var Container = /** @class */ (function () {
-    function Container() {
-        this.init();
-    }
-    /**
-     * Retrieves an instance from the container based on the provided token.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @param {T} [notFoundValue]
-     * @returns {T}
-     * @memberof Container
-     */
-    Container.prototype.get = function (token, alias) {
-        return this.resolve(alias ? this.getTokenKey(token, alias) : token);
-    };
-    /**
-     * resolve type instance with token and param provider.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} [notFoundValue]
-     * @param {...Providers[]} providers
-     * @memberof Container
-     */
-    Container.prototype.resolve = function (token) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        var key = this.getTokenKey(token);
-        if (!this.hasRegister(key)) {
-            console.error('have not register', key);
-            return null;
-        }
-        var factory = this.factories.get(key);
-        return factory.apply(void 0, providers);
-    };
-    /**
-     * clear cache.
-     *
-     * @param {Type<any>} targetType
-     * @memberof IContainer
-     */
-    Container.prototype.clearCache = function (targetType) {
-        this.get(ICacheManager.CacheManagerToken).destroy(targetType);
-    };
-    /**
-     * get token.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {Token<T>}
-     * @memberof Container
-     */
-    Container.prototype.getToken = function (token, alias) {
-        if (alias) {
-            return new Registration_1.Registration(token, alias);
-        }
-        return token;
-    };
-    /**
-     * get tocken key.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {SymbolType<T>}
-     * @memberof Container
-     */
-    Container.prototype.getTokenKey = function (token, alias) {
-        if (alias) {
-            return new Registration_1.Registration(token, alias).toString();
-        }
-        else if (token instanceof Registration_1.Registration) {
-            return token.toString();
-        }
-        return token;
-    };
-    /**
-     * register type.
-     * @abstract
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} [value]
-     * @returns {this}
-     * @memberOf Container
-     */
-    Container.prototype.register = function (token, value) {
-        this.registerFactory(token, value);
-        return this;
-    };
-    /**
-     * has register the token or not.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {boolean}
-     * @memberof Container
-     */
-    Container.prototype.has = function (token, alias) {
-        var key = this.getTokenKey(token, alias);
-        return this.hasRegister(key);
-    };
-    /**
-     * has register type.
-     *
-     * @template T
-     * @param {SymbolType<T>} key
-     * @returns
-     * @memberof Container
-     */
-    Container.prototype.hasRegister = function (key) {
-        return this.factories.has(key);
-    };
-    /**
-     * unregister the token
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {this}
-     * @memberof Container
-     */
-    Container.prototype.unregister = function (token) {
-        var key = this.getTokenKey(token);
-        if (this.hasRegister(key)) {
-            this.factories.delete(key);
-        }
-        return this;
-    };
-    /**
-     * register stingleton type.
-     * @abstract
-     * @template T
-     * @param {Token<T>} token
-     * @param {Factory<T>} [value]
-     * @returns {this}
-     * @memberOf Container
-     */
-    Container.prototype.registerSingleton = function (token, value) {
-        this.registerFactory(token, value, true);
-        return this;
-    };
-    /**
-     * register value.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} value
-     * @returns {this}
-     * @memberof Container
-     */
-    Container.prototype.registerValue = function (token, value) {
-        var _this = this;
-        var key = this.getTokenKey(token);
-        this.singleton.set(key, value);
-        if (!this.factories.has(key)) {
-            this.factories.set(key, function () {
-                return _this.singleton.get(key);
-            });
-        }
-        return this;
-    };
-    /**
-     * bind provider.
-     *
-     * @template T
-     * @param {Token<T>} provide
-     * @param {Token<T>} provider
-     * @returns {this}
-     * @memberof Container
-     */
-    Container.prototype.bindProvider = function (provide, provider) {
-        var _this = this;
-        var provideKey = this.getTokenKey(provide);
-        var factory;
-        if (utils.isToken(provider)) {
-            factory = function () {
-                var providers = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    providers[_i] = arguments[_i];
-                }
-                return _this.resolve.apply(_this, [provider].concat(providers));
-            };
-        }
-        else {
-            if (utils.isFunction(provider)) {
-                factory = function () {
-                    var providers = [];
-                    for (var _i = 0; _i < arguments.length; _i++) {
-                        providers[_i] = arguments[_i];
-                    }
-                    return provider.apply(void 0, [_this].concat(providers));
-                };
-            }
-            else {
-                factory = function () {
-                    return provider;
-                };
-            }
-        }
-        if (utils.isClass(provider)) {
-            this.provideTypes.set(provide, provider);
-        }
-        else if (utils.isToken(provider)) {
-            var token = provider;
-            while (this.provideTypes.has(token) && !utils.isClass(token)) {
-                token = this.provideTypes.get(token);
-                if (utils.isClass(token)) {
-                    this.provideTypes.set(provide, token);
-                    break;
-                }
-            }
-        }
-        this.factories.set(provideKey, factory);
-        return this;
-    };
-    /**
-     * get token implements class type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {Type<T>}
-     * @memberof Container
-     */
-    Container.prototype.getTokenImpl = function (token) {
-        if (utils.isClass(token)) {
-            return token;
-        }
-        if (this.provideTypes.has(token)) {
-            return this.provideTypes.get(token);
-        }
-        return null;
-    };
-    /**
-    * get life scope of container.
-    *
-    * @returns {LifeScope}
-    * @memberof IContainer
-    */
-    Container.prototype.getLifeScope = function () {
-        return this.get(LifeScope.LifeScopeToken);
-    };
-    /**
-     * use modules.
-     *
-     * @param {...ModuleType[]} modules
-     * @returns {this}
-     * @memberof Container
-     */
-    Container.prototype.use = function () {
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        (_a = this.get(IContainerBuilder.ContainerBuilderToken)).syncLoadModule.apply(_a, [this].concat(modules));
-        return this;
-        var _a;
-    };
-    /**
-     * async use modules.
-     *
-     * @param {...LoadType[]} modules load modules.
-     * @returns {Promise<Type<any>[]>}  types loaded.
-     * @memberof IContainer
-     */
-    Container.prototype.loadModule = function () {
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        return (_a = this.get(IContainerBuilder.ContainerBuilderToken)).loadModule.apply(_a, [this].concat(modules));
-        var _a;
-    };
-    /**
-     * invoke method async.
-     *
-     * @template T
-     * @param {Token<any>} token
-     * @param {(string | symbol)} propertyKey
-     * @param {*} [instance]
-     * @param {...Providers[]} providers
-     * @returns {Promise<T>}
-     * @memberof Container
-     */
-    Container.prototype.invoke = function (token, propertyKey, instance) {
-        var providers = [];
-        for (var _i = 3; _i < arguments.length; _i++) {
-            providers[_i - 3] = arguments[_i];
-        }
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).invoke.apply(_a, [token, propertyKey, instance].concat(providers));
-        var _a;
-    };
-    /**
-     * invoke method.
-     *
-     * @template T
-     * @param {Token<any>} token
-     * @param {(string | symbol)} propertyKey
-     * @param {*} [instance]
-     * @param {...Providers[]} providers
-     * @returns {T}
-     * @memberof Container
-     */
-    Container.prototype.syncInvoke = function (token, propertyKey, instance) {
-        var providers = [];
-        for (var _i = 3; _i < arguments.length; _i++) {
-            providers[_i - 3] = arguments[_i];
-        }
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).syncInvoke.apply(_a, [token, propertyKey, instance].concat(providers));
-        var _a;
-    };
-    Container.prototype.createSyncParams = function (params) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createSyncParams.apply(_a, [params].concat(providers));
-        var _a;
-    };
-    Container.prototype.createParams = function (params) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createParams.apply(_a, [params].concat(providers));
-        var _a;
-    };
-    Container.prototype.cacheDecorator = function (map, action) {
-        if (!map.has(action.name)) {
-            map.set(action.name, action);
-        }
-    };
-    Container.prototype.init = function () {
-        var _this = this;
-        this.factories = new utils.MapSet();
-        this.singleton = new utils.MapSet();
-        this.provideTypes = new utils.MapSet();
-        this.bindProvider(IContainer.ContainerToken, function () { return _this; });
-        core.registerCores(this);
-    };
-    Container.prototype.registerFactory = function (token, value, singleton) {
-        var key = this.getTokenKey(token);
-        if (this.factories.has(key)) {
-            return;
-        }
-        var classFactory;
-        if (!utils.isUndefined(value)) {
-            if (utils.isFunction(value)) {
-                if (utils.isClass(value)) {
-                    this.bindTypeFactory(key, value, singleton);
-                }
-                else {
-                    classFactory = this.createCustomFactory(key, value, singleton);
-                }
-            }
-            else if (singleton && value !== undefined) {
-                classFactory = this.createCustomFactory(key, function () { return value; }, singleton);
-            }
-        }
-        else if (!utils.isString(token) && !utils.isSymbol(token)) {
-            var ClassT = (token instanceof Registration_1.Registration) ? token.getClass() : token;
-            if (utils.isClass(ClassT)) {
-                this.bindTypeFactory(key, ClassT, singleton);
-            }
-        }
-        if (classFactory) {
-            this.factories.set(key, classFactory);
-        }
-    };
-    Container.prototype.createCustomFactory = function (key, factory, singleton) {
-        var _this = this;
-        return singleton ?
-            function () {
-                var providers = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    providers[_i] = arguments[_i];
-                }
-                if (_this.singleton.has(key)) {
-                    return _this.singleton.get(key);
-                }
-                var instance = factory.apply(void 0, [_this].concat(providers));
-                _this.singleton.set(key, instance);
-                return instance;
-            }
-            : function () {
-                var providers = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    providers[_i] = arguments[_i];
-                }
-                return factory.apply(void 0, [_this].concat(providers));
-            };
-    };
-    Container.prototype.bindTypeFactory = function (key, ClassT, singleton) {
-        var _this = this;
-        if (!Reflect.isExtensible(ClassT)) {
-            return;
-        }
-        var lifeScope = this.getLifeScope();
-        var parameters = lifeScope.getConstructorParameters(ClassT);
-        if (!singleton) {
-            singleton = lifeScope.isSingletonType(ClassT);
-        }
-        var factory = function () {
-            var providers = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                providers[_i] = arguments[_i];
-            }
-            if (singleton && _this.singleton.has(key)) {
-                return _this.singleton.get(key);
-            }
-            if (providers.length < 1) {
-                var lifecycleData = {
-                    tokenKey: key,
-                    targetType: ClassT,
-                    singleton: singleton
-                };
-                lifeScope.execute(lifecycleData, core.CoreActions.cache);
-                if (lifecycleData.execResult && lifecycleData.execResult instanceof ClassT) {
-                    return lifecycleData.execResult;
-                }
-            }
-            lifeScope.execute({
-                tokenKey: key,
-                targetType: ClassT,
-                params: parameters,
-                providers: providers,
-                singleton: singleton
-            }, types.IocState.runtime, core.LifeState.beforeCreateArgs);
-            var args = _this.createSyncParams.apply(_this, [parameters].concat(providers));
-            lifeScope.execute({
-                tokenKey: key,
-                targetType: ClassT,
-                args: args,
-                params: parameters,
-                providers: providers,
-                singleton: singleton
-            }, types.IocState.runtime, core.LifeState.beforeConstructor);
-            var instance = new (ClassT.bind.apply(ClassT, [void 0].concat(args)))();
-            lifeScope.execute({
-                tokenKey: key,
-                target: instance,
-                targetType: ClassT,
-                args: args,
-                params: parameters,
-                providers: providers,
-                singleton: singleton
-            }, types.IocState.runtime, core.LifeState.afterConstructor);
-            lifeScope.execute({
-                tokenKey: key,
-                target: instance,
-                targetType: ClassT,
-                args: args,
-                params: parameters,
-                providers: providers,
-                singleton: singleton
-            }, types.IocState.runtime, core.LifeState.onInit);
-            lifeScope.execute({
-                tokenKey: key,
-                target: instance,
-                targetType: ClassT,
-                args: args,
-                params: parameters,
-                providers: providers,
-                singleton: singleton
-            }, types.IocState.runtime, core.LifeState.AfterInit);
-            lifeScope.execute({
-                tokenKey: key,
-                target: instance,
-                targetType: ClassT
-            }, core.CoreActions.cache);
-            return instance;
-        };
-        this.factories.set(key, factory);
-        lifeScope.execute({
-            tokenKey: key,
-            targetType: ClassT
-        }, types.IocState.design);
-    };
-    Container.classAnnations = { "name": "Container", "params": { "constructor": [], "get": ["token", "alias"], "resolve": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"] } };
-    return Container;
-}());
-exports.Container = Container;
-
-
-});
-
-unwrapExports(Container_1);
-var Container_2 = Container_1.Container;
 
 var IModuleLoader = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -5848,8 +5298,6 @@ var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (th
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
-
-
 /**
  * server app bootstrap
  *
@@ -5857,74 +5305,30 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @class ModuleBuilder
  */
 var ModuleBuilder = /** @class */ (function () {
-    function ModuleBuilder() {
-        this.usedModules = [];
-        this.customs = [];
+    function ModuleBuilder(container) {
+        this.container = container;
     }
-    ModuleBuilder.prototype.useContainer = function (container) {
-        if (container) {
-            this.container = Promise.resolve(container);
-        }
-        return this;
-    };
-    /**
-     * use container builder
-     *
-     * @param {IContainerBuilder} builder
-     * @returns
-     * @memberof ModuleBuilder
-     */
-    ModuleBuilder.prototype.useContainerBuilder = function (builder) {
-        this.builder = builder;
-        return this;
-    };
-    /**
-     * use module, custom module.
-     *
-     * @param {(...(LoadType | CustomDefineModule<T>)[])} modules
-     * @returns {this}
-     * @memberof PlatformServer
-     */
-    ModuleBuilder.prototype.useModules = function () {
-        var _this = this;
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        modules.forEach(function (m) {
-            if (utils.isFunction(m) && !utils.isClass(m)) {
-                _this.customs.push(m);
-            }
-            else {
-                _this.usedModules.push(m);
-            }
-        });
-        return this;
-    };
     /**
      * build module.
      *
-     * @param {(Token<T>| ModuleConfiguration<T>)} [boot]
+     * @param {(Token<T>| ModuleConfiguration<T>)} [modules]
      * @returns {Promise<any>}
      * @memberof ModuleBuilder
      */
-    ModuleBuilder.prototype.build = function (boot) {
+    ModuleBuilder.prototype.build = function (modules) {
         return __awaiter(this, void 0, void 0, function () {
             var cfg, token, container;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getConfiguration(boot)];
-                    case 1:
-                        cfg = _a.sent();
-                        token = cfg.bootstrap || (utils.isToken(boot) ? boot : null);
+                    case 0:
+                        cfg = this.getConfigure(modules);
+                        token = cfg.bootstrap || (utils.isToken(modules) ? modules : null);
                         if (!token) {
                             return [2 /*return*/, Promise.reject('not find bootstrap token.')];
                         }
-                        return [4 /*yield*/, this.getContainer()];
-                    case 2:
-                        container = _a.sent();
+                        container = this.container;
                         return [4 /*yield*/, this.initContainer(cfg, container)];
-                    case 3:
+                    case 1:
                         container = _a.sent();
                         if (utils.isClass(token)) {
                             if (!container.has(token)) {
@@ -5943,41 +5347,18 @@ var ModuleBuilder = /** @class */ (function () {
     /**
      * get configuration.
      *
-     * @returns {Promise<T>}
+     * @returns {ModuleConfiguration<T>}
      * @memberof ModuleBuilder
      */
-    ModuleBuilder.prototype.getConfiguration = function (boot) {
+    ModuleBuilder.prototype.getConfigure = function (modules) {
         var cfg;
-        if (utils.isClass(boot)) {
-            cfg = this.getMetaConfig(boot);
+        if (utils.isClass(modules)) {
+            cfg = this.getMetaConfig(modules);
         }
         else {
-            cfg = (utils.isMetadataObject(boot) ? boot : {});
+            cfg = (utils.isMetadataObject(modules) ? modules : {});
         }
-        return Promise.resolve(cfg);
-    };
-    /**
-     * get container builder.
-     *
-     * @returns
-     * @memberof ModuleBuilder
-     */
-    ModuleBuilder.prototype.getContainerBuilder = function () {
-        if (!this.builder) {
-            this.builder = new DefaultContainerBuilder_1.DefaultContainerBuilder();
-        }
-        return this.builder;
-    };
-    ModuleBuilder.prototype.getContainer = function () {
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        if (!this.container) {
-            this.container = (_a = this.getContainerBuilder()).build.apply(_a, modules);
-        }
-        return this.container;
-        var _a;
+        return cfg;
     };
     ModuleBuilder.prototype.getMetaConfig = function (bootModule) {
         if (core.hasClassMetadata(core.DefModule, bootModule)) {
@@ -5990,40 +5371,19 @@ var ModuleBuilder = /** @class */ (function () {
     };
     ModuleBuilder.prototype.initContainer = function (config, container) {
         return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            var builder, usedModules, customs;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        container.bindProvider(IModuleBuilder.ModuleBuilderToken, function () { return _this; });
-                        builder = this.getContainerBuilder();
-                        if (!this.usedModules.length) return [3 /*break*/, 2];
-                        usedModules = this.usedModules;
-                        this.usedModules = [];
-                        return [4 /*yield*/, builder.loadModule.apply(builder, [container].concat(usedModules))];
+                        if (!(utils.isArray(config.imports) && config.imports.length)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, container.loadModule.apply(container, [container].concat(config.imports))];
                     case 1:
                         _a.sent();
                         _a.label = 2;
                     case 2:
-                        if (!(utils.isArray(config.imports) && config.imports.length)) return [3 /*break*/, 4];
-                        return [4 /*yield*/, builder.loadModule.apply(builder, [container].concat(config.imports))];
-                    case 3:
-                        _a.sent();
-                        _a.label = 4;
-                    case 4:
                         if (utils.isArray(config.providers) && config.providers.length) {
                             this.bindProvider(container, config.providers);
                         }
-                        if (!this.customs.length) return [3 /*break*/, 6];
-                        customs = this.customs;
-                        this.customs = [];
-                        return [4 /*yield*/, Promise.all(customs.map(function (cs) {
-                                return cs(container, config, _this);
-                            }))];
-                    case 5:
-                        _a.sent();
-                        _a.label = 6;
-                    case 6: return [2 /*return*/, container];
+                        return [2 /*return*/, container];
                 }
             });
         });
@@ -6124,7 +5484,7 @@ var ModuleBuilder = /** @class */ (function () {
             }
         });
     };
-    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "useContainer": ["container"], "useContainerBuilder": ["builder"], "useModules": ["modules"], "build": ["boot"], "getConfiguration": ["boot"], "getContainerBuilder": [], "getContainer": ["modules"], "getMetaConfig": ["bootModule"], "initContainer": ["config", "container"], "bindProvider": ["container", "providers"] } };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": ["container"], "build": ["modules"], "getConfigure": ["modules"], "getMetaConfig": ["bootModule"], "initContainer": ["config", "container"], "bindProvider": ["container", "providers"] } };
     return ModuleBuilder;
 }());
 exports.ModuleBuilder = ModuleBuilder;
@@ -6150,16 +5510,6 @@ unwrapExports(AppConfiguration);
 var AppConfiguration_1 = AppConfiguration.AppConfigurationToken;
 
 var ApplicationBuilder_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6199,6 +5549,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
 /**
  * application builder.
  *
@@ -6207,13 +5558,29 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @extends {ModuleBuilder<T>}
  * @template T
  */
-var ApplicationBuilder = /** @class */ (function (_super) {
-    __extends(ApplicationBuilder, _super);
+var ApplicationBuilder = /** @class */ (function () {
     function ApplicationBuilder(baseURL) {
-        var _this = _super.call(this) || this;
-        _this.baseURL = baseURL;
-        return _this;
+        this.baseURL = baseURL;
+        this.usedModules = [];
+        this.customs = [];
     }
+    ApplicationBuilder.prototype.useContainer = function (container) {
+        if (container) {
+            this.container = Promise.resolve(container);
+        }
+        return this;
+    };
+    /**
+     * use container builder
+     *
+     * @param {IContainerBuilder} builder
+     * @returns
+     * @memberof ModuleBuilder
+     */
+    ApplicationBuilder.prototype.useContainerBuilder = function (builder) {
+        this.builder = builder;
+        return this;
+    };
     /**
      * use custom configuration.
      *
@@ -6248,18 +5615,63 @@ var ApplicationBuilder = /** @class */ (function (_super) {
         }
         return this;
     };
+    /**
+     * use module, custom module.
+     *
+     * @param {(...(LoadType | CustomDefineModule<T>)[])} modules
+     * @returns {this}
+     * @memberof PlatformServer
+     */
+    ApplicationBuilder.prototype.useModules = function () {
+        var _this = this;
+        var modules = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            modules[_i] = arguments[_i];
+        }
+        modules.forEach(function (m) {
+            if (utils.isFunction(m) && !utils.isClass(m)) {
+                _this.customs.push(m);
+            }
+            else {
+                _this.usedModules.push(m);
+            }
+        });
+        return this;
+    };
     ApplicationBuilder.prototype.bootstrap = function (boot) {
         return __awaiter(this, void 0, void 0, function () {
-            var app;
+            var container, builder, cfg, app;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.build(boot)];
+                    case 0: return [4 /*yield*/, this.getContainer()];
                     case 1:
+                        container = _a.sent();
+                        builder = this.getModuleBuilder(container);
+                        return [4 /*yield*/, this.getConfiguration(builder.getConfigure(boot))];
+                    case 2:
+                        cfg = _a.sent();
+                        return [4 /*yield*/, this.initContainer(cfg, container)];
+                    case 3:
+                        _a.sent();
+                        return [4 /*yield*/, builder.build(boot)];
+                    case 4:
                         app = _a.sent();
                         return [2 /*return*/, app];
                 }
             });
         });
+    };
+    /**
+     * get module builer.
+     *
+     * @returns {IModuleBuilder<T>}
+     * @memberof IApplicationBuilder
+     */
+    ApplicationBuilder.prototype.getModuleBuilder = function (container) {
+        if (!this._moduleBuilder) {
+            this._moduleBuilder = container.get(IModuleBuilder.ModuleBuilderToken);
+        }
+        return this._moduleBuilder;
     };
     ApplicationBuilder.prototype.setConfigRoot = function (config) {
         if (this.baseURL) {
@@ -6268,16 +5680,57 @@ var ApplicationBuilder = /** @class */ (function (_super) {
     };
     ApplicationBuilder.prototype.initContainer = function (config, container) {
         return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            var usedModules, customs;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         this.setConfigRoot(config);
+                        if (!this.usedModules.length) return [3 /*break*/, 2];
+                        usedModules = this.usedModules;
+                        this.usedModules = [];
+                        return [4 /*yield*/, container.loadModule.apply(container, [container].concat(usedModules))];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2:
                         container.bindProvider(AppConfiguration.AppConfigurationToken, config);
-                        return [4 /*yield*/, _super.prototype.initContainer.call(this, config, container)];
-                    case 1: return [2 /*return*/, _a.sent()];
+                        if (!this.customs.length) return [3 /*break*/, 4];
+                        customs = this.customs;
+                        this.customs = [];
+                        return [4 /*yield*/, Promise.all(customs.map(function (cs) {
+                                return cs(container, config, _this);
+                            }))];
+                    case 3:
+                        _a.sent();
+                        _a.label = 4;
+                    case 4: return [2 /*return*/, container];
                 }
             });
         });
+    };
+    /**
+     * get container builder.
+     *
+     * @returns
+     * @memberof ModuleBuilder
+     */
+    ApplicationBuilder.prototype.getContainerBuilder = function () {
+        if (!this.builder) {
+            this.builder = new DefaultContainerBuilder_1.DefaultContainerBuilder();
+        }
+        return this.builder;
+    };
+    ApplicationBuilder.prototype.getContainer = function () {
+        var modules = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            modules[_i] = arguments[_i];
+        }
+        if (!this.container) {
+            this.container = (_a = this.getContainerBuilder()).build.apply(_a, modules);
+        }
+        return this.container;
+        var _a;
     };
     /**
      * get configuration.
@@ -6285,14 +5738,11 @@ var ApplicationBuilder = /** @class */ (function (_super) {
      * @returns {Promise<T>}
      * @memberof Bootstrap
      */
-    ApplicationBuilder.prototype.getConfiguration = function (boot) {
+    ApplicationBuilder.prototype.getConfiguration = function (cfg) {
         return __awaiter(this, void 0, void 0, function () {
-            var cfg;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, _super.prototype.getConfiguration.call(this, boot)];
-                    case 1:
-                        cfg = _a.sent();
+                    case 0:
                         if (!this.configuration) {
                             this.useConfiguration(cfg);
                         }
@@ -6300,7 +5750,7 @@ var ApplicationBuilder = /** @class */ (function (_super) {
                             this.useConfiguration(cfg);
                         }
                         return [4 /*yield*/, this.configuration];
-                    case 2: return [2 /*return*/, _a.sent()];
+                    case 1: return [2 /*return*/, _a.sent()];
                 }
             });
         });
@@ -6308,9 +5758,9 @@ var ApplicationBuilder = /** @class */ (function (_super) {
     ApplicationBuilder.prototype.getDefaultConfig = function () {
         return { debug: false };
     };
-    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "useConfiguration": ["config"], "bootstrap": ["boot"], "setConfigRoot": ["config"], "initContainer": ["config", "container"], "getConfiguration": ["boot"], "getDefaultConfig": [] } };
+    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "useContainer": ["container"], "useContainerBuilder": ["builder"], "useConfiguration": ["config"], "useModules": ["modules"], "bootstrap": ["boot"], "getModuleBuilder": ["container"], "setConfigRoot": ["config"], "initContainer": ["config", "container"], "getContainerBuilder": [], "getContainer": ["modules"], "getConfiguration": ["cfg"], "getDefaultConfig": [] } };
     return ApplicationBuilder;
-}(ModuleBuilder_1.ModuleBuilder));
+}());
 exports.ApplicationBuilder = ApplicationBuilder;
 
 
@@ -6319,7 +5769,7 @@ exports.ApplicationBuilder = ApplicationBuilder;
 unwrapExports(ApplicationBuilder_1);
 var ApplicationBuilder_2 = ApplicationBuilder_1.ApplicationBuilder;
 
-var D__workspace_github_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
+var lib = createCommonjsModule(function (module, exports) {
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
@@ -6348,8 +5798,600 @@ __export(ApplicationBuilder_1);
 
 });
 
-var index$7 = unwrapExports(D__workspace_github_tsioc_packages_core_lib);
+unwrapExports(lib);
 
-return index$7;
+var registerCores_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * register core for container.
+ *
+ * @export
+ * @param {IContainer} container
+ */
+function registerCores(container) {
+    container.registerSingleton(LifeScope.LifeScopeToken, function () { return new DefaultLifeScope_1.DefaultLifeScope(container); });
+    container.registerSingleton(ICacheManager.CacheManagerToken, function () { return new CacheManager_1.CacheManager(container); });
+    container.register(providers.ProviderMapToken, function () { return new providers.ProviderMap(container); });
+    container.bindProvider(providers.ProviderMap, providers.ProviderMapToken);
+    container.registerSingleton(IProviderMatcher.ProviderMatcherToken, function () { return new ProviderMatcher_1.ProviderMatcher(container); });
+    container.registerSingleton(IMethodAccessor.MethodAccessorToken, function () { return new MethodAccessor_1.MethodAccessor(container); });
+    var lifeScope = container.get(LifeScope.LifeScopeToken);
+    lifeScope.registerDecorator(decorators.Injectable, actions.CoreActions.bindProvider, actions.CoreActions.cache);
+    lifeScope.registerDecorator(decorators.Component, actions.CoreActions.bindProvider, actions.CoreActions.cache, actions.CoreActions.componentBeforeInit, actions.CoreActions.componentInit, actions.CoreActions.componentAfterInit);
+    lifeScope.registerDecorator(decorators.Singleton, actions.CoreActions.bindProvider);
+    lifeScope.registerDecorator(decorators.Abstract, actions.CoreActions.bindProvider, actions.CoreActions.cache);
+    lifeScope.registerDecorator(decorators.AutoWired, actions.CoreActions.bindParameterType, actions.CoreActions.bindPropertyType);
+    lifeScope.registerDecorator(decorators.Inject, actions.CoreActions.bindParameterType, actions.CoreActions.bindPropertyType);
+    lifeScope.registerDecorator(decorators.Param, actions.CoreActions.bindParameterType, actions.CoreActions.bindPropertyType);
+    lifeScope.registerDecorator(decorators.Method, actions.CoreActions.bindParameterProviders);
+    lifeScope.registerDecorator(decorators.Autorun, actions.CoreActions.autorun, actions.CoreActions.methodAutorun);
+    lifeScope.registerDecorator(decorators.IocExt, actions.CoreActions.autorun, actions.CoreActions.componentBeforeInit, actions.CoreActions.componentInit, actions.CoreActions.componentAfterInit);
+    container.register(Date, function () { return new Date(); });
+    container.register(String, function () { return ''; });
+    container.register(Number, function () { return Number.NaN; });
+    container.register(Boolean, function () { return undefined; });
+    container.register(lib.ModuleBuilderToken, function () { return new lib.ModuleBuilder(container); });
+}
+exports.registerCores = registerCores;
+
+
+});
+
+unwrapExports(registerCores_1);
+var registerCores_2 = registerCores_1.registerCores;
+
+var Container_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * Container.
+ */
+var Container = /** @class */ (function () {
+    function Container() {
+        this.init();
+    }
+    /**
+     * Retrieves an instance from the container based on the provided token.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {string} [alias]
+     * @param {T} [notFoundValue]
+     * @returns {T}
+     * @memberof Container
+     */
+    Container.prototype.get = function (token, alias) {
+        return this.resolve(alias ? this.getTokenKey(token, alias) : token);
+    };
+    /**
+     * resolve type instance with token and param provider.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {T} [notFoundValue]
+     * @param {...Providers[]} providers
+     * @memberof Container
+     */
+    Container.prototype.resolve = function (token) {
+        var providers = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            providers[_i - 1] = arguments[_i];
+        }
+        var key = this.getTokenKey(token);
+        if (!this.hasRegister(key)) {
+            console.error('have not register', key);
+            return null;
+        }
+        var factory = this.factories.get(key);
+        return factory.apply(void 0, providers);
+    };
+    /**
+     * clear cache.
+     *
+     * @param {Type<any>} targetType
+     * @memberof IContainer
+     */
+    Container.prototype.clearCache = function (targetType) {
+        this.get(ICacheManager.CacheManagerToken).destroy(targetType);
+    };
+    /**
+     * get token.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {string} [alias]
+     * @returns {Token<T>}
+     * @memberof Container
+     */
+    Container.prototype.getToken = function (token, alias) {
+        if (alias) {
+            return new Registration_1.Registration(token, alias);
+        }
+        return token;
+    };
+    /**
+     * get tocken key.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {string} [alias]
+     * @returns {SymbolType<T>}
+     * @memberof Container
+     */
+    Container.prototype.getTokenKey = function (token, alias) {
+        if (alias) {
+            return new Registration_1.Registration(token, alias).toString();
+        }
+        else if (token instanceof Registration_1.Registration) {
+            return token.toString();
+        }
+        return token;
+    };
+    /**
+     * register type.
+     * @abstract
+     * @template T
+     * @param {Token<T>} token
+     * @param {T} [value]
+     * @returns {this}
+     * @memberOf Container
+     */
+    Container.prototype.register = function (token, value) {
+        this.registerFactory(token, value);
+        return this;
+    };
+    /**
+     * has register the token or not.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {string} [alias]
+     * @returns {boolean}
+     * @memberof Container
+     */
+    Container.prototype.has = function (token, alias) {
+        var key = this.getTokenKey(token, alias);
+        return this.hasRegister(key);
+    };
+    /**
+     * has register type.
+     *
+     * @template T
+     * @param {SymbolType<T>} key
+     * @returns
+     * @memberof Container
+     */
+    Container.prototype.hasRegister = function (key) {
+        return this.factories.has(key);
+    };
+    /**
+     * unregister the token
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {this}
+     * @memberof Container
+     */
+    Container.prototype.unregister = function (token) {
+        var key = this.getTokenKey(token);
+        if (this.hasRegister(key)) {
+            this.factories.delete(key);
+        }
+        return this;
+    };
+    /**
+     * register stingleton type.
+     * @abstract
+     * @template T
+     * @param {Token<T>} token
+     * @param {Factory<T>} [value]
+     * @returns {this}
+     * @memberOf Container
+     */
+    Container.prototype.registerSingleton = function (token, value) {
+        this.registerFactory(token, value, true);
+        return this;
+    };
+    /**
+     * register value.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {T} value
+     * @returns {this}
+     * @memberof Container
+     */
+    Container.prototype.registerValue = function (token, value) {
+        var _this = this;
+        var key = this.getTokenKey(token);
+        this.singleton.set(key, value);
+        if (!this.factories.has(key)) {
+            this.factories.set(key, function () {
+                return _this.singleton.get(key);
+            });
+        }
+        return this;
+    };
+    /**
+     * bind provider.
+     *
+     * @template T
+     * @param {Token<T>} provide
+     * @param {Token<T>} provider
+     * @returns {this}
+     * @memberof Container
+     */
+    Container.prototype.bindProvider = function (provide, provider) {
+        var _this = this;
+        var provideKey = this.getTokenKey(provide);
+        var factory;
+        if (utils.isToken(provider)) {
+            factory = function () {
+                var providers = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    providers[_i] = arguments[_i];
+                }
+                return _this.resolve.apply(_this, [provider].concat(providers));
+            };
+        }
+        else {
+            if (utils.isFunction(provider)) {
+                factory = function () {
+                    var providers = [];
+                    for (var _i = 0; _i < arguments.length; _i++) {
+                        providers[_i] = arguments[_i];
+                    }
+                    return provider.apply(void 0, [_this].concat(providers));
+                };
+            }
+            else {
+                factory = function () {
+                    return provider;
+                };
+            }
+        }
+        if (utils.isClass(provider)) {
+            this.provideTypes.set(provide, provider);
+        }
+        else if (utils.isToken(provider)) {
+            var token = provider;
+            while (this.provideTypes.has(token) && !utils.isClass(token)) {
+                token = this.provideTypes.get(token);
+                if (utils.isClass(token)) {
+                    this.provideTypes.set(provide, token);
+                    break;
+                }
+            }
+        }
+        this.factories.set(provideKey, factory);
+        return this;
+    };
+    /**
+     * get token implements class type.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {Type<T>}
+     * @memberof Container
+     */
+    Container.prototype.getTokenImpl = function (token) {
+        if (utils.isClass(token)) {
+            return token;
+        }
+        if (this.provideTypes.has(token)) {
+            return this.provideTypes.get(token);
+        }
+        return null;
+    };
+    /**
+    * get life scope of container.
+    *
+    * @returns {LifeScope}
+    * @memberof IContainer
+    */
+    Container.prototype.getLifeScope = function () {
+        return this.get(LifeScope.LifeScopeToken);
+    };
+    /**
+     * use modules.
+     *
+     * @param {...ModuleType[]} modules
+     * @returns {this}
+     * @memberof Container
+     */
+    Container.prototype.use = function () {
+        var modules = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            modules[_i] = arguments[_i];
+        }
+        (_a = this.get(IContainerBuilder.ContainerBuilderToken)).syncLoadModule.apply(_a, [this].concat(modules));
+        return this;
+        var _a;
+    };
+    /**
+     * async use modules.
+     *
+     * @param {...LoadType[]} modules load modules.
+     * @returns {Promise<Type<any>[]>}  types loaded.
+     * @memberof IContainer
+     */
+    Container.prototype.loadModule = function () {
+        var modules = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            modules[_i] = arguments[_i];
+        }
+        return (_a = this.get(IContainerBuilder.ContainerBuilderToken)).loadModule.apply(_a, [this].concat(modules));
+        var _a;
+    };
+    /**
+     * invoke method async.
+     *
+     * @template T
+     * @param {Token<any>} token
+     * @param {(string | symbol)} propertyKey
+     * @param {*} [instance]
+     * @param {...Providers[]} providers
+     * @returns {Promise<T>}
+     * @memberof Container
+     */
+    Container.prototype.invoke = function (token, propertyKey, instance) {
+        var providers = [];
+        for (var _i = 3; _i < arguments.length; _i++) {
+            providers[_i - 3] = arguments[_i];
+        }
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).invoke.apply(_a, [token, propertyKey, instance].concat(providers));
+        var _a;
+    };
+    /**
+     * invoke method.
+     *
+     * @template T
+     * @param {Token<any>} token
+     * @param {(string | symbol)} propertyKey
+     * @param {*} [instance]
+     * @param {...Providers[]} providers
+     * @returns {T}
+     * @memberof Container
+     */
+    Container.prototype.syncInvoke = function (token, propertyKey, instance) {
+        var providers = [];
+        for (var _i = 3; _i < arguments.length; _i++) {
+            providers[_i - 3] = arguments[_i];
+        }
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).syncInvoke.apply(_a, [token, propertyKey, instance].concat(providers));
+        var _a;
+    };
+    Container.prototype.createSyncParams = function (params) {
+        var providers = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            providers[_i - 1] = arguments[_i];
+        }
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createSyncParams.apply(_a, [params].concat(providers));
+        var _a;
+    };
+    Container.prototype.createParams = function (params) {
+        var providers = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            providers[_i - 1] = arguments[_i];
+        }
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createParams.apply(_a, [params].concat(providers));
+        var _a;
+    };
+    Container.prototype.cacheDecorator = function (map, action) {
+        if (!map.has(action.name)) {
+            map.set(action.name, action);
+        }
+    };
+    Container.prototype.init = function () {
+        var _this = this;
+        this.factories = new utils.MapSet();
+        this.singleton = new utils.MapSet();
+        this.provideTypes = new utils.MapSet();
+        this.bindProvider(IContainer.ContainerToken, function () { return _this; });
+        registerCores_1.registerCores(this);
+    };
+    Container.prototype.registerFactory = function (token, value, singleton) {
+        var key = this.getTokenKey(token);
+        if (this.factories.has(key)) {
+            return;
+        }
+        var classFactory;
+        if (!utils.isUndefined(value)) {
+            if (utils.isFunction(value)) {
+                if (utils.isClass(value)) {
+                    this.bindTypeFactory(key, value, singleton);
+                }
+                else {
+                    classFactory = this.createCustomFactory(key, value, singleton);
+                }
+            }
+            else if (singleton && value !== undefined) {
+                classFactory = this.createCustomFactory(key, function () { return value; }, singleton);
+            }
+        }
+        else if (!utils.isString(token) && !utils.isSymbol(token)) {
+            var ClassT = (token instanceof Registration_1.Registration) ? token.getClass() : token;
+            if (utils.isClass(ClassT)) {
+                this.bindTypeFactory(key, ClassT, singleton);
+            }
+        }
+        if (classFactory) {
+            this.factories.set(key, classFactory);
+        }
+    };
+    Container.prototype.createCustomFactory = function (key, factory, singleton) {
+        var _this = this;
+        return singleton ?
+            function () {
+                var providers = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    providers[_i] = arguments[_i];
+                }
+                if (_this.singleton.has(key)) {
+                    return _this.singleton.get(key);
+                }
+                var instance = factory.apply(void 0, [_this].concat(providers));
+                _this.singleton.set(key, instance);
+                return instance;
+            }
+            : function () {
+                var providers = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    providers[_i] = arguments[_i];
+                }
+                return factory.apply(void 0, [_this].concat(providers));
+            };
+    };
+    Container.prototype.bindTypeFactory = function (key, ClassT, singleton) {
+        var _this = this;
+        if (!Reflect.isExtensible(ClassT)) {
+            return;
+        }
+        var lifeScope = this.getLifeScope();
+        var parameters = lifeScope.getConstructorParameters(ClassT);
+        if (!singleton) {
+            singleton = lifeScope.isSingletonType(ClassT);
+        }
+        var factory = function () {
+            var providers = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                providers[_i] = arguments[_i];
+            }
+            if (singleton && _this.singleton.has(key)) {
+                return _this.singleton.get(key);
+            }
+            if (providers.length < 1) {
+                var lifecycleData = {
+                    tokenKey: key,
+                    targetType: ClassT,
+                    singleton: singleton
+                };
+                lifeScope.execute(lifecycleData, core.CoreActions.cache);
+                if (lifecycleData.execResult && lifecycleData.execResult instanceof ClassT) {
+                    return lifecycleData.execResult;
+                }
+            }
+            lifeScope.execute({
+                tokenKey: key,
+                targetType: ClassT,
+                params: parameters,
+                providers: providers,
+                singleton: singleton
+            }, types.IocState.runtime, core.LifeState.beforeCreateArgs);
+            var args = _this.createSyncParams.apply(_this, [parameters].concat(providers));
+            lifeScope.execute({
+                tokenKey: key,
+                targetType: ClassT,
+                args: args,
+                params: parameters,
+                providers: providers,
+                singleton: singleton
+            }, types.IocState.runtime, core.LifeState.beforeConstructor);
+            var instance = new (ClassT.bind.apply(ClassT, [void 0].concat(args)))();
+            lifeScope.execute({
+                tokenKey: key,
+                target: instance,
+                targetType: ClassT,
+                args: args,
+                params: parameters,
+                providers: providers,
+                singleton: singleton
+            }, types.IocState.runtime, core.LifeState.afterConstructor);
+            lifeScope.execute({
+                tokenKey: key,
+                target: instance,
+                targetType: ClassT,
+                args: args,
+                params: parameters,
+                providers: providers,
+                singleton: singleton
+            }, types.IocState.runtime, core.LifeState.onInit);
+            lifeScope.execute({
+                tokenKey: key,
+                target: instance,
+                targetType: ClassT,
+                args: args,
+                params: parameters,
+                providers: providers,
+                singleton: singleton
+            }, types.IocState.runtime, core.LifeState.AfterInit);
+            lifeScope.execute({
+                tokenKey: key,
+                target: instance,
+                targetType: ClassT
+            }, core.CoreActions.cache);
+            return instance;
+        };
+        this.factories.set(key, factory);
+        lifeScope.execute({
+            tokenKey: key,
+            targetType: ClassT
+        }, types.IocState.design);
+    };
+    Container.classAnnations = { "name": "Container", "params": { "constructor": [], "get": ["token", "alias"], "resolve": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"] } };
+    return Container;
+}());
+exports.Container = Container;
+
+
+});
+
+unwrapExports(Container_1);
+var Container_2 = Container_1.Container;
+
+var D__Workspace_Projects_modules_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+Object.defineProperty(exports, "__esModule", { value: true });
+__export(IContainer);
+__export(Container_1);
+__export(types);
+__export(Registration_1);
+__export(InjectToken_1);
+__export(IContainerBuilder);
+__export(IMethodAccessor);
+__export(ICacheManager);
+// export * from './tokens';
+__export(LifeScope);
+__export(IModuleLoader);
+__export(DefaultModuleLoader_1);
+__export(DefaultContainerBuilder_1);
+__export(utils);
+__export(components);
+__export(core);
+__export(IModuleBuilder);
+__export(ModuleBuilder_1);
+__export(AppConfiguration);
+__export(ApplicationBuilder_1);
+
+
+});
+
+var index$8 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_core_lib);
+
+return index$8;
 
 })));

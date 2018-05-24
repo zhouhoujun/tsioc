@@ -1,7 +1,7 @@
 import { Token, Type, ModuleType, LoadType, Providers } from './types';
-import { CustomDefineModule, IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
-import { IContainer } from './IContainer';
-import { hasClassMetadata, Autorun, isProviderMap, Provider, ParamProvider, DefModule, getTypeMetadata } from './core/index';
+import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
+import { IContainer, ContainerToken } from './IContainer';
+import { hasClassMetadata, Autorun, isProviderMap, Provider, ParamProvider, DefModule, getTypeMetadata, Inject } from './core/index';
 import { Defer, isString, lang, isFunction, isClass, isUndefined, isNull, isNumber, isBaseObject, isToken, isArray, isMetadataObject } from './utils/index';
 import { IContainerBuilder } from './IContainerBuilder';
 import { DefaultContainerBuilder } from './DefaultContainerBuilder';
@@ -15,69 +15,25 @@ import { ModuleConfiguration } from './ModuleConfiguration';
  */
 export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
-    protected container: Promise<IContainer>;
+    constructor(protected container: IContainer) {
 
-    protected builder: IContainerBuilder;
-    protected usedModules: (LoadType)[];
-    protected customs: CustomDefineModule<T>[];
-    constructor() {
-        this.usedModules = [];
-        this.customs = [];
-
-    }
-
-    useContainer(container: IContainer | Promise<IContainer>) {
-        if (container) {
-            this.container = Promise.resolve(container);
-        }
-        return this;
-    }
-
-    /**
-     * use container builder
-     *
-     * @param {IContainerBuilder} builder
-     * @returns
-     * @memberof ModuleBuilder
-     */
-    useContainerBuilder(builder: IContainerBuilder) {
-        this.builder = builder;
-        return this;
-    }
-
-    /**
-     * use module, custom module.
-     *
-     * @param {(...(LoadType | CustomDefineModule<T>)[])} modules
-     * @returns {this}
-     * @memberof PlatformServer
-     */
-    useModules(...modules: (LoadType | CustomDefineModule<T>)[]): this {
-        modules.forEach(m => {
-            if (isFunction(m) && !isClass(m)) {
-                this.customs.push(m);
-            } else {
-                this.usedModules.push(m);
-            }
-        });
-        return this;
     }
 
     /**
      * build module.
      *
-     * @param {(Token<T>| ModuleConfiguration<T>)} [boot]
+     * @param {(Token<T>| ModuleConfiguration<T>)} [modules]
      * @returns {Promise<any>}
      * @memberof ModuleBuilder
      */
-    async build(boot: Token<T> | Type<any> | ModuleConfiguration<T>): Promise<T> {
-        let cfg = await this.getConfiguration(boot);
-        let token = cfg.bootstrap || (isToken(boot) ? boot : null);
+    async build(modules: Token<T> | Type<any> | ModuleConfiguration<T>): Promise<T> {
+        let cfg = this.getConfigure(modules);
+        let token = cfg.bootstrap || (isToken(modules) ? modules : null);
         if (!token) {
             return Promise.reject('not find bootstrap token.');
         }
 
-        let container: IContainer = await this.getContainer();
+        let container = this.container;
         container = await this.initContainer(cfg, container);
         if (isClass(token)) {
             if (!container.has(token)) {
@@ -92,38 +48,17 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     /**
      * get configuration.
      *
-     * @returns {Promise<T>}
+     * @returns {ModuleConfiguration<T>}
      * @memberof ModuleBuilder
      */
-    protected getConfiguration(boot?: Token<any> | ModuleConfiguration<T>): Promise<ModuleConfiguration<T>> {
+    getConfigure(modules?: Token<any> | ModuleConfiguration<T>): ModuleConfiguration<T> {
         let cfg: ModuleConfiguration<T>;
-        if (isClass(boot)) {
-            cfg = this.getMetaConfig(boot);
+        if (isClass(modules)) {
+            cfg = this.getMetaConfig(modules);
         } else {
-            cfg = (isMetadataObject(boot) ? boot : {}) as ModuleConfiguration<T>;
+            cfg = (isMetadataObject(modules) ? modules : {}) as ModuleConfiguration<T>;
         }
-
-        return Promise.resolve(cfg);
-    }
-
-    /**
-     * get container builder.
-     *
-     * @returns
-     * @memberof ModuleBuilder
-     */
-    protected getContainerBuilder() {
-        if (!this.builder) {
-            this.builder = new DefaultContainerBuilder();
-        }
-        return this.builder;
-    }
-
-    protected getContainer(...modules: LoadType[]) {
-        if (!this.container) {
-            this.container = this.getContainerBuilder().build(...modules);
-        }
-        return this.container;
+        return cfg;
     }
 
     protected getMetaConfig(bootModule: Type<any>): ModuleConfiguration<T> {
@@ -139,28 +74,12 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     protected async initContainer(config: ModuleConfiguration<T>, container: IContainer): Promise<IContainer> {
 
-        container.bindProvider(ModuleBuilderToken, () => this);
-        let builder = this.getContainerBuilder();
-        if (this.usedModules.length) {
-            let usedModules = this.usedModules;
-            this.usedModules = [];
-            await builder.loadModule(container, ...usedModules);
-        }
-
         if (isArray(config.imports) && config.imports.length) {
-            await builder.loadModule(container, ...config.imports);
+            await container.loadModule(container, ...config.imports);
         }
 
         if (isArray(config.providers) && config.providers.length) {
             this.bindProvider(container, config.providers);
-        }
-
-        if (this.customs.length) {
-            let customs = this.customs;
-            this.customs = [];
-            await Promise.all(customs.map(cs => {
-                return cs(container, config, this);
-            }));
         }
 
         return container;

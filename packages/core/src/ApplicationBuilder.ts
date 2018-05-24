@@ -1,9 +1,18 @@
 import { ModuleBuilder } from './ModuleBuilder';
 import { AppConfiguration, AppConfigurationToken } from './AppConfiguration';
-import { IModuleBuilder } from './IModuleBuilder';
-import { Token, Type } from './types';
-import { lang, isString, isClass, isMetadataObject } from './utils/index';
+import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
+import { Token, Type, LoadType } from './types';
+import { lang, isString, isClass, isMetadataObject, isFunction } from './utils/index';
 import { IContainer } from './IContainer';
+import { IContainerBuilder } from './IContainerBuilder';
+import { ModuleConfiguration } from './ModuleConfiguration';
+import { DefaultContainerBuilder } from './DefaultContainerBuilder';
+
+
+/**
+ * custom define module.
+ */
+export type CustomDefineModule<T> = (container: IContainer, config?: ModuleConfiguration<T>, builder?: IApplicationBuilder<T>) => any | Promise<any>;
 
 /**
  * application builder.
@@ -13,25 +22,61 @@ import { IContainer } from './IContainer';
  * @extends {IModuleBuilder<T>}
  * @template T
  */
-export interface IApplicationBuilder<T> extends IModuleBuilder<T> {
+export interface IApplicationBuilder<T> {
+
+    /**
+     * use an exist container for platform.
+     *
+     * @param {(IContainer | Promise<IContainer>)} container
+     * @returns {this}
+     * @memberof IApplicationBuilder
+     */
+    useContainer(container: IContainer | Promise<IContainer>): this;
+
+    /**
+     * use container builder
+     *
+     * @param {IContainerBuilder} builder
+     * @returns
+     * @memberof IApplicationBuilder
+     */
+    useContainerBuilder(builder: IContainerBuilder);
 
     /**
      * use custom configuration.
      *
      * @param {(string | T)} [config]
      * @returns {this}
-     * @memberof Bootstrap
+     * @memberof IApplicationBuilder
      */
     useConfiguration(config?: string | T): this;
+
+    /**
+     * use module, custom module.
+     *
+     * @param {(...(LoadType | CustomDefineModule<T>)[])} modules
+     * @returns {this}
+     * @memberof IApplicationBuilder
+     */
+    useModules(...modules: (LoadType | CustomDefineModule<T>)[]): this;
 
     /**
      * bootstrap app via main module.
      *
      * @param {(Token<T> | Type<any>)} boot bootstrap module.
      * @returns {Promise<any>}
-     * @memberof IPlatform
+     * @memberof IApplicationBuilder
      */
     bootstrap(boot: Token<T> | Type<any>): Promise<T>;
+
+    /**
+     * get module builer.
+     *
+     * @param {IContainer} container ioc container.
+     * @returns {IModuleBuilder<T>}
+     * @memberof IApplicationBuilder
+     */
+    getModuleBuilder(container: IContainer): IModuleBuilder<T>;
 }
 
 /**
@@ -42,12 +87,35 @@ export interface IApplicationBuilder<T> extends IModuleBuilder<T> {
  * @extends {ModuleBuilder<T>}
  * @template T
  */
-export class ApplicationBuilder<T> extends ModuleBuilder<T> {
-
+export class ApplicationBuilder<T>  {
+    private _moduleBuilder: IModuleBuilder<T>;
+    protected container: Promise<IContainer>;
+    protected builder: IContainerBuilder;
     protected configuration: Promise<AppConfiguration<T>>;
-
+    protected usedModules: (LoadType)[];
+    protected customs: CustomDefineModule<T>[];
     constructor(public baseURL?: string) {
-        super();
+        this.usedModules = [];
+        this.customs = [];
+    }
+
+    useContainer(container: IContainer | Promise<IContainer>) {
+        if (container) {
+            this.container = Promise.resolve(container);
+        }
+        return this;
+    }
+
+    /**
+     * use container builder
+     *
+     * @param {IContainerBuilder} builder
+     * @returns
+     * @memberof ModuleBuilder
+     */
+    useContainerBuilder(builder: IContainerBuilder) {
+        this.builder = builder;
+        return this;
     }
 
     /**
@@ -86,9 +154,46 @@ export class ApplicationBuilder<T> extends ModuleBuilder<T> {
         return this;
     }
 
+    /**
+     * use module, custom module.
+     *
+     * @param {(...(LoadType | CustomDefineModule<T>)[])} modules
+     * @returns {this}
+     * @memberof PlatformServer
+     */
+    useModules(...modules: (LoadType | CustomDefineModule<T>)[]): this {
+        modules.forEach(m => {
+            if (isFunction(m) && !isClass(m)) {
+                this.customs.push(m);
+            } else {
+                this.usedModules.push(m);
+            }
+        });
+        return this;
+    }
+
+
     async bootstrap(boot: Token<T> | Type<any>): Promise<T> {
-        let app = await this.build(boot);
+        let container = await this.getContainer();
+        let builder = this.getModuleBuilder(container);
+        let cfg = await this.getConfiguration(builder.getConfigure(boot));
+        await this.initContainer(cfg, container);
+        let app = await builder.build(boot);
         return app;
+    }
+
+
+    /**
+     * get module builer.
+     *
+     * @returns {IModuleBuilder<T>}
+     * @memberof IApplicationBuilder
+     */
+    getModuleBuilder(container: IContainer): IModuleBuilder<T> {
+        if (!this._moduleBuilder) {
+            this._moduleBuilder = container.get(ModuleBuilderToken);
+        }
+        return this._moduleBuilder;
     }
 
 
@@ -100,8 +205,41 @@ export class ApplicationBuilder<T> extends ModuleBuilder<T> {
 
     protected async initContainer(config: AppConfiguration<T>, container: IContainer): Promise<IContainer> {
         this.setConfigRoot(config);
+        if (this.usedModules.length) {
+            let usedModules = this.usedModules;
+            this.usedModules = [];
+            await container.loadModule(container, ...usedModules);
+        }
         container.bindProvider(AppConfigurationToken, config);
-        return await super.initContainer(config, container);
+
+        if (this.customs.length) {
+            let customs = this.customs;
+            this.customs = [];
+            await Promise.all(customs.map(cs => {
+                return cs(container, config, this);
+            }));
+        }
+        return container;
+    }
+
+    /**
+     * get container builder.
+     *
+     * @returns
+     * @memberof ModuleBuilder
+     */
+    protected getContainerBuilder() {
+        if (!this.builder) {
+            this.builder = new DefaultContainerBuilder();
+        }
+        return this.builder;
+    }
+
+    protected getContainer(...modules: LoadType[]) {
+        if (!this.container) {
+            this.container = this.getContainerBuilder().build(...modules);
+        }
+        return this.container;
     }
 
     /**
@@ -110,8 +248,7 @@ export class ApplicationBuilder<T> extends ModuleBuilder<T> {
      * @returns {Promise<T>}
      * @memberof Bootstrap
      */
-    protected async getConfiguration(boot?: Token<any> | AppConfiguration<T>): Promise<AppConfiguration<T>> {
-        let cfg = await super.getConfiguration(boot);
+    protected async getConfiguration(cfg?: AppConfiguration<T>): Promise<AppConfiguration<T>> {
         if (!this.configuration) {
             this.useConfiguration(cfg);
         } else if (lang.hasField(cfg)) {

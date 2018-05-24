@@ -14,19 +14,7 @@
         "e2e": "protractor",
         "e2e.live": "protractor --elementExplorer"
     },
-    "keywords": [
-        "IoC",
-        "AOP",
-        "dependency",
-        "injection",
-        "framework",
-        "container",
-        "decorator",
-        "autofac",
-        "Inject",
-        "type",
-        "typescript"
-    ],
+    "keywords": ["IoC", "AOP", "dependency", "injection", "framework", "container", "decorator", "autofac", "Inject", "type", "typescript"],
     "author": "houjun",
     "license": "MIT",
     "bugs": {

@@ -5,11 +5,12 @@ import { Registration } from './Registration';
 import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet } from './utils/index';
 
 import { IMethodAccessor, MethodAccessorToken } from './IMethodAccessor';
-import { ActionComponent, DecoratorType, registerCores, CoreActions, Singleton, PropertyMetadata, ComponentLifecycle, CacheActionData, LifeState } from './core/index';
+import { ActionComponent, DecoratorType, CoreActions, Singleton, PropertyMetadata, ComponentLifecycle, CacheActionData, LifeState } from './core/index';
 import { LifeScope, LifeScopeToken } from './LifeScope';
 import { IParameter } from './IParameter';
 import { ICacheManager, CacheManagerToken } from './ICacheManager';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
+import { registerCores } from './registerCores';
 
 /**
  * Container.

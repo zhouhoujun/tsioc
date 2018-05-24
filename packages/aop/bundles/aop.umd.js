@@ -1915,7 +1915,7 @@ exports.AopModule = AopModule;
 unwrapExports(AopModule_1);
 var AopModule_2 = AopModule_1.AopModule;
 
-var D__workspace_github_tsioc_packages_aop_lib = createCommonjsModule(function (module, exports) {
+var D__Workspace_Projects_modules_tsioc_packages_aop_lib = createCommonjsModule(function (module, exports) {
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
@@ -1934,7 +1934,7 @@ __export(AopModule_1);
 
 });
 
-var index$4 = unwrapExports(D__workspace_github_tsioc_packages_aop_lib);
+var index$4 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_aop_lib);
 
 return index$4;
 
