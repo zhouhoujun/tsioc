@@ -110,7 +110,7 @@ class name First char must be UpperCase.
     1. use syncBuild
     2. syncLoadModule
     3. can not use minimatch to match file.
-    4. support es5 uglify, [@ts-ioc/class-annotations](https://www.npmjs.com/package/@ts-ioc/class-annotations)  [] or [typescript-class-annotations](https://www.npmjs.com/package/typescript-class-annotations) to get class annotations before typescript compile.
+    4. support es5 uglify, [@ts-ioc/annotations](https://www.npmjs.com/package/@ts-ioc/annotations)  [] or [typescript-class-annotations](https://www.npmjs.com/package/typescript-class-annotations) to get class annotations before typescript compile.
 
 ```ts
 let builder = new ContainerBuilder();
