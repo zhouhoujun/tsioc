@@ -4,8 +4,8 @@
     "baseUrl": ".",
     "rootDir": "../../packages",
     "paths": {
-      "@ts-ioc/class-annotations":[
-        "../class-annotations/src"
+      "@ts-ioc/annotations":[
+        "../annotations/src"
       ]
     }
   },

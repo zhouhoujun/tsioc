@@ -25,4 +25,5 @@ export * from './IModuleBuilder';
 export * from './ModuleBuilder';
 export * from './ModuleConfiguration';
 export * from './AppConfiguration';
+export * from './IApplicationBuilder';
 export * from './ApplicationBuilder';

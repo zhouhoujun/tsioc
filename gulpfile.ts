@@ -2,8 +2,6 @@ import * as gulp from 'gulp';
 import { ITaskOption, Development, IContext } from 'development-tool';
 import { Operation, ITaskContext } from 'development-core';
 const through = require('through2');
-import { classAnnotations } from 'typescript-class-annotations'
-import { version } from 'punycode';
 // import 'development-tool-node';
 const jeditor = require('gulp-json-editor');
 const resolve = require('rollup-plugin-node-resolve');
@@ -67,8 +65,8 @@ Development.create(gulp, __dirname, [
     <ITaskOption>{
         refs: [
             {
-                name: 'class-annotations',
-                path: (ctx) => 'packages/class-annotations',
+                name: 'annotations',
+                path: (ctx) => 'packages/annotations',
                 cmd: (ctx) => (ctx.oper & Operation.deploy) ? 'npm publish' : 'gulp start',
                 args: argFactory
             }
@@ -79,32 +77,32 @@ Development.create(gulp, __dirname, [
                 loader: [
                     {
                         name: 'copy-to-core',
-                        src: ['packages/class-annotations/**', '!packages/class-annotations/test/**', '!packages/class-annotations/src/**', '!packages/class-annotations/node_modules/**'],
-                        dist: 'packages/core/node_modules/@ts-ioc/class-annotations',
+                        src: ['packages/annotations/**', '!packages/annotations/test/**', '!packages/annotations/src/**', '!packages/annotations/node_modules/**'],
+                        dist: 'packages/core/node_modules/@ts-ioc/annotations',
                         pipes: []
                     },
                     {
                         name: 'copy-to-aop',
-                        src: ['packages/class-annotations/**', '!packages/class-annotations/test/**', '!packages/class-annotations/src/**', '!packages/class-annotations/node_modules/**'],
-                        dist: 'packages/aop/node_modules/@ts-ioc/class-annotations',
+                        src: ['packages/annotations/**', '!packages/annotations/test/**', '!packages/annotations/src/**', '!packages/annotations/node_modules/**'],
+                        dist: 'packages/aop/node_modules/@ts-ioc/annotations',
                         pipes: []
                     },
                     {
                         name: 'copy-to-logs',
-                        src: ['packages/class-annotations/**', '!packages/class-annotations/test/**', '!packages/class-annotations/src/**', '!packages/class-annotations/node_modules/**'],
-                        dist: 'packages/logs/node_modules/@ts-ioc/class-annotations',
+                        src: ['packages/annotations/**', '!packages/annotations/test/**', '!packages/annotations/src/**', '!packages/annotations/node_modules/**'],
+                        dist: 'packages/logs/node_modules/@ts-ioc/annotations',
                         pipes: []
                     },
                     {
                         name: 'copy-to-browser',
-                        src: ['packages/class-annotations/**', '!packages/class-annotations/test/**', '!packages/class-annotations/src/**', '!packages/class-annotations/node_modules/**'],
-                        dist: 'packages/platform-browser/node_modules/@ts-ioc/class-annotations',
+                        src: ['packages/annotations/**', '!packages/annotations/test/**', '!packages/annotations/src/**', '!packages/annotations/node_modules/**'],
+                        dist: 'packages/platform-browser/node_modules/@ts-ioc/annotations',
                         pipes: []
                     },
                     {
                         name: 'copy-to-server',
-                        src: ['packages/class-annotations/**', '!packages/class-annotations/test/**', '!packages/class-annotations/src/**', '!packages/class-annotations/node_modules/**'],
-                        dist: 'packages/platform-server/node_modules/@ts-ioc/class-annotations',
+                        src: ['packages/annotations/**', '!packages/annotations/test/**', '!packages/annotations/src/**', '!packages/annotations/node_modules/**'],
+                        dist: 'packages/platform-server/node_modules/@ts-ioc/annotations',
                         pipes: []
                     }
                 ]

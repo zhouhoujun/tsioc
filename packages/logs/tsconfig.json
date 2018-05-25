@@ -10,8 +10,8 @@
       "@ts-ioc/aop": [
         "../aop/src"
       ],
-      "@ts-ioc/class-annotations":[
-        "../class-annotations/src"
+      "@ts-ioc/annotations":[
+        "../annotations/src"
       ]
     }
   },
