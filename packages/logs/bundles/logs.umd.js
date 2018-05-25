@@ -743,7 +743,7 @@ exports.LogModule = LogModule;
 unwrapExports(LogModule_1);
 var LogModule_2 = LogModule_1.LogModule;
 
-var D__Workspace_Projects_modules_tsioc_packages_logs_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_logs_lib = createCommonjsModule(function (module, exports) {
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
@@ -764,7 +764,7 @@ __export(LogModule_1);
 
 });
 
-var index = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_logs_lib);
+var index = unwrapExports(D__workspace_github_tsioc_packages_logs_lib);
 
 return index;
 

@@ -4825,440 +4825,6 @@ exports.ContainerBuilderToken = new InjectToken_1.InjectToken('__IOC_IContainerB
 unwrapExports(IContainerBuilder);
 var IContainerBuilder_1 = IContainerBuilder.ContainerBuilderToken;
 
-var IModuleLoader = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * module loader token.
- */
-exports.ModuleLoaderToken = new InjectToken_1.InjectToken('__IOC_ModuleLoader');
-
-
-});
-
-unwrapExports(IModuleLoader);
-var IModuleLoader_1 = IModuleLoader.ModuleLoaderToken;
-
-var DefaultModuleLoader_1 = createCommonjsModule(function (module, exports) {
-var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-/**
- * default module loader.
- *
- * @export
- * @class DefaultModuleLoader
- * @implements {IModuleLoader}
- */
-var DefaultModuleLoader = /** @class */ (function () {
-    function DefaultModuleLoader() {
-    }
-    DefaultModuleLoader.prototype.getLoader = function () {
-        if (!this._loader) {
-            this._loader = this.createLoader();
-        }
-        return this._loader;
-    };
-    /**
-     * load module.
-     *
-     * @param {...LoadType[]} modules
-     * @returns {Promise<ModuleType[]>}
-     * @memberof DefaultModuleLoader
-     */
-    DefaultModuleLoader.prototype.load = function () {
-        var _this = this;
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        if (modules.length) {
-            return Promise.all(modules.map(function (mdty) {
-                if (utils.isString(mdty)) {
-                    return _this.isFile(mdty) ? _this.loadFile(mdty) : _this.loadModule(mdty);
-                }
-                else if (utils.isObject(mdty) && (mdty['modules'] || mdty['files'])) {
-                    return _this.loadPathModule(mdty);
-                }
-                else {
-                    return mdty ? [mdty] : [];
-                }
-            }))
-                .then(function (allms) {
-                var rmodules = [];
-                allms.forEach(function (ms) {
-                    rmodules = rmodules.concat(ms);
-                });
-                return rmodules;
-            });
-        }
-        else {
-            return Promise.resolve([]);
-        }
-    };
-    /**
-     * load types from module.
-     *
-     * @param {...LoadType[]} modules
-     * @returns {Promise<Type<any>[]>}
-     * @memberof IContainerBuilder
-     */
-    DefaultModuleLoader.prototype.loadTypes = function () {
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        return __awaiter(this, void 0, void 0, function () {
-            var mdls;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.load.apply(this, modules)];
-                    case 1:
-                        mdls = _a.sent();
-                        return [2 /*return*/, this.getTypes.apply(this, mdls)];
-                }
-            });
-        });
-    };
-    /**
-     * get all class type in modules.
-     *
-     * @param {...ModuleType[]} modules
-     * @returns {Type<any>[]}
-     * @memberof DefaultModuleLoader
-     */
-    DefaultModuleLoader.prototype.getTypes = function () {
-        var _this = this;
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        var regModules = [];
-        modules.forEach(function (m) {
-            var types = _this.getContentTypes(m);
-            var iocExt = types.find(function (it) { return core.hasOwnClassMetadata(core.IocExt, it); });
-            if (iocExt) {
-                regModules.push(iocExt);
-            }
-            else {
-                regModules.push.apply(regModules, types);
-            }
-        });
-        return regModules;
-    };
-    DefaultModuleLoader.prototype.loadFile = function (files, basePath) {
-        var loader = this.getLoader();
-        var fRes;
-        if (utils.isArray(files)) {
-            fRes = Promise.all(files.map(function (f) { return loader(f); }))
-                .then(function (allms) {
-                var rms = [];
-                allms.forEach(function (ms) {
-                    rms = rms.concat(ms);
-                });
-                return rms;
-            });
-        }
-        else {
-            fRes = loader(files);
-        }
-        return fRes.then(function (ms) { return ms.filter(function (it) { return !!it; }); });
-    };
-    DefaultModuleLoader.prototype.isFile = function (str) {
-        return str && /\/((\w|%|\.))+\.\w+$/.test(str.replace(/\\\\/gi, '/'));
-    };
-    DefaultModuleLoader.prototype.loadModule = function (moduleName) {
-        var loader = this.getLoader();
-        return loader(moduleName).then(function (ms) { return ms.filter(function (it) { return !!it; }); });
-    };
-    DefaultModuleLoader.prototype.loadPathModule = function (pmd) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            var loader, modules;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        loader = this.getLoader();
-                        modules = [];
-                        if (!pmd.files) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.loadFile(pmd.files, pmd.basePath)
-                                .then(function (allmoduls) {
-                                allmoduls.forEach(function (ms) {
-                                    modules = modules.concat(ms);
-                                });
-                                return modules;
-                            })];
-                    case 1:
-                        _a.sent();
-                        _a.label = 2;
-                    case 2:
-                        if (!pmd.modules) return [3 /*break*/, 4];
-                        return [4 /*yield*/, Promise.all(pmd.modules.map(function (nmd) {
-                                return utils.isString(nmd) ? _this.loadModule(nmd) : nmd;
-                            })).then(function (ms) {
-                                modules = modules.concat(ms);
-                                return modules;
-                            })];
-                    case 3:
-                        _a.sent();
-                        _a.label = 4;
-                    case 4: return [2 /*return*/, modules];
-                }
-            });
-        });
-    };
-    DefaultModuleLoader.prototype.createLoader = function () {
-        if (typeof commonjsRequire !== 'undefined') {
-            return function (modulepath) {
-                return new Promise(function (resolve, reject) {
-                    commonjsRequire([modulepath], function (mud) {
-                        resolve(mud);
-                    }, function (err) {
-                        reject(err);
-                    });
-                });
-            };
-        }
-        else {
-            throw new Error('has not module loader');
-        }
-    };
-    DefaultModuleLoader.prototype.getContentTypes = function (regModule) {
-        var regModules = [];
-        if (utils.isClass(regModule)) {
-            regModules.push(regModule);
-        }
-        else {
-            var rmodules = regModule['exports'] ? regModule['exports'] : regModule;
-            for (var p in rmodules) {
-                if (utils.isClass(rmodules[p])) {
-                    regModules.push(rmodules[p]);
-                }
-            }
-        }
-        return regModules;
-    };
-    DefaultModuleLoader.classAnnations = { "name": "DefaultModuleLoader", "params": { "constructor": [], "getLoader": [], "load": ["modules"], "loadTypes": ["modules"], "getTypes": ["modules"], "loadFile": ["files", "basePath"], "isFile": ["str"], "loadModule": ["moduleName"], "loadPathModule": ["pmd"], "createLoader": [], "getContentTypes": ["regModule"] } };
-    return DefaultModuleLoader;
-}());
-exports.DefaultModuleLoader = DefaultModuleLoader;
-
-
-});
-
-unwrapExports(DefaultModuleLoader_1);
-var DefaultModuleLoader_2 = DefaultModuleLoader_1.DefaultModuleLoader;
-
-var DefaultContainerBuilder_1 = createCommonjsModule(function (module, exports) {
-var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-
-// import { hasOwnClassMetadata, IocModule } from './core/index';
-/**
- * default container builder.
- *
- * @export
- * @class DefaultContainerBuilder
- * @implements {IContainerBuilder}
- */
-var DefaultContainerBuilder = /** @class */ (function () {
-    function DefaultContainerBuilder(loader) {
-        this._loader = loader;
-    }
-    Object.defineProperty(DefaultContainerBuilder.prototype, "loader", {
-        get: function () {
-            if (!this._loader) {
-                this._loader = new DefaultModuleLoader_1.DefaultModuleLoader();
-            }
-            return this._loader;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    DefaultContainerBuilder.prototype.create = function () {
-        var _this = this;
-        var container = new Container_1.Container();
-        container.bindProvider(IContainerBuilder.ContainerBuilderToken, function () { return _this; });
-        container.bindProvider(IModuleLoader.ModuleLoaderToken, function () { return _this.loader; });
-        return container;
-    };
-    /**
-     * build container.
-     *
-     * @param {...LoadType[]} [modules]
-     * @returns
-     * @memberof DefaultContainerBuilder
-     */
-    DefaultContainerBuilder.prototype.build = function () {
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        return __awaiter(this, void 0, void 0, function () {
-            var container;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        container = this.create();
-                        if (!modules.length) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.loadModule.apply(this, [container].concat(modules))];
-                    case 1:
-                        _a.sent();
-                        _a.label = 2;
-                    case 2: return [2 /*return*/, container];
-                }
-            });
-        });
-    };
-    /**
-     * load modules for container.
-     *
-     * @param {IContainer} container
-     * @param {...LoadType[]} modules
-     * @returns {Promise<Type<any>[]>}
-     * @memberof DefaultContainerBuilder
-     */
-    DefaultContainerBuilder.prototype.loadModule = function (container) {
-        var modules = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            modules[_i - 1] = arguments[_i];
-        }
-        return __awaiter(this, void 0, void 0, function () {
-            var regModules, _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0: return [4 /*yield*/, (_a = this.loader).loadTypes.apply(_a, modules)];
-                    case 1:
-                        regModules = _b.sent();
-                        return [2 /*return*/, this.registers(container, regModules)];
-                }
-            });
-        });
-    };
-    DefaultContainerBuilder.prototype.syncBuild = function () {
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        var container = this.create();
-        if (modules.length) {
-            this.syncLoadModule.apply(this, [container].concat(modules));
-        }
-        return container;
-    };
-    DefaultContainerBuilder.prototype.syncLoadModule = function (container) {
-        var modules = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            modules[_i - 1] = arguments[_i];
-        }
-        var regModules = (_a = this.loader).getTypes.apply(_a, modules);
-        return this.registers(container, regModules);
-        var _a;
-    };
-    DefaultContainerBuilder.prototype.registers = function (container, types) {
-        types = types || [];
-        types.forEach(function (typ) {
-            container.register(typ);
-        });
-        return types;
-    };
-    DefaultContainerBuilder.classAnnations = { "name": "DefaultContainerBuilder", "params": { "constructor": ["loader"], "create": [], "build": ["modules"], "loadModule": ["container", "modules"], "syncBuild": ["modules"], "syncLoadModule": ["container", "modules"], "registers": ["container", "types"] } };
-    return DefaultContainerBuilder;
-}());
-exports.DefaultContainerBuilder = DefaultContainerBuilder;
-
-
-});
-
-unwrapExports(DefaultContainerBuilder_1);
-var DefaultContainerBuilder_2 = DefaultContainerBuilder_1.DefaultContainerBuilder;
-
-var IModuleBuilder = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * module builder token.
- */
-exports.ModuleBuilderToken = new InjectToken_1.InjectToken('__IOC_ModuleBuilder');
-
-
-});
-
-unwrapExports(IModuleBuilder);
-var IModuleBuilder_1 = IModuleBuilder.ModuleBuilderToken;
-
 var ModuleBuilder_1 = createCommonjsModule(function (module, exports) {
 var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -5315,21 +4881,21 @@ var ModuleBuilder = /** @class */ (function () {
      * @returns {Promise<any>}
      * @memberof ModuleBuilder
      */
-    ModuleBuilder.prototype.build = function (modules) {
+    ModuleBuilder.prototype.build = function (modules, moduleDecorator) {
         return __awaiter(this, void 0, void 0, function () {
             var cfg, token, container;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        cfg = this.getConfigure(modules);
+                        cfg = this.getConfigure(modules, moduleDecorator);
                         token = cfg.bootstrap || (utils.isToken(modules) ? modules : null);
                         if (!token) {
                             return [2 /*return*/, Promise.reject('not find bootstrap token.')];
                         }
                         container = this.container;
-                        return [4 /*yield*/, this.initContainer(cfg, container)];
+                        return [4 /*yield*/, this.registerDepdences(cfg)];
                     case 1:
-                        container = _a.sent();
+                        _a.sent();
                         if (utils.isClass(token)) {
                             if (!container.has(token)) {
                                 container.register(token);
@@ -5350,40 +4916,41 @@ var ModuleBuilder = /** @class */ (function () {
      * @returns {ModuleConfiguration<T>}
      * @memberof ModuleBuilder
      */
-    ModuleBuilder.prototype.getConfigure = function (modules) {
+    ModuleBuilder.prototype.getConfigure = function (modules, moduleDecorator) {
         var cfg;
         if (utils.isClass(modules)) {
-            cfg = this.getMetaConfig(modules);
+            cfg = this.getMetaConfig(modules, moduleDecorator || core.DefModule);
         }
-        else {
-            cfg = (utils.isMetadataObject(modules) ? modules : {});
+        else if (!utils.isToken(modules)) {
+            cfg = modules;
         }
-        return cfg;
+        return cfg || {};
     };
-    ModuleBuilder.prototype.getMetaConfig = function (bootModule) {
-        if (core.hasClassMetadata(core.DefModule, bootModule)) {
-            var meta = core.getTypeMetadata(core.DefModule, bootModule);
+    ModuleBuilder.prototype.getMetaConfig = function (bootModule, moduleDecorator) {
+        if (core.hasClassMetadata(moduleDecorator, bootModule)) {
+            var meta = core.getTypeMetadata(moduleDecorator, bootModule);
             if (meta && meta.length) {
                 return meta[0];
             }
         }
         return null;
     };
-    ModuleBuilder.prototype.initContainer = function (config, container) {
+    ModuleBuilder.prototype.registerDepdences = function (config) {
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         if (!(utils.isArray(config.imports) && config.imports.length)) return [3 /*break*/, 2];
-                        return [4 /*yield*/, container.loadModule.apply(container, [container].concat(config.imports))];
+                        return [4 /*yield*/, (_a = this.container).loadModule.apply(_a, config.imports)];
                     case 1:
-                        _a.sent();
-                        _a.label = 2;
+                        _b.sent();
+                        _b.label = 2;
                     case 2:
                         if (utils.isArray(config.providers) && config.providers.length) {
-                            this.bindProvider(container, config.providers);
+                            this.bindProvider(this.container, config.providers);
                         }
-                        return [2 /*return*/, container];
+                        return [2 /*return*/, this.container];
                 }
             });
         });
@@ -5484,7 +5051,7 @@ var ModuleBuilder = /** @class */ (function () {
             }
         });
     };
-    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": ["container"], "build": ["modules"], "getConfigure": ["modules"], "getMetaConfig": ["bootModule"], "initContainer": ["config", "container"], "bindProvider": ["container", "providers"] } };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": ["container"], "build": ["modules", "moduleDecorator"], "getConfigure": ["modules", "moduleDecorator"], "getMetaConfig": ["bootModule", "moduleDecorator"], "registerDepdences": ["config"], "bindProvider": ["container", "providers"] } };
     return ModuleBuilder;
 }());
 exports.ModuleBuilder = ModuleBuilder;
@@ -5495,313 +5062,23 @@ exports.ModuleBuilder = ModuleBuilder;
 unwrapExports(ModuleBuilder_1);
 var ModuleBuilder_2 = ModuleBuilder_1.ModuleBuilder;
 
-var AppConfiguration = createCommonjsModule(function (module, exports) {
+var IModuleBuilder = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 /**
- * App configuration token.
+ * module builder token.
  */
-exports.AppConfigurationToken = new InjectToken_1.InjectToken('__IOC_AppConfiguration');
+exports.ModuleBuilderToken = new InjectToken_1.InjectToken('__IOC_ModuleBuilder');
 
 
 });
 
-unwrapExports(AppConfiguration);
-var AppConfiguration_1 = AppConfiguration.AppConfigurationToken;
-
-var ApplicationBuilder_1 = createCommonjsModule(function (module, exports) {
-var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-
-/**
- * application builder.
- *
- * @export
- * @class ApplicationBuilder
- * @extends {ModuleBuilder<T>}
- * @template T
- */
-var ApplicationBuilder = /** @class */ (function () {
-    function ApplicationBuilder(baseURL) {
-        this.baseURL = baseURL;
-        this.usedModules = [];
-        this.customs = [];
-    }
-    ApplicationBuilder.prototype.useContainer = function (container) {
-        if (container) {
-            this.container = Promise.resolve(container);
-        }
-        return this;
-    };
-    /**
-     * use container builder
-     *
-     * @param {IContainerBuilder} builder
-     * @returns
-     * @memberof ModuleBuilder
-     */
-    ApplicationBuilder.prototype.useContainerBuilder = function (builder) {
-        this.builder = builder;
-        return this;
-    };
-    /**
-     * use custom configuration.
-     *
-     * @param {(string | AppConfiguration<T>)} [config]
-     * @returns {this}
-     * @memberof Bootstrap
-     */
-    ApplicationBuilder.prototype.useConfiguration = function (config) {
-        if (!this.configuration) {
-            this.configuration = Promise.resolve(this.getDefaultConfig());
-        }
-        var pcfg;
-        var builder = this.getContainerBuilder();
-        if (utils.isString(config)) {
-            pcfg = builder.loader.load(config)
-                .then(function (rs) {
-                return rs.length ? rs[0] : null;
-            });
-        }
-        else if (config) {
-            pcfg = Promise.resolve(config);
-        }
-        if (pcfg) {
-            this.configuration = this.configuration
-                .then(function (cfg) {
-                return pcfg.then(function (rcfg) {
-                    var excfg = (rcfg['default'] ? rcfg['default'] : rcfg);
-                    cfg = utils.lang.assign(cfg || {}, excfg || {});
-                    return cfg;
-                });
-            });
-        }
-        return this;
-    };
-    /**
-     * use module, custom module.
-     *
-     * @param {(...(LoadType | CustomDefineModule<T>)[])} modules
-     * @returns {this}
-     * @memberof PlatformServer
-     */
-    ApplicationBuilder.prototype.useModules = function () {
-        var _this = this;
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        modules.forEach(function (m) {
-            if (utils.isFunction(m) && !utils.isClass(m)) {
-                _this.customs.push(m);
-            }
-            else {
-                _this.usedModules.push(m);
-            }
-        });
-        return this;
-    };
-    ApplicationBuilder.prototype.bootstrap = function (boot) {
-        return __awaiter(this, void 0, void 0, function () {
-            var container, builder, cfg, app;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getContainer()];
-                    case 1:
-                        container = _a.sent();
-                        builder = this.getModuleBuilder(container);
-                        return [4 /*yield*/, this.getConfiguration(builder.getConfigure(boot))];
-                    case 2:
-                        cfg = _a.sent();
-                        return [4 /*yield*/, this.initContainer(cfg, container)];
-                    case 3:
-                        _a.sent();
-                        return [4 /*yield*/, builder.build(boot)];
-                    case 4:
-                        app = _a.sent();
-                        return [2 /*return*/, app];
-                }
-            });
-        });
-    };
-    /**
-     * get module builer.
-     *
-     * @returns {IModuleBuilder<T>}
-     * @memberof IApplicationBuilder
-     */
-    ApplicationBuilder.prototype.getModuleBuilder = function (container) {
-        if (!this._moduleBuilder) {
-            this._moduleBuilder = container.get(IModuleBuilder.ModuleBuilderToken);
-        }
-        return this._moduleBuilder;
-    };
-    ApplicationBuilder.prototype.setConfigRoot = function (config) {
-        if (this.baseURL) {
-            config.baseURL = this.baseURL;
-        }
-    };
-    ApplicationBuilder.prototype.initContainer = function (config, container) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            var usedModules, customs;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        this.setConfigRoot(config);
-                        if (!this.usedModules.length) return [3 /*break*/, 2];
-                        usedModules = this.usedModules;
-                        this.usedModules = [];
-                        return [4 /*yield*/, container.loadModule.apply(container, [container].concat(usedModules))];
-                    case 1:
-                        _a.sent();
-                        _a.label = 2;
-                    case 2:
-                        container.bindProvider(AppConfiguration.AppConfigurationToken, config);
-                        if (!this.customs.length) return [3 /*break*/, 4];
-                        customs = this.customs;
-                        this.customs = [];
-                        return [4 /*yield*/, Promise.all(customs.map(function (cs) {
-                                return cs(container, config, _this);
-                            }))];
-                    case 3:
-                        _a.sent();
-                        _a.label = 4;
-                    case 4: return [2 /*return*/, container];
-                }
-            });
-        });
-    };
-    /**
-     * get container builder.
-     *
-     * @returns
-     * @memberof ModuleBuilder
-     */
-    ApplicationBuilder.prototype.getContainerBuilder = function () {
-        if (!this.builder) {
-            this.builder = new DefaultContainerBuilder_1.DefaultContainerBuilder();
-        }
-        return this.builder;
-    };
-    ApplicationBuilder.prototype.getContainer = function () {
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        if (!this.container) {
-            this.container = (_a = this.getContainerBuilder()).build.apply(_a, modules);
-        }
-        return this.container;
-        var _a;
-    };
-    /**
-     * get configuration.
-     *
-     * @returns {Promise<T>}
-     * @memberof Bootstrap
-     */
-    ApplicationBuilder.prototype.getConfiguration = function (cfg) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!this.configuration) {
-                            this.useConfiguration(cfg);
-                        }
-                        else if (utils.lang.hasField(cfg)) {
-                            this.useConfiguration(cfg);
-                        }
-                        return [4 /*yield*/, this.configuration];
-                    case 1: return [2 /*return*/, _a.sent()];
-                }
-            });
-        });
-    };
-    ApplicationBuilder.prototype.getDefaultConfig = function () {
-        return { debug: false };
-    };
-    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "useContainer": ["container"], "useContainerBuilder": ["builder"], "useConfiguration": ["config"], "useModules": ["modules"], "bootstrap": ["boot"], "getModuleBuilder": ["container"], "setConfigRoot": ["config"], "initContainer": ["config", "container"], "getContainerBuilder": [], "getContainer": ["modules"], "getConfiguration": ["cfg"], "getDefaultConfig": [] } };
-    return ApplicationBuilder;
-}());
-exports.ApplicationBuilder = ApplicationBuilder;
-
-
-});
-
-unwrapExports(ApplicationBuilder_1);
-var ApplicationBuilder_2 = ApplicationBuilder_1.ApplicationBuilder;
-
-var lib = createCommonjsModule(function (module, exports) {
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
-Object.defineProperty(exports, "__esModule", { value: true });
-__export(IContainer);
-__export(Container_1);
-__export(types);
-__export(Registration_1);
-__export(InjectToken_1);
-__export(IContainerBuilder);
-__export(IMethodAccessor);
-__export(ICacheManager);
-// export * from './tokens';
-__export(LifeScope);
-__export(IModuleLoader);
-__export(DefaultModuleLoader_1);
-__export(DefaultContainerBuilder_1);
-__export(utils);
-__export(components);
-__export(core);
-__export(IModuleBuilder);
-__export(ModuleBuilder_1);
-__export(AppConfiguration);
-__export(ApplicationBuilder_1);
-
-
-});
-
-unwrapExports(lib);
+unwrapExports(IModuleBuilder);
+var IModuleBuilder_1 = IModuleBuilder.ModuleBuilderToken;
 
 var registerCores_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -5827,6 +5104,7 @@ function registerCores(container) {
     container.bindProvider(providers.ProviderMap, providers.ProviderMapToken);
     container.registerSingleton(IProviderMatcher.ProviderMatcherToken, function () { return new ProviderMatcher_1.ProviderMatcher(container); });
     container.registerSingleton(IMethodAccessor.MethodAccessorToken, function () { return new MethodAccessor_1.MethodAccessor(container); });
+    container.register(IModuleBuilder.ModuleBuilderToken, function () { return new ModuleBuilder_1.ModuleBuilder(container); });
     var lifeScope = container.get(LifeScope.LifeScopeToken);
     lifeScope.registerDecorator(decorators.Injectable, actions.CoreActions.bindProvider, actions.CoreActions.cache);
     lifeScope.registerDecorator(decorators.Component, actions.CoreActions.bindProvider, actions.CoreActions.cache, actions.CoreActions.componentBeforeInit, actions.CoreActions.componentInit, actions.CoreActions.componentAfterInit);
@@ -5842,7 +5120,6 @@ function registerCores(container) {
     container.register(String, function () { return ''; });
     container.register(Number, function () { return Number.NaN; });
     container.register(Boolean, function () { return undefined; });
-    container.register(lib.ModuleBuilderToken, function () { return new lib.ModuleBuilder(container); });
 }
 exports.registerCores = registerCores;
 
@@ -6361,7 +5638,712 @@ exports.Container = Container;
 unwrapExports(Container_1);
 var Container_2 = Container_1.Container;
 
-var D__Workspace_Projects_modules_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
+var IModuleLoader = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * module loader token.
+ */
+exports.ModuleLoaderToken = new InjectToken_1.InjectToken('__IOC_ModuleLoader');
+
+
+});
+
+unwrapExports(IModuleLoader);
+var IModuleLoader_1 = IModuleLoader.ModuleLoaderToken;
+
+var DefaultModuleLoader_1 = createCommonjsModule(function (module, exports) {
+var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * default module loader.
+ *
+ * @export
+ * @class DefaultModuleLoader
+ * @implements {IModuleLoader}
+ */
+var DefaultModuleLoader = /** @class */ (function () {
+    function DefaultModuleLoader() {
+    }
+    DefaultModuleLoader.prototype.getLoader = function () {
+        if (!this._loader) {
+            this._loader = this.createLoader();
+        }
+        return this._loader;
+    };
+    /**
+     * load module.
+     *
+     * @param {...LoadType[]} modules
+     * @returns {Promise<ModuleType[]>}
+     * @memberof DefaultModuleLoader
+     */
+    DefaultModuleLoader.prototype.load = function () {
+        var _this = this;
+        var modules = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            modules[_i] = arguments[_i];
+        }
+        if (modules.length) {
+            return Promise.all(modules.map(function (mdty) {
+                if (utils.isString(mdty)) {
+                    return _this.isFile(mdty) ? _this.loadFile(mdty) : _this.loadModule(mdty);
+                }
+                else if (utils.isObject(mdty) && (mdty['modules'] || mdty['files'])) {
+                    return _this.loadPathModule(mdty);
+                }
+                else {
+                    return mdty ? [mdty] : [];
+                }
+            }))
+                .then(function (allms) {
+                var rmodules = [];
+                allms.forEach(function (ms) {
+                    rmodules = rmodules.concat(ms);
+                });
+                return rmodules;
+            });
+        }
+        else {
+            return Promise.resolve([]);
+        }
+    };
+    /**
+     * load types from module.
+     *
+     * @param {...LoadType[]} modules
+     * @returns {Promise<Type<any>[]>}
+     * @memberof IContainerBuilder
+     */
+    DefaultModuleLoader.prototype.loadTypes = function () {
+        var modules = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            modules[_i] = arguments[_i];
+        }
+        return __awaiter(this, void 0, void 0, function () {
+            var mdls;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.load.apply(this, modules)];
+                    case 1:
+                        mdls = _a.sent();
+                        return [2 /*return*/, this.getTypes.apply(this, mdls)];
+                }
+            });
+        });
+    };
+    /**
+     * get all class type in modules.
+     *
+     * @param {...ModuleType[]} modules
+     * @returns {Type<any>[]}
+     * @memberof DefaultModuleLoader
+     */
+    DefaultModuleLoader.prototype.getTypes = function () {
+        var _this = this;
+        var modules = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            modules[_i] = arguments[_i];
+        }
+        var regModules = [];
+        modules.forEach(function (m) {
+            var types = _this.getContentTypes(m);
+            var iocExt = types.find(function (it) { return core.hasOwnClassMetadata(core.IocExt, it); });
+            if (iocExt) {
+                regModules.push(iocExt);
+            }
+            else {
+                regModules.push.apply(regModules, types);
+            }
+        });
+        return regModules;
+    };
+    DefaultModuleLoader.prototype.loadFile = function (files, basePath) {
+        var loader = this.getLoader();
+        var fRes;
+        if (utils.isArray(files)) {
+            fRes = Promise.all(files.map(function (f) { return loader(f); }))
+                .then(function (allms) {
+                var rms = [];
+                allms.forEach(function (ms) {
+                    rms = rms.concat(ms);
+                });
+                return rms;
+            });
+        }
+        else {
+            fRes = loader(files);
+        }
+        return fRes.then(function (ms) { return ms.filter(function (it) { return !!it; }); });
+    };
+    DefaultModuleLoader.prototype.isFile = function (str) {
+        return str && /\/((\w|%|\.))+\.\w+$/.test(str.replace(/\\\\/gi, '/'));
+    };
+    DefaultModuleLoader.prototype.loadModule = function (moduleName) {
+        var loader = this.getLoader();
+        return loader(moduleName).then(function (ms) { return ms.filter(function (it) { return !!it; }); });
+    };
+    DefaultModuleLoader.prototype.loadPathModule = function (pmd) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            var loader, modules;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        loader = this.getLoader();
+                        modules = [];
+                        if (!pmd.files) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.loadFile(pmd.files, pmd.basePath)
+                                .then(function (allmoduls) {
+                                allmoduls.forEach(function (ms) {
+                                    modules = modules.concat(ms);
+                                });
+                                return modules;
+                            })];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        if (!pmd.modules) return [3 /*break*/, 4];
+                        return [4 /*yield*/, Promise.all(pmd.modules.map(function (nmd) {
+                                return utils.isString(nmd) ? _this.loadModule(nmd) : nmd;
+                            })).then(function (ms) {
+                                modules = modules.concat(ms);
+                                return modules;
+                            })];
+                    case 3:
+                        _a.sent();
+                        _a.label = 4;
+                    case 4: return [2 /*return*/, modules];
+                }
+            });
+        });
+    };
+    DefaultModuleLoader.prototype.createLoader = function () {
+        if (typeof commonjsRequire !== 'undefined') {
+            return function (modulepath) {
+                return new Promise(function (resolve, reject) {
+                    commonjsRequire([modulepath], function (mud) {
+                        resolve(mud);
+                    }, function (err) {
+                        reject(err);
+                    });
+                });
+            };
+        }
+        else {
+            throw new Error('has not module loader');
+        }
+    };
+    DefaultModuleLoader.prototype.getContentTypes = function (regModule) {
+        var regModules = [];
+        if (utils.isClass(regModule)) {
+            regModules.push(regModule);
+        }
+        else {
+            var rmodules = regModule['exports'] ? regModule['exports'] : regModule;
+            for (var p in rmodules) {
+                if (utils.isClass(rmodules[p])) {
+                    regModules.push(rmodules[p]);
+                }
+            }
+        }
+        return regModules;
+    };
+    DefaultModuleLoader.classAnnations = { "name": "DefaultModuleLoader", "params": { "constructor": [], "getLoader": [], "load": ["modules"], "loadTypes": ["modules"], "getTypes": ["modules"], "loadFile": ["files", "basePath"], "isFile": ["str"], "loadModule": ["moduleName"], "loadPathModule": ["pmd"], "createLoader": [], "getContentTypes": ["regModule"] } };
+    return DefaultModuleLoader;
+}());
+exports.DefaultModuleLoader = DefaultModuleLoader;
+
+
+});
+
+unwrapExports(DefaultModuleLoader_1);
+var DefaultModuleLoader_2 = DefaultModuleLoader_1.DefaultModuleLoader;
+
+var DefaultContainerBuilder_1 = createCommonjsModule(function (module, exports) {
+var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+// import { hasOwnClassMetadata, IocModule } from './core/index';
+/**
+ * default container builder.
+ *
+ * @export
+ * @class DefaultContainerBuilder
+ * @implements {IContainerBuilder}
+ */
+var DefaultContainerBuilder = /** @class */ (function () {
+    function DefaultContainerBuilder(loader) {
+        this._loader = loader;
+    }
+    Object.defineProperty(DefaultContainerBuilder.prototype, "loader", {
+        get: function () {
+            if (!this._loader) {
+                this._loader = new DefaultModuleLoader_1.DefaultModuleLoader();
+            }
+            return this._loader;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    DefaultContainerBuilder.prototype.create = function () {
+        var _this = this;
+        var container = new Container_1.Container();
+        container.bindProvider(IContainerBuilder.ContainerBuilderToken, function () { return _this; });
+        container.bindProvider(IModuleLoader.ModuleLoaderToken, function () { return _this.loader; });
+        return container;
+    };
+    /**
+     * build container.
+     *
+     * @param {...LoadType[]} [modules]
+     * @returns
+     * @memberof DefaultContainerBuilder
+     */
+    DefaultContainerBuilder.prototype.build = function () {
+        var modules = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            modules[_i] = arguments[_i];
+        }
+        return __awaiter(this, void 0, void 0, function () {
+            var container;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        container = this.create();
+                        if (!modules.length) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.loadModule.apply(this, [container].concat(modules))];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2: return [2 /*return*/, container];
+                }
+            });
+        });
+    };
+    /**
+     * load modules for container.
+     *
+     * @param {IContainer} container
+     * @param {...LoadType[]} modules
+     * @returns {Promise<Type<any>[]>}
+     * @memberof DefaultContainerBuilder
+     */
+    DefaultContainerBuilder.prototype.loadModule = function (container) {
+        var modules = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            modules[_i - 1] = arguments[_i];
+        }
+        return __awaiter(this, void 0, void 0, function () {
+            var regModules, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0: return [4 /*yield*/, (_a = this.loader).loadTypes.apply(_a, modules)];
+                    case 1:
+                        regModules = _b.sent();
+                        return [2 /*return*/, this.registers(container, regModules)];
+                }
+            });
+        });
+    };
+    DefaultContainerBuilder.prototype.syncBuild = function () {
+        var modules = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            modules[_i] = arguments[_i];
+        }
+        var container = this.create();
+        if (modules.length) {
+            this.syncLoadModule.apply(this, [container].concat(modules));
+        }
+        return container;
+    };
+    DefaultContainerBuilder.prototype.syncLoadModule = function (container) {
+        var modules = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            modules[_i - 1] = arguments[_i];
+        }
+        var regModules = (_a = this.loader).getTypes.apply(_a, modules);
+        return this.registers(container, regModules);
+        var _a;
+    };
+    DefaultContainerBuilder.prototype.registers = function (container, types) {
+        types = types || [];
+        types.forEach(function (typ) {
+            container.register(typ);
+        });
+        return types;
+    };
+    DefaultContainerBuilder.classAnnations = { "name": "DefaultContainerBuilder", "params": { "constructor": ["loader"], "create": [], "build": ["modules"], "loadModule": ["container", "modules"], "syncBuild": ["modules"], "syncLoadModule": ["container", "modules"], "registers": ["container", "types"] } };
+    return DefaultContainerBuilder;
+}());
+exports.DefaultContainerBuilder = DefaultContainerBuilder;
+
+
+});
+
+unwrapExports(DefaultContainerBuilder_1);
+var DefaultContainerBuilder_2 = DefaultContainerBuilder_1.DefaultContainerBuilder;
+
+var AppConfiguration = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * App configuration token.
+ */
+exports.AppConfigurationToken = new InjectToken_1.InjectToken('__IOC_AppConfiguration');
+
+
+});
+
+unwrapExports(AppConfiguration);
+var AppConfiguration_1 = AppConfiguration.AppConfigurationToken;
+
+var ApplicationBuilder_1 = createCommonjsModule(function (module, exports) {
+var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+/**
+ * application builder.
+ *
+ * @export
+ * @class ApplicationBuilder
+ * @extends {ModuleBuilder<T>}
+ * @template T
+ */
+var ApplicationBuilder = /** @class */ (function () {
+    function ApplicationBuilder(baseURL) {
+        this.baseURL = baseURL;
+        this.usedModules = [];
+        this.customs = [];
+    }
+    ApplicationBuilder.prototype.useContainer = function (container) {
+        if (container) {
+            this.container = Promise.resolve(container);
+        }
+        return this;
+    };
+    /**
+     * use container builder
+     *
+     * @param {IContainerBuilder} builder
+     * @returns
+     * @memberof ModuleBuilder
+     */
+    ApplicationBuilder.prototype.useContainerBuilder = function (builder) {
+        this.builder = builder;
+        return this;
+    };
+    /**
+     * use custom configuration.
+     *
+     * @param {(string | AppConfiguration<T>)} [config]
+     * @returns {this}
+     * @memberof Bootstrap
+     */
+    ApplicationBuilder.prototype.useConfiguration = function (config) {
+        if (!this.configuration) {
+            this.configuration = Promise.resolve(this.getDefaultConfig());
+        }
+        var pcfg;
+        var builder = this.getContainerBuilder();
+        if (utils.isString(config)) {
+            pcfg = builder.loader.load(config)
+                .then(function (rs) {
+                return rs.length ? rs[0] : null;
+            });
+        }
+        else if (config) {
+            pcfg = Promise.resolve(config);
+        }
+        if (pcfg) {
+            this.configuration = this.configuration
+                .then(function (cfg) {
+                return pcfg.then(function (rcfg) {
+                    var excfg = (rcfg['default'] ? rcfg['default'] : rcfg);
+                    cfg = utils.lang.assign(cfg || {}, excfg || {});
+                    return cfg;
+                });
+            });
+        }
+        return this;
+    };
+    /**
+     * use module, custom module.
+     *
+     * @param {(...(LoadType | CustomRegister<T>)[])} modules
+     * @returns {this}
+     * @memberof PlatformServer
+     */
+    ApplicationBuilder.prototype.useModules = function () {
+        var _this = this;
+        var modules = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            modules[_i] = arguments[_i];
+        }
+        modules.forEach(function (m) {
+            if (utils.isFunction(m) && !utils.isClass(m)) {
+                _this.customs.push(m);
+            }
+            else {
+                _this.usedModules.push(m);
+            }
+        });
+        return this;
+    };
+    /**
+     * bootstrap application via main module
+     *
+     * @param {(Token<T> | Type<any>)} bootModule
+     * @returns {Promise<T>}
+     * @memberof ApplicationBuilder
+     */
+    ApplicationBuilder.prototype.bootstrap = function (bootModule) {
+        return __awaiter(this, void 0, void 0, function () {
+            var container, builder, cfg, app;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.getContainer()];
+                    case 1:
+                        container = _a.sent();
+                        builder = this.getModuleBuilder(container);
+                        return [4 /*yield*/, this.getConfiguration(this.getModuleConfigure(builder, bootModule))];
+                    case 2:
+                        cfg = _a.sent();
+                        return [4 /*yield*/, this.initContainer(cfg, container)];
+                    case 3:
+                        _a.sent();
+                        cfg.bootstrap = cfg.bootstrap || bootModule;
+                        return [4 /*yield*/, builder.build(cfg)];
+                    case 4:
+                        app = _a.sent();
+                        return [2 /*return*/, app];
+                }
+            });
+        });
+    };
+    /**
+     * get module builer.
+     *
+     * @returns {IModuleBuilder<T>}
+     * @memberof IApplicationBuilder
+     */
+    ApplicationBuilder.prototype.getModuleBuilder = function (container) {
+        if (!this._moduleBuilder) {
+            this._moduleBuilder = container.get(IModuleBuilder.ModuleBuilderToken);
+        }
+        return this._moduleBuilder;
+    };
+    ApplicationBuilder.prototype.getModuleConfigure = function (builer, boot) {
+        return builer.getConfigure(boot);
+    };
+    ApplicationBuilder.prototype.setConfigRoot = function (config) {
+        if (this.baseURL) {
+            config.baseURL = this.baseURL;
+        }
+    };
+    ApplicationBuilder.prototype.initContainer = function (config, container) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            var usedModules, customs;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        this.setConfigRoot(config);
+                        if (!this.usedModules.length) return [3 /*break*/, 2];
+                        usedModules = this.usedModules;
+                        this.usedModules = [];
+                        return [4 /*yield*/, container.loadModule.apply(container, [container].concat(usedModules))];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        container.bindProvider(AppConfiguration.AppConfigurationToken, config);
+                        if (!this.customs.length) return [3 /*break*/, 4];
+                        customs = this.customs;
+                        this.customs = [];
+                        return [4 /*yield*/, Promise.all(customs.map(function (cs) {
+                                return cs(container, config, _this);
+                            }))];
+                    case 3:
+                        _a.sent();
+                        _a.label = 4;
+                    case 4: return [2 /*return*/, container];
+                }
+            });
+        });
+    };
+    /**
+     * get container builder.
+     *
+     * @returns
+     * @memberof ModuleBuilder
+     */
+    ApplicationBuilder.prototype.getContainerBuilder = function () {
+        if (!this.builder) {
+            this.builder = new DefaultContainerBuilder_1.DefaultContainerBuilder();
+        }
+        return this.builder;
+    };
+    ApplicationBuilder.prototype.getContainer = function () {
+        var modules = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            modules[_i] = arguments[_i];
+        }
+        if (!this.container) {
+            this.container = (_a = this.getContainerBuilder()).build.apply(_a, modules);
+        }
+        return this.container;
+        var _a;
+    };
+    /**
+     * get configuration.
+     *
+     * @returns {Promise<T>}
+     * @memberof Bootstrap
+     */
+    ApplicationBuilder.prototype.getConfiguration = function (cfg) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!this.configuration) {
+                            this.useConfiguration(cfg);
+                        }
+                        else if (utils.lang.hasField(cfg)) {
+                            this.useConfiguration(cfg);
+                        }
+                        return [4 /*yield*/, this.configuration];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    ApplicationBuilder.prototype.getDefaultConfig = function () {
+        return { debug: false };
+    };
+    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "useContainer": ["container"], "useContainerBuilder": ["builder"], "useConfiguration": ["config"], "useModules": ["modules"], "bootstrap": ["bootModule"], "getModuleBuilder": ["container"], "getModuleConfigure": ["builer", "boot"], "setConfigRoot": ["config"], "initContainer": ["config", "container"], "getContainerBuilder": [], "getContainer": ["modules"], "getConfiguration": ["cfg"], "getDefaultConfig": [] } };
+    return ApplicationBuilder;
+}());
+exports.ApplicationBuilder = ApplicationBuilder;
+
+
+});
+
+unwrapExports(ApplicationBuilder_1);
+var ApplicationBuilder_2 = ApplicationBuilder_1.ApplicationBuilder;
+
+var D__workspace_github_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
@@ -6390,8 +6372,8 @@ __export(ApplicationBuilder_1);
 
 });
 
-var index$8 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_core_lib);
+var index$7 = unwrapExports(D__workspace_github_tsioc_packages_core_lib);
 
-return index$8;
+return index$7;
 
 })));

@@ -10,7 +10,8 @@ import { CacheManager } from './core/CacheManager';
 import { CacheManagerToken } from './ICacheManager';
 import { ProviderMatcherToken } from './core/IProviderMatcher';
 import { MethodAccessorToken } from './IMethodAccessor';
-import { ModuleBuilderToken, ModuleBuilder } from '.';
+import { ModuleBuilder } from './ModuleBuilder';
+import { ModuleBuilderToken } from './IModuleBuilder';
 
 /**
  * register core for container.
@@ -27,6 +28,7 @@ export function registerCores(container: IContainer) {
     container.registerSingleton(ProviderMatcherToken, () => new ProviderMatcher(container));
     container.registerSingleton(MethodAccessorToken, () => new MethodAccessor(container));
 
+    container.register(ModuleBuilderToken, () => new ModuleBuilder(container));
     let lifeScope = container.get(LifeScopeToken);
 
     lifeScope.registerDecorator(Injectable, CoreActions.bindProvider, CoreActions.cache);
@@ -45,7 +47,5 @@ export function registerCores(container: IContainer) {
     container.register(String, () => '');
     container.register(Number, () => Number.NaN);
     container.register(Boolean, () => undefined);
-
-    container.register(ModuleBuilderToken, () => new ModuleBuilder(container));
 
 }

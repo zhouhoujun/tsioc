@@ -2,7 +2,7 @@ import { Token, Type, ModuleType, LoadType, Providers } from './types';
 import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import { IContainer, ContainerToken } from './IContainer';
 import { hasClassMetadata, Autorun, isProviderMap, Provider, ParamProvider, DefModule, getTypeMetadata, Inject } from './core/index';
-import { Defer, isString, lang, isFunction, isClass, isUndefined, isNull, isNumber, isBaseObject, isToken, isArray, isMetadataObject } from './utils/index';
+import { Defer, isString, lang, isFunction, isClass, isUndefined, isNull, isNumber, isBaseObject, isToken, isArray, isMetadataObject, isObject } from './utils/index';
 import { IContainerBuilder } from './IContainerBuilder';
 import { DefaultContainerBuilder } from './DefaultContainerBuilder';
 import { ModuleConfiguration } from './ModuleConfiguration';
@@ -26,15 +26,15 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      * @returns {Promise<any>}
      * @memberof ModuleBuilder
      */
-    async build(modules: Token<T> | Type<any> | ModuleConfiguration<T>): Promise<T> {
-        let cfg = this.getConfigure(modules);
+    async build(modules: Token<T> | Type<any> | ModuleConfiguration<T>, moduleDecorator?: Function | string): Promise<T> {
+        let cfg = this.getConfigure(modules, moduleDecorator);
         let token = cfg.bootstrap || (isToken(modules) ? modules : null);
         if (!token) {
             return Promise.reject('not find bootstrap token.');
         }
 
         let container = this.container;
-        container = await this.initContainer(cfg, container);
+        await this.registerDepdences(cfg);
         if (isClass(token)) {
             if (!container.has(token)) {
                 container.register(token);
@@ -51,19 +51,19 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      * @returns {ModuleConfiguration<T>}
      * @memberof ModuleBuilder
      */
-    getConfigure(modules?: Token<any> | ModuleConfiguration<T>): ModuleConfiguration<T> {
+    getConfigure(modules?: Token<any> | ModuleConfiguration<T>, moduleDecorator?: Function | string): ModuleConfiguration<T> {
         let cfg: ModuleConfiguration<T>;
         if (isClass(modules)) {
-            cfg = this.getMetaConfig(modules);
-        } else {
-            cfg = (isMetadataObject(modules) ? modules : {}) as ModuleConfiguration<T>;
+            cfg = this.getMetaConfig(modules, moduleDecorator || DefModule);
+        } else if (!isToken(modules)) {
+            cfg = modules as ModuleConfiguration<T>;
         }
-        return cfg;
+        return cfg || {};
     }
 
-    protected getMetaConfig(bootModule: Type<any>): ModuleConfiguration<T> {
-        if (hasClassMetadata(DefModule, bootModule)) {
-            let meta = getTypeMetadata<T>(DefModule, bootModule);
+    protected getMetaConfig(bootModule: Type<any>, moduleDecorator: Function | string): ModuleConfiguration<T> {
+        if (hasClassMetadata(moduleDecorator, bootModule)) {
+            let meta = getTypeMetadata<T>(moduleDecorator, bootModule);
             if (meta && meta.length) {
                 return meta[0];
             }
@@ -72,17 +72,17 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
 
-    protected async initContainer(config: ModuleConfiguration<T>, container: IContainer): Promise<IContainer> {
+    protected async registerDepdences(config: ModuleConfiguration<T>): Promise<IContainer> {
 
         if (isArray(config.imports) && config.imports.length) {
-            await container.loadModule(container, ...config.imports);
+            await this.container.loadModule(...config.imports);
         }
 
         if (isArray(config.providers) && config.providers.length) {
-            this.bindProvider(container, config.providers);
+            this.bindProvider(this.container, config.providers);
         }
 
-        return container;
+        return this.container;
     }
 
     protected bindProvider(container: IContainer, providers: Providers[]) {

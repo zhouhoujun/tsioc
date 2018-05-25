@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/platform-browser",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./bundles/platform-browser.umd.js",
   "typings": "./lib/index.d.ts",
@@ -27,7 +27,7 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "peerDependencies": {
     "reflect-metadata": "^0.1.12",
-    "@ts-ioc/core": "2.4.0"
+    "@ts-ioc/core": "2.4.1"
   },
   "directories": {
     "lib": "lib"
