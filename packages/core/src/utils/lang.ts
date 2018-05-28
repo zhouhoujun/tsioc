@@ -111,3 +111,35 @@ export function find<T>(target: ObjectMap<T> | T[], express: (item: T, idx?: num
         }
     })
 }
+
+
+/**
+ * first.
+ *
+ * @export
+ * @template T
+ * @param {T[]} list
+ * @returns {T}
+ */
+export function first<T>(list: T[]): T {
+    if (isArray(list) && list.length) {
+        return list[0];
+    }
+    return null;
+}
+
+/**
+ * last.
+ *
+ * @export
+ * @template T
+ * @param {T[]} list
+ * @returns {T}
+ */
+export function last<T>(list: T[]): T {
+    if (isArray(list) && list.length) {
+        return list[list.length - 1];
+    }
+    return null;
+}
+

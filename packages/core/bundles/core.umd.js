@@ -142,6 +142,36 @@ function find(target, express) {
     });
 }
 exports.find = find;
+/**
+ * first.
+ *
+ * @export
+ * @template T
+ * @param {T[]} list
+ * @returns {T}
+ */
+function first(list) {
+    if (typeCheck.isArray(list) && list.length) {
+        return list[0];
+    }
+    return null;
+}
+exports.first = first;
+/**
+ * last.
+ *
+ * @export
+ * @template T
+ * @param {T[]} list
+ * @returns {T}
+ */
+function last(list) {
+    if (typeCheck.isArray(list) && list.length) {
+        return list[list.length - 1];
+    }
+    return null;
+}
+exports.last = last;
 
 
 });
@@ -153,6 +183,8 @@ var lang_3 = lang.omit;
 var lang_4 = lang.hasField;
 var lang_5 = lang.forIn;
 var lang_6 = lang.find;
+var lang_7 = lang.first;
+var lang_8 = lang.last;
 
 var typeCheck = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
