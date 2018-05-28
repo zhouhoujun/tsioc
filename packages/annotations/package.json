@@ -27,6 +27,7 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {},
   "peerDependencies": {
+    "tslib": "^1.9.1",
     "through2": "^2.0.1",
     "typescript": "^2.7.1"
   },
