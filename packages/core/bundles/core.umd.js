@@ -6,8 +6,6 @@
 
 reflectMetadata = reflectMetadata && reflectMetadata.hasOwnProperty('default') ? reflectMetadata['default'] : reflectMetadata;
 
-var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
-
 function commonjsRequire () {
 	throw new Error('Dynamic requires are not currently supported by rollup-plugin-commonjs');
 }
@@ -19,6 +17,208 @@ function unwrapExports (x) {
 function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
+
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+/* global Reflect, Promise */
+
+var extendStatics = Object.setPrototypeOf ||
+    ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+    function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+
+function __extends(d, b) {
+    extendStatics(d, b);
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+}
+
+var __assign = Object.assign || function __assign(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+    }
+    return t;
+};
+
+function __rest(s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0)
+            t[p[i]] = s[p[i]];
+    return t;
+}
+
+function __decorate(decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+}
+
+function __param(paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+}
+
+function __metadata(metadataKey, metadataValue) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+}
+
+function __awaiter(thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+}
+
+function __generator(thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+}
+
+function __exportStar(m, exports) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+
+function __values(o) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
+    if (m) return m.call(o);
+    return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+}
+
+function __read(o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+}
+
+function __spread() {
+    for (var ar = [], i = 0; i < arguments.length; i++)
+        ar = ar.concat(__read(arguments[i]));
+    return ar;
+}
+
+function __await(v) {
+    return this instanceof __await ? (this.v = v, this) : new __await(v);
+}
+
+function __asyncGenerator(thisArg, _arguments, generator) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var g = generator.apply(thisArg, _arguments || []), i, q = [];
+    return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+    function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+    function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);  }
+    function fulfill(value) { resume("next", value); }
+    function reject(value) { resume("throw", value); }
+    function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+}
+
+function __asyncDelegator(o) {
+    var i, p;
+    return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+    function verb(n, f) { if (o[n]) i[n] = function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; }; }
+}
+
+function __asyncValues(o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator];
+    return m ? m.call(o) : typeof __values === "function" ? __values(o) : o[Symbol.iterator]();
+}
+
+function __makeTemplateObject(cooked, raw) {
+    if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
+    return cooked;
+}
+
+function __importStar(mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result.default = mod;
+    return result;
+}
+
+function __importDefault(mod) {
+    return (mod && mod.__esModule) ? mod : { default: mod };
+}
+
+
+var tslib_1 = Object.freeze({
+	__extends: __extends,
+	__assign: __assign,
+	__rest: __rest,
+	__decorate: __decorate,
+	__param: __param,
+	__metadata: __metadata,
+	__awaiter: __awaiter,
+	__generator: __generator,
+	__exportStar: __exportStar,
+	__values: __values,
+	__read: __read,
+	__spread: __spread,
+	__await: __await,
+	__asyncGenerator: __asyncGenerator,
+	__asyncDelegator: __asyncDelegator,
+	__asyncValues: __asyncValues,
+	__makeTemplateObject: __makeTemplateObject,
+	__importStar: __importStar,
+	__importDefault: __importDefault
+});
 
 var lang = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -763,15 +963,13 @@ unwrapExports(Defer_1);
 var Defer_2 = Defer_1.Defer;
 
 var utils = createCommonjsModule(function (module, exports) {
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(typeCheck);
-__export(MapSet_1);
+
+tslib_1.__exportStar(typeCheck, exports);
+tslib_1.__exportStar(MapSet_1, exports);
 
 exports.lang = lang;
-__export(Defer_1);
+tslib_1.__exportStar(Defer_1, exports);
 
 
 });
@@ -861,17 +1059,8 @@ unwrapExports(Registration_1);
 var Registration_2 = Registration_1.Registration;
 
 var InjectToken_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 /**
  * inject token.
@@ -882,7 +1071,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @template T
  */
 var InjectToken = /** @class */ (function (_super) {
-    __extends(InjectToken, _super);
+    tslib_1.__extends(InjectToken, _super);
     function InjectToken(desc) {
         return _super.call(this, desc, '') || this;
     }
@@ -1367,13 +1556,11 @@ unwrapExports(GComposite_1);
 var GComposite_2 = GComposite_1.GComposite;
 
 var components = createCommonjsModule(function (module, exports) {
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(Composite_1);
-__export(GComposite_1);
-__export(NullComponent_1);
+
+tslib_1.__exportStar(Composite_1, exports);
+tslib_1.__exportStar(GComposite_1, exports);
+tslib_1.__exportStar(NullComponent_1, exports);
 
 
 });
@@ -1381,20 +1568,11 @@ __export(NullComponent_1);
 unwrapExports(components);
 
 var NullAction = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
 
+
 var NullActionClass = /** @class */ (function (_super) {
-    __extends(NullActionClass, _super);
+    tslib_1.__extends(NullActionClass, _super);
     function NullActionClass() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
@@ -1421,17 +1599,8 @@ unwrapExports(NullAction);
 var NullAction_1 = NullAction.NullAction;
 
 var ActionComposite_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 /**
@@ -1443,7 +1612,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @implements {ActionComponent}
  */
 var ActionComposite = /** @class */ (function (_super) {
-    __extends(ActionComposite, _super);
+    tslib_1.__extends(ActionComposite, _super);
     function ActionComposite(name) {
         var _this = _super.call(this, name) || this;
         _this.children = [];
@@ -2533,21 +2702,19 @@ unwrapExports(MethodPropParamDecoratorFactory);
 var MethodPropParamDecoratorFactory_1 = MethodPropParamDecoratorFactory.createMethodPropParamDecorator;
 
 var factories = createCommonjsModule(function (module, exports) {
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(ArgsIterator_1);
-__export(DecoratorType_1);
-__export(DecoratorFactory);
-__export(ClassDecoratorFactory);
-__export(MethodDecoratorFactory);
-__export(ParamDecoratorFactory);
-__export(PropertyDecoratorFactory);
-__export(ParamPropDecoratorFactory);
-__export(ClassMethodDecoratorFactory);
-__export(MethodPropDecoratorFactory);
-__export(MethodPropParamDecoratorFactory);
+
+tslib_1.__exportStar(ArgsIterator_1, exports);
+tslib_1.__exportStar(DecoratorType_1, exports);
+tslib_1.__exportStar(DecoratorFactory, exports);
+tslib_1.__exportStar(ClassDecoratorFactory, exports);
+tslib_1.__exportStar(MethodDecoratorFactory, exports);
+tslib_1.__exportStar(ParamDecoratorFactory, exports);
+tslib_1.__exportStar(PropertyDecoratorFactory, exports);
+tslib_1.__exportStar(ParamPropDecoratorFactory, exports);
+tslib_1.__exportStar(ClassMethodDecoratorFactory, exports);
+tslib_1.__exportStar(MethodPropDecoratorFactory, exports);
+tslib_1.__exportStar(MethodPropParamDecoratorFactory, exports);
 
 
 });
@@ -2555,17 +2722,8 @@ __export(MethodPropParamDecoratorFactory);
 unwrapExports(factories);
 
 var BindProviderAction_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -2577,7 +2735,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @extends {ActionComposite}
  */
 var BindProviderAction = /** @class */ (function (_super) {
-    __extends(BindProviderAction, _super);
+    tslib_1.__extends(BindProviderAction, _super);
     function BindProviderAction() {
         return _super.call(this, CoreActions_1.CoreActions.bindProvider) || this;
     }
@@ -2613,17 +2771,8 @@ unwrapExports(BindProviderAction_1);
 var BindProviderAction_2 = BindProviderAction_1.BindProviderAction;
 
 var BindParameterTypeAction_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -2636,7 +2785,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @extends {ActionComposite}
  */
 var BindParameterTypeAction = /** @class */ (function (_super) {
-    __extends(BindParameterTypeAction, _super);
+    tslib_1.__extends(BindParameterTypeAction, _super);
     function BindParameterTypeAction() {
         return _super.call(this, CoreActions_1.CoreActions.bindParameterType) || this;
     }
@@ -2702,17 +2851,8 @@ unwrapExports(BindParameterTypeAction_1);
 var BindParameterTypeAction_2 = BindParameterTypeAction_1.BindParameterTypeAction;
 
 var BindPropertyTypeAction_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -2724,7 +2864,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @extends {ActionComposite}
  */
 var BindPropertyTypeAction = /** @class */ (function (_super) {
-    __extends(BindPropertyTypeAction, _super);
+    tslib_1.__extends(BindPropertyTypeAction, _super);
     function BindPropertyTypeAction() {
         return _super.call(this, CoreActions_1.CoreActions.bindPropertyType) || this;
     }
@@ -2767,17 +2907,8 @@ unwrapExports(BindPropertyTypeAction_1);
 var BindPropertyTypeAction_2 = BindPropertyTypeAction_1.BindPropertyTypeAction;
 
 var InjectPropertyAction_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 /**
@@ -2788,7 +2919,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @extends {ActionComposite}
  */
 var InjectPropertyAction = /** @class */ (function (_super) {
-    __extends(InjectPropertyAction, _super);
+    tslib_1.__extends(InjectPropertyAction, _super);
     function InjectPropertyAction() {
         return _super.call(this, CoreActions_1.CoreActions.injectProperty) || this;
     }
@@ -2819,17 +2950,8 @@ unwrapExports(InjectPropertyAction_1);
 var InjectPropertyAction_2 = InjectPropertyAction_1.InjectPropertyAction;
 
 var BindParameterProviderAction_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -2842,7 +2964,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @extends {ActionComposite}
  */
 var BindParameterProviderAction = /** @class */ (function (_super) {
-    __extends(BindParameterProviderAction, _super);
+    tslib_1.__extends(BindParameterProviderAction, _super);
     function BindParameterProviderAction() {
         return _super.call(this, CoreActions_1.CoreActions.bindParameterProviders) || this;
     }
@@ -2878,17 +3000,8 @@ unwrapExports(BindParameterProviderAction_1);
 var BindParameterProviderAction_2 = BindParameterProviderAction_1.BindParameterProviderAction;
 
 var ComponentBeforeInitAction_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -2900,7 +3013,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @extends {ActionComposite}
  */
 var ComponentBeforeInitAction = /** @class */ (function (_super) {
-    __extends(ComponentBeforeInitAction, _super);
+    tslib_1.__extends(ComponentBeforeInitAction, _super);
     function ComponentBeforeInitAction() {
         return _super.call(this, CoreActions_1.CoreActions.componentBeforeInit) || this;
     }
@@ -2924,17 +3037,8 @@ unwrapExports(ComponentBeforeInitAction_1);
 var ComponentBeforeInitAction_2 = ComponentBeforeInitAction_1.ComponentBeforeInitAction;
 
 var ComponentInitAction_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -2946,7 +3050,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @extends {ActionComposite}
  */
 var ComponentInitAction = /** @class */ (function (_super) {
-    __extends(ComponentInitAction, _super);
+    tslib_1.__extends(ComponentInitAction, _super);
     function ComponentInitAction() {
         return _super.call(this, CoreActions_1.CoreActions.componentInit) || this;
     }
@@ -2970,17 +3074,8 @@ unwrapExports(ComponentInitAction_1);
 var ComponentInitAction_2 = ComponentInitAction_1.ComponentInitAction;
 
 var ComponentAfterInitAction_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -2992,7 +3087,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @extends {ActionComposite}
  */
 var ComponentAfterInitAction = /** @class */ (function (_super) {
-    __extends(ComponentAfterInitAction, _super);
+    tslib_1.__extends(ComponentAfterInitAction, _super);
     function ComponentAfterInitAction() {
         return _super.call(this, CoreActions_1.CoreActions.componentAfterInit) || this;
     }
@@ -3031,17 +3126,8 @@ unwrapExports(ICacheManager);
 var ICacheManager_1 = ICacheManager.CacheManagerToken;
 
 var CacheAction_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -3055,7 +3141,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @extends {ActionComposite}
  */
 var CacheAction = /** @class */ (function (_super) {
-    __extends(CacheAction, _super);
+    tslib_1.__extends(CacheAction, _super);
     function CacheAction() {
         return _super.call(this, CoreActions_1.CoreActions.cache) || this;
     }
@@ -3112,17 +3198,8 @@ unwrapExports(CacheAction_1);
 var CacheAction_2 = CacheAction_1.CacheAction;
 
 var SingletonAction = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 /**
@@ -3133,7 +3210,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @extends {ActionComposite}
  */
 var SingletionAction = /** @class */ (function (_super) {
-    __extends(SingletionAction, _super);
+    tslib_1.__extends(SingletionAction, _super);
     function SingletionAction() {
         return _super.call(this, CoreActions_1.CoreActions.singletion) || this;
     }
@@ -3364,21 +3441,19 @@ unwrapExports(DefModule);
 var DefModule_1 = DefModule.DefModule;
 
 var decorators = createCommonjsModule(function (module, exports) {
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(Component);
-__export(Injectable);
-__export(Inject);
-__export(AutoWried);
-__export(Param);
-__export(Method);
-__export(Singleton);
-__export(Abstract);
-__export(AutoRun);
-__export(IocExt);
-__export(DefModule);
+
+tslib_1.__exportStar(Component, exports);
+tslib_1.__exportStar(Injectable, exports);
+tslib_1.__exportStar(Inject, exports);
+tslib_1.__exportStar(AutoWried, exports);
+tslib_1.__exportStar(Param, exports);
+tslib_1.__exportStar(Method, exports);
+tslib_1.__exportStar(Singleton, exports);
+tslib_1.__exportStar(Abstract, exports);
+tslib_1.__exportStar(AutoRun, exports);
+tslib_1.__exportStar(IocExt, exports);
+tslib_1.__exportStar(DefModule, exports);
 
 
 });
@@ -3386,17 +3461,8 @@ __export(DefModule);
 unwrapExports(decorators);
 
 var AutorunAction_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -3410,7 +3476,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @extends {ActionComposite}
  */
 var AutorunAction = /** @class */ (function (_super) {
-    __extends(AutorunAction, _super);
+    tslib_1.__extends(AutorunAction, _super);
     function AutorunAction() {
         return _super.call(this, CoreActions_1.CoreActions.autorun) || this;
     }
@@ -3449,25 +3515,23 @@ unwrapExports(AutorunAction_1);
 var AutorunAction_2 = AutorunAction_1.AutorunAction;
 
 var actions = createCommonjsModule(function (module, exports) {
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(ActionComposite_1);
-__export(LifeState_1);
-__export(CoreActions_1);
-__export(NullAction);
-__export(BindProviderAction_1);
-__export(BindParameterTypeAction_1);
-__export(BindPropertyTypeAction_1);
-__export(InjectPropertyAction_1);
-__export(BindParameterProviderAction_1);
-__export(ComponentBeforeInitAction_1);
-__export(ComponentInitAction_1);
-__export(ComponentAfterInitAction_1);
-__export(CacheAction_1);
-__export(SingletonAction);
-__export(AutorunAction_1);
+
+tslib_1.__exportStar(ActionComposite_1, exports);
+tslib_1.__exportStar(LifeState_1, exports);
+tslib_1.__exportStar(CoreActions_1, exports);
+tslib_1.__exportStar(NullAction, exports);
+tslib_1.__exportStar(BindProviderAction_1, exports);
+tslib_1.__exportStar(BindParameterTypeAction_1, exports);
+tslib_1.__exportStar(BindPropertyTypeAction_1, exports);
+tslib_1.__exportStar(InjectPropertyAction_1, exports);
+tslib_1.__exportStar(BindParameterProviderAction_1, exports);
+tslib_1.__exportStar(ComponentBeforeInitAction_1, exports);
+tslib_1.__exportStar(ComponentInitAction_1, exports);
+tslib_1.__exportStar(ComponentAfterInitAction_1, exports);
+tslib_1.__exportStar(CacheAction_1, exports);
+tslib_1.__exportStar(SingletonAction, exports);
+tslib_1.__exportStar(AutorunAction_1, exports);
 
 
 });
@@ -3574,17 +3638,8 @@ var ProviderMap_2 = ProviderMap_1.ProviderMapToken;
 var ProviderMap_3 = ProviderMap_1.ProviderMap;
 
 var Provider_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 /**
  *  provider, to dynamic resovle instance of params in run time.
@@ -3729,7 +3784,7 @@ exports.Provider = Provider;
  * @extends {Provider}
  */
 var InvokeProvider = /** @class */ (function (_super) {
-    __extends(InvokeProvider, _super);
+    tslib_1.__extends(InvokeProvider, _super);
     function InvokeProvider(type, method, value) {
         var _this = _super.call(this, type, value) || this;
         _this.method = method;
@@ -3756,7 +3811,7 @@ exports.InvokeProvider = InvokeProvider;
  * @interface ParamProvider
  */
 var ParamProvider = /** @class */ (function (_super) {
-    __extends(ParamProvider, _super);
+    tslib_1.__extends(ParamProvider, _super);
     function ParamProvider(token, value, index, method) {
         var _this = _super.call(this, token, method, value) || this;
         _this.index = index;
@@ -3781,7 +3836,7 @@ exports.ParamProvider = ParamProvider;
  * @extends {Provider}
  */
 var ExtendsProvider = /** @class */ (function (_super) {
-    __extends(ExtendsProvider, _super);
+    tslib_1.__extends(ExtendsProvider, _super);
     function ExtendsProvider(token, value, extendsTarget) {
         var _this = _super.call(this, token, value) || this;
         _this.extendsTarget = extendsTarget;
@@ -3846,15 +3901,13 @@ var Provider_4 = Provider_1.ParamProvider;
 var Provider_5 = Provider_1.ExtendsProvider;
 
 var providers = createCommonjsModule(function (module, exports) {
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
-__export(Provider_1);
+
+tslib_1.__exportStar(Provider_1, exports);
 // export * from './ExtendsProvider';
-__export(ProviderMap_1);
+tslib_1.__exportStar(ProviderMap_1, exports);
 // export * from './InvokeProvider';
 // export * from './ParamProvider';
 // export * from './AsyncParamProvider';
@@ -3910,17 +3963,8 @@ unwrapExports(IProviderMatcher);
 var IProviderMatcher_1 = IProviderMatcher.ProviderMatcherToken;
 
 var MethodAutorun_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -3934,7 +3978,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @extends {ActionComposite}
  */
 var MethodAutorun = /** @class */ (function (_super) {
-    __extends(MethodAutorun, _super);
+    tslib_1.__extends(MethodAutorun, _super);
     function MethodAutorun() {
         return _super.call(this, CoreActions_1.CoreActions.methodAutorun) || this;
     }
@@ -4524,42 +4568,8 @@ unwrapExports(ProviderMatcher_1);
 var ProviderMatcher_2 = ProviderMatcher_1.ProviderMatcher;
 
 var MethodAccessor_1 = createCommonjsModule(function (module, exports) {
-var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -4582,9 +4592,9 @@ var MethodAccessor = /** @class */ (function () {
         for (var _i = 3; _i < arguments.length; _i++) {
             providers[_i - 3] = arguments[_i];
         }
-        return __awaiter(this, void 0, void 0, function () {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
             var targetClass, actionData, lifeScope, parameters, paramInstances, _a;
-            return __generator(this, function (_b) {
+            return tslib_1.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         if (!target) {
@@ -4806,21 +4816,19 @@ unwrapExports(CacheManager_1);
 var CacheManager_2 = CacheManager_1.CacheManager;
 
 var core = createCommonjsModule(function (module, exports) {
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(actions);
-__export(decorators);
-__export(factories);
-__export(providers);
-__export(IRecognizer);
-__export(IProviderMatcher);
-__export(ActionFactory_1);
-__export(DefaultLifeScope_1);
-__export(ProviderMatcher_1);
-__export(MethodAccessor_1);
-__export(CacheManager_1);
+
+tslib_1.__exportStar(actions, exports);
+tslib_1.__exportStar(decorators, exports);
+tslib_1.__exportStar(factories, exports);
+tslib_1.__exportStar(providers, exports);
+tslib_1.__exportStar(IRecognizer, exports);
+tslib_1.__exportStar(IProviderMatcher, exports);
+tslib_1.__exportStar(ActionFactory_1, exports);
+tslib_1.__exportStar(DefaultLifeScope_1, exports);
+tslib_1.__exportStar(ProviderMatcher_1, exports);
+tslib_1.__exportStar(MethodAccessor_1, exports);
+tslib_1.__exportStar(CacheManager_1, exports);
 
 
 });
@@ -4858,42 +4866,8 @@ unwrapExports(IContainerBuilder);
 var IContainerBuilder_1 = IContainerBuilder.ContainerBuilderToken;
 
 var ModuleBuilder_1 = createCommonjsModule(function (module, exports) {
-var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 /**
@@ -4914,9 +4888,9 @@ var ModuleBuilder = /** @class */ (function () {
      * @memberof ModuleBuilder
      */
     ModuleBuilder.prototype.build = function (modules, moduleDecorator) {
-        return __awaiter(this, void 0, void 0, function () {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
             var cfg, token, container;
-            return __generator(this, function (_a) {
+            return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         cfg = this.getConfigure(modules, moduleDecorator);
@@ -4968,9 +4942,9 @@ var ModuleBuilder = /** @class */ (function () {
         return null;
     };
     ModuleBuilder.prototype.registerDepdences = function (config) {
-        return __awaiter(this, void 0, void 0, function () {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
             var _a;
-            return __generator(this, function (_b) {
+            return tslib_1.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         if (!(utils.isArray(config.imports) && config.imports.length)) return [3 /*break*/, 2];
@@ -5685,42 +5659,8 @@ unwrapExports(IModuleLoader);
 var IModuleLoader_1 = IModuleLoader.ModuleLoaderToken;
 
 var DefaultModuleLoader_1 = createCommonjsModule(function (module, exports) {
-var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 /**
@@ -5788,9 +5728,9 @@ var DefaultModuleLoader = /** @class */ (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             modules[_i] = arguments[_i];
         }
-        return __awaiter(this, void 0, void 0, function () {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
             var mdls;
-            return __generator(this, function (_a) {
+            return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.load.apply(this, modules)];
                     case 1:
@@ -5852,10 +5792,10 @@ var DefaultModuleLoader = /** @class */ (function () {
         return loader(moduleName).then(function (ms) { return ms.filter(function (it) { return !!it; }); });
     };
     DefaultModuleLoader.prototype.loadPathModule = function (pmd) {
-        return __awaiter(this, void 0, void 0, function () {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
             var _this = this;
             var loader, modules;
-            return __generator(this, function (_a) {
+            return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         loader = this.getLoader();
@@ -5930,42 +5870,8 @@ unwrapExports(DefaultModuleLoader_1);
 var DefaultModuleLoader_2 = DefaultModuleLoader_1.DefaultModuleLoader;
 
 var DefaultContainerBuilder_1 = createCommonjsModule(function (module, exports) {
-var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -6011,9 +5917,9 @@ var DefaultContainerBuilder = /** @class */ (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             modules[_i] = arguments[_i];
         }
-        return __awaiter(this, void 0, void 0, function () {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
             var container;
-            return __generator(this, function (_a) {
+            return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         container = this.create();
@@ -6040,9 +5946,9 @@ var DefaultContainerBuilder = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             modules[_i - 1] = arguments[_i];
         }
-        return __awaiter(this, void 0, void 0, function () {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
             var regModules, _a;
-            return __generator(this, function (_b) {
+            return tslib_1.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, (_a = this.loader).loadTypes.apply(_a, modules)];
                     case 1:
@@ -6105,42 +6011,8 @@ unwrapExports(AppConfiguration);
 var AppConfiguration_1 = AppConfiguration.AppConfigurationToken;
 
 var ApplicationBuilder_1 = createCommonjsModule(function (module, exports) {
-var __awaiter = (commonjsGlobal && commonjsGlobal.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (commonjsGlobal && commonjsGlobal.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -6241,9 +6113,9 @@ var ApplicationBuilder = /** @class */ (function () {
      * @memberof ApplicationBuilder
      */
     ApplicationBuilder.prototype.bootstrap = function (bootModule) {
-        return __awaiter(this, void 0, void 0, function () {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
             var container, builder, cfg, app;
-            return __generator(this, function (_a) {
+            return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.getContainer()];
                     case 1:
@@ -6285,10 +6157,10 @@ var ApplicationBuilder = /** @class */ (function () {
         }
     };
     ApplicationBuilder.prototype.initContainer = function (config, container) {
-        return __awaiter(this, void 0, void 0, function () {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
             var _this = this;
             var usedModules, customs;
-            return __generator(this, function (_a) {
+            return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         this.setConfigRoot(config);
@@ -6345,8 +6217,8 @@ var ApplicationBuilder = /** @class */ (function () {
      * @memberof Bootstrap
      */
     ApplicationBuilder.prototype.getConfiguration = function (cfg) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         if (!this.configuration) {
@@ -6376,30 +6248,28 @@ unwrapExports(ApplicationBuilder_1);
 var ApplicationBuilder_2 = ApplicationBuilder_1.ApplicationBuilder;
 
 var D__workspace_github_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(IContainer);
-__export(Container_1);
-__export(types);
-__export(Registration_1);
-__export(InjectToken_1);
-__export(IContainerBuilder);
-__export(IMethodAccessor);
-__export(ICacheManager);
+
+tslib_1.__exportStar(IContainer, exports);
+tslib_1.__exportStar(Container_1, exports);
+tslib_1.__exportStar(types, exports);
+tslib_1.__exportStar(Registration_1, exports);
+tslib_1.__exportStar(InjectToken_1, exports);
+tslib_1.__exportStar(IContainerBuilder, exports);
+tslib_1.__exportStar(IMethodAccessor, exports);
+tslib_1.__exportStar(ICacheManager, exports);
 // export * from './tokens';
-__export(LifeScope);
-__export(IModuleLoader);
-__export(DefaultModuleLoader_1);
-__export(DefaultContainerBuilder_1);
-__export(utils);
-__export(components);
-__export(core);
-__export(IModuleBuilder);
-__export(ModuleBuilder_1);
-__export(AppConfiguration);
-__export(ApplicationBuilder_1);
+tslib_1.__exportStar(LifeScope, exports);
+tslib_1.__exportStar(IModuleLoader, exports);
+tslib_1.__exportStar(DefaultModuleLoader_1, exports);
+tslib_1.__exportStar(DefaultContainerBuilder_1, exports);
+tslib_1.__exportStar(utils, exports);
+tslib_1.__exportStar(components, exports);
+tslib_1.__exportStar(core, exports);
+tslib_1.__exportStar(IModuleBuilder, exports);
+tslib_1.__exportStar(ModuleBuilder_1, exports);
+tslib_1.__exportStar(AppConfiguration, exports);
+tslib_1.__exportStar(ApplicationBuilder_1, exports);
 
 
 });

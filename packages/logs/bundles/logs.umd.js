@@ -7,10 +7,6 @@
 core_1 = core_1 && core_1.hasOwnProperty('default') ? core_1['default'] : core_1;
 aop_1 = aop_1 && aop_1.hasOwnProperty('default') ? aop_1['default'] : aop_1;
 
-var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
-
-
-
 function unwrapExports (x) {
 	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
 }
@@ -18,6 +14,208 @@ function unwrapExports (x) {
 function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
+
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+/* global Reflect, Promise */
+
+var extendStatics = Object.setPrototypeOf ||
+    ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+    function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+
+function __extends(d, b) {
+    extendStatics(d, b);
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+}
+
+var __assign = Object.assign || function __assign(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+    }
+    return t;
+};
+
+function __rest(s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0)
+            t[p[i]] = s[p[i]];
+    return t;
+}
+
+function __decorate(decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+}
+
+function __param(paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+}
+
+function __metadata(metadataKey, metadataValue) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+}
+
+function __awaiter(thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+}
+
+function __generator(thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+}
+
+function __exportStar(m, exports) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+
+function __values(o) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
+    if (m) return m.call(o);
+    return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+}
+
+function __read(o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+}
+
+function __spread() {
+    for (var ar = [], i = 0; i < arguments.length; i++)
+        ar = ar.concat(__read(arguments[i]));
+    return ar;
+}
+
+function __await(v) {
+    return this instanceof __await ? (this.v = v, this) : new __await(v);
+}
+
+function __asyncGenerator(thisArg, _arguments, generator) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var g = generator.apply(thisArg, _arguments || []), i, q = [];
+    return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+    function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+    function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);  }
+    function fulfill(value) { resume("next", value); }
+    function reject(value) { resume("throw", value); }
+    function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+}
+
+function __asyncDelegator(o) {
+    var i, p;
+    return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+    function verb(n, f) { if (o[n]) i[n] = function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; }; }
+}
+
+function __asyncValues(o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator];
+    return m ? m.call(o) : typeof __values === "function" ? __values(o) : o[Symbol.iterator]();
+}
+
+function __makeTemplateObject(cooked, raw) {
+    if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
+    return cooked;
+}
+
+function __importStar(mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result.default = mod;
+    return result;
+}
+
+function __importDefault(mod) {
+    return (mod && mod.__esModule) ? mod : { default: mod };
+}
+
+
+var tslib_1 = Object.freeze({
+	__extends: __extends,
+	__assign: __assign,
+	__rest: __rest,
+	__decorate: __decorate,
+	__param: __param,
+	__metadata: __metadata,
+	__awaiter: __awaiter,
+	__generator: __generator,
+	__exportStar: __exportStar,
+	__values: __values,
+	__read: __read,
+	__spread: __spread,
+	__await: __await,
+	__asyncGenerator: __asyncGenerator,
+	__asyncDelegator: __asyncDelegator,
+	__asyncValues: __asyncValues,
+	__makeTemplateObject: __makeTemplateObject,
+	__importStar: __importStar,
+	__importDefault: __importDefault
+});
 
 var Level_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -106,19 +304,8 @@ unwrapExports(LogConfigure);
 var LogConfigure_1 = LogConfigure.LogConfigureToken;
 
 var ConfigureLoggerManger_1 = createCommonjsModule(function (module, exports) {
-var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (commonjsGlobal && commonjsGlobal.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var __param = (commonjsGlobal && commonjsGlobal.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -199,11 +386,11 @@ var ConfigureLoggerManger = /** @class */ (function () {
         return this.logManger.getLogger(name);
     };
     ConfigureLoggerManger.classAnnations = { "name": "ConfigureLoggerManger", "params": { "constructor": ["container", "config"], "setLogConfigure": ["config"], "configure": ["config"], "getLogger": ["name"] } };
-    ConfigureLoggerManger = __decorate([
+    ConfigureLoggerManger = tslib_1.__decorate([
         aop_1.NonePointcut(),
         core_1.Injectable(IConfigureLoggerManager.ConfigureLoggerManagerToken),
-        __param(0, core_1.Inject(core_1.ContainerToken)),
-        __metadata("design:paramtypes", [Object, Object])
+        tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)),
+        tslib_1.__metadata("design:paramtypes", [Object, Object])
     ], ConfigureLoggerManger);
     return ConfigureLoggerManger;
 }());
@@ -216,16 +403,8 @@ unwrapExports(ConfigureLoggerManger_1);
 var ConfigureLoggerManger_2 = ConfigureLoggerManger_1.ConfigureLoggerManger;
 
 var ConsoleLogManager_1 = createCommonjsModule(function (module, exports) {
-var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (commonjsGlobal && commonjsGlobal.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -243,11 +422,11 @@ var ConsoleLogManager = /** @class */ (function () {
         return this.logger;
     };
     ConsoleLogManager.classAnnations = { "name": "ConsoleLogManager", "params": { "constructor": [], "configure": ["config"], "getLogger": ["name"] } };
-    ConsoleLogManager = __decorate([
+    ConsoleLogManager = tslib_1.__decorate([
         aop_1.NonePointcut(),
         core_1.Singleton(),
         core_1.Injectable(ILoggerManager.LoggerManagerToken, 'console'),
-        __metadata("design:paramtypes", [])
+        tslib_1.__metadata("design:paramtypes", [])
     ], ConsoleLogManager);
     return ConsoleLogManager;
 }());
@@ -328,16 +507,8 @@ unwrapExports(ConsoleLogManager_1);
 var ConsoleLogManager_2 = ConsoleLogManager_1.ConsoleLogManager;
 
 var LogFormater_1 = createCommonjsModule(function (module, exports) {
-var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (commonjsGlobal && commonjsGlobal.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 /**
@@ -423,10 +594,10 @@ var LogFormater = /** @class */ (function () {
         return '';
     };
     LogFormater.classAnnations = { "name": "LogFormater", "params": { "constructor": [], "format": ["joinPoint", "message"], "stringifyArgs": ["params", "args"], "joinMessage": ["messgs", "separator"], "stringifyArray": ["args"], "stringify": ["target"] } };
-    LogFormater = __decorate([
+    LogFormater = tslib_1.__decorate([
         aop_1.NonePointcut(),
         core_1.Singleton(exports.LogFormaterToken, 'default'),
-        __metadata("design:paramtypes", [])
+        tslib_1.__metadata("design:paramtypes", [])
     ], LogFormater);
     return LogFormater;
 }());
@@ -440,16 +611,8 @@ var LogFormater_2 = LogFormater_1.LogFormaterToken;
 var LogFormater_3 = LogFormater_1.LogFormater;
 
 var LoggerAspect_1 = createCommonjsModule(function (module, exports) {
-var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (commonjsGlobal && commonjsGlobal.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -557,9 +720,9 @@ var LoggerAspect = /** @class */ (function () {
         }
     };
     LoggerAspect.classAnnations = { "name": "LoggerAspect", "params": { "constructor": ["container", "config"], "processLog": ["joinPoint", "annotation", "message", "level"], "formatMessage": ["joinPoint", "message"], "joinMessage": ["messgs"], "writeLog": ["logger", "joinPoint", "message", "level"] } };
-    LoggerAspect = __decorate([
+    LoggerAspect = tslib_1.__decorate([
         core_1.Abstract(),
-        __metadata("design:paramtypes", [Object, Object])
+        tslib_1.__metadata("design:paramtypes", [Object, Object])
     ], LoggerAspect);
     return LoggerAspect;
 }());
@@ -572,29 +735,8 @@ unwrapExports(LoggerAspect_1);
 var LoggerAspect_2 = LoggerAspect_1.LoggerAspect;
 
 var AnnotationLogerAspect_1 = createCommonjsModule(function (module, exports) {
-var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (commonjsGlobal && commonjsGlobal.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var __param = (commonjsGlobal && commonjsGlobal.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -606,7 +748,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @extends {LoggerAspect}
  */
 var AnnotationLogerAspect = /** @class */ (function (_super) {
-    __extends(AnnotationLogerAspect, _super);
+    tslib_1.__extends(AnnotationLogerAspect, _super);
     function AnnotationLogerAspect(container) {
         return _super.call(this, container) || this;
     }
@@ -614,17 +756,17 @@ var AnnotationLogerAspect = /** @class */ (function (_super) {
         this.processLog(joinPoint, annotation);
     };
     AnnotationLogerAspect.classAnnations = { "name": "AnnotationLogerAspect", "params": { "constructor": ["container"], "logging": ["joinPoint", "annotation"] } };
-    __decorate([
+    tslib_1.__decorate([
         aop_1.Pointcut('@annotation(Logger)', 'annotation'),
-        __metadata("design:type", Function),
-        __metadata("design:paramtypes", [aop_1.Joinpoint, Array]),
-        __metadata("design:returntype", void 0)
+        tslib_1.__metadata("design:type", Function),
+        tslib_1.__metadata("design:paramtypes", [aop_1.Joinpoint, Array]),
+        tslib_1.__metadata("design:returntype", void 0)
     ], AnnotationLogerAspect.prototype, "logging", null);
-    AnnotationLogerAspect = __decorate([
+    AnnotationLogerAspect = tslib_1.__decorate([
         core_1.Singleton(),
         aop_1.Aspect(),
-        __param(0, core_1.Inject(core_1.ContainerToken)),
-        __metadata("design:paramtypes", [Object])
+        tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)),
+        tslib_1.__metadata("design:paramtypes", [Object])
     ], AnnotationLogerAspect);
     return AnnotationLogerAspect;
 }(LoggerAspect_1.LoggerAspect));
@@ -680,19 +822,8 @@ unwrapExports(Logger);
 var Logger_1 = Logger.Logger;
 
 var LogModule_1 = createCommonjsModule(function (module, exports) {
-var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (commonjsGlobal && commonjsGlobal.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var __param = (commonjsGlobal && commonjsGlobal.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -728,10 +859,10 @@ var LogModule = /** @class */ (function () {
         container.register(ConsoleLogManager_1.ConsoleLogManager);
     };
     LogModule.classAnnations = { "name": "LogModule", "params": { "constructor": ["container"], "setup": [] } };
-    LogModule = __decorate([
+    LogModule = tslib_1.__decorate([
         core_1.IocExt('setup'),
-        __param(0, core_1.Inject(core_1.ContainerToken)),
-        __metadata("design:paramtypes", [Object])
+        tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)),
+        tslib_1.__metadata("design:paramtypes", [Object])
     ], LogModule);
     return LogModule;
 }());
@@ -744,22 +875,20 @@ unwrapExports(LogModule_1);
 var LogModule_2 = LogModule_1.LogModule;
 
 var D__workspace_github_tsioc_packages_logs_lib = createCommonjsModule(function (module, exports) {
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
 Object.defineProperty(exports, "__esModule", { value: true });
+
 // export * from './tokens';
-__export(Level_1);
-__export(ILoggerManager);
-__export(IConfigureLoggerManager);
-__export(ConfigureLoggerManger_1);
-__export(ConsoleLogManager_1);
-__export(LogConfigure);
-__export(LogFormater_1);
-__export(LoggerAspect_1);
-__export(AnnotationLogerAspect_1);
-__export(Logger);
-__export(LogModule_1);
+tslib_1.__exportStar(Level_1, exports);
+tslib_1.__exportStar(ILoggerManager, exports);
+tslib_1.__exportStar(IConfigureLoggerManager, exports);
+tslib_1.__exportStar(ConfigureLoggerManger_1, exports);
+tslib_1.__exportStar(ConsoleLogManager_1, exports);
+tslib_1.__exportStar(LogConfigure, exports);
+tslib_1.__exportStar(LogFormater_1, exports);
+tslib_1.__exportStar(LoggerAspect_1, exports);
+tslib_1.__exportStar(AnnotationLogerAspect_1, exports);
+tslib_1.__exportStar(Logger, exports);
+tslib_1.__exportStar(LogModule_1, exports);
 
 
 });

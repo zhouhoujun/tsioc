@@ -72,64 +72,6 @@ Development.create(gulp, __dirname, [
                 name: 'zip',
                 src: 'bundles/logs.umd.js',
                 pipes: [
-                    ctx => through.obj(function (file, encoding, callback) {
-                        if (file.isNull()) {
-                            return callback(null, file);
-                        }
-
-                        if (file.isStream()) {
-                            return callback('doesn\'t support Streams');
-                        }
-
-                        let contents: string = file.contents.toString('utf8');
-
-                        let commonjsGlobal = `var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {}`;
-                        let idx = contents.indexOf(commonjsGlobal);
-                        if (idx > 0) {
-                            idx = idx + commonjsGlobal.length;
-                            let prefix = contents.substring(0, idx);
-                            contents = contents.substring(idx);
-                            contents = contents.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '');
-                            contents = contents.replace(/\"use strict\";/gi, '').replace(/\s+/gi, ' ');
-
-                            let prefixs = [
-                                `Object.defineProperty(exports, "__esModule", { value: true });`,
-                                `var __extends = (commonjsGlobal && commonjsGlobal.__extends) || (function () {
-                                    var extendStatics = Object.setPrototypeOf ||
-                                        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-                                        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-                                    return function (d, b) {
-                                        extendStatics(d, b);
-                                        function __() { this.constructor = d; }
-                                        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-                                    };
-                                })();`.replace(/\s+/gi, ' '),
-                                `var __decorate = (commonjsGlobal && commonjsGlobal.__decorate) || function (decorators, target, key, desc) {
-                                    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-                                    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-                                    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-                                    return c > 3 && r && Object.defineProperty(target, key, r), r;
-                                };`.replace(/\s+/gi, ' '),
-                                `var __metadata = (commonjsGlobal && commonjsGlobal.__metadata) || function (k, v) {
-                                    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-                                };`.replace(/\s+/gi, ' '),
-                                `var __param = (commonjsGlobal && commonjsGlobal.__param) || function (paramIndex, decorator) {
-                                    return function (target, key) { decorator(target, key, paramIndex); }
-                                };`.replace(/\s+/gi, ' ')
-                            ];
-                            prefixs.forEach(itm => {
-                                let splits = contents.split(itm);
-                                if (splits.length > 2) {
-                                    contents = splits[0] + itm + '\n' + splits.slice(1).join('\n');
-                                }
-                            });
-
-                            contents = prefix + contents;
-                        }
-                        file.contents = new Buffer(contents);
-                        this.push(file);
-                        callback();
-                    }),
                     () => rename('logs.umd.min.js'),
                     () => uglify()
                 ]
