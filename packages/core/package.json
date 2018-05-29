@@ -26,7 +26,8 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "peerDependencies": {
-    "reflect-metadata": "^0.1.12"
+    "reflect-metadata": "^0.1.12",
+    "object.assign": "^4.1.0"
   },
   "directories": {
     "lib": "lib",

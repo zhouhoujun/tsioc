@@ -1,6 +1,6 @@
 import { ObjectMap, Express2, Express } from '../types';
 import { isArray, isObject } from './typeCheck';
-
+require('object.assign').shim();
 
 /**
  * get object keys.
