@@ -20,14 +20,6 @@ export type CustomRegister<T> = (container: IContainer, config?: ModuleConfigura
  */
 export interface IApplicationBuilder<T> {
 
-    /**
-     * use an exist container for platform.
-     *
-     * @param {IContainer} container
-     * @returns {this}
-     * @memberof IApplicationBuilder
-     */
-    useContainer(container: IContainer): this;
 
     /**
      * get ioc caontainer in this application.
@@ -38,13 +30,14 @@ export interface IApplicationBuilder<T> {
     getContainer(): IContainer;
 
     /**
-     * use container builder
+     * use an exist container for platform.
      *
-     * @param {IContainerBuilder} builder
-     * @returns
+     * @param {IContainer} container
+     * @returns {this}
      * @memberof IApplicationBuilder
      */
-    useContainerBuilder(builder: IContainerBuilder);
+    setContainer(container: IContainer): this;
+
 
     /**
      * get container builder in application.
@@ -53,6 +46,32 @@ export interface IApplicationBuilder<T> {
      * @memberof IApplicationBuilder
      */
     getContainerBuilder(): IContainerBuilder;
+
+    /**
+     * use container builder
+     *
+     * @param {IContainerBuilder} builder
+     * @returns
+     * @memberof IApplicationBuilder
+     */
+    setContainerBuilder(builder: IContainerBuilder);
+
+    /**
+     * get module builer.
+     *
+     * @returns {IModuleBuilder<T>}
+     * @memberof IApplicationBuilder
+     */
+    getModuleBuilder(): IModuleBuilder<T>;
+
+    /**
+     * set module builder.
+     *
+     * @param {IModuleBuilder<T>} builder
+     * @returns {this}
+     * @memberof IApplicationBuilder
+     */
+    setModuleBuilder(builder: IModuleBuilder<T>): this;
 
     /**
      * use custom configuration.
@@ -64,13 +83,31 @@ export interface IApplicationBuilder<T> {
     useConfiguration(config?: string | AppConfiguration<T>): this;
 
     /**
-     * use module, custom module.
+     * use module, custom register module.
      *
      * @param {(...(LoadType | CustomRegister<T>)[])} modules
      * @returns {this}
      * @memberof IApplicationBuilder
      */
     useModules(...modules: (LoadType | CustomRegister<T>)[]): this;
+
+    /**
+     * use module
+     *
+     * @param {(...LoadType[])} modules
+     * @returns {this}
+     * @memberof IApplicationBuilder
+     */
+    use(...modules: LoadType[]): this;
+
+    /**
+     * custom register modules
+     *
+     * @param {...CustomRegister<T>[]} moduleRegs
+     * @returns {this}
+     * @memberof IApplicationBuilder
+     */
+    registerModules(...moduleRegs: CustomRegister<T>[]): this;
 
     /**
      * bootstrap app via main module.
@@ -81,11 +118,4 @@ export interface IApplicationBuilder<T> {
      */
     bootstrap(bootModule: Token<T> | Type<any> | AppConfiguration<T>): Promise<T>;
 
-    /**
-     * get module builer.
-     *
-     * @returns {IModuleBuilder<T>}
-     * @memberof IApplicationBuilder
-     */
-    getModuleBuilder(): IModuleBuilder<T>;
 }

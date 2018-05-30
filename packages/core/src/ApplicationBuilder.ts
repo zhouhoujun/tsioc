@@ -18,23 +18,57 @@ import { CustomRegister, IApplicationBuilder } from './IApplicationBuilder';
  * @template T
  */
 export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
-    private _moduleBuilder: IModuleBuilder<T>;
+    private moduleBuilder: IModuleBuilder<T>;
     private container: IContainer;
-    protected builder: IContainerBuilder;
+    private builder: IContainerBuilder;
     protected configuration: Promise<AppConfiguration<T>>;
-    protected usedModules: (LoadType)[];
-    protected customs: CustomRegister<T>[];
+    protected usedModules: LoadType[];
+    protected customRegs: CustomRegister<T>[];
     constructor(public baseURL?: string) {
         this.usedModules = [];
-        this.customs = [];
+        this.customRegs = [];
     }
 
-    useContainer(container: IContainer) {
+
+    /**
+     * get container
+     *
+     * @returns
+     * @memberof ApplicationBuilder
+     */
+    getContainer(): IContainer {
+        if (!this.container) {
+            this.container = this.getContainerBuilder().create();
+        }
+        return this.container;
+    }
+
+    /**
+     * set container.
+     *
+     * @param {IContainer} container
+     * @returns
+     * @memberof ApplicationBuilder
+     */
+    setContainer(container: IContainer) {
         if (container) {
             this.container = container;
             this.builder = container.get(ContainerBuilderToken);
         }
         return this;
+    }
+
+    /**
+     * get container builder.
+     *
+     * @returns
+     * @memberof ModuleBuilder
+     */
+    getContainerBuilder(): IContainerBuilder {
+        if (!this.builder) {
+            this.builder = this.createContainerBuilder();
+        }
+        return this.builder;
     }
 
     /**
@@ -44,9 +78,28 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
      * @returns
      * @memberof ModuleBuilder
      */
-    useContainerBuilder(builder: IContainerBuilder) {
+    setContainerBuilder(builder: IContainerBuilder) {
         this.builder = builder;
         this.container = null;
+        return this;
+    }
+
+
+    /**
+     * get module builer.
+     *
+     * @returns {IModuleBuilder<T>}
+     * @memberof IApplicationBuilder
+     */
+    getModuleBuilder(): IModuleBuilder<T> {
+        if (!this.moduleBuilder) {
+            this.moduleBuilder = this.createModuleBuilder();
+        }
+        return this.moduleBuilder;
+    }
+
+    setModuleBuilder(builder: IModuleBuilder<T>): this {
+        this.moduleBuilder = builder;
         return this;
     }
 
@@ -93,10 +146,34 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
      * @returns {this}
      * @memberof PlatformServer
      */
+    use(...modules: LoadType[]): this {
+        this.usedModules = this.usedModules.concat(modules);
+        return this;
+    }
+
+    /**
+     * register modules via custom.
+     *
+     * @param {...CustomRegister<T>[]} moduleRegs
+     * @returns {this}
+     * @memberof ApplicationBuilder
+     */
+    registerModules(...moduleRegs: CustomRegister<T>[]): this {
+        this.customRegs = this.customRegs.concat(moduleRegs);
+        return this;
+    }
+
+    /**
+     * use module, custom module.
+     *
+     * @param {(...(LoadType | CustomRegister<T>)[])} modules
+     * @returns {this}
+     * @memberof PlatformServer
+     */
     useModules(...modules: (LoadType | CustomRegister<T>)[]): this {
         modules.forEach(m => {
             if (isFunction(m) && !isClass(m)) {
-                this.customs.push(m);
+                this.customRegs.push(m);
             } else {
                 this.usedModules.push(m);
             }
@@ -121,45 +198,6 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
         }
         let app = await builder.build(cfg);
         return app;
-    }
-
-    /**
-     * get container builder.
-     *
-     * @returns
-     * @memberof ModuleBuilder
-     */
-    getContainerBuilder(): IContainerBuilder {
-        if (!this.builder) {
-            this.builder = this.createContainerBuilder();
-        }
-        return this.builder;
-    }
-
-    /**
-     * get container
-     *
-     * @returns
-     * @memberof ApplicationBuilder
-     */
-    getContainer(): IContainer {
-        if (!this.container) {
-            this.container = this.getContainerBuilder().create();
-        }
-        return this.container;
-    }
-
-    /**
-     * get module builer.
-     *
-     * @returns {IModuleBuilder<T>}
-     * @memberof IApplicationBuilder
-     */
-    getModuleBuilder(): IModuleBuilder<T> {
-        if (!this._moduleBuilder) {
-            this._moduleBuilder = this.createModuleBuilder();
-        }
-        return this._moduleBuilder;
     }
 
     protected createModuleBuilder() {
@@ -190,9 +228,9 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
         }
         container.bindProvider(AppConfigurationToken, config);
 
-        if (this.customs.length) {
-            let customs = this.customs;
-            this.customs = [];
+        if (this.customRegs.length) {
+            let customs = this.customRegs;
+            this.customRegs = [];
             await Promise.all(customs.map(cs => {
                 return cs(container, config, this);
             }));

@@ -673,7 +673,7 @@ exports.LogModule = LogModule;
 unwrapExports(LogModule_1);
 var LogModule_2 = LogModule_1.LogModule;
 
-var D__Workspace_gitSource_tsioc_packages_logs_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_logs_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 // export * from './tokens';
@@ -692,7 +692,7 @@ tslib_1.__exportStar(LogModule_1, exports);
 
 });
 
-var index = unwrapExports(D__Workspace_gitSource_tsioc_packages_logs_lib);
+var index = unwrapExports(D__workspace_github_tsioc_packages_logs_lib);
 
 return index;
 
