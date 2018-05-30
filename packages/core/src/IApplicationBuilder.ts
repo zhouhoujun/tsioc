@@ -3,6 +3,7 @@ import { IContainer } from './IContainer';
 import { ModuleConfiguration } from './ModuleConfiguration';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IModuleBuilder } from './IModuleBuilder';
+import { AppConfiguration } from './AppConfiguration';
 
 /**
  * custom define module.
@@ -58,11 +59,11 @@ export interface IApplicationBuilder<T> {
     /**
      * bootstrap app via main module.
      *
-     * @param {(Token<T> | Type<any>)} bootModule bootstrap module.
+     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} bootModule bootstrap module.
      * @returns {Promise<any>}
      * @memberof IApplicationBuilder
      */
-    bootstrap(bootModule: Token<T> | Type<any>): Promise<T>;
+    bootstrap(bootModule: Token<T> | Type<any> | AppConfiguration<T>): Promise<T>;
 
     /**
      * get module builer.
