@@ -118,17 +118,8 @@ export class ServerApplicationBuilder<T> extends ApplicationBuilder<T> implement
         return this;
     }
 
-    /**
-     * get container builder.
-     *
-     * @returns
-     * @memberof Bootstrap
-     */
-    protected getContainerBuilder() {
-        if (!this.builder) {
-            this.builder = new ContainerBuilder();
-        }
-        return this.builder;
+    protected createContainerBuilder() {
+        return new ContainerBuilder();
     }
 
     protected getDefaultConfig(): AppConfiguration<T> {

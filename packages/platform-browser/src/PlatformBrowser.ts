@@ -33,17 +33,8 @@ export class BroserApplicationBuilder<T> extends ApplicationBuilder<T> implement
         return super.bootstrap(boot)
     }
 
-    /**
-     * get container builder.
-     *
-     * @returns
-     * @memberof Bootstrap
-     */
-    protected getContainerBuilder() {
-        if (!this.builder) {
-            this.builder = new ContainerBuilder();
-        }
-        return this.builder;
+    protected createContainerBuilder() {
+        return new ContainerBuilder();
     }
 
     protected getDefaultConfig(): AppConfiguration<T> {
@@ -81,8 +72,8 @@ export class PlatformBrowser extends BroserApplicationBuilder<any> implements IP
         return new PlatformBrowser(rootdir);
     }
 
-    bootstrap<T>(boot: Token<T> | Type<any>): Promise<T> {
-        return super.bootstrap(boot)
+    bootstrap<T>(boot: Token<T> | Type<any> | AppConfiguration<T>): Promise<T> {
+        return super.bootstrap(boot);
     }
 
 }

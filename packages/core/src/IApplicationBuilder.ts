@@ -23,11 +23,19 @@ export interface IApplicationBuilder<T> {
     /**
      * use an exist container for platform.
      *
-     * @param {(IContainer | Promise<IContainer>)} container
+     * @param {IContainer} container
      * @returns {this}
      * @memberof IApplicationBuilder
      */
-    useContainer(container: IContainer | Promise<IContainer>): this;
+    useContainer(container: IContainer): this;
+
+    /**
+     * get ioc caontainer in this application.
+     *
+     * @returns {IContainer}
+     * @memberof IApplicationBuilder
+     */
+    getContainer(): IContainer;
 
     /**
      * use container builder
@@ -39,13 +47,21 @@ export interface IApplicationBuilder<T> {
     useContainerBuilder(builder: IContainerBuilder);
 
     /**
+     * get container builder in application.
+     *
+     * @returns {IContainerBuilder}
+     * @memberof IApplicationBuilder
+     */
+    getContainerBuilder(): IContainerBuilder;
+
+    /**
      * use custom configuration.
      *
-     * @param {(string | T)} [config]
+     * @param {(string | AppConfiguration<T>)} [config]
      * @returns {this}
      * @memberof IApplicationBuilder
      */
-    useConfiguration(config?: string | T): this;
+    useConfiguration(config?: string | AppConfiguration<T>): this;
 
     /**
      * use module, custom module.
@@ -68,9 +84,8 @@ export interface IApplicationBuilder<T> {
     /**
      * get module builer.
      *
-     * @param {IContainer} container ioc container.
      * @returns {IModuleBuilder<T>}
      * @memberof IApplicationBuilder
      */
-    getModuleBuilder(container: IContainer): IModuleBuilder<T>;
+    getModuleBuilder(): IModuleBuilder<T>;
 }

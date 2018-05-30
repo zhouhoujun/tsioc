@@ -4,7 +4,7 @@ import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import { Token, Type, LoadType } from './types';
 import { lang, isString, isClass, isMetadataObject, isFunction, isToken } from './utils/index';
 import { IContainer } from './IContainer';
-import { IContainerBuilder } from './IContainerBuilder';
+import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { ModuleConfiguration } from './ModuleConfiguration';
 import { DefaultContainerBuilder } from './DefaultContainerBuilder';
 import { CustomRegister, IApplicationBuilder } from './IApplicationBuilder';
@@ -19,7 +19,7 @@ import { CustomRegister, IApplicationBuilder } from './IApplicationBuilder';
  */
 export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
     private _moduleBuilder: IModuleBuilder<T>;
-    protected container: Promise<IContainer>;
+    private container: IContainer;
     protected builder: IContainerBuilder;
     protected configuration: Promise<AppConfiguration<T>>;
     protected usedModules: (LoadType)[];
@@ -29,9 +29,10 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
         this.customs = [];
     }
 
-    useContainer(container: IContainer | Promise<IContainer>) {
+    useContainer(container: IContainer) {
         if (container) {
-            this.container = Promise.resolve(container);
+            this.container = container;
+            this.builder = container.get(ContainerBuilderToken);
         }
         return this;
     }
@@ -45,6 +46,7 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
      */
     useContainerBuilder(builder: IContainerBuilder) {
         this.builder = builder;
+        this.container = null;
         return this;
     }
 
@@ -110,8 +112,8 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
      * @memberof ApplicationBuilder
      */
     async bootstrap(bootModule: Token<T> | Type<any> | AppConfiguration<T>): Promise<T> {
-        let container = await this.getContainer();
-        let builder = this.getModuleBuilder(container);
+        let container = this.getContainer();
+        let builder = this.getModuleBuilder();
         let cfg: AppConfiguration<T> = await this.getConfiguration(this.getModuleConfigure(builder, bootModule));
         await this.initContainer(cfg, container);
         if (!cfg.bootstrap) {
@@ -121,6 +123,31 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
         return app;
     }
 
+    /**
+     * get container builder.
+     *
+     * @returns
+     * @memberof ModuleBuilder
+     */
+    getContainerBuilder(): IContainerBuilder {
+        if (!this.builder) {
+            this.builder = this.createContainerBuilder();
+        }
+        return this.builder;
+    }
+
+    /**
+     * get container
+     *
+     * @returns
+     * @memberof ApplicationBuilder
+     */
+    getContainer(): IContainer {
+        if (!this.container) {
+            this.container = this.getContainerBuilder().create();
+        }
+        return this.container;
+    }
 
     /**
      * get module builer.
@@ -128,11 +155,19 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
      * @returns {IModuleBuilder<T>}
      * @memberof IApplicationBuilder
      */
-    getModuleBuilder(container: IContainer): IModuleBuilder<T> {
+    getModuleBuilder(): IModuleBuilder<T> {
         if (!this._moduleBuilder) {
-            this._moduleBuilder = container.get(ModuleBuilderToken);
+            this._moduleBuilder = this.createModuleBuilder();
         }
         return this._moduleBuilder;
+    }
+
+    protected createModuleBuilder() {
+        return this.getContainer().get(ModuleBuilderToken);
+    }
+
+    protected createContainerBuilder() {
+        return new DefaultContainerBuilder();
     }
 
     protected getModuleConfigure(builer: IModuleBuilder<T>, boot: Token<T> | Type<any> | AppConfiguration<T>) {
@@ -165,25 +200,6 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
         return container;
     }
 
-    /**
-     * get container builder.
-     *
-     * @returns
-     * @memberof ModuleBuilder
-     */
-    protected getContainerBuilder() {
-        if (!this.builder) {
-            this.builder = new DefaultContainerBuilder();
-        }
-        return this.builder;
-    }
-
-    protected getContainer(...modules: LoadType[]) {
-        if (!this.container) {
-            this.container = this.getContainerBuilder().build(...modules);
-        }
-        return this.container;
-    }
 
     /**
      * get configuration.

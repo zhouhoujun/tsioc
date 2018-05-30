@@ -116,22 +116,13 @@ var BroserApplicationBuilder = /** @class */ (function (_super) {
     BroserApplicationBuilder.prototype.bootstrap = function (boot) {
         return _super.prototype.bootstrap.call(this, boot);
     };
-    /**
-     * get container builder.
-     *
-     * @returns
-     * @memberof Bootstrap
-     */
-    BroserApplicationBuilder.prototype.getContainerBuilder = function () {
-        if (!this.builder) {
-            this.builder = new ContainerBuilder_1.ContainerBuilder();
-        }
-        return this.builder;
+    BroserApplicationBuilder.prototype.createContainerBuilder = function () {
+        return new ContainerBuilder_1.ContainerBuilder();
     };
     BroserApplicationBuilder.prototype.getDefaultConfig = function () {
         return core_1.lang.assign({}, defaultAppConfig);
     };
-    BroserApplicationBuilder.classAnnations = { "name": "BroserApplicationBuilder", "params": { "constructor": ["baseURL"], "bootstrap": ["boot"], "getContainerBuilder": [], "getDefaultConfig": [] } };
+    BroserApplicationBuilder.classAnnations = { "name": "BroserApplicationBuilder", "params": { "constructor": ["baseURL"], "bootstrap": ["boot"], "createContainerBuilder": [], "getDefaultConfig": [] } };
     return BroserApplicationBuilder;
 }(core_1.ApplicationBuilder));
 exports.BroserApplicationBuilder = BroserApplicationBuilder;
@@ -164,7 +155,7 @@ unwrapExports(PlatformBrowser_1);
 var PlatformBrowser_2 = PlatformBrowser_1.BroserApplicationBuilder;
 var PlatformBrowser_3 = PlatformBrowser_1.PlatformBrowser;
 
-var D__workspace_github_tsioc_packages_platformBrowser_lib = createCommonjsModule(function (module, exports) {
+var D__Workspace_gitSource_tsioc_packages_platformBrowser_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(BrowserModuleLoader_1, exports);
@@ -174,7 +165,7 @@ tslib_1.__exportStar(PlatformBrowser_1, exports);
 
 });
 
-var index = unwrapExports(D__workspace_github_tsioc_packages_platformBrowser_lib);
+var index = unwrapExports(D__Workspace_gitSource_tsioc_packages_platformBrowser_lib);
 
 return index;
 

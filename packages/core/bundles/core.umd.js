@@ -248,181 +248,26 @@ defineProperties.supportsDescriptors = !!supportsDescriptors;
 
 var defineProperties_1 = defineProperties;
 
-var toStr$3 = Object.prototype.toString;
-
-var isArguments$2 = function isArguments(value) {
-	var str = toStr$3.call(value);
-	var isArgs = str === '[object Arguments]';
-	if (!isArgs) {
-		isArgs = str !== '[object Array]' &&
-			value !== null &&
-			typeof value === 'object' &&
-			typeof value.length === 'number' &&
-			value.length >= 0 &&
-			toStr$3.call(value.callee) === '[object Function]';
-	}
-	return isArgs;
-};
-
-// modified from https://github.com/es-shims/es5-shim
-var has$1 = Object.prototype.hasOwnProperty;
-var toStr$4 = Object.prototype.toString;
-var slice$1 = Array.prototype.slice;
-
-var isEnumerable$1 = Object.prototype.propertyIsEnumerable;
-var hasDontEnumBug$1 = !isEnumerable$1.call({ toString: null }, 'toString');
-var hasProtoEnumBug$1 = isEnumerable$1.call(function () {}, 'prototype');
-var dontEnums$1 = [
-	'toString',
-	'toLocaleString',
-	'valueOf',
-	'hasOwnProperty',
-	'isPrototypeOf',
-	'propertyIsEnumerable',
-	'constructor'
-];
-var equalsConstructorPrototype$1 = function (o) {
-	var ctor = o.constructor;
-	return ctor && ctor.prototype === o;
-};
-var excludedKeys$1 = {
-	$console: true,
-	$external: true,
-	$frame: true,
-	$frameElement: true,
-	$frames: true,
-	$innerHeight: true,
-	$innerWidth: true,
-	$outerHeight: true,
-	$outerWidth: true,
-	$pageXOffset: true,
-	$pageYOffset: true,
-	$parent: true,
-	$scrollLeft: true,
-	$scrollTop: true,
-	$scrollX: true,
-	$scrollY: true,
-	$self: true,
-	$webkitIndexedDB: true,
-	$webkitStorageInfo: true,
-	$window: true
-};
-var hasAutomationEqualityBug$1 = (function () {
-	/* global window */
-	if (typeof window === 'undefined') { return false; }
-	for (var k in window) {
-		try {
-			if (!excludedKeys$1['$' + k] && has$1.call(window, k) && window[k] !== null && typeof window[k] === 'object') {
-				try {
-					equalsConstructorPrototype$1(window[k]);
-				} catch (e) {
-					return true;
-				}
-			}
-		} catch (e) {
-			return true;
-		}
-	}
-	return false;
-}());
-var equalsConstructorPrototypeIfNotBuggy$1 = function (o) {
-	/* global window */
-	if (typeof window === 'undefined' || !hasAutomationEqualityBug$1) {
-		return equalsConstructorPrototype$1(o);
-	}
-	try {
-		return equalsConstructorPrototype$1(o);
-	} catch (e) {
-		return false;
-	}
-};
-
-var keysShim$1 = function keys(object) {
-	var isObject = object !== null && typeof object === 'object';
-	var isFunction = toStr$4.call(object) === '[object Function]';
-	var isArguments = isArguments$2(object);
-	var isString = isObject && toStr$4.call(object) === '[object String]';
-	var theKeys = [];
-
-	if (!isObject && !isFunction && !isArguments) {
-		throw new TypeError('Object.keys called on a non-object');
-	}
-
-	var skipProto = hasProtoEnumBug$1 && isFunction;
-	if (isString && object.length > 0 && !has$1.call(object, 0)) {
-		for (var i = 0; i < object.length; ++i) {
-			theKeys.push(String(i));
-		}
-	}
-
-	if (isArguments && object.length > 0) {
-		for (var j = 0; j < object.length; ++j) {
-			theKeys.push(String(j));
-		}
-	} else {
-		for (var name in object) {
-			if (!(skipProto && name === 'prototype') && has$1.call(object, name)) {
-				theKeys.push(String(name));
-			}
-		}
-	}
-
-	if (hasDontEnumBug$1) {
-		var skipConstructor = equalsConstructorPrototypeIfNotBuggy$1(object);
-
-		for (var k = 0; k < dontEnums$1.length; ++k) {
-			if (!(skipConstructor && dontEnums$1[k] === 'constructor') && has$1.call(object, dontEnums$1[k])) {
-				theKeys.push(dontEnums$1[k]);
-			}
-		}
-	}
-	return theKeys;
-};
-
-keysShim$1.shim = function shimObjectKeys() {
-	if (Object.keys) {
-		var keysWorksWithArguments = (function () {
-			// Safari 5.0 bug
-			return (Object.keys(arguments) || '').length === 2;
-		}(1, 2));
-		if (!keysWorksWithArguments) {
-			var originalKeys = Object.keys;
-			Object.keys = function keys(object) {
-				if (isArguments$2(object)) {
-					return originalKeys(slice$1.call(object));
-				} else {
-					return originalKeys(object);
-				}
-			};
-		}
-	} else {
-		Object.keys = keysShim$1;
-	}
-	return Object.keys || keysShim$1;
-};
-
-var objectKeys$2 = keysShim$1;
-
 /* eslint no-invalid-this: 1 */
 
 var ERROR_MESSAGE = 'Function.prototype.bind called on incompatible ';
-var slice$2 = Array.prototype.slice;
-var toStr$5 = Object.prototype.toString;
+var slice$1 = Array.prototype.slice;
+var toStr$3 = Object.prototype.toString;
 var funcType = '[object Function]';
 
 var implementation = function bind(that) {
     var target = this;
-    if (typeof target !== 'function' || toStr$5.call(target) !== funcType) {
+    if (typeof target !== 'function' || toStr$3.call(target) !== funcType) {
         throw new TypeError(ERROR_MESSAGE + target);
     }
-    var args = slice$2.call(arguments, 1);
+    var args = slice$1.call(arguments, 1);
 
     var bound;
     var binder = function () {
         if (this instanceof bound) {
             var result = target.apply(
                 this,
-                args.concat(slice$2.call(arguments))
+                args.concat(slice$1.call(arguments))
             );
             if (Object(result) === result) {
                 return result;
@@ -431,7 +276,7 @@ var implementation = function bind(that) {
         } else {
             return target.apply(
                 that,
-                args.concat(slice$2.call(arguments))
+                args.concat(slice$1.call(arguments))
             );
         }
     };
@@ -515,7 +360,7 @@ var implementation$3 = function assign(target, source1) {
 	var s, source, i, props, syms, value, key;
 	for (s = 1; s < arguments.length; ++s) {
 		source = toObject(arguments[s]);
-		props = objectKeys$2(source);
+		props = objectKeys(source);
 		var getSymbols = hasSymbols$1 && (Object.getOwnPropertySymbols || originalGetSymbols);
 		if (getSymbols) {
 			syms = getSymbols(source);
@@ -5281,7 +5126,7 @@ var ModuleBuilder = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         cfg = this.getConfigure(modules, moduleDecorator);
-                        token = cfg.bootstrap || (utils.isToken(modules) ? modules : null);
+                        token = this.getBootstrapToken(cfg, (utils.isToken(modules) ? modules : null));
                         if (!token) {
                             return [2 /*return*/, Promise.reject('not find bootstrap token.')];
                         }
@@ -5302,6 +5147,9 @@ var ModuleBuilder = /** @class */ (function () {
                 }
             });
         });
+    };
+    ModuleBuilder.prototype.getBootstrapToken = function (cfg, token) {
+        return cfg.bootstrap || token;
     };
     /**
      * get configuration.
@@ -5444,7 +5292,7 @@ var ModuleBuilder = /** @class */ (function () {
             }
         });
     };
-    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": ["container"], "build": ["modules", "moduleDecorator"], "getConfigure": ["modules", "moduleDecorator"], "getMetaConfig": ["bootModule", "moduleDecorator"], "registerDepdences": ["config"], "bindProvider": ["container", "providers"] } };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": ["container"], "build": ["modules", "moduleDecorator"], "getBootstrapToken": ["cfg", "token"], "getConfigure": ["modules", "moduleDecorator"], "getMetaConfig": ["bootModule", "moduleDecorator"], "registerDepdences": ["config"], "bindProvider": ["container", "providers"] } };
     return ModuleBuilder;
 }());
 exports.ModuleBuilder = ModuleBuilder;
@@ -6404,6 +6252,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
 /**
  * application builder.
  *
@@ -6420,7 +6269,8 @@ var ApplicationBuilder = /** @class */ (function () {
     }
     ApplicationBuilder.prototype.useContainer = function (container) {
         if (container) {
-            this.container = Promise.resolve(container);
+            this.container = container;
+            this.builder = container.get(IContainerBuilder.ContainerBuilderToken);
         }
         return this;
     };
@@ -6433,6 +6283,7 @@ var ApplicationBuilder = /** @class */ (function () {
      */
     ApplicationBuilder.prototype.useContainerBuilder = function (builder) {
         this.builder = builder;
+        this.container = null;
         return this;
     };
     /**
@@ -6504,21 +6355,20 @@ var ApplicationBuilder = /** @class */ (function () {
             var container, builder, cfg, app;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getContainer()];
-                    case 1:
-                        container = _a.sent();
-                        builder = this.getModuleBuilder(container);
+                    case 0:
+                        container = this.getContainer();
+                        builder = this.getModuleBuilder();
                         return [4 /*yield*/, this.getConfiguration(this.getModuleConfigure(builder, bootModule))];
-                    case 2:
+                    case 1:
                         cfg = _a.sent();
                         return [4 /*yield*/, this.initContainer(cfg, container)];
-                    case 3:
+                    case 2:
                         _a.sent();
                         if (!cfg.bootstrap) {
                             cfg.bootstrap = (utils.isToken(bootModule) ? bootModule : null);
                         }
                         return [4 /*yield*/, builder.build(cfg)];
-                    case 4:
+                    case 3:
                         app = _a.sent();
                         return [2 /*return*/, app];
                 }
@@ -6526,16 +6376,46 @@ var ApplicationBuilder = /** @class */ (function () {
         });
     };
     /**
+     * get container builder.
+     *
+     * @returns
+     * @memberof ModuleBuilder
+     */
+    ApplicationBuilder.prototype.getContainerBuilder = function () {
+        if (!this.builder) {
+            this.builder = this.createContainerBuilder();
+        }
+        return this.builder;
+    };
+    /**
+     * get container
+     *
+     * @returns
+     * @memberof ApplicationBuilder
+     */
+    ApplicationBuilder.prototype.getContainer = function () {
+        if (!this.container) {
+            this.container = this.getContainerBuilder().create();
+        }
+        return this.container;
+    };
+    /**
      * get module builer.
      *
      * @returns {IModuleBuilder<T>}
      * @memberof IApplicationBuilder
      */
-    ApplicationBuilder.prototype.getModuleBuilder = function (container) {
+    ApplicationBuilder.prototype.getModuleBuilder = function () {
         if (!this._moduleBuilder) {
-            this._moduleBuilder = container.get(IModuleBuilder.ModuleBuilderToken);
+            this._moduleBuilder = this.createModuleBuilder();
         }
         return this._moduleBuilder;
+    };
+    ApplicationBuilder.prototype.createModuleBuilder = function () {
+        return this.getContainer().get(IModuleBuilder.ModuleBuilderToken);
+    };
+    ApplicationBuilder.prototype.createContainerBuilder = function () {
+        return new DefaultContainerBuilder_1.DefaultContainerBuilder();
     };
     ApplicationBuilder.prototype.getModuleConfigure = function (builer, boot) {
         return builer.getConfigure(boot);
@@ -6577,29 +6457,6 @@ var ApplicationBuilder = /** @class */ (function () {
         });
     };
     /**
-     * get container builder.
-     *
-     * @returns
-     * @memberof ModuleBuilder
-     */
-    ApplicationBuilder.prototype.getContainerBuilder = function () {
-        if (!this.builder) {
-            this.builder = new DefaultContainerBuilder_1.DefaultContainerBuilder();
-        }
-        return this.builder;
-    };
-    ApplicationBuilder.prototype.getContainer = function () {
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        if (!this.container) {
-            this.container = (_a = this.getContainerBuilder()).build.apply(_a, modules);
-        }
-        return this.container;
-        var _a;
-    };
-    /**
      * get configuration.
      *
      * @returns {Promise<T>}
@@ -6625,7 +6482,7 @@ var ApplicationBuilder = /** @class */ (function () {
     ApplicationBuilder.prototype.getDefaultConfig = function () {
         return { debug: false };
     };
-    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "useContainer": ["container"], "useContainerBuilder": ["builder"], "useConfiguration": ["config"], "useModules": ["modules"], "bootstrap": ["bootModule"], "getModuleBuilder": ["container"], "getModuleConfigure": ["builer", "boot"], "setConfigRoot": ["config"], "initContainer": ["config", "container"], "getContainerBuilder": [], "getContainer": ["modules"], "getConfiguration": ["cfg"], "getDefaultConfig": [] } };
+    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "useContainer": ["container"], "useContainerBuilder": ["builder"], "useConfiguration": ["config"], "useModules": ["modules"], "bootstrap": ["bootModule"], "getContainerBuilder": [], "getContainer": [], "getModuleBuilder": [], "createModuleBuilder": [], "createContainerBuilder": [], "getModuleConfigure": ["builer", "boot"], "setConfigRoot": ["config"], "initContainer": ["config", "container"], "getConfiguration": ["cfg"], "getDefaultConfig": [] } };
     return ApplicationBuilder;
 }());
 exports.ApplicationBuilder = ApplicationBuilder;
@@ -6636,7 +6493,7 @@ exports.ApplicationBuilder = ApplicationBuilder;
 unwrapExports(ApplicationBuilder_1);
 var ApplicationBuilder_2 = ApplicationBuilder_1.ApplicationBuilder;
 
-var D__workspace_github_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
+var D__Workspace_gitSource_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(IContainer, exports);
@@ -6663,7 +6520,7 @@ tslib_1.__exportStar(ApplicationBuilder_1, exports);
 
 });
 
-var index$7 = unwrapExports(D__workspace_github_tsioc_packages_core_lib);
+var index$7 = unwrapExports(D__Workspace_gitSource_tsioc_packages_core_lib);
 
 return index$7;
 

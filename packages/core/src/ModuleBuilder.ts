@@ -45,8 +45,8 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         }
     }
 
-    protected getBootstrapToken(cfg: ModuleConfiguration<T>, modules?: Token<T> | Type<any>): Token<T> {
-        return cfg.bootstrap || modules;
+    protected getBootstrapToken(cfg: ModuleConfiguration<T>, token?: Token<T> | Type<any>): Token<T> {
+        return cfg.bootstrap || token;
     }
 
     /**
