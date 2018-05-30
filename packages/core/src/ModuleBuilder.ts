@@ -28,7 +28,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      */
     async build(modules: Token<T> | Type<any> | ModuleConfiguration<T>, moduleDecorator?: Function | string): Promise<T> {
         let cfg = this.getConfigure(modules, moduleDecorator);
-        let token = cfg.bootstrap || (isToken(modules) ? modules : null);
+        let token = this.getBootstrapToken(cfg, (isToken(modules) ? modules : null));
         if (!token) {
             return Promise.reject('not find bootstrap token.');
         }
@@ -43,6 +43,10 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         } else {
             return container.resolve(token);
         }
+    }
+
+    protected getBootstrapToken(cfg: ModuleConfiguration<T>, modules?: Token<T> | Type<any>): Token<T> {
+        return cfg.bootstrap || modules;
     }
 
     /**
