@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/core",
-  "version": "2.4.4",
+  "version": "2.4.5",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./bundles/core.umd.js",
   "typings": "./lib/index.d.ts",
@@ -27,7 +27,8 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "peerDependencies": {
     "reflect-metadata": "^0.1.12",
-    "object.assign": "^4.1.0"
+    "object.assign": "^4.1.0",
+    "tslib": "^1.9.2"
   },
   "directories": {
     "lib": "lib",

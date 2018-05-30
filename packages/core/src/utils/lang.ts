@@ -1,6 +1,8 @@
 import { ObjectMap, Express2, Express } from '../types';
 import { isArray, isObject } from './typeCheck';
-require('object.assign').shim();
+import * as objPonyfill from 'object.assign';
+
+objPonyfill.shim();
 
 /**
  * get object keys.

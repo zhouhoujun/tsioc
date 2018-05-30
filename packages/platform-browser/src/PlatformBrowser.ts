@@ -29,7 +29,7 @@ export class BroserApplicationBuilder<T> extends ApplicationBuilder<T> implement
         super(baseURL || !isUndefined(System) ? System.baseURL : location.href);
     }
 
-    bootstrap(boot: Token<T> | Type<any>): Promise<T> {
+    bootstrap(boot: Token<T> | Type<any> | AppConfiguration<T>): Promise<T> {
         return super.bootstrap(boot)
     }
 

@@ -183,7 +183,7 @@ export class PlatformServer extends ServerApplicationBuilder<any> implements IPl
         return new PlatformServer(rootdir);
     }
 
-    bootstrap<T>(boot: Token<T> | Type<any>): Promise<T> {
+    bootstrap<T>(boot: Token<T> | Type<any> | AppConfiguration<T>): Promise<T> {
         return super.bootstrap(boot);
     }
 }

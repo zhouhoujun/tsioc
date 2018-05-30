@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/platform-server",
-  "version": "2.4.4",
+  "version": "2.4.5",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -27,10 +27,10 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {},
   "peerDependencies": {
-    "tslib": "^1.9.1",
+    "tslib": "^1.9.2",
     "globby": "^7.1.1",
     "reflect-metadata": "^0.1.12",
-    "@ts-ioc/core": "2.4.4"
+    "@ts-ioc/core": "2.4.5"
   },
   "directories": {
     "lib": "lib",

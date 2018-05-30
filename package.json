@@ -1,6 +1,6 @@
 {
   "name": "tsioc-srcs",
-  "version": "2.4.4",
+  "version": "2.4.5",
   "private": true,
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
@@ -49,6 +49,7 @@
     "rollup-plugin-sourcemaps": "^0.4.2",
     "through2": "^2.0.3",
     "ts-node": "^6.0.3",
+    "tslib": "^1.9.2",
     "tslint": "^5.8.0",
     "tslint-stylish": "^2.1.0",
     "typescript": "^2.8.3",

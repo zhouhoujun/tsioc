@@ -2,7 +2,7 @@ import { ModuleBuilder } from './ModuleBuilder';
 import { AppConfiguration, AppConfigurationToken } from './AppConfiguration';
 import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import { Token, Type, LoadType } from './types';
-import { lang, isString, isClass, isMetadataObject, isFunction } from './utils/index';
+import { lang, isString, isClass, isMetadataObject, isFunction, isToken } from './utils/index';
 import { IContainer } from './IContainer';
 import { IContainerBuilder } from './IContainerBuilder';
 import { ModuleConfiguration } from './ModuleConfiguration';
@@ -105,16 +105,18 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
     /**
      * bootstrap application via main module
      *
-     * @param {(Token<T> | Type<any>)} bootModule
+     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} bootModule
      * @returns {Promise<T>}
      * @memberof ApplicationBuilder
      */
-    async bootstrap(bootModule: Token<T> | Type<any>): Promise<T> {
+    async bootstrap(bootModule: Token<T> | Type<any> | AppConfiguration<T>): Promise<T> {
         let container = await this.getContainer();
         let builder = this.getModuleBuilder(container);
-        let cfg = await this.getConfiguration(this.getModuleConfigure(builder, bootModule));
+        let cfg: AppConfiguration<T> = await this.getConfiguration(this.getModuleConfigure(builder, bootModule));
         await this.initContainer(cfg, container);
-        cfg.bootstrap = cfg.bootstrap || bootModule;
+        if (!cfg.bootstrap) {
+            cfg.bootstrap = (isToken(bootModule) ? bootModule : null);
+        }
         let app = await builder.build(cfg);
         return app;
     }
@@ -133,7 +135,7 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
         return this._moduleBuilder;
     }
 
-    protected getModuleConfigure(builer: IModuleBuilder<T>, boot: Token<T> | Type<any>) {
+    protected getModuleConfigure(builer: IModuleBuilder<T>, boot: Token<T> | Type<any> | AppConfiguration<T>) {
         return builer.getConfigure(boot);
     }
 

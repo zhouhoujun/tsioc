@@ -52,6 +52,7 @@ Development.create(gulp, __dirname, [
                             ],
                             external: [
                                 'reflect-metadata',
+                                'tslib',
                                 'log4js',
                                 '@ts-ioc/core',
                                 '@ts-ioc/aop'
