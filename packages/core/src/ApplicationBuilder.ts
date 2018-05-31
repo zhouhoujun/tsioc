@@ -98,6 +98,13 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
         return this.moduleBuilder;
     }
 
+    /**
+     * set module builder.
+     *
+     * @param {IModuleBuilder<T>} builder
+     * @returns {this}
+     * @memberof ApplicationBuilder
+     */
     setModuleBuilder(builder: IModuleBuilder<T>): this {
         this.moduleBuilder = builder;
         return this;
