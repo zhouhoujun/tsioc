@@ -29,10 +29,6 @@ export class BroserApplicationBuilder<T> extends ApplicationBuilder<T> implement
         super(baseURL || !isUndefined(System) ? System.baseURL : location.href);
     }
 
-    bootstrap(boot: Token<T> | Type<any> | AppConfiguration<T>): Promise<T> {
-        return super.bootstrap(boot)
-    }
-
     protected createContainerBuilder() {
         return new ContainerBuilder();
     }
@@ -68,10 +64,26 @@ export class PlatformBrowser extends BroserApplicationBuilder<any> implements IP
         super(baseURL);
     }
 
-    static create(rootdir?: string) {
-        return new PlatformBrowser(rootdir);
+    /**
+     * create instance.
+     *
+     * @static
+     * @param {string} [baseURL] application start up base path.
+     * @returns {PlatformBrowser} PlatfromBrowser instance.
+     * @memberof PlatformBrowser
+     */
+    static create(baseURL?: string): PlatformBrowser {
+        return new PlatformBrowser(baseURL);
     }
 
+    /**
+     * bootstrap application via main module.
+     *
+     * @template T
+     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} boot main module or appliaction configuration.
+     * @returns {Promise<T>}  main module bootstrap class instance.
+     * @memberof PlatformBrowser
+     */
     bootstrap<T>(boot: Token<T> | Type<any> | AppConfiguration<T>): Promise<T> {
         return super.bootstrap(boot);
     }

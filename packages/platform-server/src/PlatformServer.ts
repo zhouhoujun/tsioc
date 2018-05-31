@@ -170,10 +170,26 @@ export class PlatformServer extends ServerApplicationBuilder<any> implements IPl
         super(rootdir);
     }
 
-    static create(rootdir: string) {
+    /**
+     * create instance.
+     *
+     * @static
+     * @param {string} rootdir application start root path.
+     * @returns {PlatformServer}
+     * @memberof PlatformServer
+     */
+    static create(rootdir: string): PlatformServer {
         return new PlatformServer(rootdir);
     }
 
+    /**
+     * bootstrap application via main module.
+     *
+     * @template T
+     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} boot main module or appliaction configuration.
+     * @returns {Promise<T>}  main module bootstrap class instance.
+     * @memberof PlatformServer
+     */
     bootstrap<T>(boot: Token<T> | Type<any> | AppConfiguration<T>): Promise<T> {
         return super.bootstrap(boot);
     }
