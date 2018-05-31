@@ -85,7 +85,7 @@ export interface IApplicationBuilder<T> {
     /**
      * use module, custom register module.
      *
-     * @param {(...(LoadType | CustomRegister<T>)[])} modules
+     * @param {...(LoadType | CustomRegister<T>)[]} modules
      * @returns {this}
      * @memberof IApplicationBuilder
      */
@@ -94,7 +94,7 @@ export interface IApplicationBuilder<T> {
     /**
      * use module
      *
-     * @param {(...LoadType[])} modules
+     * @param {...LoadType[]} modules
      * @returns {this}
      * @memberof IApplicationBuilder
      */

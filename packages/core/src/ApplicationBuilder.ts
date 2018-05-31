@@ -142,7 +142,7 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
     /**
      * use module, custom module.
      *
-     * @param {(...(LoadType | CustomRegister<T>)[])} modules
+     * @param {...(LoadType | CustomRegister<T>)[]} modules
      * @returns {this}
      * @memberof PlatformServer
      */
@@ -166,7 +166,7 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
     /**
      * use module, custom module.
      *
-     * @param {(...(LoadType | CustomRegister<T>)[])} modules
+     * @param {...(LoadType | CustomRegister<T>)[]} modules
      * @returns {this}
      * @memberof PlatformServer
      */
