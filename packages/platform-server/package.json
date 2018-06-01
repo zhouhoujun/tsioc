@@ -26,11 +26,11 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
+    "reflect-metadata": "^0.1.12",
+    "tslib": "^1.9.2",
     "globby": "^7.1.1"
   },
   "peerDependencies": {
-    "reflect-metadata": "^0.1.12",
-    "tslib": "^1.9.2",
     "@ts-ioc/core": "2.4.7"
   },
   "directories": {

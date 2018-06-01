@@ -25,11 +25,12 @@
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
-  "dependencies": {},
+  "dependencies": {
+    "tslib": "^1.9.2"
+  },
   "peerDependencies": {
     "through2": "^2.0.1",
-    "typescript": "^2.7.1",
-    "tslib": "^1.9.2"
+    "typescript": "^2.7.1"
   },
   "directories": {
     "lib": "lib",
