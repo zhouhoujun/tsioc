@@ -7,5 +7,5 @@ export interface AfterThrowingMetadata extends AdviceMetadata {
      * @type {string}
      * @memberof AfterThrowingMetadata
      */
-    throwing: string;
+    throwing?: string;
 }
