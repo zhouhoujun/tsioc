@@ -1,6 +1,5 @@
-import { createClassDecorator, ITypeDecorator, ClassMetadata, Registration, Type, isString, isClass } from '@ts-ioc/core';
+import { createClassDecorator, ITypeDecorator, ClassMetadata, Registration, Type, isString, isClass, isArray } from '@ts-ioc/core';
 import { AspectMetadata } from '../metadatas/index';
-import { isArray } from 'util';
 
 /**
  * Aspect decorator
@@ -36,7 +35,7 @@ export interface IAspectDecorator extends ITypeDecorator<AspectMetadata> {
 
 
 /**
- * Aspect decorator and metadata. define aspect class.
+ * Aspect decorator. define aspect service.
  *
  * @Aspect
  */

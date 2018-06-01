@@ -1,6 +1,6 @@
-import { MethodMetadata, Type } from '@ts-ioc/core';
+import { Type, ClassMetadata } from '@ts-ioc/core';
 
-export interface AspectMetadata extends MethodMetadata {
+export interface AspectMetadata extends ClassMetadata {
     /**
      * set pointcut in the type only.
      *

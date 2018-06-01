@@ -16,8 +16,9 @@ export interface IAdviceDecorator<T extends AdviceMetadata> extends IMethodDecor
      *
      * ### Usage
      * - path or module name, match express.
-     * `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
-     * `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *
      * ```
      * @Aspect()
      * class AspectClass {
@@ -42,6 +43,12 @@ export interface IAdviceDecorator<T extends AdviceMetadata> extends IMethodDecor
      * @param { string } [annotation] annotation name, special annotation metadata for annotation advices.
      */
     (pointcut?: string | RegExp, annotation?: string): MethodDecorator;
+
+    /**
+     * define advice with metadata map.
+     * @param {T} [metadata]
+     */
+    (metadata?: T): MethodDecorator;
 }
 
 export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: string,
@@ -87,4 +94,9 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
         }) as IAdviceDecorator<T>;
 }
 
+/**
+ * aop advice decorator.
+ *
+ * @Advice
+ */
 export const Advice: IAdviceDecorator<AdviceMetadata> = createAdviceDecorator('Advice');

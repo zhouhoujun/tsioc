@@ -20,6 +20,12 @@ export interface IAfterReturningDecorator<T extends AfterReturningMetadata> exte
      */
     (pointcut?: string | RegExp, returning?: string, annotation?: string): MethodDecorator;
 }
+
+/**
+ * aop after returning advice decorator.
+ *
+ * @AfterReturning
+ */
 export const AfterReturning: IAfterReturningDecorator<AfterReturningMetadata> =
     createAdviceDecorator<AfterReturningMetadata>(
         'AfterReturning',

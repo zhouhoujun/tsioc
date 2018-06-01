@@ -20,6 +20,12 @@ export interface IAfterThrowingDecorator<T extends AfterThrowingMetadata> extend
      */
     (pointcut?: string | RegExp, throwing?: string, annotation?: string): MethodDecorator
 }
+
+/**
+ * aop after throwing advice decorator.
+ *
+ * @AfterThrowing
+ */
 export const AfterThrowing: IAfterThrowingDecorator<AfterThrowingMetadata> =
     createAdviceDecorator<AfterThrowingMetadata>(
         'AfterThrowing',

@@ -22,6 +22,11 @@ export interface IAroundDecorator<T extends AroundMetadata> extends IAdviceDecor
     (pointcut?: string | RegExp, args?: string, returning?: string, throwing?: string, annotation?: string): MethodDecorator
 }
 
+/**
+ * aop Around advice decorator.
+ *
+ * @Around
+ */
 export const Around: IAroundDecorator<AroundMetadata> =
     createAdviceDecorator<AroundMetadata>(
         'Around',

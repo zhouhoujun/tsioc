@@ -10,14 +10,6 @@ export interface AdviceMetadata extends MethodMetadata {
     pointcut: string | RegExp;
 
     /**
-     * annotation name, special annotation metadata for annotation advices.
-     *
-     * @type {string}
-     * @memberof AdviceMetadata
-     */
-    annotationName?: string;
-
-    /**
      * method with specail decortor.
      *
      * @type {(Function | string)}
@@ -41,6 +33,15 @@ export interface AdviceMetadata extends MethodMetadata {
      */
     within?: Type<any> | Type<any>[];
 
+
+    /**
+     * annotation name, special annotation metadata for annotation advices.
+     *
+     * @type {string}
+     * @memberof AdviceMetadata
+     */
+    annotationName?: string;
+
     /**
      * set name provider of annotation metadata for annotation advices.
      *
@@ -50,7 +51,8 @@ export interface AdviceMetadata extends MethodMetadata {
     annotationArgName?: string;
 
     /**
-     * advice name.
+     * advice type name.
+     * eg. `Before`, `Pointcut`, `Around`, `After`, `AfterThrowing`, `AfterReturning`
      *
      * @type {string}
      * @memberof AdviceMetadata

@@ -1,12 +1,11 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core'), require('util')) :
-	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core', 'util'], factory) :
-	(global.aop = global.aop || {}, global.aop.umd = global.aop.umd || {}, global.aop.umd.js = factory(global.tslib_1,global['@ts-ioc/core'],global.util));
-}(this, (function (tslib_1,core_1,util) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core')) :
+	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core'], factory) :
+	(global.aop = global.aop || {}, global.aop.umd = global.aop.umd || {}, global.aop.umd.js = factory(global.tslib_1,global['@ts-ioc/core']));
+}(this, (function (tslib_1,core_1) { 'use strict';
 
 tslib_1 = tslib_1 && tslib_1.hasOwnProperty('default') ? tslib_1['default'] : tslib_1;
 core_1 = core_1 && core_1.hasOwnProperty('default') ? core_1['default'] : core_1;
-util = util && util.hasOwnProperty('default') ? util['default'] : util;
 
 function unwrapExports (x) {
 	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
@@ -155,6 +154,11 @@ function createAdviceDecorator(adviceName, adapter, afterPointcutAdapter, metada
     });
 }
 exports.createAdviceDecorator = createAdviceDecorator;
+/**
+ * aop advice decorator.
+ *
+ * @Advice
+ */
 exports.Advice = createAdviceDecorator('Advice');
 
 
@@ -167,9 +171,8 @@ var Advice_2 = Advice.Advice;
 var Aspect = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
-
 /**
- * Aspect decorator and metadata. define aspect class.
+ * Aspect decorator. define aspect service.
  *
  * @Aspect
  */
@@ -181,7 +184,7 @@ exports.Aspect = core_1.createClassDecorator('Aspect', function (args) {
         }
     });
     args.next({
-        match: function (arg) { return util.isArray(arg) || core_1.isClass(arg); },
+        match: function (arg) { return core_1.isArray(arg) || core_1.isClass(arg); },
         setMetadata: function (metadata, arg) {
             metadata.within = arg;
         }
@@ -197,6 +200,11 @@ var Aspect_1 = Aspect.Aspect;
 var After = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
+/**
+ * aop after advice decorator.
+ *
+ * @After
+ */
 exports.After = Advice.createAdviceDecorator('After');
 
 
@@ -209,6 +217,11 @@ var AfterReturning = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
+/**
+ * aop after returning advice decorator.
+ *
+ * @AfterReturning
+ */
 exports.AfterReturning = Advice.createAdviceDecorator('AfterReturning', null, function (args) {
     args.next({
         match: function (arg) { return core_1.isString(arg); },
@@ -228,6 +241,11 @@ var AfterThrowing = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
+/**
+ * aop after throwing advice decorator.
+ *
+ * @AfterThrowing
+ */
 exports.AfterThrowing = Advice.createAdviceDecorator('AfterThrowing', null, function (args) {
     args.next({
         match: function (arg) { return core_1.isString(arg); },
@@ -247,6 +265,11 @@ var Around = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
+/**
+ * aop Around advice decorator.
+ *
+ * @Around
+ */
 exports.Around = Advice.createAdviceDecorator('Around', null, function (args) {
     args.next({
         match: function (arg) { return core_1.isString(arg); },
@@ -277,6 +300,11 @@ var Around_1 = Around.Around;
 var Before = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
+/**
+ * aop Before advice decorator.
+ *
+ * @Before
+ */
 exports.Before = Advice.createAdviceDecorator('Before');
 
 
@@ -288,6 +316,11 @@ var Before_1 = Before.Before;
 var Pointcut = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
+/**
+ * aop Pointcut advice decorator.
+ *
+ * @Pointcut
+ */
 exports.Pointcut = Advice.createAdviceDecorator('Pointcut');
 
 
@@ -1854,7 +1887,7 @@ exports.AopModule = AopModule;
 unwrapExports(AopModule_1);
 var AopModule_2 = AopModule_1.AopModule;
 
-var D__workspace_github_tsioc_packages_aop_lib = createCommonjsModule(function (module, exports) {
+var D__Workspace_Projects_modules_tsioc_packages_aop_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 // export * from './tokens';
@@ -1871,7 +1904,7 @@ tslib_1.__exportStar(AopModule_1, exports);
 
 });
 
-var index$4 = unwrapExports(D__workspace_github_tsioc_packages_aop_lib);
+var index$4 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_aop_lib);
 
 return index$4;
 
