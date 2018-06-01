@@ -195,7 +195,7 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
      * @returns {Promise<T>}
      * @memberof ApplicationBuilder
      */
-    async bootstrap(bootModule: Token<T> | Type<any> | AppConfiguration<T>): Promise<T> {
+    async bootstrap(bootModule: Token<T> | Type<any> | AppConfiguration<T>): Promise<any> {
         let container = this.getContainer();
         let builder = this.getModuleBuilder();
         let cfg: AppConfiguration<T> = await this.getConfiguration(this.getModuleConfigure(builder, bootModule));

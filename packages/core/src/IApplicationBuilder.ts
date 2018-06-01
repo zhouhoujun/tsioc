@@ -116,6 +116,6 @@ export interface IApplicationBuilder<T> {
      * @returns {Promise<any>}
      * @memberof IApplicationBuilder
      */
-    bootstrap(bootModule: Token<T> | Type<any> | AppConfiguration<T>): Promise<T>;
+    bootstrap(bootModule: Token<T> | Type<any> | AppConfiguration<T>): Promise<any>;
 
 }

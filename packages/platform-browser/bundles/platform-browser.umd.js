@@ -150,7 +150,7 @@ var PlatformBrowser = /** @class */ (function (_super) {
      *
      * @template T
      * @param {(Token<T> | Type<any> | AppConfiguration<T>)} boot main module or appliaction configuration.
-     * @returns {Promise<T>}  main module bootstrap class instance.
+     * @returns {Promise<any>}  main module bootstrap class instance.
      * @memberof PlatformBrowser
      */
     PlatformBrowser.prototype.bootstrap = function (boot) {
