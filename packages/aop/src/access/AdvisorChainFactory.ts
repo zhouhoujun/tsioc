@@ -160,8 +160,8 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
                     }
 
                     if (isArray(annotations)) {
-                        if (metadata.annotation) {
-                            let d: string = metadata.annotation;
+                        if (metadata.annotationName) {
+                            let d: string = metadata.annotationName;
                             d = /^@/.test(d) ? d : `@${d}`;
                             return annotations.filter(a => a.decorator === d);
                         }

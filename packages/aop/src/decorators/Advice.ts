@@ -14,6 +14,30 @@ export interface IAdviceDecorator<T extends AdviceMetadata> extends IMethodDecor
     /**
      * define advice with params.
      *
+     * ### Usage
+     * - path or module name, match express.
+     * `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     * `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     * ```
+     * @Aspect()
+     * class AspectClass {
+     *   @Advice('"execution(moduelName.*.*(..)")')
+     *   process(joinPoint: JointPoint){
+     *   }
+     * }
+     * ```
+     *
+     * - match method with a decorator annotation.
+     *
+     * ```
+     * @Aspect()
+     * class AspectClass {
+     *   @Advice('@annotation(DecoratorName)')
+     *   process(joinPoint: JointPoint){
+     *   }
+     * }
+     * ```
+     *
      * @param {(string | RegExp)} [pointcut] define advice match express for pointcut.
      * @param { string } [annotation] annotation name, special annotation metadata for annotation advices.
      */
@@ -31,7 +55,6 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
                 adapter(args);
             }
             args.next<AdviceMetadata>({
-                isMetadata: (arg) => isClassMetadata(arg, ['pointcut']),
                 match: (arg) => isString(arg) || isRegExp(arg),
                 setMetadata: (metadata, arg) => {
                     metadata.pointcut = arg;
@@ -51,7 +74,7 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
             args.next<AdviceMetadata>({
                 match: (arg) => isString(arg),
                 setMetadata: (metadata, arg) => {
-                    metadata.annotation = arg;
+                    metadata.annotationName = arg;
                 }
             });
         },

@@ -6484,6 +6484,13 @@ var ApplicationBuilder = /** @class */ (function () {
         }
         return this.moduleBuilder;
     };
+    /**
+     * set module builder.
+     *
+     * @param {IModuleBuilder<T>} builder
+     * @returns {this}
+     * @memberof ApplicationBuilder
+     */
     ApplicationBuilder.prototype.setModuleBuilder = function (builder) {
         this.moduleBuilder = builder;
         return this;
@@ -6525,7 +6532,7 @@ var ApplicationBuilder = /** @class */ (function () {
     /**
      * use module, custom module.
      *
-     * @param {(...(LoadType | CustomRegister<T>)[])} modules
+     * @param {...(LoadType | CustomRegister<T>)[]} modules
      * @returns {this}
      * @memberof PlatformServer
      */
@@ -6555,7 +6562,7 @@ var ApplicationBuilder = /** @class */ (function () {
     /**
      * use module, custom module.
      *
-     * @param {(...(LoadType | CustomRegister<T>)[])} modules
+     * @param {...(LoadType | CustomRegister<T>)[]} modules
      * @returns {this}
      * @memberof PlatformServer
      */

@@ -1,4 +1,6 @@
-import { createClassDecorator, ITypeDecorator, ClassMetadata, Registration } from '@ts-ioc/core';
+import { createClassDecorator, ITypeDecorator, ClassMetadata, Registration, Type, isString, isClass } from '@ts-ioc/core';
+import { AspectMetadata } from '../metadatas/index';
+import { isArray } from 'util';
 
 /**
  * Aspect decorator
@@ -7,18 +9,20 @@ import { createClassDecorator, ITypeDecorator, ClassMetadata, Registration } fro
  * @interface IAspectDecorator
  * @extends {ITypeDecorator<AspectMetadata>}
  */
-export interface IAspectDecorator extends ITypeDecorator<ClassMetadata> {
+export interface IAspectDecorator extends ITypeDecorator<AspectMetadata> {
     /**
      * Aspect decorator, define for class.  use to define class as aspect. it can setting provider to some token, singleton or not.
      *
      * @Aspect
      *
-     * @param {(Registration<any> | symbol | string)} provide define this class provider for provide.
+     * @param {string} annotation set pointcut in the class with the annotation decorator only.
+     * @param {(Type<any> | Type<any>[])>} [within]  set pointcut in the class with the annotation decorator only.
+     * @param {(Registration<any> | symbol | string)} [provide] define this class provider for provide.
      * @param {string} [alias] define this class provider with alias for provide.
      * @param {boolean} [singlton] define this class as singlton.
      * @param {number} [cache]  define class cahce expris when is not singlton.
      */
-    (provide: Registration<any> | symbol | string, alias?: string, singlton?: boolean, cache?: number): ClassDecorator;
+    (annotation: string, within?: Type<any> | Type<any>[], provide?: Registration<any> | symbol | string, alias?: string, singlton?: boolean, cache?: number): ClassDecorator;
 
     /**
      * Aspect decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.
@@ -27,14 +31,28 @@ export interface IAspectDecorator extends ITypeDecorator<ClassMetadata> {
      *
      * @param {AspectMetadata} [metadata] metadata map.
      */
-    (metadata?: ClassMetadata): ClassDecorator;
+    (metadata?: AspectMetadata): ClassDecorator;
 }
 
 
 /**
- * Aspect decorator and metadata. define aspect class. I's auto a singleton.
+ * Aspect decorator and metadata. define aspect class.
  *
  * @Aspect
  */
-export const Aspect: IAspectDecorator = createClassDecorator<ClassMetadata>('Aspect');
+export const Aspect: IAspectDecorator = createClassDecorator<AspectMetadata>('Aspect', args => {
+    args.next<AspectMetadata>({
+        match: (arg) => isString(arg),
+        setMetadata: (metadata, arg) => {
+            metadata.annotation = arg;
+        }
+    });
+
+    args.next<AspectMetadata>({
+        match: (arg) => isArray(arg) || isClass(arg),
+        setMetadata: (metadata, arg) => {
+            metadata.within = arg;
+        }
+    });
+}) as IAspectDecorator;
 

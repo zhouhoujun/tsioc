@@ -1,4 +1,4 @@
-import { MethodMetadata } from '@ts-ioc/core';
+import { MethodMetadata, Type } from '@ts-ioc/core';
 
 export interface AdviceMetadata extends MethodMetadata {
     /**
@@ -15,7 +15,31 @@ export interface AdviceMetadata extends MethodMetadata {
      * @type {string}
      * @memberof AdviceMetadata
      */
-    annotation?: string;
+    annotationName?: string;
+
+    /**
+     * method with specail decortor.
+     *
+     * @type {(Function | string)}
+     * @memberof AdviceMetadata
+     */
+    annotation?: Function | string;
+
+    /**
+     * math only the object.
+     *
+     * @type {*}
+     * @memberof AdviceMetadata
+     */
+    target?: any;
+
+    /**
+     * advice within.
+     *
+     * @type {(Type<any> | Type<any>[])}
+     * @memberof AdviceMetadata
+     */
+    within?: Type<any> | Type<any>[];
 
     /**
      * set name provider of annotation metadata for annotation advices.

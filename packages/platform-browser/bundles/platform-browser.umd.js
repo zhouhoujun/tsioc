@@ -113,16 +113,13 @@ var BroserApplicationBuilder = /** @class */ (function (_super) {
     function BroserApplicationBuilder(baseURL) {
         return _super.call(this, baseURL || !core_1.isUndefined(System) ? System.baseURL : location.href) || this;
     }
-    BroserApplicationBuilder.prototype.bootstrap = function (boot) {
-        return _super.prototype.bootstrap.call(this, boot);
-    };
     BroserApplicationBuilder.prototype.createContainerBuilder = function () {
         return new ContainerBuilder_1.ContainerBuilder();
     };
     BroserApplicationBuilder.prototype.getDefaultConfig = function () {
         return core_1.lang.assign({}, defaultAppConfig);
     };
-    BroserApplicationBuilder.classAnnations = { "name": "BroserApplicationBuilder", "params": { "constructor": ["baseURL"], "bootstrap": ["boot"], "createContainerBuilder": [], "getDefaultConfig": [] } };
+    BroserApplicationBuilder.classAnnations = { "name": "BroserApplicationBuilder", "params": { "constructor": ["baseURL"], "createContainerBuilder": [], "getDefaultConfig": [] } };
     return BroserApplicationBuilder;
 }(core_1.ApplicationBuilder));
 exports.BroserApplicationBuilder = BroserApplicationBuilder;
@@ -137,13 +134,29 @@ var PlatformBrowser = /** @class */ (function (_super) {
     function PlatformBrowser(baseURL) {
         return _super.call(this, baseURL) || this;
     }
-    PlatformBrowser.create = function (rootdir) {
-        return new PlatformBrowser(rootdir);
+    /**
+     * create instance.
+     *
+     * @static
+     * @param {string} [baseURL] application start up base path.
+     * @returns {PlatformBrowser} PlatfromBrowser instance.
+     * @memberof PlatformBrowser
+     */
+    PlatformBrowser.create = function (baseURL) {
+        return new PlatformBrowser(baseURL);
     };
+    /**
+     * bootstrap application via main module.
+     *
+     * @template T
+     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} boot main module or appliaction configuration.
+     * @returns {Promise<T>}  main module bootstrap class instance.
+     * @memberof PlatformBrowser
+     */
     PlatformBrowser.prototype.bootstrap = function (boot) {
         return _super.prototype.bootstrap.call(this, boot);
     };
-    PlatformBrowser.classAnnations = { "name": "PlatformBrowser", "params": { "constructor": ["baseURL"], "create": ["rootdir"], "bootstrap": ["boot"] } };
+    PlatformBrowser.classAnnations = { "name": "PlatformBrowser", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "bootstrap": ["boot"] } };
     return PlatformBrowser;
 }(BroserApplicationBuilder));
 exports.PlatformBrowser = PlatformBrowser;

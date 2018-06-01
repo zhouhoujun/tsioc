@@ -43,7 +43,7 @@ export class MatchPointcutAction extends ActionComposite {
         let advisor = container.get(AdvisorToken);
         let matcher = container.get(AdviceMatcherToken);
         advisor.aspects.forEach((adviceMetas, type) => {
-            let matchpoints = matcher.match(type, data.targetType, adviceMetas);
+            let matchpoints = matcher.match(type, data.targetType, adviceMetas, data.target);
             matchpoints.forEach(mpt => {
                 let fullName = mpt.fullName;
                 let advice = mpt.advice;

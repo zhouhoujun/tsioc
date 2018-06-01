@@ -1,11 +1,12 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core')) :
-	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core'], factory) :
-	(global.aop = global.aop || {}, global.aop.umd = global.aop.umd || {}, global.aop.umd.js = factory(global.tslib_1,global['@ts-ioc/core']));
-}(this, (function (tslib_1,core_1) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core'), require('util')) :
+	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core', 'util'], factory) :
+	(global.aop = global.aop || {}, global.aop.umd = global.aop.umd || {}, global.aop.umd.js = factory(global.tslib_1,global['@ts-ioc/core'],global.util));
+}(this, (function (tslib_1,core_1,util) { 'use strict';
 
 tslib_1 = tslib_1 && tslib_1.hasOwnProperty('default') ? tslib_1['default'] : tslib_1;
 core_1 = core_1 && core_1.hasOwnProperty('default') ? core_1['default'] : core_1;
+util = util && util.hasOwnProperty('default') ? util['default'] : util;
 
 function unwrapExports (x) {
 	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
@@ -125,7 +126,6 @@ function createAdviceDecorator(adviceName, adapter, afterPointcutAdapter, metada
             adapter(args);
         }
         args.next({
-            isMetadata: function (arg) { return core_1.isClassMetadata(arg, ['pointcut']); },
             match: function (arg) { return core_1.isString(arg) || core_1.isRegExp(arg); },
             setMetadata: function (metadata, arg) {
                 metadata.pointcut = arg;
@@ -143,7 +143,7 @@ function createAdviceDecorator(adviceName, adapter, afterPointcutAdapter, metada
         args.next({
             match: function (arg) { return core_1.isString(arg); },
             setMetadata: function (metadata, arg) {
-                metadata.annotation = arg;
+                metadata.annotationName = arg;
             }
         });
     }, function (metadata) {
@@ -167,12 +167,26 @@ var Advice_2 = Advice.Advice;
 var Aspect = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
+
 /**
- * Aspect decorator and metadata. define aspect class. I's auto a singleton.
+ * Aspect decorator and metadata. define aspect class.
  *
  * @Aspect
  */
-exports.Aspect = core_1.createClassDecorator('Aspect');
+exports.Aspect = core_1.createClassDecorator('Aspect', function (args) {
+    args.next({
+        match: function (arg) { return core_1.isString(arg); },
+        setMetadata: function (metadata, arg) {
+            metadata.annotation = arg;
+        }
+    });
+    args.next({
+        match: function (arg) { return util.isArray(arg) || core_1.isClass(arg); },
+        setMetadata: function (metadata, arg) {
+            metadata.within = arg;
+        }
+    });
+});
 
 
 });
@@ -604,8 +618,8 @@ var AdvisorChainFactory = /** @class */ (function () {
                     }
                 }
                 if (core_1.isArray(annotations)) {
-                    if (metadata.annotation) {
-                        var d_1 = metadata.annotation;
+                    if (metadata.annotationName) {
+                        var d_1 = metadata.annotationName;
                         d_1 = /^@/.test(d_1) ? d_1 : "@" + d_1;
                         return annotations.filter(function (a) { return a.decorator === d_1; });
                     }
@@ -1285,7 +1299,7 @@ var MatchPointcutAction = /** @class */ (function (_super) {
         var advisor = container.get(IAdvisor.AdvisorToken);
         var matcher = container.get(IAdviceMatcher.AdviceMatcherToken);
         advisor.aspects.forEach(function (adviceMetas, type) {
-            var matchpoints = matcher.match(type, data.targetType, adviceMetas);
+            var matchpoints = matcher.match(type, data.targetType, adviceMetas, data.target);
             matchpoints.forEach(function (mpt) {
                 var fullName = mpt.fullName;
                 var advice = mpt.advice;
@@ -1544,8 +1558,24 @@ var AdviceMatcher = /** @class */ (function () {
     function AdviceMatcher(container) {
         this.container = container;
     }
-    AdviceMatcher.prototype.match = function (aspectType, targetType, adviceMetas, instance) {
+    AdviceMatcher.prototype.match = function (aspectType, targetType, adviceMetas, target) {
         var _this = this;
+        var aspectMeta = core_1.lang.first(core_1.getOwnTypeMetadata(decorators.Aspect, aspectType));
+        if (aspectMeta) {
+            if (aspectMeta.within) {
+                var ins = core_1.isArray(aspectMeta.within) ? aspectMeta.within : [aspectMeta.within];
+                if (ins.indexOf(targetType) < 0) {
+                    return [];
+                }
+            }
+            if (aspectMeta.annotation) {
+                var annotation = core_1.isFunction(aspectMeta.annotation) ? aspectMeta.annotation.toString() : aspectMeta.annotation;
+                var anno = (/^\^?@\w+/.test(annotation) ? '' : '@') + annotation;
+                if (!core_1.hasOwnClassMetadata(anno, targetType)) {
+                    return [];
+                }
+            }
+        }
         var className = core_1.getClassName(targetType);
         adviceMetas = adviceMetas || core_1.getOwnMethodMetadata(decorators.Advice, targetType);
         var advisor = this.container.get(IAdvisor.AdvisorToken);
@@ -1609,8 +1639,8 @@ var AdviceMatcher = /** @class */ (function () {
             if (core_1.isString(pointcut)) {
                 if (/^execution\(\S+\)$/.test(pointcut)) {
                     pointcut = pointcut.substring(10, pointcut.length - 1);
-                    return pointcut === name;
                 }
+                return pointcut.startsWith(name);
             }
             else if (core_1.isRegExp(pointcut)) {
                 return pointcut.test(name);
@@ -1618,58 +1648,132 @@ var AdviceMatcher = /** @class */ (function () {
         }
         return false;
     };
-    AdviceMatcher.prototype.filterPointcut = function (type, points, metadata) {
+    AdviceMatcher.prototype.filterPointcut = function (type, points, metadata, target) {
         if (!metadata.pointcut) {
             return [];
         }
         var matchedPointcut;
         if (metadata.pointcut) {
-            var match_1 = this.matchTypeFactory(type, metadata.pointcut);
-            matchedPointcut = points.filter(function (p) { return match_1(p.name, p.fullName, p); });
+            var match_1 = this.matchTypeFactory(type, metadata);
+            matchedPointcut = points.filter(function (p) { return match_1(p.name, p.fullName, type, target, p); });
         }
         matchedPointcut = matchedPointcut || [];
         return matchedPointcut.map(function (p) {
             return core_1.lang.assign({}, p, { advice: metadata });
         });
     };
-    AdviceMatcher.prototype.matchTypeFactory = function (type, pointcut) {
+    AdviceMatcher.prototype.matchTypeFactory = function (type, metadata) {
+        var _this = this;
+        var pointcut = metadata.pointcut;
         if (core_1.isString(pointcut)) {
-            pointcut = (pointcut || '').trim();
-            if (/^@annotation\(\S+\)$/.test(pointcut)) {
-                pointcut = pointcut.substring(12, pointcut.length - 1);
-                var annotation_1 = /^@/.test(pointcut) ? pointcut : ('@' + pointcut);
-                return function (name, fullName) { return core_1.hasOwnMethodMetadata(annotation_1, type, name) && !core_1.hasOwnClassMetadata(decorators.Aspect, type); };
-            }
-            else {
-                if (/^execution\(\S+\)$/.test(pointcut)) {
-                    pointcut = pointcut.substring(10, pointcut.length - 1);
+            var pointcuts = (pointcut || '').trim().split(/(&&)|(\|\|)/gi);
+            var strExp_1 = pointcut.substring(0);
+            var expresses_1 = [];
+            pointcuts.forEach(function (exp) {
+                if (/^@annotation\(\s*\w+/.test(exp)) {
+                    exp = exp.substring(12, exp.length - 1);
+                    var annotation_1 = /^@/.test(exp) ? exp : ('@' + exp);
+                    expresses_1.push(function (name, fullName) { return core_1.hasOwnMethodMetadata(annotation_1, type, name) && !core_1.hasOwnClassMetadata(decorators.Aspect, type); });
                 }
-                if (pointcut === '*' || pointcut === '*.*') {
-                    return function (name, fullName, pointcut) { return !!name && !core_1.hasOwnClassMetadata(decorators.Aspect, type); };
+                else if (/^execution\(\s*\w+/.test(exp)) {
+                    exp = exp.substring(10, exp.length - 1);
+                    if (exp === '*' || exp === '*.*') {
+                        expresses_1.push(function (name, fullName) { return !!name && !core_1.hasOwnClassMetadata(decorators.Aspect, type); });
+                    }
+                    else if (/^\w+\(\s*\w+/.test(exp)) {
+                        // if is method name, will match aspect self only.
+                        expresses_1.push(function () { return false; });
+                    }
+                    else {
+                        exp = exp.replace(/\*\*/gi, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+                            .replace(/\*/gi, '\\\w+')
+                            .replace(/\./gi, '\\\.')
+                            .replace(/\//gi, '\\\/');
+                        var matcher_1 = new RegExp(exp + "$");
+                        expresses_1.push(function (name, fullName) { return matcher_1.test(fullName); });
+                    }
                 }
-                pointcut = pointcut.replace(/\*\*/gi, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
-                    .replace(/\*/gi, '\\\w+')
-                    .replace(/\./gi, '\\\.')
-                    .replace(/\//gi, '\\\/');
-                var matcher_1 = new RegExp(pointcut + "$");
-                return function (name, fullName, pointcut) { return matcher_1.test(fullName); };
+                else if (/^@within\(\s*\w+/.test(exp)) {
+                    var classnames_1 = exp.substring(exp.indexOf('(') + 1, exp.length - 1).split(',').map(function (n) { return n.trim(); });
+                    expresses_1.push(function (name, fullName, targetType) { return classnames_1.indexOf(core_1.getClassName(targetType)) >= 0; });
+                }
+                else if (/^@target\(\s*\w+/.test(exp)) {
+                    var torken_1 = exp.substring(exp.indexOf('(') + 1, exp.length - 1).trim();
+                    expresses_1.push(function (name, fullName, targetType) { return _this.container.getTokenImpl(torken_1) === targetType; });
+                }
+                else {
+                    expresses_1.push(function () { return true; });
+                }
+                strExp_1 = strExp_1.substring(exp.length);
+                if (strExp_1) {
+                    if (/^(&&)|(\|\|)/.test(strExp_1)) {
+                        expresses_1.push(strExp_1.substring(0, 2));
+                        strExp_1 = strExp_1.substring(2);
+                    }
+                }
+            });
+            if (metadata.within) {
+                expresses_1.push('&&');
+                expresses_1.push(function (method, fullName, targetType) {
+                    if (core_1.isArray(metadata.within)) {
+                        return metadata.within.indexOf(targetType) >= 0;
+                    }
+                    else {
+                        return metadata.within === targetType;
+                    }
+                });
             }
+            if (metadata.target) {
+                expresses_1.push('&&');
+                expresses_1.push(function (method, fullName, targetType, target) {
+                    return metadata.target = target;
+                });
+            }
+            if (metadata.annotation) {
+                expresses_1.push('&&');
+                expresses_1.push(function (method, fullName, targetType, target) {
+                    return core_1.hasOwnMethodMetadata(metadata.annotation, targetType, method);
+                });
+            }
+            return function (method, fullName, targetType, pointcut) {
+                var flag;
+                expresses_1.forEach(function (express, idx) {
+                    if (!core_1.isUndefined(flag)) {
+                        return;
+                    }
+                    if (core_1.isFunction(express)) {
+                        var rel = express(method, fullName, targetType, pointcut);
+                        if (idx < expresses_1.length - 2) {
+                            if (!rel && express[idx + 1] === '&&') {
+                                flag = false;
+                            }
+                            if (rel && express[idx + 1] === '||') {
+                                flag = true;
+                            }
+                        }
+                        else {
+                            flag = rel;
+                        }
+                    }
+                });
+                return flag;
+            };
         }
         else if (core_1.isRegExp(pointcut)) {
             var pointcutReg_1 = pointcut;
             if (/^\^?@\w+/.test(pointcutReg_1.source)) {
-                return function (name, fullName, pointcut) {
+                return function (name, fullName, targetType) {
                     var decName = Reflect.getMetadataKeys(type, name);
                     return decName.some(function (n) { return core_1.isString(n) && pointcutReg_1.test(n); });
                 };
             }
             else {
-                return function (name, fullName, pointcut) { return pointcutReg_1.test(fullName); };
+                return function (name, fullName) { return pointcutReg_1.test(fullName); };
             }
         }
         return null;
     };
-    AdviceMatcher.classAnnations = { "name": "AdviceMatcher", "params": { "constructor": ["container"], "match": ["aspectType", "targetType", "adviceMetas", "instance"], "matchAspectSelf": ["name", "metadata"], "filterPointcut": ["type", "points", "metadata"], "matchTypeFactory": ["type", "pointcut"] } };
+    AdviceMatcher.classAnnations = { "name": "AdviceMatcher", "params": { "constructor": ["container"], "match": ["aspectType", "targetType", "adviceMetas", "target"], "matchAspectSelf": ["name", "metadata"], "filterPointcut": ["type", "points", "metadata", "target"], "matchTypeFactory": ["type", "metadata"] } };
     AdviceMatcher = tslib_1.__decorate([
         decorators.NonePointcut(),
         core_1.Singleton(IAdviceMatcher.AdviceMatcherToken),

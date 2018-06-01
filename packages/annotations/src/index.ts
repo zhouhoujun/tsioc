@@ -1,2 +1,2 @@
-export * from './ClassAnnotations';
+export * from './classAnnotations';
 
