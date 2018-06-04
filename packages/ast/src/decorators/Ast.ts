@@ -1,4 +1,4 @@
-import { isString, isRegExp, isArray, isNumber, createClassDecorator, ClassMetadata, MetadataExtends, MetadataAdapter, isClassMetadata, Registration, isClass, ITypeDecorator, Type } from '@ts-ioc/core';
+import { isString, isRegExp, isArray, isNumber, createClassDecorator, ClassMetadata, MetadataExtends, MetadataAdapter, isClassMetadata, Registration, isClass, ITypeDecorator, Type, IClassDecorator } from '@ts-ioc/core';
 
 export interface AstMetadata extends ClassMetadata {
     astType: string;
@@ -12,32 +12,8 @@ export interface AstMetadata extends ClassMetadata {
  * @extends {ITypeDecorator<T>}
  * @template T
  */
-export interface IAstDecorator<T extends AstMetadata> extends ITypeDecorator<T> {
-    /**
-     * Ast decorator, use to define class as Ast element.
-     *
-     * @Ast
-     *
-     * @param {T} [AstName] Ast name.
-     * @param {(Registration<any> | symbol | string)} provide define this class provider for provide.
-     * @param {string} [alias] define this class provider with alias for provide.
-     * @param {boolean} [singlton] define this class as singlton.
-     */
-    (metadata?: T): ClassDecorator;
-    /**
-     * Ast decorator, use to define class as Ast element.
-     *
-     * @Ast
-     *
-     * @param {string} [AstName] Ast name.
-     */
-    (AstName?: string): ClassDecorator;
-    /**
-     * Ast decorator, use to define class as Ast element.
-     *
-     * @Ast
-     */
-    (target: Function): void;
+export interface IAstDecorator<T extends AstMetadata> extends IClassDecorator<T> {
+
 }
 
 export function createAstDecorator<T extends AstMetadata>(
@@ -51,7 +27,7 @@ export function createAstDecorator<T extends AstMetadata>(
                 metadata = metadataExtends(metadata as T);
             }
 
-            metadata.astType = metadata.alias || 'AST';
+            metadata.astType = metadata.alias;
 
             return metadata;
         }) as IAstDecorator<T>;

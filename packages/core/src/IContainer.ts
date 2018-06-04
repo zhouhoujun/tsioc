@@ -35,10 +35,11 @@ export interface IContainer extends IMethodAccessor {
      * @template T
      * @param {Token<T>} token
      * @param {string} [alias]
+     * @param {...Providers[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    get<T>(token: Token<T>, alias?: string): T;
+    get<T>(token: Token<T>, alias?: string, ...providers: Providers[]): T;
 
     /**
      * resolve type instance with token and param provider.

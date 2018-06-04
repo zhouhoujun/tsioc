@@ -29,12 +29,12 @@ export class Container implements IContainer {
      * @template T
      * @param {Token<T>} token
      * @param {string} [alias]
-     * @param {T} [notFoundValue]
+     * @param {...Providers[]} providers
      * @returns {T}
      * @memberof Container
      */
-    get<T>(token: Token<T>, alias?: string): T {
-        return this.resolve(alias ? this.getTokenKey<T>(token, alias) : token);
+    get<T>(token: Token<T>, alias?: string, ...providers: Providers[]): T {
+        return this.resolve(alias ? this.getTokenKey<T>(token, alias) : token, ...providers);
     }
 
 
