@@ -10,6 +10,9 @@ import { Advices, Advicer } from './advices/index';
 import { Aspect, Advice, NonePointcut } from './decorators/index';
 import { IAdvisor, AdvisorToken } from './IAdvisor';
 
+import * as acorn from 'acorn';
+import * as walk from 'acorn/dist/walk';
+
 /**
  * advice matcher, use to match advice when a registered create instance.
  *
@@ -138,6 +141,52 @@ export class AdviceMatcher implements IAdviceMatcher {
             return lang.assign({}, p, { advice: metadata });
         });
     }
+
+    // protected tranlateExpress(strExp: string): (method: string, fullName: string, targetType?: Type<any>, target?: any, pointcut?: IPointcut) => boolean {
+    //     let expresses: (((method: string, fullName: string, targetType?: Type<any>, target?: any, pointcut?: IPointcut) => boolean) | string)[] = [];
+    //     acorn.parse(strExp);
+
+    //     [].forEach(exp => {
+    //         if (/^@annotation\(\s*\w+/.test(exp)) {
+    //             exp = exp.substring(12, exp.length - 1);
+    //             let annotation = /^@/.test(exp) ? exp : ('@' + exp);
+    //             expresses.push((name: string, fullName: string) => hasOwnMethodMetadata(annotation, type, name) && !hasOwnClassMetadata(Aspect, type));
+
+    //         } else if (/^execution\(\s*\w+/.test(exp)) {
+    //             exp = exp.substring(10, exp.length - 1);
+    //             if (exp === '*' || exp === '*.*') {
+    //                 expresses.push((name: string, fullName: string) => !!name && !hasOwnClassMetadata(Aspect, type));
+    //             } else if (/^\w+\(\s*\w+/.test(exp)) {
+    //                 // if is method name, will match aspect self only.
+    //                 expresses.push(() => false);
+    //             } else {
+    //                 exp = exp.replace(/\*\*/gi, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+    //                     .replace(/\*/gi, '\\\w+')
+    //                     .replace(/\./gi, '\\\.')
+    //                     .replace(/\//gi, '\\\/');
+
+    //                 let matcher = new RegExp(exp + '$');
+
+    //                 expresses.push((name: string, fullName: string) => matcher.test(fullName));
+    //             }
+    //         } else if (/^@within\(\s*\w+/.test(exp)) {
+    //             let classnames = exp.substring(exp.indexOf('(') + 1, exp.length - 1).split(',').map(n => n.trim());
+    //             expresses.push((name: string, fullName: string, targetType?: Type<any>) => classnames.indexOf(getClassName(targetType)) >= 0);
+    //         } else if (/^@target\(\s*\w+/.test(exp)) {
+    //             let torken = exp.substring(exp.indexOf('(') + 1, exp.length - 1).trim();
+    //             expresses.push((name: string, fullName: string, targetType?: Type<any>) => this.container.getTokenImpl(torken) === targetType);
+    //         } else {
+    //             expresses.push(() => true);
+    //         }
+    //         strExp = strExp.substring(exp.length);
+    //         if (strExp) {
+    //             if (/^(&&)|(\|\|)/.test(strExp)) {
+    //                 expresses.push(strExp.substring(0, 2));
+    //                 strExp = strExp.substring(2);
+    //             }
+    //         }
+    //     });
+    // }
 
 
     protected matchTypeFactory(type: Type<any>, metadata: AdviceMetadata): (method: string, fullName: string, targetType?: Type<any>, target?: any, pointcut?: IPointcut) => boolean {
