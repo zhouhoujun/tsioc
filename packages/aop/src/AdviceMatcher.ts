@@ -187,51 +187,50 @@ export class AdviceMatcher implements IAdviceMatcher {
 
     protected spiltBrace(strExp: string) {
         strExp = strExp.trim();
-        if (/^\(/.test(strExp)) {
-            strExp = strExp.substring(1).trim();
-        }
-        if (/\)$/.test(strExp)) {
-            strExp = strExp.substring(0, strExp.length - 1).trim();
+
+        if (/^\(/.test(strExp) && /\)$/.test(strExp)) {
+            strExp = strExp.substring(1, strExp.length - 1).trim();
         }
 
-        if (/^\(/.test(strExp) || /\)$/.test(strExp)) {
+        if (/^\(/.test(strExp) && /\)$/.test(strExp)) {
             return this.spiltBrace(strExp);
         } else {
             return strExp;
         }
     }
 
-    protected expressToFunc(type: Type<any>, exp: string): MatchExpress {
-        if (/^@annotation\(\s*\w+/.test(exp)) {
-            exp = exp.substring(12, exp.length - 1);
+    protected expressToFunc(type: Type<any>, strExp: string): MatchExpress {
+        if (/^@annotation\(.*\)$/.test(strExp)) {
+            let exp = strExp.substring(12, strExp.length - 1);
             let annotation = /^@/.test(exp) ? exp : ('@' + exp);
             return (name: string, fullName: string) => hasOwnMethodMetadata(annotation, type, name) && !hasOwnClassMetadata(Aspect, type);
 
-        } else if (/^execution\(\s*\w+/.test(exp)) {
-            exp = exp.substring(10, exp.length - 1);
+        } else if (/^execution\(.*\)$/.test(strExp)) {
+            let exp = strExp.substring(10, strExp.length - 1);
             if (exp === '*' || exp === '*.*') {
                 return (name: string, fullName: string) => !!name && !hasOwnClassMetadata(Aspect, type);
-            } else if (/^\w+\(\s*\w+/.test(exp)) {
+            } else if (/^\w+(\((\s*\w+\s*,)*\s*\w*\))?$/.test(exp)) {
                 // if is method name, will match aspect self only.
                 return () => false;
-            } else {
+            } else if (/^([\w\*]+\.)+[\w\*]+(\((\s*\w+\s*,)*\s*\w*\))?$/.test(exp)) {
                 exp = exp.replace(/\*\*/gi, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
                     .replace(/\*/gi, '\\\w+')
                     .replace(/\./gi, '\\\.')
                     .replace(/\//gi, '\\\/');
 
                 let matcher = new RegExp(exp + '$');
-
                 return (name: string, fullName: string) => matcher.test(fullName);
+            } else {
+                return () => false;
             }
-        } else if (/^@within\(\s*\w+/.test(exp)) {
-            let classnames = exp.substring(exp.indexOf('(') + 1, exp.length - 1).split(',').map(n => n.trim());
+        } else if (/^@within\(\s*\w+/.test(strExp)) {
+            let classnames = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).split(',').map(n => n.trim());
             return (name: string, fullName: string, targetType?: Type<any>) => classnames.indexOf(getClassName(targetType)) >= 0;
-        } else if (/^@target\(\s*\w+/.test(exp)) {
-            let torken = exp.substring(exp.indexOf('(') + 1, exp.length - 1).trim();
+        } else if (/^@target\(\s*\w+/.test(strExp)) {
+            let torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
             return (name: string, fullName: string, targetType?: Type<any>) => this.container.getTokenImpl(torken) === targetType;
         } else {
-            return () => false; // default not match.
+            return () => false;
         }
     }
 
@@ -244,13 +243,25 @@ export class AdviceMatcher implements IAdviceMatcher {
             expresses.push(this.expressToFunc(type, this.spiltBrace(strExp)))
         } else {
             if (idxOr > idxAd) {
-                expresses.push(this.tranlateExpress(type, this.spiltBrace(strExp.substring(0, idxOr))));
-                expresses.push('||');
-                expresses.push(this.tranlateExpress(type, this.spiltBrace(strExp.substring(idxOr + 2))));
+                let leftExp = this.spiltBrace(strExp.substring(0, idxOr));
+                if (leftExp) {
+                    expresses.push(this.tranlateExpress(type, leftExp));
+                }
+                let rightExp = this.spiltBrace(strExp.substring(idxOr + 2));
+                if (rightExp) {
+                    expresses.push('||');
+                    expresses.push(this.tranlateExpress(type, rightExp));
+                }
             } else if (idxAd > idxOr) {
-                expresses.push(this.tranlateExpress(type, this.spiltBrace(strExp.substring(0, idxAd))));
-                expresses.push('&&');
-                expresses.push(this.tranlateExpress(type, this.spiltBrace(strExp.substring(idxAd + 2))));
+                let leftExp = this.spiltBrace(strExp.substring(0, idxAd));
+                if (leftExp) {
+                    expresses.push(this.tranlateExpress(type, leftExp));
+                }
+                let rightExp = this.spiltBrace(strExp.substring(idxAd + 2));
+                if (rightExp) {
+                    expresses.push('&&');
+                    expresses.push(this.tranlateExpress(type, rightExp));
+                }
             }
         }
 
