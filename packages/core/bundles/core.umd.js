@@ -5551,12 +5551,16 @@ var Container = /** @class */ (function () {
      * @template T
      * @param {Token<T>} token
      * @param {string} [alias]
-     * @param {T} [notFoundValue]
+     * @param {...Providers[]} providers
      * @returns {T}
      * @memberof Container
      */
     Container.prototype.get = function (token, alias) {
-        return this.resolve(alias ? this.getTokenKey(token, alias) : token);
+        var providers = [];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            providers[_i - 2] = arguments[_i];
+        }
+        return this.resolve.apply(this, [alias ? this.getTokenKey(token, alias) : token].concat(providers));
     };
     /**
      * resolve type instance with token and param provider.
@@ -6023,7 +6027,7 @@ var Container = /** @class */ (function () {
             targetType: ClassT
         }, types.IocState.design);
     };
-    Container.classAnnations = { "name": "Container", "params": { "constructor": [], "get": ["token", "alias"], "resolve": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"] } };
+    Container.classAnnations = { "name": "Container", "params": { "constructor": [], "get": ["token", "alias", "providers"], "resolve": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"] } };
     return Container;
 }());
 exports.Container = Container;
@@ -6696,7 +6700,7 @@ exports.ApplicationBuilder = ApplicationBuilder;
 unwrapExports(ApplicationBuilder_1);
 var ApplicationBuilder_2 = ApplicationBuilder_1.ApplicationBuilder;
 
-var D__Workspace_Projects_modules_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(IContainer, exports);
@@ -6723,7 +6727,7 @@ tslib_1.__exportStar(ApplicationBuilder_1, exports);
 
 });
 
-var index$7 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_core_lib);
+var index$7 = unwrapExports(D__workspace_github_tsioc_packages_core_lib);
 
 return index$7;
 

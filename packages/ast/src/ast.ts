@@ -21,10 +21,6 @@ export class AST {
     constructor(public span: AstSpan) {
     }
 
-    visit(visitor: AstVisitor, context: any) {
-        return visitor.visit(this, context);
-    }
-
     toString(): string {
         return `AST_${this.astType || ''}`;
     }
@@ -41,8 +37,7 @@ export class Quote extends AST {
 
 @Ast(ASTToken, 'EmptyExpr')
 export class EmptyExpr extends AST {
-    visit(visitor: AstVisitor, context: any = null) {
-    }
+
 }
 
 @Ast(ASTToken, 'ImplicitReceiver')
@@ -182,6 +177,10 @@ export class FunctionCall extends AST {
 export const AstVisitorToken = new InjectToken<AstVisitor>('__AST_AstVisitor');
 export interface AstVisitor {
     visit(ast: AST, context: AstContext);
+}
+
+export interface AstVisitorStarage {
+    visitFunctionCall(visit: FunctionCall, context: AstContext);
 }
 
 @Injectable(AstVisitorToken, 'Null')

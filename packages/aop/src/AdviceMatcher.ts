@@ -10,9 +10,8 @@ import { Advices, Advicer } from './advices/index';
 import { Aspect, Advice, NonePointcut } from './decorators/index';
 import { IAdvisor, AdvisorToken } from './IAdvisor';
 
-import * as acorn from 'acorn';
-import * as walk from 'acorn/dist/walk';
 
+export type MatchExpress = (method: string, fullName: string, targetType?: Type<any>, target?: any, pointcut?: IPointcut) => boolean
 /**
  * advice matcher, use to match advice when a registered create instance.
  *
@@ -142,159 +141,146 @@ export class AdviceMatcher implements IAdviceMatcher {
         });
     }
 
-    // protected tranlateExpress(strExp: string): (method: string, fullName: string, targetType?: Type<any>, target?: any, pointcut?: IPointcut) => boolean {
-    //     let expresses: (((method: string, fullName: string, targetType?: Type<any>, target?: any, pointcut?: IPointcut) => boolean) | string)[] = [];
-    //     acorn.parse(strExp);
-
-    //     [].forEach(exp => {
-    //         if (/^@annotation\(\s*\w+/.test(exp)) {
-    //             exp = exp.substring(12, exp.length - 1);
-    //             let annotation = /^@/.test(exp) ? exp : ('@' + exp);
-    //             expresses.push((name: string, fullName: string) => hasOwnMethodMetadata(annotation, type, name) && !hasOwnClassMetadata(Aspect, type));
-
-    //         } else if (/^execution\(\s*\w+/.test(exp)) {
-    //             exp = exp.substring(10, exp.length - 1);
-    //             if (exp === '*' || exp === '*.*') {
-    //                 expresses.push((name: string, fullName: string) => !!name && !hasOwnClassMetadata(Aspect, type));
-    //             } else if (/^\w+\(\s*\w+/.test(exp)) {
-    //                 // if is method name, will match aspect self only.
-    //                 expresses.push(() => false);
-    //             } else {
-    //                 exp = exp.replace(/\*\*/gi, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
-    //                     .replace(/\*/gi, '\\\w+')
-    //                     .replace(/\./gi, '\\\.')
-    //                     .replace(/\//gi, '\\\/');
-
-    //                 let matcher = new RegExp(exp + '$');
-
-    //                 expresses.push((name: string, fullName: string) => matcher.test(fullName));
-    //             }
-    //         } else if (/^@within\(\s*\w+/.test(exp)) {
-    //             let classnames = exp.substring(exp.indexOf('(') + 1, exp.length - 1).split(',').map(n => n.trim());
-    //             expresses.push((name: string, fullName: string, targetType?: Type<any>) => classnames.indexOf(getClassName(targetType)) >= 0);
-    //         } else if (/^@target\(\s*\w+/.test(exp)) {
-    //             let torken = exp.substring(exp.indexOf('(') + 1, exp.length - 1).trim();
-    //             expresses.push((name: string, fullName: string, targetType?: Type<any>) => this.container.getTokenImpl(torken) === targetType);
-    //         } else {
-    //             expresses.push(() => true);
-    //         }
-    //         strExp = strExp.substring(exp.length);
-    //         if (strExp) {
-    //             if (/^(&&)|(\|\|)/.test(strExp)) {
-    //                 expresses.push(strExp.substring(0, 2));
-    //                 strExp = strExp.substring(2);
-    //             }
-    //         }
-    //     });
-    // }
-
-
-    protected matchTypeFactory(type: Type<any>, metadata: AdviceMetadata): (method: string, fullName: string, targetType?: Type<any>, target?: any, pointcut?: IPointcut) => boolean {
+    protected matchTypeFactory(type: Type<any>, metadata: AdviceMetadata): MatchExpress {
         let pointcut = metadata.pointcut;
-        if (isString(pointcut)) {
-            let pointcuts = (pointcut || '').trim().split(/(&&)|(\|\|)/gi);
-            let strExp = pointcut.substring(0);
-            let expresses: (((method: string, fullName: string, targetType?: Type<any>, target?: any, pointcut?: IPointcut) => boolean) | string)[] = [];
-            pointcuts.forEach(exp => {
-                if (/^@annotation\(\s*\w+/.test(exp)) {
-                    exp = exp.substring(12, exp.length - 1);
-                    let annotation = /^@/.test(exp) ? exp : ('@' + exp);
-                    expresses.push((name: string, fullName: string) => hasOwnMethodMetadata(annotation, type, name) && !hasOwnClassMetadata(Aspect, type));
-
-                } else if (/^execution\(\s*\w+/.test(exp)) {
-                    exp = exp.substring(10, exp.length - 1);
-                    if (exp === '*' || exp === '*.*') {
-                        expresses.push((name: string, fullName: string) => !!name && !hasOwnClassMetadata(Aspect, type));
-                    } else if (/^\w+\(\s*\w+/.test(exp)) {
-                        // if is method name, will match aspect self only.
-                        expresses.push(() => false);
-                    } else {
-                        exp = exp.replace(/\*\*/gi, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
-                            .replace(/\*/gi, '\\\w+')
-                            .replace(/\./gi, '\\\.')
-                            .replace(/\//gi, '\\\/');
-
-                        let matcher = new RegExp(exp + '$');
-
-                        expresses.push((name: string, fullName: string) => matcher.test(fullName));
-                    }
-                } else if (/^@within\(\s*\w+/.test(exp)) {
-                    let classnames = exp.substring(exp.indexOf('(') + 1, exp.length - 1).split(',').map(n => n.trim());
-                    expresses.push((name: string, fullName: string, targetType?: Type<any>) => classnames.indexOf(getClassName(targetType)) >= 0);
-                } else if (/^@target\(\s*\w+/.test(exp)) {
-                    let torken = exp.substring(exp.indexOf('(') + 1, exp.length - 1).trim();
-                    expresses.push((name: string, fullName: string, targetType?: Type<any>) => this.container.getTokenImpl(torken) === targetType);
+        let expresses: (MatchExpress | string)[] = [];
+        if (metadata.within) {
+            expresses.push((method: string, fullName: string, targetType?: Type<any>) => {
+                if (isArray(metadata.within)) {
+                    return metadata.within.indexOf(targetType) >= 0;
                 } else {
-                    expresses.push(() => true);
-                }
-                strExp = strExp.substring(exp.length);
-                if (strExp) {
-                    if (/^(&&)|(\|\|)/.test(strExp)) {
-                        expresses.push(strExp.substring(0, 2));
-                        strExp = strExp.substring(2);
-                    }
+                    return metadata.within === targetType;
                 }
             });
-            if (metadata.within) {
-                expresses.push('&&')
-                expresses.push((method: string, fullName: string, targetType?: Type<any>) => {
-                    if (isArray(metadata.within)) {
-                        return metadata.within.indexOf(targetType) >= 0;
-                    } else {
-                        return metadata.within === targetType;
-                    }
-                });
-            }
-            if (metadata.target) {
-                expresses.push('&&')
-                expresses.push((method: string, fullName: string, targetType?: Type<any>, target?: any) => {
-                    return metadata.target = target;
-                });
-            }
+            expresses.push('&&')
+        }
+        if (metadata.target) {
+            expresses.push((method: string, fullName: string, targetType?: Type<any>, target?: any) => {
+                return metadata.target = target;
+            });
+            expresses.push('&&')
+        }
 
-            if (metadata.annotation) {
-                expresses.push('&&')
-                expresses.push((method: string, fullName: string, targetType?: Type<any>, target?: any) => {
-                    return hasOwnMethodMetadata(metadata.annotation, targetType, method);
-                });
-            }
-
-            return (method: string, fullName: string, targetType?: Type<any>, pointcut?: IPointcut) => {
-                let flag;
-                expresses.forEach((express, idx) => {
-                    if (!isUndefined(flag)) {
-                        return;
-                    }
-                    if (isFunction(express)) {
-                        let rel = express(method, fullName, targetType, pointcut);
-                        if (idx < expresses.length - 2) {
-                            if (!rel && express[idx + 1] === '&&') {
-                                flag = false;
-                            }
-                            if (rel && express[idx + 1] === '||') {
-                                flag = true;
-                            }
-                        } else {
-                            flag = rel;
-                        }
-                    }
-
-                });
-                return flag;
-            }
+        if (metadata.annotation) {
+            expresses.push((method: string, fullName: string, targetType?: Type<any>, target?: any) => {
+                return hasOwnMethodMetadata(metadata.annotation, targetType, method);
+            });
+            expresses.push('&&')
+        }
+        if (isString(pointcut)) {
+            let pointcuts = (pointcut || '').trim();
+            expresses.push(this.tranlateExpress(type, pointcuts));
         } else if (isRegExp(pointcut)) {
             let pointcutReg = pointcut;
             if (/^\^?@\w+/.test(pointcutReg.source)) {
-                return (name: string, fullName: string, targetType?: Type<any>) => {
+                expresses.push((name: string, fullName: string, targetType?: Type<any>) => {
                     let decName = Reflect.getMetadataKeys(type, name);
                     return decName.some(n => isString(n) && pointcutReg.test(n));
-                }
+                });
 
             } else {
-                return (name: string, fullName: string) => pointcutReg.test(fullName);
+                expresses.push((name: string, fullName: string) => pointcutReg.test(fullName));
             }
         }
-        return null;
+        return this.mergeExpress(...expresses);
     }
 
+    protected spiltBrace(strExp: string) {
+        strExp = strExp.trim();
+        if (/^\(/.test(strExp)) {
+            strExp = strExp.substring(1).trim();
+        }
+        if (/\)$/.test(strExp)) {
+            strExp = strExp.substring(0, strExp.length - 1).trim();
+        }
+
+        if (/^\(/.test(strExp) || /\)$/.test(strExp)) {
+            return this.spiltBrace(strExp);
+        } else {
+            return strExp;
+        }
+    }
+
+    protected expressToFunc(type: Type<any>, exp: string): MatchExpress {
+        if (/^@annotation\(\s*\w+/.test(exp)) {
+            exp = exp.substring(12, exp.length - 1);
+            let annotation = /^@/.test(exp) ? exp : ('@' + exp);
+            return (name: string, fullName: string) => hasOwnMethodMetadata(annotation, type, name) && !hasOwnClassMetadata(Aspect, type);
+
+        } else if (/^execution\(\s*\w+/.test(exp)) {
+            exp = exp.substring(10, exp.length - 1);
+            if (exp === '*' || exp === '*.*') {
+                return (name: string, fullName: string) => !!name && !hasOwnClassMetadata(Aspect, type);
+            } else if (/^\w+\(\s*\w+/.test(exp)) {
+                // if is method name, will match aspect self only.
+                return () => false;
+            } else {
+                exp = exp.replace(/\*\*/gi, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+                    .replace(/\*/gi, '\\\w+')
+                    .replace(/\./gi, '\\\.')
+                    .replace(/\//gi, '\\\/');
+
+                let matcher = new RegExp(exp + '$');
+
+                return (name: string, fullName: string) => matcher.test(fullName);
+            }
+        } else if (/^@within\(\s*\w+/.test(exp)) {
+            let classnames = exp.substring(exp.indexOf('(') + 1, exp.length - 1).split(',').map(n => n.trim());
+            return (name: string, fullName: string, targetType?: Type<any>) => classnames.indexOf(getClassName(targetType)) >= 0;
+        } else if (/^@target\(\s*\w+/.test(exp)) {
+            let torken = exp.substring(exp.indexOf('(') + 1, exp.length - 1).trim();
+            return (name: string, fullName: string, targetType?: Type<any>) => this.container.getTokenImpl(torken) === targetType;
+        } else {
+            return () => true;
+        }
+    }
+
+    protected tranlateExpress(type: Type<any>, strExp: string): MatchExpress {
+        let expresses: ((MatchExpress) | string)[] = [];
+
+        let idxOr = strExp.indexOf('||');
+        let idxAd = strExp.indexOf('&&');
+        if (idxAd < 0 && idxOr < 0) {
+            expresses.push(this.expressToFunc(type, this.spiltBrace(strExp)))
+        } else {
+            if (idxOr > idxAd) {
+                expresses.push(this.tranlateExpress(type, this.spiltBrace(strExp.substring(0, idxOr))));
+                expresses.push('||');
+                expresses.push(this.tranlateExpress(type, this.spiltBrace(strExp.substring(idxOr + 2))));
+            } else if (idxAd > idxOr) {
+                expresses.push(this.tranlateExpress(type, this.spiltBrace(strExp.substring(0, idxAd))));
+                expresses.push('&&');
+                expresses.push(this.tranlateExpress(type, this.spiltBrace(strExp.substring(idxAd + 2))));
+            }
+        }
+
+        return this.mergeExpress(...expresses);
+    }
+
+
+    protected mergeExpress(...expresses: (MatchExpress | string)[]): MatchExpress {
+        return (method: string, fullName: string, targetType?: Type<any>, pointcut?: IPointcut) => {
+            let flag;
+            expresses.forEach((express, idx) => {
+                if (!isUndefined(flag)) {
+                    return;
+                }
+                if (isFunction(express)) {
+                    let rel = express(method, fullName, targetType, pointcut);
+                    if (idx < expresses.length - 2) {
+                        if (!rel && express[idx + 1] === '&&') {
+                            flag = false;
+                        }
+                        if (rel && express[idx + 1] === '||') {
+                            flag = true;
+                        }
+                    } else {
+                        flag = rel;
+                    }
+                }
+
+            });
+            return flag;
+        }
+    }
 }

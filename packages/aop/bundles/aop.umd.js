@@ -1696,117 +1696,152 @@ var AdviceMatcher = /** @class */ (function () {
         });
     };
     AdviceMatcher.prototype.matchTypeFactory = function (type, metadata) {
-        var _this = this;
         var pointcut = metadata.pointcut;
-        if (core_1.isString(pointcut)) {
-            var pointcuts = (pointcut || '').trim().split(/(&&)|(\|\|)/gi);
-            var strExp_1 = pointcut.substring(0);
-            var expresses_1 = [];
-            pointcuts.forEach(function (exp) {
-                if (/^@annotation\(\s*\w+/.test(exp)) {
-                    exp = exp.substring(12, exp.length - 1);
-                    var annotation_1 = /^@/.test(exp) ? exp : ('@' + exp);
-                    expresses_1.push(function (name, fullName) { return core_1.hasOwnMethodMetadata(annotation_1, type, name) && !core_1.hasOwnClassMetadata(decorators.Aspect, type); });
-                }
-                else if (/^execution\(\s*\w+/.test(exp)) {
-                    exp = exp.substring(10, exp.length - 1);
-                    if (exp === '*' || exp === '*.*') {
-                        expresses_1.push(function (name, fullName) { return !!name && !core_1.hasOwnClassMetadata(decorators.Aspect, type); });
-                    }
-                    else if (/^\w+\(\s*\w+/.test(exp)) {
-                        // if is method name, will match aspect self only.
-                        expresses_1.push(function () { return false; });
-                    }
-                    else {
-                        exp = exp.replace(/\*\*/gi, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
-                            .replace(/\*/gi, '\\\w+')
-                            .replace(/\./gi, '\\\.')
-                            .replace(/\//gi, '\\\/');
-                        var matcher_1 = new RegExp(exp + "$");
-                        expresses_1.push(function (name, fullName) { return matcher_1.test(fullName); });
-                    }
-                }
-                else if (/^@within\(\s*\w+/.test(exp)) {
-                    var classnames_1 = exp.substring(exp.indexOf('(') + 1, exp.length - 1).split(',').map(function (n) { return n.trim(); });
-                    expresses_1.push(function (name, fullName, targetType) { return classnames_1.indexOf(core_1.getClassName(targetType)) >= 0; });
-                }
-                else if (/^@target\(\s*\w+/.test(exp)) {
-                    var torken_1 = exp.substring(exp.indexOf('(') + 1, exp.length - 1).trim();
-                    expresses_1.push(function (name, fullName, targetType) { return _this.container.getTokenImpl(torken_1) === targetType; });
+        var expresses = [];
+        if (metadata.within) {
+            expresses.push(function (method, fullName, targetType) {
+                if (core_1.isArray(metadata.within)) {
+                    return metadata.within.indexOf(targetType) >= 0;
                 }
                 else {
-                    expresses_1.push(function () { return true; });
-                }
-                strExp_1 = strExp_1.substring(exp.length);
-                if (strExp_1) {
-                    if (/^(&&)|(\|\|)/.test(strExp_1)) {
-                        expresses_1.push(strExp_1.substring(0, 2));
-                        strExp_1 = strExp_1.substring(2);
-                    }
+                    return metadata.within === targetType;
                 }
             });
-            if (metadata.within) {
-                expresses_1.push('&&');
-                expresses_1.push(function (method, fullName, targetType) {
-                    if (core_1.isArray(metadata.within)) {
-                        return metadata.within.indexOf(targetType) >= 0;
-                    }
-                    else {
-                        return metadata.within === targetType;
-                    }
-                });
-            }
-            if (metadata.target) {
-                expresses_1.push('&&');
-                expresses_1.push(function (method, fullName, targetType, target) {
-                    return metadata.target = target;
-                });
-            }
-            if (metadata.annotation) {
-                expresses_1.push('&&');
-                expresses_1.push(function (method, fullName, targetType, target) {
-                    return core_1.hasOwnMethodMetadata(metadata.annotation, targetType, method);
-                });
-            }
-            return function (method, fullName, targetType, pointcut) {
-                var flag;
-                expresses_1.forEach(function (express, idx) {
-                    if (!core_1.isUndefined(flag)) {
-                        return;
-                    }
-                    if (core_1.isFunction(express)) {
-                        var rel = express(method, fullName, targetType, pointcut);
-                        if (idx < expresses_1.length - 2) {
-                            if (!rel && express[idx + 1] === '&&') {
-                                flag = false;
-                            }
-                            if (rel && express[idx + 1] === '||') {
-                                flag = true;
-                            }
-                        }
-                        else {
-                            flag = rel;
-                        }
-                    }
-                });
-                return flag;
-            };
+            expresses.push('&&');
+        }
+        if (metadata.target) {
+            expresses.push(function (method, fullName, targetType, target) {
+                return metadata.target = target;
+            });
+            expresses.push('&&');
+        }
+        if (metadata.annotation) {
+            expresses.push(function (method, fullName, targetType, target) {
+                return core_1.hasOwnMethodMetadata(metadata.annotation, targetType, method);
+            });
+            expresses.push('&&');
+        }
+        if (core_1.isString(pointcut)) {
+            var pointcuts = (pointcut || '').trim();
+            expresses.push(this.tranlateExpress(type, pointcuts));
         }
         else if (core_1.isRegExp(pointcut)) {
             var pointcutReg_1 = pointcut;
             if (/^\^?@\w+/.test(pointcutReg_1.source)) {
-                return function (name, fullName, targetType) {
+                expresses.push(function (name, fullName, targetType) {
                     var decName = Reflect.getMetadataKeys(type, name);
                     return decName.some(function (n) { return core_1.isString(n) && pointcutReg_1.test(n); });
-                };
+                });
             }
             else {
-                return function (name, fullName) { return pointcutReg_1.test(fullName); };
+                expresses.push(function (name, fullName) { return pointcutReg_1.test(fullName); });
             }
         }
-        return null;
+        return this.mergeExpress.apply(this, expresses);
     };
-    AdviceMatcher.classAnnations = { "name": "AdviceMatcher", "params": { "constructor": ["container"], "match": ["aspectType", "targetType", "adviceMetas", "target"], "matchAspectSelf": ["name", "metadata"], "filterPointcut": ["type", "points", "metadata", "target"], "matchTypeFactory": ["type", "metadata"] } };
+    AdviceMatcher.prototype.spiltBrace = function (strExp) {
+        strExp = strExp.trim();
+        if (/^\(/.test(strExp)) {
+            strExp = strExp.substring(1).trim();
+        }
+        if (/\)$/.test(strExp)) {
+            strExp = strExp.substring(0, strExp.length - 1).trim();
+        }
+        if (/^\(/.test(strExp) || /\)$/.test(strExp)) {
+            return this.spiltBrace(strExp);
+        }
+        else {
+            return strExp;
+        }
+    };
+    AdviceMatcher.prototype.expressToFunc = function (type, exp) {
+        var _this = this;
+        if (/^@annotation\(\s*\w+/.test(exp)) {
+            exp = exp.substring(12, exp.length - 1);
+            var annotation_1 = /^@/.test(exp) ? exp : ('@' + exp);
+            return function (name, fullName) { return core_1.hasOwnMethodMetadata(annotation_1, type, name) && !core_1.hasOwnClassMetadata(decorators.Aspect, type); };
+        }
+        else if (/^execution\(\s*\w+/.test(exp)) {
+            exp = exp.substring(10, exp.length - 1);
+            if (exp === '*' || exp === '*.*') {
+                return function (name, fullName) { return !!name && !core_1.hasOwnClassMetadata(decorators.Aspect, type); };
+            }
+            else if (/^\w+\(\s*\w+/.test(exp)) {
+                // if is method name, will match aspect self only.
+                return function () { return false; };
+            }
+            else {
+                exp = exp.replace(/\*\*/gi, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+                    .replace(/\*/gi, '\\\w+')
+                    .replace(/\./gi, '\\\.')
+                    .replace(/\//gi, '\\\/');
+                var matcher_1 = new RegExp(exp + "$");
+                return function (name, fullName) { return matcher_1.test(fullName); };
+            }
+        }
+        else if (/^@within\(\s*\w+/.test(exp)) {
+            var classnames_1 = exp.substring(exp.indexOf('(') + 1, exp.length - 1).split(',').map(function (n) { return n.trim(); });
+            return function (name, fullName, targetType) { return classnames_1.indexOf(core_1.getClassName(targetType)) >= 0; };
+        }
+        else if (/^@target\(\s*\w+/.test(exp)) {
+            var torken_1 = exp.substring(exp.indexOf('(') + 1, exp.length - 1).trim();
+            return function (name, fullName, targetType) { return _this.container.getTokenImpl(torken_1) === targetType; };
+        }
+        else {
+            return function () { return true; };
+        }
+    };
+    AdviceMatcher.prototype.tranlateExpress = function (type, strExp) {
+        var expresses = [];
+        var idxOr = strExp.indexOf('||');
+        var idxAd = strExp.indexOf('&&');
+        if (idxAd < 0 && idxOr < 0) {
+            expresses.push(this.expressToFunc(type, this.spiltBrace(strExp)));
+        }
+        else {
+            if (idxOr > idxAd) {
+                expresses.push(this.tranlateExpress(type, this.spiltBrace(strExp.substring(0, idxOr))));
+                expresses.push('||');
+                expresses.push(this.tranlateExpress(type, this.spiltBrace(strExp.substring(idxOr + 2))));
+            }
+            else if (idxAd > idxOr) {
+                expresses.push(this.tranlateExpress(type, this.spiltBrace(strExp.substring(0, idxAd))));
+                expresses.push('&&');
+                expresses.push(this.tranlateExpress(type, this.spiltBrace(strExp.substring(idxAd + 2))));
+            }
+        }
+        return this.mergeExpress.apply(this, expresses);
+    };
+    AdviceMatcher.prototype.mergeExpress = function () {
+        var expresses = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            expresses[_i] = arguments[_i];
+        }
+        return function (method, fullName, targetType, pointcut) {
+            var flag;
+            expresses.forEach(function (express, idx) {
+                if (!core_1.isUndefined(flag)) {
+                    return;
+                }
+                if (core_1.isFunction(express)) {
+                    var rel = express(method, fullName, targetType, pointcut);
+                    if (idx < expresses.length - 2) {
+                        if (!rel && express[idx + 1] === '&&') {
+                            flag = false;
+                        }
+                        if (rel && express[idx + 1] === '||') {
+                            flag = true;
+                        }
+                    }
+                    else {
+                        flag = rel;
+                    }
+                }
+            });
+            return flag;
+        };
+    };
+    AdviceMatcher.classAnnations = { "name": "AdviceMatcher", "params": { "constructor": ["container"], "match": ["aspectType", "targetType", "adviceMetas", "target"], "matchAspectSelf": ["name", "metadata"], "filterPointcut": ["type", "points", "metadata", "target"], "matchTypeFactory": ["type", "metadata"], "spiltBrace": ["strExp"], "expressToFunc": ["type", "exp"], "tranlateExpress": ["type", "strExp"], "mergeExpress": ["expresses"] } };
     AdviceMatcher = tslib_1.__decorate([
         decorators.NonePointcut(),
         core_1.Singleton(IAdviceMatcher.AdviceMatcherToken),
@@ -1887,7 +1922,7 @@ exports.AopModule = AopModule;
 unwrapExports(AopModule_1);
 var AopModule_2 = AopModule_1.AopModule;
 
-var D__Workspace_Projects_modules_tsioc_packages_aop_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_aop_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 // export * from './tokens';
@@ -1904,7 +1939,7 @@ tslib_1.__exportStar(AopModule_1, exports);
 
 });
 
-var index$4 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_aop_lib);
+var index$4 = unwrapExports(D__workspace_github_tsioc_packages_aop_lib);
 
 return index$4;
 
