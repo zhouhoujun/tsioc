@@ -2,8 +2,6 @@ import { ActionData } from '../ActionData';
 import { ClassMetadata } from '../metadatas/index';
 import { ActionComposite } from './ActionComposite';
 import { IContainer } from '../../IContainer';
-import { ComponentLifecycle } from '../ComponentLifecycle';
-import { isFunction } from '../../utils/index';
 import { CoreActions } from './CoreActions';
 
 

@@ -1,4 +1,4 @@
-import { Inject, IContainer, LifeScope, LifeState, CoreActions, ContainerToken, LifeScopeToken, IocExt } from '@ts-ioc/core';
+import { Inject, IContainer, LifeState, CoreActions, ContainerToken, LifeScopeToken, IocExt } from '@ts-ioc/core';
 import { AopModule } from '@ts-ioc/aop';
 import { Logger } from './decorators/Logger';
 import { AnnotationLogerAspect } from './AnnotationLogerAspect';

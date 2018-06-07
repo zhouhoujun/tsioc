@@ -1,4 +1,3 @@
-
 import { isFunction, isNumber, MapSet } from '../utils/index';
 import { Type } from '../types';
 import { IContainer } from '../IContainer';

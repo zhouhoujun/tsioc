@@ -1,4 +1,3 @@
-import { IComponent } from './IComponent';
 import { Mode, Express } from '../types';
 import { GComponent } from './GComponent';
 

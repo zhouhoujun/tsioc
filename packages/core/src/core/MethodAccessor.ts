@@ -1,13 +1,9 @@
 import { IContainer } from '../IContainer';
-import { ParamProvider, ProviderMap } from './providers/index';
 import { IMethodAccessor } from '../IMethodAccessor';
 import { BindParameterProviderActionData, CoreActions, LifeState } from './actions/index';
-import { isToken, isFunction, isUndefined, isString } from '../utils/index';
-import { Type, Token, Providers } from '../types';
-import { Container } from '../Container';
-import { IContainerBuilder } from '../IContainerBuilder';
+import { isToken, isFunction } from '../utils/index';
+import { Token, Providers } from '../types';
 import { IParameter } from '../IParameter';
-import { DecoratorType } from './factories/index';
 import { IProviderMatcher, ProviderMatcherToken } from './IProviderMatcher';
 
 /**
@@ -27,7 +23,7 @@ export class MethodAccessor implements IMethodAccessor {
         return this.container.get(ProviderMatcherToken);
     }
 
-    async invoke<T>(token: Token<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): Promise<T> {
+    async invoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: Providers[]): Promise<T> {
         if (!target) {
             target = this.container.resolve(token, ...providers);
         }
@@ -52,11 +48,11 @@ export class MethodAccessor implements IMethodAccessor {
 
             return target[propertyKey](...paramInstances) as T;
         } else {
-            throw new Error(`type: ${targetClass} has no method ${propertyKey}.`)
+            throw new Error(`type: ${targetClass} has no method ${propertyKey.toString()}.`)
         }
     }
 
-    syncInvoke<T>(token: Token<any>, propertyKey: string | symbol, target?: any, ...providers: Providers[]): T {
+    syncInvoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: Providers[]): T {
         if (!target) {
             target = this.container.resolve(token, ...providers);
         }
@@ -81,7 +77,7 @@ export class MethodAccessor implements IMethodAccessor {
 
             return target[propertyKey](...paramInstances) as T;
         } else {
-            throw new Error(`type: ${targetClass} has no method ${propertyKey}.`)
+            throw new Error(`type: ${targetClass} has no method ${propertyKey.toString()}.`)
         }
     }
 

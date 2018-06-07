@@ -1,7 +1,7 @@
 import { ActionComposite } from './ActionComposite';
 import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
-import { DecoratorType, getOwnMethodMetadata, hasOwnMethodMetadata } from '../factories/index';
+import { getOwnMethodMetadata, hasOwnMethodMetadata } from '../factories/index';
 import { MethodMetadata } from '../metadatas/index';
 import { IContainer } from '../../IContainer';
 import { Providers } from '../../types';

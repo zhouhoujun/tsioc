@@ -1,4 +1,4 @@
-import { Type, AbstractType, Token, Providers } from '../types';
+import { Type, AbstractType, Token } from '../types';
 import { Registration } from '../Registration';
 import { keys } from './lang';
 

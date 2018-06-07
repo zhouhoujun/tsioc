@@ -1,14 +1,14 @@
 import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
-import { Type, AbstractType, Token, Factory, ObjectMap, SymbolType, ToInstance, IocState, Providers, ModuleType, LoadType } from './types';
+import { Type, Token, Factory, SymbolType, ToInstance, IocState, Providers, ModuleType, LoadType } from './types';
 import { Registration } from './Registration';
 import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet } from './utils/index';
 
-import { IMethodAccessor, MethodAccessorToken } from './IMethodAccessor';
-import { ActionComponent, DecoratorType, CoreActions, Singleton, PropertyMetadata, ComponentLifecycle, CacheActionData, LifeState } from './core/index';
+import { MethodAccessorToken } from './IMethodAccessor';
+import { ActionComponent, CoreActions, CacheActionData, LifeState } from './core/index';
 import { LifeScope, LifeScopeToken } from './LifeScope';
 import { IParameter } from './IParameter';
-import { ICacheManager, CacheManagerToken } from './ICacheManager';
+import { CacheManagerToken } from './ICacheManager';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { registerCores } from './registerCores';
 
@@ -294,13 +294,13 @@ export class Container implements IContainer {
      *
      * @template T
      * @param {Token<any>} token
-     * @param {(string | symbol)} propertyKey
+     * @param {string} propertyKey
      * @param {*} [instance]
      * @param {...Providers[]} providers
      * @returns {Promise<T>}
      * @memberof Container
      */
-    invoke<T>(token: Token<any>, propertyKey: string | symbol, instance?: any, ...providers: Providers[]): Promise<T> {
+    invoke<T>(token: Token<any>, propertyKey: string, instance?: any, ...providers: Providers[]): Promise<T> {
         return this.get(MethodAccessorToken).invoke(token, propertyKey, instance, ...providers);
     }
 
@@ -309,13 +309,13 @@ export class Container implements IContainer {
      *
      * @template T
      * @param {Token<any>} token
-     * @param {(string | symbol)} propertyKey
+     * @param {string} propertyKey
      * @param {*} [instance]
      * @param {...Providers[]} providers
      * @returns {T}
      * @memberof Container
      */
-    syncInvoke<T>(token: Token<any>, propertyKey: string | symbol, instance?: any, ...providers: Providers[]): T {
+    syncInvoke<T>(token: Token<any>, propertyKey: string, instance?: any, ...providers: Providers[]): T {
         return this.get(MethodAccessorToken).syncInvoke(token, propertyKey, instance, ...providers);
     }
 

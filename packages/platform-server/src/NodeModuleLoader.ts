@@ -1,4 +1,4 @@
-import { Type, IModuleLoader, ModuleType, DefaultModuleLoader } from '@ts-ioc/core';
+import { IModuleLoader, ModuleType, DefaultModuleLoader } from '@ts-ioc/core';
 import { toAbsoluteSrc } from './toAbsolute';
 
 declare let require: any;

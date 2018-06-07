@@ -1,4 +1,3 @@
-import { TypeMetadata } from './TypeMetadata';
 import { ProvideMetadata } from './ProvideMetadata';
 
 
@@ -12,9 +11,9 @@ export interface PropertyMetadata extends ProvideMetadata {
     /**
      * property name
      *
-     * @type {(string | symbol)}
+     * @type {string}
      * @memberof PropertyMetadata
      */
-    propertyKey?: string | symbol;
+    propertyKey?: string;
 
 }

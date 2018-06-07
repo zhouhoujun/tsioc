@@ -1,5 +1,4 @@
 import { ObjectMap, InjectToken } from '@ts-ioc/core';
-import { Level } from './Level';
 import { ILogger } from './ILogger';
 
 /**

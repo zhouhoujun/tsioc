@@ -1,5 +1,5 @@
-import { Metadate, ProviderMetadata, MethodMetadata, ActionComponent, ActionData, DecoratorType } from './core/index';
-import { Type, Token, Express } from './types';
+import { MethodMetadata, ActionComponent, ActionData, DecoratorType } from './core/index';
+import { Type, Express } from './types';
 import { IParameter } from './IParameter';
 import { InjectToken } from './InjectToken';
 
@@ -210,11 +210,11 @@ export interface LifeScope {
      *
      * @template T
      * @param {Type<T>} type
-     * @param {(string | symbol)} propertyKey
+     * @param {string} propertyKey
      * @returns {string[]}
      * @memberof LifeScope
      */
-    getParamerterNames<T>(type: Type<T>, propertyKey: string | symbol): string[];
+    getParamerterNames<T>(type: Type<T>, propertyKey: string): string[];
 
     /**
      * get constructor parameters metadata.
@@ -232,11 +232,11 @@ export interface LifeScope {
      * @template T
      * @param {Type<T>} type
      * @param {T} instance
-     * @param {(string | symbol)} propertyKey
+     * @param {string} propertyKey
      * @returns {IParameter[]}
      * @memberof IContainer
      */
-    getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): IParameter[];
+    getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string): IParameter[];
 
 
     /**

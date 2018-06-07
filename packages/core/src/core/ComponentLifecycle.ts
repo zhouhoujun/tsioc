@@ -1,5 +1,3 @@
-import { ClassMetadata } from './metadatas/index';
-
 /**
  * component decorator class liefcycle hooks.
  *

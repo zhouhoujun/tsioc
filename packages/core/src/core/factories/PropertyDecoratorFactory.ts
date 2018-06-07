@@ -1,7 +1,7 @@
 import { PropertyMetadata } from '../metadatas/index';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isToken, isString, isPropertyMetadata } from '../../utils/index';
+import { isToken, isPropertyMetadata } from '../../utils/index';
 import { ArgsIterator } from './ArgsIterator';
 import { Token } from '../../types';
 

@@ -1,10 +1,8 @@
-import { Token, Type, ModuleType, LoadType, Providers } from './types';
-import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
-import { IContainer, ContainerToken } from './IContainer';
-import { hasClassMetadata, Autorun, isProviderMap, Provider, ParamProvider, DefModule, getTypeMetadata, Inject } from './core/index';
-import { Defer, isString, lang, isFunction, isClass, isUndefined, isNull, isNumber, isBaseObject, isToken, isArray, isMetadataObject, isObject } from './utils/index';
-import { IContainerBuilder } from './IContainerBuilder';
-import { DefaultContainerBuilder } from './DefaultContainerBuilder';
+import { Token, Type, Providers } from './types';
+import { IModuleBuilder } from './IModuleBuilder';
+import { IContainer } from './IContainer';
+import { hasClassMetadata, isProviderMap, Provider, DefModule, getTypeMetadata } from './core/index';
+import { isString, lang, isFunction, isClass, isUndefined, isNull, isBaseObject, isToken, isArray} from './utils/index';
 import { ModuleConfiguration } from './ModuleConfiguration';
 
 /**

@@ -1,6 +1,6 @@
 import { Registration } from './Registration';
 import { IContainer } from './IContainer';
-import { ParamProvider, ProviderMap, ProviderType } from './core/index';
+import { ProviderMap, ProviderType } from './core/index';
 
 /**
  * module types.

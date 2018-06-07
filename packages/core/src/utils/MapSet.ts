@@ -1,5 +1,4 @@
-import { isClass, isString, isSymbol, isFunction, isUndefined } from './typeCheck';
-import { Type } from '../types';
+import { isClass, isString, isFunction, isUndefined } from './typeCheck';
 import { keys, forIn } from './lang';
 
 /**

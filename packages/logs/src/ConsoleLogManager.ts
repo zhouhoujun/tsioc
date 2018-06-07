@@ -1,4 +1,4 @@
-import { Injectable, Singleton, isString } from '@ts-ioc/core';
+import { Injectable, Singleton } from '@ts-ioc/core';
 import { ILoggerManager, LoggerConfig, LoggerManagerToken } from './ILoggerManager';
 import { ILogger } from './ILogger';
 import { NonePointcut } from '@ts-ioc/aop';

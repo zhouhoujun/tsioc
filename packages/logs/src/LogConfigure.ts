@@ -1,8 +1,5 @@
-import { Level } from './Level';
-import { Type, Token, ObjectMap, InjectToken } from '@ts-ioc/core';
-import { Joinpoint } from '@ts-ioc/aop';
+import { Token, ObjectMap, InjectToken } from '@ts-ioc/core';
 import { ILoggerManager } from './ILoggerManager';
-import { ILogger } from './ILogger';
 import { LOGFormater } from './LogFormater';
 
 /**

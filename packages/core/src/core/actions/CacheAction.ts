@@ -2,12 +2,10 @@ import { ActionData } from '../ActionData';
 import { ClassMetadata } from '../metadatas/index';
 import { ActionComposite } from './ActionComposite';
 import { IContainer } from '../../IContainer';
-import { isFunction, isNumber, isClass, MapSet } from '../../utils/index';
+import { isNumber, isClass } from '../../utils/index';
 import { CoreActions } from './CoreActions';
-import { Type } from '../../types';
-import { DecoratorType, getOwnTypeMetadata, hasOwnClassMetadata } from '../factories/index';
-import { ComponentLifecycle } from '../ComponentLifecycle';
-import { ICacheManager, CacheManagerToken } from '../../ICacheManager';
+import { getOwnTypeMetadata, hasOwnClassMetadata } from '../factories/index';
+import { CacheManagerToken } from '../../ICacheManager';
 
 
 /**

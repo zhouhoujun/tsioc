@@ -1,10 +1,10 @@
 import { ActionComposite } from './ActionComposite';
 import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
-import { DecoratorType, getOwnTypeMetadata, hasOwnClassMetadata } from '../factories/index';
+import { getOwnTypeMetadata, hasOwnClassMetadata } from '../factories/index';
 import { IContainer } from '../../IContainer';
-import { Token, SymbolType } from '../../types';
-import { TypeMetadata, ProviderMetadata, ClassMetadata } from '../metadatas/index';
+import { Token } from '../../types';
+import { ClassMetadata } from '../metadatas/index';
 
 /**
  * bind provider action data.

@@ -2,10 +2,10 @@ import { ActionData } from '../ActionData';
 import { AutorunMetadata } from '../metadatas/index';
 import { ActionComposite } from './ActionComposite';
 import { IContainer } from '../../IContainer';
-import { isFunction, lang, isNumber } from '../../utils/index';
+import { lang, isNumber } from '../../utils/index';
 import { CoreActions } from './CoreActions';
 import { hasMethodMetadata, getMethodMetadata } from '../factories/index';
-import { Autorun, IocExt } from '../decorators/index';
+import { Autorun } from '../decorators/index';
 
 
 

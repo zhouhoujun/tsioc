@@ -18,10 +18,10 @@ export interface MethodMetadata extends Metadate {
     /**
      * method property key
      *
-     * @type {(string | symbol)}
+     * @type {string}
      * @memberof MethodMetadata
      */
-    propertyKey?: string | symbol;
+    propertyKey?: string;
 
     // /**
     //  * method parameter names

@@ -1,10 +1,7 @@
-import { IContainer, Provider, Injectable, Singleton, Inject, IRecognizer, Express,
-    isPromise, isArray, isObservable, isFunction, ContainerToken, RecognizerToken
-} from '@ts-ioc/core';
-
-import { Joinpoint, JoinpointState } from '../joinpoints/index';
+import { IContainer, Injectable, Inject, IRecognizer, Express, ContainerToken, RecognizerToken } from '@ts-ioc/core';
+import { Joinpoint } from '../joinpoints/index';
 import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
-import { IAdvisorProceeding, AdvisorProceedingToken } from './IAdvisorProceeding';
+import { AdvisorProceedingToken } from './IAdvisorProceeding';
 import { NonePointcut } from '../decorators/index';
 
 @NonePointcut()

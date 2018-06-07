@@ -1,4 +1,4 @@
-import { ObjectMap, Express2, Express } from '../types';
+import { ObjectMap } from '../types';
 import { isArray, isObject } from './typeCheck';
 import * as objPonyfill from 'object.assign';
 

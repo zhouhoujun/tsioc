@@ -1,6 +1,5 @@
-import { IContainer } from './IContainer';
-import { Token, Type, LoadType, Providers, ObjectMap, ModuleType } from './types';
-import { InjectToken } from './InjectToken';
+import { Token, Type, LoadType, Providers, ObjectMap } from './types';
+
 
 /**
  * module configuration.

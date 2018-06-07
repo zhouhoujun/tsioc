@@ -1,5 +1,4 @@
-import { Type, ObjectMap, Token, Providers } from '../types';
-import { IContainer } from '../IContainer';
+import { Type, Token, Providers } from '../types';
 import { IParameter } from '../IParameter';
 
 

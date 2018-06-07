@@ -4633,7 +4633,7 @@ var DefaultLifeScope = /** @class */ (function () {
      *
      * @template T
      * @param {Type<T>} type
-     * @param {(string | symbol)} propertyKey
+     * @param {string} propertyKey
      * @returns {string[]}
      * @memberof DefaultLifeScope
      */
@@ -5005,7 +5005,7 @@ var MethodAccessor = /** @class */ (function () {
                     case 1:
                         paramInstances = _b.sent();
                         return [2 /*return*/, target[propertyKey].apply(target, paramInstances)];
-                    case 2: throw new Error("type: " + targetClass + " has no method " + propertyKey + ".");
+                    case 2: throw new Error("type: " + targetClass + " has no method " + propertyKey.toString() + ".");
                     case 3: return [2 /*return*/];
                 }
             });
@@ -5037,7 +5037,7 @@ var MethodAccessor = /** @class */ (function () {
             return target[propertyKey].apply(target, paramInstances);
         }
         else {
-            throw new Error("type: " + targetClass + " has no method " + propertyKey + ".");
+            throw new Error("type: " + targetClass + " has no method " + propertyKey.toString() + ".");
         }
         var _a;
     };
@@ -5827,7 +5827,7 @@ var Container = /** @class */ (function () {
      *
      * @template T
      * @param {Token<any>} token
-     * @param {(string | symbol)} propertyKey
+     * @param {string} propertyKey
      * @param {*} [instance]
      * @param {...Providers[]} providers
      * @returns {Promise<T>}
@@ -5846,7 +5846,7 @@ var Container = /** @class */ (function () {
      *
      * @template T
      * @param {Token<any>} token
-     * @param {(string | symbol)} propertyKey
+     * @param {string} propertyKey
      * @param {*} [instance]
      * @param {...Providers[]} providers
      * @returns {T}

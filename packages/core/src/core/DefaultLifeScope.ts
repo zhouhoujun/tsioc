@@ -1,11 +1,11 @@
 import { LifeScope, DecorSummary } from '../LifeScope';
 import { Type, ObjectMap, Token, IocState, Express } from '../types';
-import { isClass, isAbstractDecoratorClass, isArray, isString } from '../utils/index';
-import { Singleton, Abstract } from './decorators/index';
+import { isClass, isAbstractDecoratorClass, isArray } from '../utils/index';
+import { Singleton } from './decorators/index';
 import { ClassMetadata, MethodMetadata } from './metadatas/index';
 import { IContainer } from '../IContainer';
 import { CoreActions, ActionComponent, LifeState } from './actions/index';
-import { DecoratorType, getOwnTypeMetadata, getOwnParamerterNames, getParamerterNames, getOwnMethodMetadata, hasOwnClassMetadata } from './factories/index';
+import { DecoratorType, getOwnTypeMetadata, getOwnParamerterNames, getOwnMethodMetadata, hasOwnClassMetadata } from './factories/index';
 import { ActionData } from './ActionData';
 import { ActionFactory } from './ActionFactory';
 import { IParameter } from '../IParameter';
@@ -152,7 +152,7 @@ export class DefaultLifeScope implements LifeScope {
      * @returns {IParameter[]}
      * @memberof IContainer
      */
-    getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string | symbol): IParameter[] {
+    getMethodParameters<T>(type: Type<T>, instance: T, propertyKey: string): IParameter[] {
         return this.getParameters(type, instance, propertyKey);
     }
 
@@ -161,11 +161,11 @@ export class DefaultLifeScope implements LifeScope {
      *
      * @template T
      * @param {Type<T>} type
-     * @param {(string | symbol)} propertyKey
+     * @param {string} propertyKey
      * @returns {string[]}
      * @memberof DefaultLifeScope
      */
-    getParamerterNames<T>(type: Type<T>, propertyKey: string | symbol): string[] {
+    getParamerterNames<T>(type: Type<T>, propertyKey: string): string[] {
         let metadata = getOwnParamerterNames(type);
         let paramNames = [];
         if (metadata && metadata.hasOwnProperty(propertyKey)) {
@@ -191,7 +191,7 @@ export class DefaultLifeScope implements LifeScope {
         })
     }
 
-    getMethodMetadatas<T>(type: Type<T>, propertyKey: string | symbol): MethodMetadata[] {
+    getMethodMetadatas<T>(type: Type<T>, propertyKey: string): MethodMetadata[] {
         let metadatas = [];
         this.getMethodDecorators().forEach(dec => {
             let metas: ObjectMap<MethodMetadata[]> = getOwnMethodMetadata<MethodMetadata>(dec.name, type);
@@ -208,7 +208,7 @@ export class DefaultLifeScope implements LifeScope {
         return this.decorators.filter(express);
     }
 
-    protected getParameters<T>(type: Type<T>, instance?: T, propertyKey?: string | symbol): IParameter[] {
+    protected getParameters<T>(type: Type<T>, instance?: T, propertyKey?: string): IParameter[] {
         propertyKey = propertyKey || 'constructor';
         let data = {
             target: instance,

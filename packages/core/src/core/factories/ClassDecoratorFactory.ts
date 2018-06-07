@@ -4,7 +4,7 @@ import { Type } from '../../types';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
 import { Registration } from '../../Registration';
-import { isClass, isToken, isClassMetadata, isString, isSymbol, isObject, isNumber, isBoolean } from '../../utils/index';
+import { isString, isSymbol, isObject, isNumber, isBoolean } from '../../utils/index';
 import { ArgsIterator } from './ArgsIterator';
 
 /**

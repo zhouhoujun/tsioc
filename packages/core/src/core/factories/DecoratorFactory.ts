@@ -2,9 +2,8 @@ import 'reflect-metadata';
 import { PropertyMetadata, MethodMetadata, ParameterMetadata, Metadate, ClassMetadata } from '../metadatas/index';
 import { DecoratorType } from './DecoratorType';
 import { ArgsIterator } from './ArgsIterator';
-import { isClass, isAbstractDecoratorClass, isToken, isClassMetadata, isMetadataObject, isUndefined, isFunction, isNumber, isArray, isSymbol, lang } from '../../utils/index';
+import { isClass, isAbstractDecoratorClass, isMetadataObject, isUndefined, isFunction, isNumber, isArray, lang } from '../../utils/index';
 import { Type, AbstractType, ObjectMap } from '../../types';
-import { IClassDecorator } from './ClassDecoratorFactory';
 
 
 export const ParamerterName = 'paramerter_names';
@@ -303,7 +302,7 @@ export function hasMethodMetadata(decorator: string | Function, target: Type<any
     }
 }
 
-function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
+function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string, descriptor: TypedPropertyDescriptor<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
     let meta = lang.assign({}, getMethodMetadata(metaName, target));
     meta[propertyKey] = meta[propertyKey] || [];
 
@@ -376,7 +375,7 @@ export function hasPropertyMetadata(decorator: string | Function, target: Type<a
     }
 }
 
-function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, metadata?: T, metadataExtends?: MetadataExtends<any>) {
+function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string, metadata?: T, metadataExtends?: MetadataExtends<any>) {
     let meta = lang.assign({}, getPropertyMetadata(metaName, target));
     let propmetadata = (metadata || {}) as T;
 
@@ -468,7 +467,7 @@ export function hasOwnParamMetadata(decorator: string | Function, target: Type<a
 }
 
 
-function setParamMetadata<T extends ParameterMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string | symbol, parameterIndex: number, metadata?: T, metadataExtends?: MetadataExtends<any>) {
+function setParamMetadata<T extends ParameterMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string, parameterIndex: number, metadata?: T, metadataExtends?: MetadataExtends<any>) {
 
     let parameters: any[][] = getOwnParamMetadata(metaName, target, propertyKey).slice(0);
     // there might be gaps if some in between parameters do not have annotations.

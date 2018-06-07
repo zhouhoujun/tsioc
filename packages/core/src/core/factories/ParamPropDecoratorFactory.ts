@@ -1,8 +1,8 @@
 import 'reflect-metadata';
-import { ParamPropMetadata, TypeMetadata } from '../metadatas/index';
+import { ParamPropMetadata } from '../metadatas/index';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isClass, isToken, isParamPropMetadata, isString, isSymbol } from '../../utils/index';
+import { isToken, isParamPropMetadata } from '../../utils/index';
 import { ArgsIterator } from './ArgsIterator';
 import { Token } from '../../types';
 

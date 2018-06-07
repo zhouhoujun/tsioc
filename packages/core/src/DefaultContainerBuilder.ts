@@ -1,6 +1,5 @@
 import { IContainer } from './IContainer';
 import { Container } from './Container';
-import { isFunction, isClass, isString } from './utils/index';
 import { Type, ModuleType, LoadType } from './types';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { IModuleLoader, ModuleLoaderToken } from './IModuleLoader';

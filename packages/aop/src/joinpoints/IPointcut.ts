@@ -1,6 +1,3 @@
-import { IParameter, MethodMetadata } from '@ts-ioc/core'
-
-
 /**
  * pointcut.
  *

@@ -1,7 +1,6 @@
-import { Token, ToInstance, Providers, Express2, Type } from '../../types';
+import { Token, Providers, Express2, Type } from '../../types';
 import { IContainer } from '../../IContainer';
 import { isFunction, isObject, isUndefined } from '../../utils/index';
-import { IContainerBuilder, ContainerBuilderToken } from '../../IContainerBuilder';
 
 
 export interface TypeProvider extends Type<any> {

@@ -1,8 +1,7 @@
-import { Injectable, IContainer, Inject, isString, isUndefined, Token, Registration, Type, isClass, ContainerToken } from '@ts-ioc/core';
+import { Injectable, IContainer, Inject, isString, Token, Registration, Type, isClass, ContainerToken } from '@ts-ioc/core';
 import { ILoggerManager, LoggerManagerToken } from './ILoggerManager';
 import { LogConfigure, LogConfigureToken } from './LogConfigure';
 import { ILogger } from './ILogger';
-import { LogFormater } from './LogFormater';
 import { IConfigureLoggerManager, ConfigureLoggerManagerToken } from './IConfigureLoggerManager';
 import { NonePointcut } from '@ts-ioc/aop';
 

@@ -1,11 +1,9 @@
-import { ModuleBuilder } from './ModuleBuilder';
 import { AppConfiguration, AppConfigurationToken } from './AppConfiguration';
 import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import { Token, Type, LoadType } from './types';
-import { lang, isString, isClass, isMetadataObject, isFunction, isToken } from './utils/index';
+import { lang, isString, isClass, isFunction, isToken } from './utils/index';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { ModuleConfiguration } from './ModuleConfiguration';
 import { DefaultContainerBuilder } from './DefaultContainerBuilder';
 import { CustomRegister, IApplicationBuilder } from './IApplicationBuilder';
 
@@ -215,7 +213,7 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
         return new DefaultContainerBuilder();
     }
 
-    protected getModuleConfigure(builer: IModuleBuilder<T>, boot: Token<T> | Type<any> | AppConfiguration<T>) {
+    protected getModuleConfigure(builer: IModuleBuilder<T>, boot: Token<T> | Type<any> | AppConfiguration<T>): AppConfiguration<T> {
         return builer.getConfigure(boot);
     }
 

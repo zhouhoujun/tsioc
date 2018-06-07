@@ -1,5 +1,5 @@
 import * as ts from 'typescript'
-const through = require('through2');
+import * as through from 'through2';
 
 /**
  * attach class Annotations before typescript ts compile.

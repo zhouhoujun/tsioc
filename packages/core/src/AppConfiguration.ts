@@ -1,6 +1,6 @@
 import { ModuleConfiguration } from './ModuleConfiguration';
 import { InjectToken } from './InjectToken';
-import { ObjectMap, Token } from './types';
+import { ObjectMap } from './types';
 
 /**
  * App configuration token.

@@ -1,11 +1,10 @@
 import { Level } from './Level';
-import { Aspect, Joinpoint, JoinpointState, Pointcut } from '@ts-ioc/aop';
-import { IContainer, Singleton, Inject, Abstract, isFunction, Type, isString, isClass, isObject, Registration } from '@ts-ioc/core';
+import { Joinpoint, JoinpointState } from '@ts-ioc/aop';
+import { IContainer, Abstract, isFunction, Type, isString, isClass, isObject, Registration } from '@ts-ioc/core';
 
 import { LoggerMetadata } from './decorators/Logger';
 import { LogConfigure } from './LogConfigure';
 import { ILogger } from './ILogger';
-import { ILoggerManager } from './ILoggerManager';
 import { IConfigureLoggerManager, ConfigureLoggerManagerToken } from './IConfigureLoggerManager';
 import { ILogFormater, LogFormaterToken } from './LogFormater';
 

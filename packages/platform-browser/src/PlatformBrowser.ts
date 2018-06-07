@@ -1,4 +1,4 @@
-import { IContainer, Type, Defer, lang, isString, isFunction, isClass, IContainerBuilder, ModuleType, hasClassMetadata, Autorun, isUndefined, ModuleBuilder, ModuleConfiguration, IModuleBuilder, InjectToken, ObjectMap, Token, AppConfiguration, IApplicationBuilder, ApplicationBuilder } from '@ts-ioc/core';
+import { Type, lang, isUndefined, Token, AppConfiguration, IApplicationBuilder, ApplicationBuilder } from '@ts-ioc/core';
 import { ContainerBuilder } from './ContainerBuilder';
 
 declare let System: any;

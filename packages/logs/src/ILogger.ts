@@ -1,5 +1,3 @@
-
-
 /**
  * logger interface
  *

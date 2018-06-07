@@ -1,5 +1,4 @@
 import { ProviderMetadata } from './ProviderMetadata';
-import { ObjectMap } from '../../types';
 
 
 /**

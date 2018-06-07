@@ -1,6 +1,4 @@
-import {
-    Type, hasOwnClassMetadata, isClass
-} from '@ts-ioc/core';
+import { Type, hasOwnClassMetadata, isClass } from '@ts-ioc/core';
 import { NonePointcut } from './decorators/index';
 
 /**

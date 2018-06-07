@@ -1,5 +1,5 @@
-import { Type, Providers, Token, ObjectMap, InstanceFactory } from '../types';
-import { Provider, ProviderMap, ParamProvider, InvokeProvider, ExtendsProvider, isProviderMap, ProviderMapToken } from './providers/index';
+import { Providers } from '../types';
+import { Provider, ProviderMap, ParamProvider, isProviderMap, ProviderMapToken } from './providers/index';
 import { isString, isClass, isArray, isFunction, isNumber, isUndefined, isNull, isToken, isBaseObject, lang } from '../utils/index';
 import { IParameter } from '../IParameter';
 import { IProviderMatcher } from './IProviderMatcher';
