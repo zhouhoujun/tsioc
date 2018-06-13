@@ -1,7 +1,7 @@
 import { isFunction, isNumber, MapSet } from '../utils/index';
 import { Type } from '../types';
 import { IContainer } from '../IContainer';
-import { ComponentLifecycle } from './ComponentLifecycle';
+import { OnDestroy } from './ComponentLifecycle';
 import { ICacheManager } from '../ICacheManager';
 
 /**
@@ -108,7 +108,7 @@ export class CacheManager implements ICacheManager {
         }
 
         try {
-            let component = target as ComponentLifecycle;
+            let component = target as OnDestroy;
             if (isFunction(component.onDestroy)) {
                 this.container.syncInvoke(targetType, 'onDestroy', target);
             }

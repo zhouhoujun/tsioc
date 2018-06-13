@@ -2,7 +2,7 @@ import { ActionData } from '../ActionData';
 import { ClassMetadata } from '../metadatas/index';
 import { ActionComposite } from './ActionComposite';
 import { IContainer } from '../../IContainer';
-import { ComponentLifecycle } from '../ComponentLifecycle';
+import { AfterInit } from '../ComponentLifecycle';
 import { isFunction } from '../../utils/index';
 import { CoreActions } from './CoreActions';
 
@@ -33,7 +33,7 @@ export class ComponentAfterInitAction extends ActionComposite {
 
     protected working(container: IContainer, data: ComponentAfterInitActionData) {
         if (data.targetType && data.target) {
-            let component = data.target as ComponentLifecycle;
+            let component = data.target as AfterInit;
             if (isFunction(component.afterInit)) {
                 container.syncInvoke(data.targetType, 'afterInit', data.target);
             }

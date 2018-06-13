@@ -2,7 +2,7 @@ import { ActionData } from '../ActionData';
 import { ClassMetadata } from '../metadatas/index';
 import { ActionComposite } from './ActionComposite';
 import { IContainer } from '../../IContainer';
-import { ComponentLifecycle } from '../ComponentLifecycle';
+import { BeforeInit } from '../ComponentLifecycle';
 import { isFunction } from '../../utils/index';
 import { CoreActions } from './CoreActions';
 
@@ -35,7 +35,7 @@ export class ComponentBeforeInitAction extends ActionComposite {
     protected working(container: IContainer, data: ComponentBeforeInitActionData) {
 
         if (data.targetType && data.target) {
-            let component = data.target as ComponentLifecycle;
+            let component = data.target as BeforeInit;
             if (isFunction(component.beforeInit)) {
                 container.syncInvoke(data.targetType, 'beforeInit', data.target);
             }
