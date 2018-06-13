@@ -195,6 +195,7 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
      */
     async bootstrap(bootModule: Token<T> | Type<any> | AppConfiguration<T>): Promise<any> {
         let container = this.getContainer();
+        await this.registerExts(container);
         let builder = this.getModuleBuilder();
         let cfg: AppConfiguration<T> = await this.getConfiguration(this.getModuleConfigure(builder, bootModule));
         await this.initContainer(cfg, container);
@@ -224,15 +225,18 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
         }
     }
 
-    protected async initContainer(config: AppConfiguration<T>, container: IContainer): Promise<IContainer> {
-        this.setConfigRoot(config);
+    protected async registerExts(container: IContainer): Promise<IContainer> {
         if (this.usedModules.length) {
             let usedModules = this.usedModules;
             this.usedModules = [];
             await container.loadModule(container, ...usedModules);
         }
-        container.bindProvider(AppConfigurationToken, config);
+        return container;
+    }
 
+    protected async initContainer(config: AppConfiguration<T>, container: IContainer): Promise<IContainer> {
+        this.setConfigRoot(config);
+        container.bindProvider(AppConfigurationToken, config);
         if (this.customRegs.length) {
             let customs = this.customRegs;
             this.customRegs = [];

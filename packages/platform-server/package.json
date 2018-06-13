@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/platform-server",
-  "version": "2.4.14",
+  "version": "2.4.15",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -31,7 +31,7 @@
     "globby": "^7.1.1"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "2.4.14"
+    "@ts-ioc/core": "2.4.15"
   },
   "directories": {
     "lib": "lib",

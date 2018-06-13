@@ -6600,18 +6600,21 @@ var ApplicationBuilder = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         container = this.getContainer();
+                        return [4 /*yield*/, this.registerExts(container)];
+                    case 1:
+                        _a.sent();
                         builder = this.getModuleBuilder();
                         return [4 /*yield*/, this.getConfiguration(this.getModuleConfigure(builder, bootModule))];
-                    case 1:
+                    case 2:
                         cfg = _a.sent();
                         return [4 /*yield*/, this.initContainer(cfg, container)];
-                    case 2:
+                    case 3:
                         _a.sent();
                         if (!cfg.bootstrap) {
                             cfg.bootstrap = (utils.isToken(bootModule) ? bootModule : null);
                         }
                         return [4 /*yield*/, builder.build(cfg)];
-                    case 3:
+                    case 4:
                         app = _a.sent();
                         return [2 /*return*/, app];
                 }
@@ -6632,14 +6635,12 @@ var ApplicationBuilder = /** @class */ (function () {
             config.baseURL = this.baseURL;
         }
     };
-    ApplicationBuilder.prototype.initContainer = function (config, container) {
+    ApplicationBuilder.prototype.registerExts = function (container) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            var usedModules, customs;
+            var usedModules;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        this.setConfigRoot(config);
                         if (!this.usedModules.length) return [3 /*break*/, 2];
                         usedModules = this.usedModules;
                         this.usedModules = [];
@@ -6647,18 +6648,30 @@ var ApplicationBuilder = /** @class */ (function () {
                     case 1:
                         _a.sent();
                         _a.label = 2;
-                    case 2:
+                    case 2: return [2 /*return*/, container];
+                }
+            });
+        });
+    };
+    ApplicationBuilder.prototype.initContainer = function (config, container) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            var customs;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        this.setConfigRoot(config);
                         container.bindProvider(AppConfiguration.AppConfigurationToken, config);
-                        if (!this.customRegs.length) return [3 /*break*/, 4];
+                        if (!this.customRegs.length) return [3 /*break*/, 2];
                         customs = this.customRegs;
                         this.customRegs = [];
                         return [4 /*yield*/, Promise.all(customs.map(function (cs) {
                                 return cs(container, config, _this);
                             }))];
-                    case 3:
+                    case 1:
                         _a.sent();
-                        _a.label = 4;
-                    case 4: return [2 /*return*/, container];
+                        _a.label = 2;
+                    case 2: return [2 /*return*/, container];
                 }
             });
         });
@@ -6689,7 +6702,7 @@ var ApplicationBuilder = /** @class */ (function () {
     ApplicationBuilder.prototype.getDefaultConfig = function () {
         return { debug: false };
     };
-    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "getContainer": [], "setContainer": ["container"], "getContainerBuilder": [], "setContainerBuilder": ["builder"], "getModuleBuilder": [], "setModuleBuilder": ["builder"], "useConfiguration": ["config"], "use": ["modules"], "registerModules": ["moduleRegs"], "useModules": ["modules"], "bootstrap": ["bootModule"], "createModuleBuilder": [], "createContainerBuilder": [], "getModuleConfigure": ["builer", "boot"], "setConfigRoot": ["config"], "initContainer": ["config", "container"], "getConfiguration": ["cfg"], "getDefaultConfig": [] } };
+    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "getContainer": [], "setContainer": ["container"], "getContainerBuilder": [], "setContainerBuilder": ["builder"], "getModuleBuilder": [], "setModuleBuilder": ["builder"], "useConfiguration": ["config"], "use": ["modules"], "registerModules": ["moduleRegs"], "useModules": ["modules"], "bootstrap": ["bootModule"], "createModuleBuilder": [], "createContainerBuilder": [], "getModuleConfigure": ["builer", "boot"], "setConfigRoot": ["config"], "registerExts": ["container"], "initContainer": ["config", "container"], "getConfiguration": ["cfg"], "getDefaultConfig": [] } };
     return ApplicationBuilder;
 }());
 exports.ApplicationBuilder = ApplicationBuilder;
