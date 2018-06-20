@@ -5270,33 +5270,33 @@ var ModuleBuilder = /** @class */ (function () {
     /**
      * build module.
      *
-     * @param {(Token<T>| ModuleConfiguration<T>)} [modules]
+     * @param {(Token<T>| ModuleConfiguration<T>)} [token]
      * @returns {Promise<any>}
      * @memberof ModuleBuilder
      */
-    ModuleBuilder.prototype.build = function (modules, moduleDecorator) {
+    ModuleBuilder.prototype.build = function (token, moduleDecorator) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var cfg, token, container;
+            var cfg, bootToken, container;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        cfg = this.getConfigure(modules, moduleDecorator);
-                        token = this.getBootstrapToken(cfg, (utils.isToken(modules) ? modules : null));
-                        if (!token) {
+                        cfg = this.getConfigure(token, moduleDecorator);
+                        bootToken = this.getBootstrapToken(cfg, utils.isToken(token) ? token : null);
+                        if (!bootToken) {
                             return [2 /*return*/, Promise.reject('not find bootstrap token.')];
                         }
                         container = this.container;
                         return [4 /*yield*/, this.registerDepdences(cfg)];
                     case 1:
                         _a.sent();
-                        if (utils.isClass(token)) {
-                            if (!container.has(token)) {
-                                container.register(token);
+                        if (utils.isClass(bootToken)) {
+                            if (!container.has(bootToken)) {
+                                container.register(bootToken);
                             }
-                            return [2 /*return*/, container.resolve(token)];
+                            return [2 /*return*/, container.resolve(bootToken)];
                         }
                         else {
-                            return [2 /*return*/, container.resolve(token)];
+                            return [2 /*return*/, container.resolve(bootToken)];
                         }
                         return [2 /*return*/];
                 }
@@ -5312,13 +5312,19 @@ var ModuleBuilder = /** @class */ (function () {
      * @returns {ModuleConfiguration<T>}
      * @memberof ModuleBuilder
      */
-    ModuleBuilder.prototype.getConfigure = function (modules, moduleDecorator) {
+    ModuleBuilder.prototype.getConfigure = function (token, moduleDecorator) {
         var cfg;
-        if (utils.isClass(modules)) {
-            cfg = this.getMetaConfig(modules, moduleDecorator || core.DefModule);
+        if (utils.isClass(token)) {
+            cfg = this.getMetaConfig(token, moduleDecorator || core.DefModule);
         }
-        else if (!utils.isToken(modules)) {
-            cfg = modules;
+        else if (utils.isToken(token)) {
+            var tokenType = this.container.getTokenImpl(token);
+            if (utils.isClass(tokenType)) {
+                cfg = this.getMetaConfig(tokenType, moduleDecorator || core.DefModule);
+            }
+        }
+        else {
+            cfg = token;
         }
         return cfg || {};
     };
@@ -5447,7 +5453,7 @@ var ModuleBuilder = /** @class */ (function () {
             }
         });
     };
-    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": ["container"], "build": ["modules", "moduleDecorator"], "getBootstrapToken": ["cfg", "token"], "getConfigure": ["modules", "moduleDecorator"], "getMetaConfig": ["bootModule", "moduleDecorator"], "registerDepdences": ["config"], "bindProvider": ["container", "providers"] } };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": ["container"], "build": ["token", "moduleDecorator"], "getBootstrapToken": ["cfg", "token"], "getConfigure": ["token", "moduleDecorator"], "getMetaConfig": ["bootModule", "moduleDecorator"], "registerDepdences": ["config"], "bindProvider": ["container", "providers"] } };
     return ModuleBuilder;
 }());
 exports.ModuleBuilder = ModuleBuilder;
@@ -5750,14 +5756,14 @@ var Container = /** @class */ (function () {
             }
         }
         if (utils.isClass(provider)) {
-            this.provideTypes.set(provide, provider);
+            this.provideTypes.set(provideKey, provider);
         }
         else if (utils.isToken(provider)) {
             var token = provider;
             while (this.provideTypes.has(token) && !utils.isClass(token)) {
                 token = this.provideTypes.get(token);
                 if (utils.isClass(token)) {
-                    this.provideTypes.set(provide, token);
+                    this.provideTypes.set(provideKey, token);
                     break;
                 }
             }
@@ -5777,8 +5783,9 @@ var Container = /** @class */ (function () {
         if (utils.isClass(token)) {
             return token;
         }
-        if (this.provideTypes.has(token)) {
-            return this.provideTypes.get(token);
+        var tokenKey = this.getTokenKey(token);
+        if (this.provideTypes.has(tokenKey)) {
+            return this.provideTypes.get(tokenKey);
         }
         return null;
     };

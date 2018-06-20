@@ -21,22 +21,22 @@ export interface IModuleBuilder<T> {
     /**
      * get configure from module calss metadata or module config object.
      *
-     * @param {(Token<any> | ModuleConfiguration<T>)} modules
+     * @param {(Token<any> | ModuleConfiguration<T>)} token
      * @param {(Function|string)} [moduleDecorator] default DefModule.
      * @returns {ModuleConfiguration<T>}
      * @memberof IModuleBuilder
      */
-    getConfigure(modules: Token<any> | ModuleConfiguration<T>, moduleDecorator?: Function|string): ModuleConfiguration<T>;
+    getConfigure(token: Token<any> | ModuleConfiguration<T>, moduleDecorator?: Function|string): ModuleConfiguration<T>;
 
     /**
      * build module instacne.
      *
-     * @param {(Token<T> | ModuleConfiguration<T>)} modules build module.
+     * @param {(Token<T> | ModuleConfiguration<T>)} token build module.
      * @param {(Function|string)} [moduleDecorator] default DefModule.
      * @returns {Promise<any>}
      * @memberof IPlatform
      */
-    build(modules: Token<T> | ModuleConfiguration<T>, moduleDecorator?: Function|string): Promise<T>;
+    build(token: Token<T> | ModuleConfiguration<T>, moduleDecorator?: Function|string): Promise<T>;
 
 }
 

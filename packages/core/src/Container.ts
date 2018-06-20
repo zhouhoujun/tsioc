@@ -222,13 +222,13 @@ export class Container implements IContainer {
             }
         }
         if (isClass(provider)) {
-            this.provideTypes.set(provide, provider);
+            this.provideTypes.set(provideKey, provider);
         } else if (isToken(provider)) {
             let token = provider;
             while (this.provideTypes.has(token) && !isClass(token)) {
                 token = this.provideTypes.get(token);
                 if (isClass(token)) {
-                    this.provideTypes.set(provide, token);
+                    this.provideTypes.set(provideKey, token);
                     break;
                 }
             }
@@ -250,8 +250,9 @@ export class Container implements IContainer {
         if (isClass(token)) {
             return token;
         }
-        if (this.provideTypes.has(token)) {
-            return this.provideTypes.get(token);
+        let tokenKey = this.getTokenKey(token);
+        if (this.provideTypes.has(tokenKey)) {
+            return this.provideTypes.get(tokenKey);
         }
         return null;
     }
