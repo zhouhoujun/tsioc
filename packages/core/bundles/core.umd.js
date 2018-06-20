@@ -5314,17 +5314,23 @@ var ModuleBuilder = /** @class */ (function () {
      */
     ModuleBuilder.prototype.getConfigure = function (token, moduleDecorator) {
         var cfg;
+        moduleDecorator = moduleDecorator || core.DefModule;
         if (utils.isClass(token)) {
-            cfg = this.getMetaConfig(token, moduleDecorator || core.DefModule);
+            cfg = this.getMetaConfig(token, moduleDecorator);
         }
         else if (utils.isToken(token)) {
             var tokenType = this.container.getTokenImpl(token);
             if (utils.isClass(tokenType)) {
-                cfg = this.getMetaConfig(tokenType, moduleDecorator || core.DefModule);
+                cfg = this.getMetaConfig(tokenType, moduleDecorator);
             }
         }
         else {
             cfg = token;
+            var bootToken = this.getBootstrapToken(cfg);
+            var typeTask = utils.isClass(bootToken) ? bootToken : this.container.getTokenImpl(bootToken);
+            if (utils.isClass(typeTask)) {
+                cfg = utils.lang.assign({}, this.getMetaConfig(typeTask, moduleDecorator), cfg || {});
+            }
         }
         return cfg || {};
     };

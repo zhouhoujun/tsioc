@@ -55,15 +55,21 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      */
     getConfigure(token?: Token<any> | ModuleConfiguration<T>, moduleDecorator?: Function | string): ModuleConfiguration<T> {
         let cfg: ModuleConfiguration<T>;
+        moduleDecorator = moduleDecorator || DefModule;
         if (isClass(token)) {
-            cfg = this.getMetaConfig(token, moduleDecorator || DefModule);
+            cfg = this.getMetaConfig(token, moduleDecorator);
         } else if (isToken(token)) {
             let tokenType = this.container.getTokenImpl(token);
             if (isClass(tokenType)) {
-                cfg = this.getMetaConfig(tokenType, moduleDecorator || DefModule);
+                cfg = this.getMetaConfig(tokenType, moduleDecorator);
             }
         } else {
             cfg = token as ModuleConfiguration<T>;
+            let bootToken = this.getBootstrapToken(cfg);
+            let typeTask = isClass(bootToken) ? bootToken : this.container.getTokenImpl(bootToken);
+            if (isClass(typeTask)) {
+                cfg = lang.assign({}, this.getMetaConfig(typeTask, moduleDecorator), cfg || {});
+            }
         }
         return cfg || {};
     }
