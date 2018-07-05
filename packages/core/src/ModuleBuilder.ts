@@ -79,7 +79,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             let metas = getTypeMetadata<ModuleConfiguration<any>>(moduleDecorator, bootModule);
             if (metas && metas.length) {
                 let meta = metas[0];
-                meta.bootstrap = bootModule;
+                meta.bootstrap = meta.bootstrap || bootModule;
                 return meta;
             }
         }
