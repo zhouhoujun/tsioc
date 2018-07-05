@@ -631,6 +631,7 @@ var AdvisorChainFactory = /** @class */ (function () {
     };
     AdvisorChainFactory.prototype.invokeAdvice = function (joinPoint, advicer) {
         var _this = this;
+        var _a;
         var providers = [];
         providers.push(core_1.Provider.createExtends(joinpoints.Joinpoint, joinPoint, function (inst, provider) {
             inst._cache_JoinPoint = provider.resolve(_this.container);
@@ -670,7 +671,6 @@ var AdvisorChainFactory = /** @class */ (function () {
             providers.push(core_1.Provider.create(metadata.throwing, joinPoint.throwing));
         }
         return (_a = this.container).syncInvoke.apply(_a, [advicer.aspectType, advicer.advice.propertyKey, null].concat(providers));
-        var _a;
     };
     AdvisorChainFactory.classAnnations = { "name": "AdvisorChainFactory", "params": { "constructor": ["container", "advices"], "getAdvicers": ["adviceType"], "invoaction": ["joinPoint", "state", "valueOrthrowing"], "before": ["joinPoint"], "pointcut": ["joinPoint"], "after": ["joinPoint"], "afterThrowing": ["joinPoint"], "afterReturning": ["joinPoint"], "invokeAdvice": ["joinPoint", "advicer"] } };
     AdvisorChainFactory = tslib_1.__decorate([
@@ -724,9 +724,9 @@ var AdvisorChain = /** @class */ (function () {
         return this.container.get(core_1.RecognizerToken, this.joinPoint.state);
     };
     AdvisorChain.prototype.process = function () {
+        var _a;
         var alias = this.getRecognizer().recognize(this.joinPoint.returning);
         (_a = this.container.get(IAdvisorProceeding.AdvisorProceedingToken, alias)).proceeding.apply(_a, [this.joinPoint].concat(this.actions));
-        var _a;
     };
     AdvisorChain.classAnnations = { "name": "AdvisorChain", "params": { "constructor": ["joinPoint"], "next": ["action"], "getRecognizer": [], "process": [] } };
     tslib_1.__decorate([
