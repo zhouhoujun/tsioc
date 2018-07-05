@@ -5336,9 +5336,11 @@ var ModuleBuilder = /** @class */ (function () {
     };
     ModuleBuilder.prototype.getMetaConfig = function (bootModule, moduleDecorator) {
         if (core.hasClassMetadata(moduleDecorator, bootModule)) {
-            var meta = core.getTypeMetadata(moduleDecorator, bootModule);
-            if (meta && meta.length) {
-                return meta[0];
+            var metas = core.getTypeMetadata(moduleDecorator, bootModule);
+            if (metas && metas.length) {
+                var meta = metas[0];
+                meta.bootstrap = bootModule;
+                return meta;
             }
         }
         return null;

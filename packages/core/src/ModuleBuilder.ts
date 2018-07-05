@@ -76,9 +76,11 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     protected getMetaConfig(bootModule: Type<any>, moduleDecorator: Function | string): ModuleConfiguration<T> {
         if (hasClassMetadata(moduleDecorator, bootModule)) {
-            let meta = getTypeMetadata<T>(moduleDecorator, bootModule);
-            if (meta && meta.length) {
-                return meta[0];
+            let metas = getTypeMetadata<ModuleConfiguration<any>>(moduleDecorator, bootModule);
+            if (metas && metas.length) {
+                let meta = metas[0];
+                meta.bootstrap = bootModule;
+                return meta;
             }
         }
         return null;
