@@ -1,5 +1,5 @@
 import { ObjectMap } from '../types';
-import { isArray, isObject } from './typeCheck';
+import { isArray, isObject, isFunction } from './typeCheck';
 import * as objPonyfill from 'object.assign';
 
 objPonyfill.shim();
@@ -12,10 +12,41 @@ objPonyfill.shim();
  */
 export function keys(target: any): string[] {
     if (isObject(target)) {
-        return Object.keys(target);
+        if (isFunction(Object.keys)) {
+            return Object.keys(target);
+        } else {
+            let keys = [];
+            for (let name in target) {
+                keys.push(name);
+            }
+            return keys;
+        }
     }
     return [];
 }
+
+/**
+ * values of target object.
+ *
+ * @export
+ * @param {*} target
+ * @returns {any[]}
+ */
+export function values(target: any): any[] {
+    if (isObject(target)) {
+        if (isFunction(Object.values)) {
+            return Object.values(target);
+        } else {
+            let values = [];
+            for (let name in target) {
+                values.push(target[name]);
+            }
+            return values;
+        }
+    }
+    return [];
+}
+
 
 /**
  * assign
@@ -49,7 +80,7 @@ export function assign<T, U, V>(target: T, source1: U, source2?: V, sources?: an
 export function omit(target: ObjectMap<any>, ...fields: string[]): any {
     if (isObject(target)) {
         let result: any = {};
-        Object.keys(target).forEach(key => {
+        keys(target).forEach(key => {
             if (fields.indexOf(key) < 0) {
                 result[key] = target[key];
             }
@@ -68,10 +99,7 @@ export function omit(target: ObjectMap<any>, ...fields: string[]): any {
  * @returns
  */
 export function hasField(target: ObjectMap<any>) {
-    if (isObject(target)) {
-        return Object.keys(target).length > 0;
-    }
-    return false;
+    return keys(target).length > 0;
 }
 
 /**
@@ -86,7 +114,7 @@ export function forIn<T>(target: ObjectMap<T> | T[], iterator: (item: T, idx?: n
     if (isArray(target)) {
         target.forEach(iterator);
     } else if (isObject(target)) {
-        Object.keys(target).forEach((key, idx) => {
+        keys(target).forEach((key, idx) => {
             iterator(target[key], key);
         });
     }

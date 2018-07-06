@@ -618,11 +618,43 @@ object_assign.shim();
  */
 function keys(target) {
     if (typeCheck.isObject(target)) {
-        return Object.keys(target);
+        if (typeCheck.isFunction(Object.keys)) {
+            return Object.keys(target);
+        }
+        else {
+            var keys_1 = [];
+            for (var name_1 in target) {
+                keys_1.push(name_1);
+            }
+            return keys_1;
+        }
     }
     return [];
 }
 exports.keys = keys;
+/**
+ * values of target object.
+ *
+ * @export
+ * @param {*} target
+ * @returns {any[]}
+ */
+function values(target) {
+    if (typeCheck.isObject(target)) {
+        if (typeCheck.isFunction(Object.values)) {
+            return Object.values(target);
+        }
+        else {
+            var values_1 = [];
+            for (var name_2 in target) {
+                values_1.push(target[name_2]);
+            }
+            return values_1;
+        }
+    }
+    return [];
+}
+exports.values = values;
 /**
  * assign
  *
@@ -661,7 +693,7 @@ function omit(target) {
     }
     if (typeCheck.isObject(target)) {
         var result_1 = {};
-        Object.keys(target).forEach(function (key) {
+        keys(target).forEach(function (key) {
             if (fields.indexOf(key) < 0) {
                 result_1[key] = target[key];
             }
@@ -681,10 +713,7 @@ exports.omit = omit;
  * @returns
  */
 function hasField(target) {
-    if (typeCheck.isObject(target)) {
-        return Object.keys(target).length > 0;
-    }
-    return false;
+    return keys(target).length > 0;
 }
 exports.hasField = hasField;
 /**
@@ -700,7 +729,7 @@ function forIn(target, iterator) {
         target.forEach(iterator);
     }
     else if (typeCheck.isObject(target)) {
-        Object.keys(target).forEach(function (key, idx) {
+        keys(target).forEach(function (key, idx) {
             iterator(target[key], key);
         });
     }
@@ -765,13 +794,14 @@ exports.last = last;
 
 unwrapExports(lang);
 var lang_1 = lang.keys;
-var lang_2 = lang.assign;
-var lang_3 = lang.omit;
-var lang_4 = lang.hasField;
-var lang_5 = lang.forIn;
-var lang_6 = lang.find;
-var lang_7 = lang.first;
-var lang_8 = lang.last;
+var lang_2 = lang.values;
+var lang_3 = lang.assign;
+var lang_4 = lang.omit;
+var lang_5 = lang.hasField;
+var lang_6 = lang.forIn;
+var lang_7 = lang.find;
+var lang_8 = lang.first;
+var lang_9 = lang.last;
 
 var typeCheck = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
