@@ -1248,6 +1248,12 @@ var ObjectMapSet = /** @class */ (function () {
         }
         return strKey;
     };
+    ObjectMapSet.prototype.keys = function () {
+        return lang.values(this.keyMap);
+    };
+    ObjectMapSet.prototype.values = function () {
+        return lang.values(this.valueMap);
+    };
     ObjectMapSet.prototype.delete = function (key) {
         var strkey = this.getTypeKey(key).toString();
         try {
@@ -1286,7 +1292,7 @@ var ObjectMapSet = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
-    ObjectMapSet.classAnnations = { "name": "ObjectMapSet", "params": { "constructor": [], "clear": [], "getTypeKey": ["key"], "delete": ["key"], "forEach": ["callbackfn", "thisArg"], "get": ["key"], "has": ["key"], "set": ["key", "value"] } };
+    ObjectMapSet.classAnnations = { "name": "ObjectMapSet", "params": { "constructor": [], "clear": [], "getTypeKey": ["key"], "keys": [], "values": [], "delete": ["key"], "forEach": ["callbackfn", "thisArg"], "get": ["key"], "has": ["key"], "set": ["key", "value"] } };
     return ObjectMapSet;
 }());
 exports.ObjectMapSet = ObjectMapSet;
@@ -1302,6 +1308,12 @@ var MapSet = /** @class */ (function () {
     function MapSet() {
         this.map = typeCheck.isClass(Map) ? new Map() : new ObjectMapSet();
     }
+    MapSet.prototype.keys = function () {
+        return this.map.keys();
+    };
+    MapSet.prototype.values = function () {
+        return this.map.values();
+    };
     MapSet.prototype.clear = function () {
         this.map.clear();
     };
@@ -1329,7 +1341,7 @@ var MapSet = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
-    MapSet.classAnnations = { "name": "MapSet", "params": { "constructor": [], "clear": [], "delete": ["key"], "forEach": ["callbackfn", "thisArg"], "get": ["key"], "has": ["key"], "set": ["key", "value"] } };
+    MapSet.classAnnations = { "name": "MapSet", "params": { "constructor": [], "keys": [], "values": [], "clear": [], "delete": ["key"], "forEach": ["callbackfn", "thisArg"], "get": ["key"], "has": ["key"], "set": ["key", "value"] } };
     return MapSet;
 }());
 exports.MapSet = MapSet;

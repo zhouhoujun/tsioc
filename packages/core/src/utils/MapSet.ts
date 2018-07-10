@@ -1,5 +1,5 @@
 import { isClass, isString, isFunction, isUndefined } from './typeCheck';
-import { keys, forIn } from './lang';
+import { keys, forIn, values } from './lang';
 
 /**
  * object map set.
@@ -32,6 +32,14 @@ export class ObjectMapSet<TKey, TVal> {
             strKey = key.toString();
         }
         return strKey;
+    }
+
+    keys(): TKey[] {
+        return values(this.keyMap);
+    }
+
+    values(): TVal[] {
+        return values(this.valueMap);
     }
 
     delete(key: TKey): boolean {
@@ -85,6 +93,14 @@ export class MapSet<TKey, TVal> {
     private hasMap: boolean;
     constructor() {
         this.map = isClass(Map) ? new Map<TKey, TVal>() : new ObjectMapSet<TKey, TVal>();
+    }
+
+    keys(): TKey[] {
+        return this.map.keys() as TKey[];
+    }
+
+    values(): TVal[] {
+        return this.map.values()  as TVal[];
     }
 
     clear(): void {
