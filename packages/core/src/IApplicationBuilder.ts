@@ -112,10 +112,10 @@ export interface IApplicationBuilder<T> {
     /**
      * bootstrap app via main module.
      *
-     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} bootModule bootstrap module.
+     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token bootstrap module.
      * @returns {Promise<any>}
      * @memberof IApplicationBuilder
      */
-    bootstrap(bootModule: Token<T> | Type<any> | AppConfiguration<T>): Promise<any>;
+    bootstrap(token: Token<T> | Type<any> | AppConfiguration<T>): Promise<any>;
 
 }

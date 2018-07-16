@@ -185,11 +185,11 @@ export class PlatformServer extends ServerApplicationBuilder<any> implements IPl
      * bootstrap application via main module.
      *
      * @template T
-     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} boot main module or appliaction configuration.
+     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token main module or appliaction configuration.
      * @returns {Promise<any>}  main module bootstrap class instance.
      * @memberof PlatformServer
      */
-    bootstrap<T>(boot: Token<T> | Type<any> | AppConfiguration<T>): Promise<any> {
-        return super.bootstrap(boot);
+    bootstrap<T>(token: Token<T> | Type<any> | AppConfiguration<T>): Promise<any> {
+        return super.bootstrap(token);
     }
 }

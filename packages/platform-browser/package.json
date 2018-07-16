@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/platform-browser",
-  "version": "2.5.1",
+  "version": "2.5.2",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./bundles/platform-browser.umd.js",
   "typings": "./lib/index.d.ts",
@@ -30,7 +30,7 @@
     "tslib": "^1.9.2"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "2.5.1"
+    "@ts-ioc/core": "2.5.2"
   },
   "directories": {
     "lib": "lib"

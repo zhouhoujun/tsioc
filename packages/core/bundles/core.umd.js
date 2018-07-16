@@ -6646,13 +6646,13 @@ var ApplicationBuilder = /** @class */ (function () {
     /**
      * bootstrap application via main module
      *
-     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} bootModule
+     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token
      * @returns {Promise<T>}
      * @memberof ApplicationBuilder
      */
-    ApplicationBuilder.prototype.bootstrap = function (bootModule) {
+    ApplicationBuilder.prototype.bootstrap = function (token) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var container, builder, cfg, app;
+            var container, builder, cfg;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -6661,17 +6661,31 @@ var ApplicationBuilder = /** @class */ (function () {
                     case 1:
                         _a.sent();
                         builder = this.getModuleBuilder();
-                        return [4 /*yield*/, this.getConfiguration(this.getModuleConfigure(builder, bootModule))];
+                        return [4 /*yield*/, this.getConfiguration(this.getModuleConfigure(builder, token))];
                     case 2:
                         cfg = _a.sent();
+                        this.setConfigRoot(cfg);
+                        this.bindConfiguration(container, cfg);
                         return [4 /*yield*/, this.initContainer(cfg, container)];
                     case 3:
                         _a.sent();
-                        if (!cfg.bootstrap) {
-                            cfg.bootstrap = (utils.isToken(bootModule) ? bootModule : null);
+                        return [4 /*yield*/, this.build(builder, token, cfg)];
+                    case 4: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    ApplicationBuilder.prototype.build = function (builder, token, config) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var app;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!config.bootstrap) {
+                            config.bootstrap = (utils.isToken(token) ? token : null);
                         }
-                        return [4 /*yield*/, builder.build(cfg)];
-                    case 4:
+                        return [4 /*yield*/, builder.build(config)];
+                    case 1:
                         app = _a.sent();
                         return [2 /*return*/, app];
                 }
@@ -6717,8 +6731,6 @@ var ApplicationBuilder = /** @class */ (function () {
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        this.setConfigRoot(config);
-                        container.bindProvider(AppConfiguration.AppConfigurationToken, config);
                         if (!this.customRegs.length) return [3 /*break*/, 2];
                         customs = this.customRegs;
                         this.customRegs = [];
@@ -6733,6 +6745,9 @@ var ApplicationBuilder = /** @class */ (function () {
             });
         });
     };
+    ApplicationBuilder.prototype.bindConfiguration = function (container, config) {
+        container.bindProvider(AppConfiguration.AppConfigurationToken, config);
+    };
     /**
      * get configuration.
      *
@@ -6745,9 +6760,9 @@ var ApplicationBuilder = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         if (!this.configuration) {
-                            this.useConfiguration(cfg);
+                            this.useConfiguration();
                         }
-                        else if (utils.lang.hasField(cfg)) {
+                        if (utils.lang.hasField(cfg)) {
                             this.useConfiguration(cfg);
                         }
                         return [4 /*yield*/, this.configuration];
@@ -6759,7 +6774,7 @@ var ApplicationBuilder = /** @class */ (function () {
     ApplicationBuilder.prototype.getDefaultConfig = function () {
         return { debug: false };
     };
-    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "getContainer": [], "setContainer": ["container"], "getContainerBuilder": [], "setContainerBuilder": ["builder"], "getModuleBuilder": [], "setModuleBuilder": ["builder"], "useConfiguration": ["config"], "use": ["modules"], "registerModules": ["moduleRegs"], "useModules": ["modules"], "bootstrap": ["bootModule"], "createModuleBuilder": [], "createContainerBuilder": [], "getModuleConfigure": ["builer", "boot"], "setConfigRoot": ["config"], "registerExts": ["container"], "initContainer": ["config", "container"], "getConfiguration": ["cfg"], "getDefaultConfig": [] } };
+    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "getContainer": [], "setContainer": ["container"], "getContainerBuilder": [], "setContainerBuilder": ["builder"], "getModuleBuilder": [], "setModuleBuilder": ["builder"], "useConfiguration": ["config"], "use": ["modules"], "registerModules": ["moduleRegs"], "useModules": ["modules"], "bootstrap": ["token"], "build": ["builder", "token", "config"], "createModuleBuilder": [], "createContainerBuilder": [], "getModuleConfigure": ["builer", "boot"], "setConfigRoot": ["config"], "registerExts": ["container"], "initContainer": ["config", "container"], "bindConfiguration": ["container", "config"], "getConfiguration": ["cfg"], "getDefaultConfig": [] } };
     return ApplicationBuilder;
 }());
 exports.ApplicationBuilder = ApplicationBuilder;

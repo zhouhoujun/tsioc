@@ -1,7 +1,7 @@
 import { AppConfiguration, AppConfigurationToken } from './AppConfiguration';
 import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import { Token, Type, LoadType } from './types';
-import { lang, isString, isClass, isFunction, isToken } from './utils/index';
+import { lang, isString, isClass, isFunction, isToken, isMetadataObject } from './utils/index';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { DefaultContainerBuilder } from './DefaultContainerBuilder';
@@ -189,20 +189,26 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
     /**
      * bootstrap application via main module
      *
-     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} bootModule
+     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token
      * @returns {Promise<T>}
      * @memberof ApplicationBuilder
      */
-    async bootstrap(bootModule: Token<T> | Type<any> | AppConfiguration<T>): Promise<any> {
+    async bootstrap(token: Token<T> | Type<any> | AppConfiguration<T>): Promise<any> {
         let container = this.getContainer();
         await this.registerExts(container);
         let builder = this.getModuleBuilder();
-        let cfg: AppConfiguration<T> = await this.getConfiguration(this.getModuleConfigure(builder, bootModule));
+        let cfg: AppConfiguration<T> = await this.getConfiguration(this.getModuleConfigure(builder, token));
+        this.setConfigRoot(cfg);
+        this.bindConfiguration(container, cfg);
         await this.initContainer(cfg, container);
-        if (!cfg.bootstrap) {
-            cfg.bootstrap = (isToken(bootModule) ? bootModule : null);
+        return await this.build(builder, token, cfg);
+    }
+
+    protected async build(builder: IModuleBuilder<T>, token: Token<T> | Type<any> | AppConfiguration<T>, config: AppConfiguration<T>): Promise<any> {
+        if (!config.bootstrap) {
+            config.bootstrap = (isToken(token) ? token : null);
         }
-        let app = await builder.build(cfg);
+        let app = await builder.build(config);
         return app;
     }
 
@@ -235,8 +241,6 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
     }
 
     protected async initContainer(config: AppConfiguration<T>, container: IContainer): Promise<IContainer> {
-        this.setConfigRoot(config);
-        container.bindProvider(AppConfigurationToken, config);
         if (this.customRegs.length) {
             let customs = this.customRegs;
             this.customRegs = [];
@@ -245,6 +249,10 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
             }));
         }
         return container;
+    }
+
+    protected bindConfiguration(container: IContainer, config: AppConfiguration<T>) {
+        container.bindProvider(AppConfigurationToken, config);
     }
 
 
@@ -256,8 +264,9 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
      */
     protected async getConfiguration(cfg?: AppConfiguration<T>): Promise<AppConfiguration<T>> {
         if (!this.configuration) {
-            this.useConfiguration(cfg);
-        } else if (lang.hasField(cfg)) {
+            this.useConfiguration();
+        }
+        if (lang.hasField(cfg)) {
             this.useConfiguration(cfg);
         }
         return await this.configuration;
