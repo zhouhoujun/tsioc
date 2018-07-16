@@ -12,9 +12,18 @@ import { ModuleConfiguration } from './ModuleConfiguration';
  * @class ModuleBuilder
  */
 export class ModuleBuilder<T> implements IModuleBuilder<T> {
+    /**
+     * ioc container
+     *
+     * @type {IContainer}
+     * @memberof ModuleBuilder
+     */
+    container: IContainer;
 
-    constructor(protected container: IContainer) {
-
+    constructor(container?: IContainer) {
+        if (container) {
+            this.container = container;
+        }
     }
 
     /**

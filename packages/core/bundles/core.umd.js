@@ -5307,7 +5307,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 var ModuleBuilder = /** @class */ (function () {
     function ModuleBuilder(container) {
-        this.container = container;
+        if (container) {
+            this.container = container;
+        }
     }
     /**
      * build module.
