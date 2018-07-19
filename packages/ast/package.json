@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/ast",
-  "version": "2.5.3",
+  "version": "2.5.4",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./bundles/aop.umd.js",
   "typings": "./lib/index.d.ts",
@@ -30,7 +30,7 @@
     "tslib": "^1.9.2"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "2.5.3"
+    "@ts-ioc/core": "2.5.4"
   },
   "directories": {
     "lib": "lib",

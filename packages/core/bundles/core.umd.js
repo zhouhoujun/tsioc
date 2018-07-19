@@ -6677,6 +6677,16 @@ var ApplicationBuilder = /** @class */ (function () {
             });
         });
     };
+    /**
+     * build module.
+     *
+     * @protected
+     * @param {IModuleBuilder<T>} builder
+     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token
+     * @param {AppConfiguration<T>} config
+     * @returns {Promise<any>}
+     * @memberof ApplicationBuilder
+     */
     ApplicationBuilder.prototype.build = function (builder, token, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var app;
@@ -6694,12 +6704,35 @@ var ApplicationBuilder = /** @class */ (function () {
             });
         });
     };
+    /**
+     * create default module builder.
+     *
+     * @protected
+     * @returns
+     * @memberof ApplicationBuilder
+     */
     ApplicationBuilder.prototype.createModuleBuilder = function () {
         return this.getContainer().get(IModuleBuilder.ModuleBuilderToken);
     };
+    /**
+     * create default container builder.
+     *
+     * @protected
+     * @returns
+     * @memberof ApplicationBuilder
+     */
     ApplicationBuilder.prototype.createContainerBuilder = function () {
         return new DefaultContainerBuilder_1.DefaultContainerBuilder();
     };
+    /**
+     * get module configure.
+     *
+     * @protected
+     * @param {IModuleBuilder<T>} builer
+     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} boot
+     * @returns {AppConfiguration<T>}
+     * @memberof ApplicationBuilder
+     */
     ApplicationBuilder.prototype.getModuleConfigure = function (builer, boot) {
         return builer.getConfigure(boot);
     };
@@ -6708,6 +6741,14 @@ var ApplicationBuilder = /** @class */ (function () {
             config.baseURL = this.baseURL;
         }
     };
+    /**
+     * register ioc exts
+     *
+     * @protected
+     * @param {IContainer} container
+     * @returns {Promise<IContainer>}
+     * @memberof ApplicationBuilder
+     */
     ApplicationBuilder.prototype.registerExts = function (container) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var usedModules;
@@ -6787,7 +6828,7 @@ exports.ApplicationBuilder = ApplicationBuilder;
 unwrapExports(ApplicationBuilder_1);
 var ApplicationBuilder_2 = ApplicationBuilder_1.ApplicationBuilder;
 
-var D__workspace_github_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
+var D__Workspace_Projects_modules_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(IContainer, exports);
@@ -6814,7 +6855,7 @@ tslib_1.__exportStar(ApplicationBuilder_1, exports);
 
 });
 
-var index$7 = unwrapExports(D__workspace_github_tsioc_packages_core_lib);
+var index$7 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_core_lib);
 
 return index$7;
 
