@@ -1,0 +1,24 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": "../../../packages",
+    "paths": {
+      "@ts-ioc/core": [
+        "../../core/src"
+      ],
+      "@ts-ioc/bootstrap":[
+        "../../bootstrap/src"
+      ],
+      "@ts-ioc/platform-server":[
+        "../../platform-server/src"
+      ],
+      "@ts-ioc/annotations":[
+        "../../annotations/src"
+      ]
+    }
+  },
+  "exclude": [
+    "lib"  
+  ]
+}

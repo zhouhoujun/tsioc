@@ -1,11 +1,5 @@
 import { ModuleConfiguration } from './ModuleConfiguration';
-import { InjectToken } from './InjectToken';
-import { ObjectMap } from './types';
-
-/**
- * App configuration token.
- */
-export const AppConfigurationToken = new InjectToken<AppConfiguration<any>>('__IOC_AppConfiguration');
+import { ObjectMap } from '@ts-ioc/core';
 
 /**
  * app configuration.
@@ -21,7 +15,7 @@ export interface AppConfiguration<T> extends ModuleConfiguration<T> {
     baseURL?: string;
 
     /**
-     * debug log.
+     * set enable debug log or not.
      *
      * @type {boolean}
      * @memberof AppConfiguration

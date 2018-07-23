@@ -1,13 +1,14 @@
-import { IContainer, Type, lang, isString, Token, AppConfiguration, ApplicationBuilder, IApplicationBuilder } from '@ts-ioc/core';
+import { IContainer, Type, lang, isString, Token } from '@ts-ioc/core';
+import { AppConfiguration, ApplicationBuilder, IApplicationBuilder } from '@ts-ioc/bootstrap';
 import { existsSync } from 'fs';
 import * as path from 'path';
-import { ContainerBuilder } from './ContainerBuilder';
+import { ContainerBuilder } from '@ts-ioc/platform-server';
 
 /**
  * default app configuration.
  */
 const defaultAppConfig: AppConfiguration<any> = {
-    rootdir: '',
+    baseURL: '',
     debug: false,
     connections: {},
     setting: {}
@@ -62,8 +63,8 @@ export class ServerApplicationBuilder<T> extends ApplicationBuilder<T> implement
      * @memberof Bootstrap
      */
     useConfiguration(config?: string | AppConfiguration<T>): this {
-        if (!this.configuration) {
-            this.configuration = Promise.resolve(this.getDefaultConfig());
+        if (!this.globalConfig) {
+            this.globalConfig = Promise.resolve(this.getDefaultConfig());
         }
         let cfgmodeles: AppConfiguration<T>;
         if (isString(config)) {
@@ -95,7 +96,7 @@ export class ServerApplicationBuilder<T> extends ApplicationBuilder<T> implement
 
         if (cfgmodeles) {
             let excfg = (cfgmodeles['default'] ? cfgmodeles['default'] : cfgmodeles) as AppConfiguration<T>;
-            this.configuration = this.configuration
+            this.globalConfig = this.globalConfig
                 .then(cfg => {
                     cfg = lang.assign(cfg || {}, excfg || {}) as AppConfiguration<T>;
                     return cfg;
@@ -125,18 +126,12 @@ export class ServerApplicationBuilder<T> extends ApplicationBuilder<T> implement
         return lang.assign({}, defaultAppConfig as AppConfiguration<T>);
     }
 
-
-    protected setConfigRoot(config: AppConfiguration<T>) {
-        super.setConfigRoot(config);
-        config.rootdir = this.rootdir;
-    }
-
     protected async initContainer(config: AppConfiguration<T>, container: IContainer): Promise<IContainer> {
         await super.initContainer(config, container);
         let builder = this.getContainerBuilder();
         await Promise.all(this.dirMatchs.map(dirs => {
             return builder.loadModule(container, {
-                basePath: config.rootdir,
+                basePath: config.baseURL,
                 files: dirs
             });
         }));

@@ -1,9 +1,7 @@
-import { Token, Type, LoadType } from './types';
-import { IContainer } from './IContainer';
-import { ModuleConfiguration } from './ModuleConfiguration';
-import { IContainerBuilder } from './IContainerBuilder';
-import { IModuleBuilder } from './IModuleBuilder';
+import { Token, Type, LoadType, IContainer, IContainerBuilder } from '@ts-ioc/core';
 import { AppConfiguration } from './AppConfiguration';
+import { ModuleConfiguration } from './ModuleConfiguration';
+import { IModuleBuilder } from './IModuleBuilder';
 
 /**
  * custom define module.
@@ -19,7 +17,6 @@ export type CustomRegister<T> = (container: IContainer, config?: ModuleConfigura
  * @template T
  */
 export interface IApplicationBuilder<T> {
-
 
     /**
      * get ioc caontainer in this application.
@@ -83,15 +80,6 @@ export interface IApplicationBuilder<T> {
     useConfiguration(config?: string | AppConfiguration<T>): this;
 
     /**
-     * use module, custom register module.
-     *
-     * @param {...(LoadType | CustomRegister<T>)[]} modules
-     * @returns {this}
-     * @memberof IApplicationBuilder
-     */
-    useModules(...modules: (LoadType | CustomRegister<T>)[]): this;
-
-    /**
      * use module
      *
      * @param {...LoadType[]} modules
@@ -108,6 +96,15 @@ export interface IApplicationBuilder<T> {
      * @memberof IApplicationBuilder
      */
     registerModules(...moduleRegs: CustomRegister<T>[]): this;
+
+    /**
+     * build application.
+     *
+     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token
+     * @returns {Promise<T>}
+     * @memberof IApplicationBuilder
+     */
+    build(token: Token<T> | Type<any> | AppConfiguration<T>): Promise<T>;
 
     /**
      * bootstrap app via main module.

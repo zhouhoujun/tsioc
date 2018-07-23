@@ -1,9 +1,12 @@
-import { Token, Type, Providers } from './types';
-import { IModuleBuilder } from './IModuleBuilder';
-import { IContainer } from './IContainer';
-import { hasClassMetadata, isProviderMap, Provider, DefModule, getTypeMetadata } from './core/index';
-import { isString, lang, isFunction, isClass, isUndefined, isNull, isBaseObject, isToken, isArray } from './utils/index';
+
+import {
+    IContainer, hasClassMetadata, isProviderMap, Provider,
+    getTypeMetadata, Token, Type, Providers,
+    isString, lang, isFunction, isClass, isUndefined, isNull, isBaseObject, isToken, isArray, Injectable, Inject, ContainerToken
+} from '@ts-ioc/core';
+import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import { ModuleConfiguration } from './ModuleConfiguration';
+import { DefModule } from './decorators';
 
 /**
  * server app bootstrap
@@ -11,6 +14,7 @@ import { ModuleConfiguration } from './ModuleConfiguration';
  * @export
  * @class ModuleBuilder
  */
+@Injectable(ModuleBuilderToken)
 export class ModuleBuilder<T> implements IModuleBuilder<T> {
     /**
      * ioc container
@@ -18,12 +22,11 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      * @type {IContainer}
      * @memberof ModuleBuilder
      */
+    @Inject(ContainerToken)
     container: IContainer;
 
-    constructor(container?: IContainer) {
-        if (container) {
-            this.container = container;
-        }
+    constructor() {
+
     }
 
     /**

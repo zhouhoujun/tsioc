@@ -16,6 +16,7 @@ const del = require('del');
 
 Development.create(gulp, __dirname, [
     <ITaskOption>{
+        src: 'src',
         dist: 'lib',
         testSrc: 'test/**/*.spec.ts',
         loader: 'development-tool-node',
@@ -43,7 +44,7 @@ Development.create(gulp, __dirname, [
                 pipes: [
                     (ctx) => {
                         return rollup({
-                            name: 'platform-browser.umd.js',
+                            name: 'bootstrap.umd.js',
                             format: 'umd',
                             plugins: [
                                 resolve(),
@@ -58,34 +59,22 @@ Development.create(gulp, __dirname, [
                                 '@ts-ioc/aop'
                             ],
                             globals: {
-                                'reflect-metadata': 'Reflect',
-                                'log4js': 'log4js',
-                                '@ts-ioc/core': '@ts-ioc/core',
-                                '@ts-ioc/aop': '@ts-ioc/aop'
+                                'reflect-metadata': 'Reflect'
                             },
                             input: './lib/index.js'
                         })
                     },
-                    () => rename('platform-browser.umd.js')
+                    () => rename('bootstrap.umd.js')
                 ]
             },
             {
                 name: 'zip',
-                src: 'bundles/platform-browser.umd.js',
+                src: 'bundles/bootstrap.umd.js',
                 pipes: [
-                    () => rename('platform-browser.umd.min.js'),
+                    () => rename('bootstrap.umd.min.js'),
                     () => uglify()
                 ]
             }
-        ]
-    },
-    {
-        refs: [
-            {
-                name: 'platform-browser-bootstrap',
-                path: (ctx) => 'bootstrap',
-                cmd: (ctx) => (ctx.oper & Operation.deploy) ? 'gulp release' : 'gulp start'
-            },
         ]
     }
 ]).start();

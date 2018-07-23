@@ -31,7 +31,7 @@ let versionSetting = (ctx: ITaskContext) => {
             if (json.peerDependencies) {
                 Object.keys(json.peerDependencies).forEach(key => {
                     if (/^@ts-ioc/.test(key)) {
-                        json.peerDependencies[key] = version;
+                        json.peerDependencies[key] = '^' + version;
                     }
                 })
             }
@@ -88,6 +88,12 @@ Development.create(gulp, __dirname, [
                         pipes: []
                     },
                     {
+                        name: 'copy-to-bootstrap',
+                        src: ['packages/annotations/**', '!packages/annotations/test/**', '!packages/annotations/src/**', '!packages/annotations/node_modules/**'],
+                        dist: 'packages/bootstrap/node_modules/@ts-ioc/annotations',
+                        pipes: []
+                    },
+                    {
                         name: 'copy-to-logs',
                         src: ['packages/annotations/**', '!packages/annotations/test/**', '!packages/annotations/src/**', '!packages/annotations/node_modules/**'],
                         dist: 'packages/logs/node_modules/@ts-ioc/annotations',
@@ -126,6 +132,12 @@ Development.create(gulp, __dirname, [
                         name: 'copy-to-aop',
                         src: ['packages/core/**', '!packages/core/test/**', '!packages/core/src/**', '!packages/core/node_modules/**'],
                         dist: 'packages/aop/node_modules/@ts-ioc/core',
+                        pipes: []
+                    },
+                    {
+                        name: 'copy-to-bootstrap',
+                        src: ['packages/core/**', '!packages/core/test/**', '!packages/core/src/**', '!packages/core/node_modules/**'],
+                        dist: 'packages/bootstrap/node_modules/@ts-ioc/core',
                         pipes: []
                     },
                     {
@@ -176,6 +188,12 @@ Development.create(gulp, __dirname, [
             {
                 name: 'logs',
                 path: (ctx) => 'packages/logs',
+                cmd: (ctx) => (ctx.oper & Operation.deploy) ? 'npm publish' : 'gulp start',
+                args: argFactory
+            },
+            {
+                name: 'bootstrap',
+                path: (ctx) => 'packages/bootstrap',
                 cmd: (ctx) => (ctx.oper & Operation.deploy) ? 'npm publish' : 'gulp start',
                 args: argFactory
             },

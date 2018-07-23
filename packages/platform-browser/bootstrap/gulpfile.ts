@@ -31,7 +31,7 @@ Development.create(gulp, __dirname, [
     },
     <ITaskOption>{
         src: ['lib/**/*.js'],
-        dist: 'bundles',
+        dist: '../bundles',
         oper: Operation.release | Operation.deploy,
         loader: [
             {
@@ -43,7 +43,7 @@ Development.create(gulp, __dirname, [
                 pipes: [
                     (ctx) => {
                         return rollup({
-                            name: 'platform-browser.umd.js',
+                            name: 'platform-browser-bootstrap.umd.js',
                             format: 'umd',
                             plugins: [
                                 resolve(),
@@ -55,7 +55,10 @@ Development.create(gulp, __dirname, [
                                 'tslib',
                                 'log4js',
                                 '@ts-ioc/core',
-                                '@ts-ioc/aop'
+                                '@ts-ioc/aop',
+                                '@ts-ioc/bootstrap',
+                                '@ts-ioc/platform-browser'
+
                             ],
                             globals: {
                                 'reflect-metadata': 'Reflect',
@@ -66,26 +69,17 @@ Development.create(gulp, __dirname, [
                             input: './lib/index.js'
                         })
                     },
-                    () => rename('platform-browser.umd.js')
+                    () => rename('platform-browser-bootstrap.umd.js')
                 ]
             },
             {
                 name: 'zip',
-                src: 'bundles/platform-browser.umd.js',
+                src: 'bundles/platform-browser-bootstrap.umd.js',
                 pipes: [
-                    () => rename('platform-browser.umd.min.js'),
+                    () => rename('platform-browser-bootstrap.umd.min.js'),
                     () => uglify()
                 ]
             }
-        ]
-    },
-    {
-        refs: [
-            {
-                name: 'platform-browser-bootstrap',
-                path: (ctx) => 'bootstrap',
-                cmd: (ctx) => (ctx.oper & Operation.deploy) ? 'gulp release' : 'gulp start'
-            },
         ]
     }
 ]).start();

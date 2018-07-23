@@ -1,7 +1,5 @@
-import { createClassDecorator, ITypeDecorator } from '../factories/index';
-import { ClassMetadata } from '../metadatas/index';
-import { Registration } from '../../Registration';
-import { ModuleConfiguration } from '../../ModuleConfiguration';
+import { createClassDecorator, ITypeDecorator, ClassMetadata } from '@ts-ioc/core';
+import { ModuleConfiguration } from '../ModuleConfiguration';
 
 
 export interface IModuleMetadata extends ClassMetadata, ModuleConfiguration<any> {

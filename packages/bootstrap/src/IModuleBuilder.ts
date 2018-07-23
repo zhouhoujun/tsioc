@@ -1,12 +1,25 @@
-import { IContainer } from './IContainer';
-import { Type, LoadType, Token } from './types';
+import { Token, Registration } from '@ts-ioc/core';
 import { ModuleConfiguration } from './ModuleConfiguration';
-import { InjectToken } from './InjectToken';
+
+
+/**
+ * inject module builder.
+ *
+ * @export
+ * @class InjectModuleBuilder
+ * @extends {Registration<T>}
+ * @template T
+ */
+export class InjectModuleBuilder<T extends IModuleBuilder<any>> extends Registration<T> {
+    constructor(desc: string) {
+        super('_IOC_ModuleBuilder', desc);
+    }
+}
 
 /**
  * module builder token.
  */
-export const ModuleBuilderToken = new InjectToken<IModuleBuilder<any>>('__IOC_ModuleBuilder');
+export const ModuleBuilderToken = new InjectModuleBuilder<IModuleBuilder<any>>('');
 
 
 /**
@@ -26,7 +39,7 @@ export interface IModuleBuilder<T> {
      * @returns {ModuleConfiguration<T>}
      * @memberof IModuleBuilder
      */
-    getConfigure(token: Token<any> | ModuleConfiguration<T>, moduleDecorator?: Function|string): ModuleConfiguration<T>;
+    getConfigure(token: Token<any> | ModuleConfiguration<T>, moduleDecorator?: Function | string): ModuleConfiguration<T>;
 
     /**
      * build module instacne.
@@ -36,7 +49,7 @@ export interface IModuleBuilder<T> {
      * @returns {Promise<any>}
      * @memberof IPlatform
      */
-    build(token: Token<T> | ModuleConfiguration<T>, moduleDecorator?: Function|string): Promise<T>;
+    build(token: Token<T> | ModuleConfiguration<T>, moduleDecorator?: Function | string): Promise<T>;
 
 }
 

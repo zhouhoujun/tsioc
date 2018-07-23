@@ -75,14 +75,5 @@ Development.create(gulp, __dirname, [
             //     ]
             // }
         ]
-    },
-    {
-        refs: [
-            {
-                name: 'platform-server-bootstrap',
-                path: (ctx) => 'bootstrap',
-                cmd: (ctx) => (ctx.oper & Operation.deploy) ? 'gulp release' : 'gulp start'
-            },
-        ]
     }
 ]).start();

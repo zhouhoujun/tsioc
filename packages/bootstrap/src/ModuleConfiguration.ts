@@ -1,4 +1,4 @@
-import { Token, Type, LoadType, Providers, ObjectMap } from './types';
+import { Token, Type, LoadType, Providers } from '@ts-ioc/core';
 
 
 /**
@@ -8,7 +8,7 @@ import { Token, Type, LoadType, Providers, ObjectMap } from './types';
  * @interface ModuleConfiguration
  * @extends {ObjectMap<any>}
  */
-export interface ModuleConfiguration<T> extends ObjectMap<any> {
+export interface ModuleConfiguration<T> {
 
     /**
      * providers

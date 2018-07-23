@@ -1,12 +1,13 @@
-import { Type, lang, isUndefined, Token, AppConfiguration, IApplicationBuilder, ApplicationBuilder } from '@ts-ioc/core';
-import { ContainerBuilder } from './ContainerBuilder';
+import { Type, lang, isUndefined, Token } from '@ts-ioc/core';
+import { AppConfiguration, IApplicationBuilder, ApplicationBuilder } from '@ts-ioc/bootstrap';
+import { ContainerBuilder } from '@ts-ioc/platform-browser';
 
 declare let System: any;
 /**
  * default app configuration.
  */
 const defaultAppConfig: AppConfiguration<any> = {
-    rootdir: '',
+    baseURL: '',
     debug: false,
     connections: {},
     setting: {}
