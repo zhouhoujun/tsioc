@@ -1,9 +1,9 @@
 
-export * from './actions/index';
-export * from './decorators/index';
-export * from './metadatas/index';
-export * from './factories/index';
-export * from './providers/index';
+export * from './actions';
+export * from './decorators';
+export * from './metadatas';
+export * from './factories';
+export * from './providers';
 
 export * from './IRecognizer';
 export * from './IProviderMatcher';

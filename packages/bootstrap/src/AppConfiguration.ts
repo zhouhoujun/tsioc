@@ -10,6 +10,14 @@ import { ObjectMap } from '@ts-ioc/core';
  */
 export interface AppConfiguration<T> extends ModuleConfiguration<T> {
     /**
+     * application name.
+     *
+     * @type {string}
+     * @memberof AppConfiguration
+     */
+    name?: string;
+
+    /**
      * app base uri.
      */
     baseURL?: string;

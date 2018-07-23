@@ -1,10 +1,10 @@
 import { ActionData } from '../ActionData';
-import { ClassMetadata } from '../metadatas/index';
+import { ClassMetadata } from '../metadatas';
 import { ActionComposite } from './ActionComposite';
 import { IContainer } from '../../IContainer';
-import { isNumber, isClass } from '../../utils/index';
+import { isNumber, isClass } from '../../utils';
 import { CoreActions } from './CoreActions';
-import { getOwnTypeMetadata, hasOwnClassMetadata } from '../factories/index';
+import { getOwnTypeMetadata, hasOwnClassMetadata } from '../factories';
 import { CacheManagerToken } from '../../ICacheManager';
 
 

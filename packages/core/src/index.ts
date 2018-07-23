@@ -16,7 +16,7 @@ export * from './IModuleLoader';
 export * from './DefaultModuleLoader';
 export * from './DefaultContainerBuilder';
 
-export * from './utils/index';
-export * from './components/index';
-export * from './core/index';
+export * from './utils';
+export * from './components';
+export * from './core';
 

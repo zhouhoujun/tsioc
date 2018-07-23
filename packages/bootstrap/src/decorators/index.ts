@@ -1,2 +1,2 @@
+export * from './DIModule';
 export * from './Bootstrap';
-export * from './DefModule';

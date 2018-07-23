@@ -1,4 +1,4 @@
-import { Joinpoint } from '../joinpoints/index';
+import { Joinpoint } from '../joinpoints';
 import { Express, IRecognizer, InjectToken } from '@ts-ioc/core';
 
 /**

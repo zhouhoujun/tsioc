@@ -1,9 +1,9 @@
 import { ActionData } from '../ActionData';
 import { NullAction } from './NullAction';
 import { ActionComponent } from './ActionComponent';
-import { Metadate } from '../metadatas/index';
+import { Metadate } from '../metadatas';
 import { IContainer } from '../../IContainer';
-import { GComposite } from '../../components/index';
+import { GComposite } from '../../components';
 
 /**
  * action composite

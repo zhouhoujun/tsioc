@@ -2,9 +2,9 @@ import {
     IContainer, Singleton, Inject, getOwnMethodMetadata,
     MapSet, Type, ObjectMap, getClassName, lang, ContainerToken
 } from '@ts-ioc/core';
-import { Advices } from './advices/index';
-import { Advice, NonePointcut } from './decorators/index';
-import { AdviceMetadata } from './metadatas/index';
+import { Advices } from './advices';
+import { Advice, NonePointcut } from './decorators';
+import { AdviceMetadata } from './metadatas';
 import { IAdvisor, AdvisorToken } from './IAdvisor';
 
 /**

@@ -1,11 +1,11 @@
 import { IContainer } from './IContainer';
-import { Injectable, Component, AutoWired, Inject, Singleton, Param, Method, Abstract, Autorun, IocExt } from './core/decorators/index';
-import { CoreActions } from './core/actions/index';
+import { Injectable, Component, AutoWired, Inject, Singleton, Param, Method, Abstract, Autorun, IocExt } from './core/decorators';
+import { CoreActions } from './core/actions';
 import { DefaultLifeScope } from './core/DefaultLifeScope';
 import { LifeScopeToken } from './LifeScope';
 import { MethodAccessor } from './core/MethodAccessor';
 import { ProviderMatcher } from './core/ProviderMatcher';
-import { ProviderMap, ProviderMapToken } from './core/providers/index';
+import { ProviderMap, ProviderMapToken } from './core/providers';
 import { CacheManager } from './core/CacheManager';
 import { CacheManagerToken } from './ICacheManager';
 import { ProviderMatcherToken } from './core/IProviderMatcher';

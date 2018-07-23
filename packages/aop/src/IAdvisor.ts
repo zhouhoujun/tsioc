@@ -1,6 +1,6 @@
-import { AdviceMetadata } from './metadatas/index';
+import { AdviceMetadata } from './metadatas';
 import { Type, ObjectMap, MapSet, InjectToken } from '@ts-ioc/core';
-import { Advices } from './advices/index';
+import { Advices } from './advices';
 
 /**
  * Aop IAdvisor interface token.

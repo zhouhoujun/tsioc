@@ -1,11 +1,11 @@
 import { ActionComposite } from './ActionComposite';
 import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
-import { getParamMetadata, getOwnParamMetadata, hasParamMetadata, hasOwnParamMetadata } from '../factories/index';
-import { ParameterMetadata } from '../metadatas/index';
+import { getParamMetadata, getOwnParamMetadata, hasParamMetadata, hasOwnParamMetadata } from '../factories';
+import { ParameterMetadata } from '../metadatas';
 import { IContainer } from '../../IContainer';
 import { Token } from '../../types';
-import { isArray } from '../../utils/index';
+import { isArray } from '../../utils';
 
 /**
  * bind parameter type action data.

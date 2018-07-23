@@ -1,7 +1,7 @@
 import { IContainer } from '../IContainer';
 import { IMethodAccessor } from '../IMethodAccessor';
-import { BindParameterProviderActionData, CoreActions, LifeState } from './actions/index';
-import { isToken, isFunction } from '../utils/index';
+import { BindParameterProviderActionData, CoreActions, LifeState } from './actions';
+import { isToken, isFunction } from '../utils';
 import { Token, Providers } from '../types';
 import { IParameter } from '../IParameter';
 import { IProviderMatcher, ProviderMatcherToken } from './IProviderMatcher';

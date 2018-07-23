@@ -768,7 +768,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-var index_2 = joinpoints;
+var joinpoints_2 = joinpoints;
 
 
 
@@ -832,7 +832,7 @@ var ProxyMethod = /** @class */ (function () {
             for (var _i = 0; _i < arguments.length; _i++) {
                 args[_i] = arguments[_i];
             }
-            var joinPoint = _this.container.resolve(index_2.Joinpoint, core_1.Provider.create('options', {
+            var joinPoint = _this.container.resolve(joinpoints_2.Joinpoint, core_1.Provider.create('options', {
                 name: methodName,
                 fullName: fullName,
                 provJoinpoint: provJoinpoint,
@@ -1637,9 +1637,9 @@ var AdviceMatcher = /** @class */ (function () {
         }
         else { // if (!advisor.hasRegisterAdvices(targetType)) {
             var points_1 = [];
-            var decorators_1 = Object.getOwnPropertyDescriptors(targetType.prototype);
+            var decorators_2 = Object.getOwnPropertyDescriptors(targetType.prototype);
             // match method.
-            for (var name_1 in decorators_1) {
+            for (var name_1 in decorators_2) {
                 points_1.push({
                     name: name_1,
                     fullName: className + "." + name_1
@@ -1650,7 +1650,7 @@ var AdviceMatcher = /** @class */ (function () {
                 if (name === 'constructor') {
                     return;
                 }
-                if (core_1.isUndefined(decorators_1[name])) {
+                if (core_1.isUndefined(decorators_2[name])) {
                     points_1.push({
                         name: name,
                         fullName: className + "." + name
@@ -1934,7 +1934,7 @@ exports.AopModule = AopModule;
 unwrapExports(AopModule_1);
 var AopModule_2 = AopModule_1.AopModule;
 
-var D__workspace_github_tsioc_packages_aop_lib = createCommonjsModule(function (module, exports) {
+var D__Workspace_Projects_modules_tsioc_packages_aop_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 // export * from './tokens';
@@ -1951,7 +1951,7 @@ tslib_1.__exportStar(AopModule_1, exports);
 
 });
 
-var index$4 = unwrapExports(D__workspace_github_tsioc_packages_aop_lib);
+var index$4 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_aop_lib);
 
 return index$4;
 

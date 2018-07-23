@@ -1,6 +1,6 @@
 
 import { createMethodDecorator, IMethodDecorator, MetadataAdapter, MetadataExtends, isString, isRegExp  } from '@ts-ioc/core';
-import { AdviceMetadata } from '../metadatas/index';
+import { AdviceMetadata } from '../metadatas';
 
 /**
  * advice decorator for method.

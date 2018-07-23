@@ -1,11 +1,11 @@
 import { IContainer, IocState, LifeState, Inject, ContainerToken, LifeScopeToken, IocExt } from '@ts-ioc/core';
-import { Aspect } from './decorators/index';
+import { Aspect } from './decorators';
 import { Advisor } from './Advisor';
-import { AopActions } from './actions/index';
+import { AopActions } from './actions';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AopActionFactory } from './actions/AopActionFactory';
-import { Joinpoint } from './joinpoints/index';
-import { ProxyMethod, AdvisorChainFactory, AdvisorChain, SyncProceeding, AsyncObservableProceeding, AsyncPromiseProceeding, ReturningRecognizer } from './access/index';
+import { Joinpoint } from './joinpoints';
+import { ProxyMethod, AdvisorChainFactory, AdvisorChain, SyncProceeding, AsyncObservableProceeding, AsyncPromiseProceeding, ReturningRecognizer } from './access';
 
 
 /**

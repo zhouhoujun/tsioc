@@ -1,6 +1,6 @@
 import { IParameter } from '../IParameter';
 import { Providers } from '../types';
-import { ProviderMap } from '../core/index';
+import { ProviderMap } from '.';
 import { InjectToken } from '../InjectToken';
 
 /**

@@ -1,10 +1,10 @@
 // export * from './tokens';
-export * from './actions/index';
-export * from './decorators/index';
-export * from './metadatas/index';
-export * from './joinpoints/index';
-export * from './advices/index';
-export * from './access/index';
+export * from './actions';
+export * from './decorators';
+export * from './metadatas';
+export * from './joinpoints';
+export * from './advices';
+export * from './access';
 
 export * from './IAdvisor';
 export * from './Advisor';

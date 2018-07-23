@@ -1,6 +1,6 @@
 import { IAdviceDecorator, createAdviceDecorator } from './Advice';
 import { isString } from '@ts-ioc/core';
-import { AfterThrowingMetadata } from '../metadatas/index';
+import { AfterThrowingMetadata } from '../metadatas';
 
 /**
  * aop after throwing decorator.

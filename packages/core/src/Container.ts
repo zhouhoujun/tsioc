@@ -2,10 +2,10 @@ import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
 import { Type, Token, Factory, SymbolType, ToInstance, IocState, Providers, ModuleType, LoadType } from './types';
 import { Registration } from './Registration';
-import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet } from './utils/index';
+import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet } from './utils';
 
 import { MethodAccessorToken } from './IMethodAccessor';
-import { ActionComponent, CoreActions, CacheActionData, LifeState } from './core/index';
+import { ActionComponent, CoreActions, CacheActionData, LifeState } from './core';
 import { LifeScope, LifeScopeToken } from './LifeScope';
 import { IParameter } from './IParameter';
 import { CacheManagerToken } from './ICacheManager';

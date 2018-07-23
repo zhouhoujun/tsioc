@@ -1,4 +1,4 @@
-import { isObject } from '../../utils/index';
+import { isObject } from '../../utils';
 import { ProviderMap } from './ProviderMap';
 
 export * from './Provider';

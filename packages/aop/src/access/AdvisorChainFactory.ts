@@ -1,9 +1,9 @@
 import { IContainer, Provider, Injectable, Inject, isUndefined, isArray, lang, ContainerToken } from '@ts-ioc/core';
-import { Joinpoint, JoinpointState } from '../joinpoints/index';
-import { Advicer, Advices } from '../advices/index';
+import { Joinpoint, JoinpointState } from '../joinpoints';
+import { Advicer, Advices } from '../advices';
 import { IAdvisorChainFactory, AdvisorChainFactoryToken } from './IAdvisorChainFactory';
 import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
-import { NonePointcut } from '../decorators/index';
+import { NonePointcut } from '../decorators';
 
 @NonePointcut()
 @Injectable(AdvisorChainFactoryToken)

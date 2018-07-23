@@ -1,6 +1,6 @@
 
-import { MethodMetadata } from '../metadatas/index';
-import { createMethodDecorator, IMethodDecorator } from '../factories/index';
+import { MethodMetadata } from '../metadatas';
+import { createMethodDecorator, IMethodDecorator } from '../factories';
 
 /**
  * method decorator.

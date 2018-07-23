@@ -15,49 +15,6 @@ function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
-var Bootstrap = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * Bootstrap Decorator, definde class as mvc bootstrap module.
- *
- * @Bootstrap
- */
-exports.Bootstrap = core_1.createClassDecorator('Bootstrap');
-
-
-});
-
-unwrapExports(Bootstrap);
-var Bootstrap_1 = Bootstrap.Bootstrap;
-
-var DefModule = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * Module decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.
- *
- * @DefModule
- */
-exports.DefModule = core_1.createClassDecorator('DefModule');
-
-
-});
-
-unwrapExports(DefModule);
-var DefModule_1 = DefModule.DefModule;
-
-var decorators = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-tslib_1.__exportStar(Bootstrap, exports);
-tslib_1.__exportStar(DefModule, exports);
-
-
-});
-
-unwrapExports(decorators);
-
 var IModuleBuilder = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -90,6 +47,171 @@ exports.ModuleBuilderToken = new InjectModuleBuilder('');
 unwrapExports(IModuleBuilder);
 var IModuleBuilder_1 = IModuleBuilder.InjectModuleBuilder;
 var IModuleBuilder_2 = IModuleBuilder.ModuleBuilderToken;
+
+var DIModule = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * create bootstrap decorator.
+ *
+ * @export
+ * @template T
+ * @param {string} decorType
+ * @param {(Token<IModuleBuilder<T>> | IModuleBuilder<T>)} builder
+ * @param {InjectToken<IApplication>} provideType default provide type.
+ * @param {MetadataAdapter} [adapter]
+ * @param {MetadataExtends<T>} [metadataExtends]
+ * @returns {IDIModuleDecorator<T>}
+ */
+function createDIModuleDecorator(decorType, builder, provideType, adapter, metadataExtends) {
+    return core_1.createClassDecorator('DIModule', function (args) {
+        if (adapter) {
+            adapter(args);
+        }
+        args.next({
+            match: function (arg) { return arg && (core_1.isString(arg) || (core_1.isObject(arg) && arg instanceof core_1.Registration)); },
+            setMetadata: function (metadata, arg) {
+                if (core_1.isString(arg)) {
+                    metadata.name = arg;
+                }
+                else {
+                    metadata.provide = arg;
+                }
+            }
+        });
+        args.next({
+            match: function (arg) { return core_1.isString(arg) || core_1.isToken(arg); },
+            setMetadata: function (metadata, arg) {
+                if (core_1.isString(arg)) {
+                    metadata.name = arg;
+                }
+                else {
+                    metadata.builder = arg;
+                }
+            }
+        });
+        args.next({
+            match: function (arg) { return core_1.isString(arg); },
+            setMetadata: function (metadata, arg) {
+                metadata.name = arg;
+            }
+        });
+    }, function (metadata) {
+        if (metadataExtends) {
+            metadata = metadataExtends(metadata);
+        }
+        if (!metadata.name && core_1.isClass(metadata.type)) {
+            var isuglify = /^[a-z]$/.test(metadata.type.name);
+            if (isuglify && metadata.type.classAnnations) {
+                metadata.name = metadata.type.classAnnations.name;
+            }
+            else {
+                metadata.name = metadata.type.name;
+            }
+        }
+        metadata.provide = metadata.provide || provideType;
+        metadata.alias = metadata.alias || metadata.name;
+        metadata.decorType = decorType;
+        if (!metadata.builder) {
+            metadata.builder = builder;
+        }
+        return metadata;
+    });
+}
+exports.createDIModuleDecorator = createDIModuleDecorator;
+/**
+ * DIModule Decorator, definde class as DI module.
+ *
+ * @DIModule
+ */
+exports.DIModule = createDIModuleDecorator('', IModuleBuilder.ModuleBuilderToken);
+
+
+});
+
+unwrapExports(DIModule);
+var DIModule_1 = DIModule.createDIModuleDecorator;
+var DIModule_2 = DIModule.DIModule;
+
+var IApplication = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * Inject ApplicationToken
+ *
+ * @export
+ * @class InjectApplicationToken
+ * @extends {Registration<T>}
+ * @template T
+ */
+var InjectApplicationToken = /** @class */ (function (_super) {
+    tslib_1.__extends(InjectApplicationToken, _super);
+    function InjectApplicationToken(desc) {
+        return _super.call(this, 'Application', desc) || this;
+    }
+    InjectApplicationToken.classAnnations = { "name": "InjectApplicationToken", "params": { "constructor": ["desc"] } };
+    return InjectApplicationToken;
+}(core_1.Registration));
+exports.InjectApplicationToken = InjectApplicationToken;
+/**
+ * Application Token.
+ */
+exports.ApplicationToken = new InjectApplicationToken('');
+
+
+});
+
+unwrapExports(IApplication);
+var IApplication_1 = IApplication.InjectApplicationToken;
+var IApplication_2 = IApplication.ApplicationToken;
+
+var Bootstrap = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+/**
+ * create bootstrap decorator.
+ *
+ * @export
+ * @template T
+ * @param {string} decorType
+ * @param {(Token<IModuleBuilder<T>> | IModuleBuilder<T>)} builder
+ * @param {InjectToken<IApplication>} provideType default provide type.
+ * @param {MetadataAdapter} [adapter]
+ * @param {MetadataExtends<T>} [metadataExtends]
+ * @returns {IBootstrapDecorator<T>}
+ */
+function createBootstrapDecorator(decorType, builder, provideType, adapter, metadataExtends) {
+    return DIModule.createDIModuleDecorator(decorType, builder, provideType, adapter, metadataExtends);
+}
+exports.createBootstrapDecorator = createBootstrapDecorator;
+/**
+ * Bootstrap Decorator, definde class as mvc bootstrap module.
+ *
+ * @Bootstrap
+ */
+exports.Bootstrap = createBootstrapDecorator('bootstrap', IModuleBuilder.ModuleBuilderToken, IApplication.ApplicationToken);
+
+
+});
+
+unwrapExports(Bootstrap);
+var Bootstrap_1 = Bootstrap.createBootstrapDecorator;
+var Bootstrap_2 = Bootstrap.Bootstrap;
+
+var decorators = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+tslib_1.__exportStar(DIModule, exports);
+tslib_1.__exportStar(Bootstrap, exports);
+
+
+});
+
+unwrapExports(decorators);
 
 var ModuleBuilder_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -162,7 +284,7 @@ var ModuleBuilder = /** @class */ (function () {
         return builder || this;
     };
     ModuleBuilder.prototype.getDecorator = function () {
-        return decorators.DefModule.toString();
+        return decorators.DIModule.toString();
     };
     /**
      * get configuration.
@@ -204,14 +326,14 @@ var ModuleBuilder = /** @class */ (function () {
                         return [4 /*yield*/, this.registerDepdences(cfg)];
                     case 1:
                         _a.sent();
-                        if (core_1.isClass(token)) {
-                            if (!this.container.has(token)) {
-                                this.container.register(token);
+                        if (core_1.isClass(bootToken)) {
+                            if (!this.container.has(bootToken)) {
+                                this.container.register(bootToken);
                             }
-                            return [2 /*return*/, this.container.resolve(token)];
+                            return [2 /*return*/, this.container.resolve(bootToken)];
                         }
                         else {
-                            return [2 /*return*/, this.container.resolve(token)];
+                            return [2 /*return*/, this.container.resolve(bootToken)];
                         }
                         return [2 /*return*/];
                 }
@@ -415,7 +537,7 @@ var BootstrapModule = /** @class */ (function () {
     BootstrapModule.prototype.setup = function () {
         var container = this.container;
         var lifeScope = container.get(core_1.LifeScopeToken);
-        lifeScope.registerDecorator(decorators.DefModule, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
+        lifeScope.registerDecorator(decorators.DIModule, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
         lifeScope.registerDecorator(decorators.Bootstrap, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
         container.register(ModuleBuilder_1.ModuleBuilder);
         container.register(ApplicationBuilder_1.ApplicationBuilder);
@@ -764,11 +886,12 @@ exports.ApplicationBuilder = ApplicationBuilder;
 unwrapExports(ApplicationBuilder_1);
 var ApplicationBuilder_2 = ApplicationBuilder_1.ApplicationBuilder;
 
-var D__workspace_github_tsioc_packages_bootstrap_lib = createCommonjsModule(function (module, exports) {
+var D__Workspace_Projects_modules_tsioc_packages_bootstrap_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(decorators, exports);
 tslib_1.__exportStar(ApplicationBuilder_1, exports);
+tslib_1.__exportStar(IApplication, exports);
 tslib_1.__exportStar(IModuleBuilder, exports);
 tslib_1.__exportStar(ModuleBuilder_1, exports);
 tslib_1.__exportStar(BootstrapModule_1, exports);
@@ -776,7 +899,7 @@ tslib_1.__exportStar(BootstrapModule_1, exports);
 
 });
 
-var index$1 = unwrapExports(D__workspace_github_tsioc_packages_bootstrap_lib);
+var index$1 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_bootstrap_lib);
 
 return index$1;
 

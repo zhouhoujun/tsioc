@@ -1,7 +1,7 @@
 import { ActionComponent } from './ActionComponent';
 import { ActionData } from '../ActionData';
 import { IContainer } from '../../IContainer';
-import { NullComponent } from '../../components/index';
+import { NullComponent } from '../../components';
 
 class NullActionClass extends NullComponent implements ActionComponent {
 

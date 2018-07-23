@@ -1,5 +1,5 @@
-import { Joinpoint, JoinpointState } from '../joinpoints/index';
-import { Advicer } from '../advices/index';
+import { Joinpoint, JoinpointState } from '../joinpoints';
+import { Advicer } from '../advices';
 import { InjectToken } from '@ts-ioc/core';
 
 

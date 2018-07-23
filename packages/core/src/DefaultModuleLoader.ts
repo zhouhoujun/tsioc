@@ -1,7 +1,7 @@
 import { Type, ModuleType, LoadType, PathModules } from './types';
 import { IModuleLoader } from './IModuleLoader';
-import { isString, isClass, isObject, isArray } from './utils/index';
-import { hasOwnClassMetadata, IocExt } from './core/index';
+import { isString, isClass, isObject, isArray } from './utils';
+import { hasOwnClassMetadata, IocExt } from './core';
 
 declare let require: any;
 

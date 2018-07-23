@@ -1,6 +1,6 @@
 import { IPointcut } from './IPointcut';
 import { JoinpointState } from './JoinpointState';
-import { Advicer } from '../advices/index';
+import { Advicer } from '../advices';
 import { IParameter, MethodMetadata, Type, InjectToken } from '@ts-ioc/core';
 
  /**

@@ -1,5 +1,5 @@
-import { Metadate } from '../metadatas/index';
-import { lang, isMetadataObject } from '../../utils/index';
+import { Metadate } from '../metadatas';
+import { lang, isMetadataObject } from '../../utils';
 
 
 export interface CheckExpress<T extends Metadate> {

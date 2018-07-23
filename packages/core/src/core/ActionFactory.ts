@@ -5,7 +5,7 @@ import {
     BindParameterProviderAction, BindProviderAction,
     ComponentInitAction, ComponentBeforeInitAction, ComponentAfterInitAction,
     CacheAction, SingletionAction, AutorunAction
-} from './actions/index';
+} from './actions';
 import { MethodAutorun } from './actions/MethodAutorun';
 
 

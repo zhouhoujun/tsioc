@@ -1,8 +1,8 @@
 import { IContainer, Injectable, Inject, IRecognizer, Express, ContainerToken, RecognizerToken } from '@ts-ioc/core';
-import { Joinpoint } from '../joinpoints/index';
+import { Joinpoint } from '../joinpoints';
 import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
 import { AdvisorProceedingToken } from './IAdvisorProceeding';
-import { NonePointcut } from '../decorators/index';
+import { NonePointcut } from '../decorators';
 
 @NonePointcut()
 @Injectable(AdvisorChainToken)

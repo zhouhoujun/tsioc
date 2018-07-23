@@ -1,6 +1,6 @@
 import { Providers } from '../types';
-import { Provider, ProviderMap, ParamProvider, isProviderMap, ProviderMapToken } from './providers/index';
-import { isString, isClass, isArray, isFunction, isNumber, isUndefined, isNull, isToken, isBaseObject, lang } from '../utils/index';
+import { Provider, ProviderMap, ParamProvider, isProviderMap, ProviderMapToken } from './providers';
+import { isString, isClass, isArray, isFunction, isNumber, isUndefined, isNull, isToken, isBaseObject, lang } from '../utils';
 import { IParameter } from '../IParameter';
 import { IProviderMatcher } from './IProviderMatcher';
 import { IContainer } from '../IContainer';

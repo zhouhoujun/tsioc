@@ -1,7 +1,7 @@
 import { Singleton, IRecognizer, isPromise, isObservable, RecognizerToken } from '@ts-ioc/core';
 import { ReturningType } from './ReturningType';
-import { JoinpointState } from '../joinpoints/index';
-import { NonePointcut } from '../decorators/index';
+import { JoinpointState } from '../joinpoints';
+import { NonePointcut } from '../decorators';
 
 @NonePointcut()
 @Singleton(RecognizerToken, JoinpointState.AfterReturning)

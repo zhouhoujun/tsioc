@@ -1,5 +1,5 @@
 import { IContainer, Inject, ContainerToken, LifeScopeToken, IocExt, CoreActions } from '@ts-ioc/core';
-import { DefModule, Bootstrap } from './decorators';
+import { DIModule, Bootstrap } from './decorators';
 import { ModuleBuilder } from './ModuleBuilder';
 import { ApplicationBuilder } from './ApplicationBuilder';
 
@@ -26,7 +26,7 @@ export class BootstrapModule {
 
         let lifeScope = container.get(LifeScopeToken);
 
-        lifeScope.registerDecorator(DefModule, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
+        lifeScope.registerDecorator(DIModule, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
         lifeScope.registerDecorator(Bootstrap, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
 
         container.register(ModuleBuilder);

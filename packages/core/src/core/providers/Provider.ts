@@ -1,6 +1,6 @@
 import { Token, Providers, Express2, Type } from '../../types';
 import { IContainer } from '../../IContainer';
-import { isFunction, isObject, isUndefined } from '../../utils/index';
+import { isFunction, isObject, isUndefined } from '../../utils';
 
 
 export interface TypeProvider extends Type<any> {

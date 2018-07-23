@@ -1,11 +1,11 @@
 import { IContainer, ActionData, ActionComposite, Provider, IMethodAccessor, getClassName, MethodAccessorToken } from '@ts-ioc/core';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
 import { AopActions } from './AopActions';
-import { Aspect, Advice } from '../decorators/index';
-import { AdviceMetadata } from '../metadatas/index'
+import { Aspect, Advice } from '../decorators';
+import { AdviceMetadata } from '../metadatas'
 import { IAdviceMatcher } from '../IAdviceMatcher';
-import { IPointcut, Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints/index';
-import { Advices, Advicer } from '../advices/index';
+import { IPointcut, Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints';
+import { Advices, Advicer } from '../advices';
 import { isValideAspectTarget } from '../isValideAspectTarget';
 
 /**

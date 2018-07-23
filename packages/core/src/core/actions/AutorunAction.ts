@@ -1,11 +1,11 @@
 import { ActionData } from '../ActionData';
-import { AutorunMetadata } from '../metadatas/index';
+import { AutorunMetadata } from '../metadatas';
 import { ActionComposite } from './ActionComposite';
 import { IContainer } from '../../IContainer';
-import { isFunction } from '../../utils/index';
+import { isFunction } from '../../utils';
 import { CoreActions } from './CoreActions';
-import { hasClassMetadata, getTypeMetadata } from '../factories/index';
-import { Autorun, IocExt } from '../decorators/index';
+import { hasClassMetadata, getTypeMetadata } from '../factories';
+import { Autorun, IocExt } from '../decorators';
 
 
 

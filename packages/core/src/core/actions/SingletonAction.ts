@@ -1,5 +1,5 @@
 import { ActionData } from '../ActionData';
-import { ClassMetadata } from '../metadatas/index';
+import { ClassMetadata } from '../metadatas';
 import { ActionComposite } from './ActionComposite';
 import { IContainer } from '../../IContainer';
 import { CoreActions } from './CoreActions';

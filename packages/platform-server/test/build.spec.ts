@@ -1,6 +1,6 @@
 import 'mocha';
 import { expect } from 'chai';
-import { AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration } from '@ts-ioc/core';
+import { IContainer } from '@ts-ioc/core';
 
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom, StringIdTest, SymbolIdest } from './debug';
 import { ContainerBuilder } from '../src';

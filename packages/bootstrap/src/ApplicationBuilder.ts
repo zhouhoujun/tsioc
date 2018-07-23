@@ -2,10 +2,9 @@ import { AppConfiguration } from './AppConfiguration';
 import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import {
     IContainer, Token, Type, LoadType, lang, isString,
-    isToken, IContainerBuilder, ContainerBuilderToken, DefaultContainerBuilder, isMetadataObject
+    isToken, IContainerBuilder, ContainerBuilderToken, DefaultContainerBuilder
 } from '@ts-ioc/core';
 import { CustomRegister, IApplicationBuilder } from './IApplicationBuilder';
-import { IApplication } from './IApplication';
 import { BootstrapModule } from './BootstrapModule';
 
 /**

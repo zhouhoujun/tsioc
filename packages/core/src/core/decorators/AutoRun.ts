@@ -1,6 +1,6 @@
-import { IClassMethodDecorator, createClassMethodDecorator, ClassMethodDecorator } from '../factories/index';
-import { AutorunMetadata } from '../metadatas/index';
-import { isClassMetadata, isString, isNumber } from '../../utils/index';
+import { IClassMethodDecorator, createClassMethodDecorator, ClassMethodDecorator } from '../factories';
+import { AutorunMetadata } from '../metadatas';
+import { isClassMetadata, isString, isNumber } from '../../utils';
 import { Type } from '../../types';
 
 

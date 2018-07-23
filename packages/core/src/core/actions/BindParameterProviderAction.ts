@@ -1,11 +1,11 @@
 import { ActionComposite } from './ActionComposite';
 import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
-import { getOwnMethodMetadata, hasOwnMethodMetadata } from '../factories/index';
-import { MethodMetadata } from '../metadatas/index';
+import { getOwnMethodMetadata, hasOwnMethodMetadata } from '../factories';
+import { MethodMetadata } from '../metadatas';
 import { IContainer } from '../../IContainer';
 import { Providers } from '../../types';
-import { isArray } from '../../utils/index';
+import { isArray } from '../../utils';
 
 /**
  * bind parameter provider action data.

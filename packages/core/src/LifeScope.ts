@@ -1,4 +1,4 @@
-import { MethodMetadata, ActionComponent, ActionData, DecoratorType } from './core/index';
+import { MethodMetadata, ActionComponent, ActionData, DecoratorType } from './core';
 import { Type, Express } from './types';
 import { IParameter } from './IParameter';
 import { InjectToken } from './InjectToken';

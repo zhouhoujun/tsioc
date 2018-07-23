@@ -1,4 +1,4 @@
-import { isFunction, isNumber, MapSet } from '../utils/index';
+import { isFunction, isNumber, MapSet } from '../utils';
 import { Type } from '../types';
 import { IContainer } from '../IContainer';
 import { OnDestroy } from './ComponentLifecycle';

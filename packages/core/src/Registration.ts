@@ -1,5 +1,5 @@
 import { Type, AbstractType } from './types';
-import { isClass, isFunction, getClassName } from './utils/index';
+import { isClass, isFunction, getClassName } from './utils';
 
 /**
  * inject token.

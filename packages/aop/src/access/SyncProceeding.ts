@@ -1,8 +1,8 @@
 import { IAdvisorProceeding, AdvisorProceedingToken } from './IAdvisorProceeding';
-import { Joinpoint } from '../joinpoints/index';
+import { Joinpoint } from '../joinpoints';
 import { Express, Singleton } from '@ts-ioc/core';
 import { ReturningType } from './ReturningType';
-import { NonePointcut } from '../decorators/index';
+import { NonePointcut } from '../decorators';
 
 @NonePointcut()
 @Singleton(AdvisorProceedingToken, ReturningType.sync)

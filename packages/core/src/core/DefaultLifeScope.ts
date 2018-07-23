@@ -1,11 +1,11 @@
 import { LifeScope, DecorSummary } from '../LifeScope';
 import { Type, ObjectMap, Token, IocState, Express } from '../types';
-import { isClass, isAbstractDecoratorClass, isArray } from '../utils/index';
-import { Singleton } from './decorators/index';
-import { ClassMetadata, MethodMetadata } from './metadatas/index';
+import { isClass, isAbstractDecoratorClass, isArray } from '../utils';
+import { Singleton } from './decorators';
+import { ClassMetadata, MethodMetadata } from './metadatas';
 import { IContainer } from '../IContainer';
-import { CoreActions, ActionComponent, LifeState } from './actions/index';
-import { DecoratorType, getOwnTypeMetadata, getOwnParamerterNames, getOwnMethodMetadata, hasOwnClassMetadata } from './factories/index';
+import { CoreActions, ActionComponent, LifeState } from './actions';
+import { DecoratorType, getOwnTypeMetadata, getOwnParamerterNames, getOwnMethodMetadata, hasOwnClassMetadata } from './factories';
 import { ActionData } from './ActionData';
 import { ActionFactory } from './ActionFactory';
 import { IParameter } from '../IParameter';

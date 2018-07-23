@@ -2,7 +2,7 @@ import * as gulp from 'gulp';
 import { ITaskOption, Development } from 'development-tool';
 import { Operation } from 'development-core';
 const through = require('through2');
-import { classAnnotations } from '@ts-ioc/annotations'
+import { classAnnotations } from '../aop/node_modules/@ts-ioc/annotations'
 // import 'development-tool-node';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');

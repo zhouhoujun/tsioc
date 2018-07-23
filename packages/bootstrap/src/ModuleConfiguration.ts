@@ -12,6 +12,14 @@ import { IModuleBuilder } from './IModuleBuilder';
 export interface ModuleConfiguration<T> {
 
     /**
+     * module name.
+     *
+     * @type {string}
+     * @memberof AppConfiguration
+     */
+    name?: string;
+
+    /**
      * providers
      *
      * @type {Providers[]}
@@ -26,16 +34,16 @@ export interface ModuleConfiguration<T> {
      * @memberof ModuleConfiguration
      */
     imports?: LoadType[];
-
     /**
      * exports modules
      *
-     * @type {Type<any>[]}
+     * @type {Token<any>[]}
      * @memberof ModuleConfiguration
      */
-    exports?: Type<any>[];
+    exports?: Token<any>[];
+
     /**
-     * set this module bootstrap start with.
+     * set this DI module bootstrap start with.
      *
      * @type {Token<T>}
      * @memberof ModuleConfiguration

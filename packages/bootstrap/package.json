@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/bootstrap",
-  "version": "3.0.0-beta",
+  "version": "3.0.0-beta1",
   "description": "tsioc is AOP, Ioc container, via typescript decorator. this package for app boostrap easly",
   "main": "./bundles/bootstrap.umd.js",
   "typings": "./lib/index.d.ts",
@@ -31,7 +31,7 @@
     "globby": "^7.1.1"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "^3.0.0-beta"
+    "@ts-ioc/core": "^3.0.0-beta1"
   },
   "directories": {
     "lib": "lib",

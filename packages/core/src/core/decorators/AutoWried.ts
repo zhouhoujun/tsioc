@@ -1,5 +1,5 @@
-import { IParamPropDecorator, createParamPropDecorator } from '../factories/index';
-import { AutoWiredMetadata } from '../metadatas/index';
+import { IParamPropDecorator, createParamPropDecorator } from '../factories';
+import { AutoWiredMetadata } from '../metadatas';
 import { IContainer } from '../../IContainer';
 
 /**

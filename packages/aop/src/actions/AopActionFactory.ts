@@ -4,7 +4,7 @@ import { RegistAspectAction } from './RegistAspectAction';
 import {
     InvokeBeforeConstructorAction, InvokeAfterConstructorAction,
     BindMethodPointcutAction, MatchPointcutAction, ExetndsInstanceAction
-} from '../actions/index';
+} from '.';
 
 /**
  * aop action factory.

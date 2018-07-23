@@ -1,4 +1,4 @@
-import { MapSet, isToken, isNumber, isFunction, isUndefined } from '../../utils/index';
+import { MapSet, isToken, isNumber, isFunction, isUndefined } from '../../utils';
 import { Token, Factory, Providers, ToInstance, Express2 } from '../../types';
 import { IContainer } from '../../IContainer';
 import { InjectToken } from '../../InjectToken';

@@ -1,11 +1,11 @@
 import { IContainer, Provider, Singleton, Inject, Type, LifeScope, isFunction, ContainerToken } from '@ts-ioc/core';
-import { Advices } from '../advices/index';
-import { JoinpointState, IPointcut } from '../joinpoints/index';
-import { Joinpoint } from '../joinpoints/index';
+import { Advices } from '../advices';
+import { JoinpointState, IPointcut } from '../joinpoints';
+import { Joinpoint } from '../joinpoints';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
 import { IProxyMethod, ProxyMethodToken } from './IProxyMethod';
 import { AdvisorChainFactoryToken } from './IAdvisorChainFactory';
-import { NonePointcut } from '../decorators/index';
+import { NonePointcut } from '../decorators';
 
 @NonePointcut()
 @Singleton(ProxyMethodToken)

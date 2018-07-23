@@ -6,7 +6,7 @@ import {
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import { ModuleConfiguration } from './ModuleConfiguration';
-import { DefModule } from './decorators';
+import { DIModule } from './decorators';
 
 /**
  * server app bootstrap
@@ -71,7 +71,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
 
     getDecorator() {
-        return DefModule.toString();
+        return DIModule.toString();
     }
 
     /**
@@ -107,13 +107,13 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             throw new Error('not find bootstrap token.');
         }
         await this.registerDepdences(cfg);
-        if (isClass(token)) {
-            if (!this.container.has(token)) {
-                this.container.register(token);
+        if (isClass(bootToken)) {
+            if (!this.container.has(bootToken)) {
+                this.container.register(bootToken);
             }
-            return this.container.resolve(token);
+            return this.container.resolve(bootToken);
         } else {
-            return this.container.resolve(token);
+            return this.container.resolve(bootToken);
         }
     }
 

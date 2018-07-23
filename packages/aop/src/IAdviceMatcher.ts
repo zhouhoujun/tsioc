@@ -1,5 +1,5 @@
-import { AdviceMetadata } from './metadatas/index';
-import { MatchPointcut } from './joinpoints/index';
+import { AdviceMetadata } from './metadatas';
+import { MatchPointcut } from './joinpoints';
 import { Type, ObjectMap, InjectToken } from '@ts-ioc/core';
 
 /**
