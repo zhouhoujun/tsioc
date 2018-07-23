@@ -1,4 +1,5 @@
 import { Token, Type, LoadType, Providers } from '@ts-ioc/core';
+import { IModuleBuilder } from './IModuleBuilder';
 
 
 /**
@@ -40,6 +41,14 @@ export interface ModuleConfiguration<T> {
      * @memberof ModuleConfiguration
      */
     bootstrap?: Token<T>;
+
+    /**
+     * bind module builder.
+     *
+     * @type {(Token<IModuleBuilder<T>> | IModuleBuilder<T>)}
+     * @memberof ITaskConfigure
+     */
+    builder?: Token<IModuleBuilder<T>> | IModuleBuilder<T>;
 
 }
 

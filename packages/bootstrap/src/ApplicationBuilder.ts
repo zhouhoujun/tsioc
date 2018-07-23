@@ -2,7 +2,7 @@ import { AppConfiguration } from './AppConfiguration';
 import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import {
     IContainer, Token, Type, LoadType, lang, isString,
-    isToken, IContainerBuilder, ContainerBuilderToken, DefaultContainerBuilder
+    isToken, IContainerBuilder, ContainerBuilderToken, DefaultContainerBuilder, isMetadataObject
 } from '@ts-ioc/core';
 import { CustomRegister, IApplicationBuilder } from './IApplicationBuilder';
 import { IApplication } from './IApplication';
@@ -16,7 +16,7 @@ import { BootstrapModule } from './BootstrapModule';
  * @extends {ModuleBuilder<T>}
  * @template T
  */
-export class ApplicationBuilder<T extends IApplication> implements IApplicationBuilder<T> {
+export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
     private moduleBuilder: IModuleBuilder<T>;
     private container: IContainer;
     private builder: IContainerBuilder;
@@ -188,18 +188,24 @@ export class ApplicationBuilder<T extends IApplication> implements IApplicationB
      * @returns {Promise<any>}
      * @memberof ApplicationBuilder
      */
-    async build(token: Token<T> | Type<any> | AppConfiguration<T>): Promise<T> {
+    async build(token: Token<T> | Type<any> | AppConfiguration<T>): Promise<any> {
         let container = this.getContainer();
         await this.registerExts(container);
         let builder = this.getModuleBuilder();
-        let cfg: AppConfiguration<T> = await this.mergeConfigure(this.getModuleConfigure(builder, token));
+
+        let cfg: AppConfiguration<T> = await this.mergeConfigure(builder.getConfigure(token));
         this.bindConfiguration(container, cfg);
         await this.initContainer(cfg, container);
+
         if (!cfg.bootstrap) {
             cfg.bootstrap = (isToken(token) ? token : null);
         }
-        let app = await builder.build(cfg);
+        let app = await this.createInstance(builder, cfg);
         return app;
+    }
+
+    protected createInstance(builder: IModuleBuilder<T>, config: AppConfiguration<T>): Promise<any> {
+        return builder.build(config);
     }
 
     /**
@@ -222,19 +228,6 @@ export class ApplicationBuilder<T extends IApplication> implements IApplicationB
      */
     protected createContainerBuilder() {
         return new DefaultContainerBuilder();
-    }
-
-    /**
-     * get module configure.
-     *
-     * @protected
-     * @param {IModuleBuilder<T>} builer
-     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} boot
-     * @returns {AppConfiguration<T>}
-     * @memberof ApplicationBuilder
-     */
-    protected getModuleConfigure(builer: IModuleBuilder<T>, boot: Token<T> | Type<any> | AppConfiguration<T>): AppConfiguration<T> {
-        return builer.getConfigure(boot);
     }
 
 

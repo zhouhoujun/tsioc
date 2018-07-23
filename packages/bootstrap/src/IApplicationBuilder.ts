@@ -101,10 +101,10 @@ export interface IApplicationBuilder<T> {
      * build application.
      *
      * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token
-     * @returns {Promise<T>}
+     * @returns {Promise<any>}
      * @memberof IApplicationBuilder
      */
-    build(token: Token<T> | Type<any> | AppConfiguration<T>): Promise<T>;
+    build(token: Token<T> | Type<any> | AppConfiguration<T>): Promise<any>;
 
     /**
      * bootstrap app via main module.

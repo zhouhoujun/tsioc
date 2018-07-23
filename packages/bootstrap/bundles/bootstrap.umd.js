@@ -106,6 +106,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var ModuleBuilder = /** @class */ (function () {
     function ModuleBuilder() {
     }
+    ModuleBuilder_1 = ModuleBuilder;
     /**
      * build module.
      *
@@ -113,29 +114,104 @@ var ModuleBuilder = /** @class */ (function () {
      * @returns {Promise<any>}
      * @memberof ModuleBuilder
      */
-    ModuleBuilder.prototype.build = function (token, moduleDecorator) {
+    ModuleBuilder.prototype.build = function (token, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var cfg, bootToken, container;
+            var cfg, buider, instacnce;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        cfg = this.getConfigure(token, moduleDecorator);
-                        bootToken = this.getBootstrapToken(cfg, core_1.isToken(token) ? token : null);
+                        cfg = this.getConfigure(token);
+                        buider = this.getBuilder(cfg);
+                        return [4 /*yield*/, buider.createInstance(core_1.isToken(token) ? token : null, cfg, data)];
+                    case 1:
+                        instacnce = _a.sent();
+                        return [4 /*yield*/, buider.buildStrategy(instacnce, cfg)];
+                    case 2:
+                        _a.sent();
+                        return [2 /*return*/, instacnce];
+                }
+            });
+        });
+    };
+    /**
+     * bundle instance via config.
+     *
+     * @param {T} instance
+     * @param {ModuleConfiguration<T>} config
+     * @returns {Promise<T>}
+     * @memberof IModuleBuilder
+     */
+    ModuleBuilder.prototype.buildStrategy = function (instance, config) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            return tslib_1.__generator(this, function (_a) {
+                return [2 /*return*/, instance];
+            });
+        });
+    };
+    ModuleBuilder.prototype.getBuilder = function (config) {
+        var builder;
+        if (config.builder) {
+            builder = this.getBuilderViaConfig(config.builder);
+        }
+        else {
+            var token = this.getBootstrapToken(config);
+            if (token) {
+                builder = this.getBuilderViaToken(token);
+            }
+        }
+        return builder || this;
+    };
+    ModuleBuilder.prototype.getDecorator = function () {
+        return decorators.DefModule.toString();
+    };
+    /**
+     * get configuration.
+     *
+     * @returns {ModuleConfiguration<T>}
+     * @memberof ModuleBuilder
+     */
+    ModuleBuilder.prototype.getConfigure = function (token) {
+        var cfg;
+        if (core_1.isClass(token)) {
+            cfg = this.getMetaConfig(token);
+        }
+        else if (core_1.isToken(token)) {
+            var tokenType = this.container.getTokenImpl(token);
+            if (core_1.isClass(tokenType)) {
+                cfg = this.getMetaConfig(tokenType);
+            }
+        }
+        else {
+            cfg = token;
+            var bootToken = this.getBootstrapToken(cfg);
+            var typeTask = core_1.isClass(bootToken) ? bootToken : this.container.getTokenImpl(bootToken);
+            if (core_1.isClass(typeTask)) {
+                cfg = core_1.lang.assign({}, this.getMetaConfig(typeTask), cfg || {});
+            }
+        }
+        return cfg || {};
+    };
+    ModuleBuilder.prototype.createInstance = function (token, cfg, data) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var bootToken;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        bootToken = this.getBootstrapToken(cfg, token);
                         if (!bootToken) {
-                            return [2 /*return*/, Promise.reject('not find bootstrap token.')];
+                            throw new Error('not find bootstrap token.');
                         }
-                        container = this.container;
                         return [4 /*yield*/, this.registerDepdences(cfg)];
                     case 1:
                         _a.sent();
-                        if (core_1.isClass(bootToken)) {
-                            if (!container.has(bootToken)) {
-                                container.register(bootToken);
+                        if (core_1.isClass(token)) {
+                            if (!this.container.has(token)) {
+                                this.container.register(token);
                             }
-                            return [2 /*return*/, container.resolve(bootToken)];
+                            return [2 /*return*/, this.container.resolve(token)];
                         }
                         else {
-                            return [2 /*return*/, container.resolve(bootToken)];
+                            return [2 /*return*/, this.container.resolve(token)];
                         }
                         return [2 /*return*/];
                 }
@@ -145,41 +221,35 @@ var ModuleBuilder = /** @class */ (function () {
     ModuleBuilder.prototype.getBootstrapToken = function (cfg, token) {
         return cfg.bootstrap || token;
     };
-    /**
-     * get configuration.
-     *
-     * @returns {ModuleConfiguration<T>}
-     * @memberof ModuleBuilder
-     */
-    ModuleBuilder.prototype.getConfigure = function (token, moduleDecorator) {
-        var cfg;
-        moduleDecorator = moduleDecorator || decorators.DefModule;
-        if (core_1.isClass(token)) {
-            cfg = this.getMetaConfig(token, moduleDecorator);
+    ModuleBuilder.prototype.getBuilderViaConfig = function (builder) {
+        if (core_1.isToken(builder)) {
+            return this.container.resolve(builder);
         }
-        else if (core_1.isToken(token)) {
-            var tokenType = this.container.getTokenImpl(token);
-            if (core_1.isClass(tokenType)) {
-                cfg = this.getMetaConfig(tokenType, moduleDecorator);
-            }
+        else if (builder instanceof ModuleBuilder_1) {
+            return builder;
         }
-        else {
-            cfg = token;
-            var bootToken = this.getBootstrapToken(cfg);
-            var typeTask = core_1.isClass(bootToken) ? bootToken : this.container.getTokenImpl(bootToken);
-            if (core_1.isClass(typeTask)) {
-                cfg = core_1.lang.assign({}, this.getMetaConfig(typeTask, moduleDecorator), cfg || {});
-            }
-        }
-        return cfg || {};
+        return null;
     };
-    ModuleBuilder.prototype.getMetaConfig = function (bootModule, moduleDecorator) {
-        if (core_1.hasClassMetadata(moduleDecorator, bootModule)) {
-            var metas = core_1.getTypeMetadata(moduleDecorator, bootModule);
+    ModuleBuilder.prototype.getBuilderViaToken = function (mdl) {
+        if (core_1.isToken(mdl)) {
+            var taskType = core_1.isClass(mdl) ? mdl : this.container.getTokenImpl(mdl);
+            if (taskType) {
+                var meta = core_1.lang.first(core_1.getTypeMetadata(this.getDecorator(), taskType));
+                if (meta && meta.builder) {
+                    return core_1.isToken(meta.builder) ? this.container.resolve(meta.builder) : meta.builder;
+                }
+            }
+        }
+        return null;
+    };
+    ModuleBuilder.prototype.getMetaConfig = function (bootModule) {
+        var decorator = this.getDecorator();
+        if (core_1.hasClassMetadata(decorator, bootModule)) {
+            var metas = core_1.getTypeMetadata(decorator, bootModule);
             if (metas && metas.length) {
                 var meta = metas[0];
                 meta.bootstrap = meta.bootstrap || bootModule;
-                return meta;
+                return core_1.lang.omit(meta, 'builder');
             }
         }
         return null;
@@ -300,16 +370,17 @@ var ModuleBuilder = /** @class */ (function () {
             }
         });
     };
-    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "build": ["token", "moduleDecorator"], "getBootstrapToken": ["cfg", "token"], "getConfigure": ["token", "moduleDecorator"], "getMetaConfig": ["bootModule", "moduleDecorator"], "registerDepdences": ["config"], "bindProvider": ["container", "providers"] } };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "build": ["token", "data"], "buildStrategy": ["instance", "config"], "getBuilder": ["config"], "getDecorator": [], "getConfigure": ["token"], "createInstance": ["token", "cfg", "data"], "getBootstrapToken": ["cfg", "token"], "getBuilderViaConfig": ["builder"], "getBuilderViaToken": ["mdl"], "getMetaConfig": ["bootModule"], "registerDepdences": ["config"], "bindProvider": ["container", "providers"] } };
     tslib_1.__decorate([
         core_1.Inject(core_1.ContainerToken),
         tslib_1.__metadata("design:type", Object)
     ], ModuleBuilder.prototype, "container", void 0);
-    ModuleBuilder = tslib_1.__decorate([
+    ModuleBuilder = ModuleBuilder_1 = tslib_1.__decorate([
         core_1.Injectable(IModuleBuilder.ModuleBuilderToken),
         tslib_1.__metadata("design:paramtypes", [])
     ], ModuleBuilder);
     return ModuleBuilder;
+    var ModuleBuilder_1;
 }());
 exports.ModuleBuilder = ModuleBuilder;
 
@@ -558,7 +629,7 @@ var ApplicationBuilder = /** @class */ (function () {
                     case 1:
                         _a.sent();
                         builder = this.getModuleBuilder();
-                        return [4 /*yield*/, this.mergeConfigure(this.getModuleConfigure(builder, token))];
+                        return [4 /*yield*/, this.mergeConfigure(builder.getConfigure(token))];
                     case 2:
                         cfg = _a.sent();
                         this.bindConfiguration(container, cfg);
@@ -568,13 +639,16 @@ var ApplicationBuilder = /** @class */ (function () {
                         if (!cfg.bootstrap) {
                             cfg.bootstrap = (core_1.isToken(token) ? token : null);
                         }
-                        return [4 /*yield*/, builder.build(cfg)];
+                        return [4 /*yield*/, this.createInstance(builder, cfg)];
                     case 4:
                         app = _a.sent();
                         return [2 /*return*/, app];
                 }
             });
         });
+    };
+    ApplicationBuilder.prototype.createInstance = function (builder, config) {
+        return builder.build(config);
     };
     /**
      * create default module builder.
@@ -595,18 +669,6 @@ var ApplicationBuilder = /** @class */ (function () {
      */
     ApplicationBuilder.prototype.createContainerBuilder = function () {
         return new core_1.DefaultContainerBuilder();
-    };
-    /**
-     * get module configure.
-     *
-     * @protected
-     * @param {IModuleBuilder<T>} builer
-     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} boot
-     * @returns {AppConfiguration<T>}
-     * @memberof ApplicationBuilder
-     */
-    ApplicationBuilder.prototype.getModuleConfigure = function (builer, boot) {
-        return builer.getConfigure(boot);
     };
     /**
      * register ioc exts
@@ -691,7 +753,7 @@ var ApplicationBuilder = /** @class */ (function () {
     ApplicationBuilder.prototype.getDefaultConfig = function () {
         return { debug: false };
     };
-    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "getContainer": [], "setContainer": ["container"], "getContainerBuilder": [], "setContainerBuilder": ["builder"], "getModuleBuilder": [], "setModuleBuilder": ["builder"], "useConfiguration": ["config"], "use": ["modules"], "registerModules": ["moduleRegs"], "bootstrap": ["token"], "build": ["token"], "createModuleBuilder": [], "createContainerBuilder": [], "getModuleConfigure": ["builer", "boot"], "registerExts": ["container"], "initContainer": ["config", "container"], "bindConfiguration": ["container", "config"], "mergeConfigure": ["cfg"], "getDefaultConfig": [] } };
+    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "getContainer": [], "setContainer": ["container"], "getContainerBuilder": [], "setContainerBuilder": ["builder"], "getModuleBuilder": [], "setModuleBuilder": ["builder"], "useConfiguration": ["config"], "use": ["modules"], "registerModules": ["moduleRegs"], "bootstrap": ["token"], "build": ["token"], "createInstance": ["builder", "config"], "createModuleBuilder": [], "createContainerBuilder": [], "registerExts": ["container"], "initContainer": ["config", "container"], "bindConfiguration": ["container", "config"], "mergeConfigure": ["cfg"], "getDefaultConfig": [] } };
     return ApplicationBuilder;
 }());
 exports.ApplicationBuilder = ApplicationBuilder;
