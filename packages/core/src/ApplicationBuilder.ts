@@ -204,6 +204,16 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
         return await this.build(builder, token, cfg);
     }
 
+    /**
+     * build module.
+     *
+     * @protected
+     * @param {IModuleBuilder<T>} builder
+     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token
+     * @param {AppConfiguration<T>} config
+     * @returns {Promise<any>}
+     * @memberof ApplicationBuilder
+     */
     protected async build(builder: IModuleBuilder<T>, token: Token<T> | Type<any> | AppConfiguration<T>, config: AppConfiguration<T>): Promise<any> {
         if (!config.bootstrap) {
             config.bootstrap = (isToken(token) ? token : null);
@@ -212,14 +222,37 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
         return app;
     }
 
+    /**
+     * create default module builder.
+     *
+     * @protected
+     * @returns
+     * @memberof ApplicationBuilder
+     */
     protected createModuleBuilder() {
         return this.getContainer().get(ModuleBuilderToken);
     }
 
+    /**
+     * create default container builder.
+     *
+     * @protected
+     * @returns
+     * @memberof ApplicationBuilder
+     */
     protected createContainerBuilder() {
         return new DefaultContainerBuilder();
     }
 
+    /**
+     * get module configure.
+     *
+     * @protected
+     * @param {IModuleBuilder<T>} builer
+     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} boot
+     * @returns {AppConfiguration<T>}
+     * @memberof ApplicationBuilder
+     */
     protected getModuleConfigure(builer: IModuleBuilder<T>, boot: Token<T> | Type<any> | AppConfiguration<T>): AppConfiguration<T> {
         return builer.getConfigure(boot);
     }
@@ -231,6 +264,14 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
         }
     }
 
+    /**
+     * register ioc exts
+     *
+     * @protected
+     * @param {IContainer} container
+     * @returns {Promise<IContainer>}
+     * @memberof ApplicationBuilder
+     */
     protected async registerExts(container: IContainer): Promise<IContainer> {
         if (this.usedModules.length) {
             let usedModules = this.usedModules;

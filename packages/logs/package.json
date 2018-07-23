@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/logs",
-  "version": "2.5.3",
+  "version": "2.5.4",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./bundles/logs.umd.js",
   "typings": "./lib/index.d.ts",
@@ -14,7 +14,7 @@
     "e2e": "protractor",
     "e2e.live": "protractor --elementExplorer"
   },
-  "keywords": ["IoC", "AOP", "dependency", "injection", "framework", "container", "decorator", "autofac", "Inject", "type", "typescript"],
+  "keywords": ["IoC", "AOP", "dependency", "injection", "ts-ioc", "@ts-ioc", "tsioc", "container", "decorator", "autofac", "Inject", "type", "typescript"],
   "author": "houjun",
   "license": "MIT",
   "bugs": {
@@ -30,8 +30,8 @@
     "tslib": "^1.9.2"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "2.5.3",
-    "@ts-ioc/aop": "2.5.3"
+    "@ts-ioc/core": "2.5.4",
+    "@ts-ioc/aop": "2.5.4"
   },
   "directories": {
     "lib": "lib"
