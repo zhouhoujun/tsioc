@@ -31,9 +31,7 @@ export class BindProviderAction extends ActionComposite {
     }
 
     protected working(container: IContainer, data: BindProviderActionData) {
-        let target = data.target
         let type = data.targetType;
-        let propertyKey = data.propertyKey;
         let lifeScope = container.getLifeScope();
 
         let matchs = lifeScope.getClassDecorators(surm => surm.actions.includes(CoreActions.bindProvider) && hasOwnClassMetadata(surm.name, type));
