@@ -1,10 +1,9 @@
 import { AppConfiguration } from './AppConfiguration';
-import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import {
     IContainer, Token, Type, LoadType, lang, isString,
-    isToken, IContainerBuilder, ContainerBuilderToken, DefaultContainerBuilder, isFunction, isClass
+    isToken, DefaultContainerBuilder, isFunction, isClass, IContainerBuilder, ContainerBuilderFactoryToken
 } from '@ts-ioc/core';
-import { CustomRegister, IApplicationBuilder, ApplicationBuilderToken, ApplicationBuilderFactoryToken } from './IApplicationBuilder';
+import { IApplicationBuilder, ApplicationBuilderToken, ApplicationBuilderFactoryToken } from './IApplicationBuilder';
 import { BootstrapModule } from './BootstrapModule';
 import { IApplication } from './IApplication';
 import { ModuleBuilder } from './ModuleBuilder';
@@ -18,98 +17,12 @@ import { ModuleBuilder } from './ModuleBuilder';
  * @template T
  */
 export class ApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicationBuilder<T> {
-    private moduleBuilder: IModuleBuilder<T>;
-    // private container: IContainer;
-    private builder: IContainerBuilder;
     protected globalConfig: Promise<AppConfiguration<T>>;
-    protected usedModules: LoadType[];
-    protected customRegs: CustomRegister<T>[];
+    protected globalModules: LoadType[];
     constructor(public baseURL?: string) {
         super();
-        this.usedModules = [];
-        this.customRegs = [];
+        this.globalModules = [];
     }
-
-
-    // /**
-    //  * get container
-    //  *
-    //  * @returns
-    //  * @memberof ApplicationBuilder
-    //  */
-    // getContainer(): IContainer {
-    //     if (!this.container) {
-    //         this.container = this.getContainerBuilder().create();
-    //     }
-    //     return this.container;
-    // }
-
-    // /**
-    //  * set container.
-    //  *
-    //  * @param {IContainer} container
-    //  * @returns
-    //  * @memberof ApplicationBuilder
-    //  */
-    // setContainer(container: IContainer) {
-    //     if (container) {
-    //         this.container = container;
-    //         this.builder = container.get(ContainerBuilderToken);
-    //     }
-    //     return this;
-    // }
-
-    // /**
-    //  * get container builder.
-    //  *
-    //  * @returns
-    //  * @memberof ModuleBuilder
-    //  */
-    // getContainerBuilder(): IContainerBuilder {
-    //     if (!this.builder) {
-    //         this.builder = this.createContainerBuilder();
-    //     }
-    //     return this.builder;
-    // }
-
-    // /**
-    //  * use container builder
-    //  *
-    //  * @param {IContainerBuilder} builder
-    //  * @returns
-    //  * @memberof ModuleBuilder
-    //  */
-    // setContainerBuilder(builder: IContainerBuilder) {
-    //     this.builder = builder;
-    //     this.container = null;
-    //     return this;
-    // }
-
-
-    // /**
-    //  * get module builer.
-    //  *
-    //  * @returns {IModuleBuilder<T>}
-    //  * @memberof IApplicationBuilder
-    //  */
-    // getModuleBuilder(): IModuleBuilder<T> {
-    //     if (!this.moduleBuilder) {
-    //         this.moduleBuilder = this.createModuleBuilder();
-    //     }
-    //     return this.moduleBuilder;
-    // }
-
-    // /**
-    //  * set module builder.
-    //  *
-    //  * @param {IModuleBuilder<T>} builder
-    //  * @returns {this}
-    //  * @memberof ApplicationBuilder
-    //  */
-    // setModuleBuilder(builder: IModuleBuilder<T>): this {
-    //     this.moduleBuilder = builder;
-    //     return this;
-    // }
 
     /**
      * use configuration.
@@ -148,26 +61,14 @@ export class ApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicat
     }
 
     /**
-     * use module, custom module.
+     * use module as global Depdences module.
      *
-     * @param {...(LoadType | CustomRegister<T>)[]} modules
+     * @param {...LoadType[]} modules
      * @returns {this}
      * @memberof PlatformServer
      */
     use(...modules: LoadType[]): this {
-        this.usedModules = this.usedModules.concat(modules);
-        return this;
-    }
-
-    /**
-     * register modules via custom.
-     *
-     * @param {...CustomRegister<T>[]} moduleRegs
-     * @returns {this}
-     * @memberof ApplicationBuilder
-     */
-    registerModules(...moduleRegs: CustomRegister<T>[]): this {
-        this.customRegs = this.customRegs.concat(moduleRegs);
+        this.globalModules = this.globalModules.concat(modules);
         return this;
     }
 
@@ -214,17 +115,6 @@ export class ApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicat
         return super.build(token, data);
     }
 
-    // /**
-    //  * create default module builder.
-    //  *
-    //  * @protected
-    //  * @returns
-    //  * @memberof ApplicationBuilder
-    //  */
-    // protected createModuleBuilder() {
-    //     return this.getContainer().get(ModuleBuilderToken);
-    // }
-
     /**
      * create default container builder.
      *
@@ -232,8 +122,8 @@ export class ApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicat
      * @returns
      * @memberof ApplicationBuilder
      */
-    protected createContainerBuilder() {
-        return new DefaultContainerBuilder();
+    protected createBuilder(baseURL?: string): IApplicationBuilder<T> {
+        return new ApplicationBuilder(baseURL);
     }
 
 
@@ -247,27 +137,16 @@ export class ApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicat
      */
     protected async registerExts(): Promise<IContainer> {
         this.container.bindProvider(ApplicationBuilderToken, this);
-        this.container.bindProvider(ApplicationBuilderFactoryToken, () => this.createContainerBuilder());
+        this.container.bindProvider(ApplicationBuilderFactoryToken, (baseURL?: string) => this.createBuilder());
         if (!this.container.has(BootstrapModule)) {
             this.container.register(BootstrapModule);
         }
-        if (this.usedModules.length) {
-            let usedModules = this.usedModules;
-            this.usedModules = [];
+        if (this.globalModules.length) {
+            let usedModules = this.globalModules;
+            this.globalModules = [];
             await this.container.loadModule(...usedModules);
         }
         return this.container;
-    }
-
-    protected async initContainer(config: AppConfiguration<T>, container: IContainer): Promise<IContainer> {
-        if (this.customRegs.length) {
-            let customs = this.customRegs;
-            this.customRegs = [];
-            await Promise.all(customs.map(cs => {
-                return cs(container, config, this);
-            }));
-        }
-        return container;
     }
 
     /**
@@ -289,6 +168,9 @@ export class ApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicat
     protected bindConfiguration(config: AppConfiguration<T>): AppConfiguration<T> {
         if (this.baseURL) {
             config.baseURL = this.baseURL;
+        }
+        if (this.globalModules && this.globalModules.length) {
+            config.imports = this.globalModules.concat(config.imports);
         }
         return config;
     }

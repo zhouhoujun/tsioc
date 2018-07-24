@@ -1,4 +1,4 @@
-import { IContainer, Type, lang, isString, Token } from '@ts-ioc/core';
+import { IContainer, Type, lang, isString, Token, IContainerBuilder } from '@ts-ioc/core';
 import { AppConfiguration, ApplicationBuilder, IApplicationBuilder } from '@ts-ioc/bootstrap';
 import { existsSync } from 'fs';
 import * as path from 'path';
@@ -23,20 +23,20 @@ const defaultAppConfig: AppConfiguration<any> = {
  * @template T
  */
 export interface IServerApplicationBuilder<T> extends IApplicationBuilder<T> {
-    /**
-     * root url
-     *
-     * @type {string}
-     * @memberof IPlatformServer
-     */
-    baseURL: string;
-    /**
-     * load module from dir
-     *
-     * @param {...string[]} matchPaths
-     * @memberof IPlatformServer
-     */
-    loadDir(...matchPaths: string[]): this;
+    // /**
+    //  * root url
+    //  *
+    //  * @type {string}
+    //  * @memberof IPlatformServer
+    //  */
+    // baseURL: string;
+    // /**
+    //  * load module from dir
+    //  *
+    //  * @param {...string[]} matchPaths
+    //  * @memberof IPlatformServer
+    //  */
+    // loadDir(...matchPaths: string[]): this;
 }
 
 
@@ -49,10 +49,28 @@ export interface IServerApplicationBuilder<T> extends IApplicationBuilder<T> {
  */
 export class ServerApplicationBuilder<T> extends ApplicationBuilder<T> implements IServerApplicationBuilder<T> {
 
-    private dirMatchs: string[][];
+
+    // private dirMatchs: string[][];
     constructor(public baseURL: string) {
         super(baseURL);
-        this.dirMatchs = [];
+        // this.dirMatchs = [];
+    }
+
+    container: IContainer;
+    getContainer() {
+        if (!this.container) {
+            let builder = this.getContainerBuilder();
+            this.container = builder.create();
+        }
+        return this.container;
+    }
+
+    containerBuilder: IContainerBuilder;
+    getContainerBuilder() {
+        if (!this.containerBuilder) {
+            this.containerBuilder = new ContainerBuilder();
+        }
+        return this.containerBuilder;
     }
 
     /**
@@ -106,37 +124,24 @@ export class ServerApplicationBuilder<T> extends ApplicationBuilder<T> implement
         return this;
     }
 
-    /**
-     * load module from dirs.
-     *
-     * @param {...string[]} matchPaths
-     * @returns {this}
-     * @memberof PlatformServer
-     */
-    loadDir(...matchPaths: string[]): this {
-        this.dirMatchs.push(matchPaths);
-        return this;
-    }
+    // /**
+    //  * load module from dirs.
+    //  *
+    //  * @param {...string[]} matchPaths
+    //  * @returns {this}
+    //  * @memberof PlatformServer
+    //  */
+    // loadDir(...matchPaths: string[]): this {
+    //     this.dirMatchs.push(matchPaths);
+    //     return this;
+    // }
 
-    protected createContainerBuilder() {
-        return new ContainerBuilder();
+    protected createBuilder(baseURL?: string) {
+        return new ServerApplicationBuilder<T>(baseURL);
     }
 
     protected getDefaultConfig(): AppConfiguration<T> {
         return lang.assign({}, defaultAppConfig as AppConfiguration<T>);
-    }
-
-    protected async initContainer(config: AppConfiguration<T>, container: IContainer): Promise<IContainer> {
-        await super.initContainer(config, container);
-        let builder = this.getContainerBuilder();
-        await Promise.all(this.dirMatchs.map(dirs => {
-            return builder.loadModule(container, {
-                basePath: config.baseURL,
-                files: dirs
-            });
-        }));
-
-        return container;
     }
 }
 

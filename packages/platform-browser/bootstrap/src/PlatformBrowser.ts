@@ -1,4 +1,4 @@
-import { lang, isUndefined, Token, Type } from '@ts-ioc/core';
+import { lang, isUndefined, Token, Type, IContainer, IContainerBuilder } from '@ts-ioc/core';
 import { AppConfiguration, IApplicationBuilder, ApplicationBuilder } from '@ts-ioc/bootstrap';
 import { ContainerBuilder } from '@ts-ioc/platform-browser';
 
@@ -30,8 +30,25 @@ export class BroserApplicationBuilder<T> extends ApplicationBuilder<T> implement
         super(baseURL || !isUndefined(System) ? System.baseURL : location.href);
     }
 
-    protected createContainerBuilder() {
-        return new ContainerBuilder();
+    container: IContainer;
+    getContainer() {
+        if (!this.container) {
+            let builder = this.getContainerBuilder();
+            this.container = builder.create();
+        }
+        return this.container;
+    }
+
+    containerBuilder: IContainerBuilder;
+    getContainerBuilder() {
+        if (!this.containerBuilder) {
+            this.containerBuilder = new ContainerBuilder();
+        }
+        return this.containerBuilder;
+    }
+
+    protected createBuilder(baseURL?: string) {
+        return new BroserApplicationBuilder<T>(baseURL);
     }
 
     protected getDefaultConfig(): AppConfiguration<T> {
