@@ -6,7 +6,7 @@ import { Advices } from './advices';
  * Aop IAdvisor interface token.
  * it is a token id, you can register yourself IAdvisor for this.
  */
-export const AdvisorToken = new InjectToken<IAdvisor>('__IOC_IAdvisor');
+export const AdvisorToken = new InjectToken<IAdvisor>('DI_IAdvisor');
 
 /**
  * aspect and advices manager.

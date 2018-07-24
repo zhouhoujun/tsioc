@@ -1,4 +1,4 @@
-import { Type, ModuleType, LoadType, PathModules } from './types';
+import { Type, ModuleType, LoadType, PathModules, Express } from './types';
 import { IModuleLoader } from './IModuleLoader';
 import { isString, isClass, isObject, isArray } from './utils';
 import { hasOwnClassMetadata, IocExt } from './core';
@@ -33,7 +33,7 @@ export class DefaultModuleLoader implements IModuleLoader {
      * @returns {Promise<ModuleType[]>}
      * @memberof DefaultModuleLoader
      */
-    load(...modules: LoadType[]): Promise<ModuleType[]> {
+    load(modules: LoadType[]): Promise<ModuleType[]> {
         if (modules.length) {
             return Promise.all(modules.map(mdty => {
                 if (isString(mdty)) {
@@ -63,9 +63,9 @@ export class DefaultModuleLoader implements IModuleLoader {
      * @returns {Promise<Type<any>[]>}
      * @memberof IContainerBuilder
      */
-    async loadTypes(...modules: LoadType[]): Promise<Type<any>[]> {
-        let mdls = await this.load(...modules);
-        return this.getTypes(...mdls);
+    async loadTypes(modules: LoadType[], filter?: Express<Type<any>, boolean>): Promise<Type<any>[]> {
+        let mdls = await this.load(modules);
+        return this.getTypes(mdls, filter);
     }
 
     /**
@@ -75,14 +75,19 @@ export class DefaultModuleLoader implements IModuleLoader {
      * @returns {Type<any>[]}
      * @memberof DefaultModuleLoader
      */
-    getTypes(...modules: ModuleType[]): Type<any>[] {
+    getTypes(modules: ModuleType[], filter?: Express<Type<any>, boolean>): Type<any>[] {
         let regModules: Type<any>[] = [];
         modules.forEach(m => {
             let types = this.getContentTypes(m);
-            let iocExt = types.find(it => hasOwnClassMetadata(IocExt, it));
-            if (iocExt) {
-                regModules.push(iocExt);
-            } else {
+            let hasFilterMdl = false;
+            if (filter) {
+                let filters = types.filter(filter);
+                hasFilterMdl = filters && filters.length > 0;
+                if (hasFilterMdl) {
+                    regModules.push(...filters);
+                }
+            }
+            if (!hasFilterMdl) {
                 regModules.push(...types);
             }
         });

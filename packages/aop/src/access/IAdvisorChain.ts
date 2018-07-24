@@ -5,7 +5,7 @@ import { Express, IRecognizer, InjectToken } from '@ts-ioc/core';
  * Aop IAdvisorChain interface token.
  * it is a token id, you can register yourself IAdvisorChain for this.
  */
-export const AdvisorChainToken = new InjectToken<IAdvisorChain>('__IOC_IAdvisorChain');
+export const AdvisorChainToken = new InjectToken<IAdvisorChain>('DI_IAdvisorChain');
 
 /**
  * advisor chain.

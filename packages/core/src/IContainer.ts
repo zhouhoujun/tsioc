@@ -7,7 +7,7 @@ import { InjectToken } from './InjectToken';
  * IContainer token.
  * it is a symbol id, you can use  @Inject, @Autowried or @Param to get container instance in yourself class.
  */
-export const ContainerToken = new InjectToken<IContainer>('__IOC_IContainer');
+export const ContainerToken = new InjectToken<IContainer>('DI_IContainer');
 
 /**
  * container interface.

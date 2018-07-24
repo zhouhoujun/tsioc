@@ -75,18 +75,18 @@ var PlatformBrowser = /** @class */ (function (_super) {
     PlatformBrowser.create = function (baseURL) {
         return new PlatformBrowser(baseURL);
     };
-    /**
-     * bootstrap application via main module.
-     *
-     * @template T
-     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token main module or appliaction configuration.
-     * @returns {Promise<any>}  main module bootstrap class instance.
-     * @memberof PlatformBrowser
-     */
-    PlatformBrowser.prototype.bootstrap = function (token) {
-        return _super.prototype.bootstrap.call(this, token);
-    };
-    PlatformBrowser.classAnnations = { "name": "PlatformBrowser", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "bootstrap": ["token"] } };
+    // /**
+    //  * bootstrap application via main module.
+    //  *
+    //  * @template T
+    //  * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token main module or appliaction configuration.
+    //  * @returns {Promise<any>}  main module bootstrap class instance.
+    //  * @memberof PlatformBrowser
+    //  */
+    // bootstrap<T>(token: Token<T> | Type<any> | AppConfiguration<T>): Promise<any> {
+    //     return super.bootstrap(token);
+    // }
+    PlatformBrowser.classAnnations = { "name": "PlatformBrowser", "params": { "constructor": ["baseURL"], "create": ["baseURL"] } };
     return PlatformBrowser;
 }(BroserApplicationBuilder));
 exports.PlatformBrowser = PlatformBrowser;
@@ -98,7 +98,7 @@ unwrapExports(PlatformBrowser_1);
 var PlatformBrowser_2 = PlatformBrowser_1.BroserApplicationBuilder;
 var PlatformBrowser_3 = PlatformBrowser_1.PlatformBrowser;
 
-var D__Workspace_Projects_modules_tsioc_packages_platformBrowser_bootstrap_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_platformBrowser_bootstrap_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(PlatformBrowser_1, exports);
@@ -106,7 +106,7 @@ tslib_1.__exportStar(PlatformBrowser_1, exports);
 
 });
 
-var index = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_platformBrowser_bootstrap_lib);
+var index = unwrapExports(D__workspace_github_tsioc_packages_platformBrowser_bootstrap_lib);
 
 return index;
 

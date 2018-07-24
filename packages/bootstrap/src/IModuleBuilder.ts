@@ -12,7 +12,7 @@ import { ModuleConfiguration } from './ModuleConfiguration';
  */
 export class InjectModuleBuilder<T extends IModuleBuilder<any>> extends Registration<T> {
     constructor(desc: string) {
-        super('_IOC_ModuleBuilder', desc);
+        super('DI_ModuleBuilder', desc);
     }
 }
 

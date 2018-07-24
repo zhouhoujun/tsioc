@@ -37,7 +37,7 @@ export interface DecorSummary {
  * life scope interface symbol.
  * it is a symbol id, you can register yourself MethodAccessor for this.
  */
-export const LifeScopeToken = new InjectToken<LifeScope>('__IOC_LifeScope');
+export const LifeScopeToken = new InjectToken<LifeScope>('DI_LifeScope');
 
 /**
  * life scope of decorator.

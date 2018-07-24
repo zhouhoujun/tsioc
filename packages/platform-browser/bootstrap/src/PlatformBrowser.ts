@@ -1,4 +1,4 @@
-import { Type, lang, isUndefined, Token } from '@ts-ioc/core';
+import { lang, isUndefined, Token, Type } from '@ts-ioc/core';
 import { AppConfiguration, IApplicationBuilder, ApplicationBuilder } from '@ts-ioc/bootstrap';
 import { ContainerBuilder } from '@ts-ioc/platform-browser';
 

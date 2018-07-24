@@ -2,10 +2,11 @@ import { AppConfiguration } from './AppConfiguration';
 import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import {
     IContainer, Token, Type, LoadType, lang, isString,
-    isToken, IContainerBuilder, ContainerBuilderToken, DefaultContainerBuilder
+    isToken, IContainerBuilder, ContainerBuilderToken, DefaultContainerBuilder, isFunction, isClass
 } from '@ts-ioc/core';
-import { CustomRegister, IApplicationBuilder } from './IApplicationBuilder';
+import { CustomRegister, IApplicationBuilder, ApplicationBuilderToken, ApplicationBuilderFactoryToken } from './IApplicationBuilder';
 import { BootstrapModule } from './BootstrapModule';
+import { IApplication } from './IApplication';
 
 /**
  * application builder.
@@ -122,7 +123,7 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
         let pcfg: Promise<AppConfiguration<T>>;
         let builder = this.getContainerBuilder();
         if (isString(config)) {
-            pcfg = builder.loader.load(config)
+            pcfg = builder.loader.load([config])
                 .then(rs => {
                     return rs.length ? rs[0] as AppConfiguration<T> : null;
                 })
@@ -176,7 +177,27 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
      * @memberof ApplicationBuilder
      */
     async bootstrap(token: Token<T> | Type<any> | AppConfiguration<T>): Promise<any> {
-        return await this.build(token);
+        let app: IApplication = await this.build(token);
+        let bootMd: any;
+        if (app.config && isToken(token)) {
+            if (app.config.bootstrap !== token) {
+                if (!this.container.has(token) && isClass(token)) {
+                    this.container.register(token);
+                }
+                if (this.container.has(token)) {
+                    bootMd = this.container.resolve(token);
+                }
+            }
+        }
+        bootMd = bootMd || app;
+        if (isFunction(bootMd.onStart)) {
+            await Promise.resolve(bootMd.onStart(app));
+        }
+
+        if (isFunction(bootMd.onStarted)) {
+            bootMd.onStarted(app);
+        }
+        return bootMd;
     }
 
     /**
@@ -239,6 +260,8 @@ export class ApplicationBuilder<T> implements IApplicationBuilder<T> {
      * @memberof ApplicationBuilder
      */
     protected async registerExts(container: IContainer): Promise<IContainer> {
+        this.container.bindProvider(ApplicationBuilderToken, this);
+        this.container.bindProvider(ApplicationBuilderFactoryToken, () => this.createContainerBuilder());
         if (!container.has(BootstrapModule)) {
             container.register(BootstrapModule);
         }

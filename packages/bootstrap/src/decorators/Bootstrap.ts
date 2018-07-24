@@ -50,6 +50,17 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
      */
     (provide: Registration<any> | symbol | string, builder?: Token<IApplication>, alias?: string): ClassDecorator;
 
+
+    /**
+     * Bootstrap decorator, use to define class as Application Bootstrap element.
+     *
+     * @Bootstrap
+     * @param {string} provide application name or provide.
+     * @param {string} builder application builder token.
+     * @param {string} [alias] set application as singleton or not.
+     */
+    (provide: Registration<any> | symbol | string, builder?: Token<IApplication>, singleton?: boolean): ClassDecorator;
+
     /**
      * Bootstrap decorator, use to define class as Application Bootstrap element.
      *

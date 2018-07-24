@@ -64,7 +64,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * LoggerManger interface token.
  * it is a token id, you can register yourself LoggerManger for this.
  */
-exports.LoggerManagerToken = new core_1.InjectToken('__IOC_ILoggerManager');
+exports.LoggerManagerToken = new core_1.InjectToken('DI_ILoggerManager');
 
 
 });
@@ -79,7 +79,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * IConfigureLoggerManager interface token.
  * it is a token id, you can register yourself IConfigureLoggerManager for this.
  */
-exports.ConfigureLoggerManagerToken = new core_1.InjectToken('__IOC_IConfigureLoggerManager');
+exports.ConfigureLoggerManagerToken = new core_1.InjectToken('DI_IConfigureLoggerManager');
 
 
 });
@@ -94,7 +94,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Log configure interface symbol.
  * it is a symbol id, you can register yourself LogConfigure for this.
  */
-exports.LogConfigureToken = new core_1.InjectToken('__IOC_LogConfigure');
+exports.LogConfigureToken = new core_1.InjectToken('DI_LogConfigure');
 
 
 });
@@ -314,7 +314,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Log formater interface token.
  * it is a token id, you can register yourself formater for log.
  */
-exports.LogFormaterToken = new core_1.InjectToken('__IOC_LogFormater');
+exports.LogFormaterToken = new core_1.InjectToken('DI_LogFormater');
 var LogFormater = /** @class */ (function () {
     function LogFormater() {
     }
@@ -673,7 +673,7 @@ exports.LogModule = LogModule;
 unwrapExports(LogModule_1);
 var LogModule_2 = LogModule_1.LogModule;
 
-var D__Workspace_Projects_modules_tsioc_packages_logs_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_logs_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 // export * from './tokens';
@@ -692,7 +692,7 @@ tslib_1.__exportStar(LogModule_1, exports);
 
 });
 
-var index = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_logs_lib);
+var index = unwrapExports(D__workspace_github_tsioc_packages_logs_lib);
 
 return index;
 

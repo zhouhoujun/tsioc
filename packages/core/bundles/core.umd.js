@@ -1522,7 +1522,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * IContainer token.
  * it is a symbol id, you can use  @Inject, @Autowried or @Param to get container instance in yourself class.
  */
-exports.ContainerToken = new InjectToken_1.InjectToken('__IOC_IContainer');
+exports.ContainerToken = new InjectToken_1.InjectToken('DI_IContainer');
 
 
 });
@@ -1583,7 +1583,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * IMethodAccessor interface symbol.
  * it is a symbol id, you can register yourself MethodAccessor for this.
  */
-exports.MethodAccessorToken = new InjectToken_1.InjectToken('__IOC_IMethodAccessor');
+exports.MethodAccessorToken = new InjectToken_1.InjectToken('DI_IMethodAccessor');
 
 
 });
@@ -3544,7 +3544,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * ICacheManager interface token.
  * it is a token id, you can register yourself ICacheManager for this.
  */
-exports.CacheManagerToken = new InjectToken_1.InjectToken('__IOC_ICacheManager');
+exports.CacheManagerToken = new InjectToken_1.InjectToken('DI_ICacheManager');
 
 
 });
@@ -3952,7 +3952,7 @@ var ProviderMap_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
-exports.ProviderMapToken = new InjectToken_1.InjectToken('__IOC_ProviderMap');
+exports.ProviderMapToken = new InjectToken_1.InjectToken('DI_ProviderMap');
 /**
  * Provider Map
  *
@@ -4349,7 +4349,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * IRecognizer interface token.
  * it is a token id, you can register yourself IRecognizer for this.
  */
-exports.RecognizerToken = new InjectToken_1.InjectToken('__IOC_IRecognizer');
+exports.RecognizerToken = new InjectToken_1.InjectToken('DI_IRecognizer');
 
 
 });
@@ -4364,7 +4364,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Providers match interface symbol.
  * it is a symbol id, you can register yourself MethodAccessor for this.
  */
-exports.ProviderMatcherToken = new InjectToken_1.InjectToken('__IOC_IProviderMatcher');
+exports.ProviderMatcherToken = new InjectToken_1.InjectToken('DI_IProviderMatcher');
 
 
 });
@@ -5252,7 +5252,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * life scope interface symbol.
  * it is a symbol id, you can register yourself MethodAccessor for this.
  */
-exports.LifeScopeToken = new InjectToken_1.InjectToken('__IOC_LifeScope');
+exports.LifeScopeToken = new InjectToken_1.InjectToken('DI_LifeScope');
 
 
 });
@@ -5267,7 +5267,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * ContainerBuilder interface token.
  * it is a token id, you can register yourself IContainerBuilder for this.
  */
-exports.ContainerBuilderToken = new InjectToken_1.InjectToken('__IOC_IContainerBuilder');
+exports.ContainerBuilderToken = new InjectToken_1.InjectToken('DI_IContainerBuilder');
 
 
 });
@@ -5845,7 +5845,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /**
  * module loader token.
  */
-exports.ModuleLoaderToken = new InjectToken_1.InjectToken('__IOC_ModuleLoader');
+exports.ModuleLoaderToken = new InjectToken_1.InjectToken('DI_ModuleLoader');
 
 
 });
@@ -5855,7 +5855,6 @@ var IModuleLoader_1 = IModuleLoader.ModuleLoaderToken;
 
 var DefaultModuleLoader_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
-
 
 
 /**
@@ -5881,12 +5880,8 @@ var DefaultModuleLoader = /** @class */ (function () {
      * @returns {Promise<ModuleType[]>}
      * @memberof DefaultModuleLoader
      */
-    DefaultModuleLoader.prototype.load = function () {
+    DefaultModuleLoader.prototype.load = function (modules) {
         var _this = this;
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
         if (modules.length) {
             return Promise.all(modules.map(function (mdty) {
                 if (utils.isString(mdty)) {
@@ -5918,19 +5913,15 @@ var DefaultModuleLoader = /** @class */ (function () {
      * @returns {Promise<Type<any>[]>}
      * @memberof IContainerBuilder
      */
-    DefaultModuleLoader.prototype.loadTypes = function () {
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
+    DefaultModuleLoader.prototype.loadTypes = function (modules, filter) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var mdls;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.load.apply(this, modules)];
+                    case 0: return [4 /*yield*/, this.load(modules)];
                     case 1:
                         mdls = _a.sent();
-                        return [2 /*return*/, this.getTypes.apply(this, mdls)];
+                        return [2 /*return*/, this.getTypes(mdls, filter)];
                 }
             });
         });
@@ -5942,20 +5933,20 @@ var DefaultModuleLoader = /** @class */ (function () {
      * @returns {Type<any>[]}
      * @memberof DefaultModuleLoader
      */
-    DefaultModuleLoader.prototype.getTypes = function () {
+    DefaultModuleLoader.prototype.getTypes = function (modules, filter) {
         var _this = this;
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
         var regModules = [];
         modules.forEach(function (m) {
             var types = _this.getContentTypes(m);
-            var iocExt = types.find(function (it) { return core.hasOwnClassMetadata(core.IocExt, it); });
-            if (iocExt) {
-                regModules.push(iocExt);
+            var hasFilterMdl = false;
+            if (filter) {
+                var filters = types.filter(filter);
+                hasFilterMdl = filters && filters.length > 0;
+                if (hasFilterMdl) {
+                    regModules.push.apply(regModules, filters);
+                }
             }
-            else {
+            if (!hasFilterMdl) {
                 regModules.push.apply(regModules, types);
             }
         });
@@ -6053,7 +6044,7 @@ var DefaultModuleLoader = /** @class */ (function () {
         }
         return regModules;
     };
-    DefaultModuleLoader.classAnnations = { "name": "DefaultModuleLoader", "params": { "constructor": [], "getLoader": [], "load": ["modules"], "loadTypes": ["modules"], "getTypes": ["modules"], "loadFile": ["files", "basePath"], "isFile": ["str"], "loadModule": ["moduleName"], "loadPathModule": ["pmd"], "createLoader": [], "getContentTypes": ["regModule"] } };
+    DefaultModuleLoader.classAnnations = { "name": "DefaultModuleLoader", "params": { "constructor": [], "getLoader": [], "load": ["modules"], "loadTypes": ["modules", "filter"], "getTypes": ["modules", "filter"], "loadFile": ["files", "basePath"], "isFile": ["str"], "loadModule": ["moduleName"], "loadPathModule": ["pmd"], "createLoader": [], "getContentTypes": ["regModule"] } };
     return DefaultModuleLoader;
 }());
 exports.DefaultModuleLoader = DefaultModuleLoader;
@@ -6071,6 +6062,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
 // import { hasOwnClassMetadata, IocModule } from './core/index';
 /**
  * default container builder.
@@ -6080,8 +6072,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @implements {IContainerBuilder}
  */
 var DefaultContainerBuilder = /** @class */ (function () {
-    function DefaultContainerBuilder(loader) {
+    function DefaultContainerBuilder(loader, filter) {
         this._loader = loader;
+        this.filter = filter || (function (it) { return core.hasOwnClassMetadata(core.IocExt, it); });
     }
     Object.defineProperty(DefaultContainerBuilder.prototype, "loader", {
         get: function () {
@@ -6142,12 +6135,12 @@ var DefaultContainerBuilder = /** @class */ (function () {
             modules[_i - 1] = arguments[_i];
         }
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var regModules, _a;
-            return tslib_1.__generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0: return [4 /*yield*/, (_a = this.loader).loadTypes.apply(_a, modules)];
+            var regModules;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.loader.loadTypes(modules, this.filter)];
                     case 1:
-                        regModules = _b.sent();
+                        regModules = _a.sent();
                         return [2 /*return*/, this.registers(container, regModules)];
                 }
             });
@@ -6169,9 +6162,8 @@ var DefaultContainerBuilder = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             modules[_i - 1] = arguments[_i];
         }
-        var regModules = (_a = this.loader).getTypes.apply(_a, modules);
+        var regModules = this.loader.getTypes(modules, this.filter);
         return this.registers(container, regModules);
-        var _a;
     };
     DefaultContainerBuilder.prototype.registers = function (container, types) {
         types = types || [];
@@ -6180,7 +6172,7 @@ var DefaultContainerBuilder = /** @class */ (function () {
         });
         return types;
     };
-    DefaultContainerBuilder.classAnnations = { "name": "DefaultContainerBuilder", "params": { "constructor": ["loader"], "create": [], "build": ["modules"], "loadModule": ["container", "modules"], "syncBuild": ["modules"], "syncLoadModule": ["container", "modules"], "registers": ["container", "types"] } };
+    DefaultContainerBuilder.classAnnations = { "name": "DefaultContainerBuilder", "params": { "constructor": ["loader", "filter"], "create": [], "build": ["modules"], "loadModule": ["container", "modules"], "syncBuild": ["modules"], "syncLoadModule": ["container", "modules"], "registers": ["container", "types"] } };
     return DefaultContainerBuilder;
 }());
 exports.DefaultContainerBuilder = DefaultContainerBuilder;
@@ -6191,7 +6183,7 @@ exports.DefaultContainerBuilder = DefaultContainerBuilder;
 unwrapExports(DefaultContainerBuilder_1);
 var DefaultContainerBuilder_2 = DefaultContainerBuilder_1.DefaultContainerBuilder;
 
-var D__Workspace_Projects_modules_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(IContainer, exports);
@@ -6213,7 +6205,7 @@ tslib_1.__exportStar(core, exports);
 
 });
 
-var index$7 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_core_lib);
+var index$7 = unwrapExports(D__workspace_github_tsioc_packages_core_lib);
 
 return index$7;
 

@@ -1,9 +1,10 @@
 import { IContainer } from './IContainer';
 import { Container } from './Container';
-import { Type, ModuleType, LoadType } from './types';
+import { Type, ModuleType, LoadType, Express } from './types';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { IModuleLoader, ModuleLoaderToken } from './IModuleLoader';
 import { DefaultModuleLoader } from './DefaultModuleLoader';
+import { hasOwnClassMetadata, IocExt } from './core';
 // import { hasOwnClassMetadata, IocModule } from './core/index';
 
 /**
@@ -16,8 +17,10 @@ import { DefaultModuleLoader } from './DefaultModuleLoader';
 export class DefaultContainerBuilder implements IContainerBuilder {
 
     private _loader: IModuleLoader;
-    constructor(loader?: IModuleLoader) {
+    filter: Express<Type<any>, boolean>;
+    constructor(loader?: IModuleLoader, filter?: Express<Type<any>, boolean>) {
         this._loader = loader;
+        this.filter = filter || (it => hasOwnClassMetadata(IocExt, it))
     }
 
     get loader(): IModuleLoader {
@@ -60,7 +63,7 @@ export class DefaultContainerBuilder implements IContainerBuilder {
      * @memberof DefaultContainerBuilder
      */
     async loadModule(container: IContainer, ...modules: LoadType[]): Promise<Type<any>[]> {
-        let regModules = await this.loader.loadTypes(...modules);
+        let regModules = await this.loader.loadTypes(modules, this.filter);
         return this.registers(container, regModules);
     }
 
@@ -74,7 +77,7 @@ export class DefaultContainerBuilder implements IContainerBuilder {
     }
 
     syncLoadModule(container: IContainer, ...modules: ModuleType[]) {
-        let regModules = this.loader.getTypes(...modules);
+        let regModules = this.loader.getTypes(modules, this.filter);
         return this.registers(container, regModules);
     }
 

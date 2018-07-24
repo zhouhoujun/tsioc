@@ -7,7 +7,7 @@ import { InjectToken } from '../InjectToken';
  * Providers match interface symbol.
  * it is a symbol id, you can register yourself MethodAccessor for this.
  */
-export const ProviderMatcherToken = new InjectToken<IProviderMatcher>('__IOC_IProviderMatcher');
+export const ProviderMatcherToken = new InjectToken<IProviderMatcher>('DI_IProviderMatcher');
 
 /**
  * Providers Convert

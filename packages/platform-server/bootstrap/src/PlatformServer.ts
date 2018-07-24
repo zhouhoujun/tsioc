@@ -29,7 +29,7 @@ export interface IServerApplicationBuilder<T> extends IApplicationBuilder<T> {
      * @type {string}
      * @memberof IPlatformServer
      */
-    rootdir: string;
+    baseURL: string;
     /**
      * load module from dir
      *
@@ -50,8 +50,8 @@ export interface IServerApplicationBuilder<T> extends IApplicationBuilder<T> {
 export class ServerApplicationBuilder<T> extends ApplicationBuilder<T> implements IServerApplicationBuilder<T> {
 
     private dirMatchs: string[][];
-    constructor(public rootdir: string) {
-        super(rootdir);
+    constructor(public baseURL: string) {
+        super(baseURL);
         this.dirMatchs = [];
     }
 
@@ -70,15 +70,15 @@ export class ServerApplicationBuilder<T> extends ApplicationBuilder<T> implement
         if (isString(config)) {
             if (existsSync(config)) {
                 cfgmodeles = require(config) as AppConfiguration<T>;
-            } else if (existsSync(path.join(this.rootdir, config))) {
-                cfgmodeles = require(path.join(this.rootdir, config)) as AppConfiguration<T>;
+            } else if (existsSync(path.join(this.baseURL, config))) {
+                cfgmodeles = require(path.join(this.baseURL, config)) as AppConfiguration<T>;
             } else {
                 console.log(`config file: ${config} not exists.`)
             }
         } else if (config) {
             cfgmodeles = config;
         } else {
-            let cfgpath = path.join(this.rootdir, './config');
+            let cfgpath = path.join(this.baseURL, './config');
             ['.js', '.ts', '.json'].forEach(ext => {
                 if (cfgmodeles) {
                     return false;
@@ -160,8 +160,8 @@ export interface IPlatformServer extends IServerApplicationBuilder<any> {
  */
 export class PlatformServer extends ServerApplicationBuilder<any> implements IPlatformServer {
 
-    constructor(public rootdir: string) {
-        super(rootdir);
+    constructor(public baseURL: string) {
+        super(baseURL);
     }
 
     /**

@@ -5,7 +5,7 @@ import { IPointcut, Joinpoint } from '../joinpoints';
  * Aop proxy method interface token.
  * it is a token id, you can register yourself IProxyMethod for this.
  */
-export const ProxyMethodToken = new InjectToken<IProxyMethod>('__IOC_IProxyMethod');
+export const ProxyMethodToken = new InjectToken<IProxyMethod>('DI_IProxyMethod');
 
 /**
  * proxy method, for proxy advice method.

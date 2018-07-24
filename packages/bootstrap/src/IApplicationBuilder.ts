@@ -1,4 +1,4 @@
-import { Token, Type, LoadType, IContainer, IContainerBuilder } from '@ts-ioc/core';
+import { Token, Type, LoadType, IContainer, IContainerBuilder, InjectToken } from '@ts-ioc/core';
 import { AppConfiguration } from './AppConfiguration';
 import { ModuleConfiguration } from './ModuleConfiguration';
 import { IModuleBuilder } from './IModuleBuilder';
@@ -7,6 +7,9 @@ import { IModuleBuilder } from './IModuleBuilder';
  * custom define module.
  */
 export type CustomRegister<T> = (container: IContainer, config?: ModuleConfiguration<T>, builder?: IApplicationBuilder<T>) => any | Promise<any>;
+
+export const ApplicationBuilderToken = new InjectToken<IApplicationBuilder<any>>('DI_AppBuilder');
+export const ApplicationBuilderFactoryToken = new InjectToken<IApplicationBuilder<any>>('DI_AppBuilder_Factory');
 
 /**
  * application builder.

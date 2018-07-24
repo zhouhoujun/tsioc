@@ -5,7 +5,7 @@ import { InjectToken } from './InjectToken';
  * ICacheManager interface token.
  * it is a token id, you can register yourself ICacheManager for this.
  */
-export const CacheManagerToken = new InjectToken<ICacheManager>('__IOC_ICacheManager');
+export const CacheManagerToken = new InjectToken<ICacheManager>('DI_ICacheManager');
 
 /**
  * cache manager inteface.

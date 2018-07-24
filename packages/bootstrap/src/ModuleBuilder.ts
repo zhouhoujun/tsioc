@@ -2,11 +2,13 @@
 import {
     IContainer, hasClassMetadata, isProviderMap, Provider,
     getTypeMetadata, Token, Type, Providers,
-    isString, lang, isFunction, isClass, isUndefined, isNull, isBaseObject, isToken, isArray, Injectable, Inject, ContainerToken
+    isString, lang, isFunction, isClass, isUndefined, isNull, isBaseObject, isToken, isArray, Injectable, Inject, ContainerToken, ContainerBuilderToken, hasOwnClassMetadata, IocExt
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import { ModuleConfiguration } from './ModuleConfiguration';
 import { DIModule } from './decorators';
+import { ApplicationBuilderFactoryToken } from './IApplicationBuilder';
+import { async } from 'q';
 
 /**
  * server app bootstrap
@@ -161,6 +163,30 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     protected async registerDepdences(config: ModuleConfiguration<T>): Promise<IContainer> {
 
         if (isArray(config.imports) && config.imports.length) {
+            let buider = this.container.get(ContainerBuilderToken);
+            let decorator = this.getDecorator();
+            let mdls = await buider.loader.loadTypes(config.imports, it => hasOwnClassMetadata(IocExt, it) || hasOwnClassMetadata(decorator, it));
+
+            mdls.forEach(async md => {
+                if (this.container.has(ApplicationBuilderFactoryToken) && hasClassMetadata(decorator, md)) {
+                    let dimd = lang.first(getTypeMetadata<ModuleConfiguration<T>>(decorator, md));
+                    if (dimd) {
+                        let subApp = this.container.get(ApplicationBuilderFactoryToken);
+                        await subApp.build(md);
+                        if (dimd.exports && dimd.exports.length) {
+                            dimd.exports.forEach(token => {
+                                this.container.bindProvider(token, () => subApp.getContainer().resolve(token));
+                            });
+                        }
+                        if (dimd.providers && dimd.providers.length) {
+                            this.bindProvider(this.container, config.providers);
+                        }
+                        this.container.bindProvider(md, () => subApp.build(md));
+                    }
+                } else {
+                    this.container.register(md);
+                }
+            })
             await this.container.loadModule(...config.imports);
         }
 

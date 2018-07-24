@@ -6,7 +6,7 @@ import { Joinpoint, JoinpointState, NonePointcut } from '@ts-ioc/aop';
  * Log formater interface token.
  * it is a token id, you can register yourself formater for log.
  */
-export const LogFormaterToken = new InjectToken<ILogFormater>('__IOC_LogFormater');
+export const LogFormaterToken = new InjectToken<ILogFormater>('DI_LogFormater');
 
 /**
  * log formater logs

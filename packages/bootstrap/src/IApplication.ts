@@ -12,12 +12,12 @@ import { Registration } from '@ts-ioc/core';
  */
 export class InjectApplicationToken<T extends IApplication> extends Registration<T> {
     constructor(desc: string) {
-        super('Application', desc);
+        super('DI_Application', desc);
     }
 }
 
 /**
- * Application Token.
+ * Default Application Token.
  */
 export const ApplicationToken = new InjectApplicationToken<IApplication>('');
 
@@ -36,4 +36,38 @@ export interface IApplication {
      * @memberof IApplication
      */
     config?: AppConfiguration<any>;
+}
+
+/**
+ * on Application start.
+ *
+ * @export
+ * @interface OnStart
+ * @template T
+ */
+export interface OnApplicationStart<T extends IApplication> {
+    /**
+     * on application start.
+     *
+     * @param {T} instance
+     * @memberof OnStart
+     */
+    onStart(instance: T): void | Promise<any>;
+}
+
+/**
+ * on Application started.
+ *
+ * @export
+ * @interface OnStart
+ * @template T
+ */
+export interface OnApplicationStarted<T extends IApplication> {
+    /**
+     * on application onStarted.
+     *
+     * @param {T} instance
+     * @memberof OnStart
+     */
+    onStarted(instance: T): void;
 }

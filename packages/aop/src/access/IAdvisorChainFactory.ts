@@ -7,7 +7,7 @@ import { InjectToken } from '@ts-ioc/core';
  * Aop IAdvisorChainFactory interface token.
  * it is a token id, you can register yourself IAdvisorChainFactory for this.
  */
-export const AdvisorChainFactoryToken = new InjectToken<IAdvisorChainFactory>('__IOC_IAdvisorChainFactory');
+export const AdvisorChainFactoryToken = new InjectToken<IAdvisorChainFactory>('DI_IAdvisorChainFactory');
 
 /**
  * advice advisor chain factory for proxy method invoke.

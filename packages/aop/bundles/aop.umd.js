@@ -62,7 +62,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Aop IAdvisor interface token.
  * it is a token id, you can register yourself IAdvisor for this.
  */
-exports.AdvisorToken = new core_1.InjectToken('__IOC_IAdvisor');
+exports.AdvisorToken = new core_1.InjectToken('DI_IAdvisor');
 
 
 });
@@ -403,7 +403,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Aop IAdvisorChainFactory interface token.
  * it is a token id, you can register yourself IAdvisorChainFactory for this.
  */
-exports.AdvisorChainFactoryToken = new core_1.InjectToken('__IOC_IAdvisorChainFactory');
+exports.AdvisorChainFactoryToken = new core_1.InjectToken('DI_IAdvisorChainFactory');
 
 
 });
@@ -435,7 +435,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 * Aop IJoinpoint interface token.
 * it is a token id, you can register yourself IJoinpoint for this.
 */
-exports.JoinpointToken = new core_1.InjectToken('__IOC_IJoinpoint');
+exports.JoinpointToken = new core_1.InjectToken('DI_IJoinpoint');
 
 
 });
@@ -506,7 +506,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Aop IAdvisorChain interface token.
  * it is a token id, you can register yourself IAdvisorChain for this.
  */
-exports.AdvisorChainToken = new core_1.InjectToken('__IOC_IAdvisorChain');
+exports.AdvisorChainToken = new core_1.InjectToken('DI_IAdvisorChain');
 
 
 });
@@ -696,7 +696,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Aop IAdvisorProceeding interface token.
  * it is a token id, you can register yourself IAdvisorProceeding for this.
  */
-exports.AdvisorProceedingToken = new core_1.InjectToken('__IOC_IAdvisorProceeding');
+exports.AdvisorProceedingToken = new core_1.InjectToken('DI_IAdvisorProceeding');
 
 
 });
@@ -755,7 +755,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Aop proxy method interface token.
  * it is a token id, you can register yourself IProxyMethod for this.
  */
-exports.ProxyMethodToken = new core_1.InjectToken('__IOC_IProxyMethod');
+exports.ProxyMethodToken = new core_1.InjectToken('DI_IProxyMethod');
 
 
 });
@@ -1295,7 +1295,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Aop advice matcher interface token.
  * it is a token id, you can register yourself IActionBuilder for this.
  */
-exports.AdviceMatcherToken = new core_1.InjectToken('__IOC_IAdviceMatcher');
+exports.AdviceMatcherToken = new core_1.InjectToken('DI_IAdviceMatcher');
 
 
 });
@@ -1934,7 +1934,7 @@ exports.AopModule = AopModule;
 unwrapExports(AopModule_1);
 var AopModule_2 = AopModule_1.AopModule;
 
-var D__Workspace_Projects_modules_tsioc_packages_aop_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_aop_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 // export * from './tokens';
@@ -1951,7 +1951,7 @@ tslib_1.__exportStar(AopModule_1, exports);
 
 });
 
-var index$4 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_aop_lib);
+var index$4 = unwrapExports(D__workspace_github_tsioc_packages_aop_lib);
 
 return index$4;
 

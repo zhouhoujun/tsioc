@@ -6,7 +6,7 @@ import { InjectToken } from './InjectToken';
  * IMethodAccessor interface symbol.
  * it is a symbol id, you can register yourself MethodAccessor for this.
  */
-export const MethodAccessorToken = new InjectToken<IMethodAccessor>('__IOC_IMethodAccessor');
+export const MethodAccessorToken = new InjectToken<IMethodAccessor>('DI_IMethodAccessor');
 
 
 /**

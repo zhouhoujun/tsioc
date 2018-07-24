@@ -7,7 +7,7 @@ import { IModuleLoader } from './IModuleLoader';
  * ContainerBuilder interface token.
  * it is a token id, you can register yourself IContainerBuilder for this.
  */
-export const ContainerBuilderToken = new InjectToken<IContainerBuilder>('__IOC_IContainerBuilder');
+export const ContainerBuilderToken = new InjectToken<IContainerBuilder>('DI_IContainerBuilder');
 
 /**
  * container builder.

@@ -3,7 +3,7 @@ import { Token, Factory, Providers, ToInstance, Express2 } from '../../types';
 import { IContainer } from '../../IContainer';
 import { InjectToken } from '../../InjectToken';
 
-export const ProviderMapToken = new InjectToken<ProviderMap>('__IOC_ProviderMap');
+export const ProviderMapToken = new InjectToken<ProviderMap>('DI_ProviderMap');
 
 /**
  * Provider Map

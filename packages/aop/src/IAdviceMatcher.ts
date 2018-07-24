@@ -6,7 +6,7 @@ import { Type, ObjectMap, InjectToken } from '@ts-ioc/core';
  * Aop advice matcher interface token.
  * it is a token id, you can register yourself IActionBuilder for this.
  */
-export const AdviceMatcherToken = new InjectToken<IAdviceMatcher>('__IOC_IAdviceMatcher');
+export const AdviceMatcherToken = new InjectToken<IAdviceMatcher>('DI_IAdviceMatcher');
 
 /**
  * advice match interface, use to match advice when a registered create instance.

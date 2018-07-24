@@ -2,6 +2,7 @@ import { createClassDecorator, ClassMetadata, Token, InjectToken, MetadataAdapte
 import { IModuleBuilder, ModuleBuilderToken } from '../IModuleBuilder';
 import { IApplication, ApplicationToken } from '../IApplication';
 import { ModuleConfiguration } from '../ModuleConfiguration';
+import { isBoolean } from 'util';
 
 /**
  * DI module metadata.
@@ -23,7 +24,7 @@ export interface DIModuleMetadata extends ModuleConfiguration<any>, ClassMetadat
 
 
 /**
- * DIModule decorator, use to define class is a task element.
+ * DIModule decorator, use to define class as DI Module.
  *
  * @export
  * @interface IDIModuleDecorator
@@ -44,8 +45,8 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDec
      * DIModule decorator, use to define class as DI Module.
      *
      * @DIModule
-     * @param {string} provide application name or provide.
-     * @param {string} [alias] application alias name.
+     * @param {string} provide DI Module name or provide.
+     * @param {string} [alias] DI Module alias name.
      */
     (provide: Registration<any> | symbol | string, alias?: string): ClassDecorator;
 
@@ -53,11 +54,21 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDec
      * DIModule decorator, use to define class as DI Module.
      *
      * @DIModule
-     * @param {string} provide application name or provide.
-     * @param {string} builder application builder token.
-     * @param {string} [alias] application alias name
+     * @param {string} provide DI Module name or provide.
+     * @param {string} builder DI Module builder token.
+     * @param {string} [alias] DI Module alias name
      */
     (provide: Registration<any> | symbol | string, builder?: Token<IApplication>, alias?: string): ClassDecorator;
+
+    /**
+     * DIModule decorator, use to define class as DI Module.
+     *
+     * @DIModule
+     * @param {string} provide DI Module name or provide.
+     * @param {string} builder DI Module builder token.
+     * @param {string} [alias] set DI Module as singleton or not.
+     */
+    (provide: Registration<any> | symbol | string, builder?: Token<IApplication>, singleton?: boolean): ClassDecorator;
 
     /**
      * DIModule decorator, use to define class as Application DIModule element.
@@ -115,9 +126,13 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
             });
 
             args.next<DIModuleMetadata>({
-                match: (arg) => isString(arg),
+                match: (arg) => isString(arg) || isBoolean(arg),
                 setMetadata: (metadata, arg) => {
-                    metadata.name = arg;
+                    if (isString(arg)) {
+                        metadata.name = arg;
+                    } else if (isBoolean(arg)) {
+                        metadata.singleton = arg;
+                    }
                 }
             });
         },
@@ -151,4 +166,4 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
  *
  * @DIModule
  */
-export const DIModule: IDIModuleDecorator<DIModuleMetadata> = createDIModuleDecorator<DIModuleMetadata>('', ModuleBuilderToken);
+export const DIModule: IDIModuleDecorator<DIModuleMetadata> = createDIModuleDecorator<DIModuleMetadata>('module', ModuleBuilderToken);

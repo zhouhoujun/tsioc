@@ -7,7 +7,7 @@ import { IParameter, MethodMetadata, Type, InjectToken } from '@ts-ioc/core';
  * Aop IJoinpoint interface token.
  * it is a token id, you can register yourself IJoinpoint for this.
  */
-export const JoinpointToken = new InjectToken<IJoinpoint>('__IOC_IJoinpoint');
+export const JoinpointToken = new InjectToken<IJoinpoint>('DI_IJoinpoint');
 
 /**
  * Joinpoint interface

@@ -1,11 +1,12 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core')) :
-	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core'], factory) :
-	(global.bootstrap = global.bootstrap || {}, global.bootstrap.umd = global.bootstrap.umd || {}, global.bootstrap.umd.js = factory(global.tslib_1,global.core_1));
-}(this, (function (tslib_1,core_1) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core'), require('util')) :
+	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core', 'util'], factory) :
+	(global.bootstrap = global.bootstrap || {}, global.bootstrap.umd = global.bootstrap.umd || {}, global.bootstrap.umd.js = factory(global.tslib_1,global.core_1,global.util_1));
+}(this, (function (tslib_1,core_1,util_1) { 'use strict';
 
 tslib_1 = tslib_1 && tslib_1.hasOwnProperty('default') ? tslib_1['default'] : tslib_1;
 core_1 = core_1 && core_1.hasOwnProperty('default') ? core_1['default'] : core_1;
+util_1 = util_1 && util_1.hasOwnProperty('default') ? util_1['default'] : util_1;
 
 function unwrapExports (x) {
 	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
@@ -30,7 +31,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var InjectModuleBuilder = /** @class */ (function (_super) {
     tslib_1.__extends(InjectModuleBuilder, _super);
     function InjectModuleBuilder(desc) {
-        return _super.call(this, '_IOC_ModuleBuilder', desc) || this;
+        return _super.call(this, 'DI_ModuleBuilder', desc) || this;
     }
     InjectModuleBuilder.classAnnations = { "name": "InjectModuleBuilder", "params": { "constructor": ["desc"] } };
     return InjectModuleBuilder;
@@ -50,6 +51,7 @@ var IModuleBuilder_2 = IModuleBuilder.ModuleBuilderToken;
 
 var DIModule = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 /**
@@ -92,9 +94,14 @@ function createDIModuleDecorator(decorType, builder, provideType, adapter, metad
             }
         });
         args.next({
-            match: function (arg) { return core_1.isString(arg); },
+            match: function (arg) { return core_1.isString(arg) || util_1.isBoolean(arg); },
             setMetadata: function (metadata, arg) {
-                metadata.name = arg;
+                if (core_1.isString(arg)) {
+                    metadata.name = arg;
+                }
+                else if (util_1.isBoolean(arg)) {
+                    metadata.singleton = arg;
+                }
             }
         });
     }, function (metadata) {
@@ -125,7 +132,7 @@ exports.createDIModuleDecorator = createDIModuleDecorator;
  *
  * @DIModule
  */
-exports.DIModule = createDIModuleDecorator('', IModuleBuilder.ModuleBuilderToken);
+exports.DIModule = createDIModuleDecorator('module', IModuleBuilder.ModuleBuilderToken);
 
 
 });
@@ -149,14 +156,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var InjectApplicationToken = /** @class */ (function (_super) {
     tslib_1.__extends(InjectApplicationToken, _super);
     function InjectApplicationToken(desc) {
-        return _super.call(this, 'Application', desc) || this;
+        return _super.call(this, 'DI_Application', desc) || this;
     }
     InjectApplicationToken.classAnnations = { "name": "InjectApplicationToken", "params": { "constructor": ["desc"] } };
     return InjectApplicationToken;
 }(core_1.Registration));
 exports.InjectApplicationToken = InjectApplicationToken;
 /**
- * Application Token.
+ * Default Application Token.
  */
 exports.ApplicationToken = new InjectApplicationToken('');
 
@@ -213,8 +220,22 @@ tslib_1.__exportStar(Bootstrap, exports);
 
 unwrapExports(decorators);
 
+var IApplicationBuilder = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+exports.ApplicationBuilderToken = new core_1.InjectToken('DI_AppBuilder');
+exports.ApplicationBuilderFactoryToken = new core_1.InjectToken('DI_AppBuilder_Factory');
+
+
+});
+
+unwrapExports(IApplicationBuilder);
+var IApplicationBuilder_1 = IApplicationBuilder.ApplicationBuilderToken;
+var IApplicationBuilder_2 = IApplicationBuilder.ApplicationBuilderFactoryToken;
+
 var ModuleBuilder_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -378,16 +399,53 @@ var ModuleBuilder = /** @class */ (function () {
     };
     ModuleBuilder.prototype.registerDepdences = function (config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _a;
+            var _this = this;
+            var buider, decorator_1, mdls, _a;
             return tslib_1.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        if (!(core_1.isArray(config.imports) && config.imports.length)) return [3 /*break*/, 2];
-                        return [4 /*yield*/, (_a = this.container).loadModule.apply(_a, config.imports)];
+                        if (!(core_1.isArray(config.imports) && config.imports.length)) return [3 /*break*/, 3];
+                        buider = this.container.get(core_1.ContainerBuilderToken);
+                        decorator_1 = this.getDecorator();
+                        return [4 /*yield*/, buider.loader.loadTypes(config.imports, function (it) { return core_1.hasOwnClassMetadata(core_1.IocExt, it) || core_1.hasOwnClassMetadata(decorator_1, it); })];
                     case 1:
-                        _b.sent();
-                        _b.label = 2;
+                        mdls = _b.sent();
+                        mdls.forEach(function (md) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
+                            var _this = this;
+                            var dimd, subApp_1;
+                            return tslib_1.__generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        if (!(this.container.has(IApplicationBuilder.ApplicationBuilderFactoryToken) && core_1.hasClassMetadata(decorator_1, md))) return [3 /*break*/, 3];
+                                        dimd = core_1.lang.first(core_1.getTypeMetadata(decorator_1, md));
+                                        if (!dimd) return [3 /*break*/, 2];
+                                        subApp_1 = this.container.get(IApplicationBuilder.ApplicationBuilderFactoryToken);
+                                        return [4 /*yield*/, subApp_1.build(md)];
+                                    case 1:
+                                        _a.sent();
+                                        if (dimd.exports && dimd.exports.length) {
+                                            dimd.exports.forEach(function (token) {
+                                                _this.container.bindProvider(token, function () { return subApp_1.getContainer().resolve(token); });
+                                            });
+                                        }
+                                        if (dimd.providers && dimd.providers.length) {
+                                            this.bindProvider(this.container, config.providers);
+                                        }
+                                        this.container.bindProvider(md, function () { return subApp_1.build(md); });
+                                        _a.label = 2;
+                                    case 2: return [3 /*break*/, 4];
+                                    case 3:
+                                        this.container.register(md);
+                                        _a.label = 4;
+                                    case 4: return [2 /*return*/];
+                                }
+                            });
+                        }); });
+                        return [4 /*yield*/, (_a = this.container).loadModule.apply(_a, config.imports)];
                     case 2:
+                        _b.sent();
+                        _b.label = 3;
+                    case 3:
                         if (core_1.isArray(config.providers) && config.providers.length) {
                             this.bindProvider(this.container, config.providers);
                         }
@@ -564,6 +622,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
 /**
  * application builder.
  *
@@ -665,7 +724,7 @@ var ApplicationBuilder = /** @class */ (function () {
         var pcfg;
         var builder = this.getContainerBuilder();
         if (core_1.isString(config)) {
-            pcfg = builder.loader.load(config)
+            pcfg = builder.loader.load([config])
                 .then(function (rs) {
                 return rs.length ? rs[0] : null;
             });
@@ -724,10 +783,33 @@ var ApplicationBuilder = /** @class */ (function () {
      */
     ApplicationBuilder.prototype.bootstrap = function (token) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var app, bootMd;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.build(token)];
-                    case 1: return [2 /*return*/, _a.sent()];
+                    case 1:
+                        app = _a.sent();
+                        if (app.config && core_1.isToken(token)) {
+                            if (app.config.bootstrap !== token) {
+                                if (!this.container.has(token) && core_1.isClass(token)) {
+                                    this.container.register(token);
+                                }
+                                if (this.container.has(token)) {
+                                    bootMd = this.container.resolve(token);
+                                }
+                            }
+                        }
+                        bootMd = bootMd || app;
+                        if (!core_1.isFunction(bootMd.onStart)) return [3 /*break*/, 3];
+                        return [4 /*yield*/, Promise.resolve(bootMd.onStart(app))];
+                    case 2:
+                        _a.sent();
+                        _a.label = 3;
+                    case 3:
+                        if (core_1.isFunction(bootMd.onStarted)) {
+                            bootMd.onStarted(app);
+                        }
+                        return [2 /*return*/, bootMd];
                 }
             });
         });
@@ -802,10 +884,13 @@ var ApplicationBuilder = /** @class */ (function () {
      */
     ApplicationBuilder.prototype.registerExts = function (container) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var _this = this;
             var usedModules;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        this.container.bindProvider(IApplicationBuilder.ApplicationBuilderToken, this);
+                        this.container.bindProvider(IApplicationBuilder.ApplicationBuilderFactoryToken, function () { return _this.createContainerBuilder(); });
                         if (!container.has(BootstrapModule_1.BootstrapModule)) {
                             container.register(BootstrapModule_1.BootstrapModule);
                         }
@@ -886,12 +971,13 @@ exports.ApplicationBuilder = ApplicationBuilder;
 unwrapExports(ApplicationBuilder_1);
 var ApplicationBuilder_2 = ApplicationBuilder_1.ApplicationBuilder;
 
-var D__Workspace_Projects_modules_tsioc_packages_bootstrap_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_bootstrap_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(decorators, exports);
 tslib_1.__exportStar(ApplicationBuilder_1, exports);
 tslib_1.__exportStar(IApplication, exports);
+tslib_1.__exportStar(IApplicationBuilder, exports);
 tslib_1.__exportStar(IModuleBuilder, exports);
 tslib_1.__exportStar(ModuleBuilder_1, exports);
 tslib_1.__exportStar(BootstrapModule_1, exports);
@@ -899,7 +985,7 @@ tslib_1.__exportStar(BootstrapModule_1, exports);
 
 });
 
-var index$1 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_bootstrap_lib);
+var index$1 = unwrapExports(D__workspace_github_tsioc_packages_bootstrap_lib);
 
 return index$1;
 

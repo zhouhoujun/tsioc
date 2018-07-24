@@ -15,7 +15,7 @@ export interface LoggerConfig extends ObjectMap<any> {
  * LoggerManger interface token.
  * it is a token id, you can register yourself LoggerManger for this.
  */
-export const LoggerManagerToken = new InjectToken<ILoggerManager>('__IOC_ILoggerManager');
+export const LoggerManagerToken = new InjectToken<ILoggerManager>('DI_ILoggerManager');
 /**
  * logger manager.
  *
