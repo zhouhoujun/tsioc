@@ -1,12 +1,11 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core'), require('util')) :
-	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core', 'util'], factory) :
-	(global.bootstrap = global.bootstrap || {}, global.bootstrap.umd = global.bootstrap.umd || {}, global.bootstrap.umd.js = factory(global.tslib_1,global.core_1,global.util_1));
-}(this, (function (tslib_1,core_1,util_1) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core')) :
+	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core'], factory) :
+	(global.bootstrap = global.bootstrap || {}, global.bootstrap.umd = global.bootstrap.umd || {}, global.bootstrap.umd.js = factory(global.tslib_1,global.core_1));
+}(this, (function (tslib_1,core_1) { 'use strict';
 
 tslib_1 = tslib_1 && tslib_1.hasOwnProperty('default') ? tslib_1['default'] : tslib_1;
 core_1 = core_1 && core_1.hasOwnProperty('default') ? core_1['default'] : core_1;
-util_1 = util_1 && util_1.hasOwnProperty('default') ? util_1['default'] : util_1;
 
 function unwrapExports (x) {
 	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
@@ -53,7 +52,6 @@ var DIModule = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
-
 /**
  * create bootstrap decorator.
  *
@@ -94,12 +92,12 @@ function createDIModuleDecorator(decorType, builder, provideType, adapter, metad
             }
         });
         args.next({
-            match: function (arg) { return core_1.isString(arg) || util_1.isBoolean(arg); },
+            match: function (arg) { return core_1.isString(arg) || core_1.isBoolean(arg); },
             setMetadata: function (metadata, arg) {
                 if (core_1.isString(arg)) {
                     metadata.name = arg;
                 }
-                else if (util_1.isBoolean(arg)) {
+                else if (core_1.isBoolean(arg)) {
                     metadata.singleton = arg;
                 }
             }
