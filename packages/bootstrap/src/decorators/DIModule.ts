@@ -1,8 +1,7 @@
-import { createClassDecorator, ClassMetadata, Token, InjectToken, MetadataAdapter, MetadataExtends, ITypeDecorator, Registration, isString, isObject, isToken, isClass } from '@ts-ioc/core';
+import { createClassDecorator, ClassMetadata, Token, isBoolean, MetadataAdapter, MetadataExtends, ITypeDecorator, Registration, isString, isObject, isToken, isClass } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken } from '../IModuleBuilder';
-import { IApplication, ApplicationToken } from '../IApplication';
+import { IApplication } from '../IApplication';
 import { ModuleConfiguration } from '../ModuleConfiguration';
-import { isBoolean } from 'util';
 
 /**
  * DI module metadata.

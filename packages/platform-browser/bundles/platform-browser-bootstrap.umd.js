@@ -75,18 +75,18 @@ var PlatformBrowser = /** @class */ (function (_super) {
     PlatformBrowser.create = function (baseURL) {
         return new PlatformBrowser(baseURL);
     };
-    // /**
-    //  * bootstrap application via main module.
-    //  *
-    //  * @template T
-    //  * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token main module or appliaction configuration.
-    //  * @returns {Promise<any>}  main module bootstrap class instance.
-    //  * @memberof PlatformBrowser
-    //  */
-    // bootstrap<T>(token: Token<T> | Type<any> | AppConfiguration<T>): Promise<any> {
-    //     return super.bootstrap(token);
-    // }
-    PlatformBrowser.classAnnations = { "name": "PlatformBrowser", "params": { "constructor": ["baseURL"], "create": ["baseURL"] } };
+    /**
+     * bootstrap application via main module.
+     *
+     * @template T
+     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token main module or appliaction configuration.
+     * @returns {Promise<any>}  main module bootstrap class instance.
+     * @memberof PlatformBrowser
+     */
+    PlatformBrowser.prototype.bootstrap = function (token) {
+        return _super.prototype.bootstrap.call(this, token);
+    };
+    PlatformBrowser.classAnnations = { "name": "PlatformBrowser", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "bootstrap": ["token"] } };
     return PlatformBrowser;
 }(BroserApplicationBuilder));
 exports.PlatformBrowser = PlatformBrowser;
