@@ -1,11 +1,10 @@
 import {
     ClassMetadata, Token, InjectToken, MetadataAdapter,
-    MetadataExtends, ITypeDecorator, Registration
+    MetadataExtends, ITypeDecorator, createClassDecorator, isClass
 } from '@ts-ioc/core';
 import { AppConfiguration } from '../AppConfiguration';
-import { IModuleBuilder, ModuleBuilderToken } from '../IModuleBuilder';
 import { IApplication, ApplicationToken } from '../IApplication';
-import { createDIModuleDecorator } from './DIModule';
+import { IApplicationBuilder, ApplicationBuilderToken } from '../IApplicationBuilder';
 
 
 export interface BootstrapMetadata extends AppConfiguration<any>, ClassMetadata {
@@ -27,46 +26,9 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
      *
      * @Bootstrap
      *
-     * @param {T} [metadata] bootstrap metadate config.
+     * @param {T} metadata bootstrap metadate config.
      */
-    (metadata?: T): ClassDecorator;
-
-    /**
-     * Bootstrap decorator, use to define class as Application Bootstrap element.
-     *
-     * @Bootstrap
-     * @param {string} provide application name or provide.
-     * @param {string} [alias] application alias name.
-     */
-    (provide: Registration<any> | symbol | string, alias?: string): ClassDecorator;
-
-    /**
-     * Bootstrap decorator, use to define class as Application Bootstrap element.
-     *
-     * @Bootstrap
-     * @param {string} provide application name or provide.
-     * @param {string} builder application builder token.
-     * @param {string} [alias] application alias name
-     */
-    (provide: Registration<any> | symbol | string, builder?: Token<IApplication>, alias?: string): ClassDecorator;
-
-
-    /**
-     * Bootstrap decorator, use to define class as Application Bootstrap element.
-     *
-     * @Bootstrap
-     * @param {string} provide application name or provide.
-     * @param {string} builder application builder token.
-     * @param {string} [alias] set application as singleton or not.
-     */
-    (provide: Registration<any> | symbol | string, builder?: Token<IApplication>, singleton?: boolean): ClassDecorator;
-
-    /**
-     * Bootstrap decorator, use to define class as Application Bootstrap element.
-     *
-     * @Bootstrap
-     */
-    (target: Function): void;
+    (metadata: T): ClassDecorator;
 }
 
 
@@ -84,12 +46,40 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
  */
 export function createBootstrapDecorator<T extends BootstrapMetadata>(
     decorType: string,
-    builder: Token<IModuleBuilder<T>> | IModuleBuilder<T>,
+    builder: Token<IApplicationBuilder<T>> | IApplicationBuilder<T>,
     provideType: InjectToken<IApplication>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IBootstrapDecorator<T> {
 
-    return createDIModuleDecorator<BootstrapMetadata>(decorType, builder, provideType, adapter, metadataExtends) as IBootstrapDecorator<T>;
+    return createClassDecorator<BootstrapMetadata>('Bootstrap',
+        args => {
+            if (adapter) {
+                adapter(args);
+            }
+        },
+        metadata => {
+            if (metadataExtends) {
+                metadata = metadataExtends(metadata as T);
+            }
+
+            if (!metadata.name && isClass(metadata.type)) {
+                let isuglify = /^[a-z]$/.test(metadata.type.name);
+                if (isuglify && metadata.type.classAnnations) {
+                    metadata.name = metadata.type.classAnnations.name;
+                } else {
+                    metadata.name = metadata.type.name;
+                }
+            }
+
+            metadata.provide = metadata.provide || provideType;
+            metadata.alias = metadata.alias || metadata.name;
+
+            metadata.decorType = decorType;
+            if (!metadata.builder) {
+                metadata.builder = builder;
+            }
+            return metadata;
+        }) as IBootstrapDecorator<T>;
 }
 
 /**
@@ -97,4 +87,4 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
  *
  * @Bootstrap
  */
-export const Bootstrap: IBootstrapDecorator<BootstrapMetadata> = createBootstrapDecorator<BootstrapMetadata>('bootstrap', ModuleBuilderToken, ApplicationToken);
+export const Bootstrap: IBootstrapDecorator<BootstrapMetadata> = createBootstrapDecorator<BootstrapMetadata>('bootstrap', ApplicationBuilderToken, ApplicationToken);

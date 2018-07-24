@@ -38,43 +38,7 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDec
      *
      * @param {T} [metadata] bootstrap metadate config.
      */
-    (metadata?: T): ClassDecorator;
-
-    /**
-     * DIModule decorator, use to define class as DI Module.
-     *
-     * @DIModule
-     * @param {string} provide DI Module name or provide.
-     * @param {string} [alias] DI Module alias name.
-     */
-    (provide: Registration<any> | symbol | string, alias?: string): ClassDecorator;
-
-    /**
-     * DIModule decorator, use to define class as DI Module.
-     *
-     * @DIModule
-     * @param {string} provide DI Module name or provide.
-     * @param {string} builder DI Module builder token.
-     * @param {string} [alias] DI Module alias name
-     */
-    (provide: Registration<any> | symbol | string, builder?: Token<IApplication>, alias?: string): ClassDecorator;
-
-    /**
-     * DIModule decorator, use to define class as DI Module.
-     *
-     * @DIModule
-     * @param {string} provide DI Module name or provide.
-     * @param {string} builder DI Module builder token.
-     * @param {string} [alias] set DI Module as singleton or not.
-     */
-    (provide: Registration<any> | symbol | string, builder?: Token<IApplication>, singleton?: boolean): ClassDecorator;
-
-    /**
-     * DIModule decorator, use to define class as Application DIModule element.
-     *
-     * @DIModule
-     */
-    (target: Function): void;
+    (metadata: T): ClassDecorator;
 }
 
 
@@ -102,38 +66,6 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
             if (adapter) {
                 adapter(args);
             }
-            args.next<DIModuleMetadata>({
-                match: (arg) => arg && (isString(arg) || (isObject(arg) && arg instanceof Registration)),
-                setMetadata: (metadata, arg) => {
-                    if (isString(arg)) {
-                        metadata.name = arg;
-                    } else {
-                        metadata.provide = arg;
-                    }
-                }
-            });
-
-            args.next<DIModuleMetadata>({
-                match: (arg) => isString(arg) || isToken(arg),
-                setMetadata: (metadata, arg) => {
-                    if (isString(arg)) {
-                        metadata.name = arg;
-                    } else {
-                        metadata.builder = arg;
-                    }
-                }
-            });
-
-            args.next<DIModuleMetadata>({
-                match: (arg) => isString(arg) || isBoolean(arg),
-                setMetadata: (metadata, arg) => {
-                    if (isString(arg)) {
-                        metadata.name = arg;
-                    } else if (isBoolean(arg)) {
-                        metadata.singleton = arg;
-                    }
-                }
-            });
         },
         metadata => {
             if (metadataExtends) {

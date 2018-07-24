@@ -1,4 +1,4 @@
-import { Token, Registration } from '@ts-ioc/core';
+import { Token, Registration, IContainer, IContainerBuilder } from '@ts-ioc/core';
 import { ModuleConfiguration } from './ModuleConfiguration';
 
 
@@ -30,6 +30,21 @@ export const ModuleBuilderToken = new InjectModuleBuilder<IModuleBuilder<any>>('
  * @template T
  */
 export interface IModuleBuilder<T> {
+    /**
+     * get container of the module.
+     *
+     * @returns {IContainer}
+     * @memberof IModuleBuilder
+     */
+    getContainer(): IContainer;
+
+    /**
+     * get container builder.
+     *
+     * @returns {IContainerBuilder}
+     * @memberof IModuleBuilder
+     */
+    getContainerBuilder(): IContainerBuilder;
 
     /**
      * build module instacne.

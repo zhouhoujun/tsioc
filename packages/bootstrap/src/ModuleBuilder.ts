@@ -2,13 +2,12 @@
 import {
     IContainer, hasClassMetadata, isProviderMap, Provider,
     getTypeMetadata, Token, Type, Providers,
-    isString, lang, isFunction, isClass, isUndefined, isNull, isBaseObject, isToken, isArray, Injectable, Inject, ContainerToken, ContainerBuilderToken, hasOwnClassMetadata, IocExt
+    isString, lang, isFunction, isClass, isUndefined, isNull, isBaseObject, isToken, isArray, Injectable, Inject, ContainerToken, ContainerBuilderToken, hasOwnClassMetadata, IocExt, IContainerBuilder
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import { ModuleConfiguration } from './ModuleConfiguration';
 import { DIModule } from './decorators';
 import { ApplicationBuilderFactoryToken } from './IApplicationBuilder';
-import { async } from 'q';
 
 /**
  * server app bootstrap
@@ -32,6 +31,26 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
     /**
+     * get container of the module.
+     *
+     * @returns {IContainer}
+     * @memberof ModuleBuilder
+     */
+    getContainer(): IContainer {
+        return this.container;
+    }
+
+    /**
+     * get container builder.
+     *
+     * @returns {IContainerBuilder}
+     * @memberof IModuleBuilder
+     */
+    getContainerBuilder(): IContainerBuilder {
+        return this.container.resolve(ContainerBuilderToken);
+    }
+
+    /**
      * build module.
      *
      * @param {(Token<T>| ModuleConfiguration<T>)} [token]
@@ -40,6 +59,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      */
     async build(token: Token<T> | Type<any> | ModuleConfiguration<T>, data?: any): Promise<T> {
         let cfg = this.getConfigure(token);
+        cfg = await this.mergeConfigure(cfg);
         let buider = this.getBuilder(cfg);
         let instacnce = await buider.createInstance(isToken(token) ? token : null, cfg, data);
         await buider.buildStrategy(instacnce, cfg);
@@ -108,6 +128,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         if (!bootToken) {
             throw new Error('not find bootstrap token.');
         }
+        await this.registerExts();
         await this.registerDepdences(cfg);
         if (isClass(bootToken)) {
             if (!this.container.has(bootToken)) {
@@ -159,6 +180,13 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return null;
     }
 
+    protected async mergeConfigure(cfg: ModuleConfiguration<T>): Promise<ModuleConfiguration<T>> {
+        return cfg;
+    }
+
+    protected async registerExts(): Promise<IContainer> {
+        return this.container;
+    }
 
     protected async registerDepdences(config: ModuleConfiguration<T>): Promise<IContainer> {
 

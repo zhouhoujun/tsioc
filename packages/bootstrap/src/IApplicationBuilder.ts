@@ -19,59 +19,59 @@ export const ApplicationBuilderFactoryToken = new InjectToken<IApplicationBuilde
  * @extends {IModuleBuilder<T>}
  * @template T
  */
-export interface IApplicationBuilder<T> {
+export interface IApplicationBuilder<T> extends IModuleBuilder<T> {
 
-    /**
-     * get ioc caontainer in this application.
-     *
-     * @returns {IContainer}
-     * @memberof IApplicationBuilder
-     */
-    getContainer(): IContainer;
+    // /**
+    //  * get ioc caontainer in this application.
+    //  *
+    //  * @returns {IContainer}
+    //  * @memberof IApplicationBuilder
+    //  */
+    // getContainer(): IContainer;
 
-    /**
-     * use an exist container for platform.
-     *
-     * @param {IContainer} container
-     * @returns {this}
-     * @memberof IApplicationBuilder
-     */
-    setContainer(container: IContainer): this;
+    // /**
+    //  * use an exist container for platform.
+    //  *
+    //  * @param {IContainer} container
+    //  * @returns {this}
+    //  * @memberof IApplicationBuilder
+    //  */
+    // setContainer(container: IContainer): this;
 
 
-    /**
-     * get container builder in application.
-     *
-     * @returns {IContainerBuilder}
-     * @memberof IApplicationBuilder
-     */
-    getContainerBuilder(): IContainerBuilder;
+    // /**
+    //  * get container builder in application.
+    //  *
+    //  * @returns {IContainerBuilder}
+    //  * @memberof IApplicationBuilder
+    //  */
+    // getContainerBuilder(): IContainerBuilder;
 
-    /**
-     * use container builder
-     *
-     * @param {IContainerBuilder} builder
-     * @returns
-     * @memberof IApplicationBuilder
-     */
-    setContainerBuilder(builder: IContainerBuilder);
+    // /**
+    //  * use container builder
+    //  *
+    //  * @param {IContainerBuilder} builder
+    //  * @returns
+    //  * @memberof IApplicationBuilder
+    //  */
+    // setContainerBuilder(builder: IContainerBuilder);
 
-    /**
-     * get module builer.
-     *
-     * @returns {IModuleBuilder<T>}
-     * @memberof IApplicationBuilder
-     */
-    getModuleBuilder(): IModuleBuilder<T>;
+    // /**
+    //  * get module builer.
+    //  *
+    //  * @returns {IModuleBuilder<T>}
+    //  * @memberof IApplicationBuilder
+    //  */
+    // getModuleBuilder(): IModuleBuilder<T>;
 
-    /**
-     * set module builder.
-     *
-     * @param {IModuleBuilder<T>} builder
-     * @returns {this}
-     * @memberof IApplicationBuilder
-     */
-    setModuleBuilder(builder: IModuleBuilder<T>): this;
+    // /**
+    //  * set module builder.
+    //  *
+    //  * @param {IModuleBuilder<T>} builder
+    //  * @returns {this}
+    //  * @memberof IApplicationBuilder
+    //  */
+    // setModuleBuilder(builder: IModuleBuilder<T>): this;
 
     /**
      * use custom configuration.
