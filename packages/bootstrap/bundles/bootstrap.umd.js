@@ -116,39 +116,6 @@ unwrapExports(DIModule);
 var DIModule_1 = DIModule.createDIModuleDecorator;
 var DIModule_2 = DIModule.DIModule;
 
-var IApplication = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-/**
- * Inject ApplicationToken
- *
- * @export
- * @class InjectApplicationToken
- * @extends {Registration<T>}
- * @template T
- */
-var InjectApplicationToken = /** @class */ (function (_super) {
-    tslib_1.__extends(InjectApplicationToken, _super);
-    function InjectApplicationToken(desc) {
-        return _super.call(this, 'DI_Application', desc) || this;
-    }
-    InjectApplicationToken.classAnnations = { "name": "InjectApplicationToken", "params": { "constructor": ["desc"] } };
-    return InjectApplicationToken;
-}(core_1.Registration));
-exports.InjectApplicationToken = InjectApplicationToken;
-/**
- * Default Application Token.
- */
-exports.ApplicationToken = new InjectApplicationToken('');
-
-
-});
-
-unwrapExports(IApplication);
-var IApplication_1 = IApplication.InjectApplicationToken;
-var IApplication_2 = IApplication.ApplicationToken;
-
 var IApplicationBuilder = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -162,7 +129,6 @@ var IApplicationBuilder_1 = IApplicationBuilder.ApplicationBuilderToken;
 
 var Bootstrap = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
-
 
 
 /**
@@ -210,7 +176,7 @@ exports.createBootstrapDecorator = createBootstrapDecorator;
  *
  * @Bootstrap
  */
-exports.Bootstrap = createBootstrapDecorator('bootstrap', IApplicationBuilder.ApplicationBuilderToken, IApplication.ApplicationToken);
+exports.Bootstrap = createBootstrapDecorator('bootstrap', IApplicationBuilder.ApplicationBuilderToken);
 
 
 });
@@ -965,7 +931,7 @@ var ApplicationBuilder = /** @class */ (function (_super) {
                     case 0:
                         if (!!this.rootContainer) return [3 /*break*/, 3];
                         this.rootContainer = this.getContainerBuilder().create();
-                        return [4 /*yield*/, this.useConfiguration()];
+                        return [4 /*yield*/, this.getGlobalConfigure()];
                     case 1:
                         cfg = _a.sent();
                         this.bindAppConfig(cfg);
@@ -978,6 +944,12 @@ var ApplicationBuilder = /** @class */ (function (_super) {
                 }
             });
         });
+    };
+    ApplicationBuilder.prototype.getGlobalConfigure = function () {
+        if (!this.globalConfig) {
+            this.useConfiguration();
+        }
+        return this.globalConfig;
     };
     ApplicationBuilder.prototype.canRegRootDepds = function () {
         return false;
@@ -1075,7 +1047,7 @@ var ApplicationBuilder = /** @class */ (function (_super) {
     ApplicationBuilder.prototype.getDefaultConfig = function () {
         return { debug: false };
     };
-    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "getContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "useConfiguration": ["config"], "use": ["modules"], "bootstrap": ["token"], "build": ["token", "data"], "registerRoot": [], "canRegRootDepds": [], "createBuilder": ["baseURL"], "registerExts": ["container", "config"], "mergeConfigure": ["cfg"], "bindAppConfig": ["config"], "getDefaultConfig": [] } };
+    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "getContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "useConfiguration": ["config"], "use": ["modules"], "bootstrap": ["token"], "build": ["token", "data"], "registerRoot": [], "getGlobalConfigure": [], "canRegRootDepds": [], "createBuilder": ["baseURL"], "registerExts": ["container", "config"], "mergeConfigure": ["cfg"], "bindAppConfig": ["config"], "getDefaultConfig": [] } };
     ApplicationBuilder = ApplicationBuilder_1 = tslib_1.__decorate([
         core_1.Injectable(IApplicationBuilder.ApplicationBuilderToken),
         tslib_1.__metadata("design:paramtypes", [String])
@@ -1091,7 +1063,40 @@ exports.ApplicationBuilder = ApplicationBuilder;
 unwrapExports(ApplicationBuilder_1);
 var ApplicationBuilder_2 = ApplicationBuilder_1.ApplicationBuilder;
 
-var D__workspace_github_tsioc_packages_bootstrap_lib = createCommonjsModule(function (module, exports) {
+var IApplication = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * Inject ApplicationToken
+ *
+ * @export
+ * @class InjectApplicationToken
+ * @extends {Registration<T>}
+ * @template T
+ */
+var InjectApplicationToken = /** @class */ (function (_super) {
+    tslib_1.__extends(InjectApplicationToken, _super);
+    function InjectApplicationToken(desc) {
+        return _super.call(this, 'DI_Application', desc) || this;
+    }
+    InjectApplicationToken.classAnnations = { "name": "InjectApplicationToken", "params": { "constructor": ["desc"] } };
+    return InjectApplicationToken;
+}(core_1.Registration));
+exports.InjectApplicationToken = InjectApplicationToken;
+/**
+ * Default Application Token.
+ */
+exports.ApplicationToken = new InjectApplicationToken('');
+
+
+});
+
+unwrapExports(IApplication);
+var IApplication_1 = IApplication.InjectApplicationToken;
+var IApplication_2 = IApplication.ApplicationToken;
+
+var D__Workspace_Projects_modules_tsioc_packages_bootstrap_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(decorators, exports);
@@ -1106,7 +1111,7 @@ tslib_1.__exportStar(BootstrapModule_1, exports);
 
 });
 
-var index$1 = unwrapExports(D__workspace_github_tsioc_packages_bootstrap_lib);
+var index$1 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_bootstrap_lib);
 
 return index$1;
 

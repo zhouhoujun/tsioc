@@ -101,7 +101,7 @@ unwrapExports(PlatformBrowser_1);
 var PlatformBrowser_2 = PlatformBrowser_1.BroserApplicationBuilder;
 var PlatformBrowser_3 = PlatformBrowser_1.PlatformBrowser;
 
-var D__workspace_github_tsioc_packages_platformBrowser_bootstrap_lib = createCommonjsModule(function (module, exports) {
+var D__Workspace_Projects_modules_tsioc_packages_platformBrowser_bootstrap_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(PlatformBrowser_1, exports);
@@ -109,7 +109,7 @@ tslib_1.__exportStar(PlatformBrowser_1, exports);
 
 });
 
-var index = unwrapExports(D__workspace_github_tsioc_packages_platformBrowser_bootstrap_lib);
+var index = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_platformBrowser_bootstrap_lib);
 
 return index;
 

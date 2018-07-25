@@ -154,12 +154,19 @@ export class ApplicationBuilder<T> extends BaseModuleBuilder<T> implements IAppl
     async registerRoot(): Promise<IContainer> {
         if (!this.rootContainer) {
             this.rootContainer = this.getContainerBuilder().create();
-            let cfg = await this.useConfiguration();
+            let cfg = await this.getGlobalConfigure();
             this.bindAppConfig(cfg);
             await this.registerDepdences(this.rootContainer, cfg);
             this.rootContainer.bindProvider(AppConfigurationToken, cfg);
         }
         return this.rootContainer;
+    }
+
+    protected getGlobalConfigure() {
+        if (!this.globalConfig) {
+            this.useConfiguration();
+        }
+        return this.globalConfig;
     }
 
     protected canRegRootDepds() {

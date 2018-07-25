@@ -47,7 +47,7 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
 export function createBootstrapDecorator<T extends BootstrapMetadata>(
     decorType: string,
     builder: Token<IApplicationBuilder<T>> | IApplicationBuilder<T>,
-    provideType: InjectToken<IApplication>,
+    provideType?: InjectToken<IApplication>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IBootstrapDecorator<T> {
 
@@ -87,4 +87,4 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
  *
  * @Bootstrap
  */
-export const Bootstrap: IBootstrapDecorator<BootstrapMetadata> = createBootstrapDecorator<BootstrapMetadata>('bootstrap', ApplicationBuilderToken, ApplicationToken);
+export const Bootstrap: IBootstrapDecorator<BootstrapMetadata> = createBootstrapDecorator<BootstrapMetadata>('bootstrap', ApplicationBuilderToken);
