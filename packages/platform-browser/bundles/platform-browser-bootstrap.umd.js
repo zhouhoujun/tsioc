@@ -46,10 +46,13 @@ var BroserApplicationBuilder = /** @class */ (function (_super) {
     BroserApplicationBuilder.prototype.createContainerBuilder = function () {
         return new platformBrowser.ContainerBuilder();
     };
+    BroserApplicationBuilder.prototype.createBuilder = function () {
+        return this;
+    };
     BroserApplicationBuilder.prototype.getDefaultConfig = function () {
         return core_1.lang.assign({}, defaultAppConfig);
     };
-    BroserApplicationBuilder.classAnnations = { "name": "BroserApplicationBuilder", "params": { "constructor": ["baseURL"], "createContainerBuilder": [], "getDefaultConfig": [] } };
+    BroserApplicationBuilder.classAnnations = { "name": "BroserApplicationBuilder", "params": { "constructor": ["baseURL"], "createContainerBuilder": [], "createBuilder": [], "getDefaultConfig": [] } };
     return BroserApplicationBuilder;
 }(bootstrap.ApplicationBuilder));
 exports.BroserApplicationBuilder = BroserApplicationBuilder;

@@ -1,5 +1,11 @@
 import { ModuleConfiguration } from './ModuleConfiguration';
-import { ObjectMap } from '@ts-ioc/core';
+import { ObjectMap, InjectToken } from '@ts-ioc/core';
+
+
+/**
+ * application configuration token.
+ */
+export const AppConfigurationToken = new InjectToken<AppConfiguration<any>>('DI_APP_Configuration');
 
 /**
  * app configuration.

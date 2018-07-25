@@ -1,27 +1,52 @@
-import { AppConfiguration } from './AppConfiguration';
+import { AppConfiguration, AppConfigurationToken } from './AppConfiguration';
 import {
-    IContainer, Token, Type, LoadType, lang, isString,
-    isToken, DefaultContainerBuilder, isFunction, isClass, IContainerBuilder, ContainerBuilderFactoryToken
+    IContainer, Token, Type, LoadType, lang, isString, isArray,
+    isToken, isFunction, isClass, Injectable, IContainerBuilder, DefaultContainerBuilder
 } from '@ts-ioc/core';
-import { IApplicationBuilder, ApplicationBuilderToken, ApplicationBuilderFactoryToken } from './IApplicationBuilder';
-import { BootstrapModule } from './BootstrapModule';
+import { IApplicationBuilder, ApplicationBuilderToken, CustomRegister } from './IApplicationBuilder';
 import { IApplication } from './IApplication';
-import { ModuleBuilder } from './ModuleBuilder';
+import { BaseModuleBuilder } from './ModuleBuilder';
+import { RootModuleBuilderToken, RootContainerToken } from './IModuleBuilder';
+
 
 /**
  * application builder.
  *
  * @export
  * @class ApplicationBuilder
- * @extends {ModuleBuilder<T>}
+ * @extends {BaseModuleBuilder<T>}
  * @template T
  */
-export class ApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicationBuilder<T> {
+@Injectable(ApplicationBuilderToken)
+export class ApplicationBuilder<T> extends BaseModuleBuilder<T> implements IApplicationBuilder<T> {
     protected globalConfig: Promise<AppConfiguration<T>>;
     protected globalModules: LoadType[];
+    protected customRegs: CustomRegister<T>[];
+
     constructor(public baseURL?: string) {
         super();
         this.globalModules = [];
+        this.customRegs = [];
+    }
+
+    getContainer() {
+        if (!this.container) {
+            let builder = this.getContainerBuilder();
+            this.container = builder.create();
+        }
+        return this.container;
+    }
+
+    containerBuilder: IContainerBuilder;
+    getContainerBuilder() {
+        if (!this.containerBuilder) {
+            this.containerBuilder = this.createContainerBuilder();
+        }
+        return this.containerBuilder;
+    }
+
+    protected createContainerBuilder(): IContainerBuilder {
+        return new DefaultContainerBuilder();
     }
 
     /**
@@ -82,13 +107,14 @@ export class ApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicat
     async bootstrap(token: Token<T> | Type<any> | AppConfiguration<T>): Promise<any> {
         let app: IApplication = await this.build(token);
         let bootMd: any;
+        let container = app.container || this.getContainer();
         if (app.config && isToken(token)) {
             if (app.config.bootstrap !== token) {
-                if (!this.container.has(token) && isClass(token)) {
-                    this.container.register(token);
+                if (!container.has(token) && isClass(token)) {
+                    container.register(token);
                 }
-                if (this.container.has(token)) {
-                    bootMd = this.container.resolve(token);
+                if (container.has(token)) {
+                    bootMd = container.resolve(token);
                 }
             }
         }
@@ -100,7 +126,7 @@ export class ApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicat
         if (isFunction(bootMd.onStarted)) {
             bootMd.onStarted(app);
         }
-        return bootMd;
+        return app;
     }
 
     /**
@@ -111,8 +137,33 @@ export class ApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicat
      * @returns {Promise<any>}
      * @memberof ApplicationBuilder
      */
-    build(token: Token<T> | Type<any> | AppConfiguration<T>, data?: any): Promise<any> {
-        return super.build(token, data);
+    async build(token: Token<T> | Type<any> | AppConfiguration<T>, data?: any): Promise<any> {
+        if (!this.rootContainer) {
+            await this.registerRoot();
+        }
+        this.resetContainer();
+        this.container.bindProvider(RootContainerToken, this.rootContainer);
+        if (this.rootContainer.has(RootModuleBuilderToken)) {
+            let builder = this.rootContainer.get(RootModuleBuilderToken);
+            return await builder.build(token, data);
+        } else {
+            return await super.build(token, data);
+        }
+    }
+
+    async registerRoot(): Promise<IContainer> {
+        if (!this.rootContainer) {
+            this.rootContainer = this.getContainerBuilder().create();
+            let cfg = await this.useConfiguration();
+            this.bindAppConfig(cfg);
+            await this.registerDepdences(this.rootContainer, cfg);
+            this.rootContainer.bindProvider(AppConfigurationToken, cfg);
+        }
+        return this.rootContainer;
+    }
+
+    protected canRegRootDepds() {
+        return false;
     }
 
     /**
@@ -132,22 +183,31 @@ export class ApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicat
      *
      * @protected
      * @param {IContainer} container
+     * @param {AppConfiguration<T>} config
      * @returns {Promise<IContainer>}
      * @memberof ApplicationBuilder
      */
-    protected async registerExts(): Promise<IContainer> {
-        this.container.bindProvider(ApplicationBuilderToken, this);
-        this.container.bindProvider(ApplicationBuilderFactoryToken, (baseURL?: string) => this.createBuilder());
-        if (!this.container.has(BootstrapModule)) {
-            this.container.register(BootstrapModule);
+    protected async registerExts(container: IContainer, config: AppConfiguration<T>): Promise<IContainer> {
+        await super.registerExts(container, config);
+        config.exports = config.exports || [];
+        if (this.customRegs.length) {
+            await Promise.all(this.customRegs.map(async cs => {
+                let tokens = await cs(container, config, this);
+                if (isArray(tokens) && tokens.length) {
+                    config.exports = config.exports.concat(tokens);
+                }
+            }));
         }
         if (this.globalModules.length) {
             let usedModules = this.globalModules;
-            this.globalModules = [];
-            await this.container.loadModule(...usedModules);
+            let tokens = await container.loadModule(...usedModules);
+            if (tokens.length) {
+                config.exports = config.exports.concat(tokens);
+            }
         }
-        return this.container;
+        return container;
     }
+
 
     /**
      * meger config configuration with global config.
@@ -158,19 +218,14 @@ export class ApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicat
      * @memberof ApplicationBuilder
      */
     protected async mergeConfigure(cfg: AppConfiguration<T>): Promise<AppConfiguration<T>> {
-        if (!this.globalConfig) {
-            this.useConfiguration();
-        }
-        let gcfg = await this.globalConfig;
-        return this.bindConfiguration(lang.assign({}, gcfg, cfg));
+        cfg = await super.mergeConfigure(cfg);
+        let gcfg = this.rootContainer.get(AppConfigurationToken);
+        return lang.assign({}, lang.omit(gcfg || {}, 'imports', 'providers', 'bootstrap', 'builder', 'exports'), cfg);
     }
 
-    protected bindConfiguration(config: AppConfiguration<T>): AppConfiguration<T> {
+    protected bindAppConfig(config: AppConfiguration<T>): AppConfiguration<T> {
         if (this.baseURL) {
             config.baseURL = this.baseURL;
-        }
-        if (this.globalModules && this.globalModules.length) {
-            config.imports = this.globalModules.concat(config.imports);
         }
         return config;
     }

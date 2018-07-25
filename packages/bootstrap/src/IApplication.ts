@@ -1,5 +1,5 @@
 import { AppConfiguration } from './AppConfiguration';
-import { Registration } from '@ts-ioc/core';
+import { Registration, IContainer } from '@ts-ioc/core';
 
 
 /**
@@ -36,6 +36,13 @@ export interface IApplication {
      * @memberof IApplication
      */
     config?: AppConfiguration<any>;
+
+    /**
+     * ioc container.
+     *
+     * @memberof IApplication
+     */
+    container?: IContainer;
 }
 
 /**

@@ -1,4 +1,4 @@
-import { Token, Registration, IContainer, IContainerBuilder } from '@ts-ioc/core';
+import { Token, Registration, IContainer, IContainerBuilder, Type, InjectToken } from '@ts-ioc/core';
 import { ModuleConfiguration } from './ModuleConfiguration';
 
 
@@ -21,7 +21,15 @@ export class InjectModuleBuilder<T extends IModuleBuilder<any>> extends Registra
  */
 export const ModuleBuilderToken = new InjectModuleBuilder<IModuleBuilder<any>>('');
 
+/**
+ * root module builder token.
+ */
+export const RootModuleBuilderToken = new InjectModuleBuilder<IModuleBuilder<any>>('RootModule');
 
+/**
+ * root container token.
+ */
+export const RootContainerToken = new InjectToken<IContainer>('DI_RootContainer');
 /**
  * module builder
  *
@@ -30,6 +38,15 @@ export const ModuleBuilderToken = new InjectModuleBuilder<IModuleBuilder<any>>('
  * @template T
  */
 export interface IModuleBuilder<T> {
+
+    /**
+     * root module container.
+     *
+     * @type {IContainer}
+     * @memberof IModuleBuilder
+     */
+    rootContainer: IContainer;
+
     /**
      * get container of the module.
      *
@@ -37,6 +54,13 @@ export interface IModuleBuilder<T> {
      * @memberof IModuleBuilder
      */
     getContainer(): IContainer;
+
+    /**
+     * reset container.
+     *
+     * @memberof IModuleBuilder
+     */
+    resetContainer();
 
     /**
      * get container builder.
@@ -67,6 +91,16 @@ export interface IModuleBuilder<T> {
     buildStrategy(instance: T, config: ModuleConfiguration<T>): Promise<T>;
 
     /**
+     * import di module.
+     *
+     * @param {(Type<any> | ModuleConfiguration<any>)} token di module type
+     * @param {boolean} [forceNew] force to create new container and builder to import module. default false.
+     * @returns {Promise<IContainer>}
+     * @memberof IModuleBuilder
+     */
+    importModule(token: Type<any> | ModuleConfiguration<any>, forceNew?: boolean): Promise<IContainer>;
+
+    /**
      * create instance via token and config.
      *
      * @param {Token<T>} token
@@ -81,11 +115,21 @@ export interface IModuleBuilder<T> {
      * get builder.
      *
      * @param {ModuleConfiguration<T>} cfg
+     * @param {boolean} [forceNew] force to create builder or not. default false.
      * @returns {IModuleBuilder<T>}
      * @memberof IModuleBuilder
      */
-    getBuilder(cfg: ModuleConfiguration<T>): IModuleBuilder<T>;
+    getBuilder(cfg: ModuleConfiguration<T>, forceNew?: boolean): IModuleBuilder<T>;
 
+    /**
+     * register module depdences.
+     *
+     * @param {IContainer} container
+     * @param {ModuleConfiguration<T>} config
+     * @returns {Promise<IContainer>}
+     * @memberof IModuleBuilder
+     */
+    registerDepdences(container: IContainer, config: ModuleConfiguration<T>): Promise<IContainer>;
 
     /**
      * get the module define decorator or decorator name.

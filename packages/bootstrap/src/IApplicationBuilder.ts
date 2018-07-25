@@ -1,10 +1,13 @@
-import { Token, Type, LoadType, InjectToken } from '@ts-ioc/core';
+import { Token, Type, LoadType, InjectToken, IContainer } from '@ts-ioc/core';
 import { AppConfiguration } from './AppConfiguration';
 import { IModuleBuilder } from './IModuleBuilder';
 
+/**
+ * custom define module.
+ */
+export type CustomRegister<T> = (container: IContainer, config?: AppConfiguration<T>, builder?: IApplicationBuilder<T>) => Token<any>[] | Promise<Token<any>[]>;
 
 export const ApplicationBuilderToken = new InjectToken<IApplicationBuilder<any>>('DI_AppBuilder');
-export const ApplicationBuilderFactoryToken = new InjectToken<IApplicationBuilder<any>>('DI_AppBuilder_Factory');
 
 /**
  * application builder.
@@ -15,58 +18,6 @@ export const ApplicationBuilderFactoryToken = new InjectToken<IApplicationBuilde
  * @template T
  */
 export interface IApplicationBuilder<T> extends IModuleBuilder<T> {
-
-    // /**
-    //  * get ioc caontainer in this application.
-    //  *
-    //  * @returns {IContainer}
-    //  * @memberof IApplicationBuilder
-    //  */
-    // getContainer(): IContainer;
-
-    // /**
-    //  * use an exist container for platform.
-    //  *
-    //  * @param {IContainer} container
-    //  * @returns {this}
-    //  * @memberof IApplicationBuilder
-    //  */
-    // setContainer(container: IContainer): this;
-
-
-    // /**
-    //  * get container builder in application.
-    //  *
-    //  * @returns {IContainerBuilder}
-    //  * @memberof IApplicationBuilder
-    //  */
-    // getContainerBuilder(): IContainerBuilder;
-
-    // /**
-    //  * use container builder
-    //  *
-    //  * @param {IContainerBuilder} builder
-    //  * @returns
-    //  * @memberof IApplicationBuilder
-    //  */
-    // setContainerBuilder(builder: IContainerBuilder);
-
-    // /**
-    //  * get module builer.
-    //  *
-    //  * @returns {IModuleBuilder<T>}
-    //  * @memberof IApplicationBuilder
-    //  */
-    // getModuleBuilder(): IModuleBuilder<T>;
-
-    // /**
-    //  * set module builder.
-    //  *
-    //  * @param {IModuleBuilder<T>} builder
-    //  * @returns {this}
-    //  * @memberof IApplicationBuilder
-    //  */
-    // setModuleBuilder(builder: IModuleBuilder<T>): this;
 
     /**
      * use custom configuration.
@@ -93,7 +44,15 @@ export interface IApplicationBuilder<T> extends IModuleBuilder<T> {
      * @returns {Promise<any>}
      * @memberof IApplicationBuilder
      */
-    build(token: Token<T> | Type<any> | AppConfiguration<T>): Promise<any>;
+    build(token: Token<T> | Type<any> | AppConfiguration<T>, data?: any): Promise<any>;
+
+    /**
+     * register root container
+     *
+     * @returns {Promise<IContainer>} root container.
+     * @memberof IApplicationBuilder
+     */
+    registerRoot(): Promise<IContainer>;
 
     /**
      * bootstrap app via main module.
