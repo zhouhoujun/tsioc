@@ -263,7 +263,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-
 var exportsProvidersFiled = '__exportProviders';
 /**
  * base module builder
@@ -288,8 +287,16 @@ var BaseModuleBuilder = /** @class */ (function () {
      *
      * @memberof BaseModuleBuilder
      */
-    BaseModuleBuilder.prototype.resetContainer = function () {
-        this.container = this.getContainerBuilder().create();
+    BaseModuleBuilder.prototype.resetContainer = function (parent) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            return tslib_1.__generator(this, function (_a) {
+                this.container = this.getContainerBuilder().create();
+                if (this.container !== parent) {
+                    this.container.parent = parent;
+                }
+                return [2 /*return*/, this.container];
+            });
+        });
     };
     /**
      * get container builder.
@@ -314,15 +321,12 @@ var BaseModuleBuilder = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         cfg = this.getConfigure(token);
-                        return [4 /*yield*/, this.mergeConfigure(cfg)];
-                    case 1:
-                        cfg = _a.sent();
                         builder = this.getBuilder(cfg);
                         return [4 /*yield*/, builder.createInstance(core_1.isToken(token) ? token : null, cfg, data)];
-                    case 2:
+                    case 1:
                         instacnce = _a.sent();
                         return [4 /*yield*/, builder.buildStrategy(instacnce, cfg)];
-                    case 3:
+                    case 2:
                         _a.sent();
                         return [2 /*return*/, instacnce];
                 }
@@ -347,8 +351,7 @@ var BaseModuleBuilder = /** @class */ (function () {
     BaseModuleBuilder.prototype.importModule = function (token, forceNew) {
         if (forceNew === void 0) { forceNew = false; }
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            var container, cfg, builder, importContainer, expProviders, bootToken;
+            var container, cfg, builder, importContainer, bootToken;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -359,41 +362,23 @@ var BaseModuleBuilder = /** @class */ (function () {
                         }
                         cfg = this.getConfigure(token);
                         builder = this.getBuilder(cfg, forceNew);
-                        forceNew && builder.resetContainer();
-                        importContainer = builder.getContainer();
-                        return [4 /*yield*/, builder.registerDepdences(importContainer, cfg)];
+                        if (!forceNew) return [3 /*break*/, 2];
+                        return [4 /*yield*/, builder.resetContainer(container)];
                     case 1:
                         _a.sent();
-                        if (cfg.exports && cfg.exports.length) {
-                            cfg.exports.forEach(function (tk) {
-                                if (core_1.isClass(tk)) {
-                                    if (_this.isDIModule(tk)) {
-                                        return;
-                                    }
-                                    if (_this.isIocExt(tk)) {
-                                        container.register(tk);
-                                        return;
-                                    }
-                                }
-                                container.bindProvider(tk, function () {
-                                    var providers = [];
-                                    for (var _i = 0; _i < arguments.length; _i++) {
-                                        providers[_i] = arguments[_i];
-                                    }
-                                    return importContainer.resolve.apply(importContainer, [tk].concat(providers));
-                                });
-                            });
-                        }
-                        expProviders = cfg[exportsProvidersFiled];
-                        if (expProviders && expProviders.length) {
-                            expProviders.forEach(function (tk) {
-                                container.bindProvider(tk, function () { return importContainer.get(tk); });
-                            });
-                        }
-                        bootToken = this.getBootstrapToken(cfg, core_1.isClass(token) ? token : null);
+                        _a.label = 2;
+                    case 2:
+                        importContainer = builder.getContainer();
+                        return [4 /*yield*/, builder.registerDepdences(importContainer, cfg)];
+                    case 3:
+                        _a.sent();
+                        bootToken = builder.getBootstrapToken(cfg, core_1.isClass(token) ? token : null);
                         if (core_1.isToken(bootToken)) {
                             container.bindProvider(bootToken, function () { return builder.createInstance(bootToken, cfg); });
                         }
+                        return [4 /*yield*/, this.importConfigExports(container, importContainer, cfg)];
+                    case 4:
+                        _a.sent();
                         return [2 /*return*/, container];
                 }
             });
@@ -414,7 +399,6 @@ var BaseModuleBuilder = /** @class */ (function () {
         if (!builder) {
             builder = forceNew ? this.createBuilder() : this;
         }
-        builder.rootContainer = this.rootContainer;
         return builder;
     };
     BaseModuleBuilder.prototype.getDecorator = function () {
@@ -462,7 +446,7 @@ var BaseModuleBuilder = /** @class */ (function () {
                         return [4 /*yield*/, this.registerDepdences(container, cfg)];
                     case 1:
                         _a.sent();
-                        return [2 /*return*/, this.resolveToken(container, token, cfg)];
+                        return [2 /*return*/, this.resolveToken(container, bootToken, cfg)];
                 }
             });
         });
@@ -474,13 +458,14 @@ var BaseModuleBuilder = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this.registerExts(container, config)];
                     case 1:
                         _a.sent();
-                        if (!this.canRegRootDepds()) return [3 /*break*/, 3];
-                        return [4 /*yield*/, this.registerRootDepds(container, config)];
+                        // if (this.canRegRootDepds()) {
+                        //     await this.registerRootDepds(container, config);
+                        // }
+                        return [4 /*yield*/, this.registerConfgureDepds(container, config)];
                     case 2:
-                        _a.sent();
-                        _a.label = 3;
-                    case 3: return [4 /*yield*/, this.registerConfgureDepds(container, config)];
-                    case 4:
+                        // if (this.canRegRootDepds()) {
+                        //     await this.registerRootDepds(container, config);
+                        // }
                         _a.sent();
                         return [2 /*return*/, container];
                 }
@@ -498,23 +483,67 @@ var BaseModuleBuilder = /** @class */ (function () {
             return container.resolve(token);
         }
     };
-    BaseModuleBuilder.prototype.registerRootDepds = function (container, config) {
+    // protected async registerRootDepds(container: IContainer, config?: ModuleConfiguration<T>): Promise<IContainer> {
+    //     if (!this.canRegRootDepds()) {
+    //         return container;
+    //     }
+    //     let appcfg = this.parnet.get(AppConfigurationToken);
+    //     await this.importConfigExports(container, this.parnet, appcfg);
+    //     return container;
+    // }
+    // protected canRegRootDepds() {
+    //     return !!this.parnet;
+    // }
+    BaseModuleBuilder.prototype.importConfigExports = function (container, parentContainer, cfg) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var appcfg;
+            var _this = this;
+            var expProviders;
             return tslib_1.__generator(this, function (_a) {
-                if (!this.canRegRootDepds()) {
-                    return [2 /*return*/, container];
+                switch (_a.label) {
+                    case 0:
+                        if (!(cfg.exports && cfg.exports.length)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, Promise.all(cfg.exports.map(function (tk) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
+                                return tslib_1.__generator(this, function (_a) {
+                                    // if (isClass(tk)) {
+                                    //     if (this.isDIModule(tk)) {
+                                    //         await this.importModule(tk);
+                                    //         return tk;
+                                    //     }
+                                    //     if (this.isIocExt(tk)) {
+                                    //         container.register(tk);
+                                    //         return tk;
+                                    //     }
+                                    // }
+                                    container.bindProvider(tk, function () {
+                                        var providers = [];
+                                        for (var _i = 0; _i < arguments.length; _i++) {
+                                            providers[_i] = arguments[_i];
+                                        }
+                                        return parentContainer.resolve.apply(parentContainer, [tk].concat(providers));
+                                    });
+                                    return [2 /*return*/, tk];
+                                });
+                            }); }))];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        expProviders = cfg[exportsProvidersFiled];
+                        if (expProviders && expProviders.length) {
+                            expProviders.forEach(function (tk) {
+                                container.bindProvider(tk, function () { return parentContainer.get(tk); });
+                            });
+                        }
+                        return [2 /*return*/, container];
                 }
-                appcfg = this.rootContainer.get(AppConfiguration.AppConfigurationToken);
-                if (appcfg.exports && appcfg.exports.length || appcfg[exportsProvidersFiled]) {
-                    this.importModule(appcfg);
-                }
-                return [2 /*return*/, container];
             });
         });
     };
-    BaseModuleBuilder.prototype.canRegRootDepds = function () {
-        return !!this.rootContainer;
+    BaseModuleBuilder.prototype.needRegister = function (type) {
+        if (this.isIocExt(type)) {
+            return true;
+        }
+        return false;
     };
     BaseModuleBuilder.prototype.registerConfgureDepds = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
@@ -528,7 +557,7 @@ var BaseModuleBuilder = /** @class */ (function () {
                         return [4 /*yield*/, buider.loader.loadTypes(config.imports, function (it) { return _this.isIocExt(it) || _this.isDIModule(it); })];
                     case 1:
                         mdls = _a.sent();
-                        return [4 /*yield*/, Promise.all(mdls.map(function (md) { return _this.importModule(md); }))];
+                        return [4 /*yield*/, Promise.all(mdls.map(function (md) { return _this.importModule(md, true); }))];
                     case 2:
                         _a.sent();
                         _a.label = 3;
@@ -568,13 +597,9 @@ var BaseModuleBuilder = /** @class */ (function () {
         }
         return null;
     };
-    BaseModuleBuilder.prototype.mergeConfigure = function (cfg) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            return tslib_1.__generator(this, function (_a) {
-                return [2 /*return*/, cfg];
-            });
-        });
-    };
+    // protected async mergeConfigure(cfg: ModuleConfiguration<T>): Promise<ModuleConfiguration<T>> {
+    //     return cfg;
+    // }
     BaseModuleBuilder.prototype.getMetaConfig = function (bootModule) {
         var decorator = this.getDecorator();
         if (this.isDIModule(bootModule)) {
@@ -716,7 +741,7 @@ var BaseModuleBuilder = /** @class */ (function () {
         });
         return tokens;
     };
-    BaseModuleBuilder.classAnnations = { "name": "BaseModuleBuilder", "params": { "constructor": [], "getContainer": [], "resetContainer": [], "getContainerBuilder": [], "build": ["token", "data"], "buildStrategy": ["instance", "config"], "importModule": ["token", "forceNew"], "getBuilder": ["config", "forceNew"], "getDecorator": [], "getConfigure": ["token"], "createInstance": ["token", "cfg", "data"], "registerDepdences": ["container", "config"], "resolveToken": ["container", "token", "config"], "registerRootDepds": ["container", "config"], "canRegRootDepds": [], "registerConfgureDepds": ["container", "config"], "createBuilder": [], "getBootstrapToken": ["cfg", "token"], "getBuilderViaConfig": ["builder"], "getBuilderViaToken": ["mdl"], "mergeConfigure": ["cfg"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
+    BaseModuleBuilder.classAnnations = { "name": "BaseModuleBuilder", "params": { "constructor": [], "getContainer": [], "resetContainer": ["parent"], "getContainerBuilder": [], "build": ["token", "data"], "buildStrategy": ["instance", "config"], "importModule": ["token", "forceNew"], "getBuilder": ["config", "forceNew"], "getDecorator": [], "getConfigure": ["token"], "createInstance": ["token", "cfg", "data"], "registerDepdences": ["container", "config"], "resolveToken": ["container", "token", "config"], "importConfigExports": ["container", "parentContainer", "cfg"], "needRegister": ["type"], "registerConfgureDepds": ["container", "config"], "createBuilder": [], "getBootstrapToken": ["cfg", "token"], "getBuilderViaConfig": ["builder"], "getBuilderViaToken": ["mdl"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
     return BaseModuleBuilder;
 }());
 exports.BaseModuleBuilder = BaseModuleBuilder;
@@ -905,20 +930,20 @@ var ApplicationBuilder = /** @class */ (function (_super) {
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!!this.rootContainer) return [3 /*break*/, 2];
+                        if (!!this.root) return [3 /*break*/, 2];
                         return [4 /*yield*/, this.registerRoot()];
                     case 1:
                         _a.sent();
                         _a.label = 2;
-                    case 2:
-                        this.resetContainer();
-                        this.container.bindProvider(IModuleBuilder.RootContainerToken, this.rootContainer);
-                        if (!this.rootContainer.has(IModuleBuilder.RootModuleBuilderToken)) return [3 /*break*/, 4];
-                        builder = this.rootContainer.get(IModuleBuilder.RootModuleBuilderToken);
+                    case 2: return [4 /*yield*/, this.resetContainer(this.root)];
+                    case 3:
+                        _a.sent();
+                        if (!this.container.has(IModuleBuilder.RootModuleBuilderToken)) return [3 /*break*/, 5];
+                        builder = this.container.get(IModuleBuilder.RootModuleBuilderToken);
                         return [4 /*yield*/, builder.build(token, data)];
-                    case 3: return [2 /*return*/, _a.sent()];
-                    case 4: return [4 /*yield*/, _super.prototype.build.call(this, token, data)];
-                    case 5: return [2 /*return*/, _a.sent()];
+                    case 4: return [2 /*return*/, _a.sent()];
+                    case 5: return [4 /*yield*/, _super.prototype.build.call(this, token, data)];
+                    case 6: return [2 /*return*/, _a.sent()];
                 }
             });
         });
@@ -929,18 +954,18 @@ var ApplicationBuilder = /** @class */ (function (_super) {
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!!this.rootContainer) return [3 /*break*/, 3];
-                        this.rootContainer = this.getContainerBuilder().create();
+                        if (!!this.root) return [3 /*break*/, 3];
+                        this.root = this.getContainerBuilder().create();
                         return [4 /*yield*/, this.getGlobalConfigure()];
                     case 1:
                         cfg = _a.sent();
                         this.bindAppConfig(cfg);
-                        return [4 /*yield*/, this.registerDepdences(this.rootContainer, cfg)];
+                        return [4 /*yield*/, this.registerDepdences(this.root, cfg)];
                     case 2:
                         _a.sent();
-                        this.rootContainer.bindProvider(AppConfiguration.AppConfigurationToken, cfg);
+                        this.root.bindProvider(AppConfiguration.AppConfigurationToken, cfg);
                         _a.label = 3;
-                    case 3: return [2 /*return*/, this.rootContainer];
+                    case 3: return [2 /*return*/, this.root];
                 }
             });
         });
@@ -951,9 +976,9 @@ var ApplicationBuilder = /** @class */ (function (_super) {
         }
         return this.globalConfig;
     };
-    ApplicationBuilder.prototype.canRegRootDepds = function () {
-        return false;
-    };
+    // protected canRegRootDepds() {
+    //     return false;
+    // }
     /**
      * create default container builder.
      *
@@ -1016,28 +1041,19 @@ var ApplicationBuilder = /** @class */ (function (_super) {
             });
         });
     };
-    /**
-     * meger config configuration with global config.
-     *
-     * @protected
-     * @param {AppConfiguration<T>} cfg
-     * @returns {Promise<AppConfiguration<T>>}
-     * @memberof ApplicationBuilder
-     */
-    ApplicationBuilder.prototype.mergeConfigure = function (cfg) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var gcfg;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, _super.prototype.mergeConfigure.call(this, cfg)];
-                    case 1:
-                        cfg = _a.sent();
-                        gcfg = this.rootContainer.get(AppConfiguration.AppConfigurationToken);
-                        return [2 /*return*/, core_1.lang.assign({}, core_1.lang.omit(gcfg || {}, 'imports', 'providers', 'bootstrap', 'builder', 'exports'), cfg)];
-                }
-            });
-        });
-    };
+    // /**
+    //  * meger config configuration with global config.
+    //  *
+    //  * @protected
+    //  * @param {AppConfiguration<T>} cfg
+    //  * @returns {Promise<AppConfiguration<T>>}
+    //  * @memberof ApplicationBuilder
+    //  */
+    // protected async mergeConfigure(cfg: AppConfiguration<T>): Promise<AppConfiguration<T>> {
+    //     cfg = await super.mergeConfigure(cfg);
+    //     let gcfg = this.rootContainer.get(AppConfigurationToken);
+    //     return lang.assign({}, lang.omit(gcfg || {}, 'imports', 'providers', 'bootstrap', 'builder', 'exports'), cfg);
+    // }
     ApplicationBuilder.prototype.bindAppConfig = function (config) {
         if (this.baseURL) {
             config.baseURL = this.baseURL;
@@ -1047,7 +1063,7 @@ var ApplicationBuilder = /** @class */ (function (_super) {
     ApplicationBuilder.prototype.getDefaultConfig = function () {
         return { debug: false };
     };
-    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "getContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "useConfiguration": ["config"], "use": ["modules"], "bootstrap": ["token"], "build": ["token", "data"], "registerRoot": [], "getGlobalConfigure": [], "canRegRootDepds": [], "createBuilder": ["baseURL"], "registerExts": ["container", "config"], "mergeConfigure": ["cfg"], "bindAppConfig": ["config"], "getDefaultConfig": [] } };
+    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "getContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "useConfiguration": ["config"], "use": ["modules"], "bootstrap": ["token"], "build": ["token", "data"], "registerRoot": [], "getGlobalConfigure": [], "createBuilder": ["baseURL"], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": [] } };
     ApplicationBuilder = ApplicationBuilder_1 = tslib_1.__decorate([
         core_1.Injectable(IApplicationBuilder.ApplicationBuilderToken),
         tslib_1.__metadata("design:paramtypes", [String])
@@ -1096,7 +1112,7 @@ unwrapExports(IApplication);
 var IApplication_1 = IApplication.InjectApplicationToken;
 var IApplication_2 = IApplication.ApplicationToken;
 
-var D__Workspace_Projects_modules_tsioc_packages_bootstrap_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_bootstrap_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(decorators, exports);
@@ -1111,7 +1127,7 @@ tslib_1.__exportStar(BootstrapModule_1, exports);
 
 });
 
-var index$1 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_bootstrap_lib);
+var index$1 = unwrapExports(D__workspace_github_tsioc_packages_bootstrap_lib);
 
 return index$1;
 

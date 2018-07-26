@@ -40,14 +40,6 @@ export const RootContainerToken = new InjectToken<IContainer>('DI_RootContainer'
 export interface IModuleBuilder<T> {
 
     /**
-     * root module container.
-     *
-     * @type {IContainer}
-     * @memberof IModuleBuilder
-     */
-    rootContainer: IContainer;
-
-    /**
      * get container of the module.
      *
      * @returns {IContainer}
@@ -58,9 +50,10 @@ export interface IModuleBuilder<T> {
     /**
      * reset container.
      *
+     * @returns {Promise<IContainer>}
      * @memberof IModuleBuilder
      */
-    resetContainer();
+    resetContainer(parent: IContainer): Promise<IContainer>
 
     /**
      * get container builder.
@@ -99,6 +92,16 @@ export interface IModuleBuilder<T> {
      * @memberof IModuleBuilder
      */
     importModule(token: Type<any> | ModuleConfiguration<any>, forceNew?: boolean): Promise<IContainer>;
+
+    /**
+     * get bootstrap token.
+     *
+     * @param {ModuleConfiguration<T>} cfg
+     * @param {(Token<T> | Type<any>)} [token]
+     * @returns {Token<T>}
+     * @memberof IModuleBuilder
+     */
+    getBootstrapToken(cfg: ModuleConfiguration<T>, token?: Token<T> | Type<any>): Token<T>;
 
     /**
      * create instance via token and config.

@@ -1579,7 +1579,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-
 /**
  * advice matcher, use to match advice when a registered create instance.
  *
@@ -1611,7 +1610,7 @@ var AdviceMatcher = /** @class */ (function () {
         }
         var className = core_1.getClassName(targetType);
         adviceMetas = adviceMetas || core_1.getOwnMethodMetadata(decorators.Advice, targetType);
-        var advisor = this.container.get(IAdvisor.AdvisorToken);
+        // let advisor = this.container.get(AdvisorToken);
         var matched = [];
         if (targetType === aspectType) {
             var adviceNames = core_1.lang.keys(adviceMetas);
@@ -1934,7 +1933,7 @@ exports.AopModule = AopModule;
 unwrapExports(AopModule_1);
 var AopModule_2 = AopModule_1.AopModule;
 
-var D__Workspace_Projects_modules_tsioc_packages_aop_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_aop_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 // export * from './tokens';
@@ -1951,7 +1950,7 @@ tslib_1.__exportStar(AopModule_1, exports);
 
 });
 
-var index$4 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_aop_lib);
+var index$4 = unwrapExports(D__workspace_github_tsioc_packages_aop_lib);
 
 return index$4;
 

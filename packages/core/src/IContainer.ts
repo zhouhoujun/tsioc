@@ -18,6 +18,22 @@ export const ContainerToken = new InjectToken<IContainer>('DI_IContainer');
 export interface IContainer extends IMethodAccessor {
 
     /**
+     * parent container.
+     *
+     * @type {IContainer}
+     * @memberof IContainer
+     */
+    parent: IContainer;
+
+    /**
+     * get root container.
+     *
+     * @returns {IContainer}
+     * @memberof IContainer
+     */
+    getRoot(): IContainer;
+
+    /**
      * has register the token or not.
      *
      * @template T
@@ -27,6 +43,15 @@ export interface IContainer extends IMethodAccessor {
      * @memberof IContainer
      */
     has<T>(token: Token<T>, alias?: string): boolean;
+
+    /**
+     * current container has register.
+     *
+     * @template T
+     * @param {SymbolType<T>} key
+     * @memberof IContainer
+     */
+    hasRegister<T>(key: SymbolType<T>);
 
     /**
      * Retrieves an instance from the container based on the provided token.

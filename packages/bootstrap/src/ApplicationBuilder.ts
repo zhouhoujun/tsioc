@@ -6,7 +6,7 @@ import {
 import { IApplicationBuilder, ApplicationBuilderToken, CustomRegister } from './IApplicationBuilder';
 import { IApplication } from './IApplication';
 import { BaseModuleBuilder } from './ModuleBuilder';
-import { RootModuleBuilderToken, RootContainerToken } from './IModuleBuilder';
+import { RootModuleBuilderToken } from './IModuleBuilder';
 
 
 /**
@@ -22,6 +22,8 @@ export class ApplicationBuilder<T> extends BaseModuleBuilder<T> implements IAppl
     protected globalConfig: Promise<AppConfiguration<T>>;
     protected globalModules: LoadType[];
     protected customRegs: CustomRegister<T>[];
+
+    root: IContainer;
 
     constructor(public baseURL?: string) {
         super();
@@ -138,13 +140,12 @@ export class ApplicationBuilder<T> extends BaseModuleBuilder<T> implements IAppl
      * @memberof ApplicationBuilder
      */
     async build(token: Token<T> | Type<any> | AppConfiguration<T>, data?: any): Promise<any> {
-        if (!this.rootContainer) {
+        if (!this.root) {
             await this.registerRoot();
         }
-        this.resetContainer();
-        this.container.bindProvider(RootContainerToken, this.rootContainer);
-        if (this.rootContainer.has(RootModuleBuilderToken)) {
-            let builder = this.rootContainer.get(RootModuleBuilderToken);
+        await this.resetContainer(this.root);
+        if (this.container.has(RootModuleBuilderToken)) {
+            let builder = this.container.get(RootModuleBuilderToken);
             return await builder.build(token, data);
         } else {
             return await super.build(token, data);
@@ -152,15 +153,16 @@ export class ApplicationBuilder<T> extends BaseModuleBuilder<T> implements IAppl
     }
 
     async registerRoot(): Promise<IContainer> {
-        if (!this.rootContainer) {
-            this.rootContainer = this.getContainerBuilder().create();
+        if (!this.root) {
+            this.root = this.getContainerBuilder().create();
             let cfg = await this.getGlobalConfigure();
             this.bindAppConfig(cfg);
-            await this.registerDepdences(this.rootContainer, cfg);
-            this.rootContainer.bindProvider(AppConfigurationToken, cfg);
+            await this.registerDepdences(this.root, cfg);
+            this.root.bindProvider(AppConfigurationToken, cfg);
         }
-        return this.rootContainer;
+        return this.root;
     }
+
 
     protected getGlobalConfigure() {
         if (!this.globalConfig) {
@@ -169,9 +171,9 @@ export class ApplicationBuilder<T> extends BaseModuleBuilder<T> implements IAppl
         return this.globalConfig;
     }
 
-    protected canRegRootDepds() {
-        return false;
-    }
+    // protected canRegRootDepds() {
+    //     return false;
+    // }
 
     /**
      * create default container builder.
@@ -216,19 +218,19 @@ export class ApplicationBuilder<T> extends BaseModuleBuilder<T> implements IAppl
     }
 
 
-    /**
-     * meger config configuration with global config.
-     *
-     * @protected
-     * @param {AppConfiguration<T>} cfg
-     * @returns {Promise<AppConfiguration<T>>}
-     * @memberof ApplicationBuilder
-     */
-    protected async mergeConfigure(cfg: AppConfiguration<T>): Promise<AppConfiguration<T>> {
-        cfg = await super.mergeConfigure(cfg);
-        let gcfg = this.rootContainer.get(AppConfigurationToken);
-        return lang.assign({}, lang.omit(gcfg || {}, 'imports', 'providers', 'bootstrap', 'builder', 'exports'), cfg);
-    }
+    // /**
+    //  * meger config configuration with global config.
+    //  *
+    //  * @protected
+    //  * @param {AppConfiguration<T>} cfg
+    //  * @returns {Promise<AppConfiguration<T>>}
+    //  * @memberof ApplicationBuilder
+    //  */
+    // protected async mergeConfigure(cfg: AppConfiguration<T>): Promise<AppConfiguration<T>> {
+    //     cfg = await super.mergeConfigure(cfg);
+    //     let gcfg = this.rootContainer.get(AppConfigurationToken);
+    //     return lang.assign({}, lang.omit(gcfg || {}, 'imports', 'providers', 'bootstrap', 'builder', 'exports'), cfg);
+    // }
 
     protected bindAppConfig(config: AppConfiguration<T>): AppConfiguration<T> {
         if (this.baseURL) {

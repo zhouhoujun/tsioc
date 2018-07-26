@@ -19,8 +19,19 @@ export class Container implements IContainer {
     protected provideTypes: MapSet<Token<any>, Type<any>>;
     protected factories: MapSet<Token<any>, Function>;
     protected singleton: MapSet<Token<any>, any>;
+
+    parent: IContainer;
+
     constructor() {
         this.init();
+    }
+
+    getRoot(): IContainer {
+        let root: IContainer = this;
+        while (root.parent) {
+            root = root.parent;
+        }
+        return root;
     }
 
     /**
@@ -49,12 +60,17 @@ export class Container implements IContainer {
      */
     resolve<T>(token: Token<T>, ...providers: Providers[]): T {
         let key = this.getTokenKey<T>(token);
-        if (!this.hasRegister(key)) {
+        let hasReg = this.hasRegister(key);
+        if (!hasReg && !this.parent) {
             console.error('have not register', key);
             return null;
         }
-        let factory = this.factories.get(key);
-        return factory(...providers) as T;
+        if (hasReg) {
+            let factory = this.factories.get(key);
+            return factory(...providers) as T;
+        } else {
+            return this.parent.resolve(token, ...providers);
+        }
     }
 
     /**
@@ -127,7 +143,15 @@ export class Container implements IContainer {
      */
     has<T>(token: Token<T>, alias?: string): boolean {
         let key = this.getTokenKey(token, alias);
-        return this.hasRegister(key);
+
+        if (this.hasRegister(key)) {
+            return true;
+        }
+        if (this.parent) {
+            return this.parent.hasRegister(key);
+        } else {
+            return false;
+        }
     }
 
     /**

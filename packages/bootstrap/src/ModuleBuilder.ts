@@ -1,14 +1,14 @@
 
 import {
-    IContainer, hasClassMetadata, isProviderMap, Provider,
+    IContainer, isProviderMap, Provider,
     getTypeMetadata, Token, Type, Providers,
-    isString, lang, isFunction, isClass, isUndefined, isNull, isBaseObject, isToken, isArray, Injectable, Inject, ContainerToken, ContainerBuilderToken, hasOwnClassMetadata, IocExt, IContainerBuilder
+    isString, lang, isFunction, isClass, isUndefined, isNull, isBaseObject, isToken, isArray,
+    Injectable, Inject, ContainerToken, ContainerBuilderToken, hasOwnClassMetadata, IocExt, IContainerBuilder
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import { ModuleConfiguration } from './ModuleConfiguration';
 import { DIModule } from './decorators';
 import { BootstrapModule } from './BootstrapModule';
-import { AppConfigurationToken } from './AppConfiguration';
 
 
 const exportsProvidersFiled = '__exportProviders';
@@ -26,8 +26,6 @@ export class BaseModuleBuilder<T> implements IModuleBuilder<T> {
      * @memberof ModuleBuilder
      */
     protected container: IContainer;
-
-    rootContainer: IContainer;
 
     constructor() {
 
@@ -48,8 +46,12 @@ export class BaseModuleBuilder<T> implements IModuleBuilder<T> {
      *
      * @memberof BaseModuleBuilder
      */
-    resetContainer() {
+    async resetContainer(parent: IContainer): Promise<IContainer> {
         this.container = this.getContainerBuilder().create();
+        if (this.container !== parent) {
+            this.container.parent = parent;
+        }
+        return this.container;
     }
 
     /**
@@ -72,7 +74,7 @@ export class BaseModuleBuilder<T> implements IModuleBuilder<T> {
      */
     async build(token: Token<T> | Type<any> | ModuleConfiguration<T>, data?: any): Promise<T> {
         let cfg = this.getConfigure(token);
-        cfg = await this.mergeConfigure(cfg);
+        // cfg = await this.mergeConfigure(cfg);
         let builder = this.getBuilder(cfg);
         let instacnce = await builder.createInstance(isToken(token) ? token : null, cfg, data);
         await builder.buildStrategy(instacnce, cfg);
@@ -99,34 +101,18 @@ export class BaseModuleBuilder<T> implements IModuleBuilder<T> {
         }
         let cfg = this.getConfigure(token);
         let builder = this.getBuilder(cfg, forceNew);
-        forceNew && builder.resetContainer();
+        if (forceNew) {
+            await builder.resetContainer(container);
+        }
         let importContainer = builder.getContainer();
         await builder.registerDepdences(importContainer, cfg);
-        if (cfg.exports && cfg.exports.length) {
-            cfg.exports.forEach(tk => {
-                if (isClass(tk)) {
-                    if (this.isDIModule(tk)) {
-                        return;
-                    }
-                    if (this.isIocExt(tk)) {
-                        container.register(tk);
-                        return;
-                    }
-                }
-                container.bindProvider(tk, (...providers: Providers[]) => importContainer.resolve(tk, ...providers));
-            });
-        }
-        let expProviders: Token<any>[] = cfg[exportsProvidersFiled];
-        if (expProviders && expProviders.length) {
-            expProviders.forEach(tk => {
-                container.bindProvider(tk, () => importContainer.get(tk));
-            })
-        }
 
-        let bootToken = this.getBootstrapToken(cfg, isClass(token) ? token : null);
+        let bootToken = builder.getBootstrapToken(cfg, isClass(token) ? token : null);
         if (isToken(bootToken)) {
             container.bindProvider(bootToken, () => builder.createInstance(bootToken, cfg));
         }
+
+        await this.importConfigExports(container, importContainer, cfg);
 
         return container;
     }
@@ -144,8 +130,6 @@ export class BaseModuleBuilder<T> implements IModuleBuilder<T> {
         if (!builder) {
             builder = forceNew ? this.createBuilder() : this;
         }
-
-        builder.rootContainer = this.rootContainer;
 
         return builder;
     }
@@ -189,14 +173,14 @@ export class BaseModuleBuilder<T> implements IModuleBuilder<T> {
         }
         let container = this.getContainer();
         await this.registerDepdences(container, cfg);
-        return this.resolveToken(container, token, cfg);
+        return this.resolveToken(container, bootToken, cfg);
     }
 
     async registerDepdences(container: IContainer, config: ModuleConfiguration<T>): Promise<IContainer> {
         await this.registerExts(container, config);
-        if (this.canRegRootDepds()) {
-            await this.registerRootDepds(container, config);
-        }
+        // if (this.canRegRootDepds()) {
+        //     await this.registerRootDepds(container, config);
+        // }
         await this.registerConfgureDepds(container, config);
         return container;
     }
@@ -212,27 +196,58 @@ export class BaseModuleBuilder<T> implements IModuleBuilder<T> {
         }
     }
 
-    protected async registerRootDepds(container: IContainer, config: ModuleConfiguration<T>): Promise<IContainer> {
-        if (!this.canRegRootDepds()) {
-            return container;
-        }
+    // protected async registerRootDepds(container: IContainer, config?: ModuleConfiguration<T>): Promise<IContainer> {
+    //     if (!this.canRegRootDepds()) {
+    //         return container;
+    //     }
+    //     let appcfg = this.parnet.get(AppConfigurationToken);
+    //     await this.importConfigExports(container, this.parnet, appcfg);
+    //     return container;
+    // }
 
-        let appcfg = this.rootContainer.get(AppConfigurationToken);
-        if (appcfg.exports && appcfg.exports.length || appcfg[exportsProvidersFiled]) {
-            this.importModule(appcfg);
+    // protected canRegRootDepds() {
+    //     return !!this.parnet;
+    // }
+
+    protected async importConfigExports(container: IContainer, parentContainer: IContainer, cfg: ModuleConfiguration<any>) {
+        if (cfg.exports && cfg.exports.length) {
+            await Promise.all(cfg.exports.map(async tk => {
+                // if (isClass(tk)) {
+                //     if (this.isDIModule(tk)) {
+                //         await this.importModule(tk);
+                //         return tk;
+                //     }
+                //     if (this.isIocExt(tk)) {
+                //         container.register(tk);
+                //         return tk;
+                //     }
+                // }
+                container.bindProvider(tk, (...providers: Providers[]) => parentContainer.resolve(tk, ...providers));
+                return tk;
+            }));
+        }
+        let expProviders: Token<any>[] = cfg[exportsProvidersFiled];
+        if (expProviders && expProviders.length) {
+            expProviders.forEach(tk => {
+                container.bindProvider(tk, () => parentContainer.get(tk));
+            })
         }
         return container;
     }
 
-    protected canRegRootDepds() {
-        return !!this.rootContainer;
+    protected needRegister(type: Type<any>) {
+        if (this.isIocExt(type)) {
+            return true;
+        }
+        return false;
     }
+
 
     protected async registerConfgureDepds(container: IContainer, config: ModuleConfiguration<T>): Promise<IContainer> {
         if (isArray(config.imports) && config.imports.length) {
             let buider = container.get(ContainerBuilderToken);
             let mdls = await buider.loader.loadTypes(config.imports, it => this.isIocExt(it) || this.isDIModule(it));
-            await Promise.all(mdls.map(md => this.importModule(md)));
+            await Promise.all(mdls.map(md => this.importModule(md, true)));
         }
 
         if (isArray(config.providers) && config.providers.length) {
@@ -247,7 +262,7 @@ export class BaseModuleBuilder<T> implements IModuleBuilder<T> {
         return new BaseModuleBuilder();
     }
 
-    protected getBootstrapToken(cfg: ModuleConfiguration<T>, token?: Token<T> | Type<any>): Token<T> {
+    getBootstrapToken(cfg: ModuleConfiguration<T>, token?: Token<T> | Type<any>): Token<T> {
         return cfg.bootstrap || token;
     }
 
@@ -274,9 +289,9 @@ export class BaseModuleBuilder<T> implements IModuleBuilder<T> {
         return null;
     }
 
-    protected async mergeConfigure(cfg: ModuleConfiguration<T>): Promise<ModuleConfiguration<T>> {
-        return cfg;
-    }
+    // protected async mergeConfigure(cfg: ModuleConfiguration<T>): Promise<ModuleConfiguration<T>> {
+    //     return cfg;
+    // }
 
     protected getMetaConfig(bootModule: Type<any>): ModuleConfiguration<T> {
         let decorator = this.getDecorator();

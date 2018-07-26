@@ -46,7 +46,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
         let className = getClassName(targetType);
         adviceMetas = adviceMetas || getOwnMethodMetadata<AdviceMetadata>(Advice, targetType);
-        let advisor = this.container.get(AdvisorToken);
+        // let advisor = this.container.get(AdvisorToken);
         let matched: MatchPointcut[] = [];
 
         if (targetType === aspectType) {

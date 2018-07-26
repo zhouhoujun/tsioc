@@ -20,6 +20,15 @@ export const ApplicationBuilderToken = new InjectToken<IApplicationBuilder<any>>
 export interface IApplicationBuilder<T> extends IModuleBuilder<T> {
 
     /**
+     * root container.
+     *
+     * @type {IContainer}
+     * @memberof IModuleBuilder
+     */
+    root: IContainer;
+
+
+    /**
      * use custom configuration.
      *
      * @param {(string | AppConfiguration<T>)} [config]

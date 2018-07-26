@@ -5345,6 +5345,13 @@ var Container = /** @class */ (function () {
     function Container() {
         this.init();
     }
+    Container.prototype.getRoot = function () {
+        var root = this;
+        while (root.parent) {
+            root = root.parent;
+        }
+        return root;
+    };
     /**
      * Retrieves an instance from the container based on the provided token.
      *
@@ -5377,12 +5384,19 @@ var Container = /** @class */ (function () {
             providers[_i - 1] = arguments[_i];
         }
         var key = this.getTokenKey(token);
-        if (!this.hasRegister(key)) {
+        var hasReg = this.hasRegister(key);
+        if (!hasReg && !this.parent) {
             console.error('have not register', key);
             return null;
         }
-        var factory = this.factories.get(key);
-        return factory.apply(void 0, providers);
+        if (hasReg) {
+            var factory = this.factories.get(key);
+            return factory.apply(void 0, providers);
+        }
+        else {
+            return (_a = this.parent).resolve.apply(_a, [token].concat(providers));
+        }
+        var _a;
     };
     /**
      * clear cache.
@@ -5450,7 +5464,15 @@ var Container = /** @class */ (function () {
      */
     Container.prototype.has = function (token, alias) {
         var key = this.getTokenKey(token, alias);
-        return this.hasRegister(key);
+        if (this.hasRegister(key)) {
+            return true;
+        }
+        if (this.parent) {
+            return this.parent.hasRegister(key);
+        }
+        else {
+            return false;
+        }
     };
     /**
      * has register type.
@@ -5828,7 +5850,7 @@ var Container = /** @class */ (function () {
             targetType: ClassT
         }, types.IocState.design);
     };
-    Container.classAnnations = { "name": "Container", "params": { "constructor": [], "get": ["token", "alias", "providers"], "resolve": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"] } };
+    Container.classAnnations = { "name": "Container", "params": { "constructor": [], "getRoot": [], "get": ["token", "alias", "providers"], "resolve": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"] } };
     return Container;
 }());
 exports.Container = Container;
@@ -6183,7 +6205,7 @@ exports.DefaultContainerBuilder = DefaultContainerBuilder;
 unwrapExports(DefaultContainerBuilder_1);
 var DefaultContainerBuilder_2 = DefaultContainerBuilder_1.DefaultContainerBuilder;
 
-var D__Workspace_Projects_modules_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(IContainer, exports);
@@ -6205,7 +6227,7 @@ tslib_1.__exportStar(core, exports);
 
 });
 
-var index$7 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_core_lib);
+var index$7 = unwrapExports(D__workspace_github_tsioc_packages_core_lib);
 
 return index$7;
 
