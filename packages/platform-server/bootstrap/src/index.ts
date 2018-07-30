@@ -1,1 +1,1 @@
-export * from './PlatformServer';
+export * from './ApplicationBuilder';

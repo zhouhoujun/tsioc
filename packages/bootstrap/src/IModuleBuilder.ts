@@ -1,5 +1,6 @@
-import { Token, Registration, IContainer, IContainerBuilder, Type, InjectToken } from '@ts-ioc/core';
+import { Token, Registration, IContainer, Type, InjectToken } from '@ts-ioc/core';
 import { ModuleConfiguration } from './ModuleConfiguration';
+import { ModuleType, IocModule, ModuleInstance } from './ModuleType';
 
 
 /**
@@ -42,87 +43,60 @@ export interface IModuleBuilder<T> {
     /**
      * get container of the module.
      *
+     * @param {(ModuleType | ModuleConfiguration<T>)} token module type or module configuration.
+     * @param {IContainer} [defaultContainer] set default container or not. not set will create new container.
      * @returns {IContainer}
      * @memberof IModuleBuilder
      */
-    getContainer(): IContainer;
+    getContainer(token: ModuleType | ModuleConfiguration<T>, defaultContainer?: IContainer): IContainer ;
 
     /**
-     * reset container.
+     * create new container.
      *
-     * @returns {Promise<IContainer>}
+     * @returns {IContainer}
      * @memberof IModuleBuilder
      */
-    resetContainer(parent: IContainer): Promise<IContainer>
+    createContainer(): IContainer;
 
     /**
-     * get container builder.
+     * build module as ioc container.
      *
-     * @returns {IContainerBuilder}
+     * @param {(ModuleType | ModuleConfiguration<any>)} token
+     * @param {IContainer} [defaultContainer]
+     * @returns {Promise<ModuleInstance<T>>}
      * @memberof IModuleBuilder
      */
-    getContainerBuilder(): IContainerBuilder;
-
-    /**
-     * build module instacne.
-     *
-     * @param {(Token<T> | ModuleConfiguration<T>)} token build module.
-     * @param {any} [data] create instance init data.
-     * @returns {Promise<any>}
-     * @memberof IPlatform
-     */
-    build(token: Token<T> | ModuleConfiguration<T>, data?: any): Promise<T>;
-
-    /**
-     * bundle instance via config.
-     *
-     * @param {T} instance
-     * @param {ModuleConfiguration<T>} config
-     * @returns {Promise<T>}
-     * @memberof IModuleBuilder
-     */
-    buildStrategy(instance: T, config: ModuleConfiguration<T>): Promise<T>;
+    build(token: ModuleType | ModuleConfiguration<T>, defaultContainer?: IContainer): Promise<ModuleInstance<T>>;
 
     /**
      * import di module.
      *
      * @param {(Type<any> | ModuleConfiguration<any>)} token di module type
-     * @param {boolean} [forceNew] force to create new container and builder to import module. default false.
+     * @param {IContainer} container container to import module.
      * @returns {Promise<IContainer>}
      * @memberof IModuleBuilder
      */
-    importModule(token: Type<any> | ModuleConfiguration<any>, forceNew?: boolean): Promise<IContainer>;
+    importModule(token: Type<any> | ModuleConfiguration<any>, container: IContainer): Promise<IContainer> ;
 
-    /**
-     * get bootstrap token.
-     *
-     * @param {ModuleConfiguration<T>} cfg
-     * @param {(Token<T> | Type<any>)} [token]
-     * @returns {Token<T>}
-     * @memberof IModuleBuilder
-     */
-    getBootstrapToken(cfg: ModuleConfiguration<T>, token?: Token<T> | Type<any>): Token<T>;
+    // /**
+    //  * get bootstrap token.
+    //  *
+    //  * @param {ModuleConfiguration<T>} cfg
+    //  * @param {Token<any>} [token]
+    //  * @returns {Token<T>}
+    //  * @memberof IModuleBuilder
+    //  */
+    // getBootstrapToken(cfg: ModuleConfiguration<T>, token?: Token<any>): Token<T>;
 
-    /**
-     * create instance via token and config.
-     *
-     * @param {Token<T>} token
-     * @param {ModuleConfiguration<T>} config
-     * @param {any} [data] create instance init data.
-     * @returns {Promise<T>}
-     * @memberof IModuleBuilder
-     */
-    createInstance(token: Token<T>, config: ModuleConfiguration<T>, data?: any): Promise<T>;
-
-    /**
-     * get builder.
-     *
-     * @param {ModuleConfiguration<T>} cfg
-     * @param {boolean} [forceNew] force to create builder or not. default false.
-     * @returns {IModuleBuilder<T>}
-     * @memberof IModuleBuilder
-     */
-    getBuilder(cfg: ModuleConfiguration<T>, forceNew?: boolean): IModuleBuilder<T>;
+    // /**
+    //  * get builder.
+    //  *
+    //  * @param {ModuleConfiguration<T>} cfg
+    //  * @param {IContainer} [container] container.
+    //  * @returns {IModuleBuilder<T>}
+    //  * @memberof IModuleBuilder
+    //  */
+    // getBuilder(cfg: ModuleConfiguration<T>, container: IContainer): IModuleBuilder<T>;
 
     /**
      * register module depdences.
@@ -132,7 +106,7 @@ export interface IModuleBuilder<T> {
      * @returns {Promise<IContainer>}
      * @memberof IModuleBuilder
      */
-    registerDepdences(container: IContainer, config: ModuleConfiguration<T>): Promise<IContainer>;
+    registerDepdences(container: IContainer, config: ModuleConfiguration<T>): Promise<ModuleConfiguration<T>>;
 
     /**
      * get the module define decorator or decorator name.
@@ -145,11 +119,23 @@ export interface IModuleBuilder<T> {
     /**
      * get configure from module calss metadata or module config object.
      *
-     * @param {(Token<any> | ModuleConfiguration<T>)} token
+     * @param {(ModuleType | ModuleConfiguration<T>)} token
+     * @param {IContainer} [container] container.
      * @returns {ModuleConfiguration<T>}
      * @memberof IModuleBuilder
      */
-    getConfigure(token: Token<any> | ModuleConfiguration<T>): ModuleConfiguration<T>;
+    getConfigure(token: ModuleType | ModuleConfiguration<T>, container?: IContainer): ModuleConfiguration<T>;
+
+
+    /**
+     * bootstrap module.
+     *
+     * @param {(ModuleType | ModuleConfiguration<any>)} token
+     * @param {IContainer} [defaultContainer]
+     * @returns {Promise<ModuleInstance<T>>}
+     * @memberof IModuleBuilder
+     */
+    bootstrap(token: ModuleType | ModuleConfiguration<any>, defaultContainer?: IContainer): Promise<ModuleInstance<T>>;
 
 }
 

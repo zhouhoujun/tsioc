@@ -1,4 +1,4 @@
-import { Type, ModuleType, LoadType, Express } from './types';
+import { Type, Modules, LoadType, Express } from './types';
 import { InjectToken } from './InjectToken';
 
 /**
@@ -18,10 +18,10 @@ export interface IModuleLoader {
      * load modules by files patterns, module name or modules.
      *
      * @param {LoadType[]} modules
-     * @returns {Promise<ModuleType[]>}
+     * @returns {Promise<Modules[]>}
      * @memberof IModuleLoader
      */
-    load(modules: LoadType[]): Promise<ModuleType[]>;
+    load(modules: LoadType[]): Promise<Modules[]>;
 
     /**
      * load all class types in modules, load by files patterns, module name or modules.
@@ -35,10 +35,10 @@ export interface IModuleLoader {
     /**
      * get all class type in modules.
      *
-     * @param {ModuleType[]} modules
+     * @param {Modules[]} modules
      * @returns {Type<any>[]}
      * @memberof IModuleLoader
      */
-    getTypes(modules: ModuleType[], filter?: Express<Type<any>, boolean>): Type<any>[];
+    getTypes(modules: Modules[], filter?: Express<Type<any>, boolean>): Type<any>[];
 
 }

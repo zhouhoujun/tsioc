@@ -1,5 +1,5 @@
 import { IContainer } from './IContainer';
-import { Type, ModuleType, LoadType } from './types';
+import { Type, Modules, LoadType } from './types';
 import { InjectToken } from './InjectToken';
 import { IModuleLoader } from './IModuleLoader';
 
@@ -49,7 +49,7 @@ export interface IContainerBuilder {
      * @returns {IContainer}
      * @memberof IContainerBuilder
      */
-    syncBuild(...modules: ModuleType[]): IContainer;
+    syncBuild(...modules: Modules[]): IContainer;
 
     /**
      * load modules for container.
@@ -65,9 +65,9 @@ export interface IContainerBuilder {
      * sync load modules
      *
      * @param {IContainer} container
-     * @param {...ModuleType[]} modules
+     * @param {...Modules[]} modules
      * @memberof IContainerBuilder
      */
-    syncLoadModule(container: IContainer, ...modules: ModuleType[]);
+    syncLoadModule(container: IContainer, ...modules: Modules[]);
 
 }

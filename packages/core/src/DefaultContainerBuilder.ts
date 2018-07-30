@@ -1,6 +1,6 @@
 import { IContainer } from './IContainer';
 import { Container } from './Container';
-import { Type, ModuleType, LoadType, Express } from './types';
+import { Type, Modules, LoadType, Express } from './types';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { IModuleLoader, ModuleLoaderToken } from './IModuleLoader';
 import { DefaultModuleLoader } from './DefaultModuleLoader';
@@ -68,7 +68,7 @@ export class DefaultContainerBuilder implements IContainerBuilder {
     }
 
 
-    syncBuild(...modules: ModuleType[]): IContainer {
+    syncBuild(...modules: Modules[]): IContainer {
         let container: IContainer = this.create();
         if (modules.length) {
             this.syncLoadModule(container, ...modules);
@@ -76,7 +76,7 @@ export class DefaultContainerBuilder implements IContainerBuilder {
         return container;
     }
 
-    syncLoadModule(container: IContainer, ...modules: ModuleType[]) {
+    syncLoadModule(container: IContainer, ...modules: Modules[]) {
         let regModules = this.loader.getTypes(modules, this.filter);
         return this.registers(container, regModules);
     }

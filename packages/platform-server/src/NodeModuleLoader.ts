@@ -1,4 +1,4 @@
-import { IModuleLoader, ModuleType, DefaultModuleLoader } from '@ts-ioc/core';
+import { IModuleLoader, Modules, DefaultModuleLoader } from '@ts-ioc/core';
 import { toAbsoluteSrc } from './toAbsolute';
 
 declare let require: any;
@@ -18,7 +18,7 @@ export class NodeModuleLoader extends DefaultModuleLoader implements IModuleLoad
         super();
     }
 
-    protected loadFile(files: string | string[], basePath?: string): Promise<ModuleType[]> {
+    protected loadFile(files: string | string[], basePath?: string): Promise<Modules[]> {
         let globby = require('globby');
         return globby(toAbsoluteSrc(basePath, files)).then((mflies: string[]) => {
             return mflies.map(fp => {
@@ -27,7 +27,7 @@ export class NodeModuleLoader extends DefaultModuleLoader implements IModuleLoad
         });
     }
 
-    protected createLoader(): (modulepath: string) => Promise<ModuleType[]> {
+    protected createLoader(): (modulepath: string) => Promise<Modules[]> {
         return (modulepath: string) => Promise.resolve(require(modulepath));
     }
 

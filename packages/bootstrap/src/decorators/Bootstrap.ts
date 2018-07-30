@@ -3,8 +3,8 @@ import {
     MetadataExtends, ITypeDecorator, createClassDecorator, isClass
 } from '@ts-ioc/core';
 import { AppConfiguration } from '../AppConfiguration';
-import { IApplication } from '../IApplication';
 import { IApplicationBuilder, ApplicationBuilderToken } from '../IApplicationBuilder';
+import { IocModule } from '../ModuleType';
 
 
 export interface BootstrapMetadata extends AppConfiguration<any>, ClassMetadata {
@@ -47,7 +47,7 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
 export function createBootstrapDecorator<T extends BootstrapMetadata>(
     decorType: string,
     builder: Token<IApplicationBuilder<T>> | IApplicationBuilder<T>,
-    provideType?: InjectToken<IApplication>,
+    provideType?: InjectToken<IocModule<T>>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IBootstrapDecorator<T> {
 

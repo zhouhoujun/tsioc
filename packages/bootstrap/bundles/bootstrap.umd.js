@@ -210,8 +210,100 @@ exports.AppConfigurationToken = new core_1.InjectToken('DI_APP_Configuration');
 unwrapExports(AppConfiguration);
 var AppConfiguration_1 = AppConfiguration.AppConfigurationToken;
 
+var IModuleBootstrap = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * inject module builder.
+ *
+ * @export
+ * @class InjectModuleBuilder
+ * @extends {Registration<T>}
+ * @template T
+ */
+var InjectModuleBootstrap = /** @class */ (function (_super) {
+    tslib_1.__extends(InjectModuleBootstrap, _super);
+    function InjectModuleBootstrap(desc) {
+        return _super.call(this, 'DI_ModuleBootstrap', desc) || this;
+    }
+    InjectModuleBootstrap.classAnnations = { "name": "InjectModuleBootstrap", "params": { "constructor": ["desc"] } };
+    return InjectModuleBootstrap;
+}(core_1.Registration));
+exports.InjectModuleBootstrap = InjectModuleBootstrap;
+exports.ModuleBootstrapToken = new InjectModuleBootstrap('');
+
+
+});
+
+unwrapExports(IModuleBootstrap);
+var IModuleBootstrap_1 = IModuleBootstrap.InjectModuleBootstrap;
+var IModuleBootstrap_2 = IModuleBootstrap.ModuleBootstrapToken;
+
+var ModuleBootstrap_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+var ModuleBootstrap = /** @class */ (function () {
+    function ModuleBootstrap() {
+    }
+    ModuleBootstrap.prototype.bootstrap = function (iocModule, data) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var bootToken, container, instance;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        bootToken = iocModule.bootstrap;
+                        if (!bootToken) {
+                            throw new Error('cant not find bootstrap token.');
+                        }
+                        container = iocModule.container;
+                        if (!container) {
+                            throw new Error('cant not find container.');
+                        }
+                        instance = container.resolve(bootToken, data);
+                        return [4 /*yield*/, this.buildStrategy(instance, iocModule)];
+                    case 1:
+                        instance = _a.sent();
+                        return [2 /*return*/, instance];
+                }
+            });
+        });
+    };
+    /**
+     * bundle instance via config.
+     *
+     * @param {any} instance
+     * @param {IocModule<any>} config
+     * @returns {Promise<any>}
+     * @memberof IModuleBuilder
+     */
+    ModuleBootstrap.prototype.buildStrategy = function (instance, iocModule) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            return tslib_1.__generator(this, function (_a) {
+                return [2 /*return*/, instance];
+            });
+        });
+    };
+    ModuleBootstrap.classAnnations = { "name": "ModuleBootstrap", "params": { "constructor": [], "bootstrap": ["iocModule", "data"], "buildStrategy": ["instance", "iocModule"] } };
+    ModuleBootstrap = tslib_1.__decorate([
+        core_1.Singleton(IModuleBootstrap.ModuleBootstrapToken),
+        tslib_1.__metadata("design:paramtypes", [])
+    ], ModuleBootstrap);
+    return ModuleBootstrap;
+}());
+exports.ModuleBootstrap = ModuleBootstrap;
+
+
+});
+
+unwrapExports(ModuleBootstrap_1);
+var ModuleBootstrap_2 = ModuleBootstrap_1.ModuleBootstrap;
+
 var BootstrapModule_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -238,7 +330,8 @@ var BootstrapModule = /** @class */ (function () {
         lifeScope.registerDecorator(decorators.DIModule, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
         lifeScope.registerDecorator(decorators.Bootstrap, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
         container.register(ModuleBuilder_1.ModuleBuilder);
-        container.register(ApplicationBuilder_1.ApplicationBuilder);
+        container.register(ModuleBootstrap_1.ModuleBootstrap);
+        container.register(ApplicationBuilder.DefaultApplicationBuilder);
     };
     BootstrapModule.classAnnations = { "name": "BootstrapModule", "params": { "constructor": ["container"], "setup": [] } };
     BootstrapModule = tslib_1.__decorate([
@@ -263,161 +356,227 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
 var exportsProvidersFiled = '__exportProviders';
 /**
- * base module builder
+ * module builder
  *
  * @export
- * @class ModuleBuilder
+ * @class ModuleBuilderBase
+ * @implements {IModuleBuilder<T>}
+ * @template T
  */
-var BaseModuleBuilder = /** @class */ (function () {
-    function BaseModuleBuilder() {
+var ModuleBuilder = /** @class */ (function () {
+    function ModuleBuilder() {
     }
+    ModuleBuilder_1 = ModuleBuilder;
     /**
      * get container of the module.
      *
+     * @param {(ModuleType<T> | ModuleConfiguration<T>)} token module type or module configuration.
+     * @param {IContainer} [defaultContainer] set default container or not. not set will create new container.
      * @returns {IContainer}
-     * @memberof ModuleBuilder
-     */
-    BaseModuleBuilder.prototype.getContainer = function () {
-        return this.container;
-    };
-    /**
-     * reset new container.
-     *
      * @memberof BaseModuleBuilder
      */
-    BaseModuleBuilder.prototype.resetContainer = function (parent) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            return tslib_1.__generator(this, function (_a) {
-                this.container = this.getContainerBuilder().create();
-                if (this.container !== parent) {
-                    this.container.parent = parent;
+    ModuleBuilder.prototype.getContainer = function (token, defaultContainer) {
+        var container;
+        if (core_1.isClass(token)) {
+            if (token.__di) {
+                return token.__di;
+            }
+            else {
+                var cfg = this.getConfigure(token);
+                if (cfg.container) {
+                    token.__di = cfg.container;
                 }
-                return [2 /*return*/, this.container];
-            });
-        });
+                else {
+                    token.__di = defaultContainer || this.createContainer();
+                }
+                container = token.__di;
+            }
+        }
+        else {
+            if (token.container) {
+                container = token.container;
+            }
+            else {
+                container = token.container = defaultContainer || this.createContainer();
+            }
+        }
+        return container;
     };
-    /**
-     * get container builder.
-     *
-     * @returns {IContainerBuilder}
-     * @memberof IModuleBuilder
-     */
-    BaseModuleBuilder.prototype.getContainerBuilder = function () {
-        return this.getContainer().resolve(core_1.ContainerBuilderToken);
+    ModuleBuilder.prototype.createContainer = function () {
+        return this.getContainerBuilder().create();
+    };
+    ModuleBuilder.prototype.getContainerBuilder = function () {
+        if (!this.containerBuilder) {
+            this.containerBuilder = this.createContainerBuilder();
+        }
+        return this.containerBuilder;
+    };
+    ModuleBuilder.prototype.createContainerBuilder = function () {
+        return new core_1.DefaultContainerBuilder();
     };
     /**
      * build module.
      *
-     * @param {(Token<T>| ModuleConfiguration<T>)} [token]
+     * @param {(ModuleType | ModuleConfiguration<any>)} [token]
      * @returns {Promise<any>}
-     * @memberof ModuleBuilder
+     * @memberof ModuleBuilderBase
      */
-    BaseModuleBuilder.prototype.build = function (token, data) {
+    ModuleBuilder.prototype.build = function (token, defaultContainer) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var cfg, builder, instacnce;
+            var container, mdToken, cfg, builder, boot, iocModule;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        cfg = this.getConfigure(token);
-                        builder = this.getBuilder(cfg);
-                        return [4 /*yield*/, builder.createInstance(core_1.isToken(token) ? token : null, cfg, data)];
+                        container = this.getContainer(token, defaultContainer);
+                        mdToken = core_1.isToken(token) ? token : token.name;
+                        if (core_1.isToken(mdToken) && container.has(mdToken)) {
+                            return [2 /*return*/, container.resolve(mdToken)];
+                        }
+                        cfg = this.getConfigure(token, container);
+                        builder = this.getBuilder(cfg, container);
+                        return [4 /*yield*/, builder.registerDepdences(container, cfg)];
                     case 1:
-                        instacnce = _a.sent();
-                        return [4 /*yield*/, builder.buildStrategy(instacnce, cfg)];
-                    case 2:
-                        _a.sent();
-                        return [2 /*return*/, instacnce];
+                        cfg = _a.sent();
+                        boot = this.getBootstrapToken(cfg);
+                        if (core_1.isClass(token)) {
+                            container.register(token);
+                            iocModule = container.resolve(token);
+                        }
+                        else {
+                            iocModule = {};
+                        }
+                        iocModule.bootstrap = boot;
+                        iocModule.container = container;
+                        iocModule.modulBuilder = builder;
+                        iocModule.moduleConfig = cfg;
+                        if (core_1.isToken(mdToken)) {
+                            iocModule.moduleToken = mdToken;
+                            container.bindProvider(mdToken, iocModule);
+                        }
+                        if (core_1.isFunction(iocModule.mdOnLoaded)) {
+                            iocModule.mdOnLoaded(iocModule);
+                        }
+                        return [2 /*return*/, iocModule];
                 }
             });
         });
     };
     /**
-     * bundle instance via config.
+     * bootstrap module.
      *
-     * @param {T} instance
-     * @param {ModuleConfiguration<T>} config
-     * @returns {Promise<T>}
-     * @memberof IModuleBuilder
+     * @param {(ModuleType | ModuleConfiguration<any>)} token
+     * @param {IContainer} [defaultContainer]
+     * @memberof ModuleBuilderBase
      */
-    BaseModuleBuilder.prototype.buildStrategy = function (instance, config) {
+    ModuleBuilder.prototype.bootstrap = function (token, defaultContainer) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            return tslib_1.__generator(this, function (_a) {
-                return [2 /*return*/, instance];
-            });
-        });
-    };
-    BaseModuleBuilder.prototype.importModule = function (token, forceNew) {
-        if (forceNew === void 0) { forceNew = false; }
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var container, cfg, builder, importContainer, bootToken;
+            var md, instance;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        container = this.getContainer();
-                        if (core_1.isClass(token) && !this.isDIModule(token)) {
-                            container.register(token);
-                            return [2 /*return*/, container];
-                        }
-                        cfg = this.getConfigure(token);
-                        builder = this.getBuilder(cfg, forceNew);
-                        if (!forceNew) return [3 /*break*/, 2];
-                        return [4 /*yield*/, builder.resetContainer(container)];
+                    case 0: return [4 /*yield*/, this.build(token, defaultContainer)];
                     case 1:
-                        _a.sent();
-                        _a.label = 2;
+                        md = _a.sent();
+                        if (core_1.isFunction(md.mdBeforeCreate)) {
+                            md.mdBeforeCreate(md);
+                        }
+                        return [4 /*yield*/, this.createBootstrap(md)];
                     case 2:
-                        importContainer = builder.getContainer();
-                        return [4 /*yield*/, builder.registerDepdences(importContainer, cfg)];
+                        instance = _a.sent();
+                        if (core_1.isFunction(md.mdAfterCreate)) {
+                            md.mdAfterCreate(instance);
+                        }
+                        if (!core_1.isFunction(md.mdOnStart)) return [3 /*break*/, 4];
+                        return [4 /*yield*/, Promise.resolve(md.mdOnStart(instance))];
                     case 3:
                         _a.sent();
-                        bootToken = builder.getBootstrapToken(cfg, core_1.isClass(token) ? token : null);
-                        if (core_1.isToken(bootToken)) {
-                            container.bindProvider(bootToken, function () { return builder.createInstance(bootToken, cfg); });
-                        }
-                        return [4 /*yield*/, this.importConfigExports(container, importContainer, cfg)];
+                        _a.label = 4;
                     case 4:
-                        _a.sent();
-                        return [2 /*return*/, container];
+                        if (core_1.isFunction(md.mdOnStarted)) {
+                            instance.onStarted(instance);
+                        }
+                        return [2 /*return*/, instance];
                 }
             });
         });
     };
-    BaseModuleBuilder.prototype.getBuilder = function (config, forceNew) {
-        if (forceNew === void 0) { forceNew = false; }
+    ModuleBuilder.prototype.createBootstrap = function (iocModule) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var container;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        container = iocModule.container;
+                        return [4 /*yield*/, this.getBootstrap(container).bootstrap(iocModule)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    ModuleBuilder.prototype.getBootstrap = function (container) {
+        return container.resolve(IModuleBootstrap.ModuleBootstrapToken);
+    };
+    ModuleBuilder.prototype.importModule = function (token, container) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var imp;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (container && core_1.isClass(token) && !this.isDIModule(token)) {
+                            container.register(token);
+                            return [2 /*return*/, container];
+                        }
+                        return [4 /*yield*/, this.build(token)];
+                    case 1:
+                        imp = _a.sent();
+                        if (!!container.has(imp.moduleToken)) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.importConfigExports(container, imp.container, imp.moduleConfig)];
+                    case 2:
+                        _a.sent();
+                        imp.container.parent = container;
+                        if (imp.moduleToken) {
+                            container.bindProvider(imp.moduleToken, imp);
+                        }
+                        _a.label = 3;
+                    case 3: return [2 /*return*/, container];
+                }
+            });
+        });
+    };
+    ModuleBuilder.prototype.getBuilder = function (config, container) {
         var builder;
         if (config.builder) {
-            builder = this.getBuilderViaConfig(config.builder);
+            builder = this.getBuilderViaConfig(config.builder, container);
         }
         else {
             var token = this.getBootstrapToken(config);
             if (token) {
-                builder = this.getBuilderViaToken(token);
+                builder = this.getBuilderViaToken(token, container);
             }
         }
         if (!builder) {
-            builder = forceNew ? this.createBuilder() : this;
+            builder = this;
         }
         return builder;
     };
-    BaseModuleBuilder.prototype.getDecorator = function () {
+    ModuleBuilder.prototype.getDecorator = function () {
         return decorators.DIModule.toString();
     };
     /**
      * get configuration.
      *
      * @returns {ModuleConfiguration<T>}
-     * @memberof ModuleBuilder
+     * @memberof ModuleBuilderBase
      */
-    BaseModuleBuilder.prototype.getConfigure = function (token) {
+    ModuleBuilder.prototype.getConfigure = function (token, container) {
         var cfg;
-        var container = this.getContainer();
         if (core_1.isClass(token)) {
             cfg = this.getMetaConfig(token);
         }
         else if (core_1.isToken(token)) {
-            var tokenType = container.getTokenImpl(token);
+            var tokenType = container ? container.getTokenImpl(token) : token;
             if (core_1.isClass(tokenType)) {
                 cfg = this.getMetaConfig(tokenType);
             }
@@ -425,101 +584,49 @@ var BaseModuleBuilder = /** @class */ (function () {
         else {
             cfg = token;
             var bootToken = this.getBootstrapToken(cfg);
-            var typeTask = core_1.isClass(bootToken) ? bootToken : container.getTokenImpl(bootToken);
-            if (core_1.isClass(typeTask)) {
-                cfg = core_1.lang.assign({}, this.getMetaConfig(typeTask), cfg || {});
+            if (bootToken) {
+                var typeTask = core_1.isClass(bootToken) ? bootToken : (container ? container.getTokenImpl(bootToken) : bootToken);
+                if (core_1.isClass(typeTask)) {
+                    cfg = core_1.lang.assign({}, this.getMetaConfig(typeTask), cfg || {});
+                }
             }
         }
         return cfg || {};
     };
-    BaseModuleBuilder.prototype.createInstance = function (token, cfg, data) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var bootToken, container;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        bootToken = this.getBootstrapToken(cfg, token);
-                        if (!bootToken) {
-                            throw new Error('not find bootstrap token.');
-                        }
-                        container = this.getContainer();
-                        return [4 /*yield*/, this.registerDepdences(container, cfg)];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/, this.resolveToken(container, bootToken, cfg)];
-                }
-            });
-        });
-    };
-    BaseModuleBuilder.prototype.registerDepdences = function (container, config) {
+    ModuleBuilder.prototype.registerDepdences = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.registerExts(container, config)];
                     case 1:
                         _a.sent();
-                        // if (this.canRegRootDepds()) {
-                        //     await this.registerRootDepds(container, config);
-                        // }
                         return [4 /*yield*/, this.registerConfgureDepds(container, config)];
                     case 2:
-                        // if (this.canRegRootDepds()) {
-                        //     await this.registerRootDepds(container, config);
-                        // }
-                        _a.sent();
-                        return [2 /*return*/, container];
+                        config = _a.sent();
+                        return [2 /*return*/, config];
                 }
             });
         });
     };
-    BaseModuleBuilder.prototype.resolveToken = function (container, token, config) {
-        if (core_1.isClass(token)) {
-            if (!container.has(token)) {
-                container.register(token);
-            }
-            return container.resolve(token);
-        }
-        else {
-            return container.resolve(token);
-        }
+    ModuleBuilder.prototype.getBootstrapToken = function (cfg, token) {
+        return cfg.bootstrap;
     };
-    // protected async registerRootDepds(container: IContainer, config?: ModuleConfiguration<T>): Promise<IContainer> {
-    //     if (!this.canRegRootDepds()) {
-    //         return container;
-    //     }
-    //     let appcfg = this.parnet.get(AppConfigurationToken);
-    //     await this.importConfigExports(container, this.parnet, appcfg);
-    //     return container;
-    // }
-    // protected canRegRootDepds() {
-    //     return !!this.parnet;
-    // }
-    BaseModuleBuilder.prototype.importConfigExports = function (container, parentContainer, cfg) {
+    ModuleBuilder.prototype.importConfigExports = function (container, providerContainer, cfg) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var expProviders;
             var _this = this;
+            var expProviders;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         if (!(cfg.exports && cfg.exports.length)) return [3 /*break*/, 2];
                         return [4 /*yield*/, Promise.all(cfg.exports.map(function (tk) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
                                 return tslib_1.__generator(this, function (_a) {
-                                    // if (isClass(tk)) {
-                                    //     if (this.isDIModule(tk)) {
-                                    //         await this.importModule(tk);
-                                    //         return tk;
-                                    //     }
-                                    //     if (this.isIocExt(tk)) {
-                                    //         container.register(tk);
-                                    //         return tk;
-                                    //     }
-                                    // }
                                     container.bindProvider(tk, function () {
                                         var providers = [];
                                         for (var _i = 0; _i < arguments.length; _i++) {
                                             providers[_i] = arguments[_i];
                                         }
-                                        return parentContainer.resolve.apply(parentContainer, [tk].concat(providers));
+                                        return providerContainer.resolve.apply(providerContainer, [tk].concat(providers));
                                     });
                                     return [2 /*return*/, tk];
                                 });
@@ -531,7 +638,7 @@ var BaseModuleBuilder = /** @class */ (function () {
                         expProviders = cfg[exportsProvidersFiled];
                         if (expProviders && expProviders.length) {
                             expProviders.forEach(function (tk) {
-                                container.bindProvider(tk, function () { return parentContainer.get(tk); });
+                                container.bindProvider(tk, function () { return providerContainer.get(tk); });
                             });
                         }
                         return [2 /*return*/, container];
@@ -539,16 +646,10 @@ var BaseModuleBuilder = /** @class */ (function () {
             });
         });
     };
-    BaseModuleBuilder.prototype.needRegister = function (type) {
-        if (this.isIocExt(type)) {
-            return true;
-        }
-        return false;
-    };
-    BaseModuleBuilder.prototype.registerConfgureDepds = function (container, config) {
+    ModuleBuilder.prototype.registerConfgureDepds = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var buider, mdls;
             var _this = this;
+            var buider, mdls;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -557,7 +658,7 @@ var BaseModuleBuilder = /** @class */ (function () {
                         return [4 /*yield*/, buider.loader.loadTypes(config.imports, function (it) { return _this.isIocExt(it) || _this.isDIModule(it); })];
                     case 1:
                         mdls = _a.sent();
-                        return [4 /*yield*/, Promise.all(mdls.map(function (md) { return _this.importModule(md, true); }))];
+                        return [4 /*yield*/, Promise.all(mdls.map(function (md) { return _this.importModule(md, container); }))];
                     case 2:
                         _a.sent();
                         _a.label = 3;
@@ -565,57 +666,48 @@ var BaseModuleBuilder = /** @class */ (function () {
                         if (core_1.isArray(config.providers) && config.providers.length) {
                             config[exportsProvidersFiled] = this.bindProvider(container, config.providers);
                         }
-                        return [2 /*return*/, container];
+                        return [2 /*return*/, config];
                 }
             });
         });
     };
-    BaseModuleBuilder.prototype.createBuilder = function () {
-        return new BaseModuleBuilder();
-    };
-    BaseModuleBuilder.prototype.getBootstrapToken = function (cfg, token) {
-        return cfg.bootstrap || token;
-    };
-    BaseModuleBuilder.prototype.getBuilderViaConfig = function (builder) {
+    ModuleBuilder.prototype.getBuilderViaConfig = function (builder, container) {
         if (core_1.isToken(builder)) {
-            return this.getContainer().resolve(builder);
+            return container.resolve(builder);
         }
-        else if (builder instanceof ModuleBuilder) {
+        else if (builder instanceof ModuleBuilder_1) {
             return builder;
         }
         return null;
     };
-    BaseModuleBuilder.prototype.getBuilderViaToken = function (mdl) {
+    ModuleBuilder.prototype.getBuilderViaToken = function (mdl, container) {
         if (core_1.isToken(mdl)) {
-            var taskType = core_1.isClass(mdl) ? mdl : this.getContainer().getTokenImpl(mdl);
+            var taskType = core_1.isClass(mdl) ? mdl : container.getTokenImpl(mdl);
             if (taskType) {
                 var meta = core_1.lang.first(core_1.getTypeMetadata(this.getDecorator(), taskType));
                 if (meta && meta.builder) {
-                    return core_1.isToken(meta.builder) ? this.getContainer().resolve(meta.builder) : meta.builder;
+                    return core_1.isToken(meta.builder) ? container.resolve(meta.builder) : meta.builder;
                 }
             }
         }
         return null;
     };
-    // protected async mergeConfigure(cfg: ModuleConfiguration<T>): Promise<ModuleConfiguration<T>> {
-    //     return cfg;
-    // }
-    BaseModuleBuilder.prototype.getMetaConfig = function (bootModule) {
+    ModuleBuilder.prototype.getMetaConfig = function (bootModule) {
         var decorator = this.getDecorator();
         if (this.isDIModule(bootModule)) {
             var metas = core_1.getTypeMetadata(decorator, bootModule);
             if (metas && metas.length) {
                 var meta = metas[0];
-                meta.bootstrap = meta.bootstrap || bootModule;
+                // meta.bootstrap = meta.bootstrap || bootModule;
                 return core_1.lang.omit(meta, 'builder');
             }
         }
         return null;
     };
-    BaseModuleBuilder.prototype.isIocExt = function (token) {
+    ModuleBuilder.prototype.isIocExt = function (token) {
         return core_1.hasOwnClassMetadata(core_1.IocExt, token);
     };
-    BaseModuleBuilder.prototype.isDIModule = function (token) {
+    ModuleBuilder.prototype.isDIModule = function (token) {
         if (!core_1.isClass(token)) {
             return false;
         }
@@ -624,7 +716,7 @@ var BaseModuleBuilder = /** @class */ (function () {
         }
         return core_1.hasOwnClassMetadata(decorators.DIModule, token);
     };
-    BaseModuleBuilder.prototype.registerExts = function (container, config) {
+    ModuleBuilder.prototype.registerExts = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             return tslib_1.__generator(this, function (_a) {
                 if (!container.has(BootstrapModule_1.BootstrapModule)) {
@@ -634,7 +726,7 @@ var BaseModuleBuilder = /** @class */ (function () {
             });
         });
     };
-    BaseModuleBuilder.prototype.bindProvider = function (container, providers) {
+    ModuleBuilder.prototype.bindProvider = function (container, providers) {
         var tokens = [];
         providers.forEach(function (p, index) {
             if (core_1.isUndefined(p) || core_1.isNull(p)) {
@@ -741,54 +833,28 @@ var BaseModuleBuilder = /** @class */ (function () {
         });
         return tokens;
     };
-    BaseModuleBuilder.classAnnations = { "name": "BaseModuleBuilder", "params": { "constructor": [], "getContainer": [], "resetContainer": ["parent"], "getContainerBuilder": [], "build": ["token", "data"], "buildStrategy": ["instance", "config"], "importModule": ["token", "forceNew"], "getBuilder": ["config", "forceNew"], "getDecorator": [], "getConfigure": ["token"], "createInstance": ["token", "cfg", "data"], "registerDepdences": ["container", "config"], "resolveToken": ["container", "token", "config"], "importConfigExports": ["container", "parentContainer", "cfg"], "needRegister": ["type"], "registerConfgureDepds": ["container", "config"], "createBuilder": [], "getBootstrapToken": ["cfg", "token"], "getBuilderViaConfig": ["builder"], "getBuilderViaToken": ["mdl"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
-    return BaseModuleBuilder;
-}());
-exports.BaseModuleBuilder = BaseModuleBuilder;
-/**
- * default module builder
- *
- * @export
- * @class ModuleBuilder
- * @extends {BaseModuleBuilder<T>}
- * @implements {IModuleBuilder<T>}
- * @template T
- */
-var ModuleBuilder = /** @class */ (function (_super) {
-    tslib_1.__extends(ModuleBuilder, _super);
-    function ModuleBuilder() {
-        return _super.call(this) || this;
-    }
-    ModuleBuilder_1 = ModuleBuilder;
-    ModuleBuilder.prototype.createBuilder = function () {
-        return new ModuleBuilder_1();
-    };
-    var ModuleBuilder_1;
-    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "createBuilder": [] } };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getContainer": ["token", "defaultContainer"], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "build": ["token", "defaultContainer"], "bootstrap": ["token", "defaultContainer"], "createBootstrap": ["iocModule"], "getBootstrap": ["container"], "importModule": ["token", "container"], "getBuilder": ["config", "container"], "getDecorator": [], "getConfigure": ["token", "container"], "registerDepdences": ["container", "config"], "getBootstrapToken": ["cfg", "token"], "importConfigExports": ["container", "providerContainer", "cfg"], "registerConfgureDepds": ["container", "config"], "getBuilderViaConfig": ["builder", "container"], "getBuilderViaToken": ["mdl", "container"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
     tslib_1.__decorate([
-        core_1.Inject(core_1.ContainerToken),
+        core_1.Inject(core_1.ContainerBuilderToken),
         tslib_1.__metadata("design:type", Object)
-    ], ModuleBuilder.prototype, "container", void 0);
+    ], ModuleBuilder.prototype, "containerBuilder", void 0);
     ModuleBuilder = ModuleBuilder_1 = tslib_1.__decorate([
-        core_1.Injectable(IModuleBuilder.ModuleBuilderToken),
+        core_1.Singleton(IModuleBuilder.ModuleBuilderToken),
         tslib_1.__metadata("design:paramtypes", [])
     ], ModuleBuilder);
     return ModuleBuilder;
-}(BaseModuleBuilder));
+    var ModuleBuilder_1;
+}());
 exports.ModuleBuilder = ModuleBuilder;
 
 
 });
 
 unwrapExports(ModuleBuilder_1);
-var ModuleBuilder_2 = ModuleBuilder_1.BaseModuleBuilder;
-var ModuleBuilder_3 = ModuleBuilder_1.ModuleBuilder;
+var ModuleBuilder_2 = ModuleBuilder_1.ModuleBuilder;
 
-var ApplicationBuilder_1 = createCommonjsModule(function (module, exports) {
+var ApplicationBuilder = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
 
 
 
@@ -796,36 +862,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * application builder.
  *
  * @export
- * @class ApplicationBuilder
- * @extends {BaseModuleBuilder<T>}
+ * @class Default ApplicationBuilder
+ * @extends {ModuleBuilder<T>}
  * @template T
  */
-var ApplicationBuilder = /** @class */ (function (_super) {
-    tslib_1.__extends(ApplicationBuilder, _super);
-    function ApplicationBuilder(baseURL) {
+var DefaultApplicationBuilder = /** @class */ (function (_super) {
+    tslib_1.__extends(DefaultApplicationBuilder, _super);
+    function DefaultApplicationBuilder(baseURL) {
         var _this = _super.call(this) || this;
         _this.baseURL = baseURL;
         _this.globalModules = [];
         _this.customRegs = [];
         return _this;
     }
-    ApplicationBuilder_1 = ApplicationBuilder;
-    ApplicationBuilder.prototype.getContainer = function () {
-        if (!this.container) {
-            var builder = this.getContainerBuilder();
-            this.container = builder.create();
-        }
-        return this.container;
-    };
-    ApplicationBuilder.prototype.getContainerBuilder = function () {
-        if (!this.containerBuilder) {
-            this.containerBuilder = this.createContainerBuilder();
-        }
-        return this.containerBuilder;
-    };
-    ApplicationBuilder.prototype.createContainerBuilder = function () {
-        return new core_1.DefaultContainerBuilder();
-    };
+    // createContainer(): IContainer {
+    //     let container = this.getContainerBuilder().create();
+    //     container.register(ModuleBuilder);
+    //     return container;
+    // }
     /**
      * use configuration.
      *
@@ -833,17 +887,19 @@ var ApplicationBuilder = /** @class */ (function (_super) {
      * @returns {this} global config for this application.
      * @memberof Bootstrap
      */
-    ApplicationBuilder.prototype.useConfiguration = function (config) {
+    DefaultApplicationBuilder.prototype.useConfiguration = function (config, container) {
         if (!this.globalConfig) {
             this.globalConfig = Promise.resolve(this.getDefaultConfig());
         }
         var pcfg;
-        var builder = this.getContainerBuilder();
         if (core_1.isString(config)) {
-            pcfg = builder.loader.load([config])
-                .then(function (rs) {
-                return rs.length ? rs[0] : null;
-            });
+            if (container) {
+                var builder = container.resolve(core_1.ContainerBuilderToken);
+                pcfg = builder.loader.load([config])
+                    .then(function (rs) {
+                    return rs.length ? rs[0] : null;
+                });
+            }
         }
         else if (config) {
             pcfg = Promise.resolve(config);
@@ -867,7 +923,7 @@ var ApplicationBuilder = /** @class */ (function (_super) {
      * @returns {this}
      * @memberof PlatformServer
      */
-    ApplicationBuilder.prototype.use = function () {
+    DefaultApplicationBuilder.prototype.use = function () {
         var modules = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             modules[_i] = arguments[_i];
@@ -875,119 +931,33 @@ var ApplicationBuilder = /** @class */ (function (_super) {
         this.globalModules = this.globalModules.concat(modules);
         return this;
     };
-    /**
-     * build and bootstrap application.
-     *
-     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token
-     * @returns {Promise<T>}
-     * @memberof ApplicationBuilder
-     */
-    ApplicationBuilder.prototype.bootstrap = function (token) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var app, bootMd, container;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.build(token)];
-                    case 1:
-                        app = _a.sent();
-                        container = app.container || this.getContainer();
-                        if (app.config && core_1.isToken(token)) {
-                            if (app.config.bootstrap !== token) {
-                                if (!container.has(token) && core_1.isClass(token)) {
-                                    container.register(token);
-                                }
-                                if (container.has(token)) {
-                                    bootMd = container.resolve(token);
-                                }
-                            }
-                        }
-                        bootMd = bootMd || app;
-                        if (!core_1.isFunction(bootMd.onStart)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, Promise.resolve(bootMd.onStart(app))];
-                    case 2:
-                        _a.sent();
-                        _a.label = 3;
-                    case 3:
-                        if (core_1.isFunction(bootMd.onStarted)) {
-                            bootMd.onStarted(app);
-                        }
-                        return [2 /*return*/, app];
-                }
-            });
-        });
+    DefaultApplicationBuilder.prototype.getBootstrapToken = function (cfg, token) {
+        return cfg.bootstrap || token;
     };
-    /**
-     * build application.
-     *
-     * @param {IModuleBuilder<T>} builder
-     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token
-     * @returns {Promise<any>}
-     * @memberof ApplicationBuilder
-     */
-    ApplicationBuilder.prototype.build = function (token, data) {
+    DefaultApplicationBuilder.prototype.registerConfgureDepds = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var builder;
+            var globalCfg;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!!this.root) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.registerRoot()];
+                        if (!this.globalConfig) {
+                            this.useConfiguration();
+                        }
+                        return [4 /*yield*/, this.globalConfig];
                     case 1:
-                        _a.sent();
-                        _a.label = 2;
-                    case 2: return [4 /*yield*/, this.resetContainer(this.root)];
-                    case 3:
-                        _a.sent();
-                        if (!this.container.has(IModuleBuilder.RootModuleBuilderToken)) return [3 /*break*/, 5];
-                        builder = this.container.get(IModuleBuilder.RootModuleBuilderToken);
-                        return [4 /*yield*/, builder.build(token, data)];
-                    case 4: return [2 /*return*/, _a.sent()];
-                    case 5: return [4 /*yield*/, _super.prototype.build.call(this, token, data)];
-                    case 6: return [2 /*return*/, _a.sent()];
-                }
-            });
-        });
-    };
-    ApplicationBuilder.prototype.registerRoot = function () {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var cfg;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!!this.root) return [3 /*break*/, 3];
-                        this.root = this.getContainerBuilder().create();
-                        return [4 /*yield*/, this.getGlobalConfigure()];
-                    case 1:
-                        cfg = _a.sent();
-                        this.bindAppConfig(cfg);
-                        return [4 /*yield*/, this.registerDepdences(this.root, cfg)];
+                        globalCfg = _a.sent();
+                        config = this.mergeGlobalConfig(globalCfg, config);
+                        this.bindAppConfig(config);
+                        return [4 /*yield*/, _super.prototype.registerConfgureDepds.call(this, container, config)];
                     case 2:
-                        _a.sent();
-                        this.root.bindProvider(AppConfiguration.AppConfigurationToken, cfg);
-                        _a.label = 3;
-                    case 3: return [2 /*return*/, this.root];
+                        config = _a.sent();
+                        return [2 /*return*/, config];
                 }
             });
         });
     };
-    ApplicationBuilder.prototype.getGlobalConfigure = function () {
-        if (!this.globalConfig) {
-            this.useConfiguration();
-        }
-        return this.globalConfig;
-    };
-    // protected canRegRootDepds() {
-    //     return false;
-    // }
-    /**
-     * create default container builder.
-     *
-     * @protected
-     * @returns
-     * @memberof ApplicationBuilder
-     */
-    ApplicationBuilder.prototype.createBuilder = function (baseURL) {
-        return new ApplicationBuilder_1(baseURL);
+    DefaultApplicationBuilder.prototype.mergeGlobalConfig = function (globalCfg, moduleCfg) {
+        return core_1.lang.assign({}, globalCfg, moduleCfg);
     };
     /**
      * register ioc exts
@@ -998,17 +968,24 @@ var ApplicationBuilder = /** @class */ (function (_super) {
      * @returns {Promise<IContainer>}
      * @memberof ApplicationBuilder
      */
-    ApplicationBuilder.prototype.registerExts = function (container, config) {
+    DefaultApplicationBuilder.prototype.registerExts = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var usedModules, tokens;
             var _this = this;
+            var usedModules;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, _super.prototype.registerExts.call(this, container, config)];
                     case 1:
                         _a.sent();
                         config.exports = config.exports || [];
-                        if (!this.customRegs.length) return [3 /*break*/, 3];
+                        if (!this.globalModules.length) return [3 /*break*/, 3];
+                        usedModules = this.globalModules;
+                        return [4 /*yield*/, container.loadModule.apply(container, usedModules)];
+                    case 2:
+                        _a.sent();
+                        _a.label = 3;
+                    case 3:
+                        if (!this.customRegs.length) return [3 /*break*/, 5];
                         return [4 /*yield*/, Promise.all(this.customRegs.map(function (cs) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
                                 var tokens;
                                 return tslib_1.__generator(this, function (_a) {
@@ -1016,113 +993,50 @@ var ApplicationBuilder = /** @class */ (function (_super) {
                                         case 0: return [4 /*yield*/, cs(container, config, this)];
                                         case 1:
                                             tokens = _a.sent();
-                                            if (core_1.isArray(tokens) && tokens.length) {
-                                                config.exports = config.exports.concat(tokens);
-                                            }
-                                            return [2 /*return*/];
+                                            return [2 /*return*/, tokens];
                                     }
                                 });
                             }); }))];
-                    case 2:
-                        _a.sent();
-                        _a.label = 3;
-                    case 3:
-                        if (!this.globalModules.length) return [3 /*break*/, 5];
-                        usedModules = this.globalModules;
-                        return [4 /*yield*/, container.loadModule.apply(container, usedModules)];
                     case 4:
-                        tokens = _a.sent();
-                        if (tokens.length) {
-                            config.exports = config.exports.concat(tokens);
-                        }
+                        _a.sent();
                         _a.label = 5;
                     case 5: return [2 /*return*/, container];
                 }
             });
         });
     };
-    // /**
-    //  * meger config configuration with global config.
-    //  *
-    //  * @protected
-    //  * @param {AppConfiguration<T>} cfg
-    //  * @returns {Promise<AppConfiguration<T>>}
-    //  * @memberof ApplicationBuilder
-    //  */
-    // protected async mergeConfigure(cfg: AppConfiguration<T>): Promise<AppConfiguration<T>> {
-    //     cfg = await super.mergeConfigure(cfg);
-    //     let gcfg = this.rootContainer.get(AppConfigurationToken);
-    //     return lang.assign({}, lang.omit(gcfg || {}, 'imports', 'providers', 'bootstrap', 'builder', 'exports'), cfg);
-    // }
-    ApplicationBuilder.prototype.bindAppConfig = function (config) {
+    DefaultApplicationBuilder.prototype.bindAppConfig = function (config) {
         if (this.baseURL) {
             config.baseURL = this.baseURL;
         }
         return config;
     };
-    ApplicationBuilder.prototype.getDefaultConfig = function () {
+    DefaultApplicationBuilder.prototype.getDefaultConfig = function () {
         return { debug: false };
     };
-    var ApplicationBuilder_1;
-    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "getContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "useConfiguration": ["config"], "use": ["modules"], "bootstrap": ["token"], "build": ["token", "data"], "registerRoot": [], "getGlobalConfigure": [], "createBuilder": ["baseURL"], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": [] } };
-    ApplicationBuilder = ApplicationBuilder_1 = tslib_1.__decorate([
-        core_1.Injectable(IApplicationBuilder.ApplicationBuilderToken),
-        tslib_1.__metadata("design:paramtypes", [String])
-    ], ApplicationBuilder);
-    return ApplicationBuilder;
-}(ModuleBuilder_1.BaseModuleBuilder));
-exports.ApplicationBuilder = ApplicationBuilder;
+    DefaultApplicationBuilder.classAnnations = { "name": "DefaultApplicationBuilder", "params": { "constructor": ["baseURL"], "useConfiguration": ["config", "container"], "use": ["modules"], "getBootstrapToken": ["cfg", "token"], "registerConfgureDepds": ["container", "config"], "mergeGlobalConfig": ["globalCfg", "moduleCfg"], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": [] } };
+    return DefaultApplicationBuilder;
+}(ModuleBuilder_1.ModuleBuilder));
+exports.DefaultApplicationBuilder = DefaultApplicationBuilder;
 
 
 });
 
-unwrapExports(ApplicationBuilder_1);
-var ApplicationBuilder_2 = ApplicationBuilder_1.ApplicationBuilder;
-
-var IApplication = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-/**
- * Inject ApplicationToken
- *
- * @export
- * @class InjectApplicationToken
- * @extends {Registration<T>}
- * @template T
- */
-var InjectApplicationToken = /** @class */ (function (_super) {
-    tslib_1.__extends(InjectApplicationToken, _super);
-    function InjectApplicationToken(desc) {
-        return _super.call(this, 'DI_Application', desc) || this;
-    }
-    InjectApplicationToken.classAnnations = { "name": "InjectApplicationToken", "params": { "constructor": ["desc"] } };
-    return InjectApplicationToken;
-}(core_1.Registration));
-exports.InjectApplicationToken = InjectApplicationToken;
-/**
- * Default Application Token.
- */
-exports.ApplicationToken = new InjectApplicationToken('');
-
-
-});
-
-unwrapExports(IApplication);
-var IApplication_1 = IApplication.InjectApplicationToken;
-var IApplication_2 = IApplication.ApplicationToken;
+unwrapExports(ApplicationBuilder);
+var ApplicationBuilder_1 = ApplicationBuilder.DefaultApplicationBuilder;
 
 var D__workspace_github_tsioc_packages_bootstrap_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(decorators, exports);
 tslib_1.__exportStar(AppConfiguration, exports);
-tslib_1.__exportStar(ApplicationBuilder_1, exports);
-tslib_1.__exportStar(IApplication, exports);
+tslib_1.__exportStar(ApplicationBuilder, exports);
 tslib_1.__exportStar(IApplicationBuilder, exports);
 tslib_1.__exportStar(IModuleBuilder, exports);
 tslib_1.__exportStar(ModuleBuilder_1, exports);
 tslib_1.__exportStar(BootstrapModule_1, exports);
+tslib_1.__exportStar(IModuleBootstrap, exports);
+tslib_1.__exportStar(ModuleBootstrap_1, exports);
 
 
 });

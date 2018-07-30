@@ -1,5 +1,5 @@
-import { IContainer, Type, lang, isString, Token, IContainerBuilder } from '@ts-ioc/core';
-import { AppConfiguration, ApplicationBuilder, IApplicationBuilder } from '@ts-ioc/bootstrap';
+import { IContainer, lang, isString, IContainerBuilder } from '@ts-ioc/core';
+import { AppConfiguration, DefaultApplicationBuilder, IApplicationBuilder } from '@ts-ioc/bootstrap';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { ContainerBuilder } from '@ts-ioc/platform-server';
@@ -47,13 +47,26 @@ export interface IServerApplicationBuilder<T> extends IApplicationBuilder<T> {
  * @export
  * @class Bootstrap
  */
-export class ServerApplicationBuilder<T> extends ApplicationBuilder<T> implements IServerApplicationBuilder<T> {
+export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implements IServerApplicationBuilder<T> {
 
 
     private dirMatchs: string[][];
     constructor(public baseURL: string) {
         super(baseURL);
         this.dirMatchs = [];
+    }
+
+    /**
+     * create instance.
+     *
+     * @static
+     * @template T
+     * @param {string} rootdir
+     * @returns {ApplicationBuilder<T>}
+     * @memberof ApplicationBuilder
+     */
+    static create<T>(rootdir: string): ApplicationBuilder<T> {
+        return new ApplicationBuilder<T>(rootdir);
     }
 
     /**
@@ -144,51 +157,3 @@ export class ServerApplicationBuilder<T> extends ApplicationBuilder<T> implement
     }
 }
 
-
-/**
- * server platform.
- *
- * @export
- * @interface IPlatformServer
- * @extends {IPlatform}
- */
-export interface IPlatformServer extends IServerApplicationBuilder<any> {
-
-}
-
-/**
- * server app bootstrap
- *
- * @export
- * @class Bootstrap
- */
-export class PlatformServer extends ServerApplicationBuilder<any> implements IPlatformServer {
-
-    constructor(public baseURL: string) {
-        super(baseURL);
-    }
-
-    /**
-     * create instance.
-     *
-     * @static
-     * @param {string} rootdir application start root path.
-     * @returns {PlatformServer}
-     * @memberof PlatformServer
-     */
-    static create(rootdir: string): PlatformServer {
-        return new PlatformServer(rootdir);
-    }
-
-    /**
-     * bootstrap application via main module.
-     *
-     * @template T
-     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token main module or appliaction configuration.
-     * @returns {Promise<any>}  main module bootstrap class instance.
-     * @memberof PlatformServer
-     */
-    bootstrap<T>(token: Token<T> | Type<any> | AppConfiguration<T>): Promise<any> {
-        return super.bootstrap(token);
-    }
-}

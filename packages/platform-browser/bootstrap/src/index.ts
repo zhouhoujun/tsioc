@@ -1,1 +1,1 @@
-export * from './PlatformBrowser';
+export * from './ApplicationBuilder';

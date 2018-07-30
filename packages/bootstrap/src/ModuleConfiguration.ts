@@ -1,4 +1,4 @@
-import { Token, Type, LoadType, Providers } from '@ts-ioc/core';
+import { Token, Type, LoadType, Providers, IContainer } from '@ts-ioc/core';
 import { IModuleBuilder } from './IModuleBuilder';
 
 
@@ -49,6 +49,14 @@ export interface ModuleConfiguration<T> {
      * @memberof ModuleConfiguration
      */
     bootstrap?: Token<T>;
+
+    /**
+     * ioc container, the module defined in.
+     *
+     * @type {IContainer}
+     * @memberof ModuleConfiguration
+     */
+    container?: IContainer;
 
     /**
      * bind module builder.

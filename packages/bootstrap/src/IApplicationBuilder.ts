@@ -20,22 +20,14 @@ export const ApplicationBuilderToken = new InjectToken<IApplicationBuilder<any>>
 export interface IApplicationBuilder<T> extends IModuleBuilder<T> {
 
     /**
-     * root container.
-     *
-     * @type {IContainer}
-     * @memberof IModuleBuilder
-     */
-    root: IContainer;
-
-
-    /**
      * use custom configuration.
      *
      * @param {(string | AppConfiguration<T>)} [config]
+     * @param {IContainer} [container]
      * @returns {this}
      * @memberof IApplicationBuilder
      */
-    useConfiguration(config?: string | AppConfiguration<T>): this;
+    useConfiguration(config?: string | AppConfiguration<T>, container?: IContainer): this;
 
     /**
      * use module
@@ -45,31 +37,5 @@ export interface IApplicationBuilder<T> extends IModuleBuilder<T> {
      * @memberof IApplicationBuilder
      */
     use(...modules: LoadType[]): this;
-
-    /**
-     * build application.
-     *
-     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token
-     * @returns {Promise<any>}
-     * @memberof IApplicationBuilder
-     */
-    build(token: Token<T> | Type<any> | AppConfiguration<T>, data?: any): Promise<any>;
-
-    /**
-     * register root container
-     *
-     * @returns {Promise<IContainer>} root container.
-     * @memberof IApplicationBuilder
-     */
-    registerRoot(): Promise<IContainer>;
-
-    /**
-     * bootstrap app via main module.
-     *
-     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token bootstrap module.
-     * @returns {Promise<any>}
-     * @memberof IApplicationBuilder
-     */
-    bootstrap(token: Token<T> | Type<any> | AppConfiguration<T>): Promise<any>;
 
 }

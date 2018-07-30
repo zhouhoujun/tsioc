@@ -1,4 +1,4 @@
-import { Type, Token, Factory, SymbolType, Providers, ModuleType, LoadType } from './types';
+import { Type, Token, Factory, SymbolType, Providers, Modules, LoadType } from './types';
 import { IMethodAccessor } from './IMethodAccessor';
 import { LifeScope } from './LifeScope';
 import { InjectToken } from './InjectToken';
@@ -180,11 +180,11 @@ export interface IContainer extends IMethodAccessor {
     /**
      * use modules.
      *
-     * @param {...ModuleType[]} modules
+     * @param {...Modules[]} modules
      * @returns {this}
      * @memberof IContainer
      */
-    use(...modules: ModuleType[]): this;
+    use(...modules: Modules[]): this;
 
     /**
      * load modules.

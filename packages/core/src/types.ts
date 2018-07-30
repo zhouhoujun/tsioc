@@ -5,7 +5,7 @@ import { ProviderMap, ProviderType } from './core';
 /**
  * module types.
  */
-export type ModuleType = Type<any> | ObjectMap<any>;
+export type Modules = Type<any> | ObjectMap<any>;
 
 /**
  * load modules in base on an path.
@@ -33,16 +33,16 @@ export interface PathModules {
     /**
      * modules
      *
-     * @type {((ModuleType | string)[])}
+     * @type {((Modules | string)[])}
      * @memberof AsyncLoadOptions
      */
-    modules?: (ModuleType | string)[];
+    modules?: (Modules | string)[];
 }
 
 /**
  * load module type.
  */
-export type LoadType = ModuleType | string | PathModules;
+export type LoadType = Modules | string | PathModules;
 /**
  * symbol type
  */

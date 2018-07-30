@@ -1,7 +1,6 @@
-import { Type, ModuleType, LoadType, PathModules, Express } from './types';
+import { Type, Modules, LoadType, PathModules, Express } from './types';
 import { IModuleLoader } from './IModuleLoader';
 import { isString, isClass, isObject, isArray } from './utils';
-import { hasOwnClassMetadata, IocExt } from './core';
 
 declare let require: any;
 
@@ -18,7 +17,7 @@ export class DefaultModuleLoader implements IModuleLoader {
 
     }
 
-    private _loader: (modulepath: string) => Promise<ModuleType[]>;
+    private _loader: (modulepath: string) => Promise<Modules[]>;
     getLoader() {
         if (!this._loader) {
             this._loader = this.createLoader();
@@ -30,10 +29,10 @@ export class DefaultModuleLoader implements IModuleLoader {
      * load module.
      *
      * @param {...LoadType[]} modules
-     * @returns {Promise<ModuleType[]>}
+     * @returns {Promise<Modules[]>}
      * @memberof DefaultModuleLoader
      */
-    load(modules: LoadType[]): Promise<ModuleType[]> {
+    load(modules: LoadType[]): Promise<Modules[]> {
         if (modules.length) {
             return Promise.all(modules.map(mdty => {
                 if (isString(mdty)) {
@@ -45,7 +44,7 @@ export class DefaultModuleLoader implements IModuleLoader {
                 }
             }))
                 .then(allms => {
-                    let rmodules: ModuleType[] = [];
+                    let rmodules: Modules[] = [];
                     allms.forEach(ms => {
                         rmodules = rmodules.concat(ms);
                     })
@@ -71,11 +70,11 @@ export class DefaultModuleLoader implements IModuleLoader {
     /**
      * get all class type in modules.
      *
-     * @param {...ModuleType[]} modules
+     * @param {...Modules[]} modules
      * @returns {Type<any>[]}
      * @memberof DefaultModuleLoader
      */
-    getTypes(modules: ModuleType[], filter?: Express<Type<any>, boolean>): Type<any>[] {
+    getTypes(modules: Modules[], filter?: Express<Type<any>, boolean>): Type<any>[] {
         let regModules: Type<any>[] = [];
         modules.forEach(m => {
             let types = this.getContentTypes(m);
@@ -95,9 +94,9 @@ export class DefaultModuleLoader implements IModuleLoader {
         return regModules;
     }
 
-    protected loadFile(files: string | string[], basePath?: string): Promise<ModuleType[]> {
+    protected loadFile(files: string | string[], basePath?: string): Promise<Modules[]> {
         let loader = this.getLoader();
-        let fRes: Promise<ModuleType[]>;
+        let fRes: Promise<Modules[]>;
         if (isArray(files)) {
             fRes = Promise.all(files.map(f => loader(f)))
                 .then(allms => {
@@ -118,14 +117,14 @@ export class DefaultModuleLoader implements IModuleLoader {
     }
 
 
-    protected loadModule(moduleName: string): Promise<ModuleType[]> {
+    protected loadModule(moduleName: string): Promise<Modules[]> {
         let loader = this.getLoader();
         return loader(moduleName).then(ms => ms.filter(it => !!it));
     }
 
-    protected async loadPathModule(pmd: PathModules): Promise<ModuleType[]> {
+    protected async loadPathModule(pmd: PathModules): Promise<Modules[]> {
         let loader = this.getLoader();
-        let modules: ModuleType[] = [];
+        let modules: Modules[] = [];
         if (pmd.files) {
             await this.loadFile(pmd.files, pmd.basePath)
                 .then(allmoduls => {
@@ -147,10 +146,10 @@ export class DefaultModuleLoader implements IModuleLoader {
         return modules;
     }
 
-    protected createLoader(): (modulepath: string) => Promise<ModuleType[]> {
+    protected createLoader(): (modulepath: string) => Promise<Modules[]> {
         if (typeof require !== 'undefined') {
             return (modulepath: string) => {
-                return new Promise<ModuleType[]>((resolve, reject) => {
+                return new Promise<Modules[]>((resolve, reject) => {
                     require([modulepath], (mud) => {
                         resolve(mud);
                     }, err => {
@@ -163,7 +162,7 @@ export class DefaultModuleLoader implements IModuleLoader {
         }
     }
 
-    protected getContentTypes(regModule: ModuleType): Type<any>[] {
+    protected getContentTypes(regModule: Modules): Type<any>[] {
         let regModules: Type<any>[] = [];
 
         if (isClass(regModule)) {
