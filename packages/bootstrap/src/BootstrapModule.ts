@@ -2,7 +2,7 @@ import { IContainer, Inject, ContainerToken, LifeScopeToken, IocExt, CoreActions
 import { DIModule, Bootstrap } from './decorators';
 import { ModuleBuilder } from './ModuleBuilder';
 import { DefaultApplicationBuilder } from './ApplicationBuilder';
-import { ModuleBootstrap } from './ModuleBootstrap';
+import { BootstrapBuilder } from './BootstrapBuilder';
 
 /**
  * Bootstrap ext for ioc. auto run setup after registered.
@@ -31,7 +31,7 @@ export class BootstrapModule {
         lifeScope.registerDecorator(Bootstrap, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
 
         container.register(ModuleBuilder);
-        container.register(ModuleBootstrap);
+        container.register(BootstrapBuilder);
         container.register(DefaultApplicationBuilder);
 
     }

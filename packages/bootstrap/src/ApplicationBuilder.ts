@@ -28,12 +28,6 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         this.customRegs = [];
     }
 
-    // createContainer(): IContainer {
-    //     let container = this.getContainerBuilder().create();
-    //     container.register(ModuleBuilder);
-    //     return container;
-    // }
-
     /**
      * use configuration.
      *
@@ -82,10 +76,6 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
     use(...modules: LoadType[]): this {
         this.globalModules = this.globalModules.concat(modules);
         return this;
-    }
-
-    getBootstrapToken(cfg: AppConfiguration<T>, token?: ModuleType): Token<T> {
-        return cfg.bootstrap || token;
     }
 
     async registerConfgureDepds(container: IContainer, config: AppConfiguration<T>): Promise<AppConfiguration<T>> {

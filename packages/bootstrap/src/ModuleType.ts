@@ -1,6 +1,7 @@
 import { IContainer, Type, Token } from '@ts-ioc/core';
 import { ModuleConfiguration } from './ModuleConfiguration';
 import { IModuleBuilder } from './IModuleBuilder';
+import { IBootstrapBuilder } from './IBootstrapBuilder';
 
 /**
  * DI module type
@@ -15,21 +16,58 @@ export interface ModuleType extends Type<any> {
 }
 
 /**
- * ioc modules.
+ * ioc DI modules.
  *
  * @export
  * @interface IocModule
  * @template T
  */
 export interface IocModule<T> {
+    /**
+     * di module token.
+     *
+     * @type {Token<any>}
+     * @memberof IocModule
+     */
     moduleToken?: Token<any>;
+    /**
+     * module configuration.
+     *
+     * @type {ModuleConfiguration<T>}
+     * @memberof IocModule
+     */
     moduleConfig: ModuleConfiguration<T>;
+    /**
+     * current ioc module di contianer.
+     *
+     * @type {IContainer}
+     * @memberof IocModule
+     */
     container: IContainer;
+    /**
+     * bootstrap token.
+     *
+     * @type {Token<T>}
+     * @memberof IocModule
+     */
     bootstrap?: Token<T>;
-    modulBuilder: IModuleBuilder<T>;
+    /**
+     * bootstrap builder.
+     *
+     * @type {IBootstrapBuilder<T>}
+     * @memberof IocModule
+     */
+    bootBuilder: IBootstrapBuilder<T>;
+    /**
+     * bootstrap instance.
+     *
+     * @type {T}
+     * @memberof IocModule
+     */
+    bootInstance?: T;
 }
 
-export type ModuleInstance<T> = IocModule<T> & ModuleLoaded<T> & AfterBootCreate<T> & BeforeBootCreate<T> & ModuleStart<T> & OnModuleStarted<T>
+export type ModuleInstance<T> = T & IocModule<T> & ModuleLoaded<T> & AfterBootCreate<T> & BeforeBootCreate<T> & ModuleStart<T> & OnModuleStarted<T>
 
 
 /**

@@ -62,7 +62,7 @@ export class Container implements IContainer {
         let key = this.getTokenKey<T>(token);
         let hasReg = this.hasRegister(key);
         if (!hasReg && !this.parent) {
-            console.error('have not register', key);
+            console.log('have not register', key);
             return null;
         }
         if (hasReg) {

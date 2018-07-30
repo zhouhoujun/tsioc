@@ -11,7 +11,8 @@ import { ModuleConfiguration } from './ModuleConfiguration';
 import { DIModule } from './decorators';
 import { BootstrapModule } from './BootstrapModule';
 import { ModuleType, IocModule, ModuleInstance } from './ModuleType';
-import { IModuleBootstrap, ModuleBootstrapToken } from './IModuleBootstrap';
+import { IBootstrapBuilder, BootstrapBuilderToken } from './IBootstrapBuilder';
+import { BootstrapBuilder } from './BootstrapBuilder';
 
 
 const exportsProvidersFiled = '__exportProviders';
@@ -100,11 +101,12 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         cfg = await this.registerDepdences(container, cfg);
         let boot = this.getBootstrapToken(cfg, mdToken);
         let iocModule = this.createModuleInstance(mdToken, container);
-        let builder = this.getBuilder(cfg, container, boot);
 
         iocModule.bootstrap = boot;
         iocModule.container = container;
-        iocModule.modulBuilder = builder;
+        if (!iocModule.bootBuilder) {
+            iocModule.bootBuilder = this.getBootstrapBuilder(container, cfg);
+        }
         iocModule.moduleConfig = cfg;
 
         if (isClass(boot)) {
@@ -138,6 +140,22 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return iocModule;
     }
 
+    protected getBootstrapBuilder(container: IContainer, cfg: ModuleConfiguration<T>) {
+        let bootstrapBuilder: IBootstrapBuilder<T>;
+        if (isClass(cfg.bootBuilder)) {
+            if (!container.has(cfg.bootBuilder)) {
+                container.register(cfg.bootBuilder);
+            }
+        }
+        if (isToken(cfg.bootBuilder)) {
+            bootstrapBuilder = container.resolve(cfg.bootBuilder);
+        } else if (cfg.bootBuilder instanceof BootstrapBuilder) {
+            bootstrapBuilder = cfg.bootBuilder;
+        }
+
+        return bootstrapBuilder;
+    }
+
     /**
      * bootstrap module.
      *
@@ -165,13 +183,10 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
     protected async createBootstrap(iocModule: IocModule<T>): Promise<any> {
-        let container = iocModule.container;
-        return await this.getBootstrap(container).bootstrap(iocModule);
+        let bootBuilder = iocModule.bootBuilder || iocModule.container.resolve(BootstrapBuilderToken);
+        return await bootBuilder.build(iocModule);
     }
 
-    getBootstrap(container: IContainer): IModuleBootstrap {
-        return container.resolve(ModuleBootstrapToken);
-    }
 
     async importModule(token: ModuleType | ModuleConfiguration<any>, container: IContainer): Promise<IContainer> {
         if (container && isClass(token) && !this.isDIModule(token)) {
@@ -187,20 +202,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             }
         }
         return container;
-    }
-
-    getBuilder(config: ModuleConfiguration<T>, container: IContainer, boot?: Token<any>): IModuleBuilder<T> {
-        let builder: IModuleBuilder<T>;
-        if (config.builder) {
-            builder = this.getBuilderViaConfig(config.builder, container);
-        } else if (boot) {
-            builder = this.getBuilderViaToken(boot, container);
-        }
-        if (!builder) {
-            builder = this;
-        }
-
-        return builder;
     }
 
     getDecorator() {
@@ -241,7 +242,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return config;
     }
 
-    getBootstrapToken(cfg: ModuleConfiguration<T>, token?: Token<any>): Token<T> {
+    protected getBootstrapToken(cfg: ModuleConfiguration<T>, token?: Token<any>): Token<T> {
         return cfg.bootstrap;
     }
 
@@ -273,28 +274,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         }
 
         return config;
-    }
-
-    protected getBuilderViaConfig(builder: Token<IModuleBuilder<T>> | IModuleBuilder<T>, container: IContainer): IModuleBuilder<T> {
-        if (isToken(builder)) {
-            return container.resolve(builder);
-        } else if (builder instanceof ModuleBuilder) {
-            return builder;
-        }
-        return null;
-    }
-
-    protected getBuilderViaToken(mdl: Token<T>, container: IContainer): IModuleBuilder<T> {
-        if (isToken(mdl)) {
-            let taskType = isClass(mdl) ? mdl : container.getTokenImpl(mdl);
-            if (taskType) {
-                let meta = lang.first(getTypeMetadata<ModuleConfiguration<T>>(this.getDecorator(), taskType));
-                if (meta && meta.builder) {
-                    return isToken(meta.builder) ? container.resolve(meta.builder) : meta.builder;
-                }
-            }
-        }
-        return null;
     }
 
     protected getMetaConfig(bootModule: Type<any>): ModuleConfiguration<T> {

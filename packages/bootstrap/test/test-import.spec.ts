@@ -11,7 +11,7 @@ describe('di module', () => {
         builder = new DefaultApplicationBuilder();
     });
 
-    it('show has no bootstrap', async () => {
+    it('should has no bootstrap', async () => {
         let md = await builder.build(ModuleA);
         expect(md).to.not.null
         expect(md.bootstrap).to.undefined;
@@ -20,7 +20,7 @@ describe('di module', () => {
         expect(md.container.get('mark')).eq('marked');
     });
 
-    it('show has bootstrap and import provider', async () => {
+    it('should has bootstrap and import provider', async () => {
         let md = await builder.build(ModuleB);
         expect(md).to.not.null
         expect(md.bootstrap).to.eq(ClassSevice);
@@ -29,13 +29,13 @@ describe('di module', () => {
         expect(md.container.get('mark')).eq('marked');
     });
 
-    it('show has no bootstrap', async () => {
+    it('should has bootstrap', async () => {
         let md: ModuleInstance<ModuleB> = await builder.bootstrap(ModuleB);
         expect(md).to.not.null
         expect(md.bootstrap).to.eq(ClassSevice);
         expect(md.container).to.not.undefined;
         expect(md.container.has('mark')).to.true;
-        expect(md['instance']['saied']).eq('marked');
+        expect(md.instance.saied).eq('marked');
     });
 
 });

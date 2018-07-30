@@ -1,6 +1,7 @@
 import { Token, Registration, IContainer, Type, InjectToken } from '@ts-ioc/core';
 import { ModuleConfiguration } from './ModuleConfiguration';
 import { ModuleType, IocModule, ModuleInstance } from './ModuleType';
+import { IBootstrapBuilder } from './IBootstrapBuilder';
 
 
 /**
@@ -78,26 +79,6 @@ export interface IModuleBuilder<T> {
      */
     importModule(token: Type<any> | ModuleConfiguration<any>, container: IContainer): Promise<IContainer> ;
 
-    // /**
-    //  * get bootstrap token.
-    //  *
-    //  * @param {ModuleConfiguration<T>} cfg
-    //  * @param {Token<any>} [token]
-    //  * @returns {Token<T>}
-    //  * @memberof IModuleBuilder
-    //  */
-    // getBootstrapToken(cfg: ModuleConfiguration<T>, token?: Token<any>): Token<T>;
-
-    // /**
-    //  * get builder.
-    //  *
-    //  * @param {ModuleConfiguration<T>} cfg
-    //  * @param {IContainer} [container] container.
-    //  * @returns {IModuleBuilder<T>}
-    //  * @memberof IModuleBuilder
-    //  */
-    // getBuilder(cfg: ModuleConfiguration<T>, container: IContainer): IModuleBuilder<T>;
-
     /**
      * register module depdences.
      *
@@ -130,12 +111,12 @@ export interface IModuleBuilder<T> {
     /**
      * bootstrap module.
      *
-     * @param {(ModuleType | ModuleConfiguration<any>)} token
+     * @param {(ModuleType | ModuleConfiguration<T>)} token
      * @param {IContainer} [defaultContainer]
      * @returns {Promise<ModuleInstance<T>>}
      * @memberof IModuleBuilder
      */
-    bootstrap(token: ModuleType | ModuleConfiguration<any>, defaultContainer?: IContainer): Promise<ModuleInstance<T>>;
+    bootstrap(token: ModuleType | ModuleConfiguration<T>, defaultContainer?: IContainer): Promise<ModuleInstance<T>>;
 
 }
 

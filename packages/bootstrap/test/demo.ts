@@ -4,7 +4,7 @@ import { Injectable, Inject } from '@ts-ioc/core';
 
 @DIModule({
     providers: [
-        { provide: 'mark', useFactory: () => console.log('marked') }
+        { provide: 'mark', useFactory: () => 'marked' }
     ],
     exports: [
 
@@ -17,10 +17,10 @@ export class ModuleA {
 @Injectable
 export class ClassSevice {
     @Inject('mark')
-    mark: Function;
+    mark: string;
     saied: string;
     start() {
-        this.saied = this.mark();
+        this.saied = this.mark;
         console.log(this.saied);
     }
 }
