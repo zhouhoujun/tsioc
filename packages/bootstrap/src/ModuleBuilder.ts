@@ -2,8 +2,10 @@
 import {
     IContainer, isProviderMap, Provider,
     getTypeMetadata, Token, Type, Providers,
-    isString, lang, isFunction, isClass, isUndefined, isNull, isBaseObject, isToken, isArray,
-    Injectable, Inject, ContainerToken, ContainerBuilderToken, hasOwnClassMetadata, IocExt, IContainerBuilder
+    isString, lang, isFunction, isClass, isUndefined,
+    isNull, isBaseObject, isToken, isArray,
+    Injectable, Inject, ContainerToken, ContainerBuilderToken,
+    hasOwnClassMetadata, IocExt, IContainerBuilder
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import { ModuleConfiguration } from './ModuleConfiguration';

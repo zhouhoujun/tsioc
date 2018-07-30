@@ -57,6 +57,7 @@ var equalsConstructorPrototype = function (o) {
 	return ctor && ctor.prototype === o;
 };
 var excludedKeys = {
+	$applicationCache: true,
 	$console: true,
 	$external: true,
 	$frame: true,
@@ -158,7 +159,7 @@ keysShim.shim = function shimObjectKeys() {
 		}(1, 2));
 		if (!keysWorksWithArguments) {
 			var originalKeys = Object.keys;
-			Object.keys = function keys(object) {
+			Object.keys = function keys(object) { // eslint-disable-line func-name-matching
 				if (isArguments(object)) {
 					return originalKeys(slice.call(object));
 				} else {
@@ -248,181 +249,26 @@ defineProperties.supportsDescriptors = !!supportsDescriptors;
 
 var defineProperties_1 = defineProperties;
 
-var toStr$3 = Object.prototype.toString;
-
-var isArguments$2 = function isArguments(value) {
-	var str = toStr$3.call(value);
-	var isArgs = str === '[object Arguments]';
-	if (!isArgs) {
-		isArgs = str !== '[object Array]' &&
-			value !== null &&
-			typeof value === 'object' &&
-			typeof value.length === 'number' &&
-			value.length >= 0 &&
-			toStr$3.call(value.callee) === '[object Function]';
-	}
-	return isArgs;
-};
-
-// modified from https://github.com/es-shims/es5-shim
-var has$1 = Object.prototype.hasOwnProperty;
-var toStr$4 = Object.prototype.toString;
-var slice$1 = Array.prototype.slice;
-
-var isEnumerable$1 = Object.prototype.propertyIsEnumerable;
-var hasDontEnumBug$1 = !isEnumerable$1.call({ toString: null }, 'toString');
-var hasProtoEnumBug$1 = isEnumerable$1.call(function () {}, 'prototype');
-var dontEnums$1 = [
-	'toString',
-	'toLocaleString',
-	'valueOf',
-	'hasOwnProperty',
-	'isPrototypeOf',
-	'propertyIsEnumerable',
-	'constructor'
-];
-var equalsConstructorPrototype$1 = function (o) {
-	var ctor = o.constructor;
-	return ctor && ctor.prototype === o;
-};
-var excludedKeys$1 = {
-	$console: true,
-	$external: true,
-	$frame: true,
-	$frameElement: true,
-	$frames: true,
-	$innerHeight: true,
-	$innerWidth: true,
-	$outerHeight: true,
-	$outerWidth: true,
-	$pageXOffset: true,
-	$pageYOffset: true,
-	$parent: true,
-	$scrollLeft: true,
-	$scrollTop: true,
-	$scrollX: true,
-	$scrollY: true,
-	$self: true,
-	$webkitIndexedDB: true,
-	$webkitStorageInfo: true,
-	$window: true
-};
-var hasAutomationEqualityBug$1 = (function () {
-	/* global window */
-	if (typeof window === 'undefined') { return false; }
-	for (var k in window) {
-		try {
-			if (!excludedKeys$1['$' + k] && has$1.call(window, k) && window[k] !== null && typeof window[k] === 'object') {
-				try {
-					equalsConstructorPrototype$1(window[k]);
-				} catch (e) {
-					return true;
-				}
-			}
-		} catch (e) {
-			return true;
-		}
-	}
-	return false;
-}());
-var equalsConstructorPrototypeIfNotBuggy$1 = function (o) {
-	/* global window */
-	if (typeof window === 'undefined' || !hasAutomationEqualityBug$1) {
-		return equalsConstructorPrototype$1(o);
-	}
-	try {
-		return equalsConstructorPrototype$1(o);
-	} catch (e) {
-		return false;
-	}
-};
-
-var keysShim$1 = function keys(object) {
-	var isObject = object !== null && typeof object === 'object';
-	var isFunction = toStr$4.call(object) === '[object Function]';
-	var isArguments = isArguments$2(object);
-	var isString = isObject && toStr$4.call(object) === '[object String]';
-	var theKeys = [];
-
-	if (!isObject && !isFunction && !isArguments) {
-		throw new TypeError('Object.keys called on a non-object');
-	}
-
-	var skipProto = hasProtoEnumBug$1 && isFunction;
-	if (isString && object.length > 0 && !has$1.call(object, 0)) {
-		for (var i = 0; i < object.length; ++i) {
-			theKeys.push(String(i));
-		}
-	}
-
-	if (isArguments && object.length > 0) {
-		for (var j = 0; j < object.length; ++j) {
-			theKeys.push(String(j));
-		}
-	} else {
-		for (var name in object) {
-			if (!(skipProto && name === 'prototype') && has$1.call(object, name)) {
-				theKeys.push(String(name));
-			}
-		}
-	}
-
-	if (hasDontEnumBug$1) {
-		var skipConstructor = equalsConstructorPrototypeIfNotBuggy$1(object);
-
-		for (var k = 0; k < dontEnums$1.length; ++k) {
-			if (!(skipConstructor && dontEnums$1[k] === 'constructor') && has$1.call(object, dontEnums$1[k])) {
-				theKeys.push(dontEnums$1[k]);
-			}
-		}
-	}
-	return theKeys;
-};
-
-keysShim$1.shim = function shimObjectKeys() {
-	if (Object.keys) {
-		var keysWorksWithArguments = (function () {
-			// Safari 5.0 bug
-			return (Object.keys(arguments) || '').length === 2;
-		}(1, 2));
-		if (!keysWorksWithArguments) {
-			var originalKeys = Object.keys;
-			Object.keys = function keys(object) {
-				if (isArguments$2(object)) {
-					return originalKeys(slice$1.call(object));
-				} else {
-					return originalKeys(object);
-				}
-			};
-		}
-	} else {
-		Object.keys = keysShim$1;
-	}
-	return Object.keys || keysShim$1;
-};
-
-var objectKeys$2 = keysShim$1;
-
 /* eslint no-invalid-this: 1 */
 
 var ERROR_MESSAGE = 'Function.prototype.bind called on incompatible ';
-var slice$2 = Array.prototype.slice;
-var toStr$5 = Object.prototype.toString;
+var slice$1 = Array.prototype.slice;
+var toStr$3 = Object.prototype.toString;
 var funcType = '[object Function]';
 
 var implementation = function bind(that) {
     var target = this;
-    if (typeof target !== 'function' || toStr$5.call(target) !== funcType) {
+    if (typeof target !== 'function' || toStr$3.call(target) !== funcType) {
         throw new TypeError(ERROR_MESSAGE + target);
     }
-    var args = slice$2.call(arguments, 1);
+    var args = slice$1.call(arguments, 1);
 
     var bound;
     var binder = function () {
         if (this instanceof bound) {
             var result = target.apply(
                 this,
-                args.concat(slice$2.call(arguments))
+                args.concat(slice$1.call(arguments))
             );
             if (Object(result) === result) {
                 return result;
@@ -431,7 +277,7 @@ var implementation = function bind(that) {
         } else {
             return target.apply(
                 that,
-                args.concat(slice$2.call(arguments))
+                args.concat(slice$1.call(arguments))
             );
         }
     };
@@ -515,7 +361,7 @@ var implementation$3 = function assign(target, source1) {
 	var s, source, i, props, syms, value, key;
 	for (s = 1; s < arguments.length; ++s) {
 		source = toObject(arguments[s]);
-		props = objectKeys$2(source);
+		props = objectKeys(source);
 		var getSymbols = hasSymbols$1 && (Object.getOwnPropertySymbols || originalGetSymbols);
 		if (getSymbols) {
 			syms = getSymbols(source);
@@ -3982,8 +3828,8 @@ var ProviderMap = /** @class */ (function () {
                 for (var _i = 0; _i < arguments.length; _i++) {
                     providers[_i] = arguments[_i];
                 }
-                return (_a = _this.container).resolve.apply(_a, [provider].concat(providers));
                 var _a;
+                return (_a = _this.container).resolve.apply(_a, [provider].concat(providers));
             };
         }
         else {
@@ -4016,12 +3862,12 @@ var ProviderMap = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
+        var _a, _b;
         if (!this.maps.has(provide)) {
             return (!utils.isNumber(provide) && this.container.has(provide)) ? (_a = this.container).resolve.apply(_a, [provide].concat(providers)) : null;
         }
         var provider = this.maps.get(provide);
         return utils.isToken(provider) ? (_b = this.container).resolve.apply(_b, [provider].concat(providers)) : provider.apply(void 0, providers);
-        var _a, _b;
     };
     ProviderMap.prototype.forEach = function (express) {
         this.maps.forEach(express);
@@ -5003,7 +4849,7 @@ var MethodAccessor = /** @class */ (function () {
             providers[_i - 3] = arguments[_i];
         }
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var targetClass, actionData, lifeScope, parameters, paramInstances, _a;
+            var _a, targetClass, actionData, lifeScope, parameters, paramInstances;
             return tslib_1.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -5029,7 +4875,6 @@ var MethodAccessor = /** @class */ (function () {
                         paramInstances = _b.sent();
                         return [2 /*return*/, target[propertyKey].apply(target, paramInstances)];
                     case 2: throw new Error("type: " + targetClass + " has no method " + propertyKey.toString() + ".");
-                    case 3: return [2 /*return*/];
                 }
             });
         });
@@ -5039,6 +4884,7 @@ var MethodAccessor = /** @class */ (function () {
         for (var _i = 3; _i < arguments.length; _i++) {
             providers[_i - 3] = arguments[_i];
         }
+        var _a;
         if (!target) {
             target = (_a = this.container).resolve.apply(_a, [token].concat(providers));
         }
@@ -5062,7 +4908,6 @@ var MethodAccessor = /** @class */ (function () {
         else {
             throw new Error("type: " + targetClass + " has no method " + propertyKey.toString() + ".");
         }
-        var _a;
     };
     MethodAccessor.prototype.createSyncParams = function (params) {
         var _this = this;
@@ -5070,8 +4915,10 @@ var MethodAccessor = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
+        var _a;
         var providerMap = (_a = this.getMatcher()).matchProviders.apply(_a, [params].concat(providers));
         return params.map(function (param, index) {
+            var _a;
             if (param.name && providerMap.has(param.name)) {
                 return providerMap.resolve(param.name);
             }
@@ -5081,9 +4928,7 @@ var MethodAccessor = /** @class */ (function () {
             else {
                 return undefined;
             }
-            var _a;
         });
-        var _a;
     };
     MethodAccessor.prototype.createParams = function (params) {
         var _this = this;
@@ -5091,8 +4936,10 @@ var MethodAccessor = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
+        var _a;
         var providerMap = (_a = this.getMatcher()).matchProviders.apply(_a, [params].concat(providers));
         return Promise.all(params.map(function (param, index) {
+            var _a;
             if (param.name && providerMap.has(param.name)) {
                 return providerMap.resolve(param.name);
             }
@@ -5102,9 +4949,7 @@ var MethodAccessor = /** @class */ (function () {
             else {
                 return undefined;
             }
-            var _a;
         }));
-        var _a;
     };
     MethodAccessor.classAnnations = { "name": "MethodAccessor", "params": { "constructor": ["container"], "getMatcher": [], "invoke": ["token", "propertyKey", "target", "providers"], "syncInvoke": ["token", "propertyKey", "target", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"] } };
     return MethodAccessor;
@@ -5383,6 +5228,7 @@ var Container = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
+        var _a;
         var key = this.getTokenKey(token);
         var hasReg = this.hasRegister(key);
         if (!hasReg && !this.parent) {
@@ -5396,7 +5242,6 @@ var Container = /** @class */ (function () {
         else {
             return (_a = this.parent).resolve.apply(_a, [token].concat(providers));
         }
-        var _a;
     };
     /**
      * clear cache.
@@ -5626,9 +5471,9 @@ var Container = /** @class */ (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             modules[_i] = arguments[_i];
         }
+        var _a;
         (_a = this.get(IContainerBuilder.ContainerBuilderToken)).syncLoadModule.apply(_a, [this].concat(modules));
         return this;
-        var _a;
     };
     /**
      * async use modules.
@@ -5642,8 +5487,8 @@ var Container = /** @class */ (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             modules[_i] = arguments[_i];
         }
-        return (_a = this.get(IContainerBuilder.ContainerBuilderToken)).loadModule.apply(_a, [this].concat(modules));
         var _a;
+        return (_a = this.get(IContainerBuilder.ContainerBuilderToken)).loadModule.apply(_a, [this].concat(modules));
     };
     /**
      * invoke method async.
@@ -5661,8 +5506,8 @@ var Container = /** @class */ (function () {
         for (var _i = 3; _i < arguments.length; _i++) {
             providers[_i - 3] = arguments[_i];
         }
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).invoke.apply(_a, [token, propertyKey, instance].concat(providers));
         var _a;
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).invoke.apply(_a, [token, propertyKey, instance].concat(providers));
     };
     /**
      * invoke method.
@@ -5680,24 +5525,24 @@ var Container = /** @class */ (function () {
         for (var _i = 3; _i < arguments.length; _i++) {
             providers[_i - 3] = arguments[_i];
         }
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).syncInvoke.apply(_a, [token, propertyKey, instance].concat(providers));
         var _a;
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).syncInvoke.apply(_a, [token, propertyKey, instance].concat(providers));
     };
     Container.prototype.createSyncParams = function (params) {
         var providers = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createSyncParams.apply(_a, [params].concat(providers));
         var _a;
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createSyncParams.apply(_a, [params].concat(providers));
     };
     Container.prototype.createParams = function (params) {
         var providers = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createParams.apply(_a, [params].concat(providers));
         var _a;
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createParams.apply(_a, [params].concat(providers));
     };
     Container.prototype.cacheDecorator = function (map, action) {
         if (!map.has(action.name)) {
@@ -6001,8 +5846,8 @@ var DefaultModuleLoader = /** @class */ (function () {
     };
     DefaultModuleLoader.prototype.loadPathModule = function (pmd) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var loader, modules;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:

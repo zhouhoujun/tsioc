@@ -496,8 +496,8 @@ var BaseModuleBuilder = /** @class */ (function () {
     // }
     BaseModuleBuilder.prototype.importConfigExports = function (container, parentContainer, cfg) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var expProviders;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -547,8 +547,8 @@ var BaseModuleBuilder = /** @class */ (function () {
     };
     BaseModuleBuilder.prototype.registerConfgureDepds = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var buider, mdls;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -763,6 +763,7 @@ var ModuleBuilder = /** @class */ (function (_super) {
     ModuleBuilder.prototype.createBuilder = function () {
         return new ModuleBuilder_1();
     };
+    var ModuleBuilder_1;
     ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "createBuilder": [] } };
     tslib_1.__decorate([
         core_1.Inject(core_1.ContainerToken),
@@ -773,7 +774,6 @@ var ModuleBuilder = /** @class */ (function (_super) {
         tslib_1.__metadata("design:paramtypes", [])
     ], ModuleBuilder);
     return ModuleBuilder;
-    var ModuleBuilder_1;
 }(BaseModuleBuilder));
 exports.ModuleBuilder = ModuleBuilder;
 
@@ -1000,8 +1000,8 @@ var ApplicationBuilder = /** @class */ (function (_super) {
      */
     ApplicationBuilder.prototype.registerExts = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var usedModules, tokens;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, _super.prototype.registerExts.call(this, container, config)];
@@ -1063,13 +1063,13 @@ var ApplicationBuilder = /** @class */ (function (_super) {
     ApplicationBuilder.prototype.getDefaultConfig = function () {
         return { debug: false };
     };
+    var ApplicationBuilder_1;
     ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "getContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "useConfiguration": ["config"], "use": ["modules"], "bootstrap": ["token"], "build": ["token", "data"], "registerRoot": [], "getGlobalConfigure": [], "createBuilder": ["baseURL"], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": [] } };
     ApplicationBuilder = ApplicationBuilder_1 = tslib_1.__decorate([
         core_1.Injectable(IApplicationBuilder.ApplicationBuilderToken),
         tslib_1.__metadata("design:paramtypes", [String])
     ], ApplicationBuilder);
     return ApplicationBuilder;
-    var ApplicationBuilder_1;
 }(ModuleBuilder_1.BaseModuleBuilder));
 exports.ApplicationBuilder = ApplicationBuilder;
 

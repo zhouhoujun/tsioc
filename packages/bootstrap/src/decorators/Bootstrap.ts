@@ -3,7 +3,7 @@ import {
     MetadataExtends, ITypeDecorator, createClassDecorator, isClass
 } from '@ts-ioc/core';
 import { AppConfiguration } from '../AppConfiguration';
-import { IApplication, ApplicationToken } from '../IApplication';
+import { IApplication } from '../IApplication';
 import { IApplicationBuilder, ApplicationBuilderToken } from '../IApplicationBuilder';
 
 
