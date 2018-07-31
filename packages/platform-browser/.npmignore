@@ -1,6 +1,7 @@
 .vscode
 src
 test
+node_modules
 gulpfile.ts
 tsconfig.json
 tslint.json

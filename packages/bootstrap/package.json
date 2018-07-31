@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/bootstrap",
-  "version": "3.0.0-beta4",
+  "version": "3.0.0-beta5",
   "description": "DI Module manager, application bootstrap. base on AOP, Ioc container, via @ts-ioc/core .",
   "main": "./bundles/bootstrap.umd.js",
   "typings": "./lib/index.d.ts",
@@ -31,7 +31,7 @@
     "globby": "^7.1.1"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "^3.0.0-beta4"
+    "@ts-ioc/core": "^3.0.0-beta5"
   },
   "directories": {
     "lib": "lib",
