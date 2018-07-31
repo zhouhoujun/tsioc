@@ -1,11 +1,11 @@
-import { ModuleConfiguration } from './ModuleConfiguration';
+import { ModuleConfiguration, ModuleConfigure } from './ModuleConfiguration';
 import { ObjectMap, InjectToken } from '@ts-ioc/core';
 
 
 /**
  * application configuration token.
  */
-export const AppConfigurationToken = new InjectToken<AppConfiguration<any>>('DI_APP_Configuration');
+export const AppConfigurationToken = new InjectToken<AppConfiguration>('DI_APP_Configuration');
 
 /**
  * app configuration.
@@ -14,7 +14,7 @@ export const AppConfigurationToken = new InjectToken<AppConfiguration<any>>('DI_
  * @interface AppConfiguration
  * @extends {ObjectMap<any>}
  */
-export interface AppConfiguration<T> extends ModuleConfiguration<T> {
+export interface AppConfiguration extends ModuleConfigure {
     /**
      * application name.
      *

@@ -40,14 +40,6 @@ exports.InjectModuleBuilder = InjectModuleBuilder;
  * module builder token.
  */
 exports.ModuleBuilderToken = new InjectModuleBuilder('');
-/**
- * root module builder token.
- */
-exports.RootModuleBuilderToken = new InjectModuleBuilder('RootModule');
-/**
- * root container token.
- */
-exports.RootContainerToken = new core_1.InjectToken('DI_RootContainer');
 
 
 });
@@ -55,8 +47,6 @@ exports.RootContainerToken = new core_1.InjectToken('DI_RootContainer');
 unwrapExports(IModuleBuilder);
 var IModuleBuilder_1 = IModuleBuilder.InjectModuleBuilder;
 var IModuleBuilder_2 = IModuleBuilder.ModuleBuilderToken;
-var IModuleBuilder_3 = IModuleBuilder.RootModuleBuilderToken;
-var IModuleBuilder_4 = IModuleBuilder.RootContainerToken;
 
 var DIModule = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -68,13 +58,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @export
  * @template T
  * @param {string} decorType
- * @param {(Token<IModuleBuilder<T>> | IModuleBuilder<T>)} builder
+ * @param {(Token<IModuleBuilder> | IModuleBuilder)} [builder]
+ * @param {(Token<IBootstrapBuilder<T>> | IBootstrapBuilder<T>)} [bootBuilder]
  * @param {InjectToken<IApplication>} provideType default provide type.
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IDIModuleDecorator<T>}
  */
-function createDIModuleDecorator(decorType, builder, provideType, adapter, metadataExtends) {
+function createDIModuleDecorator(decorType, builder, bootBuilder, provideType, adapter, metadataExtends) {
     return core_1.createClassDecorator('DIModule', function (args) {
         if (adapter) {
             adapter(args);
@@ -97,6 +88,9 @@ function createDIModuleDecorator(decorType, builder, provideType, adapter, metad
         metadata.decorType = decorType;
         if (!metadata.builder) {
             metadata.builder = builder;
+        }
+        if (!metadata.bootBuilder) {
+            metadata.bootBuilder = bootBuilder;
         }
         return metadata;
     });
@@ -137,13 +131,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @export
  * @template T
  * @param {string} decorType
- * @param {(Token<IModuleBuilder<T>> | IModuleBuilder<T>)} builder
+ * @param {(Token<IApplicationBuilder> | IApplicationBuilder)} [builder]
+ * @param {(Token<IBootstrapBuilder<T>> | IBootstrapBuilder<T>)} [bootBuilder]
  * @param {InjectToken<IApplication>} provideType default provide type.
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IBootstrapDecorator<T>}
  */
-function createBootstrapDecorator(decorType, builder, provideType, adapter, metadataExtends) {
+function createBootstrapDecorator(decorType, builder, bootBuilder, provideType, adapter, metadataExtends) {
     return core_1.createClassDecorator('Bootstrap', function (args) {
         if (adapter) {
             adapter(args);
@@ -166,6 +161,9 @@ function createBootstrapDecorator(decorType, builder, provideType, adapter, meta
         metadata.decorType = decorType;
         if (!metadata.builder) {
             metadata.builder = builder;
+        }
+        if (!metadata.bootBuilder) {
+            metadata.bootBuilder = bootBuilder;
         }
         return metadata;
     });
@@ -253,7 +251,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  *
  * @export
  * @class BootstrapBuilder
- * @implements {IBootstrapBuilder<T>}
+ * @implements {IBootstrapBuilder}
  * @template T
  */
 var BootstrapBuilder = /** @class */ (function () {
@@ -281,6 +279,7 @@ var BootstrapBuilder = /** @class */ (function () {
                         return [4 /*yield*/, builder.buildStrategy(instance, iocModule)];
                     case 1:
                         instance = _a.sent();
+                        iocModule.bootInstance = instance;
                         return [2 /*return*/, instance];
                 }
             });
@@ -293,8 +292,8 @@ var BootstrapBuilder = /** @class */ (function () {
      * bundle instance via config.
      *
      * @param {T} instance
-     * @param {IocModule<T>} config
-     * @returns {Promise<T>}
+     * @param {IocModule<any>} config
+     * @returns {Promise<any>}
      * @memberof IModuleBuilder
      */
     BootstrapBuilder.prototype.buildStrategy = function (instance, iocModule) {
@@ -354,7 +353,7 @@ exports.BootstrapBuilder = BootstrapBuilder;
 unwrapExports(BootstrapBuilder_1);
 var BootstrapBuilder_2 = BootstrapBuilder_1.BootstrapBuilder;
 
-var BootstrapModule_1 = createCommonjsModule(function (module, exports) {
+var BootModule_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
@@ -366,10 +365,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Bootstrap ext for ioc. auto run setup after registered.
  * with @IocExt('setup') decorator.
  * @export
- * @class BootstrapModule
+ * @class BootModule
  */
-var BootstrapModule = /** @class */ (function () {
-    function BootstrapModule(container) {
+var BootModule = /** @class */ (function () {
+    function BootModule(container) {
         this.container = container;
     }
     /**
@@ -377,7 +376,7 @@ var BootstrapModule = /** @class */ (function () {
      *
      * @memberof AopModule
      */
-    BootstrapModule.prototype.setup = function () {
+    BootModule.prototype.setup = function () {
         var container = this.container;
         var lifeScope = container.get(core_1.LifeScopeToken);
         lifeScope.registerDecorator(decorators.DIModule, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
@@ -386,21 +385,21 @@ var BootstrapModule = /** @class */ (function () {
         container.register(BootstrapBuilder_1.BootstrapBuilder);
         container.register(ApplicationBuilder.DefaultApplicationBuilder);
     };
-    BootstrapModule.classAnnations = { "name": "BootstrapModule", "params": { "constructor": ["container"], "setup": [] } };
-    BootstrapModule = tslib_1.__decorate([
+    BootModule.classAnnations = { "name": "BootModule", "params": { "constructor": ["container"], "setup": [] } };
+    BootModule = tslib_1.__decorate([
         core_1.IocExt('setup'),
         tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)),
         tslib_1.__metadata("design:paramtypes", [Object])
-    ], BootstrapModule);
-    return BootstrapModule;
+    ], BootModule);
+    return BootModule;
 }());
-exports.BootstrapModule = BootstrapModule;
+exports.BootModule = BootModule;
 
 
 });
 
-unwrapExports(BootstrapModule_1);
-var BootstrapModule_2 = BootstrapModule_1.BootstrapModule;
+unwrapExports(BootModule_1);
+var BootModule_2 = BootModule_1.BootModule;
 
 var ModuleBuilder_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -416,8 +415,8 @@ var exportsProvidersFiled = '__exportProviders';
  * module builder
  *
  * @export
- * @class ModuleBuilderBase
- * @implements {IModuleBuilder<T>}
+ * @class ModuleBuilder
+ * @implements {IModuleBuilder}
  * @template T
  */
 var ModuleBuilder = /** @class */ (function () {
@@ -426,10 +425,10 @@ var ModuleBuilder = /** @class */ (function () {
     /**
      * get container of the module.
      *
-     * @param {(ModuleType<T> | ModuleConfiguration<T>)} token module type or module configuration.
+     * @param {(ModuleType | ModuleConfigure)} token module type or module configuration.
      * @param {IContainer} [defaultContainer] set default container or not. not set will create new container.
      * @returns {IContainer}
-     * @memberof BaseModuleBuilder
+     * @memberof ModuleBuilder
      */
     ModuleBuilder.prototype.getContainer = function (token, defaultContainer) {
         var container;
@@ -473,9 +472,9 @@ var ModuleBuilder = /** @class */ (function () {
     /**
      * build module.
      *
-     * @param {(ModuleType | ModuleConfiguration<any>)} [token]
-     * @returns {Promise<any>}
-     * @memberof ModuleBuilderBase
+     * @param {(DIModuleType<TM> | ModuleConfigure)} [token]
+     * @returns {Promise<MdlInstance<TM>>}
+     * @memberof ModuleBuilder
      */
     ModuleBuilder.prototype.build = function (token, defaultContainer) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
@@ -548,9 +547,9 @@ var ModuleBuilder = /** @class */ (function () {
     /**
      * bootstrap module.
      *
-     * @param {(ModuleType | ModuleConfiguration<any>)} token
+     * @param {(DIModuleType<TM> | ModuleConfigure)} token
      * @param {IContainer} [defaultContainer]
-     * @memberof ModuleBuilderBase
+     * @memberof ModuleBuilder
      */
     ModuleBuilder.prototype.bootstrap = function (token, defaultContainer) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
@@ -629,8 +628,8 @@ var ModuleBuilder = /** @class */ (function () {
     /**
      * get configuration.
      *
-     * @returns {ModuleConfiguration<T>}
-     * @memberof ModuleBuilderBase
+     * @returns {ModuleConfigure}
+     * @memberof ModuleBuilder
      */
     ModuleBuilder.prototype.getConfigure = function (token, container) {
         var cfg;
@@ -760,8 +759,8 @@ var ModuleBuilder = /** @class */ (function () {
     ModuleBuilder.prototype.registerExts = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             return tslib_1.__generator(this, function (_a) {
-                if (!container.has(BootstrapModule_1.BootstrapModule)) {
-                    container.register(BootstrapModule_1.BootstrapModule);
+                if (!container.has(BootModule_1.BootModule)) {
+                    container.register(BootModule_1.BootModule);
                 }
                 return [2 /*return*/, container];
             });
@@ -903,7 +902,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  *
  * @export
  * @class Default ApplicationBuilder
- * @extends {ModuleBuilder<T>}
+ * @extends {ModuleBuilder}
  * @template T
  */
 var DefaultApplicationBuilder = /** @class */ (function (_super) {
@@ -918,7 +917,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
     /**
      * use configuration.
      *
-     * @param {(string | AppConfiguration<T>)} [config]
+     * @param {(string | AppConfiguration)} [config]
      * @returns {this} global config for this application.
      * @memberof Bootstrap
      */
@@ -996,7 +995,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
      *
      * @protected
      * @param {IContainer} container
-     * @param {AppConfiguration<T>} config
+     * @param {AppConfiguration} config
      * @returns {Promise<IContainer>}
      * @memberof ApplicationBuilder
      */
@@ -1057,7 +1056,7 @@ exports.DefaultApplicationBuilder = DefaultApplicationBuilder;
 unwrapExports(ApplicationBuilder);
 var ApplicationBuilder_1 = ApplicationBuilder.DefaultApplicationBuilder;
 
-var D__Workspace_Projects_modules_tsioc_packages_bootstrap_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_bootstrap_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(decorators, exports);
@@ -1066,14 +1065,14 @@ tslib_1.__exportStar(ApplicationBuilder, exports);
 tslib_1.__exportStar(IApplicationBuilder, exports);
 tslib_1.__exportStar(IModuleBuilder, exports);
 tslib_1.__exportStar(ModuleBuilder_1, exports);
-tslib_1.__exportStar(BootstrapModule_1, exports);
+tslib_1.__exportStar(BootModule_1, exports);
 tslib_1.__exportStar(IBootstrapBuilder, exports);
 tslib_1.__exportStar(BootstrapBuilder_1, exports);
 
 
 });
 
-var index$1 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_bootstrap_lib);
+var index$1 = unwrapExports(D__workspace_github_tsioc_packages_bootstrap_lib);
 
 return index$1;
 

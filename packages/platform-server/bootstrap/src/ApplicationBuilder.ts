@@ -7,7 +7,7 @@ import { ContainerBuilder } from '@ts-ioc/platform-server';
 /**
  * default app configuration.
  */
-const defaultAppConfig: AppConfiguration<any> = {
+const defaultAppConfig: AppConfiguration = {
     baseURL: '',
     debug: false,
     connections: {},
@@ -19,10 +19,10 @@ const defaultAppConfig: AppConfiguration<any> = {
  *
  * @export
  * @interface IServerApplicationBuilder
- * @extends {IModuleBuilder<T>}
+ * @extends {IApplicationBuilder}
  * @template T
  */
-export interface IServerApplicationBuilder<T> extends IApplicationBuilder<T> {
+export interface IServerApplicationBuilder extends IApplicationBuilder {
     /**
      * root url
      *
@@ -42,12 +42,12 @@ export interface IServerApplicationBuilder<T> extends IApplicationBuilder<T> {
 
 
 /**
- * server app bootstrap
+ * application builder for server side.
  *
  * @export
  * @class Bootstrap
  */
-export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implements IServerApplicationBuilder<T> {
+export class ApplicationBuilder extends DefaultApplicationBuilder implements IServerApplicationBuilder {
 
 
     private dirMatchs: string[][];
@@ -62,30 +62,30 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
      * @static
      * @template T
      * @param {string} rootdir
-     * @returns {ApplicationBuilder<T>}
+     * @returns {ApplicationBuilder}
      * @memberof ApplicationBuilder
      */
-    static create<T>(rootdir: string): ApplicationBuilder<T> {
-        return new ApplicationBuilder<T>(rootdir);
+    static create(rootdir: string): ApplicationBuilder {
+        return new ApplicationBuilder(rootdir);
     }
 
     /**
      * use custom configuration.
      *
-     * @param {(string | AppConfiguration<T>)} [config]
+     * @param {(string | AppConfiguration)} [config]
      * @returns {this}
      * @memberof Bootstrap
      */
-    useConfiguration(config?: string | AppConfiguration<T>): this {
+    useConfiguration(config?: string | AppConfiguration): this {
         if (!this.globalConfig) {
             this.globalConfig = Promise.resolve(this.getDefaultConfig());
         }
-        let cfgmodeles: AppConfiguration<T>;
+        let cfgmodeles: AppConfiguration;
         if (isString(config)) {
             if (existsSync(config)) {
-                cfgmodeles = require(config) as AppConfiguration<T>;
+                cfgmodeles = require(config) as AppConfiguration;
             } else if (existsSync(path.join(this.baseURL, config))) {
-                cfgmodeles = require(path.join(this.baseURL, config)) as AppConfiguration<T>;
+                cfgmodeles = require(path.join(this.baseURL, config)) as AppConfiguration;
             } else {
                 console.log(`config file: ${config} not exists.`)
             }
@@ -109,10 +109,10 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
         }
 
         if (cfgmodeles) {
-            let excfg = (cfgmodeles['default'] ? cfgmodeles['default'] : cfgmodeles) as AppConfiguration<T>;
+            let excfg = (cfgmodeles['default'] ? cfgmodeles['default'] : cfgmodeles) as AppConfiguration;
             this.globalConfig = this.globalConfig
                 .then(cfg => {
-                    cfg = lang.assign(cfg || {}, excfg || {}) as AppConfiguration<T>;
+                    cfg = lang.assign(cfg || {}, excfg || {}) as AppConfiguration;
                     return cfg;
                 });
         }
@@ -132,7 +132,7 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
         return this;
     }
 
-    protected async registerExts(container: IContainer, config: AppConfiguration<T>): Promise<IContainer> {
+    protected async registerExts(container: IContainer, config: AppConfiguration): Promise<IContainer> {
         await super.registerExts(container, config);
         await Promise.all(this.dirMatchs.map(dirs => {
             return container.loadModule(container, {
@@ -152,8 +152,8 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
         return this;
     }
 
-    protected getDefaultConfig(): AppConfiguration<T> {
-        return lang.assign({}, defaultAppConfig as AppConfiguration<T>);
+    protected getDefaultConfig(): AppConfiguration {
+        return lang.assign({}, defaultAppConfig as AppConfiguration);
     }
 }
 

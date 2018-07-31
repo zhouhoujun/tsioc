@@ -5,29 +5,29 @@ import { IModuleBuilder } from './IModuleBuilder';
 /**
  * custom define module.
  */
-export type CustomRegister<T> = (container: IContainer, config?: AppConfiguration<T>, builder?: IApplicationBuilder<T>) => Token<any>[] | Promise<Token<any>[]>;
+export type CustomRegister = (container: IContainer, config?: AppConfiguration, builder?: IApplicationBuilder) => Token<any>[] | Promise<Token<any>[]>;
 
-export const ApplicationBuilderToken = new InjectToken<IApplicationBuilder<any>>('DI_AppBuilder');
+export const ApplicationBuilderToken = new InjectToken<IApplicationBuilder>('DI_AppBuilder');
 
 /**
  * application builder.
  *
  * @export
  * @interface IApplicationBuilder
- * @extends {IModuleBuilder<T>}
+ * @extends {IModuleBuilder}
  * @template T
  */
-export interface IApplicationBuilder<T> extends IModuleBuilder<T> {
+export interface IApplicationBuilder extends IModuleBuilder {
 
     /**
      * use custom configuration.
      *
-     * @param {(string | AppConfiguration<T>)} [config]
+     * @param {(string | AppConfiguration)} [config]
      * @param {IContainer} [container]
      * @returns {this}
      * @memberof IApplicationBuilder
      */
-    useConfiguration(config?: string | AppConfiguration<T>, container?: IContainer): this;
+    useConfiguration(config?: string | AppConfiguration, container?: IContainer): this;
 
     /**
      * use module

@@ -1,7 +1,6 @@
-import { Token, Registration, IContainer, Type, InjectToken } from '@ts-ioc/core';
-import { ModuleConfiguration } from './ModuleConfiguration';
-import { ModuleType, IocModule, ModuleInstance } from './ModuleType';
-import { IBootstrapBuilder } from './IBootstrapBuilder';
+import { Registration, IContainer, Type, InjectToken } from '@ts-ioc/core';
+import { ModuleConfiguration, ModuleConfigure } from './ModuleConfiguration';
+import { ModuleType, MdlInstance, DIModuleType } from './ModuleType';
 
 
 /**
@@ -12,7 +11,7 @@ import { IBootstrapBuilder } from './IBootstrapBuilder';
  * @extends {Registration<T>}
  * @template T
  */
-export class InjectModuleBuilder<T extends IModuleBuilder<any>> extends Registration<T> {
+export class InjectModuleBuilder<T extends IModuleBuilder> extends Registration<T> {
     constructor(desc: string) {
         super('DI_ModuleBuilder', desc);
     }
@@ -21,17 +20,8 @@ export class InjectModuleBuilder<T extends IModuleBuilder<any>> extends Registra
 /**
  * module builder token.
  */
-export const ModuleBuilderToken = new InjectModuleBuilder<IModuleBuilder<any>>('');
+export const ModuleBuilderToken = new InjectModuleBuilder<IModuleBuilder>('');
 
-/**
- * root module builder token.
- */
-export const RootModuleBuilderToken = new InjectModuleBuilder<IModuleBuilder<any>>('RootModule');
-
-/**
- * root container token.
- */
-export const RootContainerToken = new InjectToken<IContainer>('DI_RootContainer');
 /**
  * module builder
  *
@@ -39,17 +29,17 @@ export const RootContainerToken = new InjectToken<IContainer>('DI_RootContainer'
  * @interface IModuleBuilder
  * @template T
  */
-export interface IModuleBuilder<T> {
+export interface IModuleBuilder {
 
     /**
      * get container of the module.
      *
-     * @param {(ModuleType | ModuleConfiguration<T>)} token module type or module configuration.
+     * @param {(ModuleType | ModuleConfigure)} token module type or module configuration.
      * @param {IContainer} [defaultContainer] set default container or not. not set will create new container.
      * @returns {IContainer}
      * @memberof IModuleBuilder
      */
-    getContainer(token: ModuleType | ModuleConfiguration<T>, defaultContainer?: IContainer): IContainer ;
+    getContainer(token: ModuleType | ModuleConfigure, defaultContainer?: IContainer): IContainer ;
 
     /**
      * create new container.
@@ -62,32 +52,32 @@ export interface IModuleBuilder<T> {
     /**
      * build module as ioc container.
      *
-     * @param {(ModuleType | ModuleConfiguration<any>)} token
+     * @param {(DIModuleType<TM> | ModuleConfigure)} token
      * @param {IContainer} [defaultContainer]
-     * @returns {Promise<ModuleInstance<T>>}
+     * @returns {Promise<MdlInstance<T>>}
      * @memberof IModuleBuilder
      */
-    build(token: ModuleType | ModuleConfiguration<T>, defaultContainer?: IContainer): Promise<ModuleInstance<T>>;
+    build<TM>(token: DIModuleType<TM> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<TM>>;
 
     /**
      * import di module.
      *
-     * @param {(Type<any> | ModuleConfiguration<any>)} token di module type
+     * @param {(Type<any> | ModuleConfigure)} token di module type
      * @param {IContainer} container container to import module.
      * @returns {Promise<IContainer>}
      * @memberof IModuleBuilder
      */
-    importModule(token: Type<any> | ModuleConfiguration<any>, container: IContainer): Promise<IContainer> ;
+    importModule(token: Type<any> | ModuleConfigure, container: IContainer): Promise<IContainer> ;
 
     /**
      * register module depdences.
      *
      * @param {IContainer} container
-     * @param {ModuleConfiguration<T>} config
-     * @returns {Promise<IContainer>}
+     * @param {ModuleConfigure} config
+     * @returns {Promise<ModuleConfigure>}
      * @memberof IModuleBuilder
      */
-    registerDepdences(container: IContainer, config: ModuleConfiguration<T>): Promise<ModuleConfiguration<T>>;
+    registerDepdences(container: IContainer, config: ModuleConfigure): Promise<ModuleConfigure>;
 
     /**
      * get the module define decorator or decorator name.
@@ -100,23 +90,23 @@ export interface IModuleBuilder<T> {
     /**
      * get configure from module calss metadata or module config object.
      *
-     * @param {(ModuleType | ModuleConfiguration<T>)} token
+     * @param {(ModuleType | ModuleConfigure)} token
      * @param {IContainer} [container] container.
-     * @returns {ModuleConfiguration<T>}
+     * @returns {ModuleConfigure}
      * @memberof IModuleBuilder
      */
-    getConfigure(token: ModuleType | ModuleConfiguration<T>, container?: IContainer): ModuleConfiguration<T>;
+    getConfigure(token: ModuleType | ModuleConfigure, container?: IContainer): ModuleConfigure;
 
 
     /**
      * bootstrap module.
      *
-     * @param {(ModuleType | ModuleConfiguration<T>)} token
+     * @param {(DIModuleType<TM> | ModuleConfigure)} token
      * @param {IContainer} [defaultContainer]
-     * @returns {Promise<ModuleInstance<T>>}
+     * @returns {Promise<MdlInstance<TM>>}
      * @memberof IModuleBuilder
      */
-    bootstrap(token: ModuleType | ModuleConfiguration<T>, defaultContainer?: IContainer): Promise<ModuleInstance<T>>;
+    bootstrap<TM>(token: DIModuleType<TM> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<TM>>;
 
 }
 

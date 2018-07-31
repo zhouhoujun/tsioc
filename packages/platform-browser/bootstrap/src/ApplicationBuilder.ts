@@ -5,25 +5,27 @@ declare let System: any;
 /**
  * default app configuration.
  */
-const defaultAppConfig: AppConfiguration<any> = {
+const defaultAppConfig: AppConfiguration = {
     baseURL: '',
     debug: false,
     connections: {},
     setting: {}
 }
 
-export interface IBroserApplicationBuilder<T> extends IApplicationBuilder<T> {
+export interface IBroserApplicationBuilder extends IApplicationBuilder {
 
 }
 
 
 /**
- * server app bootstrap
+ * application builder for browser side.
  *
  * @export
- * @class Bootstrap
+ * @class ApplicationBuilder
+ * @extends {DefaultApplicationBuilder}
+ * @implements {IBroserApplicationBuilder<T>}
  */
-export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implements IBroserApplicationBuilder<T> {
+export class ApplicationBuilder extends DefaultApplicationBuilder implements IBroserApplicationBuilder {
 
     constructor(baseURL?: string) {
         super(baseURL || !isUndefined(System) ? System.baseURL : location.href);
@@ -37,8 +39,8 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
      * @returns {ApplicationBuilder} ApplicationBuilder instance.
      * @memberof PlatformBrowser
      */
-    static create<T>(baseURL?: string): ApplicationBuilder<T> {
-        return new ApplicationBuilder<T>(baseURL);
+    static create(baseURL?: string): ApplicationBuilder {
+        return new ApplicationBuilder(baseURL);
     }
 
     protected createContainerBuilder(): IContainerBuilder {
@@ -49,8 +51,8 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
         return this;
     }
 
-    protected getDefaultConfig(): AppConfiguration<T> {
-        return lang.assign({}, defaultAppConfig as AppConfiguration<T>);
+    protected getDefaultConfig(): AppConfiguration {
+        return lang.assign({}, defaultAppConfig as AppConfiguration);
     }
 
 }

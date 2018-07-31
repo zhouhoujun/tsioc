@@ -1,18 +1,27 @@
 import { IContainer, Type, Token } from '@ts-ioc/core';
 import { ModuleConfiguration } from './ModuleConfiguration';
-import { IModuleBuilder } from './IModuleBuilder';
 import { IBootstrapBuilder } from './IBootstrapBuilder';
 
 /**
  * DI module type
  *
  * @export
- * @interface ModuleType
+ * @interface DIModuleType
  * @extends {Type<T>}
  * @template T
  */
-export interface ModuleType extends Type<any> {
+export interface DIModuleType<T> extends Type<T> {
     __di?: IContainer;
+}
+
+/**
+ * DI module type
+ *
+ * @export
+ * @interface ModuleType
+ * @extends {DIModuleType<any>}
+ */
+export interface ModuleType extends DIModuleType<any> {
 }
 
 /**
@@ -54,10 +63,10 @@ export interface IocModule<T> {
     /**
      * bootstrap builder.
      *
-     * @type {IBootstrapBuilder<T>}
+     * @type {IBootstrapBuilder}
      * @memberof IocModule
      */
-    bootBuilder: IBootstrapBuilder<T>;
+    bootBuilder: IBootstrapBuilder;
     /**
      * bootstrap instance.
      *
@@ -67,7 +76,10 @@ export interface IocModule<T> {
     bootInstance?: T;
 }
 
-export type ModuleInstance<T> = T & IocModule<T> & ModuleLoaded<T> & AfterBootCreate<T> & BeforeBootCreate<T> & ModuleStart<T> & OnModuleStarted<T>
+/**
+ *  module instance.
+ */
+export type MdlInstance<TM> = TM & IocModule<any> & ModuleLoaded<any> & AfterBootCreate<any> & BeforeBootCreate<any> & ModuleStart<any> & OnModuleStarted<any>
 
 
 /**

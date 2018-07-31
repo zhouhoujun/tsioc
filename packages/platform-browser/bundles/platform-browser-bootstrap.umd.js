@@ -17,7 +17,7 @@ function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
-var PlatformBrowser_1 = createCommonjsModule(function (module, exports) {
+var ApplicationBuilder_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
@@ -33,78 +33,53 @@ var defaultAppConfig = {
     setting: {}
 };
 /**
- * server app bootstrap
+ * application builder for browser side.
  *
  * @export
- * @class Bootstrap
+ * @class ApplicationBuilder
+ * @extends {DefaultApplicationBuilder}
+ * @implements {IBroserApplicationBuilder<T>}
  */
-var BroserApplicationBuilder = /** @class */ (function (_super) {
-    tslib_1.__extends(BroserApplicationBuilder, _super);
-    function BroserApplicationBuilder(baseURL) {
+var ApplicationBuilder = /** @class */ (function (_super) {
+    tslib_1.__extends(ApplicationBuilder, _super);
+    function ApplicationBuilder(baseURL) {
         return _super.call(this, baseURL || !core_1.isUndefined(System) ? System.baseURL : location.href) || this;
-    }
-    BroserApplicationBuilder.prototype.createContainerBuilder = function () {
-        return new platformBrowser.ContainerBuilder();
-    };
-    BroserApplicationBuilder.prototype.createBuilder = function () {
-        return this;
-    };
-    BroserApplicationBuilder.prototype.getDefaultConfig = function () {
-        return core_1.lang.assign({}, defaultAppConfig);
-    };
-    BroserApplicationBuilder.classAnnations = { "name": "BroserApplicationBuilder", "params": { "constructor": ["baseURL"], "createContainerBuilder": [], "createBuilder": [], "getDefaultConfig": [] } };
-    return BroserApplicationBuilder;
-}(bootstrap.ApplicationBuilder));
-exports.BroserApplicationBuilder = BroserApplicationBuilder;
-/**
- * server app bootstrap
- *
- * @export
- * @class Bootstrap
- */
-var PlatformBrowser = /** @class */ (function (_super) {
-    tslib_1.__extends(PlatformBrowser, _super);
-    function PlatformBrowser(baseURL) {
-        return _super.call(this, baseURL) || this;
     }
     /**
      * create instance.
      *
      * @static
      * @param {string} [baseURL] application start up base path.
-     * @returns {PlatformBrowser} PlatfromBrowser instance.
+     * @returns {ApplicationBuilder} ApplicationBuilder instance.
      * @memberof PlatformBrowser
      */
-    PlatformBrowser.create = function (baseURL) {
-        return new PlatformBrowser(baseURL);
+    ApplicationBuilder.create = function (baseURL) {
+        return new ApplicationBuilder(baseURL);
     };
-    /**
-     * bootstrap application via main module.
-     *
-     * @template T
-     * @param {(Token<T> | Type<any> | AppConfiguration<T>)} token main module or appliaction configuration.
-     * @returns {Promise<any>}  main module bootstrap class instance.
-     * @memberof PlatformBrowser
-     */
-    PlatformBrowser.prototype.bootstrap = function (token) {
-        return _super.prototype.bootstrap.call(this, token);
+    ApplicationBuilder.prototype.createContainerBuilder = function () {
+        return new platformBrowser.ContainerBuilder();
     };
-    PlatformBrowser.classAnnations = { "name": "PlatformBrowser", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "bootstrap": ["token"] } };
-    return PlatformBrowser;
-}(BroserApplicationBuilder));
-exports.PlatformBrowser = PlatformBrowser;
+    ApplicationBuilder.prototype.createBuilder = function () {
+        return this;
+    };
+    ApplicationBuilder.prototype.getDefaultConfig = function () {
+        return core_1.lang.assign({}, defaultAppConfig);
+    };
+    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "createContainerBuilder": [], "createBuilder": [], "getDefaultConfig": [] } };
+    return ApplicationBuilder;
+}(bootstrap.DefaultApplicationBuilder));
+exports.ApplicationBuilder = ApplicationBuilder;
 
 
 });
 
-unwrapExports(PlatformBrowser_1);
-var PlatformBrowser_2 = PlatformBrowser_1.BroserApplicationBuilder;
-var PlatformBrowser_3 = PlatformBrowser_1.PlatformBrowser;
+unwrapExports(ApplicationBuilder_1);
+var ApplicationBuilder_2 = ApplicationBuilder_1.ApplicationBuilder;
 
 var D__workspace_github_tsioc_packages_platformBrowser_bootstrap_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
-tslib_1.__exportStar(PlatformBrowser_1, exports);
+tslib_1.__exportStar(ApplicationBuilder_1, exports);
 
 
 });

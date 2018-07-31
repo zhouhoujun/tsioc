@@ -5,7 +5,7 @@ export * from './IApplicationBuilder';
 export * from './IModuleBuilder';
 export * from './ModuleBuilder';
 export * from './ModuleConfiguration';
-export * from './BootstrapModule';
+export * from './BootModule';
 export * from './IBootstrapBuilder';
 export * from './BootstrapBuilder';
 export * from './ModuleType';

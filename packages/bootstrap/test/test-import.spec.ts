@@ -2,11 +2,11 @@
 import 'mocha';
 import { expect } from 'chai';
 import { ModuleA, ModuleB, ClassSevice } from './demo';
-import { DefaultApplicationBuilder, IModuleBuilder, ModuleInstance } from '../src';
+import { DefaultApplicationBuilder, IModuleBuilder } from '../src';
 
 describe('di module', () => {
 
-    let builder: IModuleBuilder<any>;
+    let builder: IModuleBuilder;
     beforeEach(async () => {
         builder = new DefaultApplicationBuilder();
     });
@@ -30,7 +30,7 @@ describe('di module', () => {
     });
 
     it('should has bootstrap', async () => {
-        let md: ModuleInstance<ModuleB> = await builder.bootstrap(ModuleB);
+        let md = await builder.bootstrap(ModuleB);
         expect(md).to.not.null
         expect(md.bootstrap).to.eq(ClassSevice);
         expect(md.container).to.not.undefined;

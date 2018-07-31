@@ -8,10 +8,10 @@ import { BootstrapBuilder } from './BootstrapBuilder';
  * Bootstrap ext for ioc. auto run setup after registered.
  * with @IocExt('setup') decorator.
  * @export
- * @class BootstrapModule
+ * @class BootModule
  */
 @IocExt('setup')
-export class BootstrapModule {
+export class BootModule {
 
     constructor(@Inject(ContainerToken) private container: IContainer) {
 

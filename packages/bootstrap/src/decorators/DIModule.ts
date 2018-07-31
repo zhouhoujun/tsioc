@@ -1,6 +1,7 @@
 import { createClassDecorator, ClassMetadata, Token, MetadataAdapter, MetadataExtends, ITypeDecorator, isClass } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken } from '../IModuleBuilder';
 import { ModuleConfiguration } from '../ModuleConfiguration';
+import { IBootstrapBuilder } from '../IBootstrapBuilder';
 
 /**
  * DI module metadata.
@@ -47,7 +48,8 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDec
  * @export
  * @template T
  * @param {string} decorType
- * @param {(Token<IModuleBuilder<T>> | IModuleBuilder<T>)} builder
+ * @param {(Token<IModuleBuilder> | IModuleBuilder)} [builder]
+ * @param {(Token<IBootstrapBuilder<T>> | IBootstrapBuilder<T>)} [bootBuilder]
  * @param {InjectToken<IApplication>} provideType default provide type.
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
@@ -55,7 +57,8 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDec
  */
 export function createDIModuleDecorator<T extends DIModuleMetadata>(
     decorType: string,
-    builder: Token<IModuleBuilder<T>> | IModuleBuilder<T>,
+    builder?: Token<IModuleBuilder> | IModuleBuilder,
+    bootBuilder?: Token<IBootstrapBuilder> | IBootstrapBuilder,
     provideType?: Token<any>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IDIModuleDecorator<T> {
@@ -86,6 +89,9 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
             metadata.decorType = decorType;
             if (!metadata.builder) {
                 metadata.builder = builder;
+            }
+            if (!metadata.bootBuilder) {
+                metadata.bootBuilder = bootBuilder;
             }
             return metadata;
         }) as IDIModuleDecorator<T>;

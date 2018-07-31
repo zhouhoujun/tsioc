@@ -3,11 +3,12 @@ import {
     MetadataExtends, ITypeDecorator, createClassDecorator, isClass
 } from '@ts-ioc/core';
 import { AppConfiguration } from '../AppConfiguration';
-import { IApplicationBuilder, ApplicationBuilderToken } from '../IApplicationBuilder';
 import { IocModule } from '../ModuleType';
+import { IBootstrapBuilder } from '../IBootstrapBuilder';
+import { ApplicationBuilderToken, IApplicationBuilder } from '../IApplicationBuilder';
 
 
-export interface BootstrapMetadata extends AppConfiguration<any>, ClassMetadata {
+export interface BootstrapMetadata extends AppConfiguration, ClassMetadata {
     decorType?: string;
 }
 
@@ -38,7 +39,8 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
  * @export
  * @template T
  * @param {string} decorType
- * @param {(Token<IModuleBuilder<T>> | IModuleBuilder<T>)} builder
+ * @param {(Token<IApplicationBuilder> | IApplicationBuilder)} [builder]
+ * @param {(Token<IBootstrapBuilder<T>> | IBootstrapBuilder<T>)} [bootBuilder]
  * @param {InjectToken<IApplication>} provideType default provide type.
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
@@ -46,7 +48,8 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
  */
 export function createBootstrapDecorator<T extends BootstrapMetadata>(
     decorType: string,
-    builder: Token<IApplicationBuilder<T>> | IApplicationBuilder<T>,
+    builder?: Token<IApplicationBuilder> | IApplicationBuilder,
+    bootBuilder?: Token<IBootstrapBuilder> | IBootstrapBuilder,
     provideType?: InjectToken<IocModule<T>>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IBootstrapDecorator<T> {
@@ -77,6 +80,9 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
             metadata.decorType = decorType;
             if (!metadata.builder) {
                 metadata.builder = builder;
+            }
+            if (!metadata.bootBuilder) {
+                metadata.bootBuilder = bootBuilder;
             }
             return metadata;
         }) as IBootstrapDecorator<T>;

@@ -44,20 +44,20 @@ export interface ModuleConfiguration<T> {
     exports?: Token<any>[];
 
     /**
+     * module builder
+     *
+     * @type {(Token<IModuleBuilder> | IModuleBuilder)}
+     * @memberof ModuleConfiguration
+     */
+    builder?: Token<IModuleBuilder> | IModuleBuilder;
+
+    /**
      * ioc container, the module defined in.
      *
      * @type {IContainer}
      * @memberof ModuleConfiguration
      */
     container?: IContainer;
-
-    /**
-     * bind module builder.
-     *
-     * @type {(Token<IModuleBuilder<T>> | IModuleBuilder<T>)}
-     * @memberof ITaskConfigure
-     */
-    builder?: Token<IModuleBuilder<T>> | IModuleBuilder<T>;
 
     /**
      * set this DI module bootstrap start with.
@@ -70,10 +70,21 @@ export interface ModuleConfiguration<T> {
     /**
      * set bootstrap builder.
      *
-     * @type {(Token<IBootstrapBuilder<T>> | IBootstrapBuilder<T>)}
+     * @type {(Token<IBootstrapBuilder> | IBootstrapBuilder)}
      * @memberof ModuleConfiguration
      */
-    bootBuilder?: Token<IBootstrapBuilder<T>> | IBootstrapBuilder<T>;
+    bootBuilder?: Token<IBootstrapBuilder> | IBootstrapBuilder;
+
+}
+
+/**
+ * module configure, with any bootstrap.
+ *
+ * @export
+ * @interface ModuleConfigure
+ * @extends {ModuleConfiguration<any>}
+ */
+export interface ModuleConfigure extends ModuleConfiguration<any> {
 
 }
 

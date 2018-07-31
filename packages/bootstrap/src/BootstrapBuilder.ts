@@ -1,24 +1,22 @@
 import { IBootstrapBuilder, BootstrapBuilderToken } from './IBootstrapBuilder';
 import { IocModule } from './ModuleType';
-import { Singleton, Token, isToken, IContainer, isClass, lang, getTypeMetadata } from '@ts-ioc/core';
-import { ModuleConfiguration } from './ModuleConfiguration';
-
+import { Singleton, Token, isToken, IContainer } from '@ts-ioc/core';
 /**
  * bootstrap base builder.
  *
  * @export
  * @class BootstrapBuilder
- * @implements {IBootstrapBuilder<T>}
+ * @implements {IBootstrapBuilder}
  * @template T
  */
 @Singleton(BootstrapBuilderToken)
-export class BootstrapBuilder<T> implements IBootstrapBuilder<T> {
+export class BootstrapBuilder implements IBootstrapBuilder {
 
     constructor() {
 
     }
 
-    async build(iocModule: IocModule<T>, data?: any): Promise<T> {
+    async build<T>(iocModule: IocModule<T>, data?: any): Promise<T> {
         let builder = this.getBuilder(iocModule);
         if (!iocModule.bootstrap) {
             iocModule.bootstrap = builder.getBootstrapToken(iocModule);
@@ -37,7 +35,7 @@ export class BootstrapBuilder<T> implements IBootstrapBuilder<T> {
         return instance;
     }
 
-    getBootstrapToken(iocModule: IocModule<T>): Token<T> {
+    getBootstrapToken(iocModule: IocModule<any>): Token<any> {
         return iocModule.bootstrap || iocModule.moduleToken;
     }
 
@@ -45,17 +43,17 @@ export class BootstrapBuilder<T> implements IBootstrapBuilder<T> {
      * bundle instance via config.
      *
      * @param {T} instance
-     * @param {IocModule<T>} config
-     * @returns {Promise<T>}
+     * @param {IocModule<any>} config
+     * @returns {Promise<any>}
      * @memberof IModuleBuilder
      */
-    async buildStrategy(instance: T, iocModule: IocModule<T>): Promise<T> {
+    async buildStrategy(instance: any, iocModule: IocModule<any>): Promise<any> {
         return instance;
     }
 
-    getBuilder(iocModule: IocModule<T>): IBootstrapBuilder<T> {
+    getBuilder(iocModule: IocModule<any>): IBootstrapBuilder {
         if (!iocModule.bootBuilder) {
-            let builder: IBootstrapBuilder<T>;
+            let builder: IBootstrapBuilder;
             if (iocModule.moduleConfig.bootBuilder) {
                 builder = this.getBuilderViaConfig(iocModule.moduleConfig.bootBuilder, iocModule.container);
             }
@@ -67,7 +65,7 @@ export class BootstrapBuilder<T> implements IBootstrapBuilder<T> {
         return iocModule.bootBuilder;
     }
 
-    protected getBuilderViaConfig(builder: Token<IBootstrapBuilder<T>> | IBootstrapBuilder<T>, container: IContainer): IBootstrapBuilder<T> {
+    protected getBuilderViaConfig(builder: Token<IBootstrapBuilder> | IBootstrapBuilder, container: IContainer): IBootstrapBuilder {
         if (isToken(builder)) {
             return container.resolve(builder);
         } else if (builder instanceof BootstrapBuilder) {
