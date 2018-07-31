@@ -2,7 +2,7 @@
   "name": "@ts-ioc/aop",
   "version": "3.0.0-beta5",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
-  "main": "./bundles/aop.umd.js",
+  "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",

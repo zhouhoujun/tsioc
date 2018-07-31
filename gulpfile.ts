@@ -77,37 +77,37 @@ Development.create(gulp, __dirname, [
                 loader: [
                     {
                         name: 'copy-to-core',
-                        src: ['packages/annotations/**', '!packages/annotations/test/**', '!packages/annotations/src/**', '!packages/annotations/node_modules/**'],
+                        src: ['packages/annotations/!(test|src|node_modules)/**', 'packages/annotations/package.json'],
                         dist: 'packages/core/node_modules/@ts-ioc/annotations',
                         pipes: []
                     },
                     {
                         name: 'copy-to-aop',
-                        src: ['packages/annotations/**', '!packages/annotations/test/**', '!packages/annotations/src/**', '!packages/annotations/node_modules/**'],
+                        src: ['packages/annotations/!(test|src|node_modules)/**', 'packages/annotations/package.json'],
                         dist: 'packages/aop/node_modules/@ts-ioc/annotations',
                         pipes: []
                     },
                     {
                         name: 'copy-to-bootstrap',
-                        src: ['packages/annotations/**', '!packages/annotations/test/**', '!packages/annotations/src/**', '!packages/annotations/node_modules/**'],
+                        src: ['packages/annotations/!(test|src|node_modules)/**', 'packages/annotations/package.json'],
                         dist: 'packages/bootstrap/node_modules/@ts-ioc/annotations',
                         pipes: []
                     },
                     {
                         name: 'copy-to-logs',
-                        src: ['packages/annotations/**', '!packages/annotations/test/**', '!packages/annotations/src/**', '!packages/annotations/node_modules/**'],
+                        src: ['packages/annotations/!(test|src|node_modules)/**', 'packages/annotations/package.json'],
                         dist: 'packages/logs/node_modules/@ts-ioc/annotations',
                         pipes: []
                     },
                     {
                         name: 'copy-to-browser',
-                        src: ['packages/annotations/**', '!packages/annotations/test/**', '!packages/annotations/src/**', '!packages/annotations/node_modules/**'],
+                        src: ['packages/annotations/!(test|src|node_modules)/**', 'packages/annotations/package.json'],
                         dist: 'packages/platform-browser/node_modules/@ts-ioc/annotations',
                         pipes: []
                     },
                     {
                         name: 'copy-to-server',
-                        src: ['packages/annotations/**', '!packages/annotations/test/**', '!packages/annotations/src/**', '!packages/annotations/node_modules/**'],
+                        src: ['packages/annotations/!(test|src|node_modules)/**', 'packages/annotations/package.json'],
                         dist: 'packages/platform-server/node_modules/@ts-ioc/annotations',
                         pipes: []
                     }
@@ -130,31 +130,31 @@ Development.create(gulp, __dirname, [
                 loader: [
                     {
                         name: 'copy-to-aop',
-                        src: ['packages/core/**', '!packages/core/test/**', '!packages/core/src/**', '!packages/core/node_modules/**'],
+                        src: ['packages/core/!(src|test|node_modules)/**', 'packages/core/package.json'],
                         dist: 'packages/aop/node_modules/@ts-ioc/core',
                         pipes: []
                     },
                     {
                         name: 'copy-to-bootstrap',
-                        src: ['packages/core/**', '!packages/core/test/**', '!packages/core/src/**', '!packages/core/node_modules/**'],
+                        src: ['packages/core/!(src|test|node_modules)/**', 'packages/core/package.json'],
                         dist: 'packages/bootstrap/node_modules/@ts-ioc/core',
                         pipes: []
                     },
                     {
                         name: 'copy-to-logs',
-                        src: ['packages/core/**', '!packages/core/test/**', '!packages/core/src/**', '!packages/core/node_modules/**'],
+                        src: ['packages/core/!(src|test|node_modules)/**', 'packages/core/package.json'],
                         dist: 'packages/logs/node_modules/@ts-ioc/core',
                         pipes: []
                     },
                     {
                         name: 'copy-to-browser',
-                        src: ['packages/core/**', '!packages/core/test/**', '!packages/core/src/**', '!packages/core/node_modules/**'],
+                        src: ['packages/core/!(src|test|node_modules)/**', 'packages/core/package.json'],
                         dist: 'packages/platform-browser/node_modules/@ts-ioc/core',
                         pipes: []
                     },
                     {
                         name: 'copy-to-server',
-                        src: ['packages/core/**', '!packages/core/test/**', '!packages/core/src/**', '!packages/core/node_modules/**'],
+                        src: ['packages/core/!(src|test|node_modules)/**', 'packages/core/package.json'],
                         dist: 'packages/platform-server/node_modules/@ts-ioc/core',
                         pipes: []
                     }
@@ -176,7 +176,7 @@ Development.create(gulp, __dirname, [
                 name: 'aop',
                 loader: [{
                     name: 'copy',
-                    src: ['packages/aop/**', '!packages/aop/test/**', '!packages/aop/src/**', '!packages/aop/node_modules/**'],
+                    src: ['packages/aop/!(src|test|node_modules)/**', 'packages/aop/package.json'],
                     dist: 'packages/logs/node_modules/@ts-ioc/aop',
                     pipes: []
                 }]
