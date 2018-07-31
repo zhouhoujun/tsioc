@@ -4,7 +4,7 @@ import {
     getTypeMetadata, Token, Type, Providers,
     isString, lang, isFunction, isClass, isUndefined,
     isNull, isBaseObject, isToken, isArray, ContainerBuilderToken,
-    hasOwnClassMetadata, IocExt, IContainerBuilder, DefaultContainerBuilder, Singleton, Inject
+    hasOwnClassMetadata, IocExt, IContainerBuilder, DefaultContainerBuilder, Singleton, Inject, Injectable
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import { ModuleConfigure } from './ModuleConfiguration';
@@ -25,8 +25,7 @@ const exportsProvidersFiled = '__exportProviders';
  * @implements {IModuleBuilder}
  * @template T
  */
-@Singleton(ModuleBuilderToken)
-export class ModuleBuilder implements IModuleBuilder {
+export class BaseModuleBuilder implements IModuleBuilder {
 
     constructor() {
 
@@ -88,7 +87,7 @@ export class ModuleBuilder implements IModuleBuilder {
      * @returns {Promise<MdlInstance<TM>>}
      * @memberof ModuleBuilder
      */
-    async build<TM>(token: DIModuleType<TM> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<TM>> {
+    async build(token: DIModuleType<any> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<any>> {
         let container = this.getContainer(token, defaultContainer);
 
         let mdToken: Token<any> = isToken(token) ? token : token.name;
@@ -97,6 +96,11 @@ export class ModuleBuilder implements IModuleBuilder {
         }
 
         let cfg = this.getConfigure(token, container);
+
+        let builder = this.getBuilder(container, cfg);
+        if (builder && builder !== this) {
+            return await builder.build(token, container);
+        }
 
         cfg = await this.registerDepdences(container, cfg);
         let boot = this.getBootstrapToken(cfg, mdToken);
@@ -140,8 +144,23 @@ export class ModuleBuilder implements IModuleBuilder {
         return iocModule;
     }
 
-    protected getBootstrapBuilder(container: IContainer, cfg: ModuleConfigure) {
-        let bootstrapBuilder: IBootstrapBuilder;
+    protected getBuilder(container: IContainer, cfg: ModuleConfigure): IModuleBuilder {
+        let builder: IModuleBuilder;
+        if (isClass(cfg.builder)) {
+            if (!container.has(cfg.builder)) {
+                container.register(cfg.builder);
+            }
+        }
+        if (isToken(cfg.builder)) {
+            builder = container.resolve(cfg.builder);
+        } else if (cfg.builder instanceof BaseModuleBuilder) {
+            builder = cfg.builder;
+        }
+        return builder;
+    }
+
+    protected getBootstrapBuilder(container: IContainer, cfg: ModuleConfigure): IBootstrapBuilder<any> {
+        let bootstrapBuilder: IBootstrapBuilder<any>;
         if (isClass(cfg.bootBuilder)) {
             if (!container.has(cfg.bootBuilder)) {
                 container.register(cfg.bootBuilder);
@@ -163,8 +182,8 @@ export class ModuleBuilder implements IModuleBuilder {
      * @param {IContainer} [defaultContainer]
      * @memberof ModuleBuilder
      */
-    async bootstrap<TM>(token: DIModuleType<TM> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<TM>> {
-        let md = await this.build<TM>(token, defaultContainer);
+    async bootstrap(token: DIModuleType<any> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<any>> {
+        let md = await this.build(token, defaultContainer);
         if (isFunction(md.mdBeforeCreate)) {
             md.mdBeforeCreate(md);
         }
@@ -181,6 +200,7 @@ export class ModuleBuilder implements IModuleBuilder {
         }
         return md;
     }
+
 
     protected async createBootstrap(iocModule: IocModule<any>): Promise<any> {
         let bootBuilder = iocModule.bootBuilder || iocModule.container.resolve(BootstrapBuilderToken);
@@ -401,3 +421,33 @@ export class ModuleBuilder implements IModuleBuilder {
         return tokens;
     }
 }
+
+
+@Singleton(ModuleBuilderToken)
+@Injectable()
+export class ModuleBuilder extends BaseModuleBuilder {
+    /**
+     * build di module.
+     *
+     * @template TM
+     * @param {(DIModuleType<TM> | ModuleConfigure)} token
+     * @param {IContainer} [defaultContainer]
+     * @returns {Promise<MdlInstance<TM>>}
+     * @memberof ModuleBuilder
+     */
+    build<TM>(token: DIModuleType<TM> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<TM>> {
+        return super.build(token, defaultContainer) as Promise<MdlInstance<TM>>;
+    }
+
+    /**
+     * bootstrap module.
+     *
+     * @param {(DIModuleType<TM> | ModuleConfigure)} token
+     * @param {IContainer} [defaultContainer]
+     * @memberof ModuleBuilder
+     */
+    bootstrap<TM>(token: DIModuleType<TM> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<TM>> {
+        return super.bootstrap(token, defaultContainer) as Promise<MdlInstance<TM>>;
+    }
+}
+

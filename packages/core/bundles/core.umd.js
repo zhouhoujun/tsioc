@@ -3176,12 +3176,14 @@ var BindProviderAction = /** @class */ (function (_super) {
         matchs.forEach(function (surm) {
             var metadata = factories.getOwnTypeMetadata(surm.name, type);
             if (Array.isArray(metadata) && metadata.length > 0) {
-                var jcfg = metadata.find(function (c) { return c && !!c.provide; });
-                if (jcfg) {
-                    var provideKey = container.getTokenKey(jcfg.provide, jcfg.alias);
-                    provides.push(provideKey);
-                    container.bindProvider(provideKey, jcfg.type);
-                }
+                // bind all provider.
+                metadata.forEach(function (c) {
+                    if (c && c.provide) {
+                        var provideKey = container.getTokenKey(c.provide, c.alias);
+                        provides.push(provideKey);
+                        container.bindProvider(provideKey, c.type);
+                    }
+                });
             }
         });
         data.execResult = provides;

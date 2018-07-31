@@ -22,7 +22,7 @@ const defaultAppConfig: AppConfiguration = {
  * @extends {IApplicationBuilder}
  * @template T
  */
-export interface IServerApplicationBuilder extends IApplicationBuilder {
+export interface IApplicationBuilderServer extends IApplicationBuilder {
     /**
      * root url
      *
@@ -47,7 +47,7 @@ export interface IServerApplicationBuilder extends IApplicationBuilder {
  * @export
  * @class Bootstrap
  */
-export class ApplicationBuilder extends DefaultApplicationBuilder implements IServerApplicationBuilder {
+export class ApplicationBuilder extends DefaultApplicationBuilder implements IApplicationBuilderServer {
 
 
     private dirMatchs: string[][];
@@ -65,7 +65,7 @@ export class ApplicationBuilder extends DefaultApplicationBuilder implements ISe
      * @returns {ApplicationBuilder}
      * @memberof ApplicationBuilder
      */
-    static create(rootdir: string): ApplicationBuilder {
+    static create(rootdir: string): IApplicationBuilderServer {
         return new ApplicationBuilder(rootdir);
     }
 

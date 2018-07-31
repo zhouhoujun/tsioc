@@ -1,10 +1,9 @@
 import { AppConfiguration } from './AppConfiguration';
 import {
-    IContainer, LoadType, lang, isString, ContainerBuilderToken, Token
+    IContainer, LoadType, lang, isString, ContainerBuilderToken
 } from '@ts-ioc/core';
 import { IApplicationBuilder, CustomRegister } from './IApplicationBuilder';
-import { ModuleBuilder } from './ModuleBuilder';
-import { ModuleType } from './ModuleType';
+import { BaseModuleBuilder } from './ModuleBuilder';
 
 
 /**
@@ -15,7 +14,7 @@ import { ModuleType } from './ModuleType';
  * @extends {ModuleBuilder}
  * @template T
  */
-export class DefaultApplicationBuilder extends ModuleBuilder implements IApplicationBuilder {
+export class DefaultApplicationBuilder extends BaseModuleBuilder implements IApplicationBuilder {
     protected globalConfig: Promise<AppConfiguration>;
     protected globalModules: LoadType[];
     protected customRegs: CustomRegister[];

@@ -1,11 +1,12 @@
 import {
     ClassMetadata, Token, InjectToken, MetadataAdapter,
-    MetadataExtends, ITypeDecorator, createClassDecorator, isClass
+    MetadataExtends, ITypeDecorator
 } from '@ts-ioc/core';
 import { AppConfiguration } from '../AppConfiguration';
 import { IocModule } from '../ModuleType';
 import { IBootstrapBuilder } from '../IBootstrapBuilder';
 import { ApplicationBuilderToken, IApplicationBuilder } from '../IApplicationBuilder';
+import { createDIModuleDecorator } from './DIModule';
 
 
 export interface BootstrapMetadata extends AppConfiguration, ClassMetadata {
@@ -49,43 +50,12 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
 export function createBootstrapDecorator<T extends BootstrapMetadata>(
     decorType: string,
     builder?: Token<IApplicationBuilder> | IApplicationBuilder,
-    bootBuilder?: Token<IBootstrapBuilder> | IBootstrapBuilder,
+    bootBuilder?: Token<IBootstrapBuilder<any>> | IBootstrapBuilder<any>,
     provideType?: InjectToken<IocModule<T>>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IBootstrapDecorator<T> {
 
-    return createClassDecorator<BootstrapMetadata>('Bootstrap',
-        args => {
-            if (adapter) {
-                adapter(args);
-            }
-        },
-        metadata => {
-            if (metadataExtends) {
-                metadata = metadataExtends(metadata as T);
-            }
-
-            if (!metadata.name && isClass(metadata.type)) {
-                let isuglify = /^[a-z]$/.test(metadata.type.name);
-                if (isuglify && metadata.type.classAnnations) {
-                    metadata.name = metadata.type.classAnnations.name;
-                } else {
-                    metadata.name = metadata.type.name;
-                }
-            }
-
-            metadata.provide = metadata.provide || provideType;
-            metadata.alias = metadata.alias || metadata.name;
-
-            metadata.decorType = decorType;
-            if (!metadata.builder) {
-                metadata.builder = builder;
-            }
-            if (!metadata.bootBuilder) {
-                metadata.bootBuilder = bootBuilder;
-            }
-            return metadata;
-        }) as IBootstrapDecorator<T>;
+    return createDIModuleDecorator<BootstrapMetadata>(decorType, builder, bootBuilder, provideType, adapter, metadataExtends) as IBootstrapDecorator<T>;
 }
 
 /**

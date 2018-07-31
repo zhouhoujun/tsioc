@@ -15,42 +15,8 @@ function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
-var IModuleBuilder = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-/**
- * inject module builder.
- *
- * @export
- * @class InjectModuleBuilder
- * @extends {Registration<T>}
- * @template T
- */
-var InjectModuleBuilder = /** @class */ (function (_super) {
-    tslib_1.__extends(InjectModuleBuilder, _super);
-    function InjectModuleBuilder(desc) {
-        return _super.call(this, 'DI_ModuleBuilder', desc) || this;
-    }
-    InjectModuleBuilder.classAnnations = { "name": "InjectModuleBuilder", "params": { "constructor": ["desc"] } };
-    return InjectModuleBuilder;
-}(core_1.Registration));
-exports.InjectModuleBuilder = InjectModuleBuilder;
-/**
- * module builder token.
- */
-exports.ModuleBuilderToken = new InjectModuleBuilder('');
-
-
-});
-
-unwrapExports(IModuleBuilder);
-var IModuleBuilder_1 = IModuleBuilder.InjectModuleBuilder;
-var IModuleBuilder_2 = IModuleBuilder.ModuleBuilderToken;
-
 var DIModule = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
-
 
 /**
  * create bootstrap decorator.
@@ -101,7 +67,7 @@ exports.createDIModuleDecorator = createDIModuleDecorator;
  *
  * @DIModule
  */
-exports.DIModule = createDIModuleDecorator('module', IModuleBuilder.ModuleBuilderToken);
+exports.DIModule = createDIModuleDecorator('module');
 
 
 });
@@ -139,34 +105,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @returns {IBootstrapDecorator<T>}
  */
 function createBootstrapDecorator(decorType, builder, bootBuilder, provideType, adapter, metadataExtends) {
-    return core_1.createClassDecorator('Bootstrap', function (args) {
-        if (adapter) {
-            adapter(args);
-        }
-    }, function (metadata) {
-        if (metadataExtends) {
-            metadata = metadataExtends(metadata);
-        }
-        if (!metadata.name && core_1.isClass(metadata.type)) {
-            var isuglify = /^[a-z]$/.test(metadata.type.name);
-            if (isuglify && metadata.type.classAnnations) {
-                metadata.name = metadata.type.classAnnations.name;
-            }
-            else {
-                metadata.name = metadata.type.name;
-            }
-        }
-        metadata.provide = metadata.provide || provideType;
-        metadata.alias = metadata.alias || metadata.name;
-        metadata.decorType = decorType;
-        if (!metadata.builder) {
-            metadata.builder = builder;
-        }
-        if (!metadata.bootBuilder) {
-            metadata.bootBuilder = bootBuilder;
-        }
-        return metadata;
-    });
+    return DIModule.createDIModuleDecorator(decorType, builder, bootBuilder, provideType, adapter, metadataExtends);
 }
 exports.createBootstrapDecorator = createBootstrapDecorator;
 /**
@@ -207,6 +146,39 @@ exports.AppConfigurationToken = new core_1.InjectToken('DI_APP_Configuration');
 
 unwrapExports(AppConfiguration);
 var AppConfiguration_1 = AppConfiguration.AppConfigurationToken;
+
+var IModuleBuilder = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * inject module builder.
+ *
+ * @export
+ * @class InjectModuleBuilder
+ * @extends {Registration<T>}
+ * @template T
+ */
+var InjectModuleBuilder = /** @class */ (function (_super) {
+    tslib_1.__extends(InjectModuleBuilder, _super);
+    function InjectModuleBuilder(desc) {
+        return _super.call(this, 'DI_ModuleBuilder', desc) || this;
+    }
+    InjectModuleBuilder.classAnnations = { "name": "InjectModuleBuilder", "params": { "constructor": ["desc"] } };
+    return InjectModuleBuilder;
+}(core_1.Registration));
+exports.InjectModuleBuilder = InjectModuleBuilder;
+/**
+ * module builder token.
+ */
+exports.ModuleBuilderToken = new InjectModuleBuilder('');
+
+
+});
+
+unwrapExports(IModuleBuilder);
+var IModuleBuilder_1 = IModuleBuilder.InjectModuleBuilder;
+var IModuleBuilder_2 = IModuleBuilder.ModuleBuilderToken;
 
 var IBootstrapBuilder = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -292,7 +264,7 @@ var BootstrapBuilder = /** @class */ (function () {
      * bundle instance via config.
      *
      * @param {T} instance
-     * @param {IocModule<any>} config
+     * @param {IocModule<T>} config
      * @returns {Promise<any>}
      * @memberof IModuleBuilder
      */
@@ -419,8 +391,8 @@ var exportsProvidersFiled = '__exportProviders';
  * @implements {IModuleBuilder}
  * @template T
  */
-var ModuleBuilder = /** @class */ (function () {
-    function ModuleBuilder() {
+var BaseModuleBuilder = /** @class */ (function () {
+    function BaseModuleBuilder() {
     }
     /**
      * get container of the module.
@@ -430,7 +402,7 @@ var ModuleBuilder = /** @class */ (function () {
      * @returns {IContainer}
      * @memberof ModuleBuilder
      */
-    ModuleBuilder.prototype.getContainer = function (token, defaultContainer) {
+    BaseModuleBuilder.prototype.getContainer = function (token, defaultContainer) {
         var container;
         if (core_1.isClass(token)) {
             if (token.__di) {
@@ -457,16 +429,16 @@ var ModuleBuilder = /** @class */ (function () {
         }
         return container;
     };
-    ModuleBuilder.prototype.createContainer = function () {
+    BaseModuleBuilder.prototype.createContainer = function () {
         return this.getContainerBuilder().create();
     };
-    ModuleBuilder.prototype.getContainerBuilder = function () {
+    BaseModuleBuilder.prototype.getContainerBuilder = function () {
         if (!this.containerBuilder) {
             this.containerBuilder = this.createContainerBuilder();
         }
         return this.containerBuilder;
     };
-    ModuleBuilder.prototype.createContainerBuilder = function () {
+    BaseModuleBuilder.prototype.createContainerBuilder = function () {
         return new core_1.DefaultContainerBuilder();
     };
     /**
@@ -476,9 +448,9 @@ var ModuleBuilder = /** @class */ (function () {
      * @returns {Promise<MdlInstance<TM>>}
      * @memberof ModuleBuilder
      */
-    ModuleBuilder.prototype.build = function (token, defaultContainer) {
+    BaseModuleBuilder.prototype.build = function (token, defaultContainer) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var container, mdToken, cfg, boot, iocModule;
+            var container, mdToken, cfg, builder, boot, iocModule;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -488,8 +460,12 @@ var ModuleBuilder = /** @class */ (function () {
                             return [2 /*return*/, container.resolve(mdToken)];
                         }
                         cfg = this.getConfigure(token, container);
-                        return [4 /*yield*/, this.registerDepdences(container, cfg)];
-                    case 1:
+                        builder = this.getBuilder(container, cfg);
+                        if (!(builder && builder !== this)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, builder.build(token, container)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                    case 2: return [4 /*yield*/, this.registerDepdences(container, cfg)];
+                    case 3:
                         cfg = _a.sent();
                         boot = this.getBootstrapToken(cfg, mdToken);
                         iocModule = this.createModuleInstance(mdToken, container);
@@ -516,7 +492,7 @@ var ModuleBuilder = /** @class */ (function () {
             });
         });
     };
-    ModuleBuilder.prototype.createModuleInstance = function (token, container) {
+    BaseModuleBuilder.prototype.createModuleInstance = function (token, container) {
         var iocModule;
         if (!token || core_1.isString(token)) {
             iocModule = container.resolve(token);
@@ -529,7 +505,22 @@ var ModuleBuilder = /** @class */ (function () {
         }
         return iocModule;
     };
-    ModuleBuilder.prototype.getBootstrapBuilder = function (container, cfg) {
+    BaseModuleBuilder.prototype.getBuilder = function (container, cfg) {
+        var builder;
+        if (core_1.isClass(cfg.builder)) {
+            if (!container.has(cfg.builder)) {
+                container.register(cfg.builder);
+            }
+        }
+        if (core_1.isToken(cfg.builder)) {
+            builder = container.resolve(cfg.builder);
+        }
+        else if (cfg.builder instanceof BaseModuleBuilder) {
+            builder = cfg.builder;
+        }
+        return builder;
+    };
+    BaseModuleBuilder.prototype.getBootstrapBuilder = function (container, cfg) {
         var bootstrapBuilder;
         if (core_1.isClass(cfg.bootBuilder)) {
             if (!container.has(cfg.bootBuilder)) {
@@ -551,7 +542,7 @@ var ModuleBuilder = /** @class */ (function () {
      * @param {IContainer} [defaultContainer]
      * @memberof ModuleBuilder
      */
-    ModuleBuilder.prototype.bootstrap = function (token, defaultContainer) {
+    BaseModuleBuilder.prototype.bootstrap = function (token, defaultContainer) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var md, instance;
             return tslib_1.__generator(this, function (_a) {
@@ -582,7 +573,7 @@ var ModuleBuilder = /** @class */ (function () {
             });
         });
     };
-    ModuleBuilder.prototype.createBootstrap = function (iocModule) {
+    BaseModuleBuilder.prototype.createBootstrap = function (iocModule) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var bootBuilder;
             return tslib_1.__generator(this, function (_a) {
@@ -595,7 +586,7 @@ var ModuleBuilder = /** @class */ (function () {
             });
         });
     };
-    ModuleBuilder.prototype.importModule = function (token, container) {
+    BaseModuleBuilder.prototype.importModule = function (token, container) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var imp;
             return tslib_1.__generator(this, function (_a) {
@@ -622,7 +613,7 @@ var ModuleBuilder = /** @class */ (function () {
             });
         });
     };
-    ModuleBuilder.prototype.getDecorator = function () {
+    BaseModuleBuilder.prototype.getDecorator = function () {
         return decorators.DIModule.toString();
     };
     /**
@@ -631,7 +622,7 @@ var ModuleBuilder = /** @class */ (function () {
      * @returns {ModuleConfigure}
      * @memberof ModuleBuilder
      */
-    ModuleBuilder.prototype.getConfigure = function (token, container) {
+    BaseModuleBuilder.prototype.getConfigure = function (token, container) {
         var cfg;
         if (core_1.isClass(token)) {
             cfg = this.getMetaConfig(token);
@@ -654,7 +645,7 @@ var ModuleBuilder = /** @class */ (function () {
         }
         return cfg || {};
     };
-    ModuleBuilder.prototype.registerDepdences = function (container, config) {
+    BaseModuleBuilder.prototype.registerDepdences = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
@@ -669,10 +660,10 @@ var ModuleBuilder = /** @class */ (function () {
             });
         });
     };
-    ModuleBuilder.prototype.getBootstrapToken = function (cfg, token) {
+    BaseModuleBuilder.prototype.getBootstrapToken = function (cfg, token) {
         return cfg.bootstrap;
     };
-    ModuleBuilder.prototype.importConfigExports = function (container, providerContainer, cfg) {
+    BaseModuleBuilder.prototype.importConfigExports = function (container, providerContainer, cfg) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var _this = this;
             var expProviders;
@@ -707,7 +698,7 @@ var ModuleBuilder = /** @class */ (function () {
             });
         });
     };
-    ModuleBuilder.prototype.registerConfgureDepds = function (container, config) {
+    BaseModuleBuilder.prototype.registerConfgureDepds = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var _this = this;
             var buider, mdls;
@@ -732,7 +723,7 @@ var ModuleBuilder = /** @class */ (function () {
             });
         });
     };
-    ModuleBuilder.prototype.getMetaConfig = function (bootModule) {
+    BaseModuleBuilder.prototype.getMetaConfig = function (bootModule) {
         var decorator = this.getDecorator();
         if (this.isDIModule(bootModule)) {
             var metas = core_1.getTypeMetadata(decorator, bootModule);
@@ -744,10 +735,10 @@ var ModuleBuilder = /** @class */ (function () {
         }
         return null;
     };
-    ModuleBuilder.prototype.isIocExt = function (token) {
+    BaseModuleBuilder.prototype.isIocExt = function (token) {
         return core_1.hasOwnClassMetadata(core_1.IocExt, token);
     };
-    ModuleBuilder.prototype.isDIModule = function (token) {
+    BaseModuleBuilder.prototype.isDIModule = function (token) {
         if (!core_1.isClass(token)) {
             return false;
         }
@@ -756,7 +747,7 @@ var ModuleBuilder = /** @class */ (function () {
         }
         return core_1.hasOwnClassMetadata(decorators.DIModule, token);
     };
-    ModuleBuilder.prototype.registerExts = function (container, config) {
+    BaseModuleBuilder.prototype.registerExts = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             return tslib_1.__generator(this, function (_a) {
                 if (!container.has(BootModule_1.BootModule)) {
@@ -766,7 +757,7 @@ var ModuleBuilder = /** @class */ (function () {
             });
         });
     };
-    ModuleBuilder.prototype.bindProvider = function (container, providers) {
+    BaseModuleBuilder.prototype.bindProvider = function (container, providers) {
         var tokens = [];
         providers.forEach(function (p, index) {
             if (core_1.isUndefined(p) || core_1.isNull(p)) {
@@ -873,24 +864,56 @@ var ModuleBuilder = /** @class */ (function () {
         });
         return tokens;
     };
-    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getContainer": ["token", "defaultContainer"], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "build": ["token", "defaultContainer"], "createModuleInstance": ["token", "container"], "getBootstrapBuilder": ["container", "cfg"], "bootstrap": ["token", "defaultContainer"], "createBootstrap": ["iocModule"], "importModule": ["token", "container"], "getDecorator": [], "getConfigure": ["token", "container"], "registerDepdences": ["container", "config"], "getBootstrapToken": ["cfg", "token"], "importConfigExports": ["container", "providerContainer", "cfg"], "registerConfgureDepds": ["container", "config"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
+    BaseModuleBuilder.classAnnations = { "name": "BaseModuleBuilder", "params": { "constructor": [], "getContainer": ["token", "defaultContainer"], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "build": ["token", "defaultContainer"], "createModuleInstance": ["token", "container"], "getBuilder": ["container", "cfg"], "getBootstrapBuilder": ["container", "cfg"], "bootstrap": ["token", "defaultContainer"], "createBootstrap": ["iocModule"], "importModule": ["token", "container"], "getDecorator": [], "getConfigure": ["token", "container"], "registerDepdences": ["container", "config"], "getBootstrapToken": ["cfg", "token"], "importConfigExports": ["container", "providerContainer", "cfg"], "registerConfgureDepds": ["container", "config"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
     tslib_1.__decorate([
         core_1.Inject(core_1.ContainerBuilderToken),
         tslib_1.__metadata("design:type", Object)
-    ], ModuleBuilder.prototype, "containerBuilder", void 0);
+    ], BaseModuleBuilder.prototype, "containerBuilder", void 0);
+    return BaseModuleBuilder;
+}());
+exports.BaseModuleBuilder = BaseModuleBuilder;
+var ModuleBuilder = /** @class */ (function (_super) {
+    tslib_1.__extends(ModuleBuilder, _super);
+    function ModuleBuilder() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    /**
+     * build di module.
+     *
+     * @template TM
+     * @param {(DIModuleType<TM> | ModuleConfigure)} token
+     * @param {IContainer} [defaultContainer]
+     * @returns {Promise<MdlInstance<TM>>}
+     * @memberof ModuleBuilder
+     */
+    ModuleBuilder.prototype.build = function (token, defaultContainer) {
+        return _super.prototype.build.call(this, token, defaultContainer);
+    };
+    /**
+     * bootstrap module.
+     *
+     * @param {(DIModuleType<TM> | ModuleConfigure)} token
+     * @param {IContainer} [defaultContainer]
+     * @memberof ModuleBuilder
+     */
+    ModuleBuilder.prototype.bootstrap = function (token, defaultContainer) {
+        return _super.prototype.bootstrap.call(this, token, defaultContainer);
+    };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "build": ["token", "defaultContainer"], "bootstrap": ["token", "defaultContainer"] } };
     ModuleBuilder = tslib_1.__decorate([
         core_1.Singleton(IModuleBuilder.ModuleBuilderToken),
-        tslib_1.__metadata("design:paramtypes", [])
+        core_1.Injectable()
     ], ModuleBuilder);
     return ModuleBuilder;
-}());
+}(BaseModuleBuilder));
 exports.ModuleBuilder = ModuleBuilder;
 
 
 });
 
 unwrapExports(ModuleBuilder_1);
-var ModuleBuilder_2 = ModuleBuilder_1.ModuleBuilder;
+var ModuleBuilder_2 = ModuleBuilder_1.BaseModuleBuilder;
+var ModuleBuilder_3 = ModuleBuilder_1.ModuleBuilder;
 
 var ApplicationBuilder = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -1047,7 +1070,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
     };
     DefaultApplicationBuilder.classAnnations = { "name": "DefaultApplicationBuilder", "params": { "constructor": ["baseURL"], "useConfiguration": ["config", "container"], "use": ["modules"], "registerConfgureDepds": ["container", "config"], "mergeGlobalConfig": ["globalCfg", "moduleCfg"], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": [] } };
     return DefaultApplicationBuilder;
-}(ModuleBuilder_1.ModuleBuilder));
+}(ModuleBuilder_1.BaseModuleBuilder));
 exports.DefaultApplicationBuilder = DefaultApplicationBuilder;
 
 

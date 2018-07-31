@@ -1,5 +1,5 @@
-import { Registration, IContainer, Type, InjectToken } from '@ts-ioc/core';
-import { ModuleConfiguration, ModuleConfigure } from './ModuleConfiguration';
+import { Registration, IContainer, Type } from '@ts-ioc/core';
+import { ModuleConfigure } from './ModuleConfiguration';
 import { ModuleType, MdlInstance, DIModuleType } from './ModuleType';
 
 
@@ -11,26 +11,27 @@ import { ModuleType, MdlInstance, DIModuleType } from './ModuleType';
  * @extends {Registration<T>}
  * @template T
  */
-export class InjectModuleBuilder<T extends IModuleBuilder> extends Registration<T> {
+export class InjectModuleBuilder<T extends IGModuleBuilder<any>> extends Registration<T> {
     constructor(desc: string) {
         super('DI_ModuleBuilder', desc);
     }
 }
+
 
 /**
  * module builder token.
  */
 export const ModuleBuilderToken = new InjectModuleBuilder<IModuleBuilder>('');
 
+
 /**
- * module builder
+ * Generics module builder insterface.
  *
  * @export
- * @interface IModuleBuilder
+ * @interface IGModuleBuilder
  * @template T
  */
-export interface IModuleBuilder {
-
+export interface IGModuleBuilder<T> {
     /**
      * get container of the module.
      *
@@ -39,7 +40,7 @@ export interface IModuleBuilder {
      * @returns {IContainer}
      * @memberof IModuleBuilder
      */
-    getContainer(token: ModuleType | ModuleConfigure, defaultContainer?: IContainer): IContainer ;
+    getContainer(token: ModuleType | ModuleConfigure, defaultContainer?: IContainer): IContainer;
 
     /**
      * create new container.
@@ -52,12 +53,22 @@ export interface IModuleBuilder {
     /**
      * build module as ioc container.
      *
-     * @param {(DIModuleType<TM> | ModuleConfigure)} token
+     * @param {(DIModuleType<T> | ModuleConfigure)} token
      * @param {IContainer} [defaultContainer]
      * @returns {Promise<MdlInstance<T>>}
      * @memberof IModuleBuilder
      */
-    build<TM>(token: DIModuleType<TM> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<TM>>;
+    build(token: DIModuleType<T> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<T>>;
+
+    /**
+     * bootstrap module.
+     *
+     * @param {(DIModuleType<T> | ModuleConfigure)} token
+     * @param {IContainer} [defaultContainer]
+     * @returns {Promise<MdlInstance<T>>}
+     * @memberof IModuleBuilder
+     */
+    bootstrap(token: DIModuleType<T> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<T>>;
 
     /**
      * import di module.
@@ -67,7 +78,7 @@ export interface IModuleBuilder {
      * @returns {Promise<IContainer>}
      * @memberof IModuleBuilder
      */
-    importModule(token: Type<any> | ModuleConfigure, container: IContainer): Promise<IContainer> ;
+    importModule(token: Type<any> | ModuleConfigure, container: IContainer): Promise<IContainer>;
 
     /**
      * register module depdences.
@@ -96,7 +107,26 @@ export interface IModuleBuilder {
      * @memberof IModuleBuilder
      */
     getConfigure(token: ModuleType | ModuleConfigure, container?: IContainer): ModuleConfigure;
+}
 
+/**
+ *  module builder. objected generics to any
+ *
+ * @export
+ * @interface IModuleBuilder
+ * @extends {IGModuleBuilder<any>}
+ */
+export interface IModuleBuilder extends IGModuleBuilder<any> {
+
+    /**
+     * build module as ioc container.
+     *
+     * @param {(DIModuleType<TM> | ModuleConfigure)} token
+     * @param {IContainer} [defaultContainer]
+     * @returns {Promise<MdlInstance<T>>}
+     * @memberof IModuleBuilder
+     */
+    build<TM>(token: DIModuleType<TM> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<TM>>;
 
     /**
      * bootstrap module.

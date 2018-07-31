@@ -18,10 +18,8 @@ export class ModuleA {
 export class ClassSevice {
     @Inject('mark')
     mark: string;
-    saied: string;
     start() {
-        this.saied = this.mark;
-        console.log(this.saied);
+        console.log(this.mark);
     }
 }
 

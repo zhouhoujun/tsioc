@@ -58,7 +58,7 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDec
 export function createDIModuleDecorator<T extends DIModuleMetadata>(
     decorType: string,
     builder?: Token<IModuleBuilder> | IModuleBuilder,
-    bootBuilder?: Token<IBootstrapBuilder> | IBootstrapBuilder,
+    bootBuilder?: Token<IBootstrapBuilder<any>> | IBootstrapBuilder<any>,
     provideType?: Token<any>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IDIModuleDecorator<T> {
@@ -102,4 +102,4 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
  *
  * @DIModule
  */
-export const DIModule: IDIModuleDecorator<DIModuleMetadata> = createDIModuleDecorator<DIModuleMetadata>('module', ModuleBuilderToken);
+export const DIModule: IDIModuleDecorator<DIModuleMetadata> = createDIModuleDecorator<DIModuleMetadata>('module');

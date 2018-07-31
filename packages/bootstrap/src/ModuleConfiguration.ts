@@ -70,10 +70,10 @@ export interface ModuleConfiguration<T> {
     /**
      * set bootstrap builder.
      *
-     * @type {(Token<IBootstrapBuilder> | IBootstrapBuilder)}
+     * @type {(Token<IBootstrapBuilder<T>> | IBootstrapBuilder<T>)}
      * @memberof ModuleConfiguration
      */
-    bootBuilder?: Token<IBootstrapBuilder> | IBootstrapBuilder;
+    bootBuilder?: Token<IBootstrapBuilder<T>> | IBootstrapBuilder<T>;
 
 }
 

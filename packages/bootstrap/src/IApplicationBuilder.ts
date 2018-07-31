@@ -1,6 +1,8 @@
 import { Token, Type, LoadType, InjectToken, IContainer } from '@ts-ioc/core';
 import { AppConfiguration } from './AppConfiguration';
-import { IModuleBuilder } from './IModuleBuilder';
+import { IModuleBuilder, IGModuleBuilder } from './IModuleBuilder';
+import { DIModuleType, MdlInstance } from './ModuleType';
+import { ModuleConfigure } from './ModuleConfiguration';
 
 /**
  * custom define module.
@@ -9,17 +11,9 @@ export type CustomRegister = (container: IContainer, config?: AppConfiguration, 
 
 export const ApplicationBuilderToken = new InjectToken<IApplicationBuilder>('DI_AppBuilder');
 
-/**
- * application builder.
- *
- * @export
- * @interface IApplicationBuilder
- * @extends {IModuleBuilder}
- * @template T
- */
-export interface IApplicationBuilder extends IModuleBuilder {
 
-    /**
+export interface IGApplicationBuilder<T> extends IGModuleBuilder<T> {
+     /**
      * use custom configuration.
      *
      * @param {(string | AppConfiguration)} [config]
@@ -37,5 +31,34 @@ export interface IApplicationBuilder extends IModuleBuilder {
      * @memberof IApplicationBuilder
      */
     use(...modules: LoadType[]): this;
+}
 
+/**
+ * application builder.
+ *
+ * @export
+ * @interface IApplicationBuilder
+ * @extends {IModuleBuilder}
+ * @template T
+ */
+export interface IApplicationBuilder extends IGApplicationBuilder<any> {
+    /**
+     * build module as ioc container.
+     *
+     * @param {(DIModuleType<TM> | ModuleConfigure)} token
+     * @param {IContainer} [defaultContainer]
+     * @returns {Promise<MdlInstance<T>>}
+     * @memberof IModuleBuilder
+     */
+    build<TM>(token: DIModuleType<TM> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<TM>>;
+
+    /**
+     * bootstrap module.
+     *
+     * @param {(DIModuleType<TM> | ModuleConfigure)} token
+     * @param {IContainer} [defaultContainer]
+     * @returns {Promise<MdlInstance<TM>>}
+     * @memberof IModuleBuilder
+     */
+    bootstrap<TM>(token: DIModuleType<TM> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<TM>>;
 }

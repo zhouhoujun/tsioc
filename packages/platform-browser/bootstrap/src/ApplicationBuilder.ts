@@ -12,7 +12,7 @@ const defaultAppConfig: AppConfiguration = {
     setting: {}
 }
 
-export interface IBroserApplicationBuilder extends IApplicationBuilder {
+export interface IApplicationBuilderBroser extends IApplicationBuilder {
 
 }
 
@@ -25,7 +25,7 @@ export interface IBroserApplicationBuilder extends IApplicationBuilder {
  * @extends {DefaultApplicationBuilder}
  * @implements {IBroserApplicationBuilder<T>}
  */
-export class ApplicationBuilder extends DefaultApplicationBuilder implements IBroserApplicationBuilder {
+export class ApplicationBuilder extends DefaultApplicationBuilder implements IApplicationBuilderBroser {
 
     constructor(baseURL?: string) {
         super(baseURL || !isUndefined(System) ? System.baseURL : location.href);
@@ -39,7 +39,7 @@ export class ApplicationBuilder extends DefaultApplicationBuilder implements IBr
      * @returns {ApplicationBuilder} ApplicationBuilder instance.
      * @memberof PlatformBrowser
      */
-    static create(baseURL?: string): ApplicationBuilder {
+    static create(baseURL?: string): IApplicationBuilderBroser {
         return new ApplicationBuilder(baseURL);
     }
 

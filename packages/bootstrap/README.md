@@ -28,57 +28,57 @@ npm install @ts-ioc/platform-server
 
 import { DIModule, Bootstrap } from '@ts-ioc/bootstrap';
 // in server
-import { PlatformServer } from '@ts-ioc/platform-server/bootstrap'
+import { ApplicationBuilder } from '@ts-ioc/platform-server/bootstrap'
 // in browser
-import { PlatformBrowser } from '@ts-ioc/platform-browser/bootstrap'
+import { ApplicationBuilder } from '@ts-ioc/platform-browser/bootstrap'
 
-let builder = new ContainerBuilder();
-
-let container = build.create();
-
-container.use(AopModule);
 
 @DIModule({
-    imports:[ ...],
-    providers:[...],
-    exports:[ ... ],
-    bootstrap?: Token<any>
+    providers: [
+        { provide: 'mark', useFactory: () => 'marked' }
+        // ...
+    ],
+    exports: [
+
+    ]
 })
-export class DIModuleClassA {
+export class ModuleA {
 
 }
 
-@DIModule({
-    imports:[
-        DIModuleClassA
-    ],
-    providers:[...],
-    exports:[ ... ],
-    bootstrap?: Token<any>
-})
-export class DIModuleClassB {
-
-}
-
-@Bootstrap({
-    imports:[
-        DIModuleClassB
-    ],
-    providers:[...],
-    exports:[ ... ],
-    bootstrap?: MVCApplication
-})
-export class Application implements OnApplicationStart<MVCApplication> {
-
-    onStart(application: MVCApplication){
-        // TODO: application start work.
+@Injectable
+export class ClassSevice {
+    @Inject('mark')
+    mark: string;
+    start() {
+        console.log(this.mark);
     }
 }
 
-PlatformServer.create(__dirname)
+
+@DIModule({
+    imports: [
+        ModuleA
+    ],
+    exports: [
+        ModuleA
+    ],
+    bootstrap: ClassSevice
+})
+export class ModuleB implements ModuleStart<ClassSevice> {
+    instance: ClassSevice;
+    mdOnStart(instance: ClassSevice): void | Promise<any> {
+        this.instance = instance;
+        instance.start();
+    }
+
+}
+
+
+ApplicationBuilder.create(__dirname)
     .bootstrap(Application)
 
-PlatformBrowser.create(baseURL)
+ApplicationBuilder.create(baseURL)
     .bootstrap(Application)
 
 ```

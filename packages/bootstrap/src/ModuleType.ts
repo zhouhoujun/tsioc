@@ -66,7 +66,7 @@ export interface IocModule<T> {
      * @type {IBootstrapBuilder}
      * @memberof IocModule
      */
-    bootBuilder: IBootstrapBuilder;
+    bootBuilder: IBootstrapBuilder<T>;
     /**
      * bootstrap instance.
      *
