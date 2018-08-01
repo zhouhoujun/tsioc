@@ -1,5 +1,5 @@
 import { IContainer, lang, isString, IContainerBuilder } from '@ts-ioc/core';
-import { AppConfiguration, DefaultApplicationBuilder, IApplicationBuilder } from '@ts-ioc/bootstrap';
+import { AppConfiguration, DefaultApplicationBuilder, IApplicationBuilder, AnyApplicationBuilder } from '@ts-ioc/bootstrap';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { ContainerBuilder } from '@ts-ioc/platform-server';
@@ -14,15 +14,7 @@ const defaultAppConfig: AppConfiguration = {
     setting: {}
 }
 
-/**
- * server application builder.
- *
- * @export
- * @interface IServerApplicationBuilder
- * @extends {IApplicationBuilder}
- * @template T
- */
-export interface IApplicationBuilderServer extends IApplicationBuilder {
+export interface ServerBuildExts {
     /**
      * root url
      *
@@ -34,9 +26,25 @@ export interface IApplicationBuilderServer extends IApplicationBuilder {
      * load module from dir
      *
      * @param {...string[]} matchPaths
-     * @memberof IPlatformServer
+     * @memberof ServerBuildExts
      */
     loadDir(...matchPaths: string[]): this;
+}
+
+/**
+ * server application builder.
+ *
+ * @export
+ * @interface IServerApplicationBuilder
+ * @extends {IApplicationBuilder<T>}
+ * @template T
+ */
+export interface IApplicationBuilderServer<T> extends IApplicationBuilder<T>, ServerBuildExts {
+
+}
+
+export interface AnyApplicationBuilderServer extends AnyApplicationBuilder, ServerBuildExts {
+
 }
 
 
@@ -47,7 +55,7 @@ export interface IApplicationBuilderServer extends IApplicationBuilder {
  * @export
  * @class Bootstrap
  */
-export class ApplicationBuilder extends DefaultApplicationBuilder implements IApplicationBuilderServer {
+export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implements IApplicationBuilderServer<T> {
 
 
     private dirMatchs: string[][];
@@ -65,8 +73,8 @@ export class ApplicationBuilder extends DefaultApplicationBuilder implements IAp
      * @returns {ApplicationBuilder}
      * @memberof ApplicationBuilder
      */
-    static create(rootdir: string): IApplicationBuilderServer {
-        return new ApplicationBuilder(rootdir);
+    static create(rootdir: string): AnyApplicationBuilderServer {
+        return new ApplicationBuilder<any>(rootdir);
     }
 
     /**

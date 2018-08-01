@@ -2,13 +2,13 @@
 import 'mocha';
 import { expect } from 'chai';
 import { ModuleA, ModuleB, ClassSevice } from './demo';
-import { DefaultApplicationBuilder, IModuleBuilder } from '../src';
+import { DefaultApplicationBuilder, AnyModuleBuilder } from '../src';
 
 describe('di module', () => {
 
-    let builder: IModuleBuilder;
+    let builder: AnyModuleBuilder;
     beforeEach(async () => {
-        builder = new DefaultApplicationBuilder();
+        builder = DefaultApplicationBuilder.create();
     });
 
     it('should has no bootstrap', async () => {

@@ -1,18 +1,23 @@
 import { Token, Type, LoadType, InjectToken, IContainer } from '@ts-ioc/core';
 import { AppConfiguration } from './AppConfiguration';
-import { IModuleBuilder, IGModuleBuilder } from './IModuleBuilder';
-import { DIModuleType, MdlInstance } from './ModuleType';
+import { IModuleBuilder } from './IModuleBuilder';
+import { DIModuleType, MdlInstance, LoadedModule } from './ModuleType';
 import { ModuleConfigure } from './ModuleConfiguration';
 
 /**
  * custom define module.
  */
-export type CustomRegister = (container: IContainer, config?: AppConfiguration, builder?: IApplicationBuilder) => Token<any>[] | Promise<Token<any>[]>;
+export type CustomRegister<T> = (container: IContainer, config?: AppConfiguration, builder?: IApplicationBuilder<T>) => Token<T>[] | Promise<Token<T>[]>;
 
-export const ApplicationBuilderToken = new InjectToken<IApplicationBuilder>('DI_AppBuilder');
-
-
-export interface IGApplicationBuilder<T> extends IGModuleBuilder<T> {
+/**
+ * application builder.
+ *
+ * @export
+ * @interface IApplicationBuilder
+ * @extends {IModuleBuilder<T>}
+ * @template T
+ */
+export interface IApplicationBuilder<T> extends IModuleBuilder<T> {
      /**
      * use custom configuration.
      *
@@ -33,24 +38,28 @@ export interface IGApplicationBuilder<T> extends IGModuleBuilder<T> {
     use(...modules: LoadType[]): this;
 }
 
+
+
+export const ApplicationBuilderToken = new InjectToken<AnyApplicationBuilder>('DI_AppBuilder');
+
 /**
- * application builder.
+ * application builder. objected generics to any
  *
  * @export
- * @interface IApplicationBuilder
- * @extends {IModuleBuilder}
+ * @interface AnyApplicationBuilder
+ * @extends {IApplicationBuilder<any>}
  * @template T
  */
-export interface IApplicationBuilder extends IGApplicationBuilder<any> {
+export interface AnyApplicationBuilder extends IApplicationBuilder<any> {
     /**
      * build module as ioc container.
      *
      * @param {(DIModuleType<TM> | ModuleConfigure)} token
-     * @param {IContainer} [defaultContainer]
+     * @param {(IContainer | LoadedModule)} [defaultContainer]
      * @returns {Promise<MdlInstance<T>>}
      * @memberof IModuleBuilder
      */
-    build<TM>(token: DIModuleType<TM> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<TM>>;
+    build<TM>(token: DIModuleType<TM> | ModuleConfigure, defaults?: IContainer | LoadedModule): Promise<MdlInstance<TM>>;
 
     /**
      * bootstrap module.

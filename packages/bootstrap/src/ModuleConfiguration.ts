@@ -46,10 +46,10 @@ export interface ModuleConfiguration<T> {
     /**
      * module builder
      *
-     * @type {(Token<IModuleBuilder> | IModuleBuilder)}
+     * @type {(Token<IModuleBuilder<any>> | IModuleBuilder<any>)}
      * @memberof ModuleConfiguration
      */
-    builder?: Token<IModuleBuilder> | IModuleBuilder;
+    builder?: Token<IModuleBuilder<any>> | IModuleBuilder<any>;
 
     /**
      * ioc container, the module defined in.

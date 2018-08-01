@@ -1,6 +1,5 @@
-import { IocModule } from './ModuleType';
+import { Registration, IContainer, Token } from '@ts-ioc/core';
 import { ModuleConfiguration } from './ModuleConfiguration';
-import { InjectToken, Registration, Token } from '@ts-ioc/core';
 
 /**
  * inject Bootstrap builder.
@@ -30,40 +29,50 @@ export const BootstrapBuilderToken = new InjectBootstrapBuilder<any>('');
 export interface IBootstrapBuilder<T> {
 
     /**
-     * bootstrap ioc module.
+     * container.
      *
-     * @param {IocModule<T>} iocModule
-     * @param {*} [data]
-     * @returns {Promise<T>}
-     * @memberof IModuleBootstrap
-     */
-    build(iocModule: IocModule<T>, data?: any): Promise<T>;
-
-    /**
-     * get bootstrap builder
-     *
-     * @param {IocModule<T>} iocModule
-     * @returns {IBootstrapBuilder}
+     * @type {IContainer}
      * @memberof IBootstrapBuilder
      */
-    getBuilder(iocModule: IocModule<T>): IBootstrapBuilder<T>;
+    container: IContainer;
+    /**
+     * bootstrap ioc module.
+     *
+     * @param {(Token<T>|ModuleConfiguration<T>)} token
+     * @param {*} [data]
+     * @returns {Promise<T>}
+     * @memberof IBootstrapBuilder
+     */
+    build(token: Token<T> | ModuleConfiguration<T>, data?: any): Promise<T>;
 
     /**
      * get bootstrap token.
      *
-     * @param {IocModule<T>} iocModule
+     * @param {ModuleConfiguration<T>} config
      * @returns {Token<T>}
      * @memberof IBootstrapBuilder
      */
-    getBootstrapToken(iocModule: IocModule<T>): Token<T>;
+    getBootstrapToken(config: ModuleConfiguration<T>): Token<T>;
+
+    /**
+     * create token instance.
+     *
+     * @param {Token<T>} token
+     * @param {ModuleConfiguration<T>} config
+     * @param {*} [data]
+     * @returns {Promise<T>}
+     * @memberof IBootstrapBuilder
+     */
+    createInstance(token: Token<T>, config: ModuleConfiguration<T>, data?: any): Promise<T>;
 
     /**
      * bundle bootstrap instance via config.
      *
      * @param {T} instance
      * @param {ModuleConfiguration<T>} config
+     * @param {IContainer} [container]
      * @returns {Promise<T>}
-     * @memberof IModuleBootstrap
+     * @memberof IBootstrapBuilder
      */
     buildStrategy(instance: T, config: ModuleConfiguration<T>): Promise<T>;
 }

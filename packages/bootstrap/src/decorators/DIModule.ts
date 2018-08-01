@@ -49,7 +49,7 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDec
  * @template T
  * @param {string} decorType
  * @param {(Token<IModuleBuilder> | IModuleBuilder)} [builder]
- * @param {(Token<IBootstrapBuilder<T>> | IBootstrapBuilder<T>)} [bootBuilder]
+ * @param {(Token<IModuleBuilder<any>> | IModuleBuilder<any>)} [bootBuilder]
  * @param {InjectToken<IApplication>} provideType default provide type.
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
@@ -57,7 +57,7 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDec
  */
 export function createDIModuleDecorator<T extends DIModuleMetadata>(
     decorType: string,
-    builder?: Token<IModuleBuilder> | IModuleBuilder,
+    builder?: Token<IModuleBuilder<any>> | IModuleBuilder<any>,
     bootBuilder?: Token<IBootstrapBuilder<any>> | IBootstrapBuilder<any>,
     provideType?: Token<any>,
     adapter?: MetadataAdapter,

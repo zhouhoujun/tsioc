@@ -1,8 +1,8 @@
 import { IBootstrapBuilder, BootstrapBuilderToken } from './IBootstrapBuilder';
-import { IocModule } from './ModuleType';
-import { Singleton, Token, isToken, IContainer } from '@ts-ioc/core';
+import { Singleton, Token, isToken, IContainer, Inject, ContainerToken } from '@ts-ioc/core';
+import { ModuleConfigure, ModuleConfiguration } from './ModuleConfiguration';
 /**
- * bootstrap base builder.
+ * bootstrap builder. build class with metadata and config.
  *
  * @export
  * @class BootstrapBuilder
@@ -11,58 +11,64 @@ import { Singleton, Token, isToken, IContainer } from '@ts-ioc/core';
  */
 @Singleton(BootstrapBuilderToken)
 export class BootstrapBuilder<T> implements IBootstrapBuilder<T> {
+    /**
+     * ioc container.
+     *
+     * @type {IContainer}
+     * @memberof BootstrapBuilder
+     */
+    @Inject(ContainerToken)
+    container: IContainer;
 
     constructor() {
 
     }
 
-    async build(iocModule: IocModule<T>, data?: any): Promise<T> {
-        let builder = this.getBuilder(iocModule);
-        if (!iocModule.bootstrap) {
-            iocModule.bootstrap = builder.getBootstrapToken(iocModule);
+    async build(token: Token<T> | ModuleConfiguration<T>, data?: any): Promise<T> {
+        let bootToken, config;
+        if (isToken(token)) {
+            bootToken = token;
+        } else {
+            config = token;
+            bootToken = this.getBootstrapToken(config);
         }
-        if (!iocModule.bootstrap) {
-            throw new Error('cant not find bootstrap token.');
-        }
-        let container = iocModule.container;
-        if (!container) {
-            throw new Error('cant not find container.');
-        }
-
-        let instance = container.resolve(iocModule.bootstrap, data);
-        instance = await builder.buildStrategy(instance, iocModule);
-        iocModule.bootInstance = instance;
+        let instance = await this.createInstance(bootToken, data);
+        instance = await this.buildStrategy(instance, config);
         return instance;
     }
 
-    getBootstrapToken(iocModule: IocModule<T>): Token<T> {
-        return iocModule.bootstrap || iocModule.moduleToken;
+    async createInstance(token: Token<T>, config: ModuleConfiguration<T>, data?: any): Promise<T> {
+        if (!token) {
+            throw new Error('cant not find bootstrap token.');
+        }
+        if (!this.container.has(token)) {
+            throw new Error('cant not find container.');
+        }
+
+        let instance = this.resolveToken(token, data);
+        return instance;
     }
+
 
     /**
      * bundle instance via config.
      *
      * @param {T} instance
-     * @param {IocModule<T>} config
-     * @returns {Promise<any>}
-     * @memberof IModuleBuilder
+     * @param {ModuleConfiguration<T>} config
+     * @param {IContainer} [container]
+     * @returns {Promise<T>}
+     * @memberof BootstrapBuilder
      */
-    async buildStrategy(instance: T, iocModule: IocModule<T>): Promise<T> {
+    async buildStrategy(instance: T, config: ModuleConfiguration<T>): Promise<T> {
         return instance;
     }
 
-    getBuilder(iocModule: IocModule<T>): IBootstrapBuilder<T> {
-        if (!iocModule.bootBuilder) {
-            let builder: IBootstrapBuilder<T>;
-            if (iocModule.moduleConfig.bootBuilder) {
-                builder = this.getBuilderViaConfig(iocModule.moduleConfig.bootBuilder, iocModule.container);
-            }
-            if (!builder) {
-                builder = this;
-            }
-            iocModule.bootBuilder = builder;
-        }
-        return iocModule.bootBuilder;
+    getBootstrapToken(config: ModuleConfiguration<T>): Token<T> {
+        return config.bootstrap;
+    }
+
+    protected resolveToken(token: Token<T>, data?: any) {
+        return this.container.resolve(token, data);
     }
 
     protected getBuilderViaConfig(builder: Token<IBootstrapBuilder<T>> | IBootstrapBuilder<T>, container: IContainer): IBootstrapBuilder<T> {
@@ -73,17 +79,4 @@ export class BootstrapBuilder<T> implements IBootstrapBuilder<T> {
         }
         return null;
     }
-
-    // protected getBuilderViaToken(mdl: Token<T>, container: IContainer): IBootstrapBuilder<T> {
-    //     if (isToken(mdl)) {
-    //         let taskType = isClass(mdl) ? mdl : container.getTokenImpl(mdl);
-    //         if (taskType) {
-    //             let meta = lang.first(getTypeMetadata<ModuleConfiguration<T>>(this.getDecorator(), taskType));
-    //             if (meta && meta.builder) {
-    //                 return isToken(meta.builder) ? container.resolve(meta.builder) : meta.builder;
-    //             }
-    //         }
-    //     }
-    //     return null;
-    // }
 }

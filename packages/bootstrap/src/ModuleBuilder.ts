@@ -4,18 +4,26 @@ import {
     getTypeMetadata, Token, Type, Providers,
     isString, lang, isFunction, isClass, isUndefined,
     isNull, isBaseObject, isToken, isArray, ContainerBuilderToken,
-    hasOwnClassMetadata, IocExt, IContainerBuilder, DefaultContainerBuilder, Singleton, Inject, Injectable
+    hasOwnClassMetadata, IocExt, IContainerBuilder, DefaultContainerBuilder, Singleton, Inject, Injectable, Registration
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import { ModuleConfigure } from './ModuleConfiguration';
 import { DIModule } from './decorators';
 import { BootModule } from './BootModule';
-import { ModuleType, IocModule, MdlInstance, DIModuleType } from './ModuleType';
+import { MdlInstance, DIModuleType, LoadedModule } from './ModuleType';
 import { IBootstrapBuilder, BootstrapBuilderToken } from './IBootstrapBuilder';
 import { BootstrapBuilder } from './BootstrapBuilder';
 
 
 const exportsProvidersFiled = '__exportProviders';
+
+
+export class InjectModuleLoadToken<T> extends Registration<T> {
+
+    constructor(token: Token<T>) {
+        super(token, 'module_loader')
+    }
+}
 
 /**
  * module builder
@@ -25,7 +33,8 @@ const exportsProvidersFiled = '__exportProviders';
  * @implements {IModuleBuilder}
  * @template T
  */
-export class BaseModuleBuilder implements IModuleBuilder {
+@Singleton(ModuleBuilderToken)
+export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     constructor() {
 
@@ -39,19 +48,24 @@ export class BaseModuleBuilder implements IModuleBuilder {
      * @returns {IContainer}
      * @memberof ModuleBuilder
      */
-    getContainer(token: ModuleType | ModuleConfigure, defaultContainer?: IContainer): IContainer {
+    getContainer(token: Token<T> | ModuleConfigure, defaultContainer?: IContainer): IContainer {
         let container: IContainer;
-        if (isClass(token)) {
-            if (token.__di) {
-                return token.__di;
-            } else {
-                let cfg = this.getConfigure(token);
-                if (cfg.container) {
-                    token.__di = cfg.container;
+        if (isToken(token)) {
+            if (isClass(token)) {
+                let mdToken = token as DIModuleType<T>;
+                if (mdToken.__di) {
+                    return mdToken.__di;
                 } else {
-                    token.__di = defaultContainer || this.createContainer();
+                    let cfg = this.getConfigure(mdToken);
+                    if (cfg.container) {
+                        mdToken.__di = cfg.container;
+                    } else {
+                        mdToken.__di = defaultContainer || this.createContainer();
+                    }
+                    container = mdToken.__di;
                 }
-                container = token.__di;
+            } else {
+                return defaultContainer || this.createContainer();
             }
         } else {
             if (token.container) {
@@ -80,38 +94,25 @@ export class BaseModuleBuilder implements IModuleBuilder {
         return new DefaultContainerBuilder();
     }
 
-    /**
-     * build module.
-     *
-     * @param {(DIModuleType<TM> | ModuleConfigure)} [token]
-     * @returns {Promise<MdlInstance<TM>>}
-     * @memberof ModuleBuilder
-     */
-    async build(token: DIModuleType<any> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<any>> {
+    async load(token: Token<T> | ModuleConfigure, defaultContainer?: IContainer): Promise<LoadedModule> {
         let container = this.getContainer(token, defaultContainer);
 
-        let mdToken: Token<any> = isToken(token) ? token : token.name;
+        let tk = isToken(token) ? token : token.name;
+        let mdToken: Token<any> = new InjectModuleLoadToken(tk);
         if (isToken(mdToken) && container.has(mdToken)) {
-            return container.resolve(mdToken);
+            return container.resolve(mdToken) as LoadedModule;
         }
 
         let cfg = this.getConfigure(token, container);
 
-        let builder = this.getBuilder(container, cfg);
-        if (builder && builder !== this) {
-            return await builder.build(token, container);
-        }
-
         cfg = await this.registerDepdences(container, cfg);
         let boot = this.getBootstrapToken(cfg, mdToken);
-        let iocModule = this.createModuleInstance(mdToken, container);
 
-        iocModule.bootstrap = boot;
-        iocModule.container = container;
-        if (!iocModule.bootBuilder) {
-            iocModule.bootBuilder = this.getBootstrapBuilder(container, cfg);
-        }
-        iocModule.moduleConfig = cfg;
+        let loadmdl = {
+            moduleToken: isToken(token) ? token : cfg.bootstrap,
+            container: container,
+            moduleConfig: cfg
+        } as LoadedModule;
 
         if (isClass(boot)) {
             if (!container.has(boot)) {
@@ -119,33 +120,76 @@ export class BaseModuleBuilder implements IModuleBuilder {
             }
         }
 
-        if (isToken(mdToken)) {
-            iocModule.moduleToken = mdToken;
-            container.bindProvider(mdToken, iocModule);
+        if (tk) {
+            container.bindProvider(mdToken, () => loadmdl);
         }
 
-        if (isFunction(iocModule.mdOnLoaded)) {
-            iocModule.mdOnLoaded(iocModule);
-        }
-
-        return iocModule;
+        return loadmdl;
     }
 
-    protected createModuleInstance(token: Token<any>, container: IContainer): MdlInstance<any> {
-        let iocModule: MdlInstance<any>;
+    /**
+     * build module.
+     *
+     * @param {(Token<T> | ModuleConfigure)} token
+     * @param {(IContainer | LoadedModule)} [defaults]
+     * @returns {Promise<T>}
+     * @memberof ModuleBuilder
+     */
+    async build(token: Token<T> | ModuleConfigure, defaults?: IContainer | LoadedModule): Promise<T> {
+        let loadmdl: LoadedModule;
+        if (defaults instanceof LoadedModule) {
+            loadmdl = defaults
+        } else {
+            loadmdl = await this.load(token, defaults);
+        }
+
+        let container = loadmdl.container;
+        let cfg = loadmdl.moduleConfig;
+        let builder = this.getBuilder(container, cfg);
+        if (builder && builder !== this) {
+            return await builder.build(token, container);
+        }
+
+        let boot = this.getBootstrapToken(cfg, loadmdl.moduleToken);
+
+        let instance = this.createModuleInstance(boot, container);
+
+        let mdlInst = instance as MdlInstance<T>;
+        if (isFunction(mdlInst.mdOnInit)) {
+            mdlInst.mdOnInit(loadmdl);
+        }
+        instance = await this.buildStrategy(instance, cfg);
+        return instance;
+    }
+
+    protected createModuleInstance(token: Token<T>, container: IContainer): T {
+        let loadmdl: T;
         if (!token || isString(token)) {
-            iocModule = container.resolve(token) as MdlInstance<any>;
+            loadmdl = container.resolve(token) as T
         } else {
             if (isClass(token) && !container.has(token)) {
                 container.register(token);
             }
-            iocModule = container.resolve(token) as MdlInstance<any>;
+            loadmdl = container.resolve(token) as T;
         }
-        return iocModule;
+        return loadmdl;
     }
 
-    protected getBuilder(container: IContainer, cfg: ModuleConfigure): IModuleBuilder {
-        let builder: IModuleBuilder;
+    /**
+     * bundle instance via config.
+     *
+     * @param {T} instance
+     * @param {ModuleConfiguration<T>} config
+     * @param {IContainer} [container]
+     * @returns {Promise<T>}
+     * @memberof BootstrapBuilder
+     */
+    async buildStrategy(instance: T, config: ModuleConfigure): Promise<T> {
+        return instance;
+    }
+
+    protected getBuilder(container: IContainer, cfg: ModuleConfigure): IModuleBuilder<T> {
+        let builder: IModuleBuilder<T>;
         if (isClass(cfg.builder)) {
             if (!container.has(cfg.builder)) {
                 container.register(cfg.builder);
@@ -153,43 +197,30 @@ export class BaseModuleBuilder implements IModuleBuilder {
         }
         if (isToken(cfg.builder)) {
             builder = container.resolve(cfg.builder);
-        } else if (cfg.builder instanceof BaseModuleBuilder) {
+        } else if (cfg.builder instanceof ModuleBuilder) {
             builder = cfg.builder;
         }
         return builder;
     }
 
-    protected getBootstrapBuilder(container: IContainer, cfg: ModuleConfigure): IBootstrapBuilder<any> {
-        let bootstrapBuilder: IBootstrapBuilder<any>;
-        if (isClass(cfg.bootBuilder)) {
-            if (!container.has(cfg.bootBuilder)) {
-                container.register(cfg.bootBuilder);
-            }
-        }
-        if (isToken(cfg.bootBuilder)) {
-            bootstrapBuilder = container.resolve(cfg.bootBuilder);
-        } else if (cfg.bootBuilder instanceof BootstrapBuilder) {
-            bootstrapBuilder = cfg.bootBuilder;
-        }
-
-        return bootstrapBuilder;
-    }
-
     /**
-     * bootstrap module.
+     * bootstrap module's main.
      *
-     * @param {(DIModuleType<TM> | ModuleConfigure)} token
+     * @param {(Token<T> | ModuleConfigure)} token
+     * @param {*} [data]
      * @param {IContainer} [defaultContainer]
+     * @returns {Promise<MdlInstance<T>>}
      * @memberof ModuleBuilder
      */
-    async bootstrap(token: DIModuleType<any> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<any>> {
-        let md = await this.build(token, defaultContainer);
-        if (isFunction(md.mdBeforeCreate)) {
-            md.mdBeforeCreate(md);
+    async bootstrap(token: Token<T> | ModuleConfigure, data?: any, defaultContainer?: IContainer): Promise<T> {
+        let iocMd = await this.load(token, defaultContainer);
+        let md = await this.build(token, iocMd) as MdlInstance<T>;
+        if (isFunction(md.btBeforeCreate)) {
+            md.btBeforeCreate(iocMd);
         }
-        let instance = await this.createBootstrap(md);
-        if (isFunction(md.mdAfterCreate)) {
-            md.mdAfterCreate(instance);
+        let instance = await this.createBootstrap(iocMd.container, iocMd.moduleConfig, data);
+        if (isFunction(md.btAfterCreate)) {
+            md.btAfterCreate(instance);
         }
         if (isFunction(md.mdOnStart)) {
             await Promise.resolve(md.mdOnStart(instance));
@@ -202,18 +233,42 @@ export class BaseModuleBuilder implements IModuleBuilder {
     }
 
 
-    protected async createBootstrap(iocModule: IocModule<any>): Promise<any> {
-        let bootBuilder = iocModule.bootBuilder || iocModule.container.resolve(BootstrapBuilderToken);
-        return await bootBuilder.build(iocModule);
+    protected async createBootstrap(container: IContainer, config: ModuleConfigure, data?: any): Promise<any> {
+        let bootBuilder = this.getBootstrapBuilder(container, config);
+        let bootstrap = bootBuilder.getBootstrapToken(config);
+        if (bootstrap) {
+            return await bootBuilder.build(config, data);
+        } else {
+            return null;
+        }
+    }
+
+    protected getBootstrapBuilder(container: IContainer, config: ModuleConfigure): IBootstrapBuilder<any> {
+        let builder: IBootstrapBuilder<any>;
+        if (isClass(config.bootBuilder)) {
+            if (!container.has(config.bootBuilder)) {
+                container.register(config.bootBuilder);
+            }
+        }
+        if (isToken(config.bootBuilder)) {
+            builder = container.resolve(config.bootBuilder);
+        } else if (config.bootBuilder instanceof BootstrapBuilder) {
+            builder = config.bootBuilder;
+        }
+        if (!builder) {
+            builder = container.resolve(BootstrapBuilderToken);
+        }
+
+        return builder;
     }
 
 
-    async importModule(token: ModuleType | ModuleConfigure, container: IContainer): Promise<IContainer> {
+    async importModule(token: Token<T> | ModuleConfigure, container: IContainer): Promise<IContainer> {
         if (container && isClass(token) && !this.isDIModule(token)) {
             container.register(token);
             return container;
         }
-        let imp = await this.build(token);
+        let imp = await this.load(token);
         if (!container.has(imp.moduleToken)) {
             await this.importConfigExports(container, imp.container, imp.moduleConfig);
             imp.container.parent = container;
@@ -234,7 +289,7 @@ export class BaseModuleBuilder implements IModuleBuilder {
      * @returns {ModuleConfigure}
      * @memberof ModuleBuilder
      */
-    getConfigure(token?: ModuleType | ModuleConfigure, container?: IContainer): ModuleConfigure {
+    getConfigure(token?: Token<T> | ModuleConfigure, container?: IContainer): ModuleConfigure {
         let cfg: ModuleConfigure;
         if (isClass(token)) {
             cfg = this.getMetaConfig(token);
@@ -263,7 +318,7 @@ export class BaseModuleBuilder implements IModuleBuilder {
     }
 
     protected getBootstrapToken(cfg: ModuleConfigure, token?: Token<any>): Token<any> {
-        return cfg.bootstrap;
+        return token || cfg.bootstrap;
     }
 
     protected async importConfigExports(container: IContainer, providerContainer: IContainer, cfg: ModuleConfigure) {
@@ -421,33 +476,3 @@ export class BaseModuleBuilder implements IModuleBuilder {
         return tokens;
     }
 }
-
-
-@Singleton(ModuleBuilderToken)
-@Injectable()
-export class ModuleBuilder extends BaseModuleBuilder {
-    /**
-     * build di module.
-     *
-     * @template TM
-     * @param {(DIModuleType<TM> | ModuleConfigure)} token
-     * @param {IContainer} [defaultContainer]
-     * @returns {Promise<MdlInstance<TM>>}
-     * @memberof ModuleBuilder
-     */
-    build<TM>(token: DIModuleType<TM> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<TM>> {
-        return super.build(token, defaultContainer) as Promise<MdlInstance<TM>>;
-    }
-
-    /**
-     * bootstrap module.
-     *
-     * @param {(DIModuleType<TM> | ModuleConfigure)} token
-     * @param {IContainer} [defaultContainer]
-     * @memberof ModuleBuilder
-     */
-    bootstrap<TM>(token: DIModuleType<TM> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<TM>> {
-        return super.bootstrap(token, defaultContainer) as Promise<MdlInstance<TM>>;
-    }
-}
-

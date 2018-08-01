@@ -3,7 +3,8 @@ import {
     IContainer, LoadType, lang, isString, ContainerBuilderToken
 } from '@ts-ioc/core';
 import { IApplicationBuilder, CustomRegister } from './IApplicationBuilder';
-import { BaseModuleBuilder } from './ModuleBuilder';
+import { ModuleBuilder } from './ModuleBuilder';
+import { AnyModuleBuilder } from './IModuleBuilder';
 
 
 /**
@@ -14,10 +15,10 @@ import { BaseModuleBuilder } from './ModuleBuilder';
  * @extends {ModuleBuilder}
  * @template T
  */
-export class DefaultApplicationBuilder extends BaseModuleBuilder implements IApplicationBuilder {
+export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicationBuilder<T> {
     protected globalConfig: Promise<AppConfiguration>;
     protected globalModules: LoadType[];
-    protected customRegs: CustomRegister[];
+    protected customRegs: CustomRegister<T>[];
 
     root: IContainer;
 
@@ -25,6 +26,10 @@ export class DefaultApplicationBuilder extends BaseModuleBuilder implements IApp
         super();
         this.globalModules = [];
         this.customRegs = [];
+    }
+
+    static create(baseURL?: string): AnyModuleBuilder {
+        return new DefaultApplicationBuilder<any>(baseURL);
     }
 
     /**

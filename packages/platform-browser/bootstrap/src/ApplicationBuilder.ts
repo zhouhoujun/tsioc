@@ -1,5 +1,5 @@
 import { lang, isUndefined, IContainerBuilder } from '@ts-ioc/core';
-import { AppConfiguration, IApplicationBuilder, DefaultApplicationBuilder } from '@ts-ioc/bootstrap';
+import { AppConfiguration, IApplicationBuilder, DefaultApplicationBuilder, AnyApplicationBuilder } from '@ts-ioc/bootstrap';
 import { ContainerBuilder } from '@ts-ioc/platform-browser';
 declare let System: any;
 /**
@@ -12,7 +12,11 @@ const defaultAppConfig: AppConfiguration = {
     setting: {}
 }
 
-export interface IApplicationBuilderBroser extends IApplicationBuilder {
+export interface IApplicationBuilderBroser<T> extends IApplicationBuilder<T> {
+
+}
+
+export interface AnyApplicationBuilderBroser extends AnyApplicationBuilder {
 
 }
 
@@ -25,7 +29,7 @@ export interface IApplicationBuilderBroser extends IApplicationBuilder {
  * @extends {DefaultApplicationBuilder}
  * @implements {IBroserApplicationBuilder<T>}
  */
-export class ApplicationBuilder extends DefaultApplicationBuilder implements IApplicationBuilderBroser {
+export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implements IApplicationBuilderBroser<T> {
 
     constructor(baseURL?: string) {
         super(baseURL || !isUndefined(System) ? System.baseURL : location.href);
@@ -36,11 +40,11 @@ export class ApplicationBuilder extends DefaultApplicationBuilder implements IAp
      *
      * @static
      * @param {string} [baseURL] application start up base path.
-     * @returns {ApplicationBuilder} ApplicationBuilder instance.
-     * @memberof PlatformBrowser
+     * @returns {AnyApplicationBuilderBroser} ApplicationBuilder instance.
+     * @memberof ApplicationBuilder
      */
-    static create(baseURL?: string): IApplicationBuilderBroser {
-        return new ApplicationBuilder(baseURL);
+    static create(baseURL?: string): AnyApplicationBuilderBroser {
+        return new ApplicationBuilder<any>(baseURL);
     }
 
     protected createContainerBuilder(): IContainerBuilder {
