@@ -3984,8 +3984,8 @@ var ProviderMap = /** @class */ (function () {
                 for (var _i = 0; _i < arguments.length; _i++) {
                     providers[_i] = arguments[_i];
                 }
-                return (_a = _this.container).resolve.apply(_a, [provider].concat(providers));
                 var _a;
+                return (_a = _this.container).resolve.apply(_a, [provider].concat(providers));
             };
         }
         else {
@@ -4018,12 +4018,12 @@ var ProviderMap = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
+        var _a, _b;
         if (!this.maps.has(provide)) {
             return (!utils.isNumber(provide) && this.container.has(provide)) ? (_a = this.container).resolve.apply(_a, [provide].concat(providers)) : null;
         }
         var provider = this.maps.get(provide);
         return utils.isToken(provider) ? (_b = this.container).resolve.apply(_b, [provider].concat(providers)) : provider.apply(void 0, providers);
-        var _a, _b;
     };
     ProviderMap.prototype.forEach = function (express) {
         this.maps.forEach(express);
@@ -5005,7 +5005,7 @@ var MethodAccessor = /** @class */ (function () {
             providers[_i - 3] = arguments[_i];
         }
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var targetClass, actionData, lifeScope, parameters, paramInstances, _a;
+            var _a, targetClass, actionData, lifeScope, parameters, paramInstances;
             return tslib_1.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -5031,7 +5031,6 @@ var MethodAccessor = /** @class */ (function () {
                         paramInstances = _b.sent();
                         return [2 /*return*/, target[propertyKey].apply(target, paramInstances)];
                     case 2: throw new Error("type: " + targetClass + " has no method " + propertyKey.toString() + ".");
-                    case 3: return [2 /*return*/];
                 }
             });
         });
@@ -5041,6 +5040,7 @@ var MethodAccessor = /** @class */ (function () {
         for (var _i = 3; _i < arguments.length; _i++) {
             providers[_i - 3] = arguments[_i];
         }
+        var _a;
         if (!target) {
             target = (_a = this.container).resolve.apply(_a, [token].concat(providers));
         }
@@ -5064,7 +5064,6 @@ var MethodAccessor = /** @class */ (function () {
         else {
             throw new Error("type: " + targetClass + " has no method " + propertyKey.toString() + ".");
         }
-        var _a;
     };
     MethodAccessor.prototype.createSyncParams = function (params) {
         var _this = this;
@@ -5072,8 +5071,10 @@ var MethodAccessor = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
+        var _a;
         var providerMap = (_a = this.getMatcher()).matchProviders.apply(_a, [params].concat(providers));
         return params.map(function (param, index) {
+            var _a;
             if (param.name && providerMap.has(param.name)) {
                 return providerMap.resolve(param.name);
             }
@@ -5083,9 +5084,7 @@ var MethodAccessor = /** @class */ (function () {
             else {
                 return undefined;
             }
-            var _a;
         });
-        var _a;
     };
     MethodAccessor.prototype.createParams = function (params) {
         var _this = this;
@@ -5093,8 +5092,10 @@ var MethodAccessor = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
+        var _a;
         var providerMap = (_a = this.getMatcher()).matchProviders.apply(_a, [params].concat(providers));
         return Promise.all(params.map(function (param, index) {
+            var _a;
             if (param.name && providerMap.has(param.name)) {
                 return providerMap.resolve(param.name);
             }
@@ -5104,9 +5105,7 @@ var MethodAccessor = /** @class */ (function () {
             else {
                 return undefined;
             }
-            var _a;
         }));
-        var _a;
     };
     MethodAccessor.classAnnations = { "name": "MethodAccessor", "params": { "constructor": ["container"], "getMatcher": [], "invoke": ["token", "propertyKey", "target", "providers"], "syncInvoke": ["token", "propertyKey", "target", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"] } };
     return MethodAccessor;
@@ -5385,6 +5384,7 @@ var Container = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
+        var _a;
         var key = this.getTokenKey(token);
         var hasReg = this.hasRegister(key);
         if (!hasReg && !this.parent) {
@@ -5398,7 +5398,6 @@ var Container = /** @class */ (function () {
         else {
             return (_a = this.parent).resolve.apply(_a, [token].concat(providers));
         }
-        var _a;
     };
     /**
      * clear cache.
@@ -5633,9 +5632,9 @@ var Container = /** @class */ (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             modules[_i] = arguments[_i];
         }
+        var _a;
         (_a = this.get(IContainerBuilder.ContainerBuilderToken)).syncLoadModule.apply(_a, [this].concat(modules));
         return this;
-        var _a;
     };
     /**
      * async use modules.
@@ -5649,8 +5648,8 @@ var Container = /** @class */ (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             modules[_i] = arguments[_i];
         }
-        return (_a = this.get(IContainerBuilder.ContainerBuilderToken)).loadModule.apply(_a, [this].concat(modules));
         var _a;
+        return (_a = this.get(IContainerBuilder.ContainerBuilderToken)).loadModule.apply(_a, [this].concat(modules));
     };
     /**
      * invoke method async.
@@ -5668,8 +5667,8 @@ var Container = /** @class */ (function () {
         for (var _i = 3; _i < arguments.length; _i++) {
             providers[_i - 3] = arguments[_i];
         }
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).invoke.apply(_a, [token, propertyKey, instance].concat(providers));
         var _a;
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).invoke.apply(_a, [token, propertyKey, instance].concat(providers));
     };
     /**
      * invoke method.
@@ -5687,24 +5686,24 @@ var Container = /** @class */ (function () {
         for (var _i = 3; _i < arguments.length; _i++) {
             providers[_i - 3] = arguments[_i];
         }
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).syncInvoke.apply(_a, [token, propertyKey, instance].concat(providers));
         var _a;
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).syncInvoke.apply(_a, [token, propertyKey, instance].concat(providers));
     };
     Container.prototype.createSyncParams = function (params) {
         var providers = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createSyncParams.apply(_a, [params].concat(providers));
         var _a;
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createSyncParams.apply(_a, [params].concat(providers));
     };
     Container.prototype.createParams = function (params) {
         var providers = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createParams.apply(_a, [params].concat(providers));
         var _a;
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createParams.apply(_a, [params].concat(providers));
     };
     Container.prototype.cacheDecorator = function (map, action) {
         if (!map.has(action.name)) {
@@ -6008,8 +6007,8 @@ var DefaultModuleLoader = /** @class */ (function () {
     };
     DefaultModuleLoader.prototype.loadPathModule = function (pmd) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var loader, modules;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:

@@ -50,8 +50,8 @@ var ApplicationBuilder = /** @class */ (function (_super) {
      *
      * @static
      * @param {string} [baseURL] application start up base path.
-     * @returns {ApplicationBuilder} ApplicationBuilder instance.
-     * @memberof PlatformBrowser
+     * @returns {AnyApplicationBuilderBroser} ApplicationBuilder instance.
+     * @memberof ApplicationBuilder
      */
     ApplicationBuilder.create = function (baseURL) {
         return new ApplicationBuilder(baseURL);

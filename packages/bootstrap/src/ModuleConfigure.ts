@@ -1,16 +1,16 @@
-import { Token, Type, LoadType, Providers, IContainer } from '@ts-ioc/core';
+import { Token, LoadType, Providers, IContainer } from '@ts-ioc/core';
 import { IModuleBuilder } from './IModuleBuilder';
-import { IBootstrapBuilder } from './IBootstrapBuilder';
+import { IBootBuilder } from './IBootBuilder';
 
 
 /**
  * module configuration.
  *
  * @export
- * @interface ModuleConfiguration
+ * @interface ModuleConfig
  * @extends {ObjectMap<any>}
  */
-export interface ModuleConfiguration<T> {
+export interface ModuleConfig<T> {
 
     /**
      * module name.
@@ -44,12 +44,20 @@ export interface ModuleConfiguration<T> {
     exports?: Token<any>[];
 
     /**
-     * module builder
+     * DI module Loader builder
      *
      * @type {(Token<IModuleBuilder<any>> | IModuleBuilder<any>)}
      * @memberof ModuleConfiguration
      */
     builder?: Token<IModuleBuilder<any>> | IModuleBuilder<any>;
+
+    /**
+     * module builder.
+     *
+     * @type {(Token<IBootBuilder<T>> | IBootBuilder<T>)}
+     * @memberof ModuleConfiguration
+     */
+    moduleBuilder?: Token<IBootBuilder<T>> | IBootBuilder<T>;
 
     /**
      * ioc container, the module defined in.
@@ -70,10 +78,10 @@ export interface ModuleConfiguration<T> {
     /**
      * set bootstrap builder.
      *
-     * @type {(Token<IBootstrapBuilder<T>> | IBootstrapBuilder<T>)}
+     * @type {(Token<IBootBuilder<T>> | IBootBuilder<T>)}
      * @memberof ModuleConfiguration
      */
-    bootBuilder?: Token<IBootstrapBuilder<T>> | IBootstrapBuilder<T>;
+    bootstrapBuilder?: Token<IBootBuilder<T>> | IBootBuilder<T>;
 
 }
 
@@ -82,9 +90,9 @@ export interface ModuleConfiguration<T> {
  *
  * @export
  * @interface ModuleConfigure
- * @extends {ModuleConfiguration<any>}
+ * @extends {ModuleConfig<any>}
  */
-export interface ModuleConfigure extends ModuleConfiguration<any> {
+export interface ModuleConfigure extends ModuleConfig<any> {
 
 }
 

@@ -1,4 +1,4 @@
-import { AppConfiguration } from './AppConfiguration';
+import { AppConfigure } from './AppConfigure';
 import {
     IContainer, LoadType, lang, isString, ContainerBuilderToken
 } from '@ts-ioc/core';
@@ -16,7 +16,7 @@ import { AnyModuleBuilder } from './IModuleBuilder';
  * @template T
  */
 export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicationBuilder<T> {
-    protected globalConfig: Promise<AppConfiguration>;
+    protected globalConfig: Promise<AppConfigure>;
     protected globalModules: LoadType[];
     protected customRegs: CustomRegister<T>[];
 
@@ -35,21 +35,21 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
     /**
      * use configuration.
      *
-     * @param {(string | AppConfiguration)} [config]
+     * @param {(string | AppConfigure)} [config]
      * @returns {this} global config for this application.
      * @memberof Bootstrap
      */
-    useConfiguration(config?: string | AppConfiguration, container?: IContainer): this {
+    useConfiguration(config?: string | AppConfigure, container?: IContainer): this {
         if (!this.globalConfig) {
             this.globalConfig = Promise.resolve(this.getDefaultConfig());
         }
-        let pcfg: Promise<AppConfiguration>;
+        let pcfg: Promise<AppConfigure>;
         if (isString(config)) {
             if (container) {
                 let builder = container.resolve(ContainerBuilderToken);
                 pcfg = builder.loader.load([config])
                     .then(rs => {
-                        return rs.length ? rs[0] as AppConfiguration : null;
+                        return rs.length ? rs[0] as AppConfigure : null;
                     })
             }
         } else if (config) {
@@ -60,8 +60,8 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
             this.globalConfig = this.globalConfig
                 .then(cfg => {
                     return pcfg.then(rcfg => {
-                        let excfg = (rcfg['default'] ? rcfg['default'] : rcfg) as AppConfiguration;
-                        cfg = lang.assign(cfg || {}, excfg || {}) as AppConfiguration;
+                        let excfg = (rcfg['default'] ? rcfg['default'] : rcfg) as AppConfigure;
+                        cfg = lang.assign(cfg || {}, excfg || {}) as AppConfigure;
                         return cfg;
                     });
                 });
@@ -82,7 +82,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         return this;
     }
 
-    async registerConfgureDepds(container: IContainer, config: AppConfiguration): Promise<AppConfiguration> {
+    async registerConfgureDepds(container: IContainer, config: AppConfigure): Promise<AppConfigure> {
         if (!this.globalConfig) {
             this.useConfiguration();
         }
@@ -93,7 +93,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         return config;
     }
 
-    protected mergeGlobalConfig(globalCfg: AppConfiguration, moduleCfg: AppConfiguration) {
+    protected mergeGlobalConfig(globalCfg: AppConfigure, moduleCfg: AppConfigure) {
         return lang.assign({}, globalCfg, moduleCfg);
     }
 
@@ -102,11 +102,11 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
      *
      * @protected
      * @param {IContainer} container
-     * @param {AppConfiguration} config
+     * @param {AppConfigure} config
      * @returns {Promise<IContainer>}
      * @memberof ApplicationBuilder
      */
-    protected async registerExts(container: IContainer, config: AppConfiguration): Promise<IContainer> {
+    protected async registerExts(container: IContainer, config: AppConfigure): Promise<IContainer> {
         await super.registerExts(container, config);
         config.exports = config.exports || [];
 
@@ -124,15 +124,15 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         return container;
     }
 
-    protected bindAppConfig(config: AppConfiguration): AppConfiguration {
+    protected bindAppConfig(config: AppConfigure): AppConfigure {
         if (this.baseURL) {
             config.baseURL = this.baseURL;
         }
         return config;
     }
 
-    protected getDefaultConfig(): AppConfiguration {
-        return { debug: false } as AppConfiguration;
+    protected getDefaultConfig(): AppConfigure {
+        return { debug: false } as AppConfigure;
     }
 
 }

@@ -1,5 +1,5 @@
 import { IContainer, Type, Token } from '@ts-ioc/core';
-import { ModuleConfigure, ModuleConfiguration } from './ModuleConfiguration';
+import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 
 /**
  * DI module type
@@ -57,7 +57,7 @@ export class LoadedModule {
 /**
  *  module instance.
  */
-export type MdlInstance<TM> = TM & ModuleInit<any> & AfterBootCreate<any> & BeforeBootCreate<any> & ModuleStart<any> & OnModuleStarted<any>
+export type MdlInstance<TM> = TM & OnModuleInit & AfterBootCreate<any> & BeforeBootCreate<any> & OnModuleStart<any> & OnModuleStarted<any>
 
 
 /**
@@ -68,7 +68,7 @@ export type MdlInstance<TM> = TM & ModuleInit<any> & AfterBootCreate<any> & Befo
  * @template T
  */
 export interface BeforeBootCreate<T> {
-    btBeforeCreate(config?: ModuleConfiguration<T>);
+    btBeforeCreate(config?: ModuleConfig<T>);
 }
 
 /**
@@ -82,31 +82,31 @@ export interface AfterBootCreate<T> {
     btAfterCreate(instance: T): void;
 }
 
-export interface ModuleInit<T> {
+export interface OnModuleInit {
     /**
      * on Module init.
      *
-     * @param {T} instance
-     * @memberof OnStart
+     * @param {LoadedModule} [mdl]
+     * @memberof OnModuleInit
      */
-    mdOnInit(mdl: LoadedModule): void;
+    mdOnInit(mdl?: LoadedModule): void;
 }
 
 /**
  * module bootstrp start hook, raise hook on module bootstrap start.
  *
  * @export
- * @interface OnStart
+ * @interface OnModuleStart
  * @template T
  */
-export interface ModuleStart<T> {
+export interface OnModuleStart<T> {
     /**
      * on Module bootstrap start.
      *
-     * @param {T} instance
+     * @param {T} [instance]
      * @memberof OnStart
      */
-    mdOnStart(instance: T): void | Promise<any>;
+    mdOnStart(instance?: T): void | Promise<any>;
 }
 
 /**
@@ -120,8 +120,8 @@ export interface OnModuleStarted<T> {
     /**
      * on Module onStarted.
      *
-     * @param {T} instance
+     * @param {T} [instance]
      * @memberof OnStart
      */
-    mdOnStarted(instance: T): void;
+    mdOnStarted(instance?: T): void;
 }

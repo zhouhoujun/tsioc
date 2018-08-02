@@ -1,5 +1,5 @@
 import { Registration, IContainer, Type, Token } from '@ts-ioc/core';
-import { ModuleConfigure } from './ModuleConfiguration';
+import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { ModuleType, MdlInstance, DIModuleType, LoadedModule } from './ModuleType';
 
 
@@ -57,23 +57,23 @@ export interface IModuleBuilder<T> {
     /**
      * build module as ioc container.
      *
-     * @param {(Token<T> | ModuleConfigure)} token
+     * @param {(Token<T> | ModuleConfig<T>)} token
      * @param {(IContainer | LoadedModule)} [defaults]
-     * @returns {Promise<MdlInstance<T>>}
+     * @returns {Promise<T>}
      * @memberof IModuleBuilder
      */
-    build(token: Token<T> | ModuleConfigure, defaults?: IContainer | LoadedModule): Promise<T>;
+    build(token: Token<T> | ModuleConfig<T>, defaults?: IContainer | LoadedModule): Promise<T>;
 
     /**
      * bootstrap module's main.
      *
-     * @param {(Token<T> | ModuleConfigure)} token
+     * @param {(Token<T> | ModuleConfig<T>)} token
      * @param {*} [data]
      * @param {IContainer} [defaultContainer]
      * @returns {Promise<MdlInstance<T>>}
      * @memberof IGModuleBuilder
      */
-    bootstrap(token: Token<T> | ModuleConfigure, data?: any, defaultContainer?: IContainer): Promise<T>;
+    bootstrap(token: Token<T> | ModuleConfig<T>, data?: any, defaultContainer?: IContainer): Promise<any>;
 
     /**
      * import di module.
@@ -133,22 +133,22 @@ export interface AnyModuleBuilder extends IModuleBuilder<any> {
     /**
      * build module as ioc container.
      *
-     * @param {(Token<TM> | ModuleConfigure)} token
+     * @param {(Token<TM> | ModuleConfig<TM>)} token
      * @param {(IContainer | LoadedModule)} [defaults]
      * @returns {Promise<MdlInstance<T>>}
      * @memberof IModuleBuilder
      */
-    build<TM>(token: Token<TM> | ModuleConfigure, defaults?: IContainer | LoadedModule): Promise<MdlInstance<TM>>;
+    build<TM>(token: Token<TM> | ModuleConfig<TM>, defaults?: IContainer | LoadedModule): Promise<MdlInstance<TM>>;
 
-    /**
-     * bootstrap module.
-     *
-     * @param {(Token<TM> | ModuleConfigure)} token
-     * @param {IContainer} [defaultContainer]
-     * @returns {Promise<MdlInstance<TM>>}
-     * @memberof IModuleBuilder
-     */
-    bootstrap<TM>(token: Token<TM> | ModuleConfigure, defaultContainer?: IContainer): Promise<MdlInstance<TM>>;
+    // /**
+    //  * bootstrap module.
+    //  *
+    //  * @param {(Token<any> | ModuleConfigure)} token
+    //  * @param {IContainer} [defaultContainer]
+    //  * @returns {Promise<any>}
+    //  * @memberof IModuleBuilder
+    //  */
+    // bootstrap<T>(token: Token<any> | ModuleConfigure, defaultContainer?: IContainer): Promise<T>;
 
 }
 

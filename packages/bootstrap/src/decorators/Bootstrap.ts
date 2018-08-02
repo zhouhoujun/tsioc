@@ -1,15 +1,14 @@
 import {
-    ClassMetadata, Token, InjectToken, MetadataAdapter,
+    ClassMetadata, Token, MetadataAdapter,
     MetadataExtends, ITypeDecorator
 } from '@ts-ioc/core';
-import { AppConfiguration } from '../AppConfiguration';
-import { LoadedModule } from '../ModuleType';
-import { IBootstrapBuilder } from '../IBootstrapBuilder';
+import { AppConfigure } from '../AppConfigure';
+import { IBootBuilder } from '../IBootBuilder';
 import { ApplicationBuilderToken, IApplicationBuilder } from '../IApplicationBuilder';
 import { createDIModuleDecorator } from './DIModule';
 
 
-export interface BootstrapMetadata extends AppConfiguration, ClassMetadata {
+export interface BootstrapMetadata extends AppConfigure, ClassMetadata {
     decorType?: string;
 }
 
@@ -41,7 +40,8 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
  * @template T
  * @param {string} decorType
  * @param {(Token<IApplicationBuilder> | IApplicationBuilder)} [builder]
- * @param {(Token<IBootstrapBuilder<any>> | IBootstrapBuilder<Tany>)} [bootBuilder]
+ * @param {(Token<IBootBuilder<any>> | IBootBuilder<Tany>)} [moduleBuilder]
+ * @param {(Token<IBootBuilder<any>> | IBootBuilder<Tany>)} [bootstrapBuilder]
  * @param {InjectToken<IApplication>} provideType default provide type.
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
@@ -50,12 +50,13 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
 export function createBootstrapDecorator<T extends BootstrapMetadata>(
     decorType: string,
     builder?: Token<IApplicationBuilder<any>> | IApplicationBuilder<any>,
-    bootBuilder?: Token<IBootstrapBuilder<any>> | IBootstrapBuilder<any>,
-    provideType?: InjectToken<LoadedModule<T>>,
+    moduleBuilder?: Token<IBootBuilder<any>> | IBootBuilder<any>,
+    bootstrapBuilder?: Token<IBootBuilder<any>> | IBootBuilder<any>,
+    provideType?: Token<any>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IBootstrapDecorator<T> {
 
-    return createDIModuleDecorator<BootstrapMetadata>(decorType, builder, bootBuilder, provideType, adapter, metadataExtends) as IBootstrapDecorator<T>;
+    return createDIModuleDecorator<BootstrapMetadata>(decorType, builder, moduleBuilder, bootstrapBuilder, provideType, adapter, metadataExtends) as IBootstrapDecorator<T>;
 }
 
 /**

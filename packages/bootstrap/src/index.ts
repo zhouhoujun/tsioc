@@ -1,12 +1,12 @@
 export * from './decorators';
-export * from './AppConfiguration';
+export * from './AppConfigure';
 export * from './ApplicationBuilder';
 export * from './IApplicationBuilder';
 export * from './IModuleBuilder';
 export * from './ModuleBuilder';
-export * from './ModuleConfiguration';
+export * from './ModuleConfigure';
 export * from './BootModule';
-export * from './IBootstrapBuilder';
-export * from './BootstrapBuilder';
+export * from './IBootBuilder';
+export * from './BootBuilder';
 export * from './ModuleType';
 

@@ -33,10 +33,16 @@ import { ApplicationBuilder } from '@ts-ioc/platform-server/bootstrap'
 import { ApplicationBuilder } from '@ts-ioc/platform-browser/bootstrap'
 
 
+export class TestService {
+    test() {
+        console.log('test');
+    }
+}
+
 @DIModule({
     providers: [
-        { provide: 'mark', useFactory: () => 'marked' }
-        // ...
+        { provide: 'mark', useFactory: () => 'marked' },
+        TestService
     ],
     exports: [
 
@@ -50,6 +56,7 @@ export class ModuleA {
 export class ClassSevice {
     @Inject('mark')
     mark: string;
+    state: string;
     start() {
         console.log(this.mark);
     }
@@ -61,17 +68,18 @@ export class ClassSevice {
         ModuleA
     ],
     exports: [
-        ModuleA
+        ClassSevice
     ],
     bootstrap: ClassSevice
 })
-export class ModuleB implements ModuleStart<ClassSevice> {
-    instance: ClassSevice;
-    mdOnStart(instance: ClassSevice): void | Promise<any> {
-        this.instance = instance;
-        instance.start();
+export class ModuleB implements OnModuleStart<ClassSevice> {
+    constructor(test: TestService) {
+        test.test();
     }
-
+    mdOnStart(instance: ClassSevice): void | Promise<any> {
+        instance.start();
+        instance.state = 'started';
+    }
 }
 
 
