@@ -1,6 +1,7 @@
 import { Registration, IContainer, Type, Token } from '@ts-ioc/core';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
-import { ModuleType, MdlInstance, DIModuleType, LoadedModule } from './ModuleType';
+import { MdlInstance, LoadedModule } from './ModuleType';
+import { ContainerPool } from './ContainerPool';
 
 
 /**
@@ -26,15 +27,19 @@ export class InjectModuleBuilder<T extends IModuleBuilder<any>> extends Registra
  * @template T
  */
 export interface IModuleBuilder<T> {
+
+    getPools(): ContainerPool;
+    setPools(pools: ContainerPool);
     /**
      * get container of the module.
      *
      * @param {(Token<T> | ModuleConfigure)} token module type or module configuration.
      * @param {IContainer} [defaultContainer] set default container or not. not set will create new container.
+     * @param {IContainer} [parent] set the container parent, default will set root default container.
      * @returns {IContainer}
      * @memberof IModuleBuilder
      */
-    getContainer(token: Token<T> | ModuleConfigure, defaultContainer?: IContainer): IContainer;
+    getContainer(token: Token<T> | ModuleConfigure, defaultContainer?: IContainer, parent?: IContainer): IContainer;
 
     /**
      * create new container.
@@ -48,11 +53,12 @@ export interface IModuleBuilder<T> {
      * load module depdences.
      *
      * @param {(Token<T> | ModuleConfigure)} token
-     * @param {IContainer} [defaultContainer]
+     * @param {IContainer} [defaultContainer] set default container or not. not set will create new container.
+     * @param {IContainer} [parent] set the container parent, default will set root default container.
      * @returns {Promise<LoadedModule>}
      * @memberof IModuleBuilder
      */
-    load(token: Token<T> | ModuleConfigure, defaultContainer?: IContainer): Promise<LoadedModule>;
+    load(token: Token<T> | ModuleConfigure, defaultContainer?: IContainer, parent?: IContainer): Promise<LoadedModule>;
 
     /**
      * build module as ioc container.

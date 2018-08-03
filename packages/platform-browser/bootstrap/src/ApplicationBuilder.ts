@@ -1,11 +1,11 @@
 import { lang, isUndefined, IContainerBuilder } from '@ts-ioc/core';
-import { AppConfiguration, IApplicationBuilder, DefaultApplicationBuilder, AnyApplicationBuilder } from '@ts-ioc/bootstrap';
+import { AppConfigure, IApplicationBuilder, DefaultApplicationBuilder, AnyApplicationBuilder } from '@ts-ioc/bootstrap';
 import { ContainerBuilder } from '@ts-ioc/platform-browser';
 declare let System: any;
 /**
  * default app configuration.
  */
-const defaultAppConfig: AppConfiguration = {
+const defaultAppConfig: AppConfigure = {
     baseURL: '',
     debug: false,
     connections: {},
@@ -55,8 +55,8 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
         return this;
     }
 
-    protected getDefaultConfig(): AppConfiguration {
-        return lang.assign({}, defaultAppConfig as AppConfiguration);
+    protected getDefaultConfig(): AppConfigure {
+        return lang.assign({}, defaultAppConfig as AppConfigure);
     }
 
 }

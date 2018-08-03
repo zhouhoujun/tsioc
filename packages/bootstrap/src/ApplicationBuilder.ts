@@ -4,7 +4,8 @@ import {
 } from '@ts-ioc/core';
 import { IApplicationBuilder, CustomRegister } from './IApplicationBuilder';
 import { ModuleBuilder } from './ModuleBuilder';
-import { AnyModuleBuilder } from './IModuleBuilder';
+import { AnyModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
+import { ContainerPool, ContainerPoolToken } from './ContainerPool';
 
 
 /**
@@ -26,6 +27,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         super();
         this.globalModules = [];
         this.customRegs = [];
+        this.pools = new ContainerPool();
     }
 
     static create(baseURL?: string): AnyModuleBuilder {
@@ -97,6 +99,13 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         return lang.assign({}, globalCfg, moduleCfg);
     }
 
+    protected regDefaultContainer() {
+        let container = super.regDefaultContainer();
+        container.bindProvider(ContainerPoolToken, () => this.getPools());
+        container.resolve(ModuleBuilderToken).setPools(this.getPools());
+        return container;
+    }
+
     /**
      * register ioc exts
      *
@@ -108,7 +117,6 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
      */
     protected async registerExts(container: IContainer, config: AppConfigure): Promise<IContainer> {
         await super.registerExts(container, config);
-        config.exports = config.exports || [];
 
         if (this.globalModules.length) {
             let usedModules = this.globalModules;

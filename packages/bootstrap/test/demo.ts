@@ -1,7 +1,8 @@
-import { DIModule, OnModuleStart } from '../src';
-import { Injectable, Inject } from '@ts-ioc/core';
+import { DIModule, OnModuleStart, ContainerPoolToken } from '../src';
+import { Injectable, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
 
 export class TestService {
+    testFiled = 'test';
     test() {
         console.log('test');
     }
@@ -41,8 +42,11 @@ export class ClassSevice {
     bootstrap: ClassSevice
 })
 export class ModuleB implements OnModuleStart<ClassSevice> {
-    constructor(test: TestService) {
+    constructor(test: TestService, @Inject(ContainerToken) container: IContainer) {
+        console.log(test);
         test.test();
+
+        console.log(container.get(ContainerPoolToken))
     }
     mdOnStart(instance: ClassSevice): void | Promise<any> {
         instance.start();

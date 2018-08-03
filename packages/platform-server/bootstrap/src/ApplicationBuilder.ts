@@ -1,5 +1,5 @@
 import { IContainer, lang, isString, IContainerBuilder } from '@ts-ioc/core';
-import { AppConfiguration, DefaultApplicationBuilder, IApplicationBuilder, AnyApplicationBuilder } from '@ts-ioc/bootstrap';
+import { AppConfigure, DefaultApplicationBuilder, IApplicationBuilder, AnyApplicationBuilder } from '@ts-ioc/bootstrap';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { ContainerBuilder } from '@ts-ioc/platform-server';
@@ -7,7 +7,7 @@ import { ContainerBuilder } from '@ts-ioc/platform-server';
 /**
  * default app configuration.
  */
-const defaultAppConfig: AppConfiguration = {
+const defaultAppConfig: AppConfigure = {
     baseURL: '',
     debug: false,
     connections: {},
@@ -80,20 +80,20 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
     /**
      * use custom configuration.
      *
-     * @param {(string | AppConfiguration)} [config]
+     * @param {(string | AppConfigure)} [config]
      * @returns {this}
      * @memberof Bootstrap
      */
-    useConfiguration(config?: string | AppConfiguration): this {
+    useConfiguration(config?: string | AppConfigure): this {
         if (!this.globalConfig) {
             this.globalConfig = Promise.resolve(this.getDefaultConfig());
         }
-        let cfgmodeles: AppConfiguration;
+        let cfgmodeles: AppConfigure;
         if (isString(config)) {
             if (existsSync(config)) {
-                cfgmodeles = require(config) as AppConfiguration;
+                cfgmodeles = require(config) as AppConfigure;
             } else if (existsSync(path.join(this.baseURL, config))) {
-                cfgmodeles = require(path.join(this.baseURL, config)) as AppConfiguration;
+                cfgmodeles = require(path.join(this.baseURL, config)) as AppConfigure;
             } else {
                 console.log(`config file: ${config} not exists.`)
             }
@@ -117,10 +117,10 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
         }
 
         if (cfgmodeles) {
-            let excfg = (cfgmodeles['default'] ? cfgmodeles['default'] : cfgmodeles) as AppConfiguration;
+            let excfg = (cfgmodeles['default'] ? cfgmodeles['default'] : cfgmodeles) as AppConfigure;
             this.globalConfig = this.globalConfig
                 .then(cfg => {
-                    cfg = lang.assign(cfg || {}, excfg || {}) as AppConfiguration;
+                    cfg = lang.assign(cfg || {}, excfg || {}) as AppConfigure;
                     return cfg;
                 });
         }
@@ -140,7 +140,7 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
         return this;
     }
 
-    protected async registerExts(container: IContainer, config: AppConfiguration): Promise<IContainer> {
+    protected async registerExts(container: IContainer, config: AppConfigure): Promise<IContainer> {
         await super.registerExts(container, config);
         await Promise.all(this.dirMatchs.map(dirs => {
             return container.loadModule(container, {
@@ -160,8 +160,8 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
         return this;
     }
 
-    protected getDefaultConfig(): AppConfiguration {
-        return lang.assign({}, defaultAppConfig as AppConfiguration);
+    protected getDefaultConfig(): AppConfigure {
+        return lang.assign({}, defaultAppConfig as AppConfigure);
     }
 }
 

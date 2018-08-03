@@ -5,13 +5,13 @@ import { ObjectMap, InjectToken } from '@ts-ioc/core';
 /**
  * application configuration token.
  */
-export const AppConfigurationToken = new InjectToken<AppConfigure>('DI_APP_Configuration');
+export const AppConfigureToken = new InjectToken<AppConfigure>('DI_APP_Configuration');
 
 /**
  * app configuration.
  *
  * @export
- * @interface AppConfiguration
+ * @interface AppConfigure
  * @extends {ObjectMap<any>}
  */
 export interface AppConfigure extends ModuleConfigure {
@@ -19,7 +19,7 @@ export interface AppConfigure extends ModuleConfigure {
      * application name.
      *
      * @type {string}
-     * @memberof AppConfiguration
+     * @memberof AppConfigure
      */
     name?: string;
 
@@ -32,7 +32,7 @@ export interface AppConfigure extends ModuleConfigure {
      * set enable debug log or not.
      *
      * @type {boolean}
-     * @memberof AppConfiguration
+     * @memberof AppConfigure
      */
     debug?: boolean;
 
@@ -40,7 +40,7 @@ export interface AppConfigure extends ModuleConfigure {
      * log config.
      *
      * @type {*}
-     * @memberof AppConfiguration
+     * @memberof AppConfigure
      */
     logConfig?: any;
 
@@ -48,7 +48,7 @@ export interface AppConfigure extends ModuleConfigure {
      * custom config key value setting.
      *
      * @type {IMap<any>}
-     * @memberOf AppConfiguration
+     * @memberOf AppConfigure
      */
     setting?: ObjectMap<any>;
 
@@ -56,7 +56,7 @@ export interface AppConfigure extends ModuleConfigure {
      * custom config connections.
      *
      * @type {ObjectMap<any>}
-     * @memberof AppConfiguration
+     * @memberof AppConfigure
      */
     connections?: ObjectMap<any>;
 

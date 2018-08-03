@@ -11,16 +11,16 @@ import { ModuleConfigure } from './ModuleConfigure';
  */
 @Singleton(BootBuilderToken)
 export class BootBuilder<T> implements IBootBuilder<T> {
-    /**
-     * ioc container.
-     *
-     * @type {IContainer}
-     * @memberof BootBuilder
-     */
-    @Inject(ContainerToken)
-    container: IContainer;
+    // /**
+    //  * ioc container.
+    //  *
+    //  * @type {IContainer}
+    //  * @memberof BootBuilder
+    //  */
+    // @Inject(ContainerToken)
+    // container: IContainer;
 
-    constructor() {
+    constructor(@Inject(ContainerToken) public container: IContainer) {
 
     }
 

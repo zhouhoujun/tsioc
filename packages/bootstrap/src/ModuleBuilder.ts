@@ -10,9 +10,10 @@ import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { DIModule } from './decorators';
 import { BootModule } from './BootModule';
-import { MdlInstance, DIModuleType, LoadedModule } from './ModuleType';
+import { MdlInstance, LoadedModule } from './ModuleType';
 import { IBootBuilder, BootBuilderToken, AnyBootstrapBuilder } from './IBootBuilder';
 import { BootBuilder } from './BootBuilder';
+import { containerPools, ContainerPool } from './ContainerPool';
 
 
 const exportsProvidersFiled = '__exportProviders';
@@ -40,41 +41,85 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     }
 
+    protected pools;
+    getPools(): ContainerPool {
+        if (!this.pools) {
+            this.pools = containerPools;
+        }
+        if (!this.pools.hasDefault()) {
+            this.regDefaultContainer();
+        }
+        return this.pools;
+    }
+    setPools(pools: ContainerPool) {
+        this.pools = pools;
+    }
+
+    protected regDefaultContainer(): IContainer {
+        let container = this.createContainer();
+        container.register(BootModule);
+        this.pools.setDefault(container);
+        return container;
+    }
+
     /**
      * get container of the module.
      *
      * @param {(ModuleType | ModuleConfigure)} token module type or module configuration.
      * @param {IContainer} [defaultContainer] set default container or not. not set will create new container.
+     * @param {IContainer} [parent] set the container parent, default will set root default container.
      * @returns {IContainer}
      * @memberof ModuleBuilder
      */
-    getContainer(token: Token<T> | ModuleConfigure, defaultContainer?: IContainer): IContainer {
+    getContainer(token: Token<T> | ModuleConfigure, defaultContainer?: IContainer, parent?: IContainer): IContainer {
         let container: IContainer;
+        let pools = this.getPools();
         if (isToken(token)) {
-            if (isClass(token)) {
-                let mdToken = token as DIModuleType<T>;
-                if (mdToken.__di) {
-                    return mdToken.__di;
-                } else {
-                    let cfg = this.getConfigure(mdToken);
-                    if (cfg.container) {
-                        mdToken.__di = cfg.container;
-                    } else {
-                        mdToken.__di = defaultContainer || this.createContainer();
-                    }
-                    container = mdToken.__di;
-                }
+            if (pools.has(token)) {
+                return pools.get(token);
             } else {
-                return defaultContainer || this.createContainer();
+                let cfg = this.getConfigure(token, defaultContainer);
+
+                container = cfg.container || defaultContainer;
+
+                if (!container) {
+                    container = this.isDIModule(token) ? this.createContainer() : pools.getDefault();
+                }
+                this.setParent(container, parent);
+
+                pools.set(token, container);
+                return container;
             }
         } else {
+            if (token.name && pools.has(token.name)) {
+                return pools.get(token.name);
+            }
             if (token.container) {
                 container = token.container;
             } else {
-                container = token.container = defaultContainer || this.createContainer();
+                container = token.container = defaultContainer || pools.getDefault();
+            }
+            if (token.name) {
+                pools.set(token.name, container);
+            }
+            this.setParent(container, parent);
+
+            return container;
+        }
+    }
+
+    protected setParent(container: IContainer, parent?: IContainer) {
+        let pools = this.getPools();
+        if (pools.isDefault(container)) {
+            return;
+        }
+        if (!container.parent) {
+            if (parent && parent !== container) {
+                container.parent = parent;
+            } else {
+                container.parent = pools.getDefault();
             }
         }
-        return container;
     }
 
     createContainer(): IContainer {
@@ -94,8 +139,8 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return new DefaultContainerBuilder();
     }
 
-    async load(token: Token<T> | ModuleConfigure, defaultContainer?: IContainer): Promise<LoadedModule> {
-        let container = this.getContainer(token, defaultContainer);
+    async load(token: Token<T> | ModuleConfigure, defaultContainer?: IContainer, parent?: IContainer): Promise<LoadedModule> {
+        let container = this.getContainer(token, defaultContainer, parent);
 
         let tk = isToken(token) ? token : token.name;
         let mdToken: Token<any> = new InjectModuleLoadToken(tk);
@@ -221,7 +266,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             }
         }
         if (isToken(bootBuilder)) {
-            builder = container.resolve(bootBuilder);
+            builder = container.resolve(bootBuilder, {container: container});
         } else if (bootBuilder instanceof BootBuilder) {
             builder = bootBuilder;
         }
@@ -233,7 +278,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
     protected getDefaultBootBuilder(container: IContainer): IBootBuilder<any> {
-        return container.resolve(BootBuilderToken);
+        return container.resolve(BootBuilderToken, {container: container});
     }
 
 
@@ -242,7 +287,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             container.register(token);
             return container;
         }
-        let imp = await this.load(token);
+        let imp = await this.load(token, null, container);
         if (!container.has(imp.moduleToken)) {
             await this.importConfigExports(container, imp.container, imp.moduleConfig);
             imp.container.parent = container;
@@ -342,7 +387,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return hasOwnClassMetadata(IocExt, token);
     }
 
-    protected isDIModule(token: Type<any>) {
+    protected isDIModule(token: Token<any>) {
         if (!isClass(token)) {
             return false;
         }
@@ -353,9 +398,9 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
     protected async registerExts(container: IContainer, config: ModuleConfigure): Promise<IContainer> {
-        if (!container.has(BootModule)) {
-            container.register(BootModule);
-        }
+        // if (!container.has(BootModule)) {
+        //     container.register(BootModule);
+        // }
         return container;
     }
 

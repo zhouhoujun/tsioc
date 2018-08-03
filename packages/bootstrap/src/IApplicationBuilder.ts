@@ -1,7 +1,7 @@
 import { Token, LoadType, InjectToken, IContainer } from '@ts-ioc/core';
 import { AppConfigure } from './AppConfigure';
 import { IModuleBuilder } from './IModuleBuilder';
-import { DIModuleType, MdlInstance, LoadedModule } from './ModuleType';
+import { MdlInstance, LoadedModule } from './ModuleType';
 import { ModuleConfig } from './ModuleConfigure';
 
 /**
@@ -64,12 +64,12 @@ export interface AnyApplicationBuilder extends IApplicationBuilder<any> {
     /**
      * build module as ioc container.
      *
-     * @param {(DIModuleType<TM> | ModuleConfig<TM>)} token
+     * @param {(Token<TM> | ModuleConfig<TM>)} token
      * @param {(IContainer | LoadedModule)} [defaultContainer]
      * @returns {Promise<MdlInstance<T>>}
      * @memberof IModuleBuilder
      */
-    build<TM>(token: DIModuleType<TM> | ModuleConfig<TM>, defaults?: IContainer | LoadedModule): Promise<MdlInstance<TM>>;
+    build<TM>(token: Token<TM> | ModuleConfig<TM>, defaults?: IContainer | LoadedModule): Promise<MdlInstance<TM>>;
 
     // /**
     //  * bootstrap module.
