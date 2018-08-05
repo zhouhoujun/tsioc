@@ -2,9 +2,9 @@ import { AppConfigure } from './AppConfigure';
 import {
     IContainer, LoadType, lang, isString, ContainerBuilderToken
 } from '@ts-ioc/core';
-import { IApplicationBuilder, CustomRegister } from './IApplicationBuilder';
+import { IApplicationBuilder, CustomRegister, AnyApplicationBuilder } from './IApplicationBuilder';
 import { ModuleBuilder } from './ModuleBuilder';
-import { AnyModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
+import { ModuleBuilderToken } from './IModuleBuilder';
 import { ContainerPool, ContainerPoolToken } from './ContainerPool';
 
 
@@ -30,7 +30,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         this.pools = new ContainerPool();
     }
 
-    static create(baseURL?: string): AnyModuleBuilder {
+    static create(baseURL?: string): AnyApplicationBuilder {
         return new DefaultApplicationBuilder<any>(baseURL);
     }
 

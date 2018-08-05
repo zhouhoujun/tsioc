@@ -71,7 +71,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      * @returns {IContainer}
      * @memberof ModuleBuilder
      */
-    getContainer(token: Token<T> | ModuleConfigure, defaultContainer?: IContainer, parent?: IContainer): IContainer {
+     getContainer(token: Token<T> | ModuleConfigure, defaultContainer?: IContainer, parent?: IContainer): IContainer {
         let container: IContainer;
         let pools = this.getPools();
         if (isToken(token)) {
@@ -266,7 +266,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             }
         }
         if (isToken(bootBuilder)) {
-            builder = container.resolve(bootBuilder, {container: container});
+            builder = container.resolve(bootBuilder, { container: container });
         } else if (bootBuilder instanceof BootBuilder) {
             builder = bootBuilder;
         }
@@ -278,7 +278,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
     protected getDefaultBootBuilder(container: IContainer): IBootBuilder<any> {
-        return container.resolve(BootBuilderToken, {container: container});
+        return container.resolve(BootBuilderToken, { container: container });
     }
 
 

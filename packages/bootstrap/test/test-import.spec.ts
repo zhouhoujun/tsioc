@@ -1,14 +1,16 @@
 
 import 'mocha';
 import { expect } from 'chai';
-import { ModuleA, ModuleB, ClassSevice } from './demo';
-import { DefaultApplicationBuilder, AnyModuleBuilder } from '../src';
+import { ModuleA, ModuleB, ClassSevice, Logger } from './demo';
+import { DefaultApplicationBuilder, AnyModuleBuilder, AnyApplicationBuilder } from '../src';
+import { AopModule } from '@ts-ioc/aop';
 
 describe('di module', () => {
 
-    let builder: AnyModuleBuilder;
+    let builder: AnyApplicationBuilder;
     beforeEach(async () => {
         builder = DefaultApplicationBuilder.create();
+        // builder.use(AopModule).use(Logger);
     });
 
     it('should has no bootstrap', async () => {

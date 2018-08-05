@@ -1,5 +1,11 @@
 import { MapSet, Token, Registration, IContainer, InjectToken } from '@ts-ioc/core';
 
+/**
+ * container pool
+ *
+ * @export
+ * @class ContainerPool
+ */
 export class ContainerPool {
 
     protected pools: MapSet<Token<any>, IContainer>;

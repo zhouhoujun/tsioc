@@ -28,7 +28,20 @@ export class InjectModuleBuilder<T extends IModuleBuilder<any>> extends Registra
  */
 export interface IModuleBuilder<T> {
 
+    /**
+     * get container pool
+     *
+     * @returns {ContainerPool}
+     * @memberof IModuleBuilder
+     */
     getPools(): ContainerPool;
+
+    /**
+     * set container pool.
+     *
+     * @param {ContainerPool} pools
+     * @memberof IModuleBuilder
+     */
     setPools(pools: ContainerPool);
     /**
      * get container of the module.

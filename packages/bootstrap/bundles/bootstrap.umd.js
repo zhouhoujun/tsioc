@@ -284,6 +284,7 @@ var BootBuilder = /** @class */ (function () {
                 }
                 if (!this.container.has(token)) {
                     if (core_1.isClass(token)) {
+                        console.log('boot builder', token);
                         this.container.register(token);
                     }
                     else {
@@ -393,26 +394,6 @@ var BootModule_2 = BootModule_1.BootModule;
 
 var ModuleType = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
-// /**
-//  * DI module type
-//  *
-//  * @export
-//  * @interface DIModuleType
-//  * @extends {Type<T>}
-//  * @template T
-//  */
-// export interface DIModuleType<T> extends Type<T> {
-//     __di?: IContainer;
-// }
-// /**
-//  * DI module type
-//  *
-//  * @export
-//  * @interface ModuleType
-//  * @extends {DIModuleType<any>}
-//  */
-// export interface ModuleType extends DIModuleType<any> {
-// }
 /**
  * ioc DI loaded modules.
  *
@@ -437,6 +418,12 @@ var ModuleType_1 = ModuleType.LoadedModule;
 var ContainerPool_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
+/**
+ * container pool
+ *
+ * @export
+ * @class ContainerPool
+ */
 var ContainerPool = /** @class */ (function () {
     function ContainerPool() {
         this.pools = new core_1.MapSet();

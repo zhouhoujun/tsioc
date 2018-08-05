@@ -174,12 +174,20 @@ Development.create(gulp, __dirname, [
         tasks: [
             {
                 name: 'aop',
-                loader: [{
-                    name: 'copy',
-                    src: ['packages/aop/!(src|test|node_modules)/**', 'packages/aop/package.json'],
-                    dist: 'packages/logs/node_modules/@ts-ioc/aop',
-                    pipes: []
-                }]
+                loader: [
+                    {
+                        name: 'copy',
+                        src: ['packages/aop/!(src|test|node_modules)/**', 'packages/aop/package.json'],
+                        dist: 'packages/logs/node_modules/@ts-ioc/aop',
+                        pipes: []
+                    },
+                    {
+                        name: 'copy-to-boot',
+                        src: ['packages/aop/!(src|test|node_modules)/**', 'packages/aop/package.json'],
+                        dist: 'packages/bootstrap/node_modules/@ts-ioc/aop',
+                        pipes: []
+                    }
+                ]
             }
         ]
     },

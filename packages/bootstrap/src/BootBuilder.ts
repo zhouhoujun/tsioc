@@ -1,6 +1,7 @@
 import { IBootBuilder, BootBuilderToken } from './IBootBuilder';
 import { Singleton, Token, isToken, IContainer, Inject, ContainerToken, isClass } from '@ts-ioc/core';
 import { ModuleConfigure } from './ModuleConfigure';
+
 /**
  * token bootstrap builder. build class with metadata and config.
  *
@@ -45,6 +46,7 @@ export class BootBuilder<T> implements IBootBuilder<T> {
         }
         if (!this.container.has(token)) {
             if (isClass(token)) {
+                console.log('boot builder', token);
                 this.container.register(token);
             } else {
                 throw new Error(`cant not find token ${token.toString()} in container.`);

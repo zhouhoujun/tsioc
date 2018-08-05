@@ -7,6 +7,9 @@
       "@ts-ioc/core": [
         "../core/src"
       ],
+      "@ts-ioc/aop": [
+        "../aop/src"
+      ],
       "@ts-ioc/annotations":[
         "../annotations/src"
       ]

@@ -1,27 +1,6 @@
-import { IContainer, Type, Token } from '@ts-ioc/core';
+import { IContainer, Token } from '@ts-ioc/core';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 
-// /**
-//  * DI module type
-//  *
-//  * @export
-//  * @interface DIModuleType
-//  * @extends {Type<T>}
-//  * @template T
-//  */
-// export interface DIModuleType<T> extends Type<T> {
-//     __di?: IContainer;
-// }
-
-// /**
-//  * DI module type
-//  *
-//  * @export
-//  * @interface ModuleType
-//  * @extends {DIModuleType<any>}
-//  */
-// export interface ModuleType extends DIModuleType<any> {
-// }
 
 /**
  * ioc DI loaded modules.
