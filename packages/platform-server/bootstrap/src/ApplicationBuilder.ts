@@ -112,7 +112,7 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
                 return true;
             });
             if (!cfgmodeles) {
-                console.log('your app has not config file.');
+                console.log('no config file.');
             }
         }
 

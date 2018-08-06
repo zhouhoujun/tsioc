@@ -49,7 +49,7 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDec
  * @template T
  * @param {string} decorType
  * @param {(Token<IModuleBuilder> | IModuleBuilder)} [builder]
- * @param {(Token<IModuleBuilder<any>> | IModuleBuilder<any>)} [moduleBuilder]
+ * @param {(Token<IModuleBuilder<any>> | IModuleBuilder<any>)} [bootBuilder]
  * @param {(Token<IModuleBuilder<any>> | IModuleBuilder<any>)} [bootstrapBuilder]
  * @param {InjectToken<IApplication>} provideType default provide type.
  * @param {MetadataAdapter} [adapter]
@@ -59,8 +59,7 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDec
 export function createDIModuleDecorator<T extends DIModuleMetadata>(
     decorType: string,
     builder?: Token<IModuleBuilder<any>> | IModuleBuilder<any>,
-    moduleBuilder?: Token<IBootBuilder<any>> | IBootBuilder<any>,
-    bootstrapBuilder?: Token<IBootBuilder<any>> | IBootBuilder<any>,
+    bootBuilder?: Token<IBootBuilder<any>> | IBootBuilder<any>,
     provideType?: Token<any>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IDIModuleDecorator<T> {
@@ -92,11 +91,8 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
             if (builder && !metadata.builder) {
                 metadata.builder = builder;
             }
-            if (moduleBuilder && !metadata.moduleBuilder) {
-                metadata.moduleBuilder = moduleBuilder;
-            }
-            if (bootstrapBuilder && !metadata.bootstrapBuilder) {
-                metadata.bootstrapBuilder = bootstrapBuilder;
+            if (bootBuilder && !metadata.bootBuilder) {
+                metadata.bootBuilder = bootBuilder;
             }
             return metadata;
         }) as IDIModuleDecorator<T>;

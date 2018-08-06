@@ -52,12 +52,12 @@ export interface ModuleConfig<T> {
     builder?: Token<IModuleBuilder<any>> | IModuleBuilder<any>;
 
     /**
-     * module builder.
+     * module default boot builder.
      *
      * @type {(Token<IBootBuilder<T>> | IBootBuilder<T>)}
      * @memberof ModuleConfiguration
      */
-    moduleBuilder?: Token<IBootBuilder<T>> | IBootBuilder<T>;
+    bootBuilder?: Token<IBootBuilder<T>> | IBootBuilder<T>;
 
     /**
      * ioc container, the module defined in.
@@ -74,14 +74,6 @@ export interface ModuleConfig<T> {
      * @memberof ModuleConfiguration
      */
     bootstrap?: Token<T>;
-
-    /**
-     * set bootstrap builder.
-     *
-     * @type {(Token<IBootBuilder<T>> | IBootBuilder<T>)}
-     * @memberof ModuleConfiguration
-     */
-    bootstrapBuilder?: Token<IBootBuilder<T>> | IBootBuilder<T>;
 
 }
 

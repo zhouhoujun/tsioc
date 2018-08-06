@@ -71,7 +71,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      * @returns {IContainer}
      * @memberof ModuleBuilder
      */
-     getContainer(token: Token<T> | ModuleConfigure, defaultContainer?: IContainer, parent?: IContainer): IContainer {
+    getContainer(token: Token<T> | ModuleConfigure, defaultContainer?: IContainer, parent?: IContainer): IContainer {
         let container: IContainer;
         let pools = this.getPools();
         if (isToken(token)) {
@@ -170,31 +170,26 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      *
      * @param {(Token<T> | ModuleConfig<T>)} token
      * @param {(IContainer | LoadedModule)} [defaults]
+     * @param {*} [data]
      * @returns {Promise<T>}
      * @memberof ModuleBuilder
      */
-    async build(token: Token<T> | ModuleConfig<T>, defaults?: IContainer | LoadedModule): Promise<T> {
-        let loadmdl: LoadedModule;
-        if (defaults instanceof LoadedModule) {
-            loadmdl = defaults
-        } else {
-            loadmdl = await this.load(token, defaults);
-        }
-
+    async build(token: Token<T> | ModuleConfig<T>, defaults?: IContainer | LoadedModule, data?: any): Promise<T> {
+        let loadmdl = await this.loadByDefaults(token, defaults);
         let container = loadmdl.container;
         let cfg = loadmdl.moduleConfig;
         let builder = this.getBuilder(container, cfg);
         if (builder && builder !== this) {
-            return await builder.build(token, container);
+            return await builder.build(token, container, data);
         } else {
             let boot: Token<T> = loadmdl.moduleToken;
             if (!boot) {
-                let bootBuilder = this.getBootstrapBuilder(container, cfg.bootstrapBuilder);
-                let instance = await bootBuilder.buildByConfig(cfg);
+                let bootBuilder = this.getBootstrapBuilder(container, cfg.bootstrapBuilder || cfg.bootBuilder);
+                let instance = await bootBuilder.buildByConfig(cfg, data);
                 return instance;
             } else {
-                let bootbuilder = this.getBootstrapBuilder(container, cfg.moduleBuilder);
-                let instance = await bootbuilder.build(boot, cfg);
+                let bootbuilder = this.getBootstrapBuilder(container, cfg.bootBuilder);
+                let instance = await bootbuilder.build(boot, cfg, data);
                 let mdlInst = instance as MdlInstance<T>;
                 if (isFunction(mdlInst.mdOnInit)) {
                     mdlInst.mdOnInit(loadmdl);
@@ -208,22 +203,27 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     * bootstrap module's main.
     *
     * @param {(Token<T> | ModuleConfig<T>)} token
+    * @param {(IContainer | LoadedModule)} [defaults]
     * @param {*} [data]
-    * @param {IContainer} [defaultContainer]
     * @returns {Promise<MdlInstance<T>>}
     * @memberof ModuleBuilder
     */
-    async bootstrap(token: Token<T> | ModuleConfig<T>, data?: any, defaultContainer?: IContainer): Promise<any> {
-        let iocMd = await this.load(token, defaultContainer);
-        let md = await this.build(token, iocMd) as MdlInstance<T>;
+    async bootstrap(token: Token<T> | ModuleConfig<T>, defaults?: IContainer | LoadedModule, data?: any): Promise<any> {
+        let loadmdl = await this.loadByDefaults(token, defaults);
+        let cfg = loadmdl.moduleConfig;
+        let builder = this.getBuilder(loadmdl.container, cfg);
+        if (builder && builder !== this) {
+            return await builder.bootstrap(token, loadmdl, data);
+        }
+        let md = await this.build(token, loadmdl, data) as MdlInstance<T>;
         let bootInstance;
-        if (iocMd.moduleToken) {
+        if (loadmdl.moduleToken) {
             if (md && isFunction(md.btBeforeCreate)) {
-                md.btBeforeCreate(iocMd);
+                md.btBeforeCreate(loadmdl);
             }
 
-            let builder = this.getBootstrapBuilder(iocMd.container, iocMd.moduleConfig.bootstrapBuilder);
-            bootInstance = await builder.buildByConfig(iocMd.moduleConfig, data);
+            let builder = this.getBootstrapBuilder(loadmdl.container, cfg.bootstrapBuilder || cfg.bootBuilder);
+            bootInstance = await builder.buildByConfig(cfg, data);
 
             if (isFunction(md.btAfterCreate)) {
                 md.btAfterCreate(bootInstance);
@@ -240,6 +240,16 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         }
 
         return bootInstance;
+    }
+
+    protected async loadByDefaults(token: Token<T> | ModuleConfig<T>, defaults?: IContainer | LoadedModule): Promise<LoadedModule> {
+        let loadmdl: LoadedModule;
+        if (defaults instanceof LoadedModule) {
+            loadmdl = defaults;
+        } else {
+            loadmdl = await this.load(token, defaults);
+        }
+        return loadmdl;
     }
 
     protected getBuilder(container: IContainer, cfg: ModuleConfigure): IModuleBuilder<T> {
@@ -266,7 +276,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             }
         }
         if (isToken(bootBuilder)) {
-            builder = container.resolve(bootBuilder, { container: container });
+            builder = container.resolve(bootBuilder);
         } else if (bootBuilder instanceof BootBuilder) {
             builder = bootBuilder;
         }
@@ -278,7 +288,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
     protected getDefaultBootBuilder(container: IContainer): IBootBuilder<any> {
-        return container.resolve(BootBuilderToken, { container: container });
+        return container.resolve(BootBuilderToken);
     }
 
 
@@ -398,9 +408,10 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
     protected async registerExts(container: IContainer, config: ModuleConfigure): Promise<IContainer> {
-        // if (!container.has(BootModule)) {
-        //     container.register(BootModule);
-        // }
+        // register for each container.
+        if (!container.hasRegister(BootBuilder)) {
+            container.register(BootBuilder);
+        }
         return container;
     }
 

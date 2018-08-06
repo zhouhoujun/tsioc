@@ -37,6 +37,16 @@ export interface IBootBuilder<T> {
     container: IContainer;
 
     /**
+     * bootstrap ioc module.
+     *
+     * @param {(Token<T>|ModuleConfigure)} token
+     * @param {*} [data]
+     * @returns {Promise<T>}
+     * @memberof IBootstrapBuilder
+     */
+    build(token: Token<T>, config: ModuleConfigure, data?: any): Promise<T>;
+
+    /**
      * build
      *
      * @param {(Token<T> | ModuleConfigure))} config
@@ -47,14 +57,14 @@ export interface IBootBuilder<T> {
     buildByConfig(config: Token<T> | ModuleConfigure, data?: any): Promise<T>;
 
     /**
-     * bootstrap ioc module.
+     * get finally builder by token and config.
      *
-     * @param {(Token<T>|ModuleConfigure)} token
-     * @param {*} [data]
-     * @returns {Promise<T>}
-     * @memberof IBootstrapBuilder
+     * @param {Token<T>} token
+     * @param {ModuleConfigure} [config]
+     * @returns {IBootBuilder<T>}
+     * @memberof IBootBuilder
      */
-    build(token: Token<T>, config: ModuleConfigure, data?: any): Promise<T>;
+    getBuilder(token: Token<T>, config?: ModuleConfigure): IBootBuilder<T>;
 
     /**
      * get bootstrap token.

@@ -1,5 +1,5 @@
 import { IBootBuilder, BootBuilderToken } from './IBootBuilder';
-import { Singleton, Token, isToken, IContainer, Inject, ContainerToken, isClass } from '@ts-ioc/core';
+import { Singleton, Token, isToken, IContainer, isClass, Inject, ContainerToken } from '@ts-ioc/core';
 import { ModuleConfigure } from './ModuleConfigure';
 
 /**
@@ -12,31 +12,37 @@ import { ModuleConfigure } from './ModuleConfigure';
  */
 @Singleton(BootBuilderToken)
 export class BootBuilder<T> implements IBootBuilder<T> {
-    // /**
-    //  * ioc container.
-    //  *
-    //  * @type {IContainer}
-    //  * @memberof BootBuilder
-    //  */
-    // @Inject(ContainerToken)
-    // container: IContainer;
+    /**
+     * ioc container.
+     *
+     * @type {IContainer}
+     * @memberof BootBuilder
+     */
+    @Inject(ContainerToken)
+    public container: IContainer;
 
-    constructor(@Inject(ContainerToken) public container: IContainer) {
-
+    constructor() {
     }
 
     async build(token: Token<T>, config: ModuleConfigure, data?: any): Promise<T> {
-        let instance = await this.createInstance(token, data);
-        instance = await this.buildStrategy(instance, config);
-        return instance;
+        let builder = this.getBuilder(token, config);
+        if (builder !== this) {
+            return builder.build(token, config, data);
+        } else {
+            let instance = await this.createInstance(token, config, data);
+            instance = await this.buildStrategy(instance, config);
+            return instance;
+        }
     }
 
     async buildByConfig(config: Token<T> | ModuleConfigure, data?: any): Promise<any> {
+        let token: Token<T>;
         if (isToken(config)) {
-            return this.build(config, null, data);
+            token = config;
+            return this.build(token, this.getTokenMetaConfig(token), data);
         } else {
-            let token = this.getBootstrapToken(config);
-            return this.build(token, config, data);
+            token = this.getBootstrapToken(config);
+            return this.build(token, this.getTokenMetaConfig(token, config), data);
         }
     }
 
@@ -57,6 +63,9 @@ export class BootBuilder<T> implements IBootBuilder<T> {
         return instance;
     }
 
+    getBuilder(token: Token<T>, config?: ModuleConfigure): IBootBuilder<T> {
+        return this;
+    }
 
     /**
      * bundle instance via config.
@@ -75,16 +84,11 @@ export class BootBuilder<T> implements IBootBuilder<T> {
         return config.bootstrap;
     }
 
-    protected resolveToken(token: Token<T>, data?: any) {
-        return this.container.resolve(token, data);
+    protected getTokenMetaConfig(token: Token<T>, config?: ModuleConfigure): ModuleConfigure {
+        return config;
     }
 
-    protected getBuilderViaConfig(builder: Token<IBootBuilder<T>> | IBootBuilder<T>, container: IContainer): IBootBuilder<T> {
-        if (isToken(builder)) {
-            return container.resolve(builder);
-        } else if (builder instanceof BootBuilder) {
-            return builder;
-        }
-        return null;
+    protected resolveToken(token: Token<T>, data?: any) {
+        return this.container.resolve(token, data);
     }
 }

@@ -78,21 +78,22 @@ export interface IModuleBuilder<T> {
      *
      * @param {(Token<T> | ModuleConfig<T>)} token
      * @param {(IContainer | LoadedModule)} [defaults]
+     * @param {*} [data]
      * @returns {Promise<T>}
      * @memberof IModuleBuilder
      */
-    build(token: Token<T> | ModuleConfig<T>, defaults?: IContainer | LoadedModule): Promise<T>;
+    build(token: Token<T> | ModuleConfig<T>, defaults?: IContainer | LoadedModule, data?: any): Promise<T>;
 
     /**
      * bootstrap module's main.
      *
      * @param {(Token<T> | ModuleConfig<T>)} token
+     * @param {(IContainer | LoadedModule)} [defaults]
      * @param {*} [data]
-     * @param {IContainer} [defaultContainer]
      * @returns {Promise<MdlInstance<T>>}
      * @memberof IGModuleBuilder
      */
-    bootstrap(token: Token<T> | ModuleConfig<T>, data?: any, defaultContainer?: IContainer): Promise<any>;
+    bootstrap(token: Token<T> | ModuleConfig<T>, defaults?: IContainer | LoadedModule, data?: any): Promise<any>;
 
     /**
      * import di module.
