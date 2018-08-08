@@ -7,7 +7,8 @@ export * from './ModuleBuilder';
 export * from './ModuleConfigure';
 export * from './ContainerPool';
 export * from './BootModule';
-export * from './IBootBuilder';
-export * from './BootBuilder';
+export * from './ITypeBuilder';
+export * from './TypeBuilder';
+export * from './TypeConfigure';
 export * from './ModuleType';
 

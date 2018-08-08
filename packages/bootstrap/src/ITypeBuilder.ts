@@ -1,5 +1,5 @@
 import { Registration, IContainer, Token } from '@ts-ioc/core';
-import { ModuleConfigure } from './ModuleConfigure';
+import { TypeConfigure } from './TypeConfigure';
 
 /**
  * inject token Bootstrap builder.
@@ -9,7 +9,7 @@ import { ModuleConfigure } from './ModuleConfigure';
  * @extends {Registration<T>}
  * @template T
  */
-export class InjectBootBuilder<T extends IBootBuilder<any>> extends Registration<T> {
+export class InjectBootBuilder<T extends ITypeBuilder<any>> extends Registration<T> {
     constructor(desc: string) {
         super('DI_ModuleBootstrap', desc);
     }
@@ -18,7 +18,7 @@ export class InjectBootBuilder<T extends IBootBuilder<any>> extends Registration
 /**
  * token bootstrap builder token.
  */
-export const BootBuilderToken = new InjectBootBuilder<AnyBootstrapBuilder>('');
+export const TypeBuilderToken = new InjectBootBuilder<AnyBootstrapBuilder>('');
 
 /**
  * token bootstrap builder.
@@ -26,7 +26,7 @@ export const BootBuilderToken = new InjectBootBuilder<AnyBootstrapBuilder>('');
  * @export
  * @interface IBootBuilder
  */
-export interface IBootBuilder<T> {
+export interface ITypeBuilder<T> {
 
     /**
      * container.
@@ -37,65 +37,65 @@ export interface IBootBuilder<T> {
     container: IContainer;
 
     /**
-     * bootstrap ioc module.
+     * build token type via config.
      *
-     * @param {(Token<T>|ModuleConfigure)} token
+     * @param {Token<T>} token
+     * @param {TypeConfigure<T>} [config]
      * @param {*} [data]
      * @returns {Promise<T>}
-     * @memberof IBootstrapBuilder
+     * @memberof ITypeBuilder
      */
-    build(token: Token<T>, config: ModuleConfigure, data?: any): Promise<T>;
+    build(token: Token<T>, config?: TypeConfigure<T>, data?: any): Promise<T>;
 
     /**
-     * build
+     * build instance via type config.
      *
-     * @param {(Token<T> | ModuleConfigure))} config
+     * @param {(Token<T> | TypeConfigure<T>)} config
      * @param {*} [data]
      * @returns {Promise<T>}
      * @memberof IBootBuilder
      */
-    buildByConfig(config: Token<T> | ModuleConfigure, data?: any): Promise<T>;
+    buildByConfig(config: Token<T> | TypeConfigure<T>, data?: any): Promise<T>;
 
     /**
      * get finally builder by token and config.
      *
-     * @param {Token<T>} token
-     * @param {ModuleConfigure} [config]
-     * @returns {IBootBuilder<T>}
+     * @param {TypeConfigure<T>} [config]
+     * @returns {ITypeBuilder<T>}
      * @memberof IBootBuilder
      */
-    getBuilder(token: Token<T>, config?: ModuleConfigure): IBootBuilder<T>;
+    getBuilder(config?: TypeConfigure<T>): ITypeBuilder<T>;
 
     /**
      * get bootstrap token.
      *
-     * @param {ModuleConfigure} config
+     * @param {TypeConfigure<T>} config
      * @returns {Token<T>}
      * @memberof IBootstrapBuilder
      */
-    getBootstrapToken(config: ModuleConfigure): Token<T>;
+    getBootstrapToken(config: TypeConfigure<T>): Token<T>;
 
     /**
      * create token instance.
      *
      * @param {Token<T>} token
-     * @param {ModuleConfigure} config
+     * @param {TypeConfigure<T>} config
      * @param {*} [data]
      * @returns {Promise<T>}
      * @memberof IBootstrapBuilder
      */
-    createInstance(token: Token<T>, config: ModuleConfigure, data?: any): Promise<T>;
+    createInstance(token: Token<T>, config: TypeConfigure<T>, data?: any): Promise<T>;
 
     /**
      * bundle bootstrap instance via config.
      *
      * @param {T} instance
-     * @param {ModuleConfigure} config
+     * @param {TypeConfigure<T>} config
      * @param {IContainer} [container]
      * @returns {Promise<T>}
      * @memberof IBootstrapBuilder
      */
-    buildStrategy(instance: T, config: ModuleConfigure): Promise<T>;
+    buildStrategy(instance: T, config: TypeConfigure<T>): Promise<T>;
 }
 
 /**
@@ -103,18 +103,18 @@ export interface IBootBuilder<T> {
  *
  * @export
  * @interface AnyBootstrapBuilder
- * @extends {IBootBuilder<any>}
+ * @extends {ITypeBuilder<any>}
  */
-export interface AnyBootstrapBuilder extends IBootBuilder<any> {
+export interface AnyBootstrapBuilder extends ITypeBuilder<any> {
     /**
      * bootstrap ioc module.
      *
      * @template T
      * @param {Token<T>} token
-     * @param {ModuleConfigure} config
+     * @param {TypeConfigure<T>} config
      * @param {*} [data]
      * @returns {Promise<T>}
      * @memberof AnyBootstrapBuilder
      */
-    build<T>(token: Token<T>, config: ModuleConfigure, data?: any): Promise<T>;
+    build<T>(token: Token<T>, config: TypeConfigure<T>, data?: any): Promise<T>;
 }

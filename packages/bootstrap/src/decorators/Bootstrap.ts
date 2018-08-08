@@ -1,15 +1,15 @@
 import {
     ClassMetadata, Token, MetadataAdapter,
-    MetadataExtends, ITypeDecorator
+    MetadataExtends, ITypeDecorator, Type, isClass, isFunction
 } from '@ts-ioc/core';
 import { AppConfigure } from '../AppConfigure';
-import { IBootBuilder } from '../IBootBuilder';
-import { ApplicationBuilderToken, IApplicationBuilder } from '../IApplicationBuilder';
+import { ITypeBuilder } from '../ITypeBuilder';
+import { IApplicationBuilder } from '../IApplicationBuilder';
 import { createDIModuleDecorator } from './DIModule';
 
 
 export interface BootstrapMetadata extends AppConfigure, ClassMetadata {
-    decorType?: string;
+    builder: Type<IApplicationBuilder<any>> | IApplicationBuilder<any>;
 }
 
 
@@ -38,23 +38,36 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
  *
  * @export
  * @template T
- * @param {string} decorType
- * @param {(Token<IApplicationBuilder> | IApplicationBuilder)} [builder]
- * @param {(Token<IBootBuilder<any>> | IBootBuilder<Tany>)} [bootBuilder]
- * @param {InjectToken<IApplication>} provideType default provide type.
+ * @param {string} name
+ * @param {(Token<IApplicationBuilder> | IApplicationBuilder)} [builder] default builder
+ * @param {(Token<ITypeBuilder<any>> | ITypeBuilder<Tany>)} [typeBuilder] default type builder.
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IBootstrapDecorator<T>}
  */
 export function createBootstrapDecorator<T extends BootstrapMetadata>(
-    decorType: string,
-    builder?: Token<IApplicationBuilder<any>> | IApplicationBuilder<any>,
-    bootBuilder?: Token<IBootBuilder<any>> | IBootBuilder<any>,
-    provideType?: Token<any>,
+    name: string,
+    builder?: Type<IApplicationBuilder<any>> | IApplicationBuilder<any>,
+    typeBuilder?: Token<ITypeBuilder<any>> | ITypeBuilder<any>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IBootstrapDecorator<T> {
 
-    return createDIModuleDecorator<BootstrapMetadata>(decorType, builder, bootBuilder, provideType, adapter, metadataExtends) as IBootstrapDecorator<T>;
+    return createDIModuleDecorator<BootstrapMetadata>(name, builder, typeBuilder, adapter, (metadata: T) => {
+        if (metadataExtends) {
+            metadataExtends(metadata);
+        }
+        setTimeout(() => {
+            let builderType = metadata.builder;
+            let builder: IApplicationBuilder<any>;
+            if (isClass(builderType)) {
+                builder = isFunction(builderType['create']) ? builderType['create']() : new builderType();
+            } else {
+                builder = builderType as IApplicationBuilder<any>;
+            }
+            builder.bootstrap(metadata.type);
+        }, 800)
+        return metadata;
+    }) as IBootstrapDecorator<T>;
 }
 
 /**
@@ -62,4 +75,4 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
  *
  * @Bootstrap
  */
-export const Bootstrap: IBootstrapDecorator<BootstrapMetadata> = createBootstrapDecorator<BootstrapMetadata>('bootstrap', ApplicationBuilderToken);
+export const Bootstrap: IBootstrapDecorator<BootstrapMetadata> = createBootstrapDecorator<BootstrapMetadata>('Bootstrap');

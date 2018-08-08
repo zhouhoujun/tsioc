@@ -15,6 +15,51 @@ function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
+var Build = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * create type builder decorator
+ *
+ * @export
+ * @template T
+ * @param {string} name
+ * @param {string} [decorType]
+ * @param {(Token<ITypeBuilder<any>> | ITypeBuilder<any>)} [builder]
+ * @param {MetadataAdapter} [adapter]
+ * @param {MetadataExtends<T>} [metadataExtends]
+ * @returns {IBuildDecorator<T>}
+ */
+function createBuildDecorator(name, builder, adapter, metadataExtends) {
+    return core_1.createClassDecorator(name, function (args) {
+        if (adapter) {
+            adapter(args);
+        }
+    }, function (metadata) {
+        if (metadataExtends) {
+            metadata = metadataExtends(metadata);
+        }
+        if (builder && !metadata.typeBuilder) {
+            metadata.typeBuilder = builder;
+        }
+        return metadata;
+    });
+}
+exports.createBuildDecorator = createBuildDecorator;
+/**
+ * Build decorator, use to define class build way via config.
+ *
+ * @Build
+ */
+exports.Build = createBuildDecorator('Build');
+
+
+});
+
+unwrapExports(Build);
+var Build_1 = Build.createBuildDecorator;
+var Build_2 = Build.Build;
+
 var DIModule = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -23,17 +68,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
  *
  * @export
  * @template T
- * @param {string} decorType
+ * @param {string} name decorator name.
  * @param {(Token<IModuleBuilder> | IModuleBuilder)} [builder]
- * @param {(Token<IModuleBuilder<any>> | IModuleBuilder<any>)} [moduleBuilder]
- * @param {(Token<IModuleBuilder<any>> | IModuleBuilder<any>)} [bootstrapBuilder]
- * @param {InjectToken<IApplication>} provideType default provide type.
+ * @param {(Token<ITypeBuilder<any>> | ITypeBuilder<any>)} [typeBuilder]
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IDIModuleDecorator<T>}
  */
-function createDIModuleDecorator(decorType, builder, moduleBuilder, bootstrapBuilder, provideType, adapter, metadataExtends) {
-    return core_1.createClassDecorator('DIModule', function (args) {
+function createDIModuleDecorator(name, builder, typeBuilder, adapter, metadataExtends) {
+    return core_1.createClassDecorator(name, function (args) {
         if (adapter) {
             adapter(args);
         }
@@ -50,17 +93,12 @@ function createDIModuleDecorator(decorType, builder, moduleBuilder, bootstrapBui
                 metadata.name = metadata.type.name;
             }
         }
-        metadata.provide = metadata.provide || provideType;
-        metadata.alias = metadata.alias || metadata.name;
-        metadata.decorType = decorType;
+        metadata.decorType = name;
         if (builder && !metadata.builder) {
             metadata.builder = builder;
         }
-        if (moduleBuilder && !metadata.moduleBuilder) {
-            metadata.moduleBuilder = moduleBuilder;
-        }
-        if (bootstrapBuilder && !metadata.bootstrapBuilder) {
-            metadata.bootstrapBuilder = bootstrapBuilder;
+        if (typeBuilder && !metadata.typeBuilder) {
+            metadata.typeBuilder = typeBuilder;
         }
         return metadata;
     });
@@ -71,7 +109,7 @@ exports.createDIModuleDecorator = createDIModuleDecorator;
  *
  * @DIModule
  */
-exports.DIModule = createDIModuleDecorator('module');
+exports.DIModule = createDIModuleDecorator('DIModule');
 
 
 });
@@ -79,17 +117,6 @@ exports.DIModule = createDIModuleDecorator('module');
 unwrapExports(DIModule);
 var DIModule_1 = DIModule.createDIModuleDecorator;
 var DIModule_2 = DIModule.DIModule;
-
-var IApplicationBuilder = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-exports.ApplicationBuilderToken = new core_1.InjectToken('DI_AppBuilder');
-
-
-});
-
-unwrapExports(IApplicationBuilder);
-var IApplicationBuilder_1 = IApplicationBuilder.ApplicationBuilderToken;
 
 var Bootstrap = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -100,17 +127,31 @@ Object.defineProperty(exports, "__esModule", { value: true });
  *
  * @export
  * @template T
- * @param {string} decorType
- * @param {(Token<IApplicationBuilder> | IApplicationBuilder)} [builder]
- * @param {(Token<IBootBuilder<any>> | IBootBuilder<Tany>)} [moduleBuilder]
- * @param {(Token<IBootBuilder<any>> | IBootBuilder<Tany>)} [bootstrapBuilder]
- * @param {InjectToken<IApplication>} provideType default provide type.
+ * @param {string} name
+ * @param {(Token<IApplicationBuilder> | IApplicationBuilder)} [builder] default builder
+ * @param {(Token<ITypeBuilder<any>> | ITypeBuilder<Tany>)} [typeBuilder] default type builder.
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IBootstrapDecorator<T>}
  */
-function createBootstrapDecorator(decorType, builder, moduleBuilder, bootstrapBuilder, provideType, adapter, metadataExtends) {
-    return DIModule.createDIModuleDecorator(decorType, builder, moduleBuilder, bootstrapBuilder, provideType, adapter, metadataExtends);
+function createBootstrapDecorator(name, builder, typeBuilder, adapter, metadataExtends) {
+    return DIModule.createDIModuleDecorator(name, builder, typeBuilder, adapter, function (metadata) {
+        if (metadataExtends) {
+            metadataExtends(metadata);
+        }
+        setTimeout(function () {
+            var builderType = metadata.builder;
+            var builder;
+            if (core_1.isClass(builderType)) {
+                builder = core_1.isFunction(builderType['create']) ? builderType['create']() : new builderType();
+            }
+            else {
+                builder = builderType;
+            }
+            builder.bootstrap(metadata.type);
+        }, 800);
+        return metadata;
+    });
 }
 exports.createBootstrapDecorator = createBootstrapDecorator;
 /**
@@ -118,7 +159,7 @@ exports.createBootstrapDecorator = createBootstrapDecorator;
  *
  * @Bootstrap
  */
-exports.Bootstrap = createBootstrapDecorator('bootstrap', IApplicationBuilder.ApplicationBuilderToken);
+exports.Bootstrap = createBootstrapDecorator('Bootstrap');
 
 
 });
@@ -130,6 +171,7 @@ var Bootstrap_2 = Bootstrap.Bootstrap;
 var decorators = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
+tslib_1.__exportStar(Build, exports);
 tslib_1.__exportStar(DIModule, exports);
 tslib_1.__exportStar(Bootstrap, exports);
 
@@ -255,7 +297,7 @@ exports.LoadedModule = LoadedModule;
 unwrapExports(ModuleType);
 var ModuleType_1 = ModuleType.LoadedModule;
 
-var IBootBuilder = createCommonjsModule(function (module, exports) {
+var ITypeBuilder = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
@@ -279,17 +321,18 @@ exports.InjectBootBuilder = InjectBootBuilder;
 /**
  * token bootstrap builder token.
  */
-exports.BootBuilderToken = new InjectBootBuilder('');
+exports.TypeBuilderToken = new InjectBootBuilder('');
 
 
 });
 
-unwrapExports(IBootBuilder);
-var IBootBuilder_1 = IBootBuilder.InjectBootBuilder;
-var IBootBuilder_2 = IBootBuilder.BootBuilderToken;
+unwrapExports(ITypeBuilder);
+var ITypeBuilder_1 = ITypeBuilder.InjectBootBuilder;
+var ITypeBuilder_2 = ITypeBuilder.TypeBuilderToken;
 
-var BootBuilder_1 = createCommonjsModule(function (module, exports) {
+var TypeBuilder_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -298,19 +341,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
  *
  * @export
  * @class BootBuilder
- * @implements {implements IBootBuilder<T>}
+ * @implements {implements ITypeBuilder<T>}
  * @template T
  */
-var BootBuilder = /** @class */ (function () {
-    function BootBuilder() {
+var TypeBuilder = /** @class */ (function () {
+    function TypeBuilder() {
     }
-    BootBuilder.prototype.build = function (token, config, data) {
+    TypeBuilder_1 = TypeBuilder;
+    TypeBuilder.prototype.build = function (token, config, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var builder, instance;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        builder = this.getBuilder(token, config);
+                        if (!config) {
+                            config = this.getTokenMetaConfig(token);
+                        }
+                        builder = this.getBuilder(config);
                         if (!(builder !== this)) return [3 /*break*/, 1];
                         return [2 /*return*/, builder.build(token, config, data)];
                     case 1: return [4 /*yield*/, this.createInstance(token, config, data)];
@@ -324,7 +371,7 @@ var BootBuilder = /** @class */ (function () {
             });
         });
     };
-    BootBuilder.prototype.buildByConfig = function (config, data) {
+    TypeBuilder.prototype.buildByConfig = function (config, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var token;
             return tslib_1.__generator(this, function (_a) {
@@ -340,7 +387,7 @@ var BootBuilder = /** @class */ (function () {
             });
         });
     };
-    BootBuilder.prototype.createInstance = function (token, config, data) {
+    TypeBuilder.prototype.createInstance = function (token, config, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var instance;
             return tslib_1.__generator(this, function (_a) {
@@ -361,52 +408,94 @@ var BootBuilder = /** @class */ (function () {
             });
         });
     };
-    BootBuilder.prototype.getBuilder = function (token, config) {
+    TypeBuilder.prototype.getBuilder = function (config) {
+        if (config && config.typeBuilder) {
+            if (core_1.isClass(config.typeBuilder)) {
+                if (!this.container.has(config.typeBuilder)) {
+                    this.container.register(config.typeBuilder);
+                }
+            }
+            if (core_1.isToken(config.typeBuilder)) {
+                return this.container.resolve(config.typeBuilder);
+            }
+            else if (config.typeBuilder instanceof TypeBuilder_1) {
+                return config.typeBuilder;
+            }
+        }
         return this;
     };
     /**
      * bundle instance via config.
      *
      * @param {T} instance
-     * @param {ModuleConfigure} config
+     * @param {TypeConfigure} config
      * @param {IContainer} [container]
      * @returns {Promise<T>}
      * @memberof BootBuilder
      */
-    BootBuilder.prototype.buildStrategy = function (instance, config) {
+    TypeBuilder.prototype.buildStrategy = function (instance, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             return tslib_1.__generator(this, function (_a) {
                 return [2 /*return*/, instance];
             });
         });
     };
-    BootBuilder.prototype.getBootstrapToken = function (config) {
+    TypeBuilder.prototype.getBootstrapToken = function (config) {
         return config.bootstrap;
     };
-    BootBuilder.prototype.getTokenMetaConfig = function (token, config) {
-        return config;
+    TypeBuilder.prototype.getTokenMetaConfig = function (token, config) {
+        var cfg;
+        if (core_1.isClass(token)) {
+            cfg = this.getMetaConfig(token);
+        }
+        else if (core_1.isToken(token)) {
+            var tokenType = this.container ? this.container.getTokenImpl(token) : token;
+            if (core_1.isClass(tokenType)) {
+                cfg = this.getMetaConfig(tokenType);
+            }
+        }
+        if (cfg) {
+            return core_1.lang.assign({}, cfg, config || {});
+        }
+        else {
+            return config || {};
+        }
     };
-    BootBuilder.prototype.resolveToken = function (token, data) {
+    TypeBuilder.prototype.getDecorator = function () {
+        return decorators.Build.toString();
+    };
+    TypeBuilder.prototype.getMetaConfig = function (token) {
+        var decorator = this.getDecorator();
+        if (core_1.hasOwnClassMetadata(decorator, token)) {
+            var metas = core_1.getTypeMetadata(decorator, token);
+            if (metas && metas.length) {
+                return metas[0];
+            }
+        }
+        return null;
+    };
+    TypeBuilder.prototype.resolveToken = function (token, data) {
         return this.container.resolve(token, data);
     };
-    BootBuilder.classAnnations = { "name": "BootBuilder", "params": { "constructor": [], "build": ["token", "config", "data"], "buildByConfig": ["config", "data"], "createInstance": ["token", "config", "data"], "getBuilder": ["token", "config"], "buildStrategy": ["instance", "config"], "getBootstrapToken": ["config"], "getTokenMetaConfig": ["token", "config"], "resolveToken": ["token", "data"] } };
+    var TypeBuilder_1;
+    TypeBuilder.classAnnations = { "name": "TypeBuilder", "params": { "constructor": [], "build": ["token", "config", "data"], "buildByConfig": ["config", "data"], "createInstance": ["token", "config", "data"], "getBuilder": ["config"], "buildStrategy": ["instance", "config"], "getBootstrapToken": ["config"], "getTokenMetaConfig": ["token", "config"], "getDecorator": [], "getMetaConfig": ["token"], "resolveToken": ["token", "data"] } };
     tslib_1.__decorate([
         core_1.Inject(core_1.ContainerToken),
         tslib_1.__metadata("design:type", Object)
-    ], BootBuilder.prototype, "container", void 0);
-    BootBuilder = tslib_1.__decorate([
-        core_1.Singleton(IBootBuilder.BootBuilderToken),
+    ], TypeBuilder.prototype, "container", void 0);
+    TypeBuilder = TypeBuilder_1 = tslib_1.__decorate([
+        core_1.Singleton(ITypeBuilder.TypeBuilderToken),
         tslib_1.__metadata("design:paramtypes", [])
-    ], BootBuilder);
-    return BootBuilder;
+    ], TypeBuilder);
+    return TypeBuilder;
 }());
-exports.BootBuilder = BootBuilder;
+exports.TypeBuilder = TypeBuilder;
 
 
 });
 
-unwrapExports(BootBuilder_1);
-var BootBuilder_2 = BootBuilder_1.BootBuilder;
+unwrapExports(TypeBuilder_1);
+var TypeBuilder_2 = TypeBuilder_1.TypeBuilder;
 
 var ContainerPool_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -650,13 +739,13 @@ var ModuleBuilder = /** @class */ (function () {
                     case 3:
                         boot = loadmdl.moduleToken;
                         if (!!boot) return [3 /*break*/, 5];
-                        bootBuilder = this.getBootstrapBuilder(container, cfg.bootstrapBuilder || cfg.moduleBuilder);
+                        bootBuilder = this.getTypeBuilder(container, cfg.typeBuilder);
                         return [4 /*yield*/, bootBuilder.buildByConfig(cfg, data)];
                     case 4:
                         instance = _a.sent();
                         return [2 /*return*/, instance];
                     case 5:
-                        bootbuilder = this.getBootstrapBuilder(container, cfg.moduleBuilder);
+                        bootbuilder = this.getTypeBuilder(container, cfg.typeBuilder);
                         return [4 /*yield*/, bootbuilder.build(boot, cfg, data)];
                     case 6:
                         instance = _a.sent();
@@ -694,11 +783,12 @@ var ModuleBuilder = /** @class */ (function () {
                     case 3: return [4 /*yield*/, this.build(token, loadmdl, data)];
                     case 4:
                         md = _a.sent();
+                        bootInstance = void 0;
                         if (!loadmdl.moduleToken) return [3 /*break*/, 8];
                         if (md && core_1.isFunction(md.btBeforeCreate)) {
                             md.btBeforeCreate(loadmdl);
                         }
-                        builder_1 = this.getBootstrapBuilder(loadmdl.container, cfg.bootstrapBuilder || cfg.moduleBuilder);
+                        builder_1 = this.getTypeBuilder(loadmdl.container, cfg.typeBuilder);
                         return [4 /*yield*/, builder_1.buildByConfig(cfg, data)];
                     case 5:
                         bootInstance = _a.sent();
@@ -756,26 +846,26 @@ var ModuleBuilder = /** @class */ (function () {
         }
         return builder;
     };
-    ModuleBuilder.prototype.getBootstrapBuilder = function (container, bootBuilder) {
+    ModuleBuilder.prototype.getTypeBuilder = function (container, typeBuilder) {
         var builder;
-        if (core_1.isClass(bootBuilder)) {
-            if (!container.has(bootBuilder)) {
-                container.register(bootBuilder);
+        if (core_1.isClass(typeBuilder)) {
+            if (!container.has(typeBuilder)) {
+                container.register(typeBuilder);
             }
         }
-        if (core_1.isToken(bootBuilder)) {
-            builder = container.resolve(bootBuilder);
+        if (core_1.isToken(typeBuilder)) {
+            builder = container.resolve(typeBuilder);
         }
-        else if (bootBuilder instanceof BootBuilder_1.BootBuilder) {
-            builder = bootBuilder;
+        else if (typeBuilder instanceof TypeBuilder_1.TypeBuilder) {
+            builder = typeBuilder;
         }
         if (!builder) {
-            builder = this.getDefaultBootBuilder(container);
+            builder = this.getDefaultTypeBuilder(container);
         }
         return builder;
     };
-    ModuleBuilder.prototype.getDefaultBootBuilder = function (container) {
-        return container.resolve(IBootBuilder.BootBuilderToken);
+    ModuleBuilder.prototype.getDefaultTypeBuilder = function (container) {
+        return container.resolve(ITypeBuilder.TypeBuilderToken);
     };
     ModuleBuilder.prototype.importModule = function (token, container) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
@@ -942,8 +1032,8 @@ var ModuleBuilder = /** @class */ (function () {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             return tslib_1.__generator(this, function (_a) {
                 // register for each container.
-                if (!container.hasRegister(BootBuilder_1.BootBuilder)) {
-                    container.register(BootBuilder_1.BootBuilder);
+                if (!container.hasRegister(TypeBuilder_1.TypeBuilder)) {
+                    container.register(TypeBuilder_1.TypeBuilder);
                 }
                 return [2 /*return*/, container];
             });
@@ -1057,7 +1147,7 @@ var ModuleBuilder = /** @class */ (function () {
         return tokens;
     };
     var ModuleBuilder_1;
-    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getPools": [], "setPools": ["pools"], "regDefaultContainer": [], "getContainer": ["token", "defaultContainer", "parent"], "setParent": ["container", "parent"], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "load": ["token", "defaultContainer", "parent"], "build": ["token", "defaults", "data"], "bootstrap": ["token", "defaults", "data"], "loadByDefaults": ["token", "defaults"], "getBuilder": ["container", "cfg"], "getBootstrapBuilder": ["container", "bootBuilder"], "getDefaultBootBuilder": ["container"], "importModule": ["token", "container"], "getDecorator": [], "getConfigure": ["token", "container"], "registerDepdences": ["container", "config"], "getBootstrapToken": ["cfg"], "importConfigExports": ["container", "providerContainer", "cfg"], "registerConfgureDepds": ["container", "config"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getPools": [], "setPools": ["pools"], "regDefaultContainer": [], "getContainer": ["token", "defaultContainer", "parent"], "setParent": ["container", "parent"], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "load": ["token", "defaultContainer", "parent"], "build": ["token", "defaults", "data"], "bootstrap": ["token", "defaults", "data"], "loadByDefaults": ["token", "defaults"], "getBuilder": ["container", "cfg"], "getTypeBuilder": ["container", "typeBuilder"], "getDefaultTypeBuilder": ["container"], "importModule": ["token", "container"], "getDecorator": [], "getConfigure": ["token", "container"], "registerDepdences": ["container", "config"], "getBootstrapToken": ["cfg"], "importConfigExports": ["container", "providerContainer", "cfg"], "registerConfgureDepds": ["container", "config"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
     tslib_1.__decorate([
         core_1.Inject(core_1.ContainerBuilderToken),
         tslib_1.__metadata("design:type", Object)
@@ -1253,6 +1343,17 @@ exports.DefaultApplicationBuilder = DefaultApplicationBuilder;
 unwrapExports(ApplicationBuilder);
 var ApplicationBuilder_1 = ApplicationBuilder.DefaultApplicationBuilder;
 
+var IApplicationBuilder = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+exports.ApplicationBuilderToken = new core_1.InjectToken('DI_AppBuilder');
+
+
+});
+
+unwrapExports(IApplicationBuilder);
+var IApplicationBuilder_1 = IApplicationBuilder.ApplicationBuilderToken;
+
 var D__workspace_github_tsioc_packages_bootstrap_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -1264,8 +1365,8 @@ tslib_1.__exportStar(IModuleBuilder, exports);
 tslib_1.__exportStar(ModuleBuilder_1, exports);
 tslib_1.__exportStar(ContainerPool_1, exports);
 tslib_1.__exportStar(BootModule_1, exports);
-tslib_1.__exportStar(IBootBuilder, exports);
-tslib_1.__exportStar(BootBuilder_1, exports);
+tslib_1.__exportStar(ITypeBuilder, exports);
+tslib_1.__exportStar(TypeBuilder_1, exports);
 tslib_1.__exportStar(ModuleType, exports);
 
 

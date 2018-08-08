@@ -1,7 +1,7 @@
 import { createClassDecorator, ClassMetadata, Token, MetadataAdapter, MetadataExtends, ITypeDecorator, isClass } from '@ts-ioc/core';
 import { IModuleBuilder } from '../IModuleBuilder';
 import { ModuleConfig } from '../ModuleConfigure';
-import { IBootBuilder } from '../IBootBuilder';
+import { ITypeBuilder } from '../ITypeBuilder';
 
 /**
  * DI module metadata.
@@ -47,24 +47,21 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDec
  *
  * @export
  * @template T
- * @param {string} decorType
+ * @param {string} name decorator name.
  * @param {(Token<IModuleBuilder> | IModuleBuilder)} [builder]
- * @param {(Token<IModuleBuilder<any>> | IModuleBuilder<any>)} [bootBuilder]
- * @param {(Token<IModuleBuilder<any>> | IModuleBuilder<any>)} [bootstrapBuilder]
- * @param {InjectToken<IApplication>} provideType default provide type.
+ * @param {(Token<ITypeBuilder<any>> | ITypeBuilder<any>)} [typeBuilder]
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IDIModuleDecorator<T>}
  */
 export function createDIModuleDecorator<T extends DIModuleMetadata>(
-    decorType: string,
+    name: string,
     builder?: Token<IModuleBuilder<any>> | IModuleBuilder<any>,
-    bootBuilder?: Token<IBootBuilder<any>> | IBootBuilder<any>,
-    provideType?: Token<any>,
+    typeBuilder?: Token<ITypeBuilder<any>> | ITypeBuilder<any>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IDIModuleDecorator<T> {
 
-    return createClassDecorator<DIModuleMetadata>('DIModule',
+    return createClassDecorator<DIModuleMetadata>(name,
         args => {
             if (adapter) {
                 adapter(args);
@@ -84,15 +81,12 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
                 }
             }
 
-            metadata.provide = metadata.provide || provideType;
-            metadata.alias = metadata.alias || metadata.name;
-
-            metadata.decorType = decorType;
+            metadata.decorType = name;
             if (builder && !metadata.builder) {
                 metadata.builder = builder;
             }
-            if (bootBuilder && !metadata.bootBuilder) {
-                metadata.bootBuilder = bootBuilder;
+            if (typeBuilder && !metadata.typeBuilder) {
+                metadata.typeBuilder = typeBuilder;
             }
             return metadata;
         }) as IDIModuleDecorator<T>;
@@ -103,4 +97,4 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
  *
  * @DIModule
  */
-export const DIModule: IDIModuleDecorator<DIModuleMetadata> = createDIModuleDecorator<DIModuleMetadata>('module');
+export const DIModule: IDIModuleDecorator<DIModuleMetadata> = createDIModuleDecorator<DIModuleMetadata>('DIModule');
