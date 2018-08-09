@@ -3271,7 +3271,6 @@ var BindParameterProviderAction = /** @class */ (function (_super) {
         return _super.call(this, CoreActions_1.CoreActions.bindParameterProviders) || this;
     }
     BindParameterProviderAction.prototype.working = function (container, data) {
-        var target = data.target;
         var type = data.targetType;
         var propertyKey = data.propertyKey;
         var lifeScope = container.getLifeScope();
