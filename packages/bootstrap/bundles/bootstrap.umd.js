@@ -309,25 +309,25 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @extends {Registration<T>}
  * @template T
  */
-var InjectBootBuilder = /** @class */ (function (_super) {
-    tslib_1.__extends(InjectBootBuilder, _super);
-    function InjectBootBuilder(desc) {
-        return _super.call(this, 'DI_ModuleBootstrap', desc) || this;
+var InjectTypeBuilder = /** @class */ (function (_super) {
+    tslib_1.__extends(InjectTypeBuilder, _super);
+    function InjectTypeBuilder(desc) {
+        return _super.call(this, 'DI_TypeBuilder', desc) || this;
     }
-    InjectBootBuilder.classAnnations = { "name": "InjectBootBuilder", "params": { "constructor": ["desc"] } };
-    return InjectBootBuilder;
+    InjectTypeBuilder.classAnnations = { "name": "InjectTypeBuilder", "params": { "constructor": ["desc"] } };
+    return InjectTypeBuilder;
 }(core_1.Registration));
-exports.InjectBootBuilder = InjectBootBuilder;
+exports.InjectTypeBuilder = InjectTypeBuilder;
 /**
  * token bootstrap builder token.
  */
-exports.TypeBuilderToken = new InjectBootBuilder('');
+exports.TypeBuilderToken = new InjectTypeBuilder('');
 
 
 });
 
 unwrapExports(ITypeBuilder);
-var ITypeBuilder_1 = ITypeBuilder.InjectBootBuilder;
+var ITypeBuilder_1 = ITypeBuilder.InjectTypeBuilder;
 var ITypeBuilder_2 = ITypeBuilder.TypeBuilderToken;
 
 var TypeBuilder_1 = createCommonjsModule(function (module, exports) {
@@ -396,11 +396,11 @@ var TypeBuilder = /** @class */ (function () {
                 }
                 if (!this.container.has(token)) {
                     if (core_1.isClass(token)) {
-                        console.log('boot builder', token);
                         this.container.register(token);
                     }
                     else {
-                        throw new Error("cant not find token " + token.toString() + " in container.");
+                        console.log("cant not find token " + token.toString() + " in container.");
+                        return [2 /*return*/, null];
                     }
                 }
                 instance = this.resolveToken(token, data);
@@ -1174,6 +1174,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
 /**
  * application builder.
  *
@@ -1263,6 +1264,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
                         return [4 /*yield*/, _super.prototype.registerConfgureDepds.call(this, container, config)];
                     case 2:
                         config = _a.sent();
+                        container.bindProvider(AppConfigure.AppConfigureToken, config);
                         return [2 /*return*/, config];
                 }
             });

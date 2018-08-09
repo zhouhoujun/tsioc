@@ -11,7 +11,7 @@ import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { DIModule } from './decorators';
 import { BootModule } from './BootModule';
 import { MdlInstance, LoadedModule } from './ModuleType';
-import { ITypeBuilder, TypeBuilderToken, AnyBootstrapBuilder } from './ITypeBuilder';
+import { ITypeBuilder, TypeBuilderToken, IAnyTypeBuilder } from './ITypeBuilder';
 import { TypeBuilder } from './TypeBuilder';
 import { containerPools, ContainerPool } from './ContainerPool';
 
@@ -269,7 +269,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
 
-    protected getTypeBuilder(container: IContainer, typeBuilder: Token<ITypeBuilder<any>> | ITypeBuilder<any>): AnyBootstrapBuilder {
+    protected getTypeBuilder(container: IContainer, typeBuilder: Token<ITypeBuilder<any>> | ITypeBuilder<any>): IAnyTypeBuilder {
         let builder: ITypeBuilder<any>;
         if (isClass(typeBuilder)) {
             if (!container.has(typeBuilder)) {

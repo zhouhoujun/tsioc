@@ -71,13 +71,4 @@ export interface AnyApplicationBuilder extends IApplicationBuilder<any> {
      */
     build<TM>(token: Token<TM> | ModuleConfig<TM>, defaults?: IContainer | LoadedModule): Promise<MdlInstance<TM>>;
 
-    // /**
-    //  * bootstrap module.
-    //  *
-    //  * @param {(DIModuleType<any> | ModuleConfigure)} token
-    //  * @param {IContainer} [defaultContainer]
-    //  * @returns {Promise<any>}
-    //  * @memberof IModuleBuilder
-    //  */
-    // bootstrap<T>(token: DIModuleType<any> | ModuleConfigure, defaultContainer?: IContainer): Promise<T>;
 }

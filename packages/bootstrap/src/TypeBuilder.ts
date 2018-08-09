@@ -56,10 +56,10 @@ export class TypeBuilder<T> implements ITypeBuilder<T> {
         }
         if (!this.container.has(token)) {
             if (isClass(token)) {
-                console.log('boot builder', token);
                 this.container.register(token);
             } else {
-                throw new Error(`cant not find token ${token.toString()} in container.`);
+                console.log(`cant not find token ${token.toString()} in container.`);
+                return null;
             }
         }
 

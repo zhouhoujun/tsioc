@@ -1,6 +1,5 @@
 import { Token, LoadType, Providers, IContainer } from '@ts-ioc/core';
 import { IModuleBuilder } from './IModuleBuilder';
-import { ITypeBuilder } from './ITypeBuilder';
 import { TypeConfigure } from './TypeConfigure';
 
 

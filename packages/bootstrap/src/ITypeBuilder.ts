@@ -9,16 +9,16 @@ import { TypeConfigure } from './TypeConfigure';
  * @extends {Registration<T>}
  * @template T
  */
-export class InjectBootBuilder<T extends ITypeBuilder<any>> extends Registration<T> {
+export class InjectTypeBuilder<T extends ITypeBuilder<any>> extends Registration<T> {
     constructor(desc: string) {
-        super('DI_ModuleBootstrap', desc);
+        super('DI_TypeBuilder', desc);
     }
 }
 
 /**
  * token bootstrap builder token.
  */
-export const TypeBuilderToken = new InjectBootBuilder<AnyBootstrapBuilder>('');
+export const TypeBuilderToken = new InjectTypeBuilder<IAnyTypeBuilder>('');
 
 /**
  * token bootstrap builder.
@@ -105,7 +105,7 @@ export interface ITypeBuilder<T> {
  * @interface AnyBootstrapBuilder
  * @extends {ITypeBuilder<any>}
  */
-export interface AnyBootstrapBuilder extends ITypeBuilder<any> {
+export interface IAnyTypeBuilder extends ITypeBuilder<any> {
     /**
      * bootstrap ioc module.
      *

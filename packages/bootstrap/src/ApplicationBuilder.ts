@@ -1,4 +1,4 @@
-import { AppConfigure } from './AppConfigure';
+import { AppConfigure, AppConfigureToken } from './AppConfigure';
 import {
     IContainer, LoadType, lang, isString, ContainerBuilderToken
 } from '@ts-ioc/core';
@@ -92,6 +92,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         config = this.mergeGlobalConfig(globalCfg, config);
         this.bindAppConfig(config);
         config = await super.registerConfgureDepds(container, config);
+        container.bindProvider(AppConfigureToken, config);
         return config;
     }
 

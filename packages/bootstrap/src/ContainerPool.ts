@@ -1,4 +1,4 @@
-import { MapSet, Token, Registration, IContainer, InjectToken } from '@ts-ioc/core';
+import { MapSet, Token, SymbolType, Registration, IContainer, InjectToken } from '@ts-ioc/core';
 
 /**
  * container pool
@@ -14,7 +14,7 @@ export class ContainerPool {
         this.pools = new MapSet();
     }
 
-    getTokenKey(token: Token<any>) {
+    getTokenKey(token: Token<any>): SymbolType<any> {
         if (token instanceof Registration) {
             return token.toString();
         }
@@ -44,7 +44,7 @@ export class ContainerPool {
         this.pools.set(token, container);
     }
 
-    get(token: Token<any>) {
+    get(token: Token<any>): IContainer {
         let key = this.getTokenKey(token);
         if (!this.has(key)) {
             return null;

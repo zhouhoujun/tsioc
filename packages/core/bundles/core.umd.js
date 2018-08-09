@@ -3171,7 +3171,6 @@ var BindPropertyTypeAction = /** @class */ (function (_super) {
         return _super.call(this, CoreActions_1.CoreActions.bindPropertyType) || this;
     }
     BindPropertyTypeAction.prototype.working = function (container, data) {
-        var target = data.target;
         var type = data.targetType;
         var lifeScope = container.getLifeScope();
         var matchs = lifeScope.getPropertyDecorators(function (surm) { return surm.actions.includes(CoreActions_1.CoreActions.bindPropertyType) && factories.hasPropertyMetadata(surm.name, type); });
