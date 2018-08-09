@@ -1,6 +1,6 @@
 import { LifeScope, DecorSummary } from '../LifeScope';
 import { Type, ObjectMap, Token, IocState, Express } from '../types';
-import { isClass, isAbstractDecoratorClass, isArray } from '../utils';
+import { isClass, isAbstractDecoratorClass, isArray, lang } from '../utils';
 import { Singleton } from './decorators';
 import { ClassMetadata, MethodMetadata } from './metadatas';
 import { IContainer } from '../IContainer';
@@ -66,6 +66,15 @@ export class DefaultLifeScope implements LifeScope {
         });
         if (act) {
             act.execute(this.container, data);
+        }
+    }
+
+    routeExecute<T>(data: ActionData<T>, ...names: string[]) {
+        this.execute(data, ...names);
+        let container = this.container.parent;
+        while (container) {
+            container.getLifeScope().execute(lang.assign({}, data), ...names);
+            container = container.parent;
         }
     }
 

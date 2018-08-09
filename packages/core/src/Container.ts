@@ -454,7 +454,7 @@ export class Container implements IContainer {
 
             let args = this.createSyncParams(parameters, ...providers);
 
-            lifeScope.execute({
+            lifeScope.routeExecute({
                 tokenKey: key,
                 targetType: ClassT,
                 args: args,
@@ -465,7 +465,7 @@ export class Container implements IContainer {
 
             let instance = new ClassT(...args);
 
-            lifeScope.execute({
+            lifeScope.routeExecute({
                 tokenKey: key,
                 target: instance,
                 targetType: ClassT,
@@ -486,7 +486,7 @@ export class Container implements IContainer {
             }, IocState.runtime, LifeState.onInit);
 
 
-            lifeScope.execute({
+            lifeScope.routeExecute({
                 tokenKey: key,
                 target: instance,
                 targetType: ClassT,
@@ -495,7 +495,6 @@ export class Container implements IContainer {
                 providers: providers,
                 singleton: singleton
             }, IocState.runtime, LifeState.AfterInit);
-
 
             lifeScope.execute({
                 tokenKey: key,

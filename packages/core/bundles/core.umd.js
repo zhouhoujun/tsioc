@@ -1648,172 +1648,6 @@ unwrapExports(NullComponent_1);
 var NullComponent_2 = NullComponent_1.NullComponent;
 var NullComponent_3 = NullComponent_1.NullNode;
 
-var Composite_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-/**
- * compoiste.
- *
- * @export
- * @class Composite
- * @implements {IComponent}
- */
-var Composite = /** @class */ (function () {
-    function Composite(name) {
-        this.name = name;
-        this.children = [];
-    }
-    Composite.prototype.add = function (node) {
-        node.parent = this;
-        this.children.push(node);
-        return this;
-    };
-    Composite.prototype.remove = function (node) {
-        var component;
-        if (utils.isString(node)) {
-            component = this.find(function (cmp) { return utils.isString(node) ? cmp.name === node : cmp.equals(node); });
-        }
-        else if (node) {
-            component = node;
-        }
-        else {
-            component = this;
-        }
-        if (!component.parent) {
-            return this;
-        }
-        else if (this.equals(component.parent)) {
-            this.children.splice(this.children.indexOf(component), 1);
-            component.parent = null;
-            return this;
-        }
-        else {
-            component.parent.remove(component);
-            return this;
-        }
-    };
-    Composite.prototype.find = function (express, mode) {
-        var component;
-        this.each(function (item) {
-            if (component) {
-                return false;
-            }
-            var isFinded = utils.isFunction(express) ? express(item) : express === item;
-            if (isFinded) {
-                component = item;
-                return false;
-            }
-            return true;
-        }, mode);
-        return (component || this.empty());
-    };
-    Composite.prototype.filter = function (express, mode) {
-        var nodes = [];
-        this.each(function (item) {
-            if (express(item)) {
-                nodes.push(item);
-            }
-        }, mode);
-        return nodes;
-    };
-    Composite.prototype.each = function (express, mode) {
-        mode = mode || types.Mode.traverse;
-        var r;
-        switch (mode) {
-            case types.Mode.route:
-                r = this.routeUp(express);
-                break;
-            case types.Mode.children:
-                r = this.eachChildren(express);
-                break;
-            case types.Mode.traverse:
-                r = this.trans(express);
-                break;
-            case types.Mode.traverseLast:
-                r = this.transAfter(express);
-                break;
-            default:
-                r = this.trans(express);
-                break;
-        }
-        return r;
-    };
-    Composite.prototype.eachChildren = function (express) {
-        (this.children || []).forEach(function (item) {
-            return express(item);
-        });
-    };
-    /**
-     *do express work in routing.
-     *
-     *@param {Express<T, void | boolean>} express
-     *
-     *@memberOf IComponent
-     */
-    Composite.prototype.routeUp = function (express) {
-        if (express(this) === false) {
-            return false;
-        }
-        
-        if (this.parent && this.parent.routeUp) {
-            return this.parent.routeUp(express);
-        }
-    };
-    /**
-     *translate all sub context to do express work.
-     *
-     *@param {Express<IComponent, void | boolean>} express
-     *
-     *@memberOf IComponent
-     */
-    Composite.prototype.trans = function (express) {
-        if (express(this) === false) {
-            return false;
-        }
-        var children = this.children || [];
-        for (var i = 0; i < children.length; i++) {
-            var result = children[i].trans(express);
-            if (result === false) {
-                return result;
-            }
-        }
-        return true;
-    };
-    Composite.prototype.transAfter = function (express) {
-        var children = this.children || [];
-        for (var i = 0; i < children.length; i++) {
-            var result = children[i].transAfter(express);
-            if (result === false) {
-                return false;
-            }
-        }
-        if (express(this) === false) {
-            return false;
-        }
-        return true;
-    };
-    Composite.prototype.equals = function (node) {
-        return this === node;
-    };
-    Composite.prototype.empty = function () {
-        return NullComponent_1.NullNode;
-    };
-    Composite.prototype.isEmpty = function () {
-        return this.equals(this.empty());
-    };
-    Composite.classAnnations = { "name": "Composite", "params": { "constructor": ["name"], "add": ["node"], "remove": ["node"], "find": ["express", "mode"], "filter": ["express", "mode"], "each": ["express", "mode"], "eachChildren": ["express"], "routeUp": ["express"], "trans": ["express"], "transAfter": ["express"], "equals": ["node"], "empty": [], "isEmpty": [] } };
-    return Composite;
-}());
-exports.Composite = Composite;
-
-
-});
-
-unwrapExports(Composite_1);
-var Composite_2 = Composite_1.Composite;
-
 var GComposite_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -1983,6 +1817,45 @@ exports.GComposite = GComposite;
 
 unwrapExports(GComposite_1);
 var GComposite_2 = GComposite_1.GComposite;
+
+var Composite_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * compoiste.
+ *
+ * @export
+ * @class Composite
+ * @implements {IComponent}
+ */
+var Composite = /** @class */ (function (_super) {
+    tslib_1.__extends(Composite, _super);
+    function Composite(name) {
+        return _super.call(this, name) || this;
+    }
+    Composite.prototype.find = function (express, mode) {
+        return _super.prototype.find.call(this, express, mode);
+    };
+    Composite.prototype.filter = function (express, mode) {
+        return _super.prototype.filter.call(this, express, mode);
+    };
+    Composite.prototype.each = function (express, mode) {
+        return _super.prototype.each.call(this, express, mode);
+    };
+    Composite.prototype.eachChildren = function (express) {
+        _super.prototype.eachChildren.call(this, express);
+    };
+    Composite.classAnnations = { "name": "Composite", "params": { "constructor": ["name"], "find": ["express", "mode"], "filter": ["express", "mode"], "each": ["express", "mode"], "eachChildren": ["express"] } };
+    return Composite;
+}(GComposite_1.GComposite));
+exports.Composite = Composite;
+
+
+});
+
+unwrapExports(Composite_1);
+var Composite_2 = Composite_1.Composite;
 
 var components = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -4579,6 +4452,19 @@ var DefaultLifeScope = /** @class */ (function () {
             act.execute(this.container, data);
         }
     };
+    DefaultLifeScope.prototype.routeExecute = function (data) {
+        var names = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            names[_i - 1] = arguments[_i];
+        }
+        var _a;
+        this.execute.apply(this, [data].concat(names));
+        var container = this.container.parent;
+        while (container) {
+            (_a = container.getLifeScope()).execute.apply(_a, [utils.lang.assign({}, data)].concat(names));
+            container = container.parent;
+        }
+    };
     DefaultLifeScope.prototype.getClassDecorators = function (match) {
         return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Class), match);
     };
@@ -4778,7 +4664,7 @@ var DefaultLifeScope = /** @class */ (function () {
         }
         return types$$2.join(',');
     };
-    DefaultLifeScope.classAnnations = { "name": "DefaultLifeScope", "params": { "constructor": ["container"], "addAction": ["action", "nodepaths"], "registerDecorator": ["decorator", "actions"], "registerCustomDecorator": ["decorator", "type", "actions"], "execute": ["data", "names"], "getClassDecorators": ["match"], "getMethodDecorators": ["match"], "getPropertyDecorators": ["match"], "getParameterDecorators": ["match"], "getDecoratorType": ["decirator"], "isVaildDependence": ["target"], "getAtionByName": ["name"], "getClassAction": [], "getMethodAction": [], "getPropertyAction": [], "getParameterAction": [], "getConstructorParameters": ["type"], "getMethodParameters": ["type", "instance", "propertyKey"], "getParamerterNames": ["type", "propertyKey"], "isSingletonType": ["type"], "getMethodMetadatas": ["type", "propertyKey"], "filerDecorators": ["express"], "getParameters": ["type", "instance", "propertyKey"], "getTypeDecorators": ["decType", "match"], "buildAction": [], "toActionName": ["type"] } };
+    DefaultLifeScope.classAnnations = { "name": "DefaultLifeScope", "params": { "constructor": ["container"], "addAction": ["action", "nodepaths"], "registerDecorator": ["decorator", "actions"], "registerCustomDecorator": ["decorator", "type", "actions"], "execute": ["data", "names"], "routeExecute": ["data", "names"], "getClassDecorators": ["match"], "getMethodDecorators": ["match"], "getPropertyDecorators": ["match"], "getParameterDecorators": ["match"], "getDecoratorType": ["decirator"], "isVaildDependence": ["target"], "getAtionByName": ["name"], "getClassAction": [], "getMethodAction": [], "getPropertyAction": [], "getParameterAction": [], "getConstructorParameters": ["type"], "getMethodParameters": ["type", "instance", "propertyKey"], "getParamerterNames": ["type", "propertyKey"], "isSingletonType": ["type"], "getMethodMetadatas": ["type", "propertyKey"], "filerDecorators": ["express"], "getParameters": ["type", "instance", "propertyKey"], "getTypeDecorators": ["decType", "match"], "buildAction": [], "toActionName": ["type"] } };
     return DefaultLifeScope;
 }());
 exports.DefaultLifeScope = DefaultLifeScope;
@@ -5807,7 +5693,7 @@ var Container = /** @class */ (function () {
                 singleton: singleton
             }, types.IocState.runtime, core.LifeState.beforeCreateArgs);
             var args = _this.createSyncParams.apply(_this, [parameters].concat(providers));
-            lifeScope.execute({
+            lifeScope.routeExecute({
                 tokenKey: key,
                 targetType: ClassT,
                 args: args,
@@ -5816,7 +5702,7 @@ var Container = /** @class */ (function () {
                 singleton: singleton
             }, types.IocState.runtime, core.LifeState.beforeConstructor);
             var instance = new (ClassT.bind.apply(ClassT, [void 0].concat(args)))();
-            lifeScope.execute({
+            lifeScope.routeExecute({
                 tokenKey: key,
                 target: instance,
                 targetType: ClassT,
@@ -5834,7 +5720,7 @@ var Container = /** @class */ (function () {
                 providers: providers,
                 singleton: singleton
             }, types.IocState.runtime, core.LifeState.onInit);
-            lifeScope.execute({
+            lifeScope.routeExecute({
                 tokenKey: key,
                 target: instance,
                 targetType: ClassT,

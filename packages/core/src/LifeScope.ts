@@ -58,6 +58,16 @@ export interface LifeScope {
     execute<T>(data: ActionData<T>, ...names: string[]);
 
     /**
+     * execute the action work route with parent container.
+     *
+     * @template T
+     * @param {ActionData<T>} data
+     * @param {...string[]} names
+     * @memberof LifeScope
+     */
+    routeExecute<T>(data: ActionData<T>, ...names: string[]);
+
+    /**
      * register action.
      *
      * @param {ActionComponent} action the action.
