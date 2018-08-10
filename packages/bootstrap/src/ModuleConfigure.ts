@@ -1,6 +1,6 @@
 import { Token, LoadType, Providers, IContainer } from '@ts-ioc/core';
 import { IModuleBuilder } from './IModuleBuilder';
-import { TypeConfigure } from './TypeConfigure';
+import { AnnotationConfigure } from './AnnotationConfigure';
 
 
 /**
@@ -10,7 +10,7 @@ import { TypeConfigure } from './TypeConfigure';
  * @interface ModuleConfig
  * @extends {ObjectMap<any>}
  */
-export interface ModuleConfig<T> extends TypeConfigure<T> {
+export interface ModuleConfig<T> extends AnnotationConfigure<T> {
 
     /**
      * module name.

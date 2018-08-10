@@ -36,29 +36,29 @@ export class LoadedModule {
 /**
  *  module instance.
  */
-export type MdlInstance<TM> = TM & OnModuleInit & AfterBootCreate<any> & BeforeBootCreate<any> & OnModuleStart<any> & OnModuleStarted<any>
+export type MdlInstance<TM> = TM & OnModuleInit & AfterAnnotationCreate<any> & BeforeAnnotationCreate<any> & OnModuleStart<any> & OnModuleStarted<any>
 
 
 /**
- * module before bootstrap create hook.
+ * Before Annotation class create hook.
  *
  * @export
- * @interface BeforeBootCreate
+ * @interface BeforeAnnotationCreate
  * @template T
  */
-export interface BeforeBootCreate<T> {
-    btBeforeCreate(config?: ModuleConfig<T>);
+export interface BeforeAnnotationCreate<T> {
+    anBeforeCreate(config?: ModuleConfig<T>);
 }
 
 /**
- * module after bootstrap created hook.
+ * After Annotation classp created hook.
  *
  * @export
  * @interface AfterBootCreate
  * @template T
  */
-export interface AfterBootCreate<T> {
-    btAfterCreate(instance: T): void;
+export interface AfterAnnotationCreate<T> {
+    anAfterCreate(instance: T): void;
 }
 
 export interface OnModuleInit {

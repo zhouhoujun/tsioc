@@ -15,7 +15,7 @@ function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
-var Build = createCommonjsModule(function (module, exports) {
+var Annotation = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 /**
@@ -25,12 +25,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @template T
  * @param {string} name
  * @param {string} [decorType]
- * @param {(Token<ITypeBuilder<any>> | ITypeBuilder<any>)} [builder]
+ * @param {(Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>)} [builder]
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
- * @returns {IBuildDecorator<T>}
+ * @returns {IAnnotationDecorator<T>}
  */
-function createBuildDecorator(name, builder, adapter, metadataExtends) {
+function createAnnotationDecorator(name, builder, adapter, metadataExtends) {
     return core_1.createClassDecorator(name, function (args) {
         if (adapter) {
             adapter(args);
@@ -39,26 +39,26 @@ function createBuildDecorator(name, builder, adapter, metadataExtends) {
         if (metadataExtends) {
             metadata = metadataExtends(metadata);
         }
-        if (builder && !metadata.typeBuilder) {
-            metadata.typeBuilder = builder;
+        if (builder && !metadata.annotationBuilder) {
+            metadata.annotationBuilder = builder;
         }
         return metadata;
     });
 }
-exports.createBuildDecorator = createBuildDecorator;
+exports.createAnnotationDecorator = createAnnotationDecorator;
 /**
- * Build decorator, use to define class build way via config.
+ * Annotation decorator, use to define class build way via config.
  *
- * @Build
+ * @Annotation
  */
-exports.Build = createBuildDecorator('Build');
+exports.Annotation = createAnnotationDecorator('Annotation');
 
 
 });
 
-unwrapExports(Build);
-var Build_1 = Build.createBuildDecorator;
-var Build_2 = Build.Build;
+unwrapExports(Annotation);
+var Annotation_1 = Annotation.createAnnotationDecorator;
+var Annotation_2 = Annotation.Annotation;
 
 var DIModule = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -70,7 +70,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @template T
  * @param {string} name decorator name.
  * @param {(Token<IModuleBuilder> | IModuleBuilder)} [builder]
- * @param {(Token<ITypeBuilder<any>> | ITypeBuilder<any>)} [typeBuilder]
+ * @param {(Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>)} [typeBuilder]
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IDIModuleDecorator<T>}
@@ -97,8 +97,8 @@ function createDIModuleDecorator(name, builder, typeBuilder, adapter, metadataEx
         if (builder && !metadata.builder) {
             metadata.builder = builder;
         }
-        if (typeBuilder && !metadata.typeBuilder) {
-            metadata.typeBuilder = typeBuilder;
+        if (typeBuilder && !metadata.annotationBuilder) {
+            metadata.annotationBuilder = typeBuilder;
         }
         return metadata;
     });
@@ -129,7 +129,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @template T
  * @param {string} name
  * @param {(Token<IApplicationBuilder> | IApplicationBuilder)} [builder] default builder
- * @param {(Token<ITypeBuilder<any>> | ITypeBuilder<Tany>)} [typeBuilder] default type builder.
+ * @param {(Token<IAnnotationBuilder<any>> | IAnnotationBuilder<Tany>)} [typeBuilder] default type builder.
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IBootstrapDecorator<T>}
@@ -171,7 +171,7 @@ var Bootstrap_2 = Bootstrap.Bootstrap;
 var decorators = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
-tslib_1.__exportStar(Build, exports);
+tslib_1.__exportStar(Annotation, exports);
 tslib_1.__exportStar(DIModule, exports);
 tslib_1.__exportStar(Bootstrap, exports);
 
@@ -255,7 +255,6 @@ var BootModule = /** @class */ (function () {
         lifeScope.registerDecorator(decorators.DIModule, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
         lifeScope.registerDecorator(decorators.Bootstrap, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
         container.register(ModuleBuilder_1.ModuleBuilder);
-        // container.register(BootBuilder);
         container.register(ApplicationBuilder.DefaultApplicationBuilder);
     };
     BootModule.classAnnations = { "name": "BootModule", "params": { "constructor": ["container"], "setup": [] } };
@@ -297,58 +296,58 @@ exports.LoadedModule = LoadedModule;
 unwrapExports(ModuleType);
 var ModuleType_1 = ModuleType.LoadedModule;
 
-var ITypeBuilder = createCommonjsModule(function (module, exports) {
+var IAnnotationBuilder = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
 /**
- * inject token Bootstrap builder.
+ * inject Annotation class builder.
  *
  * @export
  * @class InjectBootstrapBuilder
  * @extends {Registration<T>}
  * @template T
  */
-var InjectTypeBuilder = /** @class */ (function (_super) {
-    tslib_1.__extends(InjectTypeBuilder, _super);
-    function InjectTypeBuilder(desc) {
+var InjectAnnotationBuilder = /** @class */ (function (_super) {
+    tslib_1.__extends(InjectAnnotationBuilder, _super);
+    function InjectAnnotationBuilder(desc) {
         return _super.call(this, 'DI_TypeBuilder', desc) || this;
     }
-    InjectTypeBuilder.classAnnations = { "name": "InjectTypeBuilder", "params": { "constructor": ["desc"] } };
-    return InjectTypeBuilder;
+    InjectAnnotationBuilder.classAnnations = { "name": "InjectAnnotationBuilder", "params": { "constructor": ["desc"] } };
+    return InjectAnnotationBuilder;
 }(core_1.Registration));
-exports.InjectTypeBuilder = InjectTypeBuilder;
+exports.InjectAnnotationBuilder = InjectAnnotationBuilder;
 /**
- * token bootstrap builder token.
+ * Annotation class builder token.
  */
-exports.TypeBuilderToken = new InjectTypeBuilder('');
+exports.AnnotationBuilderToken = new InjectAnnotationBuilder('');
 
 
 });
 
-unwrapExports(ITypeBuilder);
-var ITypeBuilder_1 = ITypeBuilder.InjectTypeBuilder;
-var ITypeBuilder_2 = ITypeBuilder.TypeBuilderToken;
+unwrapExports(IAnnotationBuilder);
+var IAnnotationBuilder_1 = IAnnotationBuilder.InjectAnnotationBuilder;
+var IAnnotationBuilder_2 = IAnnotationBuilder.AnnotationBuilderToken;
 
-var TypeBuilder_1 = createCommonjsModule(function (module, exports) {
+var AnnotationBuilder_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
 
 /**
- * token bootstrap builder. build class with metadata and config.
+ * Annotation class builder. build class with metadata and config.
  *
  * @export
- * @class BootBuilder
- * @implements {implements ITypeBuilder<T>}
+ * @class AnnotationBuilder
+ * @implements {implements IAnnotationBuilder<T>}
  * @template T
  */
-var TypeBuilder = /** @class */ (function () {
-    function TypeBuilder() {
+var AnnotationBuilder = /** @class */ (function () {
+    function AnnotationBuilder() {
     }
-    TypeBuilder_1 = TypeBuilder;
-    TypeBuilder.prototype.build = function (token, config, data) {
+    AnnotationBuilder_1 = AnnotationBuilder;
+    AnnotationBuilder.prototype.build = function (token, config, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var builder, instance;
             return tslib_1.__generator(this, function (_a) {
@@ -371,7 +370,7 @@ var TypeBuilder = /** @class */ (function () {
             });
         });
     };
-    TypeBuilder.prototype.buildByConfig = function (config, data) {
+    AnnotationBuilder.prototype.buildByConfig = function (config, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var token;
             return tslib_1.__generator(this, function (_a) {
@@ -387,7 +386,7 @@ var TypeBuilder = /** @class */ (function () {
             });
         });
     };
-    TypeBuilder.prototype.createInstance = function (token, config, data) {
+    AnnotationBuilder.prototype.createInstance = function (token, config, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var instance;
             return tslib_1.__generator(this, function (_a) {
@@ -408,18 +407,18 @@ var TypeBuilder = /** @class */ (function () {
             });
         });
     };
-    TypeBuilder.prototype.getBuilder = function (config) {
-        if (config && config.typeBuilder) {
-            if (core_1.isClass(config.typeBuilder)) {
-                if (!this.container.has(config.typeBuilder)) {
-                    this.container.register(config.typeBuilder);
+    AnnotationBuilder.prototype.getBuilder = function (config) {
+        if (config && config.annotationBuilder) {
+            if (core_1.isClass(config.annotationBuilder)) {
+                if (!this.container.has(config.annotationBuilder)) {
+                    this.container.register(config.annotationBuilder);
                 }
             }
-            if (core_1.isToken(config.typeBuilder)) {
-                return this.container.resolve(config.typeBuilder);
+            if (core_1.isToken(config.annotationBuilder)) {
+                return this.container.resolve(config.annotationBuilder);
             }
-            else if (config.typeBuilder instanceof TypeBuilder_1) {
-                return config.typeBuilder;
+            else if (config.annotationBuilder instanceof AnnotationBuilder_1) {
+                return config.annotationBuilder;
             }
         }
         return this;
@@ -428,22 +427,22 @@ var TypeBuilder = /** @class */ (function () {
      * bundle instance via config.
      *
      * @param {T} instance
-     * @param {TypeConfigure} config
+     * @param {AnnotationConfigure} config
      * @param {IContainer} [container]
      * @returns {Promise<T>}
      * @memberof BootBuilder
      */
-    TypeBuilder.prototype.buildStrategy = function (instance, config) {
+    AnnotationBuilder.prototype.buildStrategy = function (instance, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             return tslib_1.__generator(this, function (_a) {
                 return [2 /*return*/, instance];
             });
         });
     };
-    TypeBuilder.prototype.getBootstrapToken = function (config) {
+    AnnotationBuilder.prototype.getBootstrapToken = function (config) {
         return config.bootstrap;
     };
-    TypeBuilder.prototype.getTokenMetaConfig = function (token, config) {
+    AnnotationBuilder.prototype.getTokenMetaConfig = function (token, config) {
         var cfg;
         if (core_1.isClass(token)) {
             cfg = this.getMetaConfig(token);
@@ -461,10 +460,10 @@ var TypeBuilder = /** @class */ (function () {
             return config || {};
         }
     };
-    TypeBuilder.prototype.getDecorator = function () {
-        return decorators.Build.toString();
+    AnnotationBuilder.prototype.getDecorator = function () {
+        return decorators.Annotation.toString();
     };
-    TypeBuilder.prototype.getMetaConfig = function (token) {
+    AnnotationBuilder.prototype.getMetaConfig = function (token) {
         var decorator = this.getDecorator();
         if (core_1.hasOwnClassMetadata(decorator, token)) {
             var metas = core_1.getTypeMetadata(decorator, token);
@@ -474,28 +473,28 @@ var TypeBuilder = /** @class */ (function () {
         }
         return null;
     };
-    TypeBuilder.prototype.resolveToken = function (token, data) {
+    AnnotationBuilder.prototype.resolveToken = function (token, data) {
         return this.container.resolve(token, data);
     };
-    var TypeBuilder_1;
-    TypeBuilder.classAnnations = { "name": "TypeBuilder", "params": { "constructor": [], "build": ["token", "config", "data"], "buildByConfig": ["config", "data"], "createInstance": ["token", "config", "data"], "getBuilder": ["config"], "buildStrategy": ["instance", "config"], "getBootstrapToken": ["config"], "getTokenMetaConfig": ["token", "config"], "getDecorator": [], "getMetaConfig": ["token"], "resolveToken": ["token", "data"] } };
+    var AnnotationBuilder_1;
+    AnnotationBuilder.classAnnations = { "name": "AnnotationBuilder", "params": { "constructor": [], "build": ["token", "config", "data"], "buildByConfig": ["config", "data"], "createInstance": ["token", "config", "data"], "getBuilder": ["config"], "buildStrategy": ["instance", "config"], "getBootstrapToken": ["config"], "getTokenMetaConfig": ["token", "config"], "getDecorator": [], "getMetaConfig": ["token"], "resolveToken": ["token", "data"] } };
     tslib_1.__decorate([
         core_1.Inject(core_1.ContainerToken),
         tslib_1.__metadata("design:type", Object)
-    ], TypeBuilder.prototype, "container", void 0);
-    TypeBuilder = TypeBuilder_1 = tslib_1.__decorate([
-        core_1.Singleton(ITypeBuilder.TypeBuilderToken),
+    ], AnnotationBuilder.prototype, "container", void 0);
+    AnnotationBuilder = AnnotationBuilder_1 = tslib_1.__decorate([
+        core_1.Singleton(IAnnotationBuilder.AnnotationBuilderToken),
         tslib_1.__metadata("design:paramtypes", [])
-    ], TypeBuilder);
-    return TypeBuilder;
+    ], AnnotationBuilder);
+    return AnnotationBuilder;
 }());
-exports.TypeBuilder = TypeBuilder;
+exports.AnnotationBuilder = AnnotationBuilder;
 
 
 });
 
-unwrapExports(TypeBuilder_1);
-var TypeBuilder_2 = TypeBuilder_1.TypeBuilder;
+unwrapExports(AnnotationBuilder_1);
+var AnnotationBuilder_2 = AnnotationBuilder_1.AnnotationBuilder;
 
 var ContainerPool_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -739,13 +738,13 @@ var ModuleBuilder = /** @class */ (function () {
                     case 3:
                         boot = loadmdl.moduleToken;
                         if (!!boot) return [3 /*break*/, 5];
-                        bootBuilder = this.getTypeBuilder(container, cfg.typeBuilder);
+                        bootBuilder = this.getTypeBuilder(container, cfg.annotationBuilder);
                         return [4 /*yield*/, bootBuilder.buildByConfig(cfg, data)];
                     case 4:
                         instance = _a.sent();
                         return [2 /*return*/, instance];
                     case 5:
-                        bootbuilder = this.getTypeBuilder(container, cfg.typeBuilder);
+                        bootbuilder = this.getTypeBuilder(container, cfg.annotationBuilder);
                         return [4 /*yield*/, bootbuilder.build(boot, cfg, data)];
                     case 6:
                         instance = _a.sent();
@@ -785,15 +784,15 @@ var ModuleBuilder = /** @class */ (function () {
                         md = _a.sent();
                         bootInstance = void 0;
                         if (!loadmdl.moduleToken) return [3 /*break*/, 8];
-                        if (md && core_1.isFunction(md.btBeforeCreate)) {
-                            md.btBeforeCreate(loadmdl);
+                        if (md && core_1.isFunction(md.anBeforeCreate)) {
+                            md.anBeforeCreate(loadmdl);
                         }
-                        builder_1 = this.getTypeBuilder(loadmdl.container, cfg.typeBuilder);
+                        builder_1 = this.getTypeBuilder(loadmdl.container, cfg.annotationBuilder);
                         return [4 /*yield*/, builder_1.buildByConfig(cfg, data)];
                     case 5:
                         bootInstance = _a.sent();
-                        if (core_1.isFunction(md.btAfterCreate)) {
-                            md.btAfterCreate(bootInstance);
+                        if (core_1.isFunction(md.anAfterCreate)) {
+                            md.anAfterCreate(bootInstance);
                         }
                         if (!core_1.isFunction(md.mdOnStart)) return [3 /*break*/, 7];
                         return [4 /*yield*/, Promise.resolve(md.mdOnStart(bootInstance))];
@@ -856,7 +855,7 @@ var ModuleBuilder = /** @class */ (function () {
         if (core_1.isToken(typeBuilder)) {
             builder = container.resolve(typeBuilder);
         }
-        else if (typeBuilder instanceof TypeBuilder_1.TypeBuilder) {
+        else if (typeBuilder instanceof AnnotationBuilder_1.AnnotationBuilder) {
             builder = typeBuilder;
         }
         if (!builder) {
@@ -865,7 +864,7 @@ var ModuleBuilder = /** @class */ (function () {
         return builder;
     };
     ModuleBuilder.prototype.getDefaultTypeBuilder = function (container) {
-        return container.resolve(ITypeBuilder.TypeBuilderToken);
+        return container.resolve(IAnnotationBuilder.AnnotationBuilderToken);
     };
     ModuleBuilder.prototype.importModule = function (token, container) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
@@ -1032,8 +1031,8 @@ var ModuleBuilder = /** @class */ (function () {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             return tslib_1.__generator(this, function (_a) {
                 // register for each container.
-                if (!container.hasRegister(TypeBuilder_1.TypeBuilder)) {
-                    container.register(TypeBuilder_1.TypeBuilder);
+                if (!container.hasRegister(AnnotationBuilder_1.AnnotationBuilder)) {
+                    container.register(AnnotationBuilder_1.AnnotationBuilder);
                 }
                 return [2 /*return*/, container];
             });
@@ -1367,8 +1366,8 @@ tslib_1.__exportStar(IModuleBuilder, exports);
 tslib_1.__exportStar(ModuleBuilder_1, exports);
 tslib_1.__exportStar(ContainerPool_1, exports);
 tslib_1.__exportStar(BootModule_1, exports);
-tslib_1.__exportStar(ITypeBuilder, exports);
-tslib_1.__exportStar(TypeBuilder_1, exports);
+tslib_1.__exportStar(IAnnotationBuilder, exports);
+tslib_1.__exportStar(AnnotationBuilder_1, exports);
 tslib_1.__exportStar(ModuleType, exports);
 
 

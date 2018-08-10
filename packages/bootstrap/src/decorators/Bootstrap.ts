@@ -3,7 +3,7 @@ import {
     MetadataExtends, ITypeDecorator, Type, isClass, isFunction
 } from '@ts-ioc/core';
 import { AppConfigure } from '../AppConfigure';
-import { ITypeBuilder } from '../ITypeBuilder';
+import { IAnnotationBuilder } from '../IAnnotationBuilder';
 import { IApplicationBuilder } from '../IApplicationBuilder';
 import { createDIModuleDecorator } from './DIModule';
 
@@ -40,7 +40,7 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
  * @template T
  * @param {string} name
  * @param {(Token<IApplicationBuilder> | IApplicationBuilder)} [builder] default builder
- * @param {(Token<ITypeBuilder<any>> | ITypeBuilder<Tany>)} [typeBuilder] default type builder.
+ * @param {(Token<IAnnotationBuilder<any>> | IAnnotationBuilder<Tany>)} [typeBuilder] default type builder.
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IBootstrapDecorator<T>}
@@ -48,7 +48,7 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
 export function createBootstrapDecorator<T extends BootstrapMetadata>(
     name: string,
     builder?: Type<IApplicationBuilder<any>> | IApplicationBuilder<any>,
-    typeBuilder?: Token<ITypeBuilder<any>> | ITypeBuilder<any>,
+    typeBuilder?: Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IBootstrapDecorator<T> {
 

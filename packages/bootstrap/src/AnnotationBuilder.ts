@@ -1,18 +1,18 @@
-import { ITypeBuilder, TypeBuilderToken } from './ITypeBuilder';
+import { IAnnotationBuilder, AnnotationBuilderToken } from './IAnnotationBuilder';
 import { Singleton, Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, hasOwnClassMetadata, getTypeMetadata, lang } from '@ts-ioc/core';
-import { TypeConfigure } from './TypeConfigure';
-import { Build } from './decorators';
+import { AnnotationConfigure } from './AnnotationConfigure';
+import { Annotation } from './decorators';
 
 /**
- * token bootstrap builder. build class with metadata and config.
+ * Annotation class builder. build class with metadata and config.
  *
  * @export
- * @class BootBuilder
- * @implements {implements ITypeBuilder<T>}
+ * @class AnnotationBuilder
+ * @implements {implements IAnnotationBuilder<T>}
  * @template T
  */
-@Singleton(TypeBuilderToken)
-export class TypeBuilder<T> implements ITypeBuilder<T> {
+@Singleton(AnnotationBuilderToken)
+export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
     /**
      * ioc container.
      *
@@ -25,7 +25,7 @@ export class TypeBuilder<T> implements ITypeBuilder<T> {
     constructor() {
     }
 
-    async build(token: Token<T>, config?: TypeConfigure<T>, data?: any): Promise<T> {
+    async build(token: Token<T>, config?: AnnotationConfigure<T>, data?: any): Promise<T> {
         if (!config) {
             config = this.getTokenMetaConfig(token);
         }
@@ -39,7 +39,7 @@ export class TypeBuilder<T> implements ITypeBuilder<T> {
         }
     }
 
-    async buildByConfig(config: Token<T> | TypeConfigure<T>, data?: any): Promise<any> {
+    async buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any): Promise<any> {
         let token: Token<T>;
         if (isToken(config)) {
             token = config;
@@ -50,7 +50,7 @@ export class TypeBuilder<T> implements ITypeBuilder<T> {
         }
     }
 
-    async createInstance(token: Token<T>, config: TypeConfigure<T>, data?: any): Promise<T> {
+    async createInstance(token: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<T> {
         if (!token) {
             throw new Error('cant not find bootstrap token.');
         }
@@ -67,17 +67,17 @@ export class TypeBuilder<T> implements ITypeBuilder<T> {
         return instance;
     }
 
-    getBuilder(config: TypeConfigure<T>): ITypeBuilder<T> {
-        if (config && config.typeBuilder) {
-            if (isClass(config.typeBuilder)) {
-                if (!this.container.has(config.typeBuilder)) {
-                    this.container.register(config.typeBuilder);
+    getBuilder(config: AnnotationConfigure<T>): IAnnotationBuilder<T> {
+        if (config && config.annotationBuilder) {
+            if (isClass(config.annotationBuilder)) {
+                if (!this.container.has(config.annotationBuilder)) {
+                    this.container.register(config.annotationBuilder);
                 }
             }
-            if (isToken(config.typeBuilder)) {
-                return this.container.resolve(config.typeBuilder);
-            } else if (config.typeBuilder instanceof TypeBuilder) {
-                return config.typeBuilder;
+            if (isToken(config.annotationBuilder)) {
+                return this.container.resolve(config.annotationBuilder);
+            } else if (config.annotationBuilder instanceof AnnotationBuilder) {
+                return config.annotationBuilder;
             }
         }
         return this;
@@ -87,21 +87,21 @@ export class TypeBuilder<T> implements ITypeBuilder<T> {
      * bundle instance via config.
      *
      * @param {T} instance
-     * @param {TypeConfigure} config
+     * @param {AnnotationConfigure} config
      * @param {IContainer} [container]
      * @returns {Promise<T>}
      * @memberof BootBuilder
      */
-    async buildStrategy(instance: T, config: TypeConfigure<T>): Promise<T> {
+    async buildStrategy(instance: T, config: AnnotationConfigure<T>): Promise<T> {
         return instance;
     }
 
-    getBootstrapToken(config: TypeConfigure<T>): Token<T> {
+    getBootstrapToken(config: AnnotationConfigure<T>): Token<T> {
         return config.bootstrap;
     }
 
-    protected getTokenMetaConfig(token: Token<T>, config?: TypeConfigure<T>): TypeConfigure<T> {
-        let cfg: TypeConfigure<T>;
+    protected getTokenMetaConfig(token: Token<T>, config?: AnnotationConfigure<T>): AnnotationConfigure<T> {
+        let cfg: AnnotationConfigure<T>;
         if (isClass(token)) {
             cfg = this.getMetaConfig(token);
         } else if (isToken(token)) {
@@ -118,13 +118,13 @@ export class TypeBuilder<T> implements ITypeBuilder<T> {
     }
 
     getDecorator() {
-        return Build.toString();
+        return Annotation.toString();
     }
 
-    protected getMetaConfig(token: Type<any>): TypeConfigure<T> {
+    protected getMetaConfig(token: Type<any>): AnnotationConfigure<T> {
         let decorator = this.getDecorator();
         if (hasOwnClassMetadata(decorator, token)) {
-            let metas = getTypeMetadata<TypeConfigure<T>>(decorator, token);
+            let metas = getTypeMetadata<AnnotationConfigure<T>>(decorator, token);
             if (metas && metas.length) {
                 return metas[0];
             }

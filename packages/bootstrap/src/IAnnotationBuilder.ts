@@ -1,32 +1,32 @@
 import { Registration, IContainer, Token } from '@ts-ioc/core';
-import { TypeConfigure } from './TypeConfigure';
+import { AnnotationConfigure } from './AnnotationConfigure';
 
 /**
- * inject token Bootstrap builder.
+ * inject Annotation class builder.
  *
  * @export
  * @class InjectBootstrapBuilder
  * @extends {Registration<T>}
  * @template T
  */
-export class InjectTypeBuilder<T extends ITypeBuilder<any>> extends Registration<T> {
+export class InjectAnnotationBuilder<T extends IAnnotationBuilder<any>> extends Registration<T> {
     constructor(desc: string) {
         super('DI_TypeBuilder', desc);
     }
 }
 
 /**
- * token bootstrap builder token.
+ * Annotation class builder token.
  */
-export const TypeBuilderToken = new InjectTypeBuilder<IAnyTypeBuilder>('');
+export const AnnotationBuilderToken = new InjectAnnotationBuilder<IAnyTypeBuilder>('');
 
 /**
- * token bootstrap builder.
+ * Annotation class builder.
  *
  * @export
  * @interface IBootBuilder
  */
-export interface ITypeBuilder<T> {
+export interface IAnnotationBuilder<T> {
 
     /**
      * container.
@@ -40,62 +40,62 @@ export interface ITypeBuilder<T> {
      * build token type via config.
      *
      * @param {Token<T>} token
-     * @param {TypeConfigure<T>} [config]
+     * @param {AnnotationConfigure<T>} [config]
      * @param {*} [data]
      * @returns {Promise<T>}
      * @memberof ITypeBuilder
      */
-    build(token: Token<T>, config?: TypeConfigure<T>, data?: any): Promise<T>;
+    build(token: Token<T>, config?: AnnotationConfigure<T>, data?: any): Promise<T>;
 
     /**
      * build instance via type config.
      *
-     * @param {(Token<T> | TypeConfigure<T>)} config
+     * @param {(Token<T> | AnnotationConfigure<T>)} config
      * @param {*} [data]
      * @returns {Promise<T>}
      * @memberof IBootBuilder
      */
-    buildByConfig(config: Token<T> | TypeConfigure<T>, data?: any): Promise<T>;
+    buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any): Promise<T>;
 
     /**
      * get finally builder by token and config.
      *
-     * @param {TypeConfigure<T>} [config]
-     * @returns {ITypeBuilder<T>}
+     * @param {AnnotationConfigure<T>} [config]
+     * @returns {IAnnotationBuilder<T>}
      * @memberof IBootBuilder
      */
-    getBuilder(config?: TypeConfigure<T>): ITypeBuilder<T>;
+    getBuilder(config?: AnnotationConfigure<T>): IAnnotationBuilder<T>;
 
     /**
      * get bootstrap token.
      *
-     * @param {TypeConfigure<T>} config
+     * @param {AnnotationConfigure<T>} config
      * @returns {Token<T>}
      * @memberof IBootstrapBuilder
      */
-    getBootstrapToken(config: TypeConfigure<T>): Token<T>;
+    getBootstrapToken(config: AnnotationConfigure<T>): Token<T>;
 
     /**
      * create token instance.
      *
      * @param {Token<T>} token
-     * @param {TypeConfigure<T>} config
+     * @param {AnnotationConfigure<T>} config
      * @param {*} [data]
      * @returns {Promise<T>}
      * @memberof IBootstrapBuilder
      */
-    createInstance(token: Token<T>, config: TypeConfigure<T>, data?: any): Promise<T>;
+    createInstance(token: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<T>;
 
     /**
      * bundle bootstrap instance via config.
      *
      * @param {T} instance
-     * @param {TypeConfigure<T>} config
+     * @param {AnnotationConfigure<T>} config
      * @param {IContainer} [container]
      * @returns {Promise<T>}
      * @memberof IBootstrapBuilder
      */
-    buildStrategy(instance: T, config: TypeConfigure<T>): Promise<T>;
+    buildStrategy(instance: T, config: AnnotationConfigure<T>): Promise<T>;
 }
 
 /**
@@ -103,18 +103,18 @@ export interface ITypeBuilder<T> {
  *
  * @export
  * @interface AnyBootstrapBuilder
- * @extends {ITypeBuilder<any>}
+ * @extends {IAnnotationBuilder<any>}
  */
-export interface IAnyTypeBuilder extends ITypeBuilder<any> {
+export interface IAnyTypeBuilder extends IAnnotationBuilder<any> {
     /**
      * bootstrap ioc module.
      *
      * @template T
      * @param {Token<T>} token
-     * @param {TypeConfigure<T>} config
+     * @param {AnnotationConfigure<T>} config
      * @param {*} [data]
      * @returns {Promise<T>}
      * @memberof AnyBootstrapBuilder
      */
-    build<T>(token: Token<T>, config: TypeConfigure<T>, data?: any): Promise<T>;
+    build<T>(token: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<T>;
 }

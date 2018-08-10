@@ -11,8 +11,8 @@ import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { DIModule } from './decorators';
 import { BootModule } from './BootModule';
 import { MdlInstance, LoadedModule } from './ModuleType';
-import { ITypeBuilder, TypeBuilderToken, IAnyTypeBuilder } from './ITypeBuilder';
-import { TypeBuilder } from './TypeBuilder';
+import { IAnnotationBuilder, AnnotationBuilderToken, IAnyTypeBuilder } from './IAnnotationBuilder';
+import { AnnotationBuilder } from './AnnotationBuilder';
 import { containerPools, ContainerPool } from './ContainerPool';
 
 
@@ -184,11 +184,11 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         } else {
             let boot: Token<T> = loadmdl.moduleToken;
             if (!boot) {
-                let bootBuilder = this.getTypeBuilder(container, cfg.typeBuilder);
+                let bootBuilder = this.getTypeBuilder(container, cfg.annotationBuilder);
                 let instance = await bootBuilder.buildByConfig(cfg, data);
                 return instance;
             } else {
-                let bootbuilder = this.getTypeBuilder(container, cfg.typeBuilder);
+                let bootbuilder = this.getTypeBuilder(container, cfg.annotationBuilder);
                 let instance = await bootbuilder.build(boot, cfg, data);
                 let mdlInst = instance as MdlInstance<T>;
                 if (isFunction(mdlInst.mdOnInit)) {
@@ -218,15 +218,15 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             let md = await this.build(token, loadmdl, data) as MdlInstance<T>;
             let bootInstance;
             if (loadmdl.moduleToken) {
-                if (md && isFunction(md.btBeforeCreate)) {
-                    md.btBeforeCreate(loadmdl);
+                if (md && isFunction(md.anBeforeCreate)) {
+                    md.anBeforeCreate(loadmdl);
                 }
 
-                let builder = this.getTypeBuilder(loadmdl.container, cfg.typeBuilder);
+                let builder = this.getTypeBuilder(loadmdl.container, cfg.annotationBuilder);
                 bootInstance = await builder.buildByConfig(cfg, data);
 
-                if (isFunction(md.btAfterCreate)) {
-                    md.btAfterCreate(bootInstance);
+                if (isFunction(md.anAfterCreate)) {
+                    md.anAfterCreate(bootInstance);
                 }
                 if (isFunction(md.mdOnStart)) {
                     await Promise.resolve(md.mdOnStart(bootInstance));
@@ -269,8 +269,8 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
 
-    protected getTypeBuilder(container: IContainer, typeBuilder: Token<ITypeBuilder<any>> | ITypeBuilder<any>): IAnyTypeBuilder {
-        let builder: ITypeBuilder<any>;
+    protected getTypeBuilder(container: IContainer, typeBuilder: Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>): IAnyTypeBuilder {
+        let builder: IAnnotationBuilder<any>;
         if (isClass(typeBuilder)) {
             if (!container.has(typeBuilder)) {
                 container.register(typeBuilder);
@@ -278,7 +278,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         }
         if (isToken(typeBuilder)) {
             builder = container.resolve(typeBuilder);
-        } else if (typeBuilder instanceof TypeBuilder) {
+        } else if (typeBuilder instanceof AnnotationBuilder) {
             builder = typeBuilder;
         }
         if (!builder) {
@@ -288,8 +288,8 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return builder;
     }
 
-    protected getDefaultTypeBuilder(container: IContainer): ITypeBuilder<any> {
-        return container.resolve(TypeBuilderToken);
+    protected getDefaultTypeBuilder(container: IContainer): IAnnotationBuilder<any> {
+        return container.resolve(AnnotationBuilderToken);
     }
 
 
@@ -410,8 +410,8 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     protected async registerExts(container: IContainer, config: ModuleConfigure): Promise<IContainer> {
         // register for each container.
-        if (!container.hasRegister(TypeBuilder)) {
-            container.register(TypeBuilder);
+        if (!container.hasRegister(AnnotationBuilder)) {
+            container.register(AnnotationBuilder);
         }
         return container;
     }

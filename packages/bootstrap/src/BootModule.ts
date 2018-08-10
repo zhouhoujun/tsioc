@@ -29,7 +29,6 @@ export class BootModule {
         lifeScope.registerDecorator(Bootstrap, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
 
         container.register(ModuleBuilder);
-        // container.register(BootBuilder);
         container.register(DefaultApplicationBuilder);
 
     }
