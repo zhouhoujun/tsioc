@@ -10,6 +10,13 @@ import { IAnnotationBuilder } from './IAnnotationBuilder';
  */
 export interface AnnotationConfigure<T> {
     /**
+     * autorun.
+     *
+     * @type {string}
+     * @memberof AnnotationConfigure
+     */
+    autorun?: string;
+    /**
      * bootstrap via configed token.
      *
      * @type {Token<T>}

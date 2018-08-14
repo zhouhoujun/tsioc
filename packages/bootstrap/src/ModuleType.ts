@@ -1,5 +1,6 @@
 import { IContainer, Token } from '@ts-ioc/core';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
+import { AnnotationConfigure } from './AnnotationConfigure';
 
 
 /**
@@ -31,36 +32,24 @@ export class LoadedModule {
      * @memberof IocModule
      */
     container: IContainer;
+
+    bootToken: Token<any>;
+
+    bootConfig: AnnotationConfigure<any>;
 }
 
 /**
  *  module instance.
  */
-export type MdlInstance<TM> = TM & OnModuleInit & AfterAnnotationCreate<any> & BeforeAnnotationCreate<any> & OnModuleStart<any> & OnModuleStarted<any>
+export type MdInstance<TM> = TM & OnModuleInit & OnModuleStart<any> & OnModuleStarted<any>;
 
 
 /**
- * Before Annotation class create hook.
+ * on module init.
  *
  * @export
- * @interface BeforeAnnotationCreate
- * @template T
+ * @interface OnModuleInit
  */
-export interface BeforeAnnotationCreate<T> {
-    anBeforeCreate(config?: ModuleConfig<T>);
-}
-
-/**
- * After Annotation classp created hook.
- *
- * @export
- * @interface AfterBootCreate
- * @template T
- */
-export interface AfterAnnotationCreate<T> {
-    anAfterCreate(instance: T): void;
-}
-
 export interface OnModuleInit {
     /**
      * on Module init.

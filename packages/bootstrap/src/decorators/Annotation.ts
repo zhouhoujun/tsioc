@@ -2,7 +2,7 @@ import { ClassMetadata, ITypeDecorator, Token, MetadataAdapter, MetadataExtends,
 import { IAnnotationBuilder } from '../IAnnotationBuilder';
 import { AnnotationConfigure } from '../AnnotationConfigure';
 
-export interface BuildMetadata extends ClassMetadata, AnnotationConfigure<any> {
+export interface AnnotationMetadata extends ClassMetadata, AnnotationConfigure<any> {
 
 }
 
@@ -14,7 +14,7 @@ export interface BuildMetadata extends ClassMetadata, AnnotationConfigure<any> {
  * @extends {ITypeDecorator<T>}
  * @template T
  */
-export interface IAnnotationDecorator<T extends BuildMetadata> extends ITypeDecorator<T> {
+export interface IAnnotationDecorator<T extends AnnotationMetadata> extends ITypeDecorator<T> {
     /**
      * Annotation decorator, use to define class as DI Module.
      *
@@ -37,13 +37,13 @@ export interface IAnnotationDecorator<T extends BuildMetadata> extends ITypeDeco
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IAnnotationDecorator<T>}
  */
-export function createAnnotationDecorator<T extends BuildMetadata>(
+export function createAnnotationDecorator<T extends AnnotationMetadata>(
     name: string,
     builder?: Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IAnnotationDecorator<T> {
 
-    return createClassDecorator<BuildMetadata>(name,
+    return createClassDecorator<AnnotationMetadata>(name,
         args => {
             if (adapter) {
                 adapter(args);
@@ -67,4 +67,4 @@ export function createAnnotationDecorator<T extends BuildMetadata>(
  *
  * @Annotation
  */
-export const Annotation: IAnnotationDecorator<BuildMetadata> = createAnnotationDecorator<BuildMetadata>('Annotation');
+export const Annotation: IAnnotationDecorator<AnnotationMetadata> = createAnnotationDecorator<AnnotationMetadata>('Annotation');

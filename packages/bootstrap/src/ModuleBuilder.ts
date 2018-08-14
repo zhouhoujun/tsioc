@@ -10,10 +10,11 @@ import { IModuleBuilder, ModuleBuilderToken } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { DIModule } from './decorators';
 import { BootModule } from './BootModule';
-import { MdlInstance, LoadedModule } from './ModuleType';
+import { MdInstance, LoadedModule } from './ModuleType';
 import { IAnnotationBuilder, AnnotationBuilderToken, IAnyTypeBuilder } from './IAnnotationBuilder';
 import { AnnotationBuilder } from './AnnotationBuilder';
 import { containerPools, ContainerPool } from './ContainerPool';
+import { BootInstance } from './IBoot';
 
 
 const exportsProvidersFiled = '__exportProviders';
@@ -184,13 +185,13 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         } else {
             let boot: Token<T> = loadmdl.moduleToken;
             if (!boot) {
-                let bootBuilder = this.getTypeBuilder(container, cfg.annotationBuilder);
+                let bootBuilder = this.getAnnoBuilder(container, cfg.annotationBuilder);
                 let instance = await bootBuilder.buildByConfig(cfg, data);
                 return instance;
             } else {
-                let bootbuilder = this.getTypeBuilder(container, cfg.annotationBuilder);
+                let bootbuilder = this.getAnnoBuilder(container, cfg.annotationBuilder);
                 let instance = await bootbuilder.build(boot, cfg, data);
-                let mdlInst = instance as MdlInstance<T>;
+                let mdlInst = instance as MdInstance<T>;
                 if (isFunction(mdlInst.mdOnInit)) {
                     mdlInst.mdOnInit(loadmdl);
                 }
@@ -205,41 +206,41 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     * @param {(Token<T> | ModuleConfig<T>)} token
     * @param {(IContainer | LoadedModule)} [defaults]
     * @param {*} [data]
-    * @returns {Promise<MdlInstance<T>>}
+    * @returns {Promise<MdInstance<T>>}
     * @memberof ModuleBuilder
     */
     async bootstrap(token: Token<T> | ModuleConfig<T>, defaults?: IContainer | LoadedModule, data?: any): Promise<any> {
         let loadmdl = await this.loadByDefaults(token, defaults);
         let cfg = loadmdl.moduleConfig;
-        let builder = this.getBuilder(loadmdl.container, cfg);
+        let container = loadmdl.container;
+        let builder = this.getBuilder(container, cfg);
         if (builder && builder !== this) {
             return await builder.bootstrap(token, loadmdl, data);
         } else {
-            let md = await this.build(token, loadmdl, data) as MdlInstance<T>;
-            let bootInstance;
+            let md = await this.build(token, loadmdl, data) as MdInstance<T>;
+            let bootInstance: BootInstance<T>;
             if (loadmdl.moduleToken) {
-                if (md && isFunction(md.anBeforeCreate)) {
-                    md.anBeforeCreate(loadmdl);
-                }
-
-                let builder = this.getTypeBuilder(loadmdl.container, cfg.annotationBuilder);
-                bootInstance = await builder.buildByConfig(cfg, data);
-
-                if (isFunction(md.anAfterCreate)) {
-                    md.anAfterCreate(bootInstance);
-                }
+                let anBuilder = this.getAnnoBuilder(container, cfg.annotationBuilder);
+                bootInstance = await anBuilder.buildByConfig(cfg, data);
                 if (isFunction(md.mdOnStart)) {
                     await Promise.resolve(md.mdOnStart(bootInstance));
+                } else {
+                    this.invokeAutoRun(container, anBuilder.getBootstrapToken(cfg), cfg, bootInstance);
                 }
-
                 if (isFunction(md.mdOnStarted)) {
                     md.mdOnStarted(bootInstance);
                 }
             } else {
-                bootInstance = md;
+                bootInstance = md as any;
+                this.invokeAutoRun(container, this.getBootstrapToken(cfg), cfg, bootInstance);
             }
-
             return bootInstance;
+        }
+    }
+
+    protected async invokeAutoRun(container: IContainer, token: Token<any>, cfg: ModuleConfigure, instance: any): Promise<any> {
+        if (token && cfg.autorun) {
+            return await container.invoke(token, cfg.autorun, instance);
         }
     }
 
@@ -269,17 +270,17 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
 
-    protected getTypeBuilder(container: IContainer, typeBuilder: Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>): IAnyTypeBuilder {
+    protected getAnnoBuilder(container: IContainer, annBuilder: Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>): IAnyTypeBuilder {
         let builder: IAnnotationBuilder<any>;
-        if (isClass(typeBuilder)) {
-            if (!container.has(typeBuilder)) {
-                container.register(typeBuilder);
+        if (isClass(annBuilder)) {
+            if (!container.has(annBuilder)) {
+                container.register(annBuilder);
             }
         }
-        if (isToken(typeBuilder)) {
-            builder = container.resolve(typeBuilder);
-        } else if (typeBuilder instanceof AnnotationBuilder) {
-            builder = typeBuilder;
+        if (isToken(annBuilder)) {
+            builder = container.resolve(annBuilder);
+        } else if (annBuilder instanceof AnnotationBuilder) {
+            builder = annBuilder;
         }
         if (!builder) {
             builder = this.getDefaultTypeBuilder(container);

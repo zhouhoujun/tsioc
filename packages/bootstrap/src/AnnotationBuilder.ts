@@ -1,7 +1,8 @@
 import { IAnnotationBuilder, AnnotationBuilderToken } from './IAnnotationBuilder';
-import { Singleton, Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, hasOwnClassMetadata, getTypeMetadata, lang } from '@ts-ioc/core';
+import { Singleton, Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, hasOwnClassMetadata, getTypeMetadata, lang, isFunction } from '@ts-ioc/core';
 import { AnnotationConfigure } from './AnnotationConfigure';
 import { Annotation } from './decorators';
+import { BootInstance } from './IBoot';
 
 /**
  * Annotation class builder. build class with metadata and config.
@@ -33,8 +34,14 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         if (builder !== this) {
             return builder.build(token, config, data);
         } else {
-            let instance = await this.createInstance(token, config, data);
-            instance = await this.buildStrategy(instance, config);
+            let instance = await this.createInstance(token, config, data) as BootInstance<T>;
+            if (isFunction(instance.anBeforeInit)) {
+                await Promise.resolve(instance.anBeforeInit(config));
+            }
+            instance = await this.buildStrategy(instance, config) as BootInstance<T>;
+            if (isFunction(instance.anAfterInit)) {
+                await Promise.resolve(instance.anAfterInit(config));
+            }
             return instance;
         }
     }

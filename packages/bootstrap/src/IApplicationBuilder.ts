@@ -1,13 +1,14 @@
-import { Token, LoadType, InjectToken, IContainer } from '@ts-ioc/core';
+import { Token, InjectToken, IContainer, LoadType } from '@ts-ioc/core';
 import { AppConfigure } from './AppConfigure';
 import { IModuleBuilder } from './IModuleBuilder';
-import { MdlInstance, LoadedModule } from './ModuleType';
+import { MdInstance, LoadedModule } from './ModuleType';
 import { ModuleConfig } from './ModuleConfigure';
 
 /**
  * custom define module.
  */
 export type CustomRegister<T> = (container: IContainer, config?: AppConfigure, builder?: IApplicationBuilder<T>) => Token<T>[] | Promise<Token<T>[]>;
+
 
 /**
  * use module extends application.
@@ -35,6 +36,7 @@ export interface IApplicationExtends {
      */
     use(...modules: LoadType[]): this;
 }
+
 
 /**
  * application builder.
@@ -66,9 +68,9 @@ export interface AnyApplicationBuilder extends IApplicationBuilder<any> {
      *
      * @param {(Token<TM> | ModuleConfig<TM>)} token
      * @param {(IContainer | LoadedModule)} [defaultContainer]
-     * @returns {Promise<MdlInstance<T>>}
+     * @returns {Promise<MdInstance<T>>}
      * @memberof IModuleBuilder
      */
-    build<TM>(token: Token<TM> | ModuleConfig<TM>, defaults?: IContainer | LoadedModule): Promise<MdlInstance<TM>>;
+    build<TM>(token: Token<TM> | ModuleConfig<TM>, defaults?: IContainer | LoadedModule): Promise<MdInstance<TM>>;
 
 }

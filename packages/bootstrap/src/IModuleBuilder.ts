@@ -1,6 +1,6 @@
 import { Registration, IContainer, Type, Token } from '@ts-ioc/core';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
-import { MdlInstance, LoadedModule } from './ModuleType';
+import { MdInstance, LoadedModule } from './ModuleType';
 import { ContainerPool } from './ContainerPool';
 
 
@@ -90,7 +90,7 @@ export interface IModuleBuilder<T> {
      * @param {(Token<T> | ModuleConfig<T>)} token
      * @param {(IContainer | LoadedModule)} [defaults]
      * @param {*} [data]
-     * @returns {Promise<MdlInstance<T>>}
+     * @returns {Promise<MdInstance<T>>}
      * @memberof IGModuleBuilder
      */
     bootstrap(token: Token<T> | ModuleConfig<T>, defaults?: IContainer | LoadedModule, data?: any): Promise<any>;
@@ -155,20 +155,10 @@ export interface AnyModuleBuilder extends IModuleBuilder<any> {
      *
      * @param {(Token<TM> | ModuleConfig<TM>)} token
      * @param {(IContainer | LoadedModule)} [defaults]
-     * @returns {Promise<MdlInstance<T>>}
+     * @returns {Promise<MdInstance<T>>}
      * @memberof IModuleBuilder
      */
-    build<TM>(token: Token<TM> | ModuleConfig<TM>, defaults?: IContainer | LoadedModule): Promise<MdlInstance<TM>>;
-
-    // /**
-    //  * bootstrap module.
-    //  *
-    //  * @param {(Token<any> | ModuleConfigure)} token
-    //  * @param {IContainer} [defaultContainer]
-    //  * @returns {Promise<any>}
-    //  * @memberof IModuleBuilder
-    //  */
-    // bootstrap<T>(token: Token<any> | ModuleConfigure, defaultContainer?: IContainer): Promise<T>;
+    build<TM>(token: Token<TM> | ModuleConfig<TM>, defaults?: IContainer | LoadedModule): Promise<MdInstance<TM>>;
 
 }
 

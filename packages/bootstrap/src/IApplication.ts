@@ -1,15 +1,25 @@
 import { AppConfigure } from './AppConfigure';
 
 /**
- * service interface
+ * IService interface
  *
  * @export
  * @interface IService
  */
 export interface IService {
+    /**
+     * start boot.
+     */
     start(): Promise<any> | void;
+    /**
+     * stop boot.
+     *
+     * @returns {(Promise<any> | void)}
+     * @memberof IBoot
+     */
     stop(): Promise<any> | void;
 }
+
 
 /**
  * applicaton

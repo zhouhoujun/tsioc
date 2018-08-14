@@ -70,12 +70,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @template T
  * @param {string} name decorator name.
  * @param {(Token<IModuleBuilder> | IModuleBuilder)} [builder]
- * @param {(Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>)} [typeBuilder]
+ * @param {(Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>)} [annotationBuilder]
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IDIModuleDecorator<T>}
  */
-function createDIModuleDecorator(name, builder, typeBuilder, adapter, metadataExtends) {
+function createDIModuleDecorator(name, builder, annotationBuilder, adapter, metadataExtends) {
     return core_1.createClassDecorator(name, function (args) {
         if (adapter) {
             adapter(args);
@@ -97,8 +97,8 @@ function createDIModuleDecorator(name, builder, typeBuilder, adapter, metadataEx
         if (builder && !metadata.builder) {
             metadata.builder = builder;
         }
-        if (typeBuilder && !metadata.annotationBuilder) {
-            metadata.annotationBuilder = typeBuilder;
+        if (annotationBuilder && !metadata.annotationBuilder) {
+            metadata.annotationBuilder = annotationBuilder;
         }
         return metadata;
     });
@@ -129,13 +129,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @template T
  * @param {string} name
  * @param {(Token<IApplicationBuilder> | IApplicationBuilder)} [builder] default builder
- * @param {(Token<IAnnotationBuilder<any>> | IAnnotationBuilder<Tany>)} [typeBuilder] default type builder.
+ * @param {(Token<IAnnotationBuilder<any>> | IAnnotationBuilder<Tany>)} [annotationBuilder] default type builder.
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IBootstrapDecorator<T>}
  */
-function createBootstrapDecorator(name, builder, typeBuilder, adapter, metadataExtends) {
-    return DIModule.createDIModuleDecorator(name, builder, typeBuilder, adapter, function (metadata) {
+function createBootstrapDecorator(name, builder, annotationBuilder, adapter, metadataExtends) {
+    return DIModule.createDIModuleDecorator(name, builder, annotationBuilder, adapter, function (metadata) {
         if (metadataExtends) {
             metadataExtends(metadata);
         }
@@ -362,10 +362,20 @@ var AnnotationBuilder = /** @class */ (function () {
                     case 1: return [4 /*yield*/, this.createInstance(token, config, data)];
                     case 2:
                         instance = _a.sent();
-                        return [4 /*yield*/, this.buildStrategy(instance, config)];
+                        if (!core_1.isFunction(instance.anBeforeInit)) return [3 /*break*/, 4];
+                        return [4 /*yield*/, Promise.resolve(instance.anBeforeInit(config))];
                     case 3:
-                        instance = _a.sent();
-                        return [2 /*return*/, instance];
+                        _a.sent();
+                        _a.label = 4;
+                    case 4: return [4 /*yield*/, this.buildStrategy(instance, config)];
+                    case 5:
+                        instance = (_a.sent());
+                        if (!core_1.isFunction(instance.anAfterInit)) return [3 /*break*/, 7];
+                        return [4 /*yield*/, Promise.resolve(instance.anAfterInit(config))];
+                    case 6:
+                        _a.sent();
+                        _a.label = 7;
+                    case 7: return [2 /*return*/, instance];
                 }
             });
         });
@@ -738,13 +748,13 @@ var ModuleBuilder = /** @class */ (function () {
                     case 3:
                         boot = loadmdl.moduleToken;
                         if (!!boot) return [3 /*break*/, 5];
-                        bootBuilder = this.getTypeBuilder(container, cfg.annotationBuilder);
+                        bootBuilder = this.getAnnoBuilder(container, cfg.annotationBuilder);
                         return [4 /*yield*/, bootBuilder.buildByConfig(cfg, data)];
                     case 4:
                         instance = _a.sent();
                         return [2 /*return*/, instance];
                     case 5:
-                        bootbuilder = this.getTypeBuilder(container, cfg.annotationBuilder);
+                        bootbuilder = this.getAnnoBuilder(container, cfg.annotationBuilder);
                         return [4 /*yield*/, bootbuilder.build(boot, cfg, data)];
                     case 6:
                         instance = _a.sent();
@@ -763,19 +773,20 @@ var ModuleBuilder = /** @class */ (function () {
     * @param {(Token<T> | ModuleConfig<T>)} token
     * @param {(IContainer | LoadedModule)} [defaults]
     * @param {*} [data]
-    * @returns {Promise<MdlInstance<T>>}
+    * @returns {Promise<MdInstance<T>>}
     * @memberof ModuleBuilder
     */
     ModuleBuilder.prototype.bootstrap = function (token, defaults, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var loadmdl, cfg, builder, md, bootInstance, builder_1;
+            var loadmdl, cfg, container, builder, md, bootInstance, anBuilder;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.loadByDefaults(token, defaults)];
                     case 1:
                         loadmdl = _a.sent();
                         cfg = loadmdl.moduleConfig;
-                        builder = this.getBuilder(loadmdl.container, cfg);
+                        container = loadmdl.container;
+                        builder = this.getBuilder(container, cfg);
                         if (!(builder && builder !== this)) return [3 /*break*/, 3];
                         return [4 /*yield*/, builder.bootstrap(token, loadmdl, data)];
                     case 2: return [2 /*return*/, _a.sent()];
@@ -783,31 +794,35 @@ var ModuleBuilder = /** @class */ (function () {
                     case 4:
                         md = _a.sent();
                         bootInstance = void 0;
-                        if (!loadmdl.moduleToken) return [3 /*break*/, 8];
-                        if (md && core_1.isFunction(md.anBeforeCreate)) {
-                            md.anBeforeCreate(loadmdl);
-                        }
-                        builder_1 = this.getTypeBuilder(loadmdl.container, cfg.annotationBuilder);
-                        return [4 /*yield*/, builder_1.buildByConfig(cfg, data)];
+                        if (!loadmdl.moduleToken) return [3 /*break*/, 10];
+                        anBuilder = this.getAnnoBuilder(container, cfg.annotationBuilder);
+                        return [4 /*yield*/, anBuilder.buildByConfig(cfg, data)];
                     case 5:
                         bootInstance = _a.sent();
-                        if (core_1.isFunction(md.anAfterCreate)) {
-                            md.anAfterCreate(bootInstance);
-                        }
                         if (!core_1.isFunction(md.mdOnStart)) return [3 /*break*/, 7];
                         return [4 /*yield*/, Promise.resolve(md.mdOnStart(bootInstance))];
                     case 6:
                         _a.sent();
-                        _a.label = 7;
+                        return [3 /*break*/, 9];
                     case 7:
+                        if (!(cfg.autorun && core_1.isFunction(bootInstance[cfg.autorun]))) return [3 /*break*/, 9];
+                        return [4 /*yield*/, container.invoke(anBuilder.getBootstrapToken(cfg), cfg.autorun, bootInstance)];
+                    case 8:
+                        _a.sent();
+                        _a.label = 9;
+                    case 9:
                         if (core_1.isFunction(md.mdOnStarted)) {
                             md.mdOnStarted(bootInstance);
                         }
-                        return [3 /*break*/, 9];
-                    case 8:
+                        return [3 /*break*/, 12];
+                    case 10:
                         bootInstance = md;
-                        _a.label = 9;
-                    case 9: return [2 /*return*/, bootInstance];
+                        if (!cfg.autorun) return [3 /*break*/, 12];
+                        return [4 /*yield*/, container.invoke(this.getBootstrapToken(cfg), cfg.autorun, bootInstance)];
+                    case 11:
+                        _a.sent();
+                        _a.label = 12;
+                    case 12: return [2 /*return*/, bootInstance];
                 }
             });
         });
@@ -845,18 +860,18 @@ var ModuleBuilder = /** @class */ (function () {
         }
         return builder;
     };
-    ModuleBuilder.prototype.getTypeBuilder = function (container, typeBuilder) {
+    ModuleBuilder.prototype.getAnnoBuilder = function (container, annBuilder) {
         var builder;
-        if (core_1.isClass(typeBuilder)) {
-            if (!container.has(typeBuilder)) {
-                container.register(typeBuilder);
+        if (core_1.isClass(annBuilder)) {
+            if (!container.has(annBuilder)) {
+                container.register(annBuilder);
             }
         }
-        if (core_1.isToken(typeBuilder)) {
-            builder = container.resolve(typeBuilder);
+        if (core_1.isToken(annBuilder)) {
+            builder = container.resolve(annBuilder);
         }
-        else if (typeBuilder instanceof AnnotationBuilder_1.AnnotationBuilder) {
-            builder = typeBuilder;
+        else if (annBuilder instanceof AnnotationBuilder_1.AnnotationBuilder) {
+            builder = annBuilder;
         }
         if (!builder) {
             builder = this.getDefaultTypeBuilder(container);
@@ -1146,7 +1161,7 @@ var ModuleBuilder = /** @class */ (function () {
         return tokens;
     };
     var ModuleBuilder_1;
-    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getPools": [], "setPools": ["pools"], "regDefaultContainer": [], "getContainer": ["token", "defaultContainer", "parent"], "setParent": ["container", "parent"], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "load": ["token", "defaultContainer", "parent"], "build": ["token", "defaults", "data"], "bootstrap": ["token", "defaults", "data"], "loadByDefaults": ["token", "defaults"], "getBuilder": ["container", "cfg"], "getTypeBuilder": ["container", "typeBuilder"], "getDefaultTypeBuilder": ["container"], "importModule": ["token", "container"], "getDecorator": [], "getConfigure": ["token", "container"], "registerDepdences": ["container", "config"], "getBootstrapToken": ["cfg"], "importConfigExports": ["container", "providerContainer", "cfg"], "registerConfgureDepds": ["container", "config"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getPools": [], "setPools": ["pools"], "regDefaultContainer": [], "getContainer": ["token", "defaultContainer", "parent"], "setParent": ["container", "parent"], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "load": ["token", "defaultContainer", "parent"], "build": ["token", "defaults", "data"], "bootstrap": ["token", "defaults", "data"], "loadByDefaults": ["token", "defaults"], "getBuilder": ["container", "cfg"], "getAnnoBuilder": ["container", "annBuilder"], "getDefaultTypeBuilder": ["container"], "importModule": ["token", "container"], "getDecorator": [], "getConfigure": ["token", "container"], "registerDepdences": ["container", "config"], "getBootstrapToken": ["cfg"], "importConfigExports": ["container", "providerContainer", "cfg"], "registerConfgureDepds": ["container", "config"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
     tslib_1.__decorate([
         core_1.Inject(core_1.ContainerBuilderToken),
         tslib_1.__metadata("design:type", Object)
