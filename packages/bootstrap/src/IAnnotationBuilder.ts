@@ -1,24 +1,9 @@
 import { Registration, IContainer, Token } from '@ts-ioc/core';
 import { AnnotationConfigure } from './AnnotationConfigure';
 
-/**
- * inject Annotation class builder.
- *
- * @export
- * @class InjectBootstrapBuilder
- * @extends {Registration<T>}
- * @template T
- */
-export class InjectAnnotationBuilder<T extends IAnnotationBuilder<any>> extends Registration<T> {
-    constructor(desc: string) {
-        super('DI_TypeBuilder', desc);
-    }
-}
 
-/**
- * Annotation class builder token.
- */
-export const AnnotationBuilderToken = new InjectAnnotationBuilder<IAnyTypeBuilder>('');
+const annoBuilderDesc = 'DI_AnnotationBuilder';
+
 
 /**
  * Annotation class builder.
@@ -60,11 +45,12 @@ export interface IAnnotationBuilder<T> {
     /**
      * get finally builder by token and config.
      *
+     * @param {Token<T>} token
      * @param {AnnotationConfigure<T>} [config]
      * @returns {IAnnotationBuilder<T>}
      * @memberof IBootBuilder
      */
-    getBuilder(config?: AnnotationConfigure<T>): IAnnotationBuilder<T>;
+    getBuilder(token: Token<T>, config?: AnnotationConfigure<T>): IAnnotationBuilder<T>;
 
     /**
      * get annoation type token.
@@ -118,3 +104,23 @@ export interface IAnyTypeBuilder extends IAnnotationBuilder<any> {
      */
     build<T>(token: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<T>;
 }
+
+/**
+ * inject Annotation class builder.
+ *
+ * @export
+ * @class InjectBootstrapBuilder
+ * @extends {Registration<T>}
+ * @template T
+ */
+export class InjectAnnotationBuilder<T> extends Registration<IAnnotationBuilder<T>> {
+    constructor(type: Token<T>) {
+        super(type, annoBuilderDesc);
+    }
+}
+
+
+/**
+ * Annotation class builder token.
+ */
+export const AnnotationBuilderToken = new Registration<IAnyTypeBuilder>(Object, annoBuilderDesc);

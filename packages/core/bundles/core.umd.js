@@ -1418,14 +1418,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var Registration = /** @class */ (function () {
     /**
      * Creates an instance of Registration.
-     * @param {(provideType: Type<T> | AbstractType<T> | symbol | string | Registration<T>)} provideType
+     * @param {(Token<T> | Token<any>)} provideType
      * @param {string} desc
      * @memberof Registration
      */
     function Registration(provideType, desc) {
         this.type = 'Registration';
         if (provideType instanceof Registration) {
-            this.classType = provideType.classType;
+            this.classType = provideType.getType();
             var pdec = provideType.getDesc();
             if (pdec && desc && pdec !== desc) {
                 this.desc = pdec + '_' + desc;
@@ -1439,6 +1439,9 @@ var Registration = /** @class */ (function () {
             this.desc = desc;
         }
     }
+    Registration.prototype.getType = function () {
+        return this.classType;
+    };
     /**
      * get class.
      *
@@ -1476,7 +1479,7 @@ var Registration = /** @class */ (function () {
         }
         return this.type + " " + name + " " + this.desc;
     };
-    Registration.classAnnations = { "name": "Registration", "params": { "constructor": ["provideType", "desc"], "getClass": [], "getDesc": [], "toString": [] } };
+    Registration.classAnnations = { "name": "Registration", "params": { "constructor": ["provideType", "desc"], "getType": [], "getClass": [], "getDesc": [], "toString": [] } };
     return Registration;
 }());
 exports.Registration = Registration;

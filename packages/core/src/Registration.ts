@@ -1,4 +1,4 @@
-import { Type, AbstractType } from './types';
+import { Type, AbstractType, Token, SymbolType } from './types';
 import { isClass, isFunction, getClassName } from './utils';
 
 /**
@@ -10,17 +10,17 @@ import { isClass, isFunction, getClassName } from './utils';
 export class Registration<T> {
 
     protected type = 'Registration';
-    protected classType: Type<T> | AbstractType<T> | symbol | string;
+    protected classType: SymbolType<any>;
     protected desc: string;
     /**
      * Creates an instance of Registration.
-     * @param {(provideType: Type<T> | AbstractType<T> | symbol | string | Registration<T>)} provideType
+     * @param {(Token<T> | Token<any>)} provideType
      * @param {string} desc
      * @memberof Registration
      */
-    constructor(provideType: Type<T> | AbstractType<T> | symbol | string | Registration<T>, desc: string) {
+    constructor(provideType: Token<T> | Token<any>, desc: string) {
         if (provideType instanceof Registration) {
-            this.classType = provideType.classType;
+            this.classType = provideType.getType();
             let pdec = provideType.getDesc();
             if (pdec && desc && pdec !== desc) {
                 this.desc = pdec + '_' + desc;
@@ -31,6 +31,10 @@ export class Registration<T> {
             this.classType = provideType;
             this.desc = desc;
         }
+    }
+
+    getType(): SymbolType<any> {
+        return this.classType;
     }
 
 

@@ -12,6 +12,10 @@ import { AnnotationConfigure } from './AnnotationConfigure';
  */
 export class LoadedModule {
     /**
+     * token to loaded by.
+     */
+    token: Token<any> | ModuleConfigure;
+    /**
      * module Token
      *
      * @type {Token<any>}

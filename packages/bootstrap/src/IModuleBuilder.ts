@@ -4,19 +4,26 @@ import { MdInstance, LoadedModule } from './ModuleType';
 import { ContainerPool } from './ContainerPool';
 
 
+const moduleBuilderDesc = 'DI_ModuleBuilder';
+
 /**
- * inject module builder.
+ * inject module builder token.
  *
  * @export
  * @class InjectModuleBuilder
  * @extends {Registration<T>}
  * @template T
  */
-export class InjectModuleBuilder<T extends IModuleBuilder<any>> extends Registration<T> {
-    constructor(desc: string) {
-        super('DI_ModuleBuilder', desc);
+export class InjectModuleBuilderToken<T> extends Registration<IModuleBuilder<T>> {
+    constructor(type: Token<T>) {
+        super(type, moduleBuilderDesc);
     }
 }
+
+/**
+ * load default container or, loaded module.
+ */
+export type ModuleEnv = IContainer | LoadedModule;
 
 
 /**
@@ -47,12 +54,12 @@ export interface IModuleBuilder<T> {
      * get container of the module.
      *
      * @param {(Token<T> | ModuleConfigure)} token module type or module configuration.
-     * @param {IContainer} [defaultContainer] set default container or not. not set will create new container.
+     * @param {ModuleEnv} [defaults] set loadedModule will return loaded container; set default container or not. not set will create new container.
      * @param {IContainer} [parent] set the container parent, default will set root default container.
      * @returns {IContainer}
      * @memberof IModuleBuilder
      */
-    getContainer(token: Token<T> | ModuleConfigure, defaultContainer?: IContainer, parent?: IContainer): IContainer;
+    getContainer(token: Token<T> | ModuleConfigure, defaults?: ModuleEnv, parent?: IContainer): IContainer;
 
     /**
      * create new container.
@@ -66,34 +73,45 @@ export interface IModuleBuilder<T> {
      * load module depdences.
      *
      * @param {(Token<T> | ModuleConfigure)} token
-     * @param {IContainer} [defaultContainer] set default container or not. not set will create new container.
+     * @param {ModuleEnv} [env] set loadedModule will return loaded container; set default container or not. not set will create new container.
      * @param {IContainer} [parent] set the container parent, default will set root default container.
      * @returns {Promise<LoadedModule>}
      * @memberof IModuleBuilder
      */
-    load(token: Token<T> | ModuleConfigure, defaultContainer?: IContainer, parent?: IContainer): Promise<LoadedModule>;
+    load(token: Token<T> | ModuleConfigure, env?: ModuleEnv, parent?: IContainer): Promise<LoadedModule>;
 
     /**
      * build module as ioc container.
      *
      * @param {(Token<T> | ModuleConfig<T>)} token
-     * @param {(IContainer | LoadedModule)} [defaults]
+     * @param {ModuleEnv} [env]
      * @param {*} [data]
      * @returns {Promise<T>}
      * @memberof IModuleBuilder
      */
-    build(token: Token<T> | ModuleConfig<T>, defaults?: IContainer | LoadedModule, data?: any): Promise<T>;
+    build(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<T>;
+
+    /**
+     * get module builder
+     *
+     * @param {IContainer} container
+     * @param {Token<T>} token
+     * @param {ModuleConfigure} [cfg]
+     * @returns {IModuleBuilder<T>}
+     * @memberof IModuleBuilder
+     */
+    getBuilder(container: IContainer, token: Token<T>, cfg?: ModuleConfigure): IModuleBuilder<T>;
 
     /**
      * bootstrap module's main.
      *
      * @param {(Token<T> | ModuleConfig<T>)} token
-     * @param {(IContainer | LoadedModule)} [defaults]
+     * @param {ModuleEnv} [env]
      * @param {*} [data]
      * @returns {Promise<MdInstance<T>>}
      * @memberof IGModuleBuilder
      */
-    bootstrap(token: Token<T> | ModuleConfig<T>, defaults?: IContainer | LoadedModule, data?: any): Promise<any>;
+    bootstrap(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<any>;
 
     /**
      * import di module.
@@ -139,7 +157,7 @@ export interface IModuleBuilder<T> {
 /**
  * module builder token.
  */
-export const ModuleBuilderToken = new InjectModuleBuilder<AnyModuleBuilder>('');
+export const ModuleBuilderToken = new Registration<AnyModuleBuilder>(Object, moduleBuilderDesc);
 
 /**
  *  module builder. objected generics to any
@@ -154,11 +172,11 @@ export interface AnyModuleBuilder extends IModuleBuilder<any> {
      * build module as ioc container.
      *
      * @param {(Token<TM> | ModuleConfig<TM>)} token
-     * @param {(IContainer | LoadedModule)} [defaults]
+     * @param {ModuleEnv} [env]
      * @returns {Promise<MdInstance<T>>}
      * @memberof IModuleBuilder
      */
-    build<TM>(token: Token<TM> | ModuleConfig<TM>, defaults?: IContainer | LoadedModule): Promise<MdInstance<TM>>;
+    build<TM>(token: Token<TM> | ModuleConfig<TM>, env?: ModuleEnv): Promise<MdInstance<TM>>;
 
 }
 
