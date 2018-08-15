@@ -14,7 +14,9 @@ import { MdInstance, LoadedModule } from './ModuleType';
 import { IAnnotationBuilder, AnnotationBuilderToken, IAnyTypeBuilder } from './IAnnotationBuilder';
 import { AnnotationBuilder } from './AnnotationBuilder';
 import { containerPools, ContainerPool } from './ContainerPool';
-import { BootInstance } from './IBoot';
+import { AnnoInstance } from './IAnnotation';
+import { Boot } from './Boot';
+import { Service } from './Service';
 
 
 const exportsProvidersFiled = '__exportProviders';
@@ -154,7 +156,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         cfg = await this.registerDepdences(container, cfg);
 
         let loadmdl = {
-            moduleToken: isToken(token) ? token : null,
+            moduleToken: isToken(token) ? token : cfg.token,
             container: container,
             moduleConfig: cfg
         } as LoadedModule;
@@ -183,14 +185,12 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         if (builder && builder !== this) {
             return await builder.build(token, container, data);
         } else {
-            let boot: Token<T> = loadmdl.moduleToken;
-            if (!boot) {
-                let bootBuilder = this.getAnnoBuilder(container, cfg.annotationBuilder);
-                let instance = await bootBuilder.buildByConfig(cfg, data);
+            let annBuilder = this.getAnnoBuilder(container, cfg.annotationBuilder);
+            if (!loadmdl.moduleToken) {
+                let instance = await annBuilder.buildByConfig(cfg, data);
                 return instance;
             } else {
-                let bootbuilder = this.getAnnoBuilder(container, cfg.annotationBuilder);
-                let instance = await bootbuilder.build(boot, cfg, data);
+                let instance = await annBuilder.build(loadmdl.moduleToken, cfg, data);
                 let mdlInst = instance as MdInstance<T>;
                 if (isFunction(mdlInst.mdOnInit)) {
                     mdlInst.mdOnInit(loadmdl);
@@ -218,28 +218,29 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             return await builder.bootstrap(token, loadmdl, data);
         } else {
             let md = await this.build(token, loadmdl, data) as MdInstance<T>;
-            let bootInstance: BootInstance<T>;
-            if (loadmdl.moduleToken) {
+            let bootInstance: AnnoInstance<T>;
+            let bootToken = this.getBootType(cfg);
+            if (bootToken) {
                 let anBuilder = this.getAnnoBuilder(container, cfg.annotationBuilder);
-                bootInstance = await anBuilder.buildByConfig(cfg, data);
+                bootInstance = await anBuilder.build(bootToken, cfg, data);
+                await this.autoRun(container, bootToken, cfg, bootInstance);
                 if (isFunction(md.mdOnStart)) {
                     await Promise.resolve(md.mdOnStart(bootInstance));
-                } else {
-                    this.invokeAutoRun(container, anBuilder.getBootstrapToken(cfg), cfg, bootInstance);
-                }
-                if (isFunction(md.mdOnStarted)) {
-                    md.mdOnStarted(bootInstance);
                 }
             } else {
                 bootInstance = md as any;
-                this.invokeAutoRun(container, this.getBootstrapToken(cfg), cfg, bootInstance);
+                this.autoRun(container, this.getType(cfg), cfg, bootInstance);
             }
             return bootInstance;
         }
     }
 
-    protected async invokeAutoRun(container: IContainer, token: Token<any>, cfg: ModuleConfigure, instance: any): Promise<any> {
-        if (token && cfg.autorun) {
+    protected async autoRun(container: IContainer, token: Token<any>, cfg: ModuleConfigure, instance: any): Promise<any> {
+        if (instance instanceof Boot) {
+            return await instance.run();
+        } else if (instance instanceof Service) {
+            return await instance.start();
+        } else if (token && cfg.autorun) {
             return await container.invoke(token, cfg.autorun, instance);
         }
     }
@@ -331,9 +332,9 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             }
         } else {
             cfg = token as ModuleConfigure;
-            let bootToken = this.getBootstrapToken(cfg);
-            if (bootToken) {
-                let typeTask = isClass(bootToken) ? bootToken : (container ? container.getTokenImpl(bootToken) : bootToken);
+            let type = this.getType(cfg);
+            if (type) {
+                let typeTask = isClass(type) ? type : (container ? container.getTokenImpl(type) : type);
                 if (isClass(typeTask)) {
                     cfg = lang.assign({}, this.getMetaConfig(typeTask), cfg || {});
                 }
@@ -348,7 +349,27 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return config;
     }
 
-    protected getBootstrapToken(cfg: ModuleConfigure): Token<T> {
+    /**
+     * get module type
+     *
+     * @protected
+     * @param {ModuleConfigure} cfg
+     * @returns {Token<T>}
+     * @memberof ModuleBuilder
+     */
+    protected getType(cfg: ModuleConfigure): Token<T> {
+        return cfg.token || cfg.type;
+    }
+
+    /**
+     * get boot type.
+     *
+     * @protected
+     * @param {ModuleConfigure} cfg
+     * @returns {Token<T>}
+     * @memberof ModuleBuilder
+     */
+    protected getBootType(cfg: ModuleConfigure): Token<T> {
         return cfg.bootstrap;
     }
 
@@ -388,7 +409,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             let metas = getTypeMetadata<ModuleConfigure>(decorator, bootModule);
             if (metas && metas.length) {
                 let meta = metas[0];
-                // meta.bootstrap = meta.bootstrap || bootModule;
                 return lang.omit(meta, 'builder');
             }
         }

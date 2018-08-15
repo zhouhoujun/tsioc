@@ -72,12 +72,12 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
                 metadata = metadataExtends(metadata as T);
             }
 
-            if (!metadata.name && isClass(metadata.type)) {
-                let isuglify = /^[a-z]$/.test(metadata.type.name);
-                if (isuglify && metadata.type.classAnnations) {
-                    metadata.name = metadata.type.classAnnations.name;
+            if (!metadata.name && isClass(metadata.token)) {
+                let isuglify = /^[a-z]$/.test(metadata.token.name);
+                if (isuglify && metadata.token.classAnnations) {
+                    metadata.name = metadata.token.classAnnations.name;
                 } else {
-                    metadata.name = metadata.type.name;
+                    metadata.name = metadata.token.name;
                 }
             }
 

@@ -6,7 +6,6 @@ import {
 } from '@ts-ioc/core';
 import { IPointcut, MatchPointcut } from './joinpoints';
 import { Aspect, Advice, NonePointcut } from './decorators';
-import { AdvisorToken } from './IAdvisor';
 
 
 export type MatchExpress = (method: string, fullName: string, targetType?: Type<any>, target?: any, pointcut?: IPointcut) => boolean

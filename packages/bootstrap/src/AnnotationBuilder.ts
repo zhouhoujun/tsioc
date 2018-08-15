@@ -2,7 +2,7 @@ import { IAnnotationBuilder, AnnotationBuilderToken } from './IAnnotationBuilder
 import { Singleton, Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, hasOwnClassMetadata, getTypeMetadata, lang, isFunction } from '@ts-ioc/core';
 import { AnnotationConfigure } from './AnnotationConfigure';
 import { Annotation } from './decorators';
-import { BootInstance } from './IBoot';
+import { AnnoInstance } from './IAnnotation';
 
 /**
  * Annotation class builder. build class with metadata and config.
@@ -34,11 +34,11 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         if (builder !== this) {
             return builder.build(token, config, data);
         } else {
-            let instance = await this.createInstance(token, config, data) as BootInstance<T>;
+            let instance = await this.createInstance(token, config, data) as AnnoInstance<T>;
             if (isFunction(instance.anBeforeInit)) {
                 await Promise.resolve(instance.anBeforeInit(config));
             }
-            instance = await this.buildStrategy(instance, config) as BootInstance<T>;
+            instance = await this.buildStrategy(instance, config) as AnnoInstance<T>;
             if (isFunction(instance.anAfterInit)) {
                 await Promise.resolve(instance.anAfterInit(config));
             }
@@ -52,7 +52,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             token = config;
             return this.build(token, this.getTokenMetaConfig(token), data);
         } else {
-            token = this.getBootstrapToken(config);
+            token = this.getType(config);
             return this.build(token, this.getTokenMetaConfig(token, config), data);
         }
     }
@@ -103,8 +103,8 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         return instance;
     }
 
-    getBootstrapToken(config: AnnotationConfigure<T>): Token<T> {
-        return config.bootstrap;
+    getType(config: AnnotationConfigure<T>): Token<T> {
+        return config.token || config.type;
     }
 
     protected getTokenMetaConfig(token: Token<T>, config?: AnnotationConfigure<T>): AnnotationConfigure<T> {

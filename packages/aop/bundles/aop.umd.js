@@ -1936,7 +1936,6 @@ var AopModule_2 = AopModule_1.AopModule;
 var D__workspace_github_tsioc_packages_aop_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
-// export * from './tokens';
 tslib_1.__exportStar(actions, exports);
 tslib_1.__exportStar(decorators, exports);
 tslib_1.__exportStar(joinpoints, exports);

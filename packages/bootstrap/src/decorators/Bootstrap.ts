@@ -64,7 +64,7 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
             } else {
                 builder = builderType as IApplicationBuilder<any>;
             }
-            builder.bootstrap(metadata.type);
+            builder.bootstrap(metadata.token);
         }, 800)
         return metadata;
     }) as IBootstrapDecorator<T>;

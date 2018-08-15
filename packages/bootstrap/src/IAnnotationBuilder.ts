@@ -67,13 +67,13 @@ export interface IAnnotationBuilder<T> {
     getBuilder(config?: AnnotationConfigure<T>): IAnnotationBuilder<T>;
 
     /**
-     * get bootstrap token.
+     * get annoation type token.
      *
      * @param {AnnotationConfigure<T>} config
      * @returns {Token<T>}
      * @memberof IBootstrapBuilder
      */
-    getBootstrapToken(config: AnnotationConfigure<T>): Token<T>;
+    getType(config: AnnotationConfigure<T>): Token<T>;
 
     /**
      * create token instance.

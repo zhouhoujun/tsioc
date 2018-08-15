@@ -84,13 +84,13 @@ function createDIModuleDecorator(name, builder, annotationBuilder, adapter, meta
         if (metadataExtends) {
             metadata = metadataExtends(metadata);
         }
-        if (!metadata.name && core_1.isClass(metadata.type)) {
-            var isuglify = /^[a-z]$/.test(metadata.type.name);
-            if (isuglify && metadata.type.classAnnations) {
-                metadata.name = metadata.type.classAnnations.name;
+        if (!metadata.name && core_1.isClass(metadata.token)) {
+            var isuglify = /^[a-z]$/.test(metadata.token.name);
+            if (isuglify && metadata.token.classAnnations) {
+                metadata.name = metadata.token.classAnnations.name;
             }
             else {
-                metadata.name = metadata.type.name;
+                metadata.name = metadata.token.name;
             }
         }
         metadata.decorType = name;
@@ -148,7 +148,7 @@ function createBootstrapDecorator(name, builder, annotationBuilder, adapter, met
             else {
                 builder = builderType;
             }
-            builder.bootstrap(metadata.type);
+            builder.bootstrap(metadata.token);
         }, 800);
         return metadata;
     });
@@ -389,7 +389,7 @@ var AnnotationBuilder = /** @class */ (function () {
                     return [2 /*return*/, this.build(token, this.getTokenMetaConfig(token), data)];
                 }
                 else {
-                    token = this.getBootstrapToken(config);
+                    token = this.getType(config);
                     return [2 /*return*/, this.build(token, this.getTokenMetaConfig(token, config), data)];
                 }
                 return [2 /*return*/];
@@ -449,8 +449,8 @@ var AnnotationBuilder = /** @class */ (function () {
             });
         });
     };
-    AnnotationBuilder.prototype.getBootstrapToken = function (config) {
-        return config.bootstrap;
+    AnnotationBuilder.prototype.getType = function (config) {
+        return config.token || config.type;
     };
     AnnotationBuilder.prototype.getTokenMetaConfig = function (token, config) {
         var cfg;
@@ -487,7 +487,7 @@ var AnnotationBuilder = /** @class */ (function () {
         return this.container.resolve(token, data);
     };
     var AnnotationBuilder_1;
-    AnnotationBuilder.classAnnations = { "name": "AnnotationBuilder", "params": { "constructor": [], "build": ["token", "config", "data"], "buildByConfig": ["config", "data"], "createInstance": ["token", "config", "data"], "getBuilder": ["config"], "buildStrategy": ["instance", "config"], "getBootstrapToken": ["config"], "getTokenMetaConfig": ["token", "config"], "getDecorator": [], "getMetaConfig": ["token"], "resolveToken": ["token", "data"] } };
+    AnnotationBuilder.classAnnations = { "name": "AnnotationBuilder", "params": { "constructor": [], "build": ["token", "config", "data"], "buildByConfig": ["config", "data"], "createInstance": ["token", "config", "data"], "getBuilder": ["config"], "buildStrategy": ["instance", "config"], "getType": ["config"], "getTokenMetaConfig": ["token", "config"], "getDecorator": [], "getMetaConfig": ["token"], "resolveToken": ["token", "data"] } };
     tslib_1.__decorate([
         core_1.Inject(core_1.ContainerToken),
         tslib_1.__metadata("design:type", Object)
@@ -572,8 +572,56 @@ var ContainerPool_2 = ContainerPool_1.ContainerPool;
 var ContainerPool_3 = ContainerPool_1.ContainerPoolToken;
 var ContainerPool_4 = ContainerPool_1.containerPools;
 
+var Boot_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * boot element.
+ *
+ * @export
+ * @abstract
+ * @class Boot
+ */
+var Boot = /** @class */ (function () {
+    function Boot() {
+    }
+    Boot.classAnnations = { "name": "Boot", "params": { "run": [] } };
+    return Boot;
+}());
+exports.Boot = Boot;
+
+
+});
+
+unwrapExports(Boot_1);
+var Boot_2 = Boot_1.Boot;
+
+var Service_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * base service.
+ *
+ * @export
+ * @abstract
+ * @class Service
+ */
+var Service = /** @class */ (function () {
+    function Service() {
+    }
+    Service.classAnnations = { "name": "Service", "params": { "start": [], "stop": [] } };
+    return Service;
+}());
+exports.Service = Service;
+
+
+});
+
+unwrapExports(Service_1);
+var Service_2 = Service_1.Service;
+
 var ModuleBuilder_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
+
 
 
 
@@ -710,7 +758,7 @@ var ModuleBuilder = /** @class */ (function () {
                     case 1:
                         cfg = _a.sent();
                         loadmdl = {
-                            moduleToken: core_1.isToken(token) ? token : null,
+                            moduleToken: core_1.isToken(token) ? token : cfg.token,
                             container: container,
                             moduleConfig: cfg
                         };
@@ -733,7 +781,7 @@ var ModuleBuilder = /** @class */ (function () {
      */
     ModuleBuilder.prototype.build = function (token, defaults, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var loadmdl, container, cfg, builder, boot, bootBuilder, instance, bootbuilder, instance, mdlInst;
+            var loadmdl, container, cfg, builder, annBuilder, instance, instance, mdlInst;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.loadByDefaults(token, defaults)];
@@ -746,16 +794,13 @@ var ModuleBuilder = /** @class */ (function () {
                         return [4 /*yield*/, builder.build(token, container, data)];
                     case 2: return [2 /*return*/, _a.sent()];
                     case 3:
-                        boot = loadmdl.moduleToken;
-                        if (!!boot) return [3 /*break*/, 5];
-                        bootBuilder = this.getAnnoBuilder(container, cfg.annotationBuilder);
-                        return [4 /*yield*/, bootBuilder.buildByConfig(cfg, data)];
+                        annBuilder = this.getAnnoBuilder(container, cfg.annotationBuilder);
+                        if (!!loadmdl.moduleToken) return [3 /*break*/, 5];
+                        return [4 /*yield*/, annBuilder.buildByConfig(cfg, data)];
                     case 4:
                         instance = _a.sent();
                         return [2 /*return*/, instance];
-                    case 5:
-                        bootbuilder = this.getAnnoBuilder(container, cfg.annotationBuilder);
-                        return [4 /*yield*/, bootbuilder.build(boot, cfg, data)];
+                    case 5: return [4 /*yield*/, annBuilder.build(loadmdl.moduleToken, cfg, data)];
                     case 6:
                         instance = _a.sent();
                         mdlInst = instance;
@@ -778,7 +823,7 @@ var ModuleBuilder = /** @class */ (function () {
     */
     ModuleBuilder.prototype.bootstrap = function (token, defaults, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var loadmdl, cfg, container, builder, md, bootInstance, anBuilder;
+            var loadmdl, cfg, container, builder, md, bootInstance, bootToken, anBuilder;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.loadByDefaults(token, defaults)];
@@ -794,35 +839,47 @@ var ModuleBuilder = /** @class */ (function () {
                     case 4:
                         md = _a.sent();
                         bootInstance = void 0;
-                        if (!loadmdl.moduleToken) return [3 /*break*/, 10];
+                        bootToken = this.getBootType(cfg);
+                        if (!bootToken) return [3 /*break*/, 9];
                         anBuilder = this.getAnnoBuilder(container, cfg.annotationBuilder);
-                        return [4 /*yield*/, anBuilder.buildByConfig(cfg, data)];
+                        return [4 /*yield*/, anBuilder.build(bootToken, cfg, data)];
                     case 5:
                         bootInstance = _a.sent();
-                        if (!core_1.isFunction(md.mdOnStart)) return [3 /*break*/, 7];
-                        return [4 /*yield*/, Promise.resolve(md.mdOnStart(bootInstance))];
+                        return [4 /*yield*/, this.autoRun(container, bootToken, cfg, bootInstance)];
                     case 6:
                         _a.sent();
-                        return [3 /*break*/, 9];
+                        if (!core_1.isFunction(md.mdOnStart)) return [3 /*break*/, 8];
+                        return [4 /*yield*/, Promise.resolve(md.mdOnStart(bootInstance))];
                     case 7:
-                        if (!(cfg.autorun && core_1.isFunction(bootInstance[cfg.autorun]))) return [3 /*break*/, 9];
-                        return [4 /*yield*/, container.invoke(anBuilder.getBootstrapToken(cfg), cfg.autorun, bootInstance)];
-                    case 8:
                         _a.sent();
-                        _a.label = 9;
+                        _a.label = 8;
+                    case 8: return [3 /*break*/, 10];
                     case 9:
-                        if (core_1.isFunction(md.mdOnStarted)) {
-                            md.mdOnStarted(bootInstance);
-                        }
-                        return [3 /*break*/, 12];
-                    case 10:
                         bootInstance = md;
-                        if (!cfg.autorun) return [3 /*break*/, 12];
-                        return [4 /*yield*/, container.invoke(this.getBootstrapToken(cfg), cfg.autorun, bootInstance)];
-                    case 11:
-                        _a.sent();
-                        _a.label = 12;
-                    case 12: return [2 /*return*/, bootInstance];
+                        this.autoRun(container, this.getType(cfg), cfg, bootInstance);
+                        _a.label = 10;
+                    case 10: return [2 /*return*/, bootInstance];
+                }
+            });
+        });
+    };
+    ModuleBuilder.prototype.autoRun = function (container, token, cfg, instance) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!(instance instanceof Boot_1.Boot)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, instance.run()];
+                    case 1: return [2 /*return*/, _a.sent()];
+                    case 2:
+                        if (!(instance instanceof Service_1.Service)) return [3 /*break*/, 4];
+                        return [4 /*yield*/, instance.start()];
+                    case 3: return [2 /*return*/, _a.sent()];
+                    case 4:
+                        if (!(token && cfg.autorun)) return [3 /*break*/, 6];
+                        return [4 /*yield*/, container.invoke(token, cfg.autorun, instance)];
+                    case 5: return [2 /*return*/, _a.sent()];
+                    case 6: return [2 /*return*/];
                 }
             });
         });
@@ -930,9 +987,9 @@ var ModuleBuilder = /** @class */ (function () {
         }
         else {
             cfg = token;
-            var bootToken = this.getBootstrapToken(cfg);
-            if (bootToken) {
-                var typeTask = core_1.isClass(bootToken) ? bootToken : (container ? container.getTokenImpl(bootToken) : bootToken);
+            var type = this.getType(cfg);
+            if (type) {
+                var typeTask = core_1.isClass(type) ? type : (container ? container.getTokenImpl(type) : type);
                 if (core_1.isClass(typeTask)) {
                     cfg = core_1.lang.assign({}, this.getMetaConfig(typeTask), cfg || {});
                 }
@@ -955,7 +1012,26 @@ var ModuleBuilder = /** @class */ (function () {
             });
         });
     };
-    ModuleBuilder.prototype.getBootstrapToken = function (cfg) {
+    /**
+     * get module type
+     *
+     * @protected
+     * @param {ModuleConfigure} cfg
+     * @returns {Token<T>}
+     * @memberof ModuleBuilder
+     */
+    ModuleBuilder.prototype.getType = function (cfg) {
+        return cfg.token || cfg.type;
+    };
+    /**
+     * get boot type.
+     *
+     * @protected
+     * @param {ModuleConfigure} cfg
+     * @returns {Token<T>}
+     * @memberof ModuleBuilder
+     */
+    ModuleBuilder.prototype.getBootType = function (cfg) {
         return cfg.bootstrap;
     };
     ModuleBuilder.prototype.importConfigExports = function (container, providerContainer, cfg) {
@@ -1024,7 +1100,6 @@ var ModuleBuilder = /** @class */ (function () {
             var metas = core_1.getTypeMetadata(decorator, bootModule);
             if (metas && metas.length) {
                 var meta = metas[0];
-                // meta.bootstrap = meta.bootstrap || bootModule;
                 return core_1.lang.omit(meta, 'builder');
             }
         }
@@ -1161,7 +1236,7 @@ var ModuleBuilder = /** @class */ (function () {
         return tokens;
     };
     var ModuleBuilder_1;
-    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getPools": [], "setPools": ["pools"], "regDefaultContainer": [], "getContainer": ["token", "defaultContainer", "parent"], "setParent": ["container", "parent"], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "load": ["token", "defaultContainer", "parent"], "build": ["token", "defaults", "data"], "bootstrap": ["token", "defaults", "data"], "loadByDefaults": ["token", "defaults"], "getBuilder": ["container", "cfg"], "getAnnoBuilder": ["container", "annBuilder"], "getDefaultTypeBuilder": ["container"], "importModule": ["token", "container"], "getDecorator": [], "getConfigure": ["token", "container"], "registerDepdences": ["container", "config"], "getBootstrapToken": ["cfg"], "importConfigExports": ["container", "providerContainer", "cfg"], "registerConfgureDepds": ["container", "config"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getPools": [], "setPools": ["pools"], "regDefaultContainer": [], "getContainer": ["token", "defaultContainer", "parent"], "setParent": ["container", "parent"], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "load": ["token", "defaultContainer", "parent"], "build": ["token", "defaults", "data"], "bootstrap": ["token", "defaults", "data"], "autoRun": ["container", "token", "cfg", "instance"], "loadByDefaults": ["token", "defaults"], "getBuilder": ["container", "cfg"], "getAnnoBuilder": ["container", "annBuilder"], "getDefaultTypeBuilder": ["container"], "importModule": ["token", "container"], "getDecorator": [], "getConfigure": ["token", "container"], "registerDepdences": ["container", "config"], "getType": ["cfg"], "getBootType": ["cfg"], "importConfigExports": ["container", "providerContainer", "cfg"], "registerConfgureDepds": ["container", "config"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
     tslib_1.__decorate([
         core_1.Inject(core_1.ContainerBuilderToken),
         tslib_1.__metadata("design:type", Object)
@@ -1383,6 +1458,8 @@ tslib_1.__exportStar(ContainerPool_1, exports);
 tslib_1.__exportStar(BootModule_1, exports);
 tslib_1.__exportStar(IAnnotationBuilder, exports);
 tslib_1.__exportStar(AnnotationBuilder_1, exports);
+tslib_1.__exportStar(Boot_1, exports);
+tslib_1.__exportStar(Service_1, exports);
 tslib_1.__exportStar(ModuleType, exports);
 
 

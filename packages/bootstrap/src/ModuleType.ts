@@ -32,16 +32,12 @@ export class LoadedModule {
      * @memberof IocModule
      */
     container: IContainer;
-
-    bootToken: Token<any>;
-
-    bootConfig: AnnotationConfigure<any>;
 }
 
 /**
  *  module instance.
  */
-export type MdInstance<TM> = TM & OnModuleInit & OnModuleStart<any> & OnModuleStarted<any>;
+export type MdInstance<TM> = TM & OnModuleInit & OnModuleStart<any>;
 
 
 /**
@@ -69,27 +65,10 @@ export interface OnModuleInit {
  */
 export interface OnModuleStart<T> {
     /**
-     * on Module bootstrap start.
+     * on Module bootstrap started.
      *
      * @param {T} [instance]
      * @memberof OnStart
      */
     mdOnStart(instance?: T): void | Promise<any>;
-}
-
-/**
- * on Module started.
- *
- * @export
- * @interface OnStart
- * @template T
- */
-export interface OnModuleStarted<T> {
-    /**
-     * on Module onStarted.
-     *
-     * @param {T} [instance]
-     * @memberof OnStart
-     */
-    mdOnStarted(instance?: T): void;
 }
