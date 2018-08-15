@@ -403,7 +403,7 @@ var AnnotationBuilder = /** @class */ (function () {
             var instance;
             return tslib_1.__generator(this, function (_a) {
                 if (!token) {
-                    throw new Error('cant not find bootstrap token.');
+                    throw new Error('cant not find annotation token.');
                 }
                 if (!this.container.has(token)) {
                     if (core_1.isClass(token)) {
