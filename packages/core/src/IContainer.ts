@@ -106,7 +106,7 @@ export interface IContainer extends IMethodAccessor {
     getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T>;
 
     /**
-     * get token implements class type.
+     * get token implement class type.
      *
      * @template T
      * @param {Token<T>} token
@@ -116,13 +116,13 @@ export interface IContainer extends IMethodAccessor {
     getTokenImpl<T>(token: Token<T>): Type<T>;
 
     /**
-     * get token impl class extends chain.
+     * get token implement class and base classes.
      *
      * @param {Token<any>} token
-     * @returns {Type<any>[]}
+     * @returns {Token<any>[]}
      * @memberof IContainer
      */
-    getTokenExtendsChain(token: Token<any>): Type<any>[];
+    getTokenExtendsChain(token: Token<any>): Token<any>[];
 
     /**
      * register type.

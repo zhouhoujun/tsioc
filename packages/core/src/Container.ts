@@ -13,13 +13,23 @@ import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { registerCores } from './registerCores';
 
 /**
- * Container.
+ * Container
+ *
+ * @export
+ * @class Container
+ * @implements {IContainer}
  */
 export class Container implements IContainer {
     protected provideTypes: MapSet<Token<any>, Type<any>>;
     protected factories: MapSet<Token<any>, Function>;
     protected singleton: MapSet<Token<any>, any>;
 
+    /**
+     * parent container.
+     *
+     * @type {IContainer}
+     * @memberof Container
+     */
     parent: IContainer;
 
     constructor() {
@@ -284,15 +294,22 @@ export class Container implements IContainer {
         }
     }
 
-    getTokenExtendsChain(token: Token<any>): Type<any>[] {
+    /**
+     * get token implement class and base classes.
+     *
+     * @param {Token<any>} token
+     * @returns {Token<any>[]}
+     * @memberof Container
+     */
+    getTokenExtendsChain(token: Token<any>): Token<any>[] {
         if (isClass(token)) {
             return this.getBaseClasses(token);
         } else {
-            return this.getBaseClasses(this.getTokenImpl(token));
+            return this.getBaseClasses(this.getTokenImpl(token)).concat([token]);
         }
     }
 
-    protected getBaseClasses(target: Function): Type<any>[] {
+    protected getBaseClasses(target: Function): Token<any>[] {
         let types: Type<any>[] = [];
         while (isClass(target) && target !== Object) {
             types.push(target);
