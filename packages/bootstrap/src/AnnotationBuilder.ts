@@ -1,5 +1,5 @@
 import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
-import { Singleton, Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, hasOwnClassMetadata, getTypeMetadata, lang, isFunction } from '@ts-ioc/core';
+import { Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, hasOwnClassMetadata, getTypeMetadata, lang, isFunction, Injectable } from '@ts-ioc/core';
 import { AnnotationConfigure } from './AnnotationConfigure';
 import { Annotation } from './decorators';
 import { AnnoInstance } from './IAnnotation';
@@ -12,7 +12,7 @@ import { AnnoInstance } from './IAnnotation';
  * @implements {implements IAnnotationBuilder<T>}
  * @template T
  */
-@Singleton(AnnotationBuilderToken)
+@Injectable(AnnotationBuilderToken)
 export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
     /**
      * ioc container.
@@ -31,10 +31,13 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             config = this.getTokenMetaConfig(token);
         }
         let builder = this.getBuilder(token, config);
-        if (builder !== this) {
+        if (!this.isEqual(builder)) {
             return builder.build(token, config, data);
         } else {
             let instance = await this.createInstance(token, config, data) as AnnoInstance<T>;
+            if (!instance) {
+                return null;
+            }
             if (isFunction(instance.anBeforeInit)) {
                 await Promise.resolve(instance.anBeforeInit(config));
             }
@@ -65,7 +68,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             if (isClass(token)) {
                 this.container.register(token);
             } else {
-                console.log(`cant not find token ${token.toString()} in container.`);
+                console.log(`cant not find token ${token ? token.toString() : null} in container.`);
                 return null;
             }
         }
@@ -76,29 +79,33 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
     getBuilder(token: Token<T>, config?: AnnotationConfigure<T>): IAnnotationBuilder<T> {
         let builder: IAnnotationBuilder<T>;
-        if (config && config.annoBuilder) {
-            if (isClass(config.annoBuilder)) {
-                if (!this.container.has(config.annoBuilder)) {
-                    this.container.register(config.annoBuilder);
+        if (config && config.annotationBuilder) {
+            if (isClass(config.annotationBuilder)) {
+                if (!this.container.has(config.annotationBuilder)) {
+                    this.container.register(config.annotationBuilder);
                 }
             }
-            if (isToken(config.annoBuilder)) {
-                builder = this.container.resolve(config.annoBuilder);
-            } else if (config.annoBuilder instanceof AnnotationBuilder) {
-                builder = config.annoBuilder;
+            if (isToken(config.annotationBuilder)) {
+                builder = this.container.resolve(config.annotationBuilder, { container: this.container });
+            } else if (config.annotationBuilder instanceof AnnotationBuilder) {
+                builder = config.annotationBuilder;
             }
         }
         if (!builder && token) {
-            this.getTypeExtendChain(token).forEach(tk => {
+            this.container.getTokenExtendsChain(token).forEach(tk => {
                 if (builder) {
                     return false;
                 }
                 let buildToken = new InjectAnnotationBuilder<T>(tk);
                 if (this.container.has(buildToken)) {
-                    builder = this.container.get(buildToken);
+                    builder = this.container.resolve(buildToken, { container: this.container });
                 }
                 return true;
             });
+        }
+
+        if (builder && !builder.container) {
+            builder.container = this.container;
         }
         return builder || this;
     }
@@ -141,15 +148,6 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         return Annotation.toString();
     }
 
-    protected getTypeExtendChain(token: Token<T>): Token<T>[] {
-        if (isClass(token)) {
-            return [token];
-        } else {
-            return [this.container.getTokenImpl(token), token];
-        }
-    }
-
-
     protected getMetaConfig(token: Type<any>): AnnotationConfigure<T> {
         let decorator = this.getDecorator();
         if (hasOwnClassMetadata(decorator, token)) {
@@ -159,6 +157,19 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             }
         }
         return null;
+    }
+
+    protected isEqual(build: IAnnotationBuilder<T>) {
+        if (!build) {
+            return false;
+        }
+        if (build === this) {
+            return true;
+        }
+        if (build.constructor === this.constructor) {
+            return true;
+        }
+        return false;
     }
 
     protected resolveToken(token: Token<T>, data?: any) {

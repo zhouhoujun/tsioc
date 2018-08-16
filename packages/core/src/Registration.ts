@@ -9,7 +9,7 @@ import { isClass, isFunction, getClassName } from './utils';
  */
 export class Registration<T> {
 
-    protected type = 'Registration';
+    protected type = 'Reg';
     protected classType: SymbolType<any>;
     protected desc: string;
     /**
@@ -20,7 +20,7 @@ export class Registration<T> {
      */
     constructor(provideType: Token<T> | Token<any>, desc: string) {
         if (provideType instanceof Registration) {
-            this.classType = provideType.getType();
+            this.classType = provideType.getProvide();
             let pdec = provideType.getDesc();
             if (pdec && desc && pdec !== desc) {
                 this.desc = pdec + '_' + desc;
@@ -33,7 +33,7 @@ export class Registration<T> {
         }
     }
 
-    getType(): SymbolType<any> {
+    getProvide(): SymbolType<any> {
         return this.classType;
     }
 
@@ -70,7 +70,7 @@ export class Registration<T> {
     toString(): string {
         let name = '';
         if (isFunction(this.classType)) {
-            name = getClassName(this.classType);
+            name = `{${getClassName(this.classType)}}`;
         } else if (this.classType) {
             name = this.classType.toString();
         }

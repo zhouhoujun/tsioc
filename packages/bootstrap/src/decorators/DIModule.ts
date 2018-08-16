@@ -85,8 +85,8 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
             if (builder && !metadata.builder) {
                 metadata.builder = builder;
             }
-            if (annotationBuilder && !metadata.annoBuilder) {
-                metadata.annoBuilder = annotationBuilder;
+            if (annotationBuilder && !metadata.annotationBuilder) {
+                metadata.annotationBuilder = annotationBuilder;
             }
             return metadata;
         }) as IDIModuleDecorator<T>;

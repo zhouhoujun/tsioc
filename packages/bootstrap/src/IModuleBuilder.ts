@@ -2,6 +2,9 @@ import { Registration, IContainer, Type, Token } from '@ts-ioc/core';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { MdInstance, LoadedModule } from './ModuleType';
 import { ContainerPool } from './ContainerPool';
+import { IService } from './Service';
+import { IBoot } from './Boot';
+import { IRunner } from './IRunner';
 
 
 const moduleBuilderDesc = 'DI_ModuleBuilder';
@@ -25,6 +28,10 @@ export class InjectModuleBuilderToken<T> extends Registration<IModuleBuilder<T>>
  */
 export type ModuleEnv = IContainer | LoadedModule;
 
+/**
+ * runn able.
+ */
+export type Runnable<T> = T | IService | IBoot | IRunner<T>;
 
 /**
  * Generics module builder insterface.
@@ -111,7 +118,7 @@ export interface IModuleBuilder<T> {
      * @returns {Promise<MdInstance<T>>}
      * @memberof IGModuleBuilder
      */
-    bootstrap(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<any>;
+    bootstrap(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<Runnable<T>>;
 
     /**
      * import di module.

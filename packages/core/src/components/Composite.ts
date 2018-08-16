@@ -1,8 +1,6 @@
 
 import { Mode, Express } from '../types';
-import { NullNode } from './NullComponent';
 import { IComponent } from './IComponent';
-import { isFunction, isString } from '../utils';
 import { GComposite } from './GComposite';
 
 /**

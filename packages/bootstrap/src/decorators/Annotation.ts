@@ -54,8 +54,8 @@ export function createAnnotationDecorator<T extends AnnotationMetadata>(
                 metadata = metadataExtends(metadata as T);
             }
 
-            if (builder && !metadata.annoBuilder) {
-                metadata.annoBuilder = builder;
+            if (builder && !metadata.annotationBuilder) {
+                metadata.annotationBuilder = builder;
             }
             return metadata;
         }) as IAnnotationDecorator<T>;

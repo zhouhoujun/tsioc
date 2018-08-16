@@ -59,7 +59,6 @@ export interface GComponent<T extends IComponent> extends IComponent {
     /**
      * filter in component.
      *
-
      * @param {(Express<T, void | boolean>)} express
      * @param {Mode} [mode]
      * @returns {T[]}

@@ -1,11 +1,12 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core')) :
-	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core'], factory) :
-	(global.bootstrap = global.bootstrap || {}, global.bootstrap.umd = global.bootstrap.umd || {}, global.bootstrap.umd.js = factory(global.tslib_1,global.core_1));
-}(this, (function (tslib_1,core_1) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core'), require('reflect-metadata')) :
+	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core', 'reflect-metadata'], factory) :
+	(global.bootstrap = global.bootstrap || {}, global.bootstrap.umd = global.bootstrap.umd || {}, global.bootstrap.umd.js = factory(global.tslib_1,global.core_1,global.Reflect));
+}(this, (function (tslib_1,core_1,reflectMetadata) { 'use strict';
 
 tslib_1 = tslib_1 && tslib_1.hasOwnProperty('default') ? tslib_1['default'] : tslib_1;
 core_1 = core_1 && core_1.hasOwnProperty('default') ? core_1['default'] : core_1;
+reflectMetadata = reflectMetadata && reflectMetadata.hasOwnProperty('default') ? reflectMetadata['default'] : reflectMetadata;
 
 function unwrapExports (x) {
 	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
@@ -39,8 +40,8 @@ function createAnnotationDecorator(name, builder, adapter, metadataExtends) {
         if (metadataExtends) {
             metadata = metadataExtends(metadata);
         }
-        if (builder && !metadata.annoBuilder) {
-            metadata.annoBuilder = builder;
+        if (builder && !metadata.annotationBuilder) {
+            metadata.annotationBuilder = builder;
         }
         return metadata;
     });
@@ -97,8 +98,8 @@ function createDIModuleDecorator(name, builder, annotationBuilder, adapter, meta
         if (builder && !metadata.builder) {
             metadata.builder = builder;
         }
-        if (annotationBuilder && !metadata.annoBuilder) {
-            metadata.annoBuilder = annotationBuilder;
+        if (annotationBuilder && !metadata.annotationBuilder) {
+            metadata.annotationBuilder = annotationBuilder;
         }
         return metadata;
     });
@@ -228,75 +229,6 @@ unwrapExports(IModuleBuilder);
 var IModuleBuilder_1 = IModuleBuilder.InjectModuleBuilderToken;
 var IModuleBuilder_2 = IModuleBuilder.ModuleBuilderToken;
 
-var BootModule_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-
-
-/**
- * Bootstrap ext for ioc. auto run setup after registered.
- * with @IocExt('setup') decorator.
- * @export
- * @class BootModule
- */
-var BootModule = /** @class */ (function () {
-    function BootModule(container) {
-        this.container = container;
-    }
-    /**
-     * register aop for container.
-     *
-     * @memberof AopModule
-     */
-    BootModule.prototype.setup = function () {
-        var container = this.container;
-        var lifeScope = container.get(core_1.LifeScopeToken);
-        lifeScope.registerDecorator(decorators.DIModule, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
-        lifeScope.registerDecorator(decorators.Bootstrap, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
-        container.register(ModuleBuilder_1.ModuleBuilder);
-        container.register(ApplicationBuilder.DefaultApplicationBuilder);
-    };
-    BootModule.classAnnations = { "name": "BootModule", "params": { "constructor": ["container"], "setup": [] } };
-    BootModule = tslib_1.__decorate([
-        core_1.IocExt('setup'),
-        tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)),
-        tslib_1.__metadata("design:paramtypes", [Object])
-    ], BootModule);
-    return BootModule;
-}());
-exports.BootModule = BootModule;
-
-
-});
-
-unwrapExports(BootModule_1);
-var BootModule_2 = BootModule_1.BootModule;
-
-var ModuleType = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * ioc DI loaded modules.
- *
- * @export
- * @interface IocModule
- * @template T
- */
-var LoadedModule = /** @class */ (function () {
-    function LoadedModule() {
-    }
-    LoadedModule.classAnnations = { "name": "LoadedModule", "params": {} };
-    return LoadedModule;
-}());
-exports.LoadedModule = LoadedModule;
-
-
-});
-
-unwrapExports(ModuleType);
-var ModuleType_1 = ModuleType.LoadedModule;
-
 var IAnnotationBuilder = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -359,11 +291,14 @@ var AnnotationBuilder = /** @class */ (function () {
                             config = this.getTokenMetaConfig(token);
                         }
                         builder = this.getBuilder(token, config);
-                        if (!(builder !== this)) return [3 /*break*/, 1];
+                        if (!!this.isEqual(builder)) return [3 /*break*/, 1];
                         return [2 /*return*/, builder.build(token, config, data)];
                     case 1: return [4 /*yield*/, this.createInstance(token, config, data)];
                     case 2:
                         instance = _a.sent();
+                        if (!instance) {
+                            return [2 /*return*/, null];
+                        }
                         if (!core_1.isFunction(instance.anBeforeInit)) return [3 /*break*/, 4];
                         return [4 /*yield*/, Promise.resolve(instance.anBeforeInit(config))];
                     case 3:
@@ -410,7 +345,7 @@ var AnnotationBuilder = /** @class */ (function () {
                         this.container.register(token);
                     }
                     else {
-                        console.log("cant not find token " + token.toString() + " in container.");
+                        console.log("cant not find token " + (token ? token.toString() : null) + " in container.");
                         return [2 /*return*/, null];
                     }
                 }
@@ -422,30 +357,33 @@ var AnnotationBuilder = /** @class */ (function () {
     AnnotationBuilder.prototype.getBuilder = function (token, config) {
         var _this = this;
         var builder;
-        if (config && config.annoBuilder) {
-            if (core_1.isClass(config.annoBuilder)) {
-                if (!this.container.has(config.annoBuilder)) {
-                    this.container.register(config.annoBuilder);
+        if (config && config.annotationBuilder) {
+            if (core_1.isClass(config.annotationBuilder)) {
+                if (!this.container.has(config.annotationBuilder)) {
+                    this.container.register(config.annotationBuilder);
                 }
             }
-            if (core_1.isToken(config.annoBuilder)) {
-                builder = this.container.resolve(config.annoBuilder);
+            if (core_1.isToken(config.annotationBuilder)) {
+                builder = this.container.resolve(config.annotationBuilder, { container: this.container });
             }
-            else if (config.annoBuilder instanceof AnnotationBuilder_1) {
-                builder = config.annoBuilder;
+            else if (config.annotationBuilder instanceof AnnotationBuilder_1) {
+                builder = config.annotationBuilder;
             }
         }
         if (!builder && token) {
-            this.getTypeExtendChain(token).forEach(function (tk) {
+            this.container.getTokenExtendsChain(token).forEach(function (tk) {
                 if (builder) {
                     return false;
                 }
                 var buildToken = new IAnnotationBuilder.InjectAnnotationBuilder(tk);
                 if (_this.container.has(buildToken)) {
-                    builder = _this.container.get(buildToken);
+                    builder = _this.container.resolve(buildToken, { container: _this.container });
                 }
                 return true;
             });
+        }
+        if (builder && !builder.container) {
+            builder.container = this.container;
         }
         return builder || this;
     };
@@ -489,14 +427,6 @@ var AnnotationBuilder = /** @class */ (function () {
     AnnotationBuilder.prototype.getDecorator = function () {
         return decorators.Annotation.toString();
     };
-    AnnotationBuilder.prototype.getTypeExtendChain = function (token) {
-        if (core_1.isClass(token)) {
-            return [token];
-        }
-        else {
-            return [this.container.getTokenImpl(token), token];
-        }
-    };
     AnnotationBuilder.prototype.getMetaConfig = function (token) {
         var decorator = this.getDecorator();
         if (core_1.hasOwnClassMetadata(decorator, token)) {
@@ -507,17 +437,29 @@ var AnnotationBuilder = /** @class */ (function () {
         }
         return null;
     };
+    AnnotationBuilder.prototype.isEqual = function (build) {
+        if (!build) {
+            return false;
+        }
+        if (build === this) {
+            return true;
+        }
+        if (build.constructor === this.constructor) {
+            return true;
+        }
+        return false;
+    };
     AnnotationBuilder.prototype.resolveToken = function (token, data) {
         return this.container.resolve(token, data);
     };
     var AnnotationBuilder_1;
-    AnnotationBuilder.classAnnations = { "name": "AnnotationBuilder", "params": { "constructor": [], "build": ["token", "config", "data"], "buildByConfig": ["config", "data"], "createInstance": ["token", "config", "data"], "getBuilder": ["token", "config"], "buildStrategy": ["instance", "config"], "getType": ["config"], "getTokenMetaConfig": ["token", "config"], "getDecorator": [], "getTypeExtendChain": ["token"], "getMetaConfig": ["token"], "resolveToken": ["token", "data"] } };
+    AnnotationBuilder.classAnnations = { "name": "AnnotationBuilder", "params": { "constructor": [], "build": ["token", "config", "data"], "buildByConfig": ["config", "data"], "createInstance": ["token", "config", "data"], "getBuilder": ["token", "config"], "buildStrategy": ["instance", "config"], "getType": ["config"], "getTokenMetaConfig": ["token", "config"], "getDecorator": [], "getMetaConfig": ["token"], "isEqual": ["build"], "resolveToken": ["token", "data"] } };
     tslib_1.__decorate([
         core_1.Inject(core_1.ContainerToken),
         tslib_1.__metadata("design:type", Object)
     ], AnnotationBuilder.prototype, "container", void 0);
     AnnotationBuilder = AnnotationBuilder_1 = tslib_1.__decorate([
-        core_1.Singleton(IAnnotationBuilder.AnnotationBuilderToken),
+        core_1.Injectable(IAnnotationBuilder.AnnotationBuilderToken),
         tslib_1.__metadata("design:paramtypes", [])
     ], AnnotationBuilder);
     return AnnotationBuilder;
@@ -529,6 +471,77 @@ exports.AnnotationBuilder = AnnotationBuilder;
 
 unwrapExports(AnnotationBuilder_1);
 var AnnotationBuilder_2 = AnnotationBuilder_1.AnnotationBuilder;
+
+var BootModule_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+
+
+/**
+ * Bootstrap ext for ioc. auto run setup after registered.
+ * with @IocExt('setup') decorator.
+ * @export
+ * @class BootModule
+ */
+var BootModule = /** @class */ (function () {
+    function BootModule(container) {
+        this.container = container;
+    }
+    /**
+     * register aop for container.
+     *
+     * @memberof AopModule
+     */
+    BootModule.prototype.setup = function () {
+        var container = this.container;
+        var lifeScope = container.get(core_1.LifeScopeToken);
+        lifeScope.registerDecorator(decorators.DIModule, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
+        lifeScope.registerDecorator(decorators.Bootstrap, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
+        container.register(ModuleBuilder_1.ModuleBuilder);
+        container.register(AnnotationBuilder_1.AnnotationBuilder);
+        container.register(ApplicationBuilder.DefaultApplicationBuilder);
+    };
+    BootModule.classAnnations = { "name": "BootModule", "params": { "constructor": ["container"], "setup": [] } };
+    BootModule = tslib_1.__decorate([
+        core_1.IocExt('setup'),
+        tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)),
+        tslib_1.__metadata("design:paramtypes", [Object])
+    ], BootModule);
+    return BootModule;
+}());
+exports.BootModule = BootModule;
+
+
+});
+
+unwrapExports(BootModule_1);
+var BootModule_2 = BootModule_1.BootModule;
+
+var ModuleType = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * ioc DI loaded modules.
+ *
+ * @export
+ * @interface IocModule
+ * @template T
+ */
+var LoadedModule = /** @class */ (function () {
+    function LoadedModule() {
+    }
+    LoadedModule.classAnnations = { "name": "LoadedModule", "params": {} };
+    return LoadedModule;
+}());
+exports.LoadedModule = LoadedModule;
+
+
+});
+
+unwrapExports(ModuleType);
+var ModuleType_1 = ModuleType.LoadedModule;
 
 var ContainerPool_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -604,6 +617,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @export
  * @abstract
  * @class Boot
+ * @implements {IBoot}
  */
 var Boot = /** @class */ (function () {
     function Boot() {
@@ -685,7 +699,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
 var exportsProvidersFiled = '__exportProviders';
+/**
+ * inject module load token.
+ *
+ * @export
+ * @class InjectModuleLoadToken
+ * @extends {Registration<T>}
+ * @template T
+ */
 var InjectModuleLoadToken = /** @class */ (function (_super) {
     tslib_1.__extends(InjectModuleLoadToken, _super);
     function InjectModuleLoadToken(token) {
@@ -773,13 +796,13 @@ var ModuleBuilder = /** @class */ (function () {
             if (!container || !(defaultContainer instanceof core_1.Container)) {
                 container = id ? this.createContainer() : pools.getDefault();
             }
-            if (id) {
+            this.setParent(container, parent);
+            if (id || !token.container) {
                 pools.set(id, container);
             }
             else {
                 token.container = container;
             }
-            this.setParent(container, parent);
             return container;
         }
     };
@@ -869,7 +892,7 @@ var ModuleBuilder = /** @class */ (function () {
                         return [4 /*yield*/, builder.build(token, container, data)];
                     case 2: return [2 /*return*/, _a.sent()];
                     case 3:
-                        annBuilder = this.getAnnoBuilder(container, loadmdl.moduleToken, cfg.annoBuilder);
+                        annBuilder = this.getAnnoBuilder(container, loadmdl.moduleToken, cfg.annotationBuilder);
                         if (!!loadmdl.moduleToken) return [3 /*break*/, 5];
                         return [4 /*yield*/, annBuilder.buildByConfig(cfg, data)];
                     case 4:
@@ -879,7 +902,7 @@ var ModuleBuilder = /** @class */ (function () {
                     case 6:
                         instance = _a.sent();
                         mdlInst = instance;
-                        if (core_1.isFunction(mdlInst.mdOnInit)) {
+                        if (mdlInst && core_1.isFunction(mdlInst.mdOnInit)) {
                             mdlInst.mdOnInit(loadmdl);
                         }
                         return [2 /*return*/, instance];
@@ -898,7 +921,7 @@ var ModuleBuilder = /** @class */ (function () {
     */
     ModuleBuilder.prototype.bootstrap = function (token, env, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var loadmdl, cfg, container, builder, md, bootInstance, bootToken, anBuilder;
+            var loadmdl, cfg, container, builder, md, bootToken, anBuilder, bootInstance, runable;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.load(token, env)];
@@ -913,29 +936,27 @@ var ModuleBuilder = /** @class */ (function () {
                     case 3: return [4 /*yield*/, this.build(token, loadmdl, data)];
                     case 4:
                         md = _a.sent();
-                        bootInstance = void 0;
                         bootToken = this.getBootType(cfg);
-                        if (!bootToken) return [3 /*break*/, 9];
-                        anBuilder = this.getAnnoBuilder(container, bootToken, cfg.annoBuilder);
-                        return [4 /*yield*/, anBuilder.build(bootToken, cfg, data)];
+                        anBuilder = this.getAnnoBuilder(container, bootToken, cfg.annotationBuilder);
+                        return [4 /*yield*/, (bootToken ? anBuilder.build(bootToken, cfg, data) : anBuilder.buildByConfig(cfg, data))];
                     case 5:
                         bootInstance = _a.sent();
+                        runable = void 0;
+                        if (!bootInstance) return [3 /*break*/, 9];
                         return [4 /*yield*/, this.autoRun(container, bootToken, cfg, bootInstance)];
                     case 6:
-                        _a.sent();
-                        if (!core_1.isFunction(md.mdOnStart)) return [3 /*break*/, 8];
+                        runable = _a.sent();
+                        if (!(md && core_1.isFunction(md.mdOnStart))) return [3 /*break*/, 8];
                         return [4 /*yield*/, Promise.resolve(md.mdOnStart(bootInstance))];
                     case 7:
                         _a.sent();
                         _a.label = 8;
                     case 8: return [3 /*break*/, 11];
-                    case 9:
-                        bootInstance = md;
-                        return [4 /*yield*/, this.autoRun(container, this.getType(cfg), cfg, bootInstance)];
+                    case 9: return [4 /*yield*/, this.autoRun(container, this.getType(cfg), cfg, md)];
                     case 10:
-                        _a.sent();
+                        runable = _a.sent();
                         _a.label = 11;
-                    case 11: return [2 /*return*/, bootInstance];
+                    case 11: return [2 /*return*/, runable];
                 }
             });
         });
@@ -956,7 +977,7 @@ var ModuleBuilder = /** @class */ (function () {
             }
         }
         if (!builder && token) {
-            this.getTypeExtendChain(container, token).forEach(function (tk) {
+            container.getTokenExtendsChain(token).forEach(function (tk) {
                 if (builder) {
                     return false;
                 }
@@ -971,27 +992,47 @@ var ModuleBuilder = /** @class */ (function () {
     };
     ModuleBuilder.prototype.autoRun = function (container, token, cfg, instance) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var runnerToken;
+            var runner;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        runnerToken = new IRunner.InjectRunnerToken(token);
-                        if (!(instance instanceof Boot_1.Boot)) return [3 /*break*/, 2];
-                        return [4 /*yield*/, instance.run()];
-                    case 1: return [2 /*return*/, _a.sent()];
+                        if (!instance) {
+                            return [2 /*return*/, null];
+                        }
+                        container.getTokenExtendsChain(token).forEach(function (tk) {
+                            if (runner) {
+                                return false;
+                            }
+                            var runnerToken = new IRunner.InjectRunnerToken(tk);
+                            if (container.has(runnerToken)) {
+                                runner = container.resolve(runnerToken, { token: token, instance: instance, config: cfg });
+                            }
+                            return true;
+                        });
+                        if (!runner) return [3 /*break*/, 2];
+                        return [4 /*yield*/, runner.run(instance)];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/, runner];
                     case 2:
-                        if (!(instance instanceof Service_1.Service)) return [3 /*break*/, 4];
-                        return [4 /*yield*/, instance.start()];
-                    case 3: return [2 /*return*/, _a.sent()];
+                        if (!(instance instanceof Boot_1.Boot || core_1.isFunction(instance.run))) return [3 /*break*/, 4];
+                        return [4 /*yield*/, instance.run()];
+                    case 3:
+                        _a.sent();
+                        return [2 /*return*/, instance];
                     case 4:
-                        if (!container.has(runnerToken)) return [3 /*break*/, 6];
-                        return [4 /*yield*/, container.get(runnerToken).run(instance)];
-                    case 5: return [2 /*return*/, _a.sent()];
+                        if (!(instance instanceof Service_1.Service || (core_1.isFunction(instance.start) && core_1.isFunction(instance.stop)))) return [3 /*break*/, 6];
+                        return [4 /*yield*/, instance.start()];
+                    case 5:
+                        _a.sent();
+                        return [2 /*return*/, instance];
                     case 6:
                         if (!(token && cfg.autorun)) return [3 /*break*/, 8];
                         return [4 /*yield*/, container.invoke(token, cfg.autorun, instance)];
-                    case 7: return [2 /*return*/, _a.sent()];
-                    case 8: return [2 /*return*/];
+                    case 7:
+                        _a.sent();
+                        return [2 /*return*/, instance];
+                    case 8: return [2 /*return*/, instance];
                 }
             });
         });
@@ -1010,13 +1051,13 @@ var ModuleBuilder = /** @class */ (function () {
             builder = annBuilder;
         }
         if (!builder && token) {
-            this.getTypeExtendChain(container, token).forEach(function (tk) {
+            container.getTokenExtendsChain(token).forEach(function (tk) {
                 if (builder) {
                     return false;
                 }
                 var buildToken = new IAnnotationBuilder.InjectAnnotationBuilder(tk);
                 if (container.has(buildToken)) {
-                    builder = container.get(buildToken);
+                    builder = container.resolve(buildToken);
                 }
                 return true;
             });
@@ -1024,15 +1065,10 @@ var ModuleBuilder = /** @class */ (function () {
         if (!builder) {
             builder = this.getDefaultAnnBuilder(container);
         }
+        if (builder) {
+            builder.container = container;
+        }
         return builder;
-    };
-    ModuleBuilder.prototype.getTypeExtendChain = function (container, token) {
-        if (core_1.isClass(token)) {
-            return [token];
-        }
-        else {
-            return [container.getTokenImpl(token), token];
-        }
     };
     ModuleBuilder.prototype.getDefaultAnnBuilder = function (container) {
         return container.resolve(IAnnotationBuilder.AnnotationBuilderToken);
@@ -1220,9 +1256,9 @@ var ModuleBuilder = /** @class */ (function () {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             return tslib_1.__generator(this, function (_a) {
                 // register for each container.
-                if (!container.hasRegister(AnnotationBuilder_1.AnnotationBuilder)) {
-                    container.register(AnnotationBuilder_1.AnnotationBuilder);
-                }
+                // if (!container.hasRegister(AnnotationBuilder)) {
+                //     container.register(AnnotationBuilder);
+                // }
                 return [2 /*return*/, container];
             });
         });
@@ -1335,7 +1371,7 @@ var ModuleBuilder = /** @class */ (function () {
         return tokens;
     };
     var ModuleBuilder_1;
-    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getPools": [], "setPools": ["pools"], "regDefaultContainer": [], "getContainer": ["token", "env", "parent"], "getConfigId": ["cfg"], "setParent": ["container", "parent"], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "load": ["token", "env", "parent"], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "getBuilder": ["container", "token", "cfg"], "autoRun": ["container", "token", "cfg", "instance"], "getAnnoBuilder": ["container", "token", "annBuilder"], "getTypeExtendChain": ["container", "token"], "getDefaultAnnBuilder": ["container"], "importModule": ["token", "container"], "getDecorator": [], "getConfigure": ["token", "container"], "registerDepdences": ["container", "config"], "getType": ["cfg"], "getBootType": ["cfg"], "importConfigExports": ["container", "providerContainer", "cfg"], "registerConfgureDepds": ["container", "config"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getPools": [], "setPools": ["pools"], "regDefaultContainer": [], "getContainer": ["token", "env", "parent"], "getConfigId": ["cfg"], "setParent": ["container", "parent"], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "load": ["token", "env", "parent"], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "getBuilder": ["container", "token", "cfg"], "autoRun": ["container", "token", "cfg", "instance"], "getAnnoBuilder": ["container", "token", "annBuilder"], "getDefaultAnnBuilder": ["container"], "importModule": ["token", "container"], "getDecorator": [], "getConfigure": ["token", "container"], "registerDepdences": ["container", "config"], "getType": ["cfg"], "getBootType": ["cfg"], "importConfigExports": ["container", "providerContainer", "cfg"], "registerConfgureDepds": ["container", "config"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
     tslib_1.__decorate([
         core_1.Inject(core_1.ContainerBuilderToken),
         tslib_1.__metadata("design:type", Object)

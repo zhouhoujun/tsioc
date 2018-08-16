@@ -1,5 +1,5 @@
-import { IApplication } from './IApplication';
 import { Registration, Token } from '@ts-ioc/core';
+import { ModuleConfigure } from './ModuleConfigure';
 
 /**
  * application runer.
@@ -8,7 +8,10 @@ import { Registration, Token } from '@ts-ioc/core';
  * @interface IRunner
  * @template T
  */
-export interface IRunner<T extends IApplication> {
+export interface IRunner<T> {
+    token?: Token<T>;
+    instance?: T;
+    config?: ModuleConfigure;
     run(app: T): Promise<any>;
 }
 
@@ -20,7 +23,7 @@ export interface IRunner<T extends IApplication> {
  * @extends {Registration<IRunner<T>>}
  * @template T
  */
-export class InjectRunnerToken<T extends IApplication> extends Registration<IRunner<T>> {
+export class InjectRunnerToken<T> extends Registration<IRunner<T>> {
     constructor(type: Token<T>) {
         super(type as any, 'boot__runner');
     }

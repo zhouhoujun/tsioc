@@ -31,5 +31,5 @@ export interface AnnotationConfigure<T> extends ClassMetadata {
      * @type {(Token<IAnnotationBuilder<T>> | IAnnotationBuilder<T>)}
      * @memberof AnnotationConfigure
      */
-    annoBuilder?: Token<IAnnotationBuilder<T>> | IAnnotationBuilder<T>;
+    annotationBuilder?: Token<IAnnotationBuilder<T>> | IAnnotationBuilder<T>;
 }

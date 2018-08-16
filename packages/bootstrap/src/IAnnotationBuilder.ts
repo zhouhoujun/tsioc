@@ -42,15 +42,15 @@ export interface IAnnotationBuilder<T> {
      */
     buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any): Promise<T>;
 
-    /**
-     * get finally builder by token and config.
-     *
-     * @param {Token<T>} token
-     * @param {AnnotationConfigure<T>} [config]
-     * @returns {IAnnotationBuilder<T>}
-     * @memberof IBootBuilder
-     */
-    getBuilder(token: Token<T>, config?: AnnotationConfigure<T>): IAnnotationBuilder<T>;
+    // /**
+    //  * get finally builder by token and config.
+    //  *
+    //  * @param {Token<T>} token
+    //  * @param {AnnotationConfigure<T>} [config]
+    //  * @returns {IAnnotationBuilder<T>}
+    //  * @memberof IBootBuilder
+    //  */
+    // getBuilder(token: Token<T>, config?: AnnotationConfigure<T>): IAnnotationBuilder<T>;
 
     /**
      * get annoation type token.

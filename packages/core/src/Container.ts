@@ -284,6 +284,24 @@ export class Container implements IContainer {
         }
     }
 
+    getTokenExtendsChain(token: Token<any>): Type<any>[] {
+        if (isClass(token)) {
+            return this.getBaseClasses(token);
+        } else {
+            return this.getBaseClasses(this.getTokenImpl(token));
+        }
+    }
+
+    protected getBaseClasses(target: Function): Type<any>[] {
+        let types: Type<any>[] = [];
+        while (isClass(target) && target !== Object) {
+            types.push(target);
+            let p = Reflect.getPrototypeOf(target.prototype);
+            target = isClass(p) ? p : p.constructor;
+        }
+        return types;
+    }
+
     /**
     * get life scope of container.
     *
