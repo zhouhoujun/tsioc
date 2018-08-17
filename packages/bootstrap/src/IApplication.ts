@@ -8,7 +8,7 @@ import { IService } from './Service';
  * @export
  * @interface IApplication
  */
-export interface IApplication extends IService {
+export interface IApplication extends IService<any> {
     /**
      * application name
      *

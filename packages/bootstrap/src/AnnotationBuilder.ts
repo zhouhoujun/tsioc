@@ -62,13 +62,13 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
     async createInstance(token: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<T> {
         if (!token) {
-            throw new Error('cant not find annotation token.');
+            throw new Error('can not find annotation token.');
         }
         if (!this.container.has(token)) {
             if (isClass(token)) {
                 this.container.register(token);
             } else {
-                console.log(`cant not find token ${token ? token.toString() : null} in container.`);
+                console.log(`can not find token ${token ? token.toString() : null} in container.`);
                 return null;
             }
         }

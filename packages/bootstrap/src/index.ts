@@ -11,7 +11,6 @@ export * from './IAnnotation';
 export * from './IAnnotationBuilder';
 export * from './AnnotationBuilder';
 export * from './AnnotationConfigure';
-export * from './Boot';
 export * from './IRunner';
 export * from './Service';
 export * from './ModuleType';

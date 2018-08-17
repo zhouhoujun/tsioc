@@ -338,14 +338,14 @@ var AnnotationBuilder = /** @class */ (function () {
             var instance;
             return tslib_1.__generator(this, function (_a) {
                 if (!token) {
-                    throw new Error('cant not find annotation token.');
+                    throw new Error('can not find annotation token.');
                 }
                 if (!this.container.has(token)) {
                     if (core_1.isClass(token)) {
                         this.container.register(token);
                     }
                     else {
-                        console.log("cant not find token " + (token ? token.toString() : null) + " in container.");
+                        console.log("can not find token " + (token ? token.toString() : null) + " in container.");
                         return [2 /*return*/, null];
                     }
                 }
@@ -609,32 +609,10 @@ var ContainerPool_2 = ContainerPool_1.ContainerPool;
 var ContainerPool_3 = ContainerPool_1.ContainerPoolToken;
 var ContainerPool_4 = ContainerPool_1.containerPools;
 
-var Boot_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * boot element.
- *
- * @export
- * @abstract
- * @class Boot
- * @implements {IBoot}
- */
-var Boot = /** @class */ (function () {
-    function Boot() {
-    }
-    Boot.classAnnations = { "name": "Boot", "params": { "run": [] } };
-    return Boot;
-}());
-exports.Boot = Boot;
-
-
-});
-
-unwrapExports(Boot_1);
-var Boot_2 = Boot_1.Boot;
-
 var Service_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
+
 /**
  * base service.
  *
@@ -650,17 +628,50 @@ var Service = /** @class */ (function () {
     return Service;
 }());
 exports.Service = Service;
+/**
+ * application service token.
+ *
+ * @export
+ * @class InjectServiceToken
+ * @extends {Registration<IService<T>>}
+ * @template T
+ */
+var InjectServiceToken = /** @class */ (function (_super) {
+    tslib_1.__extends(InjectServiceToken, _super);
+    function InjectServiceToken(type) {
+        return _super.call(this, type, 'boot__service') || this;
+    }
+    InjectServiceToken.classAnnations = { "name": "InjectServiceToken", "params": { "constructor": ["type"] } };
+    return InjectServiceToken;
+}(core_1.Registration));
+exports.InjectServiceToken = InjectServiceToken;
 
 
 });
 
 unwrapExports(Service_1);
 var Service_2 = Service_1.Service;
+var Service_3 = Service_1.InjectServiceToken;
 
 var IRunner = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
+/**
+ * boot element.
+ *
+ * @export
+ * @abstract
+ * @class Boot
+ * @implements {IBoot}
+ */
+var Boot = /** @class */ (function () {
+    function Boot() {
+    }
+    Boot.classAnnations = { "name": "Boot", "params": { "run": ["app"] } };
+    return Boot;
+}());
+exports.Boot = Boot;
 /**
  * application runner token.
  *
@@ -683,11 +694,11 @@ exports.InjectRunnerToken = InjectRunnerToken;
 });
 
 unwrapExports(IRunner);
-var IRunner_1 = IRunner.InjectRunnerToken;
+var IRunner_1 = IRunner.Boot;
+var IRunner_2 = IRunner.InjectRunnerToken;
 
 var ModuleBuilder_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
-
 
 
 
@@ -758,10 +769,13 @@ var ModuleBuilder = /** @class */ (function () {
      * @memberof ModuleBuilder
      */
     ModuleBuilder.prototype.getContainer = function (token, env, parent) {
+        var container;
         var defaultContainer;
         if (env instanceof ModuleType.LoadedModule) {
             if (env.token === token) {
-                return env.container;
+                container = env.container;
+                this.setParent(container, parent);
+                return container;
             }
             else {
                 defaultContainer = env.container;
@@ -770,7 +784,6 @@ var ModuleBuilder = /** @class */ (function () {
         else if (defaultContainer instanceof core_1.Container) {
             defaultContainer = env;
         }
-        var container;
         var pools = this.getPools();
         if (core_1.isToken(token)) {
             if (pools.has(token)) {
@@ -795,6 +808,7 @@ var ModuleBuilder = /** @class */ (function () {
             container = token.container || defaultContainer;
             if (!container || !(defaultContainer instanceof core_1.Container)) {
                 container = id ? this.createContainer() : pools.getDefault();
+                token.container = container;
             }
             this.setParent(container, parent);
             if (id || !token.container) {
@@ -837,7 +851,7 @@ var ModuleBuilder = /** @class */ (function () {
     };
     ModuleBuilder.prototype.load = function (token, env, parent) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var container, tk, mdToken, cfg, loadmdl;
+            var container, tk, mdToken, cfg, mToken, loadmdl;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -854,9 +868,13 @@ var ModuleBuilder = /** @class */ (function () {
                         return [4 /*yield*/, this.registerDepdences(container, cfg)];
                     case 1:
                         cfg = _a.sent();
+                        mToken = core_1.isToken(token) ? token : this.getType(cfg);
+                        if (core_1.isClass(mToken) && !container.has(mToken)) {
+                            container.register(mToken);
+                        }
                         loadmdl = {
                             token: token,
-                            moduleToken: core_1.isToken(token) ? token : this.getType(cfg),
+                            moduleToken: mToken,
                             container: container,
                             moduleConfig: cfg
                         };
@@ -889,7 +907,7 @@ var ModuleBuilder = /** @class */ (function () {
                         cfg = loadmdl.moduleConfig;
                         builder = this.getBuilder(container, loadmdl.moduleToken, cfg);
                         if (!(builder && builder !== this)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, builder.build(token, container, data)];
+                        return [4 /*yield*/, builder.build(token, env, data)];
                     case 2: return [2 /*return*/, _a.sent()];
                     case 3:
                         annBuilder = this.getAnnoBuilder(container, loadmdl.moduleToken, cfg.annotationBuilder);
@@ -943,7 +961,7 @@ var ModuleBuilder = /** @class */ (function () {
                         bootInstance = _a.sent();
                         runable = void 0;
                         if (!bootInstance) return [3 /*break*/, 9];
-                        return [4 /*yield*/, this.autoRun(container, bootToken, cfg, bootInstance)];
+                        return [4 /*yield*/, this.autoRun(container, bootToken ? bootToken : anBuilder.getType(cfg), cfg, bootInstance)];
                     case 6:
                         runable = _a.sent();
                         if (!(md && core_1.isFunction(md.mdOnStart))) return [3 /*break*/, 8];
@@ -952,7 +970,7 @@ var ModuleBuilder = /** @class */ (function () {
                         _a.sent();
                         _a.label = 8;
                     case 8: return [3 /*break*/, 11];
-                    case 9: return [4 /*yield*/, this.autoRun(container, this.getType(cfg), cfg, md)];
+                    case 9: return [4 /*yield*/, this.autoRun(container, loadmdl.moduleToken, cfg, md)];
                     case 10:
                         runable = _a.sent();
                         _a.label = 11;
@@ -988,54 +1006,88 @@ var ModuleBuilder = /** @class */ (function () {
                 return true;
             });
         }
+        if (builder) {
+            builder.setPools(this.getPools());
+        }
         return builder || this;
     };
     ModuleBuilder.prototype.autoRun = function (container, token, cfg, instance) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var runner;
+            var runner_1, service_1, provider_1;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         if (!instance) {
                             return [2 /*return*/, null];
                         }
-                        container.getTokenExtendsChain(token).forEach(function (tk) {
-                            if (runner) {
-                                return false;
-                            }
-                            var runnerToken = new IRunner.InjectRunnerToken(tk);
-                            if (container.has(runnerToken)) {
-                                runner = container.resolve(runnerToken, { token: token, instance: instance, config: cfg });
-                            }
-                            return true;
-                        });
-                        if (!runner) return [3 /*break*/, 2];
-                        return [4 /*yield*/, runner.run(instance)];
+                        if (!(instance instanceof IRunner.Boot)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, instance.run()];
                     case 1:
                         _a.sent();
-                        return [2 /*return*/, runner];
+                        return [2 /*return*/, instance];
                     case 2:
-                        if (!(instance instanceof Boot_1.Boot || core_1.isFunction(instance.run))) return [3 /*break*/, 4];
-                        return [4 /*yield*/, instance.run()];
+                        if (!(instance instanceof Service_1.Service)) return [3 /*break*/, 4];
+                        return [4 /*yield*/, instance.start()];
                     case 3:
                         _a.sent();
                         return [2 /*return*/, instance];
                     case 4:
-                        if (!(instance instanceof Service_1.Service || (core_1.isFunction(instance.start) && core_1.isFunction(instance.stop)))) return [3 /*break*/, 6];
-                        return [4 /*yield*/, instance.start()];
+                        provider_1 = { token: token, instance: instance, config: cfg };
+                        container.getTokenExtendsChain(token).forEach(function (tk) {
+                            if (runner_1 || service_1) {
+                                return false;
+                            }
+                            var runnerToken = new IRunner.InjectRunnerToken(tk);
+                            if (container.has(runnerToken)) {
+                                runner_1 = container.resolve(runnerToken, provider_1);
+                            }
+                            var serviceToken = new Service_1.InjectServiceToken(tk);
+                            if (container.has(serviceToken)) {
+                                service_1 = container.resolve(serviceToken, provider_1);
+                            }
+                            return true;
+                        });
+                        if (!runner_1) {
+                            this.getDefaultRunner(container, provider_1);
+                        }
+                        if (!runner_1 && !service_1) {
+                            this.getDefaultService(container, provider_1);
+                        }
+                        if (!runner_1) return [3 /*break*/, 6];
+                        return [4 /*yield*/, runner_1.run(instance)];
                     case 5:
                         _a.sent();
-                        return [2 /*return*/, instance];
+                        return [2 /*return*/, runner_1];
                     case 6:
-                        if (!(token && cfg.autorun)) return [3 /*break*/, 8];
-                        return [4 /*yield*/, container.invoke(token, cfg.autorun, instance)];
+                        if (!service_1) return [3 /*break*/, 8];
+                        return [4 /*yield*/, service_1.start()];
                     case 7:
                         _a.sent();
+                        return [2 /*return*/, service_1];
+                    case 8:
+                        if (!(token && cfg.autorun)) return [3 /*break*/, 10];
+                        return [4 /*yield*/, container.invoke(token, cfg.autorun, instance)];
+                    case 9:
+                        _a.sent();
                         return [2 /*return*/, instance];
-                    case 8: return [2 /*return*/, instance];
+                    case 10: return [2 /*return*/, instance];
                 }
             });
         });
+    };
+    ModuleBuilder.prototype.getDefaultRunner = function (container) {
+        var provider = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            provider[_i - 1] = arguments[_i];
+        }
+        return null;
+    };
+    ModuleBuilder.prototype.getDefaultService = function (container) {
+        var provider = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            provider[_i - 1] = arguments[_i];
+        }
+        return null;
     };
     ModuleBuilder.prototype.getAnnoBuilder = function (container, token, annBuilder) {
         var builder;
@@ -1371,7 +1423,7 @@ var ModuleBuilder = /** @class */ (function () {
         return tokens;
     };
     var ModuleBuilder_1;
-    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getPools": [], "setPools": ["pools"], "regDefaultContainer": [], "getContainer": ["token", "env", "parent"], "getConfigId": ["cfg"], "setParent": ["container", "parent"], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "load": ["token", "env", "parent"], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "getBuilder": ["container", "token", "cfg"], "autoRun": ["container", "token", "cfg", "instance"], "getAnnoBuilder": ["container", "token", "annBuilder"], "getDefaultAnnBuilder": ["container"], "importModule": ["token", "container"], "getDecorator": [], "getConfigure": ["token", "container"], "registerDepdences": ["container", "config"], "getType": ["cfg"], "getBootType": ["cfg"], "importConfigExports": ["container", "providerContainer", "cfg"], "registerConfgureDepds": ["container", "config"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getPools": [], "setPools": ["pools"], "regDefaultContainer": [], "getContainer": ["token", "env", "parent"], "getConfigId": ["cfg"], "setParent": ["container", "parent"], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "load": ["token", "env", "parent"], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "getBuilder": ["container", "token", "cfg"], "autoRun": ["container", "token", "cfg", "instance"], "getDefaultRunner": ["container", "provider"], "getDefaultService": ["container", "provider"], "getAnnoBuilder": ["container", "token", "annBuilder"], "getDefaultAnnBuilder": ["container"], "importModule": ["token", "container"], "getDecorator": [], "getConfigure": ["token", "container"], "registerDepdences": ["container", "config"], "getType": ["cfg"], "getBootType": ["cfg"], "importConfigExports": ["container", "providerContainer", "cfg"], "registerConfgureDepds": ["container", "config"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
     tslib_1.__decorate([
         core_1.Inject(core_1.ContainerBuilderToken),
         tslib_1.__metadata("design:type", Object)
@@ -1593,7 +1645,6 @@ tslib_1.__exportStar(ContainerPool_1, exports);
 tslib_1.__exportStar(BootModule_1, exports);
 tslib_1.__exportStar(IAnnotationBuilder, exports);
 tslib_1.__exportStar(AnnotationBuilder_1, exports);
-tslib_1.__exportStar(Boot_1, exports);
 tslib_1.__exportStar(IRunner, exports);
 tslib_1.__exportStar(Service_1, exports);
 tslib_1.__exportStar(ModuleType, exports);

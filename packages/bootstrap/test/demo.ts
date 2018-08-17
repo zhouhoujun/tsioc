@@ -66,7 +66,7 @@ export class ModuleB implements OnModuleStart<ClassSevice> {
         let pools = container.get(ContainerPoolToken);
         // console.log(pools);
         console.log('container pools defaults..................\n');
-        console.log(pools.defaults);
+        console.log(pools.getDefault());
 
         console.log(test);
         test.test();

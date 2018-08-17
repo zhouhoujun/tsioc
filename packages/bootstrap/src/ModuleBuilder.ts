@@ -13,9 +13,8 @@ import { BootModule } from './BootModule';
 import { MdInstance, LoadedModule } from './ModuleType';
 import { IAnnotationBuilder, AnnotationBuilderToken, IAnyTypeBuilder, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import { containerPools, ContainerPool } from './ContainerPool';
-import { Boot } from './Boot';
-import { Service } from './Service';
-import { InjectRunnerToken, IRunner } from './IRunner';
+import { Service, IService, InjectServiceToken } from './Service';
+import { InjectRunnerToken, IRunner, Boot } from './IRunner';
 import { AnnotationBuilder } from './AnnotationBuilder';
 
 
@@ -51,7 +50,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     }
 
-    protected pools;
+    protected pools: ContainerPool;
     getPools(): ContainerPool {
         if (!this.pools) {
             this.pools = containerPools;
@@ -82,10 +81,13 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      * @memberof ModuleBuilder
      */
     getContainer(token: Token<T> | ModuleConfigure, env?: ModuleEnv, parent?: IContainer): IContainer {
+        let container: IContainer;
         let defaultContainer: IContainer;
         if (env instanceof LoadedModule) {
             if (env.token === token) {
-                return env.container;
+                container = env.container;
+                this.setParent(container, parent);
+                return container;
             } else {
                 defaultContainer = env.container;
             }
@@ -93,7 +95,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             defaultContainer = env;
         }
 
-        let container: IContainer;
         let pools = this.getPools();
         if (isToken(token)) {
             if (pools.has(token)) {
@@ -116,6 +117,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             container = token.container || defaultContainer;
             if (!container || !(defaultContainer instanceof Container)) {
                 container = id ? this.createContainer() : pools.getDefault();
+                token.container = container;
             }
             this.setParent(container, parent);
             if (id || !token.container) {
@@ -166,9 +168,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         if (env instanceof LoadedModule && env.token === token) {
             return env;
         }
-
         let container = this.getContainer(token, env, parent);
-
         let tk = isToken(token) ? token : this.getConfigId(token);
         let mdToken: Token<any> = new InjectModuleLoadToken(tk);
         if (tk && container.has(mdToken)) {
@@ -178,10 +178,13 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         let cfg = this.getConfigure(token, container);
 
         cfg = await this.registerDepdences(container, cfg);
-
+        let mToken = isToken(token) ? token : this.getType(cfg);
+        if (isClass(mToken) && !container.has(mToken)) {
+            container.register(mToken);
+        }
         let loadmdl = {
             token: token,
-            moduleToken: isToken(token) ? token : this.getType(cfg),
+            moduleToken: mToken,
             container: container,
             moduleConfig: cfg
         } as LoadedModule;
@@ -208,7 +211,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         let cfg = loadmdl.moduleConfig;
         let builder = this.getBuilder(container, loadmdl.moduleToken, cfg);
         if (builder && builder !== this) {
-            return await builder.build(token, container, data);
+            return await builder.build(token, env, data);
         } else {
             let annBuilder = this.getAnnoBuilder(container, loadmdl.moduleToken, cfg.annotationBuilder);
             if (!loadmdl.moduleToken) {
@@ -248,12 +251,12 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             let bootInstance = await (bootToken ? anBuilder.build(bootToken, cfg, data) : anBuilder.buildByConfig(cfg, data));
             let runable;
             if (bootInstance) {
-                runable = await this.autoRun(container, bootToken, cfg, bootInstance);
+                runable = await this.autoRun(container, bootToken ? bootToken : anBuilder.getType(cfg), cfg, bootInstance);
                 if (md && isFunction(md.mdOnStart)) {
                     await Promise.resolve(md.mdOnStart(bootInstance));
                 }
             } else {
-                runable = await this.autoRun(container, this.getType(cfg), cfg, md);
+                runable = await this.autoRun(container, loadmdl.moduleToken, cfg, md);
             }
             return runable;
         }
@@ -285,6 +288,9 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
                 return true;
             });
         }
+        if (builder) {
+            builder.setPools(this.getPools());
+        }
         return builder || this;
     }
 
@@ -292,33 +298,57 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         if (!instance) {
             return null;
         }
-        let runner: IRunner<T>;
-        container.getTokenExtendsChain(token).forEach(tk => {
-            if (runner) {
-                return false;
-            }
-            let runnerToken = new InjectRunnerToken<T>(tk);
-            if (container.has(runnerToken)) {
-                runner = container.resolve(runnerToken, { token: token, instance: instance, config: cfg });
-            }
-            return true;
-        });
 
-        if (runner) {
-            await runner.run(instance);
-            return runner;
-        } else if (instance instanceof Boot || isFunction(instance.run)) {
+        if (instance instanceof Boot) {
             await instance.run();
             return instance;
-        } else if (instance instanceof Service || (isFunction(instance.start) && isFunction(instance.stop))) {
+        } else if (instance instanceof Service) {
             await instance.start();
             return instance;
-        } else if (token && cfg.autorun) {
-            await container.invoke(token, cfg.autorun, instance);
-            return instance;
         } else {
-            return instance;
+            let runner: IRunner<T>, service: IService<T>;
+            let provider = { token: token, instance: instance, config: cfg };
+            container.getTokenExtendsChain(token).forEach(tk => {
+                if (runner || service) {
+                    return false;
+                }
+                let runnerToken = new InjectRunnerToken<T>(tk);
+                if (container.has(runnerToken)) {
+                    runner = container.resolve(runnerToken, provider);
+                }
+                let serviceToken = new InjectServiceToken<T>(tk);
+                if (container.has(serviceToken)) {
+                    service = container.resolve(serviceToken, provider);
+                }
+                return true;
+            });
+            if (!runner) {
+                this.getDefaultRunner(container, provider)
+            }
+            if (!runner && !service) {
+                this.getDefaultService(container, provider)
+            }
+            if (runner) {
+                await runner.run(instance);
+                return runner;
+            } else if (service) {
+                await service.start();
+                return service;
+            } else if (token && cfg.autorun) {
+                await container.invoke(token, cfg.autorun, instance);
+                return instance;
+            } else {
+                return instance;
+            }
         }
+    }
+
+    protected getDefaultRunner(container: IContainer, ...provider: Providers[]): IRunner<T> {
+        return null;
+    }
+
+    protected getDefaultService(container: IContainer, ...provider: Providers[]): IService<T> {
+        return null;
     }
 
     protected getAnnoBuilder(container: IContainer, token: Token<any>, annBuilder: Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>): IAnyTypeBuilder {

@@ -9,11 +9,53 @@ import { ModuleConfigure } from './ModuleConfigure';
  * @template T
  */
 export interface IRunner<T> {
+    /**
+     * module boot token.
+     */
     token?: Token<T>;
+    /**
+     * module boot instance.
+     *
+     * @type {T}
+     * @memberof IService
+     */
     instance?: T;
+    /**
+     * module configure.
+     *
+     * @type {ModuleConfigure}
+     * @memberof IService
+     */
     config?: ModuleConfigure;
-    run(app: T): Promise<any>;
+    /**
+     * run application via boot instance.
+     *
+     * @param {T} [app]
+     * @returns {Promise<any>}
+     * @memberof IRunner
+     */
+    run(app?: T): Promise<any>;
 }
+
+/**
+ * boot element.
+ *
+ * @export
+ * @abstract
+ * @class Boot
+ * @implements {IBoot}
+ */
+export abstract class Boot implements IRunner<any> {
+    /**
+     * boot run
+     *
+     * @abstract
+     * @returns {Promise<any>}
+     * @memberof Boot
+     */
+    abstract run(app?: any): Promise<any>;
+}
+
 
 /**
  * application runner token.
@@ -25,6 +67,6 @@ export interface IRunner<T> {
  */
 export class InjectRunnerToken<T> extends Registration<IRunner<T>> {
     constructor(type: Token<T>) {
-        super(type as any, 'boot__runner');
+        super(type, 'boot__runner');
     }
 }

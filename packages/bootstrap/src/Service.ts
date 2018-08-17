@@ -1,3 +1,5 @@
+import { Token, Registration } from '@ts-ioc/core';
+import { ModuleConfigure } from './ModuleConfigure';
 
 /**
  * IService interface
@@ -5,18 +7,40 @@
  * @export
  * @interface IService
  */
-export interface IService {
+export interface IService<T> {
     /**
-     * start boot.
+     * module boot token.
      */
-    start?(): Promise<any> | void;
+    token?: Token<T>;
     /**
-     * stop boot.
+     * module boot instance.
      *
-     * @returns {(Promise<any> | void)}
-     * @memberof IBoot
+     * @type {T}
+     * @memberof IService
      */
-    stop?(): Promise<any> | void;
+    instance?: T;
+    /**
+     * module configure.
+     *
+     * @type {ModuleConfigure}
+     * @memberof IService
+     */
+    config?: ModuleConfigure;
+
+    /**
+     * start application service.
+     *
+     * @returns {Promise<any>}
+     * @memberof IService
+     */
+    start(): Promise<any>;
+    /**
+     * stop server.
+     *
+     * @returns {Promise<any>}
+     * @memberof IService
+     */
+    stop?(): Promise<any>;
 }
 
 /**
@@ -27,7 +51,7 @@ export interface IService {
  * @class Service
  * @implements {IService}
  */
-export abstract class Service implements IService {
+export abstract class Service implements IService<any> {
     /**
      * start service.
      *
@@ -44,4 +68,19 @@ export abstract class Service implements IService {
      * @memberof Service
      */
     abstract stop(): Promise<any>;
+}
+
+
+/**
+ * application service token.
+ *
+ * @export
+ * @class InjectServiceToken
+ * @extends {Registration<IService<T>>}
+ * @template T
+ */
+export class InjectServiceToken<T> extends Registration<IService<T>> {
+    constructor(type: Token<T>) {
+        super(type, 'boot__service');
+    }
 }

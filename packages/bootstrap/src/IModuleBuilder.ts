@@ -3,7 +3,6 @@ import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { MdInstance, LoadedModule } from './ModuleType';
 import { ContainerPool } from './ContainerPool';
 import { IService } from './Service';
-import { IBoot } from './Boot';
 import { IRunner } from './IRunner';
 
 
@@ -31,7 +30,7 @@ export type ModuleEnv = IContainer | LoadedModule;
 /**
  * runn able.
  */
-export type Runnable<T> = T | IService | IBoot | IRunner<T>;
+export type Runnable<T> = T | IService<T> | IRunner<T>;
 
 /**
  * Generics module builder insterface.
