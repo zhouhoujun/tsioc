@@ -27,9 +27,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
     }
 
     async build(token: Token<T>, config?: AnnotationConfigure<T>, data?: any): Promise<T> {
-        if (!config) {
-            config = this.getTokenMetaConfig(token);
-        }
+        config = this.getTokenMetaConfig(token, config);
         let builder = this.getBuilder(token, config);
         if (!this.isEqual(builder)) {
             return builder.build(token, config, data);
@@ -53,10 +51,10 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         let token: Token<T>;
         if (isToken(config)) {
             token = config;
-            return this.build(token, this.getTokenMetaConfig(token), data);
+            return this.build(token, null, data);
         } else {
             token = this.getType(config);
-            return this.build(token, this.getTokenMetaConfig(token, config), data);
+            return this.build(token, config, data);
         }
     }
 

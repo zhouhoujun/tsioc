@@ -6,15 +6,15 @@ import {
     isNull, isBaseObject, isToken, isArray, ContainerBuilderToken,
     hasOwnClassMetadata, IocExt, IContainerBuilder, DefaultContainerBuilder, Singleton, Inject, Registration, isMetadataObject, Container
 } from '@ts-ioc/core';
-import { IModuleBuilder, ModuleBuilderToken, ModuleEnv, InjectModuleBuilderToken, Runnable } from './IModuleBuilder';
+import { IModuleBuilder, ModuleBuilderToken, ModuleEnv, InjectModuleBuilderToken, Runnable, DefaultModuleBuilderToken } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { DIModule } from './decorators';
 import { BootModule } from './BootModule';
 import { MdInstance, LoadedModule } from './ModuleType';
-import { IAnnotationBuilder, AnnotationBuilderToken, IAnyTypeBuilder, InjectAnnotationBuilder } from './IAnnotationBuilder';
+import { IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder, DefaultAnnotationBuilderToken, AnnotationBuilderToken } from './IAnnotationBuilder';
 import { containerPools, ContainerPool } from './ContainerPool';
-import { Service, IService, InjectServiceToken } from './Service';
-import { InjectRunnerToken, IRunner, Boot } from './IRunner';
+import { Service, IService, InjectServiceToken, DefaultServiceToken } from './Service';
+import { InjectRunnerToken, IRunner, Boot, DefaultRunnerToken } from './IRunner';
 import { AnnotationBuilder } from './AnnotationBuilder';
 
 
@@ -288,10 +288,20 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
                 return true;
             });
         }
+        if (!builder) {
+            builder = this.getDefaultBuilder(container);
+        }
         if (builder) {
             builder.setPools(this.getPools());
         }
         return builder || this;
+    }
+
+    protected getDefaultBuilder(container: IContainer): IModuleBuilder<any> {
+        if (container.has(DefaultModuleBuilderToken)) {
+            return container.resolve(DefaultModuleBuilderToken);
+        }
+        return null
     }
 
     protected async autoRun(container: IContainer, token: Token<any>, cfg: ModuleConfigure, instance: any): Promise<Runnable<T>> {
@@ -343,11 +353,17 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         }
     }
 
-    protected getDefaultRunner(container: IContainer, ...provider: Providers[]): IRunner<T> {
+    protected getDefaultRunner(container: IContainer, ...providers: Providers[]): IRunner<T> {
+        if (container.has(DefaultRunnerToken)) {
+            return container.resolve(DefaultRunnerToken, ...providers)
+        }
         return null;
     }
 
-    protected getDefaultService(container: IContainer, ...provider: Providers[]): IService<T> {
+    protected getDefaultService(container: IContainer, ...providers: Providers[]): IService<T> {
+        if (container.has(DefaultServiceToken)) {
+            return container.resolve(DefaultServiceToken, ...providers)
+        }
         return null;
     }
 
@@ -387,6 +403,9 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
 
     protected getDefaultAnnBuilder(container: IContainer): IAnnotationBuilder<any> {
+        if (container.has(DefaultAnnotationBuilderToken)) {
+            return container.resolve(DefaultAnnotationBuilderToken);
+        }
         return container.resolve(AnnotationBuilderToken);
     }
 

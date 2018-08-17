@@ -1,6 +1,6 @@
 import { AppConfigure, AppConfigureToken } from './AppConfigure';
 import {
-    IContainer, LoadType, lang, isString, ContainerBuilderToken
+    IContainer, LoadType, lang, isString, ContainerBuilderToken, MapSet, Factory, Token
 } from '@ts-ioc/core';
 import { IApplicationBuilder, CustomRegister, AnyApplicationBuilder } from './IApplicationBuilder';
 import { ModuleBuilder } from './ModuleBuilder';
@@ -20,13 +20,14 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
     protected globalConfig: Promise<AppConfigure>;
     protected globalModules: LoadType[];
     protected customRegs: CustomRegister<T>[];
-
+    protected providers: MapSet<Token<any>, any>;
     root: IContainer;
 
     constructor(public baseURL?: string) {
         super();
         this.globalModules = [];
         this.customRegs = [];
+        this.providers = new MapSet();
         this.pools = new ContainerPool();
     }
 
@@ -84,6 +85,20 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         return this;
     }
 
+    /**
+     * bind provider
+     *
+     * @template T
+     * @param {Token<T>} provide
+     * @param {Token<T> | Factory<T>} provider
+     * @returns {this}
+     * @memberof IContainer
+     */
+    provider(provide: Token<any>, provider: Token<any> | Factory<any>): this {
+        this.providers.set(provide, provider);
+        return this;
+    }
+
     async registerConfgureDepds(container: IContainer, config: AppConfigure): Promise<AppConfigure> {
         if (!this.globalConfig) {
             this.useConfiguration();
@@ -123,6 +138,9 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
             let usedModules = this.globalModules;
             await container.loadModule(...usedModules);
         }
+        this.providers.forEach((val, key) => {
+            container.bindProvider(key, val);
+        })
 
         if (this.customRegs.length) {
             await Promise.all(this.customRegs.map(async cs => {
@@ -130,6 +148,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
                 return tokens;
             }));
         }
+
         return container;
     }
 

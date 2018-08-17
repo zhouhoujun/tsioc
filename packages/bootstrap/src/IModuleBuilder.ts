@@ -158,7 +158,10 @@ export interface IModuleBuilder<T> {
     getConfigure(token: Token<T> | ModuleConfigure, container?: IContainer): ModuleConfigure;
 }
 
-
+/**
+ * default module builder token.
+ */
+export const DefaultModuleBuilderToken = new InjectModuleBuilderToken<any>(Object);
 
 /**
  * module builder token.
@@ -177,12 +180,13 @@ export interface AnyModuleBuilder extends IModuleBuilder<any> {
     /**
      * build module as ioc container.
      *
-     * @param {(Token<TM> | ModuleConfig<TM>)} token
+     * @param {(Token<T> | ModuleConfig<T>)} token
      * @param {ModuleEnv} [env]
-     * @returns {Promise<MdInstance<T>>}
-     * @memberof IModuleBuilder
+     * @param {*} [data]
+     * @returns {Promise<T>}
+     * @memberof AnyModuleBuilder
      */
-    build<TM>(token: Token<TM> | ModuleConfig<TM>, env?: ModuleEnv): Promise<MdInstance<TM>>;
+    build<T>(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<MdInstance<T>>;
 
 }
 

@@ -84,3 +84,8 @@ export class InjectServiceToken<T> extends Registration<IService<T>> {
         super(type, 'boot__service');
     }
 }
+
+/**
+ * default service token.
+ */
+export const DefaultServiceToken = new InjectServiceToken<any>('default');

@@ -70,3 +70,9 @@ export class InjectRunnerToken<T> extends Registration<IRunner<T>> {
         super(type, 'boot__runner');
     }
 }
+
+
+/**
+ * default runner token.
+ */
+export const DefaultRunnerToken = new InjectRunnerToken<any>('default');

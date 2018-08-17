@@ -1,6 +1,6 @@
-import { Token, InjectToken, IContainer, LoadType } from '@ts-ioc/core';
+import { Token, InjectToken, IContainer, LoadType, Factory } from '@ts-ioc/core';
 import { AppConfigure } from './AppConfigure';
-import { IModuleBuilder, ModuleEnv } from './IModuleBuilder';
+import { IModuleBuilder, ModuleEnv, Runnable } from './IModuleBuilder';
 import { MdInstance } from './ModuleType';
 import { ModuleConfig } from './ModuleConfigure';
 
@@ -35,6 +35,18 @@ export interface IApplicationExtends {
      * @memberof IApplicationBuilder
      */
     use(...modules: LoadType[]): this;
+
+    /**
+     * bind provider
+     *
+     * @template T
+     * @param {Token<T>} provide
+     * @param {Token<T> | Factory<T>} provider
+     * @returns {this}
+     * @memberof IContainer
+     */
+    provider(provide: Token<any>, provider: Token<any> | Factory<any>): this;
+
 }
 
 
@@ -66,11 +78,11 @@ export interface AnyApplicationBuilder extends IApplicationBuilder<any> {
     /**
      * build module as ioc container.
      *
-     * @param {(Token<TM> | ModuleConfig<TM>)} token
+     * @param {(Token<T> | ModuleConfig<T>)} token
      * @param {ModuleEnv} [defaultContainer]
      * @returns {Promise<MdInstance<T>>}
      * @memberof IModuleBuilder
      */
-    build<TM>(token: Token<TM> | ModuleConfig<TM>, env?: ModuleEnv): Promise<MdInstance<TM>>;
+    build<T>(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): Promise<MdInstance<T>>;
 
 }
