@@ -74,6 +74,6 @@ export class Registration<T> {
         } else if (this.classType) {
             name = this.classType.toString();
         }
-        return `${this.type} ${name} ${this.desc}`;
+        return `${this.type} ${name} ${this.desc}`.trim();
     }
 }

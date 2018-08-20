@@ -1,4 +1,5 @@
-import { MapSet, Token, SymbolType, Registration, IContainer, InjectToken } from '@ts-ioc/core';
+import { MapSet, Token, SymbolType, Registration, IContainer, InjectToken, LoadType } from '@ts-ioc/core';
+import { CustomRegister } from './IApplicationBuilder';
 
 /**
  * container pool
@@ -7,11 +8,12 @@ import { MapSet, Token, SymbolType, Registration, IContainer, InjectToken } from
  * @class ContainerPool
  */
 export class ContainerPool {
-
+    protected globalModules: LoadType[];
     protected pools: MapSet<Token<any>, IContainer>;
 
     constructor() {
         this.pools = new MapSet();
+        this.globalModules = [];
     }
 
     getTokenKey(token: Token<any>): SymbolType<any> {
@@ -19,6 +21,36 @@ export class ContainerPool {
             return token.toString();
         }
         return token;
+    }
+
+    /**
+     * use global modules.
+     *
+     * @param {...LoadType[]} modules
+     * @returns {this}
+     * @memberof ContainerPool
+     */
+    use(...modules: LoadType[]): this {
+        this.globalModules = this.globalModules.concat(modules);
+        return this;
+    }
+
+
+    private inited = false;
+    hasInit() {
+        return this.inited;
+    }
+
+    async initDefault(): Promise<IContainer> {
+
+        let container = this.getDefault();
+        if (this.globalModules.length) {
+            let usedModules = this.globalModules;
+            await container.loadModule(...usedModules);
+        }
+        this.inited = true;
+
+        return container;
     }
 
     isDefault(container: IContainer): boolean {

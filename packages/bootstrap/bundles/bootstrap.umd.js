@@ -346,7 +346,8 @@ var AnnotationBuilder = /** @class */ (function () {
             var instance;
             return tslib_1.__generator(this, function (_a) {
                 if (!token) {
-                    throw new Error('can not find annotation token.');
+                    console.log('can not find annotation token.');
+                    return [2 /*return*/, null];
                 }
                 if (!this.container.has(token)) {
                     if (core_1.isClass(token)) {
@@ -480,8 +481,66 @@ exports.AnnotationBuilder = AnnotationBuilder;
 unwrapExports(AnnotationBuilder_1);
 var AnnotationBuilder_2 = AnnotationBuilder_1.AnnotationBuilder;
 
+var MetaAccessor_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * application service token.
+ *
+ * @export
+ * @class InjectMetaAccessorToken
+ * @extends {Registration<MetaAccessor<T>>}
+ * @template T
+ */
+var InjectMetaAccessorToken = /** @class */ (function (_super) {
+    tslib_1.__extends(InjectMetaAccessorToken, _super);
+    function InjectMetaAccessorToken(type) {
+        return _super.call(this, type, 'boot__metaAccessor') || this;
+    }
+    InjectMetaAccessorToken.classAnnations = { "name": "InjectMetaAccessorToken", "params": { "constructor": ["type"] } };
+    return InjectMetaAccessorToken;
+}(core_1.Registration));
+exports.InjectMetaAccessorToken = InjectMetaAccessorToken;
+/**
+ * default MetaAccessor token.
+ */
+exports.DefaultMetaAccessorToken = new InjectMetaAccessorToken('default');
+var MetaAccessor = /** @class */ (function () {
+    function MetaAccessor(decorator) {
+        this.decorator = decorator;
+    }
+    MetaAccessor.prototype.get = function (container, token) {
+        var type = core_1.isClass(token) ? token : container.getTokenImpl(token);
+        if (core_1.isClass(type)) {
+            var metas = core_1.getTypeMetadata(this.decorator, type);
+            if (metas && metas.length) {
+                var meta = metas[0];
+                return meta;
+            }
+        }
+        return null;
+    };
+    MetaAccessor.classAnnations = { "name": "MetaAccessor", "params": { "constructor": ["decorator"], "get": ["container", "token"] } };
+    MetaAccessor = tslib_1.__decorate([
+        core_1.Injectable(exports.DefaultMetaAccessorToken),
+        tslib_1.__metadata("design:paramtypes", [String])
+    ], MetaAccessor);
+    return MetaAccessor;
+}());
+exports.MetaAccessor = MetaAccessor;
+
+
+});
+
+unwrapExports(MetaAccessor_1);
+var MetaAccessor_2 = MetaAccessor_1.InjectMetaAccessorToken;
+var MetaAccessor_3 = MetaAccessor_1.DefaultMetaAccessorToken;
+var MetaAccessor_4 = MetaAccessor_1.MetaAccessor;
+
 var BootModule_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -508,6 +567,7 @@ var BootModule = /** @class */ (function () {
         var lifeScope = container.get(core_1.LifeScopeToken);
         lifeScope.registerDecorator(decorators.DIModule, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
         lifeScope.registerDecorator(decorators.Bootstrap, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
+        container.register(MetaAccessor_1.MetaAccessor);
         container.register(ModuleBuilder_1.ModuleBuilder);
         container.register(AnnotationBuilder_1.AnnotationBuilder);
         container.register(ApplicationBuilder.DefaultApplicationBuilder);
@@ -554,6 +614,7 @@ var ModuleType_1 = ModuleType.LoadedModule;
 var ContainerPool_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
+
 /**
  * container pool
  *
@@ -562,13 +623,53 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 var ContainerPool = /** @class */ (function () {
     function ContainerPool() {
+        this.inited = false;
         this.pools = new core_1.MapSet();
+        this.globalModules = [];
     }
     ContainerPool.prototype.getTokenKey = function (token) {
         if (token instanceof core_1.Registration) {
             return token.toString();
         }
         return token;
+    };
+    /**
+     * use global modules.
+     *
+     * @param {...LoadType[]} modules
+     * @returns {this}
+     * @memberof ContainerPool
+     */
+    ContainerPool.prototype.use = function () {
+        var modules = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            modules[_i] = arguments[_i];
+        }
+        this.globalModules = this.globalModules.concat(modules);
+        return this;
+    };
+    ContainerPool.prototype.hasInit = function () {
+        return this.inited;
+    };
+    ContainerPool.prototype.initDefault = function () {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var container, usedModules;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        container = this.getDefault();
+                        if (!this.globalModules.length) return [3 /*break*/, 2];
+                        usedModules = this.globalModules;
+                        return [4 /*yield*/, container.loadModule.apply(container, usedModules)];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        this.inited = true;
+                        return [2 /*return*/, container];
+                }
+            });
+        });
     };
     ContainerPool.prototype.isDefault = function (container) {
         return container === this.defaults;
@@ -599,7 +700,7 @@ var ContainerPool = /** @class */ (function () {
     ContainerPool.prototype.has = function (token) {
         return this.pools.has(this.getTokenKey(token));
     };
-    ContainerPool.classAnnations = { "name": "ContainerPool", "params": { "constructor": [], "getTokenKey": ["token"], "isDefault": ["container"], "hasDefault": [], "setDefault": ["container"], "getDefault": [], "set": ["token", "container"], "get": ["token"], "has": ["token"] } };
+    ContainerPool.classAnnations = { "name": "ContainerPool", "params": { "constructor": [], "getTokenKey": ["token"], "use": ["modules"], "hasInit": [], "initDefault": [], "isDefault": ["container"], "hasDefault": [], "setDefault": ["container"], "getDefault": [], "set": ["token", "container"], "get": ["token"], "has": ["token"] } };
     return ContainerPool;
 }());
 exports.ContainerPool = ContainerPool;
@@ -729,6 +830,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
 var exportsProvidersFiled = '__exportProviders';
 /**
  * inject module load token.
@@ -788,20 +890,12 @@ var ModuleBuilder = /** @class */ (function () {
      */
     ModuleBuilder.prototype.getContainer = function (token, env, parent) {
         var container;
-        var defaultContainer;
-        if (env instanceof ModuleType.LoadedModule) {
-            if (env.token === token) {
-                container = env.container;
-                this.setParent(container, parent);
-                return container;
-            }
-            else {
-                defaultContainer = env.container;
-            }
+        if (env instanceof ModuleType.LoadedModule && env.token === token) {
+            container = env.container;
+            this.setParent(container, parent);
+            return container;
         }
-        else if (defaultContainer instanceof core_1.Container) {
-            defaultContainer = env;
-        }
+        var defaultContainer = this.getContainerInEnv(env);
         var pools = this.getPools();
         if (core_1.isToken(token)) {
             if (pools.has(token)) {
@@ -838,6 +932,16 @@ var ModuleBuilder = /** @class */ (function () {
             return container;
         }
     };
+    ModuleBuilder.prototype.getContainerInEnv = function (env) {
+        var envContainer;
+        if (env instanceof ModuleType.LoadedModule) {
+            envContainer = env.container;
+        }
+        else if (env instanceof core_1.Container) {
+            envContainer = env;
+        }
+        return envContainer;
+    };
     ModuleBuilder.prototype.getConfigId = function (cfg) {
         return cfg.name;
     };
@@ -873,9 +977,12 @@ var ModuleBuilder = /** @class */ (function () {
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (env instanceof ModuleType.LoadedModule && env.token === token) {
-                            return [2 /*return*/, env];
-                        }
+                        if (!!this.getPools().hasInit()) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.getPools().initDefault()];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2:
                         container = this.getContainer(token, env, parent);
                         tk = core_1.isToken(token) ? token : this.getConfigId(token);
                         mdToken = new InjectModuleLoadToken(tk);
@@ -884,7 +991,7 @@ var ModuleBuilder = /** @class */ (function () {
                         }
                         cfg = this.getConfigure(token, container);
                         return [4 /*yield*/, this.registerDepdences(container, cfg)];
-                    case 1:
+                    case 3:
                         cfg = _a.sent();
                         mToken = core_1.isToken(token) ? token : this.getType(cfg);
                         if (core_1.isClass(mToken) && !container.has(mToken)) {
@@ -904,6 +1011,10 @@ var ModuleBuilder = /** @class */ (function () {
             });
         });
     };
+    ModuleBuilder.prototype.cleanLoadModule = function (container, tk) {
+        var mdToken = new InjectModuleLoadToken(tk);
+        container.unregister(mdToken);
+    };
     /**
      * build module.
      *
@@ -915,7 +1026,7 @@ var ModuleBuilder = /** @class */ (function () {
      */
     ModuleBuilder.prototype.build = function (token, env, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var loadmdl, container, cfg, builder, annBuilder, instance, instance, mdlInst;
+            var loadmdl, container, cfg, builder, tk, annBuilder, instance, instance, mdlInst;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.load(token, env)];
@@ -923,9 +1034,11 @@ var ModuleBuilder = /** @class */ (function () {
                         loadmdl = _a.sent();
                         container = loadmdl.container;
                         cfg = loadmdl.moduleConfig;
-                        builder = this.getBuilder(container, loadmdl.moduleToken, cfg);
+                        builder = this.getBuilder(token, env);
                         if (!(builder && builder !== this)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, builder.build(token, env, data)];
+                        tk = core_1.isToken(token) ? token : this.getConfigId(token);
+                        this.cleanLoadModule(container, tk);
+                        return [4 /*yield*/, builder.build(token, loadmdl, data)];
                     case 2: return [2 /*return*/, _a.sent()];
                     case 3:
                         annBuilder = this.getAnnoBuilder(container, loadmdl.moduleToken, cfg.annotationBuilder);
@@ -957,7 +1070,7 @@ var ModuleBuilder = /** @class */ (function () {
     */
     ModuleBuilder.prototype.bootstrap = function (token, env, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var loadmdl, cfg, container, builder, md, bootToken, anBuilder, bootInstance, runable;
+            var loadmdl, cfg, container, builder, tk, md, bootToken, anBuilder, bootInstance, runable;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.load(token, env)];
@@ -965,8 +1078,10 @@ var ModuleBuilder = /** @class */ (function () {
                         loadmdl = _a.sent();
                         cfg = loadmdl.moduleConfig;
                         container = loadmdl.container;
-                        builder = this.getBuilder(container, loadmdl.moduleToken, cfg);
+                        builder = this.getBuilder(token, env);
                         if (!(builder && builder !== this)) return [3 /*break*/, 3];
+                        tk = core_1.isToken(token) ? token : this.getConfigId(token);
+                        this.cleanLoadModule(container, tk);
                         return [4 /*yield*/, builder.bootstrap(token, loadmdl, data)];
                     case 2: return [2 /*return*/, _a.sent()];
                     case 3: return [4 /*yield*/, this.build(token, loadmdl, data)];
@@ -997,7 +1112,9 @@ var ModuleBuilder = /** @class */ (function () {
             });
         });
     };
-    ModuleBuilder.prototype.getBuilder = function (container, token, cfg) {
+    ModuleBuilder.prototype.getBuilder = function (token, env) {
+        var container = this.getContainerInEnv(env) || this.getPools().getDefault();
+        var cfg = this.getConfigure(token, container);
         var builder;
         if (cfg) {
             if (core_1.isClass(cfg.builder)) {
@@ -1012,8 +1129,9 @@ var ModuleBuilder = /** @class */ (function () {
                 builder = cfg.builder;
             }
         }
-        if (!builder && token) {
-            container.getTokenExtendsChain(token).forEach(function (tk) {
+        var tko = core_1.isToken(token) ? token : this.getType(token);
+        if (!builder && tko) {
+            container.getTokenExtendsChain(tko).forEach(function (tk) {
                 if (builder) {
                     return false;
                 }
@@ -1199,24 +1317,13 @@ var ModuleBuilder = /** @class */ (function () {
      */
     ModuleBuilder.prototype.getConfigure = function (token, container) {
         var cfg;
-        if (core_1.isClass(token)) {
-            cfg = this.getMetaConfig(token);
-        }
-        else if (core_1.isToken(token)) {
-            var tokenType = container ? container.getTokenImpl(token) : token;
-            if (core_1.isClass(tokenType)) {
-                cfg = this.getMetaConfig(tokenType);
-            }
+        container = container || this.getPools().getDefault();
+        if (core_1.isToken(token)) {
+            cfg = this.getMetaConfig(token, container);
         }
         else if (core_1.isMetadataObject(token)) {
-            cfg = token;
-            var type = this.getType(cfg);
-            if (type) {
-                var typeTask = core_1.isClass(type) ? type : (container ? container.getTokenImpl(type) : type);
-                if (core_1.isClass(typeTask)) {
-                    cfg = core_1.lang.assign({}, this.getMetaConfig(typeTask), cfg || {});
-                }
-            }
+            var type = this.getType(token);
+            cfg = core_1.lang.assign(token || {}, this.getMetaConfig(type, container), token || {});
         }
         return cfg || {};
     };
@@ -1317,16 +1424,39 @@ var ModuleBuilder = /** @class */ (function () {
             });
         });
     };
-    ModuleBuilder.prototype.getMetaConfig = function (bootModule) {
-        var decorator = this.getDecorator();
-        if (this.isDIModule(bootModule)) {
-            var metas = core_1.getTypeMetadata(decorator, bootModule);
-            if (metas && metas.length) {
-                var meta = metas[0];
-                return core_1.lang.omit(meta, 'builder');
+    ModuleBuilder.prototype.getMetaConfig = function (token, container) {
+        if (core_1.isToken(token)) {
+            var decorator = this.getDecorator();
+            var accessor_1;
+            var provider_2 = { decorator: decorator };
+            container.getTokenExtendsChain(token).forEach(function (tk) {
+                if (accessor_1) {
+                    return false;
+                }
+                var accToken = new MetaAccessor_1.InjectMetaAccessorToken(tk);
+                if (container.has(accToken)) {
+                    accessor_1 = container.resolve(accToken, provider_2);
+                }
+                return true;
+            });
+            if (!accessor_1) {
+                accessor_1 = this.getDefaultMetaAccessor(container, provider_2);
+            }
+            if (accessor_1) {
+                return accessor_1.get(container, token);
+            }
+            else {
+                return null;
             }
         }
         return null;
+    };
+    ModuleBuilder.prototype.getDefaultMetaAccessor = function (container) {
+        var providers = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            providers[_i - 1] = arguments[_i];
+        }
+        return container.resolve.apply(container, [MetaAccessor_1.DefaultMetaAccessorToken].concat(providers));
     };
     ModuleBuilder.prototype.isIocExt = function (token) {
         return core_1.hasOwnClassMetadata(core_1.IocExt, token);
@@ -1459,7 +1589,7 @@ var ModuleBuilder = /** @class */ (function () {
         return tokens;
     };
     var ModuleBuilder_1;
-    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getPools": [], "setPools": ["pools"], "regDefaultContainer": [], "getContainer": ["token", "env", "parent"], "getConfigId": ["cfg"], "setParent": ["container", "parent"], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "load": ["token", "env", "parent"], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "getBuilder": ["container", "token", "cfg"], "getDefaultBuilder": ["container"], "autoRun": ["container", "token", "cfg", "instance"], "getDefaultRunner": ["container", "providers"], "getDefaultService": ["container", "providers"], "getAnnoBuilder": ["container", "token", "annBuilder"], "getDefaultAnnBuilder": ["container"], "importModule": ["token", "container"], "getDecorator": [], "getConfigure": ["token", "container"], "registerDepdences": ["container", "config"], "getType": ["cfg"], "getBootType": ["cfg"], "importConfigExports": ["container", "providerContainer", "cfg"], "registerConfgureDepds": ["container", "config"], "getMetaConfig": ["bootModule"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getPools": [], "setPools": ["pools"], "regDefaultContainer": [], "getContainer": ["token", "env", "parent"], "getContainerInEnv": ["env"], "getConfigId": ["cfg"], "setParent": ["container", "parent"], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "load": ["token", "env", "parent"], "cleanLoadModule": ["container", "tk"], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "getBuilder": ["token", "env"], "getDefaultBuilder": ["container"], "autoRun": ["container", "token", "cfg", "instance"], "getDefaultRunner": ["container", "providers"], "getDefaultService": ["container", "providers"], "getAnnoBuilder": ["container", "token", "annBuilder"], "getDefaultAnnBuilder": ["container"], "importModule": ["token", "container"], "getDecorator": [], "getConfigure": ["token", "container"], "registerDepdences": ["container", "config"], "getType": ["cfg"], "getBootType": ["cfg"], "importConfigExports": ["container", "providerContainer", "cfg"], "registerConfgureDepds": ["container", "config"], "getMetaConfig": ["token", "container"], "getDefaultMetaAccessor": ["container", "providers"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
     tslib_1.__decorate([
         core_1.Inject(core_1.ContainerBuilderToken),
         tslib_1.__metadata("design:type", Object)
@@ -1500,7 +1630,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
     function DefaultApplicationBuilder(baseURL) {
         var _this = _super.call(this) || this;
         _this.baseURL = baseURL;
-        _this.globalModules = [];
+        // this.globalModules = [];
         _this.customRegs = [];
         _this.providers = new core_1.MapSet();
         _this.pools = new ContainerPool_1.ContainerPool();
@@ -1557,7 +1687,8 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
         for (var _i = 0; _i < arguments.length; _i++) {
             modules[_i] = arguments[_i];
         }
-        this.globalModules = this.globalModules.concat(modules);
+        var _a;
+        (_a = this.pools).use.apply(_a, modules);
         return this;
     };
     /**
@@ -1617,24 +1748,20 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
      */
     DefaultApplicationBuilder.prototype.registerExts = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var usedModules;
             var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, _super.prototype.registerExts.call(this, container, config)];
                     case 1:
                         _a.sent();
-                        if (!this.globalModules.length) return [3 /*break*/, 3];
-                        usedModules = this.globalModules;
-                        return [4 /*yield*/, container.loadModule.apply(container, usedModules)];
-                    case 2:
-                        _a.sent();
-                        _a.label = 3;
-                    case 3:
+                        // if (this.globalModules.length) {
+                        //     let usedModules = this.globalModules;
+                        //     await container.loadModule(...usedModules);
+                        // }
                         this.providers.forEach(function (val, key) {
                             container.bindProvider(key, val);
                         });
-                        if (!this.customRegs.length) return [3 /*break*/, 5];
+                        if (!this.customRegs.length) return [3 /*break*/, 3];
                         return [4 /*yield*/, Promise.all(this.customRegs.map(function (cs) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
                                 var tokens;
                                 return tslib_1.__generator(this, function (_a) {
@@ -1646,10 +1773,10 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
                                     }
                                 });
                             }); }))];
-                    case 4:
+                    case 2:
                         _a.sent();
-                        _a.label = 5;
-                    case 5: return [2 /*return*/, container];
+                        _a.label = 3;
+                    case 3: return [2 /*return*/, container];
                 }
             });
         });
@@ -1696,6 +1823,7 @@ tslib_1.__exportStar(IModuleBuilder, exports);
 tslib_1.__exportStar(ModuleBuilder_1, exports);
 tslib_1.__exportStar(ContainerPool_1, exports);
 tslib_1.__exportStar(BootModule_1, exports);
+tslib_1.__exportStar(MetaAccessor_1, exports);
 tslib_1.__exportStar(IAnnotationBuilder, exports);
 tslib_1.__exportStar(AnnotationBuilder_1, exports);
 tslib_1.__exportStar(IRunner, exports);

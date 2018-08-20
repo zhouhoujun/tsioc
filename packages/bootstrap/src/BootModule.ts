@@ -3,6 +3,7 @@ import { DIModule, Bootstrap } from './decorators';
 import { ModuleBuilder } from './ModuleBuilder';
 import { DefaultApplicationBuilder } from './ApplicationBuilder';
 import { AnnotationBuilder } from './AnnotationBuilder';
+import { MetaAccessor } from './MetaAccessor';
 /**
  * Bootstrap ext for ioc. auto run setup after registered.
  * with @IocExt('setup') decorator.
@@ -29,6 +30,7 @@ export class BootModule {
         lifeScope.registerDecorator(DIModule, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
         lifeScope.registerDecorator(Bootstrap, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
 
+        container.register(MetaAccessor);
         container.register(ModuleBuilder);
         container.register(AnnotationBuilder);
         container.register(DefaultApplicationBuilder);

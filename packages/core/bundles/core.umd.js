@@ -1477,7 +1477,7 @@ var Registration = /** @class */ (function () {
         else if (this.classType) {
             name = this.classType.toString();
         }
-        return this.type + " " + name + " " + this.desc;
+        return (this.type + " " + name + " " + this.desc).trim();
     };
     Registration.classAnnations = { "name": "Registration", "params": { "constructor": ["provideType", "desc"], "getProvide": [], "getClass": [], "getDesc": [], "toString": [] } };
     return Registration;
@@ -5389,6 +5389,12 @@ var Container = /** @class */ (function () {
         var key = this.getTokenKey(token);
         if (this.hasRegister(key)) {
             this.factories.delete(key);
+            if (this.provideTypes.has(key)) {
+                this.provideTypes.delete(key);
+            }
+        }
+        else if (this.parent) {
+            this.parent.unregister(key);
         }
         return this;
     };

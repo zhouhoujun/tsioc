@@ -100,13 +100,12 @@ export interface IModuleBuilder<T> {
     /**
      * get module builder
      *
-     * @param {IContainer} container
-     * @param {Token<T>} token
-     * @param {ModuleConfigure} [cfg]
+     * @param {(Token<T> | ModuleConfig<T>)} token
+     * @param {ModuleEnv} [env]
      * @returns {IModuleBuilder<T>}
      * @memberof IModuleBuilder
      */
-    getBuilder(container: IContainer, token: Token<T>, cfg?: ModuleConfigure): IModuleBuilder<T>;
+    getBuilder(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): IModuleBuilder<T>;
 
     /**
      * bootstrap module's main.

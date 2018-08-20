@@ -16,6 +16,7 @@ import { containerPools, ContainerPool } from './ContainerPool';
 import { Service, IService, InjectServiceToken, DefaultServiceToken } from './Service';
 import { InjectRunnerToken, IRunner, Boot, DefaultRunnerToken } from './IRunner';
 import { AnnotationBuilder } from './AnnotationBuilder';
+import { IMetaAccessor, InjectMetaAccessorToken, DefaultMetaAccessorToken } from './MetaAccessor';
 
 
 const exportsProvidersFiled = '__exportProviders';
@@ -82,18 +83,12 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      */
     getContainer(token: Token<T> | ModuleConfigure, env?: ModuleEnv, parent?: IContainer): IContainer {
         let container: IContainer;
-        let defaultContainer: IContainer;
-        if (env instanceof LoadedModule) {
-            if (env.token === token) {
-                container = env.container;
-                this.setParent(container, parent);
-                return container;
-            } else {
-                defaultContainer = env.container;
-            }
-        } else if (defaultContainer instanceof Container) {
-            defaultContainer = env;
+        if (env instanceof LoadedModule && env.token === token) {
+            container = env.container;
+            this.setParent(container, parent);
+            return container;
         }
+        let defaultContainer = this.getContainerInEnv(env);
 
         let pools = this.getPools();
         if (isToken(token)) {
@@ -127,6 +122,16 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             }
             return container;
         }
+    }
+
+    protected getContainerInEnv(env?: ModuleEnv) {
+        let envContainer: IContainer;
+        if (env instanceof LoadedModule) {
+            envContainer = env.container;
+        } else if (env instanceof Container) {
+            envContainer = env;
+        }
+        return envContainer;
     }
 
     protected getConfigId(cfg: ModuleConfigure) {
@@ -165,9 +170,12 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
     async load(token: Token<T> | ModuleConfigure, env?: ModuleEnv, parent?: IContainer): Promise<LoadedModule> {
-        if (env instanceof LoadedModule && env.token === token) {
-            return env;
+        if (!this.getPools().hasInit()) {
+            await this.getPools().initDefault();
         }
+        // if (env instanceof LoadedModule && env.token === token) {
+        //     return env;
+        // }
         let container = this.getContainer(token, env, parent);
         let tk = isToken(token) ? token : this.getConfigId(token);
         let mdToken: Token<any> = new InjectModuleLoadToken(tk);
@@ -196,6 +204,11 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return loadmdl;
     }
 
+    protected cleanLoadModule(container: IContainer, tk: Token<any>) {
+        let mdToken: Token<any> = new InjectModuleLoadToken(tk);
+        container.unregister(mdToken);
+    }
+
     /**
      * build module.
      *
@@ -209,9 +222,11 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         let loadmdl = await this.load(token, env);
         let container = loadmdl.container;
         let cfg = loadmdl.moduleConfig;
-        let builder = this.getBuilder(container, loadmdl.moduleToken, cfg);
+        let builder = this.getBuilder(token, env);
         if (builder && builder !== this) {
-            return await builder.build(token, env, data);
+            let tk = isToken(token) ? token : this.getConfigId(token);
+            this.cleanLoadModule(container, tk);
+            return await builder.build(token, loadmdl, data);
         } else {
             let annBuilder = this.getAnnoBuilder(container, loadmdl.moduleToken, cfg.annotationBuilder);
             if (!loadmdl.moduleToken) {
@@ -241,8 +256,10 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         let loadmdl = await this.load(token, env);
         let cfg = loadmdl.moduleConfig;
         let container = loadmdl.container;
-        let builder = this.getBuilder(container, loadmdl.moduleToken, cfg);
+        let builder = this.getBuilder(token, env);
         if (builder && builder !== this) {
+            let tk = isToken(token) ? token : this.getConfigId(token);
+            this.cleanLoadModule(container, tk);
             return await builder.bootstrap(token, loadmdl, data);
         } else {
             let md = await this.build(token, loadmdl, data) as MdInstance<T>;
@@ -262,7 +279,9 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         }
     }
 
-    getBuilder(container: IContainer, token: Token<T>, cfg?: ModuleConfigure): IModuleBuilder<T> {
+    getBuilder(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): IModuleBuilder<T> {
+        let container = this.getContainerInEnv(env) || this.getPools().getDefault();
+        let cfg = this.getConfigure(token, container);
         let builder: IModuleBuilder<T>;
         if (cfg) {
             if (isClass(cfg.builder)) {
@@ -276,8 +295,10 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
                 builder = cfg.builder;
             }
         }
-        if (!builder && token) {
-            container.getTokenExtendsChain(token).forEach(tk => {
+
+        let tko = isToken(token) ? token : this.getType(token);
+        if (!builder && tko) {
+            container.getTokenExtendsChain(tko).forEach(tk => {
                 if (builder) {
                     return false;
                 }
@@ -438,22 +459,13 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      */
     getConfigure(token?: Token<T> | ModuleConfigure, container?: IContainer): ModuleConfigure {
         let cfg: ModuleConfigure;
-        if (isClass(token)) {
-            cfg = this.getMetaConfig(token);
-        } else if (isToken(token)) {
-            let tokenType = container ? container.getTokenImpl(token) : token;
-            if (isClass(tokenType)) {
-                cfg = this.getMetaConfig(tokenType);
-            }
+        container = container || this.getPools().getDefault();
+        if (isToken(token)) {
+            cfg = this.getMetaConfig(token, container);
         } else if (isMetadataObject(token)) {
-            cfg = token as ModuleConfigure;
-            let type = this.getType(cfg);
-            if (type) {
-                let typeTask = isClass(type) ? type : (container ? container.getTokenImpl(type) : type);
-                if (isClass(typeTask)) {
-                    cfg = lang.assign({}, this.getMetaConfig(typeTask), cfg || {});
-                }
-            }
+            let type = this.getType(token);
+            cfg = lang.assign(token || {}, this.getMetaConfig(type, container), token || {});
+
         }
         return cfg || {};
     }
@@ -518,16 +530,35 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return config;
     }
 
-    protected getMetaConfig(bootModule: Type<any>): ModuleConfigure {
-        let decorator = this.getDecorator();
-        if (this.isDIModule(bootModule)) {
-            let metas = getTypeMetadata<ModuleConfigure>(decorator, bootModule);
-            if (metas && metas.length) {
-                let meta = metas[0];
-                return lang.omit(meta, 'builder');
+    protected getMetaConfig(token: Token<any>, container: IContainer): ModuleConfigure {
+        if (isToken(token)) {
+            let decorator = this.getDecorator();
+            let accessor: IMetaAccessor<any>;
+            let provider = { decorator: decorator };
+            container.getTokenExtendsChain(token).forEach(tk => {
+                if (accessor) {
+                    return false;
+                }
+                let accToken = new InjectMetaAccessorToken<T>(tk);
+                if (container.has(accToken)) {
+                    accessor = container.resolve(accToken, provider);
+                }
+                return true;
+            });
+            if (!accessor) {
+                accessor = this.getDefaultMetaAccessor(container, provider);
+            }
+            if (accessor) {
+                return accessor.get(container, token);
+            } else {
+                return null;
             }
         }
         return null;
+    }
+
+    getDefaultMetaAccessor(container: IContainer, ...providers: Providers[]) {
+        return container.resolve(DefaultMetaAccessorToken, ...providers);
     }
 
     protected isIocExt(token: Type<any>) {

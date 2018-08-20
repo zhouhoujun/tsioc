@@ -7,6 +7,7 @@ export * from './ModuleBuilder';
 export * from './ModuleConfigure';
 export * from './ContainerPool';
 export * from './BootModule';
+export * from './MetaAccessor';
 export * from './IAnnotation';
 export * from './IAnnotationBuilder';
 export * from './AnnotationBuilder';

@@ -188,6 +188,11 @@ export class Container implements IContainer {
         let key = this.getTokenKey(token);
         if (this.hasRegister(key)) {
             this.factories.delete(key);
+            if (this.provideTypes.has(key)) {
+                this.provideTypes.delete(key);
+            }
+        } else if (this.parent) {
+            this.parent.unregister(key);
         }
         return this;
     }

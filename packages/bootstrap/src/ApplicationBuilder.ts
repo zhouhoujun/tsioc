@@ -18,14 +18,14 @@ import { ContainerPool, ContainerPoolToken } from './ContainerPool';
  */
 export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicationBuilder<T> {
     protected globalConfig: Promise<AppConfigure>;
-    protected globalModules: LoadType[];
+    // protected globalModules: LoadType[];
     protected customRegs: CustomRegister<T>[];
     protected providers: MapSet<Token<any>, any>;
     root: IContainer;
 
     constructor(public baseURL?: string) {
         super();
-        this.globalModules = [];
+        // this.globalModules = [];
         this.customRegs = [];
         this.providers = new MapSet();
         this.pools = new ContainerPool();
@@ -81,7 +81,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
      * @memberof PlatformServer
      */
     use(...modules: LoadType[]): this {
-        this.globalModules = this.globalModules.concat(modules);
+        this.pools.use(...modules);
         return this;
     }
 
@@ -134,10 +134,10 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
     protected async registerExts(container: IContainer, config: AppConfigure): Promise<IContainer> {
         await super.registerExts(container, config);
 
-        if (this.globalModules.length) {
-            let usedModules = this.globalModules;
-            await container.loadModule(...usedModules);
-        }
+        // if (this.globalModules.length) {
+        //     let usedModules = this.globalModules;
+        //     await container.loadModule(...usedModules);
+        // }
         this.providers.forEach((val, key) => {
             container.bindProvider(key, val);
         })
