@@ -32,6 +32,7 @@ export class ContainerPool {
      */
     use(...modules: LoadType[]): this {
         this.globalModules = this.globalModules.concat(modules);
+        this.inited = false;
         return this;
     }
 
