@@ -1,18 +1,9 @@
-import { IContainer, lang, isString, IContainerBuilder } from '@ts-ioc/core';
-import { AppConfigure, DefaultApplicationBuilder, IApplicationBuilder, AnyApplicationBuilder } from '@ts-ioc/bootstrap';
+import { IContainer, IContainerBuilder, Injectable } from '@ts-ioc/core';
+import { AppConfigure, DefaultApplicationBuilder, IApplicationBuilder, AnyApplicationBuilder, IAppConfigureLoader, AppConfigureLoaderToken } from '@ts-ioc/bootstrap';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { ContainerBuilder } from '@ts-ioc/platform-server';
 
-/**
- * default app configuration.
- */
-const defaultAppConfig: AppConfigure = {
-    baseURL: '',
-    debug: false,
-    connections: {},
-    setting: {}
-}
 
 export interface ServerBuildExts {
     /**
@@ -47,6 +38,39 @@ export interface AnyApplicationBuilderServer extends AnyApplicationBuilder, Serv
 
 }
 
+@Injectable(AppConfigureLoaderToken)
+export class ConfigureFileLoader implements IAppConfigureLoader {
+    constructor(private baseURL: string, private container: IContainer) {
+
+    }
+    async load(uri?: string): Promise<AppConfigure> {
+        if (uri) {
+            if (existsSync(uri)) {
+                return require(uri) as AppConfigure;
+            } else if (existsSync(path.join(this.baseURL, uri))) {
+                return require(path.join(this.baseURL, uri)) as AppConfigure;
+            } else {
+                console.log(`config file: ${uri} not exists.`)
+                return null;
+            }
+        } else {
+            let cfgmodeles: AppConfigure;
+            let cfgpath = path.join(this.baseURL, './config');
+            ['.js', '.ts', '.json'].forEach(ext => {
+                if (cfgmodeles) {
+                    return false;
+                }
+                if (existsSync(cfgpath + ext)) {
+                    cfgmodeles = require(cfgpath + ext);
+                    return false;
+                }
+                return true;
+            });
+            return cfgmodeles;
+        }
+    }
+
+}
 
 
 /**
@@ -75,57 +99,6 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
      */
     static create(rootdir: string): AnyApplicationBuilderServer {
         return new ApplicationBuilder<any>(rootdir);
-    }
-
-    /**
-     * use custom configuration.
-     *
-     * @param {(string | AppConfigure)} [config]
-     * @returns {this}
-     * @memberof Bootstrap
-     */
-    useConfiguration(config?: string | AppConfigure): this {
-        if (!this.globalConfig) {
-            this.globalConfig = Promise.resolve(this.getDefaultConfig());
-        }
-        let cfgmodeles: AppConfigure;
-        if (isString(config)) {
-            if (existsSync(config)) {
-                cfgmodeles = require(config) as AppConfigure;
-            } else if (existsSync(path.join(this.baseURL, config))) {
-                cfgmodeles = require(path.join(this.baseURL, config)) as AppConfigure;
-            } else {
-                console.log(`config file: ${config} not exists.`)
-            }
-        } else if (config) {
-            cfgmodeles = config;
-        } else {
-            let cfgpath = path.join(this.baseURL, './config');
-            ['.js', '.ts', '.json'].forEach(ext => {
-                if (cfgmodeles) {
-                    return false;
-                }
-                if (existsSync(cfgpath + ext)) {
-                    cfgmodeles = require(cfgpath + ext);
-                    return false;
-                }
-                return true;
-            });
-            if (!cfgmodeles) {
-                console.log('no config file.');
-            }
-        }
-
-        if (cfgmodeles) {
-            let excfg = (cfgmodeles['default'] ? cfgmodeles['default'] : cfgmodeles) as AppConfigure;
-            this.globalConfig = this.globalConfig
-                .then(cfg => {
-                    cfg = lang.assign(cfg || {}, excfg || {}) as AppConfigure;
-                    return cfg;
-                });
-        }
-
-        return this;
     }
 
     /**
@@ -160,8 +133,5 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
         return this;
     }
 
-    protected getDefaultConfig(): AppConfigure {
-        return lang.assign({}, defaultAppConfig as AppConfigure);
-    }
 }
 

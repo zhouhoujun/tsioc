@@ -1,6 +1,6 @@
 import {
     ClassMetadata, Token, MetadataAdapter,
-    MetadataExtends, ITypeDecorator, Type, isClass, isFunction
+    MetadataExtends, ITypeDecorator, Type, isClass, isFunction, LoadType, isObject
 } from '@ts-ioc/core';
 import { AppConfigure } from '../AppConfigure';
 import { IAnnotationBuilder } from '../IAnnotationBuilder';
@@ -9,7 +9,8 @@ import { createDIModuleDecorator } from './DIModule';
 
 
 export interface BootstrapMetadata extends AppConfigure, ClassMetadata {
-    builder: Type<IApplicationBuilder<any>> | IApplicationBuilder<any>;
+    builder?: Type<IApplicationBuilder<any>> | IApplicationBuilder<any>;
+    globals?: LoadType[];
 }
 
 
@@ -56,16 +57,23 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
         if (metadataExtends) {
             metadataExtends(metadata);
         }
-        setTimeout(() => {
-            let builderType = metadata.builder;
-            let builder: IApplicationBuilder<any>;
-            if (isClass(builderType)) {
-                builder = isFunction(builderType['create']) ? builderType['create']() : new builderType();
-            } else {
-                builder = builderType as IApplicationBuilder<any>;
-            }
-            builder.bootstrap(metadata.token);
-        }, 800)
+        if (metadata.builder) {
+            setTimeout(() => {
+                let builderType = metadata.builder;
+                let builder: IApplicationBuilder<any>;
+                if (isClass(builderType)) {
+                    builder = isFunction(builderType['create']) ? builderType['create']() : new builderType();
+                } else if (isObject(builderType)) {
+                    builder = builderType as IApplicationBuilder<any>;
+                }
+                if (builder) {
+                    if (metadata.globals) {
+                        builder.use(...metadata.globals);
+                    }
+                    builder.bootstrap(metadata.type);
+                }
+            }, 500);
+        }
         return metadata;
     }) as IBootstrapDecorator<T>;
 }

@@ -44,6 +44,10 @@ export class Container implements IContainer {
         return root;
     }
 
+    getBuilder(): IContainerBuilder {
+        return this.resolve(ContainerBuilderToken);
+    }
+
     /**
      * Retrieves an instance from the container based on the provided token.
      *
@@ -190,6 +194,9 @@ export class Container implements IContainer {
             this.factories.delete(key);
             if (this.provideTypes.has(key)) {
                 this.provideTypes.delete(key);
+            }
+            if (isClass(key)) {
+                this.clearCache(key);
             }
         } else if (this.parent) {
             this.parent.unregister(key);
@@ -342,7 +349,7 @@ export class Container implements IContainer {
      * @memberof Container
      */
     use(...modules: Modules[]): this {
-        this.get<IContainerBuilder>(ContainerBuilderToken).syncLoadModule(this, ...modules);
+        this.getBuilder().syncLoadModule(this, ...modules);
         return this;
     }
 
@@ -354,7 +361,7 @@ export class Container implements IContainer {
      * @memberof IContainer
      */
     loadModule(...modules: LoadType[]): Promise<Type<any>[]> {
-        return this.get<IContainerBuilder>(ContainerBuilderToken).loadModule(this, ...modules);
+        return this.getBuilder().loadModule(this, ...modules);
     }
 
     /**

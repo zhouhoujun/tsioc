@@ -1,10 +1,10 @@
 import 'reflect-metadata';
 import {
-    IContainer, isProviderMap, Provider,
-    getTypeMetadata, Token, Type, Providers,
+    IContainer, isProviderMap, Provider, Token, Type, Providers,
     isString, lang, isFunction, isClass, isUndefined,
-    isNull, isBaseObject, isToken, isArray, ContainerBuilderToken,
-    hasOwnClassMetadata, IocExt, IContainerBuilder, DefaultContainerBuilder, Singleton, Inject, Registration, isMetadataObject, Container
+    isNull, isBaseObject, isToken, isArray,
+    hasOwnClassMetadata, IocExt, IContainerBuilder, DefaultContainerBuilder, Singleton,
+    Inject, Registration, isObject, Container, ContainerBuilderToken
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv, InjectModuleBuilderToken, Runnable, DefaultModuleBuilderToken } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
@@ -462,7 +462,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         container = container || this.getPools().getDefault();
         if (isToken(token)) {
             cfg = this.getMetaConfig(token, container);
-        } else if (isMetadataObject(token)) {
+        } else if (isObject(token)) {
             let type = this.getType(token);
             cfg = lang.assign(token || {}, this.getMetaConfig(type, container), token || {});
 
@@ -518,7 +518,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     protected async registerConfgureDepds(container: IContainer, config: ModuleConfigure): Promise<ModuleConfigure> {
         if (isArray(config.imports) && config.imports.length) {
-            let buider = container.get(ContainerBuilderToken);
+            let buider = container.getBuilder();
             let mdls = await buider.loader.loadTypes(config.imports, it => this.isIocExt(it) || this.isDIModule(it));
             await Promise.all(mdls.map(md => this.importModule(md, container)));
         }
@@ -576,10 +576,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
     protected async registerExts(container: IContainer, config: ModuleConfigure): Promise<IContainer> {
-        // register for each container.
-        // if (!container.hasRegister(AnnotationBuilder)) {
-        //     container.register(AnnotationBuilder);
-        // }
         return container;
     }
 

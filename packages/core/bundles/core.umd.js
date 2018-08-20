@@ -4144,38 +4144,6 @@ var ExtendsProvider = /** @class */ (function (_super) {
     return ExtendsProvider;
 }(Provider));
 exports.ExtendsProvider = ExtendsProvider;
-// /**
-//  * async param provider.
-//  * async load source file and execution as param value.
-//  *
-//  * @export
-//  * @interface AsyncParamProvider
-//  * @extends {ParamProvider}
-//  */
-// export class AsyncParamProvider extends ParamProvider {
-//     /**
-//      * match ref files.
-//      *
-//      * @type {(string | string[])}
-//      * @memberof AsyncParamProvider
-//      */
-//     protected files?: string | string[];
-//     protected basePath?: string;
-//     constructor(files: string | string[], token: Token<any>, index?: number, method?: string, value?: any) {
-//         super(token, value, index, method);
-//         this.files = files;
-//     }
-//     resolve<T>(container: IContainer, ...providers: Providers[]): any {
-//         let buider = container.get(ContainerBuilderToken);
-//         return buider.loadModule(container, {
-//             basePath: this.basePath,
-//             files: this.files
-//         })
-//             .then(() => {
-//                 return super.resolve(container, ...providers);
-//             });
-//     }
-// }
 
 
 });
@@ -5244,6 +5212,9 @@ var Container = /** @class */ (function () {
         }
         return root;
     };
+    Container.prototype.getBuilder = function () {
+        return this.resolve(IContainerBuilder.ContainerBuilderToken);
+    };
     /**
      * Retrieves an instance from the container based on the provided token.
      *
@@ -5391,6 +5362,9 @@ var Container = /** @class */ (function () {
             this.factories.delete(key);
             if (this.provideTypes.has(key)) {
                 this.provideTypes.delete(key);
+            }
+            if (utils.isClass(key)) {
+                this.clearCache(key);
             }
         }
         else if (this.parent) {
@@ -5554,7 +5528,7 @@ var Container = /** @class */ (function () {
             modules[_i] = arguments[_i];
         }
         var _a;
-        (_a = this.get(IContainerBuilder.ContainerBuilderToken)).syncLoadModule.apply(_a, [this].concat(modules));
+        (_a = this.getBuilder()).syncLoadModule.apply(_a, [this].concat(modules));
         return this;
     };
     /**
@@ -5570,7 +5544,7 @@ var Container = /** @class */ (function () {
             modules[_i] = arguments[_i];
         }
         var _a;
-        return (_a = this.get(IContainerBuilder.ContainerBuilderToken)).loadModule.apply(_a, [this].concat(modules));
+        return (_a = this.getBuilder()).loadModule.apply(_a, [this].concat(modules));
     };
     /**
      * invoke method async.
@@ -5777,7 +5751,7 @@ var Container = /** @class */ (function () {
             targetType: ClassT
         }, types.IocState.design);
     };
-    Container.classAnnations = { "name": "Container", "params": { "constructor": [], "getRoot": [], "get": ["token", "alias", "providers"], "resolve": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token"], "getTokenExtendsChain": ["token"], "getBaseClasses": ["target"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"] } };
+    Container.classAnnations = { "name": "Container", "params": { "constructor": [], "getRoot": [], "getBuilder": [], "get": ["token", "alias", "providers"], "resolve": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token"], "getTokenExtendsChain": ["token"], "getBaseClasses": ["target"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"] } };
     return Container;
 }());
 exports.Container = Container;

@@ -1,6 +1,6 @@
-import { AppConfigure, AppConfigureToken } from './AppConfigure';
+import { AppConfigure, AppConfigureToken, DefaultConfigureToken, AppConfigureLoaderToken } from './AppConfigure';
 import {
-    IContainer, LoadType, lang, isString, ContainerBuilderToken, MapSet, Factory, Token
+    IContainer, LoadType, lang, isString, MapSet, Factory, Token, isUndefined
 } from '@ts-ioc/core';
 import { IApplicationBuilder, CustomRegister, AnyApplicationBuilder } from './IApplicationBuilder';
 import { ModuleBuilder } from './ModuleBuilder';
@@ -18,14 +18,12 @@ import { ContainerPool, ContainerPoolToken } from './ContainerPool';
  */
 export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicationBuilder<T> {
     protected globalConfig: Promise<AppConfigure>;
-    // protected globalModules: LoadType[];
     protected customRegs: CustomRegister<T>[];
     protected providers: MapSet<Token<any>, any>;
     root: IContainer;
 
     constructor(public baseURL?: string) {
         super();
-        // this.globalModules = [];
         this.customRegs = [];
         this.providers = new MapSet();
         this.pools = new ContainerPool();
@@ -43,18 +41,13 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
      * @memberof Bootstrap
      */
     useConfiguration(config?: string | AppConfigure, container?: IContainer): this {
+        container = container || this.getPools().getDefault();
         if (!this.globalConfig) {
-            this.globalConfig = Promise.resolve(this.getDefaultConfig());
+            this.globalConfig = Promise.resolve(this.getDefaultConfig(container));
         }
         let pcfg: Promise<AppConfigure>;
-        if (isString(config)) {
-            if (container) {
-                let builder = container.resolve(ContainerBuilderToken);
-                pcfg = builder.loader.load([config])
-                    .then(rs => {
-                        return rs.length ? rs[0] as AppConfigure : null;
-                    })
-            }
+        if (isString(config) || isUndefined(config)) {
+            pcfg = this.loadConfig(container, config);
         } else if (config) {
             pcfg = Promise.resolve(config);
         }
@@ -63,14 +56,32 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
             this.globalConfig = this.globalConfig
                 .then(cfg => {
                     return pcfg.then(rcfg => {
-                        let excfg = (rcfg['default'] ? rcfg['default'] : rcfg) as AppConfigure;
-                        cfg = lang.assign(cfg || {}, excfg || {}) as AppConfigure;
-                        return cfg;
+                        if (rcfg) {
+                            let excfg = (rcfg['default'] ? rcfg['default'] : rcfg) as AppConfigure;
+                            cfg = lang.assign(cfg || {}, excfg || {}) as AppConfigure;
+                        }
+                        return cfg || {};
                     });
                 });
         }
 
         return this;
+    }
+
+    protected loadConfig(container: IContainer, src?: string): Promise<AppConfigure> {
+        if (container.has(AppConfigureLoaderToken)) {
+            let loader = container.resolve(AppConfigureLoaderToken, { baseURL: this.baseURL, container: container });
+            return loader.load(src);
+        } else if (src) {
+            let builder = container.getBuilder();
+            return builder.loader.load([src])
+                .then(rs => {
+                    return rs.length ? rs[0] as AppConfigure : null;
+                })
+        } else {
+            return Promise.resolve(null);
+        }
+
     }
 
     /**
@@ -101,7 +112,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
 
     async registerConfgureDepds(container: IContainer, config: AppConfigure): Promise<AppConfigure> {
         if (!this.globalConfig) {
-            this.useConfiguration();
+            this.useConfiguration(undefined, container);
         }
         let globalCfg = await this.globalConfig;
         config = this.mergeGlobalConfig(globalCfg, config);
@@ -134,10 +145,6 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
     protected async registerExts(container: IContainer, config: AppConfigure): Promise<IContainer> {
         await super.registerExts(container, config);
 
-        // if (this.globalModules.length) {
-        //     let usedModules = this.globalModules;
-        //     await container.loadModule(...usedModules);
-        // }
         this.providers.forEach((val, key) => {
             container.bindProvider(key, val);
         })
@@ -159,8 +166,12 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         return config;
     }
 
-    protected getDefaultConfig(): AppConfigure {
-        return { debug: false } as AppConfigure;
+    protected async getDefaultConfig(container: IContainer): Promise<AppConfigure> {
+        if (container.has(DefaultConfigureToken)) {
+            return container.resolve(DefaultConfigureToken);
+        } else {
+            return {} as AppConfigure;
+        }
     }
 
 }

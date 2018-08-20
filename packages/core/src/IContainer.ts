@@ -2,6 +2,7 @@ import { Type, Token, Factory, SymbolType, Providers, Modules, LoadType } from '
 import { IMethodAccessor } from './IMethodAccessor';
 import { LifeScope } from './LifeScope';
 import { InjectToken } from './InjectToken';
+import { IContainerBuilder } from './IContainerBuilder';
 
 /**
  * IContainer token.
@@ -32,6 +33,14 @@ export interface IContainer extends IMethodAccessor {
      * @memberof IContainer
      */
     getRoot(): IContainer;
+
+    /**
+     * get container builder of this container.
+     *
+     * @returns {IContainerBuilder}
+     * @memberof IContainer
+     */
+    getBuilder(): IContainerBuilder;
 
     /**
      * has register the token or not.

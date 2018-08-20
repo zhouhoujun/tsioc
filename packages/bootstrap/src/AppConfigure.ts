@@ -8,6 +8,11 @@ import { ObjectMap, InjectToken } from '@ts-ioc/core';
 export const AppConfigureToken = new InjectToken<AppConfigure>('DI_APP_Configuration');
 
 /**
+ * application default configuration token.
+ */
+export const DefaultConfigureToken = new InjectToken<AppConfigure>('DI_Default_Configuration');
+
+/**
  * app configuration.
  *
  * @export
@@ -61,3 +66,25 @@ export interface AppConfigure extends ModuleConfigure {
     connections?: ObjectMap<any>;
 
 }
+
+/**
+ * app configure loader.
+ *
+ * @export
+ * @interface IAppConfigureLoader
+ */
+export interface IAppConfigureLoader {
+    /**
+     * load config.
+     *
+     * @param {string} [uri]
+     * @returns {Promise<AppConfigure>}
+     * @memberof AppConfigureLoader
+     */
+    load(uri?: string): Promise<AppConfigure>;
+}
+
+/**
+ *  app configure loader token.
+ */
+export const AppConfigureLoaderToken = new InjectToken<IAppConfigureLoader>('DI_Configure_Loader');

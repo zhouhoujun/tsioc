@@ -2,10 +2,10 @@
 	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core'), require('@ts-ioc/bootstrap'), require('@ts-ioc/platform-browser')) :
 	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core', '@ts-ioc/bootstrap', '@ts-ioc/platform-browser'], factory) :
 	(global['platform-browser-bootstrap'] = global['platform-browser-bootstrap'] || {}, global['platform-browser-bootstrap'].umd = global['platform-browser-bootstrap'].umd || {}, global['platform-browser-bootstrap'].umd.js = factory(global.tslib_1,global['@ts-ioc/core'],global.bootstrap,global.platformBrowser));
-}(this, (function (tslib_1,core_1,bootstrap,platformBrowser) { 'use strict';
+}(this, (function (tslib_1,core,bootstrap,platformBrowser) { 'use strict';
 
 tslib_1 = tslib_1 && tslib_1.hasOwnProperty('default') ? tslib_1['default'] : tslib_1;
-core_1 = core_1 && core_1.hasOwnProperty('default') ? core_1['default'] : core_1;
+core = core && core.hasOwnProperty('default') ? core['default'] : core;
 bootstrap = bootstrap && bootstrap.hasOwnProperty('default') ? bootstrap['default'] : bootstrap;
 platformBrowser = platformBrowser && platformBrowser.hasOwnProperty('default') ? platformBrowser['default'] : platformBrowser;
 
@@ -24,15 +24,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 /**
- * default app configuration.
- */
-var defaultAppConfig = {
-    baseURL: '',
-    debug: false,
-    connections: {},
-    setting: {}
-};
-/**
  * application builder for browser side.
  *
  * @export
@@ -43,7 +34,7 @@ var defaultAppConfig = {
 var ApplicationBuilder = /** @class */ (function (_super) {
     tslib_1.__extends(ApplicationBuilder, _super);
     function ApplicationBuilder(baseURL) {
-        return _super.call(this, baseURL || !core_1.isUndefined(System) ? System.baseURL : location.href) || this;
+        return _super.call(this, baseURL || !core.isUndefined(System) ? System.baseURL : location.href) || this;
     }
     /**
      * create instance.
@@ -62,10 +53,7 @@ var ApplicationBuilder = /** @class */ (function (_super) {
     ApplicationBuilder.prototype.createBuilder = function () {
         return this;
     };
-    ApplicationBuilder.prototype.getDefaultConfig = function () {
-        return core_1.lang.assign({}, defaultAppConfig);
-    };
-    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "createContainerBuilder": [], "createBuilder": [], "getDefaultConfig": [] } };
+    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "createContainerBuilder": [], "createBuilder": [] } };
     return ApplicationBuilder;
 }(bootstrap.DefaultApplicationBuilder));
 exports.ApplicationBuilder = ApplicationBuilder;
