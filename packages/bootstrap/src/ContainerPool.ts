@@ -1,5 +1,4 @@
 import { MapSet, Token, SymbolType, Registration, IContainer, InjectToken, LoadType } from '@ts-ioc/core';
-import { CustomRegister } from './IApplicationBuilder';
 
 /**
  * container pool
