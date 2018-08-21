@@ -1,6 +1,6 @@
 import { Token, InjectToken, IContainer, LoadType, Factory } from '@ts-ioc/core';
 import { AppConfigure } from './AppConfigure';
-import { IModuleBuilder, ModuleEnv, Runnable } from './IModuleBuilder';
+import { IModuleBuilder, ModuleEnv } from './IModuleBuilder';
 import { MdInstance } from './ModuleType';
 import { ModuleConfig } from './ModuleConfigure';
 

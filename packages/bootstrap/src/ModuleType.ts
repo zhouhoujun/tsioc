@@ -1,6 +1,5 @@
 import { IContainer, Token } from '@ts-ioc/core';
-import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
-import { AnnotationConfigure } from './AnnotationConfigure';
+import { ModuleConfigure } from './ModuleConfigure';
 
 
 /**
