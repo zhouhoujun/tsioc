@@ -96,6 +96,9 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
                 return pools.get(token);
             } else {
                 let cfg = this.getConfigure(token, defaultContainer);
+                if (env instanceof LoadedModule) {
+                    cfg = lang.assign(cfg, env.moduleConfig);
+                }
                 container = cfg.container || defaultContainer;
                 if (!container || !(defaultContainer instanceof Container)) {
                     container = this.isDIModule(token) ? this.createContainer() : pools.getDefault();
@@ -184,6 +187,9 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         }
 
         let cfg = this.getConfigure(token, container);
+        if (env instanceof LoadedModule) {
+            cfg = lang.assign(cfg, env.moduleConfig);
+        }
 
         cfg = await this.registerDepdences(container, cfg);
         let mToken = isToken(token) ? token : this.getType(cfg);

@@ -21,11 +21,10 @@ export interface IApplicationExtends {
      * use custom configuration.
      *
      * @param {(string | AppConfigure)} [config]
-     * @param {IContainer} [container]
      * @returns {this}
      * @memberof IApplicationBuilder
      */
-    useConfiguration(config?: string | AppConfigure, container?: IContainer): this;
+    useConfiguration(config?: string | AppConfigure): this;
 
     /**
      * use module

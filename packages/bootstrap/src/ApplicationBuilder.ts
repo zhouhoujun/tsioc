@@ -17,14 +17,16 @@ import { ContainerPool, ContainerPoolToken } from './ContainerPool';
  * @template T
  */
 export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicationBuilder<T> {
-    protected globalConfig: Promise<AppConfigure>;
+    private globalConfig: AppConfigure;
     protected customRegs: CustomRegister<T>[];
     protected providers: MapSet<Token<any>, any>;
+    protected configs: (string | AppConfigure)[];
     root: IContainer;
 
     constructor(public baseURL?: string) {
         super();
         this.customRegs = [];
+        this.configs = [];
         this.providers = new MapSet();
         this.pools = new ContainerPool();
     }
@@ -40,35 +42,22 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
      * @returns {this} global config for this application.
      * @memberof Bootstrap
      */
-    useConfiguration(config?: string | AppConfigure, container?: IContainer): this {
-        container = container || this.getPools().getDefault();
-        if (!this.globalConfig) {
-            this.globalConfig = Promise.resolve(this.getDefaultConfig(container));
+    useConfiguration(config?: string | AppConfigure): this {
+        if (isUndefined(config)) {
+            config = '';
         }
-        let pcfg: Promise<AppConfigure>;
-        if (isString(config) || isUndefined(config)) {
-            pcfg = this.loadConfig(container, config);
-        } else if (config) {
-            pcfg = Promise.resolve(config);
+        // clean cached config.
+        this.globalConfig = null;
+        let idx = this.configs.indexOf(config);
+        if (idx >= 0) {
+            this.configs.splice(idx, 1);
         }
-
-        if (pcfg) {
-            this.globalConfig = this.globalConfig
-                .then(cfg => {
-                    return pcfg.then(rcfg => {
-                        if (rcfg) {
-                            let excfg = (rcfg['default'] ? rcfg['default'] : rcfg) as AppConfigure;
-                            cfg = lang.assign(cfg || {}, excfg || {}) as AppConfigure;
-                        }
-                        return cfg || {};
-                    });
-                });
-        }
+        this.configs.push(config);
 
         return this;
     }
 
-    protected loadConfig(container: IContainer, src?: string): Promise<AppConfigure> {
+    protected loadConfig(container: IContainer, src: string): Promise<AppConfigure> {
         if (container.has(AppConfigureLoaderToken)) {
             let loader = container.resolve(AppConfigureLoaderToken, { baseURL: this.baseURL, container: container });
             return loader.load(src);
@@ -110,21 +99,39 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         return this;
     }
 
-    async registerConfgureDepds(container: IContainer, config: AppConfigure): Promise<AppConfigure> {
+
+    protected async getGlobalConfig(container: IContainer): Promise<AppConfigure> {
         if (!this.globalConfig) {
-            this.useConfiguration(undefined, container);
+            let globCfg = await this.getDefaultConfig(container);
+            globCfg = globCfg || {};
+            if (this.configs.length < 1) {
+                this.configs.push(''); // load default loader config.
+            }
+            let exts = await Promise.all(this.configs.map(cfg => {
+                if (isString(cfg)) {
+                    return this.loadConfig(container, cfg);
+                } else {
+                    return cfg;
+                }
+            }));
+            exts.forEach(exCfg => {
+                if (exCfg) {
+                    lang.assign(globCfg, exCfg);
+                }
+            });
+            this.globalConfig = globCfg;
         }
-        let globalCfg = await this.globalConfig;
-        config = this.mergeGlobalConfig(globalCfg, config);
-        this.bindAppConfig(config);
+        return this.globalConfig;
+    }
+
+    async registerConfgureDepds(container: IContainer, config: AppConfigure): Promise<AppConfigure> {
+        let globCfg = await this.getGlobalConfig(container);
+        this.bindAppConfig(globCfg);
+        container.bindProvider(AppConfigureToken, globCfg);
         config = await super.registerConfgureDepds(container, config);
-        container.bindProvider(AppConfigureToken, config);
         return config;
     }
 
-    protected mergeGlobalConfig(globalCfg: AppConfigure, moduleCfg: AppConfigure) {
-        return lang.assign({}, globalCfg, moduleCfg);
-    }
 
     protected regDefaultContainer() {
         let container = super.regDefaultContainer();

@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/core",
-  "version": "3.0.5",
+  "version": "3.0.6",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "main": "./bundles/core.umd.js",
   "typings": "./lib/index.d.ts",

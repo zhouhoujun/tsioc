@@ -88,3 +88,21 @@ export interface IAppConfigureLoader {
  *  app configure loader token.
  */
 export const AppConfigureLoaderToken = new InjectToken<IAppConfigureLoader>('DI_Configure_Loader');
+
+/**
+ * configure merger
+ *
+ * @export
+ * @interface IConfigureMerger
+ */
+export interface IConfigureMerger {
+    /**
+     * merge configuration.
+     *
+     * @param {AppConfigure} config
+     * @param {ModuleConfigure} moduleMetadata
+     * @returns {AppConfigure}
+     * @memberof IConfigureMerger
+     */
+    merge(config: AppConfigure, moduleMetadata: ModuleConfigure): AppConfigure;
+}

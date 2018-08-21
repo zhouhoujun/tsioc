@@ -921,6 +921,9 @@ var ModuleBuilder = /** @class */ (function () {
             }
             else {
                 var cfg = this.getConfigure(token, defaultContainer);
+                if (env instanceof ModuleType.LoadedModule) {
+                    cfg = core_1.lang.assign(cfg, env.moduleConfig);
+                }
                 container = cfg.container || defaultContainer;
                 if (!container || !(defaultContainer instanceof core_1.Container)) {
                     container = this.isDIModule(token) ? this.createContainer() : pools.getDefault();
@@ -1008,6 +1011,9 @@ var ModuleBuilder = /** @class */ (function () {
                             return [2 /*return*/, container.resolve(mdToken)];
                         }
                         cfg = this.getConfigure(token, container);
+                        if (env instanceof ModuleType.LoadedModule) {
+                            cfg = core_1.lang.assign(cfg, env.moduleConfig);
+                        }
                         return [4 /*yield*/, this.registerDepdences(container, cfg)];
                     case 3:
                         cfg = _a.sent();
@@ -1645,6 +1651,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
         var _this = _super.call(this) || this;
         _this.baseURL = baseURL;
         _this.customRegs = [];
+        _this.configs = [];
         _this.providers = new core_1.MapSet();
         _this.pools = new ContainerPool_1.ContainerPool();
         return _this;
@@ -1659,30 +1666,17 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
      * @returns {this} global config for this application.
      * @memberof Bootstrap
      */
-    DefaultApplicationBuilder.prototype.useConfiguration = function (config, container) {
-        container = container || this.getPools().getDefault();
-        if (!this.globalConfig) {
-            this.globalConfig = Promise.resolve(this.getDefaultConfig(container));
+    DefaultApplicationBuilder.prototype.useConfiguration = function (config) {
+        if (core_1.isUndefined(config)) {
+            config = '';
         }
-        var pcfg;
-        if (core_1.isString(config) || core_1.isUndefined(config)) {
-            pcfg = this.loadConfig(container, config);
+        // clean cached config.
+        this.globalConfig = null;
+        var idx = this.configs.indexOf(config);
+        if (idx >= 0) {
+            this.configs.splice(idx, 1);
         }
-        else if (config) {
-            pcfg = Promise.resolve(config);
-        }
-        if (pcfg) {
-            this.globalConfig = this.globalConfig
-                .then(function (cfg) {
-                return pcfg.then(function (rcfg) {
-                    if (rcfg) {
-                        var excfg = (rcfg['default'] ? rcfg['default'] : rcfg);
-                        cfg = core_1.lang.assign(cfg || {}, excfg || {});
-                    }
-                    return cfg || {};
-                });
-            });
-        }
+        this.configs.push(config);
         return this;
     };
     DefaultApplicationBuilder.prototype.loadConfig = function (container, src) {
@@ -1730,31 +1724,60 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
         this.providers.set(provide, provider);
         return this;
     };
-    DefaultApplicationBuilder.prototype.registerConfgureDepds = function (container, config) {
+    DefaultApplicationBuilder.prototype.getGlobalConfig = function (container) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var globalCfg;
+            var globCfg_1, exts;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!this.globalConfig) {
-                            this.useConfiguration(undefined, container);
-                        }
-                        return [4 /*yield*/, this.globalConfig];
+                        if (!!this.globalConfig) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.getDefaultConfig(container)];
                     case 1:
-                        globalCfg = _a.sent();
-                        config = this.mergeGlobalConfig(globalCfg, config);
-                        this.bindAppConfig(config);
-                        return [4 /*yield*/, _super.prototype.registerConfgureDepds.call(this, container, config)];
+                        globCfg_1 = _a.sent();
+                        globCfg_1 = globCfg_1 || {};
+                        if (this.configs.length < 1) {
+                            this.configs.push(''); // load default loader config.
+                        }
+                        return [4 /*yield*/, Promise.all(this.configs.map(function (cfg) {
+                                if (core_1.isString(cfg)) {
+                                    return _this.loadConfig(container, cfg);
+                                }
+                                else {
+                                    return cfg;
+                                }
+                            }))];
                     case 2:
-                        config = _a.sent();
-                        container.bindProvider(AppConfigure.AppConfigureToken, config);
-                        return [2 /*return*/, config];
+                        exts = _a.sent();
+                        exts.forEach(function (exCfg) {
+                            if (exCfg) {
+                                core_1.lang.assign(globCfg_1, exCfg);
+                            }
+                        });
+                        this.globalConfig = globCfg_1;
+                        _a.label = 3;
+                    case 3: return [2 /*return*/, this.globalConfig];
                 }
             });
         });
     };
-    DefaultApplicationBuilder.prototype.mergeGlobalConfig = function (globalCfg, moduleCfg) {
-        return core_1.lang.assign({}, globalCfg, moduleCfg);
+    DefaultApplicationBuilder.prototype.registerConfgureDepds = function (container, config) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var globCfg;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.getGlobalConfig(container)];
+                    case 1:
+                        globCfg = _a.sent();
+                        this.bindAppConfig(globCfg);
+                        container.bindProvider(AppConfigure.AppConfigureToken, globCfg);
+                        return [4 /*yield*/, _super.prototype.registerConfgureDepds.call(this, container, config)];
+                    case 2:
+                        config = _a.sent();
+                        return [2 /*return*/, config];
+                }
+            });
+        });
     };
     DefaultApplicationBuilder.prototype.regDefaultContainer = function () {
         var _this = this;
@@ -1822,7 +1845,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
             });
         });
     };
-    DefaultApplicationBuilder.classAnnations = { "name": "DefaultApplicationBuilder", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "useConfiguration": ["config", "container"], "loadConfig": ["container", "src"], "use": ["modules"], "provider": ["provide", "provider"], "registerConfgureDepds": ["container", "config"], "mergeGlobalConfig": ["globalCfg", "moduleCfg"], "regDefaultContainer": [], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": ["container"] } };
+    DefaultApplicationBuilder.classAnnations = { "name": "DefaultApplicationBuilder", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "useConfiguration": ["config"], "loadConfig": ["container", "src"], "use": ["modules"], "provider": ["provide", "provider"], "getGlobalConfig": ["container"], "registerConfgureDepds": ["container", "config"], "regDefaultContainer": [], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": ["container"] } };
     return DefaultApplicationBuilder;
 }(ModuleBuilder_1.ModuleBuilder));
 exports.DefaultApplicationBuilder = DefaultApplicationBuilder;
