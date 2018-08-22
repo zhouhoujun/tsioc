@@ -1,7 +1,7 @@
 import { IContainer } from './IContainer';
 import { Type, Modules, LoadType } from './types';
 import { InjectToken } from './InjectToken';
-import { IModuleLoader } from './IModuleLoader';
+import { IModuleLoader } from './injectors';
 
 /**
  * ContainerBuilder interface token.

@@ -605,203 +605,198 @@ defineProperties_1(polyfill$2, {
 
 var object_assign = polyfill$2;
 
-var lang = createCommonjsModule(function (module, exports) {
+var lang_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
 object_assign.shim();
-/**
- * get object keys.
- *
- * @param {*} target
- * @returns {string[]}
- */
-function keys(target) {
-    if (typeCheck.isObject(target)) {
-        if (typeCheck.isFunction(Object.keys)) {
-            return Object.keys(target);
+var lang;
+(function (lang) {
+    /**
+     * get object keys.
+     *
+     * @param {*} target
+     * @returns {string[]}
+     */
+    function keys(target) {
+        if (typeCheck.isObject(target)) {
+            if (typeCheck.isFunction(Object.keys)) {
+                return Object.keys(target);
+            }
+            else {
+                var keys_1 = [];
+                for (var name_1 in target) {
+                    keys_1.push(name_1);
+                }
+                return keys_1;
+            }
+        }
+        return [];
+    }
+    lang.keys = keys;
+    /**
+     * values of target object.
+     *
+     * @export
+     * @param {*} target
+     * @returns {any[]}
+     */
+    function values(target) {
+        if (typeCheck.isObject(target)) {
+            if (typeCheck.isFunction(Object.values)) {
+                return Object.values(target);
+            }
+            else {
+                var values_1 = [];
+                for (var name_2 in target) {
+                    values_1.push(target[name_2]);
+                }
+                return values_1;
+            }
+        }
+        return [];
+    }
+    lang.values = values;
+    /**
+     * assign
+     *
+     * @export
+     * @template T
+     * @param {T} target
+     * @param {...any[]} source
+     * @returns {T}
+     */
+    function assign(target, source1, source2, sources) {
+        if (sources && sources.length) {
+            sources.unshift(source2 || {});
+            sources.unshift(source1 || {});
+            return Object.assign.apply(Object, [target].concat(sources));
+        }
+        else if (source2) {
+            return Object.assign(target, source1 || {}, source2);
         }
         else {
-            var keys_1 = [];
-            for (var name_1 in target) {
-                keys_1.push(name_1);
-            }
-            return keys_1;
+            return Object.assign(target, source1 || {});
         }
     }
-    return [];
-}
-exports.keys = keys;
-/**
- * values of target object.
- *
- * @export
- * @param {*} target
- * @returns {any[]}
- */
-function values(target) {
-    if (typeCheck.isObject(target)) {
-        if (typeCheck.isFunction(Object.values)) {
-            return Object.values(target);
+    lang.assign = assign;
+    /**
+     * create an new object from target object omit some field.
+     *
+     * @export
+     * @param {ObjectMap<any>} target
+     * @param {...string[]} fields
+     * @returns {*}
+     */
+    function omit(target) {
+        var fields = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            fields[_i - 1] = arguments[_i];
+        }
+        if (typeCheck.isObject(target)) {
+            var result_1 = {};
+            keys(target).forEach(function (key) {
+                if (fields.indexOf(key) < 0) {
+                    result_1[key] = target[key];
+                }
+            });
+            return result_1;
         }
         else {
-            var values_1 = [];
-            for (var name_2 in target) {
-                values_1.push(target[name_2]);
-            }
-            return values_1;
+            return target;
         }
     }
-    return [];
-}
-exports.values = values;
-/**
- * assign
- *
- * @export
- * @template T
- * @param {T} target
- * @param {...any[]} source
- * @returns {T}
- */
-function assign(target, source1, source2, sources) {
-    if (sources && sources.length) {
-        sources.unshift(source2 || {});
-        sources.unshift(source1 || {});
-        return Object.assign.apply(Object, [target].concat(sources));
+    lang.omit = omit;
+    /**
+     * object has field or not.
+     *
+     * @export
+     * @param {ObjectMap<any>} target
+     * @returns
+     */
+    function hasField(target) {
+        return keys(target).length > 0;
     }
-    else if (source2) {
-        return Object.assign(target, source1 || {}, source2);
+    lang.hasField = hasField;
+    /**
+     * for in opter for object or array.
+     *
+     * @export
+     * @template T
+     * @param {(ObjectMap<T> | T[])} target
+     * @param {(item: T, idx?: number|string) => void|boolean} iterator
+     */
+    function forIn(target, iterator) {
+        if (typeCheck.isArray(target)) {
+            target.forEach(iterator);
+        }
+        else if (typeCheck.isObject(target)) {
+            keys(target).forEach(function (key, idx) {
+                iterator(target[key], key);
+            });
+        }
     }
-    else {
-        return Object.assign(target, source1 || {});
-    }
-}
-exports.assign = assign;
-/**
- * create an new object from target object omit some field.
- *
- * @export
- * @param {ObjectMap<any>} target
- * @param {...string[]} fields
- * @returns {*}
- */
-function omit(target) {
-    var fields = [];
-    for (var _i = 1; _i < arguments.length; _i++) {
-        fields[_i - 1] = arguments[_i];
-    }
-    if (typeCheck.isObject(target)) {
-        var result_1 = {};
-        keys(target).forEach(function (key) {
-            if (fields.indexOf(key) < 0) {
-                result_1[key] = target[key];
+    lang.forIn = forIn;
+    /**
+     * find
+     *
+     * @template T
+     * @param {(ObjectMap<T> | T[])} target
+     * @param {((item: T, idx?: number | string) => boolean)} express
+     */
+    function find(target, express) {
+        var item;
+        forIn(target, function (it, idx) {
+            if (!item) {
+                if (express(it, idx)) {
+                    item = it;
+                    return false;
+                }
+                return true;
             }
-        });
-        return result_1;
-    }
-    else {
-        return target;
-    }
-}
-exports.omit = omit;
-/**
- * object has field or not.
- *
- * @export
- * @param {ObjectMap<any>} target
- * @returns
- */
-function hasField(target) {
-    return keys(target).length > 0;
-}
-exports.hasField = hasField;
-/**
- * for in opter for object or array.
- *
- * @export
- * @template T
- * @param {(ObjectMap<T> | T[])} target
- * @param {(item: T, idx?: number|string) => void|boolean} iterator
- */
-function forIn(target, iterator) {
-    if (typeCheck.isArray(target)) {
-        target.forEach(iterator);
-    }
-    else if (typeCheck.isObject(target)) {
-        keys(target).forEach(function (key, idx) {
-            iterator(target[key], key);
-        });
-    }
-}
-exports.forIn = forIn;
-/**
- * find
- *
- * @template T
- * @param {(ObjectMap<T> | T[])} target
- * @param {((item: T, idx?: number | string) => boolean)} express
- */
-function find(target, express) {
-    var item;
-    forIn(target, function (it, idx) {
-        if (!item) {
-            if (express(it, idx)) {
-                item = it;
+            else {
                 return false;
             }
-            return true;
-        }
-        else {
-            return false;
-        }
-    });
-}
-exports.find = find;
-/**
- * first.
- *
- * @export
- * @template T
- * @param {T[]} list
- * @returns {T}
- */
-function first(list) {
-    if (typeCheck.isArray(list) && list.length) {
-        return list[0];
+        });
     }
-    return null;
-}
-exports.first = first;
-/**
- * last.
- *
- * @export
- * @template T
- * @param {T[]} list
- * @returns {T}
- */
-function last(list) {
-    if (typeCheck.isArray(list) && list.length) {
-        return list[list.length - 1];
+    lang.find = find;
+    /**
+     * first.
+     *
+     * @export
+     * @template T
+     * @param {T[]} list
+     * @returns {T}
+     */
+    function first(list) {
+        if (typeCheck.isArray(list) && list.length) {
+            return list[0];
+        }
+        return null;
     }
-    return null;
-}
-exports.last = last;
+    lang.first = first;
+    /**
+     * last.
+     *
+     * @export
+     * @template T
+     * @param {T[]} list
+     * @returns {T}
+     */
+    function last(list) {
+        if (typeCheck.isArray(list) && list.length) {
+            return list[list.length - 1];
+        }
+        return null;
+    }
+    lang.last = last;
+})(lang = exports.lang || (exports.lang = {}));
 
 
 });
 
-unwrapExports(lang);
-var lang_1 = lang.keys;
-var lang_2 = lang.values;
-var lang_3 = lang.assign;
-var lang_4 = lang.omit;
-var lang_5 = lang.hasField;
-var lang_6 = lang.forIn;
-var lang_7 = lang.find;
-var lang_8 = lang.first;
-var lang_9 = lang.last;
+unwrapExports(lang_1);
+var lang_2 = lang_1.lang;
 
 var typeCheck = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -1008,7 +1003,7 @@ function isMetadataObject(target, props, extendsProps) {
         props = extendsProps.concat(props);
     }
     if (props.length) {
-        return lang.keys(target).some(function (n) { return props.indexOf(n) > 0; });
+        return lang_1.lang.keys(target).some(function (n) { return props.indexOf(n) > 0; });
     }
     return true;
 }
@@ -1249,10 +1244,10 @@ var ObjectMapSet = /** @class */ (function () {
         return strKey;
     };
     ObjectMapSet.prototype.keys = function () {
-        return lang.values(this.keyMap);
+        return lang_1.lang.values(this.keyMap);
     };
     ObjectMapSet.prototype.values = function () {
-        return lang.values(this.valueMap);
+        return lang_1.lang.values(this.valueMap);
     };
     ObjectMapSet.prototype.delete = function (key) {
         var strkey = this.getTypeKey(key).toString();
@@ -1267,7 +1262,7 @@ var ObjectMapSet = /** @class */ (function () {
     };
     ObjectMapSet.prototype.forEach = function (callbackfn, thisArg) {
         var _this = this;
-        lang.forIn(this.keyMap, function (val, name) {
+        lang_1.lang.forIn(this.keyMap, function (val, name) {
             callbackfn(_this.valueMap[name], val, _this);
         });
     };
@@ -1287,7 +1282,7 @@ var ObjectMapSet = /** @class */ (function () {
     };
     Object.defineProperty(ObjectMapSet.prototype, "size", {
         get: function () {
-            return lang.keys(this.keyMap).length;
+            return lang_1.lang.keys(this.keyMap).length;
         },
         enumerable: true,
         configurable: true
@@ -1353,8 +1348,9 @@ unwrapExports(MapSet_1);
 var MapSet_2 = MapSet_1.ObjectMapSet;
 var MapSet_3 = MapSet_1.MapSet;
 
-var Defer_1 = createCommonjsModule(function (module, exports) {
+var PromiseUtil_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
 /**
  * defer
  *
@@ -1384,27 +1380,71 @@ var Defer = /** @class */ (function () {
     return Defer;
 }());
 exports.Defer = Defer;
+var PromiseUtil;
+(function (PromiseUtil) {
+    function forEach(promises) {
+        var result = Promise.resolve(null);
+        promises.forEach(function (p) {
+            result = result.then(function (v) { return typeCheck.isFunction(p) ? p(v) : p; });
+        });
+        return result;
+    }
+    PromiseUtil.forEach = forEach;
+    /**
+     * find first validate promise.
+     *
+     * @export
+     * @template T
+     * @param {(...(T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[])} promises
+     * @param {Express<T, boolean>} validate
+     * @returns
+     */
+    function first(promises, validate) {
+        var defer = new Defer();
+        var pf = Promise.resolve(null);
+        var length = promises ? promises.length : 0;
+        if (length) {
+            promises.forEach(function (p, idx) {
+                pf = pf.then(function (v) { return typeCheck.isFunction(p) ? p(v) : p; })
+                    .then(function (data) {
+                    if (validate(data)) {
+                        defer.resolve(data);
+                        return Promise.reject('found');
+                    }
+                    else if (idx === length - 1) {
+                        return Promise.reject('not found');
+                    }
+                    return data;
+                });
+            });
+        }
+        else {
+            defer.reject('promises array empty.');
+        }
+        return defer.promise;
+    }
+    PromiseUtil.first = first;
+})(PromiseUtil = exports.PromiseUtil || (exports.PromiseUtil = {}));
 
 
 });
 
-unwrapExports(Defer_1);
-var Defer_2 = Defer_1.Defer;
+unwrapExports(PromiseUtil_1);
+var PromiseUtil_2 = PromiseUtil_1.Defer;
+var PromiseUtil_3 = PromiseUtil_1.PromiseUtil;
 
 var utils = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(typeCheck, exports);
 tslib_1.__exportStar(MapSet_1, exports);
-
-exports.lang = lang;
-tslib_1.__exportStar(Defer_1, exports);
+tslib_1.__exportStar(lang_1, exports);
+tslib_1.__exportStar(PromiseUtil_1, exports);
 
 
 });
 
 unwrapExports(utils);
-var utils_1 = utils.lang;
 
 var Registration_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -5181,8 +5221,408 @@ exports.registerCores = registerCores;
 unwrapExports(registerCores_1);
 var registerCores_2 = registerCores_1.registerCores;
 
+var IModuleLoader = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * module loader token.
+ */
+exports.ModuleLoaderToken = new InjectToken_1.InjectToken('DI_ModuleLoader');
+
+
+});
+
+unwrapExports(IModuleLoader);
+var IModuleLoader_1 = IModuleLoader.ModuleLoaderToken;
+
+var DefaultModuleLoader_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * default module loader.
+ *
+ * @export
+ * @class DefaultModuleLoader
+ * @implements {IModuleLoader}
+ */
+var DefaultModuleLoader = /** @class */ (function () {
+    function DefaultModuleLoader() {
+    }
+    DefaultModuleLoader.prototype.getLoader = function () {
+        if (!this._loader) {
+            this._loader = this.createLoader();
+        }
+        return this._loader;
+    };
+    /**
+     * load module.
+     *
+     * @param {...LoadType[]} modules
+     * @returns {Promise<Modules[]>}
+     * @memberof DefaultModuleLoader
+     */
+    DefaultModuleLoader.prototype.load = function (modules) {
+        var _this = this;
+        if (modules.length) {
+            return Promise.all(modules.map(function (mdty) {
+                if (utils.isString(mdty)) {
+                    return _this.isFile(mdty) ? _this.loadFile(mdty) : _this.loadModule(mdty);
+                }
+                else if (utils.isObject(mdty) && (mdty['modules'] || mdty['files'])) {
+                    return _this.loadPathModule(mdty);
+                }
+                else {
+                    return mdty ? [mdty] : [];
+                }
+            }))
+                .then(function (allms) {
+                var rmodules = [];
+                allms.forEach(function (ms) {
+                    rmodules = rmodules.concat(ms);
+                });
+                return rmodules;
+            });
+        }
+        else {
+            return Promise.resolve([]);
+        }
+    };
+    /**
+     * load types from module.
+     *
+     * @param {...LoadType[]} modules
+     * @returns {Promise<Type<any>[]>}
+     * @memberof IContainerBuilder
+     */
+    DefaultModuleLoader.prototype.loadTypes = function (modules) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var mdls;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.load(modules)];
+                    case 1:
+                        mdls = _a.sent();
+                        return [2 /*return*/, this.getTypes(mdls)];
+                }
+            });
+        });
+    };
+    /**
+     * get all class type in modules.
+     *
+     * @param {Modules[]} modules
+     * @param {...Express<Type<any>, boolean>[]} filters
+     * @returns {Type<any>[]}
+     * @memberof DefaultModuleLoader
+     */
+    DefaultModuleLoader.prototype.getTypes = function (modules) {
+        var _this = this;
+        var regModules = [];
+        modules.forEach(function (m) {
+            var types = _this.getContentTypes(m);
+            regModules.push(types);
+        });
+        return regModules;
+    };
+    DefaultModuleLoader.prototype.loadFile = function (files, basePath) {
+        var loader = this.getLoader();
+        var fRes;
+        if (utils.isArray(files)) {
+            fRes = Promise.all(files.map(function (f) { return loader(f); }))
+                .then(function (allms) {
+                var rms = [];
+                allms.forEach(function (ms) {
+                    rms = rms.concat(ms);
+                });
+                return rms;
+            });
+        }
+        else {
+            fRes = loader(files);
+        }
+        return fRes.then(function (ms) { return ms.filter(function (it) { return !!it; }); });
+    };
+    DefaultModuleLoader.prototype.isFile = function (str) {
+        return str && /\/((\w|%|\.))+\.\w+$/.test(str.replace(/\\\\/gi, '/'));
+    };
+    DefaultModuleLoader.prototype.loadModule = function (moduleName) {
+        var loader = this.getLoader();
+        return loader(moduleName).then(function (ms) { return ms.filter(function (it) { return !!it; }); });
+    };
+    DefaultModuleLoader.prototype.loadPathModule = function (pmd) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var modules;
+            var _this = this;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        modules = [];
+                        if (!pmd.files) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.loadFile(pmd.files, pmd.basePath)
+                                .then(function (allmoduls) {
+                                allmoduls.forEach(function (ms) {
+                                    modules = modules.concat(ms);
+                                });
+                                return modules;
+                            })];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        if (!pmd.modules) return [3 /*break*/, 4];
+                        return [4 /*yield*/, Promise.all(pmd.modules.map(function (nmd) {
+                                return utils.isString(nmd) ? _this.loadModule(nmd) : nmd;
+                            })).then(function (ms) {
+                                modules = modules.concat(ms);
+                                return modules;
+                            })];
+                    case 3:
+                        _a.sent();
+                        _a.label = 4;
+                    case 4: return [2 /*return*/, modules];
+                }
+            });
+        });
+    };
+    DefaultModuleLoader.prototype.createLoader = function () {
+        if (typeof commonjsRequire !== 'undefined') {
+            return function (modulepath) {
+                return new Promise(function (resolve, reject) {
+                    commonjsRequire([modulepath], function (mud) {
+                        resolve(mud);
+                    }, function (err) {
+                        reject(err);
+                    });
+                });
+            };
+        }
+        else {
+            throw new Error('has not module loader');
+        }
+    };
+    DefaultModuleLoader.prototype.getContentTypes = function (regModule) {
+        var regModules = [];
+        if (utils.isClass(regModule)) {
+            regModules.push(regModule);
+        }
+        else {
+            var rmodules = regModule['exports'] ? regModule['exports'] : regModule;
+            for (var p in rmodules) {
+                var type = rmodules[p];
+                if (utils.isClass(type)) {
+                    regModules.push(type);
+                }
+            }
+        }
+        return regModules;
+    };
+    DefaultModuleLoader.classAnnations = { "name": "DefaultModuleLoader", "params": { "constructor": [], "getLoader": [], "load": ["modules"], "loadTypes": ["modules"], "getTypes": ["modules"], "loadFile": ["files", "basePath"], "isFile": ["str"], "loadModule": ["moduleName"], "loadPathModule": ["pmd"], "createLoader": [], "getContentTypes": ["regModule"] } };
+    return DefaultModuleLoader;
+}());
+exports.DefaultModuleLoader = DefaultModuleLoader;
+
+
+});
+
+unwrapExports(DefaultModuleLoader_1);
+var DefaultModuleLoader_2 = DefaultModuleLoader_1.DefaultModuleLoader;
+
+var IModuleInjector = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * module fileter token.
+ */
+exports.ModuleInjectorToken = new InjectToken_1.InjectToken('DI_ModuleInjector');
+
+
+});
+
+unwrapExports(IModuleInjector);
+var IModuleInjector_1 = IModuleInjector.ModuleInjectorToken;
+
+var ModuleInjector_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * sync module injector.
+ *
+ * @export
+ * @class ModuleInjector
+ * @implements {IModuleInjector}
+ */
+var SyncModuleInjector = /** @class */ (function () {
+    function SyncModuleInjector(filter) {
+        this.filter = filter;
+    }
+    SyncModuleInjector.prototype.inject = function (container, modules) {
+        var _this = this;
+        modules = modules || [];
+        var types = this.filter ? modules.filter(this.filter) : modules;
+        if (types.length) {
+            types.forEach(function (ty) {
+                _this.setup(container, ty);
+            });
+        }
+        return types;
+    };
+    SyncModuleInjector.prototype.setup = function (container, type) {
+        container.register(type);
+    };
+    SyncModuleInjector.classAnnations = { "name": "SyncModuleInjector", "params": { "constructor": ["filter"], "inject": ["container", "modules"], "setup": ["container", "type"] } };
+    return SyncModuleInjector;
+}());
+exports.SyncModuleInjector = SyncModuleInjector;
+/**
+ * module injector.
+ *
+ * @export
+ * @class ModuleInjector
+ * @implements {IModuleInjector}
+ */
+var ModuleInjector = /** @class */ (function () {
+    function ModuleInjector(filter) {
+        this.filter = filter;
+    }
+    ModuleInjector.prototype.inject = function (container, modules) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var types;
+            var _this = this;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        modules = modules || [];
+                        types = this.filter ? modules.filter(this.filter) : modules;
+                        if (!types.length) return [3 /*break*/, 2];
+                        return [4 /*yield*/, utils.PromiseUtil.forEach(types.map(function (ty) {
+                                return _this.setup(container, ty);
+                            }))];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2: return [2 /*return*/, types];
+                }
+            });
+        });
+    };
+    ModuleInjector.prototype.setup = function (container, type) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            return tslib_1.__generator(this, function (_a) {
+                container.register(type);
+                return [2 /*return*/];
+            });
+        });
+    };
+    ModuleInjector.classAnnations = { "name": "ModuleInjector", "params": { "constructor": ["filter"], "inject": ["container", "modules"], "setup": ["container", "type"] } };
+    return ModuleInjector;
+}());
+exports.ModuleInjector = ModuleInjector;
+
+
+});
+
+unwrapExports(ModuleInjector_1);
+var ModuleInjector_2 = ModuleInjector_1.SyncModuleInjector;
+var ModuleInjector_3 = ModuleInjector_1.ModuleInjector;
+
+var IModuleInjectorChain = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+/**
+ * module fileter token. mast use as singlton.
+ */
+exports.ModuleInjectorChainToken = new InjectToken_1.InjectToken('DI_ModuleInjectorChain');
+
+
+});
+
+unwrapExports(IModuleInjectorChain);
+var IModuleInjectorChain_1 = IModuleInjectorChain.ModuleInjectorChainToken;
+
+var ModuleInjectorChain_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * Module Injector chain, base injector chain.
+ *
+ * @export
+ * @class ModuleInjectorChain
+ * @implements {IModuleInjectorChain}
+ */
+var ModuleInjectorChain = /** @class */ (function () {
+    function ModuleInjectorChain() {
+        this._injectors = [];
+    }
+    Object.defineProperty(ModuleInjectorChain.prototype, "injectors", {
+        get: function () {
+            return this._injectors;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    ModuleInjectorChain.prototype.first = function (injector) {
+        if (this.isInjector(injector)) {
+            this._injectors.unshift(injector);
+        }
+        return this;
+    };
+    ModuleInjectorChain.prototype.next = function (injector) {
+        if (this.isInjector(injector)) {
+            this._injectors.push(injector);
+        }
+        return this;
+    };
+    ModuleInjectorChain.prototype.isInjector = function (injector) {
+        return injector instanceof ModuleInjector_1.ModuleInjector || injector instanceof ModuleInjector_1.SyncModuleInjector;
+    };
+    ModuleInjectorChain.prototype.inject = function (container, modules) {
+        return utils.PromiseUtil.first(this.injectors.map(function (jtor) { return jtor.inject(container, modules); }), function (types) { return types && types.length > 0; }).catch(function (err) { return []; });
+    };
+    ModuleInjectorChain.prototype.syncInject = function (container, modules) {
+        var types;
+        this.injectors.forEach(function (jtor) {
+            if (types && types.length) {
+                return false;
+            }
+            if (jtor instanceof ModuleInjector_1.SyncModuleInjector) {
+                types = jtor.inject(container, modules);
+            }
+            return true;
+        });
+        return types;
+    };
+    ModuleInjectorChain.classAnnations = { "name": "ModuleInjectorChain", "params": { "constructor": [], "first": ["injector"], "next": ["injector"], "isInjector": ["injector"], "inject": ["container", "modules"], "syncInject": ["container", "modules"] } };
+    return ModuleInjectorChain;
+}());
+exports.ModuleInjectorChain = ModuleInjectorChain;
+
+
+});
+
+unwrapExports(ModuleInjectorChain_1);
+var ModuleInjectorChain_2 = ModuleInjectorChain_1.ModuleInjectorChain;
+
+var injectors = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+tslib_1.__exportStar(IModuleLoader, exports);
+tslib_1.__exportStar(DefaultModuleLoader_1, exports);
+tslib_1.__exportStar(IModuleInjector, exports);
+tslib_1.__exportStar(ModuleInjector_1, exports);
+tslib_1.__exportStar(IModuleInjectorChain, exports);
+tslib_1.__exportStar(ModuleInjectorChain_1, exports);
+
+
+});
+
+unwrapExports(injectors);
+
 var Container_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -5612,6 +6052,7 @@ var Container = /** @class */ (function () {
         this.provideTypes = new utils.MapSet();
         this.bindProvider(IContainer.ContainerToken, function () { return _this; });
         registerCores_1.registerCores(this);
+        this.bindProvider(injectors.ModuleInjectorChainToken, new injectors.ModuleInjectorChain());
     };
     Container.prototype.registerFactory = function (token, value, singleton) {
         var key = this.getTokenKey(token);
@@ -5762,222 +6203,6 @@ exports.Container = Container;
 unwrapExports(Container_1);
 var Container_2 = Container_1.Container;
 
-var IModuleLoader = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-/**
- * module loader token.
- */
-exports.ModuleLoaderToken = new InjectToken_1.InjectToken('DI_ModuleLoader');
-
-
-});
-
-unwrapExports(IModuleLoader);
-var IModuleLoader_1 = IModuleLoader.ModuleLoaderToken;
-
-var DefaultModuleLoader_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-/**
- * default module loader.
- *
- * @export
- * @class DefaultModuleLoader
- * @implements {IModuleLoader}
- */
-var DefaultModuleLoader = /** @class */ (function () {
-    function DefaultModuleLoader() {
-    }
-    DefaultModuleLoader.prototype.getLoader = function () {
-        if (!this._loader) {
-            this._loader = this.createLoader();
-        }
-        return this._loader;
-    };
-    /**
-     * load module.
-     *
-     * @param {...LoadType[]} modules
-     * @returns {Promise<Modules[]>}
-     * @memberof DefaultModuleLoader
-     */
-    DefaultModuleLoader.prototype.load = function (modules) {
-        var _this = this;
-        if (modules.length) {
-            return Promise.all(modules.map(function (mdty) {
-                if (utils.isString(mdty)) {
-                    return _this.isFile(mdty) ? _this.loadFile(mdty) : _this.loadModule(mdty);
-                }
-                else if (utils.isObject(mdty) && (mdty['modules'] || mdty['files'])) {
-                    return _this.loadPathModule(mdty);
-                }
-                else {
-                    return mdty ? [mdty] : [];
-                }
-            }))
-                .then(function (allms) {
-                var rmodules = [];
-                allms.forEach(function (ms) {
-                    rmodules = rmodules.concat(ms);
-                });
-                return rmodules;
-            });
-        }
-        else {
-            return Promise.resolve([]);
-        }
-    };
-    /**
-     * load types from module.
-     *
-     * @param {...LoadType[]} modules
-     * @returns {Promise<Type<any>[]>}
-     * @memberof IContainerBuilder
-     */
-    DefaultModuleLoader.prototype.loadTypes = function (modules, filter) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var mdls;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.load(modules)];
-                    case 1:
-                        mdls = _a.sent();
-                        return [2 /*return*/, this.getTypes(mdls, filter)];
-                }
-            });
-        });
-    };
-    /**
-     * get all class type in modules.
-     *
-     * @param {...Modules[]} modules
-     * @returns {Type<any>[]}
-     * @memberof DefaultModuleLoader
-     */
-    DefaultModuleLoader.prototype.getTypes = function (modules, filter) {
-        var _this = this;
-        var regModules = [];
-        modules.forEach(function (m) {
-            var types = _this.getContentTypes(m);
-            var hasFilterMdl = false;
-            if (filter) {
-                var filters = types.filter(filter);
-                hasFilterMdl = filters && filters.length > 0;
-                if (hasFilterMdl) {
-                    regModules.push.apply(regModules, filters);
-                }
-            }
-            if (!hasFilterMdl) {
-                regModules.push.apply(regModules, types);
-            }
-        });
-        return regModules;
-    };
-    DefaultModuleLoader.prototype.loadFile = function (files, basePath) {
-        var loader = this.getLoader();
-        var fRes;
-        if (utils.isArray(files)) {
-            fRes = Promise.all(files.map(function (f) { return loader(f); }))
-                .then(function (allms) {
-                var rms = [];
-                allms.forEach(function (ms) {
-                    rms = rms.concat(ms);
-                });
-                return rms;
-            });
-        }
-        else {
-            fRes = loader(files);
-        }
-        return fRes.then(function (ms) { return ms.filter(function (it) { return !!it; }); });
-    };
-    DefaultModuleLoader.prototype.isFile = function (str) {
-        return str && /\/((\w|%|\.))+\.\w+$/.test(str.replace(/\\\\/gi, '/'));
-    };
-    DefaultModuleLoader.prototype.loadModule = function (moduleName) {
-        var loader = this.getLoader();
-        return loader(moduleName).then(function (ms) { return ms.filter(function (it) { return !!it; }); });
-    };
-    DefaultModuleLoader.prototype.loadPathModule = function (pmd) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var loader, modules;
-            var _this = this;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        loader = this.getLoader();
-                        modules = [];
-                        if (!pmd.files) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.loadFile(pmd.files, pmd.basePath)
-                                .then(function (allmoduls) {
-                                allmoduls.forEach(function (ms) {
-                                    modules = modules.concat(ms);
-                                });
-                                return modules;
-                            })];
-                    case 1:
-                        _a.sent();
-                        _a.label = 2;
-                    case 2:
-                        if (!pmd.modules) return [3 /*break*/, 4];
-                        return [4 /*yield*/, Promise.all(pmd.modules.map(function (nmd) {
-                                return utils.isString(nmd) ? _this.loadModule(nmd) : nmd;
-                            })).then(function (ms) {
-                                modules = modules.concat(ms);
-                                return modules;
-                            })];
-                    case 3:
-                        _a.sent();
-                        _a.label = 4;
-                    case 4: return [2 /*return*/, modules];
-                }
-            });
-        });
-    };
-    DefaultModuleLoader.prototype.createLoader = function () {
-        if (typeof commonjsRequire !== 'undefined') {
-            return function (modulepath) {
-                return new Promise(function (resolve, reject) {
-                    commonjsRequire([modulepath], function (mud) {
-                        resolve(mud);
-                    }, function (err) {
-                        reject(err);
-                    });
-                });
-            };
-        }
-        else {
-            throw new Error('has not module loader');
-        }
-    };
-    DefaultModuleLoader.prototype.getContentTypes = function (regModule) {
-        var regModules = [];
-        if (utils.isClass(regModule)) {
-            regModules.push(regModule);
-        }
-        else {
-            var rmodules = regModule['exports'] ? regModule['exports'] : regModule;
-            for (var p in rmodules) {
-                if (utils.isClass(rmodules[p])) {
-                    regModules.push(rmodules[p]);
-                }
-            }
-        }
-        return regModules;
-    };
-    DefaultModuleLoader.classAnnations = { "name": "DefaultModuleLoader", "params": { "constructor": [], "getLoader": [], "load": ["modules"], "loadTypes": ["modules", "filter"], "getTypes": ["modules", "filter"], "loadFile": ["files", "basePath"], "isFile": ["str"], "loadModule": ["moduleName"], "loadPathModule": ["pmd"], "createLoader": [], "getContentTypes": ["regModule"] } };
-    return DefaultModuleLoader;
-}());
-exports.DefaultModuleLoader = DefaultModuleLoader;
-
-
-});
-
-unwrapExports(DefaultModuleLoader_1);
-var DefaultModuleLoader_2 = DefaultModuleLoader_1.DefaultModuleLoader;
-
 var DefaultContainerBuilder_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -5986,7 +6211,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-// import { hasOwnClassMetadata, IocModule } from './core/index';
 /**
  * default container builder.
  *
@@ -6002,7 +6226,7 @@ var DefaultContainerBuilder = /** @class */ (function () {
     Object.defineProperty(DefaultContainerBuilder.prototype, "loader", {
         get: function () {
             if (!this._loader) {
-                this._loader = new DefaultModuleLoader_1.DefaultModuleLoader();
+                this._loader = new injectors.DefaultModuleLoader();
             }
             return this._loader;
         },
@@ -6013,7 +6237,7 @@ var DefaultContainerBuilder = /** @class */ (function () {
         var _this = this;
         var container = new Container_1.Container();
         container.bindProvider(IContainerBuilder.ContainerBuilderToken, function () { return _this; });
-        container.bindProvider(IModuleLoader.ModuleLoaderToken, function () { return _this.loader; });
+        container.bindProvider(injectors.ModuleLoaderToken, function () { return _this.loader; });
         return container;
     };
     /**
@@ -6058,13 +6282,32 @@ var DefaultContainerBuilder = /** @class */ (function () {
             modules[_i - 1] = arguments[_i];
         }
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var regModules;
+            var regModules, injTypes, injChain_1;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.loader.loadTypes(modules, this.filter)];
+                    case 0: return [4 /*yield*/, this.loader.loadTypes(modules)];
                     case 1:
                         regModules = _a.sent();
-                        return [2 /*return*/, this.registers(container, regModules)];
+                        injTypes = [];
+                        if (!(regModules && regModules.length)) return [3 /*break*/, 3];
+                        injChain_1 = this.getInjectorChain(container);
+                        return [4 /*yield*/, utils.PromiseUtil.forEach(regModules.map(function (typs) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
+                                var ityps;
+                                return tslib_1.__generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0: return [4 /*yield*/, injChain_1.inject(container, typs)];
+                                        case 1:
+                                            ityps = _a.sent();
+                                            injTypes = injTypes.concat(ityps);
+                                            return [2 /*return*/];
+                                    }
+                                });
+                            }); }))];
+                    case 2:
+                        _a.sent();
+                        _a.label = 3;
+                    case 3: return [2 /*return*/, injTypes];
                 }
             });
         });
@@ -6085,17 +6328,30 @@ var DefaultContainerBuilder = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             modules[_i - 1] = arguments[_i];
         }
-        var regModules = this.loader.getTypes(modules, this.filter);
-        return this.registers(container, regModules);
+        var regModules = this.loader.getTypes(modules);
+        var injTypes = [];
+        if (regModules && regModules.length) {
+            var injChain_2 = this.getInjectorChain(container);
+            regModules.forEach(function (typs) {
+                var ityps = injChain_2.syncInject(container, typs);
+                injTypes = injTypes.concat(ityps);
+            });
+        }
+        return injTypes;
     };
-    DefaultContainerBuilder.prototype.registers = function (container, types) {
-        types = types || [];
-        types.forEach(function (typ) {
-            container.register(typ);
-        });
-        return types;
+    DefaultContainerBuilder.prototype.getInjectorChain = function (container) {
+        var currChain = container.get(injectors.ModuleInjectorChainToken);
+        if (this.injectorChain !== currChain) {
+            this.injectorChain = null;
+        }
+        if (!this.injectorChain) {
+            this.injectorChain = currChain;
+            this.injectorChain.next(new injectors.SyncModuleInjector(this.filter))
+                .next(new injectors.SyncModuleInjector());
+        }
+        return this.injectorChain;
     };
-    DefaultContainerBuilder.classAnnations = { "name": "DefaultContainerBuilder", "params": { "constructor": ["loader", "filter"], "create": [], "build": ["modules"], "loadModule": ["container", "modules"], "syncBuild": ["modules"], "syncLoadModule": ["container", "modules"], "registers": ["container", "types"] } };
+    DefaultContainerBuilder.classAnnations = { "name": "DefaultContainerBuilder", "params": { "constructor": ["loader", "filter"], "create": [], "build": ["modules"], "loadModule": ["container", "modules"], "syncBuild": ["modules"], "syncLoadModule": ["container", "modules"], "getInjectorChain": ["container"] } };
     return DefaultContainerBuilder;
 }());
 exports.DefaultContainerBuilder = DefaultContainerBuilder;
@@ -6118,18 +6374,17 @@ tslib_1.__exportStar(IContainerBuilder, exports);
 tslib_1.__exportStar(IMethodAccessor, exports);
 tslib_1.__exportStar(ICacheManager, exports);
 tslib_1.__exportStar(LifeScope, exports);
-tslib_1.__exportStar(IModuleLoader, exports);
-tslib_1.__exportStar(DefaultModuleLoader_1, exports);
 tslib_1.__exportStar(DefaultContainerBuilder_1, exports);
 tslib_1.__exportStar(utils, exports);
 tslib_1.__exportStar(components, exports);
 tslib_1.__exportStar(core, exports);
+tslib_1.__exportStar(injectors, exports);
 
 
 });
 
-var index$7 = unwrapExports(D__workspace_github_tsioc_packages_core_lib);
+var index$8 = unwrapExports(D__workspace_github_tsioc_packages_core_lib);
 
-return index$7;
+return index$8;
 
 })));

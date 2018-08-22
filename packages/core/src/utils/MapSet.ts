@@ -1,5 +1,5 @@
 import { isClass, isString, isFunction, isUndefined } from './typeCheck';
-import { keys, forIn, values } from './lang';
+import { lang } from './lang';
 
 /**
  * object map set.
@@ -35,11 +35,11 @@ export class ObjectMapSet<TKey, TVal> {
     }
 
     keys(): TKey[] {
-        return values(this.keyMap);
+        return lang.values(this.keyMap);
     }
 
     values(): TVal[] {
-        return values(this.valueMap);
+        return lang.values(this.valueMap);
     }
 
     delete(key: TKey): boolean {
@@ -53,7 +53,7 @@ export class ObjectMapSet<TKey, TVal> {
         }
     }
     forEach(callbackfn: (value: TVal, key: TKey, map: any) => void, thisArg?: any): void {
-        forIn<TKey>(this.keyMap, (val, name) => {
+        lang.forIn<TKey>(this.keyMap, (val, name) => {
             callbackfn(this.valueMap[name], val, this);
         });
     }
@@ -75,7 +75,7 @@ export class ObjectMapSet<TKey, TVal> {
     }
 
     get size(): number {
-        return keys(this.keyMap).length;
+        return lang.keys(this.keyMap).length;
     }
 }
 

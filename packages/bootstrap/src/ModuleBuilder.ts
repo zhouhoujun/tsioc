@@ -437,7 +437,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
 
-    async importModule(token: Token<T> | ModuleConfigure, container: IContainer): Promise<IContainer> {
+    async importModule(token: Token<T>, container: IContainer): Promise<IContainer> {
         if (container && isClass(token) && !this.isDIModule(token)) {
             container.register(token);
             return container;
@@ -525,7 +525,19 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     protected async registerConfgureDepds(container: IContainer, config: ModuleConfigure): Promise<ModuleConfigure> {
         if (isArray(config.imports) && config.imports.length) {
             let buider = container.getBuilder();
-            let mdls = await buider.loader.loadTypes(config.imports, it => this.isIocExt(it) || this.isDIModule(it));
+            let types = await buider.loader.loadTypes(config.imports);
+            let mdls = [];
+            types.forEach(tys => {
+                if (!tys || tys.length) {
+                    return;
+                }
+                let exdi = tys.filter(it => this.isIocExt(it) || this.isDIModule(it));
+                if (exdi.length) {
+                    mdls = mdls.concat(exdi);
+                } else {
+                    mdls = mdls.concat(tys);
+                }
+            });
             await Promise.all(mdls.map(md => this.importModule(md, container)));
         }
 

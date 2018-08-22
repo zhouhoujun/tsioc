@@ -11,6 +11,7 @@ import { IParameter } from './IParameter';
 import { CacheManagerToken } from './ICacheManager';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { registerCores } from './registerCores';
+import { ModuleInjectorChainToken, ModuleInjectorChain } from './injectors';
 
 /**
  * Container
@@ -416,6 +417,8 @@ export class Container implements IContainer {
         this.bindProvider(ContainerToken, () => this);
 
         registerCores(this);
+
+        this.bindProvider(ModuleInjectorChainToken, new ModuleInjectorChain())
     }
 
     protected registerFactory<T>(token: Token<T>, value?: Factory<T>, singleton?: boolean) {

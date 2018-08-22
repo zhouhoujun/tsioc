@@ -12,11 +12,12 @@ export * from './ICacheManager';
 
 export * from './LifeScope';
 
-export * from './IModuleLoader';
-export * from './DefaultModuleLoader';
+
+
 export * from './DefaultContainerBuilder';
 
 export * from './utils';
 export * from './components';
 export * from './core';
+export * from './injectors';
 

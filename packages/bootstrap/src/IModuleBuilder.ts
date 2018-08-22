@@ -118,15 +118,15 @@ export interface IModuleBuilder<T> {
      */
     bootstrap(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<Runnable<T>>;
 
-    /**
-     * import di module.
-     *
-     * @param {(Type<any> | ModuleConfigure)} token di module type
-     * @param {IContainer} container container to import module.
-     * @returns {Promise<IContainer>}
-     * @memberof IModuleBuilder
-     */
-    importModule(token: Type<any> | ModuleConfigure, container: IContainer): Promise<IContainer>;
+    // /**
+    //  * import di module.
+    //  *
+    //  * @param {(Type<any> | ModuleConfigure)} token di module type
+    //  * @param {IContainer} container container to import module.
+    //  * @returns {Promise<IContainer>}
+    //  * @memberof IModuleBuilder
+    //  */
+    // importModule(token: Type<any> | ModuleConfigure, container: IContainer): Promise<IContainer>;
 
     /**
      * register module depdences.

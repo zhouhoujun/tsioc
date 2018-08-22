@@ -1,6 +1,6 @@
 import { Type, AbstractType, Token } from '../types';
 import { Registration } from '../Registration';
-import { keys } from './lang';
+import { lang } from './lang';
 
 declare let process: any;
 
@@ -219,7 +219,7 @@ export function isMetadataObject(target: any, props?: string[], extendsProps?: s
     }
 
     if (props.length) {
-        return keys(target).some(n => props.indexOf(n) > 0)
+        return lang.keys(target).some(n => props.indexOf(n) > 0)
     }
 
     return true;

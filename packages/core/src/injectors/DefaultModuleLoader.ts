@@ -1,6 +1,6 @@
-import { Type, Modules, LoadType, PathModules, Express } from './types';
+import { Type, Modules, LoadType, PathModules } from '../types';
 import { IModuleLoader } from './IModuleLoader';
-import { isString, isClass, isObject, isArray } from './utils';
+import { isString, isClass, isObject, isArray } from '../utils';
 
 declare let require: any;
 
@@ -62,33 +62,25 @@ export class DefaultModuleLoader implements IModuleLoader {
      * @returns {Promise<Type<any>[]>}
      * @memberof IContainerBuilder
      */
-    async loadTypes(modules: LoadType[], filter?: Express<Type<any>, boolean>): Promise<Type<any>[]> {
+    async loadTypes(modules: LoadType[]): Promise<Type<any>[][]> {
         let mdls = await this.load(modules);
-        return this.getTypes(mdls, filter);
+        return this.getTypes(mdls);
     }
 
     /**
      * get all class type in modules.
      *
-     * @param {...Modules[]} modules
+     * @param {Modules[]} modules
+     * @param {...Express<Type<any>, boolean>[]} filters
      * @returns {Type<any>[]}
      * @memberof DefaultModuleLoader
      */
-    getTypes(modules: Modules[], filter?: Express<Type<any>, boolean>): Type<any>[] {
-        let regModules: Type<any>[] = [];
+    getTypes(modules: Modules[]): Type<any>[][] {
+        let regModules: Type<any>[][] = [];
+
         modules.forEach(m => {
             let types = this.getContentTypes(m);
-            let hasFilterMdl = false;
-            if (filter) {
-                let filters = types.filter(filter);
-                hasFilterMdl = filters && filters.length > 0;
-                if (hasFilterMdl) {
-                    regModules.push(...filters);
-                }
-            }
-            if (!hasFilterMdl) {
-                regModules.push(...types);
-            }
+            regModules.push(types);
         });
 
         return regModules;
@@ -123,7 +115,6 @@ export class DefaultModuleLoader implements IModuleLoader {
     }
 
     protected async loadPathModule(pmd: PathModules): Promise<Modules[]> {
-        let loader = this.getLoader();
         let modules: Modules[] = [];
         if (pmd.files) {
             await this.loadFile(pmd.files, pmd.basePath)
@@ -170,8 +161,9 @@ export class DefaultModuleLoader implements IModuleLoader {
         } else {
             let rmodules = regModule['exports'] ? regModule['exports'] : regModule;
             for (let p in rmodules) {
-                if (isClass(rmodules[p])) {
-                    regModules.push(rmodules[p]);
+                let type = rmodules[p];
+                if (isClass(type)) {
+                    regModules.push(type);
                 }
             }
         }

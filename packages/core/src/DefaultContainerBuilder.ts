@@ -2,10 +2,9 @@ import { IContainer } from './IContainer';
 import { Container } from './Container';
 import { Type, Modules, LoadType, Express } from './types';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { IModuleLoader, ModuleLoaderToken } from './IModuleLoader';
-import { DefaultModuleLoader } from './DefaultModuleLoader';
 import { hasOwnClassMetadata, IocExt } from './core';
-// import { hasOwnClassMetadata, IocModule } from './core/index';
+import { IModuleLoader, ModuleLoaderToken, DefaultModuleLoader, IModuleInjectorChain, ModuleInjectorChainToken, SyncModuleInjector } from './injectors';
+import { PromiseUtil } from './utils';
 
 /**
  * default container builder.
@@ -63,8 +62,16 @@ export class DefaultContainerBuilder implements IContainerBuilder {
      * @memberof DefaultContainerBuilder
      */
     async loadModule(container: IContainer, ...modules: LoadType[]): Promise<Type<any>[]> {
-        let regModules = await this.loader.loadTypes(modules, this.filter);
-        return this.registers(container, regModules);
+        let regModules = await this.loader.loadTypes(modules);
+        let injTypes = [];
+        if (regModules && regModules.length) {
+            let injChain = this.getInjectorChain(container);
+            await PromiseUtil.forEach(regModules.map(async typs => {
+                let ityps = await injChain.inject(container, typs);
+                injTypes = injTypes.concat(ityps);
+            }));
+        }
+        return injTypes;
     }
 
 
@@ -77,16 +84,31 @@ export class DefaultContainerBuilder implements IContainerBuilder {
     }
 
     syncLoadModule(container: IContainer, ...modules: Modules[]) {
-        let regModules = this.loader.getTypes(modules, this.filter);
-        return this.registers(container, regModules);
+        let regModules = this.loader.getTypes(modules);
+        let injTypes = [];
+        if (regModules && regModules.length) {
+            let injChain = this.getInjectorChain(container);
+            regModules.forEach(typs => {
+                let ityps = injChain.syncInject(container, typs);
+                injTypes = injTypes.concat(ityps);
+            });
+        }
+        return injTypes;
     }
 
-    protected registers(container: IContainer, types: Type<any>[]): Type<any>[] {
-        types = types || [];
-        types.forEach(typ => {
-            container.register(typ);
-        });
-        return types;
+    protected injectorChain: IModuleInjectorChain;
+    protected getInjectorChain(container: IContainer): IModuleInjectorChain {
+        let currChain = container.get(ModuleInjectorChainToken);
+        if (this.injectorChain !== currChain) {
+            this.injectorChain = null;
+        }
+        if (!this.injectorChain) {
+            this.injectorChain = currChain;
+            this.injectorChain.next(new SyncModuleInjector(this.filter))
+                .next(new SyncModuleInjector());
+        }
+
+        return this.injectorChain;
     }
 
 }
