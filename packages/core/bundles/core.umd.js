@@ -1417,6 +1417,9 @@ var PromiseUtil;
                     return data;
                 });
             });
+            pf.catch(function (err) {
+                console.log(err);
+            });
         }
         else {
             defer.reject('promises array empty.');

@@ -1,7 +1,5 @@
 import { AppConfigure, AppConfigureToken, DefaultConfigureToken, AppConfigureLoaderToken } from './AppConfigure';
-import {
-    IContainer, LoadType, lang, isString, MapSet, Factory, Token, isUndefined
-} from '@ts-ioc/core';
+import { IContainer, LoadType, lang, isString, MapSet, Factory, Token, isUndefined } from '@ts-ioc/core';
 import { IApplicationBuilder, CustomRegister, AnyApplicationBuilder } from './IApplicationBuilder';
 import { ModuleBuilder } from './ModuleBuilder';
 import { ModuleBuilderToken } from './IModuleBuilder';
