@@ -2,7 +2,7 @@ import { IContainer } from './IContainer';
 import { Container } from './Container';
 import { Type, Modules, LoadType, Express } from './types';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { IModuleLoader, ModuleLoaderToken, DefaultModuleLoader, IModuleInjectorChain, ModuleInjectorChainToken, SyncModuleInjector, IocExtModuleValidateToken, SyncModuleInjectorToken } from './injectors';
+import { IModuleLoader, ModuleLoaderToken, DefaultModuleLoader, IModuleInjectorChain, ModuleInjectorChainToken, SyncModuleInjector, IocExtModuleValidateToken, SyncModuleInjectorToken, ModuleInjector, IocExtModuleValidate, ModuleInjectorChain } from './injectors';
 import { PromiseUtil } from './utils';
 
 /**
@@ -95,7 +95,13 @@ export class DefaultContainerBuilder implements IContainerBuilder {
     }
 
     protected injectorChain: IModuleInjectorChain;
-    protected getInjectorChain(container: IContainer): IModuleInjectorChain {
+    getInjectorChain(container: IContainer): IModuleInjectorChain {
+        if (!container.has(ModuleInjectorChainToken)) {
+            container.register(SyncModuleInjector)
+                .register(ModuleInjector)
+                .bindProvider(IocExtModuleValidateToken, new IocExtModuleValidate())
+                .bindProvider(ModuleInjectorChainToken, new ModuleInjectorChain())
+        }
         let currChain = container.get(ModuleInjectorChainToken);
         if (this.injectorChain !== currChain) {
             this.injectorChain = null;

@@ -26,7 +26,14 @@ export interface IModuleValidate {
     getDecorator(): string;
 }
 
-
+/**
+ * inject module validate token.
+ *
+ * @export
+ * @class InjectModuleValidateToken
+ * @extends {Registration<T>}
+ * @template T
+ */
 export class InjectModuleValidateToken<T extends IModuleValidate> extends Registration<T> {
     constructor(desc: string) {
         super('DI_ModuleValidate', desc)

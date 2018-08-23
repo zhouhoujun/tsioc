@@ -1,6 +1,6 @@
 import { Registration, IContainer, Token } from '@ts-ioc/core';
-import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
-import { MdInstance, LoadedModule } from './ModuleType';
+import { ModuleConfig } from './ModuleConfigure';
+import { MdInstance } from './ModuleType';
 import { ContainerPool } from '../utils';
 import { Runnable } from '../runnable';
 import { InjectedModule } from './InjectedModule';
@@ -44,14 +44,6 @@ export interface IModuleBuilder<T> {
      */
     getPools(): ContainerPool;
 
-    /**
-     * set container pool.
-     *
-     * @param {ContainerPool} pools
-     * @memberof IModuleBuilder
-     */
-    setPools(pools: ContainerPool);
-
     // /**
     //  * load module depdences.
     //  *
@@ -62,6 +54,16 @@ export interface IModuleBuilder<T> {
     //  * @memberof IModuleBuilder
     //  */
     // load(token: Token<T> | ModuleConfigure, env?: ModuleEnv, parent?: IContainer): Promise<LoadedModule>;
+
+    /**
+     * import module.
+     *
+     * @param {Token<T>} module
+     * @param {IContainer} [parent]
+     * @returns {Promise<InjectedModule<T>>}
+     * @memberof IModuleBuilder
+     */
+    import(module: Token<T>, parent?: IContainer): Promise<InjectedModule<T>>;
 
     /**
      * build module as ioc container.
@@ -105,33 +107,33 @@ export interface IModuleBuilder<T> {
     //  */
     // importModule(token: Type<any> | ModuleConfigure, container: IContainer): Promise<IContainer>;
 
-    /**
-     * register module depdences.
-     *
-     * @param {IContainer} container
-     * @param {ModuleConfigure} config
-     * @returns {Promise<ModuleConfigure>}
-     * @memberof IModuleBuilder
-     */
-    registerDepdences(container: IContainer, config: ModuleConfigure): Promise<ModuleConfigure>;
+    // /**
+    //  * register module depdences.
+    //  *
+    //  * @param {IContainer} container
+    //  * @param {ModuleConfigure} config
+    //  * @returns {Promise<ModuleConfigure>}
+    //  * @memberof IModuleBuilder
+    //  */
+    // registerDepdences(container: IContainer, config: ModuleConfigure): Promise<ModuleConfigure>;
 
-    /**
-     * get the module define decorator or decorator name.
-     *
-     * @returns {(Function | string)}
-     * @memberof IModuleBuilder
-     */
-    getDecorator(): Function | string;
+    // /**
+    //  * get the module define decorator or decorator name.
+    //  *
+    //  * @returns {(Function | string)}
+    //  * @memberof IModuleBuilder
+    //  */
+    // getDecorator(): Function | string;
 
-    /**
-     * get configure from module calss metadata or module config object.
-     *
-     * @param {(Token<T> | ModuleConfigure)} token
-     * @param {IContainer} [container] container.
-     * @returns {ModuleConfigure}
-     * @memberof IModuleBuilder
-     */
-    getConfigure(token: Token<T> | ModuleConfigure, container?: IContainer): ModuleConfigure;
+    // /**
+    //  * get configure from module calss metadata or module config object.
+    //  *
+    //  * @param {(Token<T> | ModuleConfigure)} token
+    //  * @param {IContainer} [container] container.
+    //  * @returns {ModuleConfigure}
+    //  * @memberof IModuleBuilder
+    //  */
+    // getConfigure(token: Token<T> | ModuleConfigure, container?: IContainer): ModuleConfigure;
 }
 
 /**

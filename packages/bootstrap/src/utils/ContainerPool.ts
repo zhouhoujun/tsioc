@@ -111,7 +111,7 @@ export class ContainerPool {
 
 export const ContainerPoolToken = new InjectToken<ContainerPool>('ContainerPool');
 
-/**
- *  global container pools.
- */
-export const containerPools = new ContainerPool();
+// /**
+//  *  global container pools.
+//  */
+// export const containerPools = new ContainerPool();

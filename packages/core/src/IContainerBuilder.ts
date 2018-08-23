@@ -1,7 +1,7 @@
 import { IContainer } from './IContainer';
 import { Type, Modules, LoadType } from './types';
 import { InjectToken } from './InjectToken';
-import { IModuleLoader } from './injectors';
+import { IModuleLoader, IModuleInjectorChain } from './injectors';
 
 /**
  * ContainerBuilder interface token.
@@ -69,5 +69,14 @@ export interface IContainerBuilder {
      * @memberof IContainerBuilder
      */
     syncLoadModule(container: IContainer, ...modules: Modules[]);
+
+    /**
+     * get moduleInjector chain.
+     *
+     * @param {IContainer} container
+     * @returns {IModuleInjectorChain}
+     * @memberof IContainerBuilder
+     */
+    getInjectorChain(container: IContainer): IModuleInjectorChain;
 
 }

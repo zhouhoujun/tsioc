@@ -1,44 +1,5 @@
-import { IContainer, Token } from '@ts-ioc/core';
-import { ModuleConfigure } from './ModuleConfigure';
 import { InjectedModule } from './InjectedModule';
 
-
-
-
-// /**
-//  * ioc DI loaded modules.
-//  *
-//  * @export
-//  * @interface IocModule
-//  * @template T
-//  */
-// export class InjectedModule {
-//     /**
-//      * token to loaded by.
-//      */
-//     token: Token<any> | ModuleConfigure;
-//     /**
-//      * module Token
-//      *
-//      * @type {Token<any>}
-//      * @memberof IocModule
-//      */
-//     moduleToken: Token<any>;
-//     /**
-//      * module configuration.
-//      *
-//      * @type {ModuleConfigure}
-//      * @memberof IocModule
-//      */
-//     moduleConfig: ModuleConfigure;
-//     /**
-//      * current ioc module di contianer.
-//      *
-//      * @type {IContainer}
-//      * @memberof IocModule
-//      */
-//     container: IContainer;
-// }
 
 /**
  *  module instance.

@@ -1,8 +1,8 @@
 import { IContainer, Inject, ContainerToken, LifeScopeToken, IocExt, CoreActions } from '@ts-ioc/core';
 import { DIModule, Bootstrap } from './decorators';
-import { ModuleBuilder } from './modules';
-import { DefaultApplicationBuilder } from './boot';
-import { AnnotationBuilder, MetaAccessor } from './annotations';
+import * as modus from './modules';
+import * as boot from './boot';
+import * as annotations from './annotations';
 
 
 /**
@@ -31,10 +31,6 @@ export class BootModule {
         lifeScope.registerDecorator(DIModule, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
         lifeScope.registerDecorator(Bootstrap, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
 
-        container.register(MetaAccessor);
-        container.register(ModuleBuilder);
-        container.register(AnnotationBuilder);
-        container.register(DefaultApplicationBuilder);
-
+        container.use(annotations, modus, boot);
     }
 }

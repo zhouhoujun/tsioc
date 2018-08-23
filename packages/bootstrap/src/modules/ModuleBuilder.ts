@@ -1,17 +1,12 @@
 import 'reflect-metadata';
 import {
-    IContainer, isProviderMap, Provider, Token, Type, Providers,
-    isString, lang, isFunction, isClass, isUndefined,
-    isNull, isBaseObject, isToken, isArray,
-    hasOwnClassMetadata, IocExt, IContainerBuilder, DefaultContainerBuilder, Singleton,
-    Inject, Registration, isObject, Container, ContainerBuilderToken
+    IContainer, Token, Providers, lang, isFunction, isClass, isToken, Singleton,
+    Inject, Registration, Container
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv, InjectModuleBuilderToken, DefaultModuleBuilderToken } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
-import { DIModule } from '../decorators';
-import { BootModule } from '../BootModule';
 import { MdInstance } from './ModuleType';
-import { containerPools, ContainerPool } from '../utils';
+import { ContainerPool, ContainerPoolToken } from '../utils';
 import { InjectRunnerToken, IRunner, Boot, DefaultRunnerToken, Service, IService, InjectServiceToken, DefaultServiceToken, Runnable } from '../runnable';
 import { IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder, DefaultAnnotationBuilderToken, AnnotationBuilderToken, AnnotationBuilder, IMetaAccessor, InjectMetaAccessorToken, DefaultMetaAccessorToken } from '../annotations';
 import { InjectedModule, InjectedModuleToken } from './InjectedModule';
@@ -46,22 +41,16 @@ export class InjectModuleLoadToken<T> extends Registration<T> {
 @Singleton(ModuleBuilderToken)
 export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
+    @Inject(ContainerPoolToken)
+    protected pools: ContainerPool;
+
     constructor() {
 
     }
 
-    protected pools: ContainerPool;
+
     getPools(): ContainerPool {
-        if (!this.pools) {
-            this.pools = containerPools;
-        }
-        if (!this.pools.hasDefault()) {
-            this.regDefaultContainer();
-        }
         return this.pools;
-    }
-    setPools(pools: ContainerPool) {
-        this.pools = pools;
     }
 
     protected regDefaultContainer() {
@@ -205,24 +194,24 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      * @memberof ModuleBuilder
      */
     async build(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<T> {
-        let builder = this.getBuilder(token, env);
+        let currEnv = await this.load(token, env);
+        let builder = this.getBuilder(currEnv);
         if (builder && builder !== this) {
             // let tk = isToken(token) ? token : this.getConfigId(token);
             // this.cleanLoadModule(container, tk);
-            return await builder.build(token, env, data);
+            return await builder.build(token, currEnv, data);
         } else {
-            let loadmdl = await this.load(token, env);
-            let container = loadmdl.container;
-            let cfg = loadmdl.config;
-            let annBuilder = this.getAnnoBuilder(container, loadmdl.token, cfg.annotationBuilder);
-            if (!loadmdl.token) {
+            let container = currEnv.container;
+            let cfg = currEnv.config;
+            let annBuilder = this.getAnnoBuilder(container, currEnv.token, cfg.annotationBuilder);
+            if (!currEnv.token) {
                 let instance = await annBuilder.buildByConfig(cfg, data);
                 return instance;
             } else {
-                let instance = await annBuilder.build(loadmdl.token, cfg, data);
+                let instance = await annBuilder.build(currEnv.token, cfg, data);
                 let mdlInst = instance as MdInstance<T>;
                 if (mdlInst && isFunction(mdlInst.mdOnInit)) {
-                    mdlInst.mdOnInit(loadmdl);
+                    mdlInst.mdOnInit(currEnv);
                 }
                 return instance;
             }
@@ -240,10 +229,12 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     */
     async bootstrap(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
         let currEnv = await this.load(token, env);
-        let builder = this.getBuilder(token, currEnv);
+        let builder = this.getBuilder(currEnv);
         if (builder && builder !== this) {
             return await builder.bootstrap(token, currEnv, data);
         } else {
+            let cfg = currEnv.config;
+            let container = currEnv.container;
             let md = await this.build(token, currEnv, data) as MdInstance<T>;
             let bootToken = this.getBootType(cfg);
             let anBuilder = this.getAnnoBuilder(container, bootToken, cfg.annotationBuilder);
@@ -255,14 +246,15 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
                     await Promise.resolve(md.mdOnStart(bootInstance));
                 }
             } else {
-                runable = await this.autoRun(container, loadmdl.moduleToken, cfg, md);
+                runable = await this.autoRun(container, currEnv.token, cfg, md);
             }
             return runable;
         }
     }
 
-    getBuilder(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): IModuleBuilder<T> {
-        let cfg = this.getConfigure(token, container);
+    getBuilder(env: InjectedModule<T>): IModuleBuilder<T> {
+        let cfg = env.config;
+        let container = env.container;
         let builder: IModuleBuilder<T>;
         if (cfg) {
             if (isClass(cfg.builder)) {
@@ -277,7 +269,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             }
         }
 
-        let tko = isToken(token) ? token : this.getType(token);
+        let tko = env.token;
         if (!builder && tko) {
             container.getTokenExtendsChain(tko).forEach(tk => {
                 if (builder) {
@@ -293,45 +285,50 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         if (!builder) {
             builder = this.getDefaultBuilder(container);
         }
-        if (builder) {
-            builder.setPools(this.getPools());
-        }
+
         return builder || this;
     }
 
-    protected getConfigure(token: Token<T> | ModuleConfig<T>, currEnv: ModuleEnv) {
-
-        let cfg: ModuleConfigure;
-        if (isToken(token)) {
-            cfg = this.getMetaConfig(token, container);
-        } else if (isObject(token)) {
-            let type = this.getType(token);
-            cfg = lang.assign(token || {}, this.getMetaConfig(type, container), token || {});
-
+    async import(token: Token<T>, parent?: IContainer): Promise<InjectedModule<T>> {
+        parent = parent || this.getPools().getDefault();
+        let type = isClass(token) ? token : parent.getTokenImpl(token);
+        if (isClass(type)) {
+            let key = new InjectedModuleToken(type);
+            if (parent.hasRegister(key.toString())) {
+                return parent.get(key)
+            } else {
+                await parent.loadModule(type);
+                return parent.get(key);
+            }
         }
-        return cfg || {};
+        return null;
     }
 
     protected async load(token: Token<T> | ModuleConfigure, env?: ModuleEnv): Promise<InjectedModule<T>> {
+        if (env instanceof InjectedModule && env.token === null) {
+            return env;
+        }
         let parent = await this.getParentContainer(env);
         if (isToken(token)) {
-            let type = isClass(token) ? token : parent.getTokenImpl(token);
-            if (type) {
-                let key = new InjectedModuleToken(type);
-                if (parent.has(key)) {
-                    return parent.get(key)
-                } else {
-                    await parent.loadModule(type);
-                    return parent.get(key);
+            return await this.import(token, parent);
+        } else {
+            let mdtype = this.getType(token);
+            if (isToken(mdtype)) {
+                let env = await this.import(mdtype, parent);
+                if (env instanceof InjectedModule) {
+                    let container = env.container;
+                    let injector = container.get(DIModuleInjectorToken);
+                    await injector.importByConfig(container, token);
+                    env.config = lang.assign(env.config, token);
+                    return env;
                 }
             }
-            return null;
-        } else {
             let injector = parent.get(DIModuleInjectorToken);
             await injector.importByConfig(parent, token)
             return new InjectedModule(null, token, parent);
         }
     }
+
 
     protected async getParentContainer(env?: ModuleEnv) {
         if (!this.getPools().hasInit()) {

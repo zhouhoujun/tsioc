@@ -416,10 +416,6 @@ export class Container implements IContainer {
         this.bindProvider(ContainerToken, () => this);
 
         registerCores(this);
-        this.register(SyncModuleInjector)
-            .register(ModuleInjector)
-            .bindProvider(IocExtModuleValidateToken, new IocExtModuleValidate())
-            .bindProvider(ModuleInjectorChainToken, new ModuleInjectorChain())
     }
 
     protected registerFactory<T>(token: Token<T>, value?: Factory<T>, singleton?: boolean) {
