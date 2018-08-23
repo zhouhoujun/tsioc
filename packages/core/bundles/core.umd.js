@@ -5082,6 +5082,586 @@ exports.registerCores = registerCores;
 unwrapExports(registerCores_1);
 var registerCores_2 = registerCores_1.registerCores;
 
+var Container_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * Container
+ *
+ * @export
+ * @class Container
+ * @implements {IContainer}
+ */
+var Container = /** @class */ (function () {
+    function Container() {
+        this.init();
+    }
+    Container.prototype.getRoot = function () {
+        var root = this;
+        while (root.parent) {
+            root = root.parent;
+        }
+        return root;
+    };
+    Container.prototype.getBuilder = function () {
+        return this.resolve(IContainerBuilder.ContainerBuilderToken);
+    };
+    /**
+     * Retrieves an instance from the container based on the provided token.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {string} [alias]
+     * @param {...Providers[]} providers
+     * @returns {T}
+     * @memberof Container
+     */
+    Container.prototype.get = function (token, alias) {
+        var providers = [];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            providers[_i - 2] = arguments[_i];
+        }
+        return this.resolve.apply(this, [alias ? this.getTokenKey(token, alias) : token].concat(providers));
+    };
+    /**
+     * resolve type instance with token and param provider.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {T} [notFoundValue]
+     * @param {...Providers[]} providers
+     * @memberof Container
+     */
+    Container.prototype.resolve = function (token) {
+        var providers = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            providers[_i - 1] = arguments[_i];
+        }
+        var _a;
+        var key = this.getTokenKey(token);
+        var hasReg = this.hasRegister(key);
+        if (!hasReg && !this.parent) {
+            console.log('have not register', key);
+            return null;
+        }
+        if (hasReg) {
+            var factory = this.factories.get(key);
+            return factory.apply(void 0, providers);
+        }
+        else {
+            return (_a = this.parent).resolve.apply(_a, [token].concat(providers));
+        }
+    };
+    /**
+     * clear cache.
+     *
+     * @param {Type<any>} targetType
+     * @memberof IContainer
+     */
+    Container.prototype.clearCache = function (targetType) {
+        this.get(ICacheManager.CacheManagerToken).destroy(targetType);
+    };
+    /**
+     * get token.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {string} [alias]
+     * @returns {Token<T>}
+     * @memberof Container
+     */
+    Container.prototype.getToken = function (token, alias) {
+        if (alias) {
+            return new Registration_1.Registration(token, alias);
+        }
+        return token;
+    };
+    /**
+     * get tocken key.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {string} [alias]
+     * @returns {SymbolType<T>}
+     * @memberof Container
+     */
+    Container.prototype.getTokenKey = function (token, alias) {
+        if (alias) {
+            return new Registration_1.Registration(token, alias).toString();
+        }
+        else if (token instanceof Registration_1.Registration) {
+            return token.toString();
+        }
+        return token;
+    };
+    /**
+     * register type.
+     * @abstract
+     * @template T
+     * @param {Token<T>} token
+     * @param {T} [value]
+     * @returns {this}
+     * @memberOf Container
+     */
+    Container.prototype.register = function (token, value) {
+        this.registerFactory(token, value);
+        return this;
+    };
+    /**
+     * has register the token or not.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {string} [alias]
+     * @returns {boolean}
+     * @memberof Container
+     */
+    Container.prototype.has = function (token, alias) {
+        var key = this.getTokenKey(token, alias);
+        if (this.hasRegister(key)) {
+            return true;
+        }
+        if (this.parent) {
+            return this.parent.hasRegister(key);
+        }
+        else {
+            return false;
+        }
+    };
+    /**
+     * has register type.
+     *
+     * @template T
+     * @param {SymbolType<T>} key
+     * @returns
+     * @memberof Container
+     */
+    Container.prototype.hasRegister = function (key) {
+        return this.factories.has(key);
+    };
+    /**
+     * unregister the token
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {this}
+     * @memberof Container
+     */
+    Container.prototype.unregister = function (token) {
+        var key = this.getTokenKey(token);
+        if (this.hasRegister(key)) {
+            this.factories.delete(key);
+            if (this.provideTypes.has(key)) {
+                this.provideTypes.delete(key);
+            }
+            if (utils.isClass(key)) {
+                this.clearCache(key);
+            }
+        }
+        else if (this.parent) {
+            this.parent.unregister(key);
+        }
+        return this;
+    };
+    /**
+     * register stingleton type.
+     * @abstract
+     * @template T
+     * @param {Token<T>} token
+     * @param {Factory<T>} [value]
+     * @returns {this}
+     * @memberOf Container
+     */
+    Container.prototype.registerSingleton = function (token, value) {
+        this.registerFactory(token, value, true);
+        return this;
+    };
+    /**
+     * register value.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {T} value
+     * @returns {this}
+     * @memberof Container
+     */
+    Container.prototype.registerValue = function (token, value) {
+        var _this = this;
+        var key = this.getTokenKey(token);
+        this.singleton.set(key, value);
+        if (!this.factories.has(key)) {
+            this.factories.set(key, function () {
+                return _this.singleton.get(key);
+            });
+        }
+        return this;
+    };
+    /**
+     * bind provider.
+     *
+     * @template T
+     * @param {Token<T>} provide
+     * @param {Token<T>} provider
+     * @returns {this}
+     * @memberof Container
+     */
+    Container.prototype.bindProvider = function (provide, provider) {
+        var _this = this;
+        var provideKey = this.getTokenKey(provide);
+        var factory;
+        if (utils.isToken(provider)) {
+            factory = function () {
+                var providers = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    providers[_i] = arguments[_i];
+                }
+                return _this.resolve.apply(_this, [provider].concat(providers));
+            };
+        }
+        else {
+            if (utils.isFunction(provider)) {
+                factory = function () {
+                    var providers = [];
+                    for (var _i = 0; _i < arguments.length; _i++) {
+                        providers[_i] = arguments[_i];
+                    }
+                    return provider.apply(void 0, [_this].concat(providers));
+                };
+            }
+            else {
+                factory = function () {
+                    return provider;
+                };
+            }
+        }
+        if (utils.isClass(provider)) {
+            this.provideTypes.set(provideKey, provider);
+        }
+        else if (utils.isToken(provider)) {
+            var token = provider;
+            while (this.provideTypes.has(token) && !utils.isClass(token)) {
+                token = this.provideTypes.get(token);
+                if (utils.isClass(token)) {
+                    this.provideTypes.set(provideKey, token);
+                    break;
+                }
+            }
+        }
+        this.factories.set(provideKey, factory);
+        return this;
+    };
+    /**
+     * get token implements class type.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {Type<T>}
+     * @memberof Container
+     */
+    Container.prototype.getTokenImpl = function (token) {
+        if (utils.isClass(token)) {
+            return token;
+        }
+        var tokenKey = this.getTokenKey(token);
+        if (this.provideTypes.has(tokenKey)) {
+            return this.provideTypes.get(tokenKey);
+        }
+        else if (this.parent) {
+            return this.parent.getTokenImpl(tokenKey);
+        }
+        else {
+            return null;
+        }
+    };
+    /**
+     * get token implement class and base classes.
+     *
+     * @param {Token<any>} token
+     * @returns {Token<any>[]}
+     * @memberof Container
+     */
+    Container.prototype.getTokenExtendsChain = function (token) {
+        if (utils.isClass(token)) {
+            return this.getBaseClasses(token);
+        }
+        else {
+            return this.getBaseClasses(this.getTokenImpl(token)).concat([token]);
+        }
+    };
+    Container.prototype.getBaseClasses = function (target) {
+        var types$$1 = [];
+        while (utils.isClass(target) && target !== Object) {
+            types$$1.push(target);
+            target = utils.lang.getParentClass(target);
+        }
+        return types$$1;
+    };
+    /**
+    * get life scope of container.
+    *
+    * @returns {LifeScope}
+    * @memberof IContainer
+    */
+    Container.prototype.getLifeScope = function () {
+        return this.get(LifeScope.LifeScopeToken);
+    };
+    /**
+     * use modules.
+     *
+     * @param {...Modules[]} modules
+     * @returns {this}
+     * @memberof Container
+     */
+    Container.prototype.use = function () {
+        var modules = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            modules[_i] = arguments[_i];
+        }
+        var _a;
+        (_a = this.getBuilder()).syncLoadModule.apply(_a, [this].concat(modules));
+        return this;
+    };
+    /**
+     * async use modules.
+     *
+     * @param {...LoadType[]} modules load modules.
+     * @returns {Promise<Type<any>[]>}  types loaded.
+     * @memberof IContainer
+     */
+    Container.prototype.loadModule = function () {
+        var modules = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            modules[_i] = arguments[_i];
+        }
+        var _a;
+        return (_a = this.getBuilder()).loadModule.apply(_a, [this].concat(modules));
+    };
+    /**
+     * invoke method async.
+     *
+     * @template T
+     * @param {Token<any>} token
+     * @param {string} propertyKey
+     * @param {*} [instance]
+     * @param {...Providers[]} providers
+     * @returns {Promise<T>}
+     * @memberof Container
+     */
+    Container.prototype.invoke = function (token, propertyKey, instance) {
+        var providers = [];
+        for (var _i = 3; _i < arguments.length; _i++) {
+            providers[_i - 3] = arguments[_i];
+        }
+        var _a;
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).invoke.apply(_a, [token, propertyKey, instance].concat(providers));
+    };
+    /**
+     * invoke method.
+     *
+     * @template T
+     * @param {Token<any>} token
+     * @param {string} propertyKey
+     * @param {*} [instance]
+     * @param {...Providers[]} providers
+     * @returns {T}
+     * @memberof Container
+     */
+    Container.prototype.syncInvoke = function (token, propertyKey, instance) {
+        var providers = [];
+        for (var _i = 3; _i < arguments.length; _i++) {
+            providers[_i - 3] = arguments[_i];
+        }
+        var _a;
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).syncInvoke.apply(_a, [token, propertyKey, instance].concat(providers));
+    };
+    Container.prototype.createSyncParams = function (params) {
+        var providers = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            providers[_i - 1] = arguments[_i];
+        }
+        var _a;
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createSyncParams.apply(_a, [params].concat(providers));
+    };
+    Container.prototype.createParams = function (params) {
+        var providers = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            providers[_i - 1] = arguments[_i];
+        }
+        var _a;
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createParams.apply(_a, [params].concat(providers));
+    };
+    Container.prototype.cacheDecorator = function (map, action) {
+        if (!map.has(action.name)) {
+            map.set(action.name, action);
+        }
+    };
+    Container.prototype.init = function () {
+        var _this = this;
+        this.factories = new utils.MapSet();
+        this.singleton = new utils.MapSet();
+        this.provideTypes = new utils.MapSet();
+        this.bindProvider(IContainer.ContainerToken, function () { return _this; });
+        registerCores_1.registerCores(this);
+    };
+    Container.prototype.registerFactory = function (token, value, singleton) {
+        var key = this.getTokenKey(token);
+        if (this.factories.has(key)) {
+            return;
+        }
+        var classFactory;
+        if (!utils.isUndefined(value)) {
+            if (utils.isFunction(value)) {
+                if (utils.isClass(value)) {
+                    this.bindTypeFactory(key, value, singleton);
+                }
+                else {
+                    classFactory = this.createCustomFactory(key, value, singleton);
+                }
+            }
+            else if (singleton && value !== undefined) {
+                classFactory = this.createCustomFactory(key, function () { return value; }, singleton);
+            }
+        }
+        else if (!utils.isString(token) && !utils.isSymbol(token)) {
+            var ClassT = (token instanceof Registration_1.Registration) ? token.getClass() : token;
+            if (utils.isClass(ClassT)) {
+                this.bindTypeFactory(key, ClassT, singleton);
+            }
+        }
+        if (classFactory) {
+            this.factories.set(key, classFactory);
+        }
+    };
+    Container.prototype.createCustomFactory = function (key, factory, singleton) {
+        var _this = this;
+        return singleton ?
+            function () {
+                var providers = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    providers[_i] = arguments[_i];
+                }
+                if (_this.singleton.has(key)) {
+                    return _this.singleton.get(key);
+                }
+                var instance = factory.apply(void 0, [_this].concat(providers));
+                _this.singleton.set(key, instance);
+                return instance;
+            }
+            : function () {
+                var providers = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    providers[_i] = arguments[_i];
+                }
+                return factory.apply(void 0, [_this].concat(providers));
+            };
+    };
+    Container.prototype.bindTypeFactory = function (key, ClassT, singleton) {
+        var _this = this;
+        if (!Reflect.isExtensible(ClassT)) {
+            return;
+        }
+        var lifeScope = this.getLifeScope();
+        var parameters = lifeScope.getConstructorParameters(ClassT);
+        if (!singleton) {
+            singleton = lifeScope.isSingletonType(ClassT);
+        }
+        var factory = function () {
+            var providers = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                providers[_i] = arguments[_i];
+            }
+            if (singleton && _this.singleton.has(key)) {
+                return _this.singleton.get(key);
+            }
+            if (providers.length < 1) {
+                var lifecycleData = {
+                    tokenKey: key,
+                    targetType: ClassT,
+                    singleton: singleton
+                };
+                lifeScope.execute(lifecycleData, core.CoreActions.cache);
+                if (lifecycleData.execResult && lifecycleData.execResult instanceof ClassT) {
+                    return lifecycleData.execResult;
+                }
+            }
+            lifeScope.execute({
+                tokenKey: key,
+                targetType: ClassT,
+                params: parameters,
+                providers: providers,
+                singleton: singleton
+            }, types.IocState.runtime, core.LifeState.beforeCreateArgs);
+            var args = _this.createSyncParams.apply(_this, [parameters].concat(providers));
+            lifeScope.routeExecute({
+                tokenKey: key,
+                targetType: ClassT,
+                args: args,
+                params: parameters,
+                providers: providers,
+                singleton: singleton
+            }, types.IocState.runtime, core.LifeState.beforeConstructor);
+            var instance = new (ClassT.bind.apply(ClassT, [void 0].concat(args)))();
+            lifeScope.routeExecute({
+                tokenKey: key,
+                target: instance,
+                targetType: ClassT,
+                args: args,
+                params: parameters,
+                providers: providers,
+                singleton: singleton
+            }, types.IocState.runtime, core.LifeState.afterConstructor);
+            lifeScope.execute({
+                tokenKey: key,
+                target: instance,
+                targetType: ClassT,
+                args: args,
+                params: parameters,
+                providers: providers,
+                singleton: singleton
+            }, types.IocState.runtime, core.LifeState.onInit);
+            lifeScope.routeExecute({
+                tokenKey: key,
+                target: instance,
+                targetType: ClassT,
+                args: args,
+                params: parameters,
+                providers: providers,
+                singleton: singleton
+            }, types.IocState.runtime, core.LifeState.AfterInit);
+            lifeScope.execute({
+                tokenKey: key,
+                target: instance,
+                targetType: ClassT
+            }, core.CoreActions.cache);
+            return instance;
+        };
+        this.factories.set(key, factory);
+        lifeScope.execute({
+            tokenKey: key,
+            targetType: ClassT
+        }, types.IocState.design);
+    };
+    Container.classAnnations = { "name": "Container", "params": { "constructor": [], "getRoot": [], "getBuilder": [], "get": ["token", "alias", "providers"], "resolve": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token"], "getTokenExtendsChain": ["token"], "getBaseClasses": ["target"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"] } };
+    return Container;
+}());
+exports.Container = Container;
+
+
+});
+
+unwrapExports(Container_1);
+var Container_2 = Container_1.Container;
+
 var IModuleLoader = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -5622,591 +6202,6 @@ tslib_1.__exportStar(ModuleInjectorChain_1, exports);
 
 unwrapExports(injectors);
 
-var Container_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * Container
- *
- * @export
- * @class Container
- * @implements {IContainer}
- */
-var Container = /** @class */ (function () {
-    function Container() {
-        this.init();
-    }
-    Container.prototype.getRoot = function () {
-        var root = this;
-        while (root.parent) {
-            root = root.parent;
-        }
-        return root;
-    };
-    Container.prototype.getBuilder = function () {
-        return this.resolve(IContainerBuilder.ContainerBuilderToken);
-    };
-    /**
-     * Retrieves an instance from the container based on the provided token.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @param {...Providers[]} providers
-     * @returns {T}
-     * @memberof Container
-     */
-    Container.prototype.get = function (token, alias) {
-        var providers = [];
-        for (var _i = 2; _i < arguments.length; _i++) {
-            providers[_i - 2] = arguments[_i];
-        }
-        return this.resolve.apply(this, [alias ? this.getTokenKey(token, alias) : token].concat(providers));
-    };
-    /**
-     * resolve type instance with token and param provider.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} [notFoundValue]
-     * @param {...Providers[]} providers
-     * @memberof Container
-     */
-    Container.prototype.resolve = function (token) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        var _a;
-        var key = this.getTokenKey(token);
-        var hasReg = this.hasRegister(key);
-        if (!hasReg && !this.parent) {
-            console.log('have not register', key);
-            return null;
-        }
-        if (hasReg) {
-            var factory = this.factories.get(key);
-            return factory.apply(void 0, providers);
-        }
-        else {
-            return (_a = this.parent).resolve.apply(_a, [token].concat(providers));
-        }
-    };
-    /**
-     * clear cache.
-     *
-     * @param {Type<any>} targetType
-     * @memberof IContainer
-     */
-    Container.prototype.clearCache = function (targetType) {
-        this.get(ICacheManager.CacheManagerToken).destroy(targetType);
-    };
-    /**
-     * get token.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {Token<T>}
-     * @memberof Container
-     */
-    Container.prototype.getToken = function (token, alias) {
-        if (alias) {
-            return new Registration_1.Registration(token, alias);
-        }
-        return token;
-    };
-    /**
-     * get tocken key.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {SymbolType<T>}
-     * @memberof Container
-     */
-    Container.prototype.getTokenKey = function (token, alias) {
-        if (alias) {
-            return new Registration_1.Registration(token, alias).toString();
-        }
-        else if (token instanceof Registration_1.Registration) {
-            return token.toString();
-        }
-        return token;
-    };
-    /**
-     * register type.
-     * @abstract
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} [value]
-     * @returns {this}
-     * @memberOf Container
-     */
-    Container.prototype.register = function (token, value) {
-        this.registerFactory(token, value);
-        return this;
-    };
-    /**
-     * has register the token or not.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {boolean}
-     * @memberof Container
-     */
-    Container.prototype.has = function (token, alias) {
-        var key = this.getTokenKey(token, alias);
-        if (this.hasRegister(key)) {
-            return true;
-        }
-        if (this.parent) {
-            return this.parent.hasRegister(key);
-        }
-        else {
-            return false;
-        }
-    };
-    /**
-     * has register type.
-     *
-     * @template T
-     * @param {SymbolType<T>} key
-     * @returns
-     * @memberof Container
-     */
-    Container.prototype.hasRegister = function (key) {
-        return this.factories.has(key);
-    };
-    /**
-     * unregister the token
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {this}
-     * @memberof Container
-     */
-    Container.prototype.unregister = function (token) {
-        var key = this.getTokenKey(token);
-        if (this.hasRegister(key)) {
-            this.factories.delete(key);
-            if (this.provideTypes.has(key)) {
-                this.provideTypes.delete(key);
-            }
-            if (utils.isClass(key)) {
-                this.clearCache(key);
-            }
-        }
-        else if (this.parent) {
-            this.parent.unregister(key);
-        }
-        return this;
-    };
-    /**
-     * register stingleton type.
-     * @abstract
-     * @template T
-     * @param {Token<T>} token
-     * @param {Factory<T>} [value]
-     * @returns {this}
-     * @memberOf Container
-     */
-    Container.prototype.registerSingleton = function (token, value) {
-        this.registerFactory(token, value, true);
-        return this;
-    };
-    /**
-     * register value.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} value
-     * @returns {this}
-     * @memberof Container
-     */
-    Container.prototype.registerValue = function (token, value) {
-        var _this = this;
-        var key = this.getTokenKey(token);
-        this.singleton.set(key, value);
-        if (!this.factories.has(key)) {
-            this.factories.set(key, function () {
-                return _this.singleton.get(key);
-            });
-        }
-        return this;
-    };
-    /**
-     * bind provider.
-     *
-     * @template T
-     * @param {Token<T>} provide
-     * @param {Token<T>} provider
-     * @returns {this}
-     * @memberof Container
-     */
-    Container.prototype.bindProvider = function (provide, provider) {
-        var _this = this;
-        var provideKey = this.getTokenKey(provide);
-        var factory;
-        if (utils.isToken(provider)) {
-            factory = function () {
-                var providers = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    providers[_i] = arguments[_i];
-                }
-                return _this.resolve.apply(_this, [provider].concat(providers));
-            };
-        }
-        else {
-            if (utils.isFunction(provider)) {
-                factory = function () {
-                    var providers = [];
-                    for (var _i = 0; _i < arguments.length; _i++) {
-                        providers[_i] = arguments[_i];
-                    }
-                    return provider.apply(void 0, [_this].concat(providers));
-                };
-            }
-            else {
-                factory = function () {
-                    return provider;
-                };
-            }
-        }
-        if (utils.isClass(provider)) {
-            this.provideTypes.set(provideKey, provider);
-        }
-        else if (utils.isToken(provider)) {
-            var token = provider;
-            while (this.provideTypes.has(token) && !utils.isClass(token)) {
-                token = this.provideTypes.get(token);
-                if (utils.isClass(token)) {
-                    this.provideTypes.set(provideKey, token);
-                    break;
-                }
-            }
-        }
-        this.factories.set(provideKey, factory);
-        return this;
-    };
-    /**
-     * get token implements class type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {Type<T>}
-     * @memberof Container
-     */
-    Container.prototype.getTokenImpl = function (token) {
-        if (utils.isClass(token)) {
-            return token;
-        }
-        var tokenKey = this.getTokenKey(token);
-        if (this.provideTypes.has(tokenKey)) {
-            return this.provideTypes.get(tokenKey);
-        }
-        else if (this.parent) {
-            return this.parent.getTokenImpl(tokenKey);
-        }
-        else {
-            return null;
-        }
-    };
-    /**
-     * get token implement class and base classes.
-     *
-     * @param {Token<any>} token
-     * @returns {Token<any>[]}
-     * @memberof Container
-     */
-    Container.prototype.getTokenExtendsChain = function (token) {
-        if (utils.isClass(token)) {
-            return this.getBaseClasses(token);
-        }
-        else {
-            return this.getBaseClasses(this.getTokenImpl(token)).concat([token]);
-        }
-    };
-    Container.prototype.getBaseClasses = function (target) {
-        var types$$1 = [];
-        while (utils.isClass(target) && target !== Object) {
-            types$$1.push(target);
-            target = utils.lang.getParentClass(target);
-        }
-        return types$$1;
-    };
-    /**
-    * get life scope of container.
-    *
-    * @returns {LifeScope}
-    * @memberof IContainer
-    */
-    Container.prototype.getLifeScope = function () {
-        return this.get(LifeScope.LifeScopeToken);
-    };
-    /**
-     * use modules.
-     *
-     * @param {...Modules[]} modules
-     * @returns {this}
-     * @memberof Container
-     */
-    Container.prototype.use = function () {
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        var _a;
-        (_a = this.getBuilder()).syncLoadModule.apply(_a, [this].concat(modules));
-        return this;
-    };
-    /**
-     * async use modules.
-     *
-     * @param {...LoadType[]} modules load modules.
-     * @returns {Promise<Type<any>[]>}  types loaded.
-     * @memberof IContainer
-     */
-    Container.prototype.loadModule = function () {
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        var _a;
-        return (_a = this.getBuilder()).loadModule.apply(_a, [this].concat(modules));
-    };
-    /**
-     * invoke method async.
-     *
-     * @template T
-     * @param {Token<any>} token
-     * @param {string} propertyKey
-     * @param {*} [instance]
-     * @param {...Providers[]} providers
-     * @returns {Promise<T>}
-     * @memberof Container
-     */
-    Container.prototype.invoke = function (token, propertyKey, instance) {
-        var providers = [];
-        for (var _i = 3; _i < arguments.length; _i++) {
-            providers[_i - 3] = arguments[_i];
-        }
-        var _a;
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).invoke.apply(_a, [token, propertyKey, instance].concat(providers));
-    };
-    /**
-     * invoke method.
-     *
-     * @template T
-     * @param {Token<any>} token
-     * @param {string} propertyKey
-     * @param {*} [instance]
-     * @param {...Providers[]} providers
-     * @returns {T}
-     * @memberof Container
-     */
-    Container.prototype.syncInvoke = function (token, propertyKey, instance) {
-        var providers = [];
-        for (var _i = 3; _i < arguments.length; _i++) {
-            providers[_i - 3] = arguments[_i];
-        }
-        var _a;
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).syncInvoke.apply(_a, [token, propertyKey, instance].concat(providers));
-    };
-    Container.prototype.createSyncParams = function (params) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        var _a;
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createSyncParams.apply(_a, [params].concat(providers));
-    };
-    Container.prototype.createParams = function (params) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        var _a;
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createParams.apply(_a, [params].concat(providers));
-    };
-    Container.prototype.cacheDecorator = function (map, action) {
-        if (!map.has(action.name)) {
-            map.set(action.name, action);
-        }
-    };
-    Container.prototype.init = function () {
-        var _this = this;
-        this.factories = new utils.MapSet();
-        this.singleton = new utils.MapSet();
-        this.provideTypes = new utils.MapSet();
-        this.bindProvider(IContainer.ContainerToken, function () { return _this; });
-        registerCores_1.registerCores(this);
-        this.register(injectors.SyncModuleInjector)
-            .register(injectors.ModuleInjector)
-            .bindProvider(injectors.IocExtModuleValidateToken, new injectors.IocExtModuleValidate())
-            .bindProvider(injectors.ModuleInjectorChainToken, new injectors.ModuleInjectorChain());
-    };
-    Container.prototype.registerFactory = function (token, value, singleton) {
-        var key = this.getTokenKey(token);
-        if (this.factories.has(key)) {
-            return;
-        }
-        var classFactory;
-        if (!utils.isUndefined(value)) {
-            if (utils.isFunction(value)) {
-                if (utils.isClass(value)) {
-                    this.bindTypeFactory(key, value, singleton);
-                }
-                else {
-                    classFactory = this.createCustomFactory(key, value, singleton);
-                }
-            }
-            else if (singleton && value !== undefined) {
-                classFactory = this.createCustomFactory(key, function () { return value; }, singleton);
-            }
-        }
-        else if (!utils.isString(token) && !utils.isSymbol(token)) {
-            var ClassT = (token instanceof Registration_1.Registration) ? token.getClass() : token;
-            if (utils.isClass(ClassT)) {
-                this.bindTypeFactory(key, ClassT, singleton);
-            }
-        }
-        if (classFactory) {
-            this.factories.set(key, classFactory);
-        }
-    };
-    Container.prototype.createCustomFactory = function (key, factory, singleton) {
-        var _this = this;
-        return singleton ?
-            function () {
-                var providers = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    providers[_i] = arguments[_i];
-                }
-                if (_this.singleton.has(key)) {
-                    return _this.singleton.get(key);
-                }
-                var instance = factory.apply(void 0, [_this].concat(providers));
-                _this.singleton.set(key, instance);
-                return instance;
-            }
-            : function () {
-                var providers = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    providers[_i] = arguments[_i];
-                }
-                return factory.apply(void 0, [_this].concat(providers));
-            };
-    };
-    Container.prototype.bindTypeFactory = function (key, ClassT, singleton) {
-        var _this = this;
-        if (!Reflect.isExtensible(ClassT)) {
-            return;
-        }
-        var lifeScope = this.getLifeScope();
-        var parameters = lifeScope.getConstructorParameters(ClassT);
-        if (!singleton) {
-            singleton = lifeScope.isSingletonType(ClassT);
-        }
-        var factory = function () {
-            var providers = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                providers[_i] = arguments[_i];
-            }
-            if (singleton && _this.singleton.has(key)) {
-                return _this.singleton.get(key);
-            }
-            if (providers.length < 1) {
-                var lifecycleData = {
-                    tokenKey: key,
-                    targetType: ClassT,
-                    singleton: singleton
-                };
-                lifeScope.execute(lifecycleData, core.CoreActions.cache);
-                if (lifecycleData.execResult && lifecycleData.execResult instanceof ClassT) {
-                    return lifecycleData.execResult;
-                }
-            }
-            lifeScope.execute({
-                tokenKey: key,
-                targetType: ClassT,
-                params: parameters,
-                providers: providers,
-                singleton: singleton
-            }, types.IocState.runtime, core.LifeState.beforeCreateArgs);
-            var args = _this.createSyncParams.apply(_this, [parameters].concat(providers));
-            lifeScope.routeExecute({
-                tokenKey: key,
-                targetType: ClassT,
-                args: args,
-                params: parameters,
-                providers: providers,
-                singleton: singleton
-            }, types.IocState.runtime, core.LifeState.beforeConstructor);
-            var instance = new (ClassT.bind.apply(ClassT, [void 0].concat(args)))();
-            lifeScope.routeExecute({
-                tokenKey: key,
-                target: instance,
-                targetType: ClassT,
-                args: args,
-                params: parameters,
-                providers: providers,
-                singleton: singleton
-            }, types.IocState.runtime, core.LifeState.afterConstructor);
-            lifeScope.execute({
-                tokenKey: key,
-                target: instance,
-                targetType: ClassT,
-                args: args,
-                params: parameters,
-                providers: providers,
-                singleton: singleton
-            }, types.IocState.runtime, core.LifeState.onInit);
-            lifeScope.routeExecute({
-                tokenKey: key,
-                target: instance,
-                targetType: ClassT,
-                args: args,
-                params: parameters,
-                providers: providers,
-                singleton: singleton
-            }, types.IocState.runtime, core.LifeState.AfterInit);
-            lifeScope.execute({
-                tokenKey: key,
-                target: instance,
-                targetType: ClassT
-            }, core.CoreActions.cache);
-            return instance;
-        };
-        this.factories.set(key, factory);
-        lifeScope.execute({
-            tokenKey: key,
-            targetType: ClassT
-        }, types.IocState.design);
-    };
-    Container.classAnnations = { "name": "Container", "params": { "constructor": [], "getRoot": [], "getBuilder": [], "get": ["token", "alias", "providers"], "resolve": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token"], "getTokenExtendsChain": ["token"], "getBaseClasses": ["target"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"] } };
-    return Container;
-}());
-exports.Container = Container;
-
-
-});
-
-unwrapExports(Container_1);
-var Container_2 = Container_1.Container;
-
 var DefaultContainerBuilder_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -6342,6 +6337,12 @@ var DefaultContainerBuilder = /** @class */ (function () {
         return injTypes;
     };
     DefaultContainerBuilder.prototype.getInjectorChain = function (container) {
+        if (!container.has(injectors.ModuleInjectorChainToken)) {
+            container.register(injectors.SyncModuleInjector)
+                .register(injectors.ModuleInjector)
+                .bindProvider(injectors.IocExtModuleValidateToken, new injectors.IocExtModuleValidate())
+                .bindProvider(injectors.ModuleInjectorChainToken, new injectors.ModuleInjectorChain());
+        }
         var currChain = container.get(injectors.ModuleInjectorChainToken);
         if (this.injectorChain !== currChain) {
             this.injectorChain = null;
