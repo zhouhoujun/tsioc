@@ -528,7 +528,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             let types = await buider.loader.loadTypes(config.imports);
             let mdls = [];
             types.forEach(tys => {
-                if (!tys || tys.length) {
+                if (!tys || tys.length < 1) {
                     return;
                 }
                 let exdi = tys.filter(it => this.isIocExt(it) || this.isDIModule(it));

@@ -1,4 +1,4 @@
-import { Registration, IContainer, Type, Token } from '@ts-ioc/core';
+import { Registration, IContainer, Token } from '@ts-ioc/core';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { MdInstance, LoadedModule } from './ModuleType';
 import { ContainerPool } from './ContainerPool';

@@ -1425,17 +1425,30 @@ var ModuleBuilder = /** @class */ (function () {
     };
     ModuleBuilder.prototype.registerConfgureDepds = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var buider, mdls;
+            var buider, types, mdls_1;
             var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         if (!(core_1.isArray(config.imports) && config.imports.length)) return [3 /*break*/, 3];
                         buider = container.getBuilder();
-                        return [4 /*yield*/, buider.loader.loadTypes(config.imports, function (it) { return _this.isIocExt(it) || _this.isDIModule(it); })];
+                        return [4 /*yield*/, buider.loader.loadTypes(config.imports)];
                     case 1:
-                        mdls = _a.sent();
-                        return [4 /*yield*/, Promise.all(mdls.map(function (md) { return _this.importModule(md, container); }))];
+                        types = _a.sent();
+                        mdls_1 = [];
+                        types.forEach(function (tys) {
+                            if (!tys || tys.length < 1) {
+                                return;
+                            }
+                            var exdi = tys.filter(function (it) { return _this.isIocExt(it) || _this.isDIModule(it); });
+                            if (exdi.length) {
+                                mdls_1 = mdls_1.concat(exdi);
+                            }
+                            else {
+                                mdls_1 = mdls_1.concat(tys);
+                            }
+                        });
+                        return [4 /*yield*/, Promise.all(mdls_1.map(function (md) { return _this.importModule(md, container); }))];
                     case 2:
                         _a.sent();
                         _a.label = 3;
