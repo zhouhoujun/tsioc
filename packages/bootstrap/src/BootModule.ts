@@ -1,9 +1,10 @@
 import { IContainer, Inject, ContainerToken, LifeScopeToken, IocExt, CoreActions } from '@ts-ioc/core';
 import { DIModule, Bootstrap } from './decorators';
-import { ModuleBuilder } from './ModuleBuilder';
-import { DefaultApplicationBuilder } from './ApplicationBuilder';
-import { AnnotationBuilder } from './AnnotationBuilder';
-import { MetaAccessor } from './MetaAccessor';
+import { ModuleBuilder } from './modules';
+import { DefaultApplicationBuilder } from './boot';
+import { AnnotationBuilder, MetaAccessor } from './annotations';
+
+
 /**
  * Bootstrap ext for ioc. auto run setup after registered.
  * with @IocExt('setup') decorator.

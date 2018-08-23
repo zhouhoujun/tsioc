@@ -84,8 +84,8 @@ export namespace PromiseUtil {
                     });
             });
             pf.catch(err => {
-                console.log(err);
-            })
+                return err;
+            });
         } else {
             defer.reject('promises array empty.');
         }

@@ -2,9 +2,9 @@ import {
     ClassMetadata, Token, MetadataAdapter,
     MetadataExtends, ITypeDecorator, Type, isClass, isFunction, LoadType, isObject
 } from '@ts-ioc/core';
-import { AppConfigure } from '../AppConfigure';
-import { IAnnotationBuilder } from '../IAnnotationBuilder';
-import { IApplicationBuilder } from '../IApplicationBuilder';
+import { AppConfigure } from '../boot/AppConfigure';
+import { IApplicationBuilder } from '../boot/IApplicationBuilder';
+import { IAnnotationBuilder } from '../annotations/IAnnotationBuilder';
 import { createDIModuleDecorator } from './DIModule';
 
 

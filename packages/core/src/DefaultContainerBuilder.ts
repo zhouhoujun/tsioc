@@ -2,8 +2,7 @@ import { IContainer } from './IContainer';
 import { Container } from './Container';
 import { Type, Modules, LoadType, Express } from './types';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { hasOwnClassMetadata, IocExt } from './core';
-import { IModuleLoader, ModuleLoaderToken, DefaultModuleLoader, IModuleInjectorChain, ModuleInjectorChainToken, SyncModuleInjector } from './injectors';
+import { IModuleLoader, ModuleLoaderToken, DefaultModuleLoader, IModuleInjectorChain, ModuleInjectorChainToken, SyncModuleInjector, IocExtModuleValidateToken, SyncModuleInjectorToken } from './injectors';
 import { PromiseUtil } from './utils';
 
 /**
@@ -17,9 +16,8 @@ export class DefaultContainerBuilder implements IContainerBuilder {
 
     private _loader: IModuleLoader;
     filter: Express<Type<any>, boolean>;
-    constructor(loader?: IModuleLoader, filter?: Express<Type<any>, boolean>) {
+    constructor(loader?: IModuleLoader) {
         this._loader = loader;
-        this.filter = filter || (it => hasOwnClassMetadata(IocExt, it))
     }
 
     get loader(): IModuleLoader {
@@ -104,8 +102,9 @@ export class DefaultContainerBuilder implements IContainerBuilder {
         }
         if (!this.injectorChain) {
             this.injectorChain = currChain;
-            this.injectorChain.next(new SyncModuleInjector(this.filter))
-                .next(new SyncModuleInjector());
+            this.injectorChain
+                .next(container.resolve(SyncModuleInjectorToken, { validate: container.get(IocExtModuleValidateToken) }))
+                .next(container.resolve(SyncModuleInjectorToken));
         }
 
         return this.injectorChain;

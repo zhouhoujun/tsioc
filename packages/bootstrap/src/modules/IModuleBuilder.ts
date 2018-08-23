@@ -1,10 +1,9 @@
 import { Registration, IContainer, Token } from '@ts-ioc/core';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { MdInstance, LoadedModule } from './ModuleType';
-import { ContainerPool } from './ContainerPool';
-import { IService } from './Service';
-import { IRunner } from './IRunner';
-
+import { ContainerPool } from '../utils';
+import { Runnable } from '../runnable';
+import { InjectedModule } from './InjectedModule';
 
 const moduleBuilderDesc = 'DI_ModuleBuilder';
 
@@ -25,12 +24,8 @@ export class InjectModuleBuilderToken<T> extends Registration<IModuleBuilder<T>>
 /**
  * load default container or, loaded module.
  */
-export type ModuleEnv = IContainer | LoadedModule;
+export type ModuleEnv = IContainer | InjectedModule<any>;
 
-/**
- * runn able.
- */
-export type Runnable<T> = T | IService<T> | IRunner<T>;
 
 /**
  * Generics module builder insterface.
@@ -56,35 +51,17 @@ export interface IModuleBuilder<T> {
      * @memberof IModuleBuilder
      */
     setPools(pools: ContainerPool);
-    /**
-     * get container of the module.
-     *
-     * @param {(Token<T> | ModuleConfigure)} token module type or module configuration.
-     * @param {ModuleEnv} [defaults] set loadedModule will return loaded container; set default container or not. not set will create new container.
-     * @param {IContainer} [parent] set the container parent, default will set root default container.
-     * @returns {IContainer}
-     * @memberof IModuleBuilder
-     */
-    getContainer(token: Token<T> | ModuleConfigure, defaults?: ModuleEnv, parent?: IContainer): IContainer;
 
-    /**
-     * create new container.
-     *
-     * @returns {IContainer}
-     * @memberof IModuleBuilder
-     */
-    createContainer(): IContainer;
-
-    /**
-     * load module depdences.
-     *
-     * @param {(Token<T> | ModuleConfigure)} token
-     * @param {ModuleEnv} [env] set loadedModule will return loaded container; set default container or not. not set will create new container.
-     * @param {IContainer} [parent] set the container parent, default will set root default container.
-     * @returns {Promise<LoadedModule>}
-     * @memberof IModuleBuilder
-     */
-    load(token: Token<T> | ModuleConfigure, env?: ModuleEnv, parent?: IContainer): Promise<LoadedModule>;
+    // /**
+    //  * load module depdences.
+    //  *
+    //  * @param {(Token<T> | ModuleConfigure)} token
+    //  * @param {ModuleEnv} [env] set loadedModule will return loaded container; set default container or not. not set will create new container.
+    //  * @param {IContainer} [parent] set the container parent, default will set root default container.
+    //  * @returns {Promise<LoadedModule>}
+    //  * @memberof IModuleBuilder
+    //  */
+    // load(token: Token<T> | ModuleConfigure, env?: ModuleEnv, parent?: IContainer): Promise<LoadedModule>;
 
     /**
      * build module as ioc container.

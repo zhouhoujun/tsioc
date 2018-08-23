@@ -1,9 +1,9 @@
 import { AppConfigure, AppConfigureToken, DefaultConfigureToken, AppConfigureLoaderToken } from './AppConfigure';
-import { IContainer, LoadType, lang, isString, MapSet, Factory, Token, isUndefined } from '@ts-ioc/core';
+import { IContainer, LoadType, lang, isString, MapSet, Factory, Token, isUndefined, DefaultContainerBuilder, IContainerBuilder } from '@ts-ioc/core';
 import { IApplicationBuilder, CustomRegister, AnyApplicationBuilder } from './IApplicationBuilder';
-import { ModuleBuilder } from './ModuleBuilder';
-import { ModuleBuilderToken } from './IModuleBuilder';
-import { ContainerPool, ContainerPoolToken } from './ContainerPool';
+import { ModuleBuilderToken, ModuleBuilder } from '../modules';
+import { ContainerPool, ContainerPoolToken } from '../utils';
+import { BootModule } from '../BootModule';
 
 
 /**
@@ -31,6 +31,22 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
 
     static create(baseURL?: string): AnyApplicationBuilder {
         return new DefaultApplicationBuilder<any>(baseURL);
+    }
+
+    protected createContainer(): IContainer {
+        return this.getContainerBuilder().create();
+    }
+
+    protected containerBuilder: IContainerBuilder;
+    getContainerBuilder() {
+        if (!this.containerBuilder) {
+            this.containerBuilder = this.createContainerBuilder();
+        }
+        return this.containerBuilder;
+    }
+
+    protected createContainerBuilder(): IContainerBuilder {
+        return new DefaultContainerBuilder();
     }
 
     /**
@@ -132,7 +148,9 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
 
 
     protected regDefaultContainer() {
-        let container = super.regDefaultContainer();
+        let container = this.createContainer();
+        container.register(BootModule);
+        this.pools.setDefault(container);
         container.bindProvider(ContainerPoolToken, () => this.getPools());
         container.resolve(ModuleBuilderToken).setPools(this.getPools());
         return container;

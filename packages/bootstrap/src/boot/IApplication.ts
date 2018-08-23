@@ -1,5 +1,5 @@
 import { AppConfigure } from './AppConfigure';
-import { IService } from './Service';
+import { IService } from '../runnable';
 
 
 /**

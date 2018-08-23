@@ -1,4 +1,4 @@
-import { ModuleConfig } from './ModuleConfigure';
+import { AnnotationConfigure } from './AnnotationConfigure';
 
 
 
@@ -13,11 +13,11 @@ export interface BeforeAnnotationInit<T> {
     /**
      * before annotation class init.
      *
-     * @param {ModuleConfig<T>} [config]
+     * @param {AnnotationConfigure<T>} [config]
      * @returns {(void | Promise<any>)}
      * @memberof OnAnnotationCreate
      */
-    anBeforeInit(config?: ModuleConfig<T>): void | Promise<any>;
+    anBeforeInit(config?: AnnotationConfigure<T>): void | Promise<any>;
 }
 
 /**
@@ -35,7 +35,7 @@ export interface AfterAnnotationInit<T> {
      * @returns {(void | Promise<any>)}
      * @memberof AfterAnnotationInit
      */
-    anAfterInit(config?: ModuleConfig<T>): void | Promise<any>;
+    anAfterInit(config?: AnnotationConfigure<T>): void | Promise<any>;
 }
 
 /**

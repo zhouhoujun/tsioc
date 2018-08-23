@@ -1,7 +1,7 @@
 import { createClassDecorator, ClassMetadata, Token, MetadataAdapter, MetadataExtends, ITypeDecorator, isClass } from '@ts-ioc/core';
-import { IModuleBuilder } from '../IModuleBuilder';
-import { ModuleConfig } from '../ModuleConfigure';
-import { IAnnotationBuilder } from '../IAnnotationBuilder';
+import { IModuleBuilder } from '../modules/IModuleBuilder';
+import { ModuleConfig } from '../modules/ModuleConfigure';
+import { IAnnotationBuilder } from '../annotations/IAnnotationBuilder';
 
 /**
  * DI module metadata.

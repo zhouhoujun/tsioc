@@ -1,5 +1,5 @@
-import { ObjectMap } from '../types';
-import { isArray, isObject, isFunction } from './typeCheck';
+import { ObjectMap, Type } from '../types';
+import { isArray, isObject, isFunction, isClass } from './typeCheck';
 import * as objPonyfill from 'object.assign';
 
 objPonyfill.shim();
@@ -142,6 +142,18 @@ export namespace lang {
                 return false;
             }
         })
+    }
+
+    /**
+     * get target type parent class.
+     *
+     * @export
+     * @param {Type<any>} target
+     * @returns {Type<any>}
+     */
+    export function getParentClass(target: Type<any>): Type<any> {
+        let p = Reflect.getPrototypeOf(target.prototype);
+        return isClass(p) ? p : p.constructor as Type<any>;
     }
 
 

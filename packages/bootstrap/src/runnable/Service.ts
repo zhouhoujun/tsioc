@@ -1,5 +1,5 @@
 import { Token, Registration } from '@ts-ioc/core';
-import { ModuleConfigure } from './ModuleConfigure';
+import { ModuleConfigure } from '../modules';
 
 /**
  * IService interface

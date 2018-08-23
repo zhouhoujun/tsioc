@@ -87,6 +87,26 @@ export class ContainerPool {
     has(token: Token<any>): boolean {
         return this.pools.has(this.getTokenKey(token));
     }
+
+    create(parent?: IContainer): IContainer {
+        parent = parent || this.getDefault();
+        let container = parent.getBuilder().create();
+        this.setParent(container, parent);
+        return container;
+    }
+
+    setParent(container: IContainer, parent?: IContainer) {
+        if (this.isDefault(container)) {
+            return;
+        }
+        if (!container.parent) {
+            if (parent && parent !== container) {
+                container.parent = parent;
+            } else {
+                container.parent = this.getDefault();
+            }
+        }
+    }
 }
 
 export const ContainerPoolToken = new InjectToken<ContainerPool>('ContainerPool');

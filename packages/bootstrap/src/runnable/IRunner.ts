@@ -1,5 +1,5 @@
 import { Registration, Token } from '@ts-ioc/core';
-import { ModuleConfigure } from './ModuleConfigure';
+import { ModuleConfigure } from '../modules';
 
 /**
  * application runer.

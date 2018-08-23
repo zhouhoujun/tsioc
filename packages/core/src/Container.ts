@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
 import { Type, Token, Factory, SymbolType, ToInstance, IocState, Providers, Modules, LoadType } from './types';
 import { Registration } from './Registration';
-import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet } from './utils';
+import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet, lang } from './utils';
 
 import { MethodAccessorToken } from './IMethodAccessor';
 import { ActionComponent, CoreActions, CacheActionData, LifeState } from './core';
@@ -11,7 +11,7 @@ import { IParameter } from './IParameter';
 import { CacheManagerToken } from './ICacheManager';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { registerCores } from './registerCores';
-import { ModuleInjectorChainToken, ModuleInjectorChain } from './injectors';
+import { ModuleInjectorChainToken, ModuleInjectorChain, IocExtModuleValidate, IocExtModuleValidateToken, SyncModuleInjector, ModuleInjector, ModuleInjectorToken, SyncModuleInjectorToken } from './injectors';
 
 /**
  * Container
@@ -326,8 +326,7 @@ export class Container implements IContainer {
         let types: Type<any>[] = [];
         while (isClass(target) && target !== Object) {
             types.push(target);
-            let p = Reflect.getPrototypeOf(target.prototype);
-            target = isClass(p) ? p : p.constructor;
+            target = lang.getParentClass(target);
         }
         return types;
     }
@@ -417,8 +416,10 @@ export class Container implements IContainer {
         this.bindProvider(ContainerToken, () => this);
 
         registerCores(this);
-
-        this.bindProvider(ModuleInjectorChainToken, new ModuleInjectorChain())
+        this.register(SyncModuleInjector)
+            .register(ModuleInjector)
+            .bindProvider(IocExtModuleValidateToken, new IocExtModuleValidate())
+            .bindProvider(ModuleInjectorChainToken, new ModuleInjectorChain())
     }
 
     protected registerFactory<T>(token: Token<T>, value?: Factory<T>, singleton?: boolean) {

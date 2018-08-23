@@ -1,5 +1,5 @@
-import { ModuleConfig, ModuleConfigure } from './ModuleConfigure';
-import { Registration, Token, Injectable, getTypeMetadata, Inject, ContainerToken, IContainer, isClass } from '@ts-ioc/core';
+import { Registration, Token, Injectable, getTypeMetadata, IContainer, isClass } from '@ts-ioc/core';
+import { AnnotationConfigure } from './AnnotationConfigure';
 
 /**
  * module metadata accessor
@@ -14,10 +14,10 @@ export interface IMetaAccessor<T> {
      *
      * @param {IContainer} container
      * @param {Token<T>} type
-     * @returns {ModuleConfig<T>}
+     * @returns {AnnotationConfigure<T>}
      * @memberof IMetaAccessor
      */
-    get(container: IContainer, type: Token<T>): ModuleConfig<T>;
+    get(container: IContainer, type: Token<T>): AnnotationConfigure<T>;
 }
 
 /**
@@ -46,10 +46,10 @@ export class MetaAccessor implements IMetaAccessor<any> {
 
     }
 
-    get(container: IContainer, token: Token<any>): ModuleConfig<any> {
+    get(container: IContainer, token: Token<any>): AnnotationConfigure<any> {
         let type = isClass(token) ? token : container.getTokenImpl(token);
         if (isClass(type)) {
-            let metas = getTypeMetadata<ModuleConfigure>(this.decorator, type);
+            let metas = getTypeMetadata<AnnotationConfigure<any>>(this.decorator, type);
             if (metas && metas.length) {
                 let meta = metas[0];
                 return meta;

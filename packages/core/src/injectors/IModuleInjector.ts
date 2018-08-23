@@ -1,6 +1,6 @@
-import { InjectToken } from '../InjectToken';
 import { Type } from '../types';
 import { IContainer } from '../IContainer';
+import { Registration } from '../Registration';
 
 /**
  * module injector.
@@ -21,6 +21,20 @@ export interface IModuleInjector {
 }
 
 /**
- * module fileter token.
+ *  inject module injector token.
  */
-export const ModuleInjectorToken = new InjectToken<IModuleInjector>('DI_ModuleInjector');
+export class InjectModuleInjectorToken<T extends IModuleInjector> extends Registration<T> {
+    constructor(desc: string, sync = false) {
+        super(sync ? 'DI_SyncModuleInjector' : 'DI_ModuleInjector', desc)
+    }
+}
+
+/**
+ * async module injector token.
+ */
+export const ModuleInjectorToken = new InjectModuleInjectorToken<IModuleInjector>('');
+
+/**
+ * Sync module injector token.
+ */
+export const SyncModuleInjectorToken = new InjectModuleInjectorToken<IModuleInjector>('', true);

@@ -1,7 +1,7 @@
 import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import { Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, hasOwnClassMetadata, getTypeMetadata, lang, isFunction, Injectable } from '@ts-ioc/core';
 import { AnnotationConfigure } from './AnnotationConfigure';
-import { Annotation } from './decorators';
+import { Annotation } from '../decorators';
 import { AnnoInstance } from './IAnnotation';
 
 /**

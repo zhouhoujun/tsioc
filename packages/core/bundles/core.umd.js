@@ -761,6 +761,18 @@ var lang;
     }
     lang.find = find;
     /**
+     * get target type parent class.
+     *
+     * @export
+     * @param {Type<any>} target
+     * @returns {Type<any>}
+     */
+    function getParentClass(target) {
+        var p = Reflect.getPrototypeOf(target.prototype);
+        return typeCheck.isClass(p) ? p : p.constructor;
+    }
+    lang.getParentClass = getParentClass;
+    /**
      * first.
      *
      * @export
@@ -1418,7 +1430,7 @@ var PromiseUtil;
                 });
             });
             pf.catch(function (err) {
-                console.log(err);
+                return err;
             });
         }
         else {
@@ -5431,24 +5443,153 @@ exports.DefaultModuleLoader = DefaultModuleLoader;
 unwrapExports(DefaultModuleLoader_1);
 var DefaultModuleLoader_2 = DefaultModuleLoader_1.DefaultModuleLoader;
 
+var IModuleValidate = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+var InjectModuleValidateToken = /** @class */ (function (_super) {
+    tslib_1.__extends(InjectModuleValidateToken, _super);
+    function InjectModuleValidateToken(desc) {
+        return _super.call(this, 'DI_ModuleValidate', desc) || this;
+    }
+    InjectModuleValidateToken.classAnnations = { "name": "InjectModuleValidateToken", "params": { "constructor": ["desc"] } };
+    return InjectModuleValidateToken;
+}(Registration_1.Registration));
+exports.InjectModuleValidateToken = InjectModuleValidateToken;
+/**
+ * Module Validate Token
+ */
+exports.ModuleValidateToken = new InjectToken_1.InjectToken('DI_ModuleValidate');
+
+
+});
+
+unwrapExports(IModuleValidate);
+var IModuleValidate_1 = IModuleValidate.InjectModuleValidateToken;
+var IModuleValidate_2 = IModuleValidate.ModuleValidateToken;
+
+var ModuleValidate = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+/**
+ * base module validate.
+ *
+ * @export
+ * @abstract
+ * @class BaseModuelValidate
+ * @implements {IModuleValidate}
+ */
+var BaseModuelValidate = /** @class */ (function () {
+    function BaseModuelValidate() {
+    }
+    BaseModuelValidate.prototype.validate = function (type) {
+        return utils.isClass(type) && core.hasOwnClassMetadata(this.getDecorator(), type);
+    };
+    BaseModuelValidate.classAnnations = { "name": "BaseModuelValidate", "params": { "constructor": [], "validate": ["type"], "getDecorator": [] } };
+    return BaseModuelValidate;
+}());
+exports.BaseModuelValidate = BaseModuelValidate;
+/**
+ * IocExt module validate token.
+ */
+exports.IocExtModuleValidateToken = new IModuleValidate.InjectModuleValidateToken(core.IocExt.toString());
+/**
+ * IocExt module validate.
+ *
+ * @export
+ * @class IocExtModuleValidate
+ * @extends {BaseModuelValidate}
+ * @implements {IModuleValidate}
+ */
+var IocExtModuleValidate = /** @class */ (function (_super) {
+    tslib_1.__extends(IocExtModuleValidate, _super);
+    function IocExtModuleValidate() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    IocExtModuleValidate.prototype.getDecorator = function () {
+        return core.IocExt.toString();
+    };
+    IocExtModuleValidate.classAnnations = { "name": "IocExtModuleValidate", "params": { "getDecorator": [] } };
+    return IocExtModuleValidate;
+}(BaseModuelValidate));
+exports.IocExtModuleValidate = IocExtModuleValidate;
+
+
+});
+
+unwrapExports(ModuleValidate);
+var ModuleValidate_1 = ModuleValidate.BaseModuelValidate;
+var ModuleValidate_2 = ModuleValidate.IocExtModuleValidateToken;
+var ModuleValidate_3 = ModuleValidate.IocExtModuleValidate;
+
 var IModuleInjector = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
+
 /**
- * module fileter token.
+ *  inject module injector token.
  */
-exports.ModuleInjectorToken = new InjectToken_1.InjectToken('DI_ModuleInjector');
+var InjectModuleInjectorToken = /** @class */ (function (_super) {
+    tslib_1.__extends(InjectModuleInjectorToken, _super);
+    function InjectModuleInjectorToken(desc, sync) {
+        if (sync === void 0) { sync = false; }
+        return _super.call(this, sync ? 'DI_SyncModuleInjector' : 'DI_ModuleInjector', desc) || this;
+    }
+    InjectModuleInjectorToken.classAnnations = { "name": "InjectModuleInjectorToken", "params": { "constructor": ["desc", "sync"] } };
+    return InjectModuleInjectorToken;
+}(Registration_1.Registration));
+exports.InjectModuleInjectorToken = InjectModuleInjectorToken;
+/**
+ * async module injector token.
+ */
+exports.ModuleInjectorToken = new InjectModuleInjectorToken('');
+/**
+ * Sync module injector token.
+ */
+exports.SyncModuleInjectorToken = new InjectModuleInjectorToken('', true);
 
 
 });
 
 unwrapExports(IModuleInjector);
-var IModuleInjector_1 = IModuleInjector.ModuleInjectorToken;
+var IModuleInjector_1 = IModuleInjector.InjectModuleInjectorToken;
+var IModuleInjector_2 = IModuleInjector.ModuleInjectorToken;
+var IModuleInjector_3 = IModuleInjector.SyncModuleInjectorToken;
 
 var ModuleInjector_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
+
+
+/**
+ * base module injector. abstract class.
+ *
+ * @export
+ * @abstract
+ * @class BaseModuleInjector
+ * @implements {IModuleInjector}
+ */
+var BaseModuleInjector = /** @class */ (function () {
+    function BaseModuleInjector(validate) {
+        this.validate = validate;
+    }
+    BaseModuleInjector.prototype.filter = function (modules) {
+        var _this = this;
+        modules = modules || [];
+        return this.validate ? modules.filter(function (md) { return _this.validate.validate(md); }) : modules;
+    };
+    BaseModuleInjector.prototype.setup = function (container, type) {
+        container.register(type);
+    };
+    BaseModuleInjector.classAnnations = { "name": "BaseModuleInjector", "params": { "constructor": ["validate"], "inject": ["container", "modules"], "filter": ["modules"], "setup": ["container", "type"] } };
+    return BaseModuleInjector;
+}());
+exports.BaseModuleInjector = BaseModuleInjector;
 /**
  * sync module injector.
  *
@@ -5456,14 +5597,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @class ModuleInjector
  * @implements {IModuleInjector}
  */
-var SyncModuleInjector = /** @class */ (function () {
-    function SyncModuleInjector(filter) {
-        this.filter = filter;
+var SyncModuleInjector = /** @class */ (function (_super) {
+    tslib_1.__extends(SyncModuleInjector, _super);
+    function SyncModuleInjector(validate) {
+        var _this = _super.call(this, validate) || this;
+        _this.validate = validate;
+        return _this;
     }
     SyncModuleInjector.prototype.inject = function (container, modules) {
         var _this = this;
-        modules = modules || [];
-        var types = this.filter ? modules.filter(this.filter) : modules;
+        var types = this.filter(modules);
         if (types.length) {
             types.forEach(function (ty) {
                 _this.setup(container, ty);
@@ -5471,12 +5614,13 @@ var SyncModuleInjector = /** @class */ (function () {
         }
         return types;
     };
-    SyncModuleInjector.prototype.setup = function (container, type) {
-        container.register(type);
-    };
-    SyncModuleInjector.classAnnations = { "name": "SyncModuleInjector", "params": { "constructor": ["filter"], "inject": ["container", "modules"], "setup": ["container", "type"] } };
+    SyncModuleInjector.classAnnations = { "name": "SyncModuleInjector", "params": { "constructor": ["validate"], "inject": ["container", "modules"] } };
+    SyncModuleInjector = tslib_1.__decorate([
+        core.Injectable(IModuleInjector.SyncModuleInjectorToken),
+        tslib_1.__metadata("design:paramtypes", [Object])
+    ], SyncModuleInjector);
     return SyncModuleInjector;
-}());
+}(BaseModuleInjector));
 exports.SyncModuleInjector = SyncModuleInjector;
 /**
  * module injector.
@@ -5485,9 +5629,12 @@ exports.SyncModuleInjector = SyncModuleInjector;
  * @class ModuleInjector
  * @implements {IModuleInjector}
  */
-var ModuleInjector = /** @class */ (function () {
-    function ModuleInjector(filter) {
-        this.filter = filter;
+var ModuleInjector = /** @class */ (function (_super) {
+    tslib_1.__extends(ModuleInjector, _super);
+    function ModuleInjector(validate) {
+        var _this = _super.call(this, validate) || this;
+        _this.validate = validate;
+        return _this;
     }
     ModuleInjector.prototype.inject = function (container, modules) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
@@ -5496,8 +5643,7 @@ var ModuleInjector = /** @class */ (function () {
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        modules = modules || [];
-                        types = this.filter ? modules.filter(this.filter) : modules;
+                        types = this.filter(modules);
                         if (!types.length) return [3 /*break*/, 2];
                         return [4 /*yield*/, utils.PromiseUtil.forEach(types.map(function (ty) {
                                 return _this.setup(container, ty);
@@ -5510,25 +5656,22 @@ var ModuleInjector = /** @class */ (function () {
             });
         });
     };
-    ModuleInjector.prototype.setup = function (container, type) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            return tslib_1.__generator(this, function (_a) {
-                container.register(type);
-                return [2 /*return*/];
-            });
-        });
-    };
-    ModuleInjector.classAnnations = { "name": "ModuleInjector", "params": { "constructor": ["filter"], "inject": ["container", "modules"], "setup": ["container", "type"] } };
+    ModuleInjector.classAnnations = { "name": "ModuleInjector", "params": { "constructor": ["validate"], "inject": ["container", "modules"] } };
+    ModuleInjector = tslib_1.__decorate([
+        core.Injectable(IModuleInjector.ModuleInjectorToken),
+        tslib_1.__metadata("design:paramtypes", [Object])
+    ], ModuleInjector);
     return ModuleInjector;
-}());
+}(BaseModuleInjector));
 exports.ModuleInjector = ModuleInjector;
 
 
 });
 
 unwrapExports(ModuleInjector_1);
-var ModuleInjector_2 = ModuleInjector_1.SyncModuleInjector;
-var ModuleInjector_3 = ModuleInjector_1.ModuleInjector;
+var ModuleInjector_2 = ModuleInjector_1.BaseModuleInjector;
+var ModuleInjector_3 = ModuleInjector_1.SyncModuleInjector;
+var ModuleInjector_4 = ModuleInjector_1.ModuleInjector;
 
 var IModuleInjectorChain = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -5613,6 +5756,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(IModuleLoader, exports);
 tslib_1.__exportStar(DefaultModuleLoader_1, exports);
+tslib_1.__exportStar(IModuleValidate, exports);
+tslib_1.__exportStar(ModuleValidate, exports);
 tslib_1.__exportStar(IModuleInjector, exports);
 tslib_1.__exportStar(ModuleInjector_1, exports);
 tslib_1.__exportStar(IModuleInjectorChain, exports);
@@ -5944,8 +6089,7 @@ var Container = /** @class */ (function () {
         var types$$1 = [];
         while (utils.isClass(target) && target !== Object) {
             types$$1.push(target);
-            var p = Reflect.getPrototypeOf(target.prototype);
-            target = utils.isClass(p) ? p : p.constructor;
+            target = utils.lang.getParentClass(target);
         }
         return types$$1;
     };
@@ -6055,7 +6199,10 @@ var Container = /** @class */ (function () {
         this.provideTypes = new utils.MapSet();
         this.bindProvider(IContainer.ContainerToken, function () { return _this; });
         registerCores_1.registerCores(this);
-        this.bindProvider(injectors.ModuleInjectorChainToken, new injectors.ModuleInjectorChain());
+        this.register(injectors.SyncModuleInjector)
+            .register(injectors.ModuleInjector)
+            .bindProvider(injectors.IocExtModuleValidateToken, new injectors.IocExtModuleValidate())
+            .bindProvider(injectors.ModuleInjectorChainToken, new injectors.ModuleInjectorChain());
     };
     Container.prototype.registerFactory = function (token, value, singleton) {
         var key = this.getTokenKey(token);
@@ -6213,7 +6360,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-
 /**
  * default container builder.
  *
@@ -6222,9 +6368,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @implements {IContainerBuilder}
  */
 var DefaultContainerBuilder = /** @class */ (function () {
-    function DefaultContainerBuilder(loader, filter) {
+    function DefaultContainerBuilder(loader) {
         this._loader = loader;
-        this.filter = filter || (function (it) { return core.hasOwnClassMetadata(core.IocExt, it); });
     }
     Object.defineProperty(DefaultContainerBuilder.prototype, "loader", {
         get: function () {
@@ -6349,12 +6494,13 @@ var DefaultContainerBuilder = /** @class */ (function () {
         }
         if (!this.injectorChain) {
             this.injectorChain = currChain;
-            this.injectorChain.next(new injectors.SyncModuleInjector(this.filter))
-                .next(new injectors.SyncModuleInjector());
+            this.injectorChain
+                .next(container.resolve(injectors.SyncModuleInjectorToken, { validate: container.get(injectors.IocExtModuleValidateToken) }))
+                .next(container.resolve(injectors.SyncModuleInjectorToken));
         }
         return this.injectorChain;
     };
-    DefaultContainerBuilder.classAnnations = { "name": "DefaultContainerBuilder", "params": { "constructor": ["loader", "filter"], "create": [], "build": ["modules"], "loadModule": ["container", "modules"], "syncBuild": ["modules"], "syncLoadModule": ["container", "modules"], "getInjectorChain": ["container"] } };
+    DefaultContainerBuilder.classAnnations = { "name": "DefaultContainerBuilder", "params": { "constructor": ["loader"], "create": [], "build": ["modules"], "loadModule": ["container", "modules"], "syncBuild": ["modules"], "syncLoadModule": ["container", "modules"], "getInjectorChain": ["container"] } };
     return DefaultContainerBuilder;
 }());
 exports.DefaultContainerBuilder = DefaultContainerBuilder;

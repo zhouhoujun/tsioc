@@ -74,10 +74,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 var ContainerBuilder = /** @class */ (function (_super) {
     tslib_1.__extends(ContainerBuilder, _super);
-    function ContainerBuilder(loader, filter) {
-        return _super.call(this, loader || new BrowserModuleLoader_1.BrowserModuleLoader(), filter) || this;
+    function ContainerBuilder(loader) {
+        return _super.call(this, loader || new BrowserModuleLoader_1.BrowserModuleLoader()) || this;
     }
-    ContainerBuilder.classAnnations = { "name": "ContainerBuilder", "params": { "constructor": ["loader", "filter"] } };
+    ContainerBuilder.classAnnations = { "name": "ContainerBuilder", "params": { "constructor": ["loader"] } };
     return ContainerBuilder;
 }(core_1.DefaultContainerBuilder));
 exports.ContainerBuilder = ContainerBuilder;

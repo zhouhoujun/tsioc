@@ -1,6 +1,6 @@
-import { Token, LoadType, Providers, IContainer } from '@ts-ioc/core';
+import { Token, LoadType, Providers, IContainer, Registration, Type } from '@ts-ioc/core';
 import { IModuleBuilder } from './IModuleBuilder';
-import { AnnotationConfigure } from './AnnotationConfigure';
+import { AnnotationConfigure } from '../annotations';
 
 
 /**
@@ -79,4 +79,3 @@ export interface ModuleConfig<T> extends AnnotationConfigure<T> {
 export interface ModuleConfigure extends ModuleConfig<any> {
 
 }
-

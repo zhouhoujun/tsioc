@@ -1,4 +1,4 @@
-import { IModuleLoader, DefaultContainerBuilder, Express, Type } from '@ts-ioc/core';
+import { IModuleLoader, DefaultContainerBuilder } from '@ts-ioc/core';
 import { BrowserModuleLoader } from './BrowserModuleLoader';
 
 
@@ -10,7 +10,7 @@ import { BrowserModuleLoader } from './BrowserModuleLoader';
  * @extends {DefaultContainerBuilder}
  */
 export class ContainerBuilder extends DefaultContainerBuilder {
-    constructor(loader?: IModuleLoader, filter?: Express<Type<any>, boolean>) {
-        super(loader || new BrowserModuleLoader(), filter)
+    constructor(loader?: IModuleLoader) {
+        super(loader || new BrowserModuleLoader())
     }
 }

@@ -1,5 +1,5 @@
-import { ModuleConfigure } from './ModuleConfigure';
 import { ObjectMap, InjectToken } from '@ts-ioc/core';
+import { ModuleConfigure } from '../modules';
 
 
 /**
