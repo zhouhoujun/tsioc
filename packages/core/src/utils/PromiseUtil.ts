@@ -48,37 +48,31 @@ export class Defer<T> {
 
 export namespace PromiseUtil {
 
-    export function forEach<T>(promises: (T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[]) {
-        let result = Promise.resolve<T>(null);
-        promises.forEach(p => {
-            result = result.then(v => isFunction(p) ? p(v) : p);
-        });
-        return result;
-    }
-
     /**
-     * find first validate promise.
+     * foreach opter for promises.
      *
      * @export
      * @template T
-     * @param {(...(T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[])} promises
-     * @param {Express<T, boolean>} validate
+     * @param {((T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[])} promises
+     * @param {Express<T, any>} express
+     * @param {T} [defVal]
      * @returns
      */
-    export function first<T>(promises: (T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[], validate: Express<T, boolean>) {
-        let defer = new Defer<T>();
-        let pf = Promise.resolve<T>(null);
+    export function forEach<T>(promises: (T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[], express: Express<T, any>, defVal?: T) {
+        let defer = new Defer<string>();
+        let pf = Promise.resolve<T>(defVal);
         let length = promises ? promises.length : 0;
 
         if (length) {
             promises.forEach((p, idx) => {
                 pf = pf.then(v => isFunction(p) ? p(v) : p)
                     .then(data => {
-                        if (validate(data)) {
-                            defer.resolve(data);
-                            return Promise.reject<T>('found');
+                        if (express(data) === false) {
+                            defer.resolve('complete');
+                            return Promise.reject<T>('complete');
                         } else if (idx === length - 1) {
-                            return Promise.reject<T>('not found');
+                            defer.resolve('complete');
+                            return Promise.reject<T>('complete');
                         }
                         return data;
                     });
@@ -87,8 +81,49 @@ export namespace PromiseUtil {
                 return err;
             });
         } else {
-            defer.reject('promises array empty.');
+            defer.reject('array empty.');
         }
+        return defer.promise;
+    }
+
+    /**
+     * run promise step by step.
+     *
+     * @export
+     * @template T
+     * @param {((T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[])} promises
+     * @returns
+     */
+    export function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[]) {
+        let result = Promise.resolve<T>(null);
+        promises.forEach(p => {
+            result = result.then(v => isFunction(p) ? p(v) : p);
+        });
+        return result;
+    }
+
+    /**
+     * find first validate value from promises.
+     *
+     * @export
+     * @template T
+     * @param {(...(T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[])} promises
+     * @param {Express<T, boolean>} validate
+     * @returns
+     */
+    export function find<T>(promises: (T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[], filter: Express<T, boolean>, defVal?: T) {
+        let defer = new Defer<T>();
+        forEach(promises, val => {
+            if (filter(val)) {
+                defer.resolve(val);
+                return false;
+            }
+            return true;
+        }, defVal)
+            .then(() => defer.resolve(null))
+            .catch(() => {
+                defer.resolve(null)
+            });
         return defer.promise;
     }
 

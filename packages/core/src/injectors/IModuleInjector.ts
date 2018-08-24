@@ -3,6 +3,17 @@ import { IContainer } from '../IContainer';
 import { Registration } from '../Registration';
 
 /**
+ *  InjectorResult
+ *
+ * @export
+ * @interface InjectorResult
+ */
+export interface InjectorResult {
+    injected: Type<any>[];
+    next?: Type<any>[];
+}
+
+/**
  * module injector.
  *
  * @export

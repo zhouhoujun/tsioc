@@ -4,7 +4,12 @@ import { IApplicationBuilder, CustomRegister, AnyApplicationBuilder } from './IA
 import { ModuleBuilder, ModuleEnv, DIModuleInjectorToken, InjectedModule, IModuleBuilder, InjectModuleBuilderToken, DefaultModuleBuilderToken } from '../modules';
 import { ContainerPool, ContainerPoolToken } from '../utils';
 import { BootModule } from '../BootModule';
+import { EventEmitter } from 'events';
 
+export enum ApplicationEvents {
+    onRootContainerCreated = 'onRootContainerCreated',
+    onRootContainerInited = 'onRooConatianerInited'
+}
 
 /**
  * application builder.
@@ -22,12 +27,15 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
     protected configs: (string | AppConfigure)[];
     inited = false;
 
+    events: EventEmitter;
+
     constructor(public baseURL?: string) {
         super();
         this.customRegs = [];
         this.globalModules = [];
         this.configs = [];
         this.providers = new MapSet();
+        this.events = new EventEmitter();
     }
 
     static create(baseURL?: string): AnyApplicationBuilder {
@@ -37,7 +45,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
     getPools(): ContainerPool {
         if (!this.pools) {
             this.pools = new ContainerPool();
-            this.regDefaultContainer();
+            this.createDefaultContainer();
         }
         return this.pools;
     }
@@ -175,6 +183,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
             this.registerExts(container, globCfg);
             this.bindAppConfig(globCfg);
             container.bindProvider(AppConfigureToken, globCfg);
+            this.events.emit(ApplicationEvents.onRootContainerInited, container);
             this.inited = true;
         }
 
@@ -206,7 +215,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         return this.globalConfig;
     }
 
-    protected regDefaultContainer() {
+    protected createDefaultContainer() {
         let container = this.createContainer();
         container.register(BootModule);
         this.pools.setDefault(container);
@@ -214,6 +223,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         let chain = container.getBuilder().getInjectorChain(container);
         chain.first(container.resolve(DIModuleInjectorToken));
         container.bindProvider(ContainerPoolToken, () => this.getPools());
+        this.events.emit(ApplicationEvents.onRootContainerCreated, container);
         return container;
     }
 

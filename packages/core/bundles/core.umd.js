@@ -1394,37 +1394,31 @@ var Defer = /** @class */ (function () {
 exports.Defer = Defer;
 var PromiseUtil;
 (function (PromiseUtil) {
-    function forEach(promises) {
-        var result = Promise.resolve(null);
-        promises.forEach(function (p) {
-            result = result.then(function (v) { return typeCheck.isFunction(p) ? p(v) : p; });
-        });
-        return result;
-    }
-    PromiseUtil.forEach = forEach;
     /**
-     * find first validate promise.
+     * foreach opter for promises.
      *
      * @export
      * @template T
-     * @param {(...(T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[])} promises
-     * @param {Express<T, boolean>} validate
+     * @param {((T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[])} promises
+     * @param {Express<T, any>} express
+     * @param {T} [defVal]
      * @returns
      */
-    function first(promises, validate) {
+    function forEach(promises, express, defVal) {
         var defer = new Defer();
-        var pf = Promise.resolve(null);
+        var pf = Promise.resolve(defVal);
         var length = promises ? promises.length : 0;
         if (length) {
             promises.forEach(function (p, idx) {
                 pf = pf.then(function (v) { return typeCheck.isFunction(p) ? p(v) : p; })
                     .then(function (data) {
-                    if (validate(data)) {
-                        defer.resolve(data);
-                        return Promise.reject('found');
+                    if (express(data) === false) {
+                        defer.resolve('complete');
+                        return Promise.reject('complete');
                     }
                     else if (idx === length - 1) {
-                        return Promise.reject('not found');
+                        defer.resolve('complete');
+                        return Promise.reject('complete');
                     }
                     return data;
                 });
@@ -1434,11 +1428,52 @@ var PromiseUtil;
             });
         }
         else {
-            defer.reject('promises array empty.');
+            defer.reject('array empty.');
         }
         return defer.promise;
     }
-    PromiseUtil.first = first;
+    PromiseUtil.forEach = forEach;
+    /**
+     * run promise step by step.
+     *
+     * @export
+     * @template T
+     * @param {((T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[])} promises
+     * @returns
+     */
+    function step(promises) {
+        var result = Promise.resolve(null);
+        promises.forEach(function (p) {
+            result = result.then(function (v) { return typeCheck.isFunction(p) ? p(v) : p; });
+        });
+        return result;
+    }
+    PromiseUtil.step = step;
+    /**
+     * find first validate value from promises.
+     *
+     * @export
+     * @template T
+     * @param {(...(T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[])} promises
+     * @param {Express<T, boolean>} validate
+     * @returns
+     */
+    function find(promises, filter, defVal) {
+        var defer = new Defer();
+        forEach(promises, function (val) {
+            if (filter(val)) {
+                defer.resolve(val);
+                return false;
+            }
+            return true;
+        }, defVal)
+            .then(function () { return defer.resolve(null); })
+            .catch(function () {
+            defer.resolve(null);
+        });
+        return defer.promise;
+    }
+    PromiseUtil.find = find;
 })(PromiseUtil = exports.PromiseUtil || (exports.PromiseUtil = {}));
 
 
@@ -5396,7 +5431,7 @@ var Container = /** @class */ (function () {
      * has register type.
      *
      * @template T
-     * @param {SymbolType<T>} key
+     * @param {Token<T>} key
      * @returns
      * @memberof Container
      */
@@ -6163,18 +6198,37 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @implements {IModuleInjector}
  */
 var BaseModuleInjector = /** @class */ (function () {
-    function BaseModuleInjector(validate) {
+    /**
+     *Creates an instance of BaseModuleInjector.
+     * @param {IModuleValidate} [validate]
+     * @param {boolean} [skipNext] skip next when has match module to injector.
+     * @memberof BaseModuleInjector
+     */
+    function BaseModuleInjector(validate, skipNext) {
         this.validate = validate;
+        this.skipNext = skipNext;
     }
     BaseModuleInjector.prototype.filter = function (modules) {
         var _this = this;
         modules = modules || [];
         return this.validate ? modules.filter(function (md) { return _this.validate.validate(md); }) : modules;
     };
+    BaseModuleInjector.prototype.next = function (all, filtered) {
+        if (filtered.length === 0) {
+            return all;
+        }
+        if (this.skipNext) {
+            return null;
+        }
+        if (filtered.length === all.length) {
+            return null;
+        }
+        return all.filter(function (it) { return filtered.indexOf(it) < 0; });
+    };
     BaseModuleInjector.prototype.setup = function (container, type) {
         container.register(type);
     };
-    BaseModuleInjector.classAnnations = { "name": "BaseModuleInjector", "params": { "constructor": ["validate"], "inject": ["container", "modules"], "filter": ["modules"], "setup": ["container", "type"] } };
+    BaseModuleInjector.classAnnations = { "name": "BaseModuleInjector", "params": { "constructor": ["validate", "skipNext"], "inject": ["container", "modules"], "filter": ["modules"], "next": ["all", "filtered"], "setup": ["container", "type"] } };
     return BaseModuleInjector;
 }());
 exports.BaseModuleInjector = BaseModuleInjector;
@@ -6182,13 +6236,14 @@ exports.BaseModuleInjector = BaseModuleInjector;
  * sync module injector.
  *
  * @export
- * @class ModuleInjector
+ * @class SyncModuleInjector
+ * @extends {BaseModuleInjector}
  * @implements {IModuleInjector}
  */
 var SyncModuleInjector = /** @class */ (function (_super) {
     tslib_1.__extends(SyncModuleInjector, _super);
-    function SyncModuleInjector(validate) {
-        var _this = _super.call(this, validate) || this;
+    function SyncModuleInjector(validate, skipNext) {
+        var _this = _super.call(this, validate, skipNext) || this;
         _this.validate = validate;
         return _this;
     }
@@ -6200,12 +6255,13 @@ var SyncModuleInjector = /** @class */ (function (_super) {
                 _this.setup(container, ty);
             });
         }
-        return types;
+        var next = this.next(modules, types);
+        return { injected: types, next: next };
     };
-    SyncModuleInjector.classAnnations = { "name": "SyncModuleInjector", "params": { "constructor": ["validate"], "inject": ["container", "modules"] } };
+    SyncModuleInjector.classAnnations = { "name": "SyncModuleInjector", "params": { "constructor": ["validate", "skipNext"], "inject": ["container", "modules"] } };
     SyncModuleInjector = tslib_1.__decorate([
         core.Injectable(IModuleInjector.SyncModuleInjectorToken),
-        tslib_1.__metadata("design:paramtypes", [Object])
+        tslib_1.__metadata("design:paramtypes", [Object, Boolean])
     ], SyncModuleInjector);
     return SyncModuleInjector;
 }(BaseModuleInjector));
@@ -6215,39 +6271,42 @@ exports.SyncModuleInjector = SyncModuleInjector;
  *
  * @export
  * @class ModuleInjector
+ * @extends {BaseModuleInjector}
  * @implements {IModuleInjector}
  */
 var ModuleInjector = /** @class */ (function (_super) {
     tslib_1.__extends(ModuleInjector, _super);
-    function ModuleInjector(validate) {
-        var _this = _super.call(this, validate) || this;
+    function ModuleInjector(validate, skipNext) {
+        var _this = _super.call(this, validate, skipNext) || this;
         _this.validate = validate;
         return _this;
     }
     ModuleInjector.prototype.inject = function (container, modules) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var types;
+            var types, next;
             var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         types = this.filter(modules);
                         if (!types.length) return [3 /*break*/, 2];
-                        return [4 /*yield*/, utils.PromiseUtil.forEach(types.map(function (ty) {
+                        return [4 /*yield*/, utils.PromiseUtil.step(types.map(function (ty) {
                                 return _this.setup(container, ty);
                             }))];
                     case 1:
                         _a.sent();
                         _a.label = 2;
-                    case 2: return [2 /*return*/, types];
+                    case 2:
+                        next = this.next(modules, types);
+                        return [2 /*return*/, { injected: types, next: next }];
                 }
             });
         });
     };
-    ModuleInjector.classAnnations = { "name": "ModuleInjector", "params": { "constructor": ["validate"], "inject": ["container", "modules"] } };
+    ModuleInjector.classAnnations = { "name": "ModuleInjector", "params": { "constructor": ["validate", "skipNext"], "inject": ["container", "modules"] } };
     ModuleInjector = tslib_1.__decorate([
         core.Injectable(IModuleInjector.ModuleInjectorToken),
-        tslib_1.__metadata("design:paramtypes", [Object])
+        tslib_1.__metadata("design:paramtypes", [Object, Boolean])
     ], ModuleInjector);
     return ModuleInjector;
 }(BaseModuleInjector));
@@ -6277,6 +6336,7 @@ var IModuleInjectorChain_1 = IModuleInjectorChain.ModuleInjectorChainToken;
 
 var ModuleInjectorChain_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 /**
@@ -6313,16 +6373,34 @@ var ModuleInjectorChain = /** @class */ (function () {
         return injector instanceof ModuleInjector_1.ModuleInjector || injector instanceof ModuleInjector_1.SyncModuleInjector;
     };
     ModuleInjectorChain.prototype.inject = function (container, modules) {
-        return utils.PromiseUtil.first(this.injectors.map(function (jtor) { return jtor.inject(container, modules); }), function (types) { return types && types.length > 0; }).catch(function (err) { return []; });
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var types;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        types = [];
+                        return [4 /*yield*/, utils.PromiseUtil.forEach(this.injectors.map(function (jtor) { return function (ijrt) { return jtor.inject(container, ijrt.next); }; }), function (result) {
+                                types = types.concat(result.injected || []);
+                                return result.next && result.next.length > 0;
+                            }, { injected: [], next: modules }).catch(function (err) { return []; })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/, types];
+                }
+            });
+        });
     };
     ModuleInjectorChain.prototype.syncInject = function (container, modules) {
-        var types;
+        var types = [];
+        var completed = false;
         this.injectors.forEach(function (jtor) {
-            if (types && types.length) {
+            if (completed) {
                 return false;
             }
             if (jtor instanceof ModuleInjector_1.SyncModuleInjector) {
-                types = jtor.inject(container, modules);
+                var result = jtor.inject(container, modules);
+                types = types.concat(result.injected);
+                completed = (!result.next || result.next.length < 1);
             }
             return true;
         });
@@ -6443,7 +6521,7 @@ var DefaultContainerBuilder = /** @class */ (function () {
                         injTypes = [];
                         if (!(regModules && regModules.length)) return [3 /*break*/, 3];
                         injChain_1 = this.getInjectorChain(container);
-                        return [4 /*yield*/, utils.PromiseUtil.forEach(regModules.map(function (typs) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
+                        return [4 /*yield*/, utils.PromiseUtil.step(regModules.map(function (typs) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
                                 var ityps;
                                 return tslib_1.__generator(this, function (_a) {
                                     switch (_a.label) {
@@ -6492,7 +6570,6 @@ var DefaultContainerBuilder = /** @class */ (function () {
     };
     DefaultContainerBuilder.prototype.getInjectorChain = function (container) {
         if (!container.has(injectors.ModuleInjectorChainToken)) {
-            console.log('-----------------init ModuleInjectorChainToken----------------------');
             container.register(injectors.SyncModuleInjector)
                 .register(injectors.ModuleInjector)
                 .bindProvider(injectors.IocExtModuleValidateToken, new injectors.IocExtModuleValidate())
@@ -6505,7 +6582,7 @@ var DefaultContainerBuilder = /** @class */ (function () {
         if (!this.injectorChain) {
             this.injectorChain = currChain;
             this.injectorChain
-                .next(container.resolve(injectors.SyncModuleInjectorToken, { validate: container.get(injectors.IocExtModuleValidateToken) }))
+                .next(container.resolve(injectors.SyncModuleInjectorToken, { validate: container.get(injectors.IocExtModuleValidateToken), skipNext: true }))
                 .next(container.resolve(injectors.SyncModuleInjectorToken));
         }
         return this.injectorChain;

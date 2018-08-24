@@ -1,14 +1,14 @@
 import 'reflect-metadata';
 import {
-    IContainer, Token, Providers, lang, isFunction, isClass, isToken, Singleton,
-    Inject, Registration, Container
+    IContainer, Token, Providers, lang, isFunction, isClass,
+    isToken, Singleton, Inject, Registration, Container
 } from '@ts-ioc/core';
-import { IModuleBuilder, ModuleBuilderToken, ModuleEnv, InjectModuleBuilderToken, DefaultModuleBuilderToken } from './IModuleBuilder';
+import { IModuleBuilder, ModuleBuilderToken, ModuleEnv } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { MdInstance } from './ModuleType';
 import { ContainerPool, ContainerPoolToken } from '../utils';
 import { InjectRunnerToken, IRunner, Boot, DefaultRunnerToken, Service, IService, InjectServiceToken, DefaultServiceToken, Runnable } from '../runnable';
-import { IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder, DefaultAnnotationBuilderToken, AnnotationBuilderToken, AnnotationBuilder, IMetaAccessor, InjectMetaAccessorToken, DefaultMetaAccessorToken } from '../annotations';
+import { IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder, DefaultAnnotationBuilderToken, AnnotationBuilderToken, AnnotationBuilder } from '../annotations';
 import { InjectedModule, InjectedModuleToken } from './InjectedModule';
 import { DIModuleInjectorToken } from './DIModuleInjector';
 
@@ -126,7 +126,9 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
                 return parent.get(key)
             } else {
                 await parent.loadModule(type);
-                return parent.get(key);
+                if (parent.has(key)) {
+                    return parent.get(key);
+                }
             }
         }
         return null;
@@ -136,25 +138,28 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         if (env instanceof InjectedModule) {
             return env;
         }
+        let injmdl: InjectedModule<T> = null;
         let parent = await this.getParentContainer(env);
         if (isToken(token)) {
-            return await this.import(token, parent);
+            injmdl = await this.import(token, parent);
         } else {
             let mdtype = this.getType(token);
             if (isToken(mdtype)) {
-                let injmdl = await this.import(mdtype, parent);
+                injmdl = await this.import(mdtype, parent);
                 if (injmdl instanceof InjectedModule) {
                     let container = injmdl.container;
                     let injector = container.get(DIModuleInjectorToken);
                     await injector.importByConfig(container, token);
                     injmdl.config = lang.assign(injmdl.config, token);
-                    return injmdl;
                 }
+            } else {
+                let injector = parent.get(DIModuleInjectorToken);
+                await injector.importByConfig(parent, token)
+                injmdl = new InjectedModule(null, token, parent);
             }
-            let injector = parent.get(DIModuleInjectorToken);
-            await injector.importByConfig(parent, token)
-            return new InjectedModule(null, token, parent);
         }
+
+        return injmdl;
     }
 
 

@@ -64,7 +64,7 @@ export class DefaultContainerBuilder implements IContainerBuilder {
         let injTypes = [];
         if (regModules && regModules.length) {
             let injChain = this.getInjectorChain(container);
-            await PromiseUtil.forEach(regModules.map(async typs => {
+            await PromiseUtil.step(regModules.map(async typs => {
                 let ityps = await injChain.inject(container, typs);
                 injTypes = injTypes.concat(ityps);
             }));
@@ -109,7 +109,7 @@ export class DefaultContainerBuilder implements IContainerBuilder {
         if (!this.injectorChain) {
             this.injectorChain = currChain;
             this.injectorChain
-                .next(container.resolve(SyncModuleInjectorToken, { validate: container.get(IocExtModuleValidateToken) }))
+                .next(container.resolve(SyncModuleInjectorToken, { validate: container.get(IocExtModuleValidateToken), skipNext: true }))
                 .next(container.resolve(SyncModuleInjectorToken));
         }
 

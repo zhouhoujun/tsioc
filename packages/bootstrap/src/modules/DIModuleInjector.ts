@@ -3,7 +3,7 @@ import { DIModuelValidateToken } from './DIModuleValidate';
 import { DIModule } from '../decorators';
 import { ContainerPoolToken } from '../utils';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
-import { InjectMetaAccessorToken, IMetaAccessor, DefaultMetaAccessorToken } from '../annotations';
+import { InjectMetaAccessorToken, IMetaAccessor, DefaultMetaAccessorToken, AnnotationMetaAccessorToken } from '../annotations';
 import { InjectedModuleToken, InjectedModule } from './InjectedModule';
 
 const exportsProvidersFiled = '__exportProviders';
@@ -95,34 +95,17 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
 
     protected getMetaConfig(token: Token<any>, container: IContainer): ModuleConfigure {
         if (isToken(token)) {
-            let decorator = this.validate.getDecorator();
-            let accessor: IMetaAccessor<any>;
-            let provider = { decorator: decorator };
-            container.getTokenExtendsChain(token).forEach(tk => {
-                if (accessor) {
-                    return false;
-                }
-                let accToken = new InjectMetaAccessorToken<any>(tk);
-                if (container.has(accToken)) {
-                    accessor = container.resolve(accToken, provider);
-                }
-                return true;
-            });
-            if (!accessor) {
-                accessor = this.getDefaultMetaAccessor(container, provider);
-            }
-            if (accessor) {
-                return accessor.get(container, token);
-            } else {
-                return null;
-            }
+            let accessor = this.getMetaAccessor(container);
+            return accessor.getMetadata(token, container);
         }
         return null;
     }
 
-    protected getDefaultMetaAccessor(container: IContainer, ...providers: Providers[]) {
-        return container.resolve(DefaultMetaAccessorToken, ...providers);
+    protected getMetaAccessor(container: IContainer): IMetaAccessor<any> {
+        let decorator = this.validate.getDecorator();
+        return container.resolve(AnnotationMetaAccessorToken, { decorator: decorator });
     }
+
 
     protected async registerConfgureDepds(container: IContainer, config: ModuleConfigure): Promise<ModuleConfigure> {
         if (isArray(config.imports) && config.imports.length) {

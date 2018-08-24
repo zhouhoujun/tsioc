@@ -1,5 +1,5 @@
 import { IModuleInjectorChain } from './IModuleInjectorChain';
-import { IModuleInjector } from './IModuleInjector';
+import { IModuleInjector, InjectorResult } from './IModuleInjector';
 import { SyncModuleInjector, ModuleInjector } from './ModuleInjector';
 import { Type } from '../types';
 import { IContainer } from '../IContainer';
@@ -41,18 +41,26 @@ export class ModuleInjectorChain implements IModuleInjectorChain {
         return injector instanceof ModuleInjector || injector instanceof SyncModuleInjector;
     }
 
-    inject(container: IContainer, modules: Type<any>[]): Promise<Type<any>[]> {
-        return PromiseUtil.first<Type<any>[]>(this.injectors.map(jtor => jtor.inject(container, modules)), types => types && types.length > 0).catch(err => []);
+    async inject(container: IContainer, modules: Type<any>[]): Promise<Type<any>[]> {
+        let types: Type<any>[] = [];
+        await PromiseUtil.forEach<InjectorResult>(this.injectors.map(jtor => (ijrt: InjectorResult) => jtor.inject(container, ijrt.next)), result => {
+            types = types.concat(result.injected || []);
+            return result.next && result.next.length > 0;
+        }, { injected: [], next: modules }).catch(err => []);
+        return types;
     }
 
     syncInject(container: IContainer, modules: Type<any>[]): Type<any>[] {
-        let types: Type<any>[];
+        let types: Type<any>[] = [];
+        let completed = false;
         this.injectors.forEach(jtor => {
-            if (types && types.length) {
+            if (completed) {
                 return false;
             }
             if (jtor instanceof SyncModuleInjector) {
-                types = jtor.inject(container, modules);
+                let result = jtor.inject(container, modules);
+                types = types.concat(result.injected);
+                completed = (!result.next || result.next.length < 1);
             }
             return true;
         });

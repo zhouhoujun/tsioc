@@ -12,6 +12,8 @@ const rollup = require('gulp-rollup');
 const rename = require('gulp-rename');
 const uglify = require('gulp-uglify');
 const del = require('del');
+// const builtins = require('rollup-plugin-node-builtins');
+// const globals = require('rollup-plugin-node-globals');
 
 
 Development.create(gulp, __dirname, [
@@ -49,10 +51,13 @@ Development.create(gulp, __dirname, [
                             plugins: [
                                 resolve(),
                                 commonjs(),
+                                // globals(),
+                                // builtins(),
                                 rollupSourcemaps()
                             ],
                             external: [
                                 'reflect-metadata',
+                                'events',
                                 'tslib',
                                 'log4js',
                                 '@ts-ioc/core',

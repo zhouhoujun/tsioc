@@ -1,7 +1,7 @@
 import { Token, InjectToken, IContainer, LoadType, Factory } from '@ts-ioc/core';
 import { AppConfigure } from './AppConfigure';
 import { IModuleBuilder, MdInstance, ModuleEnv, ModuleConfig } from '../modules';
-import { ContainerPool } from '../utils';
+import { EventEmitter } from 'events';
 
 /**
  * custom define module.
@@ -58,24 +58,7 @@ export interface IApplicationExtends {
  */
 export interface IApplicationBuilder<T> extends IModuleBuilder<T>, IApplicationExtends {
 
-    // /**
-    //  * get container of the module.
-    //  *
-    //  * @param {(Token<T> | ModuleConfigure)} token module type or module configuration.
-    //  * @param {ModuleEnv} [defaults] set loadedModule will return loaded container; set default container or not. not set will create new container.
-    //  * @param {IContainer} [parent] set the container parent, default will set root default container.
-    //  * @returns {IContainer}
-    //  * @memberof IModuleBuilder
-    //  */
-    // getContainer(token: Token<T> | ModuleConfigure, defaults?: ModuleEnv, parent?: IContainer): IContainer;
-
-    // /**
-    //  * create new container.
-    //  *
-    //  * @returns {IContainer}
-    //  * @memberof IModuleBuilder
-    //  */
-    // createContainer(): IContainer;
+    events: EventEmitter;
 
     /**
      * get module builder

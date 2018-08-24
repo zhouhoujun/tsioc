@@ -44,17 +44,6 @@ export interface IModuleBuilder<T> {
      */
     getPools(): ContainerPool;
 
-    // /**
-    //  * load module depdences.
-    //  *
-    //  * @param {(Token<T> | ModuleConfigure)} token
-    //  * @param {ModuleEnv} [env] set loadedModule will return loaded container; set default container or not. not set will create new container.
-    //  * @param {IContainer} [parent] set the container parent, default will set root default container.
-    //  * @returns {Promise<LoadedModule>}
-    //  * @memberof IModuleBuilder
-    //  */
-    // load(token: Token<T> | ModuleConfigure, env?: ModuleEnv, parent?: IContainer): Promise<LoadedModule>;
-
     /**
      * import module.
      *
@@ -89,43 +78,6 @@ export interface IModuleBuilder<T> {
      */
     bootstrap(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<Runnable<T>>;
 
-    // /**
-    //  * import di module.
-    //  *
-    //  * @param {(Type<any> | ModuleConfigure)} token di module type
-    //  * @param {IContainer} container container to import module.
-    //  * @returns {Promise<IContainer>}
-    //  * @memberof IModuleBuilder
-    //  */
-    // importModule(token: Type<any> | ModuleConfigure, container: IContainer): Promise<IContainer>;
-
-    // /**
-    //  * register module depdences.
-    //  *
-    //  * @param {IContainer} container
-    //  * @param {ModuleConfigure} config
-    //  * @returns {Promise<ModuleConfigure>}
-    //  * @memberof IModuleBuilder
-    //  */
-    // registerDepdences(container: IContainer, config: ModuleConfigure): Promise<ModuleConfigure>;
-
-    // /**
-    //  * get the module define decorator or decorator name.
-    //  *
-    //  * @returns {(Function | string)}
-    //  * @memberof IModuleBuilder
-    //  */
-    // getDecorator(): Function | string;
-
-    // /**
-    //  * get configure from module calss metadata or module config object.
-    //  *
-    //  * @param {(Token<T> | ModuleConfigure)} token
-    //  * @param {IContainer} [container] container.
-    //  * @returns {ModuleConfigure}
-    //  * @memberof IModuleBuilder
-    //  */
-    // getConfigure(token: Token<T> | ModuleConfigure, container?: IContainer): ModuleConfigure;
 }
 
 /**

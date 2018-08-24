@@ -1,12 +1,13 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core'), require('reflect-metadata')) :
-	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core', 'reflect-metadata'], factory) :
-	(global.bootstrap = global.bootstrap || {}, global.bootstrap.umd = global.bootstrap.umd || {}, global.bootstrap.umd.js = factory(global.tslib_1,global.core_1,global.Reflect));
-}(this, (function (tslib_1,core_1,reflectMetadata) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core'), require('reflect-metadata'), require('events')) :
+	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core', 'reflect-metadata', 'events'], factory) :
+	(global.bootstrap = global.bootstrap || {}, global.bootstrap.umd = global.bootstrap.umd || {}, global.bootstrap.umd.js = factory(global.tslib_1,global.core_1,global.Reflect,global.events));
+}(this, (function (tslib_1,core_1,reflectMetadata,events) { 'use strict';
 
 tslib_1 = tslib_1 && tslib_1.hasOwnProperty('default') ? tslib_1['default'] : tslib_1;
 core_1 = core_1 && core_1.hasOwnProperty('default') ? core_1['default'] : core_1;
 reflectMetadata = reflectMetadata && reflectMetadata.hasOwnProperty('default') ? reflectMetadata['default'] : reflectMetadata;
+events = events && events.hasOwnProperty('default') ? events['default'] : events;
 
 function unwrapExports (x) {
 	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
@@ -619,7 +620,7 @@ var MetaAccessor = /** @class */ (function () {
     function MetaAccessor(decorator) {
         this.decorator = decorator;
     }
-    MetaAccessor.prototype.get = function (container, token) {
+    MetaAccessor.prototype.getMetadata = function (token, container) {
         var type = core_1.isClass(token) ? token : container.getTokenImpl(token);
         if (core_1.isClass(type)) {
             var metas = core_1.getTypeMetadata(this.decorator, type);
@@ -630,7 +631,7 @@ var MetaAccessor = /** @class */ (function () {
         }
         return null;
     };
-    MetaAccessor.classAnnations = { "name": "MetaAccessor", "params": { "constructor": ["decorator"], "get": ["container", "token"] } };
+    MetaAccessor.classAnnations = { "name": "MetaAccessor", "params": { "constructor": ["decorator"], "getMetadata": ["token", "container"] } };
     MetaAccessor = tslib_1.__decorate([
         core_1.Injectable(exports.DefaultMetaAccessorToken),
         tslib_1.__metadata("design:paramtypes", [String])
@@ -638,6 +639,62 @@ var MetaAccessor = /** @class */ (function () {
     return MetaAccessor;
 }());
 exports.MetaAccessor = MetaAccessor;
+/**
+ * Annotation MetaAccessor token.
+ */
+exports.AnnotationMetaAccessorToken = new InjectMetaAccessorToken('Annotation');
+/**
+ * Annotation MetaAccessor.
+ *
+ * @export
+ * @class AnnotationMetaAccessor
+ * @implements {IMetaAccessor<any>}
+ */
+var AnnotationMetaAccessor = /** @class */ (function () {
+    function AnnotationMetaAccessor(decorator) {
+        this.decorator = decorator;
+    }
+    AnnotationMetaAccessor.prototype.getMetadata = function (token, container) {
+        if (core_1.isToken(token)) {
+            var accessor_1;
+            var provider_1 = { decorator: this.decorator };
+            container.getTokenExtendsChain(token).forEach(function (tk) {
+                if (accessor_1) {
+                    return false;
+                }
+                var accToken = new InjectMetaAccessorToken(tk);
+                if (container.has(accToken)) {
+                    accessor_1 = container.resolve(accToken, provider_1);
+                }
+                return true;
+            });
+            if (!accessor_1) {
+                accessor_1 = this.getDefaultMetaAccessor(container, provider_1);
+            }
+            if (accessor_1) {
+                return accessor_1.getMetadata(token, container);
+            }
+            else {
+                return null;
+            }
+        }
+        return null;
+    };
+    AnnotationMetaAccessor.prototype.getDefaultMetaAccessor = function (container) {
+        var providers = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            providers[_i - 1] = arguments[_i];
+        }
+        return container.resolve.apply(container, [exports.DefaultMetaAccessorToken].concat(providers));
+    };
+    AnnotationMetaAccessor.classAnnations = { "name": "AnnotationMetaAccessor", "params": { "constructor": ["decorator"], "getMetadata": ["token", "container"], "getDefaultMetaAccessor": ["container", "providers"] } };
+    AnnotationMetaAccessor = tslib_1.__decorate([
+        core_1.Injectable(exports.AnnotationMetaAccessorToken),
+        tslib_1.__metadata("design:paramtypes", [String])
+    ], AnnotationMetaAccessor);
+    return AnnotationMetaAccessor;
+}());
+exports.AnnotationMetaAccessor = AnnotationMetaAccessor;
 
 
 });
@@ -646,6 +703,8 @@ unwrapExports(MetaAccessor_1);
 var MetaAccessor_2 = MetaAccessor_1.InjectMetaAccessorToken;
 var MetaAccessor_3 = MetaAccessor_1.DefaultMetaAccessorToken;
 var MetaAccessor_4 = MetaAccessor_1.MetaAccessor;
+var MetaAccessor_5 = MetaAccessor_1.AnnotationMetaAccessorToken;
+var MetaAccessor_6 = MetaAccessor_1.AnnotationMetaAccessor;
 
 var annotations = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -801,37 +860,14 @@ var DIModuleInjector = /** @class */ (function (_super) {
     };
     DIModuleInjector.prototype.getMetaConfig = function (token, container) {
         if (core_1.isToken(token)) {
-            var decorator = this.validate.getDecorator();
-            var accessor_1;
-            var provider_1 = { decorator: decorator };
-            container.getTokenExtendsChain(token).forEach(function (tk) {
-                if (accessor_1) {
-                    return false;
-                }
-                var accToken = new annotations.InjectMetaAccessorToken(tk);
-                if (container.has(accToken)) {
-                    accessor_1 = container.resolve(accToken, provider_1);
-                }
-                return true;
-            });
-            if (!accessor_1) {
-                accessor_1 = this.getDefaultMetaAccessor(container, provider_1);
-            }
-            if (accessor_1) {
-                return accessor_1.get(container, token);
-            }
-            else {
-                return null;
-            }
+            var accessor = this.getMetaAccessor(container);
+            return accessor.getMetadata(token, container);
         }
         return null;
     };
-    DIModuleInjector.prototype.getDefaultMetaAccessor = function (container) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        return container.resolve.apply(container, [annotations.DefaultMetaAccessorToken].concat(providers));
+    DIModuleInjector.prototype.getMetaAccessor = function (container) {
+        var decorator = this.validate.getDecorator();
+        return container.resolve(annotations.AnnotationMetaAccessorToken, { decorator: decorator });
     };
     DIModuleInjector.prototype.registerConfgureDepds = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
@@ -996,7 +1032,7 @@ var DIModuleInjector = /** @class */ (function (_super) {
         });
         return tokens;
     };
-    DIModuleInjector.classAnnations = { "name": "DIModuleInjector", "params": { "constructor": ["validate"], "setup": ["container", "type"], "import": ["container", "type"], "importByConfig": ["container", "config"], "importModule": ["container", "type"], "getMetaConfig": ["token", "container"], "getDefaultMetaAccessor": ["container", "providers"], "registerConfgureDepds": ["container", "config"], "importConfigExports": ["container", "providerContainer", "cfg", "mdl"], "bindProvider": ["container", "providers"] } };
+    DIModuleInjector.classAnnations = { "name": "DIModuleInjector", "params": { "constructor": ["validate"], "setup": ["container", "type"], "import": ["container", "type"], "importByConfig": ["container", "config"], "importModule": ["container", "type"], "getMetaConfig": ["token", "container"], "getMetaAccessor": ["container"], "registerConfgureDepds": ["container", "config"], "importConfigExports": ["container", "providerContainer", "cfg", "mdl"], "bindProvider": ["container", "providers"] } };
     DIModuleInjector = tslib_1.__decorate([
         core_1.Injectable(exports.DIModuleInjectorToken),
         tslib_1.__param(0, core_1.Inject(DIModuleValidate.DIModuelValidateToken)),
@@ -1306,7 +1342,10 @@ var ModuleBuilder = /** @class */ (function () {
                     case 3: return [4 /*yield*/, parent.loadModule(type)];
                     case 4:
                         _a.sent();
-                        return [2 /*return*/, parent.get(key)];
+                        if (parent.has(key)) {
+                            return [2 /*return*/, parent.get(key)];
+                        }
+                        _a.label = 5;
                     case 5: return [2 /*return*/, null];
                 }
             });
@@ -1314,39 +1353,45 @@ var ModuleBuilder = /** @class */ (function () {
     };
     ModuleBuilder.prototype.load = function (token, env) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var parent, mdtype, injmdl, container, injector_1, injector;
+            var injmdl, parent, mdtype, container, injector, injector;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         if (env instanceof InjectedModule_1.InjectedModule) {
                             return [2 /*return*/, env];
                         }
+                        injmdl = null;
                         return [4 /*yield*/, this.getParentContainer(env)];
                     case 1:
                         parent = _a.sent();
                         if (!core_1.isToken(token)) return [3 /*break*/, 3];
                         return [4 /*yield*/, this.import(token, parent)];
-                    case 2: return [2 /*return*/, _a.sent()];
+                    case 2:
+                        injmdl = _a.sent();
+                        return [3 /*break*/, 9];
                     case 3:
                         mdtype = this.getType(token);
-                        if (!core_1.isToken(mdtype)) return [3 /*break*/, 6];
+                        if (!core_1.isToken(mdtype)) return [3 /*break*/, 7];
                         return [4 /*yield*/, this.import(mdtype, parent)];
                     case 4:
                         injmdl = _a.sent();
                         if (!(injmdl instanceof InjectedModule_1.InjectedModule)) return [3 /*break*/, 6];
                         container = injmdl.container;
-                        injector_1 = container.get(DIModuleInjector_1.DIModuleInjectorToken);
-                        return [4 /*yield*/, injector_1.importByConfig(container, token)];
+                        injector = container.get(DIModuleInjector_1.DIModuleInjectorToken);
+                        return [4 /*yield*/, injector.importByConfig(container, token)];
                     case 5:
                         _a.sent();
                         injmdl.config = core_1.lang.assign(injmdl.config, token);
-                        return [2 /*return*/, injmdl];
-                    case 6:
+                        _a.label = 6;
+                    case 6: return [3 /*break*/, 9];
+                    case 7:
                         injector = parent.get(DIModuleInjector_1.DIModuleInjectorToken);
                         return [4 /*yield*/, injector.importByConfig(parent, token)];
-                    case 7:
+                    case 8:
                         _a.sent();
-                        return [2 /*return*/, new InjectedModule_1.InjectedModule(null, token, parent)];
+                        injmdl = new InjectedModule_1.InjectedModule(null, token, parent);
+                        _a.label = 9;
+                    case 9: return [2 /*return*/, injmdl];
                 }
             });
         });
@@ -1603,6 +1648,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
+var ApplicationEvents;
+(function (ApplicationEvents) {
+    ApplicationEvents["onRootContainerCreated"] = "onRootContainerCreated";
+    ApplicationEvents["onRootContainerInited"] = "onRooConatianerInited";
+})(ApplicationEvents = exports.ApplicationEvents || (exports.ApplicationEvents = {}));
 /**
  * application builder.
  *
@@ -1621,6 +1672,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
         _this.globalModules = [];
         _this.configs = [];
         _this.providers = new core_1.MapSet();
+        _this.events = new events.EventEmitter();
         return _this;
     }
     DefaultApplicationBuilder.create = function (baseURL) {
@@ -1629,7 +1681,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
     DefaultApplicationBuilder.prototype.getPools = function () {
         if (!this.pools) {
             this.pools = new utils.ContainerPool();
-            this.regDefaultContainer();
+            this.createDefaultContainer();
         }
         return this.pools;
     };
@@ -1765,6 +1817,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
                             this.registerExts(container, globCfg);
                             this.bindAppConfig(globCfg);
                             container.bindProvider(AppConfigure.AppConfigureToken, globCfg);
+                            this.events.emit(ApplicationEvents.onRootContainerInited, container);
                             this.inited = true;
                         }
                         return [4 /*yield*/, _super.prototype.getParentContainer.call(this, env)];
@@ -1810,7 +1863,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
             });
         });
     };
-    DefaultApplicationBuilder.prototype.regDefaultContainer = function () {
+    DefaultApplicationBuilder.prototype.createDefaultContainer = function () {
         var _this = this;
         var container = this.createContainer();
         container.register(BootModule_1.BootModule);
@@ -1818,6 +1871,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
         var chain = container.getBuilder().getInjectorChain(container);
         chain.first(container.resolve(modules.DIModuleInjectorToken));
         container.bindProvider(utils.ContainerPoolToken, function () { return _this.getPools(); });
+        this.events.emit(ApplicationEvents.onRootContainerCreated, container);
         return container;
     };
     /**
@@ -1885,7 +1939,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
             });
         });
     };
-    DefaultApplicationBuilder.classAnnations = { "name": "DefaultApplicationBuilder", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "getPools": [], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "useConfiguration": ["config"], "loadConfig": ["container", "src"], "use": ["modules"], "provider": ["provide", "provider"], "getBuilder": ["env"], "getDefaultBuilder": ["container"], "getParentContainer": ["env"], "getGlobalConfig": ["container"], "regDefaultContainer": [], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": ["container"] } };
+    DefaultApplicationBuilder.classAnnations = { "name": "DefaultApplicationBuilder", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "getPools": [], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "useConfiguration": ["config"], "loadConfig": ["container", "src"], "use": ["modules"], "provider": ["provide", "provider"], "getBuilder": ["env"], "getDefaultBuilder": ["container"], "getParentContainer": ["env"], "getGlobalConfig": ["container"], "createDefaultContainer": [], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": ["container"] } };
     return DefaultApplicationBuilder;
 }(modules.ModuleBuilder));
 exports.DefaultApplicationBuilder = DefaultApplicationBuilder;
@@ -1894,7 +1948,8 @@ exports.DefaultApplicationBuilder = DefaultApplicationBuilder;
 });
 
 unwrapExports(ApplicationBuilder);
-var ApplicationBuilder_1 = ApplicationBuilder.DefaultApplicationBuilder;
+var ApplicationBuilder_1 = ApplicationBuilder.ApplicationEvents;
+var ApplicationBuilder_2 = ApplicationBuilder.DefaultApplicationBuilder;
 
 var IApplicationBuilder = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
