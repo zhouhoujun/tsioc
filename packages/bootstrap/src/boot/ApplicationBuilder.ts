@@ -1,7 +1,7 @@
 import { AppConfigure, AppConfigureToken, DefaultConfigureToken, AppConfigureLoaderToken } from './AppConfigure';
-import { IContainer, LoadType, lang, isString, MapSet, Factory, Token, isUndefined, DefaultContainerBuilder, IContainerBuilder } from '@ts-ioc/core';
+import { IContainer, LoadType, lang, isString, MapSet, Factory, Token, isUndefined, DefaultContainerBuilder, IContainerBuilder, isClass, isToken } from '@ts-ioc/core';
 import { IApplicationBuilder, CustomRegister, AnyApplicationBuilder } from './IApplicationBuilder';
-import { ModuleBuilderToken, ModuleBuilder, ModuleEnv, DIModuleInjectorToken } from '../modules';
+import { ModuleBuilder, ModuleEnv, DIModuleInjectorToken, InjectedModule, IModuleBuilder, InjectModuleBuilderToken, DefaultModuleBuilderToken } from '../modules';
 import { ContainerPool, ContainerPoolToken } from '../utils';
 import { BootModule } from '../BootModule';
 
@@ -16,14 +16,16 @@ import { BootModule } from '../BootModule';
  */
 export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicationBuilder<T> {
     private globalConfig: AppConfigure;
+    protected globalModules: LoadType[];
     protected customRegs: CustomRegister<T>[];
     protected providers: MapSet<Token<any>, any>;
     protected configs: (string | AppConfigure)[];
-    root: IContainer;
+    inited = false;
 
     constructor(public baseURL?: string) {
         super();
         this.customRegs = [];
+        this.globalModules = [];
         this.configs = [];
         this.providers = new MapSet();
     }
@@ -102,7 +104,8 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
      * @memberof PlatformServer
      */
     use(...modules: LoadType[]): this {
-        this.pools.use(...modules);
+        this.globalModules = this.globalModules.concat(modules);
+        this.inited = false;
         return this;
     }
 
@@ -120,15 +123,61 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         return this;
     }
 
+    getBuilder(env: InjectedModule<T>): IModuleBuilder<T> {
+        let cfg = env.config;
+        let container = env.container;
+        let builder: IModuleBuilder<T>;
+        if (cfg) {
+            if (isClass(cfg.builder)) {
+                if (!container.has(cfg.builder)) {
+                    container.register(cfg.builder);
+                }
+            }
+            if (isToken(cfg.builder)) {
+                builder = container.resolve(cfg.builder);
+            } else if (cfg.builder instanceof ModuleBuilder) {
+                builder = cfg.builder;
+            }
+        }
+
+        let tko = env.token;
+        if (!builder && tko) {
+            container.getTokenExtendsChain(tko).forEach(tk => {
+                if (builder) {
+                    return false;
+                }
+                let buildToken = new InjectModuleBuilderToken<T>(tk);
+                if (container.has(buildToken)) {
+                    builder = container.get(buildToken);
+                }
+                return true;
+            });
+        }
+        if (!builder) {
+            builder = this.getDefaultBuilder(container);
+        }
+
+        return builder || this;
+    }
+
+    protected getDefaultBuilder(container: IContainer): IModuleBuilder<any> {
+        if (container.has(DefaultModuleBuilderToken)) {
+            return container.resolve(DefaultModuleBuilderToken);
+        }
+        return null
+    }
+
 
     protected async getParentContainer(env?: ModuleEnv) {
-        if (!this.getPools().hasInit()) {
-            await this.getPools().initDefault();
-        }
         let container = this.getPools().getDefault();
         let globCfg = await this.getGlobalConfig(container);
-        this.bindAppConfig(globCfg);
-        container.bindProvider(AppConfigureToken, globCfg);
+        if (!this.inited) {
+            this.registerExts(container, globCfg);
+            this.bindAppConfig(globCfg);
+            container.bindProvider(AppConfigureToken, globCfg);
+            this.inited = true;
+        }
+
         return await super.getParentContainer(env);
     }
 
@@ -157,23 +206,14 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         return this.globalConfig;
     }
 
-    // async registerConfgureDepds(container: IContainer, config: AppConfigure): Promise<AppConfigure> {
-    //     let globCfg = await this.getGlobalConfig(container);
-    //     this.bindAppConfig(globCfg);
-    //     container.bindProvider(AppConfigureToken, globCfg);
-    //     config = await super.registerConfgureDepds(container, config);
-    //     return config;
-    // }
-
-
     protected regDefaultContainer() {
         let container = this.createContainer();
         container.register(BootModule);
         this.pools.setDefault(container);
-        container.bindProvider(ContainerPoolToken, () => this.getPools());
 
         let chain = container.getBuilder().getInjectorChain(container);
         chain.first(container.resolve(DIModuleInjectorToken));
+        container.bindProvider(ContainerPoolToken, () => this.getPools());
         return container;
     }
 
@@ -187,11 +227,15 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
      * @memberof ApplicationBuilder
      */
     protected async registerExts(container: IContainer, config: AppConfigure): Promise<IContainer> {
-        await super.registerExts(container, config);
+
+        if (this.globalModules.length) {
+            let usedModules = this.globalModules;
+            await container.loadModule(...usedModules);
+        }
 
         this.providers.forEach((val, key) => {
             container.bindProvider(key, val);
-        })
+        });
 
         if (this.customRegs.length) {
             await Promise.all(this.customRegs.map(async cs => {

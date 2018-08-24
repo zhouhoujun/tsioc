@@ -254,7 +254,6 @@ var DIModuleValidate_2 = DIModuleValidate.DIModuelValidate;
 var ContainerPool_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
-
 /**
  * container pool
  *
@@ -263,54 +262,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 var ContainerPool = /** @class */ (function () {
     function ContainerPool() {
-        this.inited = false;
         this.pools = new core_1.MapSet();
-        this.globalModules = [];
     }
     ContainerPool.prototype.getTokenKey = function (token) {
         if (token instanceof core_1.Registration) {
             return token.toString();
         }
         return token;
-    };
-    /**
-     * use global modules.
-     *
-     * @param {...LoadType[]} modules
-     * @returns {this}
-     * @memberof ContainerPool
-     */
-    ContainerPool.prototype.use = function () {
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        this.globalModules = this.globalModules.concat(modules);
-        this.inited = false;
-        return this;
-    };
-    ContainerPool.prototype.hasInit = function () {
-        return this.inited;
-    };
-    ContainerPool.prototype.initDefault = function () {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var container, usedModules;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        container = this.getDefault();
-                        if (!this.globalModules.length) return [3 /*break*/, 2];
-                        usedModules = this.globalModules;
-                        return [4 /*yield*/, container.loadModule.apply(container, usedModules)];
-                    case 1:
-                        _a.sent();
-                        _a.label = 2;
-                    case 2:
-                        this.inited = true;
-                        return [2 /*return*/, container];
-                }
-            });
-        });
     };
     ContainerPool.prototype.isDefault = function (container) {
         return container === this.defaults;
@@ -351,24 +309,24 @@ var ContainerPool = /** @class */ (function () {
         if (this.isDefault(container)) {
             return;
         }
-        if (!container.parent) {
-            if (parent && parent !== container) {
-                container.parent = parent;
-            }
-            else {
-                container.parent = this.getDefault();
-            }
+        // if (!container.parent) {
+        if (parent && parent !== container) {
+            container.parent = parent;
         }
+        else {
+            container.parent = this.getDefault();
+        }
+        // }
     };
-    ContainerPool.classAnnations = { "name": "ContainerPool", "params": { "constructor": [], "getTokenKey": ["token"], "use": ["modules"], "hasInit": [], "initDefault": [], "isDefault": ["container"], "hasDefault": [], "setDefault": ["container"], "getDefault": [], "set": ["token", "container"], "get": ["token"], "has": ["token"], "create": ["parent"], "setParent": ["container", "parent"] } };
+    ContainerPool.classAnnations = { "name": "ContainerPool", "params": { "constructor": [], "getTokenKey": ["token"], "isDefault": ["container"], "hasDefault": [], "setDefault": ["container"], "getDefault": [], "set": ["token", "container"], "get": ["token"], "has": ["token"], "create": ["parent"], "setParent": ["container", "parent"] } };
     return ContainerPool;
 }());
 exports.ContainerPool = ContainerPool;
 exports.ContainerPoolToken = new core_1.InjectToken('ContainerPool');
-/**
- *  global container pools.
- */
-exports.containerPools = new ContainerPool();
+// /**
+//  *  global container pools.
+//  */
+// export const containerPools = new ContainerPool();
 
 
 });
@@ -376,7 +334,6 @@ exports.containerPools = new ContainerPool();
 unwrapExports(ContainerPool_1);
 var ContainerPool_2 = ContainerPool_1.ContainerPool;
 var ContainerPool_3 = ContainerPool_1.ContainerPoolToken;
-var ContainerPool_4 = ContainerPool_1.containerPools;
 
 var utils = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -451,6 +408,9 @@ var AnnotationBuilder = /** @class */ (function () {
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        if (core_1.isClass(token) && !this.container.hasRegister(token)) {
+                            this.container.register(token);
+                        }
                         config = this.getTokenMetaConfig(token, config);
                         builder = this.getBuilder(token, config);
                         if (!!this.isEqual(builder)) return [3 /*break*/, 1];
@@ -504,13 +464,8 @@ var AnnotationBuilder = /** @class */ (function () {
                     return [2 /*return*/, null];
                 }
                 if (!this.container.has(token)) {
-                    if (core_1.isClass(token)) {
-                        this.container.register(token);
-                    }
-                    else {
-                        console.log("can not find token " + (token ? token.toString() : null) + " in container.");
-                        return [2 /*return*/, null];
-                    }
+                    console.log("can not find token " + (token ? token.toString() : null) + " in container.");
+                    return [2 /*return*/, null];
                 }
                 instance = this.resolveToken(token, data);
                 return [2 /*return*/, instance];
@@ -704,8 +659,55 @@ tslib_1.__exportStar(MetaAccessor_1, exports);
 
 unwrapExports(annotations);
 
+var InjectedModule_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * injected module.
+ *
+ * @export
+ * @class InjectedModule
+ * @template T
+ */
+var InjectedModule = /** @class */ (function () {
+    function InjectedModule(token, config, container) {
+        this.token = token;
+        this.config = config;
+        this.container = container;
+    }
+    InjectedModule.classAnnations = { "name": "InjectedModule", "params": { "constructor": ["token", "config", "container"] } };
+    return InjectedModule;
+}());
+exports.InjectedModule = InjectedModule;
+/**
+ * Injected Module Token.
+ *
+ * @export
+ * @class InjectModuleMetaConfigToken
+ * @extends {Registration<Type<T>>}
+ * @template T
+ */
+var InjectedModuleToken = /** @class */ (function (_super) {
+    tslib_1.__extends(InjectedModuleToken, _super);
+    function InjectedModuleToken(type) {
+        return _super.call(this, type, 'InjectedModule') || this;
+    }
+    InjectedModuleToken.classAnnations = { "name": "InjectedModuleToken", "params": { "constructor": ["type"] } };
+    return InjectedModuleToken;
+}(core_1.Registration));
+exports.InjectedModuleToken = InjectedModuleToken;
+
+
+});
+
+unwrapExports(InjectedModule_1);
+var InjectedModule_2 = InjectedModule_1.InjectedModule;
+var InjectedModule_3 = InjectedModule_1.InjectedModuleToken;
+
 var DIModuleInjector_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -731,13 +733,69 @@ var DIModuleInjector = /** @class */ (function (_super) {
     }
     DIModuleInjector.prototype.setup = function (container, type) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var pools, newContainer, metadata;
             return tslib_1.__generator(this, function (_a) {
-                pools = container.get(utils.ContainerPoolToken);
-                newContainer = pools.create(container);
-                newContainer.register(type);
-                metadata = this.getMetaConfig(type, newContainer);
-                return [2 /*return*/];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.importModule(container, type)];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DIModuleInjector.prototype.import = function (container, type) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var injMd;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!this.validate.validate(type)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.importModule(container, type)];
+                    case 1:
+                        injMd = _a.sent();
+                        return [2 /*return*/, injMd];
+                    case 2: return [2 /*return*/, null];
+                }
+            });
+        });
+    };
+    DIModuleInjector.prototype.importByConfig = function (container, config) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.registerConfgureDepds(container, config)];
+                    case 1:
+                        _a.sent();
+                        if (!(core_1.isArray(config.providers) && config.providers.length)) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.bindProvider(container, config.providers)];
+                    case 2:
+                        _a.sent();
+                        _a.label = 3;
+                    case 3: return [2 /*return*/, null];
+                }
+            });
+        });
+    };
+    DIModuleInjector.prototype.importModule = function (container, type) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var pools, newContainer, metaConfig, injMd;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        pools = container.get(utils.ContainerPoolToken);
+                        newContainer = pools.create(container);
+                        newContainer.register(type);
+                        metaConfig = this.getMetaConfig(type, newContainer);
+                        return [4 /*yield*/, this.registerConfgureDepds(newContainer, metaConfig)];
+                    case 1:
+                        _a.sent();
+                        return [4 /*yield*/, this.importConfigExports(container, newContainer, metaConfig, type)];
+                    case 2:
+                        _a.sent();
+                        injMd = new InjectedModule_1.InjectedModule(type, metaConfig, newContainer);
+                        container.bindProvider(new InjectedModule_1.InjectedModuleToken(type), injMd);
+                        return [2 /*return*/, injMd];
+                }
             });
         });
     };
@@ -775,42 +833,170 @@ var DIModuleInjector = /** @class */ (function (_super) {
         }
         return container.resolve.apply(container, [annotations.DefaultMetaAccessorToken].concat(providers));
     };
-    DIModuleInjector.prototype.importConfigExports = function (container, providerContainer, cfg) {
+    DIModuleInjector.prototype.registerConfgureDepds = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var expProviders;
-            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!(cfg.exports && cfg.exports.length)) return [3 /*break*/, 2];
-                        return [4 /*yield*/, Promise.all(cfg.exports.map(function (tk) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
-                                return tslib_1.__generator(this, function (_a) {
-                                    container.bindProvider(tk, function () {
-                                        var providers = [];
-                                        for (var _i = 0; _i < arguments.length; _i++) {
-                                            providers[_i] = arguments[_i];
-                                        }
-                                        return providerContainer.resolve.apply(providerContainer, [tk].concat(providers));
-                                    });
-                                    return [2 /*return*/, tk];
-                                });
-                            }); }))];
+                        if (!(core_1.isArray(config.imports) && config.imports.length)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, container.loadModule.apply(container, config.imports)];
                     case 1:
                         _a.sent();
                         _a.label = 2;
                     case 2:
-                        expProviders = cfg[exportsProvidersFiled];
-                        if (expProviders && expProviders.length) {
-                            expProviders.forEach(function (tk) {
-                                container.bindProvider(tk, function () { return providerContainer.get(tk); });
-                            });
+                        if (core_1.isArray(config.providers) && config.providers.length) {
+                            config[exportsProvidersFiled] = this.bindProvider(container, config.providers);
                         }
-                        return [2 /*return*/, container];
+                        return [2 /*return*/, config];
                 }
             });
         });
     };
-    DIModuleInjector.classAnnations = { "name": "DIModuleInjector", "params": { "constructor": ["validate"], "setup": ["container", "type"], "getMetaConfig": ["token", "container"], "getDefaultMetaAccessor": ["container", "providers"], "importConfigExports": ["container", "providerContainer", "cfg"] } };
+    DIModuleInjector.prototype.importConfigExports = function (container, providerContainer, cfg, mdl) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var expProviders;
+            return tslib_1.__generator(this, function (_a) {
+                if (container === providerContainer) {
+                    return [2 /*return*/, container];
+                }
+                if (cfg.exports && cfg.exports.length) {
+                    cfg.exports.forEach(function (tk) {
+                        container.bindProvider(tk, function () {
+                            var providers = [];
+                            for (var _i = 0; _i < arguments.length; _i++) {
+                                providers[_i] = arguments[_i];
+                            }
+                            return providerContainer.resolve.apply(providerContainer, [tk].concat(providers));
+                        });
+                    });
+                }
+                if (mdl) {
+                    container.bindProvider(mdl, function () {
+                        var providers = [];
+                        for (var _i = 0; _i < arguments.length; _i++) {
+                            providers[_i] = arguments[_i];
+                        }
+                        return providerContainer.resolve.apply(providerContainer, [mdl].concat(providers));
+                    });
+                }
+                expProviders = cfg[exportsProvidersFiled];
+                if (expProviders && expProviders.length) {
+                    expProviders.forEach(function (tk) {
+                        container.bindProvider(tk, function () { return providerContainer.get(tk); });
+                    });
+                }
+                return [2 /*return*/, container];
+            });
+        });
+    };
+    DIModuleInjector.prototype.bindProvider = function (container, providers) {
+        var tokens = [];
+        providers.forEach(function (p, index) {
+            if (core_1.isUndefined(p) || core_1.isNull(p)) {
+                return;
+            }
+            if (core_1.isProviderMap(p)) {
+                p.forEach(function (k, f) {
+                    tokens.push(k);
+                    container.bindProvider(k, f);
+                });
+            }
+            else if (p instanceof core_1.Provider) {
+                tokens.push(p.type);
+                container.bindProvider(p.type, function () {
+                    var providers = [];
+                    for (var _i = 0; _i < arguments.length; _i++) {
+                        providers[_i] = arguments[_i];
+                    }
+                    return p.resolve.apply(p, [container].concat(providers));
+                });
+            }
+            else if (core_1.isClass(p)) {
+                if (!container.has(p)) {
+                    tokens.push(p);
+                    container.register(p);
+                }
+            }
+            else if (core_1.isBaseObject(p)) {
+                var pr_1 = p;
+                var isobjMap = false;
+                if (core_1.isToken(pr_1.provide)) {
+                    if (core_1.isArray(pr_1.deps) && pr_1.deps.length) {
+                        pr_1.deps.forEach(function (d) {
+                            if (core_1.isClass(d) && !container.has(d)) {
+                                container.register(d);
+                            }
+                        });
+                    }
+                    if (!core_1.isUndefined(pr_1.useValue)) {
+                        tokens.push(pr_1.provide);
+                        container.bindProvider(pr_1.provide, function () { return pr_1.useValue; });
+                    }
+                    else if (core_1.isClass(pr_1.useClass)) {
+                        if (!container.has(pr_1.useClass)) {
+                            container.register(pr_1.useClass);
+                        }
+                        tokens.push(pr_1.provide);
+                        container.bindProvider(pr_1.provide, pr_1.useClass);
+                    }
+                    else if (core_1.isFunction(pr_1.useFactory)) {
+                        tokens.push(pr_1.provide);
+                        container.bindProvider(pr_1.provide, function () {
+                            var args = [];
+                            if (core_1.isArray(pr_1.deps) && pr_1.deps.length) {
+                                args = pr_1.deps.map(function (d) {
+                                    if (core_1.isClass(d)) {
+                                        return container.get(d);
+                                    }
+                                    else {
+                                        return d;
+                                    }
+                                });
+                            }
+                            return pr_1.useFactory.apply(pr_1, args);
+                        });
+                    }
+                    else if (core_1.isToken(pr_1.useExisting)) {
+                        if (container.has(pr_1.useExisting)) {
+                            tokens.push(pr_1.provide);
+                            container.bindProvider(pr_1.provide, pr_1.useExisting);
+                        }
+                        else {
+                            console.log('has not register:', pr_1.useExisting);
+                        }
+                    }
+                    else {
+                        isobjMap = true;
+                    }
+                }
+                else {
+                    isobjMap = true;
+                }
+                if (isobjMap) {
+                    core_1.lang.forIn(p, function (val, name) {
+                        if (!core_1.isUndefined(val)) {
+                            if (core_1.isClass(val)) {
+                                container.bindProvider(name, val);
+                            }
+                            else if (core_1.isFunction(val) || core_1.isString(val)) {
+                                container.bindProvider(name, function () { return val; });
+                            }
+                            else {
+                                container.bindProvider(name, val);
+                            }
+                            tokens.push(name);
+                        }
+                    });
+                }
+            }
+            else if (core_1.isFunction(p)) {
+                tokens.push(name);
+                container.bindProvider(name, function () { return p; });
+            }
+        });
+        return tokens;
+    };
+    DIModuleInjector.classAnnations = { "name": "DIModuleInjector", "params": { "constructor": ["validate"], "setup": ["container", "type"], "import": ["container", "type"], "importByConfig": ["container", "config"], "importModule": ["container", "type"], "getMetaConfig": ["token", "container"], "getDefaultMetaAccessor": ["container", "providers"], "registerConfgureDepds": ["container", "config"], "importConfigExports": ["container", "providerContainer", "cfg", "mdl"], "bindProvider": ["container", "providers"] } };
     DIModuleInjector = tslib_1.__decorate([
         core_1.Injectable(exports.DIModuleInjectorToken),
         tslib_1.__param(0, core_1.Inject(DIModuleValidate.DIModuelValidateToken)),
@@ -865,78 +1051,6 @@ unwrapExports(IModuleBuilder);
 var IModuleBuilder_1 = IModuleBuilder.InjectModuleBuilderToken;
 var IModuleBuilder_2 = IModuleBuilder.DefaultModuleBuilderToken;
 var IModuleBuilder_3 = IModuleBuilder.ModuleBuilderToken;
-
-var BootModule_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-
-
-
-
-
-
-/**
- * Bootstrap ext for ioc. auto run setup after registered.
- * with @IocExt('setup') decorator.
- * @export
- * @class BootModule
- */
-var BootModule = /** @class */ (function () {
-    function BootModule(container) {
-        this.container = container;
-    }
-    /**
-     * register aop for container.
-     *
-     * @memberof AopModule
-     */
-    BootModule.prototype.setup = function () {
-        var container = this.container;
-        var lifeScope = container.get(core_1.LifeScopeToken);
-        lifeScope.registerDecorator(decorators.DIModule, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
-        lifeScope.registerDecorator(decorators.Bootstrap, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
-        container.register(annotations.MetaAccessor);
-        container.register(modules.ModuleBuilder);
-        container.register(annotations.AnnotationBuilder);
-        container.register(boot.DefaultApplicationBuilder);
-    };
-    BootModule.classAnnations = { "name": "BootModule", "params": { "constructor": ["container"], "setup": [] } };
-    BootModule = tslib_1.__decorate([
-        core_1.IocExt('setup'),
-        tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)),
-        tslib_1.__metadata("design:paramtypes", [Object])
-    ], BootModule);
-    return BootModule;
-}());
-exports.BootModule = BootModule;
-
-
-});
-
-unwrapExports(BootModule_1);
-var BootModule_2 = BootModule_1.BootModule;
-
-var ModuleType = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * ioc DI loaded modules.
- *
- * @export
- * @interface IocModule
- * @template T
- */
-var LoadedModule = /** @class */ (function () {
-    function LoadedModule() {
-    }
-    LoadedModule.classAnnations = { "name": "LoadedModule", "params": {} };
-    return LoadedModule;
-}());
-exports.LoadedModule = LoadedModule;
-
-
-});
-
-unwrapExports(ModuleType);
-var ModuleType_1 = ModuleType.LoadedModule;
 
 var IRunner = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -1058,8 +1172,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-
-var exportsProvidersFiled = '__exportProviders';
 /**
  * inject module load token.
  *
@@ -1088,166 +1200,8 @@ exports.InjectModuleLoadToken = InjectModuleLoadToken;
 var ModuleBuilder = /** @class */ (function () {
     function ModuleBuilder() {
     }
-    ModuleBuilder_1 = ModuleBuilder;
     ModuleBuilder.prototype.getPools = function () {
-        if (!this.pools) {
-            this.pools = utils.containerPools;
-        }
-        if (!this.pools.hasDefault()) {
-            this.regDefaultContainer();
-        }
         return this.pools;
-    };
-    ModuleBuilder.prototype.setPools = function (pools) {
-        this.pools = pools;
-    };
-    ModuleBuilder.prototype.regDefaultContainer = function () {
-        var container = this.createContainer();
-        container.register(BootModule_1.BootModule);
-        this.pools.setDefault(container);
-        return container;
-    };
-    /**
-     * get container of the module.
-     *
-     * @param {(ModuleType | ModuleConfigure)} token module type or module configuration.
-     * @param {ModuleEnv} [env] set loadedModule will return loaded container; set default container or not. not set will create new container.
-     * @param {IContainer} [parent] set the container parent, default will set root default container.
-     * @returns {IContainer}
-     * @memberof ModuleBuilder
-     */
-    ModuleBuilder.prototype.getContainer = function (token, env, parent) {
-        var container;
-        if (env instanceof ModuleType.LoadedModule && env.token === token) {
-            container = env.container;
-            this.setParent(container, parent);
-            return container;
-        }
-        var defaultContainer = this.getContainerInEnv(env);
-        var pools = this.getPools();
-        if (core_1.isToken(token)) {
-            if (pools.has(token)) {
-                return pools.get(token);
-            }
-            else {
-                var cfg = this.getConfigure(token, defaultContainer);
-                if (env instanceof ModuleType.LoadedModule) {
-                    cfg = core_1.lang.assign(cfg, env.moduleConfig);
-                }
-                container = cfg.container || defaultContainer;
-                if (!container || !(defaultContainer instanceof core_1.Container)) {
-                    container = this.isDIModule(token) ? this.createContainer() : pools.getDefault();
-                }
-                this.setParent(container, parent);
-                pools.set(token, container);
-                return container;
-            }
-        }
-        else {
-            var id = this.getConfigId(token);
-            if (id && pools.has(id)) {
-                return pools.get(id);
-            }
-            container = token.container || defaultContainer;
-            if (!container || !(defaultContainer instanceof core_1.Container)) {
-                container = id ? this.createContainer() : pools.getDefault();
-                token.container = container;
-            }
-            this.setParent(container, parent);
-            if (id || !token.container) {
-                pools.set(id, container);
-            }
-            else {
-                token.container = container;
-            }
-            return container;
-        }
-    };
-    ModuleBuilder.prototype.getContainerInEnv = function (env) {
-        var envContainer;
-        if (env instanceof ModuleType.LoadedModule) {
-            envContainer = env.container;
-        }
-        else if (env instanceof core_1.Container) {
-            envContainer = env;
-        }
-        return envContainer;
-    };
-    ModuleBuilder.prototype.getConfigId = function (cfg) {
-        return cfg.name;
-    };
-    ModuleBuilder.prototype.setParent = function (container, parent) {
-        var pools = this.getPools();
-        if (pools.isDefault(container)) {
-            return;
-        }
-        if (!container.parent) {
-            if (parent && parent !== container) {
-                container.parent = parent;
-            }
-            else {
-                container.parent = pools.getDefault();
-            }
-        }
-    };
-    ModuleBuilder.prototype.createContainer = function () {
-        return this.getContainerBuilder().create();
-    };
-    ModuleBuilder.prototype.getContainerBuilder = function () {
-        if (!this.containerBuilder) {
-            this.containerBuilder = this.createContainerBuilder();
-        }
-        return this.containerBuilder;
-    };
-    ModuleBuilder.prototype.createContainerBuilder = function () {
-        return new core_1.DefaultContainerBuilder();
-    };
-    ModuleBuilder.prototype.load = function (token, env, parent) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var container, tk, mdToken, cfg, mToken, loadmdl;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!!this.getPools().hasInit()) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.getPools().initDefault()];
-                    case 1:
-                        _a.sent();
-                        _a.label = 2;
-                    case 2:
-                        container = this.getContainer(token, env, parent);
-                        tk = core_1.isToken(token) ? token : this.getConfigId(token);
-                        mdToken = new InjectModuleLoadToken(tk);
-                        if (tk && container.has(mdToken)) {
-                            return [2 /*return*/, container.resolve(mdToken)];
-                        }
-                        cfg = this.getConfigure(token, container);
-                        if (env instanceof ModuleType.LoadedModule) {
-                            cfg = core_1.lang.assign(cfg, env.moduleConfig);
-                        }
-                        return [4 /*yield*/, this.registerDepdences(container, cfg)];
-                    case 3:
-                        cfg = _a.sent();
-                        mToken = core_1.isToken(token) ? token : this.getType(cfg);
-                        if (core_1.isClass(mToken) && !container.has(mToken)) {
-                            container.register(mToken);
-                        }
-                        loadmdl = {
-                            token: token,
-                            moduleToken: mToken,
-                            container: container,
-                            moduleConfig: cfg
-                        };
-                        if (tk) {
-                            container.bindProvider(mdToken, function () { return loadmdl; });
-                        }
-                        return [2 /*return*/, loadmdl];
-                }
-            });
-        });
-    };
-    ModuleBuilder.prototype.cleanLoadModule = function (container, tk) {
-        var mdToken = new InjectModuleLoadToken(tk);
-        container.unregister(mdToken);
     };
     /**
      * build module.
@@ -1260,33 +1214,26 @@ var ModuleBuilder = /** @class */ (function () {
      */
     ModuleBuilder.prototype.build = function (token, env, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var loadmdl, container, cfg, builder, tk, annBuilder, instance, instance, mdlInst;
+            var injmdl, container, cfg, annBuilder, instance, instance, mdlInst;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.load(token, env)];
                     case 1:
-                        loadmdl = _a.sent();
-                        container = loadmdl.container;
-                        cfg = loadmdl.moduleConfig;
-                        builder = this.getBuilder(token, env);
-                        if (!(builder && builder !== this)) return [3 /*break*/, 3];
-                        tk = core_1.isToken(token) ? token : this.getConfigId(token);
-                        this.cleanLoadModule(container, tk);
-                        return [4 /*yield*/, builder.build(token, loadmdl, data)];
-                    case 2: return [2 /*return*/, _a.sent()];
-                    case 3:
-                        annBuilder = this.getAnnoBuilder(container, loadmdl.moduleToken, cfg.annotationBuilder);
-                        if (!!loadmdl.moduleToken) return [3 /*break*/, 5];
+                        injmdl = _a.sent();
+                        container = injmdl.container;
+                        cfg = injmdl.config;
+                        annBuilder = this.getAnnoBuilder(container, injmdl.token, cfg.annotationBuilder);
+                        if (!!injmdl.token) return [3 /*break*/, 3];
                         return [4 /*yield*/, annBuilder.buildByConfig(cfg, data)];
-                    case 4:
+                    case 2:
                         instance = _a.sent();
                         return [2 /*return*/, instance];
-                    case 5: return [4 /*yield*/, annBuilder.build(loadmdl.moduleToken, cfg, data)];
-                    case 6:
+                    case 3: return [4 /*yield*/, annBuilder.build(injmdl.token, cfg, data)];
+                    case 4:
                         instance = _a.sent();
                         mdlInst = instance;
                         if (mdlInst && core_1.isFunction(mdlInst.mdOnInit)) {
-                            mdlInst.mdOnInit(loadmdl);
+                            mdlInst.mdOnInit(injmdl);
                         }
                         return [2 /*return*/, instance];
                 }
@@ -1304,91 +1251,124 @@ var ModuleBuilder = /** @class */ (function () {
     */
     ModuleBuilder.prototype.bootstrap = function (token, env, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var loadmdl, cfg, container, builder, tk, md, bootToken, anBuilder, bootInstance, runable;
+            var injmdl, cfg, container, md, bootToken, anBuilder, bootInstance, runable;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.load(token, env)];
                     case 1:
-                        loadmdl = _a.sent();
-                        cfg = loadmdl.moduleConfig;
-                        container = loadmdl.container;
-                        builder = this.getBuilder(token, env);
-                        if (!(builder && builder !== this)) return [3 /*break*/, 3];
-                        tk = core_1.isToken(token) ? token : this.getConfigId(token);
-                        this.cleanLoadModule(container, tk);
-                        return [4 /*yield*/, builder.bootstrap(token, loadmdl, data)];
-                    case 2: return [2 /*return*/, _a.sent()];
-                    case 3: return [4 /*yield*/, this.build(token, loadmdl, data)];
-                    case 4:
+                        injmdl = _a.sent();
+                        cfg = injmdl.config;
+                        container = injmdl.container;
+                        return [4 /*yield*/, this.build(token, injmdl, data)];
+                    case 2:
                         md = _a.sent();
                         bootToken = this.getBootType(cfg);
                         anBuilder = this.getAnnoBuilder(container, bootToken, cfg.annotationBuilder);
                         return [4 /*yield*/, (bootToken ? anBuilder.build(bootToken, cfg, data) : anBuilder.buildByConfig(cfg, data))];
-                    case 5:
+                    case 3:
                         bootInstance = _a.sent();
-                        runable = void 0;
-                        if (!bootInstance) return [3 /*break*/, 9];
+                        if (!bootInstance) return [3 /*break*/, 7];
                         return [4 /*yield*/, this.autoRun(container, bootToken ? bootToken : anBuilder.getType(cfg), cfg, bootInstance)];
-                    case 6:
+                    case 4:
                         runable = _a.sent();
-                        if (!(md && core_1.isFunction(md.mdOnStart))) return [3 /*break*/, 8];
+                        if (!(md && core_1.isFunction(md.mdOnStart))) return [3 /*break*/, 6];
                         return [4 /*yield*/, Promise.resolve(md.mdOnStart(bootInstance))];
-                    case 7:
+                    case 5:
                         _a.sent();
-                        _a.label = 8;
-                    case 8: return [3 /*break*/, 11];
-                    case 9: return [4 /*yield*/, this.autoRun(container, loadmdl.moduleToken, cfg, md)];
-                    case 10:
+                        _a.label = 6;
+                    case 6: return [3 /*break*/, 9];
+                    case 7: return [4 /*yield*/, this.autoRun(container, injmdl.token, cfg, md)];
+                    case 8:
                         runable = _a.sent();
-                        _a.label = 11;
-                    case 11: return [2 /*return*/, runable];
+                        _a.label = 9;
+                    case 9: return [2 /*return*/, runable];
                 }
             });
         });
     };
-    ModuleBuilder.prototype.getBuilder = function (token, env) {
-        var container = this.getContainerInEnv(env) || this.getPools().getDefault();
-        var cfg = this.getConfigure(token, container);
-        var builder;
-        if (cfg) {
-            if (core_1.isClass(cfg.builder)) {
-                if (!container.has(cfg.builder)) {
-                    container.register(cfg.builder);
+    ModuleBuilder.prototype.import = function (token, parent) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var type, key;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!!parent) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.getParentContainer()];
+                    case 1:
+                        parent = _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        type = core_1.isClass(token) ? token : parent.getTokenImpl(token);
+                        if (!core_1.isClass(type)) return [3 /*break*/, 5];
+                        key = new InjectedModule_1.InjectedModuleToken(type);
+                        if (!parent.hasRegister(key.toString())) return [3 /*break*/, 3];
+                        return [2 /*return*/, parent.get(key)];
+                    case 3: return [4 /*yield*/, parent.loadModule(type)];
+                    case 4:
+                        _a.sent();
+                        return [2 /*return*/, parent.get(key)];
+                    case 5: return [2 /*return*/, null];
                 }
-            }
-            if (core_1.isToken(cfg.builder)) {
-                builder = container.resolve(cfg.builder);
-            }
-            else if (cfg.builder instanceof ModuleBuilder_1) {
-                builder = cfg.builder;
-            }
-        }
-        var tko = core_1.isToken(token) ? token : this.getType(token);
-        if (!builder && tko) {
-            container.getTokenExtendsChain(tko).forEach(function (tk) {
-                if (builder) {
-                    return false;
-                }
-                var buildToken = new IModuleBuilder.InjectModuleBuilderToken(tk);
-                if (container.has(buildToken)) {
-                    builder = container.get(buildToken);
-                }
-                return true;
             });
-        }
-        if (!builder) {
-            builder = this.getDefaultBuilder(container);
-        }
-        if (builder) {
-            builder.setPools(this.getPools());
-        }
-        return builder || this;
+        });
     };
-    ModuleBuilder.prototype.getDefaultBuilder = function (container) {
-        if (container.has(IModuleBuilder.DefaultModuleBuilderToken)) {
-            return container.resolve(IModuleBuilder.DefaultModuleBuilderToken);
-        }
-        return null;
+    ModuleBuilder.prototype.load = function (token, env) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var parent, mdtype, injmdl, container, injector_1, injector;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (env instanceof InjectedModule_1.InjectedModule) {
+                            return [2 /*return*/, env];
+                        }
+                        return [4 /*yield*/, this.getParentContainer(env)];
+                    case 1:
+                        parent = _a.sent();
+                        if (!core_1.isToken(token)) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.import(token, parent)];
+                    case 2: return [2 /*return*/, _a.sent()];
+                    case 3:
+                        mdtype = this.getType(token);
+                        if (!core_1.isToken(mdtype)) return [3 /*break*/, 6];
+                        return [4 /*yield*/, this.import(mdtype, parent)];
+                    case 4:
+                        injmdl = _a.sent();
+                        if (!(injmdl instanceof InjectedModule_1.InjectedModule)) return [3 /*break*/, 6];
+                        container = injmdl.container;
+                        injector_1 = container.get(DIModuleInjector_1.DIModuleInjectorToken);
+                        return [4 /*yield*/, injector_1.importByConfig(container, token)];
+                    case 5:
+                        _a.sent();
+                        injmdl.config = core_1.lang.assign(injmdl.config, token);
+                        return [2 /*return*/, injmdl];
+                    case 6:
+                        injector = parent.get(DIModuleInjector_1.DIModuleInjectorToken);
+                        return [4 /*yield*/, injector.importByConfig(parent, token)];
+                    case 7:
+                        _a.sent();
+                        return [2 /*return*/, new InjectedModule_1.InjectedModule(null, token, parent)];
+                }
+            });
+        });
+    };
+    ModuleBuilder.prototype.getParentContainer = function (env) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var parent;
+            return tslib_1.__generator(this, function (_a) {
+                if (env) {
+                    if (env instanceof core_1.Container) {
+                        parent = env;
+                    }
+                    else if (env instanceof InjectedModule_1.InjectedModule) {
+                        parent = env.container.parent;
+                    }
+                }
+                if (!parent) {
+                    parent = this.getPools().getDefault();
+                }
+                return [2 /*return*/, parent];
+            });
+        });
     };
     ModuleBuilder.prototype.autoRun = function (container, token, cfg, instance) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
@@ -1513,69 +1493,6 @@ var ModuleBuilder = /** @class */ (function () {
         }
         return container.resolve(annotations.AnnotationBuilderToken);
     };
-    ModuleBuilder.prototype.importModule = function (token, container) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var imp;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (container && core_1.isClass(token) && !this.isDIModule(token)) {
-                            container.register(token);
-                            return [2 /*return*/, container];
-                        }
-                        return [4 /*yield*/, this.load(token, null, container)];
-                    case 1:
-                        imp = _a.sent();
-                        if (!!container.has(imp.moduleToken)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, this.importConfigExports(container, imp.container, imp.moduleConfig)];
-                    case 2:
-                        _a.sent();
-                        imp.container.parent = container;
-                        if (imp.moduleToken) {
-                            container.bindProvider(imp.moduleToken, imp);
-                        }
-                        _a.label = 3;
-                    case 3: return [2 /*return*/, container];
-                }
-            });
-        });
-    };
-    ModuleBuilder.prototype.getDecorator = function () {
-        return decorators.DIModule.toString();
-    };
-    /**
-     * get configuration.
-     *
-     * @returns {ModuleConfigure}
-     * @memberof ModuleBuilder
-     */
-    ModuleBuilder.prototype.getConfigure = function (token, container) {
-        var cfg;
-        container = container || this.getPools().getDefault();
-        if (core_1.isToken(token)) {
-            cfg = this.getMetaConfig(token, container);
-        }
-        else if (core_1.isObject(token)) {
-            var type = this.getType(token);
-            cfg = core_1.lang.assign(token || {}, this.getMetaConfig(type, container), token || {});
-        }
-        return cfg || {};
-    };
-    ModuleBuilder.prototype.registerDepdences = function (container, config) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.registerExts(container, config)];
-                    case 1:
-                        _a.sent();
-                        return [4 /*yield*/, this.registerConfgureDepds(container, config)];
-                    case 2:
-                        config = _a.sent();
-                        return [2 /*return*/, config];
-                }
-            });
-        });
-    };
     /**
      * get module type
      *
@@ -1598,246 +1515,12 @@ var ModuleBuilder = /** @class */ (function () {
     ModuleBuilder.prototype.getBootType = function (cfg) {
         return cfg.bootstrap;
     };
-    ModuleBuilder.prototype.importConfigExports = function (container, providerContainer, cfg) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var expProviders;
-            var _this = this;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!(cfg.exports && cfg.exports.length)) return [3 /*break*/, 2];
-                        return [4 /*yield*/, Promise.all(cfg.exports.map(function (tk) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
-                                return tslib_1.__generator(this, function (_a) {
-                                    container.bindProvider(tk, function () {
-                                        var providers = [];
-                                        for (var _i = 0; _i < arguments.length; _i++) {
-                                            providers[_i] = arguments[_i];
-                                        }
-                                        return providerContainer.resolve.apply(providerContainer, [tk].concat(providers));
-                                    });
-                                    return [2 /*return*/, tk];
-                                });
-                            }); }))];
-                    case 1:
-                        _a.sent();
-                        _a.label = 2;
-                    case 2:
-                        expProviders = cfg[exportsProvidersFiled];
-                        if (expProviders && expProviders.length) {
-                            expProviders.forEach(function (tk) {
-                                container.bindProvider(tk, function () { return providerContainer.get(tk); });
-                            });
-                        }
-                        return [2 /*return*/, container];
-                }
-            });
-        });
-    };
-    ModuleBuilder.prototype.registerConfgureDepds = function (container, config) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var buider, types, mdls_1;
-            var _this = this;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!(core_1.isArray(config.imports) && config.imports.length)) return [3 /*break*/, 3];
-                        buider = container.getBuilder();
-                        return [4 /*yield*/, buider.loader.loadTypes(config.imports)];
-                    case 1:
-                        types = _a.sent();
-                        mdls_1 = [];
-                        types.forEach(function (tys) {
-                            if (!tys || tys.length < 1) {
-                                return;
-                            }
-                            var exdi = tys.filter(function (it) { return _this.isIocExt(it) || _this.isDIModule(it); });
-                            if (exdi.length) {
-                                mdls_1 = mdls_1.concat(exdi);
-                            }
-                            else {
-                                mdls_1 = mdls_1.concat(tys);
-                            }
-                        });
-                        return [4 /*yield*/, Promise.all(mdls_1.map(function (md) { return _this.importModule(md, container); }))];
-                    case 2:
-                        _a.sent();
-                        _a.label = 3;
-                    case 3:
-                        if (core_1.isArray(config.providers) && config.providers.length) {
-                            config[exportsProvidersFiled] = this.bindProvider(container, config.providers);
-                        }
-                        return [2 /*return*/, config];
-                }
-            });
-        });
-    };
-    ModuleBuilder.prototype.getMetaConfig = function (token, container) {
-        if (core_1.isToken(token)) {
-            var decorator = this.getDecorator();
-            var accessor_1;
-            var provider_2 = { decorator: decorator };
-            container.getTokenExtendsChain(token).forEach(function (tk) {
-                if (accessor_1) {
-                    return false;
-                }
-                var accToken = new annotations.InjectMetaAccessorToken(tk);
-                if (container.has(accToken)) {
-                    accessor_1 = container.resolve(accToken, provider_2);
-                }
-                return true;
-            });
-            if (!accessor_1) {
-                accessor_1 = this.getDefaultMetaAccessor(container, provider_2);
-            }
-            if (accessor_1) {
-                return accessor_1.get(container, token);
-            }
-            else {
-                return null;
-            }
-        }
-        return null;
-    };
-    ModuleBuilder.prototype.getDefaultMetaAccessor = function (container) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        return container.resolve.apply(container, [annotations.DefaultMetaAccessorToken].concat(providers));
-    };
-    ModuleBuilder.prototype.isIocExt = function (token) {
-        return core_1.hasOwnClassMetadata(core_1.IocExt, token);
-    };
-    ModuleBuilder.prototype.isDIModule = function (token) {
-        if (!core_1.isClass(token)) {
-            return false;
-        }
-        if (core_1.hasOwnClassMetadata(this.getDecorator(), token)) {
-            return true;
-        }
-        return core_1.hasOwnClassMetadata(decorators.DIModule, token);
-    };
-    ModuleBuilder.prototype.registerExts = function (container, config) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            return tslib_1.__generator(this, function (_a) {
-                return [2 /*return*/, container];
-            });
-        });
-    };
-    ModuleBuilder.prototype.bindProvider = function (container, providers) {
-        var tokens = [];
-        providers.forEach(function (p, index) {
-            if (core_1.isUndefined(p) || core_1.isNull(p)) {
-                return;
-            }
-            if (core_1.isProviderMap(p)) {
-                p.forEach(function (k, f) {
-                    tokens.push(k);
-                    container.bindProvider(k, f);
-                });
-            }
-            else if (p instanceof core_1.Provider) {
-                tokens.push(p.type);
-                container.bindProvider(p.type, function () {
-                    var providers = [];
-                    for (var _i = 0; _i < arguments.length; _i++) {
-                        providers[_i] = arguments[_i];
-                    }
-                    return p.resolve.apply(p, [container].concat(providers));
-                });
-            }
-            else if (core_1.isClass(p)) {
-                if (!container.has(p)) {
-                    tokens.push(p);
-                    container.register(p);
-                }
-            }
-            else if (core_1.isBaseObject(p)) {
-                var pr_1 = p;
-                var isobjMap = false;
-                if (core_1.isToken(pr_1.provide)) {
-                    if (core_1.isArray(pr_1.deps) && pr_1.deps.length) {
-                        pr_1.deps.forEach(function (d) {
-                            if (core_1.isClass(d) && !container.has(d)) {
-                                container.register(d);
-                            }
-                        });
-                    }
-                    if (!core_1.isUndefined(pr_1.useValue)) {
-                        tokens.push(pr_1.provide);
-                        container.bindProvider(pr_1.provide, function () { return pr_1.useValue; });
-                    }
-                    else if (core_1.isClass(pr_1.useClass)) {
-                        if (!container.has(pr_1.useClass)) {
-                            container.register(pr_1.useClass);
-                        }
-                        tokens.push(pr_1.provide);
-                        container.bindProvider(pr_1.provide, pr_1.useClass);
-                    }
-                    else if (core_1.isFunction(pr_1.useFactory)) {
-                        tokens.push(pr_1.provide);
-                        container.bindProvider(pr_1.provide, function () {
-                            var args = [];
-                            if (core_1.isArray(pr_1.deps) && pr_1.deps.length) {
-                                args = pr_1.deps.map(function (d) {
-                                    if (core_1.isClass(d)) {
-                                        return container.get(d);
-                                    }
-                                    else {
-                                        return d;
-                                    }
-                                });
-                            }
-                            return pr_1.useFactory.apply(pr_1, args);
-                        });
-                    }
-                    else if (core_1.isToken(pr_1.useExisting)) {
-                        if (container.has(pr_1.useExisting)) {
-                            tokens.push(pr_1.provide);
-                            container.bindProvider(pr_1.provide, pr_1.useExisting);
-                        }
-                        else {
-                            console.log('has not register:', pr_1.useExisting);
-                        }
-                    }
-                    else {
-                        isobjMap = true;
-                    }
-                }
-                else {
-                    isobjMap = true;
-                }
-                if (isobjMap) {
-                    core_1.lang.forIn(p, function (val, name) {
-                        if (!core_1.isUndefined(val)) {
-                            if (core_1.isClass(val)) {
-                                container.bindProvider(name, val);
-                            }
-                            else if (core_1.isFunction(val) || core_1.isString(val)) {
-                                container.bindProvider(name, function () { return val; });
-                            }
-                            else {
-                                container.bindProvider(name, val);
-                            }
-                            tokens.push(name);
-                        }
-                    });
-                }
-            }
-            else if (core_1.isFunction(p)) {
-                tokens.push(name);
-                container.bindProvider(name, function () { return p; });
-            }
-        });
-        return tokens;
-    };
-    var ModuleBuilder_1;
-    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getPools": [], "setPools": ["pools"], "regDefaultContainer": [], "getContainer": ["token", "env", "parent"], "getContainerInEnv": ["env"], "getConfigId": ["cfg"], "setParent": ["container", "parent"], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "load": ["token", "env", "parent"], "cleanLoadModule": ["container", "tk"], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "getBuilder": ["token", "env"], "getDefaultBuilder": ["container"], "autoRun": ["container", "token", "cfg", "instance"], "getDefaultRunner": ["container", "providers"], "getDefaultService": ["container", "providers"], "getAnnoBuilder": ["container", "token", "annBuilder"], "getDefaultAnnBuilder": ["container"], "importModule": ["token", "container"], "getDecorator": [], "getConfigure": ["token", "container"], "registerDepdences": ["container", "config"], "getType": ["cfg"], "getBootType": ["cfg"], "importConfigExports": ["container", "providerContainer", "cfg"], "registerConfgureDepds": ["container", "config"], "getMetaConfig": ["token", "container"], "getDefaultMetaAccessor": ["container", "providers"], "isIocExt": ["token"], "isDIModule": ["token"], "registerExts": ["container", "config"], "bindProvider": ["container", "providers"] } };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getPools": [], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "import": ["token", "parent"], "load": ["token", "env"], "getParentContainer": ["env"], "autoRun": ["container", "token", "cfg", "instance"], "getDefaultRunner": ["container", "providers"], "getDefaultService": ["container", "providers"], "getAnnoBuilder": ["container", "token", "annBuilder"], "getDefaultAnnBuilder": ["container"], "getType": ["cfg"], "getBootType": ["cfg"] } };
     tslib_1.__decorate([
-        core_1.Inject(core_1.ContainerBuilderToken),
-        tslib_1.__metadata("design:type", Object)
-    ], ModuleBuilder.prototype, "containerBuilder", void 0);
-    ModuleBuilder = ModuleBuilder_1 = tslib_1.__decorate([
+        core_1.Inject(utils.ContainerPoolToken),
+        tslib_1.__metadata("design:type", utils.ContainerPool)
+    ], ModuleBuilder.prototype, "pools", void 0);
+    ModuleBuilder = tslib_1.__decorate([
         core_1.Singleton(IModuleBuilder.ModuleBuilderToken),
         tslib_1.__metadata("design:paramtypes", [])
     ], ModuleBuilder);
@@ -1857,17 +1540,64 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(DIModuleInjector_1, exports);
 tslib_1.__exportStar(DIModuleValidate, exports);
+tslib_1.__exportStar(InjectedModule_1, exports);
 tslib_1.__exportStar(IModuleBuilder, exports);
 tslib_1.__exportStar(ModuleBuilder_1, exports);
-tslib_1.__exportStar(ModuleType, exports);
 
 
 });
 
 unwrapExports(modules);
 
+var BootModule_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+
+
+/**
+ * Bootstrap ext for ioc. auto run setup after registered.
+ * with @IocExt('setup') decorator.
+ * @export
+ * @class BootModule
+ */
+var BootModule = /** @class */ (function () {
+    function BootModule(container) {
+        this.container = container;
+    }
+    /**
+     * register aop for container.
+     *
+     * @memberof AopModule
+     */
+    BootModule.prototype.setup = function () {
+        var container = this.container;
+        var lifeScope = container.get(core_1.LifeScopeToken);
+        lifeScope.registerDecorator(decorators.DIModule, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
+        lifeScope.registerDecorator(decorators.Bootstrap, core_1.CoreActions.bindProvider, core_1.CoreActions.cache, core_1.CoreActions.componentBeforeInit, core_1.CoreActions.componentInit, core_1.CoreActions.componentAfterInit);
+        container.use(annotations, modules, boot);
+    };
+    BootModule.classAnnations = { "name": "BootModule", "params": { "constructor": ["container"], "setup": [] } };
+    BootModule = tslib_1.__decorate([
+        core_1.IocExt('setup'),
+        tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)),
+        tslib_1.__metadata("design:paramtypes", [Object])
+    ], BootModule);
+    return BootModule;
+}());
+exports.BootModule = BootModule;
+
+
+});
+
+unwrapExports(BootModule_1);
+var BootModule_2 = BootModule_1.BootModule;
+
 var ApplicationBuilder = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -1886,14 +1616,34 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
     function DefaultApplicationBuilder(baseURL) {
         var _this = _super.call(this) || this;
         _this.baseURL = baseURL;
+        _this.inited = false;
         _this.customRegs = [];
+        _this.globalModules = [];
         _this.configs = [];
         _this.providers = new core_1.MapSet();
-        _this.pools = new utils.ContainerPool();
         return _this;
     }
     DefaultApplicationBuilder.create = function (baseURL) {
         return new DefaultApplicationBuilder(baseURL);
+    };
+    DefaultApplicationBuilder.prototype.getPools = function () {
+        if (!this.pools) {
+            this.pools = new utils.ContainerPool();
+            this.regDefaultContainer();
+        }
+        return this.pools;
+    };
+    DefaultApplicationBuilder.prototype.createContainer = function () {
+        return this.getContainerBuilder().create();
+    };
+    DefaultApplicationBuilder.prototype.getContainerBuilder = function () {
+        if (!this.containerBuilder) {
+            this.containerBuilder = this.createContainerBuilder();
+        }
+        return this.containerBuilder;
+    };
+    DefaultApplicationBuilder.prototype.createContainerBuilder = function () {
+        return new core_1.DefaultContainerBuilder();
     };
     /**
      * use configuration.
@@ -1943,8 +1693,8 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
         for (var _i = 0; _i < arguments.length; _i++) {
             modules$$1[_i] = arguments[_i];
         }
-        var _a;
-        (_a = this.pools).use.apply(_a, modules$$1);
+        this.globalModules = this.globalModules.concat(modules$$1);
+        this.inited = false;
         return this;
     };
     /**
@@ -1959,6 +1709,69 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
     DefaultApplicationBuilder.prototype.provider = function (provide, provider) {
         this.providers.set(provide, provider);
         return this;
+    };
+    DefaultApplicationBuilder.prototype.getBuilder = function (env) {
+        var cfg = env.config;
+        var container = env.container;
+        var builder;
+        if (cfg) {
+            if (core_1.isClass(cfg.builder)) {
+                if (!container.has(cfg.builder)) {
+                    container.register(cfg.builder);
+                }
+            }
+            if (core_1.isToken(cfg.builder)) {
+                builder = container.resolve(cfg.builder);
+            }
+            else if (cfg.builder instanceof modules.ModuleBuilder) {
+                builder = cfg.builder;
+            }
+        }
+        var tko = env.token;
+        if (!builder && tko) {
+            container.getTokenExtendsChain(tko).forEach(function (tk) {
+                if (builder) {
+                    return false;
+                }
+                var buildToken = new modules.InjectModuleBuilderToken(tk);
+                if (container.has(buildToken)) {
+                    builder = container.get(buildToken);
+                }
+                return true;
+            });
+        }
+        if (!builder) {
+            builder = this.getDefaultBuilder(container);
+        }
+        return builder || this;
+    };
+    DefaultApplicationBuilder.prototype.getDefaultBuilder = function (container) {
+        if (container.has(modules.DefaultModuleBuilderToken)) {
+            return container.resolve(modules.DefaultModuleBuilderToken);
+        }
+        return null;
+    };
+    DefaultApplicationBuilder.prototype.getParentContainer = function (env) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var container, globCfg;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        container = this.getPools().getDefault();
+                        return [4 /*yield*/, this.getGlobalConfig(container)];
+                    case 1:
+                        globCfg = _a.sent();
+                        if (!this.inited) {
+                            this.registerExts(container, globCfg);
+                            this.bindAppConfig(globCfg);
+                            container.bindProvider(AppConfigure.AppConfigureToken, globCfg);
+                            this.inited = true;
+                        }
+                        return [4 /*yield*/, _super.prototype.getParentContainer.call(this, env)];
+                    case 2: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
     };
     DefaultApplicationBuilder.prototype.getGlobalConfig = function (container) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
@@ -1997,29 +1810,14 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
             });
         });
     };
-    DefaultApplicationBuilder.prototype.registerConfgureDepds = function (container, config) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var globCfg;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getGlobalConfig(container)];
-                    case 1:
-                        globCfg = _a.sent();
-                        this.bindAppConfig(globCfg);
-                        container.bindProvider(AppConfigure.AppConfigureToken, globCfg);
-                        return [4 /*yield*/, _super.prototype.registerConfgureDepds.call(this, container, config)];
-                    case 2:
-                        config = _a.sent();
-                        return [2 /*return*/, config];
-                }
-            });
-        });
-    };
     DefaultApplicationBuilder.prototype.regDefaultContainer = function () {
         var _this = this;
-        var container = _super.prototype.regDefaultContainer.call(this);
+        var container = this.createContainer();
+        container.register(BootModule_1.BootModule);
+        this.pools.setDefault(container);
+        var chain = container.getBuilder().getInjectorChain(container);
+        chain.first(container.resolve(modules.DIModuleInjectorToken));
         container.bindProvider(utils.ContainerPoolToken, function () { return _this.getPools(); });
-        container.resolve(modules.ModuleBuilderToken).setPools(this.getPools());
         return container;
     };
     /**
@@ -2033,16 +1831,22 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
      */
     DefaultApplicationBuilder.prototype.registerExts = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var usedModules;
             var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, _super.prototype.registerExts.call(this, container, config)];
+                    case 0:
+                        if (!this.globalModules.length) return [3 /*break*/, 2];
+                        usedModules = this.globalModules;
+                        return [4 /*yield*/, container.loadModule.apply(container, usedModules)];
                     case 1:
                         _a.sent();
+                        _a.label = 2;
+                    case 2:
                         this.providers.forEach(function (val, key) {
                             container.bindProvider(key, val);
                         });
-                        if (!this.customRegs.length) return [3 /*break*/, 3];
+                        if (!this.customRegs.length) return [3 /*break*/, 4];
                         return [4 /*yield*/, Promise.all(this.customRegs.map(function (cs) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
                                 var tokens;
                                 return tslib_1.__generator(this, function (_a) {
@@ -2054,10 +1858,10 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
                                     }
                                 });
                             }); }))];
-                    case 2:
+                    case 3:
                         _a.sent();
-                        _a.label = 3;
-                    case 3: return [2 /*return*/, container];
+                        _a.label = 4;
+                    case 4: return [2 /*return*/, container];
                 }
             });
         });
@@ -2081,7 +1885,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
             });
         });
     };
-    DefaultApplicationBuilder.classAnnations = { "name": "DefaultApplicationBuilder", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "useConfiguration": ["config"], "loadConfig": ["container", "src"], "use": ["modules"], "provider": ["provide", "provider"], "getGlobalConfig": ["container"], "registerConfgureDepds": ["container", "config"], "regDefaultContainer": [], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": ["container"] } };
+    DefaultApplicationBuilder.classAnnations = { "name": "DefaultApplicationBuilder", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "getPools": [], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "useConfiguration": ["config"], "loadConfig": ["container", "src"], "use": ["modules"], "provider": ["provide", "provider"], "getBuilder": ["env"], "getDefaultBuilder": ["container"], "getParentContainer": ["env"], "getGlobalConfig": ["container"], "regDefaultContainer": [], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": ["container"] } };
     return DefaultApplicationBuilder;
 }(modules.ModuleBuilder));
 exports.DefaultApplicationBuilder = DefaultApplicationBuilder;

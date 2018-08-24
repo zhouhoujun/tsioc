@@ -77,6 +77,16 @@ export interface IApplicationBuilder<T> extends IModuleBuilder<T>, IApplicationE
     //  */
     // createContainer(): IContainer;
 
+    /**
+     * get module builder
+     *
+     * @param {(Token<T> | ModuleConfig<T>)} token
+     * @param {ModuleEnv} [env]
+     * @returns {IModuleBuilder<T>}
+     * @memberof IModuleBuilder
+     */
+    getBuilder(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): IModuleBuilder<T>;
+
 }
 
 

@@ -76,15 +76,7 @@ export interface IModuleBuilder<T> {
      */
     build(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<T>;
 
-    /**
-     * get module builder
-     *
-     * @param {(Token<T> | ModuleConfig<T>)} token
-     * @param {ModuleEnv} [env]
-     * @returns {IModuleBuilder<T>}
-     * @memberof IModuleBuilder
-     */
-    getBuilder(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): IModuleBuilder<T>;
+
 
     /**
      * bootstrap module's main.

@@ -1,6 +1,6 @@
 import { DIModule, OnModuleStart, ContainerPoolToken } from '../src';
 import { Injectable, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
-import { Aspect, Before, AopModule, Around } from '@ts-ioc/aop';
+import { Aspect, Before, AopModule, Around, Joinpoint } from '@ts-ioc/aop';
 
 
 export class TestService {
@@ -37,8 +37,8 @@ export class ClassSevice {
 export class Logger {
 
     @Around('execution(*.start)')
-    log() {
-        console.log('start........');
+    log(jp: Joinpoint) {
+        console.log(jp.fullName, jp.state, 'start........');
     }
 
     @Around('execution(*.test)')
@@ -61,8 +61,6 @@ export class Logger {
 })
 export class ModuleB implements OnModuleStart<ClassSevice> {
     constructor(test: TestService, @Inject(ContainerToken) private container: IContainer) {
-        // console.log(container);
-        // console.log('container pools..................\n');
         let pools = container.get(ContainerPoolToken);
         // console.log(pools);
         console.log('container pools defaults..................\n');
@@ -70,6 +68,9 @@ export class ModuleB implements OnModuleStart<ClassSevice> {
 
         console.log(test);
         test.test();
+
+        // console.log('container pools..................\n');
+        // console.log(container);
     }
     mdOnStart(instance: ClassSevice): void | Promise<any> {
         console.log('mdOnStart...');

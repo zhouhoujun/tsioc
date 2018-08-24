@@ -27,6 +27,9 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
     }
 
     async build(token: Token<T>, config?: AnnotationConfigure<T>, data?: any): Promise<T> {
+        if (isClass(token) && !this.container.hasRegister(token)) {
+            this.container.register(token);
+        }
         config = this.getTokenMetaConfig(token, config);
         let builder = this.getBuilder(token, config);
         if (!this.isEqual(builder)) {
@@ -63,14 +66,12 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             console.log('can not find annotation token.');
             return null;
         }
+
         if (!this.container.has(token)) {
-            if (isClass(token)) {
-                this.container.register(token);
-            } else {
-                console.log(`can not find token ${token ? token.toString() : null} in container.`);
-                return null;
-            }
+            console.log(`can not find token ${token ? token.toString() : null} in container.`);
+            return null;
         }
+
 
         let instance = this.resolveToken(token, data);
         return instance;

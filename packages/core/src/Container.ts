@@ -11,7 +11,6 @@ import { IParameter } from './IParameter';
 import { CacheManagerToken } from './ICacheManager';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { registerCores } from './registerCores';
-import { ModuleInjectorChainToken, ModuleInjectorChain, IocExtModuleValidate, IocExtModuleValidateToken, SyncModuleInjector, ModuleInjector, ModuleInjectorToken, SyncModuleInjectorToken } from './injectors';
 
 /**
  * Container
@@ -173,11 +172,11 @@ export class Container implements IContainer {
      * has register type.
      *
      * @template T
-     * @param {SymbolType<T>} key
+     * @param {Token<T>} key
      * @returns
      * @memberof Container
      */
-    hasRegister<T>(key: SymbolType<T>) {
+    hasRegister<T>(key: Token<T>) {
         return this.factories.has(key);
     }
 

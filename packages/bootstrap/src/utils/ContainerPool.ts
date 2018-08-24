@@ -7,12 +7,10 @@ import { MapSet, Token, SymbolType, Registration, IContainer, InjectToken, LoadT
  * @class ContainerPool
  */
 export class ContainerPool {
-    protected globalModules: LoadType[];
     protected pools: MapSet<Token<any>, IContainer>;
 
     constructor() {
         this.pools = new MapSet();
-        this.globalModules = [];
     }
 
     getTokenKey(token: Token<any>): SymbolType<any> {
@@ -20,37 +18,6 @@ export class ContainerPool {
             return token.toString();
         }
         return token;
-    }
-
-    /**
-     * use global modules.
-     *
-     * @param {...LoadType[]} modules
-     * @returns {this}
-     * @memberof ContainerPool
-     */
-    use(...modules: LoadType[]): this {
-        this.globalModules = this.globalModules.concat(modules);
-        this.inited = false;
-        return this;
-    }
-
-
-    private inited = false;
-    hasInit() {
-        return this.inited;
-    }
-
-    async initDefault(): Promise<IContainer> {
-
-        let container = this.getDefault();
-        if (this.globalModules.length) {
-            let usedModules = this.globalModules;
-            await container.loadModule(...usedModules);
-        }
-        this.inited = true;
-
-        return container;
     }
 
     isDefault(container: IContainer): boolean {
@@ -99,13 +66,13 @@ export class ContainerPool {
         if (this.isDefault(container)) {
             return;
         }
-        if (!container.parent) {
+        // if (!container.parent) {
             if (parent && parent !== container) {
                 container.parent = parent;
             } else {
                 container.parent = this.getDefault();
             }
-        }
+        // }
     }
 }
 
