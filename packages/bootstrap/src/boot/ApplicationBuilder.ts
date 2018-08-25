@@ -131,6 +131,24 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         return this;
     }
 
+    async build(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any, builder?: IModuleBuilder<T>): Promise<T> {
+        if (builder) {
+            return await builder.build(token, env, data);
+        } else {
+            return await super.build(token, env, data);
+        }
+    }
+
+    async bootstrap(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
+        let injmdl = await this.load(token, env);
+        let builder = this.getBuilder(injmdl);
+        if (builder) {
+            return await builder.build(token, env, data);
+        } else {
+            return await super.build(token, env, data);
+        }
+    }
+
     getBuilder(env: InjectedModule<T>): IModuleBuilder<T> {
         let cfg = env.config;
         let container = env.container;
