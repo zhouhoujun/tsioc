@@ -5,6 +5,7 @@ import { ModuleBuilder, ModuleEnv, DIModuleInjectorToken, InjectedModule, IModul
 import { ContainerPool, ContainerPoolToken } from '../utils';
 import { BootModule } from '../BootModule';
 import { EventEmitter } from 'events';
+import { Runnable } from '../runnable';
 
 export enum ApplicationEvents {
     onRootContainerCreated = 'onRootContainerCreated',
@@ -131,7 +132,9 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         return this;
     }
 
-    async build(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any, builder?: IModuleBuilder<T>): Promise<T> {
+    async build(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<T> {
+        let injmdl = await this.load(token, env);
+        let builder = this.getBuilder(injmdl);
         if (builder) {
             return await builder.build(token, env, data);
         } else {
@@ -143,9 +146,9 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         let injmdl = await this.load(token, env);
         let builder = this.getBuilder(injmdl);
         if (builder) {
-            return await builder.build(token, env, data);
+            return await builder.bootstrap(token, injmdl, data);
         } else {
-            return await super.build(token, env, data);
+            return await super.bootstrap(token, injmdl, data);
         }
     }
 
