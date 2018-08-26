@@ -1687,8 +1687,17 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
         _this.configs = [];
         _this.providers = new core_1.MapSet();
         _this.events = new events.EventEmitter();
+        _this.initEvents();
         return _this;
     }
+    DefaultApplicationBuilder.prototype.initEvents = function () {
+        var _this = this;
+        this.events.on('onRooConatianerInited', function (container) {
+            _this.providers.forEach(function (val, key) {
+                container.bindProvider(key, val);
+            });
+        });
+    };
     DefaultApplicationBuilder.create = function (baseURL) {
         return new DefaultApplicationBuilder(baseURL);
     };
@@ -1947,9 +1956,6 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
                         _a.sent();
                         _a.label = 2;
                     case 2:
-                        this.providers.forEach(function (val, key) {
-                            container.bindProvider(key, val);
-                        });
                         if (!this.customRegs.length) return [3 /*break*/, 4];
                         return [4 /*yield*/, Promise.all(this.customRegs.map(function (cs) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
                                 var tokens;
@@ -1989,7 +1995,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
             });
         });
     };
-    DefaultApplicationBuilder.classAnnations = { "name": "DefaultApplicationBuilder", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "getPools": [], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "useConfiguration": ["config"], "loadConfig": ["container", "src"], "use": ["modules"], "provider": ["provide", "provider"], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "getBuilder": ["injmdl"], "getDefaultBuilder": ["container"], "getParentContainer": ["env"], "getGlobalConfig": ["container"], "createDefaultContainer": [], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": ["container"] } };
+    DefaultApplicationBuilder.classAnnations = { "name": "DefaultApplicationBuilder", "params": { "constructor": ["baseURL"], "initEvents": [], "create": ["baseURL"], "getPools": [], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "useConfiguration": ["config"], "loadConfig": ["container", "src"], "use": ["modules"], "provider": ["provide", "provider"], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "getBuilder": ["injmdl"], "getDefaultBuilder": ["container"], "getParentContainer": ["env"], "getGlobalConfig": ["container"], "createDefaultContainer": [], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": ["container"] } };
     return DefaultApplicationBuilder;
 }(modules.ModuleBuilder));
 exports.DefaultApplicationBuilder = DefaultApplicationBuilder;

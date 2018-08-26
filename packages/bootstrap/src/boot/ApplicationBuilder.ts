@@ -37,6 +37,15 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         this.configs = [];
         this.providers = new MapSet();
         this.events = new EventEmitter();
+        this.initEvents();
+    }
+
+    protected initEvents() {
+        this.events.on('onRooConatianerInited', (container) => {
+            this.providers.forEach((val, key) => {
+                container.bindProvider(key, val);
+            });
+        })
     }
 
     static create(baseURL?: string): AnyApplicationBuilder {
@@ -263,10 +272,6 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
             let usedModules = this.globalModules;
             await container.loadModule(...usedModules);
         }
-
-        this.providers.forEach((val, key) => {
-            container.bindProvider(key, val);
-        });
 
         if (this.customRegs.length) {
             await Promise.all(this.customRegs.map(async cs => {
