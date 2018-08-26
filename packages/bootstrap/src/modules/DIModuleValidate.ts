@@ -1,10 +1,10 @@
-import { Singleton, InjectModuleValidateToken, BaseModuelValidate } from '@ts-ioc/core';
+import { Singleton, InjectModuleValidateToken, BaseModuelValidate, IModuleValidate } from '@ts-ioc/core';
 import { DIModule } from '../decorators';
 
 /**
  * DIModuel Validate Token
  */
-export const DIModuelValidateToken = new InjectModuleValidateToken(DIModule.toString());
+export const DIModuelValidateToken = new InjectModuleValidateToken<IModuleValidate>(DIModule.toString());
 
 /**
  * DIModuel Validate

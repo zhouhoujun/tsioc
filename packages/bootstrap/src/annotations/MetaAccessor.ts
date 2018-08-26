@@ -10,6 +10,13 @@ import { AnnotationConfigure } from './AnnotationConfigure';
  */
 export interface IMetaAccessor<T> {
     /**
+     * get decorator metadata contain.
+     *
+     * @returns {string}
+     * @memberof IMetaAccessor
+     */
+    getDecorator(): string;
+    /**
      * get metadata config of target type.
      *
      * @param {Token<T>} type
@@ -46,16 +53,20 @@ export class MetaAccessor implements IMetaAccessor<any> {
 
     }
 
+    getDecorator() {
+        return this.decorator;
+    }
+
     getMetadata(token: Token<any>, container: IContainer): AnnotationConfigure<any> {
         let type = isClass(token) ? token : container.getTokenImpl(token);
         if (isClass(type)) {
-            let metas = getTypeMetadata<AnnotationConfigure<any>>(this.decorator, type);
+            let metas = getTypeMetadata<AnnotationConfigure<any>>(this.getDecorator(), type);
             if (metas && metas.length) {
                 let meta = metas[0];
                 return meta;
             }
         }
-        return null;
+        return {};
     }
 }
 
@@ -74,13 +85,18 @@ export const AnnotationMetaAccessorToken = new InjectMetaAccessorToken<any>('Ann
  */
 @Injectable(AnnotationMetaAccessorToken)
 export class AnnotationMetaAccessor implements IMetaAccessor<any> {
+
     constructor(private decorator: string) {
 
+    }
+
+    getDecorator(): string {
+        return this.decorator;
     }
     getMetadata(token: Token<any>, container: IContainer): AnnotationConfigure<any> {
         if (isToken(token)) {
             let accessor: IMetaAccessor<any>;
-            let provider = { decorator: this.decorator };
+            let provider = { decorator: this.getDecorator() };
             container.getTokenExtendsChain(token).forEach(tk => {
                 if (accessor) {
                     return false;
@@ -97,10 +113,10 @@ export class AnnotationMetaAccessor implements IMetaAccessor<any> {
             if (accessor) {
                 return accessor.getMetadata(token, container);
             } else {
-                return null;
+                return {};
             }
         }
-        return null;
+        return {};
     }
 
     protected getDefaultMetaAccessor(container: IContainer, ...providers: Providers[]) {

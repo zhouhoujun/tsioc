@@ -3,7 +3,7 @@ import { DIModuelValidateToken } from './DIModuleValidate';
 import { DIModule } from '../decorators';
 import { ContainerPoolToken } from '../utils';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
-import { InjectMetaAccessorToken, IMetaAccessor, DefaultMetaAccessorToken, AnnotationMetaAccessorToken } from '../annotations';
+import { IMetaAccessor, AnnotationMetaAccessorToken } from '../annotations';
 import { InjectedModuleToken, InjectedModule } from './InjectedModule';
 
 const exportsProvidersFiled = '__exportProviders';

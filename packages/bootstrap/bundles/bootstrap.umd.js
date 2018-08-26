@@ -620,18 +620,21 @@ var MetaAccessor = /** @class */ (function () {
     function MetaAccessor(decorator) {
         this.decorator = decorator;
     }
+    MetaAccessor.prototype.getDecorator = function () {
+        return this.decorator;
+    };
     MetaAccessor.prototype.getMetadata = function (token, container) {
         var type = core_1.isClass(token) ? token : container.getTokenImpl(token);
         if (core_1.isClass(type)) {
-            var metas = core_1.getTypeMetadata(this.decorator, type);
+            var metas = core_1.getTypeMetadata(this.getDecorator(), type);
             if (metas && metas.length) {
                 var meta = metas[0];
                 return meta;
             }
         }
-        return null;
+        return {};
     };
-    MetaAccessor.classAnnations = { "name": "MetaAccessor", "params": { "constructor": ["decorator"], "getMetadata": ["token", "container"] } };
+    MetaAccessor.classAnnations = { "name": "MetaAccessor", "params": { "constructor": ["decorator"], "getDecorator": [], "getMetadata": ["token", "container"] } };
     MetaAccessor = tslib_1.__decorate([
         core_1.Injectable(exports.DefaultMetaAccessorToken),
         tslib_1.__metadata("design:paramtypes", [String])
@@ -654,10 +657,13 @@ var AnnotationMetaAccessor = /** @class */ (function () {
     function AnnotationMetaAccessor(decorator) {
         this.decorator = decorator;
     }
+    AnnotationMetaAccessor.prototype.getDecorator = function () {
+        return this.decorator;
+    };
     AnnotationMetaAccessor.prototype.getMetadata = function (token, container) {
         if (core_1.isToken(token)) {
             var accessor_1;
-            var provider_1 = { decorator: this.decorator };
+            var provider_1 = { decorator: this.getDecorator() };
             container.getTokenExtendsChain(token).forEach(function (tk) {
                 if (accessor_1) {
                     return false;
@@ -675,10 +681,10 @@ var AnnotationMetaAccessor = /** @class */ (function () {
                 return accessor_1.getMetadata(token, container);
             }
             else {
-                return null;
+                return {};
             }
         }
-        return null;
+        return {};
     };
     AnnotationMetaAccessor.prototype.getDefaultMetaAccessor = function (container) {
         var providers = [];
@@ -687,7 +693,7 @@ var AnnotationMetaAccessor = /** @class */ (function () {
         }
         return container.resolve.apply(container, [exports.DefaultMetaAccessorToken].concat(providers));
     };
-    AnnotationMetaAccessor.classAnnations = { "name": "AnnotationMetaAccessor", "params": { "constructor": ["decorator"], "getMetadata": ["token", "container"], "getDefaultMetaAccessor": ["container", "providers"] } };
+    AnnotationMetaAccessor.classAnnations = { "name": "AnnotationMetaAccessor", "params": { "constructor": ["decorator"], "getDecorator": [], "getMetadata": ["token", "container"], "getDefaultMetaAccessor": ["container", "providers"] } };
     AnnotationMetaAccessor = tslib_1.__decorate([
         core_1.Injectable(exports.AnnotationMetaAccessorToken),
         tslib_1.__metadata("design:paramtypes", [String])
@@ -1353,7 +1359,7 @@ var ModuleBuilder = /** @class */ (function () {
     };
     ModuleBuilder.prototype.load = function (token, env) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var injmdl, parent, mdtype, container, injector, injector;
+            var injmdl, parent, cfg, mdtype, container, injector, injector;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1368,7 +1374,11 @@ var ModuleBuilder = /** @class */ (function () {
                         return [4 /*yield*/, this.import(token, parent)];
                     case 2:
                         injmdl = _a.sent();
-                        return [3 /*break*/, 9];
+                        if (!injmdl) {
+                            cfg = parent.get(annotations.AnnotationMetaAccessorToken).getMetadata(token, parent);
+                            injmdl = new InjectedModule_1.InjectedModule(token, cfg, parent);
+                        }
+                        return [3 /*break*/, 10];
                     case 3:
                         mdtype = this.getType(token);
                         if (!core_1.isToken(mdtype)) return [3 /*break*/, 7];
@@ -1383,15 +1393,19 @@ var ModuleBuilder = /** @class */ (function () {
                         _a.sent();
                         injmdl.config = core_1.lang.assign(injmdl.config, token);
                         _a.label = 6;
-                    case 6: return [3 /*break*/, 9];
+                    case 6: return [3 /*break*/, 8];
                     case 7:
+                        mdtype = null;
+                        _a.label = 8;
+                    case 8:
+                        if (!!injmdl) return [3 /*break*/, 10];
                         injector = parent.get(DIModuleInjector_1.DIModuleInjectorToken);
                         return [4 /*yield*/, injector.importByConfig(parent, token)];
-                    case 8:
+                    case 9:
                         _a.sent();
-                        injmdl = new InjectedModule_1.InjectedModule(null, token, parent);
-                        _a.label = 9;
-                    case 9: return [2 /*return*/, injmdl];
+                        injmdl = new InjectedModule_1.InjectedModule(mdtype, token, parent);
+                        _a.label = 10;
+                    case 10: return [2 /*return*/, injmdl];
                 }
             });
         });
@@ -1762,9 +1776,45 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
         this.providers.set(provide, provider);
         return this;
     };
-    DefaultApplicationBuilder.prototype.getBuilder = function (env) {
-        var cfg = env.config;
-        var container = env.container;
+    DefaultApplicationBuilder.prototype.build = function (token, env, data) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var injmdl, builder;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.load(token, env)];
+                    case 1:
+                        injmdl = _a.sent();
+                        builder = this.getBuilder(injmdl);
+                        if (!builder) return [3 /*break*/, 3];
+                        return [4 /*yield*/, builder.build(token, env, data)];
+                    case 2: return [2 /*return*/, _a.sent()];
+                    case 3: return [4 /*yield*/, _super.prototype.build.call(this, token, env, data)];
+                    case 4: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    DefaultApplicationBuilder.prototype.bootstrap = function (token, env, data) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var injmdl, builder;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.load(token, env)];
+                    case 1:
+                        injmdl = _a.sent();
+                        builder = this.getBuilder(injmdl);
+                        if (!builder) return [3 /*break*/, 3];
+                        return [4 /*yield*/, builder.bootstrap(token, injmdl, data)];
+                    case 2: return [2 /*return*/, _a.sent()];
+                    case 3: return [4 /*yield*/, _super.prototype.bootstrap.call(this, token, injmdl, data)];
+                    case 4: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    DefaultApplicationBuilder.prototype.getBuilder = function (injmdl) {
+        var cfg = injmdl.config;
+        var container = injmdl.container;
         var builder;
         if (cfg) {
             if (core_1.isClass(cfg.builder)) {
@@ -1779,7 +1829,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
                 builder = cfg.builder;
             }
         }
-        var tko = env.token;
+        var tko = injmdl.token;
         if (!builder && tko) {
             container.getTokenExtendsChain(tko).forEach(function (tk) {
                 if (builder) {
@@ -1939,7 +1989,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
             });
         });
     };
-    DefaultApplicationBuilder.classAnnations = { "name": "DefaultApplicationBuilder", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "getPools": [], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "useConfiguration": ["config"], "loadConfig": ["container", "src"], "use": ["modules"], "provider": ["provide", "provider"], "getBuilder": ["env"], "getDefaultBuilder": ["container"], "getParentContainer": ["env"], "getGlobalConfig": ["container"], "createDefaultContainer": [], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": ["container"] } };
+    DefaultApplicationBuilder.classAnnations = { "name": "DefaultApplicationBuilder", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "getPools": [], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "useConfiguration": ["config"], "loadConfig": ["container", "src"], "use": ["modules"], "provider": ["provide", "provider"], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "getBuilder": ["injmdl"], "getDefaultBuilder": ["container"], "getParentContainer": ["env"], "getGlobalConfig": ["container"], "createDefaultContainer": [], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": ["container"] } };
     return DefaultApplicationBuilder;
 }(modules.ModuleBuilder));
 exports.DefaultApplicationBuilder = DefaultApplicationBuilder;

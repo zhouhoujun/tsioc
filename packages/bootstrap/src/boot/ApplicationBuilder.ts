@@ -152,9 +152,9 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         }
     }
 
-    getBuilder(env: InjectedModule<T>): IModuleBuilder<T> {
-        let cfg = env.config;
-        let container = env.container;
+    getBuilder(injmdl: InjectedModule<T>): IModuleBuilder<T> {
+        let cfg = injmdl.config;
+        let container = injmdl.container;
         let builder: IModuleBuilder<T>;
         if (cfg) {
             if (isClass(cfg.builder)) {
@@ -169,7 +169,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
             }
         }
 
-        let tko = env.token;
+        let tko = injmdl.token;
         if (!builder && tko) {
             container.getTokenExtendsChain(tko).forEach(tk => {
                 if (builder) {

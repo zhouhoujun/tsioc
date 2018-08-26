@@ -8,7 +8,7 @@ import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { MdInstance } from './ModuleType';
 import { ContainerPool, ContainerPoolToken } from '../utils';
 import { InjectRunnerToken, IRunner, Boot, DefaultRunnerToken, Service, IService, InjectServiceToken, DefaultServiceToken, Runnable } from '../runnable';
-import { IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder, DefaultAnnotationBuilderToken, AnnotationBuilderToken, AnnotationBuilder } from '../annotations';
+import { IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder, DefaultAnnotationBuilderToken, AnnotationBuilderToken, AnnotationBuilder, AnnotationMetaAccessorToken } from '../annotations';
 import { InjectedModule, InjectedModuleToken } from './InjectedModule';
 import { DIModuleInjectorToken } from './DIModuleInjector';
 
@@ -142,6 +142,10 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         let parent = await this.getParentContainer(env);
         if (isToken(token)) {
             injmdl = await this.import(token, parent);
+            if (!injmdl) {
+                let cfg = parent.get(AnnotationMetaAccessorToken).getMetadata(token, parent);
+                injmdl = new InjectedModule(token, cfg, parent);
+            }
         } else {
             let mdtype = this.getType(token);
             if (isToken(mdtype)) {
@@ -153,9 +157,12 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
                     injmdl.config = lang.assign(injmdl.config, token);
                 }
             } else {
+                mdtype = null;
+            }
+            if (!injmdl) {
                 let injector = parent.get(DIModuleInjectorToken);
                 await injector.importByConfig(parent, token)
-                injmdl = new InjectedModule(null, token, parent);
+                injmdl = new InjectedModule(mdtype, token, parent);
             }
         }
 

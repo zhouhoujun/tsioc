@@ -90,7 +90,6 @@ export class ObjectMapSet<TKey, TVal> {
 export class MapSet<TKey, TVal> {
 
     private map: ObjectMapSet<TKey, TVal> | Map<TKey, TVal>;
-    private hasMap: boolean;
     constructor() {
         this.map = isClass(Map) ? new Map<TKey, TVal>() : new ObjectMapSet<TKey, TVal>();
     }
