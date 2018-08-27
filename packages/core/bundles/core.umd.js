@@ -57,7 +57,6 @@ var equalsConstructorPrototype = function (o) {
 	return ctor && ctor.prototype === o;
 };
 var excludedKeys = {
-	$applicationCache: true,
 	$console: true,
 	$external: true,
 	$frame: true,
@@ -159,7 +158,7 @@ keysShim.shim = function shimObjectKeys() {
 		}(1, 2));
 		if (!keysWorksWithArguments) {
 			var originalKeys = Object.keys;
-			Object.keys = function keys(object) { // eslint-disable-line func-name-matching
+			Object.keys = function keys(object) {
 				if (isArguments(object)) {
 					return originalKeys(slice.call(object));
 				} else {
@@ -249,26 +248,181 @@ defineProperties.supportsDescriptors = !!supportsDescriptors;
 
 var defineProperties_1 = defineProperties;
 
+var toStr$3 = Object.prototype.toString;
+
+var isArguments$2 = function isArguments(value) {
+	var str = toStr$3.call(value);
+	var isArgs = str === '[object Arguments]';
+	if (!isArgs) {
+		isArgs = str !== '[object Array]' &&
+			value !== null &&
+			typeof value === 'object' &&
+			typeof value.length === 'number' &&
+			value.length >= 0 &&
+			toStr$3.call(value.callee) === '[object Function]';
+	}
+	return isArgs;
+};
+
+// modified from https://github.com/es-shims/es5-shim
+var has$1 = Object.prototype.hasOwnProperty;
+var toStr$4 = Object.prototype.toString;
+var slice$1 = Array.prototype.slice;
+
+var isEnumerable$1 = Object.prototype.propertyIsEnumerable;
+var hasDontEnumBug$1 = !isEnumerable$1.call({ toString: null }, 'toString');
+var hasProtoEnumBug$1 = isEnumerable$1.call(function () {}, 'prototype');
+var dontEnums$1 = [
+	'toString',
+	'toLocaleString',
+	'valueOf',
+	'hasOwnProperty',
+	'isPrototypeOf',
+	'propertyIsEnumerable',
+	'constructor'
+];
+var equalsConstructorPrototype$1 = function (o) {
+	var ctor = o.constructor;
+	return ctor && ctor.prototype === o;
+};
+var excludedKeys$1 = {
+	$console: true,
+	$external: true,
+	$frame: true,
+	$frameElement: true,
+	$frames: true,
+	$innerHeight: true,
+	$innerWidth: true,
+	$outerHeight: true,
+	$outerWidth: true,
+	$pageXOffset: true,
+	$pageYOffset: true,
+	$parent: true,
+	$scrollLeft: true,
+	$scrollTop: true,
+	$scrollX: true,
+	$scrollY: true,
+	$self: true,
+	$webkitIndexedDB: true,
+	$webkitStorageInfo: true,
+	$window: true
+};
+var hasAutomationEqualityBug$1 = (function () {
+	/* global window */
+	if (typeof window === 'undefined') { return false; }
+	for (var k in window) {
+		try {
+			if (!excludedKeys$1['$' + k] && has$1.call(window, k) && window[k] !== null && typeof window[k] === 'object') {
+				try {
+					equalsConstructorPrototype$1(window[k]);
+				} catch (e) {
+					return true;
+				}
+			}
+		} catch (e) {
+			return true;
+		}
+	}
+	return false;
+}());
+var equalsConstructorPrototypeIfNotBuggy$1 = function (o) {
+	/* global window */
+	if (typeof window === 'undefined' || !hasAutomationEqualityBug$1) {
+		return equalsConstructorPrototype$1(o);
+	}
+	try {
+		return equalsConstructorPrototype$1(o);
+	} catch (e) {
+		return false;
+	}
+};
+
+var keysShim$1 = function keys(object) {
+	var isObject = object !== null && typeof object === 'object';
+	var isFunction = toStr$4.call(object) === '[object Function]';
+	var isArguments = isArguments$2(object);
+	var isString = isObject && toStr$4.call(object) === '[object String]';
+	var theKeys = [];
+
+	if (!isObject && !isFunction && !isArguments) {
+		throw new TypeError('Object.keys called on a non-object');
+	}
+
+	var skipProto = hasProtoEnumBug$1 && isFunction;
+	if (isString && object.length > 0 && !has$1.call(object, 0)) {
+		for (var i = 0; i < object.length; ++i) {
+			theKeys.push(String(i));
+		}
+	}
+
+	if (isArguments && object.length > 0) {
+		for (var j = 0; j < object.length; ++j) {
+			theKeys.push(String(j));
+		}
+	} else {
+		for (var name in object) {
+			if (!(skipProto && name === 'prototype') && has$1.call(object, name)) {
+				theKeys.push(String(name));
+			}
+		}
+	}
+
+	if (hasDontEnumBug$1) {
+		var skipConstructor = equalsConstructorPrototypeIfNotBuggy$1(object);
+
+		for (var k = 0; k < dontEnums$1.length; ++k) {
+			if (!(skipConstructor && dontEnums$1[k] === 'constructor') && has$1.call(object, dontEnums$1[k])) {
+				theKeys.push(dontEnums$1[k]);
+			}
+		}
+	}
+	return theKeys;
+};
+
+keysShim$1.shim = function shimObjectKeys() {
+	if (Object.keys) {
+		var keysWorksWithArguments = (function () {
+			// Safari 5.0 bug
+			return (Object.keys(arguments) || '').length === 2;
+		}(1, 2));
+		if (!keysWorksWithArguments) {
+			var originalKeys = Object.keys;
+			Object.keys = function keys(object) {
+				if (isArguments$2(object)) {
+					return originalKeys(slice$1.call(object));
+				} else {
+					return originalKeys(object);
+				}
+			};
+		}
+	} else {
+		Object.keys = keysShim$1;
+	}
+	return Object.keys || keysShim$1;
+};
+
+var objectKeys$2 = keysShim$1;
+
 /* eslint no-invalid-this: 1 */
 
 var ERROR_MESSAGE = 'Function.prototype.bind called on incompatible ';
-var slice$1 = Array.prototype.slice;
-var toStr$3 = Object.prototype.toString;
+var slice$2 = Array.prototype.slice;
+var toStr$5 = Object.prototype.toString;
 var funcType = '[object Function]';
 
 var implementation = function bind(that) {
     var target = this;
-    if (typeof target !== 'function' || toStr$3.call(target) !== funcType) {
+    if (typeof target !== 'function' || toStr$5.call(target) !== funcType) {
         throw new TypeError(ERROR_MESSAGE + target);
     }
-    var args = slice$1.call(arguments, 1);
+    var args = slice$2.call(arguments, 1);
 
     var bound;
     var binder = function () {
         if (this instanceof bound) {
             var result = target.apply(
                 this,
-                args.concat(slice$1.call(arguments))
+                args.concat(slice$2.call(arguments))
             );
             if (Object(result) === result) {
                 return result;
@@ -277,7 +431,7 @@ var implementation = function bind(that) {
         } else {
             return target.apply(
                 that,
-                args.concat(slice$1.call(arguments))
+                args.concat(slice$2.call(arguments))
             );
         }
     };
@@ -361,7 +515,7 @@ var implementation$3 = function assign(target, source1) {
 	var s, source, i, props, syms, value, key;
 	for (s = 1; s < arguments.length; ++s) {
 		source = toObject(arguments[s]);
-		props = objectKeys(source);
+		props = objectKeys$2(source);
 		var getSymbols = hasSymbols$1 && (Object.getOwnPropertySymbols || originalGetSymbols);
 		if (getSymbols) {
 			syms = getSymbols(source);
@@ -5938,8 +6092,47 @@ unwrapExports(IModuleValidate);
 var IModuleValidate_1 = IModuleValidate.InjectModuleValidateToken;
 var IModuleValidate_2 = IModuleValidate.ModuleValidateToken;
 
+var IMetaAccessor = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/**
+ * application service token.
+ *
+ * @export
+ * @class InjectMetaAccessorToken
+ * @extends {Registration<MetaAccessor<T>>}
+ * @template T
+ */
+var InjectMetaAccessorToken = /** @class */ (function (_super) {
+    tslib_1.__extends(InjectMetaAccessorToken, _super);
+    function InjectMetaAccessorToken(type) {
+        return _super.call(this, type, 'boot__metaAccessor') || this;
+    }
+    InjectMetaAccessorToken.classAnnations = { "name": "InjectMetaAccessorToken", "params": { "constructor": ["type"] } };
+    return InjectMetaAccessorToken;
+}(Registration_1.Registration));
+exports.InjectMetaAccessorToken = InjectMetaAccessorToken;
+/**
+ * default MetaAccessor token.
+ */
+exports.DefaultMetaAccessorToken = new InjectMetaAccessorToken('default');
+/**
+ * Annotation MetaAccessor token.
+ */
+exports.AnnotationMetaAccessorToken = new InjectMetaAccessorToken('Annotation');
+
+
+});
+
+unwrapExports(IMetaAccessor);
+var IMetaAccessor_1 = IMetaAccessor.InjectMetaAccessorToken;
+var IMetaAccessor_2 = IMetaAccessor.DefaultMetaAccessorToken;
+var IMetaAccessor_3 = IMetaAccessor.AnnotationMetaAccessorToken;
+
 var ModuleValidate = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -5956,9 +6149,32 @@ var BaseModuelValidate = /** @class */ (function () {
     function BaseModuelValidate() {
     }
     BaseModuelValidate.prototype.validate = function (type) {
-        return utils.isClass(type) && core.hasOwnClassMetadata(this.getDecorator(), type);
+        if (!utils.isClass(type)) {
+            return false;
+        }
+        var decorator = this.getDecorator();
+        if (utils.isString(decorator)) {
+            return core.hasOwnClassMetadata(decorator, type);
+        }
+        else if (utils.isArray(decorator)) {
+            if (decorator.length > 0) {
+                return decorator.some(function (decor) { return core.hasOwnClassMetadata(decor, type); });
+            }
+        }
+        return false;
     };
-    BaseModuelValidate.classAnnations = { "name": "BaseModuelValidate", "params": { "constructor": [], "validate": ["type"], "getDecorator": [] } };
+    BaseModuelValidate.prototype.getMetaConfig = function (token, container) {
+        if (utils.isToken(token)) {
+            var accessor = this.getMetaAccessor(container);
+            return accessor.getMetadata(token, container);
+        }
+        return {};
+    };
+    BaseModuelValidate.prototype.getMetaAccessor = function (container) {
+        var decorator = this.getDecorator();
+        return container.resolve(IMetaAccessor.AnnotationMetaAccessorToken, { decorator: decorator });
+    };
+    BaseModuelValidate.classAnnations = { "name": "BaseModuelValidate", "params": { "constructor": [], "validate": ["type"], "getMetaConfig": ["token", "container"], "getMetaAccessor": ["container"], "getDecorator": [] } };
     return BaseModuelValidate;
 }());
 exports.BaseModuelValidate = BaseModuelValidate;
@@ -5994,6 +6210,103 @@ unwrapExports(ModuleValidate);
 var ModuleValidate_1 = ModuleValidate.BaseModuelValidate;
 var ModuleValidate_2 = ModuleValidate.IocExtModuleValidateToken;
 var ModuleValidate_3 = ModuleValidate.IocExtModuleValidate;
+
+var MetaAccessor_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+var MetaAccessor = /** @class */ (function () {
+    function MetaAccessor(decorator) {
+        this.decorators = utils.isArray(decorator) ? decorator : [decorator];
+    }
+    MetaAccessor.prototype.getDecorators = function () {
+        return this.decorators;
+    };
+    MetaAccessor.prototype.getMetadata = function (token, container) {
+        var type = utils.isClass(token) ? token : container.getTokenImpl(token);
+        if (utils.isClass(type)) {
+            var decorators = this.getDecorators();
+            var firstDecor = decorators.find(function (decor) { return core.hasOwnClassMetadata(decor, type); });
+            var metas = core.getTypeMetadata(firstDecor, type);
+            if (metas && metas.length) {
+                var meta = metas[0];
+                return meta;
+            }
+        }
+        return {};
+    };
+    MetaAccessor.classAnnations = { "name": "MetaAccessor", "params": { "constructor": ["decorator"], "getDecorators": [], "getMetadata": ["token", "container"] } };
+    MetaAccessor = tslib_1.__decorate([
+        core.Injectable(IMetaAccessor.DefaultMetaAccessorToken),
+        tslib_1.__metadata("design:paramtypes", [Object])
+    ], MetaAccessor);
+    return MetaAccessor;
+}());
+exports.MetaAccessor = MetaAccessor;
+/**
+ * Annotation MetaAccessor.
+ *
+ * @export
+ * @class AnnotationMetaAccessor
+ * @implements {IMetaAccessor<any>}
+ */
+var AnnotationMetaAccessor = /** @class */ (function () {
+    function AnnotationMetaAccessor(decorator) {
+        this.decorators = utils.isArray(decorator) ? decorator : [decorator];
+    }
+    AnnotationMetaAccessor.prototype.getDecorators = function () {
+        return this.decorators;
+    };
+    AnnotationMetaAccessor.prototype.getMetadata = function (token, container) {
+        if (utils.isToken(token)) {
+            var accessor_1;
+            var provider_1 = { decorator: this.getDecorators() };
+            container.getTokenExtendsChain(token).forEach(function (tk) {
+                if (accessor_1) {
+                    return false;
+                }
+                var accToken = new IMetaAccessor.InjectMetaAccessorToken(tk);
+                if (container.has(accToken)) {
+                    accessor_1 = container.resolve(accToken, provider_1);
+                }
+                return true;
+            });
+            if (!accessor_1) {
+                accessor_1 = this.getDefaultMetaAccessor(container, provider_1);
+            }
+            if (accessor_1) {
+                return accessor_1.getMetadata(token, container);
+            }
+            else {
+                return {};
+            }
+        }
+        return {};
+    };
+    AnnotationMetaAccessor.prototype.getDefaultMetaAccessor = function (container) {
+        var providers = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            providers[_i - 1] = arguments[_i];
+        }
+        return container.resolve.apply(container, [IMetaAccessor.DefaultMetaAccessorToken].concat(providers));
+    };
+    AnnotationMetaAccessor.classAnnations = { "name": "AnnotationMetaAccessor", "params": { "constructor": ["decorator"], "getDecorators": [], "getMetadata": ["token", "container"], "getDefaultMetaAccessor": ["container", "providers"] } };
+    AnnotationMetaAccessor = tslib_1.__decorate([
+        core.Injectable(IMetaAccessor.AnnotationMetaAccessorToken),
+        tslib_1.__metadata("design:paramtypes", [Object])
+    ], AnnotationMetaAccessor);
+    return AnnotationMetaAccessor;
+}());
+exports.AnnotationMetaAccessor = AnnotationMetaAccessor;
+
+
+});
+
+unwrapExports(MetaAccessor_1);
+var MetaAccessor_2 = MetaAccessor_1.MetaAccessor;
+var MetaAccessor_3 = MetaAccessor_1.AnnotationMetaAccessor;
 
 var IModuleInjector = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -6270,6 +6583,8 @@ tslib_1.__exportStar(IModuleLoader, exports);
 tslib_1.__exportStar(DefaultModuleLoader_1, exports);
 tslib_1.__exportStar(IModuleValidate, exports);
 tslib_1.__exportStar(ModuleValidate, exports);
+tslib_1.__exportStar(IMetaAccessor, exports);
+tslib_1.__exportStar(MetaAccessor_1, exports);
 tslib_1.__exportStar(IModuleInjector, exports);
 tslib_1.__exportStar(ModuleInjector_1, exports);
 tslib_1.__exportStar(IModuleInjectorChain, exports);
@@ -6418,6 +6733,8 @@ var DefaultContainerBuilder = /** @class */ (function () {
         if (!container.has(injectors.ModuleInjectorChainToken)) {
             container.register(injectors.SyncModuleInjector)
                 .register(injectors.ModuleInjector)
+                .register(injectors.MetaAccessor)
+                .register(injectors.AnnotationMetaAccessor)
                 .bindProvider(injectors.IocExtModuleValidateToken, new injectors.IocExtModuleValidate())
                 .bindProvider(injectors.ModuleInjectorChainToken, new injectors.ModuleInjectorChain());
         }

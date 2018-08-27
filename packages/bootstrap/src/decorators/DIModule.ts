@@ -11,7 +11,7 @@ import { IAnnotationBuilder } from '../annotations/IAnnotationBuilder';
  * @extends {ModuleConfig<any>}
  * @extends {ClassMetadata}
  */
-export interface DIModuleMetadata extends ModuleConfig<any>, ClassMetadata {
+export interface DIModuleMetadata extends ModuleConfig<any> {
     /**
      * custom decorator type.
      *

@@ -1,4 +1,4 @@
-import { Token, ClassMetadata } from '@ts-ioc/core';
+import { Token, IAnnotationMetadata } from '@ts-ioc/core';
 import { IAnnotationBuilder } from './IAnnotationBuilder';
 
 /**
@@ -8,7 +8,7 @@ import { IAnnotationBuilder } from './IAnnotationBuilder';
  * @interface TypeConfigure
  * @template T
  */
-export interface AnnotationConfigure<T> extends ClassMetadata {
+export interface AnnotationConfigure<T> extends IAnnotationMetadata<T> {
     /**
      * autorun.
      *
@@ -16,14 +16,6 @@ export interface AnnotationConfigure<T> extends ClassMetadata {
      * @memberof AnnotationConfigure
      */
     autorun?: string;
-
-    /**
-     * annotation for the type.
-     *
-     * @type {Token<T>}
-     * @memberof AnnotationConfigure
-     */
-    token?: Token<T>;
 
     /**
      * annotation builder.

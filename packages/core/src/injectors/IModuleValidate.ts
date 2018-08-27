@@ -1,6 +1,8 @@
-import { Type } from '../types';
+import { Type, Token } from '../types';
 import { InjectToken } from '../InjectToken';
 import { Registration } from '../Registration';
+import { IAnnotationMetadata, IMetaAccessor } from './IMetaAccessor';
+import { IContainer } from '../IContainer';
 
 /**
  * module validate.
@@ -17,13 +19,32 @@ export interface IModuleValidate {
      * @memberof IModuleValidate
      */
     validate(type: Type<any>): boolean;
+
+    /**
+     * get module metadata config.
+     *
+     * @param {Token<any>} token
+     * @param {IContainer} container
+     * @returns {ClassMetadata}
+     * @memberof IModuleValidate
+     */
+    getMetaConfig(token: Token<any>, container: IContainer): IAnnotationMetadata<any>;
+
+    /**
+     * get meta accessor.
+     *
+     * @param {IContainer} container
+     * @returns {IMetaAccessor<any>}
+     * @memberof IModuleValidate
+     */
+    getMetaAccessor(container: IContainer): IMetaAccessor<any>;
     /**
      * decorator of the module.
      *
-     * @returns {string}
+     * @returns {(string | string[])}
      * @memberof IModuleValidate
      */
-    getDecorator(): string;
+    getDecorator(): string | string[];
 }
 
 /**

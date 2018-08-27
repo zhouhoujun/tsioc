@@ -1,5 +1,5 @@
 import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
-import { Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, hasOwnClassMetadata, getTypeMetadata, lang, isFunction, Injectable } from '@ts-ioc/core';
+import { Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, hasOwnClassMetadata, getTypeMetadata, lang, isFunction, Injectable, AnnotationMetaAccessorToken } from '@ts-ioc/core';
 import { AnnotationConfigure } from './AnnotationConfigure';
 import { Annotation } from '../decorators';
 import { AnnoInstance } from './IAnnotation';
@@ -149,12 +149,9 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
     }
 
     protected getMetaConfig(token: Type<any>): AnnotationConfigure<T> {
-        let decorator = this.getDecorator();
-        if (hasOwnClassMetadata(decorator, token)) {
-            let metas = getTypeMetadata<AnnotationConfigure<T>>(decorator, token);
-            if (metas && metas.length) {
-                return metas[0];
-            }
+        let accessor = this.container.resolve(AnnotationMetaAccessorToken, { decorator: this.getDecorator() });
+        if (accessor) {
+            return accessor.getMetadata(token, this.container);
         }
         return null;
     }

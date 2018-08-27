@@ -3,7 +3,6 @@ import { DIModuelValidateToken } from './DIModuleValidate';
 import { DIModule } from '../decorators';
 import { ContainerPoolToken } from '../utils';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
-import { IMetaAccessor, AnnotationMetaAccessorToken } from '../annotations';
 import { InjectedModuleToken, InjectedModule } from './InjectedModule';
 
 const exportsProvidersFiled = '__exportProviders';
@@ -83,7 +82,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         let pools = container.get(ContainerPoolToken);
         let newContainer = pools.create(container);
         newContainer.register(type);
-        let metaConfig = this.getMetaConfig(type, newContainer);
+        let metaConfig = this.validate.getMetaConfig(type, newContainer);
         await this.registerConfgureDepds(newContainer, metaConfig);
         await this.importConfigExports(container, newContainer, metaConfig, type);
 
@@ -91,19 +90,6 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         container.bindProvider(new InjectedModuleToken(type), injMd);
 
         return injMd;
-    }
-
-    protected getMetaConfig(token: Token<any>, container: IContainer): ModuleConfigure {
-        if (isToken(token)) {
-            let accessor = this.getMetaAccessor(container);
-            return accessor.getMetadata(token, container);
-        }
-        return null;
-    }
-
-    protected getMetaAccessor(container: IContainer): IMetaAccessor<any> {
-        let decorator = this.validate.getDecorator();
-        return container.resolve(AnnotationMetaAccessorToken, { decorator: decorator });
     }
 
 

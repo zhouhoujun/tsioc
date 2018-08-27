@@ -8,7 +8,7 @@ import { IAnnotationBuilder } from '../annotations/IAnnotationBuilder';
 import { createDIModuleDecorator } from './DIModule';
 
 
-export interface BootstrapMetadata extends AppConfigure, ClassMetadata {
+export interface BootstrapMetadata extends AppConfigure {
     builder?: Type<IApplicationBuilder<any>> | IApplicationBuilder<any>;
     globals?: LoadType[];
 }

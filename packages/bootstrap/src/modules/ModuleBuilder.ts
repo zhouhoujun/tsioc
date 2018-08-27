@@ -1,14 +1,14 @@
 import 'reflect-metadata';
 import {
     IContainer, Token, Providers, lang, isFunction, isClass,
-    isToken, Singleton, Inject, Registration, Container
+    isToken, Singleton, Inject, Registration, Container, AnnotationMetaAccessorToken
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { MdInstance } from './ModuleType';
 import { ContainerPool, ContainerPoolToken } from '../utils';
 import { InjectRunnerToken, IRunner, Boot, DefaultRunnerToken, Service, IService, InjectServiceToken, DefaultServiceToken, Runnable } from '../runnable';
-import { IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder, DefaultAnnotationBuilderToken, AnnotationBuilderToken, AnnotationBuilder, AnnotationMetaAccessorToken } from '../annotations';
+import { IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder, DefaultAnnotationBuilderToken, AnnotationBuilderToken, AnnotationBuilder } from '../annotations';
 import { InjectedModule, InjectedModuleToken } from './InjectedModule';
 import { DIModuleInjectorToken } from './DIModuleInjector';
 
@@ -60,10 +60,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      */
     async build(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<T> {
         let injmdl = await this.load(token, env);
-        // let builder = this.getBuilder(currEnv);
-        // if (builder && builder !== this) {
-        //     return await builder.build(token, currEnv, data);
-        // } else {
         let container = injmdl.container;
         let cfg = injmdl.config;
         let annBuilder = this.getAnnoBuilder(container, injmdl.token, cfg.annotationBuilder);
@@ -78,7 +74,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             }
             return instance;
         }
-        // }
     }
 
     /**
@@ -92,10 +87,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     */
     async bootstrap(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
         let injmdl = await this.load(token, env);
-        // let builder = this.getBuilder(currEnv);
-        // if (builder && builder !== this) {
-        //     return await builder.bootstrap(token, currEnv, data);
-        // } else {
         let cfg = injmdl.config;
         let container = injmdl.container;
         let md = await this.build(token, injmdl, data) as MdInstance<T>;
@@ -112,7 +103,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             runable = await this.autoRun(container, injmdl.token, cfg, md);
         }
         return runable;
-        // }
     }
 
     async import(token: Token<T>, parent?: IContainer): Promise<InjectedModule<T>> {
