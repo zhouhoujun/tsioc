@@ -61,10 +61,10 @@ export class Logger {
 })
 export class ModuleB implements OnModuleStart<ClassSevice> {
     constructor(test: TestService, @Inject(ContainerToken) private container: IContainer) {
-        let pools = container.get(ContainerPoolToken);
+        // let pools = container.get(ContainerPoolToken);
         // console.log(pools);
         console.log('container pools defaults..................\n');
-        console.log(pools.getDefault());
+        // console.log(pools.getDefault());
 
         console.log(test);
         test.test();

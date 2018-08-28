@@ -39,6 +39,7 @@ export class MatchPointcutAction extends ActionComposite {
         if (!isValideAspectTarget(data.targetType)) {
             return;
         }
+
         let advisor = container.get(AdvisorToken);
         let matcher = container.get(AdviceMatcherToken);
         advisor.aspects.forEach((adviceMetas, type) => {

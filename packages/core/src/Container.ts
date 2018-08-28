@@ -2,10 +2,10 @@ import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
 import { Type, Token, Factory, SymbolType, ToInstance, IocState, Providers, Modules, LoadType } from './types';
 import { Registration } from './Registration';
-import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet, lang } from './utils';
+import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet, lang, isObject, isMetadataObject } from './utils';
 
 import { MethodAccessorToken } from './IMethodAccessor';
-import { ActionComponent, CoreActions, CacheActionData, LifeState } from './core';
+import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderMatcherToken, ProviderMap, ProviderType, IProvider } from './core';
 import { LifeScope, LifeScopeToken } from './LifeScope';
 import { IParameter } from './IParameter';
 import { CacheManagerToken } from './ICacheManager';
@@ -83,6 +83,9 @@ export class Container implements IContainer {
             let factory = this.factories.get(key);
             return factory(...providers) as T;
         } else {
+            if (!this.hasContainerProvider(providers)) {
+                providers.push({ provide: ContainerToken, useValue: this });
+            }
             return this.parent.resolve(token, ...providers);
         }
     }
@@ -268,6 +271,9 @@ export class Container implements IContainer {
             }
         }
         if (isClass(provider)) {
+            if (!this.has(provider)) {
+                this.register(provider);
+            }
             this.provideTypes.set(provideKey, provider);
         } else if (isToken(provider)) {
             let token = provider;
@@ -303,6 +309,33 @@ export class Container implements IContainer {
             return this.parent.getTokenImpl(tokenKey);
         } else {
             return null;
+        }
+    }
+
+    /**
+     * get type provider for provides.
+     *
+     * @template T
+     * @param {Type<T>} target
+     * @returns {Token<T>[]}
+     * @memberof Container
+     */
+    getTypeProvides<T>(target: Type<T>): Token<T>[] {
+        if (!isClass(target)) {
+            return [];
+        }
+        let tokens: Token<T>[] = [];
+        this.provideTypes.forEach((val, key) => {
+            if (val === target) {
+                tokens.push(key);
+            }
+        });
+        if (tokens.length) {
+            return tokens;
+        } else if (this.parent) {
+            return this.parent.getTypeProvides(target);
+        } else {
+            return tokens;
         }
     }
 
@@ -482,6 +515,7 @@ export class Container implements IContainer {
                 let lifecycleData: CacheActionData = {
                     tokenKey: key,
                     targetType: ClassT,
+                    // raiseContainer: this,
                     singleton: singleton
                 };
                 lifeScope.execute(lifecycleData, CoreActions.cache);
@@ -490,22 +524,28 @@ export class Container implements IContainer {
                 }
             }
 
+            let providerMap = this.get(ProviderMatcherToken).toProviderMap(...providers);
+
             lifeScope.execute({
                 tokenKey: key,
                 targetType: ClassT,
+                raiseContainer: this,
                 params: parameters,
                 providers: providers,
+                providerMap: providerMap,
                 singleton: singleton
             }, IocState.runtime, LifeState.beforeCreateArgs);
 
-            let args = this.createSyncParams(parameters, ...providers);
+            let args = this.createSyncParams(parameters, providerMap);
 
             lifeScope.routeExecute({
                 tokenKey: key,
                 targetType: ClassT,
+                raiseContainer: this,
                 args: args,
                 params: parameters,
                 providers: providers,
+                providerMap: providerMap,
                 singleton: singleton
             }, IocState.runtime, LifeState.beforeConstructor);
 
@@ -515,9 +555,11 @@ export class Container implements IContainer {
                 tokenKey: key,
                 target: instance,
                 targetType: ClassT,
+                raiseContainer: this,
                 args: args,
                 params: parameters,
                 providers: providers,
+                providerMap: providerMap,
                 singleton: singleton
             }, IocState.runtime, LifeState.afterConstructor);
 
@@ -525,9 +567,11 @@ export class Container implements IContainer {
                 tokenKey: key,
                 target: instance,
                 targetType: ClassT,
+                raiseContainer: this,
                 args: args,
                 params: parameters,
                 providers: providers,
+                providerMap: providerMap,
                 singleton: singleton
             }, IocState.runtime, LifeState.onInit);
 
@@ -536,16 +580,19 @@ export class Container implements IContainer {
                 tokenKey: key,
                 target: instance,
                 targetType: ClassT,
+                raiseContainer: this,
                 args: args,
                 params: parameters,
                 providers: providers,
+                providerMap: providerMap,
                 singleton: singleton
             }, IocState.runtime, LifeState.AfterInit);
 
-            lifeScope.execute({
+            lifeScope.routeExecute({
                 tokenKey: key,
                 target: instance,
-                targetType: ClassT
+                targetType: ClassT,
+                raiseContainer: this
             }, CoreActions.cache);
 
             return instance;
@@ -553,11 +600,24 @@ export class Container implements IContainer {
 
         this.factories.set(key, factory);
 
-        lifeScope.execute({
+        lifeScope.routeExecute({
             tokenKey: key,
-            targetType: ClassT
+            targetType: ClassT,
+            raiseContainer: this
         }, IocState.design);
 
+    }
+
+    protected hasContainerProvider(providers: Providers[]): boolean {
+        return providers.some(p => {
+            if (p instanceof ProviderMap) {
+                return p.has(ContainerToken);
+            } else if (isMetadataObject(p)) {
+                let prd = p as IProvider;
+                return prd.provide === ContainerToken;
+            }
+            return false;
+        });
     }
 
 }

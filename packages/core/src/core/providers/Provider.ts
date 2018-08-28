@@ -7,6 +7,16 @@ export interface TypeProvider extends Type<any> {
 
 }
 
+export interface IProvider {
+    /**
+     * this type provider to.
+     *
+     * @type {SymbolType<any>}
+     * @memberof Provider
+     */
+    provide: Token<any>;
+}
+
 
 /**
  * @usageNotes
@@ -21,8 +31,8 @@ export interface TypeProvider extends Type<any> {
  * Configures the `Injector` to return an instance of `useClass` for a token.
  *
  */
-export interface ClassProvider {
-    provide: Token<any>,
+export interface ClassProvider extends IProvider {
+
     useClass: Type<any>;
     /**
      * A list of `token`s which need to be resolved by the injector. The list of values is then
@@ -31,8 +41,7 @@ export interface ClassProvider {
     deps?: any[];
 }
 
-export interface ValueProvider {
-    provide: Token<any>,
+export interface ValueProvider extends IProvider {
     useValue: any;
 }
 
@@ -49,8 +58,7 @@ export interface ValueProvider {
  *
  *
  */
-export interface FactoryProvider {
-    provide: Token<any>;
+export interface FactoryProvider extends IProvider {
     /**
    * A function to invoke to create a value for this `token`. The function is invoked with
    * resolved values of `token`s in the `deps` field.
@@ -64,8 +72,7 @@ export interface FactoryProvider {
     deps?: any[];
 }
 
-export interface ExistingProvider {
-    provide: Token<any>;
+export interface ExistingProvider extends IProvider {
     useExisting: Token<any>
 }
 
@@ -203,29 +210,6 @@ export class Provider {
     // }
 
 }
-
-// export class CustomProvider extends Provider {
-//     /**
-//      * service value is the result of type instance invoke the method return value.
-//      *
-//      * @type {string}
-//      * @memberof Provider
-//      */
-//     protected toInstance?: ToInstance<any>;
-
-//     constructor(type?: Token<any>, toInstance?: ToInstance<any>, value?: any) {
-//         super(type, value);
-//         this.toInstance = toInstance;
-//     }
-
-//     resolve<T>(container: IContainer, ...providers: Providers[]): T {
-//         if (this.toInstance) {
-//             return this.toInstance(container, ...providers);
-//         }
-//         return super.resolve(container, ...providers);
-//     }
-// }
-
 
 /**
  * InvokeProvider

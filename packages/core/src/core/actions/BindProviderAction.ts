@@ -37,15 +37,16 @@ export class BindProviderAction extends ActionComposite {
         let matchs = lifeScope.getClassDecorators(surm => surm.actions.includes(CoreActions.bindProvider) && hasOwnClassMetadata(surm.name, type));
 
         let provides = [];
+        let raiseContainer = data.raiseContainer || container;
         matchs.forEach(surm => {
             let metadata = getOwnTypeMetadata<ClassMetadata>(surm.name, type);
             if (Array.isArray(metadata) && metadata.length > 0) {
                 // bind all provider.
                 metadata.forEach(c => {
                     if (c && c.provide) {
-                        let provideKey = container.getTokenKey(c.provide, c.alias);
+                        let provideKey = raiseContainer.getTokenKey(c.provide, c.alias);
                         provides.push(provideKey);
-                        container.bindProvider(provideKey, c.type);
+                        raiseContainer.bindProvider(provideKey, c.type);
                     }
                 });
             }

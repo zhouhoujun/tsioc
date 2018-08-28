@@ -1,4 +1,4 @@
-import { IContainer, ActionData, ActionComposite, Provider, getClassName, MethodAccessorToken } from '@ts-ioc/core';
+import { IContainer, ActionData, ActionComposite, Provider, getClassName, MethodAccessorToken, Providers } from '@ts-ioc/core';
 import { AdvisorToken } from '../IAdvisor';
 import { AopActions } from './AopActions';
 import { AdviceMetadata } from '../metadatas'
@@ -54,7 +54,11 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
             params: data.params,
             targetType: targetType
         }));
-        let providers = [Provider.create(Joinpoint, joinPoint)];
+        let providers: Providers[] = [Provider.create(Joinpoint, joinPoint)];
+
+        if (data.providerMap) {
+            providers.push(data.providerMap);
+        }
 
         let access = container.get(MethodAccessorToken);
         advices.Before.forEach(advicer => {

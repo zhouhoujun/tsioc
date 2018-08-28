@@ -2,9 +2,8 @@ import { AppConfigure, AppConfigureToken, DefaultConfigureToken, AppConfigureLoa
 import { IContainer, LoadType, lang, isString, MapSet, Factory, Token, isUndefined, DefaultContainerBuilder, IContainerBuilder, isClass, isToken } from '@ts-ioc/core';
 import { IApplicationBuilder, CustomRegister, AnyApplicationBuilder } from './IApplicationBuilder';
 import { ModuleBuilder, ModuleEnv, DIModuleInjectorToken, InjectedModule, IModuleBuilder, InjectModuleBuilderToken, DefaultModuleBuilderToken } from '../modules';
-import { ContainerPool, ContainerPoolToken } from '../utils';
+import { ContainerPool, ContainerPoolToken, Events, IEvents } from '../utils';
 import { BootModule } from '../BootModule';
-import { EventEmitter } from 'events';
 import { Runnable } from '../runnable';
 
 export enum ApplicationEvents {
@@ -20,29 +19,32 @@ export enum ApplicationEvents {
  * @extends {ModuleBuilder}
  * @template T
  */
-export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicationBuilder<T> {
+export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IApplicationBuilder<T>, IEvents {
+
     private globalConfig: AppConfigure;
     protected globalModules: LoadType[];
     protected customRegs: CustomRegister<T>[];
-    protected providers: MapSet<Token<any>, any>;
+    protected beforeInitPds: MapSet<Token<any>, any>;
+    protected afterInitPds: MapSet<Token<any>, any>;
     protected configs: (string | AppConfigure)[];
     inited = false;
 
-    events: EventEmitter;
+    events: Events;
 
     constructor(public baseURL?: string) {
         super();
         this.customRegs = [];
         this.globalModules = [];
         this.configs = [];
-        this.providers = new MapSet();
-        this.events = new EventEmitter();
+        this.beforeInitPds = new MapSet();
+        this.afterInitPds = new MapSet();
+        this.events = new Events();
         this.initEvents();
     }
 
     protected initEvents() {
         this.events.on('onRooConatianerInited', (container) => {
-            this.providers.forEach((val, key) => {
+            this.afterInitPds.forEach((val, key) => {
                 container.bindProvider(key, val);
             });
         })
@@ -50,6 +52,18 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
 
     static create(baseURL?: string): AnyApplicationBuilder {
         return new DefaultApplicationBuilder<any>(baseURL);
+    }
+
+    on(name: string, event: (...args: any[]) => void): this {
+        this.events.on(name, event);
+        return this;
+    }
+    off(name: string, event?: (...args: any[]) => void): this {
+        this.events.off(name, event);
+        return this;
+    }
+    emit(name: string, ...args: any[]): void {
+        this.events.emit(name, ...args);
     }
 
     getPools(): ContainerPool {
@@ -133,11 +147,16 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
      * @template T
      * @param {Token<T>} provide
      * @param {Token<T> | Factory<T>} provider
+     * @param {boolean} [beforRootInit]
      * @returns {this}
      * @memberof IContainer
      */
-    provider(provide: Token<any>, provider: Token<any> | Factory<any>): this {
-        this.providers.set(provide, provider);
+    provider(provide: Token<any>, provider: Token<any> | Factory<any>, beforRootInit?: boolean): this {
+        if (beforRootInit) {
+            this.beforeInitPds.set(provide, provider);
+        } else {
+            this.afterInitPds.set(provide, provider);
+        }
         return this;
     }
 
@@ -208,12 +227,8 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
 
     protected async getParentContainer(env?: ModuleEnv) {
         let container = this.getPools().getDefault();
-        let globCfg = await this.getGlobalConfig(container);
         if (!this.inited) {
-            this.registerExts(container, globCfg);
-            this.bindAppConfig(globCfg);
-            container.bindProvider(AppConfigureToken, globCfg);
-            this.events.emit(ApplicationEvents.onRootContainerInited, container);
+            await this.initRootContainer(container);
             this.inited = true;
         }
 
@@ -224,7 +239,6 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
     protected async getGlobalConfig(container: IContainer): Promise<AppConfigure> {
         if (!this.globalConfig) {
             let globCfg = await this.getDefaultConfig(container);
-            globCfg = globCfg || {};
             if (this.configs.length < 1) {
                 this.configs.push(''); // load default loader config.
             }
@@ -253,8 +267,21 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         let chain = container.getBuilder().getInjectorChain(container);
         chain.first(container.resolve(DIModuleInjectorToken));
         container.bindProvider(ContainerPoolToken, () => this.getPools());
+
+        this.beforeInitPds.forEach((val, key) => {
+            container.bindProvider(key, val);
+        });
+
         this.events.emit(ApplicationEvents.onRootContainerCreated, container);
         return container;
+    }
+
+    protected async initRootContainer(container: IContainer) {
+        let globCfg = await this.getGlobalConfig(container);
+        this.registerExts(container, globCfg);
+        this.bindAppConfig(globCfg);
+        container.bindProvider(AppConfigureToken, globCfg);
+        this.events.emit(ApplicationEvents.onRootContainerInited, container);
     }
 
     /**

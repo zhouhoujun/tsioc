@@ -31,9 +31,7 @@ export class RegistAspectAction extends ActionComposite {
 
     protected working(container: IContainer, data: RegistAspectActionData) {
         let type = data.targetType;
-        let propertyKey = data.propertyKey;
         let lifeScope = container.getLifeScope();
-
         let matchs = lifeScope.getClassDecorators(surm => surm.actions.includes(AopActions.registAspect) && hasOwnClassMetadata(surm.name, type));
         let aspectMgr = container.get<IAdvisor>(AdvisorToken);
         matchs.forEach(surm => {

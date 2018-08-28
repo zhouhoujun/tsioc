@@ -125,6 +125,16 @@ export interface IContainer extends IMethodAccessor {
     getTokenImpl<T>(token: Token<T>): Type<T>;
 
     /**
+     * get type provider for provides.
+     *
+     * @template T
+     * @param {Type<T>} target
+     * @returns {Token<T>[]}
+     * @memberof IContainer
+     */
+    getTypeProvides<T>(target: Type<T>): Token<T>[];
+
+    /**
      * get token implement class and base classes.
      *
      * @param {Token<any>} token

@@ -1,5 +1,7 @@
 import { Type, Token, Providers } from '../types';
 import { IParameter } from '../IParameter';
+import { ProviderMap } from './providers';
+import { IContainer } from '../IContainer';
 
 
 /**
@@ -76,12 +78,28 @@ export interface ActionData<T> {
     execResult?: T;
 
     /**
-     * exter providers for resolve.
+     * exter providers for resolve. origin providers
      *
      * @type {Providers[]}
      * @memberof ActionData
      */
     providers?: Providers[];
+
+    /**
+     * exter providers convert to map.
+     *
+     * @type {ProviderMap}
+     * @memberof ActionData
+     */
+    providerMap?: ProviderMap;
+
+    /**
+     * container, the action raise from.
+     *
+     * @type {IContainer}
+     * @memberof ActionData
+     */
+    raiseContainer?: IContainer;
 
     /**
      * execute context.

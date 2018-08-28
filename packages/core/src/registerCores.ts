@@ -4,11 +4,8 @@ import { CoreActions } from './core/actions';
 import { DefaultLifeScope } from './core/DefaultLifeScope';
 import { LifeScopeToken } from './LifeScope';
 import { MethodAccessor } from './core/MethodAccessor';
-import { ProviderMatcher } from './core/ProviderMatcher';
-import { ProviderMap, ProviderMapToken } from './core/providers';
-import { CacheManager } from './core/CacheManager';
+import { CacheManager, ProviderMap, ProviderMapToken, ProviderMatcher, ProviderMatcherToken } from './core';
 import { CacheManagerToken } from './ICacheManager';
-import { ProviderMatcherToken } from './core/IProviderMatcher';
 import { MethodAccessorToken } from './IMethodAccessor';
 
 /**

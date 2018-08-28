@@ -111,6 +111,12 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         if (cfg.exports && cfg.exports.length) {
             cfg.exports.forEach(tk => {
                 container.bindProvider(tk, (...providers: Providers[]) => providerContainer.resolve(tk, ...providers));
+                if (isClass(tk)) {
+                    let tokens = providerContainer.getTypeProvides(tk);
+                    tokens.forEach(provide => {
+                        container.bindProvider(provide, tk);
+                    });
+                }
             });
         }
 

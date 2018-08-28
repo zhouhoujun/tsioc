@@ -3139,15 +3139,16 @@ var BindProviderAction = /** @class */ (function (_super) {
         var lifeScope = container.getLifeScope();
         var matchs = lifeScope.getClassDecorators(function (surm) { return surm.actions.includes(CoreActions_1.CoreActions.bindProvider) && factories.hasOwnClassMetadata(surm.name, type); });
         var provides = [];
+        var raiseContainer = data.raiseContainer || container;
         matchs.forEach(function (surm) {
             var metadata = factories.getOwnTypeMetadata(surm.name, type);
             if (Array.isArray(metadata) && metadata.length > 0) {
                 // bind all provider.
                 metadata.forEach(function (c) {
                     if (c && c.provide) {
-                        var provideKey = container.getTokenKey(c.provide, c.alias);
+                        var provideKey = raiseContainer.getTokenKey(c.provide, c.alias);
                         provides.push(provideKey);
-                        container.bindProvider(provideKey, c.type);
+                        raiseContainer.bindProvider(provideKey, c.type);
                     }
                 });
             }
@@ -3305,6 +3306,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
 /**
  * inject property value action, to inject property value for resolve instance.
  *
@@ -3322,12 +3324,27 @@ var InjectPropertyAction = /** @class */ (function (_super) {
             this.parent.find(function (act) { return act.name === CoreActions_1.CoreActions.bindPropertyType; }).execute(container, data);
         }
         if (data.target && data.execResult && data.execResult.length) {
+            var providerMap_1, prContainer_1;
+            if (data.providerMap) {
+                providerMap_1 = data.providerMap;
+                if (providerMap_1.has(IContainer.ContainerToken)) {
+                    prContainer_1 = providerMap_1.resolve(IContainer.ContainerToken);
+                }
+            }
             data.execResult.reverse().forEach(function (prop, idx) {
                 if (prop) {
                     var token = prop.provider ? container.getToken(prop.provider, prop.alias) : prop.type;
-                    if (container.has(token)) {
-                        data.target[prop.propertyKey] = container.resolve.apply(container, [token].concat((data.providers || [])));
+                    var val = void 0;
+                    if (providerMap_1 && providerMap_1.has(token)) {
+                        val = providerMap_1.resolve(token, providerMap_1);
                     }
+                    else if (prContainer_1 && prContainer_1.has(token)) {
+                        val = prContainer_1.resolve(token, providerMap_1);
+                    }
+                    else if (container.has(token)) {
+                        val = container.resolve(token, providerMap_1);
+                    }
+                    data.target[prop.propertyKey] = val;
                 }
             });
         }
@@ -4133,25 +4150,6 @@ var Provider = /** @class */ (function () {
     return Provider;
 }());
 exports.Provider = Provider;
-// export class CustomProvider extends Provider {
-//     /**
-//      * service value is the result of type instance invoke the method return value.
-//      *
-//      * @type {string}
-//      * @memberof Provider
-//      */
-//     protected toInstance?: ToInstance<any>;
-//     constructor(type?: Token<any>, toInstance?: ToInstance<any>, value?: any) {
-//         super(type, value);
-//         this.toInstance = toInstance;
-//     }
-//     resolve<T>(container: IContainer, ...providers: Providers[]): T {
-//         if (this.toInstance) {
-//             return this.toInstance(container, ...providers);
-//         }
-//         return super.resolve(container, ...providers);
-//     }
-// }
 /**
  * InvokeProvider
  *
@@ -5231,9 +5229,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-
-
-
 /**
  * register core for container.
  *
@@ -5242,10 +5237,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 function registerCores(container) {
     container.registerSingleton(LifeScope.LifeScopeToken, function () { return new DefaultLifeScope_1.DefaultLifeScope(container); });
-    container.registerSingleton(ICacheManager.CacheManagerToken, function () { return new CacheManager_1.CacheManager(container); });
-    container.register(providers.ProviderMapToken, function () { return new providers.ProviderMap(container); });
-    container.bindProvider(providers.ProviderMap, providers.ProviderMapToken);
-    container.registerSingleton(IProviderMatcher.ProviderMatcherToken, function () { return new ProviderMatcher_1.ProviderMatcher(container); });
+    container.registerSingleton(ICacheManager.CacheManagerToken, function () { return new core.CacheManager(container); });
+    container.register(core.ProviderMapToken, function () { return new core.ProviderMap(container); });
+    container.bindProvider(core.ProviderMap, core.ProviderMapToken);
+    container.registerSingleton(core.ProviderMatcherToken, function () { return new core.ProviderMatcher(container); });
     container.registerSingleton(IMethodAccessor.MethodAccessorToken, function () { return new MethodAccessor_1.MethodAccessor(container); });
     var lifeScope = container.get(LifeScope.LifeScopeToken);
     lifeScope.registerDecorator(decorators.Injectable, actions.CoreActions.bindProvider, actions.CoreActions.cache);
@@ -5348,6 +5343,9 @@ var Container = /** @class */ (function () {
             return factory.apply(void 0, providers);
         }
         else {
+            if (!this.hasContainerProvider(providers)) {
+                providers.push({ provide: IContainer.ContainerToken, useValue: this });
+            }
             return (_a = this.parent).resolve.apply(_a, [token].concat(providers));
         }
     };
@@ -5534,6 +5532,9 @@ var Container = /** @class */ (function () {
             }
         }
         if (utils.isClass(provider)) {
+            if (!this.has(provider)) {
+                this.register(provider);
+            }
             this.provideTypes.set(provideKey, provider);
         }
         else if (utils.isToken(provider)) {
@@ -5570,6 +5571,34 @@ var Container = /** @class */ (function () {
         }
         else {
             return null;
+        }
+    };
+    /**
+     * get type provider for provides.
+     *
+     * @template T
+     * @param {Type<T>} target
+     * @returns {Token<T>[]}
+     * @memberof Container
+     */
+    Container.prototype.getTypeProvides = function (target) {
+        if (!utils.isClass(target)) {
+            return [];
+        }
+        var tokens = [];
+        this.provideTypes.forEach(function (val, key) {
+            if (val === target) {
+                tokens.push(key);
+            }
+        });
+        if (tokens.length) {
+            return tokens;
+        }
+        else if (this.parent) {
+            return this.parent.getTypeProvides(target);
+        }
+        else {
+            return tokens;
         }
     };
     /**
@@ -5769,6 +5798,7 @@ var Container = /** @class */ (function () {
             for (var _i = 0; _i < arguments.length; _i++) {
                 providers[_i] = arguments[_i];
             }
+            var _a;
             if (singleton && _this.singleton.has(key)) {
                 return _this.singleton.get(key);
             }
@@ -5776,6 +5806,7 @@ var Container = /** @class */ (function () {
                 var lifecycleData = {
                     tokenKey: key,
                     targetType: ClassT,
+                    // raiseContainer: this,
                     singleton: singleton
                 };
                 lifeScope.execute(lifecycleData, core.CoreActions.cache);
@@ -5783,20 +5814,25 @@ var Container = /** @class */ (function () {
                     return lifecycleData.execResult;
                 }
             }
+            var providerMap = (_a = _this.get(core.ProviderMatcherToken)).toProviderMap.apply(_a, providers);
             lifeScope.execute({
                 tokenKey: key,
                 targetType: ClassT,
+                raiseContainer: _this,
                 params: parameters,
                 providers: providers,
+                providerMap: providerMap,
                 singleton: singleton
             }, types.IocState.runtime, core.LifeState.beforeCreateArgs);
-            var args = _this.createSyncParams.apply(_this, [parameters].concat(providers));
+            var args = _this.createSyncParams(parameters, providerMap);
             lifeScope.routeExecute({
                 tokenKey: key,
                 targetType: ClassT,
+                raiseContainer: _this,
                 args: args,
                 params: parameters,
                 providers: providers,
+                providerMap: providerMap,
                 singleton: singleton
             }, types.IocState.runtime, core.LifeState.beforeConstructor);
             var instance = new (ClassT.bind.apply(ClassT, [void 0].concat(args)))();
@@ -5804,43 +5840,63 @@ var Container = /** @class */ (function () {
                 tokenKey: key,
                 target: instance,
                 targetType: ClassT,
+                raiseContainer: _this,
                 args: args,
                 params: parameters,
                 providers: providers,
+                providerMap: providerMap,
                 singleton: singleton
             }, types.IocState.runtime, core.LifeState.afterConstructor);
             lifeScope.execute({
                 tokenKey: key,
                 target: instance,
                 targetType: ClassT,
+                raiseContainer: _this,
                 args: args,
                 params: parameters,
                 providers: providers,
+                providerMap: providerMap,
                 singleton: singleton
             }, types.IocState.runtime, core.LifeState.onInit);
             lifeScope.routeExecute({
                 tokenKey: key,
                 target: instance,
                 targetType: ClassT,
+                raiseContainer: _this,
                 args: args,
                 params: parameters,
                 providers: providers,
+                providerMap: providerMap,
                 singleton: singleton
             }, types.IocState.runtime, core.LifeState.AfterInit);
-            lifeScope.execute({
+            lifeScope.routeExecute({
                 tokenKey: key,
                 target: instance,
-                targetType: ClassT
+                targetType: ClassT,
+                raiseContainer: _this
             }, core.CoreActions.cache);
             return instance;
         };
         this.factories.set(key, factory);
-        lifeScope.execute({
+        lifeScope.routeExecute({
             tokenKey: key,
-            targetType: ClassT
+            targetType: ClassT,
+            raiseContainer: this
         }, types.IocState.design);
     };
-    Container.classAnnations = { "name": "Container", "params": { "constructor": [], "getRoot": [], "getBuilder": [], "get": ["token", "alias", "providers"], "resolve": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token"], "getTokenExtendsChain": ["token"], "getBaseClasses": ["target"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"] } };
+    Container.prototype.hasContainerProvider = function (providers) {
+        return providers.some(function (p) {
+            if (p instanceof core.ProviderMap) {
+                return p.has(IContainer.ContainerToken);
+            }
+            else if (utils.isMetadataObject(p)) {
+                var prd = p;
+                return prd.provide === IContainer.ContainerToken;
+            }
+            return false;
+        });
+    };
+    Container.classAnnations = { "name": "Container", "params": { "constructor": [], "getRoot": [], "getBuilder": [], "get": ["token", "alias", "providers"], "resolve": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token"], "getTypeProvides": ["target"], "getTokenExtendsChain": ["token"], "getBaseClasses": ["target"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"], "hasContainerProvider": ["providers"] } };
     return Container;
 }());
 exports.Container = Container;

@@ -89,8 +89,10 @@ var RegistAspectAction = /** @class */ (function (_super) {
         return _super.call(this, AopActions_1.AopActions.registAspect) || this;
     }
     RegistAspectAction.prototype.working = function (container, data) {
+        if (!container.hasRegister(IAdvisor.AdvisorToken.toString())) {
+            return;
+        }
         var type = data.targetType;
-        var propertyKey = data.propertyKey;
         var lifeScope = container.getLifeScope();
         var matchs = lifeScope.getClassDecorators(function (surm) { return surm.actions.includes(AopActions_1.AopActions.registAspect) && core_1.hasOwnClassMetadata(surm.name, type); });
         var aspectMgr = container.get(IAdvisor.AdvisorToken);
@@ -1121,6 +1123,9 @@ var BindMethodPointcutAction = /** @class */ (function (_super) {
         if (!data.target || !isValideAspectTarget_1.isValideAspectTarget(data.targetType)) {
             return;
         }
+        if (!container.hasRegister(access.ProxyMethodToken.toString())) {
+            return;
+        }
         var proxy = container.get(access.ProxyMethodToken);
         var target = data.target;
         var targetType = data.targetType;
@@ -1189,6 +1194,9 @@ var InvokeBeforeConstructorAction = /** @class */ (function (_super) {
         if (!isValideAspectTarget_1.isValideAspectTarget(data.targetType)) {
             return;
         }
+        if (!container.hasRegister(IAdvisor.AdvisorToken.toString())) {
+            return;
+        }
         var advisor = container.get(IAdvisor.AdvisorToken);
         var className = core_1.getClassName(data.targetType);
         var advices = advisor.getAdvices(className + '.constructor');
@@ -1207,6 +1215,9 @@ var InvokeBeforeConstructorAction = /** @class */ (function (_super) {
             targetType: targetType
         }));
         var providers = [core_1.Provider.create(joinpoints.Joinpoint, joinPoint)];
+        if (data.providerMap) {
+            providers.push(data.providerMap);
+        }
         var access = container.get(core_1.MethodAccessorToken);
         advices.Before.forEach(function (advicer) {
             access.syncInvoke.apply(access, [advicer.aspectType, advicer.advice.propertyKey, undefined].concat(providers)); // new Joinpoint(joinPoint) // container.resolve(Joinpoint, { json: joinPoint })
@@ -1251,6 +1262,9 @@ var InvokeAfterConstructorAction = /** @class */ (function (_super) {
         if (!data.target || !isValideAspectTarget_1.isValideAspectTarget(data.targetType)) {
             return;
         }
+        if (!container.hasRegister(IAdvisor.AdvisorToken.toString())) {
+            return;
+        }
         var advisor = container.get(IAdvisor.AdvisorToken);
         var className = core_1.getClassName(data.targetType);
         var advices = advisor.getAdvices(className + '.constructor');
@@ -1269,6 +1283,9 @@ var InvokeAfterConstructorAction = /** @class */ (function (_super) {
             targetType: targetType
         }));
         var providers = [core_1.Provider.create(joinpoints.Joinpoint, joinPoint)];
+        if (data.providerMap) {
+            providers.push(data.providerMap);
+        }
         var access = container.get(core_1.MethodAccessorToken);
         advices.After.forEach(function (advicer) {
             access.syncInvoke.apply(access, [advicer.aspectType, advicer.advice.propertyKey, undefined].concat(providers));
@@ -1327,6 +1344,9 @@ var MatchPointcutAction = /** @class */ (function (_super) {
         var _this = this;
         // aspect class do nothing.
         if (!isValideAspectTarget_1.isValideAspectTarget(data.targetType)) {
+            return;
+        }
+        if (!container.hasRegister(IAdvisor.AdvisorToken.toString())) {
             return;
         }
         var advisor = container.get(IAdvisor.AdvisorToken);

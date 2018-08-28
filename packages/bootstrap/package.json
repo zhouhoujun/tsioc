@@ -28,8 +28,7 @@
   "dependencies": {
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.2",
-    "globby": "^7.1.1",
-    "events": "^3.0.0"
+    "globby": "^7.1.1"
   },
   "peerDependencies": {
     "@ts-ioc/core": "^3.1.1"

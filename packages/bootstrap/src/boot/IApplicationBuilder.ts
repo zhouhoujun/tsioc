@@ -1,7 +1,7 @@
 import { Token, InjectToken, IContainer, LoadType, Factory } from '@ts-ioc/core';
 import { AppConfigure } from './AppConfigure';
 import { IModuleBuilder, MdInstance, ModuleEnv, ModuleConfig } from '../modules';
-import { EventEmitter } from 'events';
+import { Events, IEvents } from '../utils';
 
 /**
  * custom define module.
@@ -37,13 +37,13 @@ export interface IApplicationExtends {
     /**
      * bind provider
      *
-     * @template T
-     * @param {Token<T>} provide
-     * @param {Token<T> | Factory<T>} provider
+     * @param {Token<any>} provide
+     * @param {(Token<any> | Factory<any>)} provider
+     * @param {boolean} [beforRootInit]
      * @returns {this}
-     * @memberof IContainer
+     * @memberof IApplicationExtends
      */
-    provider(provide: Token<any>, provider: Token<any> | Factory<any>): this;
+    provider(provide: Token<any>, provider: Token<any> | Factory<any>, beforRootInit?: boolean): this;
 
 }
 
@@ -56,10 +56,14 @@ export interface IApplicationExtends {
  * @extends {IModuleBuilder<T>}
  * @template T
  */
-export interface IApplicationBuilder<T> extends IModuleBuilder<T>, IApplicationExtends {
-
-    events: EventEmitter;
-
+export interface IApplicationBuilder<T> extends IModuleBuilder<T>, IApplicationExtends, IEvents {
+    /**
+     * events mgr.
+     *
+     * @type {Events}
+     * @memberof IApplicationBuilder
+     */
+    events?: Events
     /**
      * get module builder
      *
