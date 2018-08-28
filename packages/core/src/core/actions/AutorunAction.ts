@@ -39,6 +39,9 @@ export class AutorunAction extends ActionComposite {
     }
 
     protected working(container: IContainer, data: AutorunActionData) {
+        if (data.raiseContainer !== container) {
+            return;
+        }
         if (data.tokenKey && data.targetType) {
             let decorators = this.getDecorator();
             decorators.forEach(decorator => {

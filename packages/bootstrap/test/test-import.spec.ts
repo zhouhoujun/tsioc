@@ -1,8 +1,8 @@
 
 import 'mocha';
 import { expect } from 'chai';
-import { ModuleA, ModuleB, ClassSevice, Logger } from './demo';
-import { DefaultApplicationBuilder, AnyModuleBuilder, AnyApplicationBuilder } from '../src';
+import { ModuleA, ModuleB, ClassSevice } from './demo';
+import { DefaultApplicationBuilder, AnyApplicationBuilder } from '../src';
 import { AopModule } from '@ts-ioc/aop';
 
 describe('di module', () => {

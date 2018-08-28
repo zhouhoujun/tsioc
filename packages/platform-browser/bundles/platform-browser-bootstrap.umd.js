@@ -64,7 +64,7 @@ exports.ApplicationBuilder = ApplicationBuilder;
 unwrapExports(ApplicationBuilder_1);
 var ApplicationBuilder_2 = ApplicationBuilder_1.ApplicationBuilder;
 
-var D__workspace_github_tsioc_packages_platformBrowser_bootstrap_lib = createCommonjsModule(function (module, exports) {
+var D__Workspace_Projects_modules_tsioc_packages_platformBrowser_bootstrap_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(ApplicationBuilder_1, exports);
@@ -72,7 +72,7 @@ tslib_1.__exportStar(ApplicationBuilder_1, exports);
 
 });
 
-var index = unwrapExports(D__workspace_github_tsioc_packages_platformBrowser_bootstrap_lib);
+var index = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_platformBrowser_bootstrap_lib);
 
 return index;
 

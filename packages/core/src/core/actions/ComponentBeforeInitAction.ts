@@ -33,7 +33,9 @@ export class ComponentBeforeInitAction extends ActionComposite {
     }
 
     protected working(container: IContainer, data: ComponentBeforeInitActionData) {
-
+        if (data.raiseContainer !== container) {
+            return;
+        }
         if (data.targetType && data.target) {
             let component = data.target as BeforeInit;
             if (isFunction(component.beforeInit)) {

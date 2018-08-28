@@ -37,6 +37,9 @@ export class CacheAction extends ActionComposite {
         if (data.singleton || !data.targetType || !isClass(data.targetType)) {
             return data;
         }
+        if (data.raiseContainer !== container) {
+            return data;
+        }
         let cacheManager = container.get(CacheManagerToken);
 
         if (data.target) {

@@ -1,4 +1,4 @@
-import { MapSet, Token, SymbolType, Registration, IContainer, InjectToken, LoadType } from '@ts-ioc/core';
+import { MapSet, Token, SymbolType, Registration, IContainer, InjectToken } from '@ts-ioc/core';
 
 /**
  * container pool

@@ -1,6 +1,6 @@
 import {
-    ClassMetadata, Token, MetadataAdapter,
-    MetadataExtends, ITypeDecorator, Type, isClass, isFunction, LoadType, isObject
+    Token, MetadataAdapter, MetadataExtends, ITypeDecorator,
+    Type, isClass, isFunction, LoadType, isObject
 } from '@ts-ioc/core';
 import { AppConfigure } from '../boot/AppConfigure';
 import { IApplicationBuilder } from '../boot/IApplicationBuilder';

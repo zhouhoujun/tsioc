@@ -1,4 +1,8 @@
-import { Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate, Inject, Token, isToken, Providers, Injectable, isArray, lang, isUndefined, isClass, isFunction, isString, isNull, isProviderMap, Provider, isBaseObject, IModuleInjector } from '@ts-ioc/core';
+import {
+    Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
+    Inject, Token, isToken, Providers, Injectable, isArray, lang, isUndefined, isClass,
+    isFunction, isString, isNull, isProviderMap, Provider, isBaseObject, IModuleInjector
+} from '@ts-ioc/core';
 import { DIModuelValidateToken } from './DIModuleValidate';
 import { DIModule } from '../decorators';
 import { ContainerPoolToken } from '../utils';

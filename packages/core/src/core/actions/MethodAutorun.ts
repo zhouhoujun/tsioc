@@ -35,6 +35,9 @@ export class MethodAutorun extends ActionComposite {
 
 
     protected working(container: IContainer, data: MethodAutorunActionData) {
+        if (data.raiseContainer !== container) {
+            return;
+        }
         if (data.target && data.targetType) {
             if (hasMethodMetadata(Autorun, data.targetType)) {
                 let metas = getMethodMetadata<AutorunMetadata>(Autorun, data.targetType);

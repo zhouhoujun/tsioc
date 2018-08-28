@@ -1,5 +1,8 @@
 import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
-import { Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, hasOwnClassMetadata, getTypeMetadata, lang, isFunction, Injectable, AnnotationMetaAccessorToken } from '@ts-ioc/core';
+import {
+    Token, isToken, IContainer, isClass, Inject, ContainerToken, Type,
+    lang, isFunction, Injectable, AnnotationMetaAccessorToken
+} from '@ts-ioc/core';
 import { AnnotationConfigure } from './AnnotationConfigure';
 import { Annotation } from '../decorators';
 import { AnnoInstance } from './IAnnotation';
@@ -35,6 +38,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         if (!this.isEqual(builder)) {
             return builder.build(token, config, data);
         } else {
+            await this.registerExts(config);
             let instance = await this.createInstance(token, config, data) as AnnoInstance<T>;
             if (!instance) {
                 return null;
@@ -125,6 +129,17 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
     getType(config: AnnotationConfigure<T>): Token<T> {
         return config.token || config.type;
+    }
+
+    /**
+     * register extension before create instance.
+     *
+     * @protected
+     * @param {AnnotationConfigure<T>} [config]
+     * @memberof AnnotationBuilder
+     */
+    protected async registerExts(config?: AnnotationConfigure<T>) {
+
     }
 
     protected getTokenMetaConfig(token: Token<T>, config?: AnnotationConfigure<T>): AnnotationConfigure<T> {

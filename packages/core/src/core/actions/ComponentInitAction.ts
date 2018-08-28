@@ -33,6 +33,9 @@ export class ComponentInitAction extends ActionComposite {
     }
 
     protected working(container: IContainer, data: ComponentInitActionData) {
+        if (data.raiseContainer !== container) {
+            return;
+        }
         if (data.targetType && data.target) {
             let component = data.target as OnInit;
             if (isFunction(component.onInit)) {

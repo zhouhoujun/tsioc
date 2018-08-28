@@ -32,6 +32,9 @@ export class ComponentAfterInitAction extends ActionComposite {
     }
 
     protected working(container: IContainer, data: ComponentAfterInitActionData) {
+        if (data.raiseContainer !== container) {
+            return;
+        }
         if (data.targetType && data.target) {
             let component = data.target as AfterInit;
             if (isFunction(component.afterInit)) {
