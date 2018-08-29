@@ -3,6 +3,8 @@ import { IMethodAccessor } from './IMethodAccessor';
 import { LifeScope } from './LifeScope';
 import { InjectToken } from './InjectToken';
 import { IContainerBuilder } from './IContainerBuilder';
+import { IResolver } from './IResolver';
+import { ResolveChain } from './resolves';
 
 /**
  * IContainer token.
@@ -10,13 +12,14 @@ import { IContainerBuilder } from './IContainerBuilder';
  */
 export const ContainerToken = new InjectToken<IContainer>('DI_IContainer');
 
+
 /**
  * container interface.
  *
  * @export
  * @interface IContainer
  */
-export interface IContainer extends IMethodAccessor {
+export interface IContainer extends IMethodAccessor, IResolver {
 
     /**
      * parent container.
@@ -33,6 +36,14 @@ export interface IContainer extends IMethodAccessor {
      * @memberof IContainer
      */
     getRoot(): IContainer;
+
+    /**
+     * resolve chain.
+     *
+     * @type {ResolveChain}
+     * @memberof IContainer
+     */
+    readonly resolveChain: ResolveChain;
 
     /**
      * get container builder of this container.
@@ -75,7 +86,7 @@ export interface IContainer extends IMethodAccessor {
     get<T>(token: Token<T>, alias?: string, ...providers: Providers[]): T;
 
     /**
-     * resolve type instance with token and param provider.
+     * resolve token value in this container only.
      *
      * @template T
      * @param {Token<T>} token
@@ -83,7 +94,7 @@ export interface IContainer extends IMethodAccessor {
      * @returns {T}
      * @memberof IContainer
      */
-    resolve<T>(token: Token<T>, ...providers: Providers[]): T;
+    resolveValue<T>(token: Token<T>, ...providers: Providers[]): T;
 
     /**
      * clear cache.
@@ -119,20 +130,22 @@ export interface IContainer extends IMethodAccessor {
      *
      * @template T
      * @param {Token<T>} token
+     * @param {boolean} inchain
      * @returns {Type<T>}
      * @memberof IContainer
      */
-    getTokenImpl<T>(token: Token<T>): Type<T>;
+    getTokenImpl<T>(token: Token<T>, inchain?: boolean): Type<T>;
 
-    /**
-     * get type provider for provides.
-     *
-     * @template T
-     * @param {Type<T>} target
-     * @returns {Token<T>[]}
-     * @memberof IContainer
-     */
-    getTypeProvides<T>(target: Type<T>): Token<T>[];
+    // /**
+    //  * get type provider for provides.
+    //  *
+    //  * @template T
+    //  * @param {Type<T>} target
+    //  * @param {boolean} inchain
+    //  * @returns {Token<T>[]}
+    //  * @memberof IContainer
+    //  */
+    // getTypeProvides<T>(target: Type<T>, inchain?: boolean): Token<T>[];
 
     /**
      * get token implement class and base classes.
@@ -162,7 +175,7 @@ export interface IContainer extends IMethodAccessor {
      * @returns {this}
      * @memberof IContainer
      */
-    unregister<T>(token: Token<T>): this;
+    unregister<T>(token: Token<T>, inchain?: boolean): this;
 
     /**
      * bind provider

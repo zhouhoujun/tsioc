@@ -412,12 +412,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @template T
  */
 var InjectedModule = /** @class */ (function () {
-    function InjectedModule(token, config, container) {
+    function InjectedModule(token, config, container, type, exports, providers) {
         this.token = token;
         this.config = config;
         this.container = container;
+        this.type = type;
+        this.exports = exports;
+        this.providers = providers;
     }
-    InjectedModule.classAnnations = { "name": "InjectedModule", "params": { "constructor": ["token", "config", "container"] } };
+    InjectedModule.classAnnations = { "name": "InjectedModule", "params": { "constructor": ["token", "config", "container", "type", "exports", "providers"] } };
     return InjectedModule;
 }());
 exports.InjectedModule = InjectedModule;
@@ -528,12 +531,12 @@ var DIModuleInjector = /** @class */ (function (_super) {
                         metaConfig = this.validate.getMetaConfig(type, newContainer);
                         return [4 /*yield*/, this.registerConfgureDepds(newContainer, metaConfig)];
                     case 1:
-                        _a.sent();
-                        return [4 /*yield*/, this.importConfigExports(container, newContainer, metaConfig, type)];
+                        metaConfig = _a.sent();
+                        injMd = new InjectedModule_1.InjectedModule(type, metaConfig, newContainer, type, metaConfig.exports || [], metaConfig[exportsProvidersFiled]);
+                        container.bindProvider(new InjectedModule_1.InjectedModuleToken(type), injMd);
+                        return [4 /*yield*/, this.importConfigExports(container, newContainer, injMd)];
                     case 2:
                         _a.sent();
-                        injMd = new InjectedModule_1.InjectedModule(type, metaConfig, newContainer);
-                        container.bindProvider(new InjectedModule_1.InjectedModuleToken(type), injMd);
                         return [2 /*return*/, injMd];
                 }
             });
@@ -558,44 +561,28 @@ var DIModuleInjector = /** @class */ (function (_super) {
             });
         });
     };
-    DIModuleInjector.prototype.importConfigExports = function (container, providerContainer, cfg, mdl) {
+    DIModuleInjector.prototype.importConfigExports = function (container, providerContainer, injMd) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var expProviders;
+            var expchs;
             return tslib_1.__generator(this, function (_a) {
                 if (container === providerContainer) {
                     return [2 /*return*/, container];
                 }
-                if (cfg.exports && cfg.exports.length) {
-                    cfg.exports.forEach(function (tk) {
-                        container.bindProvider(tk, function () {
-                            var providers = [];
-                            for (var _i = 0; _i < arguments.length; _i++) {
-                                providers[_i] = arguments[_i];
+                if (injMd) {
+                    container.resolveChain.next(injMd);
+                    if (injMd.exports && injMd.exports.length) {
+                        expchs = providerContainer.resolveChain.toArray().filter(function (r) {
+                            if (r instanceof core_1.Container) {
+                                return false;
                             }
-                            return providerContainer.resolve.apply(providerContainer, [tk].concat(providers));
+                            else {
+                                return injMd.exports.indexOf(r.type) >= 0;
+                            }
                         });
-                        if (core_1.isClass(tk)) {
-                            var tokens = providerContainer.getTypeProvides(tk);
-                            tokens.forEach(function (provide) {
-                                container.bindProvider(provide, tk);
-                            });
-                        }
-                    });
-                }
-                if (mdl) {
-                    container.bindProvider(mdl, function () {
-                        var providers = [];
-                        for (var _i = 0; _i < arguments.length; _i++) {
-                            providers[_i] = arguments[_i];
-                        }
-                        return providerContainer.resolve.apply(providerContainer, [mdl].concat(providers));
-                    });
-                }
-                expProviders = cfg[exportsProvidersFiled];
-                if (expProviders && expProviders.length) {
-                    expProviders.forEach(function (tk) {
-                        container.bindProvider(tk, function () { return providerContainer.get(tk); });
-                    });
+                        expchs.forEach(function (r) {
+                            container.resolveChain.next(r);
+                        });
+                    }
                 }
                 return [2 /*return*/, container];
             });
@@ -708,7 +695,7 @@ var DIModuleInjector = /** @class */ (function (_super) {
         });
         return tokens;
     };
-    DIModuleInjector.classAnnations = { "name": "DIModuleInjector", "params": { "constructor": ["validate"], "setup": ["container", "type"], "import": ["container", "type"], "importByConfig": ["container", "config"], "importModule": ["container", "type"], "registerConfgureDepds": ["container", "config"], "importConfigExports": ["container", "providerContainer", "cfg", "mdl"], "bindProvider": ["container", "providers"] } };
+    DIModuleInjector.classAnnations = { "name": "DIModuleInjector", "params": { "constructor": ["validate"], "setup": ["container", "type"], "import": ["container", "type"], "importByConfig": ["container", "config"], "importModule": ["container", "type"], "registerConfgureDepds": ["container", "config"], "importConfigExports": ["container", "providerContainer", "injMd"], "bindProvider": ["container", "providers"] } };
     DIModuleInjector = tslib_1.__decorate([
         core_1.Injectable(exports.DIModuleInjectorToken),
         tslib_1.__param(0, core_1.Inject(DIModuleValidate.DIModuelValidateToken)),

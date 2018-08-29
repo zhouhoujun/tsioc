@@ -5240,8 +5240,206 @@ exports.ContainerBuilderToken = new InjectToken_1.InjectToken('DI_IContainerBuil
 unwrapExports(IContainerBuilder);
 var IContainerBuilder_1 = IContainerBuilder.ContainerBuilderToken;
 
+var ResolveChain_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+
+
+
+exports.ResolveChainToken = new InjectToken_1.InjectToken('di_ResolveChain');
+var ResolveChain = /** @class */ (function () {
+    function ResolveChain(container) {
+        this.container = container;
+        this.resolvers = [];
+    }
+    ResolveChain.prototype.next = function (resolver) {
+        if (!this.hasResolver(resolver)) {
+            this.resolvers.push(resolver);
+        }
+    };
+    ResolveChain.prototype.toArray = function () {
+        return [this.container].concat(this.resolvers);
+    };
+    ResolveChain.prototype.hasResolver = function (resolver) {
+        if (resolver instanceof Container_1.Container) {
+            return this.resolvers.indexOf(resolver) >= 0;
+        }
+        else {
+            return this.resolvers.some(function (a) {
+                if (a instanceof Container_1.Container) {
+                    return false;
+                }
+                else {
+                    if (!a.type || !resolver.type) {
+                        return false;
+                    }
+                    return a.type === resolver.type;
+                }
+            });
+        }
+    };
+    ResolveChain.prototype.hasToken = function (resolver, token) {
+        var _this = this;
+        if (resolver instanceof Container_1.Container) {
+            return resolver.hasRegister(token);
+        }
+        else {
+            var exps_1 = resolver.exports || [];
+            return exps_1.concat(resolver.providers || []).some(function (t) {
+                if (_this.container.getTokenKey(t) === token) {
+                    return true;
+                }
+                else if (!utils.isClass(token)) {
+                    if (resolver.container.hasRegister(token)) {
+                        var type = resolver.container.getTokenImpl(token);
+                        return exps_1.indexOf(type) >= 0;
+                    }
+                }
+                return false;
+            });
+        }
+    };
+    ResolveChain.prototype.resolve = function (token) {
+        var _this = this;
+        var providers = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            providers[_i - 1] = arguments[_i];
+        }
+        var _a, _b;
+        var resolver = this.toArray().find(function (r) { return _this.hasToken(r, token); });
+        if (!resolver && !this.container.parent) {
+            console.log('have not register', token);
+            return null;
+        }
+        if (resolver) {
+            if (resolver instanceof Container_1.Container) {
+                return resolver.resolveValue.apply(resolver, [token].concat(providers));
+            }
+            else {
+                return (_a = resolver.container).resolveValue.apply(_a, [token].concat(providers));
+            }
+        }
+        else {
+            if (!this.hasContainerProvider(providers)) {
+                providers.push({ provide: IContainer.ContainerToken, useValue: this.container });
+            }
+            return (_b = this.container.parent).resolve.apply(_b, [token].concat(providers));
+        }
+    };
+    ResolveChain.prototype.unregister = function (token) {
+        var _this = this;
+        var resolver = this.toArray().find(function (r) { return _this.hasToken(r, token); });
+        if (resolver) {
+            if (resolver instanceof Container_1.Container) {
+                resolver.unregister(token, false);
+            }
+            else {
+                var idx = this.resolvers.indexOf(resolver);
+                if (idx >= 0 && idx < this.resolvers.length) {
+                    this.resolvers.splice(idx, 1);
+                }
+            }
+        }
+        else if (this.container.parent) {
+            this.container.parent.unregister(token);
+        }
+    };
+    ResolveChain.prototype.getTokenImpl = function (token) {
+        var _this = this;
+        var resolver = this.toArray().find(function (r) { return _this.hasToken(r, token); });
+        if (resolver) {
+            if (resolver instanceof Container_1.Container) {
+                return resolver.getTokenImpl(token, false);
+            }
+            else {
+                return resolver.container.getTokenImpl(token, false);
+            }
+        }
+        else if (this.container.parent) {
+            return this.container.parent.getTokenImpl(token);
+        }
+        else {
+            return null;
+        }
+    };
+    // getTypeProvides<T>(target: Type<T>): Token<T>[] {
+    //     let tokens: Token<T>[] = [];
+    //     this.toArray().forEach(r => {
+    //         if (tokens && tokens.length) {
+    //             return false;
+    //         }
+    //         if (r instanceof Container) {
+    //             tokens = r.getTypeProvides(target, false);
+    //         } else {
+    //             tokens = r.container.getTypeProvides(target, false);
+    //         }
+    //         return true;
+    //     });
+    //     if (tokens && tokens.length) {
+    //         return tokens;
+    //     }
+    //     if (this.container.parent) {
+    //         return this.container.parent.getTypeProvides(target);
+    //     }
+    //     return tokens;
+    // }
+    ResolveChain.prototype.hasRegister = function (token) {
+        var _this = this;
+        if (this.container.hasRegister(token)) {
+            return true;
+        }
+        if (this.resolvers.length) {
+            return this.resolvers.some(function (r) { return _this.hasToken(r, token); });
+        }
+        return false;
+    };
+    ResolveChain.prototype.has = function (token) {
+        if (this.hasRegister(token)) {
+            return true;
+        }
+        if (this.container.parent) {
+            return this.container.parent.has(token);
+        }
+        return false;
+    };
+    ResolveChain.prototype.hasContainerProvider = function (providers) {
+        return providers.some(function (p) {
+            if (p instanceof core.ProviderMap) {
+                return p.has(IContainer.ContainerToken);
+            }
+            else if (utils.isMetadataObject(p)) {
+                var prd = p;
+                return prd.provide === IContainer.ContainerToken;
+            }
+            return false;
+        });
+    };
+    ResolveChain.classAnnations = { "name": "ResolveChain", "params": { "constructor": ["container"], "next": ["resolver"], "toArray": [], "hasResolver": ["resolver"], "hasToken": ["resolver", "token"], "resolve": ["token", "providers"], "unregister": ["token"], "getTokenImpl": ["token"], "hasRegister": ["token"], "has": ["token"], "hasContainerProvider": ["providers"] } };
+    return ResolveChain;
+}());
+exports.ResolveChain = ResolveChain;
+
+
+});
+
+unwrapExports(ResolveChain_1);
+var ResolveChain_2 = ResolveChain_1.ResolveChainToken;
+var ResolveChain_3 = ResolveChain_1.ResolveChain;
+
+var resolves = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", { value: true });
+
+tslib_1.__exportStar(ResolveChain_1, exports);
+
+
+});
+
+unwrapExports(resolves);
+
 var registerCores_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
+
 
 
 
@@ -5259,6 +5457,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 function registerCores(container) {
     container.registerSingleton(LifeScope.LifeScopeToken, function () { return new DefaultLifeScope_1.DefaultLifeScope(container); });
     container.registerSingleton(ICacheManager.CacheManagerToken, function () { return new core.CacheManager(container); });
+    container.registerSingleton(resolves.ResolveChainToken, function () { return new resolves.ResolveChain(container); });
     container.register(core.ProviderMapToken, function () { return new core.ProviderMap(container); });
     container.bindProvider(core.ProviderMap, core.ProviderMapToken);
     container.registerSingleton(core.ProviderMatcherToken, function () { return new core.ProviderMatcher(container); });
@@ -5300,6 +5499,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
 /**
  * Container
  *
@@ -5319,7 +5519,7 @@ var Container = /** @class */ (function () {
         return root;
     };
     Container.prototype.getBuilder = function () {
-        return this.resolve(IContainerBuilder.ContainerBuilderToken);
+        return this.resolveValue(IContainerBuilder.ContainerBuilderToken);
     };
     /**
      * Retrieves an instance from the container based on the provided token.
@@ -5338,6 +5538,22 @@ var Container = /** @class */ (function () {
         }
         return this.resolve.apply(this, [alias ? this.getTokenKey(token, alias) : token].concat(providers));
     };
+    Object.defineProperty(Container.prototype, "resolveChain", {
+        /**
+        * resolve token value in this container only.
+        *
+        * @template T
+        * @param {Token<T>} token
+        * @param {...Providers[]} providers
+        * @returns {T}
+        * @memberof Container
+        */
+        get: function () {
+            return this.resolveValue(resolves.ResolveChainToken);
+        },
+        enumerable: true,
+        configurable: true
+    });
     /**
      * resolve type instance with token and param provider.
      *
@@ -5354,21 +5570,28 @@ var Container = /** @class */ (function () {
         }
         var _a;
         var key = this.getTokenKey(token);
-        var hasReg = this.hasRegister(key);
-        if (!hasReg && !this.parent) {
-            console.log('have not register', key);
+        return (_a = this.resolveChain).resolve.apply(_a, [key].concat(providers));
+    };
+    /**
+     * resolve token value in this container only.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {...Providers[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    Container.prototype.resolveValue = function (token) {
+        var providers = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            providers[_i - 1] = arguments[_i];
+        }
+        var key = this.getTokenKey(token);
+        if (!this.hasRegister(key)) {
             return null;
         }
-        if (hasReg) {
-            var factory = this.factories.get(key);
-            return factory.apply(void 0, providers);
-        }
-        else {
-            if (!this.hasContainerProvider(providers)) {
-                providers.push({ provide: IContainer.ContainerToken, useValue: this });
-            }
-            return (_a = this.parent).resolve.apply(_a, [token].concat(providers));
-        }
+        var factory = this.factories.get(key);
+        return factory.apply(void 0, providers);
     };
     /**
      * clear cache.
@@ -5377,7 +5600,7 @@ var Container = /** @class */ (function () {
      * @memberof IContainer
      */
     Container.prototype.clearCache = function (targetType) {
-        this.get(ICacheManager.CacheManagerToken).destroy(targetType);
+        this.resolveValue(ICacheManager.CacheManagerToken).destroy(targetType);
     };
     /**
      * get token.
@@ -5436,21 +5659,13 @@ var Container = /** @class */ (function () {
      */
     Container.prototype.has = function (token, alias) {
         var key = this.getTokenKey(token, alias);
-        if (this.hasRegister(key)) {
-            return true;
-        }
-        if (this.parent) {
-            return this.parent.hasRegister(key);
-        }
-        else {
-            return false;
-        }
+        return this.resolveChain.has(key);
     };
     /**
      * has register type.
      *
      * @template T
-     * @param {Token<T>} key
+     * @param {SymbolType<T>} key
      * @returns
      * @memberof Container
      */
@@ -5465,19 +5680,21 @@ var Container = /** @class */ (function () {
      * @returns {this}
      * @memberof Container
      */
-    Container.prototype.unregister = function (token) {
+    Container.prototype.unregister = function (token, inchain) {
         var key = this.getTokenKey(token);
-        if (this.hasRegister(key)) {
-            this.factories.delete(key);
-            if (this.provideTypes.has(key)) {
-                this.provideTypes.delete(key);
-            }
-            if (utils.isClass(key)) {
-                this.clearCache(key);
+        if (inchain === false) {
+            if (this.hasRegister(key)) {
+                this.factories.delete(key);
+                if (this.provideTypes.has(key)) {
+                    this.provideTypes.delete(key);
+                }
+                if (utils.isClass(key)) {
+                    this.clearCache(key);
+                }
             }
         }
-        else if (this.parent) {
-            this.parent.unregister(key);
+        else {
+            this.resolveChain.unregister(key);
         }
         return this;
     };
@@ -5576,52 +5793,51 @@ var Container = /** @class */ (function () {
      *
      * @template T
      * @param {Token<T>} token
+     * @param {boolean} [inchain]
      * @returns {Type<T>}
      * @memberof Container
      */
-    Container.prototype.getTokenImpl = function (token) {
-        if (utils.isClass(token)) {
-            return token;
-        }
+    Container.prototype.getTokenImpl = function (token, inchain) {
         var tokenKey = this.getTokenKey(token);
-        if (this.provideTypes.has(tokenKey)) {
-            return this.provideTypes.get(tokenKey);
-        }
-        else if (this.parent) {
-            return this.parent.getTokenImpl(tokenKey);
-        }
-        else {
+        if (inchain === false) {
+            if (utils.isClass(token)) {
+                return token;
+            }
+            if (this.provideTypes.has(tokenKey)) {
+                return this.provideTypes.get(tokenKey);
+            }
             return null;
         }
-    };
-    /**
-     * get type provider for provides.
-     *
-     * @template T
-     * @param {Type<T>} target
-     * @returns {Token<T>[]}
-     * @memberof Container
-     */
-    Container.prototype.getTypeProvides = function (target) {
-        if (!utils.isClass(target)) {
-            return [];
-        }
-        var tokens = [];
-        this.provideTypes.forEach(function (val, key) {
-            if (val === target) {
-                tokens.push(key);
-            }
-        });
-        if (tokens.length) {
-            return tokens;
-        }
-        else if (this.parent) {
-            return this.parent.getTypeProvides(target);
-        }
         else {
-            return tokens;
+            return this.resolveChain.getTokenImpl(tokenKey);
         }
     };
+    // /**
+    //  * get type provider for provides.
+    //  *
+    //  * @template T
+    //  * @param {Type<T>} target
+    //  * @returns {Token<T>[]}
+    //  * @memberof Container
+    //  */
+    // getTypeProvides<T>(target: Type<T>, inchain?: boolean): Token<T>[] {
+    //     if (inchain === false) {
+    //         if (!isClass(target)) {
+    //             return [];
+    //         }
+    //         let tokens: Token<T>[] = [];
+    //         if (this.provideTypes.values().some(a => a === target)) {
+    //             this.provideTypes.forEach((val, key) => {
+    //                 if (val === target) {
+    //                     tokens.push(key);
+    //                 }
+    //             });
+    //         }
+    //         return tokens;
+    //     } else {
+    //         return this.resolveChain.getTypeProvides(target);
+    //     }
+    // }
     /**
      * get token implement class and base classes.
      *
@@ -5702,7 +5918,7 @@ var Container = /** @class */ (function () {
             providers[_i - 3] = arguments[_i];
         }
         var _a;
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).invoke.apply(_a, [token, propertyKey, instance].concat(providers));
+        return (_a = this.resolveValue(IMethodAccessor.MethodAccessorToken)).invoke.apply(_a, [token, propertyKey, instance].concat(providers));
     };
     /**
      * invoke method.
@@ -5721,7 +5937,7 @@ var Container = /** @class */ (function () {
             providers[_i - 3] = arguments[_i];
         }
         var _a;
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).syncInvoke.apply(_a, [token, propertyKey, instance].concat(providers));
+        return (_a = this.resolveValue(IMethodAccessor.MethodAccessorToken)).syncInvoke.apply(_a, [token, propertyKey, instance].concat(providers));
     };
     Container.prototype.createSyncParams = function (params) {
         var providers = [];
@@ -5729,7 +5945,7 @@ var Container = /** @class */ (function () {
             providers[_i - 1] = arguments[_i];
         }
         var _a;
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createSyncParams.apply(_a, [params].concat(providers));
+        return (_a = this.resolveValue(IMethodAccessor.MethodAccessorToken)).createSyncParams.apply(_a, [params].concat(providers));
     };
     Container.prototype.createParams = function (params) {
         var providers = [];
@@ -5737,7 +5953,7 @@ var Container = /** @class */ (function () {
             providers[_i - 1] = arguments[_i];
         }
         var _a;
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createParams.apply(_a, [params].concat(providers));
+        return (_a = this.resolveValue(IMethodAccessor.MethodAccessorToken)).createParams.apply(_a, [params].concat(providers));
     };
     Container.prototype.cacheDecorator = function (map, action) {
         if (!map.has(action.name)) {
@@ -5905,19 +6121,7 @@ var Container = /** @class */ (function () {
             raiseContainer: this
         }, types.IocState.design);
     };
-    Container.prototype.hasContainerProvider = function (providers) {
-        return providers.some(function (p) {
-            if (p instanceof core.ProviderMap) {
-                return p.has(IContainer.ContainerToken);
-            }
-            else if (utils.isMetadataObject(p)) {
-                var prd = p;
-                return prd.provide === IContainer.ContainerToken;
-            }
-            return false;
-        });
-    };
-    Container.classAnnations = { "name": "Container", "params": { "constructor": [], "getRoot": [], "getBuilder": [], "get": ["token", "alias", "providers"], "resolve": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token"], "getTypeProvides": ["target"], "getTokenExtendsChain": ["token"], "getBaseClasses": ["target"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"], "hasContainerProvider": ["providers"] } };
+    Container.classAnnations = { "name": "Container", "params": { "constructor": [], "getRoot": [], "getBuilder": [], "get": ["token", "alias", "providers"], "resolve": ["token", "providers"], "resolveValue": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token", "inchain"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token", "inchain"], "getTokenExtendsChain": ["token"], "getBaseClasses": ["target"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"] } };
     return Container;
 }());
 exports.Container = Container;
@@ -6855,12 +7059,13 @@ tslib_1.__exportStar(utils, exports);
 tslib_1.__exportStar(components, exports);
 tslib_1.__exportStar(core, exports);
 tslib_1.__exportStar(injectors, exports);
+tslib_1.__exportStar(resolves, exports);
 
 
 });
 
-var index$8 = unwrapExports(D__workspace_github_tsioc_packages_core_lib);
+var index$9 = unwrapExports(D__workspace_github_tsioc_packages_core_lib);
 
-return index$8;
+return index$9;
 
 })));

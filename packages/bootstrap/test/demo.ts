@@ -11,12 +11,26 @@ export class TestService {
 }
 
 @DIModule({
-    providers: [
-        { provide: 'mark', useFactory: () => 'marked' },
+    imports: [
         TestService
     ],
     exports: [
+        TestService
+    ]
+})
+export class ModuleCustom {
 
+}
+
+@DIModule({
+    imports: [
+        ModuleCustom
+    ],
+    providers: [
+        { provide: 'mark', useFactory: () => 'marked' }
+    ],
+    exports: [
+        ModuleCustom
     ]
 })
 export class ModuleA {
@@ -65,7 +79,8 @@ export class ModuleB implements OnModuleStart<ClassSevice> {
         // console.log(pools);
         // console.log('container pools defaults..................\n');
         // console.log(pools.getDefault());
-
+        // console.log(container.resolveChain.toArray()[1]);
+        // console.log(container.resolve(TestService));
         console.log(test);
         test.test();
 

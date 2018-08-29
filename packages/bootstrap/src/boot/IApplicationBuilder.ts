@@ -1,6 +1,6 @@
 import { Token, InjectToken, IContainer, LoadType, Factory } from '@ts-ioc/core';
 import { AppConfigure } from './AppConfigure';
-import { IModuleBuilder, MdInstance, ModuleEnv, ModuleConfig } from '../modules';
+import { IModuleBuilder, MdInstance, ModuleEnv, ModuleConfig, InjectedModule } from '../modules';
 import { Events, IEvents } from '../utils';
 
 /**
@@ -67,12 +67,12 @@ export interface IApplicationBuilder<T> extends IModuleBuilder<T>, IApplicationE
     /**
      * get module builder
      *
-     * @param {(Token<T> | ModuleConfig<T>)} token
+     * @param {InjectedModule<T>} token
      * @param {ModuleEnv} [env]
      * @returns {IModuleBuilder<T>}
      * @memberof IModuleBuilder
      */
-    getBuilder(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): IModuleBuilder<T>;
+    getBuilder(injmdl: InjectedModule<T>): IModuleBuilder<T>;
 
 }
 

@@ -1,7 +1,7 @@
 import {
     Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
     Inject, Token, isToken, Providers, Injectable, isArray, lang, isUndefined, isClass,
-    isFunction, isString, isNull, isProviderMap, Provider, isBaseObject, IModuleInjector
+    isFunction, isString, isNull, isProviderMap, Provider, isBaseObject, IModuleInjector, Container
 } from '@ts-ioc/core';
 import { DIModuelValidateToken } from './DIModuleValidate';
 import { DIModule } from '../decorators';
@@ -86,12 +86,13 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         let pools = container.get(ContainerPoolToken);
         let newContainer = pools.create(container);
         newContainer.register(type);
-        let metaConfig = this.validate.getMetaConfig(type, newContainer);
-        await this.registerConfgureDepds(newContainer, metaConfig);
-        await this.importConfigExports(container, newContainer, metaConfig, type);
+        let metaConfig = this.validate.getMetaConfig(type, newContainer) as ModuleConfigure;
+        metaConfig = await this.registerConfgureDepds(newContainer, metaConfig);
 
-        let injMd = new InjectedModule(type, metaConfig, newContainer);
+        let injMd = new InjectedModule(type, metaConfig, newContainer, type, metaConfig.exports || [], metaConfig[exportsProvidersFiled]);
         container.bindProvider(new InjectedModuleToken(type), injMd);
+
+        await this.importConfigExports(container, newContainer, injMd);
 
         return injMd;
     }
@@ -108,32 +109,26 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         return config;
     }
 
-    protected async importConfigExports(container: IContainer, providerContainer: IContainer, cfg: ModuleConfigure, mdl?: Type<any>) {
+    protected async importConfigExports(container: IContainer, providerContainer: IContainer, injMd: InjectedModule<any>) {
         if (container === providerContainer) {
             return container;
         }
-        if (cfg.exports && cfg.exports.length) {
-            cfg.exports.forEach(tk => {
-                container.bindProvider(tk, (...providers: Providers[]) => providerContainer.resolve(tk, ...providers));
-                if (isClass(tk)) {
-                    let tokens = providerContainer.getTypeProvides(tk);
-                    tokens.forEach(provide => {
-                        container.bindProvider(provide, tk);
-                    });
-                }
-            });
+        if (injMd) {
+            container.resolveChain.next(injMd);
+            if (injMd.exports && injMd.exports.length) {
+                let expchs = providerContainer.resolveChain.toArray().filter(r => {
+                    if (r instanceof Container) {
+                        return false;
+                    } else {
+                        return injMd.exports.indexOf(r.type) >= 0
+                    }
+                });
+                expchs.forEach(r => {
+                    container.resolveChain.next(r);
+                });
+            }
         }
 
-        if (mdl) {
-            container.bindProvider(mdl, (...providers: Providers[]) => providerContainer.resolve(mdl, ...providers));
-        }
-
-        let expProviders: Token<any>[] = cfg[exportsProvidersFiled];
-        if (expProviders && expProviders.length) {
-            expProviders.forEach(tk => {
-                container.bindProvider(tk, () => providerContainer.get(tk));
-            })
-        }
         return container;
     }
 

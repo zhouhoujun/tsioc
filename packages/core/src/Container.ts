@@ -5,12 +5,13 @@ import { Registration } from './Registration';
 import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet, lang, isMetadataObject } from './utils';
 
 import { MethodAccessorToken } from './IMethodAccessor';
-import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderMatcherToken, ProviderMap, IProvider } from './core';
+import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderMatcherToken } from './core';
 import { LifeScope, LifeScopeToken } from './LifeScope';
 import { IParameter } from './IParameter';
 import { CacheManagerToken } from './ICacheManager';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { registerCores } from './registerCores';
+import { ResolveChain, ResolveChainToken } from './resolves';
 
 /**
  * Container
@@ -45,7 +46,7 @@ export class Container implements IContainer {
     }
 
     getBuilder(): IContainerBuilder {
-        return this.resolve(ContainerBuilderToken);
+        return this.resolveValue(ContainerBuilderToken);
     }
 
     /**
@@ -62,6 +63,18 @@ export class Container implements IContainer {
         return this.resolve(alias ? this.getTokenKey<T>(token, alias) : token, ...providers);
     }
 
+     /**
+     * resolve token value in this container only.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {...Providers[]} providers
+     * @returns {T}
+     * @memberof Container
+     */
+    get resolveChain(): ResolveChain {
+        return this.resolveValue(ResolveChainToken);
+    }
 
     /**
      * resolve type instance with token and param provider.
@@ -74,20 +87,25 @@ export class Container implements IContainer {
      */
     resolve<T>(token: Token<T>, ...providers: Providers[]): T {
         let key = this.getTokenKey<T>(token);
-        let hasReg = this.hasRegister(key);
-        if (!hasReg && !this.parent) {
-            console.log('have not register', key);
+        return this.resolveChain.resolve(key, ...providers);
+    }
+
+    /**
+     * resolve token value in this container only.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {...Providers[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    resolveValue<T>(token: Token<T>, ...providers: Providers[]): T {
+        let key = this.getTokenKey(token);
+        if (!this.hasRegister(key)) {
             return null;
         }
-        if (hasReg) {
-            let factory = this.factories.get(key);
-            return factory(...providers) as T;
-        } else {
-            if (!this.hasContainerProvider(providers)) {
-                providers.push({ provide: ContainerToken, useValue: this });
-            }
-            return this.parent.resolve(token, ...providers);
-        }
+        let factory = this.factories.get(key);
+        return factory(...providers) as T;
     }
 
     /**
@@ -97,7 +115,7 @@ export class Container implements IContainer {
      * @memberof IContainer
      */
     clearCache(targetType: Type<any>) {
-        this.get(CacheManagerToken).destroy(targetType);
+        this.resolveValue(CacheManagerToken).destroy(targetType);
     }
 
     /**
@@ -160,26 +178,18 @@ export class Container implements IContainer {
      */
     has<T>(token: Token<T>, alias?: string): boolean {
         let key = this.getTokenKey(token, alias);
-
-        if (this.hasRegister(key)) {
-            return true;
-        }
-        if (this.parent) {
-            return this.parent.hasRegister(key);
-        } else {
-            return false;
-        }
+        return this.resolveChain.has(key);
     }
 
     /**
      * has register type.
      *
      * @template T
-     * @param {Token<T>} key
+     * @param {SymbolType<T>} key
      * @returns
      * @memberof Container
      */
-    hasRegister<T>(key: Token<T>) {
+    hasRegister<T>(key: SymbolType<T>) {
         return this.factories.has(key);
     }
 
@@ -191,18 +201,20 @@ export class Container implements IContainer {
      * @returns {this}
      * @memberof Container
      */
-    unregister<T>(token: Token<T>): this {
+    unregister<T>(token: Token<T>, inchain?: boolean): this {
         let key = this.getTokenKey(token);
-        if (this.hasRegister(key)) {
-            this.factories.delete(key);
-            if (this.provideTypes.has(key)) {
-                this.provideTypes.delete(key);
+        if (inchain === false) {
+            if (this.hasRegister(key)) {
+                this.factories.delete(key);
+                if (this.provideTypes.has(key)) {
+                    this.provideTypes.delete(key);
+                }
+                if (isClass(key)) {
+                    this.clearCache(key);
+                }
             }
-            if (isClass(key)) {
-                this.clearCache(key);
-            }
-        } else if (this.parent) {
-            this.parent.unregister(key);
+        } else {
+            this.resolveChain.unregister(key);
         }
         return this;
     }
@@ -295,49 +307,52 @@ export class Container implements IContainer {
      *
      * @template T
      * @param {Token<T>} token
+     * @param {boolean} [inchain]
      * @returns {Type<T>}
      * @memberof Container
      */
-    getTokenImpl<T>(token: Token<T>): Type<T> {
-        if (isClass(token)) {
-            return token;
-        }
+    getTokenImpl<T>(token: Token<T>, inchain?: boolean): Type<T> {
         let tokenKey = this.getTokenKey(token);
-        if (this.provideTypes.has(tokenKey)) {
-            return this.provideTypes.get(tokenKey);
-        } else if (this.parent) {
-            return this.parent.getTokenImpl(tokenKey);
-        } else {
+        if (inchain === false) {
+            if (isClass(token)) {
+                return token;
+            }
+            if (this.provideTypes.has(tokenKey)) {
+                return this.provideTypes.get(tokenKey);
+            }
             return null;
+        } else {
+            return this.resolveChain.getTokenImpl(tokenKey);
         }
     }
 
-    /**
-     * get type provider for provides.
-     *
-     * @template T
-     * @param {Type<T>} target
-     * @returns {Token<T>[]}
-     * @memberof Container
-     */
-    getTypeProvides<T>(target: Type<T>): Token<T>[] {
-        if (!isClass(target)) {
-            return [];
-        }
-        let tokens: Token<T>[] = [];
-        this.provideTypes.forEach((val, key) => {
-            if (val === target) {
-                tokens.push(key);
-            }
-        });
-        if (tokens.length) {
-            return tokens;
-        } else if (this.parent) {
-            return this.parent.getTypeProvides(target);
-        } else {
-            return tokens;
-        }
-    }
+
+    // /**
+    //  * get type provider for provides.
+    //  *
+    //  * @template T
+    //  * @param {Type<T>} target
+    //  * @returns {Token<T>[]}
+    //  * @memberof Container
+    //  */
+    // getTypeProvides<T>(target: Type<T>, inchain?: boolean): Token<T>[] {
+    //     if (inchain === false) {
+    //         if (!isClass(target)) {
+    //             return [];
+    //         }
+    //         let tokens: Token<T>[] = [];
+    //         if (this.provideTypes.values().some(a => a === target)) {
+    //             this.provideTypes.forEach((val, key) => {
+    //                 if (val === target) {
+    //                     tokens.push(key);
+    //                 }
+    //             });
+    //         }
+    //         return tokens;
+    //     } else {
+    //         return this.resolveChain.getTypeProvides(target);
+    //     }
+    // }
 
     /**
      * get token implement class and base classes.
@@ -408,7 +423,7 @@ export class Container implements IContainer {
      * @memberof Container
      */
     invoke<T>(token: Token<any>, propertyKey: string, instance?: any, ...providers: Providers[]): Promise<T> {
-        return this.get(MethodAccessorToken).invoke(token, propertyKey, instance, ...providers);
+        return this.resolveValue(MethodAccessorToken).invoke(token, propertyKey, instance, ...providers);
     }
 
     /**
@@ -423,17 +438,16 @@ export class Container implements IContainer {
      * @memberof Container
      */
     syncInvoke<T>(token: Token<any>, propertyKey: string, instance?: any, ...providers: Providers[]): T {
-        return this.get(MethodAccessorToken).syncInvoke(token, propertyKey, instance, ...providers);
+        return this.resolveValue(MethodAccessorToken).syncInvoke(token, propertyKey, instance, ...providers);
     }
 
     createSyncParams(params: IParameter[], ...providers: Providers[]): any[] {
-        return this.get(MethodAccessorToken).createSyncParams(params, ...providers);
+        return this.resolveValue(MethodAccessorToken).createSyncParams(params, ...providers);
     }
 
     createParams(params: IParameter[], ...providers: Providers[]): Promise<any[]> {
-        return this.get(MethodAccessorToken).createParams(params, ...providers);
+        return this.resolveValue(MethodAccessorToken).createParams(params, ...providers);
     }
-
 
     protected cacheDecorator<T>(map: Map<string, ActionComponent>, action: ActionComponent) {
         if (!map.has(action.name)) {
@@ -607,19 +621,6 @@ export class Container implements IContainer {
         }, IocState.design);
 
     }
-
-    protected hasContainerProvider(providers: Providers[]): boolean {
-        return providers.some(p => {
-            if (p instanceof ProviderMap) {
-                return p.has(ContainerToken);
-            } else if (isMetadataObject(p)) {
-                let prd = p as IProvider;
-                return prd.provide === ContainerToken;
-            }
-            return false;
-        });
-    }
-
 }
 
 

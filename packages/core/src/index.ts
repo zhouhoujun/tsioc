@@ -1,4 +1,4 @@
-
+export * from './IResolver';
 export * from './IContainer';
 export * from './Container';
 
@@ -20,4 +20,5 @@ export * from './utils';
 export * from './components';
 export * from './core';
 export * from './injectors';
+export * from './resolves';
 

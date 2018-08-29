@@ -1,4 +1,4 @@
-import { Token, IContainer, Registration, Type } from '@ts-ioc/core';
+import { Token, IContainer, Registration, Type, IExports } from '@ts-ioc/core';
 import { ModuleConfig } from './ModuleConfigure';
 
 /**
@@ -8,11 +8,15 @@ import { ModuleConfig } from './ModuleConfigure';
  * @class InjectedModule
  * @template T
  */
-export class InjectedModule<T> {
+export class InjectedModule<T> implements IExports {
+
     constructor(
         public token: Token<T>,
         public config: ModuleConfig<T>,
-        public container: IContainer
+        public container: IContainer,
+        public type?: Type<any>,
+        public exports?: Token<any>[],
+        public providers?: Token<any>[]
     ) {
 
     }
