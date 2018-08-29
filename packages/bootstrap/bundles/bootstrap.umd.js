@@ -1112,6 +1112,7 @@ var AnnotationBuilder = /** @class */ (function () {
     AnnotationBuilder.prototype.resolveToken = function (token, data) {
         return this.container.resolve(token, data);
     };
+    var AnnotationBuilder_1;
     AnnotationBuilder.classAnnations = { "name": "AnnotationBuilder", "params": { "constructor": [], "build": ["token", "config", "data"], "buildByConfig": ["config", "data"], "createInstance": ["token", "config", "data"], "getBuilder": ["token", "config"], "buildStrategy": ["instance", "config"], "getType": ["config"], "registerExts": ["config"], "getTokenMetaConfig": ["token", "config"], "getDecorator": [], "getMetaConfig": ["token"], "isEqual": ["build"], "resolveToken": ["token", "data"] } };
     tslib_1.__decorate([
         core_1.Inject(core_1.ContainerToken),
@@ -1122,7 +1123,6 @@ var AnnotationBuilder = /** @class */ (function () {
         tslib_1.__metadata("design:paramtypes", [])
     ], AnnotationBuilder);
     return AnnotationBuilder;
-    var AnnotationBuilder_1;
 }());
 exports.AnnotationBuilder = AnnotationBuilder;
 
@@ -1654,8 +1654,8 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
         for (var _i = 1; _i < arguments.length; _i++) {
             args[_i - 1] = arguments[_i];
         }
-        (_a = this.events).emit.apply(_a, [name].concat(args));
         var _a;
+        (_a = this.events).emit.apply(_a, [name].concat(args));
     };
     DefaultApplicationBuilder.prototype.getPools = function () {
         if (!this.pools) {
@@ -1845,8 +1845,8 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
     };
     DefaultApplicationBuilder.prototype.getGlobalConfig = function (container) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var globCfg_1, exts;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1921,8 +1921,8 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
      */
     DefaultApplicationBuilder.prototype.registerExts = function (container, config) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var usedModules;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -2007,7 +2007,7 @@ tslib_1.__exportStar(IApplicationBuilder, exports);
 
 unwrapExports(boot);
 
-var D__Workspace_Projects_modules_tsioc_packages_bootstrap_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_bootstrap_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(decorators, exports);
@@ -2021,7 +2021,7 @@ tslib_1.__exportStar(BootModule_1, exports);
 
 });
 
-var index$6 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_bootstrap_lib);
+var index$6 = unwrapExports(D__workspace_github_tsioc_packages_bootstrap_lib);
 
 return index$6;
 

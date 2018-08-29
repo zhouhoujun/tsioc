@@ -3428,7 +3428,7 @@ var ComponentBeforeInitAction = /** @class */ (function (_super) {
         return _super.call(this, CoreActions_1.CoreActions.componentBeforeInit) || this;
     }
     ComponentBeforeInitAction.prototype.working = function (container, data) {
-        if (data.raiseContainer !== container) {
+        if (data.raiseContainer && data.raiseContainer !== container) {
             return;
         }
         if (data.targetType && data.target) {
@@ -3468,7 +3468,7 @@ var ComponentInitAction = /** @class */ (function (_super) {
         return _super.call(this, CoreActions_1.CoreActions.componentInit) || this;
     }
     ComponentInitAction.prototype.working = function (container, data) {
-        if (data.raiseContainer !== container) {
+        if (data.raiseContainer && data.raiseContainer !== container) {
             return;
         }
         if (data.targetType && data.target) {
@@ -3508,7 +3508,7 @@ var ComponentAfterInitAction = /** @class */ (function (_super) {
         return _super.call(this, CoreActions_1.CoreActions.componentAfterInit) || this;
     }
     ComponentAfterInitAction.prototype.working = function (container, data) {
-        if (data.raiseContainer !== container) {
+        if (data.raiseContainer && data.raiseContainer !== container) {
             return;
         }
         if (data.targetType && data.target) {
@@ -3565,10 +3565,10 @@ var CacheAction = /** @class */ (function (_super) {
         return _super.call(this, CoreActions_1.CoreActions.cache) || this;
     }
     CacheAction.prototype.working = function (container, data) {
-        if (data.singleton || !data.targetType || !utils.isClass(data.targetType)) {
+        if (data.raiseContainer && data.raiseContainer !== container) {
             return data;
         }
-        if (data.raiseContainer !== container) {
+        if (data.singleton || !data.targetType || !utils.isClass(data.targetType)) {
             return data;
         }
         var cacheManager = container.get(ICacheManager.CacheManagerToken);
@@ -3637,7 +3637,7 @@ var SingletionAction = /** @class */ (function (_super) {
         return _super.call(this, CoreActions_1.CoreActions.singletion) || this;
     }
     SingletionAction.prototype.working = function (container, data) {
-        if (data.raiseContainer !== container) {
+        if (data.raiseContainer && data.raiseContainer !== container) {
             return;
         }
         if (data.tokenKey && data.target && data.singleton) {
@@ -3892,7 +3892,7 @@ var AutorunAction = /** @class */ (function (_super) {
         return [decorators.IocExt, decorators.Autorun];
     };
     AutorunAction.prototype.working = function (container, data) {
-        if (data.raiseContainer !== container) {
+        if (data.raiseContainer && data.raiseContainer !== container) {
             return;
         }
         if (data.tokenKey && data.targetType) {
@@ -3983,8 +3983,8 @@ var ProviderMap = /** @class */ (function () {
                 for (var _i = 0; _i < arguments.length; _i++) {
                     providers[_i] = arguments[_i];
                 }
-                return (_a = _this.container).resolve.apply(_a, [provider].concat(providers));
                 var _a;
+                return (_a = _this.container).resolve.apply(_a, [provider].concat(providers));
             };
         }
         else {
@@ -4017,12 +4017,12 @@ var ProviderMap = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
+        var _a, _b;
         if (!this.maps.has(provide)) {
             return (!utils.isNumber(provide) && this.container.has(provide)) ? (_a = this.container).resolve.apply(_a, [provide].concat(providers)) : null;
         }
         var provider = this.maps.get(provide);
         return utils.isToken(provider) ? (_b = this.container).resolve.apply(_b, [provider].concat(providers)) : provider.apply(void 0, providers);
-        var _a, _b;
     };
     ProviderMap.prototype.forEach = function (express) {
         this.maps.forEach(express);
@@ -4343,7 +4343,7 @@ var MethodAutorun = /** @class */ (function (_super) {
         return _super.call(this, CoreActions_1.CoreActions.methodAutorun) || this;
     }
     MethodAutorun.prototype.working = function (container, data) {
-        if (data.raiseContainer !== container) {
+        if (data.raiseContainer && data.raiseContainer !== container) {
             return;
         }
         if (data.target && data.targetType) {
@@ -4535,13 +4535,13 @@ var DefaultLifeScope = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             names[_i - 1] = arguments[_i];
         }
+        var _a;
         this.execute.apply(this, [data].concat(names));
         var container = this.container.parent;
         while (container) {
             (_a = container.getLifeScope()).execute.apply(_a, [utils.lang.assign({}, data)].concat(names));
             container = container.parent;
         }
-        var _a;
     };
     DefaultLifeScope.prototype.getClassDecorators = function (match) {
         return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Class), match);
@@ -4969,7 +4969,7 @@ var MethodAccessor = /** @class */ (function () {
             providers[_i - 3] = arguments[_i];
         }
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var targetClass, actionData, lifeScope, parameters, paramInstances, _a;
+            var _a, targetClass, actionData, lifeScope, parameters, paramInstances;
             return tslib_1.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -4995,7 +4995,6 @@ var MethodAccessor = /** @class */ (function () {
                         paramInstances = _b.sent();
                         return [2 /*return*/, target[propertyKey].apply(target, paramInstances)];
                     case 2: throw new Error("type: " + targetClass + " has no method " + propertyKey.toString() + ".");
-                    case 3: return [2 /*return*/];
                 }
             });
         });
@@ -5005,6 +5004,7 @@ var MethodAccessor = /** @class */ (function () {
         for (var _i = 3; _i < arguments.length; _i++) {
             providers[_i - 3] = arguments[_i];
         }
+        var _a;
         if (!target) {
             target = (_a = this.container).resolve.apply(_a, [token].concat(providers));
         }
@@ -5028,7 +5028,6 @@ var MethodAccessor = /** @class */ (function () {
         else {
             throw new Error("type: " + targetClass + " has no method " + propertyKey.toString() + ".");
         }
-        var _a;
     };
     MethodAccessor.prototype.createSyncParams = function (params) {
         var _this = this;
@@ -5036,8 +5035,10 @@ var MethodAccessor = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
+        var _a;
         var providerMap = (_a = this.getMatcher()).matchProviders.apply(_a, [params].concat(providers));
         return params.map(function (param, index) {
+            var _a;
             if (param.name && providerMap.has(param.name)) {
                 return providerMap.resolve(param.name);
             }
@@ -5047,9 +5048,7 @@ var MethodAccessor = /** @class */ (function () {
             else {
                 return undefined;
             }
-            var _a;
         });
-        var _a;
     };
     MethodAccessor.prototype.createParams = function (params) {
         var _this = this;
@@ -5057,8 +5056,10 @@ var MethodAccessor = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
+        var _a;
         var providerMap = (_a = this.getMatcher()).matchProviders.apply(_a, [params].concat(providers));
         return Promise.all(params.map(function (param, index) {
+            var _a;
             if (param.name && providerMap.has(param.name)) {
                 return providerMap.resolve(param.name);
             }
@@ -5068,9 +5069,7 @@ var MethodAccessor = /** @class */ (function () {
             else {
                 return undefined;
             }
-            var _a;
         }));
-        var _a;
     };
     MethodAccessor.classAnnations = { "name": "MethodAccessor", "params": { "constructor": ["container"], "getMatcher": [], "invoke": ["token", "propertyKey", "target", "providers"], "syncInvoke": ["token", "propertyKey", "target", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"] } };
     return MethodAccessor;
@@ -5353,6 +5352,7 @@ var Container = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
+        var _a;
         var key = this.getTokenKey(token);
         var hasReg = this.hasRegister(key);
         if (!hasReg && !this.parent) {
@@ -5369,7 +5369,6 @@ var Container = /** @class */ (function () {
             }
             return (_a = this.parent).resolve.apply(_a, [token].concat(providers));
         }
-        var _a;
     };
     /**
      * clear cache.
@@ -5667,9 +5666,9 @@ var Container = /** @class */ (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             modules[_i] = arguments[_i];
         }
+        var _a;
         (_a = this.getBuilder()).syncLoadModule.apply(_a, [this].concat(modules));
         return this;
-        var _a;
     };
     /**
      * async use modules.
@@ -5683,8 +5682,8 @@ var Container = /** @class */ (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             modules[_i] = arguments[_i];
         }
-        return (_a = this.getBuilder()).loadModule.apply(_a, [this].concat(modules));
         var _a;
+        return (_a = this.getBuilder()).loadModule.apply(_a, [this].concat(modules));
     };
     /**
      * invoke method async.
@@ -5702,8 +5701,8 @@ var Container = /** @class */ (function () {
         for (var _i = 3; _i < arguments.length; _i++) {
             providers[_i - 3] = arguments[_i];
         }
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).invoke.apply(_a, [token, propertyKey, instance].concat(providers));
         var _a;
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).invoke.apply(_a, [token, propertyKey, instance].concat(providers));
     };
     /**
      * invoke method.
@@ -5721,24 +5720,24 @@ var Container = /** @class */ (function () {
         for (var _i = 3; _i < arguments.length; _i++) {
             providers[_i - 3] = arguments[_i];
         }
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).syncInvoke.apply(_a, [token, propertyKey, instance].concat(providers));
         var _a;
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).syncInvoke.apply(_a, [token, propertyKey, instance].concat(providers));
     };
     Container.prototype.createSyncParams = function (params) {
         var providers = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createSyncParams.apply(_a, [params].concat(providers));
         var _a;
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createSyncParams.apply(_a, [params].concat(providers));
     };
     Container.prototype.createParams = function (params) {
         var providers = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
-        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createParams.apply(_a, [params].concat(providers));
         var _a;
+        return (_a = this.get(IMethodAccessor.MethodAccessorToken)).createParams.apply(_a, [params].concat(providers));
     };
     Container.prototype.cacheDecorator = function (map, action) {
         if (!map.has(action.name)) {
@@ -5820,6 +5819,7 @@ var Container = /** @class */ (function () {
             for (var _i = 0; _i < arguments.length; _i++) {
                 providers[_i] = arguments[_i];
             }
+            var _a;
             if (singleton && _this.singleton.has(key)) {
                 return _this.singleton.get(key);
             }
@@ -5890,14 +5890,13 @@ var Container = /** @class */ (function () {
                 providerMap: providerMap,
                 singleton: singleton
             }, types.IocState.runtime, core.LifeState.AfterInit);
-            lifeScope.routeExecute({
+            lifeScope.execute({
                 tokenKey: key,
                 target: instance,
                 targetType: ClassT,
                 raiseContainer: _this
             }, core.CoreActions.cache);
             return instance;
-            var _a;
         };
         this.factories.set(key, factory);
         lifeScope.routeExecute({
@@ -6060,8 +6059,8 @@ var DefaultModuleLoader = /** @class */ (function () {
     };
     DefaultModuleLoader.prototype.loadPathModule = function (pmd) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var modules;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -6520,8 +6519,8 @@ var ModuleInjector = /** @class */ (function (_super) {
     }
     ModuleInjector.prototype.inject = function (container, modules) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var types, next;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -6750,8 +6749,8 @@ var DefaultContainerBuilder = /** @class */ (function () {
             modules[_i - 1] = arguments[_i];
         }
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
             var regModules, injTypes, injChain_1;
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.loader.loadTypes(modules)];
@@ -6839,7 +6838,7 @@ exports.DefaultContainerBuilder = DefaultContainerBuilder;
 unwrapExports(DefaultContainerBuilder_1);
 var DefaultContainerBuilder_2 = DefaultContainerBuilder_1.DefaultContainerBuilder;
 
-var D__Workspace_Projects_modules_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(IContainer, exports);
@@ -6860,7 +6859,7 @@ tslib_1.__exportStar(injectors, exports);
 
 });
 
-var index$8 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_core_lib);
+var index$8 = unwrapExports(D__workspace_github_tsioc_packages_core_lib);
 
 return index$8;
 

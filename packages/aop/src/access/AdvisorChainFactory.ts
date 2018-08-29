@@ -4,12 +4,13 @@ import { Advicer, Advices } from '../advices';
 import { IAdvisorChainFactory, AdvisorChainFactoryToken } from './IAdvisorChainFactory';
 import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
 import { NonePointcut } from '../decorators';
+import { IAdvisor, AdvisorToken } from '../IAdvisor';
 
 @NonePointcut()
 @Injectable(AdvisorChainFactoryToken)
 export class AdvisorChainFactory implements IAdvisorChainFactory {
 
-    constructor(@Inject(ContainerToken) private container: IContainer, private advices: Advices) {
+    constructor(@Inject(ContainerToken) private container: IContainer, @Inject(AdvisorToken) private advisor: IAdvisor, private advices: Advices) {
 
     }
 
@@ -181,6 +182,6 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
             providers.push(Provider.create(metadata.throwing, joinPoint.throwing));
         }
 
-        return this.container.syncInvoke<any>(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
+        return this.advisor.getContainer(advicer.aspectType, this.container).syncInvoke<any>(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
     }
 }

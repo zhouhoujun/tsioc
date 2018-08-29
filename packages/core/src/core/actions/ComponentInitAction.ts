@@ -33,7 +33,7 @@ export class ComponentInitAction extends ActionComposite {
     }
 
     protected working(container: IContainer, data: ComponentInitActionData) {
-        if (data.raiseContainer !== container) {
+        if (data.raiseContainer && data.raiseContainer !== container) {
             return;
         }
         if (data.targetType && data.target) {

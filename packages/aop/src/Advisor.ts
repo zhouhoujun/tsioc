@@ -1,6 +1,6 @@
 import {
-    IContainer, Singleton, Inject, getOwnMethodMetadata,
-    MapSet, Type, ObjectMap, getClassName, lang, ContainerToken
+    IContainer, Singleton, getOwnMethodMetadata,
+    MapSet, Type, ObjectMap, getClassName, lang, Providers
 } from '@ts-ioc/core';
 import { Advices } from './advices';
 import { Advice, NonePointcut } from './decorators';
@@ -23,6 +23,8 @@ export class Advisor implements IAdvisor {
      * @memberof AspectManager
      */
     aspects: MapSet<Type<any>, ObjectMap<AdviceMetadata[]>>;
+
+    protected aspectIocs: MapSet<Type<any>, IContainer>;
     /**
      * method advices.
      *
@@ -32,9 +34,10 @@ export class Advisor implements IAdvisor {
     advices: MapSet<string, Advices>;
 
 
-    constructor(@Inject(ContainerToken) private container: IContainer) {
-        this.aspects = new MapSet<Type<any>, ObjectMap<AdviceMetadata[]>>();
-        this.advices = new MapSet<string, Advices>();
+    constructor() {
+        this.aspects = new MapSet();
+        this.aspectIocs = new MapSet();
+        this.advices = new MapSet();
     }
 
     setAdvices(key: string, advices: Advices) {
@@ -56,10 +59,34 @@ export class Advisor implements IAdvisor {
         return methods.some(m => this.advices.has(`${className}.${m}`));
     }
 
-    add(aspect: Type<any>) {
+    add(aspect: Type<any>, raiseContainer: IContainer) {
         if (!this.aspects.has(aspect)) {
             let metas = getOwnMethodMetadata<AdviceMetadata>(Advice, aspect);
             this.aspects.set(aspect, metas);
+            this.aspectIocs.set(aspect, raiseContainer);
         }
+    }
+
+    getContainer(aspect: Type<any>, defaultContainer?: IContainer): IContainer {
+        if (this.aspectIocs.has(aspect)) {
+            return this.aspectIocs.get(aspect) || defaultContainer;
+        }
+        return defaultContainer;
+    }
+
+    /**
+     * resolve aspect.
+     *
+     * @template T
+     * @param {Type<T>} aspect
+     * @param {...Providers[]} providers
+     * @returns {T}
+     * @memberof Advisor
+     */
+    resolve<T>(aspect: Type<T>, ...providers: Providers[]): T {
+        if (this.aspectIocs.has(aspect)) {
+            return this.aspectIocs.get(aspect).resolve(aspect, ...providers);
+        }
+        return null;
     }
 }

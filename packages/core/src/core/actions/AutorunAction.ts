@@ -39,7 +39,7 @@ export class AutorunAction extends ActionComposite {
     }
 
     protected working(container: IContainer, data: AutorunActionData) {
-        if (data.raiseContainer !== container) {
+        if (data.raiseContainer && data.raiseContainer !== container) {
             return;
         }
         if (data.tokenKey && data.targetType) {

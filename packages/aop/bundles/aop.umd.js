@@ -93,12 +93,13 @@ var RegistAspectAction = /** @class */ (function (_super) {
         var lifeScope = container.getLifeScope();
         var matchs = lifeScope.getClassDecorators(function (surm) { return surm.actions.includes(AopActions_1.AopActions.registAspect) && core_1.hasOwnClassMetadata(surm.name, type); });
         var aspectMgr = container.get(IAdvisor.AdvisorToken);
+        var raiseContainer = data.raiseContainer || container;
         matchs.forEach(function (surm) {
             var metadata = core_1.getOwnTypeMetadata(surm.name, type);
             if (Array.isArray(metadata) && metadata.length > 0) {
                 metadata.forEach(function (meta) {
                     if (core_1.isClass(meta.type)) {
-                        aspectMgr.add(meta.type);
+                        aspectMgr.add(meta.type, raiseContainer);
                     }
                 });
             }
@@ -521,9 +522,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
+
 var AdvisorChainFactory = /** @class */ (function () {
-    function AdvisorChainFactory(container, advices) {
+    function AdvisorChainFactory(container, advisor, advices) {
         this.container = container;
+        this.advisor = advisor;
         this.advices = advices;
     }
     AdvisorChainFactory.prototype.getAdvicers = function (adviceType) {
@@ -630,6 +633,7 @@ var AdvisorChainFactory = /** @class */ (function () {
     };
     AdvisorChainFactory.prototype.invokeAdvice = function (joinPoint, advicer) {
         var _this = this;
+        var _a;
         var providers = [];
         providers.push(core_1.Provider.createExtends(joinpoints.Joinpoint, joinPoint, function (inst, provider) {
             inst._cache_JoinPoint = provider.resolve(_this.container);
@@ -668,15 +672,14 @@ var AdvisorChainFactory = /** @class */ (function () {
         if (!core_1.isUndefined(joinPoint.throwing) && metadata.throwing) {
             providers.push(core_1.Provider.create(metadata.throwing, joinPoint.throwing));
         }
-        return (_a = this.container).syncInvoke.apply(_a, [advicer.aspectType, advicer.advice.propertyKey, null].concat(providers));
-        var _a;
+        return (_a = this.advisor.getContainer(advicer.aspectType, this.container)).syncInvoke.apply(_a, [advicer.aspectType, advicer.advice.propertyKey, null].concat(providers));
     };
-    AdvisorChainFactory.classAnnations = { "name": "AdvisorChainFactory", "params": { "constructor": ["container", "advices"], "getAdvicers": ["adviceType"], "invoaction": ["joinPoint", "state", "valueOrthrowing"], "before": ["joinPoint"], "pointcut": ["joinPoint"], "after": ["joinPoint"], "afterThrowing": ["joinPoint"], "afterReturning": ["joinPoint"], "invokeAdvice": ["joinPoint", "advicer"] } };
+    AdvisorChainFactory.classAnnations = { "name": "AdvisorChainFactory", "params": { "constructor": ["container", "advisor", "advices"], "getAdvicers": ["adviceType"], "invoaction": ["joinPoint", "state", "valueOrthrowing"], "before": ["joinPoint"], "pointcut": ["joinPoint"], "after": ["joinPoint"], "afterThrowing": ["joinPoint"], "afterReturning": ["joinPoint"], "invokeAdvice": ["joinPoint", "advicer"] } };
     AdvisorChainFactory = tslib_1.__decorate([
         decorators.NonePointcut(),
         core_1.Injectable(IAdvisorChainFactory.AdvisorChainFactoryToken),
-        tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)),
-        tslib_1.__metadata("design:paramtypes", [Object, Object])
+        tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)), tslib_1.__param(1, core_1.Inject(IAdvisor.AdvisorToken)),
+        tslib_1.__metadata("design:paramtypes", [Object, Object, Object])
     ], AdvisorChainFactory);
     return AdvisorChainFactory;
 }());
@@ -723,9 +726,9 @@ var AdvisorChain = /** @class */ (function () {
         return this.container.get(core_1.RecognizerToken, this.joinPoint.state);
     };
     AdvisorChain.prototype.process = function () {
+        var _a;
         var alias = this.getRecognizer().recognize(this.joinPoint.returning);
         (_a = this.container.get(IAdvisorProceeding.AdvisorProceedingToken, alias)).proceeding.apply(_a, [this.joinPoint].concat(this.actions));
-        var _a;
     };
     AdvisorChain.classAnnations = { "name": "AdvisorChain", "params": { "constructor": ["joinPoint"], "next": ["action"], "getRecognizer": [], "process": [] } };
     tslib_1.__decorate([
@@ -776,12 +779,12 @@ var ProxyMethod = /** @class */ (function () {
     function ProxyMethod(container) {
         this.container = container;
     }
-    Object.defineProperty(ProxyMethod.prototype, "aspectMgr", {
+    Object.defineProperty(ProxyMethod.prototype, "advisor", {
         get: function () {
-            if (!this._aspectMgr) {
-                this._aspectMgr = this.container.get(IAdvisor.AdvisorToken);
+            if (!this._advisor) {
+                this._advisor = this.container.get(IAdvisor.AdvisorToken);
             }
-            return this._aspectMgr;
+            return this._advisor;
         },
         enumerable: true,
         configurable: true
@@ -797,7 +800,7 @@ var ProxyMethod = /** @class */ (function () {
         configurable: true
     });
     ProxyMethod.prototype.proceed = function (target, targetType, pointcut, provJoinpoint) {
-        var aspectMgr = this.aspectMgr;
+        var aspectMgr = this.advisor;
         var fullName = pointcut.fullName;
         var methodName = pointcut.name;
         var advices = aspectMgr.getAdvices(fullName);
@@ -821,7 +824,6 @@ var ProxyMethod = /** @class */ (function () {
     };
     ProxyMethod.prototype.proxy = function (propertyMethod, advices, target, targetType, pointcut, provJoinpoint) {
         var _this = this;
-        var aspectMgr = this.aspectMgr;
         var fullName = pointcut.fullName;
         var methodName = pointcut.name;
         var liefScope = this.liefScope;
@@ -841,7 +843,7 @@ var ProxyMethod = /** @class */ (function () {
                 target: target,
                 targetType: targetType
             }));
-            var adChain = container.resolve(IAdvisorChainFactory.AdvisorChainFactoryToken, { container: container, advices: advices });
+            var adChain = container.resolve(IAdvisorChainFactory.AdvisorChainFactoryToken, { container: container, advisor: _this.advisor, advices: advices });
             adChain.invoaction(joinPoint, joinpoints.JoinpointState.Before);
             adChain.invoaction(joinPoint, joinpoints.JoinpointState.Pointcut);
             var val, exeErr;
@@ -1212,12 +1214,13 @@ var InvokeBeforeConstructorAction = /** @class */ (function (_super) {
         if (data.providerMap) {
             providers.push(data.providerMap);
         }
-        var access = container.get(core_1.MethodAccessorToken);
         advices.Before.forEach(function (advicer) {
-            access.syncInvoke.apply(access, [advicer.aspectType, advicer.advice.propertyKey, undefined].concat(providers)); // new Joinpoint(joinPoint) // container.resolve(Joinpoint, { json: joinPoint })
+            var _a;
+            (_a = advisor.getContainer(advicer.aspectType, container)).syncInvoke.apply(_a, [advicer.aspectType, advicer.advice.propertyKey, null].concat(providers)); // new Joinpoint(joinPoint) // container.resolve(Joinpoint, { json: joinPoint })
         });
         advices.Around.forEach(function (advicer) {
-            access.syncInvoke.apply(access, [advicer.aspectType, advicer.advice.propertyKey, undefined].concat(providers));
+            var _a;
+            (_a = advisor.getContainer(advicer.aspectType, container)).syncInvoke.apply(_a, [advicer.aspectType, advicer.advice.propertyKey, null].concat(providers));
         });
     };
     InvokeBeforeConstructorAction.classAnnations = { "name": "InvokeBeforeConstructorAction", "params": { "constructor": [], "working": ["container", "data"] } };
@@ -1277,12 +1280,13 @@ var InvokeAfterConstructorAction = /** @class */ (function (_super) {
         if (data.providerMap) {
             providers.push(data.providerMap);
         }
-        var access = container.get(core_1.MethodAccessorToken);
         advices.After.forEach(function (advicer) {
-            access.syncInvoke.apply(access, [advicer.aspectType, advicer.advice.propertyKey, undefined].concat(providers));
+            var _a;
+            (_a = advisor.getContainer(advicer.aspectType, container)).syncInvoke.apply(_a, [advicer.aspectType, advicer.advice.propertyKey, null].concat(providers));
         });
         advices.Around.forEach(function (advicer) {
-            access.syncInvoke.apply(access, [advicer.aspectType, advicer.advice.propertyKey, undefined].concat(providers));
+            var _a;
+            (_a = advisor.getContainer(advicer.aspectType, container)).syncInvoke.apply(_a, [advicer.aspectType, advicer.advice.propertyKey, null].concat(providers));
         });
     };
     InvokeAfterConstructorAction.classAnnations = { "name": "InvokeAfterConstructorAction", "params": { "constructor": [], "working": ["container", "data"] } };
@@ -1536,9 +1540,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @class Advisor
  */
 var Advisor = /** @class */ (function () {
-    function Advisor(container) {
-        this.container = container;
+    function Advisor() {
         this.aspects = new core_1.MapSet();
+        this.aspectIocs = new core_1.MapSet();
         this.advices = new core_1.MapSet();
     }
     Advisor.prototype.setAdvices = function (key, advices) {
@@ -1558,18 +1562,44 @@ var Advisor = /** @class */ (function () {
         var className = core_1.getClassName(targetType);
         return methods.some(function (m) { return _this.advices.has(className + "." + m); });
     };
-    Advisor.prototype.add = function (aspect) {
+    Advisor.prototype.add = function (aspect, raiseContainer) {
         if (!this.aspects.has(aspect)) {
             var metas = core_1.getOwnMethodMetadata(decorators.Advice, aspect);
             this.aspects.set(aspect, metas);
+            this.aspectIocs.set(aspect, raiseContainer);
         }
     };
-    Advisor.classAnnations = { "name": "Advisor", "params": { "constructor": ["container"], "setAdvices": ["key", "advices"], "getAdvices": ["key"], "hasRegisterAdvices": ["targetType"], "add": ["aspect"] } };
+    Advisor.prototype.getContainer = function (aspect, defaultContainer) {
+        if (this.aspectIocs.has(aspect)) {
+            return this.aspectIocs.get(aspect) || defaultContainer;
+        }
+        return defaultContainer;
+    };
+    /**
+     * resolve aspect.
+     *
+     * @template T
+     * @param {Type<T>} aspect
+     * @param {...Providers[]} providers
+     * @returns {T}
+     * @memberof Advisor
+     */
+    Advisor.prototype.resolve = function (aspect) {
+        var providers = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            providers[_i - 1] = arguments[_i];
+        }
+        var _a;
+        if (this.aspectIocs.has(aspect)) {
+            return (_a = this.aspectIocs.get(aspect)).resolve.apply(_a, [aspect].concat(providers));
+        }
+        return null;
+    };
+    Advisor.classAnnations = { "name": "Advisor", "params": { "constructor": [], "setAdvices": ["key", "advices"], "getAdvices": ["key"], "hasRegisterAdvices": ["targetType"], "add": ["aspect", "raiseContainer"], "getContainer": ["aspect", "defaultContainer"], "resolve": ["aspect", "providers"] } };
     Advisor = tslib_1.__decorate([
         decorators.NonePointcut(),
         core_1.Singleton(IAdvisor.AdvisorToken),
-        tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)),
-        tslib_1.__metadata("design:paramtypes", [Object])
+        tslib_1.__metadata("design:paramtypes", [])
     ], Advisor);
     return Advisor;
 }());
@@ -1941,7 +1971,7 @@ exports.AopModule = AopModule;
 unwrapExports(AopModule_1);
 var AopModule_2 = AopModule_1.AopModule;
 
-var D__Workspace_Projects_modules_tsioc_packages_aop_lib = createCommonjsModule(function (module, exports) {
+var D__workspace_github_tsioc_packages_aop_lib = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 tslib_1.__exportStar(actions, exports);
@@ -1957,7 +1987,7 @@ tslib_1.__exportStar(AopModule_1, exports);
 
 });
 
-var index$4 = unwrapExports(D__Workspace_Projects_modules_tsioc_packages_aop_lib);
+var index$4 = unwrapExports(D__workspace_github_tsioc_packages_aop_lib);
 
 return index$4;
 

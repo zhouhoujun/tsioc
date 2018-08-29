@@ -34,10 +34,11 @@ export class CacheAction extends ActionComposite {
 
     protected working(container: IContainer, data: CacheActionData) {
 
-        if (data.singleton || !data.targetType || !isClass(data.targetType)) {
+        if (data.raiseContainer && data.raiseContainer !== container) {
             return data;
         }
-        if (data.raiseContainer !== container) {
+
+        if (data.singleton || !data.targetType || !isClass(data.targetType)) {
             return data;
         }
         let cacheManager = container.get(CacheManagerToken);

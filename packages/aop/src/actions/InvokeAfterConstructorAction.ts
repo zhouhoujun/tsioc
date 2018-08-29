@@ -1,4 +1,4 @@
-import { IContainer, ActionData, ActionComposite, Provider, getClassName, MethodAccessorToken, Providers } from '@ts-ioc/core';
+import { IContainer, ActionData, ActionComposite, Provider, getClassName, Providers } from '@ts-ioc/core';
 import { AdvisorToken } from '../IAdvisor';
 import { AopActions } from './AopActions';
 import { AdviceMetadata } from '../metadatas'
@@ -57,13 +57,12 @@ export class InvokeAfterConstructorAction extends ActionComposite {
             providers.push(data.providerMap);
         }
 
-        let access = container.get(MethodAccessorToken);
         advices.After.forEach(advicer => {
-            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, ...providers);
+            advisor.getContainer(advicer.aspectType, container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
         });
 
         advices.Around.forEach(advicer => {
-            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, ...providers);
+            advisor.getContainer(advicer.aspectType, container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
         });
     }
 }

@@ -60,13 +60,12 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
             providers.push(data.providerMap);
         }
 
-        let access = container.get(MethodAccessorToken);
         advices.Before.forEach(advicer => {
-            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, ...providers); // new Joinpoint(joinPoint) // container.resolve(Joinpoint, { json: joinPoint })
+            advisor.getContainer(advicer.aspectType, container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers); // new Joinpoint(joinPoint) // container.resolve(Joinpoint, { json: joinPoint })
         });
 
         advices.Around.forEach(advicer => {
-            access.syncInvoke(advicer.aspectType, advicer.advice.propertyKey, undefined, ...providers);
+            advisor.getContainer(advicer.aspectType, container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
         });
 
     }

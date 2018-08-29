@@ -15,12 +15,12 @@ export class ProxyMethod implements IProxyMethod {
 
     }
 
-    _aspectMgr: IAdvisor;
-    get aspectMgr(): IAdvisor {
-        if (!this._aspectMgr) {
-            this._aspectMgr = this.container.get(AdvisorToken);
+    _advisor: IAdvisor;
+    get advisor(): IAdvisor {
+        if (!this._advisor) {
+            this._advisor = this.container.get(AdvisorToken);
         }
-        return this._aspectMgr;
+        return this._advisor;
     }
 
     _liefScope: LifeScope;
@@ -33,7 +33,7 @@ export class ProxyMethod implements IProxyMethod {
 
     proceed(target: any, targetType: Type<any>, pointcut: IPointcut, provJoinpoint?: Joinpoint) {
 
-        let aspectMgr = this.aspectMgr;
+        let aspectMgr = this.advisor;
         let fullName = pointcut.fullName;
         let methodName = pointcut.name;
 
@@ -57,7 +57,6 @@ export class ProxyMethod implements IProxyMethod {
     }
 
     proxy(propertyMethod: Function, advices: Advices, target: any, targetType: Type<any>, pointcut: IPointcut, provJoinpoint?: Joinpoint) {
-        let aspectMgr = this.aspectMgr;
         let fullName = pointcut.fullName;
         let methodName = pointcut.name;
         let liefScope = this.liefScope;
@@ -75,7 +74,7 @@ export class ProxyMethod implements IProxyMethod {
                 targetType: targetType
             }));
 
-            let adChain = container.resolve(AdvisorChainFactoryToken, { container: container, advices: advices });
+            let adChain = container.resolve(AdvisorChainFactoryToken, { container: container, advisor: this.advisor, advices: advices });
             adChain.invoaction(joinPoint, JoinpointState.Before);
             adChain.invoaction(joinPoint, JoinpointState.Pointcut);
             let val, exeErr;

@@ -588,7 +588,7 @@ export class Container implements IContainer {
                 singleton: singleton
             }, IocState.runtime, LifeState.AfterInit);
 
-            lifeScope.routeExecute({
+            lifeScope.execute({
                 tokenKey: key,
                 target: instance,
                 targetType: ClassT,

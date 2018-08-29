@@ -31,7 +31,7 @@ export class SingletionAction extends ActionComposite {
     }
 
     protected working(container: IContainer, data: SingletionActionData) {
-        if (data.raiseContainer !== container) {
+        if (data.raiseContainer && data.raiseContainer !== container) {
             return;
         }
         if (data.tokenKey && data.target && data.singleton) {

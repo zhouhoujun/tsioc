@@ -34,12 +34,13 @@ export class RegistAspectAction extends ActionComposite {
         let lifeScope = container.getLifeScope();
         let matchs = lifeScope.getClassDecorators(surm => surm.actions.includes(AopActions.registAspect) && hasOwnClassMetadata(surm.name, type));
         let aspectMgr = container.get<IAdvisor>(AdvisorToken);
+        let raiseContainer = data.raiseContainer || container;
         matchs.forEach(surm => {
             let metadata = getOwnTypeMetadata<ClassMetadata>(surm.name, type);
             if (Array.isArray(metadata) && metadata.length > 0) {
                 metadata.forEach(meta => {
                     if (isClass(meta.type)) {
-                        aspectMgr.add(meta.type);
+                        aspectMgr.add(meta.type, raiseContainer);
                     }
                 });
             }

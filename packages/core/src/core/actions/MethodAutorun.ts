@@ -35,7 +35,7 @@ export class MethodAutorun extends ActionComposite {
 
 
     protected working(container: IContainer, data: MethodAutorunActionData) {
-        if (data.raiseContainer !== container) {
+        if (data.raiseContainer && data.raiseContainer !== container) {
             return;
         }
         if (data.target && data.targetType) {
