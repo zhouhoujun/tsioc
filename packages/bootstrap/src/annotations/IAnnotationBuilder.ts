@@ -26,7 +26,7 @@ export interface IAnnotationBuilder<T> {
      *
      * @param {Token<T>} token
      * @param {AnnotationConfigure<T>} [config]
-     * @param {*} [data]
+     * @param {*} [data] build data
      * @returns {Promise<T>}
      * @memberof ITypeBuilder
      */
@@ -36,7 +36,7 @@ export interface IAnnotationBuilder<T> {
      * build instance via type config.
      *
      * @param {(Token<T> | AnnotationConfigure<T>)} config
-     * @param {*} [data]
+     * @param {*} [data] build data
      * @returns {Promise<T>}
      * @memberof IBootBuilder
      */
@@ -66,7 +66,7 @@ export interface IAnnotationBuilder<T> {
      *
      * @param {Token<T>} token
      * @param {AnnotationConfigure<T>} config
-     * @param {*} [data]
+     * @param {*} [data] the data to init instance.
      * @returns {Promise<T>}
      * @memberof IBootstrapBuilder
      */

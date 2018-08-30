@@ -7,7 +7,7 @@ import { IModuleBuilder, ModuleBuilderToken, ModuleEnv } from './IModuleBuilder'
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { MdInstance } from './ModuleType';
 import { ContainerPool, ContainerPoolToken } from '../utils';
-import { InjectRunnerToken, IRunner, Boot, DefaultRunnerToken, Service, IService, InjectServiceToken, DefaultServiceToken, Runnable } from '../runnable';
+import { InjectRunnerToken, IRunner, Boot, DefaultRunnerToken, Service, IService, InjectServiceToken, DefaultServiceToken, Runnable, Runner } from '../runnable';
 import { IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder, DefaultAnnotationBuilderToken, AnnotationBuilderToken, AnnotationBuilder } from '../annotations';
 import { InjectedModule, InjectedModuleToken } from './InjectedModule';
 import { DIModuleInjectorToken } from './DIModuleInjector';
@@ -54,7 +54,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      *
      * @param {(Token<T> | ModuleConfig<T>)} token
      * @param {ModuleEnv} [env]
-     * @param {*} [data]
+     * @param {*} [data] bootstrap data, build data, Runnable data.
      * @returns {Promise<T>}
      * @memberof ModuleBuilder
      */
@@ -81,7 +81,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     *
     * @param {(Token<T> | ModuleConfig<T>)} token
     * @param {ModuleEnv} [env]
-    * @param {*} [data]
+    * @param {*} [data] bootstrap data, build data, Runnable data.
     * @returns {Promise<MdInstance<T>>}
     * @memberof ModuleBuilder
     */
@@ -95,12 +95,12 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         let bootInstance = await (bootToken ? anBuilder.build(bootToken, cfg, data) : anBuilder.buildByConfig(cfg, data));
         let runable;
         if (bootInstance) {
-            runable = await this.autoRun(container, bootToken ? bootToken : anBuilder.getType(cfg), cfg, bootInstance);
+            runable = await this.autoRun(container, bootToken ? bootToken : anBuilder.getType(cfg), cfg, bootInstance, data);
             if (md && isFunction(md.mdOnStart)) {
                 await Promise.resolve(md.mdOnStart(bootInstance));
             }
         } else {
-            runable = await this.autoRun(container, injmdl.token, cfg, md);
+            runable = await this.autoRun(container, injmdl.token, cfg, md, data);
         }
         return runable;
     }
@@ -176,16 +176,16 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     }
 
-    protected async autoRun(container: IContainer, token: Token<any>, cfg: ModuleConfigure, instance: any): Promise<Runnable<T>> {
+    protected async autoRun(container: IContainer, token: Token<any>, cfg: ModuleConfigure, instance: any, data?: any): Promise<Runnable<T>> {
         if (!instance) {
             return null;
         }
 
-        if (instance instanceof Boot) {
-            await instance.run();
+        if (instance instanceof Runner) {
+            await instance.run(data);
             return instance;
         } else if (instance instanceof Service) {
-            await instance.start();
+            await instance.start(data);
             return instance;
         } else {
             let runner: IRunner<T>, service: IService<T>;
@@ -211,13 +211,13 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
                 this.getDefaultService(container, provider)
             }
             if (runner) {
-                await runner.run(instance);
+                await runner.run(data);
                 return runner;
             } else if (service) {
-                await service.start();
+                await service.start(data);
                 return service;
             } else if (token && cfg.autorun) {
-                await container.invoke(token, cfg.autorun, instance);
+                await container.invoke(token, cfg.autorun, instance, { data: data });
                 return instance;
             } else {
                 return instance;

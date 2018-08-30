@@ -185,6 +185,6 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
     }
 
     protected resolveToken(token: Token<T>, data?: any) {
-        return this.container.resolve(token, data);
+        return this.container.resolve(token);
     }
 }

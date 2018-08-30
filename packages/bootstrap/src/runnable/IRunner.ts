@@ -9,32 +9,15 @@ import { ModuleConfigure } from '../modules';
  * @template T
  */
 export interface IRunner<T> {
-    /**
-     * module boot token.
-     */
-    token?: Token<T>;
-    /**
-     * module boot instance.
-     *
-     * @type {T}
-     * @memberof IService
-     */
-    instance?: T;
-    /**
-     * module configure.
-     *
-     * @type {ModuleConfigure}
-     * @memberof IService
-     */
-    config?: ModuleConfigure;
+
     /**
      * run application via boot instance.
      *
-     * @param {T} [app]
+     * @param {*} [data]
      * @returns {Promise<any>}
      * @memberof IRunner
      */
-    run(app?: T): Promise<any>;
+    run(data?: any): Promise<any>;
 }
 
 /**
@@ -45,15 +28,34 @@ export interface IRunner<T> {
  * @class Boot
  * @implements {IBoot}
  */
-export abstract class Boot implements IRunner<any> {
+export abstract class Runner<T> implements IRunner<T> {
+
+    constructor(protected token?: Token<T>, protected instance?: T, protected config?: ModuleConfigure) {
+
+    }
+
     /**
-     * boot run
+     * run boot.
      *
      * @abstract
+     * @param {*} [data]
      * @returns {Promise<any>}
-     * @memberof Boot
+     * @memberof Runner
      */
-    abstract run(app?: any): Promise<any>;
+    abstract run(data?: any): Promise<any>;
+}
+
+/**
+ * boot element
+ *
+ * @export
+ * @class Boot
+ * @extends {Runner<any>}
+ */
+export abstract class Boot extends Runner<any> {
+    constructor(protected token?: Token<any>, protected instance?: any, protected config?: ModuleConfigure) {
+        super(token, instance, config);
+    }
 }
 
 

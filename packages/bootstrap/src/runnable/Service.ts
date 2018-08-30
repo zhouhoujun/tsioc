@@ -8,24 +8,6 @@ import { ModuleConfigure } from '../modules';
  * @interface IService
  */
 export interface IService<T> {
-    /**
-     * module boot token.
-     */
-    token?: Token<T>;
-    /**
-     * module boot instance.
-     *
-     * @type {T}
-     * @memberof IService
-     */
-    instance?: T;
-    /**
-     * module configure.
-     *
-     * @type {ModuleConfigure}
-     * @memberof IService
-     */
-    config?: ModuleConfigure;
 
     /**
      * start application service.
@@ -33,7 +15,7 @@ export interface IService<T> {
      * @returns {Promise<any>}
      * @memberof IService
      */
-    start(): Promise<any>;
+    start(data?: any): Promise<any>;
     /**
      * stop server.
      *
@@ -51,15 +33,20 @@ export interface IService<T> {
  * @class Service
  * @implements {IService}
  */
-export abstract class Service implements IService<any> {
+export abstract class Service<T> implements IService<T> {
+
+    constructor(protected token?: Token<T>, protected instance?: T, protected config?: ModuleConfigure) {
+
+    }
     /**
      * start service.
      *
      * @abstract
+     * @param {*} [data]
      * @returns {Promise<any>}
      * @memberof Service
      */
-    abstract start(): Promise<any>;
+    abstract start(data?: any): Promise<any>;
     /**
      * stop service.
      *

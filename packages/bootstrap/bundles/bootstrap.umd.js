@@ -763,12 +763,35 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @class Boot
  * @implements {IBoot}
  */
-var Boot = /** @class */ (function () {
-    function Boot() {
+var Runner = /** @class */ (function () {
+    function Runner(token, instance, config) {
+        this.token = token;
+        this.instance = instance;
+        this.config = config;
     }
-    Boot.classAnnations = { "name": "Boot", "params": { "run": ["app"] } };
-    return Boot;
+    Runner.classAnnations = { "name": "Runner", "params": { "constructor": ["token", "instance", "config"], "run": ["data"] } };
+    return Runner;
 }());
+exports.Runner = Runner;
+/**
+ * boot element
+ *
+ * @export
+ * @class Boot
+ * @extends {Runner<any>}
+ */
+var Boot = /** @class */ (function (_super) {
+    tslib_1.__extends(Boot, _super);
+    function Boot(token, instance, config) {
+        var _this = _super.call(this, token, instance, config) || this;
+        _this.token = token;
+        _this.instance = instance;
+        _this.config = config;
+        return _this;
+    }
+    Boot.classAnnations = { "name": "Boot", "params": { "constructor": ["token", "instance", "config"] } };
+    return Boot;
+}(Runner));
 exports.Boot = Boot;
 /**
  * application runner token.
@@ -796,9 +819,10 @@ exports.DefaultRunnerToken = new InjectRunnerToken('default');
 });
 
 unwrapExports(IRunner);
-var IRunner_1 = IRunner.Boot;
-var IRunner_2 = IRunner.InjectRunnerToken;
-var IRunner_3 = IRunner.DefaultRunnerToken;
+var IRunner_1 = IRunner.Runner;
+var IRunner_2 = IRunner.Boot;
+var IRunner_3 = IRunner.InjectRunnerToken;
+var IRunner_4 = IRunner.DefaultRunnerToken;
 
 var Service_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -813,9 +837,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @implements {IService}
  */
 var Service = /** @class */ (function () {
-    function Service() {
+    function Service(token, instance, config) {
+        this.token = token;
+        this.instance = instance;
+        this.config = config;
     }
-    Service.classAnnations = { "name": "Service", "params": { "start": [], "stop": [] } };
+    Service.classAnnations = { "name": "Service", "params": { "constructor": ["token", "instance", "config"], "start": ["data"], "stop": [] } };
     return Service;
 }());
 exports.Service = Service;
@@ -1097,7 +1124,7 @@ var AnnotationBuilder = /** @class */ (function () {
         return false;
     };
     AnnotationBuilder.prototype.resolveToken = function (token, data) {
-        return this.container.resolve(token, data);
+        return this.container.resolve(token);
     };
     var AnnotationBuilder_1;
     AnnotationBuilder.classAnnations = { "name": "AnnotationBuilder", "params": { "constructor": [], "build": ["token", "config", "data"], "buildByConfig": ["config", "data"], "createInstance": ["token", "config", "data"], "getBuilder": ["token", "config"], "buildStrategy": ["instance", "config"], "getType": ["config"], "registerExts": ["config"], "getTokenMetaConfig": ["token", "config"], "getDecorator": [], "getMetaConfig": ["token"], "isEqual": ["build"], "resolveToken": ["token", "data"] } };
@@ -1177,7 +1204,7 @@ var ModuleBuilder = /** @class */ (function () {
      *
      * @param {(Token<T> | ModuleConfig<T>)} token
      * @param {ModuleEnv} [env]
-     * @param {*} [data]
+     * @param {*} [data] bootstrap data, build data, Runnable data.
      * @returns {Promise<T>}
      * @memberof ModuleBuilder
      */
@@ -1214,7 +1241,7 @@ var ModuleBuilder = /** @class */ (function () {
     *
     * @param {(Token<T> | ModuleConfig<T>)} token
     * @param {ModuleEnv} [env]
-    * @param {*} [data]
+    * @param {*} [data] bootstrap data, build data, Runnable data.
     * @returns {Promise<MdInstance<T>>}
     * @memberof ModuleBuilder
     */
@@ -1237,7 +1264,7 @@ var ModuleBuilder = /** @class */ (function () {
                     case 3:
                         bootInstance = _a.sent();
                         if (!bootInstance) return [3 /*break*/, 7];
-                        return [4 /*yield*/, this.autoRun(container, bootToken ? bootToken : anBuilder.getType(cfg), cfg, bootInstance)];
+                        return [4 /*yield*/, this.autoRun(container, bootToken ? bootToken : anBuilder.getType(cfg), cfg, bootInstance, data)];
                     case 4:
                         runable = _a.sent();
                         if (!(md && core_1.isFunction(md.mdOnStart))) return [3 /*break*/, 6];
@@ -1246,7 +1273,7 @@ var ModuleBuilder = /** @class */ (function () {
                         _a.sent();
                         _a.label = 6;
                     case 6: return [3 /*break*/, 9];
-                    case 7: return [4 /*yield*/, this.autoRun(container, injmdl.token, cfg, md)];
+                    case 7: return [4 /*yield*/, this.autoRun(container, injmdl.token, cfg, md, data)];
                     case 8:
                         runable = _a.sent();
                         _a.label = 9;
@@ -1356,7 +1383,7 @@ var ModuleBuilder = /** @class */ (function () {
             });
         });
     };
-    ModuleBuilder.prototype.autoRun = function (container, token, cfg, instance) {
+    ModuleBuilder.prototype.autoRun = function (container, token, cfg, instance, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var runner_1, service_1, provider_1;
             return tslib_1.__generator(this, function (_a) {
@@ -1365,14 +1392,14 @@ var ModuleBuilder = /** @class */ (function () {
                         if (!instance) {
                             return [2 /*return*/, null];
                         }
-                        if (!(instance instanceof runnable.Boot)) return [3 /*break*/, 2];
-                        return [4 /*yield*/, instance.run()];
+                        if (!(instance instanceof runnable.Runner)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, instance.run(data)];
                     case 1:
                         _a.sent();
                         return [2 /*return*/, instance];
                     case 2:
                         if (!(instance instanceof runnable.Service)) return [3 /*break*/, 4];
-                        return [4 /*yield*/, instance.start()];
+                        return [4 /*yield*/, instance.start(data)];
                     case 3:
                         _a.sent();
                         return [2 /*return*/, instance];
@@ -1399,19 +1426,19 @@ var ModuleBuilder = /** @class */ (function () {
                             this.getDefaultService(container, provider_1);
                         }
                         if (!runner_1) return [3 /*break*/, 6];
-                        return [4 /*yield*/, runner_1.run(instance)];
+                        return [4 /*yield*/, runner_1.run(data)];
                     case 5:
                         _a.sent();
                         return [2 /*return*/, runner_1];
                     case 6:
                         if (!service_1) return [3 /*break*/, 8];
-                        return [4 /*yield*/, service_1.start()];
+                        return [4 /*yield*/, service_1.start(data)];
                     case 7:
                         _a.sent();
                         return [2 /*return*/, service_1];
                     case 8:
                         if (!(token && cfg.autorun)) return [3 /*break*/, 10];
-                        return [4 /*yield*/, container.invoke(token, cfg.autorun, instance)];
+                        return [4 /*yield*/, container.invoke(token, cfg.autorun, instance, { data: data })];
                     case 9:
                         _a.sent();
                         return [2 /*return*/, instance];
@@ -1501,7 +1528,7 @@ var ModuleBuilder = /** @class */ (function () {
     ModuleBuilder.prototype.getBootType = function (cfg) {
         return cfg.bootstrap;
     };
-    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getPools": [], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "import": ["token", "parent"], "load": ["token", "env"], "getParentContainer": ["env"], "autoRun": ["container", "token", "cfg", "instance"], "getDefaultRunner": ["container", "providers"], "getDefaultService": ["container", "providers"], "getAnnoBuilder": ["container", "token", "annBuilder"], "getDefaultAnnBuilder": ["container"], "getType": ["cfg"], "getBootType": ["cfg"] } };
+    ModuleBuilder.classAnnations = { "name": "ModuleBuilder", "params": { "constructor": [], "getPools": [], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "import": ["token", "parent"], "load": ["token", "env"], "getParentContainer": ["env"], "autoRun": ["container", "token", "cfg", "instance", "data"], "getDefaultRunner": ["container", "providers"], "getDefaultService": ["container", "providers"], "getAnnoBuilder": ["container", "token", "annBuilder"], "getDefaultAnnBuilder": ["container"], "getType": ["cfg"], "getBootType": ["cfg"] } };
     tslib_1.__decorate([
         core_1.Inject(utils.ContainerPoolToken),
         tslib_1.__metadata("design:type", utils.ContainerPool)

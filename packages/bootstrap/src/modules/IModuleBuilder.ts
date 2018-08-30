@@ -59,7 +59,7 @@ export interface IModuleBuilder<T> {
      *
      * @param {(Token<T> | ModuleConfig<T>)} token
      * @param {ModuleEnv} [env]
-     * @param {*} [data]
+     * @param {*} [data] bootstrap data, build data, Runnable data.
      * @returns {Promise<T>}
      * @memberof IModuleBuilder
      */
@@ -72,7 +72,7 @@ export interface IModuleBuilder<T> {
      *
      * @param {(Token<T> | ModuleConfig<T>)} token
      * @param {ModuleEnv} [env]
-     * @param {*} [data]
+     * @param {*} [data] bootstrap data, build data, Runnable data.
      * @returns {Promise<MdInstance<T>>}
      * @memberof IGModuleBuilder
      */
