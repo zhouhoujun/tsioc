@@ -31,7 +31,9 @@ export class BindParameterTypeAction extends ActionComposite {
     }
 
     protected working(container: IContainer, data: ActionData<Token<any>[]>) {
-
+        if (data.raiseContainer && data.raiseContainer !== container) {
+            return;
+        }
         let target = data.target
         let type = data.targetType;
         let propertyKey = data.propertyKey;

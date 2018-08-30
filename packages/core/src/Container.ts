@@ -11,7 +11,7 @@ import { IParameter } from './IParameter';
 import { CacheManagerToken } from './ICacheManager';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { registerCores } from './registerCores';
-import { ResolveChain, ResolveChainToken } from './resolves';
+import { ResolverChain, ResolverChainToken } from './resolves';
 
 /**
  * Container
@@ -72,8 +72,8 @@ export class Container implements IContainer {
      * @returns {T}
      * @memberof Container
      */
-    get resolveChain(): ResolveChain {
-        return this.resolveValue(ResolveChainToken);
+    get resolvers(): ResolverChain {
+        return this.resolveValue(ResolverChainToken);
     }
 
     /**
@@ -87,7 +87,7 @@ export class Container implements IContainer {
      */
     resolve<T>(token: Token<T>, ...providers: Providers[]): T {
         let key = this.getTokenKey<T>(token);
-        return this.resolveChain.resolve(key, ...providers);
+        return this.resolvers.resolve(key, ...providers);
     }
 
     /**
@@ -178,7 +178,7 @@ export class Container implements IContainer {
      */
     has<T>(token: Token<T>, alias?: string): boolean {
         let key = this.getTokenKey(token, alias);
-        return this.resolveChain.has(key);
+        return this.resolvers.has(key);
     }
 
     /**
@@ -214,7 +214,7 @@ export class Container implements IContainer {
                 }
             }
         } else {
-            this.resolveChain.unregister(key);
+            this.resolvers.unregister(key);
         }
         return this;
     }
@@ -322,7 +322,7 @@ export class Container implements IContainer {
             }
             return null;
         } else {
-            return this.resolveChain.getTokenImpl(tokenKey);
+            return this.resolvers.getTokenImpl(tokenKey);
         }
     }
 

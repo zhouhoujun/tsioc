@@ -32,7 +32,9 @@ export class BindParameterProviderAction extends ActionComposite {
     }
 
     protected working(container: IContainer, data: BindParameterProviderActionData) {
-
+        if (data.raiseContainer && data.raiseContainer !== container) {
+            return;
+        }
         let type = data.targetType;
         let propertyKey = data.propertyKey;
         let lifeScope = container.getLifeScope();

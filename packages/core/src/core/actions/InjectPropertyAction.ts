@@ -35,26 +35,15 @@ export class InjectPropertyAction extends ActionComposite {
         }
 
         if (data.target && data.execResult && data.execResult.length) {
-            let providerMap: ProviderMap, prContainer: IContainer;
-            if (data.providerMap) {
-                providerMap = data.providerMap;
-                if (providerMap.has(ContainerToken)) {
-                    prContainer = providerMap.resolve(ContainerToken);
-                }
-            }
-
+            let providerMap = data.providerMap;
             data.execResult.reverse().forEach((prop, idx) => {
                 if (prop) {
                     let token = prop.provider ? container.getToken(prop.provider, prop.alias) : prop.type;
-                    let val: any;
                     if (providerMap && providerMap.has(token)) {
-                        val = providerMap.resolve(token, providerMap);
-                    } else if (prContainer && prContainer.has(token)) {
-                        val = prContainer.resolve(token, providerMap);
+                        data.target[prop.propertyKey] = providerMap.resolve(token, providerMap);
                     } else if (container.has(token)) {
-                        val = container.resolve(token, providerMap);
+                        data.target[prop.propertyKey] = container.resolve(token, providerMap);
                     }
-                    data.target[prop.propertyKey] = val;
                 }
             });
         }

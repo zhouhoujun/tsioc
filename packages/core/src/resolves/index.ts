@@ -1,2 +1,2 @@
 export * from './ResolverType';
-export * from './ResolveChain';
+export * from './ResolverChain';

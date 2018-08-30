@@ -532,7 +532,7 @@ var DIModuleInjector = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.registerConfgureDepds(newContainer, metaConfig)];
                     case 1:
                         metaConfig = _a.sent();
-                        injMd = new InjectedModule_1.InjectedModule(type, metaConfig, newContainer, type, metaConfig.exports || [], metaConfig[exportsProvidersFiled]);
+                        injMd = new InjectedModule_1.InjectedModule(metaConfig.token || type, metaConfig, newContainer, type, metaConfig.exports || [], metaConfig[exportsProvidersFiled]);
                         container.bindProvider(new InjectedModule_1.InjectedModuleToken(type), injMd);
                         return [4 /*yield*/, this.importConfigExports(container, newContainer, injMd)];
                     case 2:
@@ -569,9 +569,9 @@ var DIModuleInjector = /** @class */ (function (_super) {
                     return [2 /*return*/, container];
                 }
                 if (injMd) {
-                    container.resolveChain.next(injMd);
+                    container.resolvers.next(injMd);
                     if (injMd.exports && injMd.exports.length) {
-                        expchs = providerContainer.resolveChain.toArray().filter(function (r) {
+                        expchs = providerContainer.resolvers.toArray().filter(function (r) {
                             if (r instanceof core_1.Container) {
                                 return false;
                             }
@@ -580,7 +580,7 @@ var DIModuleInjector = /** @class */ (function (_super) {
                             }
                         });
                         expchs.forEach(function (r) {
-                            container.resolveChain.next(r);
+                            container.resolvers.next(r);
                         });
                     }
                 }

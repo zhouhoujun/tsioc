@@ -10,6 +10,13 @@ import { Container } from '../Container';
  */
 export interface IExports {
     /**
+     * export token of type.
+     *
+     * @type {Token<any>}
+     * @memberof IExports
+     */
+    token?: Token<any>;
+    /**
      * exports module type.
      *
      * @type {Type<T>}

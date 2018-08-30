@@ -303,7 +303,7 @@ export function hasMethodMetadata(decorator: string | Function, target: Type<any
 }
 
 function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string, descriptor: TypedPropertyDescriptor<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let meta = lang.assign({}, getMethodMetadata(metaName, target));
+    let meta = lang.assign({}, getOwnMethodMetadata(metaName, target));
     meta[propertyKey] = meta[propertyKey] || [];
 
     let methodMeadata = (metadata || {}) as T;
@@ -376,7 +376,7 @@ export function hasPropertyMetadata(decorator: string | Function, target: Type<a
 }
 
 function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let meta = lang.assign({}, getPropertyMetadata(metaName, target));
+    let meta = lang.assign({}, getOwnPropertyMetadata(metaName, target));
     let propmetadata = (metadata || {}) as T;
 
     propmetadata.propertyKey = propertyKey;

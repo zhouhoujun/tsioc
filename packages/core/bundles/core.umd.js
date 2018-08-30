@@ -2515,7 +2515,7 @@ function hasMethodMetadata(decorator, target, propertyKey) {
 }
 exports.hasMethodMetadata = hasMethodMetadata;
 function setMethodMetadata(name, metaName, target, propertyKey, descriptor, metadata, metadataExtends) {
-    var meta = utils.lang.assign({}, getMethodMetadata(metaName, target));
+    var meta = utils.lang.assign({}, getOwnMethodMetadata(metaName, target));
     meta[propertyKey] = meta[propertyKey] || [];
     var methodMeadata = (metadata || {});
     methodMeadata.decorator = name;
@@ -2585,7 +2585,7 @@ function hasPropertyMetadata(decorator, target, propertyKey) {
 }
 exports.hasPropertyMetadata = hasPropertyMetadata;
 function setPropertyMetadata(name, metaName, target, propertyKey, metadata, metadataExtends) {
-    var meta = utils.lang.assign({}, getPropertyMetadata(metaName, target));
+    var meta = utils.lang.assign({}, getOwnPropertyMetadata(metaName, target));
     var propmetadata = (metadata || {});
     propmetadata.propertyKey = propertyKey;
     propmetadata.decorator = name;
@@ -3186,6 +3186,9 @@ var BindParameterTypeAction = /** @class */ (function (_super) {
         return _super.call(this, CoreActions_1.CoreActions.bindParameterType) || this;
     }
     BindParameterTypeAction.prototype.working = function (container, data) {
+        if (data.raiseContainer && data.raiseContainer !== container) {
+            return;
+        }
         var target = data.target;
         var type = data.targetType;
         var propertyKey = data.propertyKey;
@@ -3265,6 +3268,9 @@ var BindPropertyTypeAction = /** @class */ (function (_super) {
         return _super.call(this, CoreActions_1.CoreActions.bindPropertyType) || this;
     }
     BindPropertyTypeAction.prototype.working = function (container, data) {
+        if (data.raiseContainer && data.raiseContainer !== container) {
+            return;
+        }
         var type = data.targetType;
         var lifeScope = container.getLifeScope();
         var matchs = lifeScope.getPropertyDecorators(function (surm) { return surm.actions.includes(CoreActions_1.CoreActions.bindPropertyType) && factories.hasPropertyMetadata(surm.name, type); });
@@ -3306,7 +3312,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-
 /**
  * inject property value action, to inject property value for resolve instance.
  *
@@ -3324,27 +3329,16 @@ var InjectPropertyAction = /** @class */ (function (_super) {
             this.parent.find(function (act) { return act.name === CoreActions_1.CoreActions.bindPropertyType; }).execute(container, data);
         }
         if (data.target && data.execResult && data.execResult.length) {
-            var providerMap_1, prContainer_1;
-            if (data.providerMap) {
-                providerMap_1 = data.providerMap;
-                if (providerMap_1.has(IContainer.ContainerToken)) {
-                    prContainer_1 = providerMap_1.resolve(IContainer.ContainerToken);
-                }
-            }
+            var providerMap_1 = data.providerMap;
             data.execResult.reverse().forEach(function (prop, idx) {
                 if (prop) {
                     var token = prop.provider ? container.getToken(prop.provider, prop.alias) : prop.type;
-                    var val = void 0;
                     if (providerMap_1 && providerMap_1.has(token)) {
-                        val = providerMap_1.resolve(token, providerMap_1);
-                    }
-                    else if (prContainer_1 && prContainer_1.has(token)) {
-                        val = prContainer_1.resolve(token, providerMap_1);
+                        data.target[prop.propertyKey] = providerMap_1.resolve(token, providerMap_1);
                     }
                     else if (container.has(token)) {
-                        val = container.resolve(token, providerMap_1);
+                        data.target[prop.propertyKey] = container.resolve(token, providerMap_1);
                     }
-                    data.target[prop.propertyKey] = val;
                 }
             });
         }
@@ -3380,6 +3374,9 @@ var BindParameterProviderAction = /** @class */ (function (_super) {
         return _super.call(this, CoreActions_1.CoreActions.bindParameterProviders) || this;
     }
     BindParameterProviderAction.prototype.working = function (container, data) {
+        if (data.raiseContainer && data.raiseContainer !== container) {
+            return;
+        }
         var type = data.targetType;
         var propertyKey = data.propertyKey;
         var lifeScope = container.getLifeScope();
@@ -5240,28 +5237,26 @@ exports.ContainerBuilderToken = new InjectToken_1.InjectToken('DI_IContainerBuil
 unwrapExports(IContainerBuilder);
 var IContainerBuilder_1 = IContainerBuilder.ContainerBuilderToken;
 
-var ResolveChain_1 = createCommonjsModule(function (module, exports) {
+var ResolverChain_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-
-
-exports.ResolveChainToken = new InjectToken_1.InjectToken('di_ResolveChain');
-var ResolveChain = /** @class */ (function () {
-    function ResolveChain(container) {
+exports.ResolverChainToken = new InjectToken_1.InjectToken('di_ResolverChain');
+var ResolverChain = /** @class */ (function () {
+    function ResolverChain(container) {
         this.container = container;
         this.resolvers = [];
     }
-    ResolveChain.prototype.next = function (resolver) {
+    ResolverChain.prototype.next = function (resolver) {
         if (!this.hasResolver(resolver)) {
             this.resolvers.push(resolver);
         }
     };
-    ResolveChain.prototype.toArray = function () {
+    ResolverChain.prototype.toArray = function () {
         return [this.container].concat(this.resolvers);
     };
-    ResolveChain.prototype.hasResolver = function (resolver) {
+    ResolverChain.prototype.hasResolver = function (resolver) {
         if (resolver instanceof Container_1.Container) {
             return this.resolvers.indexOf(resolver) >= 0;
         }
@@ -5279,12 +5274,18 @@ var ResolveChain = /** @class */ (function () {
             });
         }
     };
-    ResolveChain.prototype.hasToken = function (resolver, token) {
+    ResolverChain.prototype.hasToken = function (resolver, token) {
         var _this = this;
+        if (!token) {
+            return false;
+        }
         if (resolver instanceof Container_1.Container) {
             return resolver.hasRegister(token);
         }
         else {
+            if (resolver.type === token || this.container.getTokenKey(resolver.token) === token) {
+                return true;
+            }
             var exps_1 = resolver.exports || [];
             return exps_1.concat(resolver.providers || []).some(function (t) {
                 if (_this.container.getTokenKey(t) === token) {
@@ -5300,7 +5301,7 @@ var ResolveChain = /** @class */ (function () {
             });
         }
     };
-    ResolveChain.prototype.resolve = function (token) {
+    ResolverChain.prototype.resolve = function (token) {
         var _this = this;
         var providers = [];
         for (var _i = 1; _i < arguments.length; _i++) {
@@ -5321,13 +5322,13 @@ var ResolveChain = /** @class */ (function () {
             }
         }
         else {
-            if (!this.hasContainerProvider(providers)) {
-                providers.push({ provide: IContainer.ContainerToken, useValue: this.container });
-            }
+            // if (!this.hasContainerProvider(providers)) {
+            //     providers.push({ provide: ContainerToken, useValue: this.container });
+            // }
             return (_b = this.container.parent).resolve.apply(_b, [token].concat(providers));
         }
     };
-    ResolveChain.prototype.unregister = function (token) {
+    ResolverChain.prototype.unregister = function (token) {
         var _this = this;
         var resolver = this.toArray().find(function (r) { return _this.hasToken(r, token); });
         if (resolver) {
@@ -5345,7 +5346,7 @@ var ResolveChain = /** @class */ (function () {
             this.container.parent.unregister(token);
         }
     };
-    ResolveChain.prototype.getTokenImpl = function (token) {
+    ResolverChain.prototype.getTokenImpl = function (token) {
         var _this = this;
         var resolver = this.toArray().find(function (r) { return _this.hasToken(r, token); });
         if (resolver) {
@@ -5384,7 +5385,7 @@ var ResolveChain = /** @class */ (function () {
     //     }
     //     return tokens;
     // }
-    ResolveChain.prototype.hasRegister = function (token) {
+    ResolverChain.prototype.hasRegister = function (token) {
         var _this = this;
         if (this.container.hasRegister(token)) {
             return true;
@@ -5394,7 +5395,7 @@ var ResolveChain = /** @class */ (function () {
         }
         return false;
     };
-    ResolveChain.prototype.has = function (token) {
+    ResolverChain.prototype.has = function (token) {
         if (this.hasRegister(token)) {
             return true;
         }
@@ -5403,34 +5404,33 @@ var ResolveChain = /** @class */ (function () {
         }
         return false;
     };
-    ResolveChain.prototype.hasContainerProvider = function (providers) {
-        return providers.some(function (p) {
-            if (p instanceof core.ProviderMap) {
-                return p.has(IContainer.ContainerToken);
-            }
-            else if (utils.isMetadataObject(p)) {
-                var prd = p;
-                return prd.provide === IContainer.ContainerToken;
-            }
-            return false;
-        });
-    };
-    ResolveChain.classAnnations = { "name": "ResolveChain", "params": { "constructor": ["container"], "next": ["resolver"], "toArray": [], "hasResolver": ["resolver"], "hasToken": ["resolver", "token"], "resolve": ["token", "providers"], "unregister": ["token"], "getTokenImpl": ["token"], "hasRegister": ["token"], "has": ["token"], "hasContainerProvider": ["providers"] } };
-    return ResolveChain;
+    // protected hasContainerProvider(providers: Providers[]): boolean {
+    //     return providers.some(p => {
+    //         if (p instanceof ProviderMap) {
+    //             return p.has(ContainerToken);
+    //         } else if (isMetadataObject(p)) {
+    //             let prd = p as IProvider;
+    //             return prd.provide === ContainerToken;
+    //         }
+    //         return false;
+    //     });
+    // }
+    ResolverChain.classAnnations = { "name": "ResolverChain", "params": { "constructor": ["container"], "next": ["resolver"], "toArray": [], "hasResolver": ["resolver"], "hasToken": ["resolver", "token"], "resolve": ["token", "providers"], "unregister": ["token"], "getTokenImpl": ["token"], "hasRegister": ["token"], "has": ["token"] } };
+    return ResolverChain;
 }());
-exports.ResolveChain = ResolveChain;
+exports.ResolverChain = ResolverChain;
 
 
 });
 
-unwrapExports(ResolveChain_1);
-var ResolveChain_2 = ResolveChain_1.ResolveChainToken;
-var ResolveChain_3 = ResolveChain_1.ResolveChain;
+unwrapExports(ResolverChain_1);
+var ResolverChain_2 = ResolverChain_1.ResolverChainToken;
+var ResolverChain_3 = ResolverChain_1.ResolverChain;
 
 var resolves = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
-tslib_1.__exportStar(ResolveChain_1, exports);
+tslib_1.__exportStar(ResolverChain_1, exports);
 
 
 });
@@ -5457,7 +5457,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 function registerCores(container) {
     container.registerSingleton(LifeScope.LifeScopeToken, function () { return new DefaultLifeScope_1.DefaultLifeScope(container); });
     container.registerSingleton(ICacheManager.CacheManagerToken, function () { return new core.CacheManager(container); });
-    container.registerSingleton(resolves.ResolveChainToken, function () { return new resolves.ResolveChain(container); });
+    container.registerSingleton(resolves.ResolverChainToken, function () { return new resolves.ResolverChain(container); });
     container.register(core.ProviderMapToken, function () { return new core.ProviderMap(container); });
     container.bindProvider(core.ProviderMap, core.ProviderMapToken);
     container.registerSingleton(core.ProviderMatcherToken, function () { return new core.ProviderMatcher(container); });
@@ -5538,7 +5538,7 @@ var Container = /** @class */ (function () {
         }
         return this.resolve.apply(this, [alias ? this.getTokenKey(token, alias) : token].concat(providers));
     };
-    Object.defineProperty(Container.prototype, "resolveChain", {
+    Object.defineProperty(Container.prototype, "resolvers", {
         /**
         * resolve token value in this container only.
         *
@@ -5549,7 +5549,7 @@ var Container = /** @class */ (function () {
         * @memberof Container
         */
         get: function () {
-            return this.resolveValue(resolves.ResolveChainToken);
+            return this.resolveValue(resolves.ResolverChainToken);
         },
         enumerable: true,
         configurable: true
@@ -5570,7 +5570,7 @@ var Container = /** @class */ (function () {
         }
         var _a;
         var key = this.getTokenKey(token);
-        return (_a = this.resolveChain).resolve.apply(_a, [key].concat(providers));
+        return (_a = this.resolvers).resolve.apply(_a, [key].concat(providers));
     };
     /**
      * resolve token value in this container only.
@@ -5659,7 +5659,7 @@ var Container = /** @class */ (function () {
      */
     Container.prototype.has = function (token, alias) {
         var key = this.getTokenKey(token, alias);
-        return this.resolveChain.has(key);
+        return this.resolvers.has(key);
     };
     /**
      * has register type.
@@ -5694,7 +5694,7 @@ var Container = /** @class */ (function () {
             }
         }
         else {
-            this.resolveChain.unregister(key);
+            this.resolvers.unregister(key);
         }
         return this;
     };
@@ -5809,7 +5809,7 @@ var Container = /** @class */ (function () {
             return null;
         }
         else {
-            return this.resolveChain.getTokenImpl(tokenKey);
+            return this.resolvers.getTokenImpl(tokenKey);
         }
     };
     // /**

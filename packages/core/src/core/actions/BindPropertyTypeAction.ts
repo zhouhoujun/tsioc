@@ -30,6 +30,9 @@ export class BindPropertyTypeAction extends ActionComposite {
     }
 
     protected working(container: IContainer, data: BindPropertyTypeActionData) {
+        if (data.raiseContainer && data.raiseContainer !== container) {
+            return;
+        }
         let type = data.targetType;
         let lifeScope = container.getLifeScope();
 

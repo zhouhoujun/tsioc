@@ -4,7 +4,7 @@ import { LifeScope } from './LifeScope';
 import { InjectToken } from './InjectToken';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IResolver } from './IResolver';
-import { ResolveChain } from './resolves';
+import { ResolverChain } from './resolves';
 
 /**
  * IContainer token.
@@ -40,10 +40,10 @@ export interface IContainer extends IMethodAccessor, IResolver {
     /**
      * resolve chain.
      *
-     * @type {ResolveChain}
+     * @type {ResolverChain}
      * @memberof IContainer
      */
-    readonly resolveChain: ResolveChain;
+    readonly resolvers: ResolverChain;
 
     /**
      * get container builder of this container.

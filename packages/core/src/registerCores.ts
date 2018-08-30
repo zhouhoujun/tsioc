@@ -7,7 +7,7 @@ import { MethodAccessor } from './core/MethodAccessor';
 import { CacheManager, ProviderMap, ProviderMapToken, ProviderMatcher, ProviderMatcherToken } from './core';
 import { CacheManagerToken } from './ICacheManager';
 import { MethodAccessorToken } from './IMethodAccessor';
-import { ResolveChain, ResolveChainToken } from './resolves';
+import { ResolverChain, ResolverChainToken } from './resolves';
 
 /**
  * register core for container.
@@ -19,7 +19,7 @@ export function registerCores(container: IContainer) {
 
     container.registerSingleton(LifeScopeToken, () => new DefaultLifeScope(container));
     container.registerSingleton(CacheManagerToken, () => new CacheManager(container));
-    container.registerSingleton(ResolveChainToken, () => new ResolveChain(container));
+    container.registerSingleton(ResolverChainToken, () => new ResolverChain(container));
     container.register(ProviderMapToken, () => new ProviderMap(container));
     container.bindProvider(ProviderMap, ProviderMapToken);
     container.registerSingleton(ProviderMatcherToken, () => new ProviderMatcher(container));

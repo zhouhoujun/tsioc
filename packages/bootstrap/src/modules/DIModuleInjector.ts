@@ -89,7 +89,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         let metaConfig = this.validate.getMetaConfig(type, newContainer) as ModuleConfigure;
         metaConfig = await this.registerConfgureDepds(newContainer, metaConfig);
 
-        let injMd = new InjectedModule(type, metaConfig, newContainer, type, metaConfig.exports || [], metaConfig[exportsProvidersFiled]);
+        let injMd = new InjectedModule(metaConfig.token || type, metaConfig, newContainer, type, metaConfig.exports || [], metaConfig[exportsProvidersFiled]);
         container.bindProvider(new InjectedModuleToken(type), injMd);
 
         await this.importConfigExports(container, newContainer, injMd);
@@ -114,9 +114,9 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
             return container;
         }
         if (injMd) {
-            container.resolveChain.next(injMd);
+            container.resolvers.next(injMd);
             if (injMd.exports && injMd.exports.length) {
-                let expchs = providerContainer.resolveChain.toArray().filter(r => {
+                let expchs = providerContainer.resolvers.toArray().filter(r => {
                     if (r instanceof Container) {
                         return false;
                     } else {
@@ -124,7 +124,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
                     }
                 });
                 expchs.forEach(r => {
-                    container.resolveChain.next(r);
+                    container.resolvers.next(r);
                 });
             }
         }

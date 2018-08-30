@@ -1,16 +1,15 @@
-import { SymbolType, Providers, Token, Type } from '../types';
-import { IContainer, ContainerToken } from '../IContainer';
+import { SymbolType, Providers, Type } from '../types';
+import { IContainer } from '../IContainer';
 import { ResolverType } from './ResolverType';
 import { Container } from '../Container';
-import { ProviderMap, IProvider } from '../core';
-import { isMetadataObject, isClass } from '../utils';
+import { isClass } from '../utils';
 import { InjectToken } from '../InjectToken';
 import { IResolver } from '../IResolver';
 
 
-export const ResolveChainToken = new InjectToken<ResolveChain>('di_ResolveChain');
+export const ResolverChainToken = new InjectToken<ResolverChain>('di_ResolverChain');
 
-export class ResolveChain implements IResolver {
+export class ResolverChain implements IResolver {
 
     protected resolvers: ResolverType[];
     constructor(protected container: IContainer) {
@@ -45,9 +44,15 @@ export class ResolveChain implements IResolver {
     }
 
     hasToken<T>(resolver: ResolverType, token: SymbolType<T>): boolean {
+        if (!token) {
+            return false;
+        }
         if (resolver instanceof Container) {
             return resolver.hasRegister(token);
         } else {
+            if (resolver.type === token || this.container.getTokenKey(resolver.token) === token) {
+                return true;
+            }
             let exps = resolver.exports || [];
             return exps.concat(resolver.providers || []).some(t => {
                 if (this.container.getTokenKey(t) === token) {
@@ -76,9 +81,9 @@ export class ResolveChain implements IResolver {
                 return resolver.container.resolveValue(token, ...providers);
             }
         } else {
-            if (!this.hasContainerProvider(providers)) {
-                providers.push({ provide: ContainerToken, useValue: this.container });
-            }
+            // if (!this.hasContainerProvider(providers)) {
+            //     providers.push({ provide: ContainerToken, useValue: this.container });
+            // }
             return this.container.parent.resolve(token, ...providers);
         }
     }
@@ -157,15 +162,15 @@ export class ResolveChain implements IResolver {
         return false;
     }
 
-    protected hasContainerProvider(providers: Providers[]): boolean {
-        return providers.some(p => {
-            if (p instanceof ProviderMap) {
-                return p.has(ContainerToken);
-            } else if (isMetadataObject(p)) {
-                let prd = p as IProvider;
-                return prd.provide === ContainerToken;
-            }
-            return false;
-        });
-    }
+    // protected hasContainerProvider(providers: Providers[]): boolean {
+    //     return providers.some(p => {
+    //         if (p instanceof ProviderMap) {
+    //             return p.has(ContainerToken);
+    //         } else if (isMetadataObject(p)) {
+    //             let prd = p as IProvider;
+    //             return prd.provide === ContainerToken;
+    //         }
+    //         return false;
+    //     });
+    // }
 }
