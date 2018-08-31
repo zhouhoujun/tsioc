@@ -155,13 +155,13 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
 
     async build(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<T> {
         let injmdl = await this.load(token, env);
-        let builder = this.getBuilderByModule(injmdl);
+        let builder = this.getBuilder(injmdl);
         return await builder.build(token, injmdl, data);
     }
 
     async bootstrap(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
         let injmdl = await this.load(token, env);
-        let builder = this.getBuilderByModule(injmdl);
+        let builder = this.getBuilder(injmdl);
         return await builder.bootstrap(token, injmdl, data);
     }
 
@@ -173,12 +173,12 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
      * @returns {IModuleBuilder<T>}
      * @memberof IApplicationBuilder
      */
-    async getBuilder(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): Promise<IModuleBuilder<T>> {
+    async getBuilderByConfig(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): Promise<IModuleBuilder<T>> {
         let injmdl = await this.load(token, env);
-        return this.getBuilderByModule(injmdl)
+        return this.getBuilder(injmdl)
     }
 
-    getBuilderByModule(injmdl: InjectedModule<T>): IModuleBuilder<T> {
+    getBuilder(injmdl: InjectedModule<T>): IModuleBuilder<T> {
         let cfg = injmdl.config;
         let container = injmdl.container;
         let builder: IModuleBuilder<T>;
