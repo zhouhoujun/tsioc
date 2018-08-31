@@ -1,4 +1,3 @@
-
 import { MethodMetadata } from '../metadatas';
 import { createMethodDecorator, IMethodDecorator } from '../factories';
 

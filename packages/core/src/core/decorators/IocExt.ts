@@ -1,7 +1,6 @@
 import { createClassDecorator, ITypeDecorator } from '../factories';
-import { ClassMetadata, AutorunMetadata } from '../metadatas';
+import { AutorunMetadata } from '../metadatas';
 import { isClassMetadata, isString } from '../../utils';
-import { Type } from '../../types';
 
 /**
  * IocExt decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.

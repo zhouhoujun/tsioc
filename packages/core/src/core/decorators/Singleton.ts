@@ -1,4 +1,3 @@
-import { Type } from '../../types';
 import { createClassDecorator, ITypeDecorator } from '../factories';
 import { ClassMetadata } from '../metadatas';
 import { Registration } from '../../Registration';

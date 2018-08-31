@@ -81,9 +81,6 @@ export class ResolverChain implements IResolver {
                 return resolver.container.resolveValue(token, ...providers);
             }
         } else {
-            // if (!this.hasContainerProvider(providers)) {
-            //     providers.push({ provide: ContainerToken, useValue: this.container });
-            // }
             return this.container.parent.resolve(token, ...providers);
         }
     }
@@ -119,29 +116,6 @@ export class ResolverChain implements IResolver {
         }
     }
 
-    // getTypeProvides<T>(target: Type<T>): Token<T>[] {
-    //     let tokens: Token<T>[] = [];
-    //     this.toArray().forEach(r => {
-    //         if (tokens && tokens.length) {
-    //             return false;
-    //         }
-    //         if (r instanceof Container) {
-    //             tokens = r.getTypeProvides(target, false);
-    //         } else {
-    //             tokens = r.container.getTypeProvides(target, false);
-    //         }
-    //         return true;
-    //     });
-
-    //     if (tokens && tokens.length) {
-    //         return tokens;
-    //     }
-    //     if (this.container.parent) {
-    //         return this.container.parent.getTypeProvides(target);
-    //     }
-    //     return tokens;
-    // }
-
     hasRegister<T>(token: SymbolType<T>): boolean {
         if (this.container.hasRegister(token)) {
             return true;
@@ -161,16 +135,4 @@ export class ResolverChain implements IResolver {
         }
         return false;
     }
-
-    // protected hasContainerProvider(providers: Providers[]): boolean {
-    //     return providers.some(p => {
-    //         if (p instanceof ProviderMap) {
-    //             return p.has(ContainerToken);
-    //         } else if (isMetadataObject(p)) {
-    //             let prd = p as IProvider;
-    //             return prd.provide === ContainerToken;
-    //         }
-    //         return false;
-    //     });
-    // }
 }

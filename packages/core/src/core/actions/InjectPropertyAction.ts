@@ -1,8 +1,7 @@
 import { BindPropertyTypeActionData } from './BindPropertyTypeAction';
-import { IContainer, ContainerToken } from '../../IContainer';
+import { IContainer } from '../../IContainer';
 import { CoreActions } from './CoreActions';
 import { ActionComposite } from './ActionComposite';
-import { ProviderMap } from '../providers';
 
 
 /**

@@ -136,17 +136,6 @@ export interface IContainer extends IMethodAccessor, IResolver {
      */
     getTokenImpl<T>(token: Token<T>, inchain?: boolean): Type<T>;
 
-    // /**
-    //  * get type provider for provides.
-    //  *
-    //  * @template T
-    //  * @param {Type<T>} target
-    //  * @param {boolean} inchain
-    //  * @returns {Token<T>[]}
-    //  * @memberof IContainer
-    //  */
-    // getTypeProvides<T>(target: Type<T>, inchain?: boolean): Token<T>[];
-
     /**
      * get token implement class and base classes.
      *

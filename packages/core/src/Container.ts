@@ -326,34 +326,6 @@ export class Container implements IContainer {
         }
     }
 
-
-    // /**
-    //  * get type provider for provides.
-    //  *
-    //  * @template T
-    //  * @param {Type<T>} target
-    //  * @returns {Token<T>[]}
-    //  * @memberof Container
-    //  */
-    // getTypeProvides<T>(target: Type<T>, inchain?: boolean): Token<T>[] {
-    //     if (inchain === false) {
-    //         if (!isClass(target)) {
-    //             return [];
-    //         }
-    //         let tokens: Token<T>[] = [];
-    //         if (this.provideTypes.values().some(a => a === target)) {
-    //             this.provideTypes.forEach((val, key) => {
-    //                 if (val === target) {
-    //                     tokens.push(key);
-    //                 }
-    //             });
-    //         }
-    //         return tokens;
-    //     } else {
-    //         return this.resolveChain.getTypeProvides(target);
-    //     }
-    // }
-
     /**
      * get token implement class and base classes.
      *
