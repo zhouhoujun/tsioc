@@ -88,7 +88,7 @@ export const DefaultModuleBuilderToken = new InjectModuleBuilderToken<any>(Objec
 /**
  * module builder token.
  */
-export const ModuleBuilderToken = new Registration<AnyModuleBuilder>(Object, moduleBuilderDesc);
+export const ModuleBuilderToken = new Registration<AnyModuleBuilder>('any', moduleBuilderDesc);
 
 /**
  *  module builder. objected generics to any

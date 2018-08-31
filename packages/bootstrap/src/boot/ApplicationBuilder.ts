@@ -1,7 +1,7 @@
 import { AppConfigure, AppConfigureToken, DefaultConfigureToken, AppConfigureLoaderToken } from './AppConfigure';
 import { IContainer, LoadType, lang, isString, MapSet, Factory, Token, isUndefined, DefaultContainerBuilder, IContainerBuilder, isClass, isToken } from '@ts-ioc/core';
 import { IApplicationBuilder, CustomRegister, AnyApplicationBuilder } from './IApplicationBuilder';
-import { ModuleBuilder, ModuleEnv, DIModuleInjectorToken, InjectedModule, IModuleBuilder, InjectModuleBuilderToken, DefaultModuleBuilderToken } from '../modules';
+import { ModuleBuilder, ModuleEnv, DIModuleInjectorToken, InjectedModule, IModuleBuilder, InjectModuleBuilderToken, DefaultModuleBuilderToken, ModuleBuilderToken } from '../modules';
 import { ContainerPool, ContainerPoolToken, Events, IEvents } from '../utils';
 import { BootModule } from '../BootModule';
 import { Runnable } from '../runnable';
@@ -68,22 +68,10 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
 
     getPools(): ContainerPool {
         if (!this.pools) {
-            this.pools = new ContainerPool();
+            this.pools = new ContainerPool(this.createContainerBuilder());
             this.createDefaultContainer();
         }
         return this.pools;
-    }
-
-    protected createContainer(): IContainer {
-        return this.getContainerBuilder().create();
-    }
-
-    protected containerBuilder: IContainerBuilder;
-    getContainerBuilder() {
-        if (!this.containerBuilder) {
-            this.containerBuilder = this.createContainerBuilder();
-        }
-        return this.containerBuilder;
     }
 
     protected createContainerBuilder(): IContainerBuilder {
@@ -160,24 +148,21 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         return this;
     }
 
+    protected async load(token: Token<T> | AppConfigure, env?: ModuleEnv): Promise<InjectedModule<T>> {
+        await this.initRootContainer();
+        return super.load(token, env);
+    }
+
     async build(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<T> {
         let injmdl = await this.load(token, env);
         let builder = this.getBuilder(injmdl);
-        if (builder) {
-            return await builder.build(token, env, data);
-        } else {
-            return await super.build(token, env, data);
-        }
+        return await builder.build(token, injmdl, data);
     }
 
     async bootstrap(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
         let injmdl = await this.load(token, env);
         let builder = this.getBuilder(injmdl);
-        if (builder) {
-            return await builder.bootstrap(token, injmdl, data);
-        } else {
-            return await super.bootstrap(token, injmdl, data);
-        }
+        return await builder.bootstrap(token, injmdl, data);
     }
 
     getBuilder(injmdl: InjectedModule<T>): IModuleBuilder<T> {
@@ -221,18 +206,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         if (container.has(DefaultModuleBuilderToken)) {
             return container.resolve(DefaultModuleBuilderToken);
         }
-        return null
-    }
-
-
-    protected async getParentContainer(env?: ModuleEnv) {
-        let container = this.getPools().getDefault();
-        if (!this.inited) {
-            await this.initRootContainer(container);
-            this.inited = true;
-        }
-
-        return await super.getParentContainer(env);
+        return container.resolve(ModuleBuilderToken);
     }
 
 
@@ -260,9 +234,8 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
     }
 
     protected createDefaultContainer() {
-        let container = this.createContainer();
+        let container = this.pools.getDefault();
         container.register(BootModule);
-        this.pools.setDefault(container);
 
         let chain = container.getBuilder().getInjectorChain(container);
         chain.first(container.resolve(DIModuleInjectorToken));
@@ -276,11 +249,16 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         return container;
     }
 
-    protected async initRootContainer(container: IContainer) {
+    protected async initRootContainer(container?: IContainer) {
+        if (this.inited) {
+            return;
+        }
+        container = container || this.getPools().getDefault();
         let globCfg = await this.getGlobalConfig(container);
-        this.registerExts(container, globCfg);
+        await this.registerExts(container, globCfg);
         this.bindAppConfig(globCfg);
         container.bindProvider(AppConfigureToken, globCfg);
+        this.inited = true;
         this.events.emit(ApplicationEvents.onRootContainerInited, container);
     }
 

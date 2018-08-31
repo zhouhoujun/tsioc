@@ -261,9 +261,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @class ContainerPool
  */
 var ContainerPool = /** @class */ (function () {
-    function ContainerPool() {
+    function ContainerPool(containerBuilder) {
+        this.containerBuilder = containerBuilder;
         this.pools = new core_1.MapSet();
     }
+    ContainerPool.prototype.createContainer = function () {
+        return this.containerBuilder.create();
+    };
     ContainerPool.prototype.getTokenKey = function (token) {
         if (token instanceof core_1.Registration) {
             return token.toString();
@@ -271,16 +275,16 @@ var ContainerPool = /** @class */ (function () {
         return token;
     };
     ContainerPool.prototype.isDefault = function (container) {
-        return container === this.defaults;
+        return container === this._default;
     };
     ContainerPool.prototype.hasDefault = function () {
-        return !!this.defaults;
-    };
-    ContainerPool.prototype.setDefault = function (container) {
-        this.defaults = container;
+        return !!this._default;
     };
     ContainerPool.prototype.getDefault = function () {
-        return this.defaults;
+        if (!this._default) {
+            this._default = this.createContainer();
+        }
+        return this._default;
     };
     ContainerPool.prototype.set = function (token, container) {
         var key = this.getTokenKey(token);
@@ -318,7 +322,7 @@ var ContainerPool = /** @class */ (function () {
         }
         // }
     };
-    ContainerPool.classAnnations = { "name": "ContainerPool", "params": { "constructor": [], "getTokenKey": ["token"], "isDefault": ["container"], "hasDefault": [], "setDefault": ["container"], "getDefault": [], "set": ["token", "container"], "get": ["token"], "has": ["token"], "create": ["parent"], "setParent": ["container", "parent"] } };
+    ContainerPool.classAnnations = { "name": "ContainerPool", "params": { "constructor": ["containerBuilder"], "createContainer": [], "getTokenKey": ["token"], "isDefault": ["container"], "hasDefault": [], "getDefault": [], "set": ["token", "container"], "get": ["token"], "has": ["token"], "create": ["parent"], "setParent": ["container", "parent"] } };
     return ContainerPool;
 }());
 exports.ContainerPool = ContainerPool;
@@ -741,7 +745,7 @@ exports.DefaultModuleBuilderToken = new InjectModuleBuilderToken(Object);
 /**
  * module builder token.
  */
-exports.ModuleBuilderToken = new core_1.Registration(Object, moduleBuilderDesc);
+exports.ModuleBuilderToken = new core_1.Registration('any', moduleBuilderDesc);
 
 
 });
@@ -1673,19 +1677,10 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
     };
     DefaultApplicationBuilder.prototype.getPools = function () {
         if (!this.pools) {
-            this.pools = new utils.ContainerPool();
+            this.pools = new utils.ContainerPool(this.createContainerBuilder());
             this.createDefaultContainer();
         }
         return this.pools;
-    };
-    DefaultApplicationBuilder.prototype.createContainer = function () {
-        return this.getContainerBuilder().create();
-    };
-    DefaultApplicationBuilder.prototype.getContainerBuilder = function () {
-        if (!this.containerBuilder) {
-            this.containerBuilder = this.createContainerBuilder();
-        }
-        return this.containerBuilder;
     };
     DefaultApplicationBuilder.prototype.createContainerBuilder = function () {
         return new core_1.DefaultContainerBuilder();
@@ -1761,6 +1756,18 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
         }
         return this;
     };
+    DefaultApplicationBuilder.prototype.load = function (token, env) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.initRootContainer()];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/, _super.prototype.load.call(this, token, env)];
+                }
+            });
+        });
+    };
     DefaultApplicationBuilder.prototype.build = function (token, env, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             var injmdl, builder;
@@ -1770,11 +1777,8 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
                     case 1:
                         injmdl = _a.sent();
                         builder = this.getBuilder(injmdl);
-                        if (!builder) return [3 /*break*/, 3];
-                        return [4 /*yield*/, builder.build(token, env, data)];
+                        return [4 /*yield*/, builder.build(token, injmdl, data)];
                     case 2: return [2 /*return*/, _a.sent()];
-                    case 3: return [4 /*yield*/, _super.prototype.build.call(this, token, env, data)];
-                    case 4: return [2 /*return*/, _a.sent()];
                 }
             });
         });
@@ -1788,11 +1792,8 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
                     case 1:
                         injmdl = _a.sent();
                         builder = this.getBuilder(injmdl);
-                        if (!builder) return [3 /*break*/, 3];
                         return [4 /*yield*/, builder.bootstrap(token, injmdl, data)];
                     case 2: return [2 /*return*/, _a.sent()];
-                    case 3: return [4 /*yield*/, _super.prototype.bootstrap.call(this, token, injmdl, data)];
-                    case 4: return [2 /*return*/, _a.sent()];
                 }
             });
         });
@@ -1836,26 +1837,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
         if (container.has(modules.DefaultModuleBuilderToken)) {
             return container.resolve(modules.DefaultModuleBuilderToken);
         }
-        return null;
-    };
-    DefaultApplicationBuilder.prototype.getParentContainer = function (env) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var container;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        container = this.getPools().getDefault();
-                        if (!!this.inited) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.initRootContainer(container)];
-                    case 1:
-                        _a.sent();
-                        this.inited = true;
-                        _a.label = 2;
-                    case 2: return [4 /*yield*/, _super.prototype.getParentContainer.call(this, env)];
-                    case 3: return [2 /*return*/, _a.sent()];
-                }
-            });
-        });
+        return container.resolve(modules.ModuleBuilderToken);
     };
     DefaultApplicationBuilder.prototype.getGlobalConfig = function (container) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
@@ -1895,9 +1877,8 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
     };
     DefaultApplicationBuilder.prototype.createDefaultContainer = function () {
         var _this = this;
-        var container = this.createContainer();
+        var container = this.pools.getDefault();
         container.register(BootModule_1.BootModule);
-        this.pools.setDefault(container);
         var chain = container.getBuilder().getInjectorChain(container);
         chain.first(container.resolve(modules.DIModuleInjectorToken));
         container.bindProvider(utils.ContainerPoolToken, function () { return _this.getPools(); });
@@ -1912,12 +1893,20 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
             var globCfg;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getGlobalConfig(container)];
+                    case 0:
+                        if (this.inited) {
+                            return [2 /*return*/];
+                        }
+                        container = container || this.getPools().getDefault();
+                        return [4 /*yield*/, this.getGlobalConfig(container)];
                     case 1:
                         globCfg = _a.sent();
-                        this.registerExts(container, globCfg);
+                        return [4 /*yield*/, this.registerExts(container, globCfg)];
+                    case 2:
+                        _a.sent();
                         this.bindAppConfig(globCfg);
                         container.bindProvider(AppConfigure.AppConfigureToken, globCfg);
+                        this.inited = true;
                         this.events.emit(ApplicationEvents.onRootContainerInited, container);
                         return [2 /*return*/];
                 }
@@ -1986,7 +1975,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
             });
         });
     };
-    DefaultApplicationBuilder.classAnnations = { "name": "DefaultApplicationBuilder", "params": { "constructor": ["baseURL"], "initEvents": [], "create": ["baseURL"], "on": ["name", "event"], "off": ["name", "event"], "emit": ["name", "args"], "getPools": [], "createContainer": [], "getContainerBuilder": [], "createContainerBuilder": [], "useConfiguration": ["config"], "loadConfig": ["container", "src"], "use": ["modules"], "provider": ["provide", "provider", "beforRootInit"], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "getBuilder": ["injmdl"], "getDefaultBuilder": ["container"], "getParentContainer": ["env"], "getGlobalConfig": ["container"], "createDefaultContainer": [], "initRootContainer": ["container"], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": ["container"] } };
+    DefaultApplicationBuilder.classAnnations = { "name": "DefaultApplicationBuilder", "params": { "constructor": ["baseURL"], "initEvents": [], "create": ["baseURL"], "on": ["name", "event"], "off": ["name", "event"], "emit": ["name", "args"], "getPools": [], "createContainerBuilder": [], "useConfiguration": ["config"], "loadConfig": ["container", "src"], "use": ["modules"], "provider": ["provide", "provider", "beforRootInit"], "load": ["token", "env"], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "getBuilder": ["injmdl"], "getDefaultBuilder": ["container"], "getGlobalConfig": ["container"], "createDefaultContainer": [], "initRootContainer": ["container"], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": ["container"] } };
     return DefaultApplicationBuilder;
 }(modules.ModuleBuilder));
 exports.DefaultApplicationBuilder = DefaultApplicationBuilder;

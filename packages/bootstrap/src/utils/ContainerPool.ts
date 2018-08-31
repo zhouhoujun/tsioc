@@ -1,4 +1,4 @@
-import { MapSet, Token, SymbolType, Registration, IContainer, InjectToken } from '@ts-ioc/core';
+import { MapSet, Token, SymbolType, Registration, IContainer, InjectToken, IContainerBuilder } from '@ts-ioc/core';
 
 /**
  * container pool
@@ -9,9 +9,14 @@ import { MapSet, Token, SymbolType, Registration, IContainer, InjectToken } from
 export class ContainerPool {
     protected pools: MapSet<Token<any>, IContainer>;
 
-    constructor() {
+    constructor(protected containerBuilder: IContainerBuilder) {
         this.pools = new MapSet();
     }
+
+    protected createContainer(): IContainer {
+        return this.containerBuilder.create();
+    }
+
 
     getTokenKey(token: Token<any>): SymbolType<any> {
         if (token instanceof Registration) {
@@ -21,18 +26,18 @@ export class ContainerPool {
     }
 
     isDefault(container: IContainer): boolean {
-        return container === this.defaults;
+        return container === this._default;
     }
     hasDefault(): boolean {
-        return !!this.defaults;
+        return !!this._default;
     }
-    defaults: IContainer;
-    setDefault(container: IContainer) {
-        this.defaults = container;
-    }
+    _default: IContainer;
 
     getDefault(): IContainer {
-        return this.defaults;
+        if (!this._default) {
+            this._default = this.createContainer();
+        }
+        return this._default;
     }
 
     set(token: Token<any>, container: IContainer) {
@@ -67,11 +72,11 @@ export class ContainerPool {
             return;
         }
         // if (!container.parent) {
-            if (parent && parent !== container) {
-                container.parent = parent;
-            } else {
-                container.parent = this.getDefault();
-            }
+        if (parent && parent !== container) {
+            container.parent = parent;
+        } else {
+            container.parent = this.getDefault();
+        }
         // }
     }
 }
