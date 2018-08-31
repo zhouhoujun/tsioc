@@ -1,7 +1,7 @@
 import { AppConfigure, AppConfigureToken, DefaultConfigureToken, AppConfigureLoaderToken } from './AppConfigure';
 import { IContainer, LoadType, lang, isString, MapSet, Factory, Token, isUndefined, DefaultContainerBuilder, IContainerBuilder, isClass, isToken } from '@ts-ioc/core';
 import { IApplicationBuilder, CustomRegister, AnyApplicationBuilder } from './IApplicationBuilder';
-import { ModuleBuilder, ModuleEnv, DIModuleInjectorToken, InjectedModule, IModuleBuilder, InjectModuleBuilderToken, DefaultModuleBuilderToken, ModuleBuilderToken } from '../modules';
+import { ModuleBuilder, ModuleEnv, DIModuleInjectorToken, InjectedModule, IModuleBuilder, InjectModuleBuilderToken, DefaultModuleBuilderToken, ModuleBuilderToken, ModuleConfig } from '../modules';
 import { ContainerPool, ContainerPoolToken, Events, IEvents } from '../utils';
 import { BootModule } from '../BootModule';
 import { Runnable } from '../runnable';
@@ -155,17 +155,30 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
 
     async build(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<T> {
         let injmdl = await this.load(token, env);
-        let builder = this.getBuilder(injmdl);
+        let builder = this.getBuilderByModule(injmdl);
         return await builder.build(token, injmdl, data);
     }
 
     async bootstrap(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
         let injmdl = await this.load(token, env);
-        let builder = this.getBuilder(injmdl);
+        let builder = this.getBuilderByModule(injmdl);
         return await builder.bootstrap(token, injmdl, data);
     }
 
-    getBuilder(injmdl: InjectedModule<T>): IModuleBuilder<T> {
+    /**
+     * get module builder
+     *
+     * @param {(Token<T> | ModuleConfig<T>)} token
+     * @param {ModuleEnv} [env]
+     * @returns {IModuleBuilder<T>}
+     * @memberof IApplicationBuilder
+     */
+    async getBuilder(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): Promise<IModuleBuilder<T>> {
+        let injmdl = await this.load(token, env);
+        return this.getBuilderByModule(injmdl)
+    }
+
+    getBuilderByModule(injmdl: InjectedModule<T>): IModuleBuilder<T> {
         let cfg = injmdl.config;
         let container = injmdl.container;
         let builder: IModuleBuilder<T>;

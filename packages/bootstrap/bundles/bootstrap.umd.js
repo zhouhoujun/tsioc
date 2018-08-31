@@ -1776,7 +1776,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
                     case 0: return [4 /*yield*/, this.load(token, env)];
                     case 1:
                         injmdl = _a.sent();
-                        builder = this.getBuilder(injmdl);
+                        builder = this.getBuilderByModule(injmdl);
                         return [4 /*yield*/, builder.build(token, injmdl, data)];
                     case 2: return [2 /*return*/, _a.sent()];
                 }
@@ -1791,14 +1791,35 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
                     case 0: return [4 /*yield*/, this.load(token, env)];
                     case 1:
                         injmdl = _a.sent();
-                        builder = this.getBuilder(injmdl);
+                        builder = this.getBuilderByModule(injmdl);
                         return [4 /*yield*/, builder.bootstrap(token, injmdl, data)];
                     case 2: return [2 /*return*/, _a.sent()];
                 }
             });
         });
     };
-    DefaultApplicationBuilder.prototype.getBuilder = function (injmdl) {
+    /**
+     * get module builder
+     *
+     * @param {(Token<T> | ModuleConfig<T>)} token
+     * @param {ModuleEnv} [env]
+     * @returns {IModuleBuilder<T>}
+     * @memberof IApplicationBuilder
+     */
+    DefaultApplicationBuilder.prototype.getBuilder = function (token, env) {
+        return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var injmdl;
+            return tslib_1.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.load(token, env)];
+                    case 1:
+                        injmdl = _a.sent();
+                        return [2 /*return*/, this.getBuilderByModule(injmdl)];
+                }
+            });
+        });
+    };
+    DefaultApplicationBuilder.prototype.getBuilderByModule = function (injmdl) {
         var cfg = injmdl.config;
         var container = injmdl.container;
         var builder;
@@ -1975,7 +1996,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
             });
         });
     };
-    DefaultApplicationBuilder.classAnnations = { "name": "DefaultApplicationBuilder", "params": { "constructor": ["baseURL"], "initEvents": [], "create": ["baseURL"], "on": ["name", "event"], "off": ["name", "event"], "emit": ["name", "args"], "getPools": [], "createContainerBuilder": [], "useConfiguration": ["config"], "loadConfig": ["container", "src"], "use": ["modules"], "provider": ["provide", "provider", "beforRootInit"], "load": ["token", "env"], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "getBuilder": ["injmdl"], "getDefaultBuilder": ["container"], "getGlobalConfig": ["container"], "createDefaultContainer": [], "initRootContainer": ["container"], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": ["container"] } };
+    DefaultApplicationBuilder.classAnnations = { "name": "DefaultApplicationBuilder", "params": { "constructor": ["baseURL"], "initEvents": [], "create": ["baseURL"], "on": ["name", "event"], "off": ["name", "event"], "emit": ["name", "args"], "getPools": [], "createContainerBuilder": [], "useConfiguration": ["config"], "loadConfig": ["container", "src"], "use": ["modules"], "provider": ["provide", "provider", "beforRootInit"], "load": ["token", "env"], "build": ["token", "env", "data"], "bootstrap": ["token", "env", "data"], "getBuilder": ["token", "env"], "getBuilderByModule": ["injmdl"], "getDefaultBuilder": ["container"], "getGlobalConfig": ["container"], "createDefaultContainer": [], "initRootContainer": ["container"], "registerExts": ["container", "config"], "bindAppConfig": ["config"], "getDefaultConfig": ["container"] } };
     return DefaultApplicationBuilder;
 }(modules.ModuleBuilder));
 exports.DefaultApplicationBuilder = DefaultApplicationBuilder;

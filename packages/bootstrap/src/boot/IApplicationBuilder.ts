@@ -63,16 +63,26 @@ export interface IApplicationBuilder<T> extends IModuleBuilder<T>, IApplicationE
      * @type {Events}
      * @memberof IApplicationBuilder
      */
-    events?: Events
+    events?: Events;
+
     /**
      * get module builder
      *
-     * @param {InjectedModule<T>} token
+     * @param {(Token<T> | ModuleConfig<T>)} token
      * @param {ModuleEnv} [env]
+     * @returns {Promise<IModuleBuilder<T>>}
+     * @memberof IApplicationBuilder
+     */
+    getBuilder(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): Promise<IModuleBuilder<T>>;
+
+    /**
+     * get module builder
+     *
+     * @param {InjectedModule<T>} injmdl
      * @returns {IModuleBuilder<T>}
      * @memberof IModuleBuilder
      */
-    getBuilder(injmdl: InjectedModule<T>): IModuleBuilder<T>;
+    getBuilderByModule(injmdl: InjectedModule<T>): IModuleBuilder<T>;
 
 }
 
