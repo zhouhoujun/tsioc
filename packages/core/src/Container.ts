@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
 import { Type, Token, Factory, SymbolType, ToInstance, IocState, Providers, Modules, LoadType } from './types';
 import { Registration } from './Registration';
-import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet, lang, isMetadataObject } from './utils';
+import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet, lang } from './utils';
 
 import { MethodAccessorToken } from './IMethodAccessor';
 import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderMatcherToken } from './core';
