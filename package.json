@@ -1,6 +1,6 @@
 {
   "name": "tsioc-srcs",
-  "version": "3.1.8",
+  "version": "3.1.9",
   "private": true,
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
@@ -43,6 +43,7 @@
     "reflect-metadata": "^0.1.12",
     "rollup": "^0.53.2",
     "rollup-plugin-commonjs": "^8.2.6",
+    "rollup-plugin-inject": "^2.2.0",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-globals": "^1.2.1",
     "rollup-plugin-node-resolve": "^3.0.0",

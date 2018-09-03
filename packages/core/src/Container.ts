@@ -421,7 +421,7 @@ export class Container implements IContainer {
         return this.resolveValue(MethodAccessorToken).createParams(params, ...providers);
     }
 
-    protected cacheDecorator<T>(map: Map<string, ActionComponent>, action: ActionComponent) {
+    protected cacheDecorator<T>(map: MapSet<string, ActionComponent>, action: ActionComponent) {
         if (!map.has(action.name)) {
             map.set(action.name, action);
         }

@@ -1,5 +1,6 @@
 .DS_STORE
 .vscode/.*
+esnext
 node_modules
 lib
 build

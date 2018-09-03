@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "target":"es2017",
+    "baseUrl": ".",
+    "rootDir": "../../packages",
+    "paths": {
+      "@ts-ioc/core": [
+        "../core/src"
+      ],
+      "@ts-ioc/annotations":[
+        "../annotations/src"
+      ]
+    }
+  },
+  "exclude": [
+    "lib",
+    "node_modules"    
+  ]
+}

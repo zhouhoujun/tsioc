@@ -1,0 +1,26 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "target":"es2015",
+    "baseUrl": ".",
+    "rootDir": "../../../packages",
+    "paths": {
+      "@ts-ioc/core": [
+        "../../core/src"
+      ],
+      "@ts-ioc/bootstrap":[
+        "../../bootstrap/src"
+      ],
+      "@ts-ioc/platform-browser": [
+        "../../platform-browser/src"
+      ],
+      "@ts-ioc/annotations": [
+        "../../annotations/src"
+      ]
+    }
+  },
+  "exclude": [
+    "lib",
+    "node_modules"
+  ]
+}
