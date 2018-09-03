@@ -1,8 +1,6 @@
 import { ObjectMap, Type } from '../types';
 import { isArray, isObject, isFunction, isClass } from './typeCheck';
-import * as objPonyfill from 'object.assign';
-
-objPonyfill.shim();
+import * as objAssign from 'object-assign';
 
 export namespace lang {
 
@@ -63,11 +61,11 @@ export namespace lang {
         if (sources && sources.length) {
             sources.unshift(source2 || {});
             sources.unshift(source1 || {});
-            return Object.assign(target as any, ...sources);
+            return objAssign(target as any, ...sources);
         } else if (source2) {
-            return Object.assign(target, source1 || {} as U, source2);
+            return objAssign(target, source1 || {} as U, source2);
         } else {
-            return Object.assign(target, source1 || {} as U);
+            return objAssign(target, source1 || {} as U);
         }
     }
 

@@ -18,45 +18,8 @@ function createCommonjsModule(fn, module) {
 }
 
 var ApplicationBuilder_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var ApplicationBuilder=function(r){function t(e){return r.call(this,e||!core.isUndefined(System)?System.baseURL:location.href)||this}return tslib_1.__extends(t,r), t.create=function(e){return new t(e)}, t.prototype.createContainerBuilder=function(){return new platformBrowser.ContainerBuilder}, t.prototype.createBuilder=function(){return this}, t.classAnnations={name:"ApplicationBuilder",params:{constructor:["baseURL"],create:["baseURL"],createContainerBuilder:[],createBuilder:[]}}, t}(bootstrap.DefaultApplicationBuilder);exports.ApplicationBuilder=ApplicationBuilder;
 
-
-
-
-/**
- * application builder for browser side.
- *
- * @export
- * @class ApplicationBuilder
- * @extends {DefaultApplicationBuilder}
- * @implements {IBroserApplicationBuilder<T>}
- */
-var ApplicationBuilder = /** @class */ (function (_super) {
-    tslib_1.__extends(ApplicationBuilder, _super);
-    function ApplicationBuilder(baseURL) {
-        return _super.call(this, baseURL || !core.isUndefined(System) ? System.baseURL : location.href) || this;
-    }
-    /**
-     * create instance.
-     *
-     * @static
-     * @param {string} [baseURL] application start up base path.
-     * @returns {AnyApplicationBuilderBroser} ApplicationBuilder instance.
-     * @memberof ApplicationBuilder
-     */
-    ApplicationBuilder.create = function (baseURL) {
-        return new ApplicationBuilder(baseURL);
-    };
-    ApplicationBuilder.prototype.createContainerBuilder = function () {
-        return new platformBrowser.ContainerBuilder();
-    };
-    ApplicationBuilder.prototype.createBuilder = function () {
-        return this;
-    };
-    ApplicationBuilder.classAnnations = { "name": "ApplicationBuilder", "params": { "constructor": ["baseURL"], "create": ["baseURL"], "createContainerBuilder": [], "createBuilder": [] } };
-    return ApplicationBuilder;
-}(bootstrap.DefaultApplicationBuilder));
-exports.ApplicationBuilder = ApplicationBuilder;
 
 
 });
@@ -65,9 +28,8 @@ unwrapExports(ApplicationBuilder_1);
 var ApplicationBuilder_2 = ApplicationBuilder_1.ApplicationBuilder;
 
 var D__workspace_github_tsioc_packages_platformBrowser_bootstrap_lib = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});tslib_1.__exportStar(ApplicationBuilder_1,exports);
 
-tslib_1.__exportStar(ApplicationBuilder_1, exports);
 
 
 });

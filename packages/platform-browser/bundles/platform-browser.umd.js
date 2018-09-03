@@ -20,39 +20,8 @@ function createCommonjsModule(fn, module) {
 }
 
 var BrowserModuleLoader_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var BrowserModuleLoader=function(e){function r(){return e.call(this)||this}return tslib_1.__extends(r,e), r.prototype.createLoader=function(){if("undefined"!=typeof System)return function(e){return System.import(e)};if("undefined"!=typeof commonjsRequire)return function(e){return new Promise(function(r,o){commonjsRequire([e],function(e){r(e);},function(e){o(e);});})};throw new Error("has not module loader")}, r.classAnnations={name:"BrowserModuleLoader",params:{constructor:[],createLoader:[]}}, r}(core_1.DefaultModuleLoader);exports.BrowserModuleLoader=BrowserModuleLoader;
 
-
-var BrowserModuleLoader = /** @class */ (function (_super) {
-    tslib_1.__extends(BrowserModuleLoader, _super);
-    function BrowserModuleLoader() {
-        return _super.call(this) || this;
-    }
-    BrowserModuleLoader.prototype.createLoader = function () {
-        if (typeof System !== 'undefined') {
-            return function (modulepath) {
-                return System.import(modulepath);
-            };
-        }
-        else if (typeof commonjsRequire !== 'undefined') {
-            return function (modulepath) {
-                return new Promise(function (resolve, reject) {
-                    commonjsRequire([modulepath], function (mud) {
-                        resolve(mud);
-                    }, function (err) {
-                        reject(err);
-                    });
-                });
-            };
-        }
-        else {
-            throw new Error('has not module loader');
-        }
-    };
-    BrowserModuleLoader.classAnnations = { "name": "BrowserModuleLoader", "params": { "constructor": [], "createLoader": [] } };
-    return BrowserModuleLoader;
-}(core_1.DefaultModuleLoader));
-exports.BrowserModuleLoader = BrowserModuleLoader;
 
 
 });
@@ -61,26 +30,8 @@ unwrapExports(BrowserModuleLoader_1);
 var BrowserModuleLoader_2 = BrowserModuleLoader_1.BrowserModuleLoader;
 
 var ContainerBuilder_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var ContainerBuilder=function(r){function e(e){return r.call(this,e||new BrowserModuleLoader_1.BrowserModuleLoader)||this}return tslib_1.__extends(e,r), e.classAnnations={name:"ContainerBuilder",params:{constructor:["loader"]}}, e}(core_1.DefaultContainerBuilder);exports.ContainerBuilder=ContainerBuilder;
 
-
-
-/**
- * container builder for browser.
- *
- * @export
- * @class ContainerBuilder
- * @extends {DefaultContainerBuilder}
- */
-var ContainerBuilder = /** @class */ (function (_super) {
-    tslib_1.__extends(ContainerBuilder, _super);
-    function ContainerBuilder(loader) {
-        return _super.call(this, loader || new BrowserModuleLoader_1.BrowserModuleLoader()) || this;
-    }
-    ContainerBuilder.classAnnations = { "name": "ContainerBuilder", "params": { "constructor": ["loader"] } };
-    return ContainerBuilder;
-}(core_1.DefaultContainerBuilder));
-exports.ContainerBuilder = ContainerBuilder;
 
 
 });
@@ -89,10 +40,8 @@ unwrapExports(ContainerBuilder_1);
 var ContainerBuilder_2 = ContainerBuilder_1.ContainerBuilder;
 
 var D__workspace_github_tsioc_packages_platformBrowser_lib = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});tslib_1.__exportStar(BrowserModuleLoader_1,exports), tslib_1.__exportStar(ContainerBuilder_1,exports);
 
-tslib_1.__exportStar(BrowserModuleLoader_1, exports);
-tslib_1.__exportStar(ContainerBuilder_1, exports);
 
 
 });

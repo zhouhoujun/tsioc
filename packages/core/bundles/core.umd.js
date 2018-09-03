@@ -2,10 +2,10 @@
 	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('reflect-metadata')) :
 	typeof define === 'function' && define.amd ? define(['tslib', 'reflect-metadata'], factory) :
 	(global.core = global.core || {}, global.core.umd = global.core.umd || {}, global.core.umd.js = factory(global.tslib_1,global.Reflect));
-}(this, (function (tslib_1,reflectMetadata) { 'use strict';
+}(this, (function (tslib_1,require$$0) { 'use strict';
 
 tslib_1 = tslib_1 && tslib_1.hasOwnProperty('default') ? tslib_1['default'] : tslib_1;
-reflectMetadata = reflectMetadata && reflectMetadata.hasOwnProperty('default') ? reflectMetadata['default'] : reflectMetadata;
+require$$0 = require$$0 && require$$0.hasOwnProperty('default') ? require$$0['default'] : require$$0;
 
 function commonjsRequire () {
 	throw new Error('Dynamic requires are not currently supported by rollup-plugin-commonjs');
@@ -19,790 +19,99 @@ function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
-var toStr = Object.prototype.toString;
+/*
+object-assign
+(c) Sindre Sorhus
+@license MIT
+*/
 
-var isArguments = function isArguments(value) {
-	var str = toStr.call(value);
-	var isArgs = str === '[object Arguments]';
-	if (!isArgs) {
-		isArgs = str !== '[object Array]' &&
-			value !== null &&
-			typeof value === 'object' &&
-			typeof value.length === 'number' &&
-			value.length >= 0 &&
-			toStr.call(value.callee) === '[object Function]';
-	}
-	return isArgs;
-};
+/* eslint-disable no-unused-vars */
+var getOwnPropertySymbols = Object.getOwnPropertySymbols;
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+var propIsEnumerable = Object.prototype.propertyIsEnumerable;
 
-// modified from https://github.com/es-shims/es5-shim
-var has = Object.prototype.hasOwnProperty;
-var toStr$1 = Object.prototype.toString;
-var slice = Array.prototype.slice;
+function toObject(val) {
+	if (val === null || val === undefined) {
+		throw new TypeError('Object.assign cannot be called with null or undefined');
+	}
 
-var isEnumerable = Object.prototype.propertyIsEnumerable;
-var hasDontEnumBug = !isEnumerable.call({ toString: null }, 'toString');
-var hasProtoEnumBug = isEnumerable.call(function () {}, 'prototype');
-var dontEnums = [
-	'toString',
-	'toLocaleString',
-	'valueOf',
-	'hasOwnProperty',
-	'isPrototypeOf',
-	'propertyIsEnumerable',
-	'constructor'
-];
-var equalsConstructorPrototype = function (o) {
-	var ctor = o.constructor;
-	return ctor && ctor.prototype === o;
-};
-var excludedKeys = {
-	$console: true,
-	$external: true,
-	$frame: true,
-	$frameElement: true,
-	$frames: true,
-	$innerHeight: true,
-	$innerWidth: true,
-	$outerHeight: true,
-	$outerWidth: true,
-	$pageXOffset: true,
-	$pageYOffset: true,
-	$parent: true,
-	$scrollLeft: true,
-	$scrollTop: true,
-	$scrollX: true,
-	$scrollY: true,
-	$self: true,
-	$webkitIndexedDB: true,
-	$webkitStorageInfo: true,
-	$window: true
-};
-var hasAutomationEqualityBug = (function () {
-	/* global window */
-	if (typeof window === 'undefined') { return false; }
-	for (var k in window) {
-		try {
-			if (!excludedKeys['$' + k] && has.call(window, k) && window[k] !== null && typeof window[k] === 'object') {
-				try {
-					equalsConstructorPrototype(window[k]);
-				} catch (e) {
-					return true;
-				}
-			}
-		} catch (e) {
-			return true;
-		}
-	}
-	return false;
-}());
-var equalsConstructorPrototypeIfNotBuggy = function (o) {
-	/* global window */
-	if (typeof window === 'undefined' || !hasAutomationEqualityBug) {
-		return equalsConstructorPrototype(o);
-	}
+	return Object(val);
+}
+
+function shouldUseNative() {
 	try {
-		return equalsConstructorPrototype(o);
-	} catch (e) {
-		return false;
-	}
-};
-
-var keysShim = function keys(object) {
-	var isObject = object !== null && typeof object === 'object';
-	var isFunction = toStr$1.call(object) === '[object Function]';
-	var isArguments$$1 = isArguments(object);
-	var isString = isObject && toStr$1.call(object) === '[object String]';
-	var theKeys = [];
-
-	if (!isObject && !isFunction && !isArguments$$1) {
-		throw new TypeError('Object.keys called on a non-object');
-	}
-
-	var skipProto = hasProtoEnumBug && isFunction;
-	if (isString && object.length > 0 && !has.call(object, 0)) {
-		for (var i = 0; i < object.length; ++i) {
-			theKeys.push(String(i));
+		if (!Object.assign) {
+			return false;
 		}
-	}
 
-	if (isArguments$$1 && object.length > 0) {
-		for (var j = 0; j < object.length; ++j) {
-			theKeys.push(String(j));
+		// Detect buggy property enumeration order in older V8 versions.
+
+		// https://bugs.chromium.org/p/v8/issues/detail?id=4118
+		var test1 = new String('abc');  // eslint-disable-line no-new-wrappers
+		test1[5] = 'de';
+		if (Object.getOwnPropertyNames(test1)[0] === '5') {
+			return false;
 		}
-	} else {
-		for (var name in object) {
-			if (!(skipProto && name === 'prototype') && has.call(object, name)) {
-				theKeys.push(String(name));
-			}
+
+		// https://bugs.chromium.org/p/v8/issues/detail?id=3056
+		var test2 = {};
+		for (var i = 0; i < 10; i++) {
+			test2['_' + String.fromCharCode(i)] = i;
 		}
-	}
-
-	if (hasDontEnumBug) {
-		var skipConstructor = equalsConstructorPrototypeIfNotBuggy(object);
-
-		for (var k = 0; k < dontEnums.length; ++k) {
-			if (!(skipConstructor && dontEnums[k] === 'constructor') && has.call(object, dontEnums[k])) {
-				theKeys.push(dontEnums[k]);
-			}
-		}
-	}
-	return theKeys;
-};
-
-keysShim.shim = function shimObjectKeys() {
-	if (Object.keys) {
-		var keysWorksWithArguments = (function () {
-			// Safari 5.0 bug
-			return (Object.keys(arguments) || '').length === 2;
-		}(1, 2));
-		if (!keysWorksWithArguments) {
-			var originalKeys = Object.keys;
-			Object.keys = function keys(object) {
-				if (isArguments(object)) {
-					return originalKeys(slice.call(object));
-				} else {
-					return originalKeys(object);
-				}
-			};
-		}
-	} else {
-		Object.keys = keysShim;
-	}
-	return Object.keys || keysShim;
-};
-
-var objectKeys = keysShim;
-
-var hasOwn = Object.prototype.hasOwnProperty;
-var toString = Object.prototype.toString;
-
-var foreach = function forEach (obj, fn, ctx) {
-    if (toString.call(fn) !== '[object Function]') {
-        throw new TypeError('iterator must be a function');
-    }
-    var l = obj.length;
-    if (l === +l) {
-        for (var i = 0; i < l; i++) {
-            fn.call(ctx, obj[i], i, obj);
-        }
-    } else {
-        for (var k in obj) {
-            if (hasOwn.call(obj, k)) {
-                fn.call(ctx, obj[k], k, obj);
-            }
-        }
-    }
-};
-
-var hasSymbols = typeof Symbol === 'function' && typeof Symbol() === 'symbol';
-
-var toStr$2 = Object.prototype.toString;
-
-var isFunction = function (fn) {
-	return typeof fn === 'function' && toStr$2.call(fn) === '[object Function]';
-};
-
-var arePropertyDescriptorsSupported = function () {
-	var obj = {};
-	try {
-		Object.defineProperty(obj, 'x', { enumerable: false, value: obj });
-        /* eslint-disable no-unused-vars, no-restricted-syntax */
-        for (var _ in obj) { return false; }
-        /* eslint-enable no-unused-vars, no-restricted-syntax */
-		return obj.x === obj;
-	} catch (e) { /* this is IE 8. */
-		return false;
-	}
-};
-var supportsDescriptors = Object.defineProperty && arePropertyDescriptorsSupported();
-
-var defineProperty = function (object, name, value, predicate) {
-	if (name in object && (!isFunction(predicate) || !predicate())) {
-		return;
-	}
-	if (supportsDescriptors) {
-		Object.defineProperty(object, name, {
-			configurable: true,
-			enumerable: false,
-			value: value,
-			writable: true
+		var order2 = Object.getOwnPropertyNames(test2).map(function (n) {
+			return test2[n];
 		});
-	} else {
-		object[name] = value;
-	}
-};
-
-var defineProperties = function (object, map) {
-	var predicates = arguments.length > 2 ? arguments[2] : {};
-	var props = objectKeys(map);
-	if (hasSymbols) {
-		props = props.concat(Object.getOwnPropertySymbols(map));
-	}
-	foreach(props, function (name) {
-		defineProperty(object, name, map[name], predicates[name]);
-	});
-};
-
-defineProperties.supportsDescriptors = !!supportsDescriptors;
-
-var defineProperties_1 = defineProperties;
-
-var toStr$3 = Object.prototype.toString;
-
-var isArguments$2 = function isArguments(value) {
-	var str = toStr$3.call(value);
-	var isArgs = str === '[object Arguments]';
-	if (!isArgs) {
-		isArgs = str !== '[object Array]' &&
-			value !== null &&
-			typeof value === 'object' &&
-			typeof value.length === 'number' &&
-			value.length >= 0 &&
-			toStr$3.call(value.callee) === '[object Function]';
-	}
-	return isArgs;
-};
-
-// modified from https://github.com/es-shims/es5-shim
-var has$1 = Object.prototype.hasOwnProperty;
-var toStr$4 = Object.prototype.toString;
-var slice$1 = Array.prototype.slice;
-
-var isEnumerable$1 = Object.prototype.propertyIsEnumerable;
-var hasDontEnumBug$1 = !isEnumerable$1.call({ toString: null }, 'toString');
-var hasProtoEnumBug$1 = isEnumerable$1.call(function () {}, 'prototype');
-var dontEnums$1 = [
-	'toString',
-	'toLocaleString',
-	'valueOf',
-	'hasOwnProperty',
-	'isPrototypeOf',
-	'propertyIsEnumerable',
-	'constructor'
-];
-var equalsConstructorPrototype$1 = function (o) {
-	var ctor = o.constructor;
-	return ctor && ctor.prototype === o;
-};
-var excludedKeys$1 = {
-	$console: true,
-	$external: true,
-	$frame: true,
-	$frameElement: true,
-	$frames: true,
-	$innerHeight: true,
-	$innerWidth: true,
-	$outerHeight: true,
-	$outerWidth: true,
-	$pageXOffset: true,
-	$pageYOffset: true,
-	$parent: true,
-	$scrollLeft: true,
-	$scrollTop: true,
-	$scrollX: true,
-	$scrollY: true,
-	$self: true,
-	$webkitIndexedDB: true,
-	$webkitStorageInfo: true,
-	$window: true
-};
-var hasAutomationEqualityBug$1 = (function () {
-	/* global window */
-	if (typeof window === 'undefined') { return false; }
-	for (var k in window) {
-		try {
-			if (!excludedKeys$1['$' + k] && has$1.call(window, k) && window[k] !== null && typeof window[k] === 'object') {
-				try {
-					equalsConstructorPrototype$1(window[k]);
-				} catch (e) {
-					return true;
-				}
-			}
-		} catch (e) {
-			return true;
+		if (order2.join('') !== '0123456789') {
+			return false;
 		}
-	}
-	return false;
-}());
-var equalsConstructorPrototypeIfNotBuggy$1 = function (o) {
-	/* global window */
-	if (typeof window === 'undefined' || !hasAutomationEqualityBug$1) {
-		return equalsConstructorPrototype$1(o);
-	}
-	try {
-		return equalsConstructorPrototype$1(o);
-	} catch (e) {
+
+		// https://bugs.chromium.org/p/v8/issues/detail?id=3056
+		var test3 = {};
+		'abcdefghijklmnopqrst'.split('').forEach(function (letter) {
+			test3[letter] = letter;
+		});
+		if (Object.keys(Object.assign({}, test3)).join('') !==
+				'abcdefghijklmnopqrst') {
+			return false;
+		}
+
+		return true;
+	} catch (err) {
+		// We don't expect any of the above to throw, but better to be safe.
 		return false;
 	}
-};
+}
 
-var keysShim$1 = function keys(object) {
-	var isObject = object !== null && typeof object === 'object';
-	var isFunction = toStr$4.call(object) === '[object Function]';
-	var isArguments = isArguments$2(object);
-	var isString = isObject && toStr$4.call(object) === '[object String]';
-	var theKeys = [];
+var objectAssign = shouldUseNative() ? Object.assign : function (target, source) {
+	var from;
+	var to = toObject(target);
+	var symbols;
 
-	if (!isObject && !isFunction && !isArguments) {
-		throw new TypeError('Object.keys called on a non-object');
-	}
+	for (var s = 1; s < arguments.length; s++) {
+		from = Object(arguments[s]);
 
-	var skipProto = hasProtoEnumBug$1 && isFunction;
-	if (isString && object.length > 0 && !has$1.call(object, 0)) {
-		for (var i = 0; i < object.length; ++i) {
-			theKeys.push(String(i));
-		}
-	}
-
-	if (isArguments && object.length > 0) {
-		for (var j = 0; j < object.length; ++j) {
-			theKeys.push(String(j));
-		}
-	} else {
-		for (var name in object) {
-			if (!(skipProto && name === 'prototype') && has$1.call(object, name)) {
-				theKeys.push(String(name));
+		for (var key in from) {
+			if (hasOwnProperty.call(from, key)) {
+				to[key] = from[key];
 			}
 		}
-	}
 
-	if (hasDontEnumBug$1) {
-		var skipConstructor = equalsConstructorPrototypeIfNotBuggy$1(object);
-
-		for (var k = 0; k < dontEnums$1.length; ++k) {
-			if (!(skipConstructor && dontEnums$1[k] === 'constructor') && has$1.call(object, dontEnums$1[k])) {
-				theKeys.push(dontEnums$1[k]);
-			}
-		}
-	}
-	return theKeys;
-};
-
-keysShim$1.shim = function shimObjectKeys() {
-	if (Object.keys) {
-		var keysWorksWithArguments = (function () {
-			// Safari 5.0 bug
-			return (Object.keys(arguments) || '').length === 2;
-		}(1, 2));
-		if (!keysWorksWithArguments) {
-			var originalKeys = Object.keys;
-			Object.keys = function keys(object) {
-				if (isArguments$2(object)) {
-					return originalKeys(slice$1.call(object));
-				} else {
-					return originalKeys(object);
-				}
-			};
-		}
-	} else {
-		Object.keys = keysShim$1;
-	}
-	return Object.keys || keysShim$1;
-};
-
-var objectKeys$2 = keysShim$1;
-
-/* eslint no-invalid-this: 1 */
-
-var ERROR_MESSAGE = 'Function.prototype.bind called on incompatible ';
-var slice$2 = Array.prototype.slice;
-var toStr$5 = Object.prototype.toString;
-var funcType = '[object Function]';
-
-var implementation = function bind(that) {
-    var target = this;
-    if (typeof target !== 'function' || toStr$5.call(target) !== funcType) {
-        throw new TypeError(ERROR_MESSAGE + target);
-    }
-    var args = slice$2.call(arguments, 1);
-
-    var bound;
-    var binder = function () {
-        if (this instanceof bound) {
-            var result = target.apply(
-                this,
-                args.concat(slice$2.call(arguments))
-            );
-            if (Object(result) === result) {
-                return result;
-            }
-            return this;
-        } else {
-            return target.apply(
-                that,
-                args.concat(slice$2.call(arguments))
-            );
-        }
-    };
-
-    var boundLength = Math.max(0, target.length - args.length);
-    var boundArgs = [];
-    for (var i = 0; i < boundLength; i++) {
-        boundArgs.push('$' + i);
-    }
-
-    bound = Function('binder', 'return function (' + boundArgs.join(',') + '){ return binder.apply(this,arguments); }')(binder);
-
-    if (target.prototype) {
-        var Empty = function Empty() {};
-        Empty.prototype = target.prototype;
-        bound.prototype = new Empty();
-        Empty.prototype = null;
-    }
-
-    return bound;
-};
-
-var functionBind = Function.prototype.bind || implementation;
-
-/* eslint complexity: [2, 17], max-statements: [2, 33] */
-var shams = function hasSymbols() {
-	if (typeof Symbol !== 'function' || typeof Object.getOwnPropertySymbols !== 'function') { return false; }
-	if (typeof Symbol.iterator === 'symbol') { return true; }
-
-	var obj = {};
-	var sym = Symbol('test');
-	var symObj = Object(sym);
-	if (typeof sym === 'string') { return false; }
-
-	if (Object.prototype.toString.call(sym) !== '[object Symbol]') { return false; }
-	if (Object.prototype.toString.call(symObj) !== '[object Symbol]') { return false; }
-
-	// temp disabled per https://github.com/ljharb/object.assign/issues/17
-	// if (sym instanceof Symbol) { return false; }
-	// temp disabled per https://github.com/WebReflection/get-own-property-symbols/issues/4
-	// if (!(symObj instanceof Symbol)) { return false; }
-
-	// if (typeof Symbol.prototype.toString !== 'function') { return false; }
-	// if (String(sym) !== Symbol.prototype.toString.call(sym)) { return false; }
-
-	var symVal = 42;
-	obj[sym] = symVal;
-	for (sym in obj) { return false; } // eslint-disable-line no-restricted-syntax
-	if (typeof Object.keys === 'function' && Object.keys(obj).length !== 0) { return false; }
-
-	if (typeof Object.getOwnPropertyNames === 'function' && Object.getOwnPropertyNames(obj).length !== 0) { return false; }
-
-	var syms = Object.getOwnPropertySymbols(obj);
-	if (syms.length !== 1 || syms[0] !== sym) { return false; }
-
-	if (!Object.prototype.propertyIsEnumerable.call(obj, sym)) { return false; }
-
-	if (typeof Object.getOwnPropertyDescriptor === 'function') {
-		var descriptor = Object.getOwnPropertyDescriptor(obj, sym);
-		if (descriptor.value !== symVal || descriptor.enumerable !== true) { return false; }
-	}
-
-	return true;
-};
-
-// modified from https://github.com/es-shims/es6-shim
-
-
-var canBeObject = function (obj) {
-	return typeof obj !== 'undefined' && obj !== null;
-};
-var hasSymbols$1 = shams();
-var toObject = Object;
-var push = functionBind.call(Function.call, Array.prototype.push);
-var propIsEnumerable = functionBind.call(Function.call, Object.prototype.propertyIsEnumerable);
-var originalGetSymbols = hasSymbols$1 ? Object.getOwnPropertySymbols : null;
-
-var implementation$3 = function assign(target, source1) {
-	if (!canBeObject(target)) { throw new TypeError('target must be an object'); }
-	var objTarget = toObject(target);
-	var s, source, i, props, syms, value, key;
-	for (s = 1; s < arguments.length; ++s) {
-		source = toObject(arguments[s]);
-		props = objectKeys$2(source);
-		var getSymbols = hasSymbols$1 && (Object.getOwnPropertySymbols || originalGetSymbols);
-		if (getSymbols) {
-			syms = getSymbols(source);
-			for (i = 0; i < syms.length; ++i) {
-				key = syms[i];
-				if (propIsEnumerable(source, key)) {
-					push(props, key);
+		if (getOwnPropertySymbols) {
+			symbols = getOwnPropertySymbols(from);
+			for (var i = 0; i < symbols.length; i++) {
+				if (propIsEnumerable.call(from, symbols[i])) {
+					to[symbols[i]] = from[symbols[i]];
 				}
 			}
 		}
-		for (i = 0; i < props.length; ++i) {
-			key = props[i];
-			value = source[key];
-			if (propIsEnumerable(source, key)) {
-				objTarget[key] = value;
-			}
-		}
 	}
-	return objTarget;
+
+	return to;
 };
-
-var lacksProperEnumerationOrder = function () {
-	if (!Object.assign) {
-		return false;
-	}
-	// v8, specifically in node 4.x, has a bug with incorrect property enumeration order
-	// note: this does not detect the bug unless there's 20 characters
-	var str = 'abcdefghijklmnopqrst';
-	var letters = str.split('');
-	var map = {};
-	for (var i = 0; i < letters.length; ++i) {
-		map[letters[i]] = letters[i];
-	}
-	var obj = Object.assign({}, map);
-	var actual = '';
-	for (var k in obj) {
-		actual += k;
-	}
-	return str !== actual;
-};
-
-var assignHasPendingExceptions = function () {
-	if (!Object.assign || !Object.preventExtensions) {
-		return false;
-	}
-	// Firefox 37 still has "pending exception" logic in its Object.assign implementation,
-	// which is 72% slower than our shim, and Firefox 40's native implementation.
-	var thrower = Object.preventExtensions({ 1: 2 });
-	try {
-		Object.assign(thrower, 'xy');
-	} catch (e) {
-		return thrower[1] === 'y';
-	}
-	return false;
-};
-
-var polyfill = function getPolyfill() {
-	if (!Object.assign) {
-		return implementation$3;
-	}
-	if (lacksProperEnumerationOrder()) {
-		return implementation$3;
-	}
-	if (assignHasPendingExceptions()) {
-		return implementation$3;
-	}
-	return Object.assign;
-};
-
-var shim = function shimAssign() {
-	var polyfill$$1 = polyfill();
-	defineProperties_1(
-		Object,
-		{ assign: polyfill$$1 },
-		{ assign: function () { return Object.assign !== polyfill$$1; } }
-	);
-	return polyfill$$1;
-};
-
-var polyfill$2 = polyfill();
-
-defineProperties_1(polyfill$2, {
-	getPolyfill: polyfill,
-	implementation: implementation$3,
-	shim: shim
-});
-
-var object_assign = polyfill$2;
 
 var lang_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var lang;!function(e){function i(e){if(typeCheck.isObject(e)){if(typeCheck.isFunction(Object.keys))return Object.keys(e);var t=[];for(var n in e)t.push(n);return t}return[]}function t(n,r){typeCheck.isArray(n)?n.forEach(r):typeCheck.isObject(n)&&i(n).forEach(function(e,t){r(n[e],e);});}e.keys=i, e.values=function(e){if(typeCheck.isObject(e)){if(typeCheck.isFunction(Object.values))return Object.values(e);var t=[];for(var n in e)t.push(e[n]);return t}return[]}, e.assign=function(e,t,n,r){return r&&r.length?(r.unshift(n||{}), r.unshift(t||{}), objectAssign.apply(void 0,[e].concat(r))):n?objectAssign(e,t||{},n):objectAssign(e,t||{})}, e.omit=function(t){for(var n=[],e=1;e<arguments.length;e++)n[e-1]=arguments[e];if(typeCheck.isObject(t)){var r={};return i(t).forEach(function(e){n.indexOf(e)<0&&(r[e]=t[e]);}), r}return t}, e.hasField=function(e){return 0<i(e).length}, e.forIn=t, e.find=function(e,n){var r;t(e,function(e,t){return!(r||n(e,t)&&(r=e, 1))});}, e.getParentClass=function(e){var t=Reflect.getPrototypeOf(e.prototype);return typeCheck.isClass(t)?t:t.constructor}, e.first=function(e){return typeCheck.isArray(e)&&e.length?e[0]:null}, e.last=function(e){return typeCheck.isArray(e)&&e.length?e[e.length-1]:null};}(lang=exports.lang||(exports.lang={}));
 
-
-object_assign.shim();
-var lang;
-(function (lang) {
-    /**
-     * get object keys.
-     *
-     * @param {*} target
-     * @returns {string[]}
-     */
-    function keys(target) {
-        if (typeCheck.isObject(target)) {
-            if (typeCheck.isFunction(Object.keys)) {
-                return Object.keys(target);
-            }
-            else {
-                var keys_1 = [];
-                for (var name_1 in target) {
-                    keys_1.push(name_1);
-                }
-                return keys_1;
-            }
-        }
-        return [];
-    }
-    lang.keys = keys;
-    /**
-     * values of target object.
-     *
-     * @export
-     * @param {*} target
-     * @returns {any[]}
-     */
-    function values(target) {
-        if (typeCheck.isObject(target)) {
-            if (typeCheck.isFunction(Object.values)) {
-                return Object.values(target);
-            }
-            else {
-                var values_1 = [];
-                for (var name_2 in target) {
-                    values_1.push(target[name_2]);
-                }
-                return values_1;
-            }
-        }
-        return [];
-    }
-    lang.values = values;
-    /**
-     * assign
-     *
-     * @export
-     * @template T
-     * @param {T} target
-     * @param {...any[]} source
-     * @returns {T}
-     */
-    function assign(target, source1, source2, sources) {
-        if (sources && sources.length) {
-            sources.unshift(source2 || {});
-            sources.unshift(source1 || {});
-            return Object.assign.apply(Object, [target].concat(sources));
-        }
-        else if (source2) {
-            return Object.assign(target, source1 || {}, source2);
-        }
-        else {
-            return Object.assign(target, source1 || {});
-        }
-    }
-    lang.assign = assign;
-    /**
-     * create an new object from target object omit some field.
-     *
-     * @export
-     * @param {ObjectMap<any>} target
-     * @param {...string[]} fields
-     * @returns {*}
-     */
-    function omit(target) {
-        var fields = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            fields[_i - 1] = arguments[_i];
-        }
-        if (typeCheck.isObject(target)) {
-            var result_1 = {};
-            keys(target).forEach(function (key) {
-                if (fields.indexOf(key) < 0) {
-                    result_1[key] = target[key];
-                }
-            });
-            return result_1;
-        }
-        else {
-            return target;
-        }
-    }
-    lang.omit = omit;
-    /**
-     * object has field or not.
-     *
-     * @export
-     * @param {ObjectMap<any>} target
-     * @returns
-     */
-    function hasField(target) {
-        return keys(target).length > 0;
-    }
-    lang.hasField = hasField;
-    /**
-     * for in opter for object or array.
-     *
-     * @export
-     * @template T
-     * @param {(ObjectMap<T> | T[])} target
-     * @param {(item: T, idx?: number|string) => void|boolean} iterator
-     */
-    function forIn(target, iterator) {
-        if (typeCheck.isArray(target)) {
-            target.forEach(iterator);
-        }
-        else if (typeCheck.isObject(target)) {
-            keys(target).forEach(function (key, idx) {
-                iterator(target[key], key);
-            });
-        }
-    }
-    lang.forIn = forIn;
-    /**
-     * find
-     *
-     * @template T
-     * @param {(ObjectMap<T> | T[])} target
-     * @param {((item: T, idx?: number | string) => boolean)} express
-     */
-    function find(target, express) {
-        var item;
-        forIn(target, function (it, idx) {
-            if (!item) {
-                if (express(it, idx)) {
-                    item = it;
-                    return false;
-                }
-                return true;
-            }
-            else {
-                return false;
-            }
-        });
-    }
-    lang.find = find;
-    /**
-     * get target type parent class.
-     *
-     * @export
-     * @param {Type<any>} target
-     * @returns {Type<any>}
-     */
-    function getParentClass(target) {
-        var p = Reflect.getPrototypeOf(target.prototype);
-        return typeCheck.isClass(p) ? p : p.constructor;
-    }
-    lang.getParentClass = getParentClass;
-    /**
-     * first.
-     *
-     * @export
-     * @template T
-     * @param {T[]} list
-     * @returns {T}
-     */
-    function first(list) {
-        if (typeCheck.isArray(list) && list.length) {
-            return list[0];
-        }
-        return null;
-    }
-    lang.first = first;
-    /**
-     * last.
-     *
-     * @export
-     * @template T
-     * @param {T[]} list
-     * @returns {T}
-     */
-    function last(list) {
-        if (typeCheck.isArray(list) && list.length) {
-            return list[list.length - 1];
-        }
-        return null;
-    }
-    lang.last = last;
-})(lang = exports.lang || (exports.lang = {}));
 
 
 });
@@ -811,385 +120,8 @@ unwrapExports(lang_1);
 var lang_2 = lang_1.lang;
 
 var typeCheck = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});function isFunction(t){return!!t&&"function"==typeof t}function isAbstractDecoratorClass(t){return!!isFunction(t)&&!!Reflect.hasOwnMetadata("@Abstract",t)}function getClassName(t){return isFunction(t)?/^[a-z]$/.test(t.name)&&t.classAnnations?t.classAnnations.name:t.name:""}function isClass(t){if(!isFunction(t))return!1;if(t.prototype){if(!t.name||"Object"===t.name)return!1;if(Reflect.hasOwnMetadata("@Abstract",t))return!1;var e=t;if(/^[a-z]$/.test(e.name))return!(!e.classAnnations||!e.classAnnations.name);if(e.classAnnations&&isString(e.classAnnations.name))return!0;if(!/^[A-Z@]/.test(t.name))return!1;if(!isNodejsEnv()&&/MSIE [6-9]/.test(navigator.userAgent))return!0;try{return t.arguments&&t.caller, !1}catch(t){return!0}}return!1}function isNodejsEnv(){return"undefined"!=typeof process&&void 0!==process.versions.node}function isToken(t){return!!t&&!!(isString(t)||isSymbol(t)||isClass(t)||isObject(t)&&t instanceof Registration_1.Registration)}function isPromise(t){return!!t&&!(!isFunction(t.then)||!isFunction(t.catch))}function isObservable(t){return!(!t&&!isObject(t))&&!(!isFunction(t.subscribe)||!isFunction(t.toPromise))}function isBaseObject(t){return!!t&&!(!t.constructor||"Object"!==t.constructor.name)}function isMetadataObject(t,e,s){return!!t&&(!(isBaseType(t)||isSymbol(t)||t instanceof Registration_1.Registration||t instanceof RegExp||t instanceof Date)&&((!t.constructor||"Object"===t.constructor.name)&&(e=e||[], s&&(e=s.concat(e)), !e.length||lang_1.lang.keys(t).some(function(t){return 0<e.indexOf(t)}))))}function isClassMetadata(t,e){return isMetadataObject(t,["singleton","provide","alias","type"],e)}function isParamMetadata(t,e){return isMetadataObject(t,["type","provider","index"],e)}function isParamPropMetadata(t,e){return isMetadataObject(t,["type","provider","index"],e)}function isPropertyMetadata(t,e){return isMetadataObject(t,["type","provider"],e)}function isString(t){return"string"==typeof t}function isBoolean(t){return"boolean"==typeof t||!0===t||!1===t}function isNumber(t){return"number"==typeof t}function isUndefined(t){return void 0===t||void 0===t}function isNull(t){return null===t}function isArray(t){return Array.isArray(t)}function isObject(t){var e=typeof t;return null!=t&&("object"===e||"function"===e)}function isDate(t){return isObject(t)&&t instanceof Date}function isSymbol(t){return"symbol"==typeof t||isObject(t)&&/^Symbol\(/.test(t.toString())}function isRegExp(t){return t&&t instanceof RegExp}function isBaseType(t){return isNull(t)||isUndefined(t)||isBoolean(t)||isString(t)||isNumber(t)}exports.isFunction=isFunction, exports.isAbstractDecoratorClass=isAbstractDecoratorClass, exports.getClassName=getClassName, exports.isClass=isClass, exports.isNodejsEnv=isNodejsEnv, exports.isToken=isToken, exports.isPromise=isPromise, exports.isObservable=isObservable, exports.isBaseObject=isBaseObject, exports.isMetadataObject=isMetadataObject, exports.isClassMetadata=isClassMetadata, exports.isParamMetadata=isParamMetadata, exports.isParamPropMetadata=isParamPropMetadata, exports.isPropertyMetadata=isPropertyMetadata, exports.isString=isString, exports.isBoolean=isBoolean, exports.isNumber=isNumber, exports.isUndefined=isUndefined, exports.isNull=isNull, exports.isArray=isArray, exports.isObject=isObject, exports.isDate=isDate, exports.isSymbol=isSymbol, exports.isRegExp=isRegExp, exports.isBaseType=isBaseType;
 
-
-/**
- * check target is function or not.
- *
- * @export
- * @param {*} target
- * @returns
- */
-function isFunction(target) {
-    if (!target) {
-        return false;
-    }
-    return typeof target === 'function';
-}
-exports.isFunction = isFunction;
-/**
- * check Abstract class with @Abstract or not
- *
- * @export
- * @param {*} target
- * @returns {target is AbstractType<any>}
- */
-function isAbstractDecoratorClass(target) {
-    if (!isFunction(target)) {
-        return false;
-    }
-    if (Reflect.hasOwnMetadata('@Abstract', target)) {
-        return true;
-    }
-    return false;
-}
-exports.isAbstractDecoratorClass = isAbstractDecoratorClass;
-/**
- * get class name.
- *
- * @export
- * @param {AbstractType<any>} classType
- * @returns {string}
- */
-function getClassName(classType) {
-    if (!isFunction(classType)) {
-        return '';
-    }
-    if (/^[a-z]$/.test(classType.name)) {
-        return classType.classAnnations ? classType.classAnnations.name : classType.name;
-    }
-    return classType.name;
-}
-exports.getClassName = getClassName;
-/**
- * check target is class or not.
- *
- * @export
- * @param {*} target
- * @returns
- */
-function isClass(target) {
-    if (!isFunction(target)) {
-        return false;
-    }
-    if (target.prototype) {
-        if (!target.name || target.name === 'Object') {
-            return false;
-        }
-        if (Reflect.hasOwnMetadata('@Abstract', target)) {
-            return false;
-        }
-        var type = target;
-        // for uglify
-        if (/^[a-z]$/.test(type.name)) {
-            if (type.classAnnations && type.classAnnations.name) {
-                return true;
-            }
-            else {
-                return false;
-            }
-        }
-        else {
-            if (type.classAnnations && isString(type.classAnnations.name)) {
-                return true;
-            }
-            if (!/^[A-Z@]/.test(target.name)) {
-                return false;
-            }
-        }
-        // for IE 8, 9
-        if (!isNodejsEnv() && /MSIE [6-9]/.test(navigator.userAgent)) {
-            return true;
-        }
-        try {
-            target.arguments && target.caller;
-            return false;
-        }
-        catch (e) {
-            return true;
-        }
-    }
-    return false;
-}
-exports.isClass = isClass;
-/**
- * is run in nodejs or not.
- *
- * @export
- * @returns {boolean}
- */
-function isNodejsEnv() {
-    return (typeof process !== 'undefined') && (typeof process.versions.node !== 'undefined');
-}
-exports.isNodejsEnv = isNodejsEnv;
-/**
- * check target is token or not.
- *
- * @export
- * @param {*} target
- * @returns {target is Token<any>}
- */
-function isToken(target) {
-    if (!target) {
-        return false;
-    }
-    if (isString(target) || isSymbol(target) || isClass(target) || (isObject(target) && target instanceof Registration_1.Registration)) {
-        return true;
-    }
-    return false;
-}
-exports.isToken = isToken;
-/**
- * is target promise or not.
- *
- * @export
- * @param {*} target
- * @returns {target is Promise<any>}
- */
-function isPromise(target) {
-    if (!target) {
-        return false;
-    }
-    if (isFunction(target.then) && isFunction(target.catch)) {
-        return true;
-    }
-    return false;
-}
-exports.isPromise = isPromise;
-/**
- * is target rxjs observable or not.
- *
- * @export
- * @param {*} target
- * @returns {boolean}
- */
-function isObservable(target) {
-    if (!target && !isObject(target)) {
-        return false;
-    }
-    if (isFunction(target.subscribe) && isFunction(target.toPromise)) {
-        return true;
-    }
-    return false;
-}
-exports.isObservable = isObservable;
-/**
- * is target base object or not.
- * eg. {}, have not self constructor;
- * @export
- * @param {*} target
- * @returns {target is Promise<any>}
- */
-function isBaseObject(target) {
-    if (!target) {
-        return false;
-    }
-    if (target.constructor && target.constructor.name === 'Object') {
-        return true;
-    }
-    return false;
-}
-exports.isBaseObject = isBaseObject;
-/**
- * is metadata object or not.
- *
- * @export
- * @param {any} target
- * @param {string[]} [props]
- * @param {string[]} [extendsProps]
- * @returns {boolean}
- */
-function isMetadataObject(target, props, extendsProps) {
-    if (!target) {
-        return false;
-    }
-    if (isBaseType(target) || isSymbol(target) || target instanceof Registration_1.Registration || target instanceof RegExp || target instanceof Date) {
-        return false;
-    }
-    if (target.constructor && target.constructor.name !== 'Object') {
-        return false;
-    }
-    props = props || [];
-    if (extendsProps) {
-        props = extendsProps.concat(props);
-    }
-    if (props.length) {
-        return lang_1.lang.keys(target).some(function (n) { return props.indexOf(n) > 0; });
-    }
-    return true;
-}
-exports.isMetadataObject = isMetadataObject;
-/**
- * check object is class metadata or not.
- *
- * @export
- * @param {any} target
- * @param {string[]} [extendsProps]
- * @returns {boolean}
- */
-function isClassMetadata(target, extendsProps) {
-    return isMetadataObject(target, ['singleton', 'provide', 'alias', 'type'], extendsProps);
-}
-exports.isClassMetadata = isClassMetadata;
-/**
- * check object is param metadata or not.
- *
- * @export
- * @param {any} target
- * @param {string[]} [extendsProps]
- * @returns {boolean}
- */
-function isParamMetadata(target, extendsProps) {
-    return isMetadataObject(target, ['type', 'provider', 'index'], extendsProps);
-}
-exports.isParamMetadata = isParamMetadata;
-/**
- * check object is param prop metadata or not.
- *
- * @export
- * @param {any} target
- * @param {string[]} [extendsProps]
- * @returns {boolean}
- */
-function isParamPropMetadata(target, extendsProps) {
-    return isMetadataObject(target, ['type', 'provider', 'index'], extendsProps);
-}
-exports.isParamPropMetadata = isParamPropMetadata;
-/**
- * check object is property metadata or not.
- *
- * @export
- * @param {any} target
- * @param {string[]} [extendsProps]
- * @returns {boolean}
- */
-function isPropertyMetadata(target, extendsProps) {
-    return isMetadataObject(target, ['type', 'provider'], extendsProps);
-}
-exports.isPropertyMetadata = isPropertyMetadata;
-/**
- * check target is string or not.
- *
- * @export
- * @param {*} target
- * @returns {target is string}
- */
-function isString(target) {
-    return typeof target === 'string';
-}
-exports.isString = isString;
-/**
- * check target is boolean or not.
- *
- * @export
- * @param {*} target
- * @returns {target is boolean}
- */
-function isBoolean(target) {
-    return typeof target === 'boolean' || (target === true || target === false);
-}
-exports.isBoolean = isBoolean;
-/**
- * check target is number or not.
- *
- * @export
- * @param {*} target
- * @returns {target is number}
- */
-function isNumber(target) {
-    return typeof target === 'number';
-}
-exports.isNumber = isNumber;
-/**
- * check target is undefined or not.
- *
- * @export
- * @param {*} target
- * @returns {target is undefined}
- */
-function isUndefined(target) {
-    return typeof target === 'undefined' || target === undefined;
-}
-exports.isUndefined = isUndefined;
-/**
- * check target is unll or not.
- *
- * @export
- * @param {*} target
- * @returns {target is null}
- */
-function isNull(target) {
-    return target === null;
-}
-exports.isNull = isNull;
-/**
- * check target is array or not.
- *
- * @export
- * @param {*} target
- * @returns {target is Array<any>}
- */
-function isArray(target) {
-    return Array.isArray(target);
-}
-exports.isArray = isArray;
-/**
- * check target is object or not.
- *
- * @export
- * @param {*} target
- * @returns {target is object}
- */
-function isObject(target) {
-    var type = typeof target;
-    return target != null && (type === 'object' || type === 'function');
-}
-exports.isObject = isObject;
-/**
- * check target is date or not.
- *
- * @export
- * @param {*} target
- * @returns {target is Date}
- */
-function isDate(target) {
-    return isObject(target) && target instanceof Date;
-}
-exports.isDate = isDate;
-/**
- * check target is symbol or not.
- *
- * @export
- * @param {*} target
- * @returns {target is Symbol}
- */
-function isSymbol(target) {
-    return typeof target === 'symbol' || (isObject(target) && /^Symbol\(/.test(target.toString()));
-}
-exports.isSymbol = isSymbol;
-/**
- * check target is regexp or not.
- *
- * @export
- * @param {*} target
- * @returns {target is RegExp}
- */
-function isRegExp(target) {
-    return target && target instanceof RegExp;
-}
-exports.isRegExp = isRegExp;
-/**
- * is base type or not.
- *
- * @export
- * @param {*} target
- * @returns {boolean}
- */
-function isBaseType(target) {
-    return isNull(target) || isUndefined(target) || isBoolean(target) || isString(target) || isNumber(target);
-}
-exports.isBaseType = isBaseType;
 
 
 });
@@ -1222,136 +154,8 @@ var typeCheck_24 = typeCheck.isRegExp;
 var typeCheck_25 = typeCheck.isBaseType;
 
 var MapSet_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var ObjectMapSet=function(){function e(){this.valueMap={}, this.keyMap={};}return e.prototype.clear=function(){this.valueMap={}, this.keyMap={};}, e.prototype.getTypeKey=function(e){return typeCheck.isString(e)?e:typeCheck.isFunction(e)?e.name:e.toString()}, e.prototype.keys=function(){return lang_1.lang.values(this.keyMap)}, e.prototype.values=function(){return lang_1.lang.values(this.valueMap)}, e.prototype.delete=function(e){var t=this.getTypeKey(e).toString();try{return delete this.keyMap[t], delete this.valueMap[t], !0}catch(e){return!1}}, e.prototype.forEach=function(n,e){var a=this;lang_1.lang.forIn(this.keyMap,function(e,t){n(a.valueMap[t],e,a);});}, e.prototype.get=function(e){var t=this.getTypeKey(e);return this.valueMap[t]}, e.prototype.has=function(e){var t=this.getTypeKey(e);return!typeCheck.isUndefined(this.keyMap[t])}, e.prototype.set=function(e,t){var n=this.getTypeKey(e);return this.keyMap[n]=e, this.valueMap[n]=t, this}, Object.defineProperty(e.prototype,"size",{get:function(){return lang_1.lang.keys(this.keyMap).length},enumerable:!0,configurable:!0}), e.classAnnations={name:"ObjectMapSet",params:{constructor:[],clear:[],getTypeKey:["key"],keys:[],values:[],delete:["key"],forEach:["callbackfn","thisArg"],get:["key"],has:["key"],set:["key","value"]}}, e}();exports.ObjectMapSet=ObjectMapSet;var MapSet=function(){function e(){this.map=typeCheck.isClass(Map)?new Map:new ObjectMapSet;}return e.prototype.keys=function(){return this.map.keys()}, e.prototype.values=function(){return this.map.values()}, e.prototype.clear=function(){this.map.clear();}, e.prototype.delete=function(e){return this.map.delete(e)}, e.prototype.forEach=function(e,t){this.map.forEach(e,t);}, e.prototype.get=function(e){return this.map.get(e)}, e.prototype.has=function(e){return this.map.has(e)}, e.prototype.set=function(e,t){return this.map.set(e,t), this}, Object.defineProperty(e.prototype,"size",{get:function(){return this.map.size},enumerable:!0,configurable:!0}), e.classAnnations={name:"MapSet",params:{constructor:[],keys:[],values:[],clear:[],delete:["key"],forEach:["callbackfn","thisArg"],get:["key"],has:["key"],set:["key","value"]}}, e}();exports.MapSet=MapSet;
 
-
-/**
- * object map set.
- *
- * @export
- * @class MapSet
- * @template TKey
- * @template TVal
- */
-var ObjectMapSet = /** @class */ (function () {
-    function ObjectMapSet() {
-        this.valueMap = {};
-        this.keyMap = {};
-    }
-    ObjectMapSet.prototype.clear = function () {
-        this.valueMap = {};
-        this.keyMap = {};
-    };
-    ObjectMapSet.prototype.getTypeKey = function (key) {
-        var strKey = '';
-        if (typeCheck.isString(key)) {
-            strKey = key;
-        }
-        else if (typeCheck.isFunction(key)) {
-            strKey = key.name;
-        }
-        else {
-            strKey = key.toString();
-        }
-        return strKey;
-    };
-    ObjectMapSet.prototype.keys = function () {
-        return lang_1.lang.values(this.keyMap);
-    };
-    ObjectMapSet.prototype.values = function () {
-        return lang_1.lang.values(this.valueMap);
-    };
-    ObjectMapSet.prototype.delete = function (key) {
-        var strkey = this.getTypeKey(key).toString();
-        try {
-            delete this.keyMap[strkey];
-            delete this.valueMap[strkey];
-            return true;
-        }
-        catch (_a) {
-            return false;
-        }
-    };
-    ObjectMapSet.prototype.forEach = function (callbackfn, thisArg) {
-        var _this = this;
-        lang_1.lang.forIn(this.keyMap, function (val, name) {
-            callbackfn(_this.valueMap[name], val, _this);
-        });
-    };
-    ObjectMapSet.prototype.get = function (key) {
-        var strKey = this.getTypeKey(key);
-        return this.valueMap[strKey];
-    };
-    ObjectMapSet.prototype.has = function (key) {
-        var strKey = this.getTypeKey(key);
-        return !typeCheck.isUndefined(this.keyMap[strKey]);
-    };
-    ObjectMapSet.prototype.set = function (key, value) {
-        var strKey = this.getTypeKey(key);
-        this.keyMap[strKey] = key;
-        this.valueMap[strKey] = value;
-        return this;
-    };
-    Object.defineProperty(ObjectMapSet.prototype, "size", {
-        get: function () {
-            return lang_1.lang.keys(this.keyMap).length;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ObjectMapSet.classAnnations = { "name": "ObjectMapSet", "params": { "constructor": [], "clear": [], "getTypeKey": ["key"], "keys": [], "values": [], "delete": ["key"], "forEach": ["callbackfn", "thisArg"], "get": ["key"], "has": ["key"], "set": ["key", "value"] } };
-    return ObjectMapSet;
-}());
-exports.ObjectMapSet = ObjectMapSet;
-/**
- * map set.
- *
- * @export
- * @class MapSet
- * @template TKey
- * @template TVal
- */
-var MapSet = /** @class */ (function () {
-    function MapSet() {
-        this.map = typeCheck.isClass(Map) ? new Map() : new ObjectMapSet();
-    }
-    MapSet.prototype.keys = function () {
-        return this.map.keys();
-    };
-    MapSet.prototype.values = function () {
-        return this.map.values();
-    };
-    MapSet.prototype.clear = function () {
-        this.map.clear();
-    };
-    MapSet.prototype.delete = function (key) {
-        return this.map.delete(key);
-    };
-    MapSet.prototype.forEach = function (callbackfn, thisArg) {
-        var map = this.map;
-        map.forEach(callbackfn, thisArg);
-    };
-    MapSet.prototype.get = function (key) {
-        return this.map.get(key);
-    };
-    MapSet.prototype.has = function (key) {
-        return this.map.has(key);
-    };
-    MapSet.prototype.set = function (key, value) {
-        this.map.set(key, value);
-        return this;
-    };
-    Object.defineProperty(MapSet.prototype, "size", {
-        get: function () {
-            return this.map.size;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    MapSet.classAnnations = { "name": "MapSet", "params": { "constructor": [], "keys": [], "values": [], "clear": [], "delete": ["key"], "forEach": ["callbackfn", "thisArg"], "get": ["key"], "has": ["key"], "set": ["key", "value"] } };
-    return MapSet;
-}());
-exports.MapSet = MapSet;
 
 
 });
@@ -1361,120 +165,8 @@ var MapSet_2 = MapSet_1.ObjectMapSet;
 var MapSet_3 = MapSet_1.MapSet;
 
 var PromiseUtil_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var PromiseUtil,Defer=function(){function t(){var t=this;this.promise=new Promise(function(e,r){t.resolve=e, t.reject=r;});}return t.create=function(e){var r=new t;return e&&(r.promise=r.promise.then(e)), r}, t.classAnnations={name:"Defer",params:{create:["then"],constructor:[]}}, t}();exports.Defer=Defer, function(e){function o(e,n,r){var o=new Defer,i=Promise.resolve(r),c=e?e.length:0;return c?(e.forEach(function(r,t){i=i.then(function(e){return typeCheck.isFunction(r)?r(e):r}).then(function(e){return!1===n(e)?(o.resolve("complete"), Promise.reject("complete")):t===c-1?(o.resolve("complete"), Promise.reject("complete")):e});}), i.catch(function(e){return e})):o.reject("array empty."), o.promise}e.forEach=o, e.step=function(e){var t=Promise.resolve(null);return e.forEach(function(r){t=t.then(function(e){return typeCheck.isFunction(r)?r(e):r});}), t}, e.find=function(e,r,t){var n=new Defer;return o(e,function(e){return!r(e)||(n.resolve(e), !1)},t).then(function(){return n.resolve(null)}).catch(function(){n.resolve(null);}), n.promise};}(PromiseUtil=exports.PromiseUtil||(exports.PromiseUtil={}));
 
-/**
- * defer
- *
- * @export
- * @class Defer
- * @template T
- */
-var Defer = /** @class */ (function () {
-    function Defer() {
-        var _this = this;
-        this.promise = new Promise(function (resolve, reject) {
-            _this.resolve = resolve;
-            _this.reject = reject;
-        });
-    }
-    Defer.create = function (then) {
-        var defer = new Defer();
-        if (then) {
-            defer.promise = defer.promise.then(then);
-            return defer;
-        }
-        else {
-            return defer;
-        }
-    };
-    Defer.classAnnations = { "name": "Defer", "params": { "create": ["then"], "constructor": [] } };
-    return Defer;
-}());
-exports.Defer = Defer;
-var PromiseUtil;
-(function (PromiseUtil) {
-    /**
-     * foreach opter for promises.
-     *
-     * @export
-     * @template T
-     * @param {((T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[])} promises
-     * @param {Express<T, any>} express
-     * @param {T} [defVal]
-     * @returns
-     */
-    function forEach(promises, express, defVal) {
-        var defer = new Defer();
-        var pf = Promise.resolve(defVal);
-        var length = promises ? promises.length : 0;
-        if (length) {
-            promises.forEach(function (p, idx) {
-                pf = pf.then(function (v) { return typeCheck.isFunction(p) ? p(v) : p; })
-                    .then(function (data) {
-                    if (express(data) === false) {
-                        defer.resolve('complete');
-                        return Promise.reject('complete');
-                    }
-                    else if (idx === length - 1) {
-                        defer.resolve('complete');
-                        return Promise.reject('complete');
-                    }
-                    return data;
-                });
-            });
-            pf.catch(function (err) {
-                return err;
-            });
-        }
-        else {
-            defer.reject('array empty.');
-        }
-        return defer.promise;
-    }
-    PromiseUtil.forEach = forEach;
-    /**
-     * run promise step by step.
-     *
-     * @export
-     * @template T
-     * @param {((T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[])} promises
-     * @returns
-     */
-    function step(promises) {
-        var result = Promise.resolve(null);
-        promises.forEach(function (p) {
-            result = result.then(function (v) { return typeCheck.isFunction(p) ? p(v) : p; });
-        });
-        return result;
-    }
-    PromiseUtil.step = step;
-    /**
-     * find first validate value from promises.
-     *
-     * @export
-     * @template T
-     * @param {(...(T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[])} promises
-     * @param {Express<T, boolean>} validate
-     * @returns
-     */
-    function find(promises, filter, defVal) {
-        var defer = new Defer();
-        forEach(promises, function (val) {
-            if (filter(val)) {
-                defer.resolve(val);
-                return false;
-            }
-            return true;
-        }, defVal)
-            .then(function () { return defer.resolve(null); })
-            .catch(function () {
-            defer.resolve(null);
-        });
-        return defer.promise;
-    }
-    PromiseUtil.find = find;
-})(PromiseUtil = exports.PromiseUtil || (exports.PromiseUtil = {}));
 
 
 });
@@ -1484,12 +176,8 @@ var PromiseUtil_2 = PromiseUtil_1.Defer;
 var PromiseUtil_3 = PromiseUtil_1.PromiseUtil;
 
 var utils = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});tslib_1.__exportStar(typeCheck,exports), tslib_1.__exportStar(MapSet_1,exports), tslib_1.__exportStar(lang_1,exports), tslib_1.__exportStar(PromiseUtil_1,exports);
 
-tslib_1.__exportStar(typeCheck, exports);
-tslib_1.__exportStar(MapSet_1, exports);
-tslib_1.__exportStar(lang_1, exports);
-tslib_1.__exportStar(PromiseUtil_1, exports);
 
 
 });
@@ -1497,82 +185,8 @@ tslib_1.__exportStar(PromiseUtil_1, exports);
 unwrapExports(utils);
 
 var Registration_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var Registration=function(){function i(t,s){if(this.type="Reg", t instanceof i){this.classType=t.getProvide();var e=t.getDesc();this.desc=e&&s&&e!==s?e+"_"+s:s;}else this.classType=t, this.desc=s;}return i.prototype.getProvide=function(){return this.classType}, i.prototype.getClass=function(){return utils.isClass(this.classType)?this.classType:null}, i.prototype.getDesc=function(){return this.desc}, i.prototype.toString=function(){var t="";return utils.isFunction(this.classType)?t="{"+utils.getClassName(this.classType)+"}":this.classType&&(t=this.classType.toString()), (this.type+" "+t+" "+this.desc).trim()}, i.classAnnations={name:"Registration",params:{constructor:["provideType","desc"],getProvide:[],getClass:[],getDesc:[],toString:[]}}, i}();exports.Registration=Registration;
 
-/**
- * inject token.
- * @export
- * @class Registration
- * @template T
- */
-var Registration = /** @class */ (function () {
-    /**
-     * Creates an instance of Registration.
-     * @param {(Token<T> | Token<any>)} provideType
-     * @param {string} desc
-     * @memberof Registration
-     */
-    function Registration(provideType, desc) {
-        this.type = 'Reg';
-        if (provideType instanceof Registration) {
-            this.classType = provideType.getProvide();
-            var pdec = provideType.getDesc();
-            if (pdec && desc && pdec !== desc) {
-                this.desc = pdec + '_' + desc;
-            }
-            else {
-                this.desc = desc;
-            }
-        }
-        else {
-            this.classType = provideType;
-            this.desc = desc;
-        }
-    }
-    Registration.prototype.getProvide = function () {
-        return this.classType;
-    };
-    /**
-     * get class.
-     *
-     * @returns
-     * @memberof Registration
-     */
-    Registration.prototype.getClass = function () {
-        if (utils.isClass(this.classType)) {
-            return this.classType;
-        }
-        return null;
-    };
-    /**
-     * get desc.
-     *
-     * @returns
-     * @memberof Registration
-     */
-    Registration.prototype.getDesc = function () {
-        return this.desc;
-    };
-    /**
-     * to string.
-     *
-     * @returns {string}
-     * @memberof Registration
-     */
-    Registration.prototype.toString = function () {
-        var name = '';
-        if (utils.isFunction(this.classType)) {
-            name = "{" + utils.getClassName(this.classType) + "}";
-        }
-        else if (this.classType) {
-            name = this.classType.toString();
-        }
-        return (this.type + " " + name + " " + this.desc).trim();
-    };
-    Registration.classAnnations = { "name": "Registration", "params": { "constructor": ["provideType", "desc"], "getProvide": [], "getClass": [], "getDesc": [], "toString": [] } };
-    return Registration;
-}());
-exports.Registration = Registration;
 
 
 });
@@ -1581,26 +195,8 @@ unwrapExports(Registration_1);
 var Registration_2 = Registration_1.Registration;
 
 var InjectToken_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var InjectToken=function(t){function e(e){return t.call(this,e,"")||this}return tslib_1.__extends(e,t), e.classAnnations={name:"InjectToken",params:{constructor:["desc"]}}, e}(Registration_1.Registration);exports.InjectToken=InjectToken;
 
-
-/**
- * inject token.
- *
- * @export
- * @class InjectToken
- * @extends {Registration<T>}
- * @template T
- */
-var InjectToken = /** @class */ (function (_super) {
-    tslib_1.__extends(InjectToken, _super);
-    function InjectToken(desc) {
-        return _super.call(this, desc, '') || this;
-    }
-    InjectToken.classAnnations = { "name": "InjectToken", "params": { "constructor": ["desc"] } };
-    return InjectToken;
-}(Registration_1.Registration));
-exports.InjectToken = InjectToken;
 
 
 });
@@ -1609,13 +205,8 @@ unwrapExports(InjectToken_1);
 var InjectToken_2 = InjectToken_1.InjectToken;
 
 var IContainer = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.ContainerToken=new InjectToken_1.InjectToken("DI_IContainer");
 
-/**
- * IContainer token.
- * it is a symbol id, you can use  @Inject, @Autowried or @Param to get container instance in yourself class.
- */
-exports.ContainerToken = new InjectToken_1.InjectToken('DI_IContainer');
 
 
 });
@@ -1624,43 +215,8 @@ unwrapExports(IContainer);
 var IContainer_1 = IContainer.ContainerToken;
 
 var types = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * State of type in ioc.
- *
- * @export
- * @enum {number}
- */
-var IocState;
-(function (IocState) {
-    IocState["design"] = "design";
-    IocState["runtime"] = "runtime";
-})(IocState = exports.IocState || (exports.IocState = {}));
-/**
- * iterate way.
- *
- * @export
- * @enum {number}
- */
-var Mode;
-(function (Mode) {
-    /**
-     * route up. iterate in parents.
-     */
-    Mode[Mode["route"] = 1] = "route";
-    /**
-     * iterate in children.
-     */
-    Mode[Mode["children"] = 2] = "children";
-    /**
-     * iterate as tree map. node first
-     */
-    Mode[Mode["traverse"] = 3] = "traverse";
-    /**
-     * iterate as tree map. node last
-     */
-    Mode[Mode["traverseLast"] = 4] = "traverseLast";
-})(Mode = exports.Mode || (exports.Mode = {}));
+var IocState,Mode;Object.defineProperty(exports,"__esModule",{value:!0}), function(e){e.design="design", e.runtime="runtime";}(IocState=exports.IocState||(exports.IocState={})), function(e){e[e.route=1]="route", e[e.children=2]="children", e[e.traverse=3]="traverse", e[e.traverseLast=4]="traverseLast";}(Mode=exports.Mode||(exports.Mode={}));
+
 
 
 });
@@ -1670,13 +226,8 @@ var types_1 = types.IocState;
 var types_2 = types.Mode;
 
 var IMethodAccessor = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.MethodAccessorToken=new InjectToken_1.InjectToken("DI_IMethodAccessor");
 
-/**
- * IMethodAccessor interface symbol.
- * it is a symbol id, you can register yourself MethodAccessor for this.
- */
-exports.MethodAccessorToken = new InjectToken_1.InjectToken('DI_IMethodAccessor');
 
 
 });
@@ -1685,54 +236,8 @@ unwrapExports(IMethodAccessor);
 var IMethodAccessor_1 = IMethodAccessor.MethodAccessorToken;
 
 var NullComponent_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * null component.
- *
- * @export
- * @class NullComponent
- * @implements {IComponent}
- */
-var NullComponent = /** @class */ (function () {
-    function NullComponent() {
-    }
-    NullComponent.prototype.isEmpty = function () {
-        return true;
-    };
-    NullComponent.prototype.add = function (action) {
-        return this;
-    };
-    NullComponent.prototype.remove = function (action) {
-        return this;
-    };
-    NullComponent.prototype.find = function (express, mode) {
-        return exports.NullNode;
-    };
-    NullComponent.prototype.filter = function (express, mode) {
-        return [];
-    };
-    NullComponent.prototype.each = function (express, mode) {
-    };
-    NullComponent.prototype.trans = function (express) {
-    };
-    NullComponent.prototype.transAfter = function (express) {
-    };
-    NullComponent.prototype.routeUp = function (express) {
-    };
-    NullComponent.prototype.equals = function (node) {
-        return node === exports.NullNode;
-    };
-    NullComponent.prototype.empty = function () {
-        return exports.NullNode;
-    };
-    NullComponent.classAnnations = { "name": "NullComponent", "params": { "isEmpty": [], "add": ["action"], "remove": ["action"], "find": ["express", "mode"], "filter": ["express", "mode"], "each": ["express", "mode"], "trans": ["express"], "transAfter": ["express"], "routeUp": ["express"], "equals": ["node"], "empty": [] } };
-    return NullComponent;
-}());
-exports.NullComponent = NullComponent;
-/**
- * Null node
- */
-exports.NullNode = new NullComponent();
+Object.defineProperty(exports,"__esModule",{value:!0});var NullComponent=function(){function t(){}return t.prototype.isEmpty=function(){return!0}, t.prototype.add=function(t){return this}, t.prototype.remove=function(t){return this}, t.prototype.find=function(t,e){return exports.NullNode}, t.prototype.filter=function(t,e){return[]}, t.prototype.each=function(t,e){}, t.prototype.trans=function(t){}, t.prototype.transAfter=function(t){}, t.prototype.routeUp=function(t){}, t.prototype.equals=function(t){return t===exports.NullNode}, t.prototype.empty=function(){return exports.NullNode}, t.classAnnations={name:"NullComponent",params:{isEmpty:[],add:["action"],remove:["action"],find:["express","mode"],filter:["express","mode"],each:["express","mode"],trans:["express"],transAfter:["express"],routeUp:["express"],equals:["node"],empty:[]}}, t}();exports.NullComponent=NullComponent, exports.NullNode=new NullComponent;
+
 
 
 });
@@ -1742,168 +247,8 @@ var NullComponent_2 = NullComponent_1.NullComponent;
 var NullComponent_3 = NullComponent_1.NullNode;
 
 var GComposite_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var GComposite=function(){function t(t){this.name=t, this.children=[];}return t.prototype.add=function(t){return(t.parent=this).children.push(t), this}, t.prototype.remove=function(e){var t;return(t=utils.isString(e)?this.find(function(t){return utils.isString(e)?t.name===e:t.equals(e)}):e||this).parent?this.equals(t.parent)?(this.children.splice(this.children.indexOf(t),1), t.parent=null, this):(t.parent.remove(t), null):this}, t.prototype.find=function(e,t){var r;return this.each(function(t){return!r&&(!(utils.isFunction(e)?e(t):e===t)||(r=t, !1))},t), r||this.empty()}, t.prototype.filter=function(e,t){var r=[];return this.each(function(t){e(t)&&r.push(t);},t), r}, t.prototype.each=function(t,e){var r;switch(e=e||types.Mode.traverse){case types.Mode.route:r=this.routeUp(t);break;case types.Mode.children:r=this.eachChildren(t);break;case types.Mode.traverse:r=this.trans(t);break;case types.Mode.traverseLast:r=this.transAfter(t);break;default:r=this.trans(t);}return r}, t.prototype.eachChildren=function(e){(this.children||[]).forEach(function(t){return e(t)});}, t.prototype.routeUp=function(t){return!1!==t(this)&&(this.parent&&this.parent.routeUp?this.parent.routeUp(t):void 0)}, t.prototype.trans=function(t){if(!1===t(this))return!1;for(var e=this.children||[],r=0;r<e.length;r++){var n=e[r].trans(t);if(!1===n)return n}return!0}, t.prototype.transAfter=function(t){for(var e=this.children||[],r=0;r<e.length;r++){if(!1===e[r].transAfter(t))return!1}return!1!==t(this)}, t.prototype.equals=function(t){return this===t}, t.prototype.empty=function(){return NullComponent_1.NullNode}, t.prototype.isEmpty=function(){return this.equals(this.empty())}, t.classAnnations={name:"GComposite",params:{constructor:["name"],add:["node"],remove:["node"],find:["express","mode"],filter:["express","mode"],each:["iterate","mode"],eachChildren:["iterate"],routeUp:["iterate"],trans:["express"],transAfter:["express"],equals:["node"],empty:[],isEmpty:[]}}, t}();exports.GComposite=GComposite;
 
-
-
-/**
- * generics composite
- *
- * @export
- * @class GComposite
- * @implements {GComponent<T>}
- * @template T
- */
-var GComposite = /** @class */ (function () {
-    function GComposite(name) {
-        this.name = name;
-        this.children = [];
-    }
-    GComposite.prototype.add = function (node) {
-        node.parent = this;
-        this.children.push(node);
-        return this;
-    };
-    GComposite.prototype.remove = function (node) {
-        var component;
-        if (utils.isString(node)) {
-            component = this.find(function (cmp) { return utils.isString(node) ? cmp.name === node : cmp.equals(node); });
-        }
-        else if (node) {
-            component = node;
-        }
-        else {
-            component = this;
-        }
-        if (!component.parent) {
-            return this;
-        }
-        else if (this.equals(component.parent)) {
-            this.children.splice(this.children.indexOf(component), 1);
-            component.parent = null;
-            return this;
-        }
-        else {
-            component.parent.remove(component);
-            return null;
-        }
-    };
-    GComposite.prototype.find = function (express, mode) {
-        var component;
-        this.each(function (item) {
-            if (component) {
-                return false;
-            }
-            var isFinded = utils.isFunction(express) ? express(item) : express === (item);
-            if (isFinded) {
-                component = item;
-                return false;
-            }
-            return true;
-        }, mode);
-        return (component || this.empty());
-    };
-    GComposite.prototype.filter = function (express, mode) {
-        var nodes = [];
-        this.each(function (item) {
-            if (express(item)) {
-                nodes.push(item);
-            }
-        }, mode);
-        return nodes;
-    };
-    GComposite.prototype.each = function (iterate, mode) {
-        mode = mode || types.Mode.traverse;
-        var r;
-        switch (mode) {
-            case types.Mode.route:
-                r = this.routeUp(iterate);
-                break;
-            case types.Mode.children:
-                r = this.eachChildren(iterate);
-                break;
-            case types.Mode.traverse:
-                r = this.trans(iterate);
-                break;
-            case types.Mode.traverseLast:
-                r = this.transAfter(iterate);
-                break;
-            default:
-                r = this.trans(iterate);
-                break;
-        }
-        return r;
-    };
-    GComposite.prototype.eachChildren = function (iterate) {
-        (this.children || []).forEach(function (item) {
-            return iterate(item);
-        });
-    };
-    /**
-     *do express work in routing.
-     *
-     *@param {Express<T, void | boolean>} express
-     *
-     *@memberOf IComponent
-     */
-    GComposite.prototype.routeUp = function (iterate) {
-        var curr = this;
-        if (iterate(curr) === false) {
-            return false;
-        }
-        
-        if (this.parent && this.parent.routeUp) {
-            return this.parent.routeUp(iterate);
-        }
-    };
-    /**
-     *translate all sub context to do express work.
-     *
-     *@param {Express<T, void | boolean>} express
-     *
-     *@memberOf IComponent
-     */
-    GComposite.prototype.trans = function (express) {
-        var curr = this;
-        if (express(curr) === false) {
-            return false;
-        }
-        var children = this.children || [];
-        for (var i = 0; i < children.length; i++) {
-            var result = children[i].trans(express);
-            if (result === false) {
-                return result;
-            }
-        }
-        return true;
-    };
-    GComposite.prototype.transAfter = function (express) {
-        var children = this.children || [];
-        for (var i = 0; i < children.length; i++) {
-            var result = children[i].transAfter(express);
-            if (result === false) {
-                return false;
-            }
-        }
-        var curr = this;
-        if (express(curr) === false) {
-            return false;
-        }
-        return true;
-    };
-    GComposite.prototype.equals = function (node) {
-        return this === node;
-    };
-    GComposite.prototype.empty = function () {
-        return NullComponent_1.NullNode;
-    };
-    GComposite.prototype.isEmpty = function () {
-        return this.equals(this.empty());
-    };
-    GComposite.classAnnations = { "name": "GComposite", "params": { "constructor": ["name"], "add": ["node"], "remove": ["node"], "find": ["express", "mode"], "filter": ["express", "mode"], "each": ["iterate", "mode"], "eachChildren": ["iterate"], "routeUp": ["iterate"], "trans": ["express"], "transAfter": ["express"], "equals": ["node"], "empty": [], "isEmpty": [] } };
-    return GComposite;
-}());
-exports.GComposite = GComposite;
 
 
 });
@@ -1912,37 +257,8 @@ unwrapExports(GComposite_1);
 var GComposite_2 = GComposite_1.GComposite;
 
 var Composite_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var Composite=function(o){function e(e){return o.call(this,e)||this}return tslib_1.__extends(e,o), e.prototype.find=function(e,t){return o.prototype.find.call(this,e,t)}, e.prototype.filter=function(e,t){return o.prototype.filter.call(this,e,t)}, e.prototype.each=function(e,t){return o.prototype.each.call(this,e,t)}, e.prototype.eachChildren=function(e){o.prototype.eachChildren.call(this,e);}, e.classAnnations={name:"Composite",params:{constructor:["name"],find:["express","mode"],filter:["express","mode"],each:["express","mode"],eachChildren:["express"]}}, e}(GComposite_1.GComposite);exports.Composite=Composite;
 
-
-/**
- * compoiste.
- *
- * @export
- * @class Composite
- * @implements {IComponent}
- */
-var Composite = /** @class */ (function (_super) {
-    tslib_1.__extends(Composite, _super);
-    function Composite(name) {
-        return _super.call(this, name) || this;
-    }
-    Composite.prototype.find = function (express, mode) {
-        return _super.prototype.find.call(this, express, mode);
-    };
-    Composite.prototype.filter = function (express, mode) {
-        return _super.prototype.filter.call(this, express, mode);
-    };
-    Composite.prototype.each = function (express, mode) {
-        return _super.prototype.each.call(this, express, mode);
-    };
-    Composite.prototype.eachChildren = function (express) {
-        _super.prototype.eachChildren.call(this, express);
-    };
-    Composite.classAnnations = { "name": "Composite", "params": { "constructor": ["name"], "find": ["express", "mode"], "filter": ["express", "mode"], "each": ["express", "mode"], "eachChildren": ["express"] } };
-    return Composite;
-}(GComposite_1.GComposite));
-exports.Composite = Composite;
 
 
 });
@@ -1951,11 +267,8 @@ unwrapExports(Composite_1);
 var Composite_2 = Composite_1.Composite;
 
 var components = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});tslib_1.__exportStar(Composite_1,exports), tslib_1.__exportStar(GComposite_1,exports), tslib_1.__exportStar(NullComponent_1,exports);
 
-tslib_1.__exportStar(Composite_1, exports);
-tslib_1.__exportStar(GComposite_1, exports);
-tslib_1.__exportStar(NullComponent_1, exports);
 
 
 });
@@ -1963,29 +276,8 @@ tslib_1.__exportStar(NullComponent_1, exports);
 unwrapExports(components);
 
 var NullAction = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var NullActionClass=function(t){function e(){return null!==t&&t.apply(this,arguments)||this}return tslib_1.__extends(e,t), e.prototype.insert=function(t,e){return this}, e.prototype.execute=function(t,e,n){}, e.prototype.empty=function(){return exports.NullAction}, e.classAnnations={name:"NullActionClass",params:{insert:["action","index"],execute:["container","data","name"],empty:[]}}, e}(components.NullComponent);exports.NullAction=new NullActionClass;
 
-
-var NullActionClass = /** @class */ (function (_super) {
-    tslib_1.__extends(NullActionClass, _super);
-    function NullActionClass() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    NullActionClass.prototype.insert = function (action, index) {
-        return this;
-    };
-    NullActionClass.prototype.execute = function (container, data, name) {
-    };
-    NullActionClass.prototype.empty = function () {
-        return exports.NullAction;
-    };
-    NullActionClass.classAnnations = { "name": "NullActionClass", "params": { "insert": ["action", "index"], "execute": ["container", "data", "name"], "empty": [] } };
-    return NullActionClass;
-}(components.NullComponent));
-/**
- * Null Action
- */
-exports.NullAction = new NullActionClass();
 
 
 });
@@ -1994,59 +286,8 @@ unwrapExports(NullAction);
 var NullAction_1 = NullAction.NullAction;
 
 var ActionComposite_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var ActionComposite=function(e){function o(t){var n=e.call(this,t)||this;return n.children=[], n}return tslib_1.__extends(o,e), o.prototype.insert=function(t,n){return t.parent=this, n<0?n=0:n>=this.children.length&&(n=this.children.length-1), this.children.splice(n,0,t), this}, o.prototype.execute=function(n,e,i){i?this.find(function(t){return t.name===i}).execute(n,e):this.trans(function(t){t instanceof o&&t.working(n,e);});}, o.prototype.empty=function(){return NullAction.NullAction}, o.prototype.working=function(t,n){}, o.classAnnations={name:"ActionComposite",params:{constructor:["name"],insert:["node","index"],execute:["container","data","name"],empty:[],working:["container","data"]}}, o}(components.GComposite);exports.ActionComposite=ActionComposite;
 
-
-
-/**
- * action composite
- *
- * @export
- * @class ActionComposite
- * @extends {GComposite<ActionComponent>}
- * @implements {ActionComponent}
- */
-var ActionComposite = /** @class */ (function (_super) {
-    tslib_1.__extends(ActionComposite, _super);
-    function ActionComposite(name) {
-        var _this = _super.call(this, name) || this;
-        _this.children = [];
-        return _this;
-    }
-    ActionComposite.prototype.insert = function (node, index) {
-        node.parent = this;
-        if (index < 0) {
-            index = 0;
-        }
-        else if (index >= this.children.length) {
-            index = this.children.length - 1;
-        }
-        this.children.splice(index, 0, node);
-        return this;
-    };
-    ActionComposite.prototype.execute = function (container, data, name) {
-        if (name) {
-            this.find(function (it) { return it.name === name; })
-                .execute(container, data);
-        }
-        else {
-            this.trans(function (action) {
-                if (action instanceof ActionComposite) {
-                    action.working(container, data);
-                }
-            });
-        }
-    };
-    ActionComposite.prototype.empty = function () {
-        return NullAction.NullAction;
-    };
-    ActionComposite.prototype.working = function (container, data) {
-        // do nothing.
-    };
-    ActionComposite.classAnnations = { "name": "ActionComposite", "params": { "constructor": ["name"], "insert": ["node", "index"], "execute": ["container", "data", "name"], "empty": [], "working": ["container", "data"] } };
-    return ActionComposite;
-}(components.GComposite));
-exports.ActionComposite = ActionComposite;
 
 
 });
@@ -2055,36 +296,8 @@ unwrapExports(ActionComposite_1);
 var ActionComposite_2 = ActionComposite_1.ActionComposite;
 
 var LifeState_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * life state.
- *
- * @export
- * @enum {number}
- */
-var LifeState;
-(function (LifeState) {
-    /**
-     * before create constructor Args
-     */
-    LifeState["beforeCreateArgs"] = "beforeCreateArgs";
-    /**
-     * before constructor advice action.
-     */
-    LifeState["beforeConstructor"] = "beforeConstructor";
-    /**
-     * after constructor advice action.
-     */
-    LifeState["afterConstructor"] = "afterConstructor";
-    /**
-     * on init.
-     */
-    LifeState["onInit"] = "onInit";
-    /**
-     * after init.
-     */
-    LifeState["AfterInit"] = "AfterInit";
-})(LifeState = exports.LifeState || (exports.LifeState = {}));
+var LifeState;Object.defineProperty(exports,"__esModule",{value:!0}), function(e){e.beforeCreateArgs="beforeCreateArgs", e.beforeConstructor="beforeConstructor", e.afterConstructor="afterConstructor", e.onInit="onInit", e.AfterInit="AfterInit";}(LifeState=exports.LifeState||(exports.LifeState={}));
+
 
 
 });
@@ -2093,63 +306,8 @@ unwrapExports(LifeState_1);
 var LifeState_2 = LifeState_1.LifeState;
 
 var CoreActions_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * cores decorator actions
- *
- * @export
- */
-var CoreActions;
-(function (CoreActions) {
-    /**
-     * the action bind parameter type form metadata.
-     */
-    CoreActions["bindParameterType"] = "bindParameterType";
-    /**
-     * the action bind Property type from metadata.
-     */
-    CoreActions["bindPropertyType"] = "bindPropertyType";
-    /**
-     * inject property action.
-     */
-    CoreActions["injectProperty"] = "injectProperty";
-    /**
-     * class provider bind action.
-     */
-    CoreActions["bindProvider"] = "bindProvider";
-    /**
-     * bind parameter provider action.
-     */
-    CoreActions["bindParameterProviders"] = "bindParameterProviders";
-    /**
-     * cache action.
-     */
-    CoreActions["cache"] = "cache";
-    /**
-     * component init action.  after constructor befor property inject.
-     */
-    CoreActions["componentBeforeInit"] = "componentBeforeInit";
-    /**
-     * component on init hooks. after property inject.
-     */
-    CoreActions["componentInit"] = "componentInit";
-    /**
-     * component after init hooks. after component init.
-     */
-    CoreActions["componentAfterInit"] = "componentAfterInit";
-    /**
-     * singleton action.
-     */
-    CoreActions["singletion"] = "singletion";
-    /**
-     * autorun action.
-     */
-    CoreActions["autorun"] = "autorun";
-    /**
-     * method autorun action.
-     */
-    CoreActions["methodAutorun"] = "methodAutorun";
-})(CoreActions = exports.CoreActions || (exports.CoreActions = {}));
+var CoreActions;Object.defineProperty(exports,"__esModule",{value:!0}), function(e){e.bindParameterType="bindParameterType", e.bindPropertyType="bindPropertyType", e.injectProperty="injectProperty", e.bindProvider="bindProvider", e.bindParameterProviders="bindParameterProviders", e.cache="cache", e.componentBeforeInit="componentBeforeInit", e.componentInit="componentInit", e.componentAfterInit="componentAfterInit", e.singletion="singletion", e.autorun="autorun", e.methodAutorun="methodAutorun";}(CoreActions=exports.CoreActions||(exports.CoreActions={}));
+
 
 
 });
@@ -2158,52 +316,8 @@ unwrapExports(CoreActions_1);
 var CoreActions_2 = CoreActions_1.CoreActions;
 
 var ArgsIterator_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var ArgsIterator=function(){function t(t){this.args=t, this.idx=-1, this.metadata=null;}return t.prototype.isCompeted=function(){return this.idx>=this.args.length}, t.prototype.end=function(){this.idx=this.args.length;}, t.prototype.next=function(t){if(this.idx++, this.isCompeted())return null;var a=this.args[this.idx];t.isMetadata&&t.isMetadata(a)?(this.metadata=utils.lang.assign(this.metadata||{},a), this.end()):t.match(a)?(this.metadata=this.metadata||{}, t.setMetadata(this.metadata,a)):(utils.isMetadataObject(a)&&(this.metadata=utils.lang.assign(this.metadata||{},a)), this.end());}, t.prototype.getArgs=function(){return this.args}, t.prototype.getMetadata=function(){return this.metadata}, t.classAnnations={name:"ArgsIterator",params:{constructor:["args"],isCompeted:[],end:[],next:["express"],getArgs:[],getMetadata:[]}}, t}();exports.ArgsIterator=ArgsIterator;
 
-var ArgsIterator = /** @class */ (function () {
-    function ArgsIterator(args) {
-        this.args = args;
-        this.idx = -1;
-        this.metadata = null;
-    }
-    ArgsIterator.prototype.isCompeted = function () {
-        return this.idx >= this.args.length;
-    };
-    ArgsIterator.prototype.end = function () {
-        this.idx = this.args.length;
-    };
-    ArgsIterator.prototype.next = function (express) {
-        this.idx++;
-        if (this.isCompeted()) {
-            return null;
-        }
-        var arg = this.args[this.idx];
-        if (express.isMetadata && express.isMetadata(arg)) {
-            this.metadata = utils.lang.assign(this.metadata || {}, arg);
-            this.end();
-        }
-        else if (express.match(arg)) {
-            this.metadata = this.metadata || {};
-            express.setMetadata(this.metadata, arg);
-        }
-        else if (utils.isMetadataObject(arg)) { // when match failed then check is base metadata.
-            this.metadata = utils.lang.assign(this.metadata || {}, arg);
-            this.end();
-        }
-        else {
-            this.end();
-        }
-    };
-    ArgsIterator.prototype.getArgs = function () {
-        return this.args;
-    };
-    ArgsIterator.prototype.getMetadata = function () {
-        return this.metadata;
-    };
-    ArgsIterator.classAnnations = { "name": "ArgsIterator", "params": { "constructor": ["args"], "isCompeted": [], "end": [], "next": ["express"], "getArgs": [], "getMetadata": [] } };
-    return ArgsIterator;
-}());
-exports.ArgsIterator = ArgsIterator;
 
 
 });
@@ -2212,36 +326,8 @@ unwrapExports(ArgsIterator_1);
 var ArgsIterator_2 = ArgsIterator_1.ArgsIterator;
 
 var DecoratorType_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * decorator type category.
- *
- * @export
- * @enum {number}
- */
-var DecoratorType;
-(function (DecoratorType) {
-    /**
-     * Class decorator
-     */
-    DecoratorType[DecoratorType["Class"] = 1] = "Class";
-    /**
-     * Parameter decorator
-     */
-    DecoratorType[DecoratorType["Parameter"] = 2] = "Parameter";
-    /**
-     * Property decorator
-     */
-    DecoratorType[DecoratorType["Property"] = 4] = "Property";
-    /**
-     * Method decorator
-     */
-    DecoratorType[DecoratorType["Method"] = 8] = "Method";
-    /**
-     * decorator for any where.
-     */
-    DecoratorType[DecoratorType["All"] = 13] = "All";
-})(DecoratorType = exports.DecoratorType || (exports.DecoratorType = {}));
+var DecoratorType;Object.defineProperty(exports,"__esModule",{value:!0}), function(e){e[e.Class=1]="Class", e[e.Parameter=2]="Parameter", e[e.Property=4]="Property", e[e.Method=8]="Method", e[e.All=13]="All";}(DecoratorType=exports.DecoratorType||(exports.DecoratorType={}));
+
 
 
 });
@@ -2250,505 +336,8 @@ unwrapExports(DecoratorType_1);
 var DecoratorType_2 = DecoratorType_1.DecoratorType;
 
 var DecoratorFactory = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0}), require$$0;function createDecorator(r,s,n){var o="@"+r,t=function(){for(var t=[],a=0;a<arguments.length;a++)t[a]=arguments[a];var e=null;return t.length<1?function(){for(var t=[],a=0;a<arguments.length;a++)t[a]=arguments[a];return storeMetadata(r,o,t,e,n)}:(e=argsToMetadata(t,s))?function(){for(var t=[],a=0;a<arguments.length;a++)t[a]=arguments[a];return storeMetadata(r,o,t,e,n)}:1!==t.length||utils.isClass(t[0])?storeMetadata(r,o,t,e,n):function(){for(var t=[],a=0;a<arguments.length;a++)t[a]=arguments[a];return storeMetadata(r,o,t,e,n)}};return t.toString=function(){return o}, t.decoratorType=DecoratorType_1.DecoratorType.All, t}function argsToMetadata(t,a){var e=null;if(t.length)if(a){var r=new ArgsIterator_1.ArgsIterator(t);a(r), e=r.getMetadata();}else 1===t.length&&utils.isMetadataObject(t[0])&&(e=t[0]);return e}function storeMetadata(t,a,e,r,s){var n;switch(e.length){case 1:if(n=e[0], utils.isClass(n)||utils.isAbstractDecoratorClass(n))return setTypeMetadata(t,a,n,r,s), n;break;case 2:setPropertyMetadata(t,a,n=e[0],e[1],r,s);break;case 3:if(utils.isNumber(e[2])){setParamMetadata(t,a,n=e[0],e[1],e[2],r,s);}else{if(!utils.isUndefined(e[2])){n=e[0];var o=e[1],i=e[2];return setMethodMetadata(t,a,n,o,i,r,s), i}setPropertyMetadata(t,a,n=e[0],e[1],r,s);}break;default:throw new Error("Invalid @"+t+" Decorator declaration.")}}function getTypeMetadata(t,a){var e=Reflect.getOwnMetadata(utils.isFunction(t)?t.toString():t,a);return e=utils.isArray(e)?e:[]}function getOwnTypeMetadata(t,a){var e=Reflect.getOwnMetadata(utils.isFunction(t)?t.toString():t,a);return e=utils.isArray(e)?e:[]}function hasClassMetadata(t,a){var e=utils.isFunction(t)?t.toString():t;return Reflect.hasMetadata(e,a)}function hasOwnClassMetadata(t,a){var e=utils.isFunction(t)?t.toString():t;return Reflect.hasOwnMetadata(e,a)}function setTypeMetadata(t,a,e,r,s){var n=getOwnTypeMetadata(a,e).slice(0),o=r||{};o.type||(o.type=e), o.decorator=t, s&&(o=s(o)), n.unshift(o), setParamerterNames(e), Reflect.defineMetadata(a,n,e);}exports.ParamerterName="paramerter_names", exports.createDecorator=createDecorator, exports.getTypeMetadata=getTypeMetadata, exports.getOwnTypeMetadata=getOwnTypeMetadata, exports.hasClassMetadata=hasClassMetadata, exports.hasOwnClassMetadata=hasOwnClassMetadata;var methodMetadataExt="__method";function getMethodMetadata(t,a){var e=utils.isFunction(t)?t.toString():t,r=Reflect.getMetadata(e+methodMetadataExt,a);return r&&!utils.isArray(r)&&utils.lang.hasField(r)||(r=Reflect.getMetadata(e+methodMetadataExt,a.constructor)), utils.isArray(r)?{}:r||{}}function getOwnMethodMetadata(t,a){var e=utils.isFunction(t)?t.toString():t,r=Reflect.getOwnMetadata(e+methodMetadataExt,a);return r&&!utils.isArray(r)&&utils.lang.hasField(r)||(r=Reflect.getOwnMetadata(e+methodMetadataExt,a.constructor)), utils.isArray(r)?{}:r||{}}function hasOwnMethodMetadata(t,a,e){var r=utils.isFunction(t)?t.toString():t;if(e){var s=getOwnMethodMetadata(r,a);return s&&s.hasOwnProperty(e)}return Reflect.hasOwnMetadata(r+methodMetadataExt,a)}function hasMethodMetadata(t,a,e){var r=utils.isFunction(t)?t.toString():t;if(e){var s=getMethodMetadata(r,a);return s&&s.hasOwnProperty(e)}return Reflect.hasMetadata(r+methodMetadataExt,a)}function setMethodMetadata(t,a,e,r,s,n,o){var i=utils.lang.assign({},getOwnMethodMetadata(a,e));i[r]=i[r]||[];var d=n||{};d.decorator=t, d.propertyKey=r, o&&(d=o(d)), i[r].unshift(d), Reflect.defineMetadata(a+methodMetadataExt,i,e.constructor);}exports.getMethodMetadata=getMethodMetadata, exports.getOwnMethodMetadata=getOwnMethodMetadata, exports.hasOwnMethodMetadata=hasOwnMethodMetadata, exports.hasMethodMetadata=hasMethodMetadata;var propertyMetadataExt="__props";function getPropertyMetadata(t,a){var e=utils.isFunction(t)?t.toString():t,r=Reflect.getMetadata(e+propertyMetadataExt,a);return r&&!utils.isArray(r)&&utils.lang.hasField(r)||(r=Reflect.getMetadata(e+propertyMetadataExt,a.constructor)), utils.isArray(r)?{}:r||{}}function getOwnPropertyMetadata(t,a){var e=utils.isFunction(t)?t.toString():t,r=Reflect.getOwnMetadata(e+propertyMetadataExt,a);return r&&!utils.isArray(r)&&utils.lang.hasField(r)||(r=Reflect.getOwnMetadata(e+propertyMetadataExt,a.constructor)), utils.isArray(r)?{}:r||{}}function hasPropertyMetadata(t,a,e){var r=utils.isFunction(t)?t.toString():t;if(e){var s=getPropertyMetadata(r,a);return s&&s.hasOwnProperty(e)}return Reflect.hasMetadata(r+propertyMetadataExt,a)}function setPropertyMetadata(t,a,e,r,s,n){var o=utils.lang.assign({},getOwnPropertyMetadata(a,e)),i=s||{};if(i.propertyKey=r, i.decorator=t, !i.type){var d=Reflect.getMetadata("design:type",e,r);d||(d=Reflect.getMetadata("design:type",e.constructor,r)), i.type=d;}n&&(i=n(i)), o[r]&&utils.isArray(o[r])||(o[r]=[]), o[r].unshift(i), Reflect.defineMetadata(a+propertyMetadataExt,o,e.constructor);}exports.getPropertyMetadata=getPropertyMetadata, exports.getOwnPropertyMetadata=getOwnPropertyMetadata, exports.hasPropertyMetadata=hasPropertyMetadata;var paramsMetadataExt="__params";function getParamMetadata(t,a,e){var r=utils.isFunction(t)?t.toString():t,s=Reflect.getMetadata(r+paramsMetadataExt,a,e);return s=utils.isArray(s)?s:[]}function getOwnParamMetadata(t,a,e){var r=utils.isFunction(t)?t.toString():t,s=Reflect.getOwnMetadata(r+paramsMetadataExt,a,e);return s=utils.isArray(s)?s:[]}function hasParamMetadata(t,a,e){var r=utils.isFunction(t)?t.toString():t;return Reflect.hasMetadata(r+paramsMetadataExt,a,e)}function hasOwnParamMetadata(t,a,e){var r=utils.isFunction(t)?t.toString():t;return Reflect.hasOwnMetadata(r+paramsMetadataExt,a,e)}function setParamMetadata(t,a,e,r,s,n,o){for(var i=getOwnParamMetadata(a,e,r).slice(0);i.length<=s;)i.push(null);i[s]=i[s]||[];var d=n||{};if(!d.type){var u=Reflect.getOwnMetadata("design:type",e,r);u||(u=Reflect.getOwnMetadata("design:type",e.constructor,r)), d.type=u;}d.propertyKey=r, d.decorator=t, d.index=s, o&&(d=o(d)), i[s].unshift(d), Reflect.defineMetadata(a+paramsMetadataExt,i,e,r);}function getParamerterNames(t){var a=Reflect.getMetadata(exports.ParamerterName,t);return a&&!utils.isArray(a)&&utils.lang.hasField(a)||(a=Reflect.getMetadata(exports.ParamerterName,t.constructor)), utils.isArray(a)?{}:a||{}}function getOwnParamerterNames(t){var a=Reflect.getOwnMetadata(exports.ParamerterName,t);return a&&!utils.isArray(a)&&utils.lang.hasField(a)||(a=Reflect.getOwnMetadata(exports.ParamerterName,t.constructor)), utils.isArray(a)?{}:a||{}}function setParamerterNames(t){var e=utils.lang.assign({},getParamerterNames(t)),a=Object.getOwnPropertyDescriptors(t.prototype),r=/^[a-z]/.test(t.name),s="";t.classAnnations&&t.classAnnations.params&&(s=t.classAnnations.name, e=utils.lang.assign(e,t.classAnnations.params)), r||t.name===s||(utils.lang.forIn(a,function(t,a){"constructor"!==a&&(t.value&&(e[a]=getParamNames(t.value)), t.set&&(e[a]=getParamNames(t.set)));}), e.constructor=getParamNames(t.prototype.constructor)), Reflect.defineMetadata(exports.ParamerterName,e,t);}exports.getParamMetadata=getParamMetadata, exports.getOwnParamMetadata=getOwnParamMetadata, exports.hasParamMetadata=hasParamMetadata, exports.hasOwnParamMetadata=hasOwnParamMetadata, exports.getParamerterNames=getParamerterNames, exports.getOwnParamerterNames=getOwnParamerterNames, exports.setParamerterNames=setParamerterNames;var STRIP_COMMENTS=/((\/\/.*$)|(\/\*[\s\S]*?\*\/))/gm,ARGUMENT_NAMES=/([^\s,]+)/g;function getParamNames(t){if(!utils.isFunction(t))return[];var a=t.toString().replace(STRIP_COMMENTS,""),e=a.slice(a.indexOf("(")+1,a.indexOf(")")).match(ARGUMENT_NAMES);return null===e&&(e=[]), e}
 
-
-
-
-exports.ParamerterName = 'paramerter_names';
-/**
- * create dectorator for class params props methods.
- *
- * @export
- * @template T
- * @param {string} name
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns {*}
- */
-function createDecorator(name, adapter, metadataExtends) {
-    var metaName = "@" + name;
-    var factory = function () {
-        var args = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            args[_i] = arguments[_i];
-        }
-        var metadata = null;
-        if (args.length < 1) {
-            return function () {
-                var args = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    args[_i] = arguments[_i];
-                }
-                return storeMetadata(name, metaName, args, metadata, metadataExtends);
-            };
-        }
-        metadata = argsToMetadata(args, adapter);
-        if (metadata) {
-            return function () {
-                var args = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    args[_i] = arguments[_i];
-                }
-                return storeMetadata(name, metaName, args, metadata, metadataExtends);
-            };
-        }
-        else {
-            if (args.length === 1) {
-                if (!utils.isClass(args[0])) {
-                    return function () {
-                        var args = [];
-                        for (var _i = 0; _i < arguments.length; _i++) {
-                            args[_i] = arguments[_i];
-                        }
-                        return storeMetadata(name, metaName, args, metadata, metadataExtends);
-                    };
-                }
-            }
-        }
-        return storeMetadata(name, metaName, args, metadata, metadataExtends);
-    };
-    factory.toString = function () { return metaName; };
-    factory.decoratorType = DecoratorType_1.DecoratorType.All;
-    return factory;
-}
-exports.createDecorator = createDecorator;
-function argsToMetadata(args, adapter) {
-    var metadata = null;
-    if (args.length) {
-        if (adapter) {
-            var iterator = new ArgsIterator_1.ArgsIterator(args);
-            adapter(iterator);
-            metadata = iterator.getMetadata();
-        }
-        else if (args.length === 1 && utils.isMetadataObject(args[0])) {
-            metadata = args[0];
-        }
-    }
-    return metadata;
-}
-function storeMetadata(name, metaName, args, metadata, metadataExtends) {
-    var target;
-    switch (args.length) {
-        case 1:
-            target = args[0];
-            if (utils.isClass(target) || utils.isAbstractDecoratorClass(target)) {
-                setTypeMetadata(name, metaName, target, metadata, metadataExtends);
-                return target;
-            }
-            break;
-        case 2:
-            target = args[0];
-            var propertyKey = args[1];
-            setPropertyMetadata(name, metaName, target, propertyKey, metadata, metadataExtends);
-            break;
-        case 3:
-            if (utils.isNumber(args[2])) {
-                target = args[0];
-                var propertyKey_1 = args[1];
-                var parameterIndex = args[2];
-                setParamMetadata(name, metaName, target, propertyKey_1, parameterIndex, metadata, metadataExtends);
-            }
-            else if (utils.isUndefined(args[2])) {
-                target = args[0];
-                var propertyKey_2 = args[1];
-                setPropertyMetadata(name, metaName, target, propertyKey_2, metadata, metadataExtends);
-            }
-            else {
-                target = args[0];
-                var propertyKey_3 = args[1];
-                var descriptor = args[2];
-                setMethodMetadata(name, metaName, target, propertyKey_3, descriptor, metadata, metadataExtends);
-                return descriptor;
-            }
-            break;
-        default:
-            throw new Error("Invalid @" + name + " Decorator declaration.");
-    }
-}
-/**
- * get all class metadata of one specail decorator in target type.
- *
- * @export
- * @template T
- * @param {(string | Function)} decorator
- * @param {Type<any>} target
- * @returns
- */
-function getTypeMetadata(decorator, target) {
-    var annotations = Reflect.getOwnMetadata(utils.isFunction(decorator) ? decorator.toString() : decorator, target);
-    annotations = utils.isArray(annotations) ? annotations : [];
-    return annotations;
-}
-exports.getTypeMetadata = getTypeMetadata;
-/**
- * get own class metadata of one specail decorator in target type.
- *
- * @export
- * @template T
- * @param {(string | Function)} decorator
- * @param {Type<any>} target
- * @returns
- */
-function getOwnTypeMetadata(decorator, target) {
-    var annotations = Reflect.getOwnMetadata(utils.isFunction(decorator) ? decorator.toString() : decorator, target);
-    annotations = utils.isArray(annotations) ? annotations : [];
-    return annotations;
-}
-exports.getOwnTypeMetadata = getOwnTypeMetadata;
-/**
- * has class decorator metadata.
- *
- * @export
- * @param {(string | Function)} decorator
- * @param {(Type<any> | object)} target
- * @returns {boolean}
- */
-function hasClassMetadata(decorator, target) {
-    var name = utils.isFunction(decorator) ? decorator.toString() : decorator;
-    return Reflect.hasMetadata(name, target);
-}
-exports.hasClassMetadata = hasClassMetadata;
-/**
- * has own class decorator metadata.
- *
- * @export
- * @param {(string | Function)} decorator
- * @param {(Type<any> | object)} target
- * @returns {boolean}
- */
-function hasOwnClassMetadata(decorator, target) {
-    var name = utils.isFunction(decorator) ? decorator.toString() : decorator;
-    return Reflect.hasOwnMetadata(name, target);
-}
-exports.hasOwnClassMetadata = hasOwnClassMetadata;
-function setTypeMetadata(name, metaName, target, metadata, metadataExtends) {
-    var annotations = getOwnTypeMetadata(metaName, target).slice(0);
-    // let designParams = Reflect.getMetadata('design:paramtypes', target) || [];
-    var typeMetadata = (metadata || {});
-    if (!typeMetadata.type) {
-        typeMetadata.type = target;
-    }
-    typeMetadata.decorator = name;
-    if (metadataExtends) {
-        typeMetadata = metadataExtends(typeMetadata);
-    }
-    annotations.unshift(typeMetadata);
-    setParamerterNames(target);
-    Reflect.defineMetadata(metaName, annotations, target);
-}
-var methodMetadataExt = '__method';
-/**
- * get all method metadata of one specail decorator in target type.
- *
- * @export
- * @template T
- * @param {(string | Function)} decorator
- * @param {Type<any>} target
- * @returns {ObjectMap<T[]>}
- */
-function getMethodMetadata(decorator, target) {
-    var name = utils.isFunction(decorator) ? decorator.toString() : decorator;
-    var meta = Reflect.getMetadata(name + methodMetadataExt, target);
-    if (!meta || utils.isArray(meta) || !utils.lang.hasField(meta)) {
-        meta = Reflect.getMetadata(name + methodMetadataExt, target.constructor);
-    }
-    return utils.isArray(meta) ? {} : (meta || {});
-}
-exports.getMethodMetadata = getMethodMetadata;
-/**
- * get own method metadata of one specail decorator in target type.
- *
- * @export
- * @template T
- * @param {(string | Function)} decorator
- * @param {Type<any>} target
- * @returns {ObjectMap<T[]>}
- */
-function getOwnMethodMetadata(decorator, target) {
-    var name = utils.isFunction(decorator) ? decorator.toString() : decorator;
-    var meta = Reflect.getOwnMetadata(name + methodMetadataExt, target);
-    if (!meta || utils.isArray(meta) || !utils.lang.hasField(meta)) {
-        meta = Reflect.getOwnMetadata(name + methodMetadataExt, target.constructor);
-    }
-    return utils.isArray(meta) ? {} : (meta || {});
-}
-exports.getOwnMethodMetadata = getOwnMethodMetadata;
-/**
- * has own method decorator metadata.
- *
- * @export
- * @param {(string | Function)} decorator
- * @param {Type<any>} target
- * @param {(string | symbol)} [propertyKey]
- * @returns {boolean}
- */
-function hasOwnMethodMetadata(decorator, target, propertyKey) {
-    var name = utils.isFunction(decorator) ? decorator.toString() : decorator;
-    if (propertyKey) {
-        var meta = getOwnMethodMetadata(name, target);
-        return meta && meta.hasOwnProperty(propertyKey);
-    }
-    else {
-        return Reflect.hasOwnMetadata(name + methodMetadataExt, target);
-    }
-}
-exports.hasOwnMethodMetadata = hasOwnMethodMetadata;
-/**
- * has method decorator metadata.
- *
- * @export
- * @param {(string | Function)} decorator
- * @param {Type<any>} target
- * @param {(string | symbol)} [propertyKey]
- * @returns {boolean}
- */
-function hasMethodMetadata(decorator, target, propertyKey) {
-    var name = utils.isFunction(decorator) ? decorator.toString() : decorator;
-    if (propertyKey) {
-        var meta = getMethodMetadata(name, target);
-        return meta && meta.hasOwnProperty(propertyKey);
-    }
-    else {
-        return Reflect.hasMetadata(name + methodMetadataExt, target);
-    }
-}
-exports.hasMethodMetadata = hasMethodMetadata;
-function setMethodMetadata(name, metaName, target, propertyKey, descriptor, metadata, metadataExtends) {
-    var meta = utils.lang.assign({}, getOwnMethodMetadata(metaName, target));
-    meta[propertyKey] = meta[propertyKey] || [];
-    var methodMeadata = (metadata || {});
-    methodMeadata.decorator = name;
-    methodMeadata.propertyKey = propertyKey;
-    // methodMeadata.descriptor = descriptor;
-    if (metadataExtends) {
-        methodMeadata = metadataExtends(methodMeadata);
-    }
-    meta[propertyKey].unshift(methodMeadata);
-    Reflect.defineMetadata(metaName + methodMetadataExt, meta, target.constructor);
-}
-var propertyMetadataExt = '__props';
-/**
- * get all property metadata of one specail decorator in target type.
- *
- * @export
- * @template T
- * @param {(string | Function)} decorator
- * @param {Type<any>} target
- * @returns {ObjectMap<T[]>}
- */
-function getPropertyMetadata(decorator, target) {
-    var name = utils.isFunction(decorator) ? decorator.toString() : decorator;
-    var meta = Reflect.getMetadata(name + propertyMetadataExt, target);
-    if (!meta || utils.isArray(meta) || !utils.lang.hasField(meta)) {
-        meta = Reflect.getMetadata(name + propertyMetadataExt, target.constructor);
-    }
-    return utils.isArray(meta) ? {} : (meta || {});
-}
-exports.getPropertyMetadata = getPropertyMetadata;
-/**
- * get own property metadata of one specail decorator in target type.
- *
- * @export
- * @template T
- * @param {(string | Function)} decorator
- * @param {Type<any>} target
- * @returns {ObjectMap<T[]>}
- */
-function getOwnPropertyMetadata(decorator, target) {
-    var name = utils.isFunction(decorator) ? decorator.toString() : decorator;
-    var meta = Reflect.getOwnMetadata(name + propertyMetadataExt, target);
-    if (!meta || utils.isArray(meta) || !utils.lang.hasField(meta)) {
-        meta = Reflect.getOwnMetadata(name + propertyMetadataExt, target.constructor);
-    }
-    return utils.isArray(meta) ? {} : (meta || {});
-}
-exports.getOwnPropertyMetadata = getOwnPropertyMetadata;
-/**
- * has property decorator metadata.
- *
- * @export
- * @param {(string | Function)} decorator
- * @param {Type<any>} target
- * @param {(string | symbol)} [propertyKey]
- * @returns {boolean}
- */
-function hasPropertyMetadata(decorator, target, propertyKey) {
-    var name = utils.isFunction(decorator) ? decorator.toString() : decorator;
-    if (propertyKey) {
-        var meta = getPropertyMetadata(name, target);
-        return meta && meta.hasOwnProperty(propertyKey);
-    }
-    else {
-        return Reflect.hasMetadata(name + propertyMetadataExt, target);
-    }
-}
-exports.hasPropertyMetadata = hasPropertyMetadata;
-function setPropertyMetadata(name, metaName, target, propertyKey, metadata, metadataExtends) {
-    var meta = utils.lang.assign({}, getOwnPropertyMetadata(metaName, target));
-    var propmetadata = (metadata || {});
-    propmetadata.propertyKey = propertyKey;
-    propmetadata.decorator = name;
-    if (!propmetadata.type) {
-        var t = Reflect.getMetadata('design:type', target, propertyKey);
-        if (!t) {
-            // Needed to support react native inheritance
-            t = Reflect.getMetadata('design:type', target.constructor, propertyKey);
-        }
-        propmetadata.type = t;
-    }
-    if (metadataExtends) {
-        propmetadata = metadataExtends(propmetadata);
-    }
-    if (!meta[propertyKey] || !utils.isArray(meta[propertyKey])) {
-        meta[propertyKey] = [];
-    }
-    meta[propertyKey].unshift(propmetadata);
-    Reflect.defineMetadata(metaName + propertyMetadataExt, meta, target.constructor);
-}
-var paramsMetadataExt = '__params';
-/**
- * get paramerter metadata of one specail decorator in target method.
- *
- * @export
- * @template T
- * @param {(string | Function)} decorator
- * @param {(Type<any> | object)} target
- * @param {(string | symbol)} propertyKey
- * @returns {T[][]}
- */
-function getParamMetadata(decorator, target, propertyKey) {
-    var name = utils.isFunction(decorator) ? decorator.toString() : decorator;
-    var parameters = Reflect.getMetadata(name + paramsMetadataExt, target, propertyKey);
-    parameters = utils.isArray(parameters) ? parameters : [];
-    return parameters;
-}
-exports.getParamMetadata = getParamMetadata;
-/**
- * get own paramerter metadata of one specail decorator in target method.
- *
- * @export
- * @template T
- * @param {(string | Function)} decorator
- * @param {(Type<any> | object)} target
- * @param {(string | symbol)} propertyKey
- * @returns {T[][]}
- */
-function getOwnParamMetadata(decorator, target, propertyKey) {
-    var name = utils.isFunction(decorator) ? decorator.toString() : decorator;
-    var parameters = Reflect.getOwnMetadata(name + paramsMetadataExt, target, propertyKey);
-    parameters = utils.isArray(parameters) ? parameters : [];
-    return parameters;
-}
-exports.getOwnParamMetadata = getOwnParamMetadata;
-/**
- * has param decorator metadata.
- *
- * @export
- * @param {(string | Function)} decorator
- * @param {(Type<any> | object)} target
- * @param {(string | symbol)} propertyKey
- * @returns {boolean}
- */
-function hasParamMetadata(decorator, target, propertyKey) {
-    var name = utils.isFunction(decorator) ? decorator.toString() : decorator;
-    return Reflect.hasMetadata(name + paramsMetadataExt, target, propertyKey);
-}
-exports.hasParamMetadata = hasParamMetadata;
-/**
- * has param decorator metadata.
- *
- * @export
- * @param {(string | Function)} decorator
- * @param {(Type<any> | object)} target
- * @param {(string | symbol)} propertyKey
- * @returns {boolean}
- */
-function hasOwnParamMetadata(decorator, target, propertyKey) {
-    var name = utils.isFunction(decorator) ? decorator.toString() : decorator;
-    return Reflect.hasOwnMetadata(name + paramsMetadataExt, target, propertyKey);
-}
-exports.hasOwnParamMetadata = hasOwnParamMetadata;
-function setParamMetadata(name, metaName, target, propertyKey, parameterIndex, metadata, metadataExtends) {
-    var parameters = getOwnParamMetadata(metaName, target, propertyKey).slice(0);
-    // there might be gaps if some in between parameters do not have annotations.
-    // we pad with nulls.
-    while (parameters.length <= parameterIndex) {
-        parameters.push(null);
-    }
-    parameters[parameterIndex] = parameters[parameterIndex] || [];
-    var paramMeadata = (metadata || {});
-    if (!paramMeadata.type) {
-        var t = Reflect.getOwnMetadata('design:type', target, propertyKey);
-        if (!t) {
-            // Needed to support react native inheritance
-            t = Reflect.getOwnMetadata('design:type', target.constructor, propertyKey);
-        }
-        paramMeadata.type = t;
-    }
-    paramMeadata.propertyKey = propertyKey;
-    paramMeadata.decorator = name;
-    paramMeadata.index = parameterIndex;
-    if (metadataExtends) {
-        paramMeadata = metadataExtends(paramMeadata);
-    }
-    parameters[parameterIndex].unshift(paramMeadata);
-    Reflect.defineMetadata(metaName + paramsMetadataExt, parameters, target, propertyKey);
-}
-function getParamerterNames(target) {
-    var meta = Reflect.getMetadata(exports.ParamerterName, target);
-    if (!meta || utils.isArray(meta) || !utils.lang.hasField(meta)) {
-        meta = Reflect.getMetadata(exports.ParamerterName, target.constructor);
-    }
-    return utils.isArray(meta) ? {} : (meta || {});
-}
-exports.getParamerterNames = getParamerterNames;
-function getOwnParamerterNames(target) {
-    var meta = Reflect.getOwnMetadata(exports.ParamerterName, target);
-    if (!meta || utils.isArray(meta) || !utils.lang.hasField(meta)) {
-        meta = Reflect.getOwnMetadata(exports.ParamerterName, target.constructor);
-    }
-    return utils.isArray(meta) ? {} : (meta || {});
-}
-exports.getOwnParamerterNames = getOwnParamerterNames;
-function setParamerterNames(target) {
-    var meta = utils.lang.assign({}, getParamerterNames(target));
-    var descriptors = Object.getOwnPropertyDescriptors(target.prototype);
-    var isUglify = /^[a-z]/.test(target.name);
-    var anName = '';
-    if (target.classAnnations && target.classAnnations.params) {
-        anName = target.classAnnations.name;
-        meta = utils.lang.assign(meta, target.classAnnations.params);
-    }
-    if (!isUglify && target.name !== anName) {
-        utils.lang.forIn(descriptors, function (item, name) {
-            if (name !== 'constructor') {
-                if (item.value) {
-                    meta[name] = getParamNames(item.value);
-                }
-                if (item.set) {
-                    meta[name] = getParamNames(item.set);
-                }
-            }
-        });
-        meta['constructor'] = getParamNames(target.prototype.constructor);
-    }
-    Reflect.defineMetadata(exports.ParamerterName, meta, target);
-}
-exports.setParamerterNames = setParamerterNames;
-var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-var ARGUMENT_NAMES = /([^\s,]+)/g;
-function getParamNames(func) {
-    if (!utils.isFunction(func)) {
-        return [];
-    }
-    var fnStr = func.toString().replace(STRIP_COMMENTS, '');
-    var result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
-    if (result === null) {
-        result = [];
-    }
-    return result;
-}
 
 
 });
@@ -2776,58 +365,8 @@ var DecoratorFactory_19 = DecoratorFactory.getOwnParamerterNames;
 var DecoratorFactory_20 = DecoratorFactory.setParamerterNames;
 
 var ClassDecoratorFactory = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0}), require$$0;function createClassDecorator(t,e,r){var a=DecoratorFactory.createDecorator(t,function(t){e&&e(t), t.next({match:function(t){return t&&(utils.isSymbol(t)||utils.isString(t)||utils.isObject(t)&&t instanceof Registration_1.Registration)},setMetadata:function(t,e){t.provide=e;}}), t.next({match:function(t){return utils.isString(t)},setMetadata:function(t,e){t.alias=e;}}), t.next({match:function(t){return utils.isBoolean(t)},setMetadata:function(t,e){t.singleton=e;}}), t.next({match:function(t){return utils.isNumber(t)},setMetadata:function(t,e){t.expires=e;}});},r);return a.decoratorType=DecoratorType_1.DecoratorType.Class, a}exports.createClassDecorator=createClassDecorator;
 
-
-
-
-
-/**
- * create class decorator
- *
- * @export
- * @template T metadata type.
- * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns {*}
- */
-function createClassDecorator(name, adapter, metadataExtends) {
-    var classAdapter = (function (args) {
-        if (adapter) {
-            adapter(args);
-        }
-        args.next({
-            // isMetadata: (arg) => isClassMetadata(arg),
-            match: function (arg) { return arg && (utils.isSymbol(arg) || utils.isString(arg) || (utils.isObject(arg) && arg instanceof Registration_1.Registration)); },
-            setMetadata: function (metadata, arg) {
-                metadata.provide = arg;
-            }
-        });
-        args.next({
-            match: function (arg) { return utils.isString(arg); },
-            setMetadata: function (metadata, arg) {
-                metadata.alias = arg;
-            }
-        });
-        args.next({
-            match: function (arg) { return utils.isBoolean(arg); },
-            setMetadata: function (metadata, arg) {
-                metadata.singleton = arg;
-            }
-        });
-        args.next({
-            match: function (arg) { return utils.isNumber(arg); },
-            setMetadata: function (metadata, arg) {
-                metadata.expires = arg;
-            }
-        });
-    });
-    var decorator = DecoratorFactory.createDecorator(name, classAdapter, metadataExtends);
-    decorator.decoratorType = DecoratorType_1.DecoratorType.Class;
-    return decorator;
-}
-exports.createClassDecorator = createClassDecorator;
 
 
 });
@@ -2836,38 +375,8 @@ unwrapExports(ClassDecoratorFactory);
 var ClassDecoratorFactory_1 = ClassDecoratorFactory.createClassDecorator;
 
 var MethodDecoratorFactory = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0}), require$$0;function createMethodDecorator(e,r,t){var o=DecoratorFactory.createDecorator(e,function(e){r&&r(e), e.next({match:function(e){return utils.isArray(e)},setMetadata:function(e,r){e.providers=r;}});},t);return o.decoratorType=DecoratorType_1.DecoratorType.Method, o}exports.createMethodDecorator=createMethodDecorator;
 
-
-
-
-/**
- * create method decorator.
- *
- * @export
- * @template T metadata type.
- * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns
- */
-function createMethodDecorator(name, adapter, metadataExtends) {
-    var methodAdapter = function (args) {
-        if (adapter) {
-            adapter(args);
-        }
-        args.next({
-            match: function (arg) { return utils.isArray(arg); },
-            setMetadata: function (metadata, arg) {
-                metadata.providers = arg;
-            }
-        });
-    };
-    var decorator = DecoratorFactory.createDecorator(name, methodAdapter, metadataExtends);
-    decorator.decoratorType = DecoratorType_1.DecoratorType.Method;
-    return decorator;
-}
-exports.createMethodDecorator = createMethodDecorator;
 
 
 });
@@ -2876,45 +385,8 @@ unwrapExports(MethodDecoratorFactory);
 var MethodDecoratorFactory_1 = MethodDecoratorFactory.createMethodDecorator;
 
 var ParamDecoratorFactory = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0}), require$$0;function createParamDecorator(r,e,t){var a=DecoratorFactory.createDecorator(r,function(r){e&&e(r), r.next({isMetadata:function(r){return utils.isParamMetadata(r)},match:function(r){return utils.isToken(r)},setMetadata:function(r,e){r.provider=e;}});},t);return a.decoratorType=DecoratorType_1.DecoratorType.Parameter, a}exports.createParamDecorator=createParamDecorator;
 
-
-
-
-/**
- * create parameter decorator.
- *
- * @export
- * @template T metadata type.
- * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns
- */
-function createParamDecorator(name, adapter, metadataExtends) {
-    var paramAdapter = (function (args) {
-        if (adapter) {
-            adapter(args);
-        }
-        args.next({
-            isMetadata: function (arg) { return utils.isParamMetadata(arg); },
-            match: function (arg) { return utils.isToken(arg); },
-            setMetadata: function (metadata, arg) {
-                metadata.provider = arg;
-            }
-        });
-        // args.next<T>({
-        //     match: (arg) => isString(arg),
-        //     setMetadata: (metadata, arg) => {
-        //         metadata.alias = arg;
-        //     }
-        // });
-    });
-    var decorator = DecoratorFactory.createDecorator(name, paramAdapter, metadataExtends);
-    decorator.decoratorType = DecoratorType_1.DecoratorType.Parameter;
-    return decorator;
-}
-exports.createParamDecorator = createParamDecorator;
 
 
 });
@@ -2923,44 +395,8 @@ unwrapExports(ParamDecoratorFactory);
 var ParamDecoratorFactory_1 = ParamDecoratorFactory.createParamDecorator;
 
 var PropertyDecoratorFactory = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});function createPropDecorator(r,e,t){var o=DecoratorFactory.createDecorator(r,function(r){e&&e(r), r.next({isMetadata:function(r){return utils.isPropertyMetadata(r)},match:function(r){return utils.isToken(r)},setMetadata:function(r,e){r.provider=e;}});},t);return o.decoratorType=DecoratorType_1.DecoratorType.Property, o}exports.createPropDecorator=createPropDecorator;
 
-
-
-/**
- * create property decorator.
- *
- * @export
- * @template T metadata type.
- * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns
- */
-function createPropDecorator(name, adapter, metadataExtends) {
-    var propPropAdapter = (function (args) {
-        if (adapter) {
-            adapter(args);
-        }
-        args.next({
-            isMetadata: function (arg) { return utils.isPropertyMetadata(arg); },
-            match: function (arg) { return utils.isToken(arg); },
-            setMetadata: function (metadata, arg) {
-                metadata.provider = arg;
-            }
-        });
-        // args.next<T>({
-        //     match: (arg) => isString(arg),
-        //     setMetadata: (metadata, arg) => {
-        //         metadata.alias = arg;
-        //     }
-        // });
-    });
-    var decorator = DecoratorFactory.createDecorator(name, propPropAdapter, metadataExtends);
-    decorator.decoratorType = DecoratorType_1.DecoratorType.Property;
-    return decorator;
-}
-exports.createPropDecorator = createPropDecorator;
 
 
 });
@@ -2969,45 +405,8 @@ unwrapExports(PropertyDecoratorFactory);
 var PropertyDecoratorFactory_1 = PropertyDecoratorFactory.createPropDecorator;
 
 var ParamPropDecoratorFactory = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0}), require$$0;function createParamPropDecorator(r,e,t){var a=DecoratorFactory.createDecorator(r,function(r){e&&e(r), r.next({isMetadata:function(r){return utils.isParamPropMetadata(r)},match:function(r){return utils.isToken(r)},setMetadata:function(r,e){r.provider=e;}});},t);return a.decoratorType=DecoratorType_1.DecoratorType.Property|DecoratorType_1.DecoratorType.Parameter, a}exports.createParamPropDecorator=createParamPropDecorator;
 
-
-
-
-/**
- * create parameter or property decorator
- *
- * @export
- * @template T
- * @param {string} name
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns {IParamPropDecorator<T>}
- */
-function createParamPropDecorator(name, adapter, metadataExtends) {
-    var paramPropAdapter = (function (args) {
-        if (adapter) {
-            adapter(args);
-        }
-        args.next({
-            isMetadata: function (arg) { return utils.isParamPropMetadata(arg); },
-            match: function (arg) { return utils.isToken(arg); },
-            setMetadata: function (metadata, arg) {
-                metadata.provider = arg;
-            }
-        });
-        // args.next<T>({
-        //     match: (arg) => isString(arg),
-        //     setMetadata: (metadata, arg) => {
-        //         metadata.alias = arg;
-        //     }
-        // });
-    });
-    var decorator = DecoratorFactory.createDecorator(name, paramPropAdapter, metadataExtends);
-    decorator.decoratorType = DecoratorType_1.DecoratorType.Property | DecoratorType_1.DecoratorType.Parameter;
-    return decorator;
-}
-exports.createParamPropDecorator = createParamPropDecorator;
 
 
 });
@@ -3016,25 +415,8 @@ unwrapExports(ParamPropDecoratorFactory);
 var ParamPropDecoratorFactory_1 = ParamPropDecoratorFactory.createParamPropDecorator;
 
 var ClassMethodDecoratorFactory = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});function createClassMethodDecorator(e,r,o){var t=DecoratorFactory.createDecorator(e,r,o);return t.decoratorType=DecoratorType_1.DecoratorType.Class|DecoratorType_1.DecoratorType.Method, t}exports.createClassMethodDecorator=createClassMethodDecorator;
 
-
-/**
- * create decorator for class and method.
- *
- * @export
- * @template T
- * @param {string} name
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns {IClassMethodDecorator<T>}
- */
-function createClassMethodDecorator(name, adapter, metadataExtends) {
-    var decorator = DecoratorFactory.createDecorator(name, adapter, metadataExtends);
-    decorator.decoratorType = DecoratorType_1.DecoratorType.Class | DecoratorType_1.DecoratorType.Method;
-    return decorator;
-}
-exports.createClassMethodDecorator = createClassMethodDecorator;
 
 
 });
@@ -3043,25 +425,8 @@ unwrapExports(ClassMethodDecoratorFactory);
 var ClassMethodDecoratorFactory_1 = ClassMethodDecoratorFactory.createClassMethodDecorator;
 
 var MethodPropDecoratorFactory = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});function createMethodPropDecorator(r,e,o){var t=DecoratorFactory.createDecorator(r,e,o);return t.decoratorType=DecoratorType_1.DecoratorType.Method|DecoratorType_1.DecoratorType.Property, t}exports.createMethodPropDecorator=createMethodPropDecorator;
 
-
-/**
- * create method or property decorator
- *
- * @export
- * @template T
- * @param {string} name
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns {IMethodPropDecorator<T>}
- */
-function createMethodPropDecorator(name, adapter, metadataExtends) {
-    var decorator = DecoratorFactory.createDecorator(name, adapter, metadataExtends);
-    decorator.decoratorType = DecoratorType_1.DecoratorType.Method | DecoratorType_1.DecoratorType.Property;
-    return decorator;
-}
-exports.createMethodPropDecorator = createMethodPropDecorator;
 
 
 });
@@ -3070,25 +435,8 @@ unwrapExports(MethodPropDecoratorFactory);
 var MethodPropDecoratorFactory_1 = MethodPropDecoratorFactory.createMethodPropDecorator;
 
 var MethodPropParamDecoratorFactory = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});function createMethodPropParamDecorator(r,e,o){var t=DecoratorFactory.createDecorator(r,e,o);return t.decoratorType=DecoratorType_1.DecoratorType.Method|DecoratorType_1.DecoratorType.Property|DecoratorType_1.DecoratorType.Parameter, t}exports.createMethodPropParamDecorator=createMethodPropParamDecorator;
 
-
-/**
- * define method or property decorator
- *
- * @export
- * @template T
- * @param {string} name
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns {IMethodPropParamDecorator<T>}
- */
-function createMethodPropParamDecorator(name, adapter, metadataExtends) {
-    var decorator = DecoratorFactory.createDecorator(name, adapter, metadataExtends);
-    decorator.decoratorType = DecoratorType_1.DecoratorType.Method | DecoratorType_1.DecoratorType.Property | DecoratorType_1.DecoratorType.Parameter;
-    return decorator;
-}
-exports.createMethodPropParamDecorator = createMethodPropParamDecorator;
 
 
 });
@@ -3097,19 +445,8 @@ unwrapExports(MethodPropParamDecoratorFactory);
 var MethodPropParamDecoratorFactory_1 = MethodPropParamDecoratorFactory.createMethodPropParamDecorator;
 
 var factories = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});tslib_1.__exportStar(ArgsIterator_1,exports), tslib_1.__exportStar(DecoratorType_1,exports), tslib_1.__exportStar(DecoratorFactory,exports), tslib_1.__exportStar(ClassDecoratorFactory,exports), tslib_1.__exportStar(MethodDecoratorFactory,exports), tslib_1.__exportStar(ParamDecoratorFactory,exports), tslib_1.__exportStar(PropertyDecoratorFactory,exports), tslib_1.__exportStar(ParamPropDecoratorFactory,exports), tslib_1.__exportStar(ClassMethodDecoratorFactory,exports), tslib_1.__exportStar(MethodPropDecoratorFactory,exports), tslib_1.__exportStar(MethodPropParamDecoratorFactory,exports);
 
-tslib_1.__exportStar(ArgsIterator_1, exports);
-tslib_1.__exportStar(DecoratorType_1, exports);
-tslib_1.__exportStar(DecoratorFactory, exports);
-tslib_1.__exportStar(ClassDecoratorFactory, exports);
-tslib_1.__exportStar(MethodDecoratorFactory, exports);
-tslib_1.__exportStar(ParamDecoratorFactory, exports);
-tslib_1.__exportStar(PropertyDecoratorFactory, exports);
-tslib_1.__exportStar(ParamPropDecoratorFactory, exports);
-tslib_1.__exportStar(ClassMethodDecoratorFactory, exports);
-tslib_1.__exportStar(MethodPropDecoratorFactory, exports);
-tslib_1.__exportStar(MethodPropParamDecoratorFactory, exports);
 
 
 });
@@ -3117,48 +454,8 @@ tslib_1.__exportStar(MethodPropParamDecoratorFactory, exports);
 unwrapExports(factories);
 
 var BindProviderAction_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var BindProviderAction=function(e){function i(){return e.call(this,CoreActions_1.CoreActions.bindProvider)||this}return tslib_1.__extends(i,e), i.prototype.working=function(e,i){var o=i.targetType,r=e.getLifeScope().getClassDecorators(function(e){return e.actions.includes(CoreActions_1.CoreActions.bindProvider)&&factories.hasOwnClassMetadata(e.name,o)}),t=[],n=i.raiseContainer||e;r.forEach(function(e){var i=factories.getOwnTypeMetadata(e.name,o);Array.isArray(i)&&0<i.length&&i.forEach(function(e){if(e&&e.provide){var i=n.getTokenKey(e.provide,e.alias);t.push(i), n.bindProvider(i,e.type);}});}), i.execResult=t;}, i.classAnnations={name:"BindProviderAction",params:{constructor:[],working:["container","data"]}}, i}(ActionComposite_1.ActionComposite);exports.BindProviderAction=BindProviderAction;
 
-
-
-
-/**
- * bind provider action. for binding a factory to an token.
- *
- * @export
- * @class BindProviderAction
- * @extends {ActionComposite}
- */
-var BindProviderAction = /** @class */ (function (_super) {
-    tslib_1.__extends(BindProviderAction, _super);
-    function BindProviderAction() {
-        return _super.call(this, CoreActions_1.CoreActions.bindProvider) || this;
-    }
-    BindProviderAction.prototype.working = function (container, data) {
-        var type = data.targetType;
-        var lifeScope = container.getLifeScope();
-        var matchs = lifeScope.getClassDecorators(function (surm) { return surm.actions.includes(CoreActions_1.CoreActions.bindProvider) && factories.hasOwnClassMetadata(surm.name, type); });
-        var provides = [];
-        var raiseContainer = data.raiseContainer || container;
-        matchs.forEach(function (surm) {
-            var metadata = factories.getOwnTypeMetadata(surm.name, type);
-            if (Array.isArray(metadata) && metadata.length > 0) {
-                // bind all provider.
-                metadata.forEach(function (c) {
-                    if (c && c.provide) {
-                        var provideKey = raiseContainer.getTokenKey(c.provide, c.alias);
-                        provides.push(provideKey);
-                        raiseContainer.bindProvider(provideKey, c.type);
-                    }
-                });
-            }
-        });
-        data.execResult = provides;
-    };
-    BindProviderAction.classAnnations = { "name": "BindProviderAction", "params": { "constructor": [], "working": ["container", "data"] } };
-    return BindProviderAction;
-}(ActionComposite_1.ActionComposite));
-exports.BindProviderAction = BindProviderAction;
 
 
 });
@@ -3167,81 +464,8 @@ unwrapExports(BindProviderAction_1);
 var BindProviderAction_2 = BindProviderAction_1.BindProviderAction;
 
 var BindParameterTypeAction_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var BindParameterTypeAction=function(e){function t(){return e.call(this,CoreActions_1.CoreActions.bindParameterType)||this}return tslib_1.__extends(t,e), t.prototype.working=function(a,e){if(!e.raiseContainer||e.raiseContainer===a){var i,r=e.target,n=e.targetType,o=e.propertyKey,s=a.getLifeScope();(i=(i=r&&o?Reflect.getMetadata("design:paramtypes",r,o)||[]:Reflect.getMetadata("design:paramtypes",n)||[]).slice(0)).forEach(function(e){s.isVaildDependence(e)&&(a.has(e)||a.register(e));}), s.getParameterDecorators(function(e){return e.actions.includes(CoreActions_1.CoreActions.bindParameterType)&&(r||"constructor"!==o?factories.hasParamMetadata(e.name,r,o):factories.hasOwnParamMetadata(e.name,n))}).forEach(function(e){var t=r||"constructor"!==o?factories.getParamMetadata(e.name,r,o):factories.getOwnParamMetadata(e.name,n);utils.isArray(t)&&t.length&&t.forEach(function(e){var t=utils.isArray(e)&&0<e.length?e[0]:null;if(t&&0<=t.index){s.isVaildDependence(t.provider)&&(a.has(t.provider,t.alias)||a.register(a.getToken(t.provider,t.alias))), s.isVaildDependence(t.type)&&(a.has(t.type)||a.register(t.type));var r=t.provider?a.getTokenKey(t.provider,t.alias):t.type;r&&(i[t.index]=r);}});}), e.execResult=i;}}, t.classAnnations={name:"BindParameterTypeAction",params:{constructor:[],working:["container","data"]}}, t}(ActionComposite_1.ActionComposite);exports.BindParameterTypeAction=BindParameterTypeAction;
 
-
-
-
-
-/**
- * bind parameter type action.
- *
- * @export
- * @class BindParameterTypeAction
- * @extends {ActionComposite}
- */
-var BindParameterTypeAction = /** @class */ (function (_super) {
-    tslib_1.__extends(BindParameterTypeAction, _super);
-    function BindParameterTypeAction() {
-        return _super.call(this, CoreActions_1.CoreActions.bindParameterType) || this;
-    }
-    BindParameterTypeAction.prototype.working = function (container, data) {
-        if (data.raiseContainer && data.raiseContainer !== container) {
-            return;
-        }
-        var target = data.target;
-        var type = data.targetType;
-        var propertyKey = data.propertyKey;
-        var lifeScope = container.getLifeScope();
-        var designParams;
-        if (target && propertyKey) {
-            designParams = Reflect.getMetadata('design:paramtypes', target, propertyKey) || [];
-        }
-        else {
-            designParams = Reflect.getMetadata('design:paramtypes', type) || [];
-        }
-        designParams = designParams.slice(0);
-        designParams.forEach(function (dtype) {
-            if (lifeScope.isVaildDependence(dtype)) {
-                if (!container.has(dtype)) {
-                    container.register(dtype);
-                }
-            }
-        });
-        var matchs = lifeScope.getParameterDecorators((function (surm) {
-            return surm.actions.includes(CoreActions_1.CoreActions.bindParameterType) && ((target || propertyKey !== 'constructor') ? factories.hasParamMetadata(surm.name, target, propertyKey)
-                : factories.hasOwnParamMetadata(surm.name, type));
-        }));
-        matchs.forEach(function (surm) {
-            var parameters = (target || propertyKey !== 'constructor') ? factories.getParamMetadata(surm.name, target, propertyKey) : factories.getOwnParamMetadata(surm.name, type);
-            if (utils.isArray(parameters) && parameters.length) {
-                parameters.forEach(function (params) {
-                    var parm = (utils.isArray(params) && params.length > 0) ? params[0] : null;
-                    if (parm && parm.index >= 0) {
-                        if (lifeScope.isVaildDependence(parm.provider)) {
-                            if (!container.has(parm.provider, parm.alias)) {
-                                container.register(container.getToken(parm.provider, parm.alias));
-                            }
-                        }
-                        if (lifeScope.isVaildDependence(parm.type)) {
-                            if (!container.has(parm.type)) {
-                                container.register(parm.type);
-                            }
-                        }
-                        var token = parm.provider ? container.getTokenKey(parm.provider, parm.alias) : parm.type;
-                        if (token) {
-                            designParams[parm.index] = token;
-                        }
-                    }
-                });
-            }
-        });
-        data.execResult = designParams;
-    };
-    BindParameterTypeAction.classAnnations = { "name": "BindParameterTypeAction", "params": { "constructor": [], "working": ["container", "data"] } };
-    return BindParameterTypeAction;
-}(ActionComposite_1.ActionComposite));
-exports.BindParameterTypeAction = BindParameterTypeAction;
 
 
 });
@@ -3250,56 +474,8 @@ unwrapExports(BindParameterTypeAction_1);
 var BindParameterTypeAction_2 = BindParameterTypeAction_1.BindParameterTypeAction;
 
 var BindPropertyTypeAction_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var BindPropertyTypeAction=function(e){function t(){return e.call(this,CoreActions_1.CoreActions.bindPropertyType)||this}return tslib_1.__extends(t,e), t.prototype.working=function(o,e){if(!e.raiseContainer||e.raiseContainer===o){var i=e.targetType,n=o.getLifeScope(),t=n.getPropertyDecorators(function(e){return e.actions.includes(CoreActions_1.CoreActions.bindPropertyType)&&factories.hasPropertyMetadata(e.name,i)}),a=[];t.forEach(function(e){var t=factories.getPropertyMetadata(e.name,i);for(var r in t)a=a.concat(t[r]);(a=a.filter(function(e){return!!e})).forEach(function(e){n.isVaildDependence(e.provider)&&(o.has(e.provider,e.alias)||o.register(o.getToken(e.provider,e.alias))), n.isVaildDependence(e.type)&&(o.has(e.type)||o.register(e.type));});}), e.execResult=a;}}, t.classAnnations={name:"BindPropertyTypeAction",params:{constructor:[],working:["container","data"]}}, t}(ActionComposite_1.ActionComposite);exports.BindPropertyTypeAction=BindPropertyTypeAction;
 
-
-
-
-/**
- * bind property type action. to get the property autowride token of Type calss.
- *
- * @export
- * @class SetPropAction
- * @extends {ActionComposite}
- */
-var BindPropertyTypeAction = /** @class */ (function (_super) {
-    tslib_1.__extends(BindPropertyTypeAction, _super);
-    function BindPropertyTypeAction() {
-        return _super.call(this, CoreActions_1.CoreActions.bindPropertyType) || this;
-    }
-    BindPropertyTypeAction.prototype.working = function (container, data) {
-        if (data.raiseContainer && data.raiseContainer !== container) {
-            return;
-        }
-        var type = data.targetType;
-        var lifeScope = container.getLifeScope();
-        var matchs = lifeScope.getPropertyDecorators(function (surm) { return surm.actions.includes(CoreActions_1.CoreActions.bindPropertyType) && factories.hasPropertyMetadata(surm.name, type); });
-        var list = [];
-        matchs.forEach(function (surm) {
-            var propMetadata = factories.getPropertyMetadata(surm.name, type);
-            for (var n in propMetadata) {
-                list = list.concat(propMetadata[n]);
-            }
-            list = list.filter(function (n) { return !!n; });
-            list.forEach(function (prop) {
-                if (lifeScope.isVaildDependence(prop.provider)) {
-                    if (!container.has(prop.provider, prop.alias)) {
-                        container.register(container.getToken(prop.provider, prop.alias));
-                    }
-                }
-                if (lifeScope.isVaildDependence(prop.type)) {
-                    if (!container.has(prop.type)) {
-                        container.register(prop.type);
-                    }
-                }
-            });
-        });
-        data.execResult = list;
-    };
-    BindPropertyTypeAction.classAnnations = { "name": "BindPropertyTypeAction", "params": { "constructor": [], "working": ["container", "data"] } };
-    return BindPropertyTypeAction;
-}(ActionComposite_1.ActionComposite));
-exports.BindPropertyTypeAction = BindPropertyTypeAction;
 
 
 });
@@ -3308,45 +484,8 @@ unwrapExports(BindPropertyTypeAction_1);
 var BindPropertyTypeAction_2 = BindPropertyTypeAction_1.BindPropertyTypeAction;
 
 var InjectPropertyAction_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var InjectPropertyAction=function(e){function t(){return e.call(this,CoreActions_1.CoreActions.injectProperty)||this}return tslib_1.__extends(t,e), t.prototype.working=function(o,n){if(n.execResult||this.parent.find(function(e){return e.name===CoreActions_1.CoreActions.bindPropertyType}).execute(o,n), n.target&&n.execResult&&n.execResult.length){var i=n.providerMap;n.execResult.reverse().forEach(function(e,t){if(e){var r=e.provider?o.getToken(e.provider,e.alias):e.type;i&&i.has(r)?n.target[e.propertyKey]=i.resolve(r,i):o.has(r)&&(n.target[e.propertyKey]=o.resolve(r,i));}});}}, t.classAnnations={name:"InjectPropertyAction",params:{constructor:[],working:["container","data"]}}, t}(ActionComposite_1.ActionComposite);exports.InjectPropertyAction=InjectPropertyAction;
 
-
-
-/**
- * inject property value action, to inject property value for resolve instance.
- *
- * @export
- * @class SetPropAction
- * @extends {ActionComposite}
- */
-var InjectPropertyAction = /** @class */ (function (_super) {
-    tslib_1.__extends(InjectPropertyAction, _super);
-    function InjectPropertyAction() {
-        return _super.call(this, CoreActions_1.CoreActions.injectProperty) || this;
-    }
-    InjectPropertyAction.prototype.working = function (container, data) {
-        if (!data.execResult) {
-            this.parent.find(function (act) { return act.name === CoreActions_1.CoreActions.bindPropertyType; }).execute(container, data);
-        }
-        if (data.target && data.execResult && data.execResult.length) {
-            var providerMap_1 = data.providerMap;
-            data.execResult.reverse().forEach(function (prop, idx) {
-                if (prop) {
-                    var token = prop.provider ? container.getToken(prop.provider, prop.alias) : prop.type;
-                    if (providerMap_1 && providerMap_1.has(token)) {
-                        data.target[prop.propertyKey] = providerMap_1.resolve(token, providerMap_1);
-                    }
-                    else if (container.has(token)) {
-                        data.target[prop.propertyKey] = container.resolve(token, providerMap_1);
-                    }
-                }
-            });
-        }
-    };
-    InjectPropertyAction.classAnnations = { "name": "InjectPropertyAction", "params": { "constructor": [], "working": ["container", "data"] } };
-    return InjectPropertyAction;
-}(ActionComposite_1.ActionComposite));
-exports.InjectPropertyAction = InjectPropertyAction;
 
 
 });
@@ -3355,50 +494,8 @@ unwrapExports(InjectPropertyAction_1);
 var InjectPropertyAction_2 = InjectPropertyAction_1.InjectPropertyAction;
 
 var BindParameterProviderAction_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var BindParameterProviderAction=function(e){function r(){return e.call(this,CoreActions_1.CoreActions.bindParameterProviders)||this}return tslib_1.__extends(r,e), r.prototype.working=function(e,r){if(!r.raiseContainer||r.raiseContainer===e){var t=r.targetType,o=r.propertyKey,i=e.getLifeScope().getMethodDecorators(function(e){return e.actions.includes(CoreActions_1.CoreActions.bindParameterProviders)&&factories.hasOwnMethodMetadata(e.name,t)}),n=[];i.forEach(function(e){var r=factories.getOwnMethodMetadata(e.name,t)[o];r&&utils.isArray(r)&&0<r.length&&r.forEach(function(e){e.providers&&0<e.providers.length&&(n=n.concat(e.providers));});}), r.execResult=n;}}, r.classAnnations={name:"BindParameterProviderAction",params:{constructor:[],working:["container","data"]}}, r}(ActionComposite_1.ActionComposite);exports.BindParameterProviderAction=BindParameterProviderAction;
 
-
-
-
-
-/**
- * bind parameters action.
- *
- * @export
- * @class BindParameterProviderAction
- * @extends {ActionComposite}
- */
-var BindParameterProviderAction = /** @class */ (function (_super) {
-    tslib_1.__extends(BindParameterProviderAction, _super);
-    function BindParameterProviderAction() {
-        return _super.call(this, CoreActions_1.CoreActions.bindParameterProviders) || this;
-    }
-    BindParameterProviderAction.prototype.working = function (container, data) {
-        if (data.raiseContainer && data.raiseContainer !== container) {
-            return;
-        }
-        var type = data.targetType;
-        var propertyKey = data.propertyKey;
-        var lifeScope = container.getLifeScope();
-        var matchs = lifeScope.getMethodDecorators(function (surm) { return surm.actions.includes(CoreActions_1.CoreActions.bindParameterProviders) && factories.hasOwnMethodMetadata(surm.name, type); });
-        var providers = [];
-        matchs.forEach(function (surm) {
-            var methodmtas = factories.getOwnMethodMetadata(surm.name, type);
-            var metadatas = methodmtas[propertyKey];
-            if (metadatas && utils.isArray(metadatas) && metadatas.length > 0) {
-                metadatas.forEach(function (meta) {
-                    if (meta.providers && meta.providers.length > 0) {
-                        providers = providers.concat(meta.providers);
-                    }
-                });
-            }
-        });
-        data.execResult = providers;
-    };
-    BindParameterProviderAction.classAnnations = { "name": "BindParameterProviderAction", "params": { "constructor": [], "working": ["container", "data"] } };
-    return BindParameterProviderAction;
-}(ActionComposite_1.ActionComposite));
-exports.BindParameterProviderAction = BindParameterProviderAction;
 
 
 });
@@ -3407,38 +504,8 @@ unwrapExports(BindParameterProviderAction_1);
 var BindParameterProviderAction_2 = BindParameterProviderAction_1.BindParameterProviderAction;
 
 var ComponentBeforeInitAction_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var ComponentBeforeInitAction=function(t){function e(){return t.call(this,CoreActions_1.CoreActions.componentBeforeInit)||this}return tslib_1.__extends(e,t), e.prototype.working=function(t,e){if((!e.raiseContainer||e.raiseContainer===t)&&e.targetType&&e.target){var o=e.target;utils.isFunction(o.beforeInit)&&t.syncInvoke(e.targetType,"beforeInit",e.target);}}, e.classAnnations={name:"ComponentBeforeInitAction",params:{constructor:[],working:["container","data"]}}, e}(ActionComposite_1.ActionComposite);exports.ComponentBeforeInitAction=ComponentBeforeInitAction;
 
-
-
-
-/**
- * component before init action, to run @Component decorator class before init hooks.
- *
- * @export
- * @class ComponentBeforeInitAction
- * @extends {ActionComposite}
- */
-var ComponentBeforeInitAction = /** @class */ (function (_super) {
-    tslib_1.__extends(ComponentBeforeInitAction, _super);
-    function ComponentBeforeInitAction() {
-        return _super.call(this, CoreActions_1.CoreActions.componentBeforeInit) || this;
-    }
-    ComponentBeforeInitAction.prototype.working = function (container, data) {
-        if (data.raiseContainer && data.raiseContainer !== container) {
-            return;
-        }
-        if (data.targetType && data.target) {
-            var component = data.target;
-            if (utils.isFunction(component.beforeInit)) {
-                container.syncInvoke(data.targetType, 'beforeInit', data.target);
-            }
-        }
-    };
-    ComponentBeforeInitAction.classAnnations = { "name": "ComponentBeforeInitAction", "params": { "constructor": [], "working": ["container", "data"] } };
-    return ComponentBeforeInitAction;
-}(ActionComposite_1.ActionComposite));
-exports.ComponentBeforeInitAction = ComponentBeforeInitAction;
 
 
 });
@@ -3447,38 +514,8 @@ unwrapExports(ComponentBeforeInitAction_1);
 var ComponentBeforeInitAction_2 = ComponentBeforeInitAction_1.ComponentBeforeInitAction;
 
 var ComponentInitAction_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var ComponentInitAction=function(t){function n(){return t.call(this,CoreActions_1.CoreActions.componentInit)||this}return tslib_1.__extends(n,t), n.prototype.working=function(t,n){if((!n.raiseContainer||n.raiseContainer===t)&&n.targetType&&n.target){var o=n.target;utils.isFunction(o.onInit)&&t.syncInvoke(n.targetType,"onInit",n.target);}}, n.classAnnations={name:"ComponentInitAction",params:{constructor:[],working:["container","data"]}}, n}(ActionComposite_1.ActionComposite);exports.ComponentInitAction=ComponentInitAction;
 
-
-
-
-/**
- * component before init action, to run @Component decorator class before init hooks.
- *
- * @export
- * @class ComponentInitAction
- * @extends {ActionComposite}
- */
-var ComponentInitAction = /** @class */ (function (_super) {
-    tslib_1.__extends(ComponentInitAction, _super);
-    function ComponentInitAction() {
-        return _super.call(this, CoreActions_1.CoreActions.componentInit) || this;
-    }
-    ComponentInitAction.prototype.working = function (container, data) {
-        if (data.raiseContainer && data.raiseContainer !== container) {
-            return;
-        }
-        if (data.targetType && data.target) {
-            var component = data.target;
-            if (utils.isFunction(component.onInit)) {
-                container.syncInvoke(data.targetType, 'onInit', data.target);
-            }
-        }
-    };
-    ComponentInitAction.classAnnations = { "name": "ComponentInitAction", "params": { "constructor": [], "working": ["container", "data"] } };
-    return ComponentInitAction;
-}(ActionComposite_1.ActionComposite));
-exports.ComponentInitAction = ComponentInitAction;
 
 
 });
@@ -3487,38 +524,8 @@ unwrapExports(ComponentInitAction_1);
 var ComponentInitAction_2 = ComponentInitAction_1.ComponentInitAction;
 
 var ComponentAfterInitAction_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var ComponentAfterInitAction=function(t){function e(){return t.call(this,CoreActions_1.CoreActions.componentAfterInit)||this}return tslib_1.__extends(e,t), e.prototype.working=function(t,e){if((!e.raiseContainer||e.raiseContainer===t)&&e.targetType&&e.target){var n=e.target;utils.isFunction(n.afterInit)&&t.syncInvoke(e.targetType,"afterInit",e.target);}}, e.classAnnations={name:"ComponentAfterInitAction",params:{constructor:[],working:["container","data"]}}, e}(ActionComposite_1.ActionComposite);exports.ComponentAfterInitAction=ComponentAfterInitAction;
 
-
-
-
-/**
- * component after init action, to run @Component decorator class after init hooks.
- *
- * @export
- * @class ComponentAfterInitAction
- * @extends {ActionComposite}
- */
-var ComponentAfterInitAction = /** @class */ (function (_super) {
-    tslib_1.__extends(ComponentAfterInitAction, _super);
-    function ComponentAfterInitAction() {
-        return _super.call(this, CoreActions_1.CoreActions.componentAfterInit) || this;
-    }
-    ComponentAfterInitAction.prototype.working = function (container, data) {
-        if (data.raiseContainer && data.raiseContainer !== container) {
-            return;
-        }
-        if (data.targetType && data.target) {
-            var component = data.target;
-            if (utils.isFunction(component.afterInit)) {
-                container.syncInvoke(data.targetType, 'afterInit', data.target);
-            }
-        }
-    };
-    ComponentAfterInitAction.classAnnations = { "name": "ComponentAfterInitAction", "params": { "constructor": [], "working": ["container", "data"] } };
-    return ComponentAfterInitAction;
-}(ActionComposite_1.ActionComposite));
-exports.ComponentAfterInitAction = ComponentAfterInitAction;
 
 
 });
@@ -3527,13 +534,8 @@ unwrapExports(ComponentAfterInitAction_1);
 var ComponentAfterInitAction_2 = ComponentAfterInitAction_1.ComponentAfterInitAction;
 
 var ICacheManager = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.CacheManagerToken=new InjectToken_1.InjectToken("DI_ICacheManager");
 
-/**
- * ICacheManager interface token.
- * it is a token id, you can register yourself ICacheManager for this.
- */
-exports.CacheManagerToken = new InjectToken_1.InjectToken('DI_ICacheManager');
 
 
 });
@@ -3542,73 +544,8 @@ unwrapExports(ICacheManager);
 var ICacheManager_1 = ICacheManager.CacheManagerToken;
 
 var CacheAction_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var CacheAction=function(e){function t(){return e.call(this,CoreActions_1.CoreActions.cache)||this}return tslib_1.__extends(t,e), t.prototype.working=function(e,t){if(t.raiseContainer&&t.raiseContainer!==e)return t;if(t.singleton||!t.targetType||!utils.isClass(t.targetType))return t;var a=e.get(ICacheManager.CacheManagerToken);if(t.target){if(!a.hasCache(t.targetType))(r=this.getCacheMetadata(e,t))&&a.cache(t.targetType,t.target,r.expires);}else{var r,i=a.get(t.targetType);if(i)(r=this.getCacheMetadata(e,t))&&(a.cache(t.targetType,i,r.expires), t.execResult=i);}return t}, t.prototype.getCacheMetadata=function(e,t){for(var a,r=e.getLifeScope().getClassDecorators(function(e){return factories.hasOwnClassMetadata(e.name,t.targetType)}),i=0;i<r.length;i++){var n=r[i],o=factories.getOwnTypeMetadata(n.name,t.targetType);if(Array.isArray(o)&&0<o.length&&(a=o.find(function(e){return e&&utils.isNumber(e.expires)&&0<e.expires})))break}return a}, t.classAnnations={name:"CacheAction",params:{constructor:[],working:["container","data"],getCacheMetadata:["container","data"]}}, t}(ActionComposite_1.ActionComposite);exports.CacheAction=CacheAction;
 
-
-
-
-
-
-/**
- * cache action. To cache instance of Token. define cache expires in decorator.
- *
- * @export
- * @class CacheAction
- * @extends {ActionComposite}
- */
-var CacheAction = /** @class */ (function (_super) {
-    tslib_1.__extends(CacheAction, _super);
-    function CacheAction() {
-        return _super.call(this, CoreActions_1.CoreActions.cache) || this;
-    }
-    CacheAction.prototype.working = function (container, data) {
-        if (data.raiseContainer && data.raiseContainer !== container) {
-            return data;
-        }
-        if (data.singleton || !data.targetType || !utils.isClass(data.targetType)) {
-            return data;
-        }
-        var cacheManager = container.get(ICacheManager.CacheManagerToken);
-        if (data.target) {
-            if (!cacheManager.hasCache(data.targetType)) {
-                var cacheMetadata = this.getCacheMetadata(container, data);
-                if (cacheMetadata) {
-                    cacheManager.cache(data.targetType, data.target, cacheMetadata.expires);
-                }
-            }
-        }
-        else {
-            var target = cacheManager.get(data.targetType);
-            if (target) {
-                var cacheMetadata = this.getCacheMetadata(container, data);
-                if (cacheMetadata) {
-                    cacheManager.cache(data.targetType, target, cacheMetadata.expires);
-                    data.execResult = target;
-                }
-            }
-        }
-        return data;
-    };
-    CacheAction.prototype.getCacheMetadata = function (container, data) {
-        var lifeScope = container.getLifeScope();
-        var matchs = lifeScope.getClassDecorators(function (surm) { return factories.hasOwnClassMetadata(surm.name, data.targetType); });
-        var cacheMetadata;
-        for (var i = 0; i < matchs.length; i++) {
-            var surm = matchs[i];
-            var metadata = factories.getOwnTypeMetadata(surm.name, data.targetType);
-            if (Array.isArray(metadata) && metadata.length > 0) {
-                cacheMetadata = metadata.find(function (c) { return c && utils.isNumber(c.expires) && c.expires > 0; });
-                if (cacheMetadata) {
-                    break;
-                }
-            }
-        }
-        return cacheMetadata;
-    };
-    CacheAction.classAnnations = { "name": "CacheAction", "params": { "constructor": [], "working": ["container", "data"], "getCacheMetadata": ["container", "data"] } };
-    return CacheAction;
-}(ActionComposite_1.ActionComposite));
-exports.CacheAction = CacheAction;
 
 
 });
@@ -3617,34 +554,8 @@ unwrapExports(CacheAction_1);
 var CacheAction_2 = CacheAction_1.CacheAction;
 
 var SingletonAction = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var SingletionAction=function(t){function e(){return t.call(this,CoreActions_1.CoreActions.singletion)||this}return tslib_1.__extends(e,t), e.prototype.working=function(t,e){e.raiseContainer&&e.raiseContainer!==t||e.tokenKey&&e.target&&e.singleton&&t.registerValue(e.tokenKey,e.target);}, e.classAnnations={name:"SingletionAction",params:{constructor:[],working:["container","data"]}}, e}(ActionComposite_1.ActionComposite);exports.SingletionAction=SingletionAction;
 
-
-
-/**
- * singleton action, to set the factory of Token as singleton.
- *
- * @export
- * @class SingletionAction
- * @extends {ActionComposite}
- */
-var SingletionAction = /** @class */ (function (_super) {
-    tslib_1.__extends(SingletionAction, _super);
-    function SingletionAction() {
-        return _super.call(this, CoreActions_1.CoreActions.singletion) || this;
-    }
-    SingletionAction.prototype.working = function (container, data) {
-        if (data.raiseContainer && data.raiseContainer !== container) {
-            return;
-        }
-        if (data.tokenKey && data.target && data.singleton) {
-            container.registerValue(data.tokenKey, data.target);
-        }
-    };
-    SingletionAction.classAnnations = { "name": "SingletionAction", "params": { "constructor": [], "working": ["container", "data"] } };
-    return SingletionAction;
-}(ActionComposite_1.ActionComposite));
-exports.SingletionAction = SingletionAction;
 
 
 });
@@ -3653,14 +564,8 @@ unwrapExports(SingletonAction);
 var SingletonAction_1 = SingletonAction.SingletionAction;
 
 var Component = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.Component=factories.createClassDecorator("Component");
 
-/**
- * Component decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`ComponentLifecycle`]
- *
- * @Component
- */
-exports.Component = factories.createClassDecorator('Component');
 
 
 });
@@ -3669,14 +574,8 @@ unwrapExports(Component);
 var Component_1 = Component.Component;
 
 var Injectable = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.Injectable=factories.createClassDecorator("Injectable");
 
-/**
- * Injectable decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.
- *
- * @Injectable
- */
-exports.Injectable = factories.createClassDecorator('Injectable');
 
 
 });
@@ -3685,14 +584,8 @@ unwrapExports(Injectable);
 var Injectable_1 = Injectable.Injectable;
 
 var Inject = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.Inject=factories.createParamPropDecorator("Inject");
 
-/**
- * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
- *
- * @Inject
- */
-exports.Inject = factories.createParamPropDecorator('Inject');
 
 
 });
@@ -3701,14 +594,8 @@ unwrapExports(Inject);
 var Inject_1 = Inject.Inject;
 
 var AutoWried = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.AutoWired=factories.createParamPropDecorator("AutoWired");
 
-/**
- * AutoWired decorator, for property or param. use to auto wried type instance or value to the instance of one class with the decorator.
- *
- * @AutoWired
- */
-exports.AutoWired = factories.createParamPropDecorator('AutoWired');
 
 
 });
@@ -3717,14 +604,8 @@ unwrapExports(AutoWried);
 var AutoWried_1 = AutoWried.AutoWired;
 
 var Param = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.Param=factories.createParamDecorator("Param");
 
-/**
- * param decorator, define for parameter. use to auto wried type instance or value to the instance of one class with the decorator.
- *
- * @Param
- */
-exports.Param = factories.createParamDecorator('Param');
 
 
 });
@@ -3733,14 +614,8 @@ unwrapExports(Param);
 var Param_1 = Param.Param;
 
 var Method = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.Method=factories.createMethodDecorator("Method");
 
-/**
- * method decorator.
- *
- * @Method
- */
-exports.Method = factories.createMethodDecorator('Method');
 
 
 });
@@ -3749,17 +624,8 @@ unwrapExports(Method);
 var Method_1 = Method.Method;
 
 var Singleton = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.Singleton=factories.createClassDecorator("Singleton",null,function(e){return e.singleton=!0, e});
 
-/**
- * Singleton decorator, for class. use to define the class is singleton.
- *
- * @Singleton
- */
-exports.Singleton = factories.createClassDecorator('Singleton', null, function (metadata) {
-    metadata.singleton = true;
-    return metadata;
-});
 
 
 });
@@ -3768,14 +634,8 @@ unwrapExports(Singleton);
 var Singleton_1 = Singleton.Singleton;
 
 var Abstract = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.Abstract=factories.createClassDecorator("Abstract");
 
-/**
- * Abstract decorator. define for class.
- *
- * @Abstract
- */
-exports.Abstract = factories.createClassDecorator('Abstract');
 
 
 });
@@ -3784,31 +644,8 @@ unwrapExports(Abstract);
 var Abstract_1 = Abstract.Abstract;
 
 var AutoRun = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.Autorun=factories.createClassMethodDecorator("Autorun",function(t){t.next({isMetadata:function(t){return utils.isClassMetadata(t,["autorun"])},match:function(t){return utils.isString(t)||utils.isNumber(t)},setMetadata:function(t,e){utils.isString(e)?t.autorun=e:t.order=e;}});},function(t){return t.singleton=!0, t});
 
-
-/**
- * Autorun decorator, for class or method.  use to define the class auto run (via a method or not) after registered.
- *
- * @Autorun
- */
-exports.Autorun = factories.createClassMethodDecorator('Autorun', function (args) {
-    args.next({
-        isMetadata: function (arg) { return utils.isClassMetadata(arg, ['autorun']); },
-        match: function (arg) { return utils.isString(arg) || utils.isNumber(arg); },
-        setMetadata: function (metadata, arg) {
-            if (utils.isString(arg)) {
-                metadata.autorun = arg;
-            }
-            else {
-                metadata.order = arg;
-            }
-        }
-    });
-}, function (metadata) {
-    metadata.singleton = true;
-    return metadata;
-});
 
 
 });
@@ -3817,27 +654,8 @@ unwrapExports(AutoRun);
 var AutoRun_1 = AutoRun.Autorun;
 
 var IocExt = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.IocExt=factories.createClassDecorator("IocExt",function(t){t.next({isMetadata:function(t){return utils.isClassMetadata(t,["autorun"])},match:function(t){return utils.isString(t)},setMetadata:function(t,e){t.autorun=e;}});},function(t){return t.singleton=!0, t}), exports.IocModule=exports.IocExt;
 
-
-/**
- * IocExt decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
- *
- * @IocExt
- */
-exports.IocExt = factories.createClassDecorator('IocExt', function (args) {
-    args.next({
-        isMetadata: function (arg) { return utils.isClassMetadata(arg, ['autorun']); },
-        match: function (arg) { return utils.isString(arg); },
-        setMetadata: function (metadata, arg) {
-            metadata.autorun = arg;
-        }
-    });
-}, function (metadata) {
-    metadata.singleton = true;
-    return metadata;
-});
-exports.IocModule = exports.IocExt;
 
 
 });
@@ -3847,18 +665,8 @@ var IocExt_1 = IocExt.IocExt;
 var IocExt_2 = IocExt.IocModule;
 
 var decorators = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});tslib_1.__exportStar(Component,exports), tslib_1.__exportStar(Injectable,exports), tslib_1.__exportStar(Inject,exports), tslib_1.__exportStar(AutoWried,exports), tslib_1.__exportStar(Param,exports), tslib_1.__exportStar(Method,exports), tslib_1.__exportStar(Singleton,exports), tslib_1.__exportStar(Abstract,exports), tslib_1.__exportStar(AutoRun,exports), tslib_1.__exportStar(IocExt,exports);
 
-tslib_1.__exportStar(Component, exports);
-tslib_1.__exportStar(Injectable, exports);
-tslib_1.__exportStar(Inject, exports);
-tslib_1.__exportStar(AutoWried, exports);
-tslib_1.__exportStar(Param, exports);
-tslib_1.__exportStar(Method, exports);
-tslib_1.__exportStar(Singleton, exports);
-tslib_1.__exportStar(Abstract, exports);
-tslib_1.__exportStar(AutoRun, exports);
-tslib_1.__exportStar(IocExt, exports);
 
 
 });
@@ -3866,55 +674,8 @@ tslib_1.__exportStar(IocExt, exports);
 unwrapExports(decorators);
 
 var AutorunAction_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var AutorunAction=function(t){function o(){return t.call(this,CoreActions_1.CoreActions.autorun)||this}return tslib_1.__extends(o,t), o.prototype.getDecorator=function(){return[decorators.IocExt,decorators.Autorun]}, o.prototype.working=function(n,i){i.raiseContainer&&i.raiseContainer!==n||i.tokenKey&&i.targetType&&this.getDecorator().forEach(function(t){if(factories.hasClassMetadata(t,i.targetType)){var o=factories.getTypeMetadata(t,i.targetType),e=o.find(function(t){return!!t.autorun});if(!e&&o.length&&(e=o[0]), e){var r=n.get(i.tokenKey);r&&e.autorun&&utils.isFunction(r[e.autorun])&&n.syncInvoke(i.tokenKey,e.autorun,r);}}});}, o.classAnnations={name:"AutorunAction",params:{constructor:[],getDecorator:[],working:["container","data"]}}, o}(ActionComposite_1.ActionComposite);exports.AutorunAction=AutorunAction;
 
-
-
-
-
-
-/**
- * Inject DrawType action.
- *
- * @export
- * @class SetPropAction
- * @extends {ActionComposite}
- */
-var AutorunAction = /** @class */ (function (_super) {
-    tslib_1.__extends(AutorunAction, _super);
-    function AutorunAction() {
-        return _super.call(this, CoreActions_1.CoreActions.autorun) || this;
-    }
-    AutorunAction.prototype.getDecorator = function () {
-        return [decorators.IocExt, decorators.Autorun];
-    };
-    AutorunAction.prototype.working = function (container, data) {
-        if (data.raiseContainer && data.raiseContainer !== container) {
-            return;
-        }
-        if (data.tokenKey && data.targetType) {
-            var decorators$$1 = this.getDecorator();
-            decorators$$1.forEach(function (decorator) {
-                if (factories.hasClassMetadata(decorator, data.targetType)) {
-                    var metas = factories.getTypeMetadata(decorator, data.targetType);
-                    var meta = metas.find(function (it) { return !!it.autorun; });
-                    if (!meta && metas.length) {
-                        meta = metas[0];
-                    }
-                    if (meta) {
-                        var instance = container.get(data.tokenKey);
-                        if (instance && meta.autorun && utils.isFunction(instance[meta.autorun])) {
-                            container.syncInvoke(data.tokenKey, meta.autorun, instance);
-                        }
-                    }
-                }
-            });
-        }
-    };
-    AutorunAction.classAnnations = { "name": "AutorunAction", "params": { "constructor": [], "getDecorator": [], "working": ["container", "data"] } };
-    return AutorunAction;
-}(ActionComposite_1.ActionComposite));
-exports.AutorunAction = AutorunAction;
 
 
 });
@@ -3923,23 +684,8 @@ unwrapExports(AutorunAction_1);
 var AutorunAction_2 = AutorunAction_1.AutorunAction;
 
 var actions = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});tslib_1.__exportStar(ActionComposite_1,exports), tslib_1.__exportStar(LifeState_1,exports), tslib_1.__exportStar(CoreActions_1,exports), tslib_1.__exportStar(NullAction,exports), tslib_1.__exportStar(BindProviderAction_1,exports), tslib_1.__exportStar(BindParameterTypeAction_1,exports), tslib_1.__exportStar(BindPropertyTypeAction_1,exports), tslib_1.__exportStar(InjectPropertyAction_1,exports), tslib_1.__exportStar(BindParameterProviderAction_1,exports), tslib_1.__exportStar(ComponentBeforeInitAction_1,exports), tslib_1.__exportStar(ComponentInitAction_1,exports), tslib_1.__exportStar(ComponentAfterInitAction_1,exports), tslib_1.__exportStar(CacheAction_1,exports), tslib_1.__exportStar(SingletonAction,exports), tslib_1.__exportStar(AutorunAction_1,exports);
 
-tslib_1.__exportStar(ActionComposite_1, exports);
-tslib_1.__exportStar(LifeState_1, exports);
-tslib_1.__exportStar(CoreActions_1, exports);
-tslib_1.__exportStar(NullAction, exports);
-tslib_1.__exportStar(BindProviderAction_1, exports);
-tslib_1.__exportStar(BindParameterTypeAction_1, exports);
-tslib_1.__exportStar(BindPropertyTypeAction_1, exports);
-tslib_1.__exportStar(InjectPropertyAction_1, exports);
-tslib_1.__exportStar(BindParameterProviderAction_1, exports);
-tslib_1.__exportStar(ComponentBeforeInitAction_1, exports);
-tslib_1.__exportStar(ComponentInitAction_1, exports);
-tslib_1.__exportStar(ComponentAfterInitAction_1, exports);
-tslib_1.__exportStar(CacheAction_1, exports);
-tslib_1.__exportStar(SingletonAction, exports);
-tslib_1.__exportStar(AutorunAction_1, exports);
 
 
 });
@@ -3947,96 +693,8 @@ tslib_1.__exportStar(AutorunAction_1, exports);
 unwrapExports(actions);
 
 var ProviderMap_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.ProviderMapToken=new InjectToken_1.InjectToken("DI_ProviderMap");var ProviderMap=function(){function t(t){this.container=t, this.maps=new utils.MapSet;}return t.prototype.has=function(t){return this.maps.has(t)}, t.prototype.get=function(t){return this.maps.get(t)}, t.prototype.add=function(t,o){var e,n=this;return utils.isUndefined(t)||(e=utils.isToken(o)&&this.container.has(o)?function(){for(var t,e=[],r=0;r<arguments.length;r++)e[r]=arguments[r];return(t=n.container).resolve.apply(t,[o].concat(e))}:utils.isFunction(o)?function(){for(var t=[],e=0;e<arguments.length;e++)t[e]=arguments[e];return o.apply(void 0,[n.container].concat(t))}:function(){return o}, this.maps.set(t,e)), this}, t.prototype.remove=function(t){return this.maps.has(t)&&this.maps.delete(t), this}, t.prototype.resolve=function(t){for(var e,r,o=[],n=1;n<arguments.length;n++)o[n-1]=arguments[n];if(!this.maps.has(t))return!utils.isNumber(t)&&this.container.has(t)?(e=this.container).resolve.apply(e,[t].concat(o)):null;var i=this.maps.get(t);return utils.isToken(i)?(r=this.container).resolve.apply(r,[i].concat(o)):i.apply(void 0,o)}, t.prototype.forEach=function(t){this.maps.forEach(t);}, t.prototype.copy=function(t){var r=this;t&&t.forEach(function(t,e){r.maps.set(e,t);});}, t.classAnnations={name:"ProviderMap",params:{constructor:["container"],has:["provide"],get:["provide"],add:["provide","provider"],remove:["provide"],resolve:["provide","providers"],forEach:["express"],copy:["map"]}}, t}();exports.ProviderMap=ProviderMap;
 
-
-exports.ProviderMapToken = new InjectToken_1.InjectToken('DI_ProviderMap');
-/**
- * Provider Map
- *
- * @export
- * @class Providers
- */
-var ProviderMap = /** @class */ (function () {
-    function ProviderMap(container) {
-        this.container = container;
-        this.maps = new utils.MapSet();
-    }
-    ProviderMap.prototype.has = function (provide) {
-        return this.maps.has(provide);
-    };
-    ProviderMap.prototype.get = function (provide) {
-        return this.maps.get(provide);
-    };
-    ProviderMap.prototype.add = function (provide, provider) {
-        var _this = this;
-        if (utils.isUndefined(provide)) {
-            return this;
-        }
-        var factory;
-        if (utils.isToken(provider) && this.container.has(provider)) {
-            factory = function () {
-                var providers = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    providers[_i] = arguments[_i];
-                }
-                var _a;
-                return (_a = _this.container).resolve.apply(_a, [provider].concat(providers));
-            };
-        }
-        else {
-            if (utils.isFunction(provider)) {
-                factory = function () {
-                    var providers = [];
-                    for (var _i = 0; _i < arguments.length; _i++) {
-                        providers[_i] = arguments[_i];
-                    }
-                    return provider.apply(void 0, [_this.container].concat(providers));
-                };
-            }
-            else {
-                factory = function () {
-                    return provider;
-                };
-            }
-        }
-        this.maps.set(provide, factory);
-        return this;
-    };
-    ProviderMap.prototype.remove = function (provide) {
-        if (this.maps.has(provide)) {
-            this.maps.delete(provide);
-        }
-        return this;
-    };
-    ProviderMap.prototype.resolve = function (provide) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        var _a, _b;
-        if (!this.maps.has(provide)) {
-            return (!utils.isNumber(provide) && this.container.has(provide)) ? (_a = this.container).resolve.apply(_a, [provide].concat(providers)) : null;
-        }
-        var provider = this.maps.get(provide);
-        return utils.isToken(provider) ? (_b = this.container).resolve.apply(_b, [provider].concat(providers)) : provider.apply(void 0, providers);
-    };
-    ProviderMap.prototype.forEach = function (express) {
-        this.maps.forEach(express);
-    };
-    ProviderMap.prototype.copy = function (map) {
-        var _this = this;
-        if (!map) {
-            return;
-        }
-        map.forEach(function (val, token) {
-            _this.maps.set(token, val);
-        });
-    };
-    ProviderMap.classAnnations = { "name": "ProviderMap", "params": { "constructor": ["container"], "has": ["provide"], "get": ["provide"], "add": ["provide", "provider"], "remove": ["provide"], "resolve": ["provide", "providers"], "forEach": ["express"], "copy": ["map"] } };
-    return ProviderMap;
-}());
-exports.ProviderMap = ProviderMap;
 
 
 });
@@ -4046,207 +704,8 @@ var ProviderMap_2 = ProviderMap_1.ProviderMapToken;
 var ProviderMap_3 = ProviderMap_1.ProviderMap;
 
 var Provider_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var Provider=function(){function r(e,t){this.type=e, this.value=t;}return r.prototype.resolve=function(e){for(var t=[],r=1;r<arguments.length;r++)t[r-1]=arguments[r];return utils.isUndefined(this.value)?e.has(this.type)?e.resolve.apply(e,[this.type].concat(t)):null:this.value}, r.create=function(e,t){return new r(e,t)}, r.createExtends=function(e,t,r){return new ExtendsProvider(e,t,r)}, r.createInvoke=function(e,t,r){return new InvokeProvider(e,t,r)}, r.createParam=function(e,t,r,n){return new ParamProvider(e,t,r,n)}, r.classAnnations={name:"Provider",params:{constructor:["type","value"],resolve:["container","providers"],create:["type","value"],createExtends:["token","value","extendsTarget"],createInvoke:["token","method","value"],createParam:["token","value","index","method"]}}, r}(),InvokeProvider=function(o){function e(e,t,r){var n=o.call(this,e,r)||this;return n.method=t, n}return tslib_1.__extends(e,o), e.prototype.resolve=function(e){for(var t=[],r=1;r<arguments.length;r++)t[r-1]=arguments[r];return this.method?e.syncInvoke.apply(e,[this.type,this.method].concat(t)):o.prototype.resolve.apply(this,[e].concat(t))}, e.classAnnations={name:"InvokeProvider",params:{constructor:["type","method","value"],resolve:["container","providers"]}}, e}(exports.Provider=Provider),ParamProvider=function(s){function e(e,t,r,n){var o=s.call(this,e,n,t)||this;return o.index=r, o}return tslib_1.__extends(e,s), e.prototype.resolve=function(e){for(var t=[],r=1;r<arguments.length;r++)t[r-1]=arguments[r];return s.prototype.resolve.apply(this,[e].concat(t))}, e.classAnnations={name:"ParamProvider",params:{constructor:["token","value","index","method"],resolve:["container","providers"]}}, e}(exports.InvokeProvider=InvokeProvider);exports.ParamProvider=ParamProvider;var ExtendsProvider=function(o){function e(e,t,r){var n=o.call(this,e,t)||this;return n.extendsTarget=r, n}return tslib_1.__extends(e,o), e.prototype.resolve=function(e){for(var t=[],r=1;r<arguments.length;r++)t[r-1]=arguments[r];return o.prototype.resolve.apply(this,[e].concat(t))}, e.prototype.extends=function(e){utils.isObject(e)&&utils.isFunction(this.extendsTarget)&&this.extendsTarget(e,this);}, e.classAnnations={name:"ExtendsProvider",params:{constructor:["token","value","extendsTarget"],resolve:["container","providers"],extends:["target"]}}, e}(Provider);exports.ExtendsProvider=ExtendsProvider;
 
-
-/**
- *  provider, to dynamic resovle instance of params in run time.
- *
- * @export
- * @class Provider
- */
-var Provider = /** @class */ (function () {
-    function Provider(type, value) {
-        this.type = type;
-        this.value = value;
-    }
-    /**
-     * resolve provider value.
-     *
-     * @template T
-     * @param {IContainer} container
-     * @param {Providers[]} providers
-     * @returns {T}
-     * @memberof Provider
-     */
-    Provider.prototype.resolve = function (container) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        if (utils.isUndefined(this.value)) {
-            return container.has(this.type) ? container.resolve.apply(container, [this.type].concat(providers)) : null;
-        }
-        else {
-            return this.value; // isFunction(this.value) ? this.value(container) : this.value;
-        }
-    };
-    /**
-     * create provider.
-     *
-     * @static
-     * @param {Token<any>} type
-     * @param {(any)} value
-     * @returns Provider
-     * @memberof Provider
-     */
-    Provider.create = function (type, value) {
-        return new Provider(type, value);
-    };
-    /**
-     * create extends provider.
-     *
-     * @static
-     * @param {Token<any>} token
-     * @param {(any)} value
-     * @param {Express2<any, ExtendsProvider, void>} [extendsTarget]
-     * @returns {ExtendsProvider}
-     * @memberof Provider
-     */
-    Provider.createExtends = function (token, value, extendsTarget) {
-        return new ExtendsProvider(token, value, extendsTarget);
-    };
-    // /**
-    //  * create custom provider.
-    //  *
-    //  * @static
-    //  * @param {Token<any>} [type]
-    //  * @param {ToInstance<any>} [toInstance]
-    //  * @param {*} [value]
-    //  * @returns {CustomProvider}
-    //  * @memberof Provider
-    //  */
-    // static createCustom(type?: Token<any>, toInstance?: ToInstance<any>, value?: any): CustomProvider {
-    //     return new CustomProvider(type, toInstance, value);
-    // }
-    /**
-     * create invoked provider.
-     *
-     * @static
-     * @param {Token<any>} token
-     * @param {string} method
-     * @param {(any)} [value]
-     * @returns {InvokeProvider}
-     * @memberof Provider
-     */
-    Provider.createInvoke = function (token, method, value) {
-        return new InvokeProvider(token, method, value);
-    };
-    /**
-     * create param provider.
-     *
-     * @static
-     * @param {Token<any>} token
-     * @param {(any)} value
-     * @param {number} [index]
-     * @param {string} [method]
-     * @returns {ParamProvider}
-     * @memberof Provider
-     */
-    Provider.createParam = function (token, value, index, method) {
-        return new ParamProvider(token, value, index, method);
-    };
-    // /**
-    //  * create async param provider.
-    //  *
-    //  * @static
-    //  * @param {(string | string[])} files
-    //  * @param {Token<any>} token
-    //  * @param {number} [index]
-    //  * @param {string} [method]
-    //  * @param {(any)} [value]
-    //  * @returns {AsyncParamProvider}
-    //  * @memberof Provider
-    //  */
-    // static createAsyncParam(files: string | string[], token: Token<any>, index?: number, method?: string, value?: any): AsyncParamProvider {
-    //     return new AsyncParamProvider(files, token, index, method, value)
-    // }
-    Provider.classAnnations = { "name": "Provider", "params": { "constructor": ["type", "value"], "resolve": ["container", "providers"], "create": ["type", "value"], "createExtends": ["token", "value", "extendsTarget"], "createInvoke": ["token", "method", "value"], "createParam": ["token", "value", "index", "method"] } };
-    return Provider;
-}());
-exports.Provider = Provider;
-/**
- * InvokeProvider
- *
- * @export
- * @class InvokeProvider
- * @extends {Provider}
- */
-var InvokeProvider = /** @class */ (function (_super) {
-    tslib_1.__extends(InvokeProvider, _super);
-    function InvokeProvider(type, method, value) {
-        var _this = _super.call(this, type, value) || this;
-        _this.method = method;
-        return _this;
-    }
-    InvokeProvider.prototype.resolve = function (container) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        if (this.method) {
-            return container.syncInvoke.apply(container, [this.type, this.method].concat(providers));
-        }
-        return _super.prototype.resolve.apply(this, [container].concat(providers));
-    };
-    InvokeProvider.classAnnations = { "name": "InvokeProvider", "params": { "constructor": ["type", "method", "value"], "resolve": ["container", "providers"] } };
-    return InvokeProvider;
-}(Provider));
-exports.InvokeProvider = InvokeProvider;
-/**
- * param provider.
- *
- * @export
- * @interface ParamProvider
- */
-var ParamProvider = /** @class */ (function (_super) {
-    tslib_1.__extends(ParamProvider, _super);
-    function ParamProvider(token, value, index, method) {
-        var _this = _super.call(this, token, method, value) || this;
-        _this.index = index;
-        return _this;
-    }
-    ParamProvider.prototype.resolve = function (container) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        return _super.prototype.resolve.apply(this, [container].concat(providers));
-    };
-    ParamProvider.classAnnations = { "name": "ParamProvider", "params": { "constructor": ["token", "value", "index", "method"], "resolve": ["container", "providers"] } };
-    return ParamProvider;
-}(InvokeProvider));
-exports.ParamProvider = ParamProvider;
-/**
- * Provider enable exntends target with provider in dynamic.
- *
- * @export
- * @class ExtendsProvider
- * @extends {Provider}
- */
-var ExtendsProvider = /** @class */ (function (_super) {
-    tslib_1.__extends(ExtendsProvider, _super);
-    function ExtendsProvider(token, value, extendsTarget) {
-        var _this = _super.call(this, token, value) || this;
-        _this.extendsTarget = extendsTarget;
-        return _this;
-    }
-    ExtendsProvider.prototype.resolve = function (container) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        return _super.prototype.resolve.apply(this, [container].concat(providers));
-    };
-    ExtendsProvider.prototype.extends = function (target) {
-        if (utils.isObject(target) && utils.isFunction(this.extendsTarget)) {
-            this.extendsTarget(target, this);
-        }
-    };
-    ExtendsProvider.classAnnations = { "name": "ExtendsProvider", "params": { "constructor": ["token", "value", "extendsTarget"], "resolve": ["container", "providers"], "extends": ["target"] } };
-    return ExtendsProvider;
-}(Provider));
-exports.ExtendsProvider = ExtendsProvider;
 
 
 });
@@ -4258,30 +717,8 @@ var Provider_4 = Provider_1.ParamProvider;
 var Provider_5 = Provider_1.ExtendsProvider;
 
 var providers = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});function isProviderMap(r){return!!utils.isObject(r)&&r instanceof ProviderMap_1.ProviderMap}tslib_1.__exportStar(Provider_1,exports), tslib_1.__exportStar(ProviderMap_1,exports), exports.isProviderMap=isProviderMap;
 
-
-
-tslib_1.__exportStar(Provider_1, exports);
-// export * from './ExtendsProvider';
-tslib_1.__exportStar(ProviderMap_1, exports);
-// export * from './InvokeProvider';
-// export * from './ParamProvider';
-// export * from './AsyncParamProvider';
-/**
- * object is provider map or not.
- *
- * @export
- * @param {object} target
- * @returns {target is ProviderMap}
- */
-function isProviderMap(target) {
-    if (!utils.isObject(target)) {
-        return false;
-    }
-    return target instanceof ProviderMap_1.ProviderMap;
-}
-exports.isProviderMap = isProviderMap;
 
 
 });
@@ -4290,13 +727,8 @@ unwrapExports(providers);
 var providers_1 = providers.isProviderMap;
 
 var IRecognizer = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.RecognizerToken=new InjectToken_1.InjectToken("DI_IRecognizer");
 
-/**
- * IRecognizer interface token.
- * it is a token id, you can register yourself IRecognizer for this.
- */
-exports.RecognizerToken = new InjectToken_1.InjectToken('DI_IRecognizer');
 
 
 });
@@ -4305,13 +737,8 @@ unwrapExports(IRecognizer);
 var IRecognizer_1 = IRecognizer.RecognizerToken;
 
 var IProviderMatcher = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.ProviderMatcherToken=new InjectToken_1.InjectToken("DI_IProviderMatcher");
 
-/**
- * Providers match interface symbol.
- * it is a symbol id, you can register yourself MethodAccessor for this.
- */
-exports.ProviderMatcherToken = new InjectToken_1.InjectToken('DI_IProviderMatcher');
 
 
 });
@@ -4320,57 +747,8 @@ unwrapExports(IProviderMatcher);
 var IProviderMatcher_1 = IProviderMatcher.ProviderMatcherToken;
 
 var MethodAutorun_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var MethodAutorun=function(t){function r(){return t.call(this,CoreActions_1.CoreActions.methodAutorun)||this}return tslib_1.__extends(r,t), r.prototype.working=function(r,e){if((!e.raiseContainer||e.raiseContainer===r)&&e.target&&e.targetType&&factories.hasMethodMetadata(decorators.Autorun,e.targetType)){var t=factories.getMethodMetadata(decorators.Autorun,e.targetType),o=[],n=utils.lang.keys(t).length;utils.lang.forIn(t,function(t,r){if(t&&t.length){var e=t[0];e.autorun=r, n++, utils.isNumber(e.order)||(e.order=n), o.push(e);}}), o.sort(function(t,r){return t.order-t.order}).forEach(function(t){r.syncInvoke(e.targetType,t.autorun,e.target);});}}, r.classAnnations={name:"MethodAutorun",params:{constructor:[],working:["container","data"]}}, r}(ActionComposite_1.ActionComposite);exports.MethodAutorun=MethodAutorun;
 
-
-
-
-
-
-/**
- * Inject DrawType action.
- *
- * @export
- * @class SetPropAction
- * @extends {ActionComposite}
- */
-var MethodAutorun = /** @class */ (function (_super) {
-    tslib_1.__extends(MethodAutorun, _super);
-    function MethodAutorun() {
-        return _super.call(this, CoreActions_1.CoreActions.methodAutorun) || this;
-    }
-    MethodAutorun.prototype.working = function (container, data) {
-        if (data.raiseContainer && data.raiseContainer !== container) {
-            return;
-        }
-        if (data.target && data.targetType) {
-            if (factories.hasMethodMetadata(decorators.Autorun, data.targetType)) {
-                var metas = factories.getMethodMetadata(decorators.Autorun, data.targetType);
-                var lastmetas_1 = [];
-                var idx_1 = utils.lang.keys(metas).length;
-                utils.lang.forIn(metas, function (mm, key) {
-                    if (mm && mm.length) {
-                        var m = mm[0];
-                        m.autorun = key;
-                        idx_1++;
-                        if (!utils.isNumber(m.order)) {
-                            m.order = idx_1;
-                        }
-                        lastmetas_1.push(m);
-                    }
-                });
-                lastmetas_1.sort(function (au1, au2) {
-                    return au1.order - au1.order;
-                }).forEach(function (aut) {
-                    container.syncInvoke(data.targetType, aut.autorun, data.target);
-                });
-            }
-        }
-    };
-    MethodAutorun.classAnnations = { "name": "MethodAutorun", "params": { "constructor": [], "working": ["container", "data"] } };
-    return MethodAutorun;
-}(ActionComposite_1.ActionComposite));
-exports.MethodAutorun = MethodAutorun;
 
 
 });
@@ -4379,74 +757,8 @@ unwrapExports(MethodAutorun_1);
 var MethodAutorun_2 = MethodAutorun_1.MethodAutorun;
 
 var ActionFactory_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var ActionFactory=function(){function n(){}return n.prototype.create=function(n){var o;switch(n){case actions.CoreActions.bindParameterType:o=new actions.BindParameterTypeAction;break;case actions.CoreActions.bindPropertyType:o=new actions.BindPropertyTypeAction;break;case actions.CoreActions.injectProperty:o=new actions.InjectPropertyAction;break;case actions.CoreActions.bindProvider:o=new actions.BindProviderAction;break;case actions.CoreActions.bindParameterProviders:o=new actions.BindParameterProviderAction;break;case actions.CoreActions.componentInit:o=new actions.ComponentInitAction;break;case actions.CoreActions.componentBeforeInit:o=new actions.ComponentBeforeInitAction;break;case actions.CoreActions.componentAfterInit:o=new actions.ComponentAfterInitAction;break;case actions.CoreActions.cache:o=new actions.CacheAction;break;case actions.CoreActions.singletion:o=new actions.SingletionAction;break;case actions.CoreActions.autorun:o=new actions.AutorunAction;break;case actions.CoreActions.methodAutorun:o=new MethodAutorun_1.MethodAutorun;break;default:o=new actions.ActionComposite(n);}return o}, n.classAnnations={name:"ActionFactory",params:{create:["type"]}}, n}();exports.ActionFactory=ActionFactory;
 
-
-/**
- * action factory.
- *
- * @export
- * @class ActionFactory
- */
-var ActionFactory = /** @class */ (function () {
-    function ActionFactory() {
-    }
-    /**
-     * create action by action type. type in 'CoreActions'
-     *
-     * @param {string} type
-     * @returns {ActionComponent}
-     * @memberof ActionFactory
-     */
-    ActionFactory.prototype.create = function (type) {
-        var action;
-        switch (type) {
-            case actions.CoreActions.bindParameterType:
-                action = new actions.BindParameterTypeAction();
-                break;
-            case actions.CoreActions.bindPropertyType:
-                action = new actions.BindPropertyTypeAction();
-                break;
-            case actions.CoreActions.injectProperty:
-                action = new actions.InjectPropertyAction();
-                break;
-            case actions.CoreActions.bindProvider:
-                action = new actions.BindProviderAction();
-                break;
-            case actions.CoreActions.bindParameterProviders:
-                action = new actions.BindParameterProviderAction();
-                break;
-            case actions.CoreActions.componentInit:
-                action = new actions.ComponentInitAction();
-                break;
-            case actions.CoreActions.componentBeforeInit:
-                action = new actions.ComponentBeforeInitAction();
-                break;
-            case actions.CoreActions.componentAfterInit:
-                action = new actions.ComponentAfterInitAction();
-                break;
-            case actions.CoreActions.cache:
-                action = new actions.CacheAction();
-                break;
-            case actions.CoreActions.singletion:
-                action = new actions.SingletionAction();
-                break;
-            case actions.CoreActions.autorun:
-                action = new actions.AutorunAction();
-                break;
-            case actions.CoreActions.methodAutorun:
-                action = new MethodAutorun_1.MethodAutorun();
-                break;
-            default:
-                action = new actions.ActionComposite(type);
-                break;
-        }
-        return action;
-    };
-    ActionFactory.classAnnations = { "name": "ActionFactory", "params": { "create": ["type"] } };
-    return ActionFactory;
-}());
-exports.ActionFactory = ActionFactory;
 
 
 });
@@ -4455,294 +767,8 @@ unwrapExports(ActionFactory_1);
 var ActionFactory_2 = ActionFactory_1.ActionFactory;
 
 var DefaultLifeScope_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var DefaultLifeScope=function(){function t(t){this.container=t, this.decorators=[], this.buildAction();}return t.prototype.addAction=function(t){for(var e=[],r=1;r<arguments.length;r++)e[r-1]=arguments[r];var o=this.action;return e.forEach(function(e){o=o.find(function(t){return t.name===e});}), o&&o.add(t), this}, t.prototype.registerDecorator=function(t){for(var e=[],r=1;r<arguments.length;r++)e[r-1]=arguments[r];var o=this.getDecoratorType(t);return this.registerCustomDecorator.apply(this,[t,o].concat(e))}, t.prototype.registerCustomDecorator=function(t,e){for(var r=[],o=2;o<arguments.length;o++)r[o-2]=arguments[o];var a=this.toActionName(e),n=t.toString();return this.decorators.some(function(t){return t.name===n})||this.decorators.push({name:n,types:a,actions:r}), this}, t.prototype.execute=function(t){for(var e=[],r=1;r<arguments.length;r++)e[r-1]=arguments[r];e=e.filter(function(t){return!!t});var o=this.action;e.forEach(function(e){o=o.find(function(t){return t.name===e});}), o&&o.execute(this.container,t);}, t.prototype.routeExecute=function(t){for(var e,r=[],o=1;o<arguments.length;o++)r[o-1]=arguments[o];this.execute.apply(this,[t].concat(r));for(var a=this.container.parent;a;)(e=a.getLifeScope()).execute.apply(e,[utils.lang.assign({},t)].concat(r)), a=a.parent;}, t.prototype.getClassDecorators=function(t){return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Class),t)}, t.prototype.getMethodDecorators=function(t){return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Method),t)}, t.prototype.getPropertyDecorators=function(t){return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Property),t)}, t.prototype.getParameterDecorators=function(t){return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Parameter),t)}, t.prototype.getDecoratorType=function(t){return t.decoratorType||factories.DecoratorType.All}, t.prototype.isVaildDependence=function(e){return!!e&&(!!utils.isClass(e)&&(!utils.isAbstractDecoratorClass(e)&&this.getClassDecorators().some(function(t){return factories.hasOwnClassMetadata(t.name,e)})))}, t.prototype.getAtionByName=function(e){return this.action.find(function(t){return t.name===e})}, t.prototype.getClassAction=function(){return this.getAtionByName(this.toActionName(factories.DecoratorType.Class))}, t.prototype.getMethodAction=function(){return this.getAtionByName(this.toActionName(factories.DecoratorType.Method))}, t.prototype.getPropertyAction=function(){return this.getAtionByName(this.toActionName(factories.DecoratorType.Property))}, t.prototype.getParameterAction=function(){return this.getAtionByName(this.toActionName(factories.DecoratorType.Parameter))}, t.prototype.getConstructorParameters=function(t){return this.getParameters(t)}, t.prototype.getMethodParameters=function(t,e,r){return this.getParameters(t,e,r)}, t.prototype.getParamerterNames=function(t,e){var r=factories.getOwnParamerterNames(t),o=[];return r&&r.hasOwnProperty(e)&&(o=r[e]), utils.isArray(o)||(o=[]), o}, t.prototype.isSingletonType=function(r){return!!factories.hasOwnClassMetadata(decorators.Singleton,r)||this.getClassDecorators().some(function(t){var e=factories.getOwnTypeMetadata(t.name,r)||[];return!!utils.isArray(e)&&e.some(function(t){return!0===t.singleton})})}, t.prototype.getMethodMetadatas=function(r,o){var a=[];return this.getMethodDecorators().forEach(function(t){var e=factories.getOwnMethodMetadata(t.name,r);e.hasOwnProperty(o)&&(a=a.concat(e[o]||[]));}), a}, t.prototype.filerDecorators=function(t){return this.decorators.filter(t)}, t.prototype.getParameters=function(t,e,r){var o={target:e,targetType:t,propertyKey:r=r||"constructor"};this.execute(o,actions.LifeState.onInit,actions.CoreActions.bindParameterType);var a=this.getParamerterNames(t,r);return o.execResult.length?o.execResult.map(function(t,e){return{type:t,name:a[e]}}):a.map(function(t){return{name:t,type:void 0}})}, t.prototype.getTypeDecorators=function(r,o){return this.filerDecorators(function(t){var e=0<=(t.types||"").indexOf(r);return e&&o&&(e=o(t)), e})}, t.prototype.buildAction=function(){var t=new ActionFactory_1.ActionFactory,e=t.create("");e.add(t.create(types.IocState.design).add(t.create(actions.CoreActions.bindProvider)).add(t.create(actions.CoreActions.autorun))).add(t.create(types.IocState.runtime).add(t.create(actions.LifeState.beforeCreateArgs)).add(t.create(actions.LifeState.beforeConstructor)).add(t.create(actions.LifeState.afterConstructor)).add(t.create(actions.LifeState.onInit).add(t.create(actions.CoreActions.componentBeforeInit)).add(t.create(this.toActionName(factories.DecoratorType.Class))).add(t.create(this.toActionName(factories.DecoratorType.Method))).add(t.create(this.toActionName(factories.DecoratorType.Property)).add(t.create(actions.CoreActions.bindPropertyType)).add(t.create(actions.CoreActions.injectProperty))).add(t.create(this.toActionName(factories.DecoratorType.Parameter)).add(t.create(actions.CoreActions.bindParameterType)).add(t.create(actions.CoreActions.bindParameterProviders))).add(t.create(actions.CoreActions.componentInit))).add(t.create(actions.LifeState.AfterInit).add(t.create(actions.CoreActions.singletion)).add(t.create(actions.CoreActions.componentAfterInit)).add(t.create(actions.CoreActions.methodAutorun)))).add(t.create(actions.CoreActions.cache)), this.action=e;}, t.prototype.toActionName=function(t){var e=[];return t&factories.DecoratorType.Class&&e.push("ClassDecorator"), t&factories.DecoratorType.Method&&e.push("MethodDecorator"), t&factories.DecoratorType.Property&&e.push("PropertyDecorator"), t&factories.DecoratorType.Parameter&&e.push("ParameterDecorator"), e.join(",")}, t.classAnnations={name:"DefaultLifeScope",params:{constructor:["container"],addAction:["action","nodepaths"],registerDecorator:["decorator","actions"],registerCustomDecorator:["decorator","type","actions"],execute:["data","names"],routeExecute:["data","names"],getClassDecorators:["match"],getMethodDecorators:["match"],getPropertyDecorators:["match"],getParameterDecorators:["match"],getDecoratorType:["decirator"],isVaildDependence:["target"],getAtionByName:["name"],getClassAction:[],getMethodAction:[],getPropertyAction:[],getParameterAction:[],getConstructorParameters:["type"],getMethodParameters:["type","instance","propertyKey"],getParamerterNames:["type","propertyKey"],isSingletonType:["type"],getMethodMetadatas:["type","propertyKey"],filerDecorators:["express"],getParameters:["type","instance","propertyKey"],getTypeDecorators:["decType","match"],buildAction:[],toActionName:["type"]}}, t}();exports.DefaultLifeScope=DefaultLifeScope;
 
-
-
-
-
-
-/**
- * default implement life scope.
- *
- * @export
- * @class DefaultLifeScope
- * @implements {LifeScope}
- */
-var DefaultLifeScope = /** @class */ (function () {
-    function DefaultLifeScope(container) {
-        this.container = container;
-        this.decorators = [];
-        this.buildAction();
-    }
-    DefaultLifeScope.prototype.addAction = function (action) {
-        var nodepaths = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            nodepaths[_i - 1] = arguments[_i];
-        }
-        var parent = this.action;
-        nodepaths.forEach(function (pathname) {
-            parent = parent.find(function (act) { return act.name === pathname; });
-        });
-        if (parent) {
-            parent.add(action);
-        }
-        return this;
-    };
-    DefaultLifeScope.prototype.registerDecorator = function (decorator) {
-        var actions$$2 = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            actions$$2[_i - 1] = arguments[_i];
-        }
-        var type = this.getDecoratorType(decorator);
-        return this.registerCustomDecorator.apply(this, [decorator, type].concat(actions$$2));
-    };
-    DefaultLifeScope.prototype.registerCustomDecorator = function (decorator, type) {
-        var actions$$2 = [];
-        for (var _i = 2; _i < arguments.length; _i++) {
-            actions$$2[_i - 2] = arguments[_i];
-        }
-        var types$$2 = this.toActionName(type);
-        var name = decorator.toString();
-        if (!this.decorators.some(function (d) { return d.name === name; })) {
-            this.decorators.push({
-                name: name,
-                types: types$$2,
-                actions: actions$$2
-            });
-        }
-        return this;
-    };
-    DefaultLifeScope.prototype.execute = function (data) {
-        var names = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            names[_i - 1] = arguments[_i];
-        }
-        names = names.filter(function (n) { return !!n; });
-        var act = this.action;
-        names.forEach(function (name) {
-            act = act.find(function (itm) { return itm.name === name; });
-        });
-        if (act) {
-            act.execute(this.container, data);
-        }
-    };
-    DefaultLifeScope.prototype.routeExecute = function (data) {
-        var names = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            names[_i - 1] = arguments[_i];
-        }
-        var _a;
-        this.execute.apply(this, [data].concat(names));
-        var container = this.container.parent;
-        while (container) {
-            (_a = container.getLifeScope()).execute.apply(_a, [utils.lang.assign({}, data)].concat(names));
-            container = container.parent;
-        }
-    };
-    DefaultLifeScope.prototype.getClassDecorators = function (match) {
-        return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Class), match);
-    };
-    DefaultLifeScope.prototype.getMethodDecorators = function (match) {
-        return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Method), match);
-    };
-    DefaultLifeScope.prototype.getPropertyDecorators = function (match) {
-        return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Property), match);
-    };
-    DefaultLifeScope.prototype.getParameterDecorators = function (match) {
-        return this.getTypeDecorators(this.toActionName(factories.DecoratorType.Parameter), match);
-    };
-    DefaultLifeScope.prototype.getDecoratorType = function (decirator) {
-        return decirator.decoratorType || factories.DecoratorType.All;
-    };
-    /**
-     * is vaildate dependence type or not. dependence type must with class decorator.
-     *
-     * @template T
-     * @param {Type<T>} target
-     * @returns {boolean}
-     * @memberof Container
-     */
-    DefaultLifeScope.prototype.isVaildDependence = function (target) {
-        if (!target) {
-            return false;
-        }
-        if (!utils.isClass(target)) {
-            return false;
-        }
-        if (utils.isAbstractDecoratorClass(target)) {
-            return false;
-        }
-        return this.getClassDecorators().some(function (act) { return factories.hasOwnClassMetadata(act.name, target); });
-    };
-    DefaultLifeScope.prototype.getAtionByName = function (name) {
-        return this.action.find(function (action) { return action.name === name; });
-    };
-    DefaultLifeScope.prototype.getClassAction = function () {
-        return this.getAtionByName(this.toActionName(factories.DecoratorType.Class));
-    };
-    DefaultLifeScope.prototype.getMethodAction = function () {
-        return this.getAtionByName(this.toActionName(factories.DecoratorType.Method));
-    };
-    DefaultLifeScope.prototype.getPropertyAction = function () {
-        return this.getAtionByName(this.toActionName(factories.DecoratorType.Property));
-    };
-    DefaultLifeScope.prototype.getParameterAction = function () {
-        return this.getAtionByName(this.toActionName(factories.DecoratorType.Parameter));
-    };
-    /**
-     * get constructor parameters metadata.
-     *
-     * @template T
-     * @param {Type<T>} type
-     * @returns {IParameter[]}
-     * @memberof IContainer
-     */
-    DefaultLifeScope.prototype.getConstructorParameters = function (type) {
-        return this.getParameters(type);
-    };
-    /**
-     * get method params metadata.
-     *
-     * @template T
-     * @param {Type<T>} type
-     * @param {T} instance
-     * @param {(string | symbol)} propertyKey
-     * @returns {IParameter[]}
-     * @memberof IContainer
-     */
-    DefaultLifeScope.prototype.getMethodParameters = function (type, instance, propertyKey) {
-        return this.getParameters(type, instance, propertyKey);
-    };
-    /**
-     * get paramerter names.
-     *
-     * @template T
-     * @param {Type<T>} type
-     * @param {string} propertyKey
-     * @returns {string[]}
-     * @memberof DefaultLifeScope
-     */
-    DefaultLifeScope.prototype.getParamerterNames = function (type, propertyKey) {
-        var metadata = factories.getOwnParamerterNames(type);
-        var paramNames = [];
-        if (metadata && metadata.hasOwnProperty(propertyKey)) {
-            paramNames = metadata[propertyKey];
-        }
-        if (!utils.isArray(paramNames)) {
-            paramNames = [];
-        }
-        return paramNames;
-    };
-    DefaultLifeScope.prototype.isSingletonType = function (type) {
-        if (factories.hasOwnClassMetadata(decorators.Singleton, type)) {
-            return true;
-        }
-        return this.getClassDecorators().some(function (surm) {
-            var metadatas = factories.getOwnTypeMetadata(surm.name, type) || [];
-            if (utils.isArray(metadatas)) {
-                return metadatas.some(function (m) { return m.singleton === true; });
-            }
-            return false;
-        });
-    };
-    DefaultLifeScope.prototype.getMethodMetadatas = function (type, propertyKey) {
-        var metadatas = [];
-        this.getMethodDecorators().forEach(function (dec) {
-            var metas = factories.getOwnMethodMetadata(dec.name, type);
-            if (metas.hasOwnProperty(propertyKey)) {
-                metadatas = metadatas.concat(metas[propertyKey] || []);
-            }
-        });
-        return metadatas;
-    };
-    DefaultLifeScope.prototype.filerDecorators = function (express) {
-        return this.decorators.filter(express);
-    };
-    DefaultLifeScope.prototype.getParameters = function (type, instance, propertyKey) {
-        propertyKey = propertyKey || 'constructor';
-        var data = {
-            target: instance,
-            targetType: type,
-            propertyKey: propertyKey
-        };
-        this.execute(data, actions.LifeState.onInit, actions.CoreActions.bindParameterType);
-        var paramNames = this.getParamerterNames(type, propertyKey);
-        if (data.execResult.length) {
-            return data.execResult.map(function (typ, idx) {
-                return {
-                    type: typ,
-                    name: paramNames[idx]
-                };
-            });
-        }
-        else {
-            return paramNames.map(function (name) {
-                return {
-                    name: name,
-                    type: undefined
-                };
-            });
-        }
-    };
-    DefaultLifeScope.prototype.getTypeDecorators = function (decType, match) {
-        return this.filerDecorators(function (value) {
-            var flag = (value.types || '').indexOf(decType) >= 0;
-            if (flag && match) {
-                flag = match(value);
-            }
-            return flag;
-        });
-    };
-    DefaultLifeScope.prototype.buildAction = function () {
-        var factory = new ActionFactory_1.ActionFactory();
-        var action = factory.create('');
-        action
-            .add(factory.create(types.IocState.design)
-            .add(factory.create(actions.CoreActions.bindProvider))
-            .add(factory.create(actions.CoreActions.autorun)))
-            .add(factory.create(types.IocState.runtime)
-            .add(factory.create(actions.LifeState.beforeCreateArgs))
-            .add(factory.create(actions.LifeState.beforeConstructor))
-            .add(factory.create(actions.LifeState.afterConstructor))
-            .add(factory.create(actions.LifeState.onInit)
-            .add(factory.create(actions.CoreActions.componentBeforeInit))
-            .add(factory.create(this.toActionName(factories.DecoratorType.Class)))
-            .add(factory.create(this.toActionName(factories.DecoratorType.Method)))
-            .add(factory.create(this.toActionName(factories.DecoratorType.Property))
-            .add(factory.create(actions.CoreActions.bindPropertyType))
-            .add(factory.create(actions.CoreActions.injectProperty)))
-            .add(factory.create(this.toActionName(factories.DecoratorType.Parameter))
-            .add(factory.create(actions.CoreActions.bindParameterType))
-            .add(factory.create(actions.CoreActions.bindParameterProviders)))
-            .add(factory.create(actions.CoreActions.componentInit)))
-            .add(factory.create(actions.LifeState.AfterInit)
-            .add(factory.create(actions.CoreActions.singletion))
-            .add(factory.create(actions.CoreActions.componentAfterInit))
-            .add(factory.create(actions.CoreActions.methodAutorun))))
-            .add(factory.create(actions.CoreActions.cache));
-        this.action = action;
-    };
-    DefaultLifeScope.prototype.toActionName = function (type) {
-        var types$$2 = [];
-        if (type & factories.DecoratorType.Class) {
-            types$$2.push('ClassDecorator');
-        }
-        if (type & factories.DecoratorType.Method) {
-            types$$2.push('MethodDecorator');
-        }
-        if (type & factories.DecoratorType.Property) {
-            types$$2.push('PropertyDecorator');
-        }
-        if (type & factories.DecoratorType.Parameter) {
-            types$$2.push('ParameterDecorator');
-        }
-        return types$$2.join(',');
-    };
-    DefaultLifeScope.classAnnations = { "name": "DefaultLifeScope", "params": { "constructor": ["container"], "addAction": ["action", "nodepaths"], "registerDecorator": ["decorator", "actions"], "registerCustomDecorator": ["decorator", "type", "actions"], "execute": ["data", "names"], "routeExecute": ["data", "names"], "getClassDecorators": ["match"], "getMethodDecorators": ["match"], "getPropertyDecorators": ["match"], "getParameterDecorators": ["match"], "getDecoratorType": ["decirator"], "isVaildDependence": ["target"], "getAtionByName": ["name"], "getClassAction": [], "getMethodAction": [], "getPropertyAction": [], "getParameterAction": [], "getConstructorParameters": ["type"], "getMethodParameters": ["type", "instance", "propertyKey"], "getParamerterNames": ["type", "propertyKey"], "isSingletonType": ["type"], "getMethodMetadatas": ["type", "propertyKey"], "filerDecorators": ["express"], "getParameters": ["type", "instance", "propertyKey"], "getTypeDecorators": ["decType", "match"], "buildAction": [], "toActionName": ["type"] } };
-    return DefaultLifeScope;
-}());
-exports.DefaultLifeScope = DefaultLifeScope;
 
 
 });
@@ -4751,188 +777,8 @@ unwrapExports(DefaultLifeScope_1);
 var DefaultLifeScope_2 = DefaultLifeScope_1.DefaultLifeScope;
 
 var ProviderMatcher_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var ProviderMatcher=function(){function e(e){this.container=e;}return e.prototype.toProviderMap=function(){for(var s=this,e=[],r=0;r<arguments.length;r++)e[r]=arguments[r];if(1===e.length&&providers.isProviderMap(e[0]))return e[0];var n=this.container.resolve(providers.ProviderMapToken);return e.forEach(function(i,e){if(!utils.isUndefined(i)&&!utils.isNull(i))if(providers.isProviderMap(i))n.copy(i);else if(i instanceof providers.Provider)i instanceof providers.ParamProvider?!i.type&&utils.isNumber(i.index)?n.add(i.index,function(){for(var e=[],r=0;r<arguments.length;r++)e[r]=arguments[r];return i.resolve.apply(i,[s.container].concat(e))}):n.add(i.type,function(){for(var e=[],r=0;r<arguments.length;r++)e[r]=arguments[r];return i.resolve.apply(i,[s.container].concat(e))}):n.add(i.type,function(){for(var e=[],r=0;r<arguments.length;r++)e[r]=arguments[r];return i.resolve.apply(i,[s.container].concat(e))});else if(utils.isClass(i))s.container.has(i)||s.container.register(i), n.add(i,i);else if(utils.isBaseObject(i)){var r=i,t=!1;utils.isToken(r.provide)?(utils.isArray(r.deps)&&r.deps.length&&r.deps.forEach(function(e){utils.isClass(e)&&!s.container.has(e)&&s.container.register(e);}), utils.isUndefined(r.useValue)?utils.isClass(r.useClass)?(s.container.has(r.useClass)||s.container.register(r.useClass), n.add(r.provide,r.useClass)):utils.isFunction(r.useFactory)?n.add(r.provide,function(){var e=[];return utils.isArray(r.deps)&&r.deps.length&&(e=r.deps.map(function(e){return utils.isClass(e)?s.container.get(e):e})), r.useFactory.apply(r,e)}):utils.isToken(r.useExisting)?s.container.has(r.useExisting)?n.add(r.provide,function(){return s.container.resolve(r.useExisting)}):console.log("has not register:",r.useExisting):t=!0:n.add(r.provide,function(){return r.useValue})):t=!0, t&&utils.lang.forIn(i,function(e,r){utils.isUndefined(e)||(utils.isClass(e)?n.add(r,e):utils.isFunction(e)||utils.isString(e)?n.add(r,function(){return e}):n.add(r,e));});}else utils.isFunction(i)?n.add(name,function(){return i}):n.add(e,i);}), n}, e.prototype.matchProviders=function(e){for(var r=[],i=1;i<arguments.length;i++)r[i-1]=arguments[i];return this.match(e,this.toProviderMap.apply(this,r))}, e.prototype.match=function(e,i){var t=this,s=this.container.resolve(providers.ProviderMapToken);return e.length&&e.forEach(function(e,r){e.name&&(i.has(e.name)?s.add(e.name,i.get(e.name)):utils.isToken(e.type)?i.has(e.type)?s.add(e.name,i.get(e.type)):t.container.has(e.type)&&s.add(e.name,e.type):i.has(r)&&s.add(e.name,i.get(r)));}), s}, e.classAnnations={name:"ProviderMatcher",params:{constructor:["container"],toProviderMap:["providers"],matchProviders:["params","providers"],match:["params","providers"]}}, e}();exports.ProviderMatcher=ProviderMatcher;
 
-
-/**
- * provider matcher. use to find custome providers in resolve.
- *
- * @export
- * @class ProviderMatcher
- * @implements {IProviderMatcher}
- */
-var ProviderMatcher = /** @class */ (function () {
-    function ProviderMatcher(container) {
-        this.container = container;
-    }
-    ProviderMatcher.prototype.toProviderMap = function () {
-        var _this = this;
-        var providers$$1 = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            providers$$1[_i] = arguments[_i];
-        }
-        if (providers$$1.length === 1 && providers.isProviderMap(providers$$1[0])) {
-            return providers$$1[0];
-        }
-        var map = this.container.resolve(providers.ProviderMapToken);
-        providers$$1.forEach(function (p, index) {
-            if (utils.isUndefined(p) || utils.isNull(p)) {
-                return;
-            }
-            if (providers.isProviderMap(p)) {
-                map.copy(p);
-            }
-            else if (p instanceof providers.Provider) {
-                if (p instanceof providers.ParamProvider) {
-                    if (!p.type && utils.isNumber(p.index)) {
-                        map.add(p.index, function () {
-                            var providers$$1 = [];
-                            for (var _i = 0; _i < arguments.length; _i++) {
-                                providers$$1[_i] = arguments[_i];
-                            }
-                            return p.resolve.apply(p, [_this.container].concat(providers$$1));
-                        });
-                    }
-                    else {
-                        map.add(p.type, function () {
-                            var providers$$1 = [];
-                            for (var _i = 0; _i < arguments.length; _i++) {
-                                providers$$1[_i] = arguments[_i];
-                            }
-                            return p.resolve.apply(p, [_this.container].concat(providers$$1));
-                        });
-                    }
-                }
-                else {
-                    map.add(p.type, function () {
-                        var providers$$1 = [];
-                        for (var _i = 0; _i < arguments.length; _i++) {
-                            providers$$1[_i] = arguments[_i];
-                        }
-                        return p.resolve.apply(p, [_this.container].concat(providers$$1));
-                    });
-                }
-            }
-            else if (utils.isClass(p)) {
-                if (!_this.container.has(p)) {
-                    _this.container.register(p);
-                }
-                map.add(p, p);
-            }
-            else if (utils.isBaseObject(p)) {
-                var pr_1 = p;
-                var isobjMap = false;
-                if (utils.isToken(pr_1.provide)) {
-                    if (utils.isArray(pr_1.deps) && pr_1.deps.length) {
-                        pr_1.deps.forEach(function (d) {
-                            if (utils.isClass(d) && !_this.container.has(d)) {
-                                _this.container.register(d);
-                            }
-                        });
-                    }
-                    if (!utils.isUndefined(pr_1.useValue)) {
-                        map.add(pr_1.provide, function () { return pr_1.useValue; });
-                    }
-                    else if (utils.isClass(pr_1.useClass)) {
-                        if (!_this.container.has(pr_1.useClass)) {
-                            _this.container.register(pr_1.useClass);
-                        }
-                        map.add(pr_1.provide, pr_1.useClass);
-                    }
-                    else if (utils.isFunction(pr_1.useFactory)) {
-                        map.add(pr_1.provide, function () {
-                            var args = [];
-                            if (utils.isArray(pr_1.deps) && pr_1.deps.length) {
-                                args = pr_1.deps.map(function (d) {
-                                    if (utils.isClass(d)) {
-                                        return _this.container.get(d);
-                                    }
-                                    else {
-                                        return d;
-                                    }
-                                });
-                            }
-                            return pr_1.useFactory.apply(pr_1, args);
-                        });
-                    }
-                    else if (utils.isToken(pr_1.useExisting)) {
-                        if (_this.container.has(pr_1.useExisting)) {
-                            map.add(pr_1.provide, function () { return _this.container.resolve(pr_1.useExisting); });
-                        }
-                        else {
-                            console.log('has not register:', pr_1.useExisting);
-                        }
-                    }
-                    else {
-                        isobjMap = true;
-                    }
-                }
-                else {
-                    isobjMap = true;
-                }
-                if (isobjMap) {
-                    utils.lang.forIn(p, function (val, name) {
-                        if (!utils.isUndefined(val)) {
-                            if (utils.isClass(val)) {
-                                map.add(name, val);
-                            }
-                            else if (utils.isFunction(val) || utils.isString(val)) {
-                                map.add(name, function () { return val; });
-                            }
-                            else {
-                                map.add(name, val);
-                            }
-                        }
-                    });
-                }
-            }
-            else if (utils.isFunction(p)) {
-                map.add(name, function () { return p; });
-            }
-            else {
-                map.add(index, p);
-            }
-        });
-        return map;
-    };
-    ProviderMatcher.prototype.matchProviders = function (params) {
-        var providers$$1 = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers$$1[_i - 1] = arguments[_i];
-        }
-        return this.match(params, this.toProviderMap.apply(this, providers$$1));
-    };
-    ProviderMatcher.prototype.match = function (params, providers$$1) {
-        var _this = this;
-        var map = this.container.resolve(providers.ProviderMapToken);
-        if (!params.length) {
-            return map;
-        }
-        params.forEach(function (param, index) {
-            if (!param.name) {
-                return;
-            }
-            if (providers$$1.has(param.name)) {
-                map.add(param.name, providers$$1.get(param.name));
-            }
-            else if (utils.isToken(param.type)) {
-                if (providers$$1.has(param.type)) {
-                    map.add(param.name, providers$$1.get(param.type));
-                }
-                else if (_this.container.has(param.type)) {
-                    map.add(param.name, param.type);
-                }
-            }
-            else if (providers$$1.has(index)) {
-                map.add(param.name, providers$$1.get(index));
-            }
-        });
-        return map;
-    };
-    ProviderMatcher.classAnnations = { "name": "ProviderMatcher", "params": { "constructor": ["container"], "toProviderMap": ["providers"], "matchProviders": ["params", "providers"], "match": ["params", "providers"] } };
-    return ProviderMatcher;
-}());
-exports.ProviderMatcher = ProviderMatcher;
 
 
 });
@@ -4941,137 +787,8 @@ unwrapExports(ProviderMatcher_1);
 var ProviderMatcher_2 = ProviderMatcher_1.ProviderMatcher;
 
 var MethodAccessor_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var MethodAccessor=function(){function e(e){this.container=e;}return e.prototype.getMatcher=function(){return this.container.get(IProviderMatcher.ProviderMatcherToken)}, e.prototype.invoke=function(s,c,p){for(var h=[],e=3;e<arguments.length;e++)h[e-3]=arguments[e];return tslib_1.__awaiter(this,void 0,void 0,function(){var t,r,o,n,a,i;return tslib_1.__generator(this,function(e){switch(e.label){case 0:if(p||(p=(t=this.container).resolve.apply(t,[s].concat(h))), !(r=this.container.getTokenImpl(s)))throw Error(s.toString()+" is not implements by any class.");return p&&utils.isFunction(p[c])?(o={target:p,targetType:r,propertyKey:c}, (n=this.container.getLifeScope()).execute(o,actions.LifeState.onInit,actions.CoreActions.bindParameterProviders), h=h.concat(o.execResult), a=n.getMethodParameters(r,p,c), [4,this.createParams.apply(this,[a].concat(h))]):[3,2];case 1:return i=e.sent(), [2,p[c].apply(p,i)];case 2:throw new Error("type: "+r+" has no method "+c.toString()+".")}})})}, e.prototype.syncInvoke=function(e,t,r){for(var o,n=[],a=3;a<arguments.length;a++)n[a-3]=arguments[a];r||(r=(o=this.container).resolve.apply(o,[e].concat(n)));var i=this.container.getTokenImpl(e);if(!i)throw Error(e.toString()+" is not implements by any class.");if(r&&utils.isFunction(r[t])){var s={target:r,targetType:i,propertyKey:t},c=this.container.getLifeScope();c.execute(s,actions.LifeState.onInit,actions.CoreActions.bindParameterProviders), n=n.concat(s.execResult);var p=c.getMethodParameters(i,r,t),h=this.createSyncParams.apply(this,[p].concat(n));return r[t].apply(r,h)}throw new Error("type: "+i+" has no method "+t.toString()+".")}, e.prototype.createSyncParams=function(e){for(var t,o=this,n=[],r=1;r<arguments.length;r++)n[r-1]=arguments[r];var a=(t=this.getMatcher()).matchProviders.apply(t,[e].concat(n));return e.map(function(e,t){var r;return e.name&&a.has(e.name)?a.resolve(e.name):utils.isToken(e.type)?(r=o.container).resolve.apply(r,[e.type].concat(n)):void 0})}, e.prototype.createParams=function(e){for(var t,o=this,n=[],r=1;r<arguments.length;r++)n[r-1]=arguments[r];var a=(t=this.getMatcher()).matchProviders.apply(t,[e].concat(n));return Promise.all(e.map(function(e,t){var r;return e.name&&a.has(e.name)?a.resolve(e.name):utils.isToken(e.type)?(r=o.container).resolve.apply(r,[e.type].concat(n)):void 0}))}, e.classAnnations={name:"MethodAccessor",params:{constructor:["container"],getMatcher:[],invoke:["token","propertyKey","target","providers"],syncInvoke:["token","propertyKey","target","providers"],createSyncParams:["params","providers"],createParams:["params","providers"]}}, e}();exports.MethodAccessor=MethodAccessor;
 
-
-
-
-/**
- * method accessor
- *
- * @export
- * @class MethodAccessor
- * @implements {IMethodAccessor}
- */
-var MethodAccessor = /** @class */ (function () {
-    function MethodAccessor(container) {
-        this.container = container;
-    }
-    MethodAccessor.prototype.getMatcher = function () {
-        return this.container.get(IProviderMatcher.ProviderMatcherToken);
-    };
-    MethodAccessor.prototype.invoke = function (token, propertyKey, target) {
-        var providers = [];
-        for (var _i = 3; _i < arguments.length; _i++) {
-            providers[_i - 3] = arguments[_i];
-        }
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var _a, targetClass, actionData, lifeScope, parameters, paramInstances;
-            return tslib_1.__generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        if (!target) {
-                            target = (_a = this.container).resolve.apply(_a, [token].concat(providers));
-                        }
-                        targetClass = this.container.getTokenImpl(token);
-                        if (!targetClass) {
-                            throw Error(token.toString() + ' is not implements by any class.');
-                        }
-                        if (!(target && utils.isFunction(target[propertyKey]))) return [3 /*break*/, 2];
-                        actionData = {
-                            target: target,
-                            targetType: targetClass,
-                            propertyKey: propertyKey,
-                        };
-                        lifeScope = this.container.getLifeScope();
-                        lifeScope.execute(actionData, actions.LifeState.onInit, actions.CoreActions.bindParameterProviders);
-                        providers = providers.concat(actionData.execResult);
-                        parameters = lifeScope.getMethodParameters(targetClass, target, propertyKey);
-                        return [4 /*yield*/, this.createParams.apply(this, [parameters].concat(providers))];
-                    case 1:
-                        paramInstances = _b.sent();
-                        return [2 /*return*/, target[propertyKey].apply(target, paramInstances)];
-                    case 2: throw new Error("type: " + targetClass + " has no method " + propertyKey.toString() + ".");
-                }
-            });
-        });
-    };
-    MethodAccessor.prototype.syncInvoke = function (token, propertyKey, target) {
-        var providers = [];
-        for (var _i = 3; _i < arguments.length; _i++) {
-            providers[_i - 3] = arguments[_i];
-        }
-        var _a;
-        if (!target) {
-            target = (_a = this.container).resolve.apply(_a, [token].concat(providers));
-        }
-        var targetClass = this.container.getTokenImpl(token);
-        if (!targetClass) {
-            throw Error(token.toString() + ' is not implements by any class.');
-        }
-        if (target && utils.isFunction(target[propertyKey])) {
-            var actionData = {
-                target: target,
-                targetType: targetClass,
-                propertyKey: propertyKey,
-            };
-            var lifeScope = this.container.getLifeScope();
-            lifeScope.execute(actionData, actions.LifeState.onInit, actions.CoreActions.bindParameterProviders);
-            providers = providers.concat(actionData.execResult);
-            var parameters = lifeScope.getMethodParameters(targetClass, target, propertyKey);
-            var paramInstances = this.createSyncParams.apply(this, [parameters].concat(providers));
-            return target[propertyKey].apply(target, paramInstances);
-        }
-        else {
-            throw new Error("type: " + targetClass + " has no method " + propertyKey.toString() + ".");
-        }
-    };
-    MethodAccessor.prototype.createSyncParams = function (params) {
-        var _this = this;
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        var _a;
-        var providerMap = (_a = this.getMatcher()).matchProviders.apply(_a, [params].concat(providers));
-        return params.map(function (param, index) {
-            var _a;
-            if (param.name && providerMap.has(param.name)) {
-                return providerMap.resolve(param.name);
-            }
-            else if (utils.isToken(param.type)) {
-                return (_a = _this.container).resolve.apply(_a, [param.type].concat(providers));
-            }
-            else {
-                return undefined;
-            }
-        });
-    };
-    MethodAccessor.prototype.createParams = function (params) {
-        var _this = this;
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        var _a;
-        var providerMap = (_a = this.getMatcher()).matchProviders.apply(_a, [params].concat(providers));
-        return Promise.all(params.map(function (param, index) {
-            var _a;
-            if (param.name && providerMap.has(param.name)) {
-                return providerMap.resolve(param.name);
-            }
-            else if (utils.isToken(param.type)) {
-                return (_a = _this.container).resolve.apply(_a, [param.type].concat(providers));
-            }
-            else {
-                return undefined;
-            }
-        }));
-    };
-    MethodAccessor.classAnnations = { "name": "MethodAccessor", "params": { "constructor": ["container"], "getMatcher": [], "invoke": ["token", "propertyKey", "target", "providers"], "syncInvoke": ["token", "propertyKey", "target", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"] } };
-    return MethodAccessor;
-}());
-exports.MethodAccessor = MethodAccessor;
 
 
 });
@@ -5080,106 +797,8 @@ unwrapExports(MethodAccessor_1);
 var MethodAccessor_2 = MethodAccessor_1.MethodAccessor;
 
 var CacheManager_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var CacheManager=function(){function e(e){this.container=e, this.cacheTokens=new utils.MapSet;}return e.prototype.isChecking=function(){return!!this.timeout}, e.prototype.hasCache=function(e){return this.cacheTokens.has(e)}, e.prototype.cache=function(e,t,s){var r;this.hasCache(e)?(r=this.cacheTokens.get(e)).expires=Date.now()+s:r={target:t,expires:Date.now()+s}, this.cacheTokens.set(e,r), this.isChecking()||this.checkExpires();}, e.prototype.get=function(e,t){var s=null;if(!this.cacheTokens.has(e))return null;var r=this.cacheTokens.get(e);return r.expires<=Date.now()?(s=r.target, utils.isNumber(t)&&0<t&&(r.expires=Date.now()+t, this.cacheTokens.set(e,r))):this.destroy(e,r.target), s}, e.prototype.checkExpires=function(){var t=this;if(this.timeout&&(clearTimeout(this.timeout), this.timeout=0), 0<this.cacheTokens.size){var s=[];this.cacheTokens.forEach(function(e,t){e.expires>=Date.now()&&s.push(t);}), s.length&&s.forEach(function(e){t.destroy(e,t.cacheTokens.get(e).target);}), this.timeout=setTimeout(function(){t.checkExpires();},6e4);}}, e.prototype.destroy=function(e,t){if(this.hasCache(e)){t||(t=this.cacheTokens.get(e).target);try{var s=t;utils.isFunction(s.onDestroy)&&this.container.syncInvoke(e,"onDestroy",t), this.cacheTokens.delete(e);}catch(e){console.error&&console.error(e);}}}, e.classAnnations={name:"CacheManager",params:{constructor:["container"],isChecking:[],hasCache:["targetType"],cache:["targetType","target","expires"],get:["targetType","expires"],checkExpires:[],destroy:["targetType","target"]}}, e}();exports.CacheManager=CacheManager;
 
-/**
- * cache manager.
- *
- * @export
- * @class CacheManager
- * @implements {ICacheManager}
- */
-var CacheManager = /** @class */ (function () {
-    function CacheManager(container) {
-        this.container = container;
-        this.cacheTokens = new utils.MapSet();
-    }
-    CacheManager.prototype.isChecking = function () {
-        return !!this.timeout;
-    };
-    CacheManager.prototype.hasCache = function (targetType) {
-        return this.cacheTokens.has(targetType);
-    };
-    CacheManager.prototype.cache = function (targetType, target, expires) {
-        var cache;
-        if (this.hasCache(targetType)) {
-            cache = this.cacheTokens.get(targetType);
-            cache.expires = Date.now() + expires;
-        }
-        else {
-            cache = {
-                target: target,
-                expires: Date.now() + expires
-            };
-        }
-        this.cacheTokens.set(targetType, cache);
-        if (!this.isChecking()) {
-            this.checkExpires();
-        }
-    };
-    CacheManager.prototype.get = function (targetType, expires) {
-        var result = null;
-        if (!this.cacheTokens.has(targetType)) {
-            return null;
-        }
-        var cache = this.cacheTokens.get(targetType);
-        if (cache.expires <= Date.now()) {
-            result = cache.target;
-            if (utils.isNumber(expires) && expires > 0) {
-                cache.expires = Date.now() + expires;
-                this.cacheTokens.set(targetType, cache);
-            }
-        }
-        else {
-            this.destroy(targetType, cache.target);
-        }
-        return result;
-    };
-    CacheManager.prototype.checkExpires = function () {
-        var _this = this;
-        if (this.timeout) {
-            clearTimeout(this.timeout);
-            this.timeout = 0;
-        }
-        if (this.cacheTokens.size > 0) {
-            var timeoutCaches_1 = [];
-            this.cacheTokens.forEach(function (cache, targetType) {
-                if (cache.expires >= Date.now()) {
-                    timeoutCaches_1.push(targetType);
-                }
-            });
-            if (timeoutCaches_1.length) {
-                timeoutCaches_1.forEach(function (targetType) {
-                    _this.destroy(targetType, _this.cacheTokens.get(targetType).target);
-                });
-            }
-            this.timeout = setTimeout(function () {
-                _this.checkExpires();
-            }, 60000);
-        }
-    };
-    CacheManager.prototype.destroy = function (targetType, target) {
-        if (!this.hasCache(targetType)) {
-            return;
-        }
-        if (!target) {
-            target = this.cacheTokens.get(targetType).target;
-        }
-        try {
-            var component = target;
-            if (utils.isFunction(component.onDestroy)) {
-                this.container.syncInvoke(targetType, 'onDestroy', target);
-            }
-            this.cacheTokens.delete(targetType);
-        }
-        catch (err) {
-            console.error && console.error(err);
-        }
-    };
-    CacheManager.classAnnations = { "name": "CacheManager", "params": { "constructor": ["container"], "isChecking": [], "hasCache": ["targetType"], "cache": ["targetType", "target", "expires"], "get": ["targetType", "expires"], "checkExpires": [], "destroy": ["targetType", "target"] } };
-    return CacheManager;
-}());
-exports.CacheManager = CacheManager;
 
 
 });
@@ -5188,19 +807,8 @@ unwrapExports(CacheManager_1);
 var CacheManager_2 = CacheManager_1.CacheManager;
 
 var core = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});tslib_1.__exportStar(actions,exports), tslib_1.__exportStar(decorators,exports), tslib_1.__exportStar(factories,exports), tslib_1.__exportStar(providers,exports), tslib_1.__exportStar(IRecognizer,exports), tslib_1.__exportStar(IProviderMatcher,exports), tslib_1.__exportStar(ActionFactory_1,exports), tslib_1.__exportStar(DefaultLifeScope_1,exports), tslib_1.__exportStar(ProviderMatcher_1,exports), tslib_1.__exportStar(MethodAccessor_1,exports), tslib_1.__exportStar(CacheManager_1,exports);
 
-tslib_1.__exportStar(actions, exports);
-tslib_1.__exportStar(decorators, exports);
-tslib_1.__exportStar(factories, exports);
-tslib_1.__exportStar(providers, exports);
-tslib_1.__exportStar(IRecognizer, exports);
-tslib_1.__exportStar(IProviderMatcher, exports);
-tslib_1.__exportStar(ActionFactory_1, exports);
-tslib_1.__exportStar(DefaultLifeScope_1, exports);
-tslib_1.__exportStar(ProviderMatcher_1, exports);
-tslib_1.__exportStar(MethodAccessor_1, exports);
-tslib_1.__exportStar(CacheManager_1, exports);
 
 
 });
@@ -5208,13 +816,8 @@ tslib_1.__exportStar(CacheManager_1, exports);
 unwrapExports(core);
 
 var LifeScope = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.LifeScopeToken=new InjectToken_1.InjectToken("DI_LifeScope");
 
-/**
- * life scope interface symbol.
- * it is a symbol id, you can register yourself MethodAccessor for this.
- */
-exports.LifeScopeToken = new InjectToken_1.InjectToken('DI_LifeScope');
 
 
 });
@@ -5223,13 +826,8 @@ unwrapExports(LifeScope);
 var LifeScope_1 = LifeScope.LifeScopeToken;
 
 var IContainerBuilder = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.ContainerBuilderToken=new InjectToken_1.InjectToken("DI_IContainerBuilder");
 
-/**
- * ContainerBuilder interface token.
- * it is a token id, you can register yourself IContainerBuilder for this.
- */
-exports.ContainerBuilderToken = new InjectToken_1.InjectToken('DI_IContainerBuilder');
 
 
 });
@@ -5238,187 +836,8 @@ unwrapExports(IContainerBuilder);
 var IContainerBuilder_1 = IContainerBuilder.ContainerBuilderToken;
 
 var ResolverChain_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.ResolverChainToken=new InjectToken_1.InjectToken("di_ResolverChain");var ResolverChain=function(){function e(e){this.container=e, this.resolvers=[];}return e.prototype.next=function(e){this.hasResolver(e)||this.resolvers.push(e);}, e.prototype.toArray=function(){return[this.container].concat(this.resolvers)}, e.prototype.hasResolver=function(n){return n instanceof Container_1.Container?0<=this.resolvers.indexOf(n):this.resolvers.some(function(e){return!(e instanceof Container_1.Container)&&(!(!e.type||!n.type)&&e.type===n.type)})}, e.prototype.hasToken=function(t,r){var o=this;if(!r)return!1;if(t instanceof Container_1.Container)return t.hasRegister(r);if(t.type===r||this.container.getTokenKey(t.token)===r)return!0;var s=t.exports||[];return s.concat(t.providers||[]).some(function(e){if(o.container.getTokenKey(e)===r)return!0;if(!utils.isClass(r)&&t.container.hasRegister(r)){var n=t.container.getTokenImpl(r);return 0<=s.indexOf(n)}return!1})}, e.prototype.resolve=function(n){for(var e,t,r=this,o=[],s=1;s<arguments.length;s++)o[s-1]=arguments[s];var i=this.toArray().find(function(e){return r.hasToken(e,n)});return i||this.container.parent?i?i instanceof Container_1.Container?i.resolveValue.apply(i,[n].concat(o)):(e=i.container).resolveValue.apply(e,[n].concat(o)):(t=this.container.parent).resolve.apply(t,[n].concat(o)):(console.log("have not register",n), null)}, e.prototype.unregister=function(n){var t=this,e=this.toArray().find(function(e){return t.hasToken(e,n)});if(e)if(e instanceof Container_1.Container)e.unregister(n,!1);else{var r=this.resolvers.indexOf(e);0<=r&&r<this.resolvers.length&&this.resolvers.splice(r,1);}else this.container.parent&&this.container.parent.unregister(n);}, e.prototype.getTokenImpl=function(n){var t=this,e=this.toArray().find(function(e){return t.hasToken(e,n)});return e?e instanceof Container_1.Container?e.getTokenImpl(n,!1):e.container.getTokenImpl(n,!1):this.container.parent?this.container.parent.getTokenImpl(n):null}, e.prototype.hasRegister=function(n){var t=this;return!!this.container.hasRegister(n)||!!this.resolvers.length&&this.resolvers.some(function(e){return t.hasToken(e,n)})}, e.prototype.has=function(e){return!!this.hasRegister(e)||!!this.container.parent&&this.container.parent.has(e)}, e.classAnnations={name:"ResolverChain",params:{constructor:["container"],next:["resolver"],toArray:[],hasResolver:["resolver"],hasToken:["resolver","token"],resolve:["token","providers"],unregister:["token"],getTokenImpl:["token"],hasRegister:["token"],has:["token"]}}, e}();exports.ResolverChain=ResolverChain;
 
-
-
-exports.ResolverChainToken = new InjectToken_1.InjectToken('di_ResolverChain');
-var ResolverChain = /** @class */ (function () {
-    function ResolverChain(container) {
-        this.container = container;
-        this.resolvers = [];
-    }
-    ResolverChain.prototype.next = function (resolver) {
-        if (!this.hasResolver(resolver)) {
-            this.resolvers.push(resolver);
-        }
-    };
-    ResolverChain.prototype.toArray = function () {
-        return [this.container].concat(this.resolvers);
-    };
-    ResolverChain.prototype.hasResolver = function (resolver) {
-        if (resolver instanceof Container_1.Container) {
-            return this.resolvers.indexOf(resolver) >= 0;
-        }
-        else {
-            return this.resolvers.some(function (a) {
-                if (a instanceof Container_1.Container) {
-                    return false;
-                }
-                else {
-                    if (!a.type || !resolver.type) {
-                        return false;
-                    }
-                    return a.type === resolver.type;
-                }
-            });
-        }
-    };
-    ResolverChain.prototype.hasToken = function (resolver, token) {
-        var _this = this;
-        if (!token) {
-            return false;
-        }
-        if (resolver instanceof Container_1.Container) {
-            return resolver.hasRegister(token);
-        }
-        else {
-            if (resolver.type === token || this.container.getTokenKey(resolver.token) === token) {
-                return true;
-            }
-            var exps_1 = resolver.exports || [];
-            return exps_1.concat(resolver.providers || []).some(function (t) {
-                if (_this.container.getTokenKey(t) === token) {
-                    return true;
-                }
-                else if (!utils.isClass(token)) {
-                    if (resolver.container.hasRegister(token)) {
-                        var type = resolver.container.getTokenImpl(token);
-                        return exps_1.indexOf(type) >= 0;
-                    }
-                }
-                return false;
-            });
-        }
-    };
-    ResolverChain.prototype.resolve = function (token) {
-        var _this = this;
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        var _a, _b;
-        var resolver = this.toArray().find(function (r) { return _this.hasToken(r, token); });
-        if (!resolver && !this.container.parent) {
-            console.log('have not register', token);
-            return null;
-        }
-        if (resolver) {
-            if (resolver instanceof Container_1.Container) {
-                return resolver.resolveValue.apply(resolver, [token].concat(providers));
-            }
-            else {
-                return (_a = resolver.container).resolveValue.apply(_a, [token].concat(providers));
-            }
-        }
-        else {
-            // if (!this.hasContainerProvider(providers)) {
-            //     providers.push({ provide: ContainerToken, useValue: this.container });
-            // }
-            return (_b = this.container.parent).resolve.apply(_b, [token].concat(providers));
-        }
-    };
-    ResolverChain.prototype.unregister = function (token) {
-        var _this = this;
-        var resolver = this.toArray().find(function (r) { return _this.hasToken(r, token); });
-        if (resolver) {
-            if (resolver instanceof Container_1.Container) {
-                resolver.unregister(token, false);
-            }
-            else {
-                var idx = this.resolvers.indexOf(resolver);
-                if (idx >= 0 && idx < this.resolvers.length) {
-                    this.resolvers.splice(idx, 1);
-                }
-            }
-        }
-        else if (this.container.parent) {
-            this.container.parent.unregister(token);
-        }
-    };
-    ResolverChain.prototype.getTokenImpl = function (token) {
-        var _this = this;
-        var resolver = this.toArray().find(function (r) { return _this.hasToken(r, token); });
-        if (resolver) {
-            if (resolver instanceof Container_1.Container) {
-                return resolver.getTokenImpl(token, false);
-            }
-            else {
-                return resolver.container.getTokenImpl(token, false);
-            }
-        }
-        else if (this.container.parent) {
-            return this.container.parent.getTokenImpl(token);
-        }
-        else {
-            return null;
-        }
-    };
-    // getTypeProvides<T>(target: Type<T>): Token<T>[] {
-    //     let tokens: Token<T>[] = [];
-    //     this.toArray().forEach(r => {
-    //         if (tokens && tokens.length) {
-    //             return false;
-    //         }
-    //         if (r instanceof Container) {
-    //             tokens = r.getTypeProvides(target, false);
-    //         } else {
-    //             tokens = r.container.getTypeProvides(target, false);
-    //         }
-    //         return true;
-    //     });
-    //     if (tokens && tokens.length) {
-    //         return tokens;
-    //     }
-    //     if (this.container.parent) {
-    //         return this.container.parent.getTypeProvides(target);
-    //     }
-    //     return tokens;
-    // }
-    ResolverChain.prototype.hasRegister = function (token) {
-        var _this = this;
-        if (this.container.hasRegister(token)) {
-            return true;
-        }
-        if (this.resolvers.length) {
-            return this.resolvers.some(function (r) { return _this.hasToken(r, token); });
-        }
-        return false;
-    };
-    ResolverChain.prototype.has = function (token) {
-        if (this.hasRegister(token)) {
-            return true;
-        }
-        if (this.container.parent) {
-            return this.container.parent.has(token);
-        }
-        return false;
-    };
-    // protected hasContainerProvider(providers: Providers[]): boolean {
-    //     return providers.some(p => {
-    //         if (p instanceof ProviderMap) {
-    //             return p.has(ContainerToken);
-    //         } else if (isMetadataObject(p)) {
-    //             let prd = p as IProvider;
-    //             return prd.provide === ContainerToken;
-    //         }
-    //         return false;
-    //     });
-    // }
-    ResolverChain.classAnnations = { "name": "ResolverChain", "params": { "constructor": ["container"], "next": ["resolver"], "toArray": [], "hasResolver": ["resolver"], "hasToken": ["resolver", "token"], "resolve": ["token", "providers"], "unregister": ["token"], "getTokenImpl": ["token"], "hasRegister": ["token"], "has": ["token"] } };
-    return ResolverChain;
-}());
-exports.ResolverChain = ResolverChain;
 
 
 });
@@ -5428,9 +847,8 @@ var ResolverChain_2 = ResolverChain_1.ResolverChainToken;
 var ResolverChain_3 = ResolverChain_1.ResolverChain;
 
 var resolves = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});tslib_1.__exportStar(ResolverChain_1,exports);
 
-tslib_1.__exportStar(ResolverChain_1, exports);
 
 
 });
@@ -5438,47 +856,8 @@ tslib_1.__exportStar(ResolverChain_1, exports);
 unwrapExports(resolves);
 
 var registerCores_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});function registerCores(e){e.registerSingleton(LifeScope.LifeScopeToken,function(){return new DefaultLifeScope_1.DefaultLifeScope(e)}), e.registerSingleton(ICacheManager.CacheManagerToken,function(){return new core.CacheManager(e)}), e.registerSingleton(resolves.ResolverChainToken,function(){return new resolves.ResolverChain(e)}), e.register(core.ProviderMapToken,function(){return new core.ProviderMap(e)}), e.bindProvider(core.ProviderMap,core.ProviderMapToken), e.registerSingleton(core.ProviderMatcherToken,function(){return new core.ProviderMatcher(e)}), e.registerSingleton(IMethodAccessor.MethodAccessorToken,function(){return new MethodAccessor_1.MethodAccessor(e)});var r=e.get(LifeScope.LifeScopeToken);r.registerDecorator(decorators.Injectable,actions.CoreActions.bindProvider,actions.CoreActions.cache), r.registerDecorator(decorators.Component,actions.CoreActions.bindProvider,actions.CoreActions.cache,actions.CoreActions.componentBeforeInit,actions.CoreActions.componentInit,actions.CoreActions.componentAfterInit), r.registerDecorator(decorators.Singleton,actions.CoreActions.bindProvider), r.registerDecorator(decorators.Abstract,actions.CoreActions.bindProvider,actions.CoreActions.cache), r.registerDecorator(decorators.AutoWired,actions.CoreActions.bindParameterType,actions.CoreActions.bindPropertyType), r.registerDecorator(decorators.Inject,actions.CoreActions.bindParameterType,actions.CoreActions.bindPropertyType), r.registerDecorator(decorators.Param,actions.CoreActions.bindParameterType,actions.CoreActions.bindPropertyType), r.registerDecorator(decorators.Method,actions.CoreActions.bindParameterProviders), r.registerDecorator(decorators.Autorun,actions.CoreActions.autorun,actions.CoreActions.methodAutorun), r.registerDecorator(decorators.IocExt,actions.CoreActions.autorun,actions.CoreActions.componentBeforeInit,actions.CoreActions.componentInit,actions.CoreActions.componentAfterInit), e.register(Date,function(){return new Date}), e.register(String,function(){return""}), e.register(Number,function(){return Number.NaN}), e.register(Boolean,function(){});}exports.registerCores=registerCores;
 
-
-
-
-
-
-
-
-
-/**
- * register core for container.
- *
- * @export
- * @param {IContainer} container
- */
-function registerCores(container) {
-    container.registerSingleton(LifeScope.LifeScopeToken, function () { return new DefaultLifeScope_1.DefaultLifeScope(container); });
-    container.registerSingleton(ICacheManager.CacheManagerToken, function () { return new core.CacheManager(container); });
-    container.registerSingleton(resolves.ResolverChainToken, function () { return new resolves.ResolverChain(container); });
-    container.register(core.ProviderMapToken, function () { return new core.ProviderMap(container); });
-    container.bindProvider(core.ProviderMap, core.ProviderMapToken);
-    container.registerSingleton(core.ProviderMatcherToken, function () { return new core.ProviderMatcher(container); });
-    container.registerSingleton(IMethodAccessor.MethodAccessorToken, function () { return new MethodAccessor_1.MethodAccessor(container); });
-    var lifeScope = container.get(LifeScope.LifeScopeToken);
-    lifeScope.registerDecorator(decorators.Injectable, actions.CoreActions.bindProvider, actions.CoreActions.cache);
-    lifeScope.registerDecorator(decorators.Component, actions.CoreActions.bindProvider, actions.CoreActions.cache, actions.CoreActions.componentBeforeInit, actions.CoreActions.componentInit, actions.CoreActions.componentAfterInit);
-    lifeScope.registerDecorator(decorators.Singleton, actions.CoreActions.bindProvider);
-    lifeScope.registerDecorator(decorators.Abstract, actions.CoreActions.bindProvider, actions.CoreActions.cache);
-    lifeScope.registerDecorator(decorators.AutoWired, actions.CoreActions.bindParameterType, actions.CoreActions.bindPropertyType);
-    lifeScope.registerDecorator(decorators.Inject, actions.CoreActions.bindParameterType, actions.CoreActions.bindPropertyType);
-    lifeScope.registerDecorator(decorators.Param, actions.CoreActions.bindParameterType, actions.CoreActions.bindPropertyType);
-    lifeScope.registerDecorator(decorators.Method, actions.CoreActions.bindParameterProviders);
-    lifeScope.registerDecorator(decorators.Autorun, actions.CoreActions.autorun, actions.CoreActions.methodAutorun);
-    lifeScope.registerDecorator(decorators.IocExt, actions.CoreActions.autorun, actions.CoreActions.componentBeforeInit, actions.CoreActions.componentInit, actions.CoreActions.componentAfterInit);
-    container.register(Date, function () { return new Date(); });
-    container.register(String, function () { return ''; });
-    container.register(Number, function () { return Number.NaN; });
-    container.register(Boolean, function () { return undefined; });
-}
-exports.registerCores = registerCores;
 
 
 });
@@ -5487,644 +866,8 @@ unwrapExports(registerCores_1);
 var registerCores_2 = registerCores_1.registerCores;
 
 var Container_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0}), require$$0;var Container=function(){function e(){this.init();}return e.prototype.getRoot=function(){for(var e=this;e.parent;)e=e.parent;return e}, e.prototype.getBuilder=function(){return this.resolveValue(IContainerBuilder.ContainerBuilderToken)}, e.prototype.get=function(e,t){for(var r=[],o=2;o<arguments.length;o++)r[o-2]=arguments[o];return this.resolve.apply(this,[t?this.getTokenKey(e,t):e].concat(r))}, Object.defineProperty(e.prototype,"resolvers",{get:function(){return this.resolveValue(resolves.ResolverChainToken)},enumerable:!0,configurable:!0}), e.prototype.resolve=function(e){for(var t,r=[],o=1;o<arguments.length;o++)r[o-1]=arguments[o];var s=this.getTokenKey(e);return(t=this.resolvers).resolve.apply(t,[s].concat(r))}, e.prototype.resolveValue=function(e){for(var t=[],r=1;r<arguments.length;r++)t[r-1]=arguments[r];var o=this.getTokenKey(e);return this.hasRegister(o)?this.factories.get(o).apply(void 0,t):null}, e.prototype.clearCache=function(e){this.resolveValue(ICacheManager.CacheManagerToken).destroy(e);}, e.prototype.getToken=function(e,t){return t?new Registration_1.Registration(e,t):e}, e.prototype.getTokenKey=function(e,t){return t?new Registration_1.Registration(e,t).toString():e instanceof Registration_1.Registration?e.toString():e}, e.prototype.register=function(e,t){return this.registerFactory(e,t), this}, e.prototype.has=function(e,t){var r=this.getTokenKey(e,t);return this.resolvers.has(r)}, e.prototype.hasRegister=function(e){return this.factories.has(e)}, e.prototype.unregister=function(e,t){var r=this.getTokenKey(e);return!1===t?this.hasRegister(r)&&(this.factories.delete(r), this.provideTypes.has(r)&&this.provideTypes.delete(r), utils.isClass(r)&&this.clearCache(r)):this.resolvers.unregister(r), this}, e.prototype.registerSingleton=function(e,t){return this.registerFactory(e,t,!0), this}, e.prototype.registerValue=function(e,t){var r=this,o=this.getTokenKey(e);return this.singleton.set(o,t), this.factories.has(o)||this.factories.set(o,function(){return r.singleton.get(o)}), this}, e.prototype.bindProvider=function(e,r){var t,o=this,s=this.getTokenKey(e);if(t=utils.isToken(r)?function(){for(var e=[],t=0;t<arguments.length;t++)e[t]=arguments[t];return o.resolve.apply(o,[r].concat(e))}:utils.isFunction(r)?function(){for(var e=[],t=0;t<arguments.length;t++)e[t]=arguments[t];return r.apply(void 0,[o].concat(e))}:function(){return r}, utils.isClass(r))this.has(r)||this.register(r), this.provideTypes.set(s,r);else if(utils.isToken(r))for(var i=r;this.provideTypes.has(i)&&!utils.isClass(i);)if(i=this.provideTypes.get(i), utils.isClass(i)){this.provideTypes.set(s,i);break}return this.factories.set(s,t), this}, e.prototype.getTokenImpl=function(e,t){var r=this.getTokenKey(e);return!1===t?utils.isClass(e)?e:this.provideTypes.has(r)?this.provideTypes.get(r):null:this.resolvers.getTokenImpl(r)}, e.prototype.getTokenExtendsChain=function(e){return utils.isClass(e)?this.getBaseClasses(e):this.getBaseClasses(this.getTokenImpl(e)).concat([e])}, e.prototype.getBaseClasses=function(e){for(var t=[];utils.isClass(e)&&e!==Object;)t.push(e), e=utils.lang.getParentClass(e);return t}, e.prototype.getLifeScope=function(){return this.get(LifeScope.LifeScopeToken)}, e.prototype.use=function(){for(var e,t=[],r=0;r<arguments.length;r++)t[r]=arguments[r];return(e=this.getBuilder()).syncLoadModule.apply(e,[this].concat(t)), this}, e.prototype.loadModule=function(){for(var e,t=[],r=0;r<arguments.length;r++)t[r]=arguments[r];return(e=this.getBuilder()).loadModule.apply(e,[this].concat(t))}, e.prototype.invoke=function(e,t,r){for(var o,s=[],i=3;i<arguments.length;i++)s[i-3]=arguments[i];return(o=this.resolveValue(IMethodAccessor.MethodAccessorToken)).invoke.apply(o,[e,t,r].concat(s))}, e.prototype.syncInvoke=function(e,t,r){for(var o,s=[],i=3;i<arguments.length;i++)s[i-3]=arguments[i];return(o=this.resolveValue(IMethodAccessor.MethodAccessorToken)).syncInvoke.apply(o,[e,t,r].concat(s))}, e.prototype.createSyncParams=function(e){for(var t,r=[],o=1;o<arguments.length;o++)r[o-1]=arguments[o];return(t=this.resolveValue(IMethodAccessor.MethodAccessorToken)).createSyncParams.apply(t,[e].concat(r))}, e.prototype.createParams=function(e){for(var t,r=[],o=1;o<arguments.length;o++)r[o-1]=arguments[o];return(t=this.resolveValue(IMethodAccessor.MethodAccessorToken)).createParams.apply(t,[e].concat(r))}, e.prototype.cacheDecorator=function(e,t){e.has(t.name)||e.set(t.name,t);}, e.prototype.init=function(){var e=this;this.factories=new utils.MapSet, this.singleton=new utils.MapSet, this.provideTypes=new utils.MapSet, this.bindProvider(IContainer.ContainerToken,function(){return e}), registerCores_1.registerCores(this);}, e.prototype.registerFactory=function(e,t,r){var o=this.getTokenKey(e);if(!this.factories.has(o)){var s;if(utils.isUndefined(t)){if(!utils.isString(e)&&!utils.isSymbol(e)){var i=e instanceof Registration_1.Registration?e.getClass():e;utils.isClass(i)&&this.bindTypeFactory(o,i,r);}}else utils.isFunction(t)?utils.isClass(t)?this.bindTypeFactory(o,t,r):s=this.createCustomFactory(o,t,r):r&&void 0!==t&&(s=this.createCustomFactory(o,function(){return t},r));s&&this.factories.set(o,s);}}, e.prototype.createCustomFactory=function(o,s,e){var i=this;return e?function(){for(var e=[],t=0;t<arguments.length;t++)e[t]=arguments[t];if(i.singleton.has(o))return i.singleton.get(o);var r=s.apply(void 0,[i].concat(e));return i.singleton.set(o,r), r}:function(){for(var e=[],t=0;t<arguments.length;t++)e[t]=arguments[t];return s.apply(void 0,[i].concat(e))}}, e.prototype.bindTypeFactory=function(a,c,p){var u=this;if(Reflect.isExtensible(c)){var l=this.getLifeScope(),g=l.getConstructorParameters(c);p||(p=l.isSingletonType(c));this.factories.set(a,function(){for(var e,t=[],r=0;r<arguments.length;r++)t[r]=arguments[r];if(p&&u.singleton.has(a))return u.singleton.get(a);if(t.length<1){var o={tokenKey:a,targetType:c,singleton:p};if(l.execute(o,core.CoreActions.cache), o.execResult&&o.execResult instanceof c)return o.execResult}var s=(e=u.get(core.ProviderMatcherToken)).toProviderMap.apply(e,t);l.execute({tokenKey:a,targetType:c,raiseContainer:u,params:g,providers:t,providerMap:s,singleton:p},types.IocState.runtime,core.LifeState.beforeCreateArgs);var i=u.createSyncParams(g,s);l.routeExecute({tokenKey:a,targetType:c,raiseContainer:u,args:i,params:g,providers:t,providerMap:s,singleton:p},types.IocState.runtime,core.LifeState.beforeConstructor);var n=new(c.bind.apply(c,[void 0].concat(i)));return l.routeExecute({tokenKey:a,target:n,targetType:c,raiseContainer:u,args:i,params:g,providers:t,providerMap:s,singleton:p},types.IocState.runtime,core.LifeState.afterConstructor), l.execute({tokenKey:a,target:n,targetType:c,raiseContainer:u,args:i,params:g,providers:t,providerMap:s,singleton:p},types.IocState.runtime,core.LifeState.onInit), l.routeExecute({tokenKey:a,target:n,targetType:c,raiseContainer:u,args:i,params:g,providers:t,providerMap:s,singleton:p},types.IocState.runtime,core.LifeState.AfterInit), l.execute({tokenKey:a,target:n,targetType:c,raiseContainer:u},core.CoreActions.cache), n}), l.routeExecute({tokenKey:a,targetType:c,raiseContainer:this},types.IocState.design);}}, e.classAnnations={name:"Container",params:{constructor:[],getRoot:[],getBuilder:[],get:["token","alias","providers"],resolve:["token","providers"],resolveValue:["token","providers"],clearCache:["targetType"],getToken:["token","alias"],getTokenKey:["token","alias"],register:["token","value"],has:["token","alias"],hasRegister:["key"],unregister:["token","inchain"],registerSingleton:["token","value"],registerValue:["token","value"],bindProvider:["provide","provider"],getTokenImpl:["token","inchain"],getTokenExtendsChain:["token"],getBaseClasses:["target"],getLifeScope:[],use:["modules"],loadModule:["modules"],invoke:["token","propertyKey","instance","providers"],syncInvoke:["token","propertyKey","instance","providers"],createSyncParams:["params","providers"],createParams:["params","providers"],cacheDecorator:["map","action"],init:[],registerFactory:["token","value","singleton"],createCustomFactory:["key","factory","singleton"],bindTypeFactory:["key","ClassT","singleton"]}}, e}();exports.Container=Container;
 
-
-
-
-
-
-
-
-
-
-
-
-/**
- * Container
- *
- * @export
- * @class Container
- * @implements {IContainer}
- */
-var Container = /** @class */ (function () {
-    function Container() {
-        this.init();
-    }
-    Container.prototype.getRoot = function () {
-        var root = this;
-        while (root.parent) {
-            root = root.parent;
-        }
-        return root;
-    };
-    Container.prototype.getBuilder = function () {
-        return this.resolveValue(IContainerBuilder.ContainerBuilderToken);
-    };
-    /**
-     * Retrieves an instance from the container based on the provided token.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @param {...Providers[]} providers
-     * @returns {T}
-     * @memberof Container
-     */
-    Container.prototype.get = function (token, alias) {
-        var providers = [];
-        for (var _i = 2; _i < arguments.length; _i++) {
-            providers[_i - 2] = arguments[_i];
-        }
-        return this.resolve.apply(this, [alias ? this.getTokenKey(token, alias) : token].concat(providers));
-    };
-    Object.defineProperty(Container.prototype, "resolvers", {
-        /**
-        * resolve token value in this container only.
-        *
-        * @template T
-        * @param {Token<T>} token
-        * @param {...Providers[]} providers
-        * @returns {T}
-        * @memberof Container
-        */
-        get: function () {
-            return this.resolveValue(resolves.ResolverChainToken);
-        },
-        enumerable: true,
-        configurable: true
-    });
-    /**
-     * resolve type instance with token and param provider.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} [notFoundValue]
-     * @param {...Providers[]} providers
-     * @memberof Container
-     */
-    Container.prototype.resolve = function (token) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        var _a;
-        var key = this.getTokenKey(token);
-        return (_a = this.resolvers).resolve.apply(_a, [key].concat(providers));
-    };
-    /**
-     * resolve token value in this container only.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {...Providers[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    Container.prototype.resolveValue = function (token) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        var key = this.getTokenKey(token);
-        if (!this.hasRegister(key)) {
-            return null;
-        }
-        var factory = this.factories.get(key);
-        return factory.apply(void 0, providers);
-    };
-    /**
-     * clear cache.
-     *
-     * @param {Type<any>} targetType
-     * @memberof IContainer
-     */
-    Container.prototype.clearCache = function (targetType) {
-        this.resolveValue(ICacheManager.CacheManagerToken).destroy(targetType);
-    };
-    /**
-     * get token.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {Token<T>}
-     * @memberof Container
-     */
-    Container.prototype.getToken = function (token, alias) {
-        if (alias) {
-            return new Registration_1.Registration(token, alias);
-        }
-        return token;
-    };
-    /**
-     * get tocken key.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {SymbolType<T>}
-     * @memberof Container
-     */
-    Container.prototype.getTokenKey = function (token, alias) {
-        if (alias) {
-            return new Registration_1.Registration(token, alias).toString();
-        }
-        else if (token instanceof Registration_1.Registration) {
-            return token.toString();
-        }
-        return token;
-    };
-    /**
-     * register type.
-     * @abstract
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} [value]
-     * @returns {this}
-     * @memberOf Container
-     */
-    Container.prototype.register = function (token, value) {
-        this.registerFactory(token, value);
-        return this;
-    };
-    /**
-     * has register the token or not.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {boolean}
-     * @memberof Container
-     */
-    Container.prototype.has = function (token, alias) {
-        var key = this.getTokenKey(token, alias);
-        return this.resolvers.has(key);
-    };
-    /**
-     * has register type.
-     *
-     * @template T
-     * @param {SymbolType<T>} key
-     * @returns
-     * @memberof Container
-     */
-    Container.prototype.hasRegister = function (key) {
-        return this.factories.has(key);
-    };
-    /**
-     * unregister the token
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {this}
-     * @memberof Container
-     */
-    Container.prototype.unregister = function (token, inchain) {
-        var key = this.getTokenKey(token);
-        if (inchain === false) {
-            if (this.hasRegister(key)) {
-                this.factories.delete(key);
-                if (this.provideTypes.has(key)) {
-                    this.provideTypes.delete(key);
-                }
-                if (utils.isClass(key)) {
-                    this.clearCache(key);
-                }
-            }
-        }
-        else {
-            this.resolvers.unregister(key);
-        }
-        return this;
-    };
-    /**
-     * register stingleton type.
-     * @abstract
-     * @template T
-     * @param {Token<T>} token
-     * @param {Factory<T>} [value]
-     * @returns {this}
-     * @memberOf Container
-     */
-    Container.prototype.registerSingleton = function (token, value) {
-        this.registerFactory(token, value, true);
-        return this;
-    };
-    /**
-     * register value.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} value
-     * @returns {this}
-     * @memberof Container
-     */
-    Container.prototype.registerValue = function (token, value) {
-        var _this = this;
-        var key = this.getTokenKey(token);
-        this.singleton.set(key, value);
-        if (!this.factories.has(key)) {
-            this.factories.set(key, function () {
-                return _this.singleton.get(key);
-            });
-        }
-        return this;
-    };
-    /**
-     * bind provider.
-     *
-     * @template T
-     * @param {Token<T>} provide
-     * @param {Token<T>} provider
-     * @returns {this}
-     * @memberof Container
-     */
-    Container.prototype.bindProvider = function (provide, provider) {
-        var _this = this;
-        var provideKey = this.getTokenKey(provide);
-        var factory;
-        if (utils.isToken(provider)) {
-            factory = function () {
-                var providers = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    providers[_i] = arguments[_i];
-                }
-                return _this.resolve.apply(_this, [provider].concat(providers));
-            };
-        }
-        else {
-            if (utils.isFunction(provider)) {
-                factory = function () {
-                    var providers = [];
-                    for (var _i = 0; _i < arguments.length; _i++) {
-                        providers[_i] = arguments[_i];
-                    }
-                    return provider.apply(void 0, [_this].concat(providers));
-                };
-            }
-            else {
-                factory = function () {
-                    return provider;
-                };
-            }
-        }
-        if (utils.isClass(provider)) {
-            if (!this.has(provider)) {
-                this.register(provider);
-            }
-            this.provideTypes.set(provideKey, provider);
-        }
-        else if (utils.isToken(provider)) {
-            var token = provider;
-            while (this.provideTypes.has(token) && !utils.isClass(token)) {
-                token = this.provideTypes.get(token);
-                if (utils.isClass(token)) {
-                    this.provideTypes.set(provideKey, token);
-                    break;
-                }
-            }
-        }
-        this.factories.set(provideKey, factory);
-        return this;
-    };
-    /**
-     * get token implements class type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {boolean} [inchain]
-     * @returns {Type<T>}
-     * @memberof Container
-     */
-    Container.prototype.getTokenImpl = function (token, inchain) {
-        var tokenKey = this.getTokenKey(token);
-        if (inchain === false) {
-            if (utils.isClass(token)) {
-                return token;
-            }
-            if (this.provideTypes.has(tokenKey)) {
-                return this.provideTypes.get(tokenKey);
-            }
-            return null;
-        }
-        else {
-            return this.resolvers.getTokenImpl(tokenKey);
-        }
-    };
-    // /**
-    //  * get type provider for provides.
-    //  *
-    //  * @template T
-    //  * @param {Type<T>} target
-    //  * @returns {Token<T>[]}
-    //  * @memberof Container
-    //  */
-    // getTypeProvides<T>(target: Type<T>, inchain?: boolean): Token<T>[] {
-    //     if (inchain === false) {
-    //         if (!isClass(target)) {
-    //             return [];
-    //         }
-    //         let tokens: Token<T>[] = [];
-    //         if (this.provideTypes.values().some(a => a === target)) {
-    //             this.provideTypes.forEach((val, key) => {
-    //                 if (val === target) {
-    //                     tokens.push(key);
-    //                 }
-    //             });
-    //         }
-    //         return tokens;
-    //     } else {
-    //         return this.resolveChain.getTypeProvides(target);
-    //     }
-    // }
-    /**
-     * get token implement class and base classes.
-     *
-     * @param {Token<any>} token
-     * @returns {Token<any>[]}
-     * @memberof Container
-     */
-    Container.prototype.getTokenExtendsChain = function (token) {
-        if (utils.isClass(token)) {
-            return this.getBaseClasses(token);
-        }
-        else {
-            return this.getBaseClasses(this.getTokenImpl(token)).concat([token]);
-        }
-    };
-    Container.prototype.getBaseClasses = function (target) {
-        var types$$1 = [];
-        while (utils.isClass(target) && target !== Object) {
-            types$$1.push(target);
-            target = utils.lang.getParentClass(target);
-        }
-        return types$$1;
-    };
-    /**
-    * get life scope of container.
-    *
-    * @returns {LifeScope}
-    * @memberof IContainer
-    */
-    Container.prototype.getLifeScope = function () {
-        return this.get(LifeScope.LifeScopeToken);
-    };
-    /**
-     * use modules.
-     *
-     * @param {...Modules[]} modules
-     * @returns {this}
-     * @memberof Container
-     */
-    Container.prototype.use = function () {
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        var _a;
-        (_a = this.getBuilder()).syncLoadModule.apply(_a, [this].concat(modules));
-        return this;
-    };
-    /**
-     * async use modules.
-     *
-     * @param {...LoadType[]} modules load modules.
-     * @returns {Promise<Type<any>[]>}  types loaded.
-     * @memberof IContainer
-     */
-    Container.prototype.loadModule = function () {
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        var _a;
-        return (_a = this.getBuilder()).loadModule.apply(_a, [this].concat(modules));
-    };
-    /**
-     * invoke method async.
-     *
-     * @template T
-     * @param {Token<any>} token
-     * @param {string} propertyKey
-     * @param {*} [instance]
-     * @param {...Providers[]} providers
-     * @returns {Promise<T>}
-     * @memberof Container
-     */
-    Container.prototype.invoke = function (token, propertyKey, instance) {
-        var providers = [];
-        for (var _i = 3; _i < arguments.length; _i++) {
-            providers[_i - 3] = arguments[_i];
-        }
-        var _a;
-        return (_a = this.resolveValue(IMethodAccessor.MethodAccessorToken)).invoke.apply(_a, [token, propertyKey, instance].concat(providers));
-    };
-    /**
-     * invoke method.
-     *
-     * @template T
-     * @param {Token<any>} token
-     * @param {string} propertyKey
-     * @param {*} [instance]
-     * @param {...Providers[]} providers
-     * @returns {T}
-     * @memberof Container
-     */
-    Container.prototype.syncInvoke = function (token, propertyKey, instance) {
-        var providers = [];
-        for (var _i = 3; _i < arguments.length; _i++) {
-            providers[_i - 3] = arguments[_i];
-        }
-        var _a;
-        return (_a = this.resolveValue(IMethodAccessor.MethodAccessorToken)).syncInvoke.apply(_a, [token, propertyKey, instance].concat(providers));
-    };
-    Container.prototype.createSyncParams = function (params) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        var _a;
-        return (_a = this.resolveValue(IMethodAccessor.MethodAccessorToken)).createSyncParams.apply(_a, [params].concat(providers));
-    };
-    Container.prototype.createParams = function (params) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        var _a;
-        return (_a = this.resolveValue(IMethodAccessor.MethodAccessorToken)).createParams.apply(_a, [params].concat(providers));
-    };
-    Container.prototype.cacheDecorator = function (map, action) {
-        if (!map.has(action.name)) {
-            map.set(action.name, action);
-        }
-    };
-    Container.prototype.init = function () {
-        var _this = this;
-        this.factories = new utils.MapSet();
-        this.singleton = new utils.MapSet();
-        this.provideTypes = new utils.MapSet();
-        this.bindProvider(IContainer.ContainerToken, function () { return _this; });
-        registerCores_1.registerCores(this);
-    };
-    Container.prototype.registerFactory = function (token, value, singleton) {
-        var key = this.getTokenKey(token);
-        if (this.factories.has(key)) {
-            return;
-        }
-        var classFactory;
-        if (!utils.isUndefined(value)) {
-            if (utils.isFunction(value)) {
-                if (utils.isClass(value)) {
-                    this.bindTypeFactory(key, value, singleton);
-                }
-                else {
-                    classFactory = this.createCustomFactory(key, value, singleton);
-                }
-            }
-            else if (singleton && value !== undefined) {
-                classFactory = this.createCustomFactory(key, function () { return value; }, singleton);
-            }
-        }
-        else if (!utils.isString(token) && !utils.isSymbol(token)) {
-            var ClassT = (token instanceof Registration_1.Registration) ? token.getClass() : token;
-            if (utils.isClass(ClassT)) {
-                this.bindTypeFactory(key, ClassT, singleton);
-            }
-        }
-        if (classFactory) {
-            this.factories.set(key, classFactory);
-        }
-    };
-    Container.prototype.createCustomFactory = function (key, factory, singleton) {
-        var _this = this;
-        return singleton ?
-            function () {
-                var providers = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    providers[_i] = arguments[_i];
-                }
-                if (_this.singleton.has(key)) {
-                    return _this.singleton.get(key);
-                }
-                var instance = factory.apply(void 0, [_this].concat(providers));
-                _this.singleton.set(key, instance);
-                return instance;
-            }
-            : function () {
-                var providers = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    providers[_i] = arguments[_i];
-                }
-                return factory.apply(void 0, [_this].concat(providers));
-            };
-    };
-    Container.prototype.bindTypeFactory = function (key, ClassT, singleton) {
-        var _this = this;
-        if (!Reflect.isExtensible(ClassT)) {
-            return;
-        }
-        var lifeScope = this.getLifeScope();
-        var parameters = lifeScope.getConstructorParameters(ClassT);
-        if (!singleton) {
-            singleton = lifeScope.isSingletonType(ClassT);
-        }
-        var factory = function () {
-            var providers = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                providers[_i] = arguments[_i];
-            }
-            var _a;
-            if (singleton && _this.singleton.has(key)) {
-                return _this.singleton.get(key);
-            }
-            if (providers.length < 1) {
-                var lifecycleData = {
-                    tokenKey: key,
-                    targetType: ClassT,
-                    // raiseContainer: this,
-                    singleton: singleton
-                };
-                lifeScope.execute(lifecycleData, core.CoreActions.cache);
-                if (lifecycleData.execResult && lifecycleData.execResult instanceof ClassT) {
-                    return lifecycleData.execResult;
-                }
-            }
-            var providerMap = (_a = _this.get(core.ProviderMatcherToken)).toProviderMap.apply(_a, providers);
-            lifeScope.execute({
-                tokenKey: key,
-                targetType: ClassT,
-                raiseContainer: _this,
-                params: parameters,
-                providers: providers,
-                providerMap: providerMap,
-                singleton: singleton
-            }, types.IocState.runtime, core.LifeState.beforeCreateArgs);
-            var args = _this.createSyncParams(parameters, providerMap);
-            lifeScope.routeExecute({
-                tokenKey: key,
-                targetType: ClassT,
-                raiseContainer: _this,
-                args: args,
-                params: parameters,
-                providers: providers,
-                providerMap: providerMap,
-                singleton: singleton
-            }, types.IocState.runtime, core.LifeState.beforeConstructor);
-            var instance = new (ClassT.bind.apply(ClassT, [void 0].concat(args)))();
-            lifeScope.routeExecute({
-                tokenKey: key,
-                target: instance,
-                targetType: ClassT,
-                raiseContainer: _this,
-                args: args,
-                params: parameters,
-                providers: providers,
-                providerMap: providerMap,
-                singleton: singleton
-            }, types.IocState.runtime, core.LifeState.afterConstructor);
-            lifeScope.execute({
-                tokenKey: key,
-                target: instance,
-                targetType: ClassT,
-                raiseContainer: _this,
-                args: args,
-                params: parameters,
-                providers: providers,
-                providerMap: providerMap,
-                singleton: singleton
-            }, types.IocState.runtime, core.LifeState.onInit);
-            lifeScope.routeExecute({
-                tokenKey: key,
-                target: instance,
-                targetType: ClassT,
-                raiseContainer: _this,
-                args: args,
-                params: parameters,
-                providers: providers,
-                providerMap: providerMap,
-                singleton: singleton
-            }, types.IocState.runtime, core.LifeState.AfterInit);
-            lifeScope.execute({
-                tokenKey: key,
-                target: instance,
-                targetType: ClassT,
-                raiseContainer: _this
-            }, core.CoreActions.cache);
-            return instance;
-        };
-        this.factories.set(key, factory);
-        lifeScope.routeExecute({
-            tokenKey: key,
-            targetType: ClassT,
-            raiseContainer: this
-        }, types.IocState.design);
-    };
-    Container.classAnnations = { "name": "Container", "params": { "constructor": [], "getRoot": [], "getBuilder": [], "get": ["token", "alias", "providers"], "resolve": ["token", "providers"], "resolveValue": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token", "inchain"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token", "inchain"], "getTokenExtendsChain": ["token"], "getBaseClasses": ["target"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"] } };
-    return Container;
-}());
-exports.Container = Container;
 
 
 });
@@ -6133,12 +876,8 @@ unwrapExports(Container_1);
 var Container_2 = Container_1.Container;
 
 var IModuleLoader = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.ModuleLoaderToken=new InjectToken_1.InjectToken("DI_ModuleLoader");
 
-/**
- * module loader token.
- */
-exports.ModuleLoaderToken = new InjectToken_1.InjectToken('DI_ModuleLoader');
 
 
 });
@@ -6147,191 +886,8 @@ unwrapExports(IModuleLoader);
 var IModuleLoader_1 = IModuleLoader.ModuleLoaderToken;
 
 var DefaultModuleLoader_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var DefaultModuleLoader=function(){function e(){}return e.prototype.getLoader=function(){return this._loader||(this._loader=this.createLoader()), this._loader}, e.prototype.load=function(e){var t=this;return e.length?Promise.all(e.map(function(e){return utils.isString(e)?t.isFile(e)?t.loadFile(e):t.loadModule(e):utils.isObject(e)&&(e.modules||e.files)?t.loadPathModule(e):e?[e]:[]})).then(function(e){var t=[];return e.forEach(function(e){t=t.concat(e);}), t}):Promise.resolve([])}, e.prototype.loadTypes=function(r){return tslib_1.__awaiter(this,void 0,void 0,function(){var t;return tslib_1.__generator(this,function(e){switch(e.label){case 0:return[4,this.load(r)];case 1:return t=e.sent(), [2,this.getTypes(t)]}})})}, e.prototype.getTypes=function(e){var r=this,o=[];return e.forEach(function(e){var t=r.getContentTypes(e);o.push(t);}), o}, e.prototype.loadFile=function(e,t){var r=this.getLoader();return(utils.isArray(e)?Promise.all(e.map(function(e){return r(e)})).then(function(e){var t=[];return e.forEach(function(e){t=t.concat(e);}), t}):r(e)).then(function(e){return e.filter(function(e){return!!e})})}, e.prototype.isFile=function(e){return e&&/\/((\w|%|\.))+\.\w+$/.test(e.replace(/\\\\/gi,"/"))}, e.prototype.loadModule=function(e){return this.getLoader()(e).then(function(e){return e.filter(function(e){return!!e})})}, e.prototype.loadPathModule=function(o){return tslib_1.__awaiter(this,void 0,void 0,function(){var t,r=this;return tslib_1.__generator(this,function(e){switch(e.label){case 0:return t=[], o.files?[4,this.loadFile(o.files,o.basePath).then(function(e){return e.forEach(function(e){t=t.concat(e);}), t})]:[3,2];case 1:e.sent(), e.label=2;case 2:return o.modules?[4,Promise.all(o.modules.map(function(e){return utils.isString(e)?r.loadModule(e):e})).then(function(e){return t=t.concat(e)})]:[3,4];case 3:e.sent(), e.label=4;case 4:return[2,t]}})})}, e.prototype.createLoader=function(){if("undefined"!=typeof commonjsRequire)return function(e){return new Promise(function(t,r){commonjsRequire([e],function(e){t(e);},function(e){r(e);});})};throw new Error("has not module loader")}, e.prototype.getContentTypes=function(e){var t=[];if(utils.isClass(e))t.push(e);else{var r=e.exports?e.exports:e;for(var o in r){var n=r[o];utils.isClass(n)&&t.push(n);}}return t}, e.classAnnations={name:"DefaultModuleLoader",params:{constructor:[],getLoader:[],load:["modules"],loadTypes:["modules"],getTypes:["modules"],loadFile:["files","basePath"],isFile:["str"],loadModule:["moduleName"],loadPathModule:["pmd"],createLoader:[],getContentTypes:["regModule"]}}, e}();exports.DefaultModuleLoader=DefaultModuleLoader;
 
-
-/**
- * default module loader.
- *
- * @export
- * @class DefaultModuleLoader
- * @implements {IModuleLoader}
- */
-var DefaultModuleLoader = /** @class */ (function () {
-    function DefaultModuleLoader() {
-    }
-    DefaultModuleLoader.prototype.getLoader = function () {
-        if (!this._loader) {
-            this._loader = this.createLoader();
-        }
-        return this._loader;
-    };
-    /**
-     * load module.
-     *
-     * @param {...LoadType[]} modules
-     * @returns {Promise<Modules[]>}
-     * @memberof DefaultModuleLoader
-     */
-    DefaultModuleLoader.prototype.load = function (modules) {
-        var _this = this;
-        if (modules.length) {
-            return Promise.all(modules.map(function (mdty) {
-                if (utils.isString(mdty)) {
-                    return _this.isFile(mdty) ? _this.loadFile(mdty) : _this.loadModule(mdty);
-                }
-                else if (utils.isObject(mdty) && (mdty['modules'] || mdty['files'])) {
-                    return _this.loadPathModule(mdty);
-                }
-                else {
-                    return mdty ? [mdty] : [];
-                }
-            }))
-                .then(function (allms) {
-                var rmodules = [];
-                allms.forEach(function (ms) {
-                    rmodules = rmodules.concat(ms);
-                });
-                return rmodules;
-            });
-        }
-        else {
-            return Promise.resolve([]);
-        }
-    };
-    /**
-     * load types from module.
-     *
-     * @param {...LoadType[]} modules
-     * @returns {Promise<Type<any>[]>}
-     * @memberof IContainerBuilder
-     */
-    DefaultModuleLoader.prototype.loadTypes = function (modules) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var mdls;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.load(modules)];
-                    case 1:
-                        mdls = _a.sent();
-                        return [2 /*return*/, this.getTypes(mdls)];
-                }
-            });
-        });
-    };
-    /**
-     * get all class type in modules.
-     *
-     * @param {Modules[]} modules
-     * @param {...Express<Type<any>, boolean>[]} filters
-     * @returns {Type<any>[]}
-     * @memberof DefaultModuleLoader
-     */
-    DefaultModuleLoader.prototype.getTypes = function (modules) {
-        var _this = this;
-        var regModules = [];
-        modules.forEach(function (m) {
-            var types = _this.getContentTypes(m);
-            regModules.push(types);
-        });
-        return regModules;
-    };
-    DefaultModuleLoader.prototype.loadFile = function (files, basePath) {
-        var loader = this.getLoader();
-        var fRes;
-        if (utils.isArray(files)) {
-            fRes = Promise.all(files.map(function (f) { return loader(f); }))
-                .then(function (allms) {
-                var rms = [];
-                allms.forEach(function (ms) {
-                    rms = rms.concat(ms);
-                });
-                return rms;
-            });
-        }
-        else {
-            fRes = loader(files);
-        }
-        return fRes.then(function (ms) { return ms.filter(function (it) { return !!it; }); });
-    };
-    DefaultModuleLoader.prototype.isFile = function (str) {
-        return str && /\/((\w|%|\.))+\.\w+$/.test(str.replace(/\\\\/gi, '/'));
-    };
-    DefaultModuleLoader.prototype.loadModule = function (moduleName) {
-        var loader = this.getLoader();
-        return loader(moduleName).then(function (ms) { return ms.filter(function (it) { return !!it; }); });
-    };
-    DefaultModuleLoader.prototype.loadPathModule = function (pmd) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var modules;
-            var _this = this;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        modules = [];
-                        if (!pmd.files) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.loadFile(pmd.files, pmd.basePath)
-                                .then(function (allmoduls) {
-                                allmoduls.forEach(function (ms) {
-                                    modules = modules.concat(ms);
-                                });
-                                return modules;
-                            })];
-                    case 1:
-                        _a.sent();
-                        _a.label = 2;
-                    case 2:
-                        if (!pmd.modules) return [3 /*break*/, 4];
-                        return [4 /*yield*/, Promise.all(pmd.modules.map(function (nmd) {
-                                return utils.isString(nmd) ? _this.loadModule(nmd) : nmd;
-                            })).then(function (ms) {
-                                modules = modules.concat(ms);
-                                return modules;
-                            })];
-                    case 3:
-                        _a.sent();
-                        _a.label = 4;
-                    case 4: return [2 /*return*/, modules];
-                }
-            });
-        });
-    };
-    DefaultModuleLoader.prototype.createLoader = function () {
-        if (typeof commonjsRequire !== 'undefined') {
-            return function (modulepath) {
-                return new Promise(function (resolve, reject) {
-                    commonjsRequire([modulepath], function (mud) {
-                        resolve(mud);
-                    }, function (err) {
-                        reject(err);
-                    });
-                });
-            };
-        }
-        else {
-            throw new Error('has not module loader');
-        }
-    };
-    DefaultModuleLoader.prototype.getContentTypes = function (regModule) {
-        var regModules = [];
-        if (utils.isClass(regModule)) {
-            regModules.push(regModule);
-        }
-        else {
-            var rmodules = regModule['exports'] ? regModule['exports'] : regModule;
-            for (var p in rmodules) {
-                var type = rmodules[p];
-                if (utils.isClass(type)) {
-                    regModules.push(type);
-                }
-            }
-        }
-        return regModules;
-    };
-    DefaultModuleLoader.classAnnations = { "name": "DefaultModuleLoader", "params": { "constructor": [], "getLoader": [], "load": ["modules"], "loadTypes": ["modules"], "getTypes": ["modules"], "loadFile": ["files", "basePath"], "isFile": ["str"], "loadModule": ["moduleName"], "loadPathModule": ["pmd"], "createLoader": [], "getContentTypes": ["regModule"] } };
-    return DefaultModuleLoader;
-}());
-exports.DefaultModuleLoader = DefaultModuleLoader;
 
 
 });
@@ -6340,31 +896,8 @@ unwrapExports(DefaultModuleLoader_1);
 var DefaultModuleLoader_2 = DefaultModuleLoader_1.DefaultModuleLoader;
 
 var IModuleValidate = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var InjectModuleValidateToken=function(t){function e(e){return t.call(this,"DI_ModuleValidate",e)||this}return tslib_1.__extends(e,t), e.classAnnations={name:"InjectModuleValidateToken",params:{constructor:["desc"]}}, e}(Registration_1.Registration);exports.InjectModuleValidateToken=InjectModuleValidateToken, exports.ModuleValidateToken=new InjectToken_1.InjectToken("DI_ModuleValidate");
 
-
-
-/**
- * inject module validate token.
- *
- * @export
- * @class InjectModuleValidateToken
- * @extends {Registration<T>}
- * @template T
- */
-var InjectModuleValidateToken = /** @class */ (function (_super) {
-    tslib_1.__extends(InjectModuleValidateToken, _super);
-    function InjectModuleValidateToken(desc) {
-        return _super.call(this, 'DI_ModuleValidate', desc) || this;
-    }
-    InjectModuleValidateToken.classAnnations = { "name": "InjectModuleValidateToken", "params": { "constructor": ["desc"] } };
-    return InjectModuleValidateToken;
-}(Registration_1.Registration));
-exports.InjectModuleValidateToken = InjectModuleValidateToken;
-/**
- * Module Validate Token
- */
-exports.ModuleValidateToken = new InjectToken_1.InjectToken('DI_ModuleValidate');
 
 
 });
@@ -6374,34 +907,8 @@ var IModuleValidate_1 = IModuleValidate.InjectModuleValidateToken;
 var IModuleValidate_2 = IModuleValidate.ModuleValidateToken;
 
 var IMetaAccessor = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var InjectMetaAccessorToken=function(t){function e(e){return t.call(this,e,"boot__metaAccessor")||this}return tslib_1.__extends(e,t), e.classAnnations={name:"InjectMetaAccessorToken",params:{constructor:["type"]}}, e}(Registration_1.Registration);exports.InjectMetaAccessorToken=InjectMetaAccessorToken, exports.DefaultMetaAccessorToken=new InjectMetaAccessorToken("default"), exports.AnnotationMetaAccessorToken=new InjectMetaAccessorToken("Annotation");
 
-
-/**
- * application service token.
- *
- * @export
- * @class InjectMetaAccessorToken
- * @extends {Registration<MetaAccessor<T>>}
- * @template T
- */
-var InjectMetaAccessorToken = /** @class */ (function (_super) {
-    tslib_1.__extends(InjectMetaAccessorToken, _super);
-    function InjectMetaAccessorToken(type) {
-        return _super.call(this, type, 'boot__metaAccessor') || this;
-    }
-    InjectMetaAccessorToken.classAnnations = { "name": "InjectMetaAccessorToken", "params": { "constructor": ["type"] } };
-    return InjectMetaAccessorToken;
-}(Registration_1.Registration));
-exports.InjectMetaAccessorToken = InjectMetaAccessorToken;
-/**
- * default MetaAccessor token.
- */
-exports.DefaultMetaAccessorToken = new InjectMetaAccessorToken('default');
-/**
- * Annotation MetaAccessor token.
- */
-exports.AnnotationMetaAccessorToken = new InjectMetaAccessorToken('Annotation');
 
 
 });
@@ -6412,77 +919,8 @@ var IMetaAccessor_2 = IMetaAccessor.DefaultMetaAccessorToken;
 var IMetaAccessor_3 = IMetaAccessor.AnnotationMetaAccessorToken;
 
 var ModuleValidate = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var BaseModuelValidate=function(){function e(){}return e.prototype.validate=function(t){if(!utils.isClass(t))return!1;var e=this.getDecorator();return utils.isString(e)?core.hasOwnClassMetadata(e,t):!!(utils.isArray(e)&&0<e.length)&&e.some(function(e){return core.hasOwnClassMetadata(e,t)})}, e.prototype.getMetaConfig=function(e,t){return utils.isToken(e)?this.getMetaAccessor(t).getMetadata(e,t):{}}, e.prototype.getMetaAccessor=function(e){var t=this.getDecorator();return e.resolve(IMetaAccessor.AnnotationMetaAccessorToken,{decorator:t})}, e.classAnnations={name:"BaseModuelValidate",params:{constructor:[],validate:["type"],getMetaConfig:["token","container"],getMetaAccessor:["container"],getDecorator:[]}}, e}();exports.BaseModuelValidate=BaseModuelValidate, exports.IocExtModuleValidateToken=new IModuleValidate.InjectModuleValidateToken(core.IocExt.toString());var IocExtModuleValidate=function(e){function t(){return null!==e&&e.apply(this,arguments)||this}return tslib_1.__extends(t,e), t.prototype.getDecorator=function(){return core.IocExt.toString()}, t.classAnnations={name:"IocExtModuleValidate",params:{getDecorator:[]}}, t}(BaseModuelValidate);exports.IocExtModuleValidate=IocExtModuleValidate;
 
-
-
-
-
-/**
- * base module validate.
- *
- * @export
- * @abstract
- * @class BaseModuelValidate
- * @implements {IModuleValidate}
- */
-var BaseModuelValidate = /** @class */ (function () {
-    function BaseModuelValidate() {
-    }
-    BaseModuelValidate.prototype.validate = function (type) {
-        if (!utils.isClass(type)) {
-            return false;
-        }
-        var decorator = this.getDecorator();
-        if (utils.isString(decorator)) {
-            return core.hasOwnClassMetadata(decorator, type);
-        }
-        else if (utils.isArray(decorator)) {
-            if (decorator.length > 0) {
-                return decorator.some(function (decor) { return core.hasOwnClassMetadata(decor, type); });
-            }
-        }
-        return false;
-    };
-    BaseModuelValidate.prototype.getMetaConfig = function (token, container) {
-        if (utils.isToken(token)) {
-            var accessor = this.getMetaAccessor(container);
-            return accessor.getMetadata(token, container);
-        }
-        return {};
-    };
-    BaseModuelValidate.prototype.getMetaAccessor = function (container) {
-        var decorator = this.getDecorator();
-        return container.resolve(IMetaAccessor.AnnotationMetaAccessorToken, { decorator: decorator });
-    };
-    BaseModuelValidate.classAnnations = { "name": "BaseModuelValidate", "params": { "constructor": [], "validate": ["type"], "getMetaConfig": ["token", "container"], "getMetaAccessor": ["container"], "getDecorator": [] } };
-    return BaseModuelValidate;
-}());
-exports.BaseModuelValidate = BaseModuelValidate;
-/**
- * IocExt module validate token.
- */
-exports.IocExtModuleValidateToken = new IModuleValidate.InjectModuleValidateToken(core.IocExt.toString());
-/**
- * IocExt module validate.
- *
- * @export
- * @class IocExtModuleValidate
- * @extends {BaseModuelValidate}
- * @implements {IModuleValidate}
- */
-var IocExtModuleValidate = /** @class */ (function (_super) {
-    tslib_1.__extends(IocExtModuleValidate, _super);
-    function IocExtModuleValidate() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    IocExtModuleValidate.prototype.getDecorator = function () {
-        return core.IocExt.toString();
-    };
-    IocExtModuleValidate.classAnnations = { "name": "IocExtModuleValidate", "params": { "getDecorator": [] } };
-    return IocExtModuleValidate;
-}(BaseModuelValidate));
-exports.IocExtModuleValidate = IocExtModuleValidate;
 
 
 });
@@ -6493,94 +931,8 @@ var ModuleValidate_2 = ModuleValidate.IocExtModuleValidateToken;
 var ModuleValidate_3 = ModuleValidate.IocExtModuleValidate;
 
 var MetaAccessor_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var MetaAccessor=function(){function t(t){this.decorators=utils.isArray(t)?t:[t];}return t.prototype.getDecorators=function(){return this.decorators}, t.prototype.getMetadata=function(t,e){var r=utils.isClass(t)?t:e.getTokenImpl(t);if(utils.isClass(r)){var o=this.getDecorators().find(function(t){return core.hasOwnClassMetadata(t,r)}),a=core.getTypeMetadata(o,r);if(a&&a.length)return a[0]}return{}}, t.classAnnations={name:"MetaAccessor",params:{constructor:["decorator"],getDecorators:[],getMetadata:["token","container"]}}, t=tslib_1.__decorate([core.Injectable(IMetaAccessor.DefaultMetaAccessorToken),tslib_1.__metadata("design:paramtypes",[Object])],t)}();exports.MetaAccessor=MetaAccessor;var AnnotationMetaAccessor=function(){function t(t){this.decorators=utils.isArray(t)?t:[t];}return t.prototype.getDecorators=function(){return this.decorators}, t.prototype.getMetadata=function(t,r){if(utils.isToken(t)){var o,a={decorator:this.getDecorators()};return r.getTokenExtendsChain(t).forEach(function(t){if(o)return!1;var e=new IMetaAccessor.InjectMetaAccessorToken(t);return r.has(e)&&(o=r.resolve(e,a)), !0}), o||(o=this.getDefaultMetaAccessor(r,a)), o?o.getMetadata(t,r):{}}return{}}, t.prototype.getDefaultMetaAccessor=function(t){for(var e=[],r=1;r<arguments.length;r++)e[r-1]=arguments[r];return t.resolve.apply(t,[IMetaAccessor.DefaultMetaAccessorToken].concat(e))}, t.classAnnations={name:"AnnotationMetaAccessor",params:{constructor:["decorator"],getDecorators:[],getMetadata:["token","container"],getDefaultMetaAccessor:["container","providers"]}}, t=tslib_1.__decorate([core.Injectable(IMetaAccessor.AnnotationMetaAccessorToken),tslib_1.__metadata("design:paramtypes",[Object])],t)}();exports.AnnotationMetaAccessor=AnnotationMetaAccessor;
 
-
-
-
-var MetaAccessor = /** @class */ (function () {
-    function MetaAccessor(decorator) {
-        this.decorators = utils.isArray(decorator) ? decorator : [decorator];
-    }
-    MetaAccessor.prototype.getDecorators = function () {
-        return this.decorators;
-    };
-    MetaAccessor.prototype.getMetadata = function (token, container) {
-        var type = utils.isClass(token) ? token : container.getTokenImpl(token);
-        if (utils.isClass(type)) {
-            var decorators = this.getDecorators();
-            var firstDecor = decorators.find(function (decor) { return core.hasOwnClassMetadata(decor, type); });
-            var metas = core.getTypeMetadata(firstDecor, type);
-            if (metas && metas.length) {
-                var meta = metas[0];
-                return meta;
-            }
-        }
-        return {};
-    };
-    MetaAccessor.classAnnations = { "name": "MetaAccessor", "params": { "constructor": ["decorator"], "getDecorators": [], "getMetadata": ["token", "container"] } };
-    MetaAccessor = tslib_1.__decorate([
-        core.Injectable(IMetaAccessor.DefaultMetaAccessorToken),
-        tslib_1.__metadata("design:paramtypes", [Object])
-    ], MetaAccessor);
-    return MetaAccessor;
-}());
-exports.MetaAccessor = MetaAccessor;
-/**
- * Annotation MetaAccessor.
- *
- * @export
- * @class AnnotationMetaAccessor
- * @implements {IMetaAccessor<any>}
- */
-var AnnotationMetaAccessor = /** @class */ (function () {
-    function AnnotationMetaAccessor(decorator) {
-        this.decorators = utils.isArray(decorator) ? decorator : [decorator];
-    }
-    AnnotationMetaAccessor.prototype.getDecorators = function () {
-        return this.decorators;
-    };
-    AnnotationMetaAccessor.prototype.getMetadata = function (token, container) {
-        if (utils.isToken(token)) {
-            var accessor_1;
-            var provider_1 = { decorator: this.getDecorators() };
-            container.getTokenExtendsChain(token).forEach(function (tk) {
-                if (accessor_1) {
-                    return false;
-                }
-                var accToken = new IMetaAccessor.InjectMetaAccessorToken(tk);
-                if (container.has(accToken)) {
-                    accessor_1 = container.resolve(accToken, provider_1);
-                }
-                return true;
-            });
-            if (!accessor_1) {
-                accessor_1 = this.getDefaultMetaAccessor(container, provider_1);
-            }
-            if (accessor_1) {
-                return accessor_1.getMetadata(token, container);
-            }
-            else {
-                return {};
-            }
-        }
-        return {};
-    };
-    AnnotationMetaAccessor.prototype.getDefaultMetaAccessor = function (container) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        return container.resolve.apply(container, [IMetaAccessor.DefaultMetaAccessorToken].concat(providers));
-    };
-    AnnotationMetaAccessor.classAnnations = { "name": "AnnotationMetaAccessor", "params": { "constructor": ["decorator"], "getDecorators": [], "getMetadata": ["token", "container"], "getDefaultMetaAccessor": ["container", "providers"] } };
-    AnnotationMetaAccessor = tslib_1.__decorate([
-        core.Injectable(IMetaAccessor.AnnotationMetaAccessorToken),
-        tslib_1.__metadata("design:paramtypes", [Object])
-    ], AnnotationMetaAccessor);
-    return AnnotationMetaAccessor;
-}());
-exports.AnnotationMetaAccessor = AnnotationMetaAccessor;
 
 
 });
@@ -6590,30 +942,8 @@ var MetaAccessor_2 = MetaAccessor_1.MetaAccessor;
 var MetaAccessor_3 = MetaAccessor_1.AnnotationMetaAccessor;
 
 var IModuleInjector = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var InjectModuleInjectorToken=function(t){function e(e,n){return void 0===n&&(n=!1), t.call(this,n?"DI_SyncModuleInjector":"DI_ModuleInjector",e)||this}return tslib_1.__extends(e,t), e.classAnnations={name:"InjectModuleInjectorToken",params:{constructor:["desc","sync"]}}, e}(Registration_1.Registration);exports.InjectModuleInjectorToken=InjectModuleInjectorToken, exports.ModuleInjectorToken=new InjectModuleInjectorToken(""), exports.SyncModuleInjectorToken=new InjectModuleInjectorToken("",!0);
 
-
-/**
- *  inject module injector token.
- */
-var InjectModuleInjectorToken = /** @class */ (function (_super) {
-    tslib_1.__extends(InjectModuleInjectorToken, _super);
-    function InjectModuleInjectorToken(desc, sync) {
-        if (sync === void 0) { sync = false; }
-        return _super.call(this, sync ? 'DI_SyncModuleInjector' : 'DI_ModuleInjector', desc) || this;
-    }
-    InjectModuleInjectorToken.classAnnations = { "name": "InjectModuleInjectorToken", "params": { "constructor": ["desc", "sync"] } };
-    return InjectModuleInjectorToken;
-}(Registration_1.Registration));
-exports.InjectModuleInjectorToken = InjectModuleInjectorToken;
-/**
- * async module injector token.
- */
-exports.ModuleInjectorToken = new InjectModuleInjectorToken('');
-/**
- * Sync module injector token.
- */
-exports.SyncModuleInjectorToken = new InjectModuleInjectorToken('', true);
 
 
 });
@@ -6624,133 +954,8 @@ var IModuleInjector_2 = IModuleInjector.ModuleInjectorToken;
 var IModuleInjector_3 = IModuleInjector.SyncModuleInjectorToken;
 
 var ModuleInjector_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var BaseModuleInjector=function(){function e(e,t){this.validate=e, this.skipNext=t;}return e.prototype.filter=function(e){var t=this;return e=e||[], this.validate?e.filter(function(e){return t.validate.validate(e)}):e}, e.prototype.next=function(e,t){return 0===t.length?e:this.skipNext?null:t.length===e.length?null:e.filter(function(e){return t.indexOf(e)<0})}, e.prototype.setup=function(e,t){e.register(t);}, e.classAnnations={name:"BaseModuleInjector",params:{constructor:["validate","skipNext"],inject:["container","modules"],filter:["modules"],next:["all","filtered"],setup:["container","type"]}}, e}(),SyncModuleInjector=function(r){function e(e,t){var n=r.call(this,e,t)||this;return n.validate=e, n}return tslib_1.__extends(e,r), e.prototype.inject=function(t,e){var n=this,r=this.filter(e);return r.length&&r.forEach(function(e){n.setup(t,e);}), {injected:r,next:this.next(e,r)}}, e.classAnnations={name:"SyncModuleInjector",params:{constructor:["validate","skipNext"],inject:["container","modules"]}}, e=tslib_1.__decorate([core.Injectable(IModuleInjector.SyncModuleInjectorToken),tslib_1.__metadata("design:paramtypes",[Object,Boolean])],e)}(exports.BaseModuleInjector=BaseModuleInjector);exports.SyncModuleInjector=SyncModuleInjector;var ModuleInjector=function(r){function e(e,t){var n=r.call(this,e,t)||this;return n.validate=e, n}return tslib_1.__extends(e,r), e.prototype.inject=function(o,i){return tslib_1.__awaiter(this,void 0,void 0,function(){var t,n,r=this;return tslib_1.__generator(this,function(e){switch(e.label){case 0:return(t=this.filter(i)).length?[4,utils.PromiseUtil.step(t.map(function(e){return r.setup(o,e)}))]:[3,2];case 1:e.sent(), e.label=2;case 2:return n=this.next(i,t), [2,{injected:t,next:n}]}})})}, e.classAnnations={name:"ModuleInjector",params:{constructor:["validate","skipNext"],inject:["container","modules"]}}, e=tslib_1.__decorate([core.Injectable(IModuleInjector.ModuleInjectorToken),tslib_1.__metadata("design:paramtypes",[Object,Boolean])],e)}(BaseModuleInjector);exports.ModuleInjector=ModuleInjector;
 
-
-
-
-/**
- * base module injector. abstract class.
- *
- * @export
- * @abstract
- * @class BaseModuleInjector
- * @implements {IModuleInjector}
- */
-var BaseModuleInjector = /** @class */ (function () {
-    /**
-     *Creates an instance of BaseModuleInjector.
-     * @param {IModuleValidate} [validate]
-     * @param {boolean} [skipNext] skip next when has match module to injector.
-     * @memberof BaseModuleInjector
-     */
-    function BaseModuleInjector(validate, skipNext) {
-        this.validate = validate;
-        this.skipNext = skipNext;
-    }
-    BaseModuleInjector.prototype.filter = function (modules) {
-        var _this = this;
-        modules = modules || [];
-        return this.validate ? modules.filter(function (md) { return _this.validate.validate(md); }) : modules;
-    };
-    BaseModuleInjector.prototype.next = function (all, filtered) {
-        if (filtered.length === 0) {
-            return all;
-        }
-        if (this.skipNext) {
-            return null;
-        }
-        if (filtered.length === all.length) {
-            return null;
-        }
-        return all.filter(function (it) { return filtered.indexOf(it) < 0; });
-    };
-    BaseModuleInjector.prototype.setup = function (container, type) {
-        container.register(type);
-    };
-    BaseModuleInjector.classAnnations = { "name": "BaseModuleInjector", "params": { "constructor": ["validate", "skipNext"], "inject": ["container", "modules"], "filter": ["modules"], "next": ["all", "filtered"], "setup": ["container", "type"] } };
-    return BaseModuleInjector;
-}());
-exports.BaseModuleInjector = BaseModuleInjector;
-/**
- * sync module injector.
- *
- * @export
- * @class SyncModuleInjector
- * @extends {BaseModuleInjector}
- * @implements {IModuleInjector}
- */
-var SyncModuleInjector = /** @class */ (function (_super) {
-    tslib_1.__extends(SyncModuleInjector, _super);
-    function SyncModuleInjector(validate, skipNext) {
-        var _this = _super.call(this, validate, skipNext) || this;
-        _this.validate = validate;
-        return _this;
-    }
-    SyncModuleInjector.prototype.inject = function (container, modules) {
-        var _this = this;
-        var types = this.filter(modules);
-        if (types.length) {
-            types.forEach(function (ty) {
-                _this.setup(container, ty);
-            });
-        }
-        var next = this.next(modules, types);
-        return { injected: types, next: next };
-    };
-    SyncModuleInjector.classAnnations = { "name": "SyncModuleInjector", "params": { "constructor": ["validate", "skipNext"], "inject": ["container", "modules"] } };
-    SyncModuleInjector = tslib_1.__decorate([
-        core.Injectable(IModuleInjector.SyncModuleInjectorToken),
-        tslib_1.__metadata("design:paramtypes", [Object, Boolean])
-    ], SyncModuleInjector);
-    return SyncModuleInjector;
-}(BaseModuleInjector));
-exports.SyncModuleInjector = SyncModuleInjector;
-/**
- * module injector.
- *
- * @export
- * @class ModuleInjector
- * @extends {BaseModuleInjector}
- * @implements {IModuleInjector}
- */
-var ModuleInjector = /** @class */ (function (_super) {
-    tslib_1.__extends(ModuleInjector, _super);
-    function ModuleInjector(validate, skipNext) {
-        var _this = _super.call(this, validate, skipNext) || this;
-        _this.validate = validate;
-        return _this;
-    }
-    ModuleInjector.prototype.inject = function (container, modules) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var types, next;
-            var _this = this;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        types = this.filter(modules);
-                        if (!types.length) return [3 /*break*/, 2];
-                        return [4 /*yield*/, utils.PromiseUtil.step(types.map(function (ty) {
-                                return _this.setup(container, ty);
-                            }))];
-                    case 1:
-                        _a.sent();
-                        _a.label = 2;
-                    case 2:
-                        next = this.next(modules, types);
-                        return [2 /*return*/, { injected: types, next: next }];
-                }
-            });
-        });
-    };
-    ModuleInjector.classAnnations = { "name": "ModuleInjector", "params": { "constructor": ["validate", "skipNext"], "inject": ["container", "modules"] } };
-    ModuleInjector = tslib_1.__decorate([
-        core.Injectable(IModuleInjector.ModuleInjectorToken),
-        tslib_1.__metadata("design:paramtypes", [Object, Boolean])
-    ], ModuleInjector);
-    return ModuleInjector;
-}(BaseModuleInjector));
-exports.ModuleInjector = ModuleInjector;
 
 
 });
@@ -6761,12 +966,8 @@ var ModuleInjector_3 = ModuleInjector_1.SyncModuleInjector;
 var ModuleInjector_4 = ModuleInjector_1.ModuleInjector;
 
 var IModuleInjectorChain = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});exports.ModuleInjectorChainToken=new InjectToken_1.InjectToken("DI_ModuleInjectorChain");
 
-/**
- * module fileter token. mast use as singlton.
- */
-exports.ModuleInjectorChainToken = new InjectToken_1.InjectToken('DI_ModuleInjectorChain');
 
 
 });
@@ -6775,81 +976,8 @@ unwrapExports(IModuleInjectorChain);
 var IModuleInjectorChain_1 = IModuleInjectorChain.ModuleInjectorChainToken;
 
 var ModuleInjectorChain_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var ModuleInjectorChain=function(){function t(){this._injectors=[];}return Object.defineProperty(t.prototype,"injectors",{get:function(){return this._injectors},enumerable:!0,configurable:!0}), t.prototype.first=function(t){return this.isInjector(t)&&this._injectors.unshift(t), this}, t.prototype.next=function(t){return this.isInjector(t)&&this._injectors.push(t), this}, t.prototype.isInjector=function(t){return t instanceof ModuleInjector_1.ModuleInjector||t instanceof ModuleInjector_1.SyncModuleInjector}, t.prototype.inject=function(n,r){return tslib_1.__awaiter(this,void 0,void 0,function(){var e;return tslib_1.__generator(this,function(t){switch(t.label){case 0:return e=[], [4,utils.PromiseUtil.forEach(this.injectors.map(function(e){return function(t){return e.inject(n,t.next)}}),function(t){return e=e.concat(t.injected||[]), t.next&&0<t.next.length},{injected:[],next:r}).catch(function(t){return[]})];case 1:return t.sent(), [2,e]}})})}, t.prototype.syncInject=function(n,r){var o=[],i=!1;return this.injectors.forEach(function(t){if(i)return!1;if(t instanceof ModuleInjector_1.SyncModuleInjector){var e=t.inject(n,r);o=o.concat(e.injected), i=!e.next||e.next.length<1;}return!0}), o}, t.classAnnations={name:"ModuleInjectorChain",params:{constructor:[],first:["injector"],next:["injector"],isInjector:["injector"],inject:["container","modules"],syncInject:["container","modules"]}}, t}();exports.ModuleInjectorChain=ModuleInjectorChain;
 
-
-
-/**
- * Module Injector chain, base injector chain.
- *
- * @export
- * @class ModuleInjectorChain
- * @implements {IModuleInjectorChain}
- */
-var ModuleInjectorChain = /** @class */ (function () {
-    function ModuleInjectorChain() {
-        this._injectors = [];
-    }
-    Object.defineProperty(ModuleInjectorChain.prototype, "injectors", {
-        get: function () {
-            return this._injectors;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ModuleInjectorChain.prototype.first = function (injector) {
-        if (this.isInjector(injector)) {
-            this._injectors.unshift(injector);
-        }
-        return this;
-    };
-    ModuleInjectorChain.prototype.next = function (injector) {
-        if (this.isInjector(injector)) {
-            this._injectors.push(injector);
-        }
-        return this;
-    };
-    ModuleInjectorChain.prototype.isInjector = function (injector) {
-        return injector instanceof ModuleInjector_1.ModuleInjector || injector instanceof ModuleInjector_1.SyncModuleInjector;
-    };
-    ModuleInjectorChain.prototype.inject = function (container, modules) {
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var types;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        types = [];
-                        return [4 /*yield*/, utils.PromiseUtil.forEach(this.injectors.map(function (jtor) { return function (ijrt) { return jtor.inject(container, ijrt.next); }; }), function (result) {
-                                types = types.concat(result.injected || []);
-                                return result.next && result.next.length > 0;
-                            }, { injected: [], next: modules }).catch(function (err) { return []; })];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/, types];
-                }
-            });
-        });
-    };
-    ModuleInjectorChain.prototype.syncInject = function (container, modules) {
-        var types = [];
-        var completed = false;
-        this.injectors.forEach(function (jtor) {
-            if (completed) {
-                return false;
-            }
-            if (jtor instanceof ModuleInjector_1.SyncModuleInjector) {
-                var result = jtor.inject(container, modules);
-                types = types.concat(result.injected);
-                completed = (!result.next || result.next.length < 1);
-            }
-            return true;
-        });
-        return types;
-    };
-    ModuleInjectorChain.classAnnations = { "name": "ModuleInjectorChain", "params": { "constructor": [], "first": ["injector"], "next": ["injector"], "isInjector": ["injector"], "inject": ["container", "modules"], "syncInject": ["container", "modules"] } };
-    return ModuleInjectorChain;
-}());
-exports.ModuleInjectorChain = ModuleInjectorChain;
 
 
 });
@@ -6858,18 +986,8 @@ unwrapExports(ModuleInjectorChain_1);
 var ModuleInjectorChain_2 = ModuleInjectorChain_1.ModuleInjectorChain;
 
 var injectors = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});tslib_1.__exportStar(IModuleLoader,exports), tslib_1.__exportStar(DefaultModuleLoader_1,exports), tslib_1.__exportStar(IModuleValidate,exports), tslib_1.__exportStar(ModuleValidate,exports), tslib_1.__exportStar(IMetaAccessor,exports), tslib_1.__exportStar(MetaAccessor_1,exports), tslib_1.__exportStar(IModuleInjector,exports), tslib_1.__exportStar(ModuleInjector_1,exports), tslib_1.__exportStar(IModuleInjectorChain,exports), tslib_1.__exportStar(ModuleInjectorChain_1,exports);
 
-tslib_1.__exportStar(IModuleLoader, exports);
-tslib_1.__exportStar(DefaultModuleLoader_1, exports);
-tslib_1.__exportStar(IModuleValidate, exports);
-tslib_1.__exportStar(ModuleValidate, exports);
-tslib_1.__exportStar(IMetaAccessor, exports);
-tslib_1.__exportStar(MetaAccessor_1, exports);
-tslib_1.__exportStar(IModuleInjector, exports);
-tslib_1.__exportStar(ModuleInjector_1, exports);
-tslib_1.__exportStar(IModuleInjectorChain, exports);
-tslib_1.__exportStar(ModuleInjectorChain_1, exports);
 
 
 });
@@ -6877,164 +995,8 @@ tslib_1.__exportStar(ModuleInjectorChain_1, exports);
 unwrapExports(injectors);
 
 var DefaultContainerBuilder_1 = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});var DefaultContainerBuilder=function(){function e(e){this._loader=e;}return Object.defineProperty(e.prototype,"loader",{get:function(){return this._loader||(this._loader=new injectors.DefaultModuleLoader), this._loader},enumerable:!0,configurable:!0}), e.prototype.create=function(){var e=this,t=new Container_1.Container;return t.bindProvider(IContainerBuilder.ContainerBuilderToken,function(){return e}), t.bindProvider(injectors.ModuleLoaderToken,function(){return e.loader}), t}, e.prototype.build=function(){for(var n=[],e=0;e<arguments.length;e++)n[e]=arguments[e];return tslib_1.__awaiter(this,void 0,void 0,function(){var t;return tslib_1.__generator(this,function(e){switch(e.label){case 0:return t=this.create(), n.length?[4,this.loadModule.apply(this,[t].concat(n))]:[3,2];case 1:e.sent(), e.label=2;case 2:return[2,t]}})})}, e.prototype.loadModule=function(a){for(var n=[],e=1;e<arguments.length;e++)n[e-1]=arguments[e];return tslib_1.__awaiter(this,void 0,void 0,function(){var t,r,o,i=this;return tslib_1.__generator(this,function(e){switch(e.label){case 0:return[4,this.loader.loadTypes(n)];case 1:return t=e.sent(), r=[], t&&t.length?(o=this.getInjectorChain(a), [4,utils.PromiseUtil.step(t.map(function(n){return tslib_1.__awaiter(i,void 0,void 0,function(){var t;return tslib_1.__generator(this,function(e){switch(e.label){case 0:return[4,o.inject(a,n)];case 1:return t=e.sent(), r=r.concat(t), [2]}})})}))]):[3,3];case 2:e.sent(), e.label=3;case 3:return[2,r]}})})}, e.prototype.syncBuild=function(){for(var e=[],t=0;t<arguments.length;t++)e[t]=arguments[t];var n=this.create();return e.length&&this.syncLoadModule.apply(this,[n].concat(e)), n}, e.prototype.syncLoadModule=function(n){for(var e=[],t=1;t<arguments.length;t++)e[t-1]=arguments[t];var r=this.loader.getTypes(e),o=[];if(r&&r.length){var i=this.getInjectorChain(n);r.forEach(function(e){var t=i.syncInject(n,e);o=o.concat(t);});}return o}, e.prototype.getInjectorChain=function(e){e.has(injectors.ModuleInjectorChainToken)||e.register(injectors.SyncModuleInjector).register(injectors.ModuleInjector).register(injectors.MetaAccessor).register(injectors.AnnotationMetaAccessor).bindProvider(injectors.IocExtModuleValidateToken,new injectors.IocExtModuleValidate).bindProvider(injectors.ModuleInjectorChainToken,new injectors.ModuleInjectorChain);var t=e.get(injectors.ModuleInjectorChainToken);return this.injectorChain!==t&&(this.injectorChain=null), this.injectorChain||(this.injectorChain=t, this.injectorChain.next(e.resolve(injectors.SyncModuleInjectorToken,{validate:e.get(injectors.IocExtModuleValidateToken),skipNext:!0})).next(e.resolve(injectors.SyncModuleInjectorToken))), this.injectorChain}, e.classAnnations={name:"DefaultContainerBuilder",params:{constructor:["loader"],create:[],build:["modules"],loadModule:["container","modules"],syncBuild:["modules"],syncLoadModule:["container","modules"],getInjectorChain:["container"]}}, e}();exports.DefaultContainerBuilder=DefaultContainerBuilder;
 
-
-
-
-
-/**
- * default container builder.
- *
- * @export
- * @class DefaultContainerBuilder
- * @implements {IContainerBuilder}
- */
-var DefaultContainerBuilder = /** @class */ (function () {
-    function DefaultContainerBuilder(loader) {
-        this._loader = loader;
-    }
-    Object.defineProperty(DefaultContainerBuilder.prototype, "loader", {
-        get: function () {
-            if (!this._loader) {
-                this._loader = new injectors.DefaultModuleLoader();
-            }
-            return this._loader;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    DefaultContainerBuilder.prototype.create = function () {
-        var _this = this;
-        var container = new Container_1.Container();
-        container.bindProvider(IContainerBuilder.ContainerBuilderToken, function () { return _this; });
-        container.bindProvider(injectors.ModuleLoaderToken, function () { return _this.loader; });
-        return container;
-    };
-    /**
-     * build container.
-     *
-     * @param {...LoadType[]} [modules]
-     * @returns
-     * @memberof DefaultContainerBuilder
-     */
-    DefaultContainerBuilder.prototype.build = function () {
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var container;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        container = this.create();
-                        if (!modules.length) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.loadModule.apply(this, [container].concat(modules))];
-                    case 1:
-                        _a.sent();
-                        _a.label = 2;
-                    case 2: return [2 /*return*/, container];
-                }
-            });
-        });
-    };
-    /**
-     * load modules for container.
-     *
-     * @param {IContainer} container
-     * @param {...LoadType[]} modules
-     * @returns {Promise<Type<any>[]>}
-     * @memberof DefaultContainerBuilder
-     */
-    DefaultContainerBuilder.prototype.loadModule = function (container) {
-        var modules = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            modules[_i - 1] = arguments[_i];
-        }
-        return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var regModules, injTypes, injChain_1;
-            var _this = this;
-            return tslib_1.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.loader.loadTypes(modules)];
-                    case 1:
-                        regModules = _a.sent();
-                        injTypes = [];
-                        if (!(regModules && regModules.length)) return [3 /*break*/, 3];
-                        injChain_1 = this.getInjectorChain(container);
-                        return [4 /*yield*/, utils.PromiseUtil.step(regModules.map(function (typs) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
-                                var ityps;
-                                return tslib_1.__generator(this, function (_a) {
-                                    switch (_a.label) {
-                                        case 0: return [4 /*yield*/, injChain_1.inject(container, typs)];
-                                        case 1:
-                                            ityps = _a.sent();
-                                            injTypes = injTypes.concat(ityps);
-                                            return [2 /*return*/];
-                                    }
-                                });
-                            }); }))];
-                    case 2:
-                        _a.sent();
-                        _a.label = 3;
-                    case 3: return [2 /*return*/, injTypes];
-                }
-            });
-        });
-    };
-    DefaultContainerBuilder.prototype.syncBuild = function () {
-        var modules = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            modules[_i] = arguments[_i];
-        }
-        var container = this.create();
-        if (modules.length) {
-            this.syncLoadModule.apply(this, [container].concat(modules));
-        }
-        return container;
-    };
-    DefaultContainerBuilder.prototype.syncLoadModule = function (container) {
-        var modules = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            modules[_i - 1] = arguments[_i];
-        }
-        var regModules = this.loader.getTypes(modules);
-        var injTypes = [];
-        if (regModules && regModules.length) {
-            var injChain_2 = this.getInjectorChain(container);
-            regModules.forEach(function (typs) {
-                var ityps = injChain_2.syncInject(container, typs);
-                injTypes = injTypes.concat(ityps);
-            });
-        }
-        return injTypes;
-    };
-    DefaultContainerBuilder.prototype.getInjectorChain = function (container) {
-        if (!container.has(injectors.ModuleInjectorChainToken)) {
-            container.register(injectors.SyncModuleInjector)
-                .register(injectors.ModuleInjector)
-                .register(injectors.MetaAccessor)
-                .register(injectors.AnnotationMetaAccessor)
-                .bindProvider(injectors.IocExtModuleValidateToken, new injectors.IocExtModuleValidate())
-                .bindProvider(injectors.ModuleInjectorChainToken, new injectors.ModuleInjectorChain());
-        }
-        var currChain = container.get(injectors.ModuleInjectorChainToken);
-        if (this.injectorChain !== currChain) {
-            this.injectorChain = null;
-        }
-        if (!this.injectorChain) {
-            this.injectorChain = currChain;
-            this.injectorChain
-                .next(container.resolve(injectors.SyncModuleInjectorToken, { validate: container.get(injectors.IocExtModuleValidateToken), skipNext: true }))
-                .next(container.resolve(injectors.SyncModuleInjectorToken));
-        }
-        return this.injectorChain;
-    };
-    DefaultContainerBuilder.classAnnations = { "name": "DefaultContainerBuilder", "params": { "constructor": ["loader"], "create": [], "build": ["modules"], "loadModule": ["container", "modules"], "syncBuild": ["modules"], "syncLoadModule": ["container", "modules"], "getInjectorChain": ["container"] } };
-    return DefaultContainerBuilder;
-}());
-exports.DefaultContainerBuilder = DefaultContainerBuilder;
 
 
 });
@@ -7043,23 +1005,8 @@ unwrapExports(DefaultContainerBuilder_1);
 var DefaultContainerBuilder_2 = DefaultContainerBuilder_1.DefaultContainerBuilder;
 
 var D__workspace_github_tsioc_packages_core_lib = createCommonjsModule(function (module, exports) {
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports,"__esModule",{value:!0});tslib_1.__exportStar(IContainer,exports), tslib_1.__exportStar(Container_1,exports), tslib_1.__exportStar(types,exports), tslib_1.__exportStar(Registration_1,exports), tslib_1.__exportStar(InjectToken_1,exports), tslib_1.__exportStar(IContainerBuilder,exports), tslib_1.__exportStar(IMethodAccessor,exports), tslib_1.__exportStar(ICacheManager,exports), tslib_1.__exportStar(LifeScope,exports), tslib_1.__exportStar(DefaultContainerBuilder_1,exports), tslib_1.__exportStar(utils,exports), tslib_1.__exportStar(components,exports), tslib_1.__exportStar(core,exports), tslib_1.__exportStar(injectors,exports), tslib_1.__exportStar(resolves,exports);
 
-tslib_1.__exportStar(IContainer, exports);
-tslib_1.__exportStar(Container_1, exports);
-tslib_1.__exportStar(types, exports);
-tslib_1.__exportStar(Registration_1, exports);
-tslib_1.__exportStar(InjectToken_1, exports);
-tslib_1.__exportStar(IContainerBuilder, exports);
-tslib_1.__exportStar(IMethodAccessor, exports);
-tslib_1.__exportStar(ICacheManager, exports);
-tslib_1.__exportStar(LifeScope, exports);
-tslib_1.__exportStar(DefaultContainerBuilder_1, exports);
-tslib_1.__exportStar(utils, exports);
-tslib_1.__exportStar(components, exports);
-tslib_1.__exportStar(core, exports);
-tslib_1.__exportStar(injectors, exports);
-tslib_1.__exportStar(resolves, exports);
 
 
 });
