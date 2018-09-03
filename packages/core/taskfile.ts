@@ -52,7 +52,7 @@ const rename = require('gulp-rename');
             src: 'bundles/core.umd.js',
             dest: 'bundles',
             sourcemaps: true,
-            // uglify: true,
+            uglify: true,
             pipes: [
                 () => rename('core.umd.min.js')
             ],
