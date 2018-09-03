@@ -1,10 +1,10 @@
 {
   "name": "@ts-ioc/aop",
-  "version": "3.1.10",
+  "version": "3.1.11",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "esnext": "./es2017/aop.js",
   "es2015": "./es2015/aop.js",
-  "module": "'./lib/index.js",
+  "module": "./lib/index.js",
   "main": "./bundles/aop.umd.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
@@ -29,7 +29,7 @@
     "tslib": "^1.9.2"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "^3.1.10"
+    "@ts-ioc/core": "^3.1.11"
   },
   "directories": {
     "lib": "lib",
