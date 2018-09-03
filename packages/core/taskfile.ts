@@ -156,6 +156,6 @@ export class CoreES2015Builder extends PackageActivity {
 export class CoreES2017Builder extends PackageActivity {
 }
 
-let tkc = TaskContainer.create(__dirname)
+TaskContainer.create(__dirname)
     .use(PipeModule)
     .bootstrap(CoreBuilder, CoreES2015Builder, CoreES2017Builder);

@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/annotations",
-  "version": "3.1.9",
+  "version": "3.1.10",
   "description": "typescript class annotations is a solution for typescript class compile to es5 uglify.  for project used tsioc to es5 uglify",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -22,11 +22,9 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "tslib": "^1.9.2"
-  },
-  "peerDependencies": {
+    "tslib": "^1.9.2",
     "through2": "^2.0.1",
-    "typescript": "^2.7.1"
+    "typescript": "^3.0.3"
   },
   "directories": {
     "lib": "lib",
