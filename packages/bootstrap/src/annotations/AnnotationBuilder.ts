@@ -46,7 +46,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             if (isFunction(instance.anBeforeInit)) {
                 await Promise.resolve(instance.anBeforeInit(config));
             }
-            instance = await this.buildStrategy(instance, config) as AnnoInstance<T>;
+            instance = await this.buildStrategy(instance, config, data) as AnnoInstance<T>;
             if (isFunction(instance.anAfterInit)) {
                 await Promise.resolve(instance.anAfterInit(config));
             }
@@ -123,7 +123,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      * @returns {Promise<T>}
      * @memberof BootBuilder
      */
-    async buildStrategy(instance: T, config: AnnotationConfigure<T>): Promise<T> {
+    async buildStrategy(instance: T, config: AnnotationConfigure<T>, data?: any): Promise<T> {
         return instance;
     }
 

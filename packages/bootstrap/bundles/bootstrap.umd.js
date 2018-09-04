@@ -1007,7 +1007,7 @@ var AnnotationBuilder = /** @class */ (function () {
                     case 4:
                         _a.sent();
                         _a.label = 5;
-                    case 5: return [4 /*yield*/, this.buildStrategy(instance, config)];
+                    case 5: return [4 /*yield*/, this.buildStrategy(instance, config, data)];
                     case 6:
                         instance = (_a.sent());
                         if (!core_1.isFunction(instance.anAfterInit)) return [3 /*break*/, 8];
@@ -1095,7 +1095,7 @@ var AnnotationBuilder = /** @class */ (function () {
      * @returns {Promise<T>}
      * @memberof BootBuilder
      */
-    AnnotationBuilder.prototype.buildStrategy = function (instance, config) {
+    AnnotationBuilder.prototype.buildStrategy = function (instance, config, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
             return tslib_1.__generator(this, function (_a) {
                 return [2 /*return*/, instance];
@@ -1163,7 +1163,7 @@ var AnnotationBuilder = /** @class */ (function () {
         return this.container.resolve(token);
     };
     var AnnotationBuilder_1;
-    AnnotationBuilder.classAnnations = { "name": "AnnotationBuilder", "params": { "constructor": [], "build": ["token", "config", "data"], "buildByConfig": ["config", "data"], "createInstance": ["token", "config", "data"], "getBuilder": ["token", "config"], "buildStrategy": ["instance", "config"], "getType": ["config"], "registerExts": ["config"], "getTokenMetaConfig": ["token", "config"], "getDecorator": [], "getMetaConfig": ["token"], "isEqual": ["build"], "resolveToken": ["token", "data"] } };
+    AnnotationBuilder.classAnnations = { "name": "AnnotationBuilder", "params": { "constructor": [], "build": ["token", "config", "data"], "buildByConfig": ["config", "data"], "createInstance": ["token", "config", "data"], "getBuilder": ["token", "config"], "buildStrategy": ["instance", "config", "data"], "getType": ["config"], "registerExts": ["config"], "getTokenMetaConfig": ["token", "config"], "getDecorator": [], "getMetaConfig": ["token"], "isEqual": ["build"], "resolveToken": ["token", "data"] } };
     tslib_1.__decorate([
         core_1.Inject(core_1.ContainerToken),
         tslib_1.__metadata("design:type", Object)

@@ -77,11 +77,11 @@ export interface IAnnotationBuilder<T> {
      *
      * @param {T} instance
      * @param {AnnotationConfigure<T>} config
-     * @param {IContainer} [container]
+     * @param {*} [data] the data to init instance.
      * @returns {Promise<T>}
      * @memberof IBootstrapBuilder
      */
-    buildStrategy(instance: T, config: AnnotationConfigure<T>): Promise<T>;
+    buildStrategy(instance: T, config: AnnotationConfigure<T>, data?: any): Promise<T>;
 }
 
 /**
