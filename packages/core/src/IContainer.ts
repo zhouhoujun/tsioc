@@ -5,6 +5,7 @@ import { InjectToken } from './InjectToken';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IResolver } from './IResolver';
 import { ResolverChain } from './resolves';
+import { Registration } from './Registration';
 
 /**
  * IContainer token.
@@ -135,6 +136,19 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @memberof IContainer
      */
     getTokenImpl<T>(token: Token<T>, inchain?: boolean): Type<T>;
+
+    /**
+     * get target reference service.
+     *
+     * @template T
+     * @param {Type<Registration<T>>} [refServiceInject] reference service Registration Injector
+     * @param {Token<any>} target  the service reference to.
+     * @param {Token<T>} [defaultToken] default service token.
+     * @param {...Providers[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    getRefService<T>(refServiceInject: Type<Registration<T>>, target: Token<any>, defaultToken?: Token<T>, ...providers: Providers[]): T
 
     /**
      * get token implement class and base classes.

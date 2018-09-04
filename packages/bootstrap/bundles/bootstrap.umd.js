@@ -1054,8 +1054,8 @@ var AnnotationBuilder = /** @class */ (function () {
         });
     };
     AnnotationBuilder.prototype.getBuilder = function (token, config) {
-        var _this = this;
         var builder;
+        var provider = { provide: core_1.ContainerToken, useValue: this.container };
         if (config && config.annotationBuilder) {
             if (core_1.isClass(config.annotationBuilder)) {
                 if (!this.container.has(config.annotationBuilder)) {
@@ -1063,23 +1063,14 @@ var AnnotationBuilder = /** @class */ (function () {
                 }
             }
             if (core_1.isToken(config.annotationBuilder)) {
-                builder = this.container.resolve(config.annotationBuilder, { container: this.container });
+                builder = this.container.resolve(config.annotationBuilder, provider);
             }
             else if (config.annotationBuilder instanceof AnnotationBuilder_1) {
                 builder = config.annotationBuilder;
             }
         }
         if (!builder && token) {
-            this.container.getTokenExtendsChain(token).forEach(function (tk) {
-                if (builder) {
-                    return false;
-                }
-                var buildToken = new IAnnotationBuilder.InjectAnnotationBuilder(tk);
-                if (_this.container.has(buildToken)) {
-                    builder = _this.container.resolve(buildToken, { container: _this.container });
-                }
-                return true;
-            });
+            builder = this.container.getRefService(IAnnotationBuilder.InjectAnnotationBuilder, token, null, provider);
         }
         if (builder && !builder.container) {
             builder.container = this.container;
@@ -1425,7 +1416,7 @@ var ModuleBuilder = /** @class */ (function () {
     };
     ModuleBuilder.prototype.autoRun = function (container, token, cfg, instance, data) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
-            var runner_1, service_1, provider_1;
+            var provider, runner, service;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1444,38 +1435,29 @@ var ModuleBuilder = /** @class */ (function () {
                         _a.sent();
                         return [2 /*return*/, instance];
                     case 4:
-                        provider_1 = { token: token, instance: instance, config: cfg };
-                        container.getTokenExtendsChain(token).forEach(function (tk) {
-                            if (runner_1 || service_1) {
-                                return false;
+                        provider = { token: token, instance: instance, config: cfg };
+                        runner = container.getRefService(runnable.InjectRunnerToken, token, runnable.DefaultRunnerToken, provider);
+                        service = void 0;
+                        if (!runner) {
+                            service = container.getRefService(runnable.InjectServiceToken, token, runnable.DefaultServiceToken, provider);
+                            if (!service) {
+                                runner = this.getDefaultRunner(container, provider);
                             }
-                            var runnerToken = new runnable.InjectRunnerToken(tk);
-                            if (container.has(runnerToken)) {
-                                runner_1 = container.resolve(runnerToken, provider_1);
-                            }
-                            var serviceToken = new runnable.InjectServiceToken(tk);
-                            if (container.has(serviceToken)) {
-                                service_1 = container.resolve(serviceToken, provider_1);
-                            }
-                            return true;
-                        });
-                        if (!runner_1) {
-                            this.getDefaultRunner(container, provider_1);
                         }
-                        if (!runner_1 && !service_1) {
-                            this.getDefaultService(container, provider_1);
+                        if (!runner && !service) {
+                            this.getDefaultService(container, provider);
                         }
-                        if (!runner_1) return [3 /*break*/, 6];
-                        return [4 /*yield*/, runner_1.run(data)];
+                        if (!runner) return [3 /*break*/, 6];
+                        return [4 /*yield*/, runner.run(data)];
                     case 5:
                         _a.sent();
-                        return [2 /*return*/, runner_1];
+                        return [2 /*return*/, runner];
                     case 6:
-                        if (!service_1) return [3 /*break*/, 8];
-                        return [4 /*yield*/, service_1.start(data)];
+                        if (!service) return [3 /*break*/, 8];
+                        return [4 /*yield*/, service.start(data)];
                     case 7:
                         _a.sent();
-                        return [2 /*return*/, service_1];
+                        return [2 /*return*/, service];
                     case 8:
                         if (!(token && cfg.autorun)) return [3 /*break*/, 10];
                         return [4 /*yield*/, container.invoke(token, cfg.autorun, instance, { data: data })];
@@ -1492,18 +1474,12 @@ var ModuleBuilder = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
         }
-        if (container.has(runnable.DefaultRunnerToken)) {
-            return container.resolve.apply(container, [runnable.DefaultRunnerToken].concat(providers));
-        }
         return null;
     };
     ModuleBuilder.prototype.getDefaultService = function (container) {
         var providers = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             providers[_i - 1] = arguments[_i];
-        }
-        if (container.has(runnable.DefaultServiceToken)) {
-            return container.resolve.apply(container, [runnable.DefaultServiceToken].concat(providers));
         }
         return null;
     };
@@ -1521,16 +1497,7 @@ var ModuleBuilder = /** @class */ (function () {
             builder = annBuilder;
         }
         if (!builder && token) {
-            container.getTokenExtendsChain(token).forEach(function (tk) {
-                if (builder) {
-                    return false;
-                }
-                var buildToken = new annotations.InjectAnnotationBuilder(tk);
-                if (container.has(buildToken)) {
-                    builder = container.resolve(buildToken);
-                }
-                return true;
-            });
+            builder = container.getRefService(annotations.InjectAnnotationBuilder, token, annotations.DefaultAnnotationBuilderToken);
         }
         if (!builder) {
             builder = this.getDefaultAnnBuilder(container);
@@ -1541,9 +1508,6 @@ var ModuleBuilder = /** @class */ (function () {
         return builder;
     };
     ModuleBuilder.prototype.getDefaultAnnBuilder = function (container) {
-        if (container.has(annotations.DefaultAnnotationBuilderToken)) {
-            return container.resolve(annotations.DefaultAnnotationBuilderToken);
-        }
         return container.resolve(annotations.AnnotationBuilderToken);
     };
     /**
@@ -1880,16 +1844,7 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
         }
         var tko = injmdl.token;
         if (!builder && tko) {
-            container.getTokenExtendsChain(tko).forEach(function (tk) {
-                if (builder) {
-                    return false;
-                }
-                var buildToken = new modules.InjectModuleBuilderToken(tk);
-                if (container.has(buildToken)) {
-                    builder = container.get(buildToken);
-                }
-                return true;
-            });
+            builder = container.getRefService(modules.InjectModuleBuilderToken, tko, modules.DefaultModuleBuilderToken);
         }
         if (!builder) {
             builder = this.getDefaultBuilder(container);
@@ -1897,9 +1852,6 @@ var DefaultApplicationBuilder = /** @class */ (function (_super) {
         return builder || this;
     };
     DefaultApplicationBuilder.prototype.getDefaultBuilder = function (container) {
-        if (container.has(modules.DefaultModuleBuilderToken)) {
-            return container.resolve(modules.DefaultModuleBuilderToken);
-        }
         return container.resolve(modules.ModuleBuilderToken);
     };
     DefaultApplicationBuilder.prototype.getGlobalConfig = function (container) {

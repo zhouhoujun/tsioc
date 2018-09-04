@@ -188,24 +188,15 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             await instance.start(data);
             return instance;
         } else {
-            let runner: IRunner<T>, service: IService<T>;
+
             let provider = { token: token, instance: instance, config: cfg };
-            container.getTokenExtendsChain(token).forEach(tk => {
-                if (runner || service) {
-                    return false;
-                }
-                let runnerToken = new InjectRunnerToken<T>(tk);
-                if (container.has(runnerToken)) {
-                    runner = container.resolve(runnerToken, provider);
-                }
-                let serviceToken = new InjectServiceToken<T>(tk);
-                if (container.has(serviceToken)) {
-                    service = container.resolve(serviceToken, provider);
-                }
-                return true;
-            });
+            let runner: IRunner<T> = container.getRefService(InjectRunnerToken, token, DefaultRunnerToken, provider);
+            let service: IService<T>;
             if (!runner) {
-                this.getDefaultRunner(container, provider)
+                service = container.getRefService(InjectServiceToken, token, DefaultServiceToken, provider);
+                if (!service) {
+                    runner = this.getDefaultRunner(container, provider);
+                }
             }
             if (!runner && !service) {
                 this.getDefaultService(container, provider)
@@ -226,16 +217,10 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
     protected getDefaultRunner(container: IContainer, ...providers: Providers[]): IRunner<T> {
-        if (container.has(DefaultRunnerToken)) {
-            return container.resolve(DefaultRunnerToken, ...providers)
-        }
         return null;
     }
 
     protected getDefaultService(container: IContainer, ...providers: Providers[]): IService<T> {
-        if (container.has(DefaultServiceToken)) {
-            return container.resolve(DefaultServiceToken, ...providers)
-        }
         return null;
     }
 
@@ -253,16 +238,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             builder = annBuilder;
         }
         if (!builder && token) {
-            container.getTokenExtendsChain(token).forEach(tk => {
-                if (builder) {
-                    return false;
-                }
-                let buildToken = new InjectAnnotationBuilder<T>(tk);
-                if (container.has(buildToken)) {
-                    builder = container.resolve(buildToken);
-                }
-                return true;
-            });
+            builder = container.getRefService(InjectAnnotationBuilder, token, DefaultAnnotationBuilderToken);
         }
         if (!builder) {
             builder = this.getDefaultAnnBuilder(container);
@@ -276,9 +252,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
 
     protected getDefaultAnnBuilder(container: IContainer): IAnnotationBuilder<any> {
-        if (container.has(DefaultAnnotationBuilderToken)) {
-            return container.resolve(DefaultAnnotationBuilderToken);
-        }
         return container.resolve(AnnotationBuilderToken);
     }
 

@@ -1,6 +1,6 @@
 import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import {
-    Token, isToken, IContainer, isClass, Inject, ContainerToken, Type,
+    Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, Providers,
     lang, isFunction, Injectable, AnnotationMetaAccessorToken
 } from '@ts-ioc/core';
 import { AnnotationConfigure } from './AnnotationConfigure';
@@ -83,6 +83,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
     getBuilder(token: Token<T>, config?: AnnotationConfigure<T>): IAnnotationBuilder<T> {
         let builder: IAnnotationBuilder<T>;
+        let provider = <Providers>{ provide: ContainerToken, useValue: this.container };
         if (config && config.annotationBuilder) {
             if (isClass(config.annotationBuilder)) {
                 if (!this.container.has(config.annotationBuilder)) {
@@ -90,22 +91,13 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
                 }
             }
             if (isToken(config.annotationBuilder)) {
-                builder = this.container.resolve(config.annotationBuilder, { container: this.container });
+                builder = this.container.resolve(config.annotationBuilder, provider);
             } else if (config.annotationBuilder instanceof AnnotationBuilder) {
                 builder = config.annotationBuilder;
             }
         }
         if (!builder && token) {
-            this.container.getTokenExtendsChain(token).forEach(tk => {
-                if (builder) {
-                    return false;
-                }
-                let buildToken = new InjectAnnotationBuilder<T>(tk);
-                if (this.container.has(buildToken)) {
-                    builder = this.container.resolve(buildToken, { container: this.container });
-                }
-                return true;
-            });
+            builder = this.container.getRefService(InjectAnnotationBuilder, token, null, provider) as IAnnotationBuilder<T>;
         }
 
         if (builder && !builder.container) {

@@ -1,5 +1,6 @@
 import { PipeModule, Package, AssetConfigure, AssetActivity, TsConfigure, CleanConfigure, CleanActivity, PackageActivity } from '@taskfr/pipes';
 import { TaskContainer } from '@taskfr/platform-server';
+import { IActivity } from '@taskfr/core';
 
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -11,7 +12,7 @@ const rename = require('gulp-rename');
 @Package({
     src: 'src',
     clean: 'lib',
-    test: 'test/**/*.spec.ts',
+    test: (act: IActivity) => act.context.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
     assets: {
         ts: { dest: 'lib', annotation: true, uglify: false }
     },

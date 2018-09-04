@@ -935,6 +935,7 @@ let AnnotationBuilder = AnnotationBuilder_1 = class AnnotationBuilder {
     }
     getBuilder(token, config) {
         let builder;
+        let provider = { provide: core_1.ContainerToken, useValue: this.container };
         if (config && config.annotationBuilder) {
             if (core_1.isClass(config.annotationBuilder)) {
                 if (!this.container.has(config.annotationBuilder)) {
@@ -942,23 +943,14 @@ let AnnotationBuilder = AnnotationBuilder_1 = class AnnotationBuilder {
                 }
             }
             if (core_1.isToken(config.annotationBuilder)) {
-                builder = this.container.resolve(config.annotationBuilder, { container: this.container });
+                builder = this.container.resolve(config.annotationBuilder, provider);
             }
             else if (config.annotationBuilder instanceof AnnotationBuilder_1) {
                 builder = config.annotationBuilder;
             }
         }
         if (!builder && token) {
-            this.container.getTokenExtendsChain(token).forEach(tk => {
-                if (builder) {
-                    return false;
-                }
-                let buildToken = new IAnnotationBuilder.InjectAnnotationBuilder(tk);
-                if (this.container.has(buildToken)) {
-                    builder = this.container.resolve(buildToken, { container: this.container });
-                }
-                return true;
-            });
+            builder = this.container.getRefService(IAnnotationBuilder.InjectAnnotationBuilder, token, null, provider);
         }
         if (builder && !builder.container) {
             builder.container = this.container;
@@ -1243,24 +1235,14 @@ let ModuleBuilder = class ModuleBuilder {
             return instance;
         }
         else {
-            let runner, service;
             let provider = { token: token, instance: instance, config: cfg };
-            container.getTokenExtendsChain(token).forEach(tk => {
-                if (runner || service) {
-                    return false;
-                }
-                let runnerToken = new runnable.InjectRunnerToken(tk);
-                if (container.has(runnerToken)) {
-                    runner = container.resolve(runnerToken, provider);
-                }
-                let serviceToken = new runnable.InjectServiceToken(tk);
-                if (container.has(serviceToken)) {
-                    service = container.resolve(serviceToken, provider);
-                }
-                return true;
-            });
+            let runner = container.getRefService(runnable.InjectRunnerToken, token, runnable.DefaultRunnerToken, provider);
+            let service;
             if (!runner) {
-                this.getDefaultRunner(container, provider);
+                service = container.getRefService(runnable.InjectServiceToken, token, runnable.DefaultServiceToken, provider);
+                if (!service) {
+                    runner = this.getDefaultRunner(container, provider);
+                }
             }
             if (!runner && !service) {
                 this.getDefaultService(container, provider);
@@ -1283,15 +1265,9 @@ let ModuleBuilder = class ModuleBuilder {
         }
     }
     getDefaultRunner(container, ...providers) {
-        if (container.has(runnable.DefaultRunnerToken)) {
-            return container.resolve(runnable.DefaultRunnerToken, ...providers);
-        }
         return null;
     }
     getDefaultService(container, ...providers) {
-        if (container.has(runnable.DefaultServiceToken)) {
-            return container.resolve(runnable.DefaultServiceToken, ...providers);
-        }
         return null;
     }
     getAnnoBuilder(container, token, annBuilder) {
@@ -1308,16 +1284,7 @@ let ModuleBuilder = class ModuleBuilder {
             builder = annBuilder;
         }
         if (!builder && token) {
-            container.getTokenExtendsChain(token).forEach(tk => {
-                if (builder) {
-                    return false;
-                }
-                let buildToken = new annotations.InjectAnnotationBuilder(tk);
-                if (container.has(buildToken)) {
-                    builder = container.resolve(buildToken);
-                }
-                return true;
-            });
+            builder = container.getRefService(annotations.InjectAnnotationBuilder, token, annotations.DefaultAnnotationBuilderToken);
         }
         if (!builder) {
             builder = this.getDefaultAnnBuilder(container);
@@ -1328,9 +1295,6 @@ let ModuleBuilder = class ModuleBuilder {
         return builder;
     }
     getDefaultAnnBuilder(container) {
-        if (container.has(annotations.DefaultAnnotationBuilderToken)) {
-            return container.resolve(annotations.DefaultAnnotationBuilderToken);
-        }
         return container.resolve(annotations.AnnotationBuilderToken);
     }
     /**
@@ -1615,16 +1579,7 @@ class DefaultApplicationBuilder extends modules.ModuleBuilder {
         }
         let tko = injmdl.token;
         if (!builder && tko) {
-            container.getTokenExtendsChain(tko).forEach(tk => {
-                if (builder) {
-                    return false;
-                }
-                let buildToken = new modules.InjectModuleBuilderToken(tk);
-                if (container.has(buildToken)) {
-                    builder = container.get(buildToken);
-                }
-                return true;
-            });
+            builder = container.getRefService(modules.InjectModuleBuilderToken, tko, modules.DefaultModuleBuilderToken);
         }
         if (!builder) {
             builder = this.getDefaultBuilder(container);
@@ -1632,9 +1587,6 @@ class DefaultApplicationBuilder extends modules.ModuleBuilder {
         return builder || this;
     }
     getDefaultBuilder(container) {
-        if (container.has(modules.DefaultModuleBuilderToken)) {
-            return container.resolve(modules.DefaultModuleBuilderToken);
-        }
         return container.resolve(modules.ModuleBuilderToken);
     }
     async getGlobalConfig(container) {

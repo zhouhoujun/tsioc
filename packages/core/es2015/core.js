@@ -5186,6 +5186,35 @@ class Container {
         return types$$1;
     }
     /**
+     * get target reference service.
+     *
+     * @template T
+     * @param {Type<Registration<T>>} [refServiceInject] reference service Registration Injector
+     * @param {Token<any>} target  the service reference to.
+     * @param {Token<T>} [defaultToken] default service token.
+     * @param {...Providers[]} providers
+     * @returns {T}
+     * @memberof Container
+     */
+    getRefService(refServiceInject, target, defaultToken, ...providers) {
+        let service;
+        this.getTokenExtendsChain(target)
+            .forEach(tk => {
+            if (service) {
+                return false;
+            }
+            let serviceToken = new refServiceInject(tk);
+            if (this.has(serviceToken)) {
+                service = this.resolve(serviceToken, ...providers);
+            }
+            return true;
+        });
+        if (!service && defaultToken && this.has(defaultToken)) {
+            service = this.resolve(defaultToken, ...providers);
+        }
+        return service;
+    }
+    /**
     * get life scope of container.
     *
     * @returns {LifeScope}
@@ -5398,7 +5427,7 @@ class Container {
         }, types.IocState.design);
     }
 }
-Container.classAnnations = { "name": "Container", "params": { "constructor": [], "getRoot": [], "getBuilder": [], "get": ["token", "alias", "providers"], "resolve": ["token", "providers"], "resolveValue": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token", "inchain"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token", "inchain"], "getTokenExtendsChain": ["token"], "getBaseClasses": ["target"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"] } };
+Container.classAnnations = { "name": "Container", "params": { "constructor": [], "getRoot": [], "getBuilder": [], "get": ["token", "alias", "providers"], "resolve": ["token", "providers"], "resolveValue": ["token", "providers"], "clearCache": ["targetType"], "getToken": ["token", "alias"], "getTokenKey": ["token", "alias"], "register": ["token", "value"], "has": ["token", "alias"], "hasRegister": ["key"], "unregister": ["token", "inchain"], "registerSingleton": ["token", "value"], "registerValue": ["token", "value"], "bindProvider": ["provide", "provider"], "getTokenImpl": ["token", "inchain"], "getTokenExtendsChain": ["token"], "getBaseClasses": ["target"], "getRefService": ["refServiceInject", "target", "defaultToken", "providers"], "getLifeScope": [], "use": ["modules"], "loadModule": ["modules"], "invoke": ["token", "propertyKey", "instance", "providers"], "syncInvoke": ["token", "propertyKey", "instance", "providers"], "createSyncParams": ["params", "providers"], "createParams": ["params", "providers"], "cacheDecorator": ["map", "action"], "init": [], "registerFactory": ["token", "value", "singleton"], "createCustomFactory": ["key", "factory", "singleton"], "bindTypeFactory": ["key", "ClassT", "singleton"] } };
 exports.Container = Container;
 
 
@@ -5793,21 +5822,8 @@ let AnnotationMetaAccessor = class AnnotationMetaAccessor {
     }
     getMetadata(token, container) {
         if (utils.isToken(token)) {
-            let accessor;
             let provider = { decorator: this.getDecorators() };
-            container.getTokenExtendsChain(token).forEach(tk => {
-                if (accessor) {
-                    return false;
-                }
-                let accToken = new IMetaAccessor.InjectMetaAccessorToken(tk);
-                if (container.has(accToken)) {
-                    accessor = container.resolve(accToken, provider);
-                }
-                return true;
-            });
-            if (!accessor) {
-                accessor = this.getDefaultMetaAccessor(container, provider);
-            }
+            let accessor = container.getRefService(IMetaAccessor.InjectMetaAccessorToken, token, IMetaAccessor.DefaultMetaAccessorToken, provider);
             if (accessor) {
                 return accessor.getMetadata(token, container);
             }
@@ -5817,11 +5833,8 @@ let AnnotationMetaAccessor = class AnnotationMetaAccessor {
         }
         return {};
     }
-    getDefaultMetaAccessor(container, ...providers) {
-        return container.resolve(IMetaAccessor.DefaultMetaAccessorToken, ...providers);
-    }
 };
-AnnotationMetaAccessor.classAnnations = { "name": "AnnotationMetaAccessor", "params": { "constructor": ["decorator"], "getDecorators": [], "getMetadata": ["token", "container"], "getDefaultMetaAccessor": ["container", "providers"] } };
+AnnotationMetaAccessor.classAnnations = { "name": "AnnotationMetaAccessor", "params": { "constructor": ["decorator"], "getDecorators": [], "getMetadata": ["token", "container"] } };
 AnnotationMetaAccessor = tslib_1.__decorate([
     core.Injectable(IMetaAccessor.AnnotationMetaAccessorToken),
     tslib_1.__metadata("design:paramtypes", [Object])

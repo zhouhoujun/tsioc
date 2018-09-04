@@ -56,21 +56,8 @@ export class AnnotationMetaAccessor implements IMetaAccessor<any> {
 
     getMetadata(token: Token<any>, container: IContainer): IAnnotationMetadata<any> {
         if (isToken(token)) {
-            let accessor: IMetaAccessor<any>;
             let provider = { decorator: this.getDecorators() };
-            container.getTokenExtendsChain(token).forEach(tk => {
-                if (accessor) {
-                    return false;
-                }
-                let accToken = new InjectMetaAccessorToken<any>(tk);
-                if (container.has(accToken)) {
-                    accessor = container.resolve(accToken, provider);
-                }
-                return true;
-            });
-            if (!accessor) {
-                accessor = this.getDefaultMetaAccessor(container, provider);
-            }
+            let accessor = container.getRefService(InjectMetaAccessorToken, token, DefaultMetaAccessorToken, provider);
             if (accessor) {
                 return accessor.getMetadata(token, container);
             } else {
@@ -78,9 +65,5 @@ export class AnnotationMetaAccessor implements IMetaAccessor<any> {
             }
         }
         return {};
-    }
-
-    protected getDefaultMetaAccessor(container: IContainer, ...providers: Providers[]) {
-        return container.resolve(DefaultMetaAccessorToken, ...providers);
     }
 }

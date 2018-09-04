@@ -63,15 +63,15 @@ export class Container implements IContainer {
         return this.resolve(alias ? this.getTokenKey<T>(token, alias) : token, ...providers);
     }
 
-     /**
-     * resolve token value in this container only.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {...Providers[]} providers
-     * @returns {T}
-     * @memberof Container
-     */
+    /**
+    * resolve token value in this container only.
+    *
+    * @template T
+    * @param {Token<T>} token
+    * @param {...Providers[]} providers
+    * @returns {T}
+    * @memberof Container
+    */
     get resolvers(): ResolverChain {
         return this.resolveValue(ResolverChainToken);
     }
@@ -348,6 +348,36 @@ export class Container implements IContainer {
             target = lang.getParentClass(target);
         }
         return types;
+    }
+
+    /**
+     * get target reference service.
+     *
+     * @template T
+     * @param {Type<Registration<T>>} [refServiceInject] reference service Registration Injector
+     * @param {Token<any>} target  the service reference to.
+     * @param {Token<T>} [defaultToken] default service token.
+     * @param {...Providers[]} providers
+     * @returns {T}
+     * @memberof Container
+     */
+    getRefService<T>(refServiceInject: Type<Registration<T>>, target: Token<any>, defaultToken?: Token<T>, ...providers: Providers[]): T {
+        let service: T;
+        this.getTokenExtendsChain(target)
+            .forEach(tk => {
+                if (service) {
+                    return false;
+                }
+                let serviceToken = new refServiceInject(tk);
+                if (this.has(serviceToken)) {
+                    service = this.resolve(serviceToken, ...providers);
+                }
+                return true;
+            });
+        if (!service && defaultToken && this.has(defaultToken)) {
+            service = this.resolve(defaultToken, ...providers);
+        }
+        return service;
     }
 
     /**

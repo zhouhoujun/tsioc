@@ -16,6 +16,7 @@
     }
   },
   "exclude": [
-    "lib"  
+    "lib",
+    "node_modules/@ts-ioc"  
   ]
 }

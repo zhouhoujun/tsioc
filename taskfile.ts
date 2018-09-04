@@ -45,6 +45,9 @@ let versionSetting = (ctx: IPipeContext) => {
                 let envArgs = ctx.getEnvArgs();
                 let packages = ctx.getFolders('packages');
                 let cmd = envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
+                if (envArgs.test === 'false' || envArgs.upioc) {
+                    cmd = cmd + ' -- --test=false'
+                }
                 let cmds = packages.map(fd => {
                     return `cd ${fd} && ${cmd}`;
                 });
@@ -52,6 +55,20 @@ let versionSetting = (ctx: IPipeContext) => {
                 return cmds;
             },
             activity: 'shell'
+        },
+        {
+            name: 'update-ioc',
+            src: (act: AssetActivity) => {
+                let arg = act.context.getEnvArgs();
+                if (arg.upioc) {
+                    // let packages = act.context.getFolders('packages');
+                    // return packages.map(p => p + '/(bundles|lib)/**');
+                    return ['./packages/!(platform-browser)/bundles/**', './packages/!(platform-browser)/lib/**']
+                }
+                return './packages/empty/**';
+            },
+            dest: './node_modules/@ts-ioc',
+            activity: AssetActivity
         }
     ]
 })

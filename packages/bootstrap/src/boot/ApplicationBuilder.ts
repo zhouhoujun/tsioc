@@ -197,16 +197,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
 
         let tko = injmdl.token;
         if (!builder && tko) {
-            container.getTokenExtendsChain(tko).forEach(tk => {
-                if (builder) {
-                    return false;
-                }
-                let buildToken = new InjectModuleBuilderToken<T>(tk);
-                if (container.has(buildToken)) {
-                    builder = container.get(buildToken);
-                }
-                return true;
-            });
+            builder = container.getRefService(InjectModuleBuilderToken, tko, DefaultModuleBuilderToken);
         }
         if (!builder) {
             builder = this.getDefaultBuilder(container);
@@ -216,9 +207,6 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
     }
 
     protected getDefaultBuilder(container: IContainer): IModuleBuilder<any> {
-        if (container.has(DefaultModuleBuilderToken)) {
-            return container.resolve(DefaultModuleBuilderToken);
-        }
         return container.resolve(ModuleBuilderToken);
     }
 

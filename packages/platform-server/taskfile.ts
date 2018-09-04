@@ -1,5 +1,6 @@
 import { PipeModule, Package, ShellTaskConfig, IPipeContext, CleanConfigure, CleanActivity, AssetActivity, PackageActivity, TsConfigure, AssetConfigure } from '@taskfr/pipes';
 import { TaskContainer } from '@taskfr/platform-server';
+import { IActivity } from '@taskfr/core';
 
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -12,7 +13,7 @@ const builtins = require('rollup-plugin-node-builtins');
 @Package({
     src: 'src',
     clean: 'lib',
-    test: 'test/**/*.spec.ts',
+    test: (act: IActivity) => act.context.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
     assets: {
         ts: { dest: 'lib', annotation: true, uglify: false }
     },
