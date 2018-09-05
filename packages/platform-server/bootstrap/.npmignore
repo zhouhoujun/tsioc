@@ -4,5 +4,7 @@ test
 node_modules
 gulpfile.ts
 tsconfig.json
+tsconfig.es2015.json
+tsconfig.es2017.json
 tslint.json
 package-lock.json
