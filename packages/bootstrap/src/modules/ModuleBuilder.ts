@@ -91,7 +91,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         let container = injmdl.container;
         let md = await this.build(token, injmdl, data) as MdInstance<T>;
         let bootToken = this.getBootType(cfg);
-        let anBuilder = this.getAnnoBuilder(container, bootToken, cfg.bootAnnotationBuilder);
+        let anBuilder = this.getAnnoBuilder(container, bootToken, cfg.annotationBuilder);
         let bootInstance = await (bootToken ? anBuilder.build(bootToken, cfg, data) : anBuilder.buildByConfig(cfg, data));
         let runable;
         if (bootInstance) {
@@ -189,17 +189,17 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             return instance;
         } else {
 
-            let provider = { token: token, instance: instance, config: cfg };
-            let runner: IRunner<T> = container.getRefService(InjectRunnerToken, token, DefaultRunnerToken, provider);
+            let providers = [{provide: token, useValue: instance }, { token: token, instance: instance, config: cfg }] as Providers[];
+            let runner: IRunner<T> = container.getRefService(InjectRunnerToken, token, DefaultRunnerToken, ...providers);
             let service: IService<T>;
             if (!runner) {
-                service = container.getRefService(InjectServiceToken, token, DefaultServiceToken, provider);
+                service = container.getRefService(InjectServiceToken, token, DefaultServiceToken, ...providers);
                 if (!service) {
-                    runner = this.getDefaultRunner(container, provider);
+                    runner = this.getDefaultRunner(container, ...providers);
                 }
             }
             if (!runner && !service) {
-                this.getDefaultService(container, provider)
+                this.getDefaultService(container, ...providers)
             }
             if (runner) {
                 await runner.run(data);
@@ -226,6 +226,10 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     protected getAnnoBuilder(container: IContainer, token: Token<any>, annBuilder: Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>): IAnyTypeBuilder {
         let builder: IAnnotationBuilder<any>;
+        if (!builder && token) {
+            builder = container.getRefService(InjectAnnotationBuilder, token, DefaultAnnotationBuilderToken);
+        }
+
         if (isClass(annBuilder)) {
             if (!container.has(annBuilder)) {
                 container.register(annBuilder);
@@ -237,13 +241,10 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         } else if (annBuilder instanceof AnnotationBuilder) {
             builder = annBuilder;
         }
-        if (!builder && token) {
-            builder = container.getRefService(InjectAnnotationBuilder, token, DefaultAnnotationBuilderToken);
-        }
+
         if (!builder) {
             builder = this.getDefaultAnnBuilder(container);
         }
-
         if (builder) {
             builder.container = container
         }

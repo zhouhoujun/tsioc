@@ -953,7 +953,7 @@ let AnnotationBuilder = AnnotationBuilder_1 = class AnnotationBuilder {
     }
     getBuilder(token, config) {
         let builder;
-        let provider = { provide: core_1.ContainerToken, useValue: this.container };
+        let providers = [{ provide: core_1.ContainerToken, useValue: this.container }, { provide: core_1.Container, useValue: this.container }];
         if (config && config.annotationBuilder) {
             if (core_1.isClass(config.annotationBuilder)) {
                 if (!this.container.has(config.annotationBuilder)) {
@@ -961,14 +961,14 @@ let AnnotationBuilder = AnnotationBuilder_1 = class AnnotationBuilder {
                 }
             }
             if (core_1.isToken(config.annotationBuilder)) {
-                builder = this.container.resolve(config.annotationBuilder, provider);
+                builder = this.container.resolve(config.annotationBuilder, ...providers);
             }
             else if (config.annotationBuilder instanceof AnnotationBuilder_1) {
                 builder = config.annotationBuilder;
             }
         }
         if (!builder && token) {
-            builder = this.container.getRefService(IAnnotationBuilder.InjectAnnotationBuilder, token, null, provider);
+            builder = this.container.getRefService(IAnnotationBuilder.InjectAnnotationBuilder, token, null, ...providers);
         }
         if (builder && !builder.container) {
             builder.container = this.container;
@@ -1005,13 +1005,14 @@ let AnnotationBuilder = AnnotationBuilder_1 = class AnnotationBuilder {
     }
     getTokenMetaConfig(token, config) {
         let cfg;
+        let decorator = config ? config.decorator : null;
         if (core_1.isClass(token)) {
-            cfg = this.getMetaConfig(token);
+            cfg = this.getMetaConfig(token, decorator);
         }
         else if (core_1.isToken(token)) {
             let tokenType = this.container ? this.container.getTokenImpl(token) : token;
             if (core_1.isClass(tokenType)) {
-                cfg = this.getMetaConfig(tokenType);
+                cfg = this.getMetaConfig(tokenType, decorator);
             }
         }
         if (cfg) {
@@ -1021,11 +1022,18 @@ let AnnotationBuilder = AnnotationBuilder_1 = class AnnotationBuilder {
             return config || {};
         }
     }
+    /**
+     * get default decorator.
+     *
+     * @returns
+     * @memberof AnnotationBuilder
+     */
     getDecorator() {
         return decorators.Annotation.toString();
     }
-    getMetaConfig(token) {
-        let accessor = this.container.resolve(core_1.AnnotationMetaAccessorToken, { decorator: this.getDecorator() });
+    getMetaConfig(token, decorator) {
+        let defDecorator = this.getDecorator();
+        let accessor = this.container.resolve(core_1.AnnotationMetaAccessorToken, { decorator: decorator ? [decorator, defDecorator] : defDecorator });
         if (accessor) {
             return accessor.getMetadata(token, this.container);
         }
@@ -1047,7 +1055,7 @@ let AnnotationBuilder = AnnotationBuilder_1 = class AnnotationBuilder {
         return this.container.resolve(token);
     }
 };
-AnnotationBuilder.classAnnations = { "name": "AnnotationBuilder", "params": { "constructor": [], "build": ["token", "config", "data"], "buildByConfig": ["config", "data"], "createInstance": ["token", "config", "data"], "getBuilder": ["token", "config"], "buildStrategy": ["instance", "config", "data"], "getType": ["config"], "registerExts": ["config"], "getTokenMetaConfig": ["token", "config"], "getDecorator": [], "getMetaConfig": ["token"], "isEqual": ["build"], "resolveToken": ["token", "data"] } };
+AnnotationBuilder.classAnnations = { "name": "AnnotationBuilder", "params": { "constructor": [], "build": ["token", "config", "data"], "buildByConfig": ["config", "data"], "createInstance": ["token", "config", "data"], "getBuilder": ["token", "config"], "buildStrategy": ["instance", "config", "data"], "getType": ["config"], "registerExts": ["config"], "getTokenMetaConfig": ["token", "config"], "getDecorator": [], "getMetaConfig": ["token", "decorator"], "isEqual": ["build"], "resolveToken": ["token", "data"] } };
 tslib_1.__decorate([
     core_1.Inject(core_1.ContainerToken),
     tslib_1.__metadata("design:type", Object)
@@ -1164,7 +1172,7 @@ let ModuleBuilder = class ModuleBuilder {
             let container = injmdl.container;
             let md = yield this.build(token, injmdl, data);
             let bootToken = this.getBootType(cfg);
-            let anBuilder = this.getAnnoBuilder(container, bootToken, cfg.bootAnnotationBuilder);
+            let anBuilder = this.getAnnoBuilder(container, bootToken, cfg.annotationBuilder);
             let bootInstance = yield (bootToken ? anBuilder.build(bootToken, cfg, data) : anBuilder.buildByConfig(cfg, data));
             let runable;
             if (bootInstance) {
@@ -1268,17 +1276,17 @@ let ModuleBuilder = class ModuleBuilder {
                 return instance;
             }
             else {
-                let provider = { token: token, instance: instance, config: cfg };
-                let runner = container.getRefService(runnable.InjectRunnerToken, token, runnable.DefaultRunnerToken, provider);
+                let providers = [{ provide: token, useValue: instance }, { token: token, instance: instance, config: cfg }];
+                let runner = container.getRefService(runnable.InjectRunnerToken, token, runnable.DefaultRunnerToken, ...providers);
                 let service;
                 if (!runner) {
-                    service = container.getRefService(runnable.InjectServiceToken, token, runnable.DefaultServiceToken, provider);
+                    service = container.getRefService(runnable.InjectServiceToken, token, runnable.DefaultServiceToken, ...providers);
                     if (!service) {
-                        runner = this.getDefaultRunner(container, provider);
+                        runner = this.getDefaultRunner(container, ...providers);
                     }
                 }
                 if (!runner && !service) {
-                    this.getDefaultService(container, provider);
+                    this.getDefaultService(container, ...providers);
                 }
                 if (runner) {
                     yield runner.run(data);
@@ -1306,6 +1314,9 @@ let ModuleBuilder = class ModuleBuilder {
     }
     getAnnoBuilder(container, token, annBuilder) {
         let builder;
+        if (!builder && token) {
+            builder = container.getRefService(annotations.InjectAnnotationBuilder, token, annotations.DefaultAnnotationBuilderToken);
+        }
         if (core_1.isClass(annBuilder)) {
             if (!container.has(annBuilder)) {
                 container.register(annBuilder);
@@ -1316,9 +1327,6 @@ let ModuleBuilder = class ModuleBuilder {
         }
         else if (annBuilder instanceof annotations.AnnotationBuilder) {
             builder = annBuilder;
-        }
-        if (!builder && token) {
-            builder = container.getRefService(annotations.InjectAnnotationBuilder, token, annotations.DefaultAnnotationBuilderToken);
         }
         if (!builder) {
             builder = this.getDefaultAnnBuilder(container);

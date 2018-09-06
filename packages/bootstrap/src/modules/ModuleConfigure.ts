@@ -1,6 +1,6 @@
-import { Token, LoadType, Providers, IContainer } from '@ts-ioc/core';
+import { Token, LoadType, Providers } from '@ts-ioc/core';
 import { IModuleBuilder } from './IModuleBuilder';
-import { AnnotationConfigure, IAnnotationBuilder } from '../annotations';
+import { AnnotationConfigure } from '../annotations';
 
 
 /**
@@ -58,22 +58,6 @@ export interface ModuleConfig<T> extends AnnotationConfigure<T> {
      * @memberof ModuleConfiguration
      */
     builder?: Token<IModuleBuilder<any>> | IModuleBuilder<any>;
-
-    /**
-     * ioc container, the module defined in.
-     *
-     * @type {IContainer}
-     * @memberof ModuleConfiguration
-     */
-    container?: IContainer;
-
-    /**
-     * boot annotation builder.
-     *
-     * @type {(Token<IAnnotationBuilder<T>> | IAnnotationBuilder<T>)}
-     * @memberof AnnotationConfigure
-     */
-    bootAnnotationBuilder?: Token<IAnnotationBuilder<T>> | IAnnotationBuilder<T>;
 
 }
 
