@@ -2,7 +2,7 @@
 src
 test
 node_modules
-gulpfile.ts
+taskfile.ts
 tsconfig.json
 tslint.json
 package-lock.json
