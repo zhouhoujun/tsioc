@@ -1139,7 +1139,7 @@ let ModuleBuilder = class ModuleBuilder {
         let container = injmdl.container;
         let md = await this.build(token, injmdl, data);
         let bootToken = this.getBootType(cfg);
-        let anBuilder = this.getAnnoBuilder(container, bootToken, cfg.annotationBuilder);
+        let anBuilder = this.getAnnoBuilder(container, bootToken, cfg.bootAnnotationBuilder);
         let bootInstance = await (bootToken ? anBuilder.build(bootToken, cfg, data) : anBuilder.buildByConfig(cfg, data));
         let runable;
         if (bootInstance) {

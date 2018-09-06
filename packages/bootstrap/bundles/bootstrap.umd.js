@@ -1290,7 +1290,7 @@ var ModuleBuilder = /** @class */ (function () {
                     case 2:
                         md = _a.sent();
                         bootToken = this.getBootType(cfg);
-                        anBuilder = this.getAnnoBuilder(container, bootToken, cfg.annotationBuilder);
+                        anBuilder = this.getAnnoBuilder(container, bootToken, cfg.bootAnnotationBuilder);
                         return [4 /*yield*/, (bootToken ? anBuilder.build(bootToken, cfg, data) : anBuilder.buildByConfig(cfg, data))];
                     case 3:
                         bootInstance = _a.sent();

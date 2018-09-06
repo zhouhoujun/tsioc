@@ -7,7 +7,7 @@ import { IModuleBuilder, ModuleBuilderToken, ModuleEnv } from './IModuleBuilder'
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { MdInstance } from './ModuleType';
 import { ContainerPool, ContainerPoolToken } from '../utils';
-import { InjectRunnerToken, IRunner, Boot, DefaultRunnerToken, Service, IService, InjectServiceToken, DefaultServiceToken, Runnable, Runner } from '../runnable';
+import { InjectRunnerToken, IRunner, DefaultRunnerToken, Service, IService, InjectServiceToken, DefaultServiceToken, Runnable, Runner } from '../runnable';
 import { IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder, DefaultAnnotationBuilderToken, AnnotationBuilderToken, AnnotationBuilder } from '../annotations';
 import { InjectedModule, InjectedModuleToken } from './InjectedModule';
 import { DIModuleInjectorToken } from './DIModuleInjector';
@@ -91,7 +91,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         let container = injmdl.container;
         let md = await this.build(token, injmdl, data) as MdInstance<T>;
         let bootToken = this.getBootType(cfg);
-        let anBuilder = this.getAnnoBuilder(container, bootToken, cfg.annotationBuilder);
+        let anBuilder = this.getAnnoBuilder(container, bootToken, cfg.bootAnnotationBuilder);
         let bootInstance = await (bootToken ? anBuilder.build(bootToken, cfg, data) : anBuilder.buildByConfig(cfg, data));
         let runable;
         if (bootInstance) {
