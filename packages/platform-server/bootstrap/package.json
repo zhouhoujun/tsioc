@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/platform-server/bootstrap",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "esnext": "../es2017/platform-server-bootstrap.js",
   "es2015": "../es2015/platform-server-bootstrap.js",
@@ -30,9 +30,9 @@
     "globby": "^7.1.1"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "^3.2.1",
-    "@ts-ioc/bootstrap": "^3.2.1",
-    "@ts-ioc/platform-server": "^3.2.1"
+    "@ts-ioc/core": "^3.2.2",
+    "@ts-ioc/bootstrap": "^3.2.2",
+    "@ts-ioc/platform-server": "^3.2.2"
   },
   "directories": {
     "lib": "lib",
