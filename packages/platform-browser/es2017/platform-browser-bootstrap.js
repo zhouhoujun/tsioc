@@ -1,11 +1,13 @@
-'use strict';
+(function (global, factory) {
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core'), require('@ts-ioc/bootstrap'), require('@ts-ioc/platform-browser')) :
+	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core', '@ts-ioc/bootstrap', '@ts-ioc/platform-browser'], factory) :
+	(global['platform-browser-bootstrap'] = global['platform-browser-bootstrap'] || {}, global['platform-browser-bootstrap'].js = factory(global.tslib,global['@ts-ioc/core'],global.bootstrap,global.platformBrowser));
+}(this, (function (tslib,core,bootstrap,platformBrowser) { 'use strict';
 
-function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
-
-var tslib = _interopDefault(require('tslib'));
-var core = _interopDefault(require('@ts-ioc/core'));
-var bootstrap = _interopDefault(require('@ts-ioc/bootstrap'));
-var platformBrowser = _interopDefault(require('@ts-ioc/platform-browser'));
+tslib = tslib && tslib.hasOwnProperty('default') ? tslib['default'] : tslib;
+core = core && core.hasOwnProperty('default') ? core['default'] : core;
+bootstrap = bootstrap && bootstrap.hasOwnProperty('default') ? bootstrap['default'] : bootstrap;
+platformBrowser = platformBrowser && platformBrowser.hasOwnProperty('default') ? platformBrowser['default'] : platformBrowser;
 
 function unwrapExports (x) {
 	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
@@ -73,7 +75,9 @@ tslib.__exportStar(ApplicationBuilder_1, exports);
 
 var index = unwrapExports(D__workspace_github_tsioc_packages_platformBrowser_bootstrap_esnext);
 
-module.exports = index;
+return index;
+
+})));
 
 //# sourceMappingURL=sourcemaps/platform-browser-bootstrap.js.map
 

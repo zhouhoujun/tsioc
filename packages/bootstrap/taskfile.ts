@@ -83,7 +83,7 @@ export class BootBuilder extends PackageActivity {
                 (ctx) => {
                     return rollup({
                         name: 'bootstrap.js',
-                        format: 'cjs',
+                        format: 'umd',
                         sourceMap: true,
                         plugins: [
                             resolve(),
@@ -129,7 +129,7 @@ export class BootES2015Builder extends PackageActivity {
                 (ctx) => {
                     return rollup({
                         name: 'bootstrap.js',
-                        format: 'cjs',
+                        format: 'umd',
                         sourceMap: true,
                         plugins: [
                             resolve(),

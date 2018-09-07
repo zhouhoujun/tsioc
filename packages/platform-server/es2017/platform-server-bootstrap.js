@@ -1,13 +1,15 @@
-'use strict';
+(function (global, factory) {
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core'), require('@ts-ioc/bootstrap'), require('fs'), require('path'), require('@ts-ioc/platform-server')) :
+	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core', '@ts-ioc/bootstrap', 'fs', 'path', '@ts-ioc/platform-server'], factory) :
+	(global['platform-server-bootstrap'] = global['platform-server-bootstrap'] || {}, global['platform-server-bootstrap'].js = factory(global.tslib_1,global['@ts-ioc/core'],global.bootstrap_1,global.fs_1,global.path,global.platformServer));
+}(this, (function (tslib_1,core,bootstrap_1,fs_1,path,platformServer) { 'use strict';
 
-function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
-
-var tslib_1 = _interopDefault(require('tslib'));
-var core = _interopDefault(require('@ts-ioc/core'));
-var bootstrap_1 = _interopDefault(require('@ts-ioc/bootstrap'));
-var fs_1 = _interopDefault(require('fs'));
-var path = _interopDefault(require('path'));
-var platformServer = _interopDefault(require('@ts-ioc/platform-server'));
+tslib_1 = tslib_1 && tslib_1.hasOwnProperty('default') ? tslib_1['default'] : tslib_1;
+core = core && core.hasOwnProperty('default') ? core['default'] : core;
+bootstrap_1 = bootstrap_1 && bootstrap_1.hasOwnProperty('default') ? bootstrap_1['default'] : bootstrap_1;
+fs_1 = fs_1 && fs_1.hasOwnProperty('default') ? fs_1['default'] : fs_1;
+path = path && path.hasOwnProperty('default') ? path['default'] : path;
+platformServer = platformServer && platformServer.hasOwnProperty('default') ? platformServer['default'] : platformServer;
 
 function commonjsRequire () {
 	throw new Error('Dynamic requires are not currently supported by rollup-plugin-commonjs');
@@ -146,7 +148,9 @@ tslib_1.__exportStar(ApplicationBuilder_1, exports);
 
 var index = unwrapExports(D__workspace_github_tsioc_packages_platformServer_bootstrap_esnext);
 
-module.exports = index;
+return index;
+
+})));
 
 //# sourceMappingURL=sourcemaps/platform-server-bootstrap.js.map
 

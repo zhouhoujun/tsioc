@@ -1,10 +1,12 @@
-'use strict';
+(function (global, factory) {
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core'), require('reflect-metadata')) :
+	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core', 'reflect-metadata'], factory) :
+	(global.bootstrap = global.bootstrap || {}, global.bootstrap.js = factory(global.tslib_1,global.core_1,global.Reflect));
+}(this, (function (tslib_1,core_1,reflectMetadata) { 'use strict';
 
-function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
-
-var tslib_1 = _interopDefault(require('tslib'));
-var core_1 = _interopDefault(require('@ts-ioc/core'));
-var reflectMetadata = _interopDefault(require('reflect-metadata'));
+tslib_1 = tslib_1 && tslib_1.hasOwnProperty('default') ? tslib_1['default'] : tslib_1;
+core_1 = core_1 && core_1.hasOwnProperty('default') ? core_1['default'] : core_1;
+reflectMetadata = reflectMetadata && reflectMetadata.hasOwnProperty('default') ? reflectMetadata['default'] : reflectMetadata;
 
 function unwrapExports (x) {
 	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
@@ -1738,7 +1740,9 @@ tslib_1.__exportStar(BootModule_1, exports);
 
 var index$6 = unwrapExports(D__workspace_github_tsioc_packages_bootstrap_esnext);
 
-module.exports = index$6;
+return index$6;
+
+})));
 
 //# sourceMappingURL=sourcemaps/bootstrap.js.map
 

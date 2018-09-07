@@ -1,6 +1,6 @@
 
 import { Injectable, getTypeMetadata, hasOwnClassMetadata } from '../core';
-import { Token, Providers } from '../types';
+import { Token } from '../types';
 import { IContainer } from '../IContainer';
 import { isClass, isToken, isArray } from '../utils';
 import { DefaultMetaAccessorToken, IMetaAccessor, IAnnotationMetadata, AnnotationMetaAccessorToken, InjectMetaAccessorToken } from './IMetaAccessor';

@@ -1,9 +1,11 @@
-'use strict';
+(function (global, factory) {
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core')) :
+	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core'], factory) :
+	(global['platform-browser'] = global['platform-browser'] || {}, global['platform-browser'].js = factory(global.tslib_1,global['@ts-ioc/core']));
+}(this, (function (tslib_1,core_1) { 'use strict';
 
-function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
-
-var tslib_1 = _interopDefault(require('tslib'));
-var core_1 = _interopDefault(require('@ts-ioc/core'));
+tslib_1 = tslib_1 && tslib_1.hasOwnProperty('default') ? tslib_1['default'] : tslib_1;
+core_1 = core_1 && core_1.hasOwnProperty('default') ? core_1['default'] : core_1;
 
 function commonjsRequire () {
 	throw new Error('Dynamic requires are not currently supported by rollup-plugin-commonjs');
@@ -97,7 +99,9 @@ tslib_1.__exportStar(ContainerBuilder_1, exports);
 
 var index = unwrapExports(D__workspace_github_tsioc_packages_platformBrowser_esnext);
 
-module.exports = index;
+return index;
+
+})));
 
 //# sourceMappingURL=sourcemaps/platform-browser.js.map
 

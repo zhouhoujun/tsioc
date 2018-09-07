@@ -82,7 +82,7 @@ export class AopBuilder extends PackageActivity {
                 (ctx) => {
                     return rollup({
                         name: 'aop.js',
-                        format: 'cjs',
+                        format: 'umd',
                         sourceMap: true,
                         plugins: [
                             resolve(),
@@ -128,7 +128,7 @@ export class AopES2015Builder extends PackageActivity {
                 (ctx) => {
                     return rollup({
                         name: 'aop.js',
-                        format: 'cjs',
+                        format: 'umd',
                         sourceMap: true,
                         plugins: [
                             resolve(),

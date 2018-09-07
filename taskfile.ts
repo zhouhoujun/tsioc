@@ -63,7 +63,7 @@ let versionSetting = (ctx: IPipeContext) => {
                 if (arg.upioc) {
                     // let packages = act.context.getFolders('packages');
                     // return packages.map(p => p + '/(bundles|lib)/**');
-                    return ['./packages/!(platform-browser)/bundles/**', './packages/!(platform-browser)/lib/**']
+                    return ['./packages/!(platform-browser)/bundles/**', './packages/!(platform-browser)/lib/**', './packages/!(platform-browser)/es2015/**', './packages/!(platform-browser)/es2017/**']
                 }
                 return './packages/empty/**';
             },

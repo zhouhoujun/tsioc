@@ -1,9 +1,11 @@
-'use strict';
+(function (global, factory) {
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('@ts-ioc/core'), require('@ts-ioc/aop')) :
+	typeof define === 'function' && define.amd ? define(['@ts-ioc/core', '@ts-ioc/aop'], factory) :
+	(global.logs = global.logs || {}, global.logs.js = factory(global['@ts-ioc/core'],global['@ts-ioc/aop']));
+}(this, (function (core_1,aop_1) { 'use strict';
 
-function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
-
-var core_1 = _interopDefault(require('@ts-ioc/core'));
-var aop_1 = _interopDefault(require('@ts-ioc/aop'));
+core_1 = core_1 && core_1.hasOwnProperty('default') ? core_1['default'] : core_1;
+aop_1 = aop_1 && aop_1.hasOwnProperty('default') ? aop_1['default'] : aop_1;
 
 var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -764,7 +766,9 @@ __export(LogModule_1);
 
 var index = unwrapExports(D__workspace_github_tsioc_packages_logs_esnext);
 
-module.exports = index;
+return index;
+
+})));
 
 //# sourceMappingURL=sourcemaps/logs.js.map
 

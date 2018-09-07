@@ -79,7 +79,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-
 /**
  * regist aspect action.
  *
@@ -87,31 +86,29 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @class RegistAspectAction
  * @extends {ActionComposite}
  */
-var RegistAspectAction = /** @class */ (function (_super) {
-    tslib_1.__extends(RegistAspectAction, _super);
-    function RegistAspectAction() {
-        return _super.call(this, AopActions_1.AopActions.registAspect) || this;
+class RegistAspectAction extends core_1.ActionComposite {
+    constructor() {
+        super(AopActions_1.AopActions.registAspect);
     }
-    RegistAspectAction.prototype.working = function (container, data) {
-        var type = data.targetType;
-        var lifeScope = container.getLifeScope();
-        var matchs = lifeScope.getClassDecorators(function (surm) { return surm.actions.includes(AopActions_1.AopActions.registAspect) && core_1.hasOwnClassMetadata(surm.name, type); });
-        var aspectMgr = container.get(IAdvisor.AdvisorToken);
-        var raiseContainer = data.raiseContainer || container;
-        matchs.forEach(function (surm) {
-            var metadata = core_1.getOwnTypeMetadata(surm.name, type);
+    working(container, data) {
+        let type = data.targetType;
+        let lifeScope = container.getLifeScope();
+        let matchs = lifeScope.getClassDecorators(surm => surm.actions.includes(AopActions_1.AopActions.registAspect) && core_1.hasOwnClassMetadata(surm.name, type));
+        let aspectMgr = container.get(IAdvisor.AdvisorToken);
+        let raiseContainer = data.raiseContainer || container;
+        matchs.forEach(surm => {
+            let metadata = core_1.getOwnTypeMetadata(surm.name, type);
             if (Array.isArray(metadata) && metadata.length > 0) {
-                metadata.forEach(function (meta) {
+                metadata.forEach(meta => {
                     if (core_1.isClass(meta.type)) {
                         aspectMgr.add(meta.type, raiseContainer);
                     }
                 });
             }
         });
-    };
-    RegistAspectAction.classAnnations = { "name": "RegistAspectAction", "params": { "constructor": [], "working": ["container", "data"] } };
-    return RegistAspectAction;
-}(core_1.ActionComposite));
+    }
+}
+RegistAspectAction.classAnnations = { "name": "RegistAspectAction", "params": { "constructor": [], "working": ["container", "data"] } };
 exports.RegistAspectAction = RegistAspectAction;
 
 
@@ -126,13 +123,13 @@ var Advice = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 function createAdviceDecorator(adviceName, adapter, afterPointcutAdapter, metadataExtends) {
-    return core_1.createMethodDecorator('Advice', function (args) {
+    return core_1.createMethodDecorator('Advice', args => {
         if (adapter) {
             adapter(args);
         }
         args.next({
-            match: function (arg) { return core_1.isString(arg) || core_1.isRegExp(arg); },
-            setMetadata: function (metadata, arg) {
+            match: (arg) => core_1.isString(arg) || core_1.isRegExp(arg),
+            setMetadata: (metadata, arg) => {
                 metadata.pointcut = arg;
             }
         });
@@ -140,18 +137,18 @@ function createAdviceDecorator(adviceName, adapter, afterPointcutAdapter, metada
             afterPointcutAdapter(args);
         }
         args.next({
-            match: function (arg) { return core_1.isString(arg); },
-            setMetadata: function (metadata, arg) {
+            match: (arg) => core_1.isString(arg),
+            setMetadata: (metadata, arg) => {
                 metadata.annotationArgName = arg;
             }
         });
         args.next({
-            match: function (arg) { return core_1.isString(arg); },
-            setMetadata: function (metadata, arg) {
+            match: (arg) => core_1.isString(arg),
+            setMetadata: (metadata, arg) => {
                 metadata.annotationName = arg;
             }
         });
-    }, function (metadata) {
+    }, metadata => {
         if (metadataExtends) {
             metadata = metadataExtends(metadata);
         }
@@ -184,16 +181,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
  *
  * @Aspect
  */
-exports.Aspect = core_1.createClassDecorator('Aspect', function (args) {
+exports.Aspect = core_1.createClassDecorator('Aspect', args => {
     args.next({
-        match: function (arg) { return core_1.isString(arg); },
-        setMetadata: function (metadata, arg) {
+        match: (arg) => core_1.isString(arg),
+        setMetadata: (metadata, arg) => {
             metadata.annotation = arg;
         }
     });
     args.next({
-        match: function (arg) { return core_1.isArray(arg) || core_1.isClass(arg); },
-        setMetadata: function (metadata, arg) {
+        match: (arg) => core_1.isArray(arg) || core_1.isClass(arg),
+        setMetadata: (metadata, arg) => {
             metadata.within = arg;
         }
     });
@@ -234,10 +231,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
  *
  * @AfterReturning
  */
-exports.AfterReturning = Advice.createAdviceDecorator('AfterReturning', null, function (args) {
+exports.AfterReturning = Advice.createAdviceDecorator('AfterReturning', null, args => {
     args.next({
-        match: function (arg) { return core_1.isString(arg); },
-        setMetadata: function (metadata, arg) {
+        match: (arg) => core_1.isString(arg),
+        setMetadata: (metadata, arg) => {
             metadata.returning = arg;
         }
     });
@@ -260,10 +257,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
  *
  * @AfterThrowing
  */
-exports.AfterThrowing = Advice.createAdviceDecorator('AfterThrowing', null, function (args) {
+exports.AfterThrowing = Advice.createAdviceDecorator('AfterThrowing', null, args => {
     args.next({
-        match: function (arg) { return core_1.isString(arg); },
-        setMetadata: function (metadata, arg) {
+        match: (arg) => core_1.isString(arg),
+        setMetadata: (metadata, arg) => {
             metadata.throwing = arg;
         }
     });
@@ -286,22 +283,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
  *
  * @Around
  */
-exports.Around = Advice.createAdviceDecorator('Around', null, function (args) {
+exports.Around = Advice.createAdviceDecorator('Around', null, args => {
     args.next({
-        match: function (arg) { return core_1.isString(arg); },
-        setMetadata: function (metadata, arg) {
+        match: (arg) => core_1.isString(arg),
+        setMetadata: (metadata, arg) => {
             metadata.args = arg;
         }
     });
     args.next({
-        match: function (arg) { return core_1.isString(arg); },
-        setMetadata: function (metadata, arg) {
+        match: (arg) => core_1.isString(arg),
+        setMetadata: (metadata, arg) => {
             metadata.returning = arg;
         }
     });
     args.next({
-        match: function (arg) { return core_1.isString(arg); },
-        setMetadata: function (metadata, arg) {
+        match: (arg) => core_1.isString(arg),
+        setMetadata: (metadata, arg) => {
             metadata.throwing = arg;
         }
     });
@@ -490,8 +487,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @class Joinpoint
  * @implements {IJoinpoint}
  */
-var Joinpoint = /** @class */ (function () {
-    function Joinpoint(options) {
+let Joinpoint = class Joinpoint {
+    constructor(options) {
         this.provJoinpoint = options.provJoinpoint;
         this.name = options.name;
         this.fullName = options.fullName;
@@ -505,14 +502,13 @@ var Joinpoint = /** @class */ (function () {
         this.target = options.target;
         this.targetType = options.targetType;
     }
-    Joinpoint.classAnnations = { "name": "Joinpoint", "params": { "constructor": ["options"] } };
-    Joinpoint = tslib_1.__decorate([
-        core_1.Injectable(IJoinpoint.JoinpointToken),
-        decorators.NonePointcut(),
-        tslib_1.__metadata("design:paramtypes", [Object])
-    ], Joinpoint);
-    return Joinpoint;
-}());
+};
+Joinpoint.classAnnations = { "name": "Joinpoint", "params": { "constructor": ["options"] } };
+Joinpoint = tslib_1.__decorate([
+    core_1.Injectable(IJoinpoint.JoinpointToken),
+    decorators.NonePointcut(),
+    tslib_1.__metadata("design:paramtypes", [Object])
+], Joinpoint);
 exports.Joinpoint = Joinpoint;
 
 
@@ -563,16 +559,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-var AdvisorChainFactory = /** @class */ (function () {
-    function AdvisorChainFactory(container, advisor, advices) {
+let AdvisorChainFactory = class AdvisorChainFactory {
+    constructor(container, advisor, advices) {
         this.container = container;
         this.advisor = advisor;
         this.advices = advices;
     }
-    AdvisorChainFactory.prototype.getAdvicers = function (adviceType) {
+    getAdvicers(adviceType) {
         return (adviceType ? this.advices[adviceType] : null) || [];
-    };
-    AdvisorChainFactory.prototype.invoaction = function (joinPoint, state, valueOrthrowing) {
+    }
+    invoaction(joinPoint, state, valueOrthrowing) {
         joinPoint.state = state;
         joinPoint.returning = undefined;
         joinPoint.throwing = undefined;
@@ -596,96 +592,89 @@ var AdvisorChainFactory = /** @class */ (function () {
                 this.afterReturning(joinPoint);
                 break;
         }
-    };
-    AdvisorChainFactory.prototype.before = function (joinPoint) {
-        var _this = this;
-        var cloneJp = core_1.lang.assign({}, joinPoint);
+    }
+    before(joinPoint) {
+        let cloneJp = core_1.lang.assign({}, joinPoint);
         this.getAdvicers('Around')
-            .forEach(function (advicer) {
-            _this.invokeAdvice(cloneJp, advicer);
+            .forEach(advicer => {
+            this.invokeAdvice(cloneJp, advicer);
         });
         if (!core_1.isUndefined(cloneJp.args)) {
             joinPoint.args = cloneJp.args;
         }
         this.getAdvicers('Before')
-            .forEach(function (advicer) {
-            _this.invokeAdvice(cloneJp, advicer);
+            .forEach(advicer => {
+            this.invokeAdvice(cloneJp, advicer);
         });
-    };
-    AdvisorChainFactory.prototype.pointcut = function (joinPoint) {
-        var _this = this;
-        var cloneJp = core_1.lang.assign({}, joinPoint);
+    }
+    pointcut(joinPoint) {
+        let cloneJp = core_1.lang.assign({}, joinPoint);
         this.getAdvicers('Pointcut')
-            .forEach(function (advicer) {
-            _this.invokeAdvice(cloneJp, advicer);
+            .forEach(advicer => {
+            this.invokeAdvice(cloneJp, advicer);
         });
         if (!core_1.isUndefined(cloneJp.args)) {
             joinPoint.args = cloneJp.args;
         }
-    };
-    AdvisorChainFactory.prototype.after = function (joinPoint) {
-        var _this = this;
-        var cloneJp = core_1.lang.assign({}, joinPoint);
+    }
+    after(joinPoint) {
+        let cloneJp = core_1.lang.assign({}, joinPoint);
         this.getAdvicers('Around')
-            .forEach(function (advicer) {
-            _this.invokeAdvice(cloneJp, advicer);
+            .forEach(advicer => {
+            this.invokeAdvice(cloneJp, advicer);
         });
         this.getAdvicers('After')
-            .forEach(function (advicer) {
-            _this.invokeAdvice(cloneJp, advicer);
+            .forEach(advicer => {
+            this.invokeAdvice(cloneJp, advicer);
         });
-    };
-    AdvisorChainFactory.prototype.afterThrowing = function (joinPoint) {
-        var _this = this;
-        var cloneJp = core_1.lang.assign({}, joinPoint);
+    }
+    afterThrowing(joinPoint) {
+        let cloneJp = core_1.lang.assign({}, joinPoint);
         this.getAdvicers('Around')
-            .forEach(function (advicer) {
-            _this.invokeAdvice(cloneJp, advicer);
+            .forEach(advicer => {
+            this.invokeAdvice(cloneJp, advicer);
         });
         this.getAdvicers('AfterThrowing')
-            .forEach(function (advicer) {
-            _this.invokeAdvice(cloneJp, advicer);
+            .forEach(advicer => {
+            this.invokeAdvice(cloneJp, advicer);
         });
-    };
-    AdvisorChainFactory.prototype.afterReturning = function (joinPoint) {
-        var _this = this;
-        var cloneJp = core_1.lang.assign({}, joinPoint);
-        var advChain = this.container.resolve(IAdvisorChain.AdvisorChainToken, { joinPoint: cloneJp });
+    }
+    afterReturning(joinPoint) {
+        let cloneJp = core_1.lang.assign({}, joinPoint);
+        let advChain = this.container.resolve(IAdvisorChain.AdvisorChainToken, { joinPoint: cloneJp });
         this.getAdvicers('Around')
-            .forEach(function (advicer) {
-            advChain.next(function (jp) {
-                return _this.invokeAdvice(jp, advicer);
+            .forEach(advicer => {
+            advChain.next((jp) => {
+                return this.invokeAdvice(jp, advicer);
             });
         });
         this.getAdvicers('AfterReturning')
-            .forEach(function (advicer) {
-            advChain.next(function (jp) {
-                return _this.invokeAdvice(jp, advicer);
+            .forEach(advicer => {
+            advChain.next(jp => {
+                return this.invokeAdvice(jp, advicer);
             });
         });
-        advChain.next(function (jp) {
+        advChain.next((jp) => {
             if (!core_1.isUndefined(jp.returning)) {
                 joinPoint.returning = jp.returning;
             }
             return joinPoint;
         });
         advChain.process();
-    };
-    AdvisorChainFactory.prototype.invokeAdvice = function (joinPoint, advicer) {
-        var _this = this;
-        var _a;
-        var providers = [];
-        providers.push(core_1.Provider.createExtends(joinpoints.Joinpoint, joinPoint, function (inst, provider) {
-            inst._cache_JoinPoint = provider.resolve(_this.container);
+    }
+    invokeAdvice(joinPoint, advicer) {
+        let providers = [];
+        providers.push(core_1.Provider.createExtends(joinpoints.Joinpoint, joinPoint, (inst, provider) => {
+            inst._cache_JoinPoint = provider.resolve(this.container);
         }));
-        var metadata = advicer.advice;
+        let metadata = advicer.advice;
         if (!core_1.isUndefined(joinPoint.args) && metadata.args) {
             providers.push(core_1.Provider.create(metadata.args, joinPoint.args));
         }
         if (metadata.annotationArgName) {
-            providers.push(core_1.Provider.create(metadata.annotationArgName, function () {
-                var curj = joinPoint;
-                var annotations = curj.annotations;
+            providers.push(core_1.Provider.create(metadata.annotationArgName, () => {
+                let curj = joinPoint;
+                let annotations = curj.annotations;
                 while (!annotations && joinPoint.provJoinpoint) {
                     curj = joinPoint.provJoinpoint;
                     if (curj && curj.annotations) {
@@ -695,9 +684,9 @@ var AdvisorChainFactory = /** @class */ (function () {
                 }
                 if (core_1.isArray(annotations)) {
                     if (metadata.annotationName) {
-                        var d_1 = metadata.annotationName;
-                        d_1 = /^@/.test(d_1) ? d_1 : "@" + d_1;
-                        return annotations.filter(function (a) { return a.decorator === d_1; });
+                        let d = metadata.annotationName;
+                        d = /^@/.test(d) ? d : `@${d}`;
+                        return annotations.filter(a => a.decorator === d);
                     }
                     return annotations;
                 }
@@ -712,17 +701,16 @@ var AdvisorChainFactory = /** @class */ (function () {
         if (!core_1.isUndefined(joinPoint.throwing) && metadata.throwing) {
             providers.push(core_1.Provider.create(metadata.throwing, joinPoint.throwing));
         }
-        return (_a = this.advisor.getContainer(advicer.aspectType, this.container)).syncInvoke.apply(_a, [advicer.aspectType, advicer.advice.propertyKey, null].concat(providers));
-    };
-    AdvisorChainFactory.classAnnations = { "name": "AdvisorChainFactory", "params": { "constructor": ["container", "advisor", "advices"], "getAdvicers": ["adviceType"], "invoaction": ["joinPoint", "state", "valueOrthrowing"], "before": ["joinPoint"], "pointcut": ["joinPoint"], "after": ["joinPoint"], "afterThrowing": ["joinPoint"], "afterReturning": ["joinPoint"], "invokeAdvice": ["joinPoint", "advicer"] } };
-    AdvisorChainFactory = tslib_1.__decorate([
-        decorators.NonePointcut(),
-        core_1.Injectable(IAdvisorChainFactory.AdvisorChainFactoryToken),
-        tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)), tslib_1.__param(1, core_1.Inject(IAdvisor.AdvisorToken)),
-        tslib_1.__metadata("design:paramtypes", [Object, Object, Object])
-    ], AdvisorChainFactory);
-    return AdvisorChainFactory;
-}());
+        return this.advisor.getContainer(advicer.aspectType, this.container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
+    }
+};
+AdvisorChainFactory.classAnnations = { "name": "AdvisorChainFactory", "params": { "constructor": ["container", "advisor", "advices"], "getAdvicers": ["adviceType"], "invoaction": ["joinPoint", "state", "valueOrthrowing"], "before": ["joinPoint"], "pointcut": ["joinPoint"], "after": ["joinPoint"], "afterThrowing": ["joinPoint"], "afterReturning": ["joinPoint"], "invokeAdvice": ["joinPoint", "advicer"] } };
+AdvisorChainFactory = tslib_1.__decorate([
+    decorators.NonePointcut(),
+    core_1.Injectable(IAdvisorChainFactory.AdvisorChainFactoryToken),
+    tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)), tslib_1.__param(1, core_1.Inject(IAdvisor.AdvisorToken)),
+    tslib_1.__metadata("design:paramtypes", [Object, Object, Object])
+], AdvisorChainFactory);
 exports.AdvisorChainFactory = AdvisorChainFactory;
 
 
@@ -758,34 +746,33 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-var AdvisorChain = /** @class */ (function () {
-    function AdvisorChain(joinPoint) {
+let AdvisorChain = class AdvisorChain {
+    constructor(joinPoint) {
         this.joinPoint = joinPoint;
         this.actions = [];
     }
-    AdvisorChain.prototype.next = function (action) {
+    next(action) {
         this.actions.push(action);
-    };
-    AdvisorChain.prototype.getRecognizer = function () {
+    }
+    getRecognizer() {
         return this.container.get(core_1.RecognizerToken, this.joinPoint.state);
-    };
-    AdvisorChain.prototype.process = function () {
-        var _a;
-        var alias = this.getRecognizer().recognize(this.joinPoint.returning);
-        (_a = this.container.get(IAdvisorProceeding.AdvisorProceedingToken, alias)).proceeding.apply(_a, [this.joinPoint].concat(this.actions));
-    };
-    AdvisorChain.classAnnations = { "name": "AdvisorChain", "params": { "constructor": ["joinPoint"], "next": ["action"], "getRecognizer": [], "process": [] } };
-    tslib_1.__decorate([
-        core_1.Inject(core_1.ContainerToken),
-        tslib_1.__metadata("design:type", Object)
-    ], AdvisorChain.prototype, "container", void 0);
-    AdvisorChain = tslib_1.__decorate([
-        decorators.NonePointcut(),
-        core_1.Injectable(IAdvisorChain.AdvisorChainToken),
-        tslib_1.__metadata("design:paramtypes", [joinpoints.Joinpoint])
-    ], AdvisorChain);
-    return AdvisorChain;
-}());
+    }
+    process() {
+        let alias = this.getRecognizer().recognize(this.joinPoint.returning);
+        this.container.get(IAdvisorProceeding.AdvisorProceedingToken, alias)
+            .proceeding(this.joinPoint, ...this.actions);
+    }
+};
+AdvisorChain.classAnnations = { "name": "AdvisorChain", "params": { "constructor": ["joinPoint"], "next": ["action"], "getRecognizer": [], "process": [] } };
+tslib_1.__decorate([
+    core_1.Inject(core_1.ContainerToken),
+    tslib_1.__metadata("design:type", Object)
+], AdvisorChain.prototype, "container", void 0);
+AdvisorChain = tslib_1.__decorate([
+    decorators.NonePointcut(),
+    core_1.Injectable(IAdvisorChain.AdvisorChainToken),
+    tslib_1.__metadata("design:paramtypes", [joinpoints.Joinpoint])
+], AdvisorChain);
 exports.AdvisorChain = AdvisorChain;
 
 
@@ -818,70 +805,57 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-var joinpoints_2 = joinpoints;
+const joinpoints_2 = joinpoints;
 
 
 
 
-var ProxyMethod = /** @class */ (function () {
-    function ProxyMethod(container) {
+let ProxyMethod = class ProxyMethod {
+    constructor(container) {
         this.container = container;
     }
-    Object.defineProperty(ProxyMethod.prototype, "advisor", {
-        get: function () {
-            if (!this._advisor) {
-                this._advisor = this.container.get(IAdvisor.AdvisorToken);
-            }
-            return this._advisor;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(ProxyMethod.prototype, "liefScope", {
-        get: function () {
-            if (!this._liefScope) {
-                this._liefScope = this.container.getLifeScope();
-            }
-            return this._liefScope;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ProxyMethod.prototype.proceed = function (target, targetType, pointcut, provJoinpoint) {
-        var aspectMgr = this.advisor;
-        var fullName = pointcut.fullName;
-        var methodName = pointcut.name;
-        var advices = aspectMgr.getAdvices(fullName);
+    get advisor() {
+        if (!this._advisor) {
+            this._advisor = this.container.get(IAdvisor.AdvisorToken);
+        }
+        return this._advisor;
+    }
+    get liefScope() {
+        if (!this._liefScope) {
+            this._liefScope = this.container.getLifeScope();
+        }
+        return this._liefScope;
+    }
+    proceed(target, targetType, pointcut, provJoinpoint) {
+        let aspectMgr = this.advisor;
+        let fullName = pointcut.fullName;
+        let methodName = pointcut.name;
+        let advices = aspectMgr.getAdvices(fullName);
         if (advices && pointcut) {
             if (pointcut.descriptor && (pointcut.descriptor.get || pointcut.descriptor.set)) {
                 if (pointcut.descriptor.get) {
-                    var getMethod = pointcut.descriptor.get.bind(target);
+                    let getMethod = pointcut.descriptor.get.bind(target);
                     pointcut.descriptor.get = this.proxy(getMethod, advices, target, targetType, pointcut, provJoinpoint);
                 }
                 if (pointcut.descriptor.set) {
-                    var setMethod = pointcut.descriptor.set.bind(target);
+                    let setMethod = pointcut.descriptor.set.bind(target);
                     pointcut.descriptor.set = this.proxy(setMethod, advices, target, targetType, pointcut, provJoinpoint);
                 }
                 Object.defineProperty(target, methodName, pointcut.descriptor);
             }
             else if (core_1.isFunction(target[methodName])) {
-                var propertyMethod = target[methodName].bind(target);
+                let propertyMethod = target[methodName].bind(target);
                 target[methodName] = this.proxy(propertyMethod, advices, target, targetType, pointcut, provJoinpoint);
             }
         }
-    };
-    ProxyMethod.prototype.proxy = function (propertyMethod, advices, target, targetType, pointcut, provJoinpoint) {
-        var _this = this;
-        var fullName = pointcut.fullName;
-        var methodName = pointcut.name;
-        var liefScope = this.liefScope;
-        var container = this.container;
-        return function () {
-            var args = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                args[_i] = arguments[_i];
-            }
-            var joinPoint = _this.container.resolve(joinpoints_2.Joinpoint, core_1.Provider.create('options', {
+    }
+    proxy(propertyMethod, advices, target, targetType, pointcut, provJoinpoint) {
+        let fullName = pointcut.fullName;
+        let methodName = pointcut.name;
+        let liefScope = this.liefScope;
+        let container = this.container;
+        return (...args) => {
+            let joinPoint = this.container.resolve(joinpoints_2.Joinpoint, core_1.Provider.create('options', {
                 name: methodName,
                 fullName: fullName,
                 provJoinpoint: provJoinpoint,
@@ -891,12 +865,12 @@ var ProxyMethod = /** @class */ (function () {
                 target: target,
                 targetType: targetType
             }));
-            var adChain = container.resolve(IAdvisorChainFactory.AdvisorChainFactoryToken, { container: container, advisor: _this.advisor, advices: advices });
+            let adChain = container.resolve(IAdvisorChainFactory.AdvisorChainFactoryToken, { container: container, advisor: this.advisor, advices: advices });
             adChain.invoaction(joinPoint, joinpoints.JoinpointState.Before);
             adChain.invoaction(joinPoint, joinpoints.JoinpointState.Pointcut);
-            var val, exeErr;
+            let val, exeErr;
             try {
-                val = propertyMethod.apply(void 0, joinPoint.args);
+                val = propertyMethod(...joinPoint.args);
             }
             catch (err) {
                 exeErr = err;
@@ -910,16 +884,15 @@ var ProxyMethod = /** @class */ (function () {
                 return joinPoint.returning;
             }
         };
-    };
-    ProxyMethod.classAnnations = { "name": "ProxyMethod", "params": { "constructor": ["container"], "proceed": ["target", "targetType", "pointcut", "provJoinpoint"], "proxy": ["propertyMethod", "advices", "target", "targetType", "pointcut", "provJoinpoint"] } };
-    ProxyMethod = tslib_1.__decorate([
-        decorators.NonePointcut(),
-        core_1.Singleton(IProxyMethod.ProxyMethodToken),
-        tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)),
-        tslib_1.__metadata("design:paramtypes", [Object])
-    ], ProxyMethod);
-    return ProxyMethod;
-}());
+    }
+};
+ProxyMethod.classAnnations = { "name": "ProxyMethod", "params": { "constructor": ["container"], "proceed": ["target", "targetType", "pointcut", "provJoinpoint"], "proxy": ["propertyMethod", "advices", "target", "targetType", "pointcut", "provJoinpoint"] } };
+ProxyMethod = tslib_1.__decorate([
+    decorators.NonePointcut(),
+    core_1.Singleton(IProxyMethod.ProxyMethodToken),
+    tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)),
+    tslib_1.__metadata("design:paramtypes", [Object])
+], ProxyMethod);
 exports.ProxyMethod = ProxyMethod;
 
 
@@ -969,34 +942,29 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-var AsyncPromiseProceeding = /** @class */ (function () {
-    function AsyncPromiseProceeding() {
+let AsyncPromiseProceeding = class AsyncPromiseProceeding {
+    constructor() {
     }
-    AsyncPromiseProceeding.prototype.proceeding = function (joinPoint) {
-        var actions = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            actions[_i - 1] = arguments[_i];
-        }
+    proceeding(joinPoint, ...actions) {
         if (joinPoint.returning) {
-            actions.forEach((function (action) {
-                joinPoint.returning = joinPoint.returning.then(function (val) {
+            actions.forEach((action => {
+                joinPoint.returning = joinPoint.returning.then((val) => {
                     joinPoint.returningValue = val;
                     return Promise.resolve(action(joinPoint))
-                        .then(function () {
+                        .then(() => {
                         return joinPoint.returningValue;
                     });
                 });
             }));
         }
-    };
-    AsyncPromiseProceeding.classAnnations = { "name": "AsyncPromiseProceeding", "params": { "constructor": [], "proceeding": ["joinPoint", "actions"] } };
-    AsyncPromiseProceeding = tslib_1.__decorate([
-        decorators.NonePointcut(),
-        core_1.Singleton(IAdvisorProceeding.AdvisorProceedingToken, ReturningType_1.ReturningType.promise),
-        tslib_1.__metadata("design:paramtypes", [])
-    ], AsyncPromiseProceeding);
-    return AsyncPromiseProceeding;
-}());
+    }
+};
+AsyncPromiseProceeding.classAnnations = { "name": "AsyncPromiseProceeding", "params": { "constructor": [], "proceeding": ["joinPoint", "actions"] } };
+AsyncPromiseProceeding = tslib_1.__decorate([
+    decorators.NonePointcut(),
+    core_1.Singleton(IAdvisorProceeding.AdvisorProceedingToken, ReturningType_1.ReturningType.promise),
+    tslib_1.__metadata("design:paramtypes", [])
+], AsyncPromiseProceeding);
 exports.AsyncPromiseProceeding = AsyncPromiseProceeding;
 
 
@@ -1014,17 +982,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-var AsyncObservableProceeding = /** @class */ (function () {
-    function AsyncObservableProceeding() {
+let AsyncObservableProceeding = class AsyncObservableProceeding {
+    constructor() {
     }
-    AsyncObservableProceeding.prototype.proceeding = function (joinPoint) {
-        var actions = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            actions[_i - 1] = arguments[_i];
-        }
+    proceeding(joinPoint, ...actions) {
         if (core_1.isFunction(joinPoint.returning.flatMap)) {
-            actions.forEach(function (action) {
-                joinPoint.returning = joinPoint.returning.flatMap(function (val) {
+            actions.forEach(action => {
+                joinPoint.returning = joinPoint.returning.flatMap((val) => {
                     joinPoint.returningValue = val;
                     action(joinPoint);
                     if (core_1.isObservable(joinPoint.returningValue)) {
@@ -1040,19 +1004,18 @@ var AsyncObservableProceeding = /** @class */ (function () {
             });
         }
         else {
-            actions.forEach(function (action) {
+            actions.forEach(action => {
                 action(joinPoint);
             });
         }
-    };
-    AsyncObservableProceeding.classAnnations = { "name": "AsyncObservableProceeding", "params": { "constructor": [], "proceeding": ["joinPoint", "actions"] } };
-    AsyncObservableProceeding = tslib_1.__decorate([
-        decorators.NonePointcut(),
-        core_1.Singleton(IAdvisorProceeding.AdvisorProceedingToken, ReturningType_1.ReturningType.observable),
-        tslib_1.__metadata("design:paramtypes", [])
-    ], AsyncObservableProceeding);
-    return AsyncObservableProceeding;
-}());
+    }
+};
+AsyncObservableProceeding.classAnnations = { "name": "AsyncObservableProceeding", "params": { "constructor": [], "proceeding": ["joinPoint", "actions"] } };
+AsyncObservableProceeding = tslib_1.__decorate([
+    decorators.NonePointcut(),
+    core_1.Singleton(IAdvisorProceeding.AdvisorProceedingToken, ReturningType_1.ReturningType.observable),
+    tslib_1.__metadata("design:paramtypes", [])
+], AsyncObservableProceeding);
 exports.AsyncObservableProceeding = AsyncObservableProceeding;
 
 
@@ -1070,10 +1033,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-var ReturningRecognizer = /** @class */ (function () {
-    function ReturningRecognizer() {
+let ReturningRecognizer = class ReturningRecognizer {
+    constructor() {
     }
-    ReturningRecognizer.prototype.recognize = function (value) {
+    recognize(value) {
         if (core_1.isPromise(value)) {
             return ReturningType_1.ReturningType.promise;
         }
@@ -1081,15 +1044,14 @@ var ReturningRecognizer = /** @class */ (function () {
             return ReturningType_1.ReturningType.observable;
         }
         return ReturningType_1.ReturningType.sync;
-    };
-    ReturningRecognizer.classAnnations = { "name": "ReturningRecognizer", "params": { "constructor": [], "recognize": ["value"] } };
-    ReturningRecognizer = tslib_1.__decorate([
-        decorators.NonePointcut(),
-        core_1.Singleton(core_1.RecognizerToken, joinpoints.JoinpointState.AfterReturning),
-        tslib_1.__metadata("design:paramtypes", [])
-    ], ReturningRecognizer);
-    return ReturningRecognizer;
-}());
+    }
+};
+ReturningRecognizer.classAnnations = { "name": "ReturningRecognizer", "params": { "constructor": [], "recognize": ["value"] } };
+ReturningRecognizer = tslib_1.__decorate([
+    decorators.NonePointcut(),
+    core_1.Singleton(core_1.RecognizerToken, joinpoints.JoinpointState.AfterReturning),
+    tslib_1.__metadata("design:paramtypes", [])
+], ReturningRecognizer);
 exports.ReturningRecognizer = ReturningRecognizer;
 
 
@@ -1107,26 +1069,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-var SyncProceeding = /** @class */ (function () {
-    function SyncProceeding() {
-    }
-    SyncProceeding.prototype.proceeding = function (joinPoint) {
-        var actions = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            actions[_i - 1] = arguments[_i];
-        }
+let SyncProceeding = class SyncProceeding {
+    proceeding(joinPoint, ...actions) {
         joinPoint.returningValue = joinPoint.returning;
-        actions.forEach((function (action) {
+        actions.forEach((action => {
             action(joinPoint);
         }));
-    };
-    SyncProceeding.classAnnations = { "name": "SyncProceeding", "params": { "proceeding": ["joinPoint", "actions"] } };
-    SyncProceeding = tslib_1.__decorate([
-        decorators.NonePointcut(),
-        core_1.Singleton(IAdvisorProceeding.AdvisorProceedingToken, ReturningType_1.ReturningType.sync)
-    ], SyncProceeding);
-    return SyncProceeding;
-}());
+    }
+};
+SyncProceeding.classAnnations = { "name": "SyncProceeding", "params": { "proceeding": ["joinPoint", "actions"] } };
+SyncProceeding = tslib_1.__decorate([
+    decorators.NonePointcut(),
+    core_1.Singleton(IAdvisorProceeding.AdvisorProceedingToken, ReturningType_1.ReturningType.sync)
+], SyncProceeding);
 exports.SyncProceeding = SyncProceeding;
 
 
@@ -1166,7 +1121,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-
 /**
  * bind method pointcut action.
  *
@@ -1174,12 +1128,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @class BindMethodPointcutAction
  * @extends {ActionComposite}
  */
-var BindMethodPointcutAction = /** @class */ (function (_super) {
-    tslib_1.__extends(BindMethodPointcutAction, _super);
-    function BindMethodPointcutAction() {
-        return _super.call(this, AopActions_1.AopActions.bindMethodPointcut) || this;
+class BindMethodPointcutAction extends core_1.ActionComposite {
+    constructor() {
+        super(AopActions_1.AopActions.bindMethodPointcut);
     }
-    BindMethodPointcutAction.prototype.working = function (container, data) {
+    working(container, data) {
         // aspect class do nothing.
         if (!data.target || !isValideAspectTarget_1.isValideAspectTarget(data.targetType)) {
             return;
@@ -1187,41 +1140,40 @@ var BindMethodPointcutAction = /** @class */ (function (_super) {
         if (!container.hasRegister(access.ProxyMethodToken.toString())) {
             return;
         }
-        var proxy = container.get(access.ProxyMethodToken);
-        var target = data.target;
-        var targetType = data.targetType;
-        var className = core_1.getClassName(targetType);
-        var methods = [];
-        var decorators = Object.getOwnPropertyDescriptors(targetType.prototype);
-        core_1.lang.forIn(decorators, function (item, name) {
+        let proxy = container.get(access.ProxyMethodToken);
+        let target = data.target;
+        let targetType = data.targetType;
+        let className = core_1.getClassName(targetType);
+        let methods = [];
+        let decorators = Object.getOwnPropertyDescriptors(targetType.prototype);
+        core_1.lang.forIn(decorators, (item, name) => {
             if (name === 'constructor') {
                 return;
             }
             methods.push({
                 name: name,
-                fullName: className + "." + name,
+                fullName: `${className}.${name}`,
                 descriptor: item
             });
         });
-        var allmethods = core_1.getParamerterNames(targetType);
-        core_1.lang.forIn(allmethods, function (item, name) {
+        let allmethods = core_1.getParamerterNames(targetType);
+        core_1.lang.forIn(allmethods, (item, name) => {
             if (name === 'constructor') {
                 return;
             }
             if (core_1.isUndefined(decorators[name])) {
                 methods.push({
                     name: name,
-                    fullName: className + "." + name
+                    fullName: `${className}.${name}`
                 });
             }
         });
-        methods.forEach(function (pointcut) {
+        methods.forEach(pointcut => {
             proxy.proceed(target, targetType, pointcut, target['_cache_JoinPoint']);
         });
-    };
-    BindMethodPointcutAction.classAnnations = { "name": "BindMethodPointcutAction", "params": { "constructor": [], "working": ["container", "data"] } };
-    return BindMethodPointcutAction;
-}(core_1.ActionComposite));
+    }
+}
+BindMethodPointcutAction.classAnnations = { "name": "BindMethodPointcutAction", "params": { "constructor": [], "working": ["container", "data"] } };
 exports.BindMethodPointcutAction = BindMethodPointcutAction;
 
 
@@ -1239,7 +1191,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-
 /**
  * actions invoke before constructor.
  *
@@ -1247,25 +1198,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @class InvokeBeforeConstructorAction
  * @extends {ActionComposite}
  */
-var InvokeBeforeConstructorAction = /** @class */ (function (_super) {
-    tslib_1.__extends(InvokeBeforeConstructorAction, _super);
-    function InvokeBeforeConstructorAction() {
-        return _super.call(this, AopActions_1.AopActions.registAspect) || this;
+class InvokeBeforeConstructorAction extends core_1.ActionComposite {
+    constructor() {
+        super(AopActions_1.AopActions.registAspect);
     }
-    InvokeBeforeConstructorAction.prototype.working = function (container, data) {
+    working(container, data) {
         // aspect class do nothing.
         if (!isValideAspectTarget_1.isValideAspectTarget(data.targetType)) {
             return;
         }
-        var advisor = container.get(IAdvisor.AdvisorToken);
-        var className = core_1.getClassName(data.targetType);
-        var advices = advisor.getAdvices(className + '.constructor');
+        let advisor = container.get(IAdvisor.AdvisorToken);
+        let className = core_1.getClassName(data.targetType);
+        let advices = advisor.getAdvices(className + '.constructor');
         if (!advices) {
             return;
         }
-        var targetType = data.targetType;
-        var target = data.target;
-        var joinPoint = container.resolve(joinpoints.Joinpoint, core_1.Provider.create('options', {
+        let targetType = data.targetType;
+        let target = data.target;
+        let joinPoint = container.resolve(joinpoints.Joinpoint, core_1.Provider.create('options', {
             name: 'constructor',
             state: joinpoints.JoinpointState.Before,
             fullName: className + '.constructor',
@@ -1274,22 +1224,19 @@ var InvokeBeforeConstructorAction = /** @class */ (function (_super) {
             params: data.params,
             targetType: targetType
         }));
-        var providers = [core_1.Provider.create(joinpoints.Joinpoint, joinPoint)];
+        let providers = [core_1.Provider.create(joinpoints.Joinpoint, joinPoint)];
         if (data.providerMap) {
             providers.push(data.providerMap);
         }
-        advices.Before.forEach(function (advicer) {
-            var _a;
-            (_a = advisor.getContainer(advicer.aspectType, container)).syncInvoke.apply(_a, [advicer.aspectType, advicer.advice.propertyKey, null].concat(providers)); // new Joinpoint(joinPoint) // container.resolve(Joinpoint, { json: joinPoint })
+        advices.Before.forEach(advicer => {
+            advisor.getContainer(advicer.aspectType, container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers); // new Joinpoint(joinPoint) // container.resolve(Joinpoint, { json: joinPoint })
         });
-        advices.Around.forEach(function (advicer) {
-            var _a;
-            (_a = advisor.getContainer(advicer.aspectType, container)).syncInvoke.apply(_a, [advicer.aspectType, advicer.advice.propertyKey, null].concat(providers));
+        advices.Around.forEach(advicer => {
+            advisor.getContainer(advicer.aspectType, container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
         });
-    };
-    InvokeBeforeConstructorAction.classAnnations = { "name": "InvokeBeforeConstructorAction", "params": { "constructor": [], "working": ["container", "data"] } };
-    return InvokeBeforeConstructorAction;
-}(core_1.ActionComposite));
+    }
+}
+InvokeBeforeConstructorAction.classAnnations = { "name": "InvokeBeforeConstructorAction", "params": { "constructor": [], "working": ["container", "data"] } };
 exports.InvokeBeforeConstructorAction = InvokeBeforeConstructorAction;
 
 
@@ -1307,7 +1254,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-
 /**
  * invoke after constructor action.
  *
@@ -1315,25 +1261,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @class InvokeAfterConstructorAction
  * @extends {ActionComposite}
  */
-var InvokeAfterConstructorAction = /** @class */ (function (_super) {
-    tslib_1.__extends(InvokeAfterConstructorAction, _super);
-    function InvokeAfterConstructorAction() {
-        return _super.call(this, AopActions_1.AopActions.invokeAfterConstructorAdvices) || this;
+class InvokeAfterConstructorAction extends core_1.ActionComposite {
+    constructor() {
+        super(AopActions_1.AopActions.invokeAfterConstructorAdvices);
     }
-    InvokeAfterConstructorAction.prototype.working = function (container, data) {
+    working(container, data) {
         // aspect class do nothing.
         if (!data.target || !isValideAspectTarget_1.isValideAspectTarget(data.targetType)) {
             return;
         }
-        var advisor = container.get(IAdvisor.AdvisorToken);
-        var className = core_1.getClassName(data.targetType);
-        var advices = advisor.getAdvices(className + '.constructor');
+        let advisor = container.get(IAdvisor.AdvisorToken);
+        let className = core_1.getClassName(data.targetType);
+        let advices = advisor.getAdvices(className + '.constructor');
         if (!advices) {
             return;
         }
-        var targetType = data.targetType;
-        var target = data.target;
-        var joinPoint = container.resolve(joinpoints.Joinpoint, core_1.Provider.create('options', {
+        let targetType = data.targetType;
+        let target = data.target;
+        let joinPoint = container.resolve(joinpoints.Joinpoint, core_1.Provider.create('options', {
             name: 'constructor',
             state: joinpoints.JoinpointState.After,
             fullName: className + '.constructor',
@@ -1342,22 +1287,19 @@ var InvokeAfterConstructorAction = /** @class */ (function (_super) {
             params: data.params,
             targetType: targetType
         }));
-        var providers = [core_1.Provider.create(joinpoints.Joinpoint, joinPoint)];
+        let providers = [core_1.Provider.create(joinpoints.Joinpoint, joinPoint)];
         if (data.providerMap) {
             providers.push(data.providerMap);
         }
-        advices.After.forEach(function (advicer) {
-            var _a;
-            (_a = advisor.getContainer(advicer.aspectType, container)).syncInvoke.apply(_a, [advicer.aspectType, advicer.advice.propertyKey, null].concat(providers));
+        advices.After.forEach(advicer => {
+            advisor.getContainer(advicer.aspectType, container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
         });
-        advices.Around.forEach(function (advicer) {
-            var _a;
-            (_a = advisor.getContainer(advicer.aspectType, container)).syncInvoke.apply(_a, [advicer.aspectType, advicer.advice.propertyKey, null].concat(providers));
+        advices.Around.forEach(advicer => {
+            advisor.getContainer(advicer.aspectType, container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
         });
-    };
-    InvokeAfterConstructorAction.classAnnations = { "name": "InvokeAfterConstructorAction", "params": { "constructor": [], "working": ["container", "data"] } };
-    return InvokeAfterConstructorAction;
-}(core_1.ActionComposite));
+    }
+}
+InvokeAfterConstructorAction.classAnnations = { "name": "InvokeAfterConstructorAction", "params": { "constructor": [], "working": ["container", "data"] } };
 exports.InvokeAfterConstructorAction = InvokeAfterConstructorAction;
 
 
@@ -1392,7 +1334,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 
 
-
 /**
  *  match pointcut action.
  *
@@ -1400,25 +1341,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @class MatchPointcutAction
  * @extends {ActionComposite}
  */
-var MatchPointcutAction = /** @class */ (function (_super) {
-    tslib_1.__extends(MatchPointcutAction, _super);
-    function MatchPointcutAction() {
-        return _super.call(this, AopActions_1.AopActions.matchPointcut) || this;
+class MatchPointcutAction extends core_1.ActionComposite {
+    constructor() {
+        super(AopActions_1.AopActions.matchPointcut);
     }
-    MatchPointcutAction.prototype.working = function (container, data) {
-        var _this = this;
+    working(container, data) {
         // aspect class do nothing.
         if (!isValideAspectTarget_1.isValideAspectTarget(data.targetType)) {
             return;
         }
-        var advisor = container.get(IAdvisor.AdvisorToken);
-        var matcher = container.get(IAdviceMatcher.AdviceMatcherToken);
-        advisor.aspects.forEach(function (adviceMetas, type) {
-            var matchpoints = matcher.match(type, data.targetType, adviceMetas, data.target);
-            matchpoints.forEach(function (mpt) {
-                var fullName = mpt.fullName;
-                var advice = mpt.advice;
-                var advices = advisor.getAdvices(fullName);
+        let advisor = container.get(IAdvisor.AdvisorToken);
+        let matcher = container.get(IAdviceMatcher.AdviceMatcherToken);
+        advisor.aspects.forEach((adviceMetas, type) => {
+            let matchpoints = matcher.match(type, data.targetType, adviceMetas, data.target);
+            matchpoints.forEach(mpt => {
+                let fullName = mpt.fullName;
+                let advice = mpt.advice;
+                let advices = advisor.getAdvices(fullName);
                 if (!advices) {
                     advices = {
                         Before: [],
@@ -1430,43 +1369,43 @@ var MatchPointcutAction = /** @class */ (function (_super) {
                     };
                     advisor.setAdvices(fullName, advices);
                 }
-                var advicer = core_1.lang.assign(mpt, {
+                let advicer = core_1.lang.assign(mpt, {
                     aspectType: type
                 });
                 if (advice.adviceName === 'Before') {
-                    if (!advices.Before.some(function (a) { return _this.isAdviceEquals(a.advice, advice); })) {
+                    if (!advices.Before.some(a => this.isAdviceEquals(a.advice, advice))) {
                         advices.Before.push(advicer);
                     }
                 }
                 else if (advice.adviceName === 'Pointcut') {
-                    if (!advices.Pointcut.some(function (a) { return _this.isAdviceEquals(a.advice, advice); })) {
+                    if (!advices.Pointcut.some(a => this.isAdviceEquals(a.advice, advice))) {
                         advices.Pointcut.push(advicer);
                     }
                 }
                 else if (advice.adviceName === 'Around') {
-                    if (!advices.Around.some(function (a) { return _this.isAdviceEquals(a.advice, advice); })) {
+                    if (!advices.Around.some(a => this.isAdviceEquals(a.advice, advice))) {
                         advices.Around.push(advicer);
                     }
                 }
                 else if (advice.adviceName === 'After') {
-                    if (!advices.After.some(function (a) { return _this.isAdviceEquals(a.advice, advice); })) {
+                    if (!advices.After.some(a => this.isAdviceEquals(a.advice, advice))) {
                         advices.After.push(advicer);
                     }
                 }
                 else if (advice.adviceName === 'AfterThrowing') {
-                    if (!advices.AfterThrowing.some(function (a) { return _this.isAdviceEquals(a.advice, advice); })) {
+                    if (!advices.AfterThrowing.some(a => this.isAdviceEquals(a.advice, advice))) {
                         advices.AfterThrowing.push(advicer);
                     }
                 }
                 else if (advice.adviceName === 'AfterReturning') {
-                    if (!advices.AfterReturning.some(function (a) { return _this.isAdviceEquals(a.advice, advice); })) {
+                    if (!advices.AfterReturning.some(a => this.isAdviceEquals(a.advice, advice))) {
                         advices.AfterReturning.push(advicer);
                     }
                 }
             });
         });
-    };
-    MatchPointcutAction.prototype.isAdviceEquals = function (advice1, advice2) {
+    }
+    isAdviceEquals(advice1, advice2) {
         if (!advice1 || !advice2) {
             return false;
         }
@@ -1476,10 +1415,9 @@ var MatchPointcutAction = /** @class */ (function (_super) {
         return advice1.adviceName === advice2.adviceName
             && advice1.pointcut === advice2.pointcut
             && advice1.propertyKey === advice2.propertyKey;
-    };
-    MatchPointcutAction.classAnnations = { "name": "MatchPointcutAction", "params": { "constructor": [], "working": ["container", "data"], "isAdviceEquals": ["advice1", "advice2"] } };
-    return MatchPointcutAction;
-}(core_1.ActionComposite));
+    }
+}
+MatchPointcutAction.classAnnations = { "name": "MatchPointcutAction", "params": { "constructor": [], "working": ["container", "data"], "isAdviceEquals": ["advice1", "advice2"] } };
 exports.MatchPointcutAction = MatchPointcutAction;
 
 
@@ -1501,11 +1439,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @export
  * @class AopActionFactory
  */
-var AopActionFactory = /** @class */ (function () {
-    function AopActionFactory() {
-    }
-    AopActionFactory.prototype.create = function (type) {
-        var action;
+class AopActionFactory {
+    create(type) {
+        let action;
         switch (type) {
             case AopActions_1.AopActions.registAspect:
                 action = new RegistAspectAction_1.RegistAspectAction();
@@ -1530,10 +1466,9 @@ var AopActionFactory = /** @class */ (function () {
                 break;
         }
         return action;
-    };
-    AopActionFactory.classAnnations = { "name": "AopActionFactory", "params": { "create": ["type"] } };
-    return AopActionFactory;
-}());
+    }
+}
+AopActionFactory.classAnnations = { "name": "AopActionFactory", "params": { "create": ["type"] } };
 exports.AopActionFactory = AopActionFactory;
 
 
@@ -1548,7 +1483,6 @@ var ExetndsInstanceAction_1 = createCommonjsModule(function (module, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 
-
 /**
  * extends instance action.
  *
@@ -1556,25 +1490,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @class ExetndsInstanceAction
  * @extends {ActionComposite}
  */
-var ExetndsInstanceAction = /** @class */ (function (_super) {
-    tslib_1.__extends(ExetndsInstanceAction, _super);
-    function ExetndsInstanceAction() {
-        return _super.call(this, AopActions_1.AopActions.registAspect) || this;
+class ExetndsInstanceAction extends core_1.ActionComposite {
+    constructor() {
+        super(AopActions_1.AopActions.registAspect);
     }
-    ExetndsInstanceAction.prototype.working = function (container, data) {
+    working(container, data) {
         // aspect class do nothing.
         if (!data.target || !data.providers || data.providers.length < 1) {
             return;
         }
-        data.providers.forEach(function (p) {
+        data.providers.forEach(p => {
             if (p && p instanceof core_1.ExtendsProvider) {
                 p.extends(data.target);
             }
         });
-    };
-    ExetndsInstanceAction.classAnnations = { "name": "ExetndsInstanceAction", "params": { "constructor": [], "working": ["container", "data"] } };
-    return ExetndsInstanceAction;
-}(core_1.ActionComposite));
+    }
+}
+ExetndsInstanceAction.classAnnations = { "name": "ExetndsInstanceAction", "params": { "constructor": [], "working": ["container", "data"] } };
 exports.ExetndsInstanceAction = ExetndsInstanceAction;
 
 
@@ -1617,42 +1549,41 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @export
  * @class Advisor
  */
-var Advisor = /** @class */ (function () {
-    function Advisor() {
+let Advisor = class Advisor {
+    constructor() {
         this.aspects = new core_1.MapSet();
         this.aspectIocs = new core_1.MapSet();
         this.advices = new core_1.MapSet();
     }
-    Advisor.prototype.setAdvices = function (key, advices) {
+    setAdvices(key, advices) {
         if (!this.advices.has(key)) {
             this.advices.set(key, advices);
         }
-    };
-    Advisor.prototype.getAdvices = function (key) {
+    }
+    getAdvices(key) {
         if (!this.advices.has(key)) {
             return null;
         }
         return this.advices.get(key);
-    };
-    Advisor.prototype.hasRegisterAdvices = function (targetType) {
-        var _this = this;
-        var methods = core_1.lang.keys(Object.getOwnPropertyDescriptors(targetType.prototype));
-        var className = core_1.getClassName(targetType);
-        return methods.some(function (m) { return _this.advices.has(className + "." + m); });
-    };
-    Advisor.prototype.add = function (aspect, raiseContainer) {
+    }
+    hasRegisterAdvices(targetType) {
+        let methods = core_1.lang.keys(Object.getOwnPropertyDescriptors(targetType.prototype));
+        let className = core_1.getClassName(targetType);
+        return methods.some(m => this.advices.has(`${className}.${m}`));
+    }
+    add(aspect, raiseContainer) {
         if (!this.aspects.has(aspect)) {
-            var metas = core_1.getOwnMethodMetadata(decorators.Advice, aspect);
+            let metas = core_1.getOwnMethodMetadata(decorators.Advice, aspect);
             this.aspects.set(aspect, metas);
             this.aspectIocs.set(aspect, raiseContainer);
         }
-    };
-    Advisor.prototype.getContainer = function (aspect, defaultContainer) {
+    }
+    getContainer(aspect, defaultContainer) {
         if (this.aspectIocs.has(aspect)) {
             return this.aspectIocs.get(aspect) || defaultContainer;
         }
         return defaultContainer;
-    };
+    }
     /**
      * resolve aspect.
      *
@@ -1662,25 +1593,19 @@ var Advisor = /** @class */ (function () {
      * @returns {T}
      * @memberof Advisor
      */
-    Advisor.prototype.resolve = function (aspect) {
-        var providers = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            providers[_i - 1] = arguments[_i];
-        }
-        var _a;
+    resolve(aspect, ...providers) {
         if (this.aspectIocs.has(aspect)) {
-            return (_a = this.aspectIocs.get(aspect)).resolve.apply(_a, [aspect].concat(providers));
+            return this.aspectIocs.get(aspect).resolve(aspect, ...providers);
         }
         return null;
-    };
-    Advisor.classAnnations = { "name": "Advisor", "params": { "constructor": [], "setAdvices": ["key", "advices"], "getAdvices": ["key"], "hasRegisterAdvices": ["targetType"], "add": ["aspect", "raiseContainer"], "getContainer": ["aspect", "defaultContainer"], "resolve": ["aspect", "providers"] } };
-    Advisor = tslib_1.__decorate([
-        decorators.NonePointcut(),
-        core_1.Singleton(IAdvisor.AdvisorToken),
-        tslib_1.__metadata("design:paramtypes", [])
-    ], Advisor);
-    return Advisor;
-}());
+    }
+};
+Advisor.classAnnations = { "name": "Advisor", "params": { "constructor": [], "setAdvices": ["key", "advices"], "getAdvices": ["key"], "hasRegisterAdvices": ["targetType"], "add": ["aspect", "raiseContainer"], "getContainer": ["aspect", "defaultContainer"], "resolve": ["aspect", "providers"] } };
+Advisor = tslib_1.__decorate([
+    decorators.NonePointcut(),
+    core_1.Singleton(IAdvisor.AdvisorToken),
+    tslib_1.__metadata("design:paramtypes", [])
+], Advisor);
 exports.Advisor = Advisor;
 
 
@@ -1704,46 +1629,45 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @class AdviceMatcher
  * @implements {IAdviceMatcher}
  */
-var AdviceMatcher = /** @class */ (function () {
-    function AdviceMatcher(container) {
+let AdviceMatcher = class AdviceMatcher {
+    constructor(container) {
         this.container = container;
     }
-    AdviceMatcher.prototype.match = function (aspectType, targetType, adviceMetas, target) {
-        var _this = this;
-        var aspectMeta = core_1.lang.first(core_1.getOwnTypeMetadata(decorators.Aspect, aspectType));
+    match(aspectType, targetType, adviceMetas, target) {
+        let aspectMeta = core_1.lang.first(core_1.getOwnTypeMetadata(decorators.Aspect, aspectType));
         if (aspectMeta) {
             if (aspectMeta.within) {
-                var ins = core_1.isArray(aspectMeta.within) ? aspectMeta.within : [aspectMeta.within];
+                let ins = core_1.isArray(aspectMeta.within) ? aspectMeta.within : [aspectMeta.within];
                 if (ins.indexOf(targetType) < 0) {
                     return [];
                 }
             }
             if (aspectMeta.annotation) {
-                var annotation = core_1.isFunction(aspectMeta.annotation) ? aspectMeta.annotation.toString() : aspectMeta.annotation;
-                var anno = (/^\^?@\w+/.test(annotation) ? '' : '@') + annotation;
+                let annotation = core_1.isFunction(aspectMeta.annotation) ? aspectMeta.annotation.toString() : aspectMeta.annotation;
+                let anno = (/^\^?@\w+/.test(annotation) ? '' : '@') + annotation;
                 if (!core_1.hasOwnClassMetadata(anno, targetType)) {
                     return [];
                 }
             }
         }
-        var className = core_1.getClassName(targetType);
+        let className = core_1.getClassName(targetType);
         adviceMetas = adviceMetas || core_1.getOwnMethodMetadata(decorators.Advice, targetType);
         // let advisor = this.container.get(AdvisorToken);
-        var matched = [];
+        let matched = [];
         if (targetType === aspectType) {
-            var adviceNames = core_1.lang.keys(adviceMetas);
+            let adviceNames = core_1.lang.keys(adviceMetas);
             if (adviceNames.length > 1) {
-                var advices_1 = [];
-                adviceNames.forEach(function (n) {
-                    advices_1 = advices_1.concat(adviceMetas[n]);
+                let advices = [];
+                adviceNames.forEach(n => {
+                    advices = advices.concat(adviceMetas[n]);
                 });
-                adviceNames.forEach(function (n) {
-                    advices_1.forEach(function (adv) {
+                adviceNames.forEach(n => {
+                    advices.forEach(adv => {
                         if (adv.propertyKey !== n) {
-                            if (_this.matchAspectSelf(n, adv)) {
+                            if (this.matchAspectSelf(n, adv)) {
                                 matched.push({
                                     name: n,
-                                    fullName: className + "." + n,
+                                    fullName: `${className}.${n}`,
                                     advice: adv
                                 });
                             }
@@ -1753,39 +1677,39 @@ var AdviceMatcher = /** @class */ (function () {
             }
         }
         else { // if (!advisor.hasRegisterAdvices(targetType)) {
-            var points_1 = [];
-            var decorators_2 = Object.getOwnPropertyDescriptors(targetType.prototype);
+            let points = [];
+            let decorators$$2 = Object.getOwnPropertyDescriptors(targetType.prototype);
             // match method.
-            for (var name_1 in decorators_2) {
-                points_1.push({
-                    name: name_1,
-                    fullName: className + "." + name_1
+            for (let name in decorators$$2) {
+                points.push({
+                    name: name,
+                    fullName: `${className}.${name}`
                 });
             }
-            var allmethods = core_1.getParamerterNames(targetType);
-            core_1.lang.forIn(allmethods, function (item, name) {
+            let allmethods = core_1.getParamerterNames(targetType);
+            core_1.lang.forIn(allmethods, (item, name) => {
                 if (name === 'constructor') {
                     return;
                 }
-                if (core_1.isUndefined(decorators_2[name])) {
-                    points_1.push({
+                if (core_1.isUndefined(decorators$$2[name])) {
+                    points.push({
                         name: name,
-                        fullName: className + "." + name
+                        fullName: `${className}.${name}`
                     });
                 }
             });
-            Object.getOwnPropertyNames(adviceMetas).forEach(function (name) {
-                var advices = adviceMetas[name];
-                advices.forEach(function (metadata) {
-                    matched = matched.concat(_this.filterPointcut(targetType, points_1, metadata));
+            Object.getOwnPropertyNames(adviceMetas).forEach(name => {
+                let advices = adviceMetas[name];
+                advices.forEach(metadata => {
+                    matched = matched.concat(this.filterPointcut(targetType, points, metadata));
                 });
             });
         }
         return matched;
-    };
-    AdviceMatcher.prototype.matchAspectSelf = function (name, metadata) {
+    }
+    matchAspectSelf(name, metadata) {
         if (metadata.pointcut) {
-            var pointcut = metadata.pointcut;
+            let pointcut = metadata.pointcut;
             if (core_1.isString(pointcut)) {
                 if (/^execution\(\S+\)$/.test(pointcut)) {
                     pointcut = pointcut.substring(10, pointcut.length - 1);
@@ -1797,26 +1721,26 @@ var AdviceMatcher = /** @class */ (function () {
             }
         }
         return false;
-    };
-    AdviceMatcher.prototype.filterPointcut = function (type, points, metadata, target) {
+    }
+    filterPointcut(type, points, metadata, target) {
         if (!metadata.pointcut) {
             return [];
         }
-        var matchedPointcut;
+        let matchedPointcut;
         if (metadata.pointcut) {
-            var match_1 = this.matchTypeFactory(type, metadata);
-            matchedPointcut = points.filter(function (p) { return match_1(p.name, p.fullName, type, target, p); });
+            let match = this.matchTypeFactory(type, metadata);
+            matchedPointcut = points.filter(p => match(p.name, p.fullName, type, target, p));
         }
         matchedPointcut = matchedPointcut || [];
-        return matchedPointcut.map(function (p) {
+        return matchedPointcut.map(p => {
             return core_1.lang.assign({}, p, { advice: metadata });
         });
-    };
-    AdviceMatcher.prototype.matchTypeFactory = function (type, metadata) {
-        var pointcut = metadata.pointcut;
-        var expresses = [];
+    }
+    matchTypeFactory(type, metadata) {
+        let pointcut = metadata.pointcut;
+        let expresses = [];
         if (metadata.within) {
-            expresses.push(function (method, fullName, targetType) {
+            expresses.push((method, fullName, targetType) => {
                 if (core_1.isArray(metadata.within)) {
                     return metadata.within.indexOf(targetType) >= 0;
                 }
@@ -1827,36 +1751,36 @@ var AdviceMatcher = /** @class */ (function () {
             expresses.push('&&');
         }
         if (metadata.target) {
-            expresses.push(function (method, fullName, targetType, target) {
+            expresses.push((method, fullName, targetType, target) => {
                 return metadata.target = target;
             });
             expresses.push('&&');
         }
         if (metadata.annotation) {
-            expresses.push(function (method, fullName, targetType, target) {
+            expresses.push((method, fullName, targetType, target) => {
                 return core_1.hasOwnMethodMetadata(metadata.annotation, targetType, method);
             });
             expresses.push('&&');
         }
         if (core_1.isString(pointcut)) {
-            var pointcuts = (pointcut || '').trim();
+            let pointcuts = (pointcut || '').trim();
             expresses.push(this.tranlateExpress(type, pointcuts));
         }
         else if (core_1.isRegExp(pointcut)) {
-            var pointcutReg_1 = pointcut;
-            if (/^\^?@\w+/.test(pointcutReg_1.source)) {
-                expresses.push(function (name, fullName, targetType) {
-                    var decName = Reflect.getMetadataKeys(type, name);
-                    return decName.some(function (n) { return core_1.isString(n) && pointcutReg_1.test(n); });
+            let pointcutReg = pointcut;
+            if (/^\^?@\w+/.test(pointcutReg.source)) {
+                expresses.push((name, fullName, targetType) => {
+                    let decName = Reflect.getMetadataKeys(type, name);
+                    return decName.some(n => core_1.isString(n) && pointcutReg.test(n));
                 });
             }
             else {
-                expresses.push(function (name, fullName) { return pointcutReg_1.test(fullName); });
+                expresses.push((name, fullName) => pointcutReg.test(fullName));
             }
         }
-        return this.mergeExpress.apply(this, expresses);
-    };
-    AdviceMatcher.prototype.spiltBrace = function (strExp) {
+        return this.mergeExpress(...expresses);
+    }
+    spiltBrace(strExp) {
         strExp = strExp.trim();
         if (/^\(/.test(strExp) && /\)$/.test(strExp)) {
             strExp = strExp.substring(1, strExp.length - 1).trim();
@@ -1867,93 +1791,88 @@ var AdviceMatcher = /** @class */ (function () {
         else {
             return strExp;
         }
-    };
-    AdviceMatcher.prototype.expressToFunc = function (type, strExp) {
-        var _this = this;
+    }
+    expressToFunc(type, strExp) {
         if (/^@annotation\(.*\)$/.test(strExp)) {
-            var exp = strExp.substring(12, strExp.length - 1);
-            var annotation_1 = /^@/.test(exp) ? exp : ('@' + exp);
-            return function (name, fullName) { return core_1.hasOwnMethodMetadata(annotation_1, type, name) && !core_1.hasOwnClassMetadata(decorators.Aspect, type); };
+            let exp = strExp.substring(12, strExp.length - 1);
+            let annotation = /^@/.test(exp) ? exp : ('@' + exp);
+            return (name, fullName) => core_1.hasOwnMethodMetadata(annotation, type, name) && !core_1.hasOwnClassMetadata(decorators.Aspect, type);
         }
         else if (/^execution\(.*\)$/.test(strExp)) {
-            var exp = strExp.substring(10, strExp.length - 1);
+            let exp = strExp.substring(10, strExp.length - 1);
             if (exp === '*' || exp === '*.*') {
-                return function (name, fullName) { return !!name && !core_1.hasOwnClassMetadata(decorators.Aspect, type); };
+                return (name, fullName) => !!name && !core_1.hasOwnClassMetadata(decorators.Aspect, type);
             }
             else if (/^\w+(\((\s*\w+\s*,)*\s*\w*\))?$/.test(exp)) {
                 // if is method name, will match aspect self only.
-                return function () { return false; };
+                return () => false;
             }
             else if (/^([\w\*]+\.)+[\w\*]+(\((\s*\w+\s*,)*\s*\w*\))?$/.test(exp)) {
                 exp = exp.replace(/\*\*/gi, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
                     .replace(/\*/gi, '\\\w+')
                     .replace(/\./gi, '\\\.')
                     .replace(/\//gi, '\\\/');
-                var matcher_1 = new RegExp(exp + "$");
-                return function (name, fullName) { return matcher_1.test(fullName); };
+                let matcher = new RegExp(exp + "$");
+                return (name, fullName) => matcher.test(fullName);
             }
             else {
-                return function () { return false; };
+                return () => false;
             }
         }
         else if (/^@within\(\s*\w+/.test(strExp)) {
-            var classnames_1 = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).split(',').map(function (n) { return n.trim(); });
-            return function (name, fullName, targetType) { return classnames_1.indexOf(core_1.getClassName(targetType)) >= 0; };
+            let classnames = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).split(',').map(n => n.trim());
+            return (name, fullName, targetType) => classnames.indexOf(core_1.getClassName(targetType)) >= 0;
         }
         else if (/^@target\(\s*\w+/.test(strExp)) {
-            var torken_1 = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
-            return function (name, fullName, targetType) { return _this.container.getTokenImpl(torken_1) === targetType; };
+            let torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
+            return (name, fullName, targetType) => this.container.getTokenImpl(torken) === targetType;
         }
         else {
-            return function () { return false; };
+            return () => false;
         }
-    };
-    AdviceMatcher.prototype.tranlateExpress = function (type, strExp) {
-        var expresses = [];
-        var idxOr = strExp.indexOf('||');
-        var idxAd = strExp.indexOf('&&');
+    }
+    tranlateExpress(type, strExp) {
+        let expresses = [];
+        let idxOr = strExp.indexOf('||');
+        let idxAd = strExp.indexOf('&&');
         if (idxAd < 0 && idxOr < 0) {
             expresses.push(this.expressToFunc(type, this.spiltBrace(strExp)));
         }
         else {
             if (idxOr > idxAd) {
-                var leftExp = this.spiltBrace(strExp.substring(0, idxOr));
+                let leftExp = this.spiltBrace(strExp.substring(0, idxOr));
                 if (leftExp) {
                     expresses.push(this.tranlateExpress(type, leftExp));
                 }
-                var rightExp = this.spiltBrace(strExp.substring(idxOr + 2));
+                let rightExp = this.spiltBrace(strExp.substring(idxOr + 2));
                 if (rightExp) {
                     expresses.push('||');
                     expresses.push(this.tranlateExpress(type, rightExp));
                 }
             }
             else if (idxAd > idxOr) {
-                var leftExp = this.spiltBrace(strExp.substring(0, idxAd));
+                let leftExp = this.spiltBrace(strExp.substring(0, idxAd));
                 if (leftExp) {
                     expresses.push(this.tranlateExpress(type, leftExp));
                 }
-                var rightExp = this.spiltBrace(strExp.substring(idxAd + 2));
+                let rightExp = this.spiltBrace(strExp.substring(idxAd + 2));
                 if (rightExp) {
                     expresses.push('&&');
                     expresses.push(this.tranlateExpress(type, rightExp));
                 }
             }
         }
-        return this.mergeExpress.apply(this, expresses);
-    };
-    AdviceMatcher.prototype.mergeExpress = function () {
-        var expresses = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            expresses[_i] = arguments[_i];
-        }
-        return function (method, fullName, targetType, pointcut) {
-            var flag;
-            expresses.forEach(function (express, idx) {
+        return this.mergeExpress(...expresses);
+    }
+    mergeExpress(...expresses) {
+        return (method, fullName, targetType, pointcut) => {
+            let flag;
+            expresses.forEach((express, idx) => {
                 if (!core_1.isUndefined(flag)) {
                     return;
                 }
                 if (core_1.isFunction(express)) {
-                    var rel = express(method, fullName, targetType, pointcut);
+                    let rel = express(method, fullName, targetType, pointcut);
                     if (idx < expresses.length - 2) {
                         if (!rel && express[idx + 1] === '&&') {
                             flag = false;
@@ -1969,16 +1888,15 @@ var AdviceMatcher = /** @class */ (function () {
             });
             return flag;
         };
-    };
-    AdviceMatcher.classAnnations = { "name": "AdviceMatcher", "params": { "constructor": ["container"], "match": ["aspectType", "targetType", "adviceMetas", "target"], "matchAspectSelf": ["name", "metadata"], "filterPointcut": ["type", "points", "metadata", "target"], "matchTypeFactory": ["type", "metadata"], "spiltBrace": ["strExp"], "expressToFunc": ["type", "strExp"], "tranlateExpress": ["type", "strExp"], "mergeExpress": ["expresses"] } };
-    AdviceMatcher = tslib_1.__decorate([
-        decorators.NonePointcut(),
-        core_1.Singleton(IAdviceMatcher.AdviceMatcherToken),
-        tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)),
-        tslib_1.__metadata("design:paramtypes", [Object])
-    ], AdviceMatcher);
-    return AdviceMatcher;
-}());
+    }
+};
+AdviceMatcher.classAnnations = { "name": "AdviceMatcher", "params": { "constructor": ["container"], "match": ["aspectType", "targetType", "adviceMetas", "target"], "matchAspectSelf": ["name", "metadata"], "filterPointcut": ["type", "points", "metadata", "target"], "matchTypeFactory": ["type", "metadata"], "spiltBrace": ["strExp"], "expressToFunc": ["type", "strExp"], "tranlateExpress": ["type", "strExp"], "mergeExpress": ["expresses"] } };
+AdviceMatcher = tslib_1.__decorate([
+    decorators.NonePointcut(),
+    core_1.Singleton(IAdviceMatcher.AdviceMatcherToken),
+    tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)),
+    tslib_1.__metadata("design:paramtypes", [Object])
+], AdviceMatcher);
 exports.AdviceMatcher = AdviceMatcher;
 
 
@@ -2006,8 +1924,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @export
  * @class AopModule
  */
-var AopModule = /** @class */ (function () {
-    function AopModule(container) {
+let AopModule = class AopModule {
+    constructor(container) {
         this.container = container;
     }
     /**
@@ -2015,8 +1933,8 @@ var AopModule = /** @class */ (function () {
      *
      * @memberof AopModule
      */
-    AopModule.prototype.setup = function () {
-        var container = this.container;
+    setup() {
+        let container = this.container;
         container.register(joinpoints.Joinpoint);
         container.register(access.AdvisorChainFactory);
         container.register(access.ReturningRecognizer);
@@ -2027,8 +1945,8 @@ var AopModule = /** @class */ (function () {
         container.register(access.ProxyMethod);
         container.register(Advisor_1.Advisor);
         container.register(AdviceMatcher_1.AdviceMatcher);
-        var lifeScope = container.get(core_1.LifeScopeToken);
-        var factory = new AopActionFactory_1.AopActionFactory();
+        let lifeScope = container.get(core_1.LifeScopeToken);
+        let factory = new AopActionFactory_1.AopActionFactory();
         lifeScope.addAction(factory.create(actions.AopActions.registAspect), core_1.IocState.design);
         lifeScope.addAction(factory.create(actions.AopActions.matchPointcut), core_1.IocState.runtime, core_1.LifeState.beforeConstructor);
         lifeScope.addAction(factory.create(actions.AopActions.bindMethodPointcut), core_1.IocState.runtime, core_1.LifeState.AfterInit);
@@ -2036,15 +1954,14 @@ var AopModule = /** @class */ (function () {
         lifeScope.addAction(factory.create(actions.AopActions.exetndsInstance), core_1.IocState.runtime, core_1.LifeState.onInit, core_1.LifeState.afterConstructor);
         lifeScope.addAction(factory.create(actions.AopActions.invokeAfterConstructorAdvices), core_1.IocState.runtime, core_1.LifeState.afterConstructor);
         lifeScope.registerDecorator(decorators.Aspect, actions.AopActions.registAspect, actions.AopActions.exetndsInstance);
-    };
-    AopModule.classAnnations = { "name": "AopModule", "params": { "constructor": ["container"], "setup": [] } };
-    AopModule = tslib_1.__decorate([
-        core_1.IocExt('setup'),
-        tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)),
-        tslib_1.__metadata("design:paramtypes", [Object])
-    ], AopModule);
-    return AopModule;
-}());
+    }
+};
+AopModule.classAnnations = { "name": "AopModule", "params": { "constructor": ["container"], "setup": [] } };
+AopModule = tslib_1.__decorate([
+    core_1.IocExt('setup'),
+    tslib_1.__param(0, core_1.Inject(core_1.ContainerToken)),
+    tslib_1.__metadata("design:paramtypes", [Object])
+], AopModule);
 exports.AopModule = AopModule;
 
 

@@ -88,7 +88,7 @@ export class LogsBuilder extends PackageActivity {
                 (ctx) => {
                     return rollup({
                         name: 'logs.js',
-                        format: 'cjs',
+                        format: 'umd',
                         sourceMap: true,
                         plugins: [
                             resolve(),
@@ -136,7 +136,7 @@ export class LogsES2015Builder extends PackageActivity {
                 (ctx) => {
                     return rollup({
                         name: 'logs.js',
-                        format: 'cjs',
+                        format: 'umd',
                         sourceMap: true,
                         plugins: [
                             resolve(),

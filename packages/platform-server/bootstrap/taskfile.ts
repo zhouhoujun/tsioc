@@ -36,7 +36,7 @@ export class PfServerBootBuilder extends PackageActivity {
                 (ctx) => {
                     return rollup({
                         name: 'platform-server-bootstrap.js',
-                        format: 'cjs',
+                        format: 'umd',
                         sourceMap: true,
                         plugins: [
                             resolve(),
@@ -90,7 +90,7 @@ export class PfServerBootES2015Builder extends PackageActivity {
                 (ctx) => {
                     return rollup({
                         name: 'platform-server-bootstrap.js',
-                        format: 'cjs',
+                        format: 'umd',
                         sourceMap: true,
                         plugins: [
                             resolve(),

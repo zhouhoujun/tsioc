@@ -1,9 +1,11 @@
-'use strict';
+(function (global, factory) {
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('reflect-metadata')) :
+	typeof define === 'function' && define.amd ? define(['tslib', 'reflect-metadata'], factory) :
+	(global.core = global.core || {}, global.core.js = factory(global.tslib_1,global.Reflect));
+}(this, (function (tslib_1,reflectMetadata) { 'use strict';
 
-function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
-
-var tslib_1 = _interopDefault(require('tslib'));
-var reflectMetadata = _interopDefault(require('reflect-metadata'));
+tslib_1 = tslib_1 && tslib_1.hasOwnProperty('default') ? tslib_1['default'] : tslib_1;
+reflectMetadata = reflectMetadata && reflectMetadata.hasOwnProperty('default') ? reflectMetadata['default'] : reflectMetadata;
 
 function commonjsRequire () {
 	throw new Error('Dynamic requires are not currently supported by rollup-plugin-commonjs');
@@ -6257,7 +6259,9 @@ tslib_1.__exportStar(resolves, exports);
 
 var index$9 = unwrapExports(D__workspace_github_tsioc_packages_core_esnext);
 
-module.exports = index$9;
+return index$9;
+
+})));
 
 //# sourceMappingURL=sourcemaps/core.js.map
 

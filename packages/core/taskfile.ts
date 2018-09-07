@@ -79,7 +79,7 @@ export class CoreBuilder extends PackageActivity {
                 (ctx) => {
                     return rollup({
                         name: 'core.js',
-                        format: 'cjs',
+                        format: 'umd',
                         sourceMap: true,
                         plugins: [
                             resolve(),
@@ -125,7 +125,7 @@ export class CoreES2015Builder extends PackageActivity {
                 (ctx) => {
                     return rollup({
                         name: 'core.js',
-                        format: 'cjs',
+                        format: 'umd',
                         sourceMap: true,
                         plugins: [
                             resolve(),

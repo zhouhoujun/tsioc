@@ -1,11 +1,13 @@
-'use strict';
+(function (global, factory) {
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('tslib'), require('@ts-ioc/core'), require('path'), require('globby')) :
+	typeof define === 'function' && define.amd ? define(['tslib', '@ts-ioc/core', 'path', 'globby'], factory) :
+	(global['platform-server'] = global['platform-server'] || {}, global['platform-server'].js = factory(global.tslib_1,global['@ts-ioc/core'],global.path,global.globby));
+}(this, (function (tslib_1,core_1,path,globby) { 'use strict';
 
-function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
-
-var tslib_1 = _interopDefault(require('tslib'));
-var core_1 = _interopDefault(require('@ts-ioc/core'));
-var path = _interopDefault(require('path'));
-var globby = _interopDefault(require('globby'));
+tslib_1 = tslib_1 && tslib_1.hasOwnProperty('default') ? tslib_1['default'] : tslib_1;
+core_1 = core_1 && core_1.hasOwnProperty('default') ? core_1['default'] : core_1;
+path = path && path.hasOwnProperty('default') ? path['default'] : path;
+globby = globby && globby.hasOwnProperty('default') ? globby['default'] : globby;
 
 function commonjsRequire () {
 	throw new Error('Dynamic requires are not currently supported by rollup-plugin-commonjs');
@@ -152,7 +154,9 @@ tslib_1.__exportStar(toAbsolute, exports);
 
 var index = unwrapExports(D__workspace_github_tsioc_packages_platformServer_esnext);
 
-module.exports = index;
+return index;
+
+})));
 
 //# sourceMappingURL=sourcemaps/platform-server.js.map
 

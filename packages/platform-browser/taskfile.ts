@@ -92,7 +92,7 @@ export class PfBrowserBuilder extends PackageActivity {
                 (ctx) => {
                     return rollup({
                         name: 'platform-browser.js',
-                        format: 'cjs',
+                        format: 'umd',
                         sourceMap: true,
                         plugins: [
                             resolve(),
@@ -140,7 +140,7 @@ export class PfBrowserES2015Builder extends PackageActivity {
                 (ctx) => {
                     return rollup({
                         name: 'platform-browser.js',
-                        format: 'cjs',
+                        format: 'umd',
                         sourceMap: true,
                         plugins: [
                             resolve(),

@@ -3,6 +3,9 @@
 esnext
 node_modules
 lib
+bundles
+es2015
+es2017
 build
 package-lock.json
 
