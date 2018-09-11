@@ -400,5 +400,5 @@ export function isRegExp(target: any): target is RegExp {
  * @returns {boolean}
  */
 export function isBaseType(target: any): boolean {
-    return isNull(target) || isUndefined(target) || isBoolean(target) || isString(target) || isNumber(target);
+    return isNull(target) || isUndefined(target) || isBoolean(target) || isString(target) || isNumber(target) || isDate(target);
 }
