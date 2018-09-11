@@ -337,6 +337,17 @@ export function isNull(target: any): target is null {
 }
 
 /**
+ * is target null or undefined.
+ *
+ * @export
+ * @param {*} target
+ * @returns {boolean}
+ */
+export function isNullOrUndefined(target): boolean {
+    return isNull(target) || isUndefined(target);
+}
+
+/**
  * check target is array or not.
  *
  * @export
@@ -400,5 +411,5 @@ export function isRegExp(target: any): target is RegExp {
  * @returns {boolean}
  */
 export function isBaseType(target: any): boolean {
-    return isNull(target) || isUndefined(target) || isBoolean(target) || isString(target) || isNumber(target) || isDate(target);
+    return isBoolean(target) || isString(target) || isNumber(target) || isDate(target);
 }
