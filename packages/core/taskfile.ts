@@ -1,162 +1,91 @@
-import { PipeModule, Package, AssetConfigure, AssetActivity, TsConfigure, CleanConfigure, CleanActivity, PackageActivity } from '@taskfr/pipes';
+import { PipeModule, Package, AssetActivity, PackageActivity, AssetTask, CleanToken, TsCompile } from '@taskfr/pipes';
 import { TaskContainer } from '@taskfr/platform-server';
 import { IActivity } from '@taskfr/core';
-
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
 const rollup = require('gulp-rollup');
 const rename = require('gulp-rename');
-// const builtins = require('rollup-plugin-node-builtins');
+@AssetTask({
+    src: 'lib/**/*.js',
+    dest: 'bundles',
+    data: {
+        name: 'core.umd.js',
+        input: 'lib/index.js'
+    },
+    sourcemaps: true,
+    pipes: [
+        (act) => {
+            return rollup({
+                name: act.config.data.name,
+                format: 'umd',
+                sourceMap: true,
+                plugins: [
+                    resolve(),
+                    commonjs(),
+                    rollupSourcemaps()
+                ],
+                external: [
+                    'reflect-metadata',
+                    'log4js',
+                    'tslib',
+                    'object-assign',
+                    '@ts-ioc/core'
+                ],
+                globals: {
+                    'reflect-metadata': 'Reflect',
+                    'log4js': 'log4js',
+                    '@ts-ioc/core': '@ts-ioc/core'
+                },
+                input: act.config.data.input
+            })
+        },
+        (act) => rename(act.config.data.name)
+    ]
+})
+export class CoreRollup extends AssetActivity {
+}
 
 @Package({
-    src: 'src',
     clean: 'lib',
     test: (act: IActivity) => act.context.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
     assets: {
-        ts: { dest: 'lib', annotation: true, uglify: false }
-    },
-    sequence: [
-        <AssetConfigure>{
-            src: 'lib/**/*.js',
-            dest: 'bundles',
-            sourcemaps: true,
-            pipes: [
-                (ctx) => {
-                    return rollup({
-                        name: 'core.umd.js',
-                        format: 'umd',
-                        sourceMap: true,
-                        plugins: [
-                            resolve(),
-                            commonjs(),
-                            // builtins()
-                            rollupSourcemaps()
-                        ],
-                        external: [
-                            'reflect-metadata',
-                            'tslib',
-                            'log4js'
-                        ],
-                        globals: {
-                            'reflect-metadata': 'Reflect'
-                        },
-                        input: './lib/index.js'
-                    })
-                },
-                () => rename('core.umd.js')
-            ],
-            task: AssetActivity
+        ts: {
+            sequence: [
+                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false },
+                CoreRollup,
+                {
+                    name: 'zip',
+                    src: 'bundles/core.umd.js',
+                    dest: 'bundles',
+                    sourcemaps: true,
+                    uglify: true,
+                    pipes: [
+                        () => rename('core.umd.min.js')
+                    ],
+                    task: AssetActivity
+                }
+            ]
         },
-        <AssetConfigure>{
-            name: 'zip',
-            src: 'bundles/core.umd.js',
-            dest: 'bundles',
-            sourcemaps: true,
-            uglify: true,
-            pipes: [
-                () => rename('core.umd.min.js')
-            ],
-            task: AssetActivity
+        ts2015: {
+            sequence: [
+                { src: 'src/**/*.ts', dest: 'esnext', annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
+                { src: 'esnext/**/*.js', dest: 'es2015', data: { name: 'core.js', input: './esnext/index.js' }, activity: CoreRollup }
+            ]
+        },
+        es2017: {
+            sequence: [
+                { clean: 'esnext', activity: CleanToken },
+                { src: 'src/**/*.ts', dest: 'esnext', annotation: true, uglify: false, tsconfig: './tsconfig.es2017.json', activity: TsCompile },
+                { src: 'esnext/**/*.js', dest: 'es2017', data: { name: 'core.js', input: './esnext/index.js' }, activity: CoreRollup },
+                { clean: 'esnext', activity: CleanToken }
+            ]
         }
-    ]
+    }
 })
 export class CoreBuilder extends PackageActivity {
 }
 
-@Package({
-    src: 'src',
-    clean: 'esnext',
-    assets: {
-        ts: <TsConfigure>{ dest: 'esnext', annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json' }
-    },
-    sequence: [
-        <AssetConfigure>{
-            src: 'esnext/**/*.js',
-            dest: 'es2015',
-            sourcemaps: true,
-            pipes: [
-                (ctx) => {
-                    return rollup({
-                        name: 'core.js',
-                        format: 'umd',
-                        sourceMap: true,
-                        plugins: [
-                            resolve(),
-                            commonjs(),
-                            // builtins()
-                            rollupSourcemaps()
-                        ],
-                        external: [
-                            'reflect-metadata',
-                            'tslib',
-                            'log4js'
-                        ],
-                        globals: {
-                            'reflect-metadata': 'Reflect'
-                        },
-                        input: './esnext/index.js'
-                    })
-                },
-                () => rename('core.js')
-            ],
-            task: AssetActivity
-        },
-        <CleanConfigure>{
-            clean: 'esnext',
-            activity: CleanActivity
-        }
-    ]
-})
-export class CoreES2015Builder extends PackageActivity {
-}
-@Package({
-    src: 'src',
-    clean: 'esnext',
-    assets: {
-        ts: <TsConfigure>{ dest: 'esnext', annotation: true, uglify: false, tsconfig: './tsconfig.es2017.json' }
-    },
-    sequence: [
-        <AssetConfigure>{
-            src: 'esnext/**/*.js',
-            dest: 'es2017',
-            sourcemaps: true,
-            pipes: [
-                (ctx) => {
-                    return rollup({
-                        name: 'core.js',
-                        format: 'umd',
-                        sourceMap: true,
-                        plugins: [
-                            resolve(),
-                            commonjs(),
-                            // builtins()
-                            rollupSourcemaps()
-                        ],
-                        external: [
-                            'reflect-metadata',
-                            'tslib',
-                            'log4js'
-                        ],
-                        globals: {
-                            'reflect-metadata': 'Reflect'
-                        },
-                        input: './esnext/index.js'
-                    })
-                },
-                () => rename('core.js')
-            ],
-            task: AssetActivity
-        },
-        <CleanConfigure>{
-            clean: 'esnext',
-            activity: CleanActivity
-        }
-    ]
-})
-export class CoreES2017Builder extends PackageActivity {
-}
-
 TaskContainer.create(__dirname)
     .use(PipeModule)
-    .bootstrap(CoreBuilder, CoreES2015Builder, CoreES2017Builder);
+    .bootstrap(CoreBuilder);

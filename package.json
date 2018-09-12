@@ -8,7 +8,19 @@
     "reinstall": "npm cache clean && npm install",
     "build": "tkf"
   },
-  "keywords": ["IoC", "AOP", "dependency", "injection", "framework", "container", "decorator", "autofac", "Inject", "type", "typescript"],
+  "keywords": [
+    "IoC",
+    "AOP",
+    "dependency",
+    "injection",
+    "framework",
+    "container",
+    "decorator",
+    "autofac",
+    "Inject",
+    "type",
+    "typescript"
+  ],
   "author": "houjun <freebirds8281@hotmail.com>",
   "license": "MIT",
   "bugs": {
@@ -20,10 +32,10 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@taskfr/cli": "^2.1.9",
-    "@taskfr/core": "^2.1.9",
-    "@taskfr/pipes": "^2.1.9",
-    "@taskfr/platform-server": "^2.1.9",
+    "@taskfr/cli": "^2.1.11",
+    "@taskfr/core": "^2.1.11",
+    "@taskfr/pipes": "^2.1.11",
+    "@taskfr/platform-server": "^2.1.11",
     "@types/chai": "^4.1.3",
     "@types/gulp-mocha": "0.0.32",
     "bluebird": "^3.4.1",
