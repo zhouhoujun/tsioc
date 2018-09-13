@@ -4,6 +4,7 @@ import { existsSync } from 'fs';
 import * as path from 'path';
 import { ContainerBuilder } from '@ts-ioc/platform-server';
 
+const processRoot = path.join(path.dirname(process.cwd()), path.basename(process.cwd()));
 
 export interface ServerBuildExts {
     /**
@@ -98,7 +99,7 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
      * @memberof ApplicationBuilder
      */
     static create(rootdir: string): AnyApplicationBuilderServer {
-        return new ApplicationBuilder<any>(rootdir);
+        return new ApplicationBuilder<any>(rootdir || processRoot);
     }
 
     /**
