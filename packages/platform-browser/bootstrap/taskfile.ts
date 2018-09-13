@@ -60,7 +60,7 @@ export class BootRollup extends AssetActivity {
     assets: {
         ts: {
             sequence: [
-                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false },
+                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, activity: TsCompile },
                 BootRollup,
                 {
                     name: 'zip',
