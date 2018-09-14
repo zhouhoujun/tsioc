@@ -1,4 +1,4 @@
-import { Token, LoadType, Providers } from '@ts-ioc/core';
+import { Token, LoadType, Providers, Modules } from '@ts-ioc/core';
 import { IModuleBuilder } from './IModuleBuilder';
 import { AnnotationConfigure } from '../annotations';
 
@@ -46,10 +46,10 @@ export interface ModuleConfig<T> extends AnnotationConfigure<T> {
     /**
      * exports modules
      *
-     * @type {Token<any>[]}
+     * @type {Modules[]}
      * @memberof ModuleConfiguration
      */
-    exports?: Token<any>[];
+    exports?: Modules[];
 
     /**
      * DI module Loader builder

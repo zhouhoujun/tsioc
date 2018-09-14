@@ -86,10 +86,12 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         let pools = container.get(ContainerPoolToken);
         let newContainer = pools.create(container);
         newContainer.register(type);
+        let builder = newContainer.getBuilder();
         let metaConfig = this.validate.getMetaConfig(type, newContainer) as ModuleConfigure;
         metaConfig = await this.registerConfgureDepds(newContainer, metaConfig);
 
-        let injMd = new InjectedModule(metaConfig.token || type, metaConfig, newContainer, type, metaConfig.exports || [], metaConfig[exportsProvidersFiled]);
+        let exps: Type<any>[] = [].concat(...builder.loader.getTypes(metaConfig.exports || []));
+        let injMd = new InjectedModule(metaConfig.token || type, metaConfig, newContainer, type, exps, metaConfig[exportsProvidersFiled]);
         container.bindProvider(new InjectedModuleToken(type), injMd);
 
         await this.importConfigExports(container, newContainer, injMd);
