@@ -1,8 +1,7 @@
 import { Providers } from '../types';
 import { Provider, ProviderMap, ParamProvider, isProviderMap, ProviderMapToken } from './providers';
 import { isString, isClass, isArray, isFunction, isNumber, isUndefined, isNull, isToken, isBaseObject, lang } from '../utils';
-import { IParameter } from '../IParameter';
-import { IProviderMatcher } from './IProviderMatcher';
+import { IProviderParser } from './IProviderParser';
 import { IContainer } from '../IContainer';
 
 /**
@@ -12,13 +11,13 @@ import { IContainer } from '../IContainer';
  * @class ProviderMatcher
  * @implements {IProviderMatcher}
  */
-export class ProviderMatcher implements IProviderMatcher {
+export class ProviderParser implements IProviderParser {
 
     constructor(private container: IContainer) {
 
     }
 
-    toProviderMap(...providers: Providers[]): ProviderMap {
+    parse(...providers: Providers[]): ProviderMap {
         if (providers.length === 1 && isProviderMap(providers[0])) {
             return providers[0] as ProviderMap;
         }
@@ -114,34 +113,4 @@ export class ProviderMatcher implements IProviderMatcher {
 
         return map;
     }
-
-    matchProviders(params: IParameter[], ...providers: Providers[]): ProviderMap {
-        return this.match(params, this.toProviderMap(...providers));
-    }
-
-    match(params: IParameter[], providers: ProviderMap): ProviderMap {
-        let map = this.container.resolve(ProviderMapToken);
-        if (!params.length) {
-            return map;
-        }
-        params.forEach((param, index) => {
-            if (!param.name) {
-                return;
-            }
-            if (providers.has(param.name)) {
-                map.add(param.name, providers.get(param.name));
-            } else if (isToken(param.type)) {
-                if (providers.has(param.type)) {
-                    map.add(param.name, providers.get(param.type));
-                } else if (this.container.has(param.type)) {
-                    map.add(param.name, param.type);
-                }
-            } else if (providers.has(index)) {
-                map.add(param.name, providers.get(index));
-            }
-        });
-
-        return map;
-    }
-
 }

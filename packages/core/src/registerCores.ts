@@ -4,7 +4,7 @@ import { CoreActions } from './core/actions';
 import { DefaultLifeScope } from './core/DefaultLifeScope';
 import { LifeScopeToken } from './LifeScope';
 import { MethodAccessor } from './core/MethodAccessor';
-import { CacheManager, ProviderMap, ProviderMapToken, ProviderMatcher, ProviderMatcherToken } from './core';
+import { CacheManager, ProviderMap, ProviderMapToken, ProviderParser, ProviderParserToken } from './core';
 import { CacheManagerToken } from './ICacheManager';
 import { MethodAccessorToken } from './IMethodAccessor';
 import { ResolverChain, ResolverChainToken } from './resolves';
@@ -22,7 +22,7 @@ export function registerCores(container: IContainer) {
     container.registerSingleton(ResolverChainToken, () => new ResolverChain(container));
     container.register(ProviderMapToken, () => new ProviderMap(container));
     container.bindProvider(ProviderMap, ProviderMapToken);
-    container.registerSingleton(ProviderMatcherToken, () => new ProviderMatcher(container));
+    container.registerSingleton(ProviderParserToken, () => new ProviderParser(container));
     container.registerSingleton(MethodAccessorToken, () => new MethodAccessor(container));
 
     let lifeScope = container.get(LifeScopeToken);

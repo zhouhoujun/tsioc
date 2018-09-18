@@ -5,7 +5,7 @@ import { Registration } from './Registration';
 import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet, lang } from './utils';
 
 import { MethodAccessorToken } from './IMethodAccessor';
-import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderMatcherToken } from './core';
+import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderParserToken } from './core';
 import { LifeScope, LifeScopeToken } from './LifeScope';
 import { IParameter } from './IParameter';
 import { CacheManagerToken } from './ICacheManager';
@@ -540,7 +540,7 @@ export class Container implements IContainer {
                 }
             }
 
-            let providerMap = this.get(ProviderMatcherToken).toProviderMap(...providers);
+            let providerMap = this.get(ProviderParserToken).parse(...providers);
 
             lifeScope.execute({
                 tokenKey: key,

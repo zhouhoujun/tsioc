@@ -1,5 +1,5 @@
-import { MapSet, isToken, isNumber, isFunction, isUndefined } from '../../utils';
-import { Token, Factory, Providers, ToInstance, Express2 } from '../../types';
+import { MapSet, isToken, isNumber, isFunction, isUndefined, isObject } from '../../utils';
+import { Token, Factory, Providers, ToInstance, Express2, SymbolType } from '../../types';
 import { IContainer } from '../../IContainer';
 import { InjectToken } from '../../InjectToken';
 
@@ -18,15 +18,23 @@ export class ProviderMap {
     }
 
     has(provide: Token<any> | number): boolean {
-        return this.maps.has(provide);
+        return this.maps.has(this.getTokenKey(provide));
+    }
+
+    getTokenKey(token: Token<any> | number): SymbolType<any> | number {
+        if (isToken(token)) {
+            return this.container.getTokenKey(token);
+        }
+        return token;
     }
 
     get<T>(provide: Token<T> | number): Token<T> | Factory<T> {
-        return this.maps.get(provide);
+        return this.maps.get(this.getTokenKey(provide));
     }
 
     add<T>(provide: Token<T> | number, provider: Token<T> | Factory<T>): this {
-        if (isUndefined(provide)) {
+        let key = this.getTokenKey(provide);
+        if (isUndefined(key)) {
             return this;
         }
         let factory;
@@ -45,24 +53,28 @@ export class ProviderMap {
                 };
             }
         }
-        this.maps.set(provide, factory);
+        this.maps.set(key, factory);
         return this;
     }
 
     remove<T>(provide: Token<T> | number): this {
-        if (this.maps.has(provide)) {
-            this.maps.delete(provide);
+        let key = this.getTokenKey(provide);
+        if (this.maps.has(key)) {
+            this.maps.delete(key);
         }
         return this;
     }
 
     resolve<T>(provide: Token<T> | number, ...providers: Providers[]): T {
-        if (!this.maps.has(provide)) {
-            return (!isNumber(provide) && this.container.has(provide)) ? this.container.resolve(provide, ...providers) : null;
+        let key = this.getTokenKey(provide);
+        if (this.maps.has(key)) {
+            let provider = this.maps.get(key);
+            return isToken(provider) ? this.container.resolve(provider, ...providers) : provider(...providers);
+        } else {
+            return (!isNumber(key) && this.container.has(key)) ? this.container.resolve(key, ...providers) : null;
         }
 
-        let provider = this.maps.get(provide);
-        return isToken(provider) ? this.container.resolve(provider, ...providers) : provider(...providers);
+
     }
 
     forEach(express: Express2<Factory<any>, Token<any> | number, void | boolean>) {
@@ -77,4 +89,20 @@ export class ProviderMap {
             this.maps.set(token, val);
         });
     }
+}
+
+
+
+/**
+ * object is provider map or not.
+ *
+ * @export
+ * @param {object} target
+ * @returns {target is ProviderMap}
+ */
+export function isProviderMap(target: object): target is ProviderMap {
+    if (!isObject(target)) {
+        return false;
+    }
+    return target instanceof ProviderMap;
 }

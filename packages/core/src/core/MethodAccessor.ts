@@ -4,7 +4,7 @@ import { BindParameterProviderActionData, CoreActions, LifeState } from './actio
 import { isToken, isFunction } from '../utils';
 import { Token, Providers } from '../types';
 import { IParameter } from '../IParameter';
-import { IProviderMatcher, ProviderMatcherToken } from './IProviderMatcher';
+import { IProviderParser, ProviderParserToken } from './IProviderParser';
 
 /**
  * method accessor
@@ -19,8 +19,8 @@ export class MethodAccessor implements IMethodAccessor {
 
     }
 
-    getMatcher(): IProviderMatcher {
-        return this.container.get(ProviderMatcherToken);
+    getMatcher(): IProviderParser {
+        return this.container.get(ProviderParserToken);
     }
 
     async invoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: Providers[]): Promise<T> {
@@ -82,12 +82,15 @@ export class MethodAccessor implements IMethodAccessor {
     }
 
     createSyncParams(params: IParameter[], ...providers: Providers[]): any[] {
-        let providerMap = this.getMatcher().matchProviders(params, ...providers);
+        let providerMap = this.getMatcher().parse(params, ...providers);
         return params.map((param, index) => {
             if (param.name && providerMap.has(param.name)) {
                 return providerMap.resolve(param.name);
             } else if (isToken(param.type)) {
-                return this.container.resolve(param.type, ...providers);
+                if (providerMap.has(param.type)) {
+                    return providerMap.resolve(param.type);
+                }
+                return this.container.resolve(param.type, providerMap);
             } else {
                 return undefined;
             }
@@ -95,12 +98,15 @@ export class MethodAccessor implements IMethodAccessor {
     }
 
     createParams(params: IParameter[], ...providers: Providers[]): Promise<any[]> {
-        let providerMap = this.getMatcher().matchProviders(params, ...providers);
+        let providerMap = this.getMatcher().parse(params, ...providers);
         return Promise.all(params.map((param, index) => {
             if (param.name && providerMap.has(param.name)) {
                 return providerMap.resolve(param.name);
             } else if (isToken(param.type)) {
-                return this.container.resolve(param.type, ...providers);
+                if (providerMap.has(param.type)) {
+                    return providerMap.resolve(param.type);
+                }
+                return this.container.resolve(param.type, providerMap);
             } else {
                 return undefined;
             }
