@@ -29,7 +29,6 @@ const rename = require('gulp-rename');
                     'reflect-metadata',
                     'log4js',
                     'tslib',
-                    'object-assign',
                     '@ts-ioc/core'
                 ],
                 globals: {
