@@ -36,11 +36,12 @@ export interface IAnnotationBuilder<T> {
      * build instance via type config.
      *
      * @param {(Token<T> | AnnotationConfigure<T>)} config
-     * @param {*} [data] build data
+     * @param {*} [data] build data.
+     * @param {...Token<any>[]} excludeTokens
      * @returns {Promise<T>}
-     * @memberof IBootBuilder
+     * @memberof IAnnotationBuilder
      */
-    buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any): Promise<T>;
+    buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any, ...excludeTokens: Token<any>[]): Promise<T>;
 
     /**
      * get finally builder by token and config.

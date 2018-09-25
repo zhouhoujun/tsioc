@@ -92,7 +92,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         let md = await this.build(token, injmdl, data) as MdInstance<T>;
         let bootToken = this.getBootType(cfg);
         let anBuilder = this.getAnnoBuilder(container, bootToken, cfg.annotationBuilder);
-        let bootInstance = await (bootToken ? anBuilder.build(bootToken, cfg, data) : anBuilder.buildByConfig(cfg, data));
+        let bootInstance = await (bootToken ? anBuilder.build(bootToken, cfg, data) : anBuilder.buildByConfig(cfg, data, this.getType(cfg)));
         let runable;
         if (bootInstance) {
             runable = await this.autoRun(container, bootToken ? bootToken : anBuilder.getType(cfg), cfg, bootInstance, data);

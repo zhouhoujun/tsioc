@@ -1,22 +1,6 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "target":"es2015",
-    "baseUrl": ".",
-    "rootDir": "../../packages",
-    "paths": {
-      "@ts-ioc/core": [
-        "../core/src"
-      ],
-      "@ts-ioc/aop": [
-        "../aop/src"
-      ],
-      "@ts-ioc/annotations":[
-        "../annotations/src"
-      ]
-    }
-  },
-  "exclude": [
-    "lib"  
-  ]
+    "target":"es2015"
+  }
 }

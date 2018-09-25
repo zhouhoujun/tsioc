@@ -54,13 +54,19 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         }
     }
 
-    async buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any): Promise<any> {
+    async buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any, ...excludeTokens: Token<any>[]): Promise<any> {
         let token: Token<T>;
         if (isToken(config)) {
             token = config;
+            if (excludeTokens.indexOf(token) >= 0) {
+                token = null;
+            }
             return this.build(token, null, data);
         } else {
             token = this.getType(config);
+            if (excludeTokens.indexOf(token) >= 0) {
+                token = null;
+            }
             return this.build(token, config, data);
         }
     }

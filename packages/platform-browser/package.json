@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/platform-browser",
-  "version": "3.2.7",
+  "version": "3.2.8",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "esnext": "./es2017/platform-browser.js",
   "es2015": "./es2015/platform-browser.js",
@@ -29,7 +29,7 @@
     "tslib": "^1.9.2"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "^3.2.7"
+    "@ts-ioc/core": "^3.2.8"
   },
   "directories": {
     "lib": "lib"
