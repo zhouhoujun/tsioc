@@ -65,8 +65,6 @@ export interface IModuleBuilder<T> {
      */
     build(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<T>;
 
-
-
     /**
      * bootstrap module's main.
      *
@@ -77,6 +75,17 @@ export interface IModuleBuilder<T> {
      * @memberof IGModuleBuilder
      */
     bootstrap(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<Runnable<T>>;
+
+    /**
+     * run module.
+     *
+     * @param {(Token<T> | ModuleConfig<T>)} token
+     * @param {ModuleEnv} [env]
+     * @param {*} [data] bootstrap data, build data, Runnable data.
+     * @returns {Promise<MdInstance<T>>}
+     * @memberof IGModuleBuilder
+     */
+    run(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<Runnable<T>>;
 
 }
 

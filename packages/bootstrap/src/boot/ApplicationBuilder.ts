@@ -165,6 +165,10 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         return await builder.bootstrap(token, injmdl, data);
     }
 
+    run(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
+        return this.bootstrap(token, env, data);
+    }
+
     /**
      * get module builder
      *
