@@ -105,6 +105,19 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return runable;
     }
 
+    /**
+    * run module.
+    *
+    * @param {(Token<T> | ModuleConfig<T>)} token
+    * @param {ModuleEnv} [env]
+    * @param {*} [data] bootstrap data, build data, Runnable data.
+    * @returns {Promise<MdInstance<T>>}
+    * @memberof ModuleBuilder
+    */
+    run(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
+        return this.bootstrap(token, env, data);
+    }
+
     async import(token: Token<T>, parent?: IContainer): Promise<InjectedModule<T>> {
         if (!parent) {
             parent = await this.getParentContainer();
@@ -189,7 +202,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             return instance;
         } else {
 
-            let providers = [{provide: token, useValue: instance }, { token: token, instance: instance, config: cfg }] as Providers[];
+            let providers = [{ provide: token, useValue: instance }, { token: token, instance: instance, config: cfg }] as Providers[];
             let runner: IRunner<T> = container.getRefService(InjectRunnerToken, token, DefaultRunnerToken, ...providers);
             let service: IService<T>;
             if (!runner) {
