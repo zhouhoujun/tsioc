@@ -73,7 +73,6 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
     async createInstance(token: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<T> {
         if (!token) {
-            console.log('can not find annotation token.');
             return null;
         }
 

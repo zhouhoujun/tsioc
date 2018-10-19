@@ -189,7 +189,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     }
 
-    protected async autoRun(container: IContainer, token: Token<any>, cfg: ModuleConfigure, instance: any, data?: any): Promise<Runnable<T>> {
+    protected async autoRun(container: IContainer, token: Token<any>, cfg: ModuleConfigure, instance: any, data: any): Promise<Runnable<T>> {
         if (!instance) {
             return null;
         }

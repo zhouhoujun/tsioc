@@ -6,10 +6,24 @@ import { ContainerPool, ContainerPoolToken, Events, IEvents } from '../utils';
 import { BootModule } from '../BootModule';
 import { Runnable } from '../runnable';
 
-export enum ApplicationEvents {
+/**
+ * application events
+ *
+ * @export
+ * @enum {number}
+ */
+export enum AppEvents {
     onRootContainerCreated = 'onRootContainerCreated',
-    onRootContainerInited = 'onRooConatianerInited'
+    onRootContainerInited = 'onRootContainerInited',
+    onModuleCreated = 'onModuleCreated',
+    onBootCreated = 'onBootCreated',
+    onRunnableStarted = 'onRunnableStarted'
 }
+
+/**
+ * application events
+ */
+export const ApplicationEvents = AppEvents;
 
 /**
  * application builder.
@@ -43,7 +57,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
     }
 
     protected initEvents() {
-        this.events.on('onRooConatianerInited', (container) => {
+        this.events.on(AppEvents.onRootContainerInited, (container) => {
             this.afterInitPds.forEach((val, key) => {
                 container.bindProvider(key, val);
             });
@@ -156,7 +170,9 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
     async build(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<T> {
         let injmdl = await this.load(token, env);
         let builder = this.getBuilder(injmdl);
-        return await builder.build(token, injmdl, data);
+        let md = await builder.build(token, injmdl, data);
+        this.emit(AppEvents.onModuleCreated, md, token);
+        return md;
     }
 
     async bootstrap(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
@@ -210,6 +226,13 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         return builder || this;
     }
 
+    protected async autoRun(container: IContainer, token: Token<any>, cfg: ModuleConfig<T>, instance: any, data?: any): Promise<Runnable<T>> {
+        this.emit(AppEvents.onBootCreated, instance, token);
+        let runnable = await super.autoRun(container, token, cfg, instance, data);
+        this.emit(AppEvents.onRunnableStarted, runnable, instance, token);
+        return runnable;
+    }
+
     protected getDefaultBuilder(container: IContainer): IModuleBuilder<any> {
         return container.resolve(ModuleBuilderToken);
     }
@@ -250,7 +273,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
             container.bindProvider(key, val);
         });
 
-        this.events.emit(ApplicationEvents.onRootContainerCreated, container);
+        this.events.emit(AppEvents.onRootContainerCreated, container);
         return container;
     }
 
@@ -264,7 +287,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
         this.bindAppConfig(globCfg);
         container.bindProvider(AppConfigureToken, globCfg);
         this.inited = true;
-        this.events.emit(ApplicationEvents.onRootContainerInited, container);
+        this.events.emit(AppEvents.onRootContainerInited, container);
     }
 
     /**
