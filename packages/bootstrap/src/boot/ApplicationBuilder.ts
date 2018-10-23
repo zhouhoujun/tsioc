@@ -57,7 +57,7 @@ export class DefaultApplicationBuilder<T> extends ModuleBuilder<T> implements IA
     }
 
     protected initEvents() {
-        this.events.on(AppEvents.onRootContainerInited, (container) => {
+        this.on(AppEvents.onRootContainerInited, (container) => {
             this.afterInitPds.forEach((val, key) => {
                 container.bindProvider(key, val);
             });

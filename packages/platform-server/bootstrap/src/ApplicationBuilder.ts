@@ -75,6 +75,18 @@ export class ConfigureFileLoader implements IAppConfigureLoader {
 
 
 /**
+ * server app.
+ *
+ * @export
+ * @template T
+ * @param {string} [baseURL]
+ * @returns {IApplicationBuilderServer<T>}
+ */
+export function serverApp<T>(baseURL?: string): IApplicationBuilderServer<T> {
+    return new ApplicationBuilder<T>(baseURL);
+}
+
+/**
  * application builder for server side.
  *
  * @export
@@ -93,7 +105,6 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
      * create instance.
      *
      * @static
-     * @template T
      * @param {string} rootdir
      * @returns {ApplicationBuilder}
      * @memberof ApplicationBuilder

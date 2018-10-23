@@ -99,14 +99,4 @@ export const ApplicationBuilderToken = new InjectToken<AnyApplicationBuilder>('D
  * @template T
  */
 export interface AnyApplicationBuilder extends IApplicationBuilder<any> {
-    /**
-     * build module as ioc container.
-     *
-     * @param {(Token<T> | ModuleConfig<T>)} token
-     * @param {ModuleEnv} [defaultContainer]
-     * @returns {Promise<MdInstance<T>>}
-     * @memberof IModuleBuilder
-     */
-    build<T>(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): Promise<MdInstance<T>>;
-
 }

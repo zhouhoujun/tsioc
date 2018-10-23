@@ -107,17 +107,5 @@ export const ModuleBuilderToken = new Registration<AnyModuleBuilder>('any', modu
  * @extends {IModuleBuilder<any>}
  */
 export interface AnyModuleBuilder extends IModuleBuilder<any> {
-
-    /**
-     * build module as ioc container.
-     *
-     * @param {(Token<T> | ModuleConfig<T>)} token
-     * @param {ModuleEnv} [env]
-     * @param {*} [data]
-     * @returns {Promise<T>}
-     * @memberof AnyModuleBuilder
-     */
-    build<T>(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<MdInstance<T>>;
-
 }
 
