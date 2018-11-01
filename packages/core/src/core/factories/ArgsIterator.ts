@@ -2,12 +2,46 @@ import { Metadate } from '../metadatas';
 import { lang, isMetadataObject } from '../../utils';
 
 
+/**
+ * arg checker.
+ *
+ * @export
+ * @interface CheckExpress
+ * @template T
+ */
 export interface CheckExpress<T extends Metadate> {
+    /**
+     * arg matched or not.
+     *
+     * @param {*} arg
+     * @returns {boolean}
+     * @memberof CheckExpress
+     */
     match(arg: any): boolean;
+    /**
+     * arg is meatdata or not.
+     *
+     * @param {*} arg
+     * @returns {boolean}
+     * @memberof CheckExpress
+     */
     isMetadata?(arg: any): boolean;
+    /**
+     * set arg to metadata.
+     *
+     * @param {T} metadata
+     * @param {*} arg
+     * @memberof CheckExpress
+     */
     setMetadata(metadata: T, arg: any): void
 }
 
+/**
+ * args iterator.s
+ *
+ * @export
+ * @class ArgsIterator
+ */
 export class ArgsIterator {
     private idx: number;
     private metadata: Metadate;
