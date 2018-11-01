@@ -5,6 +5,31 @@ import { lang } from './lang';
 declare let process: any;
 
 /**
+ * assert param is right or not.
+ *
+ * @export
+ * @param {*} param
+ * @param {(string | Function)} msg
+ * @param {(target: any) => boolean} [checkExp]
+ */
+export function assert(param: any, msg: string | Function, checkExp?: (target: any) => boolean) {
+    if (isNullOrUndefined(param)) {
+        throw new Error(isFunction(msg) ? msg(param) : msg);
+    }
+}
+/**
+ * check assert param invalid by express
+ *
+ * @export
+ * @param {(boolean | (() => boolean))} express
+ * @param {(string | Function)} msg
+ */
+export function assertExp(express: boolean | (() => boolean), msg: string | Function) {
+    if (!(isFunction(express) ? express() : express)) {
+        throw new Error(isFunction(msg) ? msg() : msg);
+    }
+}
+/**
  * check target is function or not.
  *
  * @export

@@ -1,4 +1,4 @@
-import { IModuleLoader, DefaultModuleLoader } from '@ts-ioc/core';
+import { IModuleLoader, DefaultModuleLoader, assert } from '@ts-ioc/core';
 
 declare let System: any;
 declare let require: any;
@@ -13,7 +13,8 @@ export class BrowserModuleLoader extends DefaultModuleLoader implements IModuleL
             return (modulepath: string) => {
                 return System.import(modulepath);
             }
-        } else if (typeof require !== 'undefined') {
+        } else {
+            assert(require, 'has not module loader');
             return (modulepath: string) => {
                 return new Promise((resolve, reject) => {
                     require([modulepath], (mud) => {
@@ -23,8 +24,6 @@ export class BrowserModuleLoader extends DefaultModuleLoader implements IModuleL
                     })
                 });
             }
-        } else {
-            throw new Error('has not module loader');
         }
     }
 
