@@ -1,23 +1,5 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "rootDir": "../../packages",
-    "paths": {
-      "@ts-ioc/core": [
-        "../core/src"
-      ],
-      "@ts-ioc/aop": [
-        "../aop/src"
-      ],
-      "@ts-ioc/annotations":[
-        "../annotations/src"
-      ]
-    }
-  },
-  "exclude": [
-    "lib",
-    "node_modules"    
-  ]
-
+  }
 }

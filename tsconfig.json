@@ -1,6 +1,30 @@
 {
   "compilerOptions": {
     "importHelpers": true,
+    "baseUrl": ".",
+    "paths": {
+      "@ts-ioc/annotations":[
+        "packages/annotations/src"
+      ],
+      "@ts-ioc/core": [
+        "packages/core/src"
+      ],
+      "@ts-ioc/aop":[
+        "packages/aop/src"
+      ],
+      "@ts-ioc/bootstrap":[
+        "packages/bootstrap/src"
+      ],
+      "@ts-ioc/logs": [
+        "packages/logs/src"
+      ],
+      "@ts-ioc/platform-browser":[
+        "packages/platform-browser/src"
+      ],
+      "@ts-ioc/platform-server":[
+        "packages/platform-server/src"
+      ]
+    },
     "module": "commonjs",
     "target":"es5",
     "lib": ["dom", "es2015", "es2017"],
