@@ -1,6 +1,7 @@
 import { ObjectMap, Type } from '../types';
 import { isArray, isObject, isFunction, isClass } from './typeCheck';
 import * as objAssign from 'object-assign';
+import { getClassName, isNullOrUndefined } from '@ts-ioc/core';
 
 export namespace lang {
 
@@ -183,6 +184,20 @@ export namespace lang {
             return list[list.length - 1];
         }
         return null;
+    }
+
+    /**
+     * get calss of object.
+     *
+     * @export
+     * @param {*} target
+     * @returns {Type<any>}
+     */
+    export function getClass(target: any): Type<any> {
+        if (isNullOrUndefined(target)) {
+            return null;
+        }
+        return target.constructor || target.prototype.constructor;
     }
 
 }
