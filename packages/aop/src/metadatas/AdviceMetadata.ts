@@ -1,5 +1,12 @@
 import { MethodMetadata, Type } from '@ts-ioc/core';
 
+/**
+ * advice metadata.
+ *
+ * @export
+ * @interface AdviceMetadata
+ * @extends {MethodMetadata}
+ */
 export interface AdviceMetadata extends MethodMetadata {
     /**
      * path or module name, match express
@@ -32,7 +39,6 @@ export interface AdviceMetadata extends MethodMetadata {
      * @memberof AdviceMetadata
      */
     within?: Type<any> | Type<any>[];
-
 
     /**
      * annotation name, special annotation metadata for annotation advices.

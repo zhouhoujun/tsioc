@@ -1,5 +1,8 @@
 import { Type, ClassMetadata } from '@ts-ioc/core';
 
+/**
+ * aspect metadata.
+ */
 export interface AspectMetadata extends ClassMetadata {
     /**
      * set pointcut in the type only.
