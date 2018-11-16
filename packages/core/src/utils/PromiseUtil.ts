@@ -46,6 +46,9 @@ export class Defer<T> {
     }
 }
 
+/**
+ * promise util.
+ */
 export namespace PromiseUtil {
 
     /**
