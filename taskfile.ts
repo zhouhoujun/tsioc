@@ -43,7 +43,7 @@ let versionSetting = (ctx: IPipeContext) => {
         {
             shell: (ctx: IPipeContext) => {
                 let envArgs = ctx.getEnvArgs();
-                let packages = ctx.getFolders('packages');
+                let packages = ctx.getFolders('packages').filter(f => !/(annotations|aop|bootstrap)/.test(f));
                 let cmd = envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
                 if (envArgs.test === 'false' || envArgs.upioc) {
                     cmd = cmd + ' -- --test=false'
