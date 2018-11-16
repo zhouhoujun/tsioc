@@ -43,7 +43,6 @@ export interface IMethodAccessor {
      */
     syncInvoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: Providers[]): T;
 
-
     /**
      * create params instances with IParameter and provider.
      *

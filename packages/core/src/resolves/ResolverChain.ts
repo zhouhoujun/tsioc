@@ -6,9 +6,20 @@ import { isClass } from '../utils';
 import { InjectToken } from '../InjectToken';
 import { IResolver } from '../IResolver';
 
-
+/**
+ *  resolver chain token.
+ */
 export const ResolverChainToken = new InjectToken<ResolverChain>('di_ResolverChain');
 
+/**
+ * resover chain.
+ *
+ * resove by setp.
+ *
+ * @export
+ * @class ResolverChain
+ * @implements {IResolver}
+ */
 export class ResolverChain implements IResolver {
 
     protected resolvers: ResolverType[];
@@ -16,6 +27,12 @@ export class ResolverChain implements IResolver {
         this.resolvers = [];
     }
 
+    /**
+     * reigister next resolver.
+     *
+     * @param {ResolverType} resolver
+     * @memberof ResolverChain
+     */
     next(resolver: ResolverType) {
         if (!this.hasResolver(resolver)) {
             this.resolvers.push(resolver);
@@ -68,6 +85,15 @@ export class ResolverChain implements IResolver {
         }
     }
 
+    /**
+     * resove token via registered resolver chain.
+     *
+     * @template T
+     * @param {SymbolType<T>} token
+     * @param {...Providers[]} providers
+     * @returns {T}
+     * @memberof ResolverChain
+     */
     resolve<T>(token: SymbolType<T>, ...providers: Providers[]): T {
         let resolver = this.toArray().find(r => this.hasToken(r, token));
         if (!resolver && !this.container.parent) {
@@ -85,6 +111,13 @@ export class ResolverChain implements IResolver {
         }
     }
 
+    /**
+     * unregister token in registered resolver chain.
+     *
+     * @template T
+     * @param {SymbolType<T>} token
+     * @memberof ResolverChain
+     */
     unregister<T>(token: SymbolType<T>) {
         let resolver = this.toArray().find(r => this.hasToken(r, token));
         if (resolver) {
@@ -101,6 +134,14 @@ export class ResolverChain implements IResolver {
         }
     }
 
+    /**
+     * get token implements class in the registered resolver chain.
+     *
+     * @template T
+     * @param {SymbolType<T>} token
+     * @returns {Type<T>}
+     * @memberof ResolverChain
+     */
     getTokenImpl<T>(token: SymbolType<T>): Type<T> {
         let resolver = this.toArray().find(r => this.hasToken(r, token));
         if (resolver) {
@@ -116,6 +157,14 @@ export class ResolverChain implements IResolver {
         }
     }
 
+    /**
+     * has register in the registered resolver chain.
+     *
+     * @template T
+     * @param {SymbolType<T>} token
+     * @returns {boolean}
+     * @memberof ResolverChain
+     */
     hasRegister<T>(token: SymbolType<T>): boolean {
         if (this.container.hasRegister(token)) {
             return true;
@@ -126,6 +175,14 @@ export class ResolverChain implements IResolver {
         return false;
     }
 
+    /**
+     * has token or not in the registered resolver chain.
+     *
+     * @template T
+     * @param {SymbolType<T>} token
+     * @returns {boolean}
+     * @memberof ResolverChain
+     */
     has<T>(token: SymbolType<T>): boolean {
         if (this.hasRegister(token)) {
             return true;
