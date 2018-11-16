@@ -1,4 +1,4 @@
-import { ProviderMetadata } from './ProviderMetadata';
+import { ClassMetadata } from './ClassMetadata';
 
 
 /**
@@ -7,5 +7,5 @@ import { ProviderMetadata } from './ProviderMetadata';
  * @export
  * @interface InjectableMetadata
  */
-export interface InjectableMetadata extends ProviderMetadata {
+export interface InjectableMetadata extends ClassMetadata {
 }

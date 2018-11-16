@@ -1,4 +1,4 @@
-import { Type, Token, Factory, SymbolType, Providers, Modules, LoadType } from './types';
+import { Type, Token, Factory, SymbolType, Providers, Modules, LoadType, ReferenceToken } from './types';
 import { IMethodAccessor } from './IMethodAccessor';
 import { LifeScope } from './LifeScope';
 import { InjectToken } from './InjectToken';
@@ -98,6 +98,85 @@ export interface IContainer extends IMethodAccessor, IResolver {
     resolveValue<T>(token: Token<T>, ...providers: Providers[]): T;
 
     /**
+     * get service or target reference service.
+     *
+     * @template T
+     * @param {Token<T>} token servive token.
+     * @param {Token<any>} [target] service refrence target.
+     * @param {...Providers[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    getService<T>(token: Token<T>, target?: Token<any>, ...providers: Providers[]): T;
+
+    /**
+     * get target reference service.
+     *
+     * @template T
+     * @param {ReferenceToken<T>} [refToken] reference service Registration Injector
+     * @param {Token<any>} target  the service reference to.
+     * @param {Token<T>} [defaultToken] default service token.
+     * @param {...Providers[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any>, defaultToken?: Token<T>, ...providers: Providers[]): T
+
+    /**
+     * register type.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {Factory<T>} [value]
+     * @returns {this}
+     * @memberof IContainer
+     */
+    register<T>(token: Token<T>, value?: Factory<T>): this;
+
+    /**
+     * register stingleton type.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {Factory<T>} value
+     * @returns {this}
+     * @memberOf IContainer
+     */
+    registerSingleton<T>(token: Token<T>, value?: Factory<T>): this;
+
+    /**
+     * register value.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {T} value
+     * @returns {this}
+     * @memberof IContainer
+     */
+    registerValue<T>(token: Token<T>, value: T): this;
+
+    /**
+     * bind provider
+     *
+     * @template T
+     * @param {Token<T>} provide
+     * @param {Token<T> | Factory<T>} provider
+     * @returns {this}
+     * @memberof IContainer
+     */
+    bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this;
+
+    /**
+     * unregister the token
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {this}
+     * @memberof IContainer
+     */
+    unregister<T>(token: Token<T>, inchain?: boolean): this;
+
+    /**
      * clear cache.
      *
      * @param {Type<any>} targetType
@@ -138,19 +217,6 @@ export interface IContainer extends IMethodAccessor, IResolver {
     getTokenImpl<T>(token: Token<T>, inchain?: boolean): Type<T>;
 
     /**
-     * get target reference service.
-     *
-     * @template T
-     * @param {Type<Registration<T>>} [refServiceInject] reference service Registration Injector
-     * @param {Token<any>} target  the service reference to.
-     * @param {Token<T>} [defaultToken] default service token.
-     * @param {...Providers[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getRefService<T>(refServiceInject: Type<Registration<T>>, target: Token<any>, defaultToken?: Token<T>, ...providers: Providers[]): T
-
-    /**
      * get token implement class and base classes.
      *
      * @param {Token<any>} token
@@ -158,60 +224,6 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @memberof IContainer
      */
     getTokenExtendsChain(token: Token<any>): Token<any>[];
-
-    /**
-     * register type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {Factory<T>} [value]
-     * @returns {this}
-     * @memberof IContainer
-     */
-    register<T>(token: Token<T>, value?: Factory<T>): this;
-
-    /**
-     * unregister the token
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {this}
-     * @memberof IContainer
-     */
-    unregister<T>(token: Token<T>, inchain?: boolean): this;
-
-    /**
-     * bind provider
-     *
-     * @template T
-     * @param {Token<T>} provide
-     * @param {Token<T> | Factory<T>} provider
-     * @returns {this}
-     * @memberof IContainer
-     */
-    bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this;
-
-    /**
-     * register stingleton type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {Factory<T>} value
-     * @returns {this}
-     * @memberOf IContainer
-     */
-    registerSingleton<T>(token: Token<T>, value?: Factory<T>): this;
-
-    /**
-     * register value.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} value
-     * @returns {this}
-     * @memberof IContainer
-     */
-    registerValue<T>(token: Token<T>, value: T): this;
 
     /**
      * get life scope of container.

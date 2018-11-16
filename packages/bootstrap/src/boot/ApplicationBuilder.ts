@@ -13,10 +13,25 @@ import { Runnable } from '../runnable';
  * @enum {number}
  */
 export enum AppEvents {
+    /**
+     * on root container created.
+     */
     onRootContainerCreated = 'onRootContainerCreated',
+    /**
+     * on root container inited.
+     */
     onRootContainerInited = 'onRootContainerInited',
+    /**
+     * on module created.
+     */
     onModuleCreated = 'onModuleCreated',
+    /**
+     * on boot created.
+     */
     onBootCreated = 'onBootCreated',
+    /**
+     *  on runable service started.
+     */
     onRunnableStarted = 'onRunnableStarted'
 }
 

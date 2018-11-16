@@ -4,6 +4,7 @@ export * from './Container';
 
 export * from './types';
 export * from './Registration';
+export * from './InjectReference';
 export * from './InjectToken';
 export * from './IContainerBuilder';
 export * from './IParameter';

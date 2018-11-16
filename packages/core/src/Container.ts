@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
-import { Type, Token, Factory, SymbolType, ToInstance, IocState, Providers, Modules, LoadType } from './types';
+import { Type, Token, Factory, SymbolType, ToInstance, IocState, Providers, Modules, LoadType, ReferenceToken } from './types';
 import { Registration } from './Registration';
 import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet, lang } from './utils';
 
@@ -12,6 +12,7 @@ import { CacheManagerToken } from './ICacheManager';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { registerCores } from './registerCores';
 import { ResolverChain, ResolverChainToken } from './resolves';
+import { InjectReference } from './InjectReference';
 
 /**
  * Container
@@ -50,6 +51,45 @@ export class Container implements IContainer {
     }
 
     /**
+    * resolve token value in this container only.
+    *
+    * @template T
+    * @param {Token<T>} token
+    * @param {...Providers[]} providers
+    * @returns {T}
+    * @memberof Container
+    */
+    get resolvers(): ResolverChain {
+        return this.resolveValue(ResolverChainToken);
+    }
+
+    /**
+     * has register the token or not.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {string} [alias]
+     * @returns {boolean}
+     * @memberof Container
+     */
+    has<T>(token: Token<T>, alias?: string): boolean {
+        let key = this.getTokenKey(token, alias);
+        return this.resolvers.has(key);
+    }
+
+    /**
+     * has register type.
+     *
+     * @template T
+     * @param {SymbolType<T>} key
+     * @returns
+     * @memberof Container
+     */
+    hasRegister<T>(key: SymbolType<T>) {
+        return this.factories.has(key);
+    }
+
+    /**
      * Retrieves an instance from the container based on the provided token.
      *
      * @template T
@@ -61,19 +101,6 @@ export class Container implements IContainer {
      */
     get<T>(token: Token<T>, alias?: string, ...providers: Providers[]): T {
         return this.resolve(alias ? this.getTokenKey<T>(token, alias) : token, ...providers);
-    }
-
-    /**
-    * resolve token value in this container only.
-    *
-    * @template T
-    * @param {Token<T>} token
-    * @param {...Providers[]} providers
-    * @returns {T}
-    * @memberof Container
-    */
-    get resolvers(): ResolverChain {
-        return this.resolveValue(ResolverChainToken);
     }
 
     /**
@@ -109,31 +136,52 @@ export class Container implements IContainer {
     }
 
     /**
-     * clear cache.
+     * get service or target reference service.
      *
-     * @param {Type<any>} targetType
-     * @memberof IContainer
+     * @template T
+     * @param {Token<T>} token servive token.
+     * @param {Token<any>} [target] service refrence target.
+     * @param {...Providers[]} providers
+     * @returns {T}
+     * @memberof Container
      */
-    clearCache(targetType: Type<any>) {
-        this.resolveValue(CacheManagerToken).destroy(targetType);
+    getService<T>(token: Token<T>, target?: Token<any>, ...providers: Providers[]): T {
+        if (isToken(target)) {
+            return this.getRefService((tk) => new InjectReference(this.getTokenImpl(token), tk), target, token, ...providers);
+        } else {
+            return this.resolve(token, ...(isUndefined(target) ? providers : providers.splice(0, 0, target)));
+        }
     }
 
     /**
-     * get token.
+     * get target reference service.
      *
      * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {Token<T>}
+     * @param {Type<Registration<T>>} [refToken] reference service Registration Injector
+     * @param {Token<any>} target  the service reference to.
+     * @param {Token<T>} [defaultToken] default service token.
+     * @param {...Providers[]} providers
+     * @returns {T}
      * @memberof Container
      */
-    getToken<T>(token: Token<T>, alias?: string): Token<T> {
-        if (alias) {
-            return new Registration(token, alias);
+    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any>, defaultToken?: Token<T>, ...providers: Providers[]): T {
+        let service: T;
+        this.getTokenExtendsChain(target)
+            .forEach(tk => {
+                if (service) {
+                    return false;
+                }
+                let serviceToken = isClass(refToken) ? new refToken(tk) : refToken(tk);
+                if (this.has(serviceToken)) {
+                    service = this.resolve(serviceToken, ...providers);
+                }
+                return true;
+            });
+        if (!service && defaultToken && this.has(defaultToken)) {
+            service = this.resolve(defaultToken, ...providers);
         }
-        return token;
+        return service;
     }
-
 
     /**
      * get tocken key.
@@ -164,58 +212,6 @@ export class Container implements IContainer {
      */
     register<T>(token: Token<T>, value?: Factory<T>): this {
         this.registerFactory(token, value);
-        return this;
-    }
-
-    /**
-     * has register the token or not.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {boolean}
-     * @memberof Container
-     */
-    has<T>(token: Token<T>, alias?: string): boolean {
-        let key = this.getTokenKey(token, alias);
-        return this.resolvers.has(key);
-    }
-
-    /**
-     * has register type.
-     *
-     * @template T
-     * @param {SymbolType<T>} key
-     * @returns
-     * @memberof Container
-     */
-    hasRegister<T>(key: SymbolType<T>) {
-        return this.factories.has(key);
-    }
-
-    /**
-     * unregister the token
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {this}
-     * @memberof Container
-     */
-    unregister<T>(token: Token<T>, inchain?: boolean): this {
-        let key = this.getTokenKey(token);
-        if (inchain === false) {
-            if (this.hasRegister(key)) {
-                this.factories.delete(key);
-                if (this.provideTypes.has(key)) {
-                    this.provideTypes.delete(key);
-                }
-                if (isClass(key)) {
-                    this.clearCache(key);
-                }
-            }
-        } else {
-            this.resolvers.unregister(key);
-        }
         return this;
     }
 
@@ -303,6 +299,58 @@ export class Container implements IContainer {
     }
 
     /**
+     * unregister the token
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {this}
+     * @memberof Container
+     */
+    unregister<T>(token: Token<T>, inchain?: boolean): this {
+        let key = this.getTokenKey(token);
+        if (inchain === false) {
+            if (this.hasRegister(key)) {
+                this.factories.delete(key);
+                if (this.provideTypes.has(key)) {
+                    this.provideTypes.delete(key);
+                }
+                if (isClass(key)) {
+                    this.clearCache(key);
+                }
+            }
+        } else {
+            this.resolvers.unregister(key);
+        }
+        return this;
+    }
+
+    /**
+     * clear cache.
+     *
+     * @param {Type<any>} targetType
+     * @memberof IContainer
+     */
+    clearCache(targetType: Type<any>) {
+        this.resolveValue(CacheManagerToken).destroy(targetType);
+    }
+
+    /**
+     * get token.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {string} [alias]
+     * @returns {Token<T>}
+     * @memberof Container
+     */
+    getToken<T>(token: Token<T>, alias?: string): Token<T> {
+        if (alias) {
+            return new Registration(token, alias);
+        }
+        return token;
+    }
+
+    /**
      * get token implements class type.
      *
      * @template T
@@ -348,36 +396,6 @@ export class Container implements IContainer {
             target = lang.getParentClass(target);
         }
         return types;
-    }
-
-    /**
-     * get target reference service.
-     *
-     * @template T
-     * @param {Type<Registration<T>>} [refServiceInject] reference service Registration Injector
-     * @param {Token<any>} target  the service reference to.
-     * @param {Token<T>} [defaultToken] default service token.
-     * @param {...Providers[]} providers
-     * @returns {T}
-     * @memberof Container
-     */
-    getRefService<T>(refServiceInject: Type<Registration<T>>, target: Token<any>, defaultToken?: Token<T>, ...providers: Providers[]): T {
-        let service: T;
-        this.getTokenExtendsChain(target)
-            .forEach(tk => {
-                if (service) {
-                    return false;
-                }
-                let serviceToken = new refServiceInject(tk);
-                if (this.has(serviceToken)) {
-                    service = this.resolve(serviceToken, ...providers);
-                }
-                return true;
-            });
-        if (!service && defaultToken && this.has(defaultToken)) {
-            service = this.resolve(defaultToken, ...providers);
-        }
-        return service;
     }
 
     /**

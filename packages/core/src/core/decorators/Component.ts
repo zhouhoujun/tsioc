@@ -1,6 +1,5 @@
-import { createClassDecorator, ITypeDecorator } from '../factories';
+import { createClassDecorator, IClassDecorator } from '../factories';
 import { InjectableMetadata } from '../metadatas';
-import { Registration } from '../../Registration';
 
 /**
  * Component decorator
@@ -9,18 +8,18 @@ import { Registration } from '../../Registration';
  * @interface IInjectableDecorator
  * @extends {IClassDecorator<InjectableMetadata>}
  */
-export interface IComponentDecorator extends ITypeDecorator<InjectableMetadata> {
-    /**
-     * Component decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`ComponentLifecycle`]
-     *
-     * @Component
-     *
-     * @param {(Registration<any> | symbol | string)} provide define this class provider for provide.
-     * @param {string} [alias] define this class provider with alias for provide.
-     * @param {boolean} [singlton] define this class as singlton.
-     * @param {number} [cache]  define class cahce expris when is not singlton.
-     */
-    (provide: Registration<any> | symbol | string, alias?: string, singlton?: boolean, cache?: number): ClassDecorator;
+export interface IComponentDecorator extends IClassDecorator<InjectableMetadata> {
+    // /**
+    //  * Component decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`ComponentLifecycle`]
+    //  *
+    //  * @Component
+    //  *
+    //  * @param {(Registration<any> | symbol | string)} provide define this class provider for provide.
+    //  * @param {string} [alias] define this class provider with alias for provide.
+    //  * @param {boolean} [singlton] define this class as singlton.
+    //  * @param {number} [cache]  define class cahce expris when is not singlton.
+    //  */
+    // (provide: Registration<any> | symbol | string, alias?: string, singlton?: boolean, cache?: number): ClassDecorator;
 
     /**
      * Component decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`ComponentLifecycle`]

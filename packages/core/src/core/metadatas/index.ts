@@ -1,5 +1,6 @@
 
 export * from './Metadate';
+export * from './RefMetadata';
 export * from './MethodMetadata';
 export * from './ParameterMetadata';
 export * from './ParamPropMetadata';

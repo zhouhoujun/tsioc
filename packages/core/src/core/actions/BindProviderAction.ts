@@ -5,6 +5,7 @@ import { getOwnTypeMetadata, hasOwnClassMetadata } from '../factories';
 import { IContainer } from '../../IContainer';
 import { Token } from '../../types';
 import { ClassMetadata } from '../metadatas';
+import { InjectReference } from '../../InjectReference';
 
 /**
  * bind provider action data.
@@ -43,10 +44,18 @@ export class BindProviderAction extends ActionComposite {
             if (Array.isArray(metadata) && metadata.length > 0) {
                 // bind all provider.
                 metadata.forEach(c => {
-                    if (c && c.provide) {
+                    if (!c) {
+                        return;
+                    }
+                    if (c.provide) {
                         let provideKey = raiseContainer.getTokenKey(c.provide, c.alias);
                         provides.push(provideKey);
                         raiseContainer.bindProvider(provideKey, c.type);
+                    }
+                    if (c.refTarget) {
+                        let refKey = new InjectReference(c.type, c.refTarget).toString();
+                        provides.push(refKey);
+                        raiseContainer.bindProvider(refKey, c.type)
                     }
                 });
             }

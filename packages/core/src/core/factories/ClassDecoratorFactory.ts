@@ -1,10 +1,10 @@
 import 'reflect-metadata';
 import { ClassMetadata } from '../metadatas';
-import { Type } from '../../types';
+import { Type, Token } from '../../types';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
 import { Registration } from '../../Registration';
-import { isString, isSymbol, isObject, isNumber, isBoolean } from '../../utils';
+import { isString, isSymbol, isObject, isNumber, isBoolean, isToken } from '../../utils';
 import { ArgsIterator } from './ArgsIterator';
 
 /**
@@ -34,6 +34,34 @@ export interface ITypeDecorator<T extends ClassMetadata> {
  * @interface IClassDecorator
  */
 export interface IClassDecorator<T extends ClassMetadata> extends ITypeDecorator<T> {
+
+    /**
+     * define class decorator setting with params.
+     *
+     * @param {(Registration<any> | symbol | string)} provide define this class provider for provide.
+     * @param {string} [alias] define this class provider with alias for provide.
+     */
+    (provide: Registration<any> | symbol | string, alias?: string): ClassDecorator;
+
+    /**
+     * define class decorator setting with params.
+     *
+     * @param {(Registration<any> | symbol | string)} provide define this class provider for provide.
+     * @param {string} [alias] define this class provider with alias for provide.
+     * @param {Token<any>} [refTarget]  define the class as service of target.
+     */
+    (provide: Registration<any> | symbol | string, alias: string, refTarget: Token<any>): ClassDecorator;
+
+    /**
+     * define class decorator setting with params.
+     *
+     * @param {(Registration<any> | symbol | string)} provide define this class provider for provide.
+     * @param {string} [alias] define this class provider with alias for provide.
+     * @param {boolean} [singlton] define this class as singlton.
+     * @param {Token<any>} [refTarget]  define the class as service of target.
+     */
+    (provide: Registration<any> | symbol | string, alias: string, singlton: boolean, refTarget: Token<any>): ClassDecorator;
+
     /**
      * define class decorator setting with params.
      *
@@ -41,8 +69,9 @@ export interface IClassDecorator<T extends ClassMetadata> extends ITypeDecorator
      * @param {string} [alias] define this class provider with alias for provide.
      * @param {boolean} [singlton] define this class as singlton.
      * @param {number} [cache]  define class cahce expris when is not singlton.
+     * @param {Token<any>} [refTarget]  define the class as service of target.
      */
-    (provide: Registration<any> | symbol | string, alias?: string, singlton?: boolean, cache?: number): ClassDecorator;
+    (provide: Registration<any> | symbol | string, alias: string, cache: number, refTarget: Token<any>): ClassDecorator;
 
 }
 
@@ -62,12 +91,10 @@ export interface IClassDecorator<T extends ClassMetadata> extends ITypeDecorator
 export function createClassDecorator<T extends ClassMetadata>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): IClassDecorator<T> {
 
     let classAdapter = ((args: ArgsIterator) => {
-        let metadata;
         if (adapter) {
             adapter(args);
         }
         args.next<T>({
-            // isMetadata: (arg) => isClassMetadata(arg),
             match: (arg) => arg && (isSymbol(arg) || isString(arg) || (isObject(arg) && arg instanceof Registration)),
             setMetadata: (metadata, arg) => {
                 metadata.provide = arg;
@@ -82,14 +109,20 @@ export function createClassDecorator<T extends ClassMetadata>(name: string, adap
         });
 
         args.next<T>({
-            match: (arg) => isBoolean(arg),
+            match: (arg) => isBoolean(arg) || isNumber(arg) || isToken(arg),
             setMetadata: (metadata, arg) => {
-                metadata.singleton = arg;
+                if (isBoolean(arg)) {
+                    metadata.singleton = arg;
+                } else if (isNumber(arg)) {
+                    metadata.expires = arg;
+                } else if (isToken(arg)) {
+                    metadata.refTarget = arg;
+                }
             }
         });
 
         args.next<T>({
-            match: (arg) => isNumber(arg),
+            match: (arg) => isToken(arg),
             setMetadata: (metadata, arg) => {
                 metadata.expires = arg;
             }

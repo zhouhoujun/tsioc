@@ -131,6 +131,11 @@ export interface AbstractType<T> extends Function {
     classAnnations?: ClassAnnations;
 }
 
+/**
+ * reference token.
+ */
+export type ReferenceToken<T> = Type<Registration<T>> | ((token: Token<any>) => Token<T>);
+
 
 /**
  * express.
