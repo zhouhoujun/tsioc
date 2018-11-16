@@ -1,6 +1,6 @@
 {
   "name": "tsioc-srcs",
-  "version": "3.2.12",
+  "version": "3.2.14",
   "private": true,
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
