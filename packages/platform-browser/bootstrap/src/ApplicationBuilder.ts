@@ -53,9 +53,4 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
     protected createContainerBuilder(): IContainerBuilder {
         return new ContainerBuilder();
     }
-
-    protected createBuilder() {
-        return this;
-    }
-
 }

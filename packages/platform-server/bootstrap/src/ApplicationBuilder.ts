@@ -141,9 +141,5 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
         return new ContainerBuilder();
     }
 
-    protected createBuilder() {
-        return this;
-    }
-
 }
 
