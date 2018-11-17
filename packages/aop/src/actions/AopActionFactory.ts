@@ -14,6 +14,13 @@ import {
  */
 export class AopActionFactory {
 
+    /**
+     * create aop decorator action component.
+     *
+     * @param {string} type
+     * @returns {ActionComponent}
+     * @memberof AopActionFactory
+     */
     create(type: string): ActionComponent {
         let action: ActionComponent;
         switch (type) {

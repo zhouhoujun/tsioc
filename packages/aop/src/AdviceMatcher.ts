@@ -7,8 +7,11 @@ import {
 import { IPointcut, MatchPointcut } from './joinpoints';
 import { Aspect, Advice, NonePointcut } from './decorators';
 
-
+/**
+ * match express.
+ */
 export type MatchExpress = (method: string, fullName: string, targetType?: Type<any>, target?: any, pointcut?: IPointcut) => boolean
+
 /**
  * advice matcher, use to match advice when a registered create instance.
  *

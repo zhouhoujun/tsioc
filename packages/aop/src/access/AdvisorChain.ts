@@ -4,6 +4,13 @@ import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
 import { AdvisorProceedingToken } from './IAdvisorProceeding';
 import { NonePointcut } from '../decorators';
 
+/**
+ * advisor chain.
+ *
+ * @export
+ * @class AdvisorChain
+ * @implements {IAdvisorChain}
+ */
 @NonePointcut()
 @Injectable(AdvisorChainToken)
 export class AdvisorChain implements IAdvisorChain {
@@ -17,14 +24,31 @@ export class AdvisorChain implements IAdvisorChain {
         this.actions = [];
     }
 
+    /**
+     * register next action.
+     *
+     * @param {Express<Joinpoint, any>} action
+     * @memberof AdvisorChain
+     */
     next(action: Express<Joinpoint, any>) {
         this.actions.push(action);
     }
 
+    /**
+     * get recognizer of this advisor.
+     *
+     * @returns {IRecognizer}
+     * @memberof AdvisorChain
+     */
     getRecognizer(): IRecognizer {
         return this.container.get(RecognizerToken, this.joinPoint.state);
     }
 
+    /**
+     * process the advices.
+     *
+     * @memberof AdvisorChain
+     */
     process(): void {
         let alias = this.getRecognizer().recognize(this.joinPoint.returning);
         this.container.get(AdvisorProceedingToken, alias)

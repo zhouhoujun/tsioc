@@ -1,5 +1,5 @@
 import { IContainer, Inject, ContainerToken, LifeScopeToken, IocExt, CoreActions } from '@ts-ioc/core';
-import { Test, Suite } from './core';
+import { Suite } from './core';
 
 
 /**

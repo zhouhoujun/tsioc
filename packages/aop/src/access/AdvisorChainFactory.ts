@@ -6,6 +6,13 @@ import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
 import { NonePointcut } from '../decorators';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
 
+/**
+ * advisor chain factory.
+ *
+ * @export
+ * @class AdvisorChainFactory
+ * @implements {IAdvisorChainFactory}
+ */
 @NonePointcut()
 @Injectable(AdvisorChainFactoryToken)
 export class AdvisorChainFactory implements IAdvisorChainFactory {

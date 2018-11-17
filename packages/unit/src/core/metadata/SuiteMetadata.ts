@@ -12,7 +12,7 @@ export interface SuiteMetadata extends ClassMetadata {
      * test suite describe message.
      *
      * @type {string}
-     * @memberof FieldMetadata
+     * @memberof SuiteMetadata
      */
     describe?: string;
 

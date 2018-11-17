@@ -7,6 +7,13 @@ import { IProxyMethod, ProxyMethodToken } from './IProxyMethod';
 import { AdvisorChainFactoryToken } from './IAdvisorChainFactory';
 import { NonePointcut } from '../decorators';
 
+/**
+ * Proxy method.
+ *
+ * @export
+ * @class ProxyMethod
+ * @implements {IProxyMethod}
+ */
 @NonePointcut()
 @Singleton(ProxyMethodToken)
 export class ProxyMethod implements IProxyMethod {
@@ -31,6 +38,15 @@ export class ProxyMethod implements IProxyMethod {
         return this._liefScope;
     }
 
+    /**
+     * proceed the proxy method.
+     *
+     * @param {*} target
+     * @param {Type<any>} targetType
+     * @param {IPointcut} pointcut
+     * @param {Joinpoint} [provJoinpoint]
+     * @memberof ProxyMethod
+     */
     proceed(target: any, targetType: Type<any>, pointcut: IPointcut, provJoinpoint?: Joinpoint) {
 
         let aspectMgr = this.advisor;
