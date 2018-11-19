@@ -1,7 +1,7 @@
 import { AppConfigure } from './AppConfigure';
-import { LoadType, Factory, Token, isClass, isToken } from '@ts-ioc/core';
+import { LoadType, Factory, Token } from '@ts-ioc/core';
 import { IApplicationBuilder, AnyApplicationBuilder } from './IApplicationBuilder';
-import { ModuleBuilder, ModuleEnv, InjectedModule, IModuleBuilder, InjectModuleBuilderToken, DefaultModuleBuilderToken, ModuleBuilderToken, ModuleConfig } from '../modules';
+import { ModuleEnv, InjectedModule } from '../modules';
 import { IEvents } from '../utils';
 import { Runnable } from '../runnable';
 import { RunnableBuilder, RunnableEvents } from './RunnableBuilder';

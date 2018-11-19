@@ -48,6 +48,11 @@ export const ConfigureLoaderToken = new InjectToken<IConfigureLoader<ModuleConfi
 @Ref(RunnableBuilderToken)
 export class ConfigureManager<T extends ModuleConfigure> {
 
+    /**
+     * Creates an instance of ConfigureManager.
+     * @param {string} [baseURL]
+     * @memberof ConfigureManager
+     */
     constructor(protected baseURL?: string) {
 
     }
@@ -79,6 +84,13 @@ export class ConfigureManager<T extends ModuleConfigure> {
         return this;
     }
 
+    /**
+     * bind runnable builder.
+     *
+     * @param {RunnableBuilder<any>} builder
+     * @param {...CustomRegister<any>[]} regs
+     * @memberof ConfigureManager
+     */
     async bindBuilder(builder: RunnableBuilder<any>, ...regs: CustomRegister<any>[]) {
         let config = await this.getConfig();
         if (this.baseURL) {
@@ -90,6 +102,12 @@ export class ConfigureManager<T extends ModuleConfigure> {
         }));
     }
 
+    /**
+     * get config.
+     *
+     * @returns {Promise<T>}
+     * @memberof ConfigureManager
+     */
     async getConfig(): Promise<T> {
         if (!this.config) {
             this.config = await this.initConfig();
@@ -97,6 +115,13 @@ export class ConfigureManager<T extends ModuleConfigure> {
         return this.config;
     }
 
+    /**
+     * init config.
+     *
+     * @protected
+     * @returns
+     * @memberof ConfigureManager
+     */
     protected async initConfig() {
         let config = await this.getDefaultConfig();
         if (this.configs.length < 1) {
@@ -117,6 +142,14 @@ export class ConfigureManager<T extends ModuleConfigure> {
         return config;
     }
 
+    /**
+     * load config.
+     *
+     * @protected
+     * @param {string} src
+     * @returns {Promise<T>}
+     * @memberof ConfigureManager
+     */
     protected async loadConfig(src: string): Promise<T> {
         if (this.container.has(ConfigureLoaderToken)) {
             let loader = this.container.resolve(ConfigureLoaderToken, { baseURL: this.baseURL, container: this.container });
@@ -128,9 +161,15 @@ export class ConfigureManager<T extends ModuleConfigure> {
         } else {
             return null;
         }
-
     }
 
+    /**
+     * get default config.
+     *
+     * @protected
+     * @returns {Promise<T>}
+     * @memberof ConfigureManager
+     */
     protected async getDefaultConfig(): Promise<T> {
         if (this.container.has(DefaultConfigureToken)) {
             return this.container.resolve(DefaultConfigureToken) as T;
