@@ -1,5 +1,5 @@
 import { IService } from './Service';
-import { IRunner } from './IRunner';
+import { IRunner } from './Runner';
 
 /**
  * runn able.

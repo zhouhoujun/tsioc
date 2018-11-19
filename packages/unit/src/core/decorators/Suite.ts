@@ -1,4 +1,4 @@
-import { TypeMetadata, IClassMethodDecorator, MetadataAdapter, MetadataExtends, createClassDecorator, IClassDecorator, isString, ITypeDecorator } from '@ts-ioc/core';
+import { TypeMetadata, IClassMethodDecorator, MetadataAdapter, MetadataExtends, createClassDecorator, IClassDecorator, isString, ITypeDecorator, isNumber } from '@ts-ioc/core';
 import { SuiteMetadata } from '../metadata';
 
 
@@ -35,6 +35,12 @@ export function createSuiteDecorator<T extends SuiteMetadata>(
                 match: (arg) => isString(arg),
                 setMetadata: (metadata, arg) => {
                     metadata.describe = arg;
+                }
+            });
+            args.next<SuiteMetadata>({
+                match: (arg) => isNumber(arg),
+                setMetadata: (metadata, arg) => {
+                    metadata.timeout = arg;
                 }
             });
         },

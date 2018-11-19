@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import {
     IContainer, Token, Providers, lang, isFunction, isClass,
-    isToken, Singleton, Inject, Registration, Container, AnnotationMetaAccessorToken
+    isToken, Singleton, Inject, Registration, Container, AnnotationMetaAccessorToken, InjectReference
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
@@ -201,9 +201,17 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             await instance.start(data);
             return instance;
         } else {
-
             let providers = [{ provide: token, useValue: instance }, { token: token, instance: instance, config: cfg }] as Providers[];
-            let runner: IRunner<T> = container.getRefService(InjectRunnerToken, token, DefaultRunnerToken, ...providers);
+            let runner: IRunner<T> = container.getRefService(
+                (tk) => {
+                    let tokens = [new InjectRunnerToken(tk)];
+                    return tokens.concat(container.getTokenExtendsChain(isToken(annBuilder) ? annBuilder : AnnotationBuilderToken)
+                        .map(token => {
+                            return new InjectReference(token, tk);
+                        }));
+                },
+                token, 
+                DefaultRunnerToken, ...providers);
             let service: IService<T>;
             if (!runner) {
                 service = container.getRefService(InjectServiceToken, token, DefaultServiceToken, ...providers);
@@ -212,7 +220,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
                 }
             }
             if (!runner && !service) {
-                this.getDefaultService(container, ...providers)
+                service = this.getDefaultService(container, ...providers)
             }
             if (runner) {
                 await runner.run(data);
@@ -240,7 +248,16 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     protected getAnnoBuilder(container: IContainer, token: Token<any>, annBuilder: Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>): IAnyTypeBuilder {
         let builder: IAnnotationBuilder<any>;
         if (!builder && token) {
-            builder = container.getRefService(InjectAnnotationBuilder, token, DefaultAnnotationBuilderToken);
+            builder = container.getRefService(
+                (tk) => {
+                    let tokens = [new InjectAnnotationBuilder(tk)];
+                    return tokens.concat(container.getTokenExtendsChain(isToken(annBuilder) ? annBuilder : AnnotationBuilderToken)
+                        .map(token => {
+                            return new InjectReference(token, tk);
+                        }));
+                },
+                token,
+                DefaultAnnotationBuilderToken);
         }
 
         if (isClass(annBuilder)) {

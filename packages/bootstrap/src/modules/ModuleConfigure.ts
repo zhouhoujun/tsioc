@@ -13,6 +13,14 @@ import { AnnotationConfigure } from '../annotations';
 export interface ModuleConfig<T> extends AnnotationConfigure<T> {
 
     /**
+     * module base url.
+     *
+     * @type {string}
+     * @memberof ModuleConfig
+     */
+    baseURL?: string;
+
+    /**
      * module name.
      *
      * @type {string}

@@ -1,5 +1,5 @@
 
-import { createPropDecorator, MetadataExtends, MetadataAdapter, isString, isNumber, IMethodDecorator, createMethodDecorator } from '@ts-ioc/core';
+import { MetadataExtends, MetadataAdapter, isString, isNumber, IMethodDecorator, createMethodDecorator } from '@ts-ioc/core';
 import { TestMetadata, TestCaseMetadata } from '../metadata';
 
 
@@ -28,11 +28,23 @@ export interface ITestDecorator<T extends TestMetadata> extends IMethodDecorator
 export function createTestDecorator<T extends TestMetadata>(
     action: string,
     adapter?: MetadataAdapter,
+    finallyAdapter?: MetadataAdapter,
     metaExtends?: MetadataExtends<T>): ITestDecorator<T> {
     return createMethodDecorator<TestMetadata>('Test',
         args => {
             if (adapter) {
                 adapter(args);
+            }
+
+            args.next<TestCaseMetadata>({
+                match: (arg) => isNumber(arg),
+                setMetadata: (metadata, arg) => {
+                    metadata.timeout = arg;
+                }
+            });
+
+            if (finallyAdapter) {
+                finallyAdapter(args);
             }
         },
         (metadata: T) => {
@@ -44,7 +56,7 @@ export function createTestDecorator<T extends TestMetadata>(
         }) as ITestDecorator<T>;
 }
 
-export interface ITestCaseDecorator extends ITestDecorator<TestCaseMetadata>  {
+export interface ITestCaseDecorator extends ITestDecorator<TestCaseMetadata> {
     /**
      * @Test decorator. define the method of class as unit test case.  Describe a specification or test-case with the given `title` and callback `fn` acting
      * as a thunk.
@@ -64,26 +76,22 @@ export interface ITestCaseDecorator extends ITestDecorator<TestCaseMetadata>  {
  * @interface ITestDecorator
  * @template T
  */
-export const Test: ITestCaseDecorator = createTestDecorator<TestCaseMetadata>('Case', args => {
-    args.next<TestCaseMetadata>({
-        match: (arg) => isString(arg),
-        setMetadata: (metadata, arg) => {
-            metadata.title = arg;
-        }
-    });
+export const Test: ITestCaseDecorator = createTestDecorator<TestCaseMetadata>('Case',
+    args => {
+        args.next<TestCaseMetadata>({
+            match: (arg) => isString(arg),
+            setMetadata: (metadata, arg) => {
+                metadata.title = arg;
+            }
+        });
 
-    args.next<TestCaseMetadata>({
-        match: (arg) => isNumber(arg),
-        setMetadata: (metadata, arg) => {
-            metadata.timeout = arg;
-        }
-    });
-
-    args.next<TestCaseMetadata>({
-        match: (arg) => isNumber(arg),
-        setMetadata: (metadata, arg) => {
-            metadata.setp = arg;
-        }
-    });
-}) as ITestCaseDecorator;
+    },
+    args => {
+        args.next<TestCaseMetadata>({
+            match: (arg) => isNumber(arg),
+            setMetadata: (metadata, arg) => {
+                metadata.setp = arg;
+            }
+        });
+    }) as ITestCaseDecorator;
 

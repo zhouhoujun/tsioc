@@ -15,6 +15,14 @@ export interface TestMetadata extends MethodMetadata {
      * @memberof TestMetadata
      */
     action?: string;
+
+    /**
+     * test timeout.
+     *
+     * @type {number}
+     * @memberof TestMetadata
+     */
+    timeout?: number;
 }
 
 /**
@@ -55,13 +63,7 @@ export interface TestCaseMetadata extends TestMetadata {
     * @memberof TestCaseMetadata
     */
     title?: string;
-    /**
-     * test timeout.
-     *
-     * @type {number}
-     * @memberof TestCaseMetadata
-     */
-    timeout?: number;
+
     /**
      * test setp
      *

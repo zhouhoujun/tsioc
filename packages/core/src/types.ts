@@ -134,7 +134,7 @@ export interface AbstractType<T> extends Function {
 /**
  * reference token.
  */
-export type ReferenceToken<T> = Type<Registration<T>> | ((token: Token<any>) => Token<T>);
+export type ReferenceToken<T> = Type<Registration<T>> | ((token: Token<any>) => Token<T> | Token<T>[]);
 
 
 /**

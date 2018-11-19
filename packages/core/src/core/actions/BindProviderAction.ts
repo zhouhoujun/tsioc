@@ -52,8 +52,8 @@ export class BindProviderAction extends ActionComposite {
                         provides.push(provideKey);
                         raiseContainer.bindProvider(provideKey, c.type);
                     }
-                    if (c.refTarget) {
-                        let refKey = new InjectReference(c.type, c.refTarget).toString();
+                    if (c.refTo) {
+                        let refKey = new InjectReference(c.type, c.refTo).toString();
                         provides.push(refKey);
                         raiseContainer.bindProvider(refKey, c.type)
                     }

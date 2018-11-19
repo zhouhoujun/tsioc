@@ -110,6 +110,17 @@ export interface IContainer extends IMethodAccessor, IResolver {
     getService<T>(token: Token<T>, target?: Token<any>, ...providers: Providers[]): T;
 
     /**
+     * get service  or taget reference service implements type.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {Token<any>} [target]
+     * @returns {Type<T>}
+     * @memberof IContainer
+     */
+    getServiceType<T>(token: Token<T>, target?: Token<any>): Type<T>;
+
+    /**
      * get target reference service.
      *
      * @template T

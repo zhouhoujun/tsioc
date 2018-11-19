@@ -2,10 +2,10 @@ import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
 import { Type, Token, Factory, SymbolType, ToInstance, IocState, Providers, Modules, LoadType, ReferenceToken } from './types';
 import { Registration } from './Registration';
-import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet, lang } from './utils';
+import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet, lang, isArray } from './utils';
 
 import { MethodAccessorToken } from './IMethodAccessor';
-import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderParserToken } from './core';
+import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderParserToken, getOwnTypeMetadata, AddRef, AddRefMetadata } from './core';
 import { LifeScope, LifeScopeToken } from './LifeScope';
 import { IParameter } from './IParameter';
 import { CacheManagerToken } from './ICacheManager';
@@ -25,6 +25,7 @@ export class Container implements IContainer {
     protected provideTypes: MapSet<Token<any>, Type<any>>;
     protected factories: MapSet<Token<any>, Function>;
     protected singleton: MapSet<Token<any>, any>;
+    // protected refs: MapSet<Type<any>, Type<any>[]>;
 
     /**
      * parent container.
@@ -147,9 +148,29 @@ export class Container implements IContainer {
      */
     getService<T>(token: Token<T>, target?: Token<any>, ...providers: Providers[]): T {
         if (isToken(target)) {
-            return this.getRefService((tk) => new InjectReference(this.getTokenImpl(token), tk), target, token, ...providers);
+            let serv = this.getServiceType(token, target);
+            return this.getRefService((tk) => new InjectReference(serv, tk), target, token, ...providers);
         } else {
             return this.resolve(token, ...(isUndefined(target) ? providers : providers.splice(0, 0, target)));
+        }
+    }
+
+    /**
+     * get service  or taget reference service implements type.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {Token<any>} [target]
+     * @returns {Type<T>}
+     * @memberof Container
+     */
+    getServiceType<T>(token: Token<T>, target?: Token<any>): Type<T> {
+        if (target) {
+            let metadatas = getOwnTypeMetadata<AddRefMetadata>(AddRef, this.getTokenImpl(target));
+            let ref = metadatas.find(meta => meta.addRefs && meta.addRefs.key === token);
+            return ref ? this.getTokenImpl(ref.addRefs.value) : this.getTokenImpl(token);
+        } else {
+            return this.getTokenImpl(token);
         }
     }
 
@@ -172,7 +193,12 @@ export class Container implements IContainer {
                     return false;
                 }
                 let serviceToken = isClass(refToken) ? new refToken(tk) : refToken(tk);
-                if (this.has(serviceToken)) {
+                if (isArray(serviceToken)) {
+                    let token = serviceToken.find(tk => this.has(tk));
+                    if (token) {
+                        service = this.resolve(token, ...providers);
+                    }
+                } else if (this.has(serviceToken)) {
                     service = this.resolve(serviceToken, ...providers);
                 }
                 return true;
@@ -297,6 +323,21 @@ export class Container implements IContainer {
         this.factories.set(provideKey, factory);
         return this;
     }
+
+    // bindRef(target: Token<any>, service: Token<any>) {
+    //     let tType = this.getTokenImpl(target);
+    //     let tServ = this.getTokenImpl(service);
+    //     if (tType && tServ) {
+    //         if (!this.refs.has(tType)) {
+    //             this.refs.set(tType, []);
+    //         }
+    //         let services = this.refs.get(tType);
+    //         if (!services.some(s => s === tServ)) {
+    //             services.push(tServ);
+    //             this.refs.set(tType, services);
+    //         }
+    //     }
+    // }
 
     /**
      * unregister the token
@@ -476,9 +517,10 @@ export class Container implements IContainer {
     }
 
     protected init() {
-        this.factories = new MapSet<Token<any>, Function>();
-        this.singleton = new MapSet<Token<any>, any>();
-        this.provideTypes = new MapSet<Token<any>, Type<any>>();
+        this.factories = new MapSet();
+        this.singleton = new MapSet();
+        this.provideTypes = new MapSet();
+        // this.refs = new MapSet();
         this.bindProvider(ContainerToken, () => this);
 
         registerCores(this);

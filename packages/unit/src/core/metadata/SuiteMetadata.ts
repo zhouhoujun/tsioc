@@ -16,4 +16,12 @@ export interface SuiteMetadata extends ClassMetadata {
      */
     describe?: string;
 
+    /**
+     * all action default timeout.
+     *
+     * @type {number}
+     * @memberof SuiteMetadata
+     */
+    timeout?: number;
+
 }
