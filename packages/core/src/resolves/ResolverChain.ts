@@ -21,8 +21,15 @@ export const ResolverChainToken = new InjectToken<ResolverChain>('di_ResolverCha
  * @implements {IResolver}
  */
 export class ResolverChain implements IResolver {
-
+    /**
+     * resolvers
+     *
+     * @protected
+     * @type {ResolverType[]}
+     * @memberof ResolverChain
+     */
     protected resolvers: ResolverType[];
+
     constructor(protected container: IContainer) {
         this.resolvers = [];
     }
@@ -39,10 +46,23 @@ export class ResolverChain implements IResolver {
         }
     }
 
+    /**
+     * resolver chain to array.
+     *
+     * @returns {ResolverType[]}
+     * @memberof ResolverChain
+     */
     toArray(): ResolverType[] {
         return [<ResolverType>this.container].concat(this.resolvers);
     }
 
+    /**
+     * has resolver or not.
+     *
+     * @param {ResolverType} resolver
+     * @returns
+     * @memberof ResolverChain
+     */
     hasResolver(resolver: ResolverType) {
         if (resolver instanceof Container) {
             return this.resolvers.indexOf(resolver) >= 0;
@@ -60,6 +80,15 @@ export class ResolverChain implements IResolver {
         }
     }
 
+    /**
+     * has token or not.
+     *
+     * @template T
+     * @param {ResolverType} resolver
+     * @param {SymbolType<T>} token
+     * @returns {boolean}
+     * @memberof ResolverChain
+     */
     hasToken<T>(resolver: ResolverType, token: SymbolType<T>): boolean {
         if (!token) {
             return false;

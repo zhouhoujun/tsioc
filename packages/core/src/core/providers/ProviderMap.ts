@@ -17,18 +17,44 @@ export class ProviderMap {
         this.maps = new MapSet();
     }
 
+    /**
+     * provider map keys.
+     *
+     * @returns {Token<any>[]}
+     * @memberof ProviderMap
+     */
     keys(): Token<any>[] {
         return this.maps.keys() as Token<any>[];
     }
 
+    /**
+     * provider map values.
+     *
+     * @returns {Factory<any>[]}
+     * @memberof ProviderMap
+     */
     values(): Factory<any>[] {
         return this.maps.values();
     }
 
+    /**
+     * has provide or not.
+     *
+     * @param {(Token<any> | number)} provide
+     * @returns {boolean}
+     * @memberof ProviderMap
+     */
     has(provide: Token<any> | number): boolean {
         return this.maps.has(this.getTokenKey(provide));
     }
 
+    /**
+     * get token key.
+     *
+     * @param {(Token<any> | number)} token
+     * @returns {(SymbolType<any> | number)}
+     * @memberof ProviderMap
+     */
     getTokenKey(token: Token<any> | number): SymbolType<any> | number {
         if (isToken(token)) {
             return this.container.getTokenKey(token);
@@ -36,10 +62,27 @@ export class ProviderMap {
         return token;
     }
 
+    /**
+     * get token factory.
+     *
+     * @template T
+     * @param {(Token<T> | number)} provide
+     * @returns {(Token<T> | Factory<T>)}
+     * @memberof ProviderMap
+     */
     get<T>(provide: Token<T> | number): Token<T> | Factory<T> {
         return this.maps.get(this.getTokenKey(provide));
     }
 
+    /**
+     * add and bind token provider.
+     *
+     * @template T
+     * @param {(Token<T> | number)} provide
+     * @param {(Token<T> | Factory<T>)} provider
+     * @returns {this}
+     * @memberof ProviderMap
+     */
     add<T>(provide: Token<T> | number, provider: Token<T> | Factory<T>): this {
         let key = this.getTokenKey(provide);
         if (isUndefined(key)) {
@@ -65,6 +108,14 @@ export class ProviderMap {
         return this;
     }
 
+    /**
+     * remove provide token.
+     *
+     * @template T
+     * @param {(Token<T> | number)} provide
+     * @returns {this}
+     * @memberof ProviderMap
+     */
     remove<T>(provide: Token<T> | number): this {
         let key = this.getTokenKey(provide);
         if (this.maps.has(key)) {
@@ -73,6 +124,15 @@ export class ProviderMap {
         return this;
     }
 
+    /**
+     * resolve instance via provide token.
+     *
+     * @template T
+     * @param {(Token<T> | number)} provide
+     * @param {...ProviderTypes[]} providers
+     * @returns {T}
+     * @memberof ProviderMap
+     */
     resolve<T>(provide: Token<T> | number, ...providers: ProviderTypes[]): T {
         let key = this.getTokenKey(provide);
         if (this.maps.has(key)) {
@@ -83,10 +143,23 @@ export class ProviderMap {
         }
     }
 
+    /**
+     * iterator each provide and instance of provide.
+     *
+     * @param {(Express2<Factory<any>, Token<any> | number, void | boolean>)} express
+     * @memberof ProviderMap
+     */
     forEach(express: Express2<Factory<any>, Token<any> | number, void | boolean>) {
         this.maps.forEach(express);
     }
 
+    /**
+     * copy provider map.
+     *
+     * @param {ProviderMap} map
+     * @returns
+     * @memberof ProviderMap
+     */
     copy(map: ProviderMap) {
         if (!map) {
             return;

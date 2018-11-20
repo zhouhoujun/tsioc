@@ -81,7 +81,7 @@ export class ModuleB implements OnModuleStart<ClassSevice> {
         let pools = container.get(ContainerPoolToken);
         // console.log(pools);
         console.log(container.has('mark'), container.get('mark'));
-        console.log(container);
+        console.log(container, container.getResolvers());
         console.log('container pools defaults..................\n');
         // console.log(pools.getDefault());
         // console.log(container.resolveChain.toArray()[1]);
@@ -101,7 +101,7 @@ export class ModuleB implements OnModuleStart<ClassSevice> {
     }
 }
 
-// test
-DefaultApplicationBuilder.create()
-    // .use(AopModule).use(LogModule)
-    .bootstrap(ModuleB);
+// // test
+// DefaultApplicationBuilder.create()
+//     // .use(AopModule).use(LogModule)
+//     .bootstrap(ModuleB);

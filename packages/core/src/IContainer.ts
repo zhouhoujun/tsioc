@@ -43,7 +43,7 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @type {ResolverChain}
      * @memberof IContainer
      */
-    readonly resolvers: ResolverChain;
+    getResolvers(): ResolverChain;
 
     /**
      * get container builder of this container.

@@ -1,6 +1,7 @@
 import { Token, IContainer, Registration, Type, IExports } from '@ts-ioc/core';
 import { ModuleConfig } from './ModuleConfigure';
 
+
 /**
  * injected module.
  *
@@ -15,12 +16,12 @@ export class InjectedModule<T> implements IExports {
         public config: ModuleConfig<T>,
         public container: IContainer,
         public type?: Type<any>,
-        public exports?: Token<any>[]
+        public exports?: Token<any>[],
+        public providers?: Token<any>[]
     ) {
 
     }
 }
-
 
 
 /**

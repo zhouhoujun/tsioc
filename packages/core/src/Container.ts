@@ -15,6 +15,11 @@ import { ResolverChain, ResolverChainToken } from './resolves';
 import { InjectReference } from './InjectReference';
 
 /**
+ * singleton reg token.
+ */
+const SingletonRegToken = '___IOC__Singleton___';
+
+/**
  * Container
  *
  * @export
@@ -24,8 +29,7 @@ import { InjectReference } from './InjectReference';
 export class Container implements IContainer {
     protected provideTypes: MapSet<Token<any>, Type<any>>;
     protected factories: MapSet<Token<any>, Function>;
-    protected singleton: MapSet<Token<any>, any>;
-
+    // protected singleton: MapSet<Token<any>, any>;
 
     /**
      * parent container.
@@ -33,7 +37,7 @@ export class Container implements IContainer {
      * @type {IContainer}
      * @memberof Container
      */
-    parent: IContainer;
+    parent: IContainer
 
     constructor() {
         this.init();
@@ -60,7 +64,7 @@ export class Container implements IContainer {
     * @returns {T}
     * @memberof Container
     */
-    get resolvers(): ResolverChain {
+    getResolvers(): ResolverChain {
         return this.resolveValue(ResolverChainToken);
     }
 
@@ -75,7 +79,7 @@ export class Container implements IContainer {
      */
     has<T>(token: Token<T>, alias?: string): boolean {
         let key = this.getTokenKey(token, alias);
-        return this.resolvers.has(key);
+        return this.getResolvers().has(key);
     }
 
     /**
@@ -115,7 +119,7 @@ export class Container implements IContainer {
      */
     resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
         let key = this.getTokenKey<T>(token);
-        return this.resolvers.resolve(key, ...providers);
+        return this.getResolvers().resolve(key, ...providers);
     }
 
     /**
@@ -263,10 +267,10 @@ export class Container implements IContainer {
     registerValue<T>(token: Token<T>, value: T): this {
         let key = this.getTokenKey(token);
 
-        this.singleton.set(key, value);
+        this.getSingleton().set(key, value);
         if (!this.factories.has(key)) {
             this.factories.set(key, () => {
-                return this.singleton.get(key);
+                return this.getSingleton().get(key);
             });
         }
 
@@ -341,7 +345,7 @@ export class Container implements IContainer {
                 }
             }
         } else {
-            this.resolvers.unregister(key);
+            this.getResolvers().unregister(key);
         }
         return this;
     }
@@ -392,7 +396,7 @@ export class Container implements IContainer {
             }
             return null;
         } else {
-            return this.resolvers.getTokenImpl(tokenKey);
+            return this.getResolvers().getTokenImpl(tokenKey);
         }
     }
 
@@ -499,12 +503,18 @@ export class Container implements IContainer {
 
     protected init() {
         this.factories = new MapSet();
-        this.singleton = new MapSet();
+        // this.singleton = new MapSet();
         this.provideTypes = new MapSet();
-        // this.refs = new MapSet();
         this.bindProvider(ContainerToken, () => this);
 
         registerCores(this);
+    }
+
+    protected getSingleton(): MapSet<Token<any>, any> {
+        if (!this.hasRegister(SingletonRegToken)) {
+            this.bindProvider(SingletonRegToken, new MapSet<Token<any>, any>());
+        }
+        return this.resolveValue(SingletonRegToken);
     }
 
     protected registerFactory<T>(token: Token<T>, value?: Factory<T>, singleton?: boolean) {
@@ -541,11 +551,11 @@ export class Container implements IContainer {
     protected createCustomFactory<T>(key: SymbolType<T>, factory?: ToInstance<T>, singleton?: boolean) {
         return singleton ?
             (...providers: ProviderTypes[]) => {
-                if (this.singleton.has(key)) {
-                    return this.singleton.get(key);
+                if (this.getSingleton().has(key)) {
+                    return this.getSingleton().get(key);
                 }
                 let instance = factory(this, ...providers);
-                this.singleton.set(key, instance);
+                this.getSingleton().set(key, instance);
                 return instance;
             }
             : (...providers: ProviderTypes[]) => factory(this, ...providers);
@@ -564,8 +574,8 @@ export class Container implements IContainer {
         }
 
         let factory = (...providers: ProviderTypes[]) => {
-            if (singleton && this.singleton.has(key)) {
-                return this.singleton.get(key);
+            if (singleton && this.getSingleton().has(key)) {
+                return this.getSingleton().get(key);
             }
 
             if (providers.length < 1) {

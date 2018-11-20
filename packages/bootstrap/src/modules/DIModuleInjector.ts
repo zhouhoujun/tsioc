@@ -91,7 +91,8 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         metaConfig = await this.registerConfgureDepds(newContainer, metaConfig, type);
 
         let exps: Type<any>[] = [].concat(...builder.loader.getTypes(metaConfig.exports || []));
-        let injMd = new InjectedModule(metaConfig.token || type, metaConfig, newContainer, type, exps);
+        let pdrMap = newContainer.get(new InjectReference(ProviderMap, type));
+        let injMd = new InjectedModule(metaConfig.token || type, metaConfig, newContainer, type, exps, pdrMap ? pdrMap.keys() : []);
         container.bindProvider(new InjectedModuleToken(type), injMd);
 
         await this.importConfigExports(container, newContainer, injMd);
@@ -116,9 +117,10 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
             return container;
         }
         if (injMd) {
-            container.resolvers.next(injMd);
+            let chain = container.getResolvers();
+            chain.next(injMd);
             if (injMd.exports && injMd.exports.length) {
-                let expchs = providerContainer.resolvers.toArray().filter(r => {
+                let expchs = providerContainer.getResolvers().toArray().filter(r => {
                     if (r instanceof Container) {
                         return false;
                     } else {
@@ -126,7 +128,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
                     }
                 });
                 expchs.forEach(r => {
-                    container.resolvers.next(r);
+                    chain.next(r);
                 });
             }
         }
