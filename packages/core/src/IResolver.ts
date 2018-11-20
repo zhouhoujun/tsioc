@@ -1,4 +1,4 @@
-import { Token, Providers } from './types';
+import { Token, ProviderTypes } from './types';
 
 /**
  * resolver interface.
@@ -12,9 +12,9 @@ export interface IResolver {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {...Providers[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IResolver
      */
-    resolve<T>(token: Token<T>, ...providers: Providers[]): T;
+    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
 }

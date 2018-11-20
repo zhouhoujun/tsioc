@@ -1,6 +1,6 @@
 import {
     Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
-    Inject, Token, isToken, Providers, Injectable, isArray, lang, isUndefined, isClass,
+    Inject, Token, isToken, ProviderTypes, Injectable, isArray, lang, isUndefined, isClass,
     isFunction, isString, isNull, isProviderMap, Provider, isBaseObject, IModuleInjector, Container
 } from '@ts-ioc/core';
 import { DIModuelValidateToken } from './DIModuleValidate';
@@ -134,7 +134,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         return container;
     }
 
-    protected bindProvider(container: IContainer, providers: Providers[]): Token<any>[] {
+    protected bindProvider(container: IContainer, providers: ProviderTypes[]): Token<any>[] {
         let tokens: Token<any>[] = [];
         providers.forEach((p, index) => {
             if (isUndefined(p) || isNull(p)) {
@@ -147,7 +147,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
                 });
             } else if (p instanceof Provider) {
                 tokens.push(p.type);
-                container.bindProvider(p.type, (...providers: Providers[]) => p.resolve(container, ...providers));
+                container.bindProvider(p.type, (...providers: ProviderTypes[]) => p.resolve(container, ...providers));
             } else if (isClass(p)) {
                 if (!container.has(p)) {
                     tokens.push(p);

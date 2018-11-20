@@ -18,9 +18,9 @@ export interface IRefDecorator {
      *
      * @Ref
      *
-     * @param {(Registration<any> | symbol | string)} refTarget reference to target token.
+     * @param {(Registration<any> | symbol | string)} refTo reference to target token.
      */
-    (refTarget: Registration<any> | symbol | string): ClassDecorator;
+    (refTo: Registration<any> | symbol | string): ClassDecorator;
 
     /**
      * Ref decorator, for class. use to define the class as service of target.

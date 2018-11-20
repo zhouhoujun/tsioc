@@ -1,6 +1,6 @@
 import {
     IContainer, Singleton, getOwnMethodMetadata,
-    MapSet, Type, ObjectMap, getClassName, lang, Providers
+    MapSet, Type, ObjectMap, getClassName, lang, ProviderTypes
 } from '@ts-ioc/core';
 import { Advices } from './advices';
 import { Advice, NonePointcut } from './decorators';
@@ -107,11 +107,11 @@ export class Advisor implements IAdvisor {
      *
      * @template T
      * @param {Type<T>} aspect
-     * @param {...Providers[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof Advisor
      */
-    resolve<T>(aspect: Type<T>, ...providers: Providers[]): T {
+    resolve<T>(aspect: Type<T>, ...providers: ProviderTypes[]): T {
         if (this.aspectIocs.has(aspect)) {
             return this.aspectIocs.get(aspect).resolve(aspect, ...providers);
         }

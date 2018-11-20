@@ -13,5 +13,5 @@ export async function unitTest(options: LoadType): Promise<any> {
    let builder = new DefaultApplicationBuilder('.');
    builder.use(UnitModule)
       .use(options);
-   return builder.bootstrap();
+   // return builder.bootstrap();
 }

@@ -1,5 +1,5 @@
 import { IParameter } from '../IParameter';
-import { Providers } from '../types';
+import { ProviderTypes } from '../types';
 import { ProviderMap } from './providers';
 import { InjectToken } from '../InjectToken';
 
@@ -19,10 +19,10 @@ export interface IProviderParser {
     /**
      * convert to provider map.
      *
-     * @param {...Providers[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {ProviderMap}
      * @memberof IProviderParser
      */
-    parse(...providers: Providers[]): ProviderMap;
+    parse(...providers: ProviderTypes[]): ProviderMap;
 
 }

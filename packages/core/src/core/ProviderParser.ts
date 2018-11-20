@@ -1,4 +1,4 @@
-import { Providers } from '../types';
+import { ProviderTypes } from '../types';
 import { Provider, ProviderMap, ParamProvider, isProviderMap, ProviderMapToken } from './providers';
 import { isString, isClass, isArray, isFunction, isNumber, isUndefined, isNull, isToken, isBaseObject, lang } from '../utils';
 import { IProviderParser } from './IProviderParser';
@@ -17,7 +17,7 @@ export class ProviderParser implements IProviderParser {
 
     }
 
-    parse(...providers: Providers[]): ProviderMap {
+    parse(...providers: ProviderTypes[]): ProviderMap {
         if (providers.length === 1 && isProviderMap(providers[0])) {
             return providers[0] as ProviderMap;
         }
@@ -31,13 +31,13 @@ export class ProviderParser implements IProviderParser {
             } else if (p instanceof Provider) {
                 if (p instanceof ParamProvider) {
                     if (!p.type && isNumber(p.index)) {
-                        map.add(p.index, (...providers: Providers[]) => p.resolve(this.container, ...providers));
+                        map.add(p.index, (...providers: ProviderTypes[]) => p.resolve(this.container, ...providers));
                     } else {
-                        map.add(p.type, (...providers: Providers[]) => p.resolve(this.container, ...providers));
+                        map.add(p.type, (...providers: ProviderTypes[]) => p.resolve(this.container, ...providers));
                     }
 
                 } else {
-                    map.add(p.type, (...providers: Providers[]) => p.resolve(this.container, ...providers));
+                    map.add(p.type, (...providers: ProviderTypes[]) => p.resolve(this.container, ...providers));
                 }
             } else if (isClass(p)) {
                 if (!this.container.has(p)) {

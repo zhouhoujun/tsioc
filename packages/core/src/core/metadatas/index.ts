@@ -7,6 +7,7 @@ export * from './ParamPropMetadata';
 export * from './PropertyMetadata';
 export * from './ProvideMetadata';
 export * from './ProviderMetadata';
+export * from './ProvidersMetadata';
 export * from './TypeMetadata';
 export * from './AutoWiredMetadata';
 export * from './AutorunMetadata';

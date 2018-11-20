@@ -1,11 +1,11 @@
 import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
-import { Type, Token, Factory, SymbolType, ToInstance, IocState, Providers, Modules, LoadType, ReferenceToken } from './types';
+import { Type, Token, Factory, SymbolType, ToInstance, IocState, ProviderTypes, Modules, LoadType, ReferenceToken } from './types';
 import { Registration } from './Registration';
 import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet, lang, isArray } from './utils';
 
 import { MethodAccessorToken } from './IMethodAccessor';
-import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderParserToken, getOwnTypeMetadata, AddRef, AddRefMetadata } from './core';
+import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderParserToken, getOwnTypeMetadata, Providers, ProvidersMetadata, ProviderMap } from './core';
 import { LifeScope, LifeScopeToken } from './LifeScope';
 import { IParameter } from './IParameter';
 import { CacheManagerToken } from './ICacheManager';
@@ -56,7 +56,7 @@ export class Container implements IContainer {
     *
     * @template T
     * @param {Token<T>} token
-    * @param {...Providers[]} providers
+    * @param {...ProviderTypes[]} providers
     * @returns {T}
     * @memberof Container
     */
@@ -96,11 +96,11 @@ export class Container implements IContainer {
      * @template T
      * @param {Token<T>} token
      * @param {string} [alias]
-     * @param {...Providers[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof Container
      */
-    get<T>(token: Token<T>, alias?: string, ...providers: Providers[]): T {
+    get<T>(token: Token<T>, alias?: string, ...providers: ProviderTypes[]): T {
         return this.resolve(alias ? this.getTokenKey<T>(token, alias) : token, ...providers);
     }
 
@@ -110,10 +110,10 @@ export class Container implements IContainer {
      * @template T
      * @param {Token<T>} token
      * @param {T} [notFoundValue]
-     * @param {...Providers[]} providers
+     * @param {...ProviderTypes[]} providers
      * @memberof Container
      */
-    resolve<T>(token: Token<T>, ...providers: Providers[]): T {
+    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
         let key = this.getTokenKey<T>(token);
         return this.resolvers.resolve(key, ...providers);
     }
@@ -123,11 +123,11 @@ export class Container implements IContainer {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {...Providers[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    resolveValue<T>(token: Token<T>, ...providers: Providers[]): T {
+    resolveValue<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
         let key = this.getTokenKey(token);
         if (!this.hasRegister(key)) {
             return null;
@@ -142,35 +142,15 @@ export class Container implements IContainer {
      * @template T
      * @param {Token<T>} token servive token.
      * @param {Token<any>} [target] service refrence target.
-     * @param {...Providers[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof Container
      */
-    getService<T>(token: Token<T>, target?: Token<any>, ...providers: Providers[]): T {
+    getService<T>(token: Token<T>, target?: Token<any>, ...providers: ProviderTypes[]): T {
         if (isToken(target)) {
-            let serv = this.getServiceType(token, target);
-            return this.getRefService((tk) => new InjectReference(serv, tk), target, token, ...providers);
+            return this.getRefService((tk) => [{ token: token, isRef: false }, new InjectReference(this.getTokenImpl(token), tk)], target, token, ...providers);
         } else {
             return this.resolve(token, ...(isUndefined(target) ? providers : providers.splice(0, 0, target)));
-        }
-    }
-
-    /**
-     * get service  or taget reference service implements type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {Token<any>} [target]
-     * @returns {Type<T>}
-     * @memberof Container
-     */
-    getServiceType<T>(token: Token<T>, target?: Token<any>): Type<T> {
-        if (target) {
-            let metadatas = getOwnTypeMetadata<AddRefMetadata>(AddRef, this.getTokenImpl(target));
-            let ref = metadatas.find(meta => meta.addRefs && meta.addRefs.key === token);
-            return ref ? this.getTokenImpl(ref.addRefs.value) : this.getTokenImpl(token);
-        } else {
-            return this.getTokenImpl(token);
         }
     }
 
@@ -181,26 +161,41 @@ export class Container implements IContainer {
      * @param {Type<Registration<T>>} [refToken] reference service Registration Injector
      * @param {Token<any>} target  the service reference to.
      * @param {Token<T>} [defaultToken] default service token.
-     * @param {...Providers[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof Container
      */
-    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any>, defaultToken?: Token<T>, ...providers: Providers[]): T {
-        let service: T;
+    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any>, defaultToken?: Token<T>, ...providers: ProviderTypes[]): T {
+        let service: T = null;
         this.getTokenExtendsChain(target)
             .forEach(tk => {
                 if (service) {
                     return false;
                 }
-                let serviceToken = isClass(refToken) ? new refToken(tk) : refToken(tk);
-                if (isArray(serviceToken)) {
-                    let token = serviceToken.find(tk => this.has(tk));
-                    if (token) {
-                        service = this.resolve(token, ...providers);
+                let token = isClass(refToken) ? new refToken(tk) : (isFunction(refToken) ? refToken(tk) : refToken);
+                let tokens = isArray(token) ? token : [token];
+
+                tokens.forEach(sToken => {
+                    if (service) {
+                        return false;
                     }
-                } else if (this.has(serviceToken)) {
-                    service = this.resolve(serviceToken, ...providers);
-                }
+                    let tk: Token<T>;
+                    let isRef = true;
+                    if (isToken(sToken)) {
+                        tk = sToken;
+                    } else {
+                        tk = sToken.token;
+                        isRef = sToken.isRef !== false;
+                    }
+                    let pdrmap = this.get(new InjectReference(ProviderMap, tk));
+                    if (pdrmap && pdrmap.has(tk)) {
+                        service = pdrmap.resolve(tk, ...providers);
+                    } else if (isRef && this.has(tk)) {
+                        service = this.resolve(tk, ...providers);
+                    }
+
+                    return true;
+                });
                 return true;
             });
         if (!service && defaultToken && this.has(defaultToken)) {
@@ -290,12 +285,12 @@ export class Container implements IContainer {
         let provideKey = this.getTokenKey(provide);
         let factory;
         if (isToken(provider)) {
-            factory = (...providers: Providers[]) => {
+            factory = (...providers: ProviderTypes[]) => {
                 return this.resolve(provider, ...providers);
             };
         } else {
             if (isFunction(provider)) {
-                factory = (...providers: Providers[]) => {
+                factory = (...providers: ProviderTypes[]) => {
                     return (<ToInstance<any>>provider)(this, ...providers);
                 };
             } else {
@@ -479,11 +474,11 @@ export class Container implements IContainer {
      * @param {Token<any>} token
      * @param {string} propertyKey
      * @param {*} [instance]
-     * @param {...Providers[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {Promise<T>}
      * @memberof Container
      */
-    invoke<T>(token: Token<any>, propertyKey: string, instance?: any, ...providers: Providers[]): Promise<T> {
+    invoke<T>(token: Token<any>, propertyKey: string, instance?: any, ...providers: ProviderTypes[]): Promise<T> {
         return this.resolveValue(MethodAccessorToken).invoke(token, propertyKey, instance, ...providers);
     }
 
@@ -494,19 +489,19 @@ export class Container implements IContainer {
      * @param {Token<any>} token
      * @param {string} propertyKey
      * @param {*} [instance]
-     * @param {...Providers[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof Container
      */
-    syncInvoke<T>(token: Token<any>, propertyKey: string, instance?: any, ...providers: Providers[]): T {
+    syncInvoke<T>(token: Token<any>, propertyKey: string, instance?: any, ...providers: ProviderTypes[]): T {
         return this.resolveValue(MethodAccessorToken).syncInvoke(token, propertyKey, instance, ...providers);
     }
 
-    createSyncParams(params: IParameter[], ...providers: Providers[]): any[] {
+    createSyncParams(params: IParameter[], ...providers: ProviderTypes[]): any[] {
         return this.resolveValue(MethodAccessorToken).createSyncParams(params, ...providers);
     }
 
-    createParams(params: IParameter[], ...providers: Providers[]): Promise<any[]> {
+    createParams(params: IParameter[], ...providers: ProviderTypes[]): Promise<any[]> {
         return this.resolveValue(MethodAccessorToken).createParams(params, ...providers);
     }
 
@@ -559,7 +554,7 @@ export class Container implements IContainer {
 
     protected createCustomFactory<T>(key: SymbolType<T>, factory?: ToInstance<T>, singleton?: boolean) {
         return singleton ?
-            (...providers: Providers[]) => {
+            (...providers: ProviderTypes[]) => {
                 if (this.singleton.has(key)) {
                     return this.singleton.get(key);
                 }
@@ -567,7 +562,7 @@ export class Container implements IContainer {
                 this.singleton.set(key, instance);
                 return instance;
             }
-            : (...providers: Providers[]) => factory(this, ...providers);
+            : (...providers: ProviderTypes[]) => factory(this, ...providers);
     }
 
     protected bindTypeFactory<T>(key: SymbolType<T>, ClassT?: Type<T>, singleton?: boolean) {
@@ -582,7 +577,7 @@ export class Container implements IContainer {
             singleton = lifeScope.isSingletonType<T>(ClassT);
         }
 
-        let factory = (...providers: Providers[]) => {
+        let factory = (...providers: ProviderTypes[]) => {
             if (singleton && this.singleton.has(key)) {
                 return this.singleton.get(key);
             }

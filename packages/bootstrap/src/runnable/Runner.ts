@@ -73,7 +73,6 @@ export class InjectRunnerToken<T> extends Registration<IRunner<T>> {
     }
 }
 
-
 /**
  * default runner token.
  */

@@ -1,7 +1,7 @@
 import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import {
-    Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, Providers,
-    lang, isFunction, Injectable, AnnotationMetaAccessorToken, Container
+    Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, ProviderTypes,
+    lang, isFunction, Injectable, AnnotationMetaAccessorToken, Container, InjectReference
 } from '@ts-ioc/core';
 import { AnnotationConfigure } from './AnnotationConfigure';
 import { Annotation } from '../decorators';
@@ -88,7 +88,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
     getBuilder(token: Token<T>, config?: AnnotationConfigure<T>): IAnnotationBuilder<T> {
         let builder: IAnnotationBuilder<T>;
-        let providers = [{ provide: ContainerToken, useValue: this.container }, { provide: Container, useValue: this.container }] as Providers[];
+        let providers = [{ provide: ContainerToken, useValue: this.container }, { provide: Container, useValue: this.container }] as ProviderTypes[];
         if (config && config.annotationBuilder) {
             if (isClass(config.annotationBuilder)) {
                 if (!this.container.has(config.annotationBuilder)) {
@@ -102,7 +102,11 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             }
         }
         if (!builder && token) {
-            builder = this.container.getRefService(InjectAnnotationBuilder, token, null, ...providers) as IAnnotationBuilder<T>;
+            builder = this.container.getRefService((tk) => [
+                { token: AnnotationBuilder, isRef: false },
+                new InjectAnnotationBuilder(tk),
+                new InjectReference(AnnotationBuilder, tk),
+            ], token, null, ...providers) as IAnnotationBuilder<T>;
         }
 
         if (builder && !builder.container) {

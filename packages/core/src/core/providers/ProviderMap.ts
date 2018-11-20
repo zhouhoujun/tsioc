@@ -1,5 +1,5 @@
 import { MapSet, isToken, isNumber, isFunction, isUndefined, isObject } from '../../utils';
-import { Token, Factory, Providers, ToInstance, Express2, SymbolType } from '../../types';
+import { Token, Factory, ProviderTypes, ToInstance, Express2, SymbolType } from '../../types';
 import { IContainer } from '../../IContainer';
 import { InjectToken } from '../../InjectToken';
 
@@ -39,12 +39,12 @@ export class ProviderMap {
         }
         let factory;
         if (isToken(provider) && this.container.has(provider)) {
-            factory = (...providers: Providers[]) => {
+            factory = (...providers: ProviderTypes[]) => {
                 return this.container.resolve(provider, ...providers);
             };
         } else {
             if (isFunction(provider)) {
-                factory = (...providers: Providers[]) => {
+                factory = (...providers: ProviderTypes[]) => {
                     return (<ToInstance<any>>provider)(this.container, ...providers);
                 };
             } else {
@@ -65,7 +65,7 @@ export class ProviderMap {
         return this;
     }
 
-    resolve<T>(provide: Token<T> | number, ...providers: Providers[]): T {
+    resolve<T>(provide: Token<T> | number, ...providers: ProviderTypes[]): T {
         let key = this.getTokenKey(provide);
         if (this.maps.has(key)) {
             let provider = this.maps.get(key);
@@ -73,8 +73,6 @@ export class ProviderMap {
         } else {
             return (!isNumber(key) && this.container.has(key)) ? this.container.resolve(key, ...providers) : null;
         }
-
-
     }
 
     forEach(express: Express2<Factory<any>, Token<any> | number, void | boolean>) {

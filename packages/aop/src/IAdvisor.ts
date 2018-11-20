@@ -1,5 +1,5 @@
 import { AdviceMetadata } from './metadatas';
-import { Type, ObjectMap, MapSet, InjectToken, IContainer, Providers } from '@ts-ioc/core';
+import { Type, ObjectMap, MapSet, InjectToken, IContainer, ProviderTypes } from '@ts-ioc/core';
 import { Advices } from './advices';
 
 /**
@@ -79,9 +79,9 @@ export interface IAdvisor {
      *
      * @template T
      * @param {Type<T>} aspect
-     * @param {...Providers[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IAdvisor
      */
-    resolve<T>(aspect: Type<T>, ...providers: Providers[]): T;
+    resolve<T>(aspect: Type<T>, ...providers: ProviderTypes[]): T;
 }

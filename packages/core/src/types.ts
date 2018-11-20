@@ -56,17 +56,17 @@ export type Token<T> = Registration<T> | SymbolType<T>;
 /**
  * providers
  */
-export type Providers = ObjectMap<any> | ProviderMap | ProviderType;
+export type ProviderTypes = ObjectMap<any> | ProviderMap | ProviderType;
 
 /**
  * instance factory.
  */
-export type InstanceFactory<T> = (...providers: Providers[]) => T
+export type InstanceFactory<T> = (...providers: ProviderTypes[]) => T
 
 /**
  * to instance via container.
  */
-export type ToInstance<T> = (container?: IContainer, ...providers: Providers[]) => T;
+export type ToInstance<T> = (container?: IContainer, ...providers: ProviderTypes[]) => T;
 
 /**
  * Factory of Token
@@ -131,10 +131,15 @@ export interface AbstractType<T> extends Function {
     classAnnations?: ClassAnnations;
 }
 
+export interface IReference<T> {
+    token: Token<T>;
+    isRef?: boolean;
+}
+
 /**
  * reference token.
  */
-export type ReferenceToken<T> = Type<Registration<T>> | ((token: Token<any>) => Token<T> | Token<T>[]);
+export type ReferenceToken<T> = Type<Registration<T>> | IReference<T> | ((token: Token<any>) => IReference<T> | Token<T> | (IReference<T> | Token<T>)[]);
 
 
 /**

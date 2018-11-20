@@ -4,7 +4,7 @@ import { CoreActions } from './CoreActions';
 import { getOwnMethodMetadata, hasOwnMethodMetadata } from '../factories';
 import { MethodMetadata } from '../metadatas';
 import { IContainer } from '../../IContainer';
-import { Providers } from '../../types';
+import { ProviderTypes } from '../../types';
 import { isArray } from '../../utils';
 
 /**
@@ -12,9 +12,9 @@ import { isArray } from '../../utils';
  *
  * @export
  * @interface BindParameterProviderActionData
- * @extends {ActionData<Providers[]>}
+ * @extends {ActionData<ProviderTypes[]>}
  */
-export interface BindParameterProviderActionData extends ActionData<Providers[]> {
+export interface BindParameterProviderActionData extends ActionData<ProviderTypes[]> {
 
 }
 
@@ -41,7 +41,7 @@ export class BindParameterProviderAction extends ActionComposite {
 
         let matchs = lifeScope.getMethodDecorators(surm => surm.actions.includes(CoreActions.bindParameterProviders) && hasOwnMethodMetadata(surm.name, type));
 
-        let providers: Providers[] = [];
+        let providers: ProviderTypes[] = [];
         matchs.forEach(surm => {
             let methodmtas = getOwnMethodMetadata<MethodMetadata>(surm.name, type);
             let metadatas = methodmtas[propertyKey];

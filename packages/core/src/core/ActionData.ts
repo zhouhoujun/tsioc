@@ -1,4 +1,4 @@
-import { Type, Token, Providers } from '../types';
+import { Type, Token, ProviderTypes } from '../types';
 import { IParameter } from '../IParameter';
 import { ProviderMap } from './providers';
 import { IContainer } from '../IContainer';
@@ -80,10 +80,10 @@ export interface ActionData<T> {
     /**
      * exter providers for resolve. origin providers
      *
-     * @type {Providers[]}
+     * @type {ProviderTypes[]}
      * @memberof ActionData
      */
-    providers?: Providers[];
+    providers?: ProviderTypes[];
 
     /**
      * exter providers convert to map.

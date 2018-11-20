@@ -1,4 +1,4 @@
-import { Token, Providers } from './types';
+import { Token, ProviderTypes } from './types';
 import { IParameter } from './IParameter';
 import { InjectToken } from './InjectToken';
 
@@ -24,11 +24,11 @@ export interface IMethodAccessor {
      * @param {Token<any>} token  type of object
      * @param {string} propertyKey method name
      * @param {*} [target] instance of type.
-     * @param {...Providers[]} providers param provider.
+     * @param {...ProviderTypes[]} providers param provider.
      * @returns {Promise<T>}
      * @memberof IMethodAccessor
      */
-    invoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: Providers[]): Promise<T>;
+    invoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: ProviderTypes[]): Promise<T>;
 
     /**
      * try to invoke the method of intance,  if no instance will create by type.
@@ -41,7 +41,7 @@ export interface IMethodAccessor {
      * @returns {T}
      * @memberof IMethodAccessor
      */
-    syncInvoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: Providers[]): T;
+    syncInvoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: ProviderTypes[]): T;
 
     /**
      * create params instances with IParameter and provider.
@@ -51,7 +51,7 @@ export interface IMethodAccessor {
      * @returns {any[]}
      * @memberof IMethodAccessor
      */
-    createSyncParams(params: IParameter[], ...providers: Providers[]): any[];
+    createSyncParams(params: IParameter[], ...providers: ProviderTypes[]): any[];
 
     /**
      * create params instances with IParameter and provider
@@ -61,6 +61,6 @@ export interface IMethodAccessor {
      * @returns {Promise<any[]>}
      * @memberof IMethodAccessor
      */
-    createParams(params: IParameter[], ...providers: Providers[]): Promise<any[]>;
+    createParams(params: IParameter[], ...providers: ProviderTypes[]): Promise<any[]>;
 
 }

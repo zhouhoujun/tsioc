@@ -1,4 +1,4 @@
-import { Type, Token, Factory, SymbolType, Providers, Modules, LoadType, ReferenceToken } from './types';
+import { Type, Token, Factory, SymbolType, ProviderTypes, Modules, LoadType, ReferenceToken } from './types';
 import { IMethodAccessor } from './IMethodAccessor';
 import { LifeScope } from './LifeScope';
 import { InjectToken } from './InjectToken';
@@ -80,22 +80,22 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @template T
      * @param {Token<T>} token
      * @param {string} [alias]
-     * @param {...Providers[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    get<T>(token: Token<T>, alias?: string, ...providers: Providers[]): T;
+    get<T>(token: Token<T>, alias?: string, ...providers: ProviderTypes[]): T;
 
     /**
      * resolve token value in this container only.
      *
      * @template T
      * @param {Token<T>} token
-     * @param {...Providers[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    resolveValue<T>(token: Token<T>, ...providers: Providers[]): T;
+    resolveValue<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
 
     /**
      * get service or target reference service.
@@ -103,22 +103,11 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @template T
      * @param {Token<T>} token servive token.
      * @param {Token<any>} [target] service refrence target.
-     * @param {...Providers[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getService<T>(token: Token<T>, target?: Token<any>, ...providers: Providers[]): T;
-
-    /**
-     * get service  or taget reference service implements type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {Token<any>} [target]
-     * @returns {Type<T>}
-     * @memberof IContainer
-     */
-    getServiceType<T>(token: Token<T>, target?: Token<any>): Type<T>;
+    getService<T>(token: Token<T>, target?: Token<any>, ...providers: ProviderTypes[]): T;
 
     /**
      * get target reference service.
@@ -127,11 +116,11 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @param {ReferenceToken<T>} [refToken] reference service Registration Injector
      * @param {Token<any>} target  the service reference to.
      * @param {Token<T>} [defaultToken] default service token.
-     * @param {...Providers[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any>, defaultToken?: Token<T>, ...providers: Providers[]): T
+    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any>, defaultToken?: Token<T>, ...providers: ProviderTypes[]): T
 
     /**
      * register type.

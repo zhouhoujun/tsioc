@@ -6,6 +6,8 @@ import { IContainer } from '../../IContainer';
 import { Token } from '../../types';
 import { ClassMetadata } from '../metadatas';
 import { InjectReference } from '../../InjectReference';
+import { ProviderMap } from '../providers';
+import { ProviderParserToken } from '../IProviderParser';
 
 /**
  * bind provider action data.
@@ -56,6 +58,16 @@ export class BindProviderAction extends ActionComposite {
                         let refKey = new InjectReference(c.type, c.refTo).toString();
                         provides.push(refKey);
                         raiseContainer.bindProvider(refKey, c.type)
+                    }
+                    // class private provider.
+                    if (c.providers && c.providers.length) {
+                        let refKey = new InjectReference(ProviderMap, c.type);
+                        let maps = raiseContainer.get(ProviderParserToken).parse(c.providers);
+                        if (raiseContainer.has(refKey)) {
+                            raiseContainer.bindProvider(refKey.toString(), raiseContainer.get(refKey).copy(maps));
+                        } else {
+                            raiseContainer.bindProvider(refKey.toString(), maps);
+                        }
                     }
                 });
             }

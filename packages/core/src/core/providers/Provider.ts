@@ -1,12 +1,24 @@
-import { Token, Providers, Express2, Type } from '../../types';
+import { Token, ProviderTypes, Express2, Type } from '../../types';
 import { IContainer } from '../../IContainer';
 import { isFunction, isObject, isUndefined } from '../../utils';
 
-
+/**
+ * type provider.
+ *
+ * @export
+ * @interface TypeProvider
+ * @extends {Type<any>}
+ */
 export interface TypeProvider extends Type<any> {
 
 }
 
+/**
+ * Provider interface.
+ *
+ * @export
+ * @interface IProvider
+ */
 export interface IProvider {
     /**
      * this type provider to.
@@ -111,11 +123,11 @@ export class Provider {
      *
      * @template T
      * @param {IContainer} container
-     * @param {Providers[]} providers
+     * @param {ProviderTypes[]} providers
      * @returns {T}
      * @memberof Provider
      */
-    resolve<T>(container: IContainer, ...providers: Providers[]): T {
+    resolve<T>(container: IContainer, ...providers: ProviderTypes[]): T {
         if (isUndefined(this.value)) {
             return container.has(this.type) ? container.resolve(this.type, ...providers) : null;
         } else {
@@ -193,22 +205,6 @@ export class Provider {
         return new ParamProvider(token, value, index, method);
     }
 
-    // /**
-    //  * create async param provider.
-    //  *
-    //  * @static
-    //  * @param {(string | string[])} files
-    //  * @param {Token<any>} token
-    //  * @param {number} [index]
-    //  * @param {string} [method]
-    //  * @param {(any)} [value]
-    //  * @returns {AsyncParamProvider}
-    //  * @memberof Provider
-    //  */
-    // static createAsyncParam(files: string | string[], token: Token<any>, index?: number, method?: string, value?: any): AsyncParamProvider {
-    //     return new AsyncParamProvider(files, token, index, method, value)
-    // }
-
 }
 
 /**
@@ -232,7 +228,7 @@ export class InvokeProvider extends Provider {
         this.method = method;
     }
 
-    resolve<T>(container: IContainer, ...providers: Providers[]): T {
+    resolve<T>(container: IContainer, ...providers: ProviderTypes[]): T {
         if (this.method) {
             return container.syncInvoke<T>(this.type, this.method, ...providers);
         }
@@ -261,7 +257,7 @@ export class ParamProvider extends InvokeProvider {
         this.index = index;
     }
 
-    resolve<T>(container: IContainer, ...providers: Providers[]): T {
+    resolve<T>(container: IContainer, ...providers: ProviderTypes[]): T {
         return super.resolve(container, ...providers);
     }
 }
@@ -280,7 +276,7 @@ export class ExtendsProvider extends Provider {
         super(token, value);
     }
 
-    resolve<T>(container: IContainer, ...providers: Providers[]): T {
+    resolve<T>(container: IContainer, ...providers: ProviderTypes[]): T {
         return super.resolve(container, ...providers);
     }
 

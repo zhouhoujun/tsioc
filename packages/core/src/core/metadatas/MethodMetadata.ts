@@ -1,5 +1,5 @@
 import { Metadate } from './Metadate';
-import { Providers } from '../../types';
+import { ProviderTypes } from '../../types';
 
 /**
  * method metadata
@@ -11,10 +11,10 @@ export interface MethodMetadata extends Metadate {
     /**
      * param providers
      *
-     * @type {Providers[]}
+     * @type {ProviderTypes[]}
      * @memberof MethodMetadata
      */
-    providers?: Providers[];
+    providers?: ProviderTypes[];
     /**
      * method property key
      *
@@ -23,12 +23,4 @@ export interface MethodMetadata extends Metadate {
      */
     propertyKey?: string;
 
-    // /**
-    //  * method parameter names
-    //  *
-    //  * @type {string[]}
-    //  * @memberof ClassMetadata
-    //  */
-    // parameterNames?: string[];
-    // descriptor?: TypedPropertyDescriptor<any>;
 }

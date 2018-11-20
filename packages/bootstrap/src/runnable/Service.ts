@@ -25,6 +25,7 @@ export interface IService<T> {
     stop?(): Promise<any>;
 }
 
+
 /**
  * base service.
  *

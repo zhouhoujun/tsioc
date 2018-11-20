@@ -1,4 +1,4 @@
-import { SymbolType, Providers, Type } from '../types';
+import { SymbolType, ProviderTypes, Type } from '../types';
 import { IContainer } from '../IContainer';
 import { ResolverType } from './ResolverType';
 import { Container } from '../Container';
@@ -90,11 +90,11 @@ export class ResolverChain implements IResolver {
      *
      * @template T
      * @param {SymbolType<T>} token
-     * @param {...Providers[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof ResolverChain
      */
-    resolve<T>(token: SymbolType<T>, ...providers: Providers[]): T {
+    resolve<T>(token: SymbolType<T>, ...providers: ProviderTypes[]): T {
         let resolver = this.toArray().find(r => this.hasToken(r, token));
         if (!resolver && !this.container.parent) {
             console.log('have not register', token);

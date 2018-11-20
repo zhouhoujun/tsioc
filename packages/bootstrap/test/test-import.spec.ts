@@ -3,13 +3,13 @@ import 'mocha';
 import { expect } from 'chai';
 import { ModuleA, ModuleB, ClassSevice } from './demo';
 import { DefaultApplicationBuilder, AnyApplicationBuilder } from '../src';
-import { AopModule } from '@ts-ioc/aop';
 
 describe('di module', () => {
 
     let builder: AnyApplicationBuilder;
     beforeEach(async () => {
         builder = DefaultApplicationBuilder.create();
+        console.log('create builder---------\n');
         // builder.use(AopModule).use(Logger);
     });
 
