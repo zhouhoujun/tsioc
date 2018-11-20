@@ -1,4 +1,4 @@
-import { IContainer, LoadType, MapSet, Factory, Token, DefaultContainerBuilder, IContainerBuilder, isClass, isToken } from '@ts-ioc/core';
+import { IContainer, LoadType, MapSet, Factory, Token, DefaultContainerBuilder, IContainerBuilder, isClass, isToken, InjectReference } from '@ts-ioc/core';
 import { IRunnableBuilder, CustomRegister } from './IRunnableBuilder';
 import { ModuleBuilder, ModuleEnv, DIModuleInjectorToken, InjectedModule, IModuleBuilder, InjectModuleBuilderToken, DefaultModuleBuilderToken, ModuleBuilderToken, ModuleConfig, ModuleConfigure } from '../modules';
 import { ContainerPool, ContainerPoolToken, Events, IEvents } from '../utils';
@@ -131,7 +131,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
 
     protected async load(token: Token<T> | ModuleConfigure, env?: ModuleEnv): Promise<InjectedModule<T>> {
         await this.initRootContainer();
-        return super.load(token, env);
+        return await super.load(token, env);
     }
 
     async build(token: Token<T> | ModuleConfigure, env?: ModuleEnv, data?: any): Promise<T> {
@@ -184,7 +184,13 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
 
         let tko = injmdl.token;
         if (!builder && tko) {
-            builder = container.getRefService(InjectModuleBuilderToken, tko, DefaultModuleBuilderToken);
+            builder = container.getRefService(
+                (tk) => [
+                    { token: ModuleBuilder, isRef: false },
+                    new InjectModuleBuilderToken(tk),
+                    new InjectReference(ModuleBuilder, tk)
+                ],
+                tko, DefaultModuleBuilderToken);
         }
         if (!builder) {
             builder = this.getDefaultBuilder(container);

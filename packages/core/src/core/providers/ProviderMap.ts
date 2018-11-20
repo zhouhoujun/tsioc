@@ -14,7 +14,15 @@ export const ProviderMapToken = new InjectToken<ProviderMap>('DI_ProviderMap');
 export class ProviderMap {
     private maps: MapSet<Token<any> | number, Factory<any>>;
     constructor(private container: IContainer) {
-        this.maps = new MapSet<Token<any> | number, Factory<any>>();
+        this.maps = new MapSet();
+    }
+
+    keys(): Token<any>[] {
+        return this.maps.keys() as Token<any>[];
+    }
+
+    values(): Factory<any>[] {
+        return this.maps.values();
     }
 
     has(provide: Token<any> | number): boolean {

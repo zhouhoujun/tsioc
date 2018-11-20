@@ -43,10 +43,18 @@ export class ModuleInjectorChain implements IModuleInjectorChain {
 
     async inject(container: IContainer, modules: Type<any>[]): Promise<Type<any>[]> {
         let types: Type<any>[] = [];
-        await PromiseUtil.forEach<InjectorResult>(this.injectors.map(jtor => (ijrt: InjectorResult) => jtor.inject(container, ijrt.next)), result => {
-            types = types.concat(result.injected || []);
-            return result.next && result.next.length > 0;
-        }, { injected: [], next: modules }).catch(err => []);
+        await PromiseUtil.forEach<InjectorResult>(
+            this.injectors.map(jtor => (ijrt: InjectorResult) => jtor.inject(container, ijrt.next)),
+            result => {
+                types = types.concat(result.injected || []);
+                return result.next && result.next.length > 0;
+            },
+            { injected: [], next: modules }
+        )
+            .catch(err => {
+                console.log(err);
+                return [];
+            });
         return types;
     }
 

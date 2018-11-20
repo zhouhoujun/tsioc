@@ -1,7 +1,7 @@
 import {
     Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
-    Inject, Token, isToken, ProviderTypes, Injectable, isArray, lang, isUndefined, isClass,
-    isFunction, isString, isNull, isProviderMap, Provider, isBaseObject, IModuleInjector, Container
+    Inject, Token, ProviderTypes, Injectable, isArray, isClass,
+    IModuleInjector, Container, ProviderMap, ProviderParserToken, InjectReference
 } from '@ts-ioc/core';
 import { DIModuelValidateToken } from './DIModuleValidate';
 import { DIModule } from '../decorators';
@@ -9,7 +9,7 @@ import { ContainerPoolToken } from '../utils';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { InjectedModuleToken, InjectedModule } from './InjectedModule';
 
-const exportsProvidersFiled = '__exportProviders';
+// const exportsProvidersFiled = '__exportProviders';
 
 /**
  * DIModule injector interface.
@@ -88,10 +88,10 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         newContainer.register(type);
         let builder = newContainer.getBuilder();
         let metaConfig = this.validate.getMetaConfig(type, newContainer) as ModuleConfigure;
-        metaConfig = await this.registerConfgureDepds(newContainer, metaConfig);
+        metaConfig = await this.registerConfgureDepds(newContainer, metaConfig, type);
 
         let exps: Type<any>[] = [].concat(...builder.loader.getTypes(metaConfig.exports || []));
-        let injMd = new InjectedModule(metaConfig.token || type, metaConfig, newContainer, type, exps, metaConfig[exportsProvidersFiled]);
+        let injMd = new InjectedModule(metaConfig.token || type, metaConfig, newContainer, type, exps);
         container.bindProvider(new InjectedModuleToken(type), injMd);
 
         await this.importConfigExports(container, newContainer, injMd);
@@ -100,13 +100,13 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
     }
 
 
-    protected async registerConfgureDepds(container: IContainer, config: ModuleConfigure): Promise<ModuleConfigure> {
+    protected async registerConfgureDepds(container: IContainer, config: ModuleConfigure, type?: Type<any>): Promise<ModuleConfigure> {
         if (isArray(config.imports) && config.imports.length) {
             await container.loadModule(...config.imports);
         }
 
         if (isArray(config.providers) && config.providers.length) {
-            config[exportsProvidersFiled] = this.bindProvider(container, config.providers);
+            this.bindProvider(container, config.providers, type);
         }
         return config;
     }
@@ -134,93 +134,111 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         return container;
     }
 
-    protected bindProvider(container: IContainer, providers: ProviderTypes[]): Token<any>[] {
-        let tokens: Token<any>[] = [];
-        providers.forEach((p, index) => {
-            if (isUndefined(p) || isNull(p)) {
-                return;
+    protected bindProvider(container: IContainer, providers: ProviderTypes[], type?: Type<any>): Token<any>[] {
+        let parser = container.get(ProviderParserToken);
+        let pdrmap: ProviderMap;
+        if (type && isClass(type)) {
+            let mapRef = new InjectReference(ProviderMap, type);
+            pdrmap = container.get(mapRef);
+            let newpMap = parser.parse(...providers);
+            if (pdrmap) {
+                pdrmap.copy(newpMap);
+            } else {
+                pdrmap = newpMap;
+                container.bindProvider(mapRef, pdrmap);
             }
-            if (isProviderMap(p)) {
-                p.forEach((k, f) => {
-                    tokens.push(k);
-                    container.bindProvider(k, f);
-                });
-            } else if (p instanceof Provider) {
-                tokens.push(p.type);
-                container.bindProvider(p.type, (...providers: ProviderTypes[]) => p.resolve(container, ...providers));
-            } else if (isClass(p)) {
-                if (!container.has(p)) {
-                    tokens.push(p);
-                    container.register(p);
-                }
-            } else if (isBaseObject(p)) {
-                let pr: any = p;
-                let isobjMap = false;
-                if (isToken(pr.provide)) {
-                    if (isArray(pr.deps) && pr.deps.length) {
-                        pr.deps.forEach(d => {
-                            if (isClass(d) && !container.has(d)) {
-                                container.register(d);
-                            }
-                        });
-                    }
-                    if (!isUndefined(pr.useValue)) {
-                        tokens.push(pr.provide);
-                        container.bindProvider(pr.provide, () => pr.useValue);
-                    } else if (isClass(pr.useClass)) {
-                        if (!container.has(pr.useClass)) {
-                            container.register(pr.useClass);
-                        }
-                        tokens.push(pr.provide);
-                        container.bindProvider(pr.provide, pr.useClass);
-                    } else if (isFunction(pr.useFactory)) {
-                        tokens.push(pr.provide);
-                        container.bindProvider(pr.provide, () => {
-                            let args = [];
-                            if (isArray(pr.deps) && pr.deps.length) {
-                                args = pr.deps.map(d => {
-                                    if (isClass(d)) {
-                                        return container.get(d);
-                                    } else {
-                                        return d;
-                                    }
-                                });
-                            }
-                            return pr.useFactory.apply(pr, args);
-                        });
-                    } else if (isToken(pr.useExisting)) {
-                        if (container.has(pr.useExisting)) {
-                            tokens.push(pr.provide);
-                            container.bindProvider(pr.provide, pr.useExisting);
-                        } else {
-                            console.log('has not register:', pr.useExisting);
-                        }
-                    } else {
-                        isobjMap = true;
-                    }
-                } else {
-                    isobjMap = true;
-                }
-
-                if (isobjMap) {
-                    lang.forIn<any>(p, (val, name: string) => {
-                        if (!isUndefined(val)) {
-                            if (isClass(val)) {
-                                container.bindProvider(name, val);
-                            } else if (isFunction(val) || isString(val)) {
-                                container.bindProvider(name, () => val);
-                            } else {
-                                container.bindProvider(name, val);
-                            }
-                            tokens.push(name);
-                        }
-                    });
-                }
-            } else if (isFunction(p)) {
-                tokens.push(name);
-                container.bindProvider(name, () => p);
-            }
+        }
+        let tokens = pdrmap.keys();
+        tokens.forEach(key => {
+            container.bindProvider(key, (...providers: ProviderTypes[]) => pdrmap.resolve(key, ...providers));
+            console.log(key, container.get(key));
         });
+        // let tokens: Token<any>[] = [];
+        // providers.forEach((p, index) => {
+        //     if (isUndefined(p) || isNull(p)) {
+        //         return;
+        //     }
+        //     if (isProviderMap(p)) {
+        //         p.forEach((k, f) => {
+        //             tokens.push(k);
+        //             container.bindProvider(k, f);
+        //         });
+        //     } else if (p instanceof Provider) {
+        //         tokens.push(p.type);
+        //         container.bindProvider(p.type, (...providers: ProviderTypes[]) => p.resolve(container, ...providers));
+        //     } else if (isClass(p)) {
+        //         if (!container.has(p)) {
+        //             tokens.push(p);
+        //             container.register(p);
+        //         }
+        //     } else if (isBaseObject(p)) {
+        //         let pr: any = p;
+        //         let isobjMap = false;
+        //         if (isToken(pr.provide)) {
+        //             if (isArray(pr.deps) && pr.deps.length) {
+        //                 pr.deps.forEach(d => {
+        //                     if (isClass(d) && !container.has(d)) {
+        //                         container.register(d);
+        //                     }
+        //                 });
+        //             }
+        //             if (!isUndefined(pr.useValue)) {
+        //                 tokens.push(pr.provide);
+        //                 container.bindProvider(pr.provide, () => pr.useValue);
+        //             } else if (isClass(pr.useClass)) {
+        //                 if (!container.has(pr.useClass)) {
+        //                     container.register(pr.useClass);
+        //                 }
+        //                 tokens.push(pr.provide);
+        //                 container.bindProvider(pr.provide, pr.useClass);
+        //             } else if (isFunction(pr.useFactory)) {
+        //                 tokens.push(pr.provide);
+        //                 container.bindProvider(pr.provide, () => {
+        //                     let args = [];
+        //                     if (isArray(pr.deps) && pr.deps.length) {
+        //                         args = pr.deps.map(d => {
+        //                             if (isClass(d)) {
+        //                                 return container.get(d);
+        //                             } else {
+        //                                 return d;
+        //                             }
+        //                         });
+        //                     }
+        //                     return pr.useFactory.apply(pr, args);
+        //                 });
+        //             } else if (isToken(pr.useExisting)) {
+        //                 if (container.has(pr.useExisting)) {
+        //                     tokens.push(pr.provide);
+        //                     container.bindProvider(pr.provide, pr.useExisting);
+        //                 } else {
+        //                     console.log('has not register:', pr.useExisting);
+        //                 }
+        //             } else {
+        //                 isobjMap = true;
+        //             }
+        //         } else {
+        //             isobjMap = true;
+        //         }
+
+        //         if (isobjMap) {
+        //             lang.forIn<any>(p, (val, name: string) => {
+        //                 if (!isUndefined(val)) {
+        //                     if (isClass(val)) {
+        //                         container.bindProvider(name, val);
+        //                     } else if (isFunction(val) || isString(val)) {
+        //                         container.bindProvider(name, () => val);
+        //                     } else {
+        //                         container.bindProvider(name, val);
+        //                     }
+        //                     tokens.push(name);
+        //                 }
+        //             });
+        //         }
+        //     } else if (isFunction(p)) {
+        //         tokens.push(name);
+        //         container.bindProvider(name, () => p);
+        //     }
+        // });
 
         return tokens;
     }

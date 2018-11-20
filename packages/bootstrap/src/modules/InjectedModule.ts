@@ -15,8 +15,7 @@ export class InjectedModule<T> implements IExports {
         public config: ModuleConfig<T>,
         public container: IContainer,
         public type?: Type<any>,
-        public exports?: Token<any>[],
-        public providers?: Token<any>[]
+        public exports?: Token<any>[]
     ) {
 
     }

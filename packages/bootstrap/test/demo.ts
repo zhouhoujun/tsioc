@@ -1,7 +1,8 @@
-import { DIModule, OnModuleStart } from '../src';
+import { DIModule, OnModuleStart, ContainerPoolToken } from '../src';
 import { Injectable, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
 import { Aspect, AopModule, Around, Joinpoint } from '@ts-ioc/aop';
-
+import { DefaultApplicationBuilder, AnyApplicationBuilder } from '../src';
+import { LogModule } from '@ts-ioc/logs';
 
 export class TestService {
     testFiled = 'test';
@@ -43,6 +44,7 @@ export class ClassSevice {
     mark: string;
     state: string;
     start() {
+        console.log('-------log mark---------');
         console.log(this.mark);
     }
 }
@@ -65,6 +67,7 @@ export class Logger {
 @DIModule({
     imports: [
         AopModule,
+        LogModule,
         Logger,
         ModuleA
     ],
@@ -75,9 +78,9 @@ export class Logger {
 })
 export class ModuleB implements OnModuleStart<ClassSevice> {
     constructor(test: TestService, @Inject(ContainerToken) private container: IContainer) {
-        // let pools = container.get(ContainerPoolToken);
+        let pools = container.get(ContainerPoolToken);
         // console.log(pools);
-        // console.log('container pools defaults..................\n');
+        console.log('container pools defaults..................\n');
         // console.log(pools.getDefault());
         // console.log(container.resolveChain.toArray()[1]);
         // console.log(container.resolve(TestService));
@@ -90,9 +93,13 @@ export class ModuleB implements OnModuleStart<ClassSevice> {
     mdOnStart(instance: ClassSevice): void | Promise<any> {
         console.log('mdOnStart...');
         // console.log(this.container);
+        console.log(instance);
         instance.start();
         instance.state = 'started';
     }
 }
 
-
+// test
+DefaultApplicationBuilder.create()
+    // .use(AopModule).use(LogModule)
+    .bootstrap(ModuleB);

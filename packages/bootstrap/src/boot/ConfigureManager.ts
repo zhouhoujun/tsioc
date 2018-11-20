@@ -54,7 +54,7 @@ export class ConfigureManager<T extends ModuleConfigure> {
      * @memberof ConfigureManager
      */
     constructor(protected baseURL?: string) {
-
+        this.configs = [];
     }
 
     @Inject(ContainerToken)

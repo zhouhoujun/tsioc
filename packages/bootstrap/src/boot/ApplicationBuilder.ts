@@ -53,64 +53,24 @@ export class DefaultApplicationBuilder<T> extends RunnableBuilder<T> implements 
             this.configMgr.useConfiguration(config);
         }
         this.configs.push(config);
-
-        return this;
-    }
-
-    /**
-     * use module as global Depdences module.
-     *
-     * @param {...LoadType[]} modules
-     * @returns {this}
-     * @memberof PlatformServer
-     */
-    use(...modules: LoadType[]): this {
-        this.globalModules = this.globalModules.concat(modules);
-        this.inited = false;
-        return this;
-    }
-
-    /**
-     * bind provider
-     *
-     * @template T
-     * @param {Token<T>} provide
-     * @param {Token<T> | Factory<T>} provider
-     * @param {boolean} [beforRootInit]
-     * @returns {this}
-     * @memberof IContainer
-     */
-    provider(provide: Token<any>, provider: Token<any> | Factory<any>, beforRootInit?: boolean): this {
-        if (beforRootInit) {
-            this.beforeInitPds.set(provide, provider);
-        } else {
-            this.afterInitPds.set(provide, provider);
-        }
         return this;
     }
 
     protected async load(token: Token<T> | AppConfigure, env?: ModuleEnv): Promise<InjectedModule<T>> {
-        await this.initRootContainer();
         return super.load(token, env);
     }
 
-    async build(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<T> {
-        let injmdl = await this.load(token, env);
-        let builder = this.getBuilder(injmdl);
-        let md = await builder.build(token, injmdl, data);
-        this.emit(AppEvents.onModuleCreated, md, token);
-        return md;
+    build(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<T> {
+        return super.build(token, env, data);
     }
 
-    async bootstrap(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
-        let injmdl = await this.load(token, env);
-        let builder = this.getBuilder(injmdl);
-        return await builder.bootstrap(token, injmdl, data);
+    bootstrap(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
+        return super.bootstrap(token, env, data);
     }
 
     run(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
-        return this.bootstrap(token, env, data);
-    }å
+        return this.run(token, env, data);
+    }
 
     protected createConfigureMgr() {
         let cfgMgr = super.createConfigureMgr();

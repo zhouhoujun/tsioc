@@ -25,7 +25,6 @@ export class Container implements IContainer {
     protected provideTypes: MapSet<Token<any>, Type<any>>;
     protected factories: MapSet<Token<any>, Function>;
     protected singleton: MapSet<Token<any>, any>;
-    // protected refs: MapSet<Type<any>, Type<any>[]>;
 
     /**
      * parent container.
@@ -187,7 +186,8 @@ export class Container implements IContainer {
                         tk = sToken.token;
                         isRef = sToken.isRef !== false;
                     }
-                    let pdrmap = this.get(new InjectReference(ProviderMap, tk));
+                    let pmapTk = new InjectReference(ProviderMap, tk);
+                    let pdrmap = this.has(pmapTk) ? this.get(new InjectReference(ProviderMap, tk)) : null;
                     if (pdrmap && pdrmap.has(tk)) {
                         service = pdrmap.resolve(tk, ...providers);
                     } else if (isRef && this.has(tk)) {
@@ -318,21 +318,6 @@ export class Container implements IContainer {
         this.factories.set(provideKey, factory);
         return this;
     }
-
-    // bindRef(target: Token<any>, service: Token<any>) {
-    //     let tType = this.getTokenImpl(target);
-    //     let tServ = this.getTokenImpl(service);
-    //     if (tType && tServ) {
-    //         if (!this.refs.has(tType)) {
-    //             this.refs.set(tType, []);
-    //         }
-    //         let services = this.refs.get(tType);
-    //         if (!services.some(s => s === tServ)) {
-    //             services.push(tServ);
-    //             this.refs.set(tType, services);
-    //         }
-    //     }
-    // }
 
     /**
      * unregister the token

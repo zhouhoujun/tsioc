@@ -105,10 +105,10 @@ export class ProviderParser implements IProviderParser {
 
             } else if (isFunction(p)) {
                 map.add(name, () => p);
-            } else {
-                map.add(index, p);
             }
-
+            // else {
+            //     map.add(index, p);
+            // }
         });
 
         return map;

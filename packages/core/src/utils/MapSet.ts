@@ -1,5 +1,6 @@
 import { isClass, isString, isFunction, isUndefined } from './typeCheck';
 import { lang } from './lang';
+import { isArray } from '@ts-ioc/core/lib/utils';
 
 /**
  * object map set.
@@ -95,11 +96,11 @@ export class MapSet<TKey, TVal> {
     }
 
     keys(): TKey[] {
-        return this.map.keys() as TKey[];
+        return this.toArray(this.map.keys());
     }
 
     values(): TVal[] {
-        return this.map.values()  as TVal[];
+        return this.toArray(this.map.values());
     }
 
     clear(): void {
@@ -124,5 +125,21 @@ export class MapSet<TKey, TVal> {
     }
     get size(): number {
         return this.map.size;
+    }
+
+    protected toArray<T>(items: T[] | IterableIterator<T>): T[] {
+        if (isArray(items)) {
+            return items;
+        } else {
+            if (isFunction(Array.from)) {
+                return Array.from(items);
+            } else {
+                let itms = [];
+                for (let i in items) {
+                    itms.push(i);
+                }
+                return itms;
+            }
+        }
     }
 }
