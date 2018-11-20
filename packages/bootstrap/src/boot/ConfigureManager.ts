@@ -2,6 +2,7 @@ import { Inject, InjectToken, Injectable, Ref, isUndefined, lang, ContainerToken
 import { ModuleConfigure } from '../modules';
 import { RunnableBuilderToken, CustomRegister } from './IRunnableBuilder';
 import { RunnableBuilder } from './RunnableBuilder';
+import { PromiseUtil } from '@ts-ioc/core/lib/utils';
 
 
 /**
@@ -96,7 +97,7 @@ export class ConfigureManager<T extends ModuleConfigure> {
         if (this.baseURL) {
             config.baseURL = this.baseURL;
         }
-        await Promise.all(regs.map(async cs => {
+        await PromiseUtil.step(regs.map(async cs => {
             let tokens = await cs(this.container, config, builder);
             return tokens;
         }));

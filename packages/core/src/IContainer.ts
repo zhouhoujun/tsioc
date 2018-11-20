@@ -5,7 +5,6 @@ import { InjectToken } from './InjectToken';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IResolver } from './IResolver';
 import { ResolverChain } from './resolves';
-import { Registration } from './Registration';
 
 /**
  * IContainer token.
@@ -23,7 +22,7 @@ export const ContainerToken = new InjectToken<IContainer>('DI_IContainer');
 export interface IContainer extends IMethodAccessor, IResolver {
 
     /**
-     * parent container.
+     * get or set parent container.
      *
      * @type {IContainer}
      * @memberof IContainer

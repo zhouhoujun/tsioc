@@ -57,19 +57,19 @@ export class DefaultApplicationBuilder<T> extends RunnableBuilder<T> implements 
     }
 
     protected async load(token: Token<T> | AppConfigure, env?: ModuleEnv): Promise<InjectedModule<T>> {
-        return super.load(token, env);
+        return await super.load(token, env);
     }
 
-    build(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<T> {
-        return super.build(token, env, data);
+    async build(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<T> {
+        return await super.build(token, env, data);
     }
 
-    bootstrap(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
-        return super.bootstrap(token, env, data);
+    async bootstrap(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
+        return await super.bootstrap(token, env, data);
     }
 
-    run(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
-        return this.run(token, env, data);
+    async run(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
+        return await super.run(token, env, data);
     }
 
     protected createConfigureMgr() {

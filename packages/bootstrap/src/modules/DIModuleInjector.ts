@@ -77,7 +77,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
     async importByConfig<T>(container: IContainer, config: ModuleConfig<T>): Promise<any> {
         await this.registerConfgureDepds(container, config);
         if (isArray(config.providers) && config.providers.length) {
-            await this.bindProvider(container, config.providers);
+            this.bindProvider(container, config.providers);
         }
         return null;
     }
@@ -151,8 +151,8 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         let tokens = pdrmap.keys();
         tokens.forEach(key => {
             container.bindProvider(key, (...providers: ProviderTypes[]) => pdrmap.resolve(key, ...providers));
-            console.log(key, container.get(key));
         });
+        return tokens;
         // let tokens: Token<any>[] = [];
         // providers.forEach((p, index) => {
         //     if (isUndefined(p) || isNull(p)) {
@@ -240,6 +240,6 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         //     }
         // });
 
-        return tokens;
+        // return tokens;
     }
 }

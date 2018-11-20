@@ -36,7 +36,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         config = this.getTokenMetaConfig(token, config);
         let builder = this.getBuilder(token, config);
         if (!this.isEqual(builder)) {
-            return builder.build(token, config, data);
+            return await builder.build(token, config, data);
         } else {
             await this.registerExts(config);
             let instance = await this.createInstance(token, config, data) as AnnoInstance<T>;
@@ -61,13 +61,13 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             if (excludeTokens.indexOf(token) >= 0) {
                 token = null;
             }
-            return this.build(token, null, data);
+            return await this.build(token, null, data);
         } else {
             token = this.getType(config);
             if (excludeTokens.indexOf(token) >= 0) {
                 token = null;
             }
-            return this.build(token, config, data);
+            return await this.build(token, config, data);
         }
     }
 

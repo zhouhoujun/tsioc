@@ -2,7 +2,12 @@ import { IContainer } from './IContainer';
 import { Container } from './Container';
 import { Type, Modules, LoadType, Express } from './types';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { IModuleLoader, ModuleLoaderToken, DefaultModuleLoader, IModuleInjectorChain, ModuleInjectorChainToken, SyncModuleInjector, IocExtModuleValidateToken, SyncModuleInjectorToken, ModuleInjector, IocExtModuleValidate, ModuleInjectorChain, MetaAccessor, AnnotationMetaAccessor } from './injectors';
+import {
+    IModuleLoader, ModuleLoaderToken, DefaultModuleLoader, IModuleInjectorChain,
+    ModuleInjectorChainToken, SyncModuleInjector, IocExtModuleValidateToken,
+    SyncModuleInjectorToken, ModuleInjector, IocExtModuleValidate, ModuleInjectorChain,
+    MetaAccessor, AnnotationMetaAccessor
+} from './injectors';
 import { PromiseUtil } from './utils';
 
 /**

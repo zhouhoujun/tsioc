@@ -26,6 +26,7 @@ export class Container implements IContainer {
     protected factories: MapSet<Token<any>, Function>;
     protected singleton: MapSet<Token<any>, any>;
 
+
     /**
      * parent container.
      *

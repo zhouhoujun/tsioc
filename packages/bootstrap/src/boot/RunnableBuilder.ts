@@ -148,8 +148,8 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         return await builder.bootstrap(token, injmdl, data);
     }
 
-    run(token: Token<T> | ModuleConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
-        return this.bootstrap(token, env, data);
+    async run(token: Token<T> | ModuleConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
+        return await this.bootstrap(token, env, data);
     }
 
     /**
