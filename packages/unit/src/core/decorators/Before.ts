@@ -19,4 +19,4 @@ export interface IBeforeTestDecorator extends ITestDecorator<TestMetadata> {
  * @interface IBeforeTestDecorator
  * @template T
  */
-export const Before: IBeforeTestDecorator = createTestDecorator<TestMetadata>('Before') as IBeforeTestDecorator;
+export const Before: IBeforeTestDecorator = createTestDecorator<TestMetadata>('TestBefore') as IBeforeTestDecorator;

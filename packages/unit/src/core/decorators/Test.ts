@@ -27,11 +27,11 @@ export interface ITestDecorator<T extends TestMetadata> {
  * @returns {ITestDecorator<T>}
  */
 export function createTestDecorator<T extends TestMetadata>(
-    action: string,
+    name: string,
     adapter?: MetadataAdapter,
     finallyAdapter?: MetadataAdapter,
     metaExtends?: MetadataExtends<T>): ITestDecorator<T> {
-    return createMethodDecorator<TestMetadata>('Test',
+    return createMethodDecorator<TestMetadata>(name,
         args => {
             if (adapter) {
                 adapter(args);
@@ -47,14 +47,7 @@ export function createTestDecorator<T extends TestMetadata>(
             if (finallyAdapter) {
                 finallyAdapter(args);
             }
-        },
-        (metadata: T) => {
-            if (metaExtends) {
-                metadata = metaExtends(metadata)
-            }
-            metadata.action = action;
-            return metadata;
-        }) as ITestDecorator<T>;
+        }, metaExtends) as ITestDecorator<T>;
 }
 
 export interface ITestCaseDecorator extends ITestDecorator<TestCaseMetadata> {
@@ -77,7 +70,7 @@ export interface ITestCaseDecorator extends ITestDecorator<TestCaseMetadata> {
  * @interface ITestDecorator
  * @template T
  */
-export const Test: ITestCaseDecorator = createTestDecorator<TestCaseMetadata>('Case',
+export const Test: ITestCaseDecorator = createTestDecorator<TestCaseMetadata>('TestCase',
     args => {
         args.next<TestCaseMetadata>({
             match: (arg) => isString(arg),

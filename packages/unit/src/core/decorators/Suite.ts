@@ -1,4 +1,7 @@
-import { TypeMetadata, IClassMethodDecorator, MetadataAdapter, MetadataExtends, createClassDecorator, IClassDecorator, isString, ITypeDecorator, isNumber } from '@ts-ioc/core';
+import {
+    TypeMetadata, MetadataAdapter, MetadataExtends, createClassDecorator,
+    isString, ITypeDecorator, isNumber
+} from '@ts-ioc/core';
 import { SuiteMetadata } from '../metadata';
 
 
@@ -10,7 +13,8 @@ import { SuiteMetadata } from '../metadata';
  * @template T
  */
 export interface ISuiteDecorator<T extends SuiteMetadata> extends ITypeDecorator<T> {
-    (describe?: string): ClassDecorator;
+    (describe: string): ClassDecorator;
+    (describe: string, timeout: number): ClassDecorator;
 }
 
 /**
@@ -46,11 +50,11 @@ export function createSuiteDecorator<T extends SuiteMetadata>(
         },
         (metadata: T) => {
             if (metaExtends) {
-               metadata = metaExtends(metadata);
+                metadata = metaExtends(metadata);
             }
             metadata.singleton = true;
             return metadata;
         }) as ISuiteDecorator<T>;
 }
 
-export const Suite: IClassMethodDecorator<TypeMetadata> = createSuiteDecorator<TypeMetadata>();
+export const Suite: ISuiteDecorator<SuiteMetadata> = createSuiteDecorator<TypeMetadata>();

@@ -1,8 +1,14 @@
 import { IRunner, Runner, ModuleConfigure, DefaultRunnerToken } from '@ts-ioc/bootstrap';
-import { Token, getMethodMetadata, isNumber, lang, ContainerToken, IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Defer, Injectable } from '@ts-ioc/core';
+import { Token, getMethodMetadata, isNumber, lang, ContainerToken, IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Defer, Injectable, isUndefined, getClassName } from '@ts-ioc/core';
 import { Before, BeforeEach, Test, Suite } from '../core/decorators';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../core';
 
+/**
+ * test case decribe.
+ *
+ * @export
+ * @interface ICaseDescribe
+ */
 export interface ICaseDescribe {
     key: string;
     order: number;
@@ -10,6 +16,7 @@ export interface ICaseDescribe {
     title: string;
 }
 
+declare let process: any;
 
 /**
  * Suite runner.
@@ -29,38 +36,40 @@ export class SuiteRunner extends Runner<any> implements IRunner<any> {
 
     constructor(token?: Token<any>, instance?: any, config?: ModuleConfigure) {
         super(token, instance, config);
-        this.init();
     }
 
     init() {
         let metas = getOwnTypeMetadata<SuiteMetadata>(Suite, this.instance);
         let meta = metas.find(m => isNumber(m.timeout));
         this.timeout = meta ? meta.timeout : (3 * 60 * 60 * 1000);
-        this.describe = metas.map(m => m.describe).filter(d => d).join('; ');
+        this.describe = metas.map(m => m.describe).filter(d => d).join('; ') || getClassName(this.container.getTokenImpl(this.token));
     }
 
     async run(data?: any): Promise<any> {
+        this.init();
         try {
             await this.runBefore();
             await this.runTest();
         } catch (err) {
             console.error(err);
-            if (process) {
+            if (!isUndefined(process)) {
                 process.exit(0);
             }
         }
     }
 
-    runTimeout(action: Promise<any>, describe: string, timeout: number): Promise<any> {
-        let hasResolve = false;
+    runTimeout(action: () => Promise<any>, describe: string, timeout: number): Promise<any> {
         let defer = new Defer();
-        setTimeout(() => {
-            if (!hasResolve) {
+        let timer = setTimeout(() => {
+            if (timer) {
+                clearTimeout(timer);
                 defer.reject(new Error(`${describe}, timeout ${timeout}`));
             }
         }, timeout);
-        action.then(r => {
-            hasResolve = true;
+
+        action().then(r => {
+            clearTimeout(timer);
+            timer = null;
             defer.resolve(r);
         })
 
@@ -73,7 +82,7 @@ export class SuiteRunner extends Runner<any> implements IRunner<any> {
             .map(key => {
                 let meta = methodMaps[key].find(m => isNumber(m.timeout));
                 return this.runTimeout(
-                    this.container.invoke(this.token, key, this.instance),
+                    () => this.container.invoke(this.token, key, this.instance),
                     'sutie before ' + key,
                     meta ? meta.timeout : this.timeout)
             }));
@@ -85,7 +94,7 @@ export class SuiteRunner extends Runner<any> implements IRunner<any> {
             .map(key => {
                 let meta = methodMaps[key].find(m => isNumber(m.timeout));
                 return this.runTimeout(
-                    this.container.invoke(this.token, key, this.instance),
+                    () => this.container.invoke(this.token, key, this.instance),
                     'before each ' + key,
                     meta ? meta.timeout : this.timeout);
             }));
@@ -112,15 +121,13 @@ export class SuiteRunner extends Runner<any> implements IRunner<any> {
                 })
                 .map(caseDesc => {
                     return this.runCase(caseDesc)
-                })).catch(err => {
-                    console.error(err);
-                });
+                }));
     }
 
     async runCase(caseDesc: ICaseDescribe): Promise<any> {
         await this.runBeforeEach();
         return await this.runTimeout(
-            this.container.invoke(this.token, caseDesc.key, this.instance),
+            () => this.container.invoke(this.token, caseDesc.key, this.instance),
             caseDesc.title,
             caseDesc.timeout);
     }
