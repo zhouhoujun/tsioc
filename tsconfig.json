@@ -21,9 +21,18 @@
       "@ts-ioc/platform-browser":[
         "packages/platform-browser/src"
       ],
+      "@ts-ioc/platform-browser/bootstrap":[
+        "packages/platform-browser/bootstrap/src"
+      ],
       "@ts-ioc/platform-server":[
         "packages/platform-server/src"
-      ]
+      ],
+      "@ts-ioc/platform-server/bootstrap":[
+        "packages/platform-server/bootstrap/src"
+      ],
+      "@ts-ioc/unit": [
+        "packages/unit/src"
+      ],
     },
     "module": "commonjs",
     "target":"es5",

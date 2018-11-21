@@ -1,5 +1,5 @@
 import { IContainer, IContainerBuilder, Injectable } from '@ts-ioc/core';
-import { AppConfigure, DefaultApplicationBuilder, IApplicationBuilder, AnyApplicationBuilder, IAppConfigureLoader, AppConfigureLoaderToken } from '@ts-ioc/bootstrap';
+import { AppConfigure, DefaultApplicationBuilder, IApplicationBuilder, AnyApplicationBuilder, IConfigureLoader, ConfigureLoaderToken } from '@ts-ioc/bootstrap';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { ContainerBuilder } from '@ts-ioc/platform-server';
@@ -39,8 +39,8 @@ export interface AnyApplicationBuilderServer extends AnyApplicationBuilder, Serv
 
 }
 
-@Injectable(AppConfigureLoaderToken)
-export class ConfigureFileLoader implements IAppConfigureLoader {
+@Injectable(ConfigureLoaderToken)
+export class ConfigureFileLoader implements IConfigureLoader<AppConfigure> {
     constructor(private baseURL: string, private container: IContainer) {
 
     }
@@ -125,16 +125,14 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
         return this;
     }
 
-    protected async registerExts(container: IContainer, config: AppConfigure): Promise<IContainer> {
-        await super.registerExts(container, config);
+    protected async registerByConfigure(container: IContainer, config: AppConfigure): Promise<void> {
+        await super.registerByConfigure(container, config);
         await Promise.all(this.dirMatchs.map(dirs => {
             return container.loadModule(container, {
                 basePath: config.baseURL,
                 files: dirs
             });
         }));
-
-        return container;
     }
 
     protected createContainerBuilder(): IContainerBuilder {

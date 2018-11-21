@@ -40,8 +40,15 @@ export class SuiteRunner extends Runner<any> implements IRunner<any> {
     }
 
     async run(data?: any): Promise<any> {
-        await this.runBefore();
-        await this.runTest();
+        try {
+            await this.runBefore();
+            await this.runTest();
+        } catch (err) {
+            console.error(err);
+            if (process) {
+                process.exit(0);
+            }
+        }
     }
 
     runTimeout(action: Promise<any>, describe: string, timeout: number): Promise<any> {
@@ -49,10 +56,11 @@ export class SuiteRunner extends Runner<any> implements IRunner<any> {
         let defer = new Defer();
         setTimeout(() => {
             if (!hasResolve) {
-                defer.reject(`${describe}, timeout ${timeout}`)
+                defer.reject(new Error(`${describe}, timeout ${timeout}`));
             }
-        });
+        }, timeout);
         action.then(r => {
+            hasResolve = true;
             defer.resolve(r);
         })
 
@@ -104,7 +112,9 @@ export class SuiteRunner extends Runner<any> implements IRunner<any> {
                 })
                 .map(caseDesc => {
                     return this.runCase(caseDesc)
-                }));
+                })).catch(err => {
+                    console.error(err);
+                });
     }
 
     async runCase(caseDesc: ICaseDescribe): Promise<any> {

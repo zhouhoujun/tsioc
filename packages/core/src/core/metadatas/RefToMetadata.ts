@@ -8,7 +8,7 @@ import { TypeMetadata } from './TypeMetadata';
  * @interface RefMetadata
  * @extends {TypeMetadata}
  */
-export interface RefMetadata extends TypeMetadata {
+export interface RefToMetadata extends TypeMetadata {
     /**
      * define the class as service reference to target.
      *

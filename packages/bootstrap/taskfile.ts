@@ -16,31 +16,29 @@ const rename = require('gulp-rename');
     },
     sourcemaps: true,
     pipes: [
-        (act) => {
-            return rollup({
-                name: act.config.data.name,
-                format: 'umd',
-                sourceMap: true,
-                plugins: [
-                    resolve(),
-                    commonjs(),
-                    rollupSourcemaps()
-                ],
-                external: [
-                    'reflect-metadata',
-                    'events',
-                    'tslib',
-                    'object-assign',
-                    'log4js',
-                    '@ts-ioc/core',
-                    '@ts-ioc/aop'
-                ],
-                globals: {
-                    'reflect-metadata': 'Reflect'
-                },
-                input: act.config.data.input
-            })
-        },
+        (act) => rollup({
+            name: act.config.data.name,
+            format: 'umd',
+            sourceMap: true,
+            plugins: [
+                resolve(),
+                commonjs(),
+                rollupSourcemaps()
+            ],
+            external: [
+                'reflect-metadata',
+                'events',
+                'tslib',
+                'object-assign',
+                'log4js',
+                '@ts-ioc/core',
+                '@ts-ioc/aop'
+            ],
+            globals: {
+                'reflect-metadata': 'Reflect'
+            },
+            input: act.config.data.input
+        }),
         (act) => rename(act.config.data.name)
     ]
 })

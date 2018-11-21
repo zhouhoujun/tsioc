@@ -1,4 +1,7 @@
-import { MapSet, Token, SymbolType, Registration, IContainer, InjectToken, IContainerBuilder } from '@ts-ioc/core';
+import {
+    MapSet, Token, SymbolType, Registration,
+    IContainer, InjectToken, IContainerBuilder
+} from '@ts-ioc/core';
 
 /**
  * container pool
@@ -81,9 +84,8 @@ export class ContainerPool {
     }
 }
 
-export const ContainerPoolToken = new InjectToken<ContainerPool>('ContainerPool');
+/**
+ *  container pool token.
+ */
+export const ContainerPoolToken = new InjectToken<ContainerPool>('DI_ContainerPool');
 
-// /**
-//  *  global container pools.
-//  */
-// export const containerPools = new ContainerPool();

@@ -1,6 +1,5 @@
-import { isClass, isString, isFunction, isUndefined } from './typeCheck';
+import { isClass, isArray, isString, isFunction, isUndefined } from './typeCheck';
 import { lang } from './lang';
-import { isArray } from '@ts-ioc/core/lib/utils';
 
 /**
  * object map set.

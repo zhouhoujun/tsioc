@@ -1,6 +1,5 @@
 import { Registration, IContainer, Token } from '@ts-ioc/core';
 import { ModuleConfig } from './ModuleConfigure';
-import { MdInstance } from './ModuleType';
 import { ContainerPool } from '../utils';
 import { Runnable } from '../runnable';
 import { InjectedModule } from './InjectedModule';

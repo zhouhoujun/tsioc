@@ -1,42 +1,11 @@
-import { Inject, InjectToken, Injectable, Ref, isUndefined, lang, ContainerToken, IContainer, isString } from '@ts-ioc/core';
+import {
+    Inject, Injectable, RefTo, isUndefined,
+    lang, ContainerToken, IContainer, isString
+} from '@ts-ioc/core';
 import { ModuleConfigure } from '../modules';
-import { RunnableBuilderToken, CustomRegister } from './IRunnableBuilder';
-import { RunnableBuilder } from './RunnableBuilder';
-import { PromiseUtil } from '@ts-ioc/core/lib/utils';
+import { RunnableBuilderToken, IRunnableBuilder } from './IRunnableBuilder';
+import { ConfigureMgrToken, ConfigureLoaderToken, IConfigureManager, DefaultConfigureToken } from './IConfigureManager';
 
-
-/**
- * configure manager token.
- */
-export const ConfigureMgrToken = new InjectToken<ConfigureManager<ModuleConfigure>>('config-mgr');
-
-/**
- * application default configuration token.
- */
-export const DefaultConfigureToken = new InjectToken<ModuleConfigure>('DI_Default_Configuration');
-
-
-/**
- * configure loader.
- *
- * @export
- * @interface IConfigureLoader
- */
-export interface IConfigureLoader<T extends ModuleConfigure> {
-    /**
-     * load config.
-     *
-     * @param {string} [uri]
-     * @returns {Promise<T>}
-     * @memberof AppConfigureLoader
-     */
-    load(uri?: string): Promise<T>;
-}
-
-/**
- * configure loader token.
- */
-export const ConfigureLoaderToken = new InjectToken<IConfigureLoader<ModuleConfigure>>('DI_Configure_Loader');
 
 
 /**
@@ -45,9 +14,9 @@ export const ConfigureLoaderToken = new InjectToken<IConfigureLoader<ModuleConfi
  * @export
  * @class ConfigureManager
  */
+// @RefTo(RunnableBuilderToken)
 @Injectable(ConfigureMgrToken)
-@Ref(RunnableBuilderToken)
-export class ConfigureManager<T extends ModuleConfigure> {
+export class ConfigureManager<T extends ModuleConfigure> implements IConfigureManager<T> {
 
     /**
      * Creates an instance of ConfigureManager.
@@ -88,19 +57,11 @@ export class ConfigureManager<T extends ModuleConfigure> {
     /**
      * bind runnable builder.
      *
-     * @param {RunnableBuilder<any>} builder
-     * @param {...CustomRegister<any>[]} regs
+     * @param {IRunnableBuilder<any>} builder
      * @memberof ConfigureManager
      */
-    async bindBuilder(builder: RunnableBuilder<any>, ...regs: CustomRegister<any>[]) {
-        let config = await this.getConfig();
-        if (this.baseURL) {
-            config.baseURL = this.baseURL;
-        }
-        await PromiseUtil.step(regs.map(async cs => {
-            let tokens = await cs(this.container, config, builder);
-            return tokens;
-        }));
+    async bindBuilder(builder: IRunnableBuilder<any>) {
+        // let config = await this.getConfig();
     }
 
     /**

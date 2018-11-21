@@ -1,7 +1,7 @@
 import { ProviderTypes } from '../types';
 import { Provider, ProviderMap, ParamProvider, isProviderMap, ProviderMapToken } from './providers';
 import {
-    isString, isClass, isArray, isFunction, isNumber,
+    isClass, isArray, isFunction, isNumber,
     isUndefined, isNull, isToken, isBaseObject, lang
 } from '../utils';
 import { IProviderParser } from './IProviderParser';
@@ -9,6 +9,8 @@ import { IContainer } from '../IContainer';
 
 /**
  * provider matcher. use to find custome providers in resolve.
+ *
+ * note: object map provider can not resolve token.
  *
  * @export
  * @class ProviderMatcher
@@ -95,13 +97,15 @@ export class ProviderParser implements IProviderParser {
                 if (isobjMap) {
                     lang.forIn<any>(p, (val, name) => {
                         if (!isUndefined(val)) {
-                            if (isClass(val)) {
-                                map.add(name, val);
-                            } else if (isFunction(val) || isString(val)) {
+                            // object map can not resolve token.
+                            if (isToken(val)) {
                                 map.add(name, () => val);
                             } else {
                                 map.add(name, val);
                             }
+                            // else if (isFunction(val) || isString(val)) {
+                            //     map.add(name, () => val);
+                            // }
                         }
                     });
                 }

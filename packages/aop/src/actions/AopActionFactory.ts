@@ -1,10 +1,12 @@
 import { ActionComponent } from '@ts-ioc/core';
 import { AopActions } from './AopActions';
 import { RegistAspectAction } from './RegistAspectAction';
-import {
-    InvokeBeforeConstructorAction, InvokeAfterConstructorAction,
-    BindMethodPointcutAction, MatchPointcutAction, ExetndsInstanceAction
-} from '.';
+import { MatchPointcutAction } from './MatchPointcutAction';
+import { InvokeBeforeConstructorAction } from './InvokeBeforeConstructorAction';
+import { InvokeAfterConstructorAction } from './InvokeAfterConstructorAction';
+import { BindMethodPointcutAction } from './BindMethodPointcutAction';
+import { ExetndsInstanceAction } from './ExetndsInstanceAction';
+
 
 /**
  * aop action factory.

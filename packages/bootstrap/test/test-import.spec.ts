@@ -3,8 +3,8 @@ import 'mocha';
 import { expect } from 'chai';
 import { ModuleA, ModuleB, ClassSevice } from './demo';
 import { DefaultApplicationBuilder, AnyApplicationBuilder } from '../src';
-import { AopModule } from '@ts-ioc/aop';
-import { LogModule } from '@ts-ioc/logs';
+// import { AopModule } from '@ts-ioc/aop';
+// import { LogModule } from '@ts-ioc/logs';
 
 
 describe('di module', () => {
@@ -12,7 +12,7 @@ describe('di module', () => {
     let builder: AnyApplicationBuilder;
     beforeEach(async () => {
         builder = DefaultApplicationBuilder.create();
-        builder.use(AopModule).use(LogModule);
+        // builder.use(AopModule).use(LogModule);
     });
 
     it('should has no bootstrap', async () => {

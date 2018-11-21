@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import {
     IContainer, Token, ProviderTypes, lang, isFunction, isClass,
     isToken, Singleton, Inject, Registration, Container,
-    AnnotationMetaAccessorToken, InjectReference
+    AnnotationMetaAccessorToken, InjectReference, Injectable
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';

@@ -1,5 +1,4 @@
-import { AnnotationConfigure } from './AnnotationConfigure';
-
+import { AnnotationConfigure } from './IAnnotationBuilder';
 
 
 /**

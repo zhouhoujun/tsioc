@@ -1,7 +1,6 @@
 import { ObjectMap, Type } from '../types';
-import { isArray, isObject, isFunction, isClass } from './typeCheck';
+import { isNullOrUndefined, isArray, isObject, isFunction, isClass } from './typeCheck';
 import * as objAssign from 'object-assign';
-import { getClassName, isNullOrUndefined } from '@ts-ioc/core';
 
 export namespace lang {
 

@@ -6,7 +6,9 @@ import { InjectToken } from '../../InjectToken';
 export const ProviderMapToken = new InjectToken<ProviderMap>('DI_ProviderMap');
 
 /**
- * Provider Map
+ * Provider Map.
+ *
+ * note: object map provider can not resolve token.
  *
  * @export
  * @class Providers

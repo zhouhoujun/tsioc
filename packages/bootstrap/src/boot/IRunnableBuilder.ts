@@ -2,7 +2,7 @@ import { Token, InjectToken, IContainer, LoadType, Factory } from '@ts-ioc/core'
 import { AppConfigure } from './AppConfigure';
 import { IModuleBuilder, ModuleEnv, ModuleConfig, InjectedModule } from '../modules';
 import { Events, IEvents } from '../utils';
-import { ConfigureManager } from './ConfigureManager';
+import { IConfigureManager } from './IConfigureManager';
 
 /**
  * custom define module.
@@ -80,16 +80,12 @@ export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends
     /**
      * get config manager.
      *
-     * @returns {ConfigureManager<ModuleConfig<T>>}
+     * @returns {IConfigureManager<ModuleConfig<T>>}
      * @memberof IRunnableBuilder
      */
-    getConfigManager(): ConfigureManager<ModuleConfig<T>>;
+    getConfigManager(): IConfigureManager<ModuleConfig<T>>;
 
 }
-
-
-
-export const RunnableBuilderToken = new InjectToken<AnyRunnableBuilder>('DI_RunnableBuilder');
 
 /**
  * runnable builder. objected generics to any
@@ -100,4 +96,11 @@ export const RunnableBuilderToken = new InjectToken<AnyRunnableBuilder>('DI_Runn
  * @template T
  */
 export interface AnyRunnableBuilder extends IRunnableBuilder<any> {
+
 }
+
+/**
+ * runable builder token.
+ */
+export const RunnableBuilderToken = new InjectToken<AnyRunnableBuilder>('DI_RunnableBuilder');
+

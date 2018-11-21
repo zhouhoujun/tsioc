@@ -1,8 +1,8 @@
-import { DIModule, OnModuleStart, ContainerPoolToken } from '../src';
+import { DIModule, OnModuleStart, DefaultApplicationBuilder } from '../src';
 import { Injectable, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
 import { Aspect, AopModule, Around, Joinpoint } from '@ts-ioc/aop';
-import { DefaultApplicationBuilder, AnyApplicationBuilder } from '../src';
 import { LogModule } from '@ts-ioc/logs';
+
 
 export class TestService {
     testFiled = 'test';
@@ -78,11 +78,11 @@ export class Logger {
 })
 export class ModuleB implements OnModuleStart<ClassSevice> {
     constructor(test: TestService, @Inject(ContainerToken) private container: IContainer) {
-        let pools = container.get(ContainerPoolToken);
+        // let pools = container.get(ContainerPoolToken);
         // console.log(pools);
-        console.log(container.has('mark'), container.get('mark'));
-        console.log(container, container.getResolvers());
-        console.log('container pools defaults..................\n');
+        // console.log(container.has('mark'), container.get('mark'));
+        // console.log(container);
+        // console.log('container pools defaults..................\n');
         // console.log(pools.getDefault());
         // console.log(container.resolveChain.toArray()[1]);
         // console.log(container.resolve(TestService));

@@ -1,10 +1,10 @@
 import { IContainer } from './IContainer';
-import { Injectable, Component, AutoWired, Inject, Singleton, Param, Method, Abstract, Autorun, IocExt, Ref, Providers } from './core/decorators';
-import { CoreActions } from './core/actions';
-import { DefaultLifeScope } from './core/DefaultLifeScope';
 import { LifeScopeToken } from './LifeScope';
-import { MethodAccessor } from './core/MethodAccessor';
-import { CacheManager, ProviderMap, ProviderMapToken, ProviderParser, ProviderParserToken } from './core';
+import {
+    CacheManager, ProviderMap, ProviderMapToken, ProviderParser, ProviderParserToken,
+    Injectable, Component, AutoWired, Inject, Singleton, Param, DefaultLifeScope,
+    Method, Abstract, Autorun, IocExt, RefTo, Providers, CoreActions, MethodAccessor
+} from './core';
 import { CacheManagerToken } from './ICacheManager';
 import { MethodAccessorToken } from './IMethodAccessor';
 import { ResolverChain, ResolverChainToken } from './resolves';
@@ -30,7 +30,7 @@ export function registerCores(container: IContainer) {
     lifeScope.registerDecorator(Injectable, CoreActions.bindProvider, CoreActions.cache);
     lifeScope.registerDecorator(Component, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
     lifeScope.registerDecorator(Singleton, CoreActions.bindProvider);
-    lifeScope.registerDecorator(Ref, CoreActions.bindProvider);
+    lifeScope.registerDecorator(RefTo, CoreActions.bindProvider);
     lifeScope.registerDecorator(Providers, CoreActions.bindProvider);
     lifeScope.registerDecorator(Abstract, CoreActions.bindProvider, CoreActions.cache);
     lifeScope.registerDecorator(AutoWired, CoreActions.bindParameterType, CoreActions.bindPropertyType);

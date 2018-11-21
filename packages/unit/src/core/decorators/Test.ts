@@ -1,5 +1,5 @@
 
-import { MetadataExtends, MetadataAdapter, isString, isNumber, IMethodDecorator, createMethodDecorator } from '@ts-ioc/core';
+import { MetadataExtends, MetadataAdapter, isString, isNumber, createMethodDecorator } from '@ts-ioc/core';
 import { TestMetadata, TestCaseMetadata } from '../metadata';
 
 
@@ -10,8 +10,9 @@ import { TestMetadata, TestCaseMetadata } from '../metadata';
  * @interface ITestDecorator
  * @template T
  */
-export interface ITestDecorator<T extends TestMetadata> extends IMethodDecorator<T> {
-
+export interface ITestDecorator<T extends TestMetadata> {
+    (timeout: number): MethodDecorator;
+    (metadata?: T): MethodDecorator;
 }
 
 

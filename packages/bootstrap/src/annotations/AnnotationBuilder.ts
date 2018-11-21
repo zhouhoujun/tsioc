@@ -1,10 +1,8 @@
-import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import {
     Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, ProviderTypes,
     lang, isFunction, Injectable, AnnotationMetaAccessorToken, Container, InjectReference
 } from '@ts-ioc/core';
-import { AnnotationConfigure } from './AnnotationConfigure';
-import { Annotation } from '../decorators';
+import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import { AnnoInstance } from './IAnnotation';
 
 /**
@@ -27,8 +25,18 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
     public container: IContainer;
 
     constructor() {
+
     }
 
+    /**
+     * build token type via config.
+     *
+     * @param {Token<T>} token
+     * @param {AnnotationConfigure<T>} [config]
+     * @param {*} [data] build data
+     * @returns {Promise<T>}
+     * @memberof ITypeBuilder
+     */
     async build(token: Token<T>, config?: AnnotationConfigure<T>, data?: any): Promise<T> {
         if (isClass(token) && !this.container.hasRegister(token)) {
             this.container.register(token);
@@ -54,6 +62,15 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         }
     }
 
+    /**
+     * build instance via type config.
+     *
+     * @param {(Token<T> | AnnotationConfigure<T>)} config
+     * @param {*} [data] build data.
+     * @param {...Token<any>[]} excludeTokens
+     * @returns {Promise<T>}
+     * @memberof IAnnotationBuilder
+     */
     async buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any, ...excludeTokens: Token<any>[]): Promise<any> {
         let token: Token<T>;
         if (isToken(config)) {
@@ -168,7 +185,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      * @memberof AnnotationBuilder
      */
     getDecorator() {
-        return Annotation.toString();
+        return '@Annotation';
     }
 
     protected getMetaConfig(token: Type<any>, decorator?: string): AnnotationConfigure<T> {
@@ -187,7 +204,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         if (build === this) {
             return true;
         }
-        if (build.constructor === this.constructor) {
+        if (lang.getClass(build) === lang.getClass(this)) {
             return true;
         }
         return false;

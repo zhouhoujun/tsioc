@@ -1,11 +1,10 @@
 import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
 import { Type, Token, Factory, SymbolType, ToInstance, IocState, ProviderTypes, Modules, LoadType, ReferenceToken } from './types';
-import { Registration } from './Registration';
 import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet, lang, isArray } from './utils';
-
+import { Registration } from './Registration';
 import { MethodAccessorToken } from './IMethodAccessor';
-import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderParserToken, getOwnTypeMetadata, Providers, ProvidersMetadata, ProviderMap } from './core';
+import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderParserToken, ProviderMap } from './core';
 import { LifeScope, LifeScopeToken } from './LifeScope';
 import { IParameter } from './IParameter';
 import { CacheManagerToken } from './ICacheManager';
@@ -191,8 +190,7 @@ export class Container implements IContainer {
                         tk = sToken.token;
                         isRef = sToken.isRef !== false;
                     }
-                    let pmapTk = new InjectReference(ProviderMap, tk);
-                    let pdrmap = this.has(pmapTk) ? this.get(new InjectReference(ProviderMap, tk)) : null;
+                    let pdrmap = this.get(new InjectReference(ProviderMap, tk));
                     if (pdrmap && pdrmap.has(tk)) {
                         service = pdrmap.resolve(tk, ...providers);
                     } else if (isRef && this.has(tk)) {

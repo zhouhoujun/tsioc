@@ -24,6 +24,13 @@ export class Advisor implements IAdvisor {
      */
     aspects: MapSet<Type<any>, ObjectMap<AdviceMetadata[]>>;
 
+    /**
+     * aspect ioc containers.
+     *
+     * @protected
+     * @type {MapSet<Type<any>, IContainer>}
+     * @memberof Advisor
+     */
     protected aspectIocs: MapSet<Type<any>, IContainer>;
     /**
      * method advices.

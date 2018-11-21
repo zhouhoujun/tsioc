@@ -1,10 +1,18 @@
-import { IContainer, LoadType, MapSet, Factory, Token, DefaultContainerBuilder, IContainerBuilder, isClass, isToken, InjectReference } from '@ts-ioc/core';
-import { IRunnableBuilder, CustomRegister } from './IRunnableBuilder';
-import { ModuleBuilder, ModuleEnv, DIModuleInjectorToken, InjectedModule, IModuleBuilder, InjectModuleBuilderToken, DefaultModuleBuilderToken, ModuleBuilderToken, ModuleConfig, ModuleConfigure } from '../modules';
+import {
+    IContainer, LoadType, MapSet, Factory, Token,
+    DefaultContainerBuilder, IContainerBuilder, isClass,
+    isToken, InjectReference, PromiseUtil, Injectable, lang
+} from '@ts-ioc/core';
+import { IRunnableBuilder, CustomRegister, RunnableBuilderToken } from './IRunnableBuilder';
+import {
+    ModuleBuilder, ModuleEnv, DIModuleInjectorToken,
+    InjectedModule, IModuleBuilder, InjectModuleBuilderToken, DefaultModuleBuilderToken,
+    ModuleBuilderToken, ModuleConfig, ModuleConfigure
+} from '../modules';
 import { ContainerPool, ContainerPoolToken, Events, IEvents } from '../utils';
 import { BootModule } from '../BootModule';
 import { Runnable } from '../runnable';
-import { ConfigureMgrToken, ConfigureManager } from './ConfigureManager';
+import { ConfigureMgrToken, IConfigureManager } from './IConfigureManager';
 
 /**
  * runnable events
@@ -44,13 +52,14 @@ export enum RunnableEvents {
  * @extends {ModuleBuilder}
  * @template T
  */
+@Injectable(RunnableBuilderToken)
 export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBuilder<T>, IEvents {
 
     protected globalModules: LoadType[];
     protected customRegs: CustomRegister<T>[];
     protected beforeInitPds: MapSet<Token<any>, any>;
     protected afterInitPds: MapSet<Token<any>, any>;
-    protected configMgr: ConfigureManager<ModuleConfig<T>>;
+    protected configMgr: IConfigureManager<ModuleConfig<T>>;
     inited = false;
 
     events: Events;
@@ -199,7 +208,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         return builder || this;
     }
 
-    getConfigManager(): ConfigureManager<ModuleConfig<T>> {
+    getConfigManager(): IConfigureManager<ModuleConfig<T>> {
         if (!this.configMgr) {
             this.configMgr = this.createConfigureMgr();
         }
@@ -207,7 +216,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
     }
 
     protected createConfigureMgr() {
-        return this.getPools().getDefault().getService(ConfigureMgrToken, this.constructor, { baseURL: this.baseURL });
+        return this.getPools().getDefault().getService(ConfigureMgrToken, lang.getClass(this), { baseURL: this.baseURL });
     }
 
     protected async autoRun(container: IContainer, token: Token<any>, cfg: ModuleConfig<T>, instance: any, data?: any): Promise<Runnable<T>> {
@@ -244,10 +253,11 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         let container = this.getPools().getDefault();
         await this.registerExts(container);
         let configManager = this.getConfigManager();
-        await configManager.bindBuilder(this, ...this.customRegs);
+        let config = await configManager.getConfig();
+        await this.registerByConfigure(container, config);
+        await configManager.bindBuilder(this);
         this.inited = true;
         this.events.emit(RunnableEvents.onRootContainerInited, container);
-
     }
 
     /**
@@ -263,5 +273,24 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
             let usedModules = this.globalModules;
             await container.loadModule(...usedModules);
         }
+    }
+
+    /**
+     * register by configure.
+     *
+     * @protected
+     * @param {IContainer} container
+     * @param {ModuleConfig<T>} config
+     * @returns {Promise<void>}
+     * @memberof RunnableBuilder
+     */
+    protected async registerByConfigure(container: IContainer, config: ModuleConfig<T>): Promise<void> {
+        if (this.baseURL) {
+            config.baseURL = this.baseURL;
+        }
+        await PromiseUtil.step(this.customRegs.map(async cs => {
+            let tokens = await cs(container, config, this);
+            return tokens;
+        }));
     }
 }

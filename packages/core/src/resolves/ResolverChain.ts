@@ -126,7 +126,7 @@ export class ResolverChain implements IResolver {
     resolve<T>(token: SymbolType<T>, ...providers: ProviderTypes[]): T {
         let resolver = this.toArray().find(r => this.hasToken(r, token));
         if (!resolver && !this.container.parent) {
-            console.log('have not register', token);
+            // console.log('have not register', token);
             return null;
         }
         if (resolver) {

@@ -8,4 +8,5 @@ import { ClassMetadata } from './ClassMetadata';
  * @interface InjectableMetadata
  */
 export interface InjectableMetadata extends ClassMetadata {
+
 }

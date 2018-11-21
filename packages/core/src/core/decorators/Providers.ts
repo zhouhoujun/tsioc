@@ -1,8 +1,7 @@
 import { createDecorator, ArgsIterator } from '../factories';
 import { ProvidersMetadata } from '../metadatas';
-import { Registration } from '../../Registration';
-import { isToken, isArray } from '../../utils';
-import { Token, ProviderTypes } from '../../types';
+import { isArray } from '../../utils';
+import { ProviderTypes } from '../../types';
 
 /**
  * @Providers decorator, for class. use to define the class as service of target.

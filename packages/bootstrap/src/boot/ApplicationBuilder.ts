@@ -1,5 +1,5 @@
+import { Token, IContainer } from '@ts-ioc/core';
 import { AppConfigure } from './AppConfigure';
-import { LoadType, Factory, Token } from '@ts-ioc/core';
 import { IApplicationBuilder, AnyApplicationBuilder } from './IApplicationBuilder';
 import { ModuleEnv, InjectedModule } from '../modules';
 import { IEvents } from '../utils';
@@ -80,5 +80,16 @@ export class DefaultApplicationBuilder<T> extends RunnableBuilder<T> implements 
         return cfgMgr;
     }
 
-
+    /**
+     * register by configure.
+     *
+     * @protected
+     * @param {IContainer} container
+     * @param {AppConfigure} config
+     * @returns {Promise<void>}
+     * @memberof RunnableBuilder
+     */
+    protected async registerByConfigure(container: IContainer, config: AppConfigure): Promise<void> {
+        await super.registerByConfigure(container, config);
+    }
 }

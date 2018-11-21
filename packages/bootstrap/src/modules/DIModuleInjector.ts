@@ -91,7 +91,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         metaConfig = await this.registerConfgureDepds(newContainer, metaConfig, type);
 
         let exps: Type<any>[] = [].concat(...builder.loader.getTypes(metaConfig.exports || []));
-        let pdrMap = newContainer.get(new InjectReference(ProviderMap, type));
+        let pdrMap =  newContainer.get(new InjectReference(ProviderMap, type));
         let injMd = new InjectedModule(metaConfig.token || type, metaConfig, newContainer, type, exps, pdrMap ? pdrMap.keys() : []);
         container.bindProvider(new InjectedModuleToken(type), injMd);
 

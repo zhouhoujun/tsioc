@@ -3,13 +3,13 @@ import {
     Type, isClass, isFunction, LoadType, isObject
 } from '@ts-ioc/core';
 import { AppConfigure } from '../boot/AppConfigure';
-import { IApplicationBuilder } from '../boot/IApplicationBuilder';
+import { IRunnableBuilder } from '../boot/IRunnableBuilder';
 import { IAnnotationBuilder } from '../annotations/IAnnotationBuilder';
 import { createDIModuleDecorator } from './DIModule';
 
 
 export interface BootstrapMetadata extends AppConfigure {
-    builder?: Type<IApplicationBuilder<any>> | IApplicationBuilder<any>;
+    builder?: Type<IRunnableBuilder<any>> | IRunnableBuilder<any>;
     globals?: LoadType[];
 }
 
@@ -40,7 +40,7 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
  * @export
  * @template T
  * @param {string} name
- * @param {(Token<IApplicationBuilder> | IApplicationBuilder)} [builder] default builder
+ * @param {(Token<IRunnableBuilder> | IRunnableBuilder)} [builder] default builder
  * @param {(Token<IAnnotationBuilder<any>> | IAnnotationBuilder<Tany>)} [annotationBuilder] default type builder.
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
@@ -48,7 +48,7 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
  */
 export function createBootstrapDecorator<T extends BootstrapMetadata>(
     name: string,
-    builder?: Type<IApplicationBuilder<any>> | IApplicationBuilder<any>,
+    builder?: Type<IRunnableBuilder<any>> | IRunnableBuilder<any>,
     annotationBuilder?: Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IBootstrapDecorator<T> {
@@ -60,11 +60,11 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
         if (metadata.builder) {
             setTimeout(() => {
                 let builderType = metadata.builder;
-                let builder: IApplicationBuilder<any>;
+                let builder: IRunnableBuilder<any>;
                 if (isClass(builderType)) {
                     builder = isFunction(builderType['create']) ? builderType['create']() : new builderType();
                 } else if (isObject(builderType)) {
-                    builder = builderType as IApplicationBuilder<any>;
+                    builder = builderType as IRunnableBuilder<any>;
                 }
                 if (builder) {
                     if (metadata.globals) {

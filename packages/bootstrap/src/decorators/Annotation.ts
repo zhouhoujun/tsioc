@@ -1,7 +1,13 @@
 import { ITypeDecorator, Token, MetadataAdapter, MetadataExtends, createClassDecorator } from '@ts-ioc/core';
-import { IAnnotationBuilder } from '../annotations/IAnnotationBuilder';
-import { AnnotationConfigure } from '../annotations/AnnotationConfigure';
+import { IAnnotationBuilder, AnnotationConfigure } from '../annotations/IAnnotationBuilder';
 
+/**
+ * annotation metadata.
+ *
+ * @export
+ * @interface AnnotationMetadata
+ * @extends {AnnotationConfigure<any>}
+ */
 export interface AnnotationMetadata extends AnnotationConfigure<any> {
 
 }

@@ -1,14 +1,7 @@
-import { Token, InjectToken, IContainer, LoadType, Factory } from '@ts-ioc/core';
+import { InjectToken } from '@ts-ioc/core';
 import { AppConfigure } from './AppConfigure';
-import { IModuleBuilder, ModuleEnv, ModuleConfig, InjectedModule } from '../modules';
-import { Events, IEvents } from '../utils';
+import { IEvents } from '../utils';
 import { IRunnableExtends, IRunnableBuilder } from './IRunnableBuilder';
-
-// /**
-//  * custom define module.
-//  */
-// export type CustomRegister<T> = (container: IContainer, config?: AppConfigure, builder?: IApplicationBuilder<T>) => Token<T>[] | Promise<Token<T>[]>;
-
 
 /**
  * use module extends application.
@@ -25,7 +18,6 @@ export interface IApplicationExtends extends IRunnableExtends {
      * @memberof IApplicationBuilder
      */
     useConfiguration(config?: string | AppConfigure): this;
-
 }
 
 
@@ -39,11 +31,12 @@ export interface IApplicationExtends extends IRunnableExtends {
  */
 export interface IApplicationBuilder<T> extends IRunnableBuilder<T>, IApplicationExtends, IEvents {
 
-
 }
 
 
-
+/**
+ *  application builder token.
+ */
 export const ApplicationBuilderToken = new InjectToken<AnyApplicationBuilder>('DI_AppBuilder');
 
 /**
@@ -55,4 +48,5 @@ export const ApplicationBuilderToken = new InjectToken<AnyApplicationBuilder>('D
  * @template T
  */
 export interface AnyApplicationBuilder extends IApplicationBuilder<any> {
+
 }
