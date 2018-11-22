@@ -40,10 +40,11 @@ export interface IMetaAccessor<T> {
     /**
      * get then first decorator metadata contain via decorators in order.
      *
-     * @returns {(string | string[])}
+     * @param {Type<T>} type
+     * @returns {string[]}
      * @memberof IMetaAccessor
      */
-    getDecorators(type: Token<T>): string[];
+    getDecorators(type: Type<T>): string[];
 
     /**
      * get metadata config of target type. via decorators in order.

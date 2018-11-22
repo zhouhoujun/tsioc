@@ -196,7 +196,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             if (decorator) {
                 decors.unshift(decorator);
             }
-            return accessor.getMetadata(token, this.container, decors.length ? d => decors.indexOf(d) > 0 : undefined);
+            return accessor.getMetadata(token , this.container, decors.length ? d => decors.indexOf(d) > 0 : undefined);
         }
         return null;
     }
