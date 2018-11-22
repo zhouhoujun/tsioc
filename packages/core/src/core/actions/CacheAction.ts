@@ -66,7 +66,7 @@ export class CacheAction extends ActionComposite {
 
     getCacheMetadata(container: IContainer, data: CacheActionData): ClassMetadata {
         let lifeScope = container.getLifeScope();
-        let matchs = lifeScope.getClassDecorators(surm => hasOwnClassMetadata(surm.name, data.targetType));
+        let matchs = lifeScope.getClassDecorators(data.targetType);
         let cacheMetadata: ClassMetadata;
         for (let i = 0; i < matchs.length; i++) {
             let surm = matchs[i];

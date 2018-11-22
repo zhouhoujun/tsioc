@@ -12,6 +12,8 @@ export * from './ActionData';
 export * from './ActionFactory';
 export * from './DefaultLifeScope';
 export * from './IExecutable';
+export * from './IMetaAccessor';
+export * from './MetaAccessor';
 export * from './MethodAccessor';
 export * from './ComponentLifecycle';
 export * from './CacheManager';

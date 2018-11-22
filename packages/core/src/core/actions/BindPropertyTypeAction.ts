@@ -1,7 +1,7 @@
 import { ActionComposite } from './ActionComposite';
 import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
-import { getPropertyMetadata, hasPropertyMetadata } from '../factories';
+import { getPropertyMetadata } from '../factories';
 import { PropertyMetadata } from '../metadatas';
 import { IContainer } from '../../IContainer';
 
@@ -36,7 +36,7 @@ export class BindPropertyTypeAction extends ActionComposite {
         let type = data.targetType;
         let lifeScope = container.getLifeScope();
 
-        let matchs = lifeScope.getPropertyDecorators(surm => surm.actions.includes(CoreActions.bindPropertyType) && hasPropertyMetadata(surm.name, type));
+        let matchs = lifeScope.getPropertyDecorators(type, surm => surm.actions.includes(CoreActions.bindPropertyType));
         let list: PropertyMetadata[] = [];
         matchs.forEach(surm => {
             let propMetadata = getPropertyMetadata<PropertyMetadata>(surm.name, type);

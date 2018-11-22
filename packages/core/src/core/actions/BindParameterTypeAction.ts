@@ -56,10 +56,7 @@ export class BindParameterTypeAction extends ActionComposite {
         });
 
 
-        let matchs = lifeScope.getParameterDecorators((surm => {
-            return surm.actions.includes(CoreActions.bindParameterType) && ((target || propertyKey !== 'constructor') ? hasParamMetadata(surm.name, target, propertyKey)
-                : hasOwnParamMetadata(surm.name, type));
-        }));
+        let matchs = lifeScope.getParameterDecorators(target || type, propertyKey, surm => surm.actions.includes(CoreActions.bindParameterType));
 
         matchs.forEach(surm => {
             let parameters = (target || propertyKey !== 'constructor') ? getParamMetadata<ParameterMetadata>(surm.name, target, propertyKey) : getOwnParamMetadata<ParameterMetadata>(surm.name, type);

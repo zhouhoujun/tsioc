@@ -1,8 +1,7 @@
 import { IModuleValidate, InjectModuleValidateToken } from './IModuleValidate';
 import { Type, Token } from '../types';
 import { isClass, isString, isArray, isToken } from '../utils';
-import { hasOwnClassMetadata, IocExt } from '../core';
-import { IMetaAccessor, IAnnotationMetadata, AnnotationMetaAccessorToken } from './IMetaAccessor';
+import { hasOwnClassMetadata, IocExt, IMetaAccessor, IAnnotationMetadata, AnnotationMetaAccessorToken, getClassDecorators } from '../core';
 import { IContainer } from '../IContainer';
 
 /**
@@ -36,14 +35,14 @@ export abstract class BaseModuelValidate implements IModuleValidate {
     getMetaConfig(token: Token<any>, container: IContainer): IAnnotationMetadata<any> {
         if (isToken(token)) {
             let accessor = this.getMetaAccessor(container);
-            return accessor.getMetadata(token, container);
+            let decorator = this.getDecorator();
+            return accessor.getMetadata(token, container, decorator ? d => isArray(decorator) ? decorator.indexOf(d) >= 0 : decorator === d : undefined);
         }
         return {};
     }
 
     getMetaAccessor(container: IContainer): IMetaAccessor<any> {
-        let decorator = this.getDecorator();
-        return container.resolve(AnnotationMetaAccessorToken, { decorator: decorator });
+        return container.resolve(AnnotationMetaAccessorToken);
     }
 
     abstract getDecorator(): string | string[];
@@ -63,6 +62,6 @@ export const IocExtModuleValidateToken = new InjectModuleValidateToken(IocExt.to
  */
 export class IocExtModuleValidate extends BaseModuelValidate implements IModuleValidate {
     getDecorator(): string {
-        return IocExt.toString()
+        return IocExt.toString();
     }
 }

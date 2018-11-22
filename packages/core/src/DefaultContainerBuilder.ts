@@ -5,8 +5,7 @@ import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import {
     IModuleLoader, ModuleLoaderToken, DefaultModuleLoader, IModuleInjectorChain,
     ModuleInjectorChainToken, SyncModuleInjector, IocExtModuleValidateToken,
-    SyncModuleInjectorToken, ModuleInjector, IocExtModuleValidate, ModuleInjectorChain,
-    MetaAccessor, AnnotationMetaAccessor
+    SyncModuleInjectorToken, ModuleInjector, IocExtModuleValidate, ModuleInjectorChain
 } from './injectors';
 import { PromiseUtil } from './utils';
 
@@ -104,8 +103,6 @@ export class DefaultContainerBuilder implements IContainerBuilder {
         if (!container.has(ModuleInjectorChainToken)) {
             container.register(SyncModuleInjector)
                 .register(ModuleInjector)
-                .register(MetaAccessor)
-                .register(AnnotationMetaAccessor)
                 .bindProvider(IocExtModuleValidateToken, new IocExtModuleValidate())
                 .bindProvider(ModuleInjectorChainToken, new ModuleInjectorChain())
         }

@@ -39,7 +39,7 @@ export class BindParameterProviderAction extends ActionComposite {
         let propertyKey = data.propertyKey;
         let lifeScope = container.getLifeScope();
 
-        let matchs = lifeScope.getMethodDecorators(surm => surm.actions.includes(CoreActions.bindParameterProviders) && hasOwnMethodMetadata(surm.name, type));
+        let matchs = lifeScope.getMethodDecorators(type, surm => surm.actions.includes(CoreActions.bindParameterProviders) && hasOwnMethodMetadata(surm.name, type));
 
         let providers: ProviderTypes[] = [];
         matchs.forEach(surm => {

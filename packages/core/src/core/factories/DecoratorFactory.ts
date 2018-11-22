@@ -2,8 +2,8 @@ import 'reflect-metadata';
 import { PropertyMetadata, MethodMetadata, ParameterMetadata, Metadate, ClassMetadata } from '../metadatas';
 import { DecoratorType } from './DecoratorType';
 import { ArgsIterator } from './ArgsIterator';
-import { isClass, isAbstractDecoratorClass, isMetadataObject, isUndefined, isFunction, isNumber, isArray, lang } from '../../utils';
-import { Type, AbstractType, ObjectMap } from '../../types';
+import { isClass, isAbstractDecoratorClass, isMetadataObject, isUndefined, isFunction, isNumber, isArray, lang, isString } from '../../utils';
+import { Type, AbstractType, ObjectMap, Express } from '../../types';
 
 
 export const ParamerterName = 'paramerter_names';
@@ -150,6 +150,71 @@ function storeMetadata<T>(name: string, metaName: string, args: any[], metadata?
     }
 }
 
+
+function getDecoratorsOfType(target: any, exp: Express<string, boolean>, own = false): string[] {
+    return (own ? Reflect.getOwnMetadataKeys(target) : Reflect.getMetadataKeys(target)).filter(d => {
+        if (d && isString(d)) {
+            return exp(d);
+        }
+        return false;
+    });
+}
+
+/**
+ * get type decorators of class.
+ *
+ * @export
+ * @param {(Type<any> | AbstractType<any>)} target
+ * @returns {string[]}
+ */
+export function getClassDecorators(target: Type<any> | AbstractType<any>): string[] {
+    return getDecoratorsOfType(target, (d) => {
+        if (!/^@/.test(d)) {
+            return false;
+        }
+        return !/__\w+$/.test(d);
+    }, true);
+}
+
+/**
+ * get type decorators of class.
+ *
+ * @export
+ * @param {(Type<any> | AbstractType<any>)} target
+ * @returns {string[]}
+ */
+export function getMethodDecorators(target: Type<any> | AbstractType<any>): string[] {
+    return getDecoratorsOfType(target, (d) => /^@\S+__method$/.test(d)).map(d => d.replace(/__method$/ig, ''));
+}
+
+
+/**
+ * get type decorators of class.
+ *
+ * @export
+ * @param {(Type<any> | AbstractType<any>)} target
+ * @returns {string[]}
+ */
+export function getPropDecorators(target: Type<any> | AbstractType<any>): string[] {
+    return getDecoratorsOfType(target, (d) => /^@\S+__props$/.test(d)).map(d => d.replace(/__props$/ig, ''));
+}
+
+/**
+ * get type decorators of class.
+ *
+ * @export
+ * @param {(Type<any> | AbstractType<any>)} target
+ * @returns {string[]}
+ */
+export function getParamDecorators(target: any, propertyKey?: string): string[] {
+    return ((propertyKey && propertyKey !== 'constructor') ? Reflect.getMetadataKeys(target, propertyKey) : Reflect.getOwnMetadataKeys(lang.getClass(target)) || []).filter(d => {
+        if (d && isString(d)) {
+            return /^@\S+__params$/.test(d);
+        }
+        return false;
+    }).map(d => d.replace(/__params$/ig, ''));
+}
+
 /**
  * get all class metadata of one specail decorator in target type.
  *
@@ -192,8 +257,6 @@ export function hasClassMetadata(decorator: string | Function, target: Type<any>
     let name = isFunction(decorator) ? decorator.toString() : decorator;
     return Reflect.hasMetadata(name, target);
 }
-
-
 
 /**
  * has own class decorator metadata.

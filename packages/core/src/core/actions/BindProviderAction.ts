@@ -37,7 +37,7 @@ export class BindProviderAction extends ActionComposite {
         let type = data.targetType;
         let lifeScope = container.getLifeScope();
 
-        let matchs = lifeScope.getClassDecorators(surm => surm.actions.includes(CoreActions.bindProvider) && hasOwnClassMetadata(surm.name, type));
+        let matchs = lifeScope.getClassDecorators(type, surm => surm.actions.includes(CoreActions.bindProvider));
 
         let provides = [];
         let raiseContainer = data.raiseContainer || container;

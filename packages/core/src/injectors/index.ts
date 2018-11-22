@@ -2,8 +2,6 @@ export * from './IModuleLoader';
 export * from './DefaultModuleLoader';
 export * from './IModuleValidate';
 export * from './ModuleValidate';
-export * from './IMetaAccessor';
-export * from './MetaAccessor';
 export * from './IModuleInjector';
 export * from './ModuleInjector';
 export * from './IModuleInjectorChain';

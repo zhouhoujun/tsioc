@@ -2,13 +2,14 @@ import { LifeScope, DecorSummary } from '../LifeScope';
 import { Type, ObjectMap, Token, IocState, Express } from '../types';
 import { isClass, isAbstractDecoratorClass, isArray, lang } from '../utils';
 import { Singleton } from './decorators';
-import { ClassMetadata, MethodMetadata } from './metadatas';
+import { MethodMetadata } from './metadatas';
 import { IContainer } from '../IContainer';
 import { CoreActions, ActionComponent, LifeState } from './actions';
-import { DecoratorType, getOwnTypeMetadata, getOwnParamerterNames, getOwnMethodMetadata, hasOwnClassMetadata } from './factories';
+import { DecoratorType, getOwnParamerterNames, getOwnMethodMetadata, hasOwnClassMetadata, getMethodDecorators, getClassDecorators, getPropDecorators, getParamDecorators } from './factories';
 import { ActionData } from './ActionData';
 import { ActionFactory } from './ActionFactory';
 import { IParameter } from '../IParameter';
+import { DefaultMetaAccessorToken } from './IMetaAccessor';
 
 
 /**
@@ -78,20 +79,28 @@ export class DefaultLifeScope implements LifeScope {
         }
     }
 
-    getClassDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[] {
-        return this.getTypeDecorators(this.toActionName(DecoratorType.Class), match);
+    getClassDecorators(type: Type<any>, match?: Express<DecorSummary, boolean>): DecorSummary[] {
+        return getClassDecorators(type)
+            .map(dec => this.decorators.find(d => d.name === dec))
+            .filter(d => d && (match ? match(d) : true));
     }
 
-    getMethodDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[] {
-        return this.getTypeDecorators(this.toActionName(DecoratorType.Method), match);
+    getMethodDecorators(type: Type<any>, match?: Express<DecorSummary, boolean>): DecorSummary[] {
+        return getMethodDecorators(type)
+            .map(dec => this.decorators.find(d => d.name === dec))
+            .filter(d => d && (match ? match(d) : true));
     }
 
-    getPropertyDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[] {
-        return this.getTypeDecorators(this.toActionName(DecoratorType.Property), match);
+    getPropertyDecorators(type: Type<any>, match?: Express<DecorSummary, boolean>): DecorSummary[] {
+        return getPropDecorators(type)
+            .map(dec => this.decorators.find(d => d.name === dec))
+            .filter(d => d && (match ? match(d) : true));
     }
 
-    getParameterDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[] {
-        return this.getTypeDecorators(this.toActionName(DecoratorType.Parameter), match);
+    getParameterDecorators(target: any, propertyKey: string, match?: Express<DecorSummary, boolean>): DecorSummary[] {
+        return getParamDecorators(target, propertyKey)
+            .map(dec => this.decorators.find(d => d.name === dec))
+            .filter(d => d && (match ? match(d) : true));
     }
 
     getDecoratorType(decirator: any): DecoratorType {
@@ -117,8 +126,7 @@ export class DefaultLifeScope implements LifeScope {
         if (isAbstractDecoratorClass(target)) {
             return false;
         }
-        return this.getClassDecorators().some(act => hasOwnClassMetadata(act.name, target));
-
+        return this.getClassDecorators(target).length > 0;
     }
 
     getAtionByName(name: string): ActionComponent {
@@ -190,28 +198,21 @@ export class DefaultLifeScope implements LifeScope {
         if (hasOwnClassMetadata(Singleton, type)) {
             return true;
         }
-
-        return this.getClassDecorators().some(surm => {
-            let metadatas = getOwnTypeMetadata(surm.name, type) as ClassMetadata[] || [];
-            if (isArray(metadatas)) {
-                return metadatas.some(m => m.singleton === true);
-            }
-            return false;
-        })
+        let metadata = this.container.get(DefaultMetaAccessorToken).find(type, this.container, m => m.singleton === true);
+        return !!metadata;
     }
 
     getMethodMetadatas<T>(type: Type<T>, propertyKey: string): MethodMetadata[] {
         let metadatas = [];
-        this.getMethodDecorators().forEach(dec => {
-            let metas: ObjectMap<MethodMetadata[]> = getOwnMethodMetadata<MethodMetadata>(dec.name, type);
-            if (metas.hasOwnProperty(propertyKey)) {
-                metadatas = metadatas.concat(metas[propertyKey] || []);
-            }
-        });
+        this.getMethodDecorators(type)
+            .forEach(dec => {
+                let metas: ObjectMap<MethodMetadata[]> = getOwnMethodMetadata<MethodMetadata>(dec.name, type);
+                if (metas.hasOwnProperty(propertyKey)) {
+                    metadatas = metadatas.concat(metas[propertyKey] || []);
+                }
+            });
         return metadatas;
     }
-
-
 
     filerDecorators(express?: Express<DecorSummary, boolean>): DecorSummary[] {
         return this.decorators.filter(express);

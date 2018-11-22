@@ -1,5 +1,5 @@
 import { ClassMetadata } from '../core';
-import { Token, Type } from '../types';
+import { Token, Type, Express } from '../types';
 import { IContainer } from '../IContainer';
 import { Registration } from '../Registration';
 
@@ -43,16 +43,30 @@ export interface IMetaAccessor<T> {
      * @returns {(string | string[])}
      * @memberof IMetaAccessor
      */
-    getDecorators(): string[];
+    getDecorators(type: Token<T>): string[];
+
     /**
      * get metadata config of target type. via decorators in order.
      *
      * @param {Token<T>} type
      * @param {IContainer} container
+     * @param {Express<string, boolean>} [decorFilter]
      * @returns {IAnnotationMetadata<T>}
      * @memberof IMetaAccessor
      */
-    getMetadata(type: Token<T>, container: IContainer): IAnnotationMetadata<T>;
+    getMetadata(type: Token<T>, container: IContainer, decorFilter?: Express<string, boolean>): IAnnotationMetadata<T>;
+
+    /**
+     * find metadata.
+     *
+     * @param {Token<T>} type
+     * @param {IContainer} container
+     * @param {Express<IAnnotationMetadata<T>, boolean>} filter
+     * @param {Express<string, boolean>} [decorFilter]
+     * @returns {IAnnotationMetadata<T>}
+     * @memberof IMetaAccessor
+     */
+    find(type: Token<T>, container: IContainer, filter: Express<IAnnotationMetadata<T>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<T>;
 }
 
 /**

@@ -111,38 +111,43 @@ export interface LifeScope {
     /**
      * get class decorators
      *
+     * @param {Type<any>} type
      * @param {Express<DecorSummary, boolean>} [match]
      * @returns {DecorSummary[]}
      * @memberof LifeScope
      */
-    getClassDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[];
+    getClassDecorators(type: Type<any>, match?: Express<DecorSummary, boolean>): DecorSummary[];
 
     /**
      * get method decorators
      *
+     * @param {Type<any>} type
      * @param {Express<DecorSummary, boolean>} [match]
      * @returns {DecorSummary[]}
      * @memberof LifeScope
      */
-    getMethodDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[];
+    getMethodDecorators(type: Type<any>, match?: Express<DecorSummary, boolean>): DecorSummary[];
 
     /**
      * get property decorators
      *
+     * @param {Type<any>} type
      * @param {Express<DecorSummary, boolean>} [match]
      * @returns {DecorSummary[]}
      * @memberof LifeScope
      */
-    getPropertyDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[];
+    getPropertyDecorators(type: Type<any>, match?: Express<DecorSummary, boolean>): DecorSummary[];
 
     /**
      * get parameter decorators
      *
+     * @param {Type<any>} type
+     * @param {string} propertyKey
      * @param {Express<DecorSummary, boolean>} [match]
      * @returns {DecorSummary[]}
      * @memberof LifeScope
      */
-    getParameterDecorators(match?: Express<DecorSummary, boolean>): DecorSummary[];
+    getParameterDecorators(target: any, propertyKey: string, match?: Express<DecorSummary, boolean>): DecorSummary[];
 
 
     /**

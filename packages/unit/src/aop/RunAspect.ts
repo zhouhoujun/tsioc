@@ -15,17 +15,19 @@ export class RunAspect  extends LoggerAspect {
 
     @Around('execution(*.runBefore)')
     logBefore(joinPoint: Joinpoint) {
-        console.log(joinPoint.state, joinPoint.targetType);
+        console.log(joinPoint.state, joinPoint.fullName);
+        console.log(joinPoint.args);
     }
 
     @Around('execution(*.runBeforeEach)')
     logBeforeEach(joinPoint: Joinpoint) {
-        console.log(joinPoint.state, joinPoint.targetType);
+        console.log(joinPoint.state, joinPoint.fullName);
     }
 
     @Around('execution(*.runCase)')
     logTestCase(joinPoint: Joinpoint) {
-        console.log(joinPoint.state, joinPoint.targetType, joinPoint.args);
+        console.log(joinPoint.state, joinPoint.fullName);
+        console.log(joinPoint.args[0].title);
     }
 
 }

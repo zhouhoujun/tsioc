@@ -196,6 +196,9 @@ export namespace lang {
         if (isNullOrUndefined(target)) {
             return null;
         }
+        if (isClass(target)) {
+            return target;
+        }
         return target.constructor || target.prototype.constructor;
     }
 

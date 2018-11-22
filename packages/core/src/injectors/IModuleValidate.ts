@@ -1,7 +1,7 @@
 import { Type, Token } from '../types';
 import { InjectToken } from '../InjectToken';
 import { Registration } from '../Registration';
-import { IAnnotationMetadata, IMetaAccessor } from './IMetaAccessor';
+import { IAnnotationMetadata, IMetaAccessor } from '../core';
 import { IContainer } from '../IContainer';
 
 /**

@@ -8,7 +8,19 @@
     "reinstall": "npm cache clean && npm install",
     "build": "tkf"
   },
-  "keywords": ["IoC", "AOP", "dependency", "injection", "framework", "container", "decorator", "autofac", "Inject", "type", "typescript"],
+  "keywords": [
+    "IoC",
+    "AOP",
+    "dependency",
+    "injection",
+    "framework",
+    "container",
+    "decorator",
+    "autofac",
+    "Inject",
+    "type",
+    "typescript"
+  ],
   "author": "houjun <freebirds8281@hotmail.com>",
   "license": "MIT",
   "bugs": {
@@ -18,7 +30,9 @@
     "type": "git",
     "url": "git+https://github.com/zhouhoujun/tsioc.git"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@ts-ioc/core": "^3.2.14"
+  },
   "devDependencies": {
     "@taskfr/cli": "^2.1.11",
     "@taskfr/core": "^2.1.11",
