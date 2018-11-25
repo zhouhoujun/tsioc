@@ -154,6 +154,22 @@ export namespace lang {
         return isClass(p) ? p : p.constructor as Type<any>;
     }
 
+    /**
+     * get all parent class in chain.
+     *
+     * @export
+     * @param {Type<any>} target
+     * @returns {Type<any>[]}
+     */
+    export function getBaseClasses(target: Type<any>): Type<any>[] {
+        let types: Type<any>[] = [];
+        while (isClass(target) && target !== Object) {
+            types.push(target);
+            target = lang.getParentClass(target);
+        }
+        return types;
+    }
+
 
     /**
      * first.

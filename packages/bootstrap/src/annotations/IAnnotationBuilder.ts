@@ -148,7 +148,7 @@ export class InjectAnnotationBuilder<T> extends Registration<IAnnotationBuilder<
 /**
  * Annotation class builder token.
  */
-export const AnnotationBuilderToken = new Registration<IAnyTypeBuilder>(Object, annoBuilderDesc);
+export const AnnotationBuilderToken = new InjectAnnotationBuilder<any>('');
 
 /**
  * Default Annotation class builder token.

@@ -119,5 +119,4 @@ export class DefaultContainerBuilder implements IContainerBuilder {
 
         return this.injectorChain;
     }
-
 }

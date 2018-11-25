@@ -63,6 +63,29 @@ export class MetaAccessor implements IMetaAccessor<any> {
         }
         return metadata;
     }
+
+    filter(token: Token<any>, container: IContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any>[] {
+        let type = isClass(token) ? token : container.getTokenImpl(token);
+        let metadatas = [];
+        if (isClass(type)) {
+            let decors = this.getDecorators(type);
+            if (decorFilter) {
+                decors = decors.filter(decorFilter);
+            }
+            decors.forEach(decor => {
+                let metas = getTypeMetadata<IAnnotationMetadata<any>>(decor, type);
+                if (metas && metas.length) {
+                    metas.forEach(meta => {
+                        if (meta && filter(meta)) {
+                            metadatas.push(meta);
+                        }
+                        return true;
+                    });
+                }
+            });
+        }
+        return metadatas;
+    }
 }
 
 
@@ -102,5 +125,17 @@ export class AnnotationMetaAccessor extends MetaAccessor implements IMetaAccesso
             }
         }
         return null;
+    }
+
+    filter(token: Token<any>, container: IContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any>[] {
+        if (isToken(token)) {
+            let accessor = container.getRefService(InjectMetaAccessorToken, token, DefaultMetaAccessorToken);
+            if (accessor) {
+                return accessor.filter(token, container, filter, decorFilter);
+            } else {
+                return super.filter(token, container, filter, decorFilter);
+            }
+        }
+        return [];
     }
 }

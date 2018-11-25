@@ -107,7 +107,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         }
 
         if (isArray(config.providers) && config.providers.length) {
-            this.bindProvider(container, config.providers, type);
+            await this.bindProvider(container, config.providers, type);
         }
         return config;
     }

@@ -148,37 +148,44 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         if (env instanceof InjectedModule) {
             return env;
         }
-        let injmdl: InjectedModule<T> = null;
         let parent = await this.getParentContainer(env);
         if (isToken(token)) {
-            injmdl = await this.import(token, parent);
-            if (!injmdl) {
-                let cfg = parent.get(AnnotationMetaAccessorToken).getMetadata(token, parent);
-                injmdl = new InjectedModule(token, cfg, parent);
-            }
+            return await this.loadViaToken(token, parent);
         } else {
-            let mdtype = this.getType(token);
-            if (isToken(mdtype)) {
-                injmdl = await this.import(mdtype, parent);
-                if (injmdl instanceof InjectedModule) {
-                    let container = injmdl.container;
-                    let injector = container.get(DIModuleInjectorToken);
-                    await injector.importByConfig(container, token);
-                    injmdl.config = lang.assign(injmdl.config, token);
-                }
-            } else {
-                mdtype = null;
-            }
-            if (!injmdl) {
-                let injector = parent.get(DIModuleInjectorToken);
-                await injector.importByConfig(parent, token)
-                injmdl = new InjectedModule(mdtype, token, parent);
-            }
+            return await this.loadViaConfig(token, parent);
         }
+    }
 
+    protected async loadViaToken(token: Token<T>, parent: IContainer): Promise<InjectedModule<T>> {
+        let injmdl: InjectedModule<T> = await this.import(token, parent);
+        if (!injmdl) {
+            let cfg = parent.get(AnnotationMetaAccessorToken).getMetadata(token, parent);
+            injmdl = new InjectedModule(token, cfg, parent);
+        }
         return injmdl;
     }
 
+    protected async loadViaConfig(config: ModuleConfigure, parent: IContainer): Promise<InjectedModule<T>> {
+        let injmdl: InjectedModule<T>;
+        let mdtype = this.getType(config);
+        if (isToken(mdtype)) {
+            injmdl = await this.import(mdtype, parent);
+            if (injmdl instanceof InjectedModule) {
+                let container = injmdl.container;
+                let injector = container.get(DIModuleInjectorToken);
+                await injector.importByConfig(container, config);
+                injmdl.config = lang.assign({}, injmdl.config, config);
+            }
+        } else {
+            mdtype = null;
+        }
+        if (!injmdl) {
+            let injector = parent.get(DIModuleInjectorToken);
+            await injector.importByConfig(parent, config)
+            injmdl = new InjectedModule(mdtype, config, parent);
+        }
+        return injmdl;
+    }
 
     protected async getParentContainer(env?: ModuleEnv) {
         let parent: IContainer;
@@ -193,7 +200,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             parent = this.getPools().getDefault();
         }
         return parent;
-
     }
 
     protected async autoRun(container: IContainer, token: Token<any>, cfg: ModuleConfigure, instance: any, data: any): Promise<Runnable<T>> {
@@ -261,17 +267,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     protected getAnnoBuilder(container: IContainer, token: Token<any>, annBuilder: Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>): IAnyTypeBuilder {
         let builder: IAnnotationBuilder<any>;
-        if (!builder && token) {
-            builder = container.getRefService(
-                (tk) => [
-                    { token: AnnotationBuilder, isRef: false },
-                    new InjectAnnotationBuilder(tk),
-                    new InjectReference(AnnotationBuilder, tk),
-                ],
-                token,
-                DefaultAnnotationBuilderToken);
-        }
-
         if (isClass(annBuilder)) {
             if (!container.has(annBuilder)) {
                 container.register(annBuilder);
@@ -282,6 +277,17 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             builder = container.resolve(annBuilder);
         } else if (annBuilder instanceof AnnotationBuilder) {
             builder = annBuilder;
+        }
+
+        if (!builder && token) {
+            builder = container.getRefService(
+                (tk) => [
+                    { token: AnnotationBuilder, isRef: false },
+                    new InjectAnnotationBuilder(tk),
+                    new InjectReference(AnnotationBuilder, tk),
+                ],
+                token,
+                DefaultAnnotationBuilderToken);
         }
 
         if (!builder) {

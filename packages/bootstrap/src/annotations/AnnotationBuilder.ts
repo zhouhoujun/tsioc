@@ -4,6 +4,7 @@ import {
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import { AnnoInstance } from './IAnnotation';
+import { Annotation } from '../decorators';
 
 /**
  * Annotation class builder. build class with metadata and config.
@@ -185,7 +186,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      * @memberof AnnotationBuilder
      */
     getDecorator() {
-        return '@Annotation';
+        return Annotation.toString();
     }
 
     protected getMetaConfig(token: Type<any>, decorator?: string): AnnotationConfigure<T> {

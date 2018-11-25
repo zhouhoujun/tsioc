@@ -1,10 +1,10 @@
 import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
-import { Type, Token, Factory, SymbolType, ToInstance, IocState, ProviderTypes, Modules, LoadType, ReferenceToken } from './types';
+import { Type, Token, Factory, SymbolType, ToInstance, IocState, ProviderTypes, Modules, LoadType, ReferenceToken, IReference } from './types';
 import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet, lang, isArray } from './utils';
 import { Registration } from './Registration';
 import { MethodAccessorToken } from './IMethodAccessor';
-import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderParserToken, ProviderMap } from './core';
+import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderParserToken, ProviderMap, DefaultMetaAccessorToken } from './core';
 import { LifeScope, LifeScopeToken } from './LifeScope';
 import { IParameter } from './IParameter';
 import { CacheManagerToken } from './ICacheManager';
@@ -176,35 +176,41 @@ export class Container implements IContainer {
                     return false;
                 }
                 let token = isClass(refToken) ? new refToken(tk) : (isFunction(refToken) ? refToken(tk) : refToken);
-                let tokens = isArray(token) ? token : [token];
-
-                tokens.forEach(sToken => {
-                    if (service) {
-                        return false;
-                    }
-                    let tk: Token<T>;
-                    let isRef = true;
-                    if (isToken(sToken)) {
-                        tk = sToken;
-                    } else {
-                        tk = sToken.token;
-                        isRef = sToken.isRef !== false;
-                    }
-                    let pdrmap = this.get(new InjectReference(ProviderMap, tk));
-                    if (pdrmap && pdrmap.has(tk)) {
-                        service = pdrmap.resolve(tk, ...providers);
-                    } else if (isRef && this.has(tk)) {
-                        service = this.resolve(tk, ...providers);
-                    }
-
-                    return true;
-                });
+                if (isArray(token)) {
+                    token.forEach(stk => {
+                        if (service) {
+                            return false;
+                        }
+                        service = this.resolveRef(stk, ...providers);
+                        return true;
+                    });
+                } else {
+                    service = this.resolveRef(token);
+                }
                 return true;
             });
         if (!service && defaultToken && this.has(defaultToken)) {
             service = this.resolve(defaultToken, ...providers);
         }
         return service;
+    }
+
+    protected resolveRef<T>(refToken: Token<T> | IReference<T>, ...providers: ProviderTypes[]) {
+        let tk: Token<T>;
+        let isRef = true;
+        if (isToken(refToken)) {
+            tk = refToken;
+        } else {
+            tk = refToken.token;
+            isRef = refToken.isRef !== false;
+        }
+        let pdrmap = this.get(new InjectReference(ProviderMap, tk));
+        if (pdrmap && pdrmap.has(tk)) {
+            return pdrmap.resolve(tk, ...providers);
+        } else if (isRef && this.has(tk)) {
+            return this.resolve(tk, ...providers);
+        }
+        return null;
     }
 
     /**
@@ -407,19 +413,14 @@ export class Container implements IContainer {
      */
     getTokenExtendsChain(token: Token<any>): Token<any>[] {
         if (isClass(token)) {
-            return this.getBaseClasses(token);
-        } else {
-            return this.getBaseClasses(this.getTokenImpl(token)).concat([token]);
-        }
-    }
+            let prds = this.resolveValue(DefaultMetaAccessorToken)
+                .filter(token, this, m => m && isToken(m.provide))
+                .map(meta => meta.provide);
 
-    protected getBaseClasses(target: Function): Token<any>[] {
-        let types: Type<any>[] = [];
-        while (isClass(target) && target !== Object) {
-            types.push(target);
-            target = lang.getParentClass(target);
+            return prds.concat(lang.getBaseClasses(token));
+        } else {
+            return [token].concat(lang.getBaseClasses(this.getTokenImpl(token)));
         }
-        return types;
     }
 
     /**

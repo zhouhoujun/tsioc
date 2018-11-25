@@ -68,6 +68,18 @@ export interface IMetaAccessor<T> {
      * @memberof IMetaAccessor
      */
     find(type: Token<T>, container: IContainer, filter: Express<IAnnotationMetadata<T>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<T>;
+
+    /**
+     * filter metadata.
+     *
+     * @param {Token<T>} type
+     * @param {IContainer} container
+     * @param {Express<IAnnotationMetadata<T>, boolean>} filter
+     * @param {Express<string, boolean>} [decorFilter]
+     * @returns {IAnnotationMetadata<T>[]}
+     * @memberof IMetaAccessor
+     */
+    filter(type: Token<T>, container: IContainer, filter: Express<IAnnotationMetadata<T>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<T>[];
 }
 
 /**
