@@ -84,8 +84,6 @@ export class ProviderParser implements IProviderParser {
                     } else if (isToken(pr.useExisting)) {
                         if (this.container.has(pr.useExisting)) {
                             map.add(pr.provide, () => this.container.resolve(pr.useExisting));
-                        } else {
-                            console.log('has not register:', pr.useExisting);
                         }
                     } else {
                         isobjMap = true;

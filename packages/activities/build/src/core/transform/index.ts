@@ -8,6 +8,7 @@ export * from './TransformActivity';
 export * from './SourceActivity';
 export * from './MochaTestActivity';
 export * from './DestActivity';
+export * from './UglifyActivity';
 export * from './transformTypes';
 
 export * from './Annotation';

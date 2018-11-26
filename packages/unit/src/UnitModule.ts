@@ -14,8 +14,6 @@ import * as runners from './runner';
         runners
     ],
     exports: [
-        // AopModule,
-        // LogModule,
         runners
     ]
 })

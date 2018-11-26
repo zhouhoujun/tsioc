@@ -71,7 +71,6 @@ export class SourceActivity extends StreamActivity {
         if (this.src) {
             let strSrc = await ctx.exec(this, this.src);
             let options = await ctx.exec(this, this.srcOptions);
-            console.log('source activity:', strSrc, options);
             ctx.setAsResult(src(strSrc, options || undefined));
         }
     }

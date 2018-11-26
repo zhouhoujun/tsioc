@@ -84,7 +84,6 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
      * @memberof ActivityContext
      */
     get result(): T {
-        console.log(this.constructor.name, 'get context result:', this.data);
         return this.data;
     }
 
@@ -92,7 +91,6 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
         if (data !== this.data) {
             this.emit('resultChanged', data);
         }
-        console.log(this.constructor.name, 'set context result:', data);
         this.data = data;
     }
 

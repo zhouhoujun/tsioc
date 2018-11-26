@@ -53,7 +53,7 @@ export class CoreRollup extends AssetActivity {
     assets: {
         ts: {
             sequence: [
-                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, activity: TsCompile },
+                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: true, activity: TsCompile },
                 CoreRollup,
                 {
                     name: 'zip',

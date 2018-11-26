@@ -18,6 +18,7 @@ export class MochaTestActivity extends StreamActivity {
     protected async execute(): Promise<void> {
         let ctx = this.getContext();
         let ta = ctx.target as TestActivity;
+        console.log(ctx.result);
         await this.executePipe(ctx.result, () => {
             let mocha = require('gulp-mocha');
             return ta.options ? mocha(ta.options) : mocha();

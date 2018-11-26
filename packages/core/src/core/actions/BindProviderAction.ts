@@ -61,12 +61,12 @@ export class BindProviderAction extends ActionComposite {
                     }
                     // class private provider.
                     if (c.providers && c.providers.length) {
-                        let refKey = new InjectReference(ProviderMap, c.type);
+                        let refKey = new InjectReference(ProviderMap, c.type).toString();
                         let maps = raiseContainer.get(ProviderParserToken).parse(c.providers);
                         if (raiseContainer.has(refKey)) {
-                            raiseContainer.bindProvider(refKey.toString(), raiseContainer.get(refKey).copy(maps));
+                            raiseContainer.bindProvider(refKey, raiseContainer.get<ProviderMap>(refKey).copy(maps));
                         } else {
-                            raiseContainer.bindProvider(refKey.toString(), maps);
+                            raiseContainer.bindProvider(refKey, maps);
                         }
                     }
                 });

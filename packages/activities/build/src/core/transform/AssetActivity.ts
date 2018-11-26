@@ -1,5 +1,5 @@
 import { isArray } from '@ts-ioc/core';
-import { UglifyActivity, TestActivity, WatchActivity } from '../activities';
+import { TestActivity, WatchActivity } from '../activities';
 import { AnnotationActivity, AnnotationsConfigure } from './Annotation';
 import { IAssetActivity, AssetToken } from './IAssetActivity';
 import { Asset } from '../decorators';
@@ -7,6 +7,7 @@ import { TransformActivity } from './TransformActivity';
 import { SourceActivity } from './SourceActivity';
 import { DestActivity } from './DestActivity';
 import { SourceMapsActivity } from './SourceMapsActivity';
+import { UglifyActivity } from './UglifyActivity';
 
 
 
@@ -95,7 +96,6 @@ export class AssetActivity extends TransformActivity implements IAssetActivity {
             await this.test.run(ctx);
         }
         if (!(this.watch && ctx.target === this.watch)) {
-            console.log('asset src:', this.src);
             if (this.src) {
                 await this.src.run(ctx);
             }

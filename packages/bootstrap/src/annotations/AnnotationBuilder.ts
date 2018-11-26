@@ -4,7 +4,6 @@ import {
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import { AnnoInstance } from './IAnnotation';
-import { Annotation } from '../decorators';
 
 /**
  * Annotation class builder. build class with metadata and config.
@@ -188,25 +187,10 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         }
     }
 
-    /**
-     * get default decorator.
-     *
-     * @returns
-     * @memberof AnnotationBuilder
-     */
-    getDecorator() {
-        return Annotation.toString();
-    }
-
     protected getMetaConfig(token: Type<any>, decorator?: string): AnnotationConfigure<T> {
-        let defDecorator = this.getDecorator();
         let accessor = this.container.resolve(AnnotationMetaAccessorToken);
         if (accessor) {
-            let decors: string[] = isArray(defDecorator) ? defDecorator : [defDecorator];
-            if (decorator) {
-                decors.unshift(decorator);
-            }
-            return accessor.getMetadata(token, this.container, decors.length ? d => decors.indexOf(d) > 0 : undefined);
+            return accessor.getMetadata(token, this.container);
         }
         return null;
     }

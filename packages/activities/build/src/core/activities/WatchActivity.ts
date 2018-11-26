@@ -259,7 +259,6 @@ export class WatchActivity extends NodeActivity implements IActivityResult<FileC
                 bufferTime(300),
                 filter(c => c.length > 0),
                 map(chgs => {
-                    console.log('watch files changed:', chgs);
                     let chg = new FileChanged(watchSrc);
                     chgs.forEach(fc => {
                         if (fc.added) {
@@ -276,7 +275,6 @@ export class WatchActivity extends NodeActivity implements IActivityResult<FileC
                 })
             )
             .subscribe(chg => {
-                console.log('watch change:', chg);
                 ctx.setAsResult(chg);
                 watchBody.run(ctx);
             });

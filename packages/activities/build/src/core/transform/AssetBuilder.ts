@@ -2,12 +2,13 @@ import { IActivity, Src, ActivityBuilder } from '@taskfr/core';
 import { isBoolean, isString, Injectable } from '@ts-ioc/core';
 import { AssetConfigure } from './AssetConfigure';
 import { AssetActivity } from './AssetActivity';
-import { UglifyActivity, UglifyConfigure, TestActivity, TestConfigure, WatchActivity, WatchConfigure } from '../activities';
+import { TestActivity, TestConfigure, WatchActivity, WatchConfigure } from '../activities';
 import { AnnotationActivity, AnnotationsConfigure } from './Annotation';
 import { AssetBuilderToken } from './IAssetActivity';
 import { SourceActivity, SourceConfigure } from './SourceActivity';
 import { DestActivity, DestConfigure } from './DestActivity';
 import { SourceMapsActivity, SourceMapsConfigure } from './SourceMapsActivity';
+import { UglifyActivity, UglifyConfigure } from './UglifyActivity';
 
 
 /**

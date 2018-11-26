@@ -52,7 +52,6 @@ export class SuiteRunner extends Runner<any> implements IRunner<any> {
     getSuiteDescribe(): ISuiteDescribe {
         let type = lang.getClass(this.instance);
         let metas = getOwnTypeMetadata<SuiteMetadata>(Suite, type);
-        console.log(this.config);
         let meta = metas.find(m => isNumber(m.timeout));
         this.timeout = meta ? meta.timeout : (3 * 60 * 60 * 1000);
         this.describe = metas.map(m => m.describe).filter(d => d).join('; ') || getClassName(type);

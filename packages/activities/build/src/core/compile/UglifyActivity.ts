@@ -96,7 +96,6 @@ export class UglifyActivity extends ShellCompilerActivity {
         this.shell = this.shell || path.normalize(path.join(this.getContext().getRootPath(), 'node_modules', '.bin', 'uglifyjs'));
     }
 
-
     protected formatShell(shell: string) {
         let outfile = path.join(this.dist, this.bundle)
         shell = shell + ' ' + outfile + ' -o ' + outfile;

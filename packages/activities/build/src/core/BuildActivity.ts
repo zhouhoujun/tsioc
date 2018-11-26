@@ -218,7 +218,6 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
     protected async getInputFiles(ctx: BuidActivityContext) {
         if (this.src) {
             let src = await ctx.getFiles(this.src);
-            console.log('build activity src:', src);
             ctx.setAsResult(src);
         }
     }

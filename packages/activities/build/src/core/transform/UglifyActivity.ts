@@ -1,7 +1,7 @@
 
 import * as uglify from 'gulp-uglify';
 import { Task, OnActivityInit, ActivityConfigure, CtxType, InjectAcitityToken, ExpressionToken, ConfigureType } from '@taskfr/core';
-import { NodeActivity } from '@taskfr/node';
+import { StreamActivity } from './StreamActivity';
 
 /**
  * uglify activity configure.
@@ -36,7 +36,7 @@ export const UglifyToken = new InjectAcitityToken<UglifyActivity>('uglify');
  * @implements {OnActivityInit}
  */
 @Task(UglifyToken)
-export class UglifyActivity extends NodeActivity implements OnActivityInit {
+export class UglifyActivity extends StreamActivity implements OnActivityInit {
 
     /**
      * uglify options
@@ -53,10 +53,6 @@ export class UglifyActivity extends NodeActivity implements OnActivityInit {
 
     protected async execute() {
         let ctx = this.getContext();
-        if (this.uglifyOptions) {
-            ctx.result = ctx.result.pipe(uglify(this.uglifyOptions))
-        } else {
-            ctx.result = ctx.result.pipe(uglify())
-        }
+        ctx.result = await this.executePipe(ctx.result, this.uglifyOptions ? uglify(this.uglifyOptions) : uglify());
     }
 }
