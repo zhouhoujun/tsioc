@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import {
     IContainer, Token, ProviderTypes, lang, isFunction, isClass,
     isToken, Inject, Registration, Container,
-    AnnotationMetaAccessorToken, InjectReference, Injectable
+    AnnotationMetaAccessorToken, InjectReference, Injectable, RefTokenType
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
@@ -281,11 +281,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
         if (!builder && token) {
             builder = container.getRefService(
-                (tk) => [
-                    { token: AnnotationBuilder, isRef: false },
-                    new InjectAnnotationBuilder(tk),
-                    new InjectReference(AnnotationBuilder, tk),
-                ],
+                (tk) => this.getRefAnnoTokens(container, tk),
                 token,
                 DefaultAnnotationBuilderToken);
         }
@@ -297,6 +293,15 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             builder.container = container
         }
         return builder;
+    }
+
+    protected getRefAnnoTokens(container: IContainer, tk): RefTokenType<any>[] {
+        return [
+            new InjectAnnotationBuilder(tk),
+            { token: AnnotationBuilderToken, isRef: false },
+            new InjectReference(lang.getClass(this), tk),
+            new InjectReference(AnnotationBuilder, tk)
+        ]
     }
 
 

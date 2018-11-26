@@ -41,7 +41,6 @@ export const RefTo: IRefToDecorator = createDecorator<RefToMetadata>('RefTo', ((
     args.next<RefToMetadata>({
         match: arg => isToken(arg),
         setMetadata: (metadata, arg) => {
-            console.log('ref to arg:', arg);
             metadata.refTo = arg;
         }
     })

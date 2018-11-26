@@ -1,6 +1,6 @@
 import {
     Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, ProviderTypes,
-    lang, isFunction, Injectable, AnnotationMetaAccessorToken, Container, InjectReference, isArray
+    lang, isFunction, Injectable, AnnotationMetaAccessorToken, Container, InjectReference, isArray, RefTokenType
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import { AnnoInstance } from './IAnnotation';
@@ -120,17 +120,26 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             }
         }
         if (!builder && token) {
-            builder = this.container.getRefService((tk) => [
-                { token: AnnotationBuilder, isRef: false },
-                new InjectAnnotationBuilder(tk),
-                new InjectReference(AnnotationBuilder, tk),
-            ], token, null, ...providers) as IAnnotationBuilder<T>;
+            builder = this.container.getRefService(
+                tk => this.getRefAnnoTokens(tk),
+                token,
+                null,
+                ...providers) as IAnnotationBuilder<T>;
         }
 
         if (builder && !builder.container) {
             builder.container = this.container;
         }
         return builder || this;
+    }
+
+    protected getRefAnnoTokens(tk): RefTokenType<any>[] {
+        return [
+            new InjectAnnotationBuilder(tk),
+            { token: AnnotationBuilderToken, isRef: false },
+            new InjectReference(lang.getClass(this), tk),
+            new InjectReference(AnnotationBuilder, tk)
+        ]
     }
 
     /**
@@ -197,7 +206,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             if (decorator) {
                 decors.unshift(decorator);
             }
-            return accessor.getMetadata(token , this.container, decors.length ? d => decors.indexOf(d) > 0 : undefined);
+            return accessor.getMetadata(token, this.container, decors.length ? d => decors.indexOf(d) > 0 : undefined);
         }
         return null;
     }

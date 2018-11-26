@@ -184,6 +184,7 @@ export class Container implements IContainer {
                     return false;
                 }
                 let token = isClass(refToken) ? new refToken(tk) : (isFunction(refToken) ? refToken(tk) : refToken);
+                console.log('ref sercice token:', token);
                 if (isArray(token)) {
                     token.forEach(stk => {
                         if (service) {

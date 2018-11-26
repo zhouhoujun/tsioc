@@ -1,7 +1,7 @@
 import {
     IContainer, LoadType, MapSet, Factory, Token,
     DefaultContainerBuilder, IContainerBuilder, isClass,
-    isToken, InjectReference, PromiseUtil, Injectable, lang
+    isToken, InjectReference, PromiseUtil, Injectable, lang, ReferenceToken, IReference, RefTokenType
 } from '@ts-ioc/core';
 import { IRunnableBuilder, CustomRegister, RunnableBuilderToken } from './IRunnableBuilder';
 import {
@@ -194,11 +194,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         let tko = injmdl.token;
         if (!builder && tko) {
             builder = container.getRefService(
-                (tk) => [
-                    { token: ModuleBuilder, isRef: false },
-                    new InjectModuleBuilderToken(tk),
-                    new InjectReference(ModuleBuilder, tk)
-                ],
+                tk => this.getRefBuilderTokens(container, tk),
                 tko, DefaultModuleBuilderToken);
         }
         if (!builder) {
@@ -206,6 +202,16 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         }
 
         return builder || this;
+    }
+
+    protected getRefBuilderTokens(container: IContainer, tk): RefTokenType<any>[] {
+        return [
+            new InjectModuleBuilderToken(tk),
+            { token: ModuleBuilderToken, isRef: false },
+            new InjectReference(lang.getClass(this), tk),
+            new InjectReference(RunnableBuilder, tk),
+            new InjectReference(ModuleBuilder, tk)
+        ]
     }
 
     getConfigManager(): IConfigureManager<ModuleConfig<T>> {

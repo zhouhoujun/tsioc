@@ -33,6 +33,7 @@ export class TransformActivity extends StreamActivity implements ITransformActiv
     config: ITransformConfigure;
 
     async onActivityInit(config: ITransformConfigure) {
+        console.log('------------------------------\ntrasfrom config:', config);
         await super.onActivityInit(config);
         if (config.pipes) {
             this.pipes = await this.translate(config.pipes);

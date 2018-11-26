@@ -6,7 +6,7 @@ export * from './ITransformConfigure';
 export * from './SourceMapsActivity';
 export * from './TransformActivity';
 export * from './SourceActivity';
-export * from './StreamTestActivity';
+export * from './MochaTestActivity';
 export * from './DestActivity';
 export * from './transformTypes';
 

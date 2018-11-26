@@ -1,6 +1,7 @@
 import { Registration } from './Registration';
 import { IContainer } from './IContainer';
 import { ProviderMap, ProviderType } from './core/providers';
+import { type } from 'os';
 
 /**
  * module types.
@@ -138,9 +139,14 @@ export interface IReference<T> {
 }
 
 /**
+ * reference token type.
+ */
+export type RefTokenType<T> =  IReference<T> | Token<T>;
+
+/**
  * reference token.
  */
-export type ReferenceToken<T> = Type<Registration<T>> | IReference<T> | ((token: Token<any>) => IReference<T> | Token<T> | (IReference<T> | Token<T>)[]);
+export type ReferenceToken<T> = Type<Registration<T>> | IReference<T> | ((token: Token<any>) => RefTokenType<T> | RefTokenType<T>[]);
 
 
 /**

@@ -13,7 +13,7 @@ import { TestFrameworkToken, TestToken, TestActivity } from '../activities';
  */
 @Task(TestFrameworkToken)
 @RefTo(TestToken)
-export class StreamTestActivity extends StreamActivity {
+export class MochaTestActivity extends StreamActivity {
 
     protected async execute(): Promise<void> {
         let ctx = this.getContext();
