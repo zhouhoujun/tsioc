@@ -5,7 +5,10 @@ import { Singleton } from './decorators';
 import { MethodMetadata } from './metadatas';
 import { IContainer } from '../IContainer';
 import { CoreActions, ActionComponent, LifeState } from './actions';
-import { DecoratorType, getOwnParamerterNames, getOwnMethodMetadata, hasOwnClassMetadata, getMethodDecorators, getClassDecorators, getPropDecorators, getParamDecorators } from './factories';
+import {
+    DecoratorType, getOwnParamerterNames, getOwnMethodMetadata, hasOwnClassMetadata,
+    getMethodDecorators, getClassDecorators, getPropDecorators, getParamDecorators
+} from './factories';
 import { ActionData } from './ActionData';
 import { ActionFactory } from './ActionFactory';
 import { IParameter } from '../IParameter';

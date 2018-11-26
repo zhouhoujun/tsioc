@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "target":"es2015"
+  },
+  "exclude": [
+    "lib",
+    "node_modules"
+  ]
+}

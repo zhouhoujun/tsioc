@@ -219,10 +219,11 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * get token implement class and base classes.
      *
      * @param {Token<any>} token
+     * @param {boolean} [chain] get all base classes or only impletment class. default true.
      * @returns {Token<any>[]}
      * @memberof IContainer
      */
-    getTokenExtendsChain(token: Token<any>): Token<any>[];
+    getTokenExtendsChain(token: Token<any>, chain?: boolean): Token<any>[];
 
     /**
      * get life scope of container.

@@ -151,7 +151,15 @@ export class Container implements IContainer {
      */
     getService<T>(token: Token<T>, target?: Token<any>, ...providers: ProviderTypes[]): T {
         if (isToken(target)) {
-            return this.getRefService((tk) => [{ token: token, isRef: false }, new InjectReference(this.getTokenImpl(token), tk)], target, token, ...providers);
+            let tokens = this.getTokenExtendsChain(token, false).map(t => {
+                return { token: token, isRef: false };
+            });
+            return this.getRefService(
+                (tk) => (<(Token<T> | IReference<T>)[]>tokens)
+                    .concat(tokens.map(t => new InjectReference(t.token, tk))),
+                target,
+                token,
+                ...providers);
         } else {
             return this.resolve(token, ...(isUndefined(target) ? providers : providers.splice(0, 0, target)));
         }
@@ -411,15 +419,15 @@ export class Container implements IContainer {
      * @returns {Token<any>[]}
      * @memberof Container
      */
-    getTokenExtendsChain(token: Token<any>): Token<any>[] {
+    getTokenExtendsChain(token: Token<any>, chain = true): Token<any>[] {
         if (isClass(token)) {
             let prds = this.resolveValue(DefaultMetaAccessorToken)
                 .filter(token, this, m => m && isToken(m.provide))
                 .map(meta => meta.provide);
 
-            return prds.concat(lang.getBaseClasses(token));
+            return prds.concat(chain ? lang.getBaseClasses(token) : token);
         } else {
-            return [token].concat(lang.getBaseClasses(this.getTokenImpl(token)));
+            return [token].concat(token ? lang.getBaseClasses(this.getTokenImpl(token)) : this.getTokenImpl(token));
         }
     }
 

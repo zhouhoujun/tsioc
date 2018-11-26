@@ -1,0 +1,10 @@
+.DS_STORE
+.vscode/.*
+node_modules
+package-lock.json
+esnext
+build
+lib
+bin
+
+

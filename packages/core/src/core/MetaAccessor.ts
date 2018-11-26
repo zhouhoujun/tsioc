@@ -6,6 +6,14 @@ import { isClass, isToken, lang } from '../utils';
 import { DefaultMetaAccessorToken, IMetaAccessor, IAnnotationMetadata, InjectMetaAccessorToken } from './IMetaAccessor';
 import { getClassDecorators, getTypeMetadata } from './factories';
 
+
+/**
+ * class metadata accessor.
+ *
+ * @export
+ * @class MetaAccessor
+ * @implements {IMetaAccessor<any>}
+ */
 export class MetaAccessor implements IMetaAccessor<any> {
 
     constructor() {

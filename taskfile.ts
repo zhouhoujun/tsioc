@@ -1,13 +1,14 @@
-import { PipeModule, IPipeContext, PipeTask, AssetActivity } from '@taskfr/pipes';
 import { TaskContainer } from '@taskfr/platform-server';
+import { Asset, BuildModule, AssetActivity } from '@taskfr/build';
+import { INodeActivityContext } from '@taskfr/node';
 const jeditor = require('gulp-json-editor');
 
 
 
-let versionSetting = (ctx: IPipeContext) => {
+let versionSetting = (ctx: INodeActivityContext) => {
     let envArgs = ctx.getEnvArgs();
     return jeditor((json: any) => {
-        let version = envArgs['vs'] || '';
+        let version = envArgs['setvs'] || '';
         if (version) {
             json.version = version;
             if (json.peerDependencies) {
@@ -22,12 +23,12 @@ let versionSetting = (ctx: IPipeContext) => {
     })
 }
 
-@PipeTask({
+@Asset({
     pipes: [
         {
             src: ['packages/**/package.json', '!node_modules/**/package.json'],
             pipes: [
-                (act: AssetActivity) => versionSetting(act.context),
+                (act: AssetActivity) => versionSetting(act.getContext()),
             ],
             dest: 'packages',
             activity: AssetActivity
@@ -35,19 +36,16 @@ let versionSetting = (ctx: IPipeContext) => {
         {
             src: ['package.json'],
             pipes: [
-                (act: AssetActivity) => versionSetting(act.context)
+                (act: AssetActivity) => versionSetting(act.getContext())
             ],
             dest: '.',
             activity: AssetActivity
         },
         {
-            shell: (ctx: IPipeContext) => {
+            shell: (ctx: INodeActivityContext) => {
                 let envArgs = ctx.getEnvArgs();
-                let packages = ctx.getFolders('packages'); // .filter(f => !/(annotations|aop|bootstrap)/.test(f));
+                let packages = ctx.getFolders('packages').filter(f => !/activities/.test(f)); // (f => !/(annotations|aop|bootstrap)/.test(f));
                 let cmd = envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
-                if (envArgs.test === 'false' || envArgs.upioc) {
-                    cmd = cmd + ' -- --test=false'
-                }
                 let cmds = packages.map(fd => {
                     return `cd ${fd} && ${cmd}`;
                 });
@@ -55,26 +53,12 @@ let versionSetting = (ctx: IPipeContext) => {
                 return cmds;
             },
             activity: 'shell'
-        },
-        {
-            name: 'update-ioc',
-            src: (act: AssetActivity) => {
-                let arg = act.context.getEnvArgs();
-                if (arg.upioc) {
-                    // let packages = act.context.getFolders('packages');
-                    // return packages.map(p => p + '/(bundles|lib)/**');
-                    return ['./packages/!(platform-browser)/bundles/**', './packages/!(platform-browser)/lib/**', './packages/!(platform-browser)/es2015/**', './packages/!(platform-browser)/es2017/**']
-                }
-                return './packages/empty/**';
-            },
-            dest: './node_modules/@ts-ioc',
-            activity: AssetActivity
         }
     ]
 })
-export class BuilderPackage {
+export class BuilderIoc {
 }
 
 TaskContainer.create(__dirname)
-    .use(PipeModule)
-    .bootstrap(BuilderPackage);
+    .use(BuildModule)
+    .bootstrap(BuilderIoc);

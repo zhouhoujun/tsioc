@@ -33,6 +33,24 @@
       "@ts-ioc/unit": [
         "packages/unit/src"
       ],
+      "@taskfr/core": [
+        "packages/activities/core/src"
+      ],
+      "@taskfr/node": [
+        "packages/activities/node/src"
+      ],
+      "@taskfr/build": [
+        "packages/activities/build/src"
+      ],
+      "@taskfr/pack": [
+        "packages/activities/pack/src"
+      ],
+      "@taskfr/platform-server": [
+        "packages/activities/platform-server/src"
+      ],
+      "@taskfr/platform-browser": [
+        "packages/activities/platform-browser/src"
+      ]
     },
     "module": "commonjs",
     "target":"es5",

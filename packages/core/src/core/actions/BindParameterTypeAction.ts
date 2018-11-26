@@ -1,7 +1,7 @@
 import { ActionComposite } from './ActionComposite';
 import { ActionData } from '../ActionData';
 import { CoreActions } from './CoreActions';
-import { getParamMetadata, getOwnParamMetadata, hasParamMetadata, hasOwnParamMetadata } from '../factories';
+import { getParamMetadata, getOwnParamMetadata } from '../factories';
 import { ParameterMetadata } from '../metadatas';
 import { IContainer } from '../../IContainer';
 import { Token } from '../../types';

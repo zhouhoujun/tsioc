@@ -1,5 +1,6 @@
-import { PipeModule, Package, CleanConfigure, AssetActivity, CleanActivity, PackageActivity, TsConfigure, AssetConfigure, AssetTask, CleanToken, TsCompile } from '@taskfr/pipes';
 import { TaskContainer } from '@taskfr/platform-server';
+import { Asset, AssetActivity, CleanToken, TsCompile } from '@taskfr/build';
+import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -9,7 +10,7 @@ const rollup = require('gulp-rollup');
 const rename = require('gulp-rename');
 const builtins = require('rollup-plugin-node-builtins');
 
-@AssetTask({
+@Asset({
     src: 'esnext/**/*.js',
     dest: '../es2015',
     data: {
@@ -57,7 +58,7 @@ const builtins = require('rollup-plugin-node-builtins');
 export class BootRollup extends AssetActivity {
 }
 
-@Package({
+@Pack({
     src: 'src',
     clean: 'lib',
     test: 'test/**/*.spec.ts',
@@ -79,9 +80,9 @@ export class BootRollup extends AssetActivity {
         }
     }
 })
-export class PfServerBootBuilder extends PackageActivity {
+export class PfServerBootBuilder extends PackActivity {
 }
 
 TaskContainer.create(__dirname)
-    .use(PipeModule)
+    .use(PackModule)
     .bootstrap(PfServerBootBuilder);

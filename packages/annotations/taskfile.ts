@@ -1,7 +1,7 @@
-import { PipeModule, Package } from '@taskfr/pipes';
+import { PackModule, Pack } from '@taskfr/pack';
 import { TaskContainer } from '@taskfr/platform-server';
 
-@Package({
+@Pack({
     src: 'src',
     clean: 'lib',
     test: 'test/**/*.spec.ts',
@@ -13,5 +13,5 @@ export class Builder {
 }
 
 TaskContainer.create(__dirname)
-    .use(PipeModule)
+    .use(PackModule)
     .bootstrap(Builder);

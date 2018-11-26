@@ -10,8 +10,8 @@
   "scripts": {
     "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",
-    "build": "tkf",
-    "prepublish": "tkf"
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
+    "prepublish": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": ["IoC", "AOP", "dependency", "injection", "ts-ioc", "@ts-ioc", "tsioc", "container", "decorator", "autofac", "Inject", "type", "typescript"],
   "author": "houjun",

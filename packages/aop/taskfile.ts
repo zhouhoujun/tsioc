@@ -1,13 +1,14 @@
-import { PipeModule, Package, AssetActivity, PackageActivity, AssetTask, CleanToken, TsCompile } from '@taskfr/pipes';
+import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 import { TaskContainer } from '@taskfr/platform-server';
-import { IActivity } from '@taskfr/core';
+import { Asset, AssetActivity, TsCompile, CleanToken } from '@taskfr/build';
+
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
 const rollup = require('gulp-rollup');
 const rename = require('gulp-rename');
 
-@AssetTask({
+@Asset({
     src: 'lib/**/*.js',
     dest: 'bundles',
     data: {
@@ -47,9 +48,9 @@ const rename = require('gulp-rename');
 export class AopRollup extends AssetActivity {
 }
 
-@Package({
+@Pack({
     clean: 'lib',
-    test: (act: IActivity) => act.context.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
+    // test: (act: IActivity) => act.context.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
     assets: {
         ts: {
             sequence: [
@@ -84,9 +85,9 @@ export class AopRollup extends AssetActivity {
         }
     }
 })
-export class AopBuilder extends PackageActivity {
+export class AopBuilder extends PackActivity {
 }
 
 TaskContainer.create(__dirname)
-    .use(PipeModule)
+    .use(PackModule)
     .bootstrap(AopBuilder);

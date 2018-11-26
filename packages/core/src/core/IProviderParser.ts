@@ -1,4 +1,3 @@
-import { IParameter } from '../IParameter';
 import { ProviderTypes } from '../types';
 import { ProviderMap } from './providers';
 import { InjectToken } from '../InjectToken';
