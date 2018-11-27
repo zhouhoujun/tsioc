@@ -1,6 +1,5 @@
 import { TaskContainer } from '@taskfr/platform-server';
-import { Asset, BuildModule, AssetActivity } from '@taskfr/build';
-import { INodeActivityContext } from '@taskfr/node';
+import { INodeActivityContext, Asset, BuildModule, AssetActivity } from '@taskfr/build';
 const jeditor = require('gulp-json-editor');
 
 

@@ -1,7 +1,6 @@
-import { ShellActivityConfig } from '@taskfr/node';
 import { Task, CtxType } from '@taskfr/core';
 import { ObjectMap } from '@ts-ioc/core';
-import { ShellCompilerActivity } from '../ShellCompilerActivity';
+import { ShellActivity, ShellActivityConfig } from '../ShellActivity';
 
 /**
  * closure command args.
@@ -21,8 +20,15 @@ export interface ClosureActivityConfig extends ShellActivityConfig {
     args: CtxType<ClosureCmdArgs>;
 }
 
+/**
+ * closure activity.
+ *
+ * @export
+ * @class ClosureActivity
+ * @extends {ShellActivity}
+ */
 @Task('closure')
-export class ClosureActivity extends ShellCompilerActivity {
+export class ClosureActivity extends ShellActivity {
 
     jarPath: string;
 

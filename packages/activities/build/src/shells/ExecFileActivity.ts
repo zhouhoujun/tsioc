@@ -1,8 +1,8 @@
 import { isString, isArray, isBoolean } from '@ts-ioc/core';
 import { existsSync } from 'fs';
-import { Src, Task, CtxType, ActivityConfigure } from '@taskfr/core';
+import { Src, Task, CtxType } from '@taskfr/core';
 import * as execa from 'execa';
-import { NodeActivity, NodeActivityContext } from '../core';
+import { CompilerActivity, CompilerConfigure } from '../core';
 
 
 /**
@@ -12,7 +12,7 @@ import { NodeActivity, NodeActivityContext } from '../core';
  * @interface ExecFileActivityConfig
  * @extends {ActivityConfigure}
  */
-export interface ExecFileActivityConfig extends ActivityConfigure {
+export interface ExecFileActivityConfig extends CompilerConfigure {
     /**
      * files
      *
@@ -51,7 +51,7 @@ export interface ExecFileActivityConfig extends ActivityConfigure {
  * @implements {ITask}
  */
 @Task('execfile')
-export class ExecFileActivity extends NodeActivity {
+export class ExecFileActivity extends CompilerActivity {
     /**
      * files.
      *
@@ -91,7 +91,7 @@ export class ExecFileActivity extends NodeActivity {
         }
     }
 
-    protected async execute(ctx?: NodeActivityContext<any>): Promise<void> {
+    protected async execute(): Promise<void> {
         return await Promise.resolve(this.files)
             .then(files => {
                 let allowError = this.allowError;

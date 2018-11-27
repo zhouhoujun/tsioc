@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path'
 import { Task } from '@taskfr/core';
 import { mkdir } from 'shelljs';
-import { ShellCompilerActivity } from '../ShellCompilerActivity';
+import { ShellActivity } from '../ShellActivity';
 
 
 
@@ -14,7 +14,7 @@ import { ShellCompilerActivity } from '../ShellCompilerActivity';
  * @extends {BuildActivity}
  */
 @Task('sass')
-export class SassBuilderActivity extends ShellCompilerActivity {
+export class SassBuilderActivity extends ShellActivity {
 
     constructor() {
         super();

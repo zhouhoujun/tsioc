@@ -15,10 +15,21 @@ Please file issues and pull requests against that repo.
 npm install @taskfr/core
 ```
 
-2. install cli:
+2. install build
 
+```
+npm install -g @taskfr/build
+```
+
+3. install cli | build pack:
+
+### cli in global
 ```shell
-npm install -g @taskfr/cli
+npm install -g @taskfr/pack
+```
+### build pack
+```
+npm install @taskfr/pack
 ```
 
 use command: `tkf [task names] [--param param]`
@@ -93,7 +104,7 @@ TaskContainer.create(__dirname)
 ## Simples
 
 ```ts
-import { PipeModule, PackageTask, AssetActivity, IPackageConfigure, IAssetConfigure } from '@taskfr/pipes';
+import { PipeModule, PackageTask, AssetActivity, IPackageConfigure, IAssetConfigure } from '@taskfr/build';
 import { TaskContainer } from '@taskfr/platform-server';
 const rename = require('gulp-rename');
 const rollup = require('gulp-rollup');

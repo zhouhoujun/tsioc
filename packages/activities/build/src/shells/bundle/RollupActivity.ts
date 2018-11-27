@@ -1,9 +1,8 @@
 import * as path from 'path';
-import { ShellActivityConfig } from '@taskfr/node';
 import { Task, Src, CtxType } from '@taskfr/core';
 import { lang, ObjectMap } from '@ts-ioc/core';
 import { RollupDirOptions, RollupFileOptions, rollup } from 'rollup';
-import { ShellCompilerActivity } from '../ShellCompilerActivity';
+import { ShellActivity, ShellActivityConfig } from '../ShellActivity';
 
 export interface RollupCmdOptions {
     format: string,
@@ -67,10 +66,10 @@ export interface RollupActivityConfig extends ShellActivityConfig {
  *
  * @export
  * @class RollupActivity
- * @extends {ShellCompilerActivity}
+ * @extends {ShellActivity}
  */
 @Task('rollup')
-export class RollupActivity extends ShellCompilerActivity {
+export class RollupActivity extends ShellActivity {
     /**
      * rollup src for cmd
      *

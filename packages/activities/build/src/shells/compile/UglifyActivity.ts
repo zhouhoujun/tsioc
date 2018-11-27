@@ -1,8 +1,7 @@
 import * as path from 'path';
-import { ShellActivityConfig } from '@taskfr/node';
 import { Task, Src, CtxType } from '@taskfr/core';
 import { lang, ObjectMap } from '@ts-ioc/core';
-import { ShellCompilerActivity } from '../ShellCompilerActivity';
+import { ShellActivity, ShellActivityConfig } from '../ShellActivity';
 
 /**
  * uglify activity config.
@@ -51,10 +50,10 @@ export interface ShellUglifyConfigure extends ShellActivityConfig {
  *
  * @export
  * @class UglifyActivity
- * @extends {ShellCompilerActivity}
+ * @extends {ShellActivity}
  */
 @Task('uglify')
-export class ShellUglifyActivity extends ShellCompilerActivity {
+export class ShellUglifyActivity extends ShellActivity {
 
     /**
      * src

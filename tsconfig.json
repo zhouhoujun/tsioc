@@ -36,9 +36,6 @@
       "@taskfr/core": [
         "packages/activities/core/src"
       ],
-      "@taskfr/node": [
-        "packages/activities/node/src"
-      ],
       "@taskfr/build": [
         "packages/activities/build/src"
       ],

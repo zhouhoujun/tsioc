@@ -1,9 +1,9 @@
-import { NodeActivityContext } from '@taskfr/node';
 import { BuildActivity } from './BuildActivity';
 import { Inject, Injectable, Refs } from '@ts-ioc/core';
 import { InputDataToken, InjectActivityContextToken, ActivityContextToken } from '@taskfr/core';
 import { BuildHandleActivity } from './BuildHandleActivity';
 import { CompilerToken } from './BuildHandle';
+import { NodeActivityContext } from './NodeActivity';
 
 /**
  * compiler context token.

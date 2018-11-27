@@ -1,7 +1,7 @@
-import { NodeActivity } from '@taskfr/node';
 import { BuildHandleContext } from './BuildHandleContext';
 import { Task, ActivityConfigure } from '@taskfr/core';
 import { CompilerToken } from './BuildHandle';
+import { NodeActivity } from './NodeActivity';
 
 
 export interface  CompilerConfigure  extends ActivityConfigure {

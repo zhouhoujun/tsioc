@@ -1,7 +1,7 @@
-import { NodeActivityContext } from '@taskfr/node';
 import { Inject, Injectable, isArray } from '@ts-ioc/core';
 import { InputDataToken, InjectActivityContextToken } from '@taskfr/core';
 import { BuildActivity } from './BuildActivity';
+import { NodeActivityContext } from './NodeActivity';
 
 /**
  * build activity context.

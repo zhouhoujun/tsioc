@@ -1,9 +1,8 @@
 import * as path from 'path';
-import { ShellActivityConfig } from '@taskfr/node';
 import { Task, CtxType, Src } from '@taskfr/core';
 import { CompilerOptions, ModuleResolutionKind, ModuleKind, ScriptTarget } from 'typescript';
 import { ObjectMap, lang, isArray, isBoolean } from '@ts-ioc/core';
-import { ShellCompilerActivity } from '../ShellCompilerActivity';
+import { ShellActivity, ShellActivityConfig } from '../ShellActivity';
 
 
 /**
@@ -51,10 +50,10 @@ export interface TscCompileActivityConfig extends ShellActivityConfig {
  *
  * @export
  * @class TscCompileActivity
- * @extends {ShellCompilerActivity}
+ * @extends {ShellActivity}
  */
 @Task('tsc')
-export class TscCompileActivity extends ShellCompilerActivity {
+export class TscCompileActivity extends ShellActivity {
     /**
      * tsconfig.
      *

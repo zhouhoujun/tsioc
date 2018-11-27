@@ -1,8 +1,7 @@
 import * as path from 'path';
-import { ShellActivityConfig } from '@taskfr/node';
 import { Task, CtxType } from '@taskfr/core';
 import { lang } from '@ts-ioc/core';
-import { ShellCompilerActivity } from '../ShellCompilerActivity';
+import { ShellActivity, ShellActivityConfig } from '../ShellActivity';
 
 export interface AngularConfig {
     defaultProject?: string;
@@ -30,10 +29,10 @@ export interface NgcCompileActivityConfig extends ShellActivityConfig {
  *
  * @export
  * @class NgcCompileActivity
- * @extends {ShellCompilerActivity}
+ * @extends {ShellActivity}
  */
 @Task('ngc')
-export class NgcCompileActivity extends ShellCompilerActivity {
+export class NgcCompileActivity extends ShellActivity {
 
     /**
      * tsconfig.

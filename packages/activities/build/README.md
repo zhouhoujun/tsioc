@@ -1,11 +1,11 @@
-# packaged @taskfr/node
+# packaged @taskfr/build
 `@taskfr` type task framework, base on AOP, Ioc container, via @ts-ioc. file stream pipes activities.
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/type-task).
 Please file issues and pull requests against that repo.
 
-`@taskfr/node` nodejs activities.
+`@taskfr/build` nodejs activities.
 
 
 ## Install
@@ -13,7 +13,7 @@ Please file issues and pull requests against that repo.
 1. install modules:
 
 ```shell
-npm install @taskfr/node
+npm install @taskfr/build
 ```
 
 2. install cli:
@@ -94,7 +94,7 @@ TaskContainer.create(__dirname)
 ## Simples
 
 ```ts
-import { PipeModule, PackageTask, AssetActivity, IPackageConfigure, IAssetConfigure } from '@taskfr/node';
+import { PipeModule, PackageTask, AssetActivity, IPackageConfigure, IAssetConfigure } from '@taskfr/build';
 import { TaskContainer } from '@taskfr/platform-server';
 const rename = require('gulp-rename');
 const rollup = require('gulp-rollup');

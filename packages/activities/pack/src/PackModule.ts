@@ -1,5 +1,4 @@
 import { DIModule } from '@ts-ioc/bootstrap';
-import { NodejsModule } from '@taskfr/node';
 import { BuildModule } from '@taskfr/build';
 import { PackSetup } from './PackSetup';
 import * as cores from './core';
@@ -9,7 +8,6 @@ import * as generate from './generate';
 
 @DIModule({
     imports: [
-        NodejsModule,
         BuildModule,
         PackSetup,
         cores,
@@ -18,7 +16,6 @@ import * as generate from './generate';
         serves
     ],
     exports: [
-        NodejsModule,
         BuildModule,
         cores,
         builds,

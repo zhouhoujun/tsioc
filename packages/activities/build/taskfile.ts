@@ -50,7 +50,6 @@ const builtins = require('rollup-plugin-node-builtins');
                 'minimist', 'gulp-sourcemaps', 'vinyl-fs', 'gulp-mocha', 'del', 'chokidar',
                 'gulp-uglify', 'execa',
                 '@taskfr/core',
-                '@taskfr/node',
                 'gulp-typescript',
                 'rxjs',
                 'rxjs/operators'

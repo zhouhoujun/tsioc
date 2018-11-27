@@ -1,8 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import { ShellActivityConfig } from '@taskfr/node';
 import { Task, Src, CtxType } from '@taskfr/core';
-import { ShellCompilerActivity } from '../ShellCompilerActivity';
+import { ShellActivity, ShellActivityConfig } from '../ShellActivity';
 
 /**
  * bable build activity config
@@ -37,10 +36,10 @@ export interface BabelCompileActivityConfig extends ShellActivityConfig {
  *
  * @export
  * @class BabelCompileActivity
- * @extends {ShellCompilerActivity}
+ * @extends {ShellActivity}
  */
 @Task('babel')
-export class BabelCompileActivity extends ShellCompilerActivity {
+export class BabelCompileActivity extends ShellActivity {
     /**
      * ts file src
      *

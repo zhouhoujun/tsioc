@@ -1,7 +1,7 @@
 import { GCoreActivityConfigs } from '@taskfr/core';
 import { BuildConfigure, BuildHandleConfigure, TestConfigure, UglifyConfigure, WatchConfigure, CleanConfigure } from './core';
 import { TsConfigure, AssetConfigure, ITransformConfigure, DestConfigure, SourceConfigure, AnnotationsConfigure,  } from './transform';
-import { ShellActivityConfig, ExecFileActivityConfig } from '@taskfr/node';
+import { ShellActivityConfig, ExecFileActivityConfig } from '@taskfr/build';
 
 /**
  *  build configure.

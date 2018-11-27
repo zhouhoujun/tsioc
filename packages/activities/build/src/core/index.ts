@@ -1,3 +1,6 @@
+export * from './INodeContext';
+export * from './FileChanged';
+export * from './NodeActivity';
 export * from './BuildHandle';
 export * from './BuidActivityContext';
 export * from './BuildActivity';

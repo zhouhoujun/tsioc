@@ -1,6 +1,6 @@
-export * from './ShellCompilerActivity';
-export * from './ShellCompilerActivityContext';
+export * from './ShellActivity';
+export * from './ExecFileActivity';
 export * from './bundle';
 export * from './compile';
 export * from './styles';
-
+export * from './ShellModule';
