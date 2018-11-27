@@ -1,4 +1,7 @@
-import { Injectable, isNullOrUndefined, Inject, IContainer, ContainerToken, isFunction, isPromise, Type, hasOwnClassMetadata, ObjectMap, isClass } from '@ts-ioc/core';
+import {
+    Injectable, isNullOrUndefined, Inject, IContainer, ContainerToken, isFunction,
+    isPromise, Type, hasOwnClassMetadata, ObjectMap, isClass
+} from '@ts-ioc/core';
 import { IActivity } from './IActivity';
 import { ITranslator } from './Translator';
 import { Activity } from './Activity';

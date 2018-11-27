@@ -1,4 +1,4 @@
-import { Registration, Type } from '@ts-ioc/core';
+import { Registration, Token } from '@ts-ioc/core';
 
 
 export interface ITranslator {
@@ -21,7 +21,7 @@ export interface ITranslator {
  * @template T
  */
 export class InjectTranslatorToken<T, TR> extends Registration<Translator<T, TR>> {
-    constructor(type: Type<T>) {
+    constructor(type: Token<T>) {
         super(type, 'Translator');
     }
 }

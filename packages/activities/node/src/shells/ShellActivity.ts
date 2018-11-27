@@ -18,7 +18,7 @@ export interface ShellActivityConfig extends ActivityConfigure {
      * @type {CtxType<Src>}
      * @memberof ShellActivityConfig
      */
-    shell: CtxType<Src>;
+    shell?: CtxType<Src>;
     /**
      * shell args.
      *
@@ -39,7 +39,7 @@ export interface ShellActivityConfig extends ActivityConfigure {
      * @type {CtxType<boolean>}
      * @memberof ShellActivityConfig
      */
-    allowError: CtxType<boolean>;
+    allowError?: CtxType<boolean>;
 }
 
 

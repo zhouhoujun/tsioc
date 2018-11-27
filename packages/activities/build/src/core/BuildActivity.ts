@@ -1,6 +1,9 @@
-import { ChainActivity, Task, ChainConfigure, CtxType, Src, ExpressionToken, ConfigureType, Active, IActivity, ActivityContext, InjectAcitityToken } from '@taskfr/core';
+import {
+    ChainActivity, Task, ChainConfigure, CtxType, Src,
+    ExpressionToken, ConfigureType, Active, IActivity, InjectAcitityToken
+} from '@taskfr/core';
 import { isBoolean, Token } from '@ts-ioc/core';
-import { WatchActivity, WatchConfigure } from './activities';
+import { WatchActivity, WatchConfigure } from './handles';
 import { BuidActivityContext } from './BuidActivityContext';
 import { BuildHandleConfigure, BuildHandleActivity } from './BuildHandleActivity';
 
@@ -197,7 +200,7 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
     protected async execOnce(): Promise<void> {
         if (this.watch) {
             this.watch.body = this;
-            let watchCtx = this.getCtxFactory().create();
+            let watchCtx = this.createContext();
             watchCtx.target = this.watch;
             this.watch.run(watchCtx);
         }
@@ -254,11 +257,11 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
     }
 
     protected verifyCtx(ctx?: any) {
-        if (ctx instanceof ActivityContext) {
+        if (ctx instanceof BuidActivityContext) {
             this._ctx = ctx;
         } else {
             this.getContext().setAsResult(ctx);
+            this.getContext().builder = this;
         }
-        this.getContext().builder = this;
     }
 }

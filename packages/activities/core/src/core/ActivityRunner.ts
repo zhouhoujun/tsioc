@@ -49,7 +49,7 @@ export class ActivityRunner<T> implements IActivityRunner<T> {
     }
 
     async start(data?: any): Promise<T> {
-        let ctx = data instanceof ActivityContext ? data : this.instance.getCtxFactory().create(data === this.instance.id ? undefined : data);
+        let ctx = data instanceof ActivityContext ? data : this.instance.createContext(data === this.instance.id ? undefined : data);
         return await this.instance.run(ctx)
             .then(ctx => {
                 this.state = RunState.complete;

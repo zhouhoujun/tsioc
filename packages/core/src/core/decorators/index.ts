@@ -1,6 +1,6 @@
 export * from './Component';
 export * from './Injectable';
-export * from './RefTo';
+export * from './Refs';
 export * from './Providers';
 export * from './Inject';
 export * from './AutoWried';

@@ -1,6 +1,6 @@
 import { GCoreActivityConfigs } from '@taskfr/core';
-import { BuildConfigure, AssetConfigure, ITransformConfigure, DestConfigure, SourceConfigure, AnnotationsConfigure, BuildHandleConfigure, TestConfigure, UglifyConfigure, WatchConfigure, CleanConfigure } from './core';
-import { TsConfigure } from './assets';
+import { BuildConfigure, BuildHandleConfigure, TestConfigure, UglifyConfigure, WatchConfigure, CleanConfigure } from './core';
+import { TsConfigure, AssetConfigure, ITransformConfigure, DestConfigure, SourceConfigure, AnnotationsConfigure,  } from './transform';
 import { ShellActivityConfig, ExecFileActivityConfig } from '@taskfr/node';
 
 /**

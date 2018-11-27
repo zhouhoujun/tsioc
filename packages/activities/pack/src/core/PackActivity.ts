@@ -4,17 +4,7 @@ import { IPackActivity } from './IPackActivity';
 import { ServeActivity } from '../serves';
 
 
-@Pack({
-    clean: 'dist',
-    src: 'src',
-    dist: 'dist',
-    handles: [
-        {
-            test: '*.ts',
-            compiler: 'tsc'
-        }
-    ]
-})
+@Pack
 export class PackActivity extends BuildActivity implements IPackActivity {
     /**
      * clean activity.

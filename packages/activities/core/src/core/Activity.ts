@@ -1,11 +1,10 @@
-import { Inject, Express, ContainerToken, IContainer } from '@ts-ioc/core';
+import { Inject, Express, ContainerToken, IContainer, Token, ProviderType, lang, InjectReference } from '@ts-ioc/core';
 import { Task } from '../decorators';
 import { IActivity, ActivityToken } from './IActivity';
 import { ActivityConfigure, ExpressionType, Expression, ActivityType } from './ActivityConfigure';
 import { OnActivityInit } from './OnActivityInit';
-import { ActivityContext } from './ActivityContext';
-import { ContextFactory } from './ContextFactory';
-import { IActivityContext } from './IActivityContext';
+import { ActivityContext, ActivityContextToken } from './ActivityContext';
+import { IActivityContext, InputDataToken, InjectActivityContextToken } from './IActivityContext';
 
 /**
  * activity base.
@@ -17,19 +16,11 @@ import { IActivityContext } from './IActivityContext';
  * @implements {OnActivityInit}
  */
 @Task
-export abstract class Activity implements IActivity, OnActivityInit  {
+export abstract class Activity implements IActivity, OnActivityInit {
     @Inject(ContainerToken)
     private container: IContainer;
 
     protected _ctx: IActivityContext;
-
-    /**
-     * context factory.
-     *
-     * @type {ContextFactory}
-     * @memberof Activity
-     */
-    private _ctxFactory: ContextFactory;
 
     /**
      * workflow instance uuid.
@@ -67,24 +58,27 @@ export abstract class Activity implements IActivity, OnActivityInit  {
         return this.container;
     }
 
-
     /**
-     * get context factory.
+     * create activity context.
      *
-     * @returns {ContextFactory}
-     * @memberof ActivityBase
+     * @template T
+     * @param {*} [data]
+     * @param {Token<IActivity>} [type]
+     * @param {Token<T>} [defCtx]
+     * @returns {T}
+     * @memberof ContextFactory
      */
-    getCtxFactory(): ContextFactory {
-        if (!this._ctxFactory) {
-            let ctxFactory = this.getContainer().resolve(ContextFactory);
-            if (this.config && this.config.contextType) {
-                ctxFactory.setDefaultContextType(this.config.contextType);
-            } else {
-                ctxFactory.setDefaultActivityType(this.constructor);
-            }
-            this._ctxFactory = ctxFactory;
+    createContext<T extends IActivityContext>(data?: any, type?: Token<IActivity>, defCtx?: Token<T>): T {
+        let provider = { provide: InputDataToken, useValue: data } as ProviderType;
+        type = type || lang.getClass(this);
+        if (this.config && this.config.contextType) {
+            return this.container.resolve(this.config.contextType, provider) as T;
         }
-        return this._ctxFactory;
+
+        return this.container.getRefService(
+            tk => [new InjectActivityContextToken(tk), new InjectReference(ActivityContextToken, tk)],
+            type,
+            defCtx || ActivityContextToken, provider) as T;
     }
 
     /**
@@ -95,7 +89,7 @@ export abstract class Activity implements IActivity, OnActivityInit  {
      */
     getContext(): IActivityContext {
         if (!this._ctx) {
-            this._ctx = this.getCtxFactory().create();
+            this._ctx = this.createContext();
         }
         return this._ctx;
     }

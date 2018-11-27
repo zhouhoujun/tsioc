@@ -1,7 +1,13 @@
-import { IActivity, Src, ActivityBuilder, Activity, SequenceConfigure, SequenceActivityToken, ParallelConfigure, ParallelActivityToken } from '@taskfr/core';
+import {
+    IActivity, Src, ActivityBuilder, Activity, SequenceConfigure,
+    SequenceActivityToken, ParallelConfigure, ParallelActivityToken
+} from '@taskfr/core';
 import { Injectable, lang, isString, isArray } from '@ts-ioc/core';
 import { PackActivity } from './PackActivity';
-import { CleanActivity, CleanConfigure, TestActivity, TestConfigure, AssetActivity, AssetConfigure, InjectAssetActivityToken, AssetToken, BuildHandleToken } from '@taskfr/build';
+import {
+    CleanActivity, CleanConfigure, TestActivity, TestConfigure, AssetActivity,
+    AssetConfigure, InjectAssetActivityToken, AssetToken, BuildHandleToken
+} from '@taskfr/build';
 import { PackConfigure } from './PackConfigure';
 import { PackBuilderToken } from './IPackActivity';
 
@@ -95,7 +101,7 @@ export class PackBuilder extends ActivityBuilder {
                 activity.clean = await this.toActivity<Src, CleanActivity, CleanConfigure>(config.clean, activity,
                     act => act instanceof CleanActivity,
                     src => {
-                        return <CleanConfigure>{ clean: src, task: CleanActivity };
+                        return <CleanConfigure>{ clean: src, activity: CleanActivity };
                     }
                 );
             }
@@ -107,7 +113,7 @@ export class PackBuilder extends ActivityBuilder {
                         if (!src) {
                             return null;
                         }
-                        return <TestConfigure>{ src: src, task: TestActivity };
+                        return <TestConfigure>{ src: src, activity: TestActivity };
                     }
                 );
             }

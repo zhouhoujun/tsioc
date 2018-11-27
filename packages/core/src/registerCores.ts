@@ -3,7 +3,7 @@ import { LifeScopeToken } from './LifeScope';
 import {
     CacheManager, ProviderMap, ProviderMapToken, ProviderParser, ProviderParserToken,
     Injectable, Component, AutoWired, Inject, Singleton, Param, DefaultLifeScope,
-    Method, Abstract, Autorun, IocExt, RefTo, Providers, CoreActions, MethodAccessor,
+    Method, Abstract, Autorun, IocExt, Refs, Providers, CoreActions, MethodAccessor,
     MetaAccessor, AnnotationMetaAccessor, DefaultMetaAccessorToken, AnnotationMetaAccessorToken
 } from './core';
 import { CacheManagerToken } from './ICacheManager';
@@ -34,7 +34,7 @@ export function registerCores(container: IContainer) {
     lifeScope.registerDecorator(Injectable, CoreActions.bindProvider, CoreActions.cache);
     lifeScope.registerDecorator(Component, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
     lifeScope.registerDecorator(Singleton, CoreActions.bindProvider);
-    lifeScope.registerDecorator(RefTo, CoreActions.bindProvider);
+    lifeScope.registerDecorator(Refs, CoreActions.bindProvider);
     lifeScope.registerDecorator(Providers, CoreActions.bindProvider);
     lifeScope.registerDecorator(Abstract, CoreActions.bindProvider, CoreActions.cache);
     lifeScope.registerDecorator(AutoWired, CoreActions.bindParameterType, CoreActions.bindPropertyType);

@@ -1,6 +1,6 @@
 import { Token } from '../../types';
 import { TypeMetadata } from './TypeMetadata';
-import { RefToMetadata } from './RefToMetadata';
+import { RefMetadata } from './RefMetadata';
 
 /**
  * provider type to.
@@ -9,7 +9,7 @@ import { RefToMetadata } from './RefToMetadata';
  * @interface Provider
  * @extends {MetaType}
  */
-export interface ProviderMetadata extends TypeMetadata, RefToMetadata  {
+export interface ProviderMetadata extends TypeMetadata, RefMetadata  {
     /**
      * this type provider to.
      *

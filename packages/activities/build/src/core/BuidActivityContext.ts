@@ -3,6 +3,9 @@ import { Inject, Injectable, isArray } from '@ts-ioc/core';
 import { InputDataToken, InjectActivityContextToken } from '@taskfr/core';
 import { BuildActivity } from './BuildActivity';
 
+/**
+ * build activity context.
+ */
 export const BuidActivityContextToken = new InjectActivityContextToken(BuildActivity);
 
 /**
@@ -46,9 +49,7 @@ export class BuidActivityContext extends NodeActivityContext<string[]> {
 
     protected translate(data: any): any {
         let re = super.translate(data);
-        if (!isArray(re)) {
-            return [];
-        }
+        return isArray(re) ? re : [re];
     }
 
     /**

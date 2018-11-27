@@ -1,6 +1,5 @@
 export * from './IActivity';
 
-export * from './ContextFactory';
 export * from './IActivityBuilder';
 export * from './ActivityBuilder';
 export * from './Translator';

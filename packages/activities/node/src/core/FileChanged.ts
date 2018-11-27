@@ -1,4 +1,6 @@
-import { Src } from '@taskfr/core';
+import { Src, InjectTranslatorToken, Translator } from '@taskfr/core';
+import { Injectable } from '@ts-ioc/core';
+import * as globby from 'globby';
 
 /**
  * file changed.
@@ -28,14 +30,22 @@ export class FileChanged implements IFileChanged {
         this.updated = [];
         this.removed = [];
     }
+}
 
-    /**
-     * all changed.
-     *
-     * @returns {string []}
-     * @memberof FileChanged
-     */
-    changed(): string[] {
-        return this.added.concat(this.updated, this.removed);
+/**
+ *  file changed translator token.
+ */
+export const FileChangedTransToken = new InjectTranslatorToken<FileChanged, Promise<string[]>>(FileChanged);
+
+
+@Injectable(FileChangedTransToken)
+export class FileChangedTranslator extends Translator<FileChanged, Promise<string[]>> {
+
+    async translate(target: FileChanged): Promise<string[]> {
+        if (target.removed.length) {
+            return await globby(target.watch);
+        } else {
+            return target.added.concat(target.updated);
+        }
     }
 }

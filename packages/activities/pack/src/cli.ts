@@ -86,7 +86,6 @@ let exitHandler = (options, err) => {
         rm('-rf', path.join('config', 'environments'));
     }
     if (err) {
-        console.log(' ');
         console.log(colors.red('NGR ERROR', err));
     }
     if (options.exit) {

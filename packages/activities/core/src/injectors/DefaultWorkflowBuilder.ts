@@ -1,5 +1,8 @@
 import { IContainer, Singleton, Token, ProviderTypes } from '@ts-ioc/core';
-import { ActivityType, IActivity, UUIDToken, RandomUUIDFactory, ActivityConfigure, ActivityRunnerToken, Activity } from '../core';
+import {
+    ActivityType, IActivity, UUIDToken, RandomUUIDFactory,
+    ActivityConfigure, ActivityRunnerToken, Activity
+} from '../core';
 import { ModuleBuilder, ModuleEnv, Runnable, IService, InjectModuleBuilderToken } from '@ts-ioc/bootstrap';
 
 

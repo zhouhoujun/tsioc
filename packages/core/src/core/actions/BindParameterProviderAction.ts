@@ -53,9 +53,7 @@ export class BindParameterProviderAction extends ActionComposite {
                 });
             }
         });
-
         data.execResult = providers;
-
     }
 }
 

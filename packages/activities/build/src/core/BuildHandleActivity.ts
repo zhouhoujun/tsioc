@@ -1,9 +1,12 @@
-import { HandleActivity, Active, Task, ExpressionType, IActivity, Expression, HandleConfigure, CtxType, InjectAcitityToken } from '@taskfr/core';
-import { isRegExp, Token, isToken, isString, isArray, Express, isFunction } from '@ts-ioc/core';
-import { BuidActivityContext, BuidActivityContextToken } from './BuidActivityContext';
+import {
+    HandleActivity, Active, Task, ExpressionType, IActivity,
+    Expression, HandleConfigure, CtxType, InjectAcitityToken
+} from '@taskfr/core';
+import { isRegExp, isString, isArray, Express, isFunction, lang, InjectReference } from '@ts-ioc/core';
+import { BuidActivityContext } from './BuidActivityContext';
 import minimatch = require('minimatch');
-import { CompilerActivity } from './CompilerActivity';
-import { CompilerActivityContext } from './CompilerActivityContext';
+import { CompilerToken, InjectCompilerToken } from './BuildHandle';
+import { BuildHandleContext } from './BuildHandleContext';
 
 
 /**
@@ -20,7 +23,7 @@ export interface BuildHandleConfigure extends HandleConfigure {
      * @type {ExpressionType<string | RegExp| Express<string, boolean>>}
      * @memberof BuildHandleConfigure
      */
-    test: ExpressionType<string | RegExp | Express<string, boolean>>;
+    test?: ExpressionType<string | RegExp | Express<string, boolean>>;
 
     /**
      * compiler
@@ -28,7 +31,7 @@ export interface BuildHandleConfigure extends HandleConfigure {
      * @type {Active}
      * @memberof BuildHandleConfigure
      */
-    compiler: Active;
+    compiler?: Active;
 
     /**
      * sub dist
@@ -49,7 +52,7 @@ export const BuildHandleToken = new InjectAcitityToken<BuildHandleActivity>('bui
  * @class BuildHandleActivity
  * @extends {HandleActivity}
  */
-@Task(BuildHandleToken, BuidActivityContextToken)
+@Task(BuildHandleToken)
 export class BuildHandleActivity extends HandleActivity {
 
     /**
@@ -59,14 +62,6 @@ export class BuildHandleActivity extends HandleActivity {
      * @memberof BuildHandleActivity
      */
     compiler: IActivity;
-
-    /**
-     * compiler token.
-     *
-     * @type {Token<IActivity>}
-     * @memberof BuildHandleActivity
-     */
-    compilerToken: Token<IActivity>;
 
     /**
      * sub dist.
@@ -87,19 +82,16 @@ export class BuildHandleActivity extends HandleActivity {
     async onActivityInit(config: BuildHandleConfigure) {
         await super.onActivityInit(config);
         if (config.compiler) {
-            if (isToken(config.compiler)) {
-                this.compilerToken = config.compiler;
-            } else {
-                this.compilerToken = this.getContext().getBuilder().getType(config.compiler);
-            }
             this.compiler = await this.buildActivity(config.compiler);
+        } else {
+            this.compiler = this.getContainer().getRefService(tk => [new InjectCompilerToken(tk), new InjectReference(CompilerToken, tk)], lang.getClass(this));
         }
         this.test = await this.toExpression(config.test);
         this.subDist = this.getContext().to(config.subDist) || '';
     }
 
-    getContext(): BuidActivityContext {
-        return super.getContext() as BuidActivityContext;
+    getContext(): BuildHandleContext<any> {
+        return super.getContext() as BuildHandleContext<any>;
     }
 
     /**
@@ -113,10 +105,10 @@ export class BuildHandleActivity extends HandleActivity {
     protected async execute(next?: () => Promise<any>): Promise<void> {
         let ctx = this.getContext();
         if (!this.test) {
-            let compCtx = this.getCtxFactory().create<CompilerActivityContext>(null, this.compilerToken, CompilerActivity);
-            await this.compile(compCtx);
+            await this.compile(ctx);
         } else {
-            if (ctx.isCompleted()) {
+            let bdrCtx = ctx.builder.getContext();
+            if (bdrCtx.isCompleted()) {
                 return;
             }
             let test = await ctx.exec(this, this.test);
@@ -124,24 +116,34 @@ export class BuildHandleActivity extends HandleActivity {
 
             if (isArray(ctx.result)) {
                 if (isString(test)) {
-                    files = ctx.result.filter(f => minimatch(f, test as string));
+                    files = bdrCtx.result.filter(f => minimatch(f, test as string));
                 } else if (isFunction(test)) {
-                    files = ctx.result.filter(test);
+                    files = bdrCtx.result.filter(test);
                 } else if (isRegExp(test)) {
-                    files = ctx.result.filter(f => (<RegExp>test).test(f));
+                    files = bdrCtx.result.filter(f => (<RegExp>test).test(f));
                 }
             }
             if (!files || files.length < 1) {
-                let compCtx = this.getCtxFactory().create<CompilerActivityContext>(files, this.compilerToken, CompilerActivity);
-                compCtx.builder = ctx.builder;
-                compCtx.handle = this;
-                await this.compile(compCtx);
-                ctx.complete(files);
+                await this.compile(ctx);
+                bdrCtx.complete(files);
             }
         }
     }
 
-    protected async compile(ctx: CompilerActivityContext) {
+    protected async compile(ctx: BuildHandleContext<any>) {
         await this.compiler.run(ctx);
+    }
+
+    protected verifyCtx(ctx?: any) {
+        let cur = this.getContext();
+        if (ctx instanceof BuidActivityContext) {
+            cur.builder = ctx.builder;
+            cur.origin = this;
+        } else if (ctx instanceof BuildHandleContext) {
+            cur.builder = ctx.builder;
+            cur.origin = ctx.origin
+        }
+        cur.handle = this;
+        cur.setAsResult(ctx);
     }
 }

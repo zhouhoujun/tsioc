@@ -70,17 +70,8 @@ export class NodeActivityContext<T> extends ActivityContext<T> implements INodeA
 
     packageFile = 'package.json';
 
-
     constructor(@Inject(InputDataToken) input: any) {
         super(input);
-    }
-
-    protected translate(input: any): any {
-        input = super.translate(input);
-        if (input instanceof FileChanged) {
-            return input.changed();
-        }
-        return super.translate(input);
     }
 
     private args: ObjectMap<any>;

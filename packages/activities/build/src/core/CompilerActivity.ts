@@ -1,9 +1,12 @@
 import { NodeActivity } from '@taskfr/node';
-import { CompilerActivityContext } from './CompilerActivityContext';
-import { ShellActivity } from '@taskfr/node';
-import { ExecOptions } from 'child_process';
-import { Task } from '@taskfr/core';
-import { ShellCompilerActivityContext } from './ShellCompilerActivityContext';
+import { BuildHandleContext } from './BuildHandleContext';
+import { Task, ActivityConfigure } from '@taskfr/core';
+import { CompilerToken } from './BuildHandle';
+
+
+export interface  CompilerConfigure  extends ActivityConfigure {
+
+}
 
 /**
  * compiler activity.
@@ -13,10 +16,25 @@ import { ShellCompilerActivityContext } from './ShellCompilerActivityContext';
  * @class CompilerActivity
  * @extends {NodeActivity}
  */
+@Task(CompilerToken)
 export abstract class CompilerActivity extends NodeActivity {
 
-    getContext(): CompilerActivityContext {
-        return super.getContext() as CompilerActivityContext;
+    /**
+     * get context.
+     *
+     * @returns {CompilerHandleContext}
+     * @memberof CompilerActivity
+     */
+    getContext(): BuildHandleContext<any> {
+        return super.getContext() as BuildHandleContext<any>;
+    }
+
+    protected verifyCtx(ctx?: any) {
+        if (ctx instanceof BuildHandleContext) {
+            this._ctx = ctx;
+        } else {
+            this.getContext().setAsResult(ctx);
+        }
     }
     /**
      * execute build activity.
@@ -27,28 +45,4 @@ export abstract class CompilerActivity extends NodeActivity {
      * @memberof NodeActivity
      */
     protected abstract async execute(): Promise<void>;
-}
-
-
-/**
- * shell compiler activity.
- *
- * @export
- * @class ShellCompilerActivity
- * @extends {ShellActivity}
- */
-@Task
-export class ShellCompilerActivity extends ShellActivity {
-
-    getContext(): ShellCompilerActivityContext {
-        return super.getContext() as ShellCompilerActivityContext;
-    }
-
-    protected execShell(cmd: string, options?: ExecOptions): Promise<any> {
-        return super.execShell(cmd, options);
-    }
-
-    protected formatShell(shell: string): string {
-        return super.formatShell(shell);
-    }
 }

@@ -116,7 +116,7 @@ export function createClassDecorator<T extends ClassMetadata>(name: string, adap
                 } else if (isNumber(arg)) {
                     metadata.expires = arg;
                 } else if (isToken(arg)) {
-                    metadata.refTo = arg;
+                    metadata.refs = { target: arg, provide: metadata.provide || metadata.type, alias: metadata.alias  };
                 }
             }
         });

@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
-import { Type, Token, Factory, SymbolType, ToInstance, IocState, ProviderTypes, Modules, LoadType, ReferenceToken, IReference } from './types';
+import { Type, Token, Factory, SymbolType, ToInstance, IocState, ProviderTypes, Modules, LoadType, ReferenceToken, IReference, RefTokenType } from './types';
 import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet, lang, isArray } from './utils';
 import { Registration } from './Registration';
 import { MethodAccessorToken } from './IMethodAccessor';
@@ -28,7 +28,6 @@ const SingletonRegToken = '___IOC__Singleton___';
 export class Container implements IContainer {
     protected provideTypes: MapSet<Token<any>, Type<any>>;
     protected factories: MapSet<Token<any>, Function>;
-    // protected singleton: MapSet<Token<any>, any>;
 
     /**
      * parent container.
@@ -155,13 +154,13 @@ export class Container implements IContainer {
                 return { token: token, isRef: false };
             });
             return this.getRefService(
-                (tk) => (<(Token<T> | IReference<T>)[]>tokens)
+                (tk) => (<RefTokenType<T>[]>tokens)
                     .concat(tokens.map(t => new InjectReference(t.token, tk))),
                 target,
                 token,
                 ...providers);
         } else {
-            return this.resolve(token, ...(isUndefined(target) ? providers : providers.splice(0, 0, target)));
+            return this.resolve(token, ...(target ? [target as ProviderTypes].concat(providers) : providers));
         }
     }
 
@@ -193,7 +192,7 @@ export class Container implements IContainer {
                         return true;
                     });
                 } else {
-                    service = this.resolveRef(token);
+                    service = this.resolveRef(token, ...providers);
                 }
                 return true;
             });
@@ -423,7 +422,7 @@ export class Container implements IContainer {
         if (isClass(token)) {
             let prds = this.resolveValue(DefaultMetaAccessorToken)
                 .filter(token, this, m => m && isToken(m.provide))
-                .map(meta => meta.provide);
+                .map(meta => this.getTokenKey(meta.provide, meta.alias));
 
             return prds.concat(chain ? lang.getBaseClasses(token) : token);
         } else {
@@ -510,7 +509,6 @@ export class Container implements IContainer {
 
     protected init() {
         this.factories = new MapSet();
-        // this.singleton = new MapSet();
         this.provideTypes = new MapSet();
         this.bindProvider(ContainerToken, () => this);
 
@@ -575,7 +573,6 @@ export class Container implements IContainer {
 
         let lifeScope = this.getLifeScope();
         let parameters = lifeScope.getConstructorParameters(ClassT);
-
         if (!singleton) {
             singleton = lifeScope.isSingletonType<T>(ClassT);
         }

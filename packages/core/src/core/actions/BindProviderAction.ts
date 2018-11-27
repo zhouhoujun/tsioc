@@ -8,6 +8,7 @@ import { ClassMetadata } from '../metadatas';
 import { InjectReference } from '../../InjectReference';
 import { ProviderMap } from '../providers';
 import { ProviderParserToken } from '../IProviderParser';
+import { isArray } from 'util';
 
 /**
  * bind provider action data.
@@ -54,10 +55,10 @@ export class BindProviderAction extends ActionComposite {
                         provides.push(provideKey);
                         raiseContainer.bindProvider(provideKey, c.type);
                     }
-                    if (c.refTo) {
-                        let refKey = new InjectReference(c.type, c.refTo).toString();
+                    if (c.refs) {
+                        let refKey = new InjectReference(c.refs.provide ? raiseContainer.getTokenKey(c.refs.provide, c.refs.alias) : c.type, c.refs.target).toString();
                         provides.push(refKey);
-                        raiseContainer.bindProvider(refKey, c.type)
+                        raiseContainer.bindProvider(refKey, c.type);
                     }
                     // class private provider.
                     if (c.providers && c.providers.length) {

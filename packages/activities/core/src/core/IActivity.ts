@@ -1,8 +1,7 @@
-import { Registration, IContainer } from '@ts-ioc/core';
+import { Registration, IContainer, Token } from '@ts-ioc/core';
 import { ActivityConfigure } from './ActivityConfigure';
 import { OnActivityInit } from './OnActivityInit';
 import { IActivityContext, IActivityContextResult } from './IActivityContext';
-import { ContextFactory } from './ContextFactory';
 
 /**
  * Inject AcitityToken
@@ -68,12 +67,16 @@ export interface IActivity {
     getContainer(): IContainer;
 
     /**
-     * context factory.
+     * create context.
      *
-     * @type {ContextFactory}
-     * @memberof Activity
+     * @template T
+     * @param {*} [data]
+     * @param {Token<IActivity>} [type]
+     * @param {Token<T>} [defCtx]
+     * @returns {T}
+     * @memberof IActivity
      */
-    getCtxFactory(): ContextFactory;
+    createContext<T extends IActivityContext>(data?: any, type?: Token<IActivity>, defCtx?: Token<T>): T
 
     /**
      * config.

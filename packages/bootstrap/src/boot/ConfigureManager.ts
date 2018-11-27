@@ -1,5 +1,5 @@
 import {
-    Inject, Injectable, RefTo, isUndefined,
+    Inject, Injectable, Refs, isUndefined,
     lang, ContainerToken, IContainer, isString
 } from '@ts-ioc/core';
 import { ModuleConfigure } from '../modules';

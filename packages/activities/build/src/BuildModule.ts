@@ -1,20 +1,18 @@
 import { DIModule } from '@ts-ioc/bootstrap';
 import * as core from './core';
-import { BuildSetup } from './BuildSetup';
 import { NodejsModule } from '@taskfr/node';
-import * as assets from './assets';
+import { TransformModule } from './transform';
 
 @DIModule({
     imports: [
         NodejsModule,
-        BuildSetup,
         core,
-        assets
+        TransformModule
     ],
     exports: [
         NodejsModule,
         core,
-        assets
+        TransformModule
     ]
 })
 export class BuildModule {
