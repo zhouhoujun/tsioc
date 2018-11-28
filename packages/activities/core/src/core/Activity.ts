@@ -17,10 +17,24 @@ import { IActivityContext, InputDataToken, InjectActivityContextToken } from './
  */
 @Task
 export abstract class Activity implements IActivity, OnActivityInit {
-    @Inject(ContainerToken)
-    private container: IContainer;
 
-    protected _ctx: IActivityContext;
+    /**
+     * get container.
+     *
+     * @returns {IContainer}
+     * @memberof ActivityBase
+     */
+    @Inject(ContainerToken)
+    container: IContainer;
+
+
+    /**
+     *  activity execute context.
+     *
+     * @type {IActivityContext}
+     * @memberof Activity
+     */
+    context: IActivityContext;
 
     /**
      * workflow instance uuid.
@@ -49,16 +63,6 @@ export abstract class Activity implements IActivity, OnActivityInit {
     }
 
     /**
-     * get container.
-     *
-     * @returns {IContainer}
-     * @memberof ActivityBase
-     */
-    getContainer(): IContainer {
-        return this.container;
-    }
-
-    /**
      * create activity context.
      *
      * @template T
@@ -76,27 +80,18 @@ export abstract class Activity implements IActivity, OnActivityInit {
         }
 
         return this.container.getRefService(
-            tk => [new InjectActivityContextToken(tk), new InjectReference(ActivityContextToken, tk)],
+            [
+                tk => new InjectActivityContextToken(tk),
+                tk => new InjectReference(ActivityContextToken, tk)
+            ],
             type,
             defCtx || ActivityContextToken, provider) as T;
-    }
-
-    /**
-     *  activity execute context.
-     *
-     * @type {IActivityContext}
-     * @memberof Activity
-     */
-    getContext(): IActivityContext {
-        if (!this._ctx) {
-            this._ctx = this.createContext();
-        }
-        return this._ctx;
     }
 
 
     async onActivityInit(config: ActivityConfigure) {
         this.config = config;
+        this.context = this.createContext();
     }
 
     /**
@@ -109,7 +104,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
     async run(ctx?: IActivityContext): Promise<IActivityContext> {
         this.verifyCtx(ctx);
         await this.execute();
-        return this.getContext();
+        return this.context;
     }
 
     /**
@@ -132,9 +127,17 @@ export abstract class Activity implements IActivity, OnActivityInit {
      */
     protected verifyCtx(ctx?: any) {
         if (ctx instanceof ActivityContext) {
-            this._ctx = ctx;
+            this.context = ctx;
         } else {
-            this.getContext().setAsResult(ctx);
+            this.setResult(ctx);
+        }
+    }
+
+    protected setResult(ctx?: any) {
+        if (!this.context) {
+            this.context = this.createContext(ctx);
+        } else {
+            this.context.setAsResult(ctx);
         }
     }
 
@@ -149,7 +152,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @memberof Activity
      */
     protected toExpression<T>(exptype: ExpressionType<T>, target?: IActivity): Promise<Expression<T>> {
-        return this.getContext().getBuilder().toExpression(exptype, target || this);
+        return this.context.getBuilder().toExpression(exptype, target || this);
     }
 
     /**
@@ -173,11 +176,11 @@ export abstract class Activity implements IActivity, OnActivityInit {
         toConfig: Express<Tr, TCfg>,
         valify?: Express<TCfg, TCfg>,
         target?: IActivity): Promise<Ta> {
-        return this.getContext().getBuilder().toActivity<Tr, Ta, TCfg>(exptype, target || this, isRightActivity, toConfig, valify);
+        return this.context.getBuilder().toActivity<Tr, Ta, TCfg>(exptype, target || this, isRightActivity, toConfig, valify);
     }
 
     protected buildActivity<T extends IActivity>(config: ActivityType<T>): Promise<T> {
-        return this.getContext().getBuilder().buildByConfig(config, this.id) as Promise<T>;
+        return this.context.getBuilder().buildByConfig(config, this.id) as Promise<T>;
     }
 
 }

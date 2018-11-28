@@ -1,4 +1,4 @@
-import { InjectToken, Registration, Token, IContainer, ObjectMap, Type } from '@ts-ioc/core';
+import { InjectToken, Registration, Token, IContainer, ObjectMap, Type, RefRegistration } from '@ts-ioc/core';
 import { IActivity } from './IActivity';
 import { ActivityConfigure, Expression } from './ActivityConfigure';
 import { ActivityBuilder } from './ActivityBuilder';
@@ -161,7 +161,7 @@ export interface IActivityContextResult<T> extends IActivityContext {
  * @class InjectActivityContextToken
  * @extends {Registration<IActivityContext<any>>}
  */
-export class InjectActivityContextToken extends Registration<IActivityContext> {
+export class InjectActivityContextToken extends RefRegistration<IActivityContext> {
     constructor(type: Token<IActivity>) {
         super(type, 'Activity_Context');
     }

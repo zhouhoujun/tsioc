@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { PropertyMetadata, MethodMetadata, ParameterMetadata, Metadate, ClassMetadata } from '../metadatas';
 import { DecoratorType } from './DecoratorType';
 import { ArgsIterator } from './ArgsIterator';
-import { isClass, isAbstractDecoratorClass, isMetadataObject, isUndefined, isFunction, isNumber, isArray, lang, isString } from '../../utils';
+import { isClass, isAbstractClass, isMetadataObject, isUndefined, isFunction, isNumber, isArray, lang, isString } from '../../utils';
 import { Type, AbstractType, ObjectMap, Express } from '../../types';
 
 
@@ -117,7 +117,7 @@ function storeMetadata<T>(name: string, metaName: string, args: any[], metadata?
     switch (args.length) {
         case 1:
             target = args[0];
-            if (isClass(target) || isAbstractDecoratorClass(target)) {
+            if (isClass(target) || isAbstractClass(target)) {
                 setTypeMetadata(name, metaName, target, metadata, metadataExtends);
                 return target;
             }

@@ -49,7 +49,7 @@ export class CoreRollup extends AssetActivity {
 
 @Pack({
     clean: 'lib',
-    test: (act: IActivity) => act.getContext().getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
+    test: (act: IActivity) => act.context.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
     assets: {
         ts: {
             sequence: [

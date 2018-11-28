@@ -1,6 +1,8 @@
-import { PipeModule, Package, IPipeContext, AssetActivity, PackageActivity, AssetTask, CleanToken, TsCompile } from '@taskfr/pipes';
+
 import { TaskContainer } from '@taskfr/platform-server';
 import { IActivity } from '@taskfr/core';
+import { Asset, AssetActivity, CleanToken, TsCompile, IBuildHandleActivity } from '@taskfr/build';
+import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -10,7 +12,7 @@ const rollup = require('gulp-rollup');
 const rename = require('gulp-rename');
 const builtins = require('rollup-plugin-node-builtins');
 
-@AssetTask({
+@Asset({
     src: 'esnext/**/*.js',
     dest: 'es2015',
     data: {
@@ -27,7 +29,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 plugins: [
                     resolve(),
                     commonjs({
-                        exclude: [ 'node_modules/**', '../../node_modules/**']
+                        exclude: ['node_modules/**', '../../node_modules/**']
                     }),
                     // builtins(),
                     rollupSourcemaps()
@@ -56,7 +58,7 @@ const builtins = require('rollup-plugin-node-builtins');
 export class PfServerRollup extends AssetActivity {
 }
 
-@Package({
+@Pack({
     src: 'src',
     clean: 'lib',
     test: (act: IActivity) => act.context.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
@@ -77,20 +79,19 @@ export class PfServerRollup extends AssetActivity {
             ]
         }
     },
-    sequence: [
-        {
-            shell: (ctx: IPipeContext) => {
-                // let envArgs = ctx.getEnvArgs();
-                return `cd bootstrap & tkf`
-            },
-            activity: 'shell'
-        }
-    ]
+    after: {
+        shell: (ctx: IBuildHandleActivity) => {
+            // let envArgs = ctx.getEnvArgs();
+            return `cd bootstrap & tkf`
+        },
+        activity: 'shell'
+    }
+
 })
-export class PfServerBuilder extends PackageActivity {
+export class PfServerBuilder extends PackActivity {
 }
 
 TaskContainer.create(__dirname)
-    .use(PipeModule)
+    .use(PackModule)
     .bootstrap(PfServerBuilder);
 

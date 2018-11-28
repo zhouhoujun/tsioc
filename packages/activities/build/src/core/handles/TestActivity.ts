@@ -84,7 +84,7 @@ export class TestActivity extends BuildHandleActivity {
 
     async onActivityInit(config: TestConfigure) {
         await super.onActivityInit(config);
-        this.options = this.getContext().to(config.options);
+        this.options = this.context.to(config.options);
         if (!isUndefined(config.enable)) {
             this.enable = await this.toExpression(config.enable);
         }

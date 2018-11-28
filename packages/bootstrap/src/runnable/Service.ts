@@ -1,4 +1,4 @@
-import { Token, Registration } from '@ts-ioc/core';
+import { Token, RefRegistration } from '@ts-ioc/core';
 import { ModuleConfigure } from '../modules';
 
 /**
@@ -67,13 +67,13 @@ export abstract class Service<T> implements IService<T> {
  * @extends {Registration<IService<T>>}
  * @template T
  */
-export class InjectServiceToken<T> extends Registration<IService<T>> {
+export class InjectServiceToken<T> extends RefRegistration<IService<T>> {
     constructor(type: Token<T>) {
-        super(type, 'boot__service');
+        super(type, 'service');
     }
 }
 
 /**
  * default service token.
  */
-export const DefaultServiceToken = new InjectServiceToken<any>('default');
+export const ServiceToken = new InjectServiceToken<any>(Object);

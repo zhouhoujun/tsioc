@@ -9,8 +9,8 @@ import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { MdInstance } from './ModuleType';
 import { ContainerPool, ContainerPoolToken } from '../utils';
 import {
-    InjectRunnerToken, IRunner, DefaultRunnerToken, Service, IService,
-    InjectServiceToken, DefaultServiceToken, Runnable, Runner
+    InjectRunnerToken, IRunner, RunnerToken, Service, IService,
+    InjectServiceToken, ServiceToken, Runnable, Runner
 } from '../runnable';
 import {
     IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder,
@@ -98,10 +98,11 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         let container = injmdl.container;
         let md = await this.build(token, injmdl, data) as MdInstance<T>;
         let bootToken = this.getBootType(cfg);
-        let anBuilder = this.getAnnoBuilder(container, bootToken, cfg.annotationBuilder);
-        let bootInstance = await (bootToken ? anBuilder.build(bootToken, cfg, data) : anBuilder.buildByConfig(cfg, data, this.getType(cfg)));
+        let bootInstance;
         let runable;
-        if (bootInstance) {
+        if (bootToken) {
+            let anBuilder = this.getAnnoBuilder(container, bootToken, cfg.annotationBuilder);
+            bootInstance = await anBuilder.build(bootToken, cfg, data);
             runable = await this.autoRun(container, bootToken ? bootToken : anBuilder.getType(cfg), cfg, bootInstance, data);
             if (md && isFunction(md.mdOnStart)) {
                 await Promise.resolve(md.mdOnStart(bootInstance));
@@ -216,31 +217,27 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         } else {
             let providers = [{ provide: token, useValue: instance }, { token: token, instance: instance, config: cfg }] as ProviderTypes[];
             let runner: IRunner<T> = container.getRefService(
-                (tk) => [
-                    { token: Runner, isRef: false },
-                    new InjectRunnerToken(tk),
-                    new InjectReference(Runner, tk)
+                [
+                    { service: RunnerToken, isPrivate: true },
+                    { service: Runner, isPrivate: true },
+                    tk => new InjectRunnerToken(tk),
+                    tk => new InjectReference(Runner, tk)
                 ],
                 token,
-                DefaultRunnerToken,
+                RunnerToken,
                 ...providers);
             let service: IService<T>;
             if (!runner) {
                 service = container.getRefService(
-                    tk => [
-                        { token: Service, isRef: false },
-                        new InjectServiceToken(tk),
-                        new InjectReference(Service, tk)
+                    [
+                        { service: ServiceToken, isPrivate: true },
+                        { service: Service, isPrivate: true },
+                        tk => new InjectServiceToken(tk),
+                        tk => new InjectReference(Service, tk)
                     ],
                     token,
-                    DefaultServiceToken,
+                    ServiceToken,
                     ...providers);
-                if (!service) {
-                    runner = this.getDefaultRunner(container, ...providers);
-                }
-            }
-            if (!runner && !service) {
-                service = this.getDefaultService(container, ...providers)
             }
             if (runner) {
                 await runner.run(data);
@@ -255,14 +252,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
                 return instance;
             }
         }
-    }
-
-    protected getDefaultRunner(container: IContainer, ...providers: ProviderTypes[]): IRunner<T> {
-        return null;
-    }
-
-    protected getDefaultService(container: IContainer, ...providers: ProviderTypes[]): IService<T> {
-        return null;
     }
 
     protected getAnnoBuilder(container: IContainer, token: Token<any>, annBuilder: Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>): IAnyTypeBuilder {
@@ -281,7 +270,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
         if (!builder && token) {
             builder = container.getRefService(
-                (tk) => this.getRefAnnoTokens(container, tk),
+                this.getRefAnnoTokens(container),
                 token,
                 DefaultAnnotationBuilderToken);
         }
@@ -295,12 +284,12 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return builder;
     }
 
-    protected getRefAnnoTokens(container: IContainer, tk): RefTokenType<any>[] {
+    protected getRefAnnoTokens(container: IContainer): RefTokenType<any>[] {
         return [
-            new InjectAnnotationBuilder(tk),
-            { token: AnnotationBuilderToken, isRef: false },
-            new InjectReference(lang.getClass(this), tk),
-            new InjectReference(AnnotationBuilder, tk)
+            { service: AnnotationBuilderToken, isPrivate: true },
+            tk => new InjectAnnotationBuilder(tk),
+            tk => new InjectReference(AnnotationBuilderToken, tk),
+            tk => new InjectReference(AnnotationBuilder, tk)
         ]
     }
 

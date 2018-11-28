@@ -79,10 +79,10 @@ export class TscCompileActivity extends ShellActivity {
 
     async onActivityInit(config: TscCompileActivityConfig) {
         await super.onActivityInit(config);
-        this.src = await this.getContext().getFiles(this.getContext().to(config.src));
-        this.dist = this.getContext().to(config.dist);
-        this.tsconfig = this.getContext().to(config.tsconfig);
-        this.compilerOptions = this.getContext().to(config.compilerOptions);
+        this.src = await this.context.getFiles(this.context.to(config.src));
+        this.dist = this.context.to(config.dist);
+        this.tsconfig = this.context.to(config.tsconfig);
+        this.compilerOptions = this.context.to(config.compilerOptions);
         this.shell = this.shell || path.normalize(path.resolve('node_modules', '.bin', 'tsc'));
     }
 

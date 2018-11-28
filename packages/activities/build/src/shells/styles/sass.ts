@@ -21,7 +21,7 @@ export class SassBuilderActivity extends ShellActivity {
     }
 
     protected async execute(): Promise<void> {
-        let ctx = this.getContext();
+        let ctx = this.context;
         let dist = path.join(ctx.builder.dist, ctx.handle.subDist);
         if (fs.existsSync(dist)) {
             mkdir('-p', dist);

@@ -42,7 +42,7 @@ export class ServeActivity extends NodeActivity {
 
     async onActivityInit(config: ServeConfigure): Promise<any> {
         await super.onActivityInit(config);
-        this.dirs = await this.getContext().to(config.dirs);
+        this.dirs = await this.context.to(config.dirs);
     }
 
     /**

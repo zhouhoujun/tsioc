@@ -29,7 +29,7 @@ export class ThrowActivity extends ControlActivity {
     }
 
     protected async execute(): Promise<void> {
-        let error = await this.getContext().exec(this, this.exception);
+        let error = await this.context.exec(this, this.exception);
         throw error;
     }
 }

@@ -1,7 +1,7 @@
 import {
     Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
     Inject, Token, ProviderTypes, Injectable, isArray, isClass,
-    IModuleInjector, Container, ProviderMap, ProviderParserToken, InjectReference
+    IModuleInjector, Container, ProviderMap, ProviderParserToken, InjectReference, InjectClassProvidesToken
 } from '@ts-ioc/core';
 import { DIModuelValidateToken } from './DIModuleValidate';
 import { DIModule } from '../decorators';
@@ -91,8 +91,17 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         metaConfig = await this.registerConfgureDepds(newContainer, metaConfig, type);
 
         let exps: Type<any>[] = [].concat(...builder.loader.getTypes(metaConfig.exports || []));
-        let pdrMap =  newContainer.get(new InjectReference(ProviderMap, type));
-        let injMd = new InjectedModule(metaConfig.token || type, metaConfig, newContainer, type, exps, pdrMap ? pdrMap.keys() : []);
+        let classProvides = [];
+        exps.forEach(ty => {
+            let tokens = newContainer.get(new InjectClassProvidesToken(ty));
+            if (isArray(tokens) && tokens.length) {
+                classProvides = classProvides.concat(tokens);
+            }
+        });
+        console.log(type.name, 'classProvides:', classProvides);
+
+        let pdrMap = newContainer.get(new InjectReference(ProviderMap, type));
+        let injMd = new InjectedModule(metaConfig.token || type, metaConfig, newContainer, type, exps, pdrMap ? classProvides.concat(pdrMap.keys()) : classProvides);
         container.bindProvider(new InjectedModuleToken(type), injMd);
 
         await this.importConfigExports(container, newContainer, injMd);

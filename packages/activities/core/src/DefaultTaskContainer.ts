@@ -6,7 +6,7 @@ import {
 import { ITaskContainer } from './ITaskContainer';
 import {
     IApplicationBuilder, DefaultApplicationBuilder, AppConfigure, DefaultAnnotationBuilderToken,
-    DefaultServiceToken, DefaultModuleBuilderToken, ApplicationEvents
+    ServiceToken, ModuleBuilderToken, ApplicationEvents
 } from '@ts-ioc/bootstrap';
 import { Aspect, AopModule } from '@ts-ioc/aop';
 import { SequenceActivity } from './activities';
@@ -51,8 +51,8 @@ export class DefaultTaskContainer implements ITaskContainer {
                 .use(LogModule)
                 .use(CoreModule)
                 .provider(DefaultAnnotationBuilderToken, ActivityBuilderToken)
-                .provider(DefaultServiceToken, ActivityRunnerToken)
-                .provider(DefaultModuleBuilderToken, WorkflowBuilderToken);
+                .provider(ServiceToken, ActivityRunnerToken)
+                .provider(ModuleBuilderToken, WorkflowBuilderToken);
 
         }
         return this.builder;

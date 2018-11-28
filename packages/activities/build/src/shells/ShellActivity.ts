@@ -81,18 +81,18 @@ export class ShellActivity extends CompilerActivity implements OnActivityInit {
 
     async onActivityInit(config: ShellActivityConfig) {
         await super.onActivityInit(config);
-        this.shell = this.getContext().to(config.shell);
-        let args = this.getContext().to(config.args);
+        this.shell = this.context.to(config.shell);
+        let args = this.context.to(config.args);
         this.args = isArray(args) ? args : this.formatArgs(args);
-        this.options = this.getContext().to(config.options);
-        this.allowError = this.getContext().to(config.allowError);
+        this.options = this.context.to(config.options);
+        this.allowError = this.context.to(config.allowError);
         if (!isBoolean(this.allowError)) {
             this.allowError = true;
         }
     }
 
     protected async execute(): Promise<void> {
-        let ctx = this.getContext();
+        let ctx = this.context;
         return await Promise.resolve(this.shell)
             .then(cmds => {
                 let options = this.options;

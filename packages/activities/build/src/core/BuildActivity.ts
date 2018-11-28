@@ -53,7 +53,7 @@ export interface BuildConfigure extends ChainConfigure {
      * @type {Active}
      * @memberof BuildConfigure
      */
-    beforeBuildBody?: Active;
+    before?: Active;
 
     /**
      * do sth, after build completed.
@@ -61,7 +61,7 @@ export interface BuildConfigure extends ChainConfigure {
      * @type {Active}
      * @memberof BuildConfigure
      */
-    afterBuildBody?: Active;
+    after?: Active;
 }
 
 export const BuildToken = new InjectAcitityToken<BuildActivity>('build');
@@ -74,6 +74,14 @@ export const BuildToken = new InjectAcitityToken<BuildActivity>('build');
  * @extends {IActivity}
  */
 export interface IBuildActivity extends IActivity {
+
+    /**
+     * build context.
+     *
+     * @type {BuidActivityContext}
+     * @memberof IBuildActivity
+     */
+    context: BuidActivityContext;
     /**
      * build src root.
      *
@@ -103,7 +111,7 @@ export interface IBuildActivity extends IActivity {
      * @type {IActivity}
      * @memberof BuildActivity
      */
-    beforeBuildBody: IActivity;
+    before: IActivity;
 
     /**
      * do sth, after build completed.
@@ -111,7 +119,7 @@ export interface IBuildActivity extends IActivity {
      * @type {IActivity}
      * @memberof BuildActivity
      */
-    afterBuildBody: IActivity;
+    after: IActivity;
 }
 
 /**
@@ -125,6 +133,14 @@ export interface IBuildActivity extends IActivity {
 export class BuildActivity extends ChainActivity implements IBuildActivity {
 
     /**
+     * build context.
+     *
+     * @type {BuidActivityContext}
+     * @memberof BuildActivity
+     */
+    context: BuidActivityContext;
+
+    /**
      * build src root.
      *
      * @type {Src}
@@ -153,7 +169,7 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
      * @type {IActivity}
      * @memberof BuildActivity
      */
-    beforeBuildBody: IActivity;
+    before: IActivity;
 
     /**
      * do sth, after build completed.
@@ -161,11 +177,11 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
      * @type {IActivity}
      * @memberof BuildActivity
      */
-    afterBuildBody: IActivity;
+    after: IActivity;
 
     async onActivityInit(config: BuildConfigure) {
         await super.onActivityInit(config);
-        this.src = this.getContext().to(config.src);
+        this.src = this.context.to(config.src);
         if (config.watch) {
             this.watch = await this.toActivity<Src | boolean, WatchActivity, WatchConfigure>(
                 config.watch,
@@ -181,11 +197,11 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
                 });
         }
 
-        if (config.beforeBuildBody) {
-            this.beforeBuildBody = await this.buildActivity(config.beforeBuildBody);
+        if (config.before) {
+            this.before = await this.buildActivity(config.before);
         }
-        if (config.afterBuildBody) {
-            this.afterBuildBody = await this.buildActivity(config.afterBuildBody);
+        if (config.after) {
+            this.after = await this.buildActivity(config.after);
         }
     }
 
@@ -204,11 +220,7 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
             watchCtx.target = this.watch;
             this.watch.run(watchCtx);
         }
-        await this.getInputFiles(this.getContext());
-    }
-
-    getContext(): BuidActivityContext {
-        return super.getContext() as BuidActivityContext;
+        await this.getInputFiles(this.context);
     }
 
     /**
@@ -234,34 +246,34 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
      * @memberof BuildActivity
      */
     protected async execute(): Promise<void> {
-        let ctx = this.getContext();
+        let ctx = this.context;
         if (!(this.watch && ctx.target === this.watch)) {
             await this.execOnce();
         }
         await this.execBeforeBody();
-        await this.handleRequest(this.getContext());
+        await this.handleRequest(this.context);
         await this.execAfterBody();
 
     }
 
     protected async execBeforeBody() {
-        if (this.beforeBuildBody) {
-            await this.beforeBuildBody.run(this.getContext());
+        if (this.before) {
+            await this.before.run(this.context);
         }
     }
 
     protected async execAfterBody() {
-        if (this.afterBuildBody) {
-            await this.afterBuildBody.run(this.getContext());
+        if (this.after) {
+            await this.after.run(this.context);
         }
     }
 
     protected verifyCtx(ctx?: any) {
         if (ctx instanceof BuidActivityContext) {
-            this._ctx = ctx;
+            this.context = ctx;
         } else {
-            this.getContext().setAsResult(ctx);
-            this.getContext().builder = this;
+            this.setResult(ctx);
+            this.context.builder = this;
         }
     }
 }

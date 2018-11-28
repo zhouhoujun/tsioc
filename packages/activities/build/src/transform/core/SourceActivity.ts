@@ -67,11 +67,10 @@ export class SourceActivity extends StreamActivity {
     }
 
     protected async execute() {
-        let ctx = this.getContext();
         if (this.src) {
-            let strSrc = await ctx.exec(this, this.src);
-            let options = await ctx.exec(this, this.srcOptions);
-            ctx.result = src(strSrc, options || undefined);
+            let strSrc = await this.context.exec(this, this.src);
+            let options = await this.context.exec(this, this.srcOptions);
+            this.context.result = src(strSrc, options || undefined);
         }
     }
 }

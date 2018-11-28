@@ -64,9 +64,9 @@ export class DependenceActivity extends ControlActivity {
      */
     protected async execute() {
         if (this.dependence) {
-            await this.dependence.run(this.getContext());
+            await this.dependence.run(this.context);
         }
-        await this.body.run(this.getContext());
+        await this.body.run(this.context);
     }
 
 }

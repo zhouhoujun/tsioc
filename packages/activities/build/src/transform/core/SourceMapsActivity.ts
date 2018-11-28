@@ -52,7 +52,7 @@ export class SourceMapsActivity extends StreamActivity implements ISourceMapsAct
 
     async onActivityInit(config: SourceMapsConfigure) {
         await super.onActivityInit(config);
-        this.sourcemaps = this.getContext().to(config.sourcemaps) || './sourcemaps';
+        this.sourcemaps = this.context.to(config.sourcemaps) || './sourcemaps';
     }
 
     protected async execute() {
@@ -61,8 +61,7 @@ export class SourceMapsActivity extends StreamActivity implements ISourceMapsAct
             console.error('not found gulp-sourcemaps');
             return;
         }
-        let ctx = this.getContext();
-        ctx.result = await this.executePipe(ctx.result, this.hasInit ? () => sourcemaps.write(this.sourcemaps) : () => sourcemaps.init());
+        this.context.result = await this.executePipe(this.context.result, this.hasInit ? () => sourcemaps.write(this.sourcemaps) : () => sourcemaps.init());
     }
 
     async init(ctx: TransformContext) {

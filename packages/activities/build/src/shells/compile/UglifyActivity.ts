@@ -88,11 +88,11 @@ export class ShellUglifyActivity extends ShellActivity {
     async onActivityInit(config: ShellUglifyConfigure) {
         await super.onActivityInit(config);
         this.options = lang.assign({ silent: true }, this.options || {});
-        this.src = await this.getContext().getFiles(this.getContext().to(config.src));
-        this.dist = this.getContext().to(config.dist);
-        this.uglifyOptions = this.getContext().to(config.uglifyOptions);
-        this.bundle = this.getContext().to(config.bundle) || 'bundle.js';
-        this.shell = this.shell || path.normalize(path.join(this.getContext().getRootPath(), 'node_modules', '.bin', 'uglifyjs'));
+        this.src = await this.context.getFiles(this.context.to(config.src));
+        this.dist = this.context.to(config.dist);
+        this.uglifyOptions = this.context.to(config.uglifyOptions);
+        this.bundle = this.context.to(config.bundle) || 'bundle.js';
+        this.shell = this.shell || path.normalize(path.join(this.context.getRootPath(), 'node_modules', '.bin', 'uglifyjs'));
     }
 
     protected formatShell(shell: string) {

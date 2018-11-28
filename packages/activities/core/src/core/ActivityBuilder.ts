@@ -1,5 +1,5 @@
 import { ActivityBuilderToken, IActivityBuilder } from './IActivityBuilder';
-import { isFunction, isString, Token, Express, isToken, Injectable } from '@ts-ioc/core';
+import { isFunction, isString, Token, Express, isToken, Injectable, lang } from '@ts-ioc/core';
 import { AnnotationBuilder } from '@ts-ioc/bootstrap';
 import { IActivity, ActivityInstance, InjectAcitityToken } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
@@ -65,6 +65,9 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
         }
 
         if (isFunction(instance.onActivityInit)) {
+            if (lang.getClass(instance).name === 'CleanActivity') {
+                console.log('exeute onActivityInit:', lang.getClass(this).name);
+            }
             await Promise.resolve(instance.onActivityInit(config));
         }
         return instance;
@@ -151,7 +154,7 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
         if (isString(result)) {
             rt = result;
         } else {
-            rt = await target.getContext().exec(target, result);
+            rt = await target.context.exec(target, result);
         }
         let config = toConfig(rt);
         if (valify) {

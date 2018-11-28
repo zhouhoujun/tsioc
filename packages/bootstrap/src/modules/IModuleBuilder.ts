@@ -1,4 +1,4 @@
-import { Registration, IContainer, Token } from '@ts-ioc/core';
+import { Registration, IContainer, Token, RefRegistration } from '@ts-ioc/core';
 import { ModuleConfig } from './ModuleConfigure';
 import { ContainerPool } from '../utils';
 import { Runnable } from '../runnable';
@@ -14,7 +14,7 @@ const moduleBuilderDesc = 'DI_ModuleBuilder';
  * @extends {Registration<T>}
  * @template T
  */
-export class InjectModuleBuilderToken<T> extends Registration<IModuleBuilder<T>> {
+export class InjectModuleBuilderToken<T> extends RefRegistration<IModuleBuilder<T>> {
     constructor(type: Token<T>) {
         super(type, moduleBuilderDesc);
     }
@@ -91,12 +91,7 @@ export interface IModuleBuilder<T> {
 /**
  * default module builder token.
  */
-export const DefaultModuleBuilderToken = new InjectModuleBuilderToken<any>(Object);
-
-/**
- * module builder token.
- */
-export const ModuleBuilderToken = new Registration<AnyModuleBuilder>('any', moduleBuilderDesc);
+export const ModuleBuilderToken = new InjectModuleBuilderToken<any>(Object);
 
 /**
  *  module builder. objected generics to any

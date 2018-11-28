@@ -38,21 +38,20 @@ export class PackActivity extends BuildActivity implements IPackActivity {
      */
     protected async execOnce(): Promise<void> {
         if (this.clean) {
-            await this.clean.run(this.getContext());
+            await this.clean.run(this.context);
         }
         await super.execOnce();
     }
 
     protected async execBeforeBody() {
-        let ctx = this.getContext();
         if (this.test) {
-            await this.test.run(ctx);
+            await this.test.run(this.context);
         }
-        if (this.beforeBuildBody) {
-            await this.beforeBuildBody.run(ctx);
+        if (this.before) {
+            await this.before.run(this.context);
         }
         if (this.serve) {
-            await this.serve.run(ctx);
+            await this.serve.run(this.context);
         }
     }
 }

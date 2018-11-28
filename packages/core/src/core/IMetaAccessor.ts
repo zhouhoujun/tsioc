@@ -2,6 +2,7 @@ import { ClassMetadata } from '../core';
 import { Token, Type, Express } from '../types';
 import { IContainer } from '../IContainer';
 import { Registration } from '../Registration';
+import { RefRegistration } from '../InjectReference';
 
 /**
  * annotation metadata.
@@ -90,9 +91,9 @@ export interface IMetaAccessor<T> {
  * @extends {Registration<MetaAccessor<T>>}
  * @template T
  */
-export class InjectMetaAccessorToken<T> extends Registration<IMetaAccessor<T>> {
+export class InjectMetaAccessorToken<T> extends RefRegistration<IMetaAccessor<T>> {
     constructor(type: Token<T>) {
-        super(type, 'boot__metaAccessor');
+        super(type, 'metaAccessor');
     }
 }
 

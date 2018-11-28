@@ -38,7 +38,7 @@ export class ChainActivity extends ControlActivity implements IChainActivity {
      * @memberof ChainActivity
      */
     protected async execute(): Promise<void> {
-        await this.handleRequest(this.getContext());
+        await this.handleRequest(this.context);
     }
 
     /**

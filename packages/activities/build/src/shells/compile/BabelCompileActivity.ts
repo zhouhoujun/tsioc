@@ -65,10 +65,10 @@ export class BabelCompileActivity extends ShellActivity {
 
     async onActivityInit(config: BabelCompileActivityConfig) {
         await super.onActivityInit(config);
-        this.src = await this.getContext().getFiles(this.getContext().to(config.src));
-        this.outFile = this.getContext().to(config.outFile);
-        this.format = this.getContext().to(config.format);
-        this.shell = this.shell || path.normalize(path.join(this.getContext().getRootPath(), 'node_modules', '.bin', 'babel'));
+        this.src = await this.context.getFiles(this.context.to(config.src));
+        this.outFile = this.context.to(config.outFile);
+        this.format = this.context.to(config.format);
+        this.shell = this.shell || path.normalize(path.join(this.context.getRootPath(), 'node_modules', '.bin', 'babel'));
     }
 
     protected formatShell(shell: string): string {
@@ -99,7 +99,7 @@ export class BabelCompileActivity extends ShellActivity {
      */
     protected async after(): Promise<void> {
         await super.after();
-        let output = await this.execShell(path.normalize(path.join(this.getContext().getRootPath(), './node_modules/.bin/babel-external-helpers')) +
+        let output = await this.execShell(path.normalize(path.join(this.context.getRootPath(), './node_modules/.bin/babel-external-helpers')) +
             ' --output-type global ', { silent: true } as any);
         let outFile = path.normalize(this.outFile);
         await new Promise((res, rej) => {

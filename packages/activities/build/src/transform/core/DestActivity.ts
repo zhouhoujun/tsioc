@@ -77,11 +77,10 @@ export class DestActivity extends TransformActivity {
 
     protected async afterPipe(): Promise<void> {
         await super.afterPipe();
-        let ctx = this.getContext();
-        if (ctx.sourceMaps instanceof SourceMapsActivity) {
-            await ctx.sourceMaps.run(ctx);
+        if (this.context.sourceMaps instanceof SourceMapsActivity) {
+            await this.context.sourceMaps.run(this.context);
         }
-        await this.writeStream(ctx);
+        await this.writeStream(this.context);
     }
 
     /**

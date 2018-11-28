@@ -53,10 +53,10 @@ export class TsCompile extends AssetActivity implements OnActivityInit {
     async onActivityInit(cfg: TsConfigure) {
         await super.onActivityInit(cfg);
         this.defaultAnnotation = { annotationFramework: () => classAnnotations(), task: AnnotationActivity };
-        let tds = this.getContext().to(cfg.tds);
+        let tds = this.context.to(cfg.tds);
         if (tds !== false) {
             if (isString(tds)) {
-                this.tdsDest = this.getContainer().resolve(DestAcitvityToken);
+                this.tdsDest = this.container.resolve(DestAcitvityToken);
                 this.tdsDest.dest = tds;
             } else {
                 this.tdsDest = true;
@@ -75,8 +75,7 @@ export class TsCompile extends AssetActivity implements OnActivityInit {
      * @memberof TsCompile
      */
     protected async pipe(): Promise<void> {
-        let ctx = this.getContext();
-        ctx.result.js = await this.pipeStream(ctx.result.js, ...this.pipes);
+        this.context.result.js = await this.pipeStream(this.context.result.js, ...this.pipes);
     }
     /**
      * begin pipe.
@@ -87,8 +86,7 @@ export class TsCompile extends AssetActivity implements OnActivityInit {
      */
     protected async beforePipe(): Promise<void> {
         await super.beforePipe();
-        let ctx = this.getContext();
-        ctx.result = await this.executePipe(ctx.result, this.getTsCompilePipe());
+        this.context.result = await this.executePipe(this.context.result, this.getTsCompilePipe());
     }
     /**
      * get ts configue compile.
@@ -99,9 +97,9 @@ export class TsCompile extends AssetActivity implements OnActivityInit {
      */
     private getTsCompilePipe(): ITransform {
         let cfg = this.config as TsConfigure;
-        let tsconfig = this.getContext().to(cfg.tsconfig || './tsconfig.json');
+        let tsconfig = this.context.to(cfg.tsconfig || './tsconfig.json');
         if (isString(tsconfig)) {
-            let tsProject = ts.createProject(this.getContext().toRootPath(tsconfig));
+            let tsProject = ts.createProject(this.context.toRootPath(tsconfig));
             return tsProject();
         } else {
             return ts(tsconfig);
@@ -116,10 +114,9 @@ export class TsCompile extends AssetActivity implements OnActivityInit {
      */
     protected async executeUglify() {
         if (this.uglify) {
-            let ctx = this.getContext();
-            let ugCtx = this.createContext<TransformContext>(ctx.result.js);
+            let ugCtx = this.createContext<TransformContext>(this.context.result.js);
             await this.uglify.run(ugCtx);
-            ctx.result.js = ugCtx.result;
+            this.context.result.js = ugCtx.result;
         }
     }
     /**
@@ -127,28 +124,26 @@ export class TsCompile extends AssetActivity implements OnActivityInit {
      *
      * @protected
      * @param {DestActivity} ds
-     * @param {ctx} TransformActivityContext
      * @returns
      * @memberof TsCompile
      */
     protected async executeDest(ds: DestActivity) {
-        let ctx = this.getContext();
-        if (!ds || !ctx.result) {
+        if (!ds || !this.context.result) {
             return;
         }
 
-        let stream = ctx.result;
+        let stream = this.context.result;
         if (this.tdsDest && isTransform(stream.dts)) {
             let dts = isBoolean(this.tdsDest) ? ds : (this.tdsDest || ds);
             await dts.run(this.createContext<TransformContext>(stream.dts));
         }
         if (isTransform(stream.js)) {
             let jsCtx = this.createContext<TransformContext>(stream.js);
-            jsCtx.sourceMaps = ctx.sourceMaps;
+            jsCtx.sourceMaps = this.context.sourceMaps;
             await ds.run(jsCtx);
         } else if (isTransform(stream)) {
             let newCtx = this.createContext<TransformContext>(stream);
-            newCtx.sourceMaps = ctx.sourceMaps;
+            newCtx.sourceMaps = this.context.sourceMaps;
             await ds.run(newCtx);
         }
     }

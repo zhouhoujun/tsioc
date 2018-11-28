@@ -12,7 +12,6 @@ import { ResolverChain } from './resolves';
  */
 export const ContainerToken = new InjectToken<IContainer>('DI_IContainer');
 
-
 /**
  * container interface.
  *
@@ -68,10 +67,10 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * current container has register.
      *
      * @template T
-     * @param {SymbolType<T>} key
+     * @param {Token<T>} key
      * @memberof IContainer
      */
-    hasRegister<T>(key: SymbolType<T>);
+    hasRegister<T>(key: Token<T>): boolean;
 
     /**
      * Retrieves an instance from the container based on the provided token.

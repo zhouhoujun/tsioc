@@ -1,6 +1,7 @@
 import { Registration } from './Registration';
 import { IContainer } from './IContainer';
 import { ProviderMap, ProviderType } from './core/providers';
+import { type } from 'os';
 
 /**
  * module types.
@@ -133,19 +134,35 @@ export interface AbstractType<T> extends Function {
 }
 
 export interface IReference<T> {
-    token: Token<T>;
-    isRef?: boolean;
+    /**
+     * ref service
+     *
+     * @type {Token<T>}
+     * @memberof IReference
+     */
+    service: Token<T>;
+    /**
+     * is private service of target class or not.
+     *
+     * @type {boolean}
+     * @memberof IReference
+     */
+    isPrivate?: boolean;
 }
 
 /**
  * reference token type.
  */
-export type RefTokenType<T> =  IReference<T> | Token<T>;
+export type RefTokenType<T> = IReference<T> | Token<T>;
+
+export type RefTokenFac<T> = (token: Token<any>) => RefTokenType<T> | RefTokenType<T>[];
+
+export type RefTokenFacType<T> = Type<Registration<T>> | RefTokenType<T> | RefTokenFac<T>
 
 /**
  * reference token.
  */
-export type ReferenceToken<T> = Type<Registration<T>> | IReference<T> | ((token: Token<any>) => RefTokenType<T> | RefTokenType<T>[]);
+export type ReferenceToken<T> = RefTokenFacType<T> | RefTokenFacType<T>[];
 
 
 /**

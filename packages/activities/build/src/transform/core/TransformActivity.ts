@@ -60,8 +60,7 @@ export class TransformActivity extends StreamActivity implements ITransformActiv
      * @memberof PipeActivity
      */
     protected async pipe(): Promise<void> {
-        let ctx = this.getContext();
-        ctx.result = await this.pipeStream(ctx.result, ...this.pipes);
+        this.context.result = await this.pipeStream(this.context.result, ...this.pipes);
     }
 
     /**
@@ -126,7 +125,7 @@ export class TransformActivity extends StreamActivity implements ITransformActiv
      * @memberof PipeActivityBuilder
      */
     protected translate(pipes: TransformExpress): Promise<TransformType[]> {
-        let trsfs: TransformConfig[] = this.getContext().to(pipes);
+        let trsfs: TransformConfig[] = this.context.to(pipes);
         if (!trsfs || trsfs.length < 1) {
             return Promise.resolve([]);
         }
@@ -146,7 +145,7 @@ export class TransformActivity extends StreamActivity implements ITransformActiv
         } else if (isActivityType(cfg)) {
             return await this.buildActivity(cfg);
         } else if (isFunction(cfg)) {
-            return await Promise.resolve(cfg(this, this.getContext()));
+            return await Promise.resolve(cfg(this, this.context));
         }
 
         if (isPromise(cfg)) {

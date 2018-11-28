@@ -56,7 +56,7 @@ export interface IActivity {
      * @type {IContext}
      * @memberof IActivity
      */
-    getContext(): IActivityContext;
+    context: IActivityContext;
 
     /**
      * get ioc container.
@@ -64,7 +64,7 @@ export interface IActivity {
      * @returns {IContainer}
      * @memberof IContext
      */
-    getContainer(): IContainer;
+    container: IContainer;
 
     /**
      * create context.
@@ -110,7 +110,7 @@ export interface IActivityResult<T> extends IActivity {
      * @type {IContext}
      * @memberof IActivityResult
      */
-    getContext(): IActivityContextResult<T>;
+    readonly context: IActivityContextResult<T>;
     /**
      * run activity.
      *

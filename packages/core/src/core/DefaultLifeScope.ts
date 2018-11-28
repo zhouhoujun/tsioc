@@ -1,6 +1,6 @@
 import { LifeScope, DecorSummary } from '../LifeScope';
 import { Type, ObjectMap, Token, IocState, Express } from '../types';
-import { isClass, isAbstractDecoratorClass, isArray, lang } from '../utils';
+import { isClass, isAbstractClass, isArray, lang } from '../utils';
 import { Singleton } from './decorators';
 import { MethodMetadata } from './metadatas';
 import { IContainer } from '../IContainer';
@@ -126,7 +126,7 @@ export class DefaultLifeScope implements LifeScope {
             return false;
         }
 
-        if (isAbstractDecoratorClass(target)) {
+        if (isAbstractClass(target)) {
             return false;
         }
         return this.getClassDecorators(target).length > 0;

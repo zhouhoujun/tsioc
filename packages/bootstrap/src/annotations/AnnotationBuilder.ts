@@ -1,6 +1,6 @@
 import {
     Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, ProviderTypes,
-    lang, isFunction, Injectable, AnnotationMetaAccessorToken, Container, InjectReference, isArray, RefTokenType
+    lang, isFunction, Injectable, AnnotationMetaAccessorToken, Container, InjectReference, RefTokenType
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import { AnnoInstance } from './IAnnotation';
@@ -120,7 +120,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         }
         if (!builder && token) {
             builder = this.container.getRefService(
-                tk => this.getRefAnnoTokens(tk),
+                this.getRefAnnoTokens(),
                 token,
                 null,
                 ...providers) as IAnnotationBuilder<T>;
@@ -132,12 +132,12 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         return builder || this;
     }
 
-    protected getRefAnnoTokens(tk): RefTokenType<any>[] {
+    protected getRefAnnoTokens(): RefTokenType<any>[] {
         return [
-            new InjectAnnotationBuilder(tk),
-            { token: AnnotationBuilderToken, isRef: false },
-            new InjectReference(lang.getClass(this), tk),
-            new InjectReference(AnnotationBuilder, tk)
+            { service: AnnotationBuilderToken, isPrivate: true },
+            (tk) => new InjectAnnotationBuilder(tk),
+            (tk) => new InjectReference(AnnotationBuilderToken, tk),
+            (tk) => new InjectReference(AnnotationBuilder, tk)
         ]
     }
 

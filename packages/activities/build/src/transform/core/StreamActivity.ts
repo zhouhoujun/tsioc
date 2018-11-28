@@ -12,12 +12,17 @@ import { CompilerActivity, BuildHandleContext } from '../../core';
 @Task
 export class StreamActivity extends CompilerActivity {
 
+
+    /**
+     * stream context.
+     *
+     * @type {TransformContext}
+     * @memberof StreamActivity
+     */
+    context: TransformContext;
+
     protected async execute(): Promise<void> {
 
-    }
-
-    getContext(): TransformContext {
-        return super.getContext() as TransformContext;
     }
 
     /**
@@ -28,14 +33,14 @@ export class StreamActivity extends CompilerActivity {
      */
     protected verifyCtx(ctx?: any) {
         if (ctx instanceof TransformContext) {
-            this._ctx = ctx;
+            this.context = ctx;
         } else {
-            let cur = this.getContext();
+            this.setResult(ctx);
             if (ctx instanceof BuildHandleContext) {
-                cur.builder = ctx.builder;
-                cur.origin = ctx.origin;
+                this.context.builder = ctx.builder;
+                this.context.origin = ctx.origin;
             }
-            cur.setAsResult(ctx);
+            this.context.setAsResult(ctx);
         }
     }
 
@@ -51,7 +56,7 @@ export class StreamActivity extends CompilerActivity {
     */
     protected async executePipe(stream: ITransform, transform: TransformType, waitend = false): Promise<ITransform> {
         let next: ITransform;
-        let transPipe = await this.getContext().exec(this, transform);
+        let transPipe = await this.context.exec(this, transform);
         let vaild = false;
         if (isTransform(stream)) {
             if (isTransform(transPipe) && !transPipe.changeAsOrigin) {

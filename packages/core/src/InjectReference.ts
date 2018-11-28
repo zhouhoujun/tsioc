@@ -4,6 +4,21 @@ import { Token } from './types';
 import { isFunction, getClassName } from './utils';
 
 /**
+ * Reference registration.
+ *
+ * @export
+ * @class RefRegistration
+ * @extends {Registration<T>}
+ * @template T
+ */
+export class RefRegistration<T> extends Registration<T> {
+    constructor(provideType: Token<T> | Token<any>, desc: string) {
+        super(provideType, desc);
+        this.type = 'Ref';
+    }
+}
+
+/**
  * inject reference.
  *
  * @export
@@ -11,9 +26,9 @@ import { isFunction, getClassName } from './utils';
  * @extends {Registration<T>}
  * @template T
  */
-export class InjectReference<T> extends Registration<T> {
+export class InjectReference<T> extends RefRegistration<T> {
     constructor(provideType: Token<T>, private target: Token<any>) {
-        super(provideType, '_ref_');
+        super(provideType, '');
     }
 
     /**
@@ -30,6 +45,23 @@ export class InjectReference<T> extends Registration<T> {
         } else if (this.target) {
             name = this.target.toString();
         }
-        return `${key}${name}`;
+        return `${key} for ${name}`;
+    }
+}
+
+export interface IClassProvides {
+    decors: string[];
+    provides: Token<any>[];
+}
+/**
+ * inject class provides token.
+ *
+ * @export
+ * @class InjectClassProvidesToken
+ * @extends {RefRegistration<IClassProvides>}
+ */
+export class InjectClassProvidesToken extends RefRegistration<IClassProvides> {
+    constructor(provideType: Token<any>) {
+        super(provideType, 'class_provides')
     }
 }

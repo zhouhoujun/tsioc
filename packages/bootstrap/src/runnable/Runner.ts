@@ -1,4 +1,4 @@
-import { Registration, Token } from '@ts-ioc/core';
+import { Token, RefRegistration } from '@ts-ioc/core';
 import { ModuleConfigure } from '../modules';
 
 /**
@@ -67,13 +67,13 @@ export abstract class Boot extends Runner<any> {
  * @extends {Registration<IRunner<T>>}
  * @template T
  */
-export class InjectRunnerToken<T> extends Registration<IRunner<T>> {
+export class InjectRunnerToken<T> extends RefRegistration<IRunner<T>> {
     constructor(type: Token<T>) {
-        super(type, 'boot__runner');
+        super(type, 'runner');
     }
 }
 
 /**
  * default runner token.
  */
-export const DefaultRunnerToken = new InjectRunnerToken<any>('default');
+export const RunnerToken = new InjectRunnerToken<any>(Object);

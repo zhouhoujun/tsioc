@@ -21,9 +21,8 @@ export abstract class ExecuteActivity<T> extends Activity implements IActivityRe
      * @type {ActivityContext}
      * @memberof Activity
      */
-    getContext(): IActivityContextResult<T> {
-        return super.getContext();
-    }
+    context: IActivityContextResult<T>;
+
     /**
      * run task.
      *
@@ -34,7 +33,7 @@ export abstract class ExecuteActivity<T> extends Activity implements IActivityRe
     async run(ctx?: IActivityContext): Promise<IActivityContextResult<T>> {
         this.verifyCtx(ctx);
         await this.execute();
-        return this.getContext();
+        return this.context;
     }
 
 }

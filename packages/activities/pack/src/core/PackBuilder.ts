@@ -6,7 +6,7 @@ import { Injectable, lang, isString, isArray } from '@ts-ioc/core';
 import { PackActivity } from './PackActivity';
 import {
     CleanActivity, CleanConfigure, TestActivity, TestConfigure, AssetActivity,
-    AssetConfigure, InjectAssetActivityToken, AssetToken, BuildHandleToken
+    AssetConfigure, InjectAssetActivityToken, AssetToken, BuildHandleToken, HandleContextToken, BuildHandleActivity
 } from '@taskfr/build';
 import { PackConfigure } from './PackConfigure';
 import { PackBuilderToken } from './IPackActivity';
@@ -33,7 +33,7 @@ export class PackBuilder extends ActivityBuilder {
     async buildStrategy(activity: IActivity, config: PackConfigure): Promise<IActivity> {
         await super.buildStrategy(activity, config);
         if (activity instanceof PackActivity) {
-            let srcRoot = activity.src = activity.getContext().to(config.src);
+            let srcRoot = activity.src = activity.context.to(config.src);
 
             let assets = await Promise.all(lang.keys(config.assets).map(name => {
                 return this.toActivity<Src, AssetActivity, AssetConfigure>(config.assets[name], activity,
@@ -87,6 +87,7 @@ export class PackBuilder extends ActivityBuilder {
                             return null;
                         }
                         let handle = this.container.resolve(BuildHandleToken);
+                        // console.log(this.container.has(HandleContextToken), this.container.has(BuildHandleToken));
                         handle.id = activity.id;
 
                         handle.compiler = a;

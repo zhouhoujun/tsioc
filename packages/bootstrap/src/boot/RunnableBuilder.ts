@@ -1,12 +1,12 @@
 import {
     IContainer, LoadType, MapSet, Factory, Token,
     DefaultContainerBuilder, IContainerBuilder, isClass,
-    isToken, InjectReference, PromiseUtil, Injectable, lang, ReferenceToken, IReference, RefTokenType
+    isToken, InjectReference, PromiseUtil, Injectable, lang, RefTokenType
 } from '@ts-ioc/core';
 import { IRunnableBuilder, CustomRegister, RunnableBuilderToken } from './IRunnableBuilder';
 import {
     ModuleBuilder, ModuleEnv, DIModuleInjectorToken,
-    InjectedModule, IModuleBuilder, InjectModuleBuilderToken, DefaultModuleBuilderToken,
+    InjectedModule, IModuleBuilder, InjectModuleBuilderToken,
     ModuleBuilderToken, ModuleConfig, ModuleConfigure
 } from '../modules';
 import { ContainerPool, ContainerPoolToken, Events, IEvents } from '../utils';
@@ -194,23 +194,23 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         let tko = injmdl.token;
         if (!builder && tko) {
             builder = container.getRefService(
-                tk => this.getRefBuilderTokens(container, tk),
-                tko, DefaultModuleBuilderToken);
-        }
-        if (!builder) {
-            builder = this.getDefaultBuilder(container);
+                this.getRefBuilderTokens(container),
+                tko, ModuleBuilderToken);
         }
 
         return builder || this;
     }
 
-    protected getRefBuilderTokens(container: IContainer, tk): RefTokenType<any>[] {
+    protected getRefBuilderTokens(container: IContainer): RefTokenType<any>[] {
         return [
-            new InjectModuleBuilderToken(tk),
-            { token: ModuleBuilderToken, isRef: false },
-            new InjectReference(lang.getClass(this), tk),
-            new InjectReference(RunnableBuilder, tk),
-            new InjectReference(ModuleBuilder, tk)
+            { service: RunnableBuilderToken, isPrivate: true },
+            { service: ModuleBuilderToken, isPrivate: true },
+            (tk) => new InjectModuleBuilderToken(tk),
+            (tk) => new InjectReference(lang.getClass(this), tk),
+            (tk) => new InjectReference(RunnableBuilderToken, tk),
+            (tk) => new InjectReference(RunnableBuilder, tk),
+            (tk) => new InjectReference(ModuleBuilderToken, tk),
+            (tk) => new InjectReference(ModuleBuilder, tk)
         ]
     }
 
@@ -230,10 +230,6 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         let runnable = await super.autoRun(container, token, cfg, instance, data);
         this.emit(RunnableEvents.onRunnableStarted, runnable, instance, token);
         return runnable;
-    }
-
-    protected getDefaultBuilder(container: IContainer): IModuleBuilder<any> {
-        return container.resolve(ModuleBuilderToken);
     }
 
     protected createDefaultContainer() {

@@ -19,9 +19,8 @@ import { CompilerToken, UglifyToken, UglifyActivity } from '../../core';
 export class UglifyCompilerActivity extends StreamActivity implements OnActivityInit {
 
     protected async execute() {
-        let ctx = this.getContext();
-        let hd = ctx.handle as UglifyActivity;
+        let hd = this.context.handle as UglifyActivity;
         let uglifyOptions = hd.uglifyOptions;
-        ctx.result = await this.executePipe(ctx.result, uglifyOptions ? uglify(uglifyOptions) : uglify());
+        this.context.result = await this.executePipe(this.context.result, uglifyOptions ? uglify(uglifyOptions) : uglify());
     }
 }

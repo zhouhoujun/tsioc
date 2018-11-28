@@ -4,7 +4,7 @@ import { Task, Activity, SequenceActivity, ActivityContext } from '../src';
 export class SimpleTask extends Activity {
     protected async execute(): Promise<void> {
         // console.log('before simple task:', this.name);
-        this.getContext().result = await Promise.resolve('simple task')
+        this.context.result = await Promise.resolve('simple task')
             .then(val => {
                 console.log('return simple task:', val);
                 return val;
@@ -18,7 +18,7 @@ export class SimpleCTask extends SequenceActivity {
 
     protected async after(): Promise<void> {
         // console.log('before component task:', this.name);
-        this.getContext().result = await Promise.resolve('component task')
+        this.context.result = await Promise.resolve('component task')
             .then(val => {
                 console.log('return component task:', val);
                 return val;

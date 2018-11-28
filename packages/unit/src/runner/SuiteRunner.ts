@@ -1,4 +1,4 @@
-import { IRunner, Runner, ModuleConfigure, DefaultRunnerToken } from '@ts-ioc/bootstrap';
+import { IRunner, Runner, ModuleConfigure, RunnerToken } from '@ts-ioc/bootstrap';
 import { Token, getMethodMetadata, isNumber, lang, ContainerToken, IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Defer, Injectable, isUndefined, getClassName } from '@ts-ioc/core';
 import { Before, BeforeEach, Test, Suite } from '../core/decorators';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../core';
@@ -30,7 +30,7 @@ declare let process: any;
  * @class SuiteRunner
  * @implements {IRunner<any>}
  */
-@Injectable(DefaultRunnerToken)
+@Injectable(RunnerToken)
 export class SuiteRunner extends Runner<any> implements IRunner<any> {
 
     @Inject(ContainerToken)

@@ -43,7 +43,7 @@ export class DelayActivity extends ControlActivity implements OnActivityInit {
     }
 
     protected async execute(): Promise<any> {
-        let delay = await this.getContext().exec(this, this.delay);
+        let delay = await this.context.exec(this, this.delay);
         let defer = new Defer<any>();
         let timmer = setTimeout(() => {
             defer.resolve();
@@ -51,7 +51,7 @@ export class DelayActivity extends ControlActivity implements OnActivityInit {
         }, delay);
         await defer.promise;
         if (this.body) {
-            await this.body.run(this.getContext());
+            await this.body.run(this.context);
         }
     }
 }

@@ -1,5 +1,6 @@
-import { PipeModule, Package, AssetActivity, PackageActivity, AssetTask, CleanToken, TsCompile, IPipeContext } from '@taskfr/pipes';
+import { AssetActivity, CleanToken, TsCompile, Asset, INodeActivityContext } from '@taskfr/build';
 import { TaskContainer } from '@taskfr/platform-server';
+import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
@@ -7,7 +8,7 @@ const commonjs = require('rollup-plugin-commonjs');
 const rollup = require('gulp-rollup');
 const rename = require('gulp-rename');
 
-@AssetTask({
+@Asset({
     src: 'lib/**/*.js',
     dest: 'bundles',
     data: {
@@ -50,7 +51,7 @@ export class PfBrowserRollup extends AssetActivity {
 }
 
 
-@Package({
+@Pack({
     src: 'src',
     clean: 'lib',
     test: 'test/**/*.spec.ts',
@@ -87,19 +88,18 @@ export class PfBrowserRollup extends AssetActivity {
             ]
         }
     },
-    sequence: [
-        {
-            shell: (ctx: IPipeContext) => {
-                // let envArgs = ctx.getEnvArgs();
-                return `cd bootstrap & tkf`
-            },
-            activity: 'shell'
-        }
-    ]
+    after: {
+        shell: (ctx: INodeActivityContext) => {
+            // let envArgs = ctx.getEnvArgs();
+            return `cd bootstrap & tkf`
+        },
+        activity: 'shell'
+    }
+
 })
-export class PfBrowserBuilder extends PackageActivity {
+export class PfBrowserBuilder extends PackActivity {
 }
 
 TaskContainer.create(__dirname)
-    .use(PipeModule)
+    .use(PackModule)
     .bootstrap(PfBrowserBuilder);

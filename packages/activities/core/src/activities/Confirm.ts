@@ -40,9 +40,9 @@ export class ConfirmActivity extends ControlActivity {
     }
 
     protected async execute() {
-        let confirm = this.getContext().exec(this, this.confirm);
+        let confirm = this.context.exec(this, this.confirm);
         if (confirm) {
-            this.body.run(this.getContext());
+            this.body.run(this.context);
         }
     }
 }

@@ -57,11 +57,11 @@ export class SwitchActivity extends ControlActivity {
     }
 
     protected async execute(): Promise<void> {
-        let matchkey = await this.getContext().exec<any>(this, this.expression);
+        let matchkey = await this.context.exec<any>(this, this.expression);
         if (!isUndefined(matchkey) && this.cases.has(matchkey)) {
-            await this.cases.get(matchkey).run(this.getContext());
+            await this.cases.get(matchkey).run(this.context);
         } else if (this.defaultBody) {
-            await this.defaultBody.run(this.getContext());
+            await this.defaultBody.run(this.context);
         }
     }
 }

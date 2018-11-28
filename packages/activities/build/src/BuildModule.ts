@@ -1,16 +1,16 @@
 import { DIModule } from '@ts-ioc/bootstrap';
-import * as core from './core';
+import * as buildcore from './core';
 import { TransformModule } from './transform';
 import { ShellModule } from './shells'
 
 @DIModule({
     imports: [
-        core,
+        buildcore,
         TransformModule,
         ShellModule
     ],
     exports: [
-        core,
+        buildcore,
         TransformModule,
         ShellModule
     ]

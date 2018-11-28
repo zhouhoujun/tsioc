@@ -47,7 +47,7 @@ export class UglifyActivity extends BuildHandleActivity implements OnActivityIni
 
     async onActivityInit(config: UglifyConfigure) {
         await super.onActivityInit(config);
-        this.uglifyOptions = this.getContext().to(config.uglifyOptions);
+        this.uglifyOptions = this.context.to(config.uglifyOptions);
     }
 
     protected async compile(ctx: BuildHandleContext<any>): Promise<void> {

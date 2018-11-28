@@ -1,4 +1,4 @@
-import { Registration, IContainer, Token, IAnnotationMetadata } from '@ts-ioc/core';
+import { IContainer, Token, IAnnotationMetadata, RefRegistration } from '@ts-ioc/core';
 
 
 /**
@@ -138,7 +138,7 @@ export interface IAnyTypeBuilder extends IAnnotationBuilder<any> {
  * @extends {Registration<T>}
  * @template T
  */
-export class InjectAnnotationBuilder<T> extends Registration<IAnnotationBuilder<T>> {
+export class InjectAnnotationBuilder<T> extends RefRegistration<IAnnotationBuilder<T>> {
     constructor(type: Token<T>) {
         super(type, annoBuilderDesc);
     }

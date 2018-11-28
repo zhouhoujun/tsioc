@@ -56,6 +56,14 @@ export const BuildHandleToken = new InjectAcitityToken<BuildHandleActivity>('bui
 export class BuildHandleActivity extends HandleActivity {
 
     /**
+     * build handle context.
+     *
+     * @type {BuildHandleContext<any>}
+     * @memberof BuildHandleActivity
+     */
+    context: BuildHandleContext<any>;
+
+    /**
      * compiler.
      *
      * @type {IActivity}
@@ -84,14 +92,13 @@ export class BuildHandleActivity extends HandleActivity {
         if (config.compiler) {
             this.compiler = await this.buildActivity(config.compiler);
         } else {
-            this.compiler = this.getContainer().getRefService(tk => [new InjectCompilerToken(tk), new InjectReference(CompilerToken, tk)], lang.getClass(this));
+            this.compiler = this.container.getRefService([
+                tk => new InjectCompilerToken(tk),
+                tk => new InjectReference(CompilerToken, tk)
+            ], lang.getClass(this));
         }
         this.test = await this.toExpression(config.test);
-        this.subDist = this.getContext().to(config.subDist) || '';
-    }
-
-    getContext(): BuildHandleContext<any> {
-        return super.getContext() as BuildHandleContext<any>;
+        this.subDist = this.context.to(config.subDist) || '';
     }
 
     /**
@@ -103,11 +110,11 @@ export class BuildHandleActivity extends HandleActivity {
      * @memberof BuildHandleActivity
      */
     protected async execute(next?: () => Promise<any>): Promise<void> {
-        let ctx = this.getContext();
+        let ctx = this.context;
         if (!this.test) {
             await this.compile(ctx);
         } else {
-            let bdrCtx = ctx.builder.getContext();
+            let bdrCtx = ctx.builder.context;
             if (bdrCtx.isCompleted()) {
                 return;
             }
@@ -135,15 +142,14 @@ export class BuildHandleActivity extends HandleActivity {
     }
 
     protected verifyCtx(ctx?: any) {
-        let cur = this.getContext();
+        this.setResult(ctx);
         if (ctx instanceof BuidActivityContext) {
-            cur.builder = ctx.builder;
-            cur.origin = this;
+            this.context.builder = ctx.builder;
+            this.context.origin = this;
         } else if (ctx instanceof BuildHandleContext) {
-            cur.builder = ctx.builder;
-            cur.origin = ctx.origin
+            this.context.builder = ctx.builder;
+            this.context.origin = ctx.origin
         }
-        cur.handle = this;
-        cur.setAsResult(ctx);
+        this.context.handle = this;
     }
 }

@@ -1,13 +1,15 @@
-import { PipeModule, Package, AssetActivity, PackageActivity, AssetTask, CleanToken, TsCompile } from '@taskfr/pipes';
+
 import { TaskContainer } from '@taskfr/platform-server';
 import { IActivity } from '@taskfr/core';
+import { Asset, AssetActivity, CleanToken, TsCompile } from '@taskfr/build';
+import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
 const rollup = require('gulp-rollup');
 const rename = require('gulp-rename');
 
-@AssetTask({
+@Asset({
     src: 'lib/**/*.js',
     dest: 'bundles',
     data: {
@@ -47,7 +49,7 @@ const rename = require('gulp-rename');
 export class BootRollup extends AssetActivity {
 }
 
-@Package({
+@Pack({
     src: 'src',
     clean: 'lib',
     test: (act: IActivity) => act.context.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
@@ -85,9 +87,9 @@ export class BootRollup extends AssetActivity {
         }
     }
 })
-export class BootBuilder extends PackageActivity {
+export class BootBuilder extends PackActivity {
 }
 
 TaskContainer.create(__dirname)
-    .use(PipeModule)
+    .use(PackModule)
     .bootstrap(BootBuilder);

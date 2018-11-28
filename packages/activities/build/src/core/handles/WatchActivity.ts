@@ -279,10 +279,10 @@ export class WatchActivity extends BuildHandleActivity {
                             chg.removed = chg.removed.concat(fc.removed);
                         }
                     });
-                    return this.getContainer().getRefService(
-                        tk => [
-                            new InjectTranslatorToken<FileChanged, Promise<string[]>>(tk),
-                            new InjectReference(FileChangedTransToken, tk)
+                    return this.container.getRefService(
+                        [
+                            tk => new InjectTranslatorToken<FileChanged, Promise<string[]>>(tk),
+                            tk => new InjectReference(FileChangedTransToken, tk)
                         ],
                         lang.getClass(this),
                         FileChangedTransToken)

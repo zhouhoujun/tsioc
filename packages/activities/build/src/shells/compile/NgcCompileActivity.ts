@@ -53,8 +53,8 @@ export class NgcCompileActivity extends ShellActivity {
     async onActivityInit(config: NgcCompileActivityConfig) {
         await super.onActivityInit(config);
         this.options = lang.assign({silent: true}, this.options || {});
-        this.tsconfig = this.getContext().to(config.tsconfig);
-        this.shell = this.shell || path.join(this.getContext().getRootPath(), 'node_modules', '.bin', 'ngc');
+        this.tsconfig = this.context.to(config.tsconfig);
+        this.shell = this.shell || path.join(this.context.getRootPath(), 'node_modules', '.bin', 'ngc');
     }
 
     protected formatShell(shell: string): string {

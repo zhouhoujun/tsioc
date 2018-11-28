@@ -89,12 +89,12 @@ export class RollupActivity extends ShellActivity {
 
     async onActivityInit(config: RollupActivityConfig) {
         await super.onActivityInit(config);
-        this.src = await this.getContext().getFiles(this.getContext().to(config.src));
+        this.src = await this.context.getFiles(this.context.to(config.src));
         this.options = lang.assign({ silent: true }, this.options || {});
-        this.rollupFileOptions = this.getContext().to(config.rollupFileOptions);
-        this.rollupDirOptions = this.getContext().to(config.rollupDirOptions);
-        this.rollupConfig = this.getContext().to(config.rollupConfig);
-        this.shell = this.shell || path.normalize(path.join(this.getContext().getRootPath(), 'node_modules', '.bin', 'rollup'));
+        this.rollupFileOptions = this.context.to(config.rollupFileOptions);
+        this.rollupDirOptions = this.context.to(config.rollupDirOptions);
+        this.rollupConfig = this.context.to(config.rollupConfig);
+        this.shell = this.shell || path.normalize(path.join(this.context.getRootPath(), 'node_modules', '.bin', 'rollup'));
     }
 
     protected async before(): Promise<any> {

@@ -25,7 +25,7 @@ export abstract class HandleActivity extends ControlActivity implements IHandleA
     async run(ctx?: IActivityContext, next?: () => Promise<any>): Promise<IActivityContext> {
         this.verifyCtx(ctx);
         await this.execute(next);
-        return this.getContext()
+        return this.context
     }
 
     /**

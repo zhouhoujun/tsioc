@@ -39,10 +39,10 @@ export class WhileActivity extends ControlActivity {
     }
 
     protected async execute(): Promise<any> {
-        let condition = await this.getContext().exec(this, this.condition);
+        let condition = await this.context.exec(this, this.condition);
         while (condition) {
-            await this.body.run(this.getContext());
-            condition = await this.getContext().exec(this, this.condition)
+            await this.body.run(this.context);
+            condition = await this.context.exec(this, this.condition)
         }
     }
 }

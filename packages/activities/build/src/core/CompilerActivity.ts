@@ -20,20 +20,18 @@ export interface  CompilerConfigure  extends ActivityConfigure {
 export abstract class CompilerActivity extends NodeActivity {
 
     /**
-     * get context.
+     * compile context.
      *
      * @returns {CompilerHandleContext}
      * @memberof CompilerActivity
      */
-    getContext(): BuildHandleContext<any> {
-        return super.getContext() as BuildHandleContext<any>;
-    }
+    context: BuildHandleContext<any>;
 
     protected verifyCtx(ctx?: any) {
         if (ctx instanceof BuildHandleContext) {
-            this._ctx = ctx;
+            this.context = ctx;
         } else {
-            this.getContext().setAsResult(ctx);
+            this.setResult(ctx);
         }
     }
     /**

@@ -1,5 +1,3 @@
-
-
 import { Token, Type, Express } from '../types';
 import { IContainer } from '../IContainer';
 import { isClass, isToken, lang } from '../utils';
@@ -125,7 +123,7 @@ export class AnnotationMetaAccessor extends MetaAccessor implements IMetaAccesso
 
     find(token: Token<any>, container: IContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
         if (isToken(token)) {
-            let accessor = container.getRefService(InjectMetaAccessorToken, token, DefaultMetaAccessorToken);
+            let accessor = container.getRefService(InjectMetaAccessorToken, token);
             if (accessor) {
                 return accessor.find(token, container, filter, decorFilter);
             } else {
@@ -137,7 +135,7 @@ export class AnnotationMetaAccessor extends MetaAccessor implements IMetaAccesso
 
     filter(token: Token<any>, container: IContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any>[] {
         if (isToken(token)) {
-            let accessor = container.getRefService(InjectMetaAccessorToken, token, DefaultMetaAccessorToken);
+            let accessor = container.getRefService(InjectMetaAccessorToken, token);
             if (accessor) {
                 return accessor.filter(token, container, filter, decorFilter);
             } else {

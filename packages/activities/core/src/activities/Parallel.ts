@@ -58,7 +58,7 @@ export class ParallelActivity extends ControlActivity {
      * @memberof ParallelActivity
      */
     protected async execute(): Promise<void> {
-        await Promise.all(this.activities.map(task => task.run(this.getContext())));
+        await Promise.all(this.activities.map(task => task.run(this.context)));
     }
 
 }

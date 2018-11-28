@@ -1,5 +1,5 @@
 import { IActivity, Activity, IActivityContext } from '../core';
-import { Registration, Type } from '@ts-ioc/core';
+import { Registration, Type, lang } from '@ts-ioc/core';
 import { Task } from '../decorators';
 
 
@@ -56,7 +56,7 @@ export abstract class ContextActivity extends Activity {
         await this.before();
         await this.execute();
         await this.after();
-        return this.getContext();
+        return this.context;
     }
 
 
@@ -69,11 +69,9 @@ export abstract class ContextActivity extends Activity {
      * @memberof ContextActivity
      */
     protected async before(): Promise<void> {
-        if (this.config && this.config.type) {
-            let dep = this.getContext().getContainer().getRefService(InjectBeforeActivity, this.config.type);
-            if (dep) {
-                await dep.run(this.getContext());
-            }
+        let dep = this.context.getContainer().getRefService(InjectBeforeActivity, lang.getClass(this));
+        if (dep) {
+            await dep.run(this.context);
         }
     }
 
@@ -94,11 +92,9 @@ export abstract class ContextActivity extends Activity {
      * @memberof ContextActivity
      */
     protected async after(): Promise<void> {
-        if (this.config && this.config.type) {
-            let dep = this.getContext().getContainer().getRefService(InjectAfterActivity, this.config.type);
-            if (dep) {
-                await dep.run(this.getContext());
-            }
+        let dep = this.context.getContainer().getRefService(InjectAfterActivity, lang.getClass(this));
+        if (dep) {
+            await dep.run(this.context);
         }
     }
 }

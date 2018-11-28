@@ -1,6 +1,21 @@
 import { Type, AbstractType, Token, SymbolType } from './types';
 import { isClass, isFunction, getClassName } from './utils';
 
+
+/**
+ * is registration class or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns
+ */
+export function isRegistrationClass(target: any): target is Type<Registration<any>> {
+    if (isClass(target)) {
+        return (<any>target).isIocRegClass === true;
+    }
+    return false;
+}
+
 /**
  * inject token.
  * @export
@@ -8,7 +23,7 @@ import { isClass, isFunction, getClassName } from './utils';
  * @template T
  */
 export class Registration<T> {
-
+    static readonly isIocRegClass = true;
     protected type = 'Reg';
     protected classType: SymbolType<any>;
     protected desc: string;
@@ -74,6 +89,6 @@ export class Registration<T> {
         } else if (this.classType) {
             name = this.classType.toString();
         }
-        return `${this.type} ${name} ${this.desc}`.trim();
+        return [this.type, name, this.desc].filter(n => n).join('_');
     }
 }

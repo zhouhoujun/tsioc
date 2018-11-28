@@ -41,7 +41,6 @@ export class InvokeActivity extends ControlActivity {
     targetType: Token<any>;
 
     protected async execute(): Promise<any> {
-        let ctx = this.getContext();
-        return ctx.getContainer().invoke(this.targetType, this.target, this.args, { provide: ActivityContext, useValue: ctx });
+        return this.context.getContainer().invoke(this.targetType, this.target, this.args, { provide: ActivityContext, useValue: this.context });
     }
 }

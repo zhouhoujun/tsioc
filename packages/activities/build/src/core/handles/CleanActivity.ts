@@ -43,6 +43,7 @@ export class CleanActivity extends BuildHandleActivity {
 
     async onActivityInit(config: CleanConfigure) {
         await super.onActivityInit(config);
+        console.log('CleanActivity:', this.context.constructor.name);
         this.clean = await this.toExpression(config.clean);
     }
 

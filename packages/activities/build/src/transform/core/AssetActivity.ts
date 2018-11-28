@@ -91,7 +91,7 @@ export class AssetActivity extends TransformActivity implements IAssetActivity {
      * @memberof AssetActivity
      */
     protected async beforePipe(): Promise<void> {
-        let ctx = this.getContext();
+        let ctx = this.context;
         if (this.test) {
             await this.test.run(ctx);
         }
@@ -145,7 +145,7 @@ export class AssetActivity extends TransformActivity implements IAssetActivity {
      */
     protected async executeUglify() {
         if (this.uglify) {
-            await this.uglify.run(this.getContext());
+            await this.uglify.run(this.context);
         }
     }
 
@@ -162,6 +162,6 @@ export class AssetActivity extends TransformActivity implements IAssetActivity {
         if (!ds) {
             return;
         }
-        await ds.run(this.getContext());
+        await ds.run(this.context);
     }
 }

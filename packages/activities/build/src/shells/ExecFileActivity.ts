@@ -82,10 +82,10 @@ export class ExecFileActivity extends CompilerActivity {
 
     async onActivityInit(config: ExecFileActivityConfig) {
         await super.onActivityInit(config);
-        this.files = this.getContext().to(config.files);
-        this.args = this.getContext().to(config.args);
-        this.options = this.getContext().to(config.options);
-        this.allowError = this.getContext().to(config.allowError);
+        this.files = this.context.to(config.files);
+        this.args = this.context.to(config.args);
+        this.options = this.context.to(config.options);
+        this.allowError = this.context.to(config.allowError);
         if (!isBoolean(this.allowError)) {
             this.allowError = true;
         }

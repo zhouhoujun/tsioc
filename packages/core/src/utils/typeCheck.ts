@@ -50,7 +50,7 @@ export function isFunction(target: any): target is Function {
  * @param {*} target
  * @returns {target is AbstractType<any>}
  */
-export function isAbstractDecoratorClass(target: any): target is AbstractType<any> {
+export function isAbstractClass(target: any): target is AbstractType<any> {
     if (!isFunction(target)) {
         return false;
     }

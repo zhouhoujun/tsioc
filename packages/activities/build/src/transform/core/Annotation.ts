@@ -51,8 +51,7 @@ export class AnnotationActivity extends StreamActivity {
      */
     protected async execute(): Promise<void> {
         if (this.annotationFramework) {
-            let ctx = this.getContext();
-            ctx.result = await this.executePipe(ctx.result, this.annotationFramework);
+            this.context.result = await this.executePipe(this.context.result, this.annotationFramework);
         }
     }
 }

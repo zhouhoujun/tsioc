@@ -50,7 +50,7 @@ export class IfActivity extends ControlActivity {
     }
 
     protected async execute(): Promise<void> {
-        let condition = await this.getContext().exec(this, this.condition);
+        let condition = await this.context.exec(this, this.condition);
         if (condition) {
             await this.execIf();
         } else if (this.elseBody) {
@@ -59,11 +59,11 @@ export class IfActivity extends ControlActivity {
     }
 
     protected async execIf(): Promise<void> {
-        await this.ifBody.run(this.getContext());
+        await this.ifBody.run(this.context);
     }
 
     protected async execElse(): Promise<void> {
-        await this.elseBody.run(this.getContext());
+        await this.elseBody.run(this.context);
     }
 
 }

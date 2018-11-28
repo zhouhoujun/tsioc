@@ -26,15 +26,19 @@ const del = require('del');
 @Task
 export abstract class NodeActivity extends ContextActivity {
 
-    getContext(): NodeActivityContext<any> {
-        return super.getContext() as NodeActivityContext<any>;
-    }
+    /**
+     * node activity context.
+     *
+     * @type {NodeActivityContext<any>}
+     * @memberof NodeActivity
+     */
+    context: NodeActivityContext<any>;
 
     protected verifyCtx(ctx?: any) {
         if (ctx instanceof NodeActivityContext) {
-            this._ctx = ctx;
+            this.context = ctx;
         } else {
-            this.getContext().setAsResult(ctx);
+            this.setResult(ctx);
         }
     }
 

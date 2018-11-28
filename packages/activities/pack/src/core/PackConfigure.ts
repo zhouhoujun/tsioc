@@ -66,4 +66,20 @@ export interface PackConfigure extends BuildConfigure {
      * @memberof PackConfigure
      */
     serve?: ExpressionToken<Src> | ConfigureType<ServeActivity, ServeConfigure>;
+
+    /**
+     * before build activity.
+     *
+     * @type {PackConfigures<PackActive>}
+     * @memberof BuildConfigure
+     */
+    before?: PackConfigures<PackActive>;
+
+    /**
+     * do sth, after build completed.
+     *
+     * @type {PackConfigures<PackActive>}
+     * @memberof BuildConfigure
+     */
+    after?: PackConfigures<PackActive>;
 }
