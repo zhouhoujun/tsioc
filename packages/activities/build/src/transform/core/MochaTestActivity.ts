@@ -15,7 +15,6 @@ import { TestToken, TestActivity, CompilerToken } from '../../core';
 export class MochaTestActivity extends StreamActivity {
     protected async execute(): Promise<void> {
         let ta = this.context.handle as TestActivity;
-        console.log(this.context.builder);
         await this.executePipe(this.context.result, () => {
             let mocha = require('gulp-mocha');
             return ta.options ? mocha(ta.options) : mocha();

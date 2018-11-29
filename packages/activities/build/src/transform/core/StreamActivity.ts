@@ -125,14 +125,13 @@ export class TransformContext extends BuildHandleContext<ITransform> {
         super(input);
     }
 
-    protected translate(input: any): any {
-        input = super.translate(input);
+    protected translate(data: any): any {
+        let input = super.translate(data);
         if (input instanceof Stream) {
             return input;
         } else if (isArray(input)) {
             let srcs = input.filter(i => isString(i) || isArray(i));
-            console.log(input);
-            return srcs.length ? src(srcs) : srcs;
+            return srcs.length ? src(srcs) : null;
         } else if (isString(input)) {
             return src(input);
         }
