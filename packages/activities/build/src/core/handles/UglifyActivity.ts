@@ -1,6 +1,5 @@
 import { Task, OnActivityInit, CtxType, InjectAcitityToken } from '@taskfr/core';
-import { BuildHandleConfigure, BuildHandleActivity } from '../BuildHandleActivity';
-import { BuildHandleContext } from '../BuildHandleContext';
+import { BuildHandleConfigure, BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
 
 /**
  * uglify activity configure.

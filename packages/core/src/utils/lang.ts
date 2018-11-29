@@ -217,5 +217,4 @@ export namespace lang {
         }
         return target.constructor || target.prototype.constructor;
     }
-
 }

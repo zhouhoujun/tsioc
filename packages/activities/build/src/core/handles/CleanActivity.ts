@@ -1,6 +1,5 @@
 import { Src, InjectAcitityToken, Task, Expression, ExpressionType } from '@taskfr/core';
-import { BuildHandleActivity, BuildHandleConfigure } from '../BuildHandleActivity';
-import { BuildHandleContext } from '../BuildHandleContext';
+import { BuildHandleActivity, BuildHandleConfigure, BuildHandleContext } from '../BuildHandleActivity';
 
 
 
@@ -43,7 +42,6 @@ export class CleanActivity extends BuildHandleActivity {
 
     async onActivityInit(config: CleanConfigure) {
         await super.onActivityInit(config);
-        console.log('CleanActivity:', this.context.constructor.name);
         this.clean = await this.toExpression(config.clean);
     }
 

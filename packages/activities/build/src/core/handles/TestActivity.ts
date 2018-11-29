@@ -1,7 +1,6 @@
 import { CtxType, ExpressionType, Expression, Task, InjectAcitityToken, IActivity, Active, Src } from '@taskfr/core';
 import { isUndefined } from '@ts-ioc/core';
-import { BuildHandleActivity, BuildHandleConfigure } from '../BuildHandleActivity';
-import { BuildHandleContext } from '../BuildHandleContext';
+import { BuildHandleActivity, BuildHandleConfigure, BuildHandleContext } from '../BuildHandleActivity';
 
 /**
  * test activity configure.
@@ -97,7 +96,7 @@ export class TestActivity extends BuildHandleActivity {
         let test = await ctx.exec(this, this.enable);
         let testSrc = await ctx.exec(this, this.src);
         if (testSrc) {
-            ctx = this.createContext(testSrc);
+            ctx.setAsResult(testSrc);
         }
         if (test !== false && this.compiler) {
             await this.compiler.run(ctx);

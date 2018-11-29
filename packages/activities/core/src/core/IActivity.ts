@@ -69,14 +69,13 @@ export interface IActivity {
     /**
      * create context.
      *
-     * @template T
      * @param {*} [data]
      * @param {Token<IActivity>} [type]
      * @param {Token<T>} [defCtx]
      * @returns {T}
      * @memberof IActivity
      */
-    createContext<T extends IActivityContext>(data?: any, type?: Token<IActivity>, defCtx?: Token<T>): T
+    createContext(data?: any, type?: Token<IActivity>, defCtx?: Token<any>): IActivityContext
 
     /**
      * config.

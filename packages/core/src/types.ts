@@ -1,7 +1,6 @@
 import { Registration } from './Registration';
 import { IContainer } from './IContainer';
 import { ProviderMap, ProviderType } from './core/providers';
-import { type } from 'os';
 
 /**
  * module types.

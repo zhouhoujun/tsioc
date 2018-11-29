@@ -1,6 +1,13 @@
 import { IHandleActivity, IActivity, Expression } from '@taskfr/core';
 import { Express, Registration, Token } from '@ts-ioc/core';
 
+/**
+ * build handle activity.
+ *
+ * @export
+ * @interface IBuildHandleActivity
+ * @extends {IHandleActivity}
+ */
 export interface IBuildHandleActivity extends IHandleActivity {
     /**
      * compiler
@@ -48,5 +55,5 @@ export class InjectCompilerToken<T extends ICompiler> extends Registration<T> {
 /**
  * compiler token.
  */
-export const CompilerToken = new InjectCompilerToken<ICompiler>(Object);
+export const CompilerToken = new InjectCompilerToken<ICompiler>('handle');
 

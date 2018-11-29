@@ -73,7 +73,6 @@ export interface ITaskDecorator<T extends ActivityMetadata> extends ITypeDecorat
 export function createTaskDecorator<T extends ActivityMetadata>(
     taskType: string,
     annotationBuilder?: Token<IActivityBuilder> | IActivityBuilder,
-    provideType?: Token<any>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): ITaskDecorator<T> {
 
@@ -137,15 +136,6 @@ export function createTaskDecorator<T extends ActivityMetadata>(
 
             if (isUndefined(metadata.provide)) {
                 metadata.provide = metadata.name;
-            }
-
-            if (provideType) {
-                if (isString(metadata.provide)) {
-                    metadata.provide = new Registration(provideType, metadata.provide);
-                }
-                if (!metadata.activity || !metadata.task) {
-                    metadata.activity = provideType;
-                }
             }
 
             metadata.decorType = taskType;

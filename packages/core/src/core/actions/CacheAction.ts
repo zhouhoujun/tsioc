@@ -4,7 +4,7 @@ import { ActionComposite } from './ActionComposite';
 import { IContainer } from '../../IContainer';
 import { isNumber, isClass } from '../../utils';
 import { CoreActions } from './CoreActions';
-import { getOwnTypeMetadata, hasOwnClassMetadata } from '../factories';
+import { getOwnTypeMetadata } from '../factories';
 import { CacheManagerToken } from '../../ICacheManager';
 
 

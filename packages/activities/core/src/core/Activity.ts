@@ -65,18 +65,17 @@ export abstract class Activity implements IActivity, OnActivityInit {
     /**
      * create activity context.
      *
-     * @template T
      * @param {*} [data]
      * @param {Token<IActivity>} [type]
      * @param {Token<T>} [defCtx]
      * @returns {T}
      * @memberof ContextFactory
      */
-    createContext<T extends IActivityContext>(data?: any, type?: Token<IActivity>, defCtx?: Token<T>): T {
+    createContext(data?: any, type?: Token<IActivity>, defCtx?: Token<any>): IActivityContext {
         let provider = { provide: InputDataToken, useValue: data } as ProviderType;
         type = type || lang.getClass(this);
         if (this.config && this.config.contextType) {
-            return this.container.resolve(this.config.contextType, provider) as T;
+            return this.container.resolve(this.config.contextType, provider);
         }
 
         return this.container.getRefService(
@@ -85,7 +84,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
                 tk => new InjectReference(ActivityContextToken, tk)
             ],
             type,
-            defCtx || ActivityContextToken, provider) as T;
+            defCtx || ActivityContextToken, provider);
     }
 
 
@@ -133,6 +132,13 @@ export abstract class Activity implements IActivity, OnActivityInit {
         }
     }
 
+    /**
+     * set context result.
+     *
+     * @protected
+     * @param {*} [ctx]
+     * @memberof Activity
+     */
     protected setResult(ctx?: any) {
         if (!this.context) {
             this.context = this.createContext(ctx);

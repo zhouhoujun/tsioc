@@ -87,7 +87,6 @@ export class PackBuilder extends ActivityBuilder {
                             return null;
                         }
                         let handle = this.container.resolve(BuildHandleToken);
-                        // console.log(this.container.has(HandleContextToken), this.container.has(BuildHandleToken));
                         handle.id = activity.id;
 
                         handle.compiler = a;

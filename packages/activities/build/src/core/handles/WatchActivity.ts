@@ -3,8 +3,7 @@ import { IActivity, ExpressionType, Src, Expression, InjectAcitityToken, Task, A
 import { Defer, isArray, Token, lang, InjectReference } from '@ts-ioc/core';
 import { fromEventPattern } from 'rxjs';
 import { bufferTime, flatMap, filter } from 'rxjs/operators';
-import { BuildHandleActivity, BuildHandleConfigure } from '../BuildHandleActivity';
-import { BuildHandleContext } from '../BuildHandleContext';
+import { BuildHandleActivity, BuildHandleConfigure, BuildHandleContext } from '../BuildHandleActivity';
 import { FileChanged, FileChangedTransToken, IFileChanged } from '../FileChanged';
 const chokidar = require('chokidar');
 

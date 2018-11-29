@@ -206,7 +206,6 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
             { service: RunnableBuilderToken, isPrivate: true },
             { service: ModuleBuilderToken, isPrivate: true },
             (tk) => new InjectModuleBuilderToken(tk),
-            (tk) => new InjectReference(lang.getClass(this), tk),
             (tk) => new InjectReference(RunnableBuilderToken, tk),
             (tk) => new InjectReference(RunnableBuilder, tk),
             (tk) => new InjectReference(ModuleBuilderToken, tk),

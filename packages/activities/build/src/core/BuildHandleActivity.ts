@@ -2,11 +2,14 @@ import {
     HandleActivity, Active, Task, ExpressionType, IActivity,
     Expression, HandleConfigure, CtxType, InjectAcitityToken
 } from '@taskfr/core';
-import { isRegExp, isString, isArray, Express, isFunction, lang, InjectReference } from '@ts-ioc/core';
+import { isRegExp, isString, isArray, Express, isFunction, lang, InjectReference, Token } from '@ts-ioc/core';
 import { BuidActivityContext } from './BuidActivityContext';
 import minimatch = require('minimatch');
 import { CompilerToken, InjectCompilerToken } from './BuildHandle';
-import { BuildHandleContext } from './BuildHandleContext';
+import { BuildActivity } from './BuildActivity';
+import { Inject, Injectable, Refs } from '@ts-ioc/core';
+import { InputDataToken, InjectActivityContextToken, ActivityContextToken } from '@taskfr/core';
+import { NodeActivityContext } from './NodeActivity';
 
 
 /**
@@ -42,6 +45,9 @@ export interface BuildHandleConfigure extends HandleConfigure {
     subDist?: CtxType<string>;
 }
 
+/**
+ * build handle token.
+ */
 export const BuildHandleToken = new InjectAcitityToken<BuildHandleActivity>('build-handle');
 
 /**
@@ -141,15 +147,70 @@ export class BuildHandleActivity extends HandleActivity {
         await this.compiler.run(ctx);
     }
 
-    protected verifyCtx(ctx?: any) {
-        this.setResult(ctx);
-        if (ctx instanceof BuidActivityContext) {
-            this.context.builder = ctx.builder;
-            this.context.origin = this;
-        } else if (ctx instanceof BuildHandleContext) {
-            this.context.builder = ctx.builder;
-            this.context.origin = ctx.origin
+    createContext(data?: any, type?: Token<IActivity>, defCtx?: Token<any>): BuildHandleContext<any> {
+        let context = super.createContext(data, type, defCtx) as BuildHandleContext<any>;
+        if (this.context) {
+            context.builder = this.context.builder;
+            context.origin = this.context.origin;
+            context.handle = this.context.handle || this;
+        } else {
+            context.handle = this;
         }
-        this.context.handle = this;
+        return context;
+    }
+
+    protected verifyCtx(ctx?: any) {
+        if (ctx instanceof BuildHandleContext) {
+            this.context = ctx;
+        } else {
+            this.setResult(ctx);
+            if (ctx instanceof BuidActivityContext) {
+                this.context.builder = ctx.builder;
+                this.context.origin = this;
+            }
+        }
+    }
+}
+
+/**
+ * compiler context token.
+ */
+export const HandleContextToken = new InjectActivityContextToken(BuildHandleActivity);
+
+/**
+ * build handle activity context.
+ *
+ * @export
+ * @class BuidHandleActivityContext
+ * @extends {NodeActivityContext}
+ */
+@Injectable(HandleContextToken)
+@Refs(CompilerToken, ActivityContextToken)
+export class BuildHandleContext<T> extends NodeActivityContext<T> {
+
+    /**
+     * origin build handle
+     *
+     * @type {BuildHandleActivity}
+     * @memberof BuildHandleContext
+     */
+    origin: BuildHandleActivity;
+    /**
+     * the builder
+     *
+     * @type {BuildActivity}
+     * @memberof BuidActivityContext
+     */
+    builder: BuildActivity;
+    /**
+     * build handle.
+     *
+     * @type {BuildHandleActivity}
+     * @memberof CompilerContext
+     */
+    handle: BuildHandleActivity;
+
+    constructor(@Inject(InputDataToken) input: any) {
+        super(input);
     }
 }

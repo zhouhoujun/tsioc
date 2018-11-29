@@ -1,6 +1,5 @@
 import { Src, ContextActivity, Task, ActivityContext, InputDataToken, InjectActivityContextToken } from '@taskfr/core';
 import { Inject, Injectable, ObjectMap, Express2, isArray, isString, assertExp } from '@ts-ioc/core';
-import { FileChanged } from './FileChanged';
 import { toAbsolutePath } from '@ts-ioc/platform-server';
 import { existsSync, readdirSync, lstatSync } from 'fs';
 import { join, dirname, normalize } from 'path';

@@ -65,9 +65,6 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
         }
 
         if (isFunction(instance.onActivityInit)) {
-            if (lang.getClass(instance).name === 'CleanActivity') {
-                console.log('exeute onActivityInit:', lang.getClass(this).name);
-            }
             await Promise.resolve(instance.onActivityInit(config));
         }
         return instance;

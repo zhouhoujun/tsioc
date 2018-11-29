@@ -28,7 +28,6 @@ export function registerCores(container: IContainer) {
     container.registerSingleton(DefaultMetaAccessorToken, MetaAccessor);
     container.registerSingleton(AnnotationMetaAccessorToken, AnnotationMetaAccessor);
 
-
     let lifeScope = container.get(LifeScopeToken);
 
     lifeScope.registerDecorator(Injectable, CoreActions.bindProvider, CoreActions.cache);

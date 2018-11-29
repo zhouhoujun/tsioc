@@ -1,5 +1,5 @@
 import { DIModule } from '@ts-ioc/bootstrap';
-import { BuildModule } from '@taskfr/build';
+import { BuildModule, TransformModule, ShellModule } from '@taskfr/build';
 import { PackSetup } from './PackSetup';
 import * as cores from './core';
 import * as builds from './build';
@@ -9,6 +9,8 @@ import * as generate from './generate';
 @DIModule({
     imports: [
         BuildModule,
+        ShellModule,
+        TransformModule,
         PackSetup,
         cores,
         builds,
@@ -17,6 +19,8 @@ import * as generate from './generate';
     ],
     exports: [
         BuildModule,
+        ShellModule,
+        TransformModule,
         cores,
         builds,
         generate,

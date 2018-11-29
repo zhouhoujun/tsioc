@@ -93,14 +93,14 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         let exps: Type<any>[] = [].concat(...builder.loader.getTypes(metaConfig.exports || []));
         let classProvides = [];
         exps.forEach(ty => {
-            let tokens = newContainer.get(new InjectClassProvidesToken(ty));
-            if (isArray(tokens) && tokens.length) {
-                classProvides = classProvides.concat(tokens);
+            let classPd = newContainer.resolveValue(new InjectClassProvidesToken(ty));
+            if (classPd && isArray(classPd.provides) && classPd.provides.length) {
+                classProvides = classProvides.concat(classPd.provides);
             }
         });
-        console.log(type.name, 'classProvides:', classProvides);
+        // console.log(type.name, 'classProvides:', classProvides);
 
-        let pdrMap = newContainer.get(new InjectReference(ProviderMap, type));
+        let pdrMap = newContainer.resolveValue(new InjectReference(ProviderMap, type));
         let injMd = new InjectedModule(metaConfig.token || type, metaConfig, newContainer, type, exps, pdrMap ? classProvides.concat(pdrMap.keys()) : classProvides);
         container.bindProvider(new InjectedModuleToken(type), injMd);
 

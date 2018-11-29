@@ -26,7 +26,7 @@ export class RefRegistration<T> extends Registration<T> {
  * @extends {Registration<T>}
  * @template T
  */
-export class InjectReference<T> extends RefRegistration<T> {
+export class InjectReference<T> extends Registration<T> {
     constructor(provideType: Token<T>, private target: Token<any>) {
         super(provideType, '');
     }
@@ -45,14 +45,33 @@ export class InjectReference<T> extends RefRegistration<T> {
         } else if (this.target) {
             name = this.target.toString();
         }
-        return `${key} for ${name}`;
+        return `Ref ${key} for ${name}`;
     }
 }
 
+/**
+ * class provides.
+ *
+ * @export
+ * @interface IClassProvides
+ */
 export interface IClassProvides {
+    /**
+     * decorators of class
+     *
+     * @type {string[]}
+     * @memberof IClassProvides
+     */
     decors: string[];
+    /**
+     * provides of class
+     *
+     * @type {Token<any>[]}
+     * @memberof IClassProvides
+     */
     provides: Token<any>[];
 }
+
 /**
  * inject class provides token.
  *

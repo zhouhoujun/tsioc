@@ -10,7 +10,7 @@ import { Stream } from 'stream';
 import { CompilerActivity, BuildHandleContext } from '../../core';
 
 @Task
-export class StreamActivity extends CompilerActivity {
+export abstract class StreamActivity extends CompilerActivity {
 
 
     /**
@@ -21,9 +21,15 @@ export class StreamActivity extends CompilerActivity {
      */
     context: TransformContext;
 
-    protected async execute(): Promise<void> {
-
-    }
+    /**
+     * execute.
+     *
+     * @protected
+     * @abstract
+     * @returns {Promise<void>}
+     * @memberof StreamActivity
+     */
+    protected abstract async execute(): Promise<void>;
 
     /**
      * create activity context.
@@ -39,8 +45,8 @@ export class StreamActivity extends CompilerActivity {
             if (ctx instanceof BuildHandleContext) {
                 this.context.builder = ctx.builder;
                 this.context.origin = ctx.origin;
+                this.context.handle = ctx.handle;
             }
-            this.context.setAsResult(ctx);
         }
     }
 

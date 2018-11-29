@@ -2,6 +2,9 @@ import { BindPropertyTypeActionData } from './BindPropertyTypeAction';
 import { IContainer } from '../../IContainer';
 import { CoreActions } from './CoreActions';
 import { ActionComposite } from './ActionComposite';
+import { InjectReference } from '../../InjectReference';
+import { ProviderMap } from '../providers';
+import { ObjectMap } from '../../types';
 
 
 /**
@@ -12,7 +15,7 @@ import { ActionComposite } from './ActionComposite';
  * @extends {BindPropertyTypeActionData}
  */
 export interface InjectPropertyActionData extends BindPropertyTypeActionData {
-
+    injecteds?: ObjectMap<boolean>;
 }
 
 /**
@@ -35,13 +38,20 @@ export class InjectPropertyAction extends ActionComposite {
 
         if (data.target && data.execResult && data.execResult.length) {
             let providerMap = data.providerMap;
-            data.execResult.reverse().forEach((prop, idx) => {
-                if (prop) {
+            data.injecteds = data.injecteds || {};
+            data.execResult.forEach((prop, idx) => {
+                if (prop && !data.injecteds[prop.propertyKey]) {
                     let token = prop.provider ? container.getToken(prop.provider, prop.alias) : prop.type;
-                    if (providerMap && providerMap.has(token)) {
+                    let pdrMap = container.get(new InjectReference(ProviderMap, data.targetType));
+                    if (pdrMap && pdrMap.has(token)) {
+                        data.target[prop.propertyKey] = pdrMap.resolve(token, providerMap);
+                        data.injecteds[prop.propertyKey] = true;
+                    } else if (providerMap && providerMap.has(token)) {
                         data.target[prop.propertyKey] = providerMap.resolve(token, providerMap);
+                        data.injecteds[prop.propertyKey] = true;
                     } else if (container.has(token)) {
                         data.target[prop.propertyKey] = container.resolve(token, providerMap);
+                        data.injecteds[prop.propertyKey] = true;
                     }
                 }
             });

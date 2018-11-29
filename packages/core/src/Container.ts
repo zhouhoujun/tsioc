@@ -432,6 +432,7 @@ export class Container implements IContainer {
         }
     }
 
+
     /**
      * get token implement class and base classes.
      *
@@ -440,17 +441,22 @@ export class Container implements IContainer {
      * @memberof Container
      */
     getTokenExtendsChain(token: Token<any>, chain = true): Token<any>[] {
-        if (isClass(token)) {
-            let prds = this.get(new InjectClassProvidesToken(token));
-            return (prds ? prds.provides : []).concat(chain ? lang.getBaseClasses(token) : token);
-        } else {
-            let type = this.getTokenImpl(token);
-            if (type) {
-                return [token].concat(chain ? lang.getBaseClasses(type) : type);
-            } else {
-                return [token]
-            }
+        let type = isClass(token) ? token : this.getTokenImpl(token);
+        if (!isClass(type)) {
+            return [token];
         }
+        let types = chain ? lang.getBaseClasses(type) : [type];
+        let tokens: Token<any>[] = [];
+        types.forEach(type => {
+            if (type) {
+                let prds = this.get(new InjectClassProvidesToken(token));
+                if (prds && prds.provides && prds.provides.length) {
+                    tokens.push(...prds.provides);
+                }
+                tokens.push(type);
+            }
+        });
+        return tokens;
     }
 
     /**
