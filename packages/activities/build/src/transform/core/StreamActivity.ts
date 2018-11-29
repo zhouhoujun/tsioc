@@ -130,7 +130,9 @@ export class TransformContext extends BuildHandleContext<ITransform> {
         if (input instanceof Stream) {
             return input;
         } else if (isArray(input)) {
-            return src(input.filter(i => isString(i) || isArray(i)));
+            let srcs = input.filter(i => isString(i) || isArray(i));
+            console.log(input);
+            return srcs.length ? src(srcs) : srcs;
         } else if (isString(input)) {
             return src(input);
         }
