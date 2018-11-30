@@ -53,9 +53,9 @@ export abstract class ContextActivity extends Activity {
     */
     async run(ctx?: IActivityContext): Promise<IActivityContext> {
         this.verifyCtx(ctx);
-        await this.before();
+        await this.executeBefore();
         await this.execute();
-        await this.after();
+        await this.executeAfter();
         return this.context;
     }
 
@@ -68,7 +68,7 @@ export abstract class ContextActivity extends Activity {
      * @returns {Promise<void>}
      * @memberof ContextActivity
      */
-    protected async before(): Promise<void> {
+    protected async executeBefore(): Promise<void> {
         let dep = this.context.getContainer().getRefService(InjectBeforeActivity, lang.getClass(this));
         if (dep) {
             await dep.run(this.context);
@@ -91,7 +91,7 @@ export abstract class ContextActivity extends Activity {
      * @returns {Promise<void>}
      * @memberof ContextActivity
      */
-    protected async after(): Promise<void> {
+    protected async executeAfter(): Promise<void> {
         let dep = this.context.getContainer().getRefService(InjectAfterActivity, lang.getClass(this));
         if (dep) {
             await dep.run(this.context);

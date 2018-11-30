@@ -1,6 +1,6 @@
 import { Inject, Express, ContainerToken, IContainer, Token, ProviderType, lang, InjectReference } from '@ts-ioc/core';
 import { Task } from '../decorators';
-import { IActivity, ActivityToken } from './IActivity';
+import { IActivity, ActivityToken, WorkflowId } from './IActivity';
 import { ActivityConfigure, ExpressionType, Expression, ActivityType } from './ActivityConfigure';
 import { OnActivityInit } from './OnActivityInit';
 import { ActivityContext, ActivityContextToken } from './ActivityContext';
@@ -42,7 +42,9 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @type {string}
      * @memberof IActivity
      */
-    id: string;
+    get id(): string {
+        return this.container.get(WorkflowId);
+    }
     /**
      * activity display name.
      *

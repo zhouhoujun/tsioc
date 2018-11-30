@@ -250,19 +250,19 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
         if (!(this.watch && ctx.target === this.watch)) {
             await this.execOnce();
         }
-        await this.execBeforeBody();
+        await this.beforeBuild();
         await this.handleRequest(this.context);
-        await this.execAfterBody();
+        await this.afterBuild();
 
     }
 
-    protected async execBeforeBody() {
+    protected async beforeBuild() {
         if (this.before) {
             await this.before.run(this.context);
         }
     }
 
-    protected async execAfterBody() {
+    protected async afterBuild() {
         if (this.after) {
             await this.after.run(this.context);
         }

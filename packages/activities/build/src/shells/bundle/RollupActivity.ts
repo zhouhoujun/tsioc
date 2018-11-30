@@ -97,8 +97,8 @@ export class RollupActivity extends ShellActivity {
         this.shell = this.shell || path.normalize(path.join(this.context.getRootPath(), 'node_modules', '.bin', 'rollup'));
     }
 
-    protected async before(): Promise<any> {
-        await super.before();
+    protected async executeBefore(): Promise<any> {
+        await super.executeBefore();
         if (this.rollupDirOptions) {
             return await rollup(this.rollupDirOptions);
         }

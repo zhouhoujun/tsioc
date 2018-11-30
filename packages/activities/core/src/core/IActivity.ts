@@ -1,4 +1,4 @@
-import { Registration, IContainer, Token } from '@ts-ioc/core';
+import { Registration, IContainer, Token, InjectToken } from '@ts-ioc/core';
 import { ActivityConfigure } from './ActivityConfigure';
 import { OnActivityInit } from './OnActivityInit';
 import { IActivityContext, IActivityContextResult } from './IActivityContext';
@@ -16,6 +16,8 @@ export class InjectAcitityToken<T extends IActivity> extends Registration<T> {
         super('Activity', desc);
     }
 }
+
+export const WorkflowId = new InjectToken<string>('Workflow_ID');
 
 /**
  * task token.
@@ -40,7 +42,7 @@ export interface IActivity {
      * @type {string}
      * @memberof IActivity
      */
-    id: string;
+    readonly id: string;
 
     /**
      * activity display name.

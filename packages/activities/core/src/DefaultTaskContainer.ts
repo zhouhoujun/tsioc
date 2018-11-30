@@ -1,7 +1,7 @@
 import { Type, hasClassMetadata, lang, IContainer, LoadType, isToken, Token, Factory } from '@ts-ioc/core';
 import {
     SequenceConfigure, Active, IActivityRunner, UUIDToken, RandomUUIDFactory,
-    ActivityRunnerToken, ActivityBuilderToken
+    ActivityRunnerToken, ActivityBuilderToken, WorkflowId
 } from './core';
 import { ITaskContainer } from './ITaskContainer';
 import {
@@ -121,7 +121,7 @@ export class DefaultTaskContainer implements ITaskContainer {
      * @param {string} [workflowId]
      * @memberof ITaskContainer
      */
-    async createActivity(activity: Active, workflowId?: string): Promise<IActivityRunner<any>> {
+    async createActivity(activity: Active, workflowId?: string, data?: any): Promise<IActivityRunner<any>> {
         let boot: Active;
         workflowId = workflowId || this.createUUID();
 
@@ -129,14 +129,14 @@ export class DefaultTaskContainer implements ITaskContainer {
             boot = activity;
         } else {
             boot = activity || {};
-            boot.id = workflowId;
             if (!boot.token) {
                 boot.builder = boot.builder || WorkflowBuilderToken;
-                boot.annotationBuilder = boot.annotationBuilder || ActivityBuilderToken;
+                boot.annotationBuilder = boot.annotationBuilder;
             }
         }
         let env = this.getBuilder().getPools().create();
-        let runner = await this.getBuilder().bootstrap(boot, env, workflowId) as IActivityRunner<any>;
+        this.getContainer().bindProvider(WorkflowId, workflowId);
+        let runner = await this.getBuilder().bootstrap(boot, env, data) as IActivityRunner<any>;
         this.getContainer().bindProvider(workflowId, runner);
         return runner;
     }

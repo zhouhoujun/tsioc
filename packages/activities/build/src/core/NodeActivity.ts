@@ -23,7 +23,7 @@ const del = require('del');
  * @template T
  */
 @Task
-export abstract class NodeActivity extends Activity {
+export abstract class NodeActivity extends ContextActivity {
 
     /**
      * node activity context.

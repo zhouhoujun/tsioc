@@ -52,7 +52,7 @@ export class SequenceActivity extends ControlActivity {
     protected async execute(): Promise<void> {
         let execPromise = Promise.resolve(this.context);
         this.activities.forEach(task => {
-            execPromise = execPromise.then(pdata => task.run(pdata));
+            execPromise = execPromise.then(ctx => task.run(ctx));
         });
         await execPromise;
     }

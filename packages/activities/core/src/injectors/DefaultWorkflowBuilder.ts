@@ -1,6 +1,6 @@
-import { IContainer, Singleton, ProviderTypes } from '@ts-ioc/core';
+import { IContainer, Singleton, ProviderTypes, Token } from '@ts-ioc/core';
 import {
-    ActivityType, IActivity, UUIDToken, RandomUUIDFactory, ActivityRunnerToken, Activity
+    ActivityType, IActivity, UUIDToken, RandomUUIDFactory, ActivityRunnerToken, Activity, ActivityConfigure
 } from '../core';
 import { ModuleBuilder, ModuleEnv, Runnable, IService, InjectModuleBuilderToken } from '@ts-ioc/bootstrap';
 
@@ -26,10 +26,9 @@ export class DefaultWorkflowBuilder extends ModuleBuilder<IActivity> {
      * @returns {Promise<IActivityRunner<any>>}
      * @memberof DefaultWorkflowBuilder
      */
-    async bootstrap(activity: ActivityType<IActivity>, env?: ModuleEnv, workflowId?: string): Promise<Runnable<IActivity>> {
+    async bootstrap(activity: ActivityType<IActivity>, env?: ModuleEnv, data?: string): Promise<Runnable<IActivity>> {
         let injmdl = await this.load(activity, env);
-        workflowId = workflowId || this.createUUID(injmdl.container);
-        let runner = await super.bootstrap(activity, injmdl, workflowId);
+        let runner = await super.bootstrap(activity, injmdl, data);
         return runner;
     }
 
@@ -42,6 +41,10 @@ export class DefaultWorkflowBuilder extends ModuleBuilder<IActivity> {
 
     protected getDefaultService(container: IContainer, ...providers: ProviderTypes[]): IService<IActivity> {
         return container.resolve(ActivityRunnerToken, ...providers);
+    }
+
+    protected getBootType(cfg: ActivityConfigure): Token<any> {
+        return cfg.bootstrap || cfg.activity || cfg.task;
     }
 }
 

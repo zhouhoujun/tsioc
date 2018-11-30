@@ -46,22 +46,18 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
      *
      * @param {Token<IActivity>} token
      * @param {ActivityConfigure} config
-     * @param {string} uuid
+     * @param {any} data
      * @returns {Promise<IActivity>}
      * @memberof ActivityBuilder
      */
-    async createInstance(token: Token<IActivity>, config: ActivityConfigure, uuid: string): Promise<IActivity> {
+    async createInstance(token: Token<IActivity>, config: ActivityConfigure, data: any): Promise<IActivity> {
         if (isString(token)) {
             token = this.traslateStrToken(token);
         }
 
-        let instance = await super.createInstance(token, config, uuid) as ActivityInstance;
+        let instance = await super.createInstance(token, config, data) as ActivityInstance;
         if (!instance) {
             return null;
-        }
-
-        if (isString(uuid)) {
-            instance.id = uuid;
         }
 
         if (isFunction(instance.onActivityInit)) {
@@ -86,9 +82,8 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
         return token;
     }
 
-    protected resolveToken(token: Token<IActivity>, uuid?: string): IActivity {
+    protected resolveToken(token: Token<IActivity>): IActivity {
         let activity = this.container.resolve(token);
-        activity.id = uuid;
         return activity;
     }
 

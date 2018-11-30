@@ -1,6 +1,6 @@
 import { Task, Activity, SequenceActivity, ActivityContext } from '../src';
 
-@Task('test')
+@Task('stest')
 export class SimpleTask extends Activity {
     protected async execute(): Promise<void> {
         // console.log('before simple task:', this.name);
@@ -16,7 +16,8 @@ export class SimpleTask extends Activity {
 @Task('comptest')
 export class SimpleCTask extends SequenceActivity {
 
-    protected async after(): Promise<void> {
+    protected async execute(): Promise<void> {
+        await super.execute();
         // console.log('before component task:', this.name);
         this.context.result = await Promise.resolve('component task')
             .then(val => {
@@ -29,7 +30,7 @@ export class SimpleCTask extends SequenceActivity {
 
 @Task({
     name: 'test-module',
-    activity: SequenceActivity,
+    // activity: SequenceActivity,
     sequence: [
         {
             name: 'test------3',
@@ -41,7 +42,7 @@ export class SimpleCTask extends SequenceActivity {
         }
     ]
 })
-export class TaskModuleTest { // extends SequenceActivity {
+export class TaskModuleTest extends SequenceActivity {
 
 }
 

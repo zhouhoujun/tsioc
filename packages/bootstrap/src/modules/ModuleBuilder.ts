@@ -204,6 +204,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
     protected async autoRun(container: IContainer, token: Token<any>, cfg: ModuleConfigure, instance: any, data: any): Promise<Runnable<T>> {
+        console.log(token, cfg);
         if (!instance) {
             return null;
         }

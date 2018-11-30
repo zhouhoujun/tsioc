@@ -21,7 +21,7 @@ describe('auto register with build', () => {
     });
 
     it('should bootstrap with single task via name or provider.', async () => {
-        let result = await container.use(SimpleTask).bootstrap('test');
+        let result = await container.use(SimpleTask).bootstrap('stest');
         // console.log(result);
         expect(result.resultValue).eq('simple task');
     });
@@ -33,11 +33,11 @@ describe('auto register with build', () => {
 
     it('should bootstrap with component task via name or provider.', async () => {
         let result = await container.use(SimpleCTask).bootstrap('comptest');
-        // console.log('comptest:' , result.activity, result.activityInstance);
+        // console.log('comptest:' , result.activity, result.instance);
         expect(result.resultValue).eq('component task');
     });
 
-    it('should bootstrap with IConfigure.', async () => {
+    it('should bootstrap with configure.', async () => {
         let result = await container.bootstrap({
             name: 'test1',
             activity: SequenceActivity,
@@ -52,11 +52,13 @@ describe('auto register with build', () => {
                 }
             ]
         });
+        // console.log('comptest:' , result.activity, result.configure);
         expect(result.resultValue).eq('component task');
     });
 
     it('should bootstrap with meta IConfigure.', async () => {
         let result = await container.bootstrap(TaskModuleTest);
+        // console.log('comptest:' , result.activity, result.configure);
         expect(result.resultValue).eq('component task');
     });
 

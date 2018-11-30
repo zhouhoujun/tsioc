@@ -87,7 +87,6 @@ export class PackBuilder extends ActivityBuilder {
                             return null;
                         }
                         let handle = this.container.resolve(BuildHandleToken);
-                        handle.id = activity.id;
 
                         handle.compiler = a;
                         handle.name = 'handle-' + name;

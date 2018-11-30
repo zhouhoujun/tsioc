@@ -43,7 +43,7 @@ export class PackActivity extends BuildActivity implements IPackActivity {
         await super.execOnce();
     }
 
-    protected async execBeforeBody() {
+    protected async beforeBuild() {
         if (this.test) {
             await this.test.run(this.context);
         }
