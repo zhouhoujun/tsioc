@@ -40,7 +40,7 @@ export class BindProviderAction extends ActionComposite {
         let matchs = lifeScope.getClassDecorators(type, surm => surm.actions.includes(CoreActions.bindProvider));
         let clpds = new InjectClassProvidesToken(type);
         // has binding.
-        let classPds = raiseContainer.resolveValue(clpds) || { provides: [], decors: [clpds.toString()] };
+        let classPds = raiseContainer.resolveValue(clpds) || { provides: [clpds.toString()], decors: [] };
         if (classPds.decors.length) {
             matchs = matchs.filter(d => classPds.decors.indexOf(d.name) < 0);
         }

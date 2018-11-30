@@ -1,6 +1,6 @@
-import { Task } from '@taskfr/core';
+import { Task, IActivity } from '@taskfr/core';
 import { ITransform } from './ITransform';
-import { isUndefined } from '@ts-ioc/core';
+import { isUndefined, Token } from '@ts-ioc/core';
 import { TransformType, isTransform } from './transformTypes';
 import { InputDataToken, InjectActivityContextToken } from '@taskfr/core';
 import { Injectable, Inject, isArray, isString } from '@ts-ioc/core';
@@ -48,6 +48,25 @@ export abstract class StreamActivity extends CompilerActivity {
                 this.context.handle = ctx.handle;
             }
         }
+    }
+
+    /**
+     * create context.
+     *
+     * @param {*} [data]
+     * @param {Token<IActivity>} [type]
+     * @param {Token<any>} [defCtx]
+     * @returns {TransformContext}
+     * @memberof StreamActivity
+     */
+    createContext(data?: any, type?: Token<IActivity>, defCtx?: Token<any>): TransformContext {
+        let context = super.createContext(data, type, defCtx) as TransformContext;
+        if (this.context) {
+            context.builder = this.context.builder;
+            context.origin = this.context.origin;
+            context.handle = this.context.handle;
+        }
+        return context;
     }
 
     /**

@@ -2,6 +2,7 @@ import { BuildHandleContext } from './BuildHandleActivity';
 import { Task, ActivityConfigure } from '@taskfr/core';
 import { CompilerToken } from './BuildHandle';
 import { NodeActivity } from './NodeActivity';
+import { BuidActivityContext } from './BuidActivityContext';
 
 
 /**
@@ -11,7 +12,7 @@ import { NodeActivity } from './NodeActivity';
  * @interface CompilerConfigure
  * @extends {ActivityConfigure}
  */
-export interface  CompilerConfigure  extends ActivityConfigure {
+export interface CompilerConfigure extends ActivityConfigure {
 
 }
 
@@ -29,15 +30,17 @@ export abstract class CompilerActivity extends NodeActivity {
     /**
      * compile context.
      *
-     * @returns {CompilerHandleContext}
+     * @type {BuildHandleContext<any>}
      * @memberof CompilerActivity
      */
     context: BuildHandleContext<any>;
 
     protected verifyCtx(ctx?: any) {
         if (ctx instanceof BuildHandleContext) {
+            console.log('CompilerActivity BuildHandleContext:', ctx ? ctx.constructor.name : '');
             this.context = ctx;
         } else {
+            console.log('CompilerActivity:', ctx ? ctx.constructor.name : '');
             this.setResult(ctx);
         }
     }

@@ -91,13 +91,12 @@ export class AssetActivity extends TransformActivity implements IAssetActivity {
      * @memberof AssetActivity
      */
     protected async beforePipe(): Promise<void> {
-        let ctx = this.context;
         if (this.test) {
-            await this.test.run(ctx);
+            await this.test.run(this.context);
         }
-        if (!(this.watch && ctx.target === this.watch)) {
+        if (!(this.watch && this.context.target === this.watch)) {
             if (this.src) {
-                await this.src.run(ctx);
+                await this.src.run(this.context);
             }
             if (this.watch) {
                 this.watch.body = this;
@@ -107,11 +106,11 @@ export class AssetActivity extends TransformActivity implements IAssetActivity {
             }
         }
         if (this.annotation) {
-            await this.annotation.run(ctx);
+            await this.annotation.run(this.context);
         }
         if (this.sourcemaps) {
-            ctx.sourceMaps = this.sourcemaps;
-            await this.sourcemaps.init(ctx);
+            this.context.sourceMaps = this.sourcemaps;
+            await this.sourcemaps.init(this.context);
         }
     }
 

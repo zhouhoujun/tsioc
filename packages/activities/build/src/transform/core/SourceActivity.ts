@@ -66,7 +66,7 @@ export class SourceActivity extends StreamActivity {
         }
     }
 
-    protected async execute() {
+    protected async execute(): Promise<void> {
         if (this.src) {
             let strSrc = await this.context.exec(this, this.src);
             let options = await this.context.exec(this, this.srcOptions);

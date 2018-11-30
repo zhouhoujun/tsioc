@@ -11,7 +11,7 @@ import { CacheManagerToken } from './ICacheManager';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { registerCores } from './registerCores';
 import { ResolverChain, ResolverChainToken } from './resolves';
-import { InjectReference, InjectClassProvidesToken } from './InjectReference';
+import { InjectReference, InjectClassProvidesToken, RefRegistration } from './InjectReference';
 
 /**
  * singleton reg token.
@@ -183,6 +183,10 @@ export class Container implements IContainer {
             .forEach(tk => {
                 if (service) {
                     return false;
+                }
+                // exclude ref registration.
+                if (tk instanceof RefRegistration || tk instanceof InjectReference) {
+                    return true;
                 }
                 (isArray(refToken) ? refToken : [refToken]).forEach(stk => {
                     if (service) {
@@ -443,13 +447,13 @@ export class Container implements IContainer {
     getTokenExtendsChain(token: Token<any>, chain = true): Token<any>[] {
         let type = isClass(token) ? token : this.getTokenImpl(token);
         if (!isClass(type)) {
-            return [token];
+            return token ? [token] : [];
         }
         let types = chain ? lang.getBaseClasses(type) : [type];
         let tokens: Token<any>[] = [];
         types.forEach(type => {
             if (type) {
-                let prds = this.get(new InjectClassProvidesToken(token));
+                let prds = this.get(new InjectClassProvidesToken(type));
                 if (prds && prds.provides && prds.provides.length) {
                     tokens.push(...prds.provides);
                 }

@@ -135,7 +135,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
     protected getRefAnnoTokens(): RefTokenType<any>[] {
         return [
             { service: AnnotationBuilderToken, isPrivate: true },
-            (tk) => new InjectAnnotationBuilder(tk),
+            (tk) =>  new InjectAnnotationBuilder(tk),
             (tk) => new InjectReference(AnnotationBuilderToken, tk),
             (tk) => new InjectReference(AnnotationBuilder, tk)
         ]

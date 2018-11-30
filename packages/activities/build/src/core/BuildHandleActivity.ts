@@ -116,18 +116,15 @@ export class BuildHandleActivity extends HandleActivity {
      * @memberof BuildHandleActivity
      */
     protected async execute(next?: () => Promise<any>): Promise<void> {
-        let ctx = this.context;
-        if (!this.test) {
-            await this.compile(ctx);
-        } else {
-            let bdrCtx = ctx.builder.context;
+        if (this.test && this.context.builder) {
+            let bdrCtx = this.context.builder.context;
             if (bdrCtx.isCompleted()) {
                 return;
             }
-            let test = await ctx.exec(this, this.test);
+            let test = await this.context.exec(this, this.test);
             let files: string[];
 
-            if (isArray(ctx.result)) {
+            if (isArray(this.context.result)) {
                 if (isString(test)) {
                     files = bdrCtx.result.filter(f => minimatch(f, test as string));
                 } else if (isFunction(test)) {
@@ -137,16 +134,34 @@ export class BuildHandleActivity extends HandleActivity {
                 }
             }
             if (!files || files.length < 1) {
-                await this.compile(ctx);
+                await this.compile(this.context);
                 bdrCtx.complete(files);
             }
+        } else {
+            await this.compile(this.context);
         }
     }
 
+    /**
+     * compile.
+     *
+     * @protected
+     * @param {BuildHandleContext<any>} ctx
+     * @memberof BuildHandleActivity
+     */
     protected async compile(ctx: BuildHandleContext<any>) {
         await this.compiler.run(ctx);
     }
 
+    /**
+     * create context.
+     *
+     * @param {*} [data]
+     * @param {Token<IActivity>} [type]
+     * @param {Token<any>} [defCtx]
+     * @returns {BuildHandleContext<any>}
+     * @memberof BuildHandleActivity
+     */
     createContext(data?: any, type?: Token<IActivity>, defCtx?: Token<any>): BuildHandleContext<any> {
         let context = super.createContext(data, type, defCtx) as BuildHandleContext<any>;
         if (this.context) {
@@ -167,6 +182,7 @@ export class BuildHandleActivity extends HandleActivity {
             if (ctx instanceof BuidActivityContext) {
                 this.context.builder = ctx.builder;
                 this.context.origin = this;
+                this.context.handle = this;
             }
         }
     }

@@ -1,4 +1,4 @@
-import { Src, ContextActivity, Task, ActivityContext, InputDataToken, InjectActivityContextToken } from '@taskfr/core';
+import { Src, ContextActivity, Task, ActivityContext, InputDataToken, InjectActivityContextToken, Activity } from '@taskfr/core';
 import { Inject, Injectable, ObjectMap, Express2, isArray, isString, assertExp } from '@ts-ioc/core';
 import { toAbsolutePath } from '@ts-ioc/platform-server';
 import { existsSync, readdirSync, lstatSync } from 'fs';
@@ -23,7 +23,7 @@ const del = require('del');
  * @template T
  */
 @Task
-export abstract class NodeActivity extends ContextActivity {
+export abstract class NodeActivity extends Activity {
 
     /**
      * node activity context.
