@@ -1,6 +1,6 @@
 import 'mocha';
 import { expect } from 'chai';
-import { DefaultContainerBuilder, AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration } from '../src';
+import { ContainerBuilder, AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration } from '../src';
 import * as debuModules from './debug';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom, StringIdTest, SymbolIdest } from './debug';
 
@@ -8,7 +8,7 @@ describe('auto register with build', () => {
 
     let container: IContainer;
     before(async () => {
-        let builder = new DefaultContainerBuilder();
+        let builder = new ContainerBuilder();
         container = await builder.build(debuModules);
     });
 

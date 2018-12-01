@@ -1,7 +1,9 @@
-import { MapSet, isToken, isNumber, isFunction, isUndefined, isObject } from '../../utils';
+import { isToken, isNumber, isFunction, isUndefined, isObject } from '../../utils';
 import { Token, Factory, ProviderTypes, ToInstance, Express2, SymbolType } from '../../types';
 import { IContainer } from '../../IContainer';
 import { InjectToken } from '../../InjectToken';
+
+// use core-js in browser.
 
 export const ProviderMapToken = new InjectToken<ProviderMap>('DI_ProviderMap');
 
@@ -14,9 +16,9 @@ export const ProviderMapToken = new InjectToken<ProviderMap>('DI_ProviderMap');
  * @class Providers
  */
 export class ProviderMap {
-    private maps: MapSet<Token<any> | number, Factory<any>>;
+    private maps: Map<Token<any> | number, Factory<any>>;
     constructor(private container: IContainer) {
-        this.maps = new MapSet();
+        this.maps = new Map();
     }
 
     /**
@@ -26,7 +28,7 @@ export class ProviderMap {
      * @memberof ProviderMap
      */
     keys(): Token<any>[] {
-        return this.maps.keys() as Token<any>[];
+        return Array.from(this.maps.keys()) as Token<any>[];
     }
 
     /**
@@ -36,7 +38,7 @@ export class ProviderMap {
      * @memberof ProviderMap
      */
     values(): Factory<any>[] {
-        return this.maps.values();
+        return  Array.from(this.maps.values()) as Factory<any>[];
     }
 
     /**

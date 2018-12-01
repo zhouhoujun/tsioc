@@ -1,10 +1,13 @@
 import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
-import { Type, Token, Factory, SymbolType, ToInstance, IocState, ProviderTypes, Modules, LoadType, ReferenceToken, IReference, RefTokenType, RefTokenFac, RefTokenFacType } from './types';
-import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, MapSet, lang, isArray, isAbstractClass } from './utils';
+import {
+    Type, Token, Factory, SymbolType, ToInstance, IocState, ProviderTypes,
+    Modules, LoadType, ReferenceToken, IReference, RefTokenType, RefTokenFacType
+} from './types';
+import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, lang, isArray } from './utils';
 import { Registration, isRegistrationClass } from './Registration';
 import { MethodAccessorToken } from './IMethodAccessor';
-import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderParserToken, ProviderMap, DefaultMetaAccessorToken } from './core';
+import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderParserToken, ProviderMap } from './core';
 import { LifeScope, LifeScopeToken } from './LifeScope';
 import { IParameter } from './IParameter';
 import { CacheManagerToken } from './ICacheManager';
@@ -26,8 +29,8 @@ const SingletonRegToken = '___IOC__Singleton___';
  * @implements {IContainer}
  */
 export class Container implements IContainer {
-    protected provideTypes: MapSet<Token<any>, Type<any>>;
-    protected factories: MapSet<Token<any>, Function>;
+    protected provideTypes: Map<Token<any>, Type<any>>;
+    protected factories: Map<Token<any>, Function>;
 
     /**
      * parent container.
@@ -534,23 +537,23 @@ export class Container implements IContainer {
         return this.resolveValue(MethodAccessorToken).createParams(params, ...providers);
     }
 
-    protected cacheDecorator<T>(map: MapSet<string, ActionComponent>, action: ActionComponent) {
+    protected cacheDecorator<T>(map: Map<string, ActionComponent>, action: ActionComponent) {
         if (!map.has(action.name)) {
             map.set(action.name, action);
         }
     }
 
     protected init() {
-        this.factories = new MapSet();
-        this.provideTypes = new MapSet();
+        this.factories = new Map();
+        this.provideTypes = new Map();
         this.bindProvider(ContainerToken, () => this);
 
         registerCores(this);
     }
 
-    protected getSingleton(): MapSet<Token<any>, any> {
+    protected getSingleton(): Map<Token<any>, any> {
         if (!this.hasRegister(SingletonRegToken)) {
-            this.bindProvider(SingletonRegToken, new MapSet<Token<any>, any>());
+            this.bindProvider(SingletonRegToken, new Map<Token<any>, any>());
         }
         return this.resolveValue(SingletonRegToken);
     }

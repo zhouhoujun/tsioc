@@ -1,6 +1,6 @@
 import {
     IContainer, Singleton, getOwnMethodMetadata,
-    MapSet, Type, ObjectMap, getClassName, lang, ProviderTypes
+    Type, ObjectMap, getClassName, lang, ProviderTypes
 } from '@ts-ioc/core';
 import { Advices } from './advices';
 import { Advice, NonePointcut } from './decorators';
@@ -19,32 +19,32 @@ export class Advisor implements IAdvisor {
     /**
      * aspects.
      *
-     * @type {MapSet<Type<any>, ObjectMap<AdviceMetadata[]>>}
+     * @type {Map<Type<any>, ObjectMap<AdviceMetadata[]>>}
      * @memberof AspectManager
      */
-    aspects: MapSet<Type<any>, ObjectMap<AdviceMetadata[]>>;
+    aspects: Map<Type<any>, ObjectMap<AdviceMetadata[]>>;
 
     /**
      * aspect ioc containers.
      *
      * @protected
-     * @type {MapSet<Type<any>, IContainer>}
+     * @type {Map<Type<any>, IContainer>}
      * @memberof Advisor
      */
-    protected aspectIocs: MapSet<Type<any>, IContainer>;
+    protected aspectIocs: Map<Type<any>, IContainer>;
     /**
      * method advices.
      *
-     * @type {MapSet<string, Advices>}
+     * @type {Map<string, Advices>}
      * @memberof AspectManager
      */
-    advices: MapSet<string, Advices>;
+    advices: Map<string, Advices>;
 
 
     constructor() {
-        this.aspects = new MapSet();
-        this.aspectIocs = new MapSet();
-        this.advices = new MapSet();
+        this.aspects = new Map();
+        this.aspectIocs = new Map();
+        this.advices = new Map();
     }
 
     /**

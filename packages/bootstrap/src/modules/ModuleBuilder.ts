@@ -204,7 +204,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
     protected async autoRun(container: IContainer, token: Token<any>, cfg: ModuleConfigure, instance: any, data: any): Promise<Runnable<T>> {
-        console.log(token, cfg);
         if (!instance) {
             return null;
         }
@@ -222,6 +221,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
                     { service: RunnerToken, isPrivate: true },
                     { service: Runner, isPrivate: true },
                     tk => new InjectRunnerToken(tk),
+                    tk => new InjectReference(RunnerToken, tk),
                     tk => new InjectReference(Runner, tk)
                 ],
                 token,
@@ -234,12 +234,14 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
                         { service: ServiceToken, isPrivate: true },
                         { service: Service, isPrivate: true },
                         tk => new InjectServiceToken(tk),
+                        tk => new InjectReference(ServiceToken, tk),
                         tk => new InjectReference(Service, tk)
                     ],
                     token,
                     ServiceToken,
                     ...providers);
             }
+            console.log('has runner:', !!instance, runner);
             if (runner) {
                 await runner.run(data);
                 return runner;

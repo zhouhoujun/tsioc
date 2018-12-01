@@ -1,5 +1,5 @@
 import {
-    MapSet, Token, SymbolType, Registration,
+    Token, SymbolType, Registration,
     IContainer, InjectToken, IContainerBuilder
 } from '@ts-ioc/core';
 
@@ -10,10 +10,10 @@ import {
  * @class ContainerPool
  */
 export class ContainerPool {
-    protected pools: MapSet<Token<any>, IContainer>;
+    protected pools: Map<Token<any>, IContainer>;
 
     constructor(protected containerBuilder: IContainerBuilder) {
-        this.pools = new MapSet();
+        this.pools = new Map();
     }
 
     protected createContainer(): IContainer {

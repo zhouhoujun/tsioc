@@ -1,14 +1,14 @@
 
 import 'mocha';
 import { expect } from 'chai';
-import { AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration, Inject, Singleton, DefaultContainerBuilder } from '../src';
+import { AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration, Inject, Singleton, ContainerBuilder } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student, InjMClassRoom, InjCollegeClassRoom, InjCollegeAliasClassRoom, StingMClassRoom, StringIdTest, SymbolIdest, SymbolCollegeClassRoom } from './debug';
 
 describe('custom register test', () => {
 
     let container: IContainer;
     beforeEach(async () => {
-        let builder = new DefaultContainerBuilder();
+        let builder = new ContainerBuilder();
         container = await builder.build();
     });
 

@@ -1,6 +1,6 @@
 import {
-    IContainer, LoadType, MapSet, Factory, Token,
-    DefaultContainerBuilder, IContainerBuilder, isClass,
+    IContainer, LoadType, Factory, Token,
+    ContainerBuilder, IContainerBuilder, isClass,
     isToken, InjectReference, PromiseUtil, Injectable, lang, RefTokenType
 } from '@ts-ioc/core';
 import { IRunnableBuilder, CustomRegister, RunnableBuilderToken } from './IRunnableBuilder';
@@ -57,8 +57,8 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
 
     protected globalModules: LoadType[];
     protected customRegs: CustomRegister<T>[];
-    protected beforeInitPds: MapSet<Token<any>, any>;
-    protected afterInitPds: MapSet<Token<any>, any>;
+    protected beforeInitPds: Map<Token<any>, any>;
+    protected afterInitPds: Map<Token<any>, any>;
     protected configMgr: IConfigureManager<ModuleConfig<T>>;
     inited = false;
 
@@ -68,8 +68,8 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         super();
         this.customRegs = [];
         this.globalModules = [];
-        this.beforeInitPds = new MapSet();
-        this.afterInitPds = new MapSet();
+        this.beforeInitPds = new Map();
+        this.afterInitPds = new Map();
         this.events = new Events();
         this.initEvents();
     }
@@ -103,7 +103,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
     }
 
     protected createContainerBuilder(): IContainerBuilder {
-        return new DefaultContainerBuilder();
+        return new ContainerBuilder();
     }
 
     /**

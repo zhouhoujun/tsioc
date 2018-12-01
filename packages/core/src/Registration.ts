@@ -35,13 +35,6 @@ export class Registration<T> {
      */
     constructor(provideType: Token<T> | Token<any>, desc: string) {
         if (provideType instanceof Registration) {
-            // this.classType = provideType.getProvide();
-            // let pdec = provideType.getDesc();
-            // if (pdec && desc && pdec !== desc) {
-            //     this.desc = pdec + '_' + desc;
-            // } else {
-            //     this.desc = desc;
-            // }
             if (desc) {
                 this.classType = provideType.toString();
                 this.desc = desc;

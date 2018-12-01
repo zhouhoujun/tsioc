@@ -2,7 +2,7 @@ import { IContainer, IContainerBuilder, Injectable } from '@ts-ioc/core';
 import { AppConfigure, DefaultApplicationBuilder, IApplicationBuilder, AnyApplicationBuilder, IConfigureLoader, ConfigureLoaderToken } from '@ts-ioc/bootstrap';
 import { existsSync } from 'fs';
 import * as path from 'path';
-import { ContainerBuilder } from '@ts-ioc/platform-server';
+import { ServerContainerBuilder } from '@ts-ioc/platform-server';
 
 const processRoot = path.join(path.dirname(process.cwd()), path.basename(process.cwd()));
 
@@ -136,7 +136,7 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
     }
 
     protected createContainerBuilder(): IContainerBuilder {
-        return new ContainerBuilder();
+        return new ServerContainerBuilder();
     }
 
 }

@@ -12,13 +12,13 @@ import { Activity } from '../core';
 @Task
 export abstract class ControlActivity extends Activity {
 
-    /**
-     * to string.
-     *
-     * @returns {string}
-     * @memberof ControlActivity
-     */
-    toString(): string  {
-        return '';
-    }
+    // /**
+    //  * to string.
+    //  *
+    //  * @returns {string}
+    //  * @memberof ControlActivity
+    //  */
+    // toString(): string  {
+    //     return '';
+    // }
 }

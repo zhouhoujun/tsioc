@@ -1,7 +1,7 @@
 import 'mocha';
 import { expect } from 'chai';
 import {
-    Method, Inject, DefaultContainerBuilder, AutoWired, Injectable, Singleton, IContainer,
+    Method, Inject, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer,
     ParameterMetadata, Param, isFunction, hasOwnMethodMetadata, hasPropertyMetadata
 } from '@ts-ioc/core';
 import { AnnotationAspect } from './aop/AnnotationAspect';
@@ -79,7 +79,7 @@ describe('aop test', () => {
 
     let container: IContainer;
     beforeEach(async () => {
-        let builder = new DefaultContainerBuilder();
+        let builder = new ContainerBuilder();
         container = await builder.create();
         container.use(AopModule);
         container.register(IocLog);

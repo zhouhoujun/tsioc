@@ -1,6 +1,6 @@
 import 'mocha';
 import { expect } from 'chai';
-import { DefaultContainerBuilder, IContainer } from '../src';
+import { ContainerBuilder, IContainer } from '../src';
 // import { AnnotationAspect } from './aop/AnnotationAspect';
 // import { CheckRightAspect } from './aop/CheckRightAspect';
 import * as testModules from './extends-test';
@@ -9,7 +9,7 @@ import { Person, Home } from './extends-test';
 describe('extends test', () => {
     let container: IContainer;
     before(async () => {
-        let builder = new DefaultContainerBuilder();
+        let builder = new ContainerBuilder();
         container = await builder.build(testModules);
     });
 

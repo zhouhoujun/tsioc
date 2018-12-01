@@ -1,4 +1,4 @@
-import { IModuleLoader, DefaultContainerBuilder } from '@ts-ioc/core';
+import { IModuleLoader, ContainerBuilder } from '@ts-ioc/core';
 import { NodeModuleLoader } from './NodeModuleLoader';
 
 /**
@@ -6,9 +6,9 @@ import { NodeModuleLoader } from './NodeModuleLoader';
  *
  * @export
  * @class ContainerBuilder
- * @extends {DefaultContainerBuilder}
+ * @extends {ContainerBuilder}
  */
-export class ContainerBuilder extends DefaultContainerBuilder {
+export class ServerContainerBuilder extends ContainerBuilder {
 
     constructor(loader?: IModuleLoader) {
         super(loader || new NodeModuleLoader())

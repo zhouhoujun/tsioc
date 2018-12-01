@@ -1,6 +1,6 @@
 import { Task } from '../decorators';
 import { IActivity, InjectAcitityToken, Expression, SwitchConfigure } from '../core';
-import { MapSet, isUndefined } from '@ts-ioc/core';
+import { isUndefined } from '@ts-ioc/core';
 import { ControlActivity } from './ControlActivity';
 
 /**
@@ -27,10 +27,10 @@ export class SwitchActivity extends ControlActivity {
     /**
      * Switch body.
      *
-     * @type {MapSet<any, IActivity>}
+     * @type {Map<any, IActivity>}
      * @memberof SwitchActivity
      */
-    cases: MapSet<any, IActivity> = new MapSet();
+    cases: Map<any, IActivity> = new Map();
 
     /**
      * default activity.

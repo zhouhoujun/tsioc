@@ -26,6 +26,7 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
     "reflect-metadata": "^0.1.12",
+    "core-js": "^2.5.7",
     "tslib": "^1.9.2"
   },
   "peerDependencies": {

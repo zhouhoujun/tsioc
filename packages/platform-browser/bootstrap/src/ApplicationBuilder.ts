@@ -1,6 +1,6 @@
 import { isUndefined, IContainerBuilder } from '@ts-ioc/core';
 import { IApplicationBuilder, DefaultApplicationBuilder, AnyApplicationBuilder, IApplication } from '@ts-ioc/bootstrap';
-import { ContainerBuilder } from '@ts-ioc/platform-browser';
+import { BrowserContainerBuilder } from '@ts-ioc/platform-browser';
 declare let System: any;
 
 export interface IApplicationBuilderBrowser<T> extends IApplicationBuilder<T> {
@@ -51,6 +51,6 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
     }
 
     protected createContainerBuilder(): IContainerBuilder {
-        return new ContainerBuilder();
+        return new BrowserContainerBuilder();
     }
 }

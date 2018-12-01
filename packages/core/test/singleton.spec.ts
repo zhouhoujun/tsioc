@@ -1,6 +1,6 @@
 import 'mocha';
 import { expect } from 'chai';
-import { DefaultContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param } from '../src';
+import { ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Person } from './debug';
 
 describe('Singleton test', () => {
@@ -8,7 +8,7 @@ describe('Singleton test', () => {
 
 
     it('should has one instance',  () => {
-        let builder = new DefaultContainerBuilder();
+        let builder = new ContainerBuilder();
         let container = builder.create();
         container.register(Person);
         let instance = container.get(Person);

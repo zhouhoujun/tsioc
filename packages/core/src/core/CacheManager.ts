@@ -1,4 +1,4 @@
-import { isFunction, isNumber, MapSet } from '../utils';
+import { isFunction, isNumber } from '../utils';
 import { Type } from '../types';
 import { IContainer } from '../IContainer';
 import { OnDestroy } from './ComponentLifecycle';
@@ -23,9 +23,9 @@ export interface CacheTarget {
  * @implements {ICacheManager}
  */
 export class CacheManager implements ICacheManager {
-    cacheTokens: MapSet<Type<any>, CacheTarget>;
+    cacheTokens: Map<Type<any>, CacheTarget>;
     constructor(private container: IContainer) {
-        this.cacheTokens = new MapSet();
+        this.cacheTokens = new Map();
     }
 
     isChecking() {

@@ -1,5 +1,5 @@
 import { AdviceMetadata } from './metadatas';
-import { Type, ObjectMap, MapSet, InjectToken, IContainer, ProviderTypes } from '@ts-ioc/core';
+import { Type, ObjectMap, InjectToken, IContainer, ProviderTypes } from '@ts-ioc/core';
 import { Advices } from './advices';
 
 /**
@@ -18,17 +18,17 @@ export interface IAdvisor {
     /**
      * aspects
      *
-     * @type {MapSet<Type<any>, ObjectMap<AdviceMetadata[]>>}
+     * @type {Map<Type<any>, ObjectMap<AdviceMetadata[]>>}
      * @memberof IAdvisor
      */
-    aspects: MapSet<Type<any>, ObjectMap<AdviceMetadata[]>>;
+    aspects: Map<Type<any>, ObjectMap<AdviceMetadata[]>>;
     /**
      * advices
      *
-     * @type {MapSet<string, Advices>}
+     * @type {Map<string, Advices>}
      * @memberof IAdvisor
      */
-    advices: MapSet<string, Advices>;
+    advices: Map<string, Advices>;
 
     /**
      * has register advices or not.

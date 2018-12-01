@@ -25,9 +25,9 @@ export class SequenceActivity extends ControlActivity {
      */
     activities: IActivity[] = [];
 
-    async onActivityInit(config: SequenceConfigure): Promise<any> {
-        this.activities = this.activities || [];
+    async onActivityInit(config: SequenceConfigure): Promise<void> {
         await super.onActivityInit(config);
+        this.activities = this.activities || [];
         if (config.sequence && config.sequence.length) {
             await this.buildChildren(this, config.sequence);
         }

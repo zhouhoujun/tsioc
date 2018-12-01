@@ -15,7 +15,7 @@ export * from './LifeScope';
 
 
 
-export * from './DefaultContainerBuilder';
+export * from './ContainerBuilder';
 
 export * from './utils';
 export * from './components';

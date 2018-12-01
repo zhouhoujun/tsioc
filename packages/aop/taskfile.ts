@@ -1,6 +1,7 @@
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 import { TaskContainer } from '@taskfr/platform-server';
 import { Asset, AssetActivity, TsCompile, CleanToken } from '@taskfr/build';
+import { IActivity } from '@taskfr/core';
 
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -50,7 +51,7 @@ export class AopRollup extends AssetActivity {
 
 @Pack({
     clean: 'lib',
-    // test: (act: IActivity) => act.context.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
+    test: (act: IActivity) => act.context.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
     assets: {
         ts: {
             sequence: [

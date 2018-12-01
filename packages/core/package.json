@@ -26,8 +26,7 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
     "reflect-metadata": "^0.1.12",
-    "tslib": "^1.9.2",
-    "object-assign": "^4.1.1"
+    "tslib": "^1.9.2"
   },
   "directories": {
     "lib": "lib",

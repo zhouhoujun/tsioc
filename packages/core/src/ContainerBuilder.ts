@@ -16,7 +16,7 @@ import { PromiseUtil } from './utils';
  * @class DefaultContainerBuilder
  * @implements {IContainerBuilder}
  */
-export class DefaultContainerBuilder implements IContainerBuilder {
+export class ContainerBuilder implements IContainerBuilder {
 
     private _loader: IModuleLoader;
     filter: Express<Type<any>, boolean>;
@@ -98,7 +98,6 @@ export class DefaultContainerBuilder implements IContainerBuilder {
         return injTypes;
     }
 
-    protected injectorChain: IModuleInjectorChain;
     getInjectorChain(container: IContainer): IModuleInjectorChain {
         if (!container.has(ModuleInjectorChainToken)) {
             container.register(SyncModuleInjector)
@@ -107,16 +106,10 @@ export class DefaultContainerBuilder implements IContainerBuilder {
                 .bindProvider(ModuleInjectorChainToken, new ModuleInjectorChain())
         }
         let currChain = container.get(ModuleInjectorChainToken);
-        if (this.injectorChain !== currChain) {
-            this.injectorChain = null;
-        }
-        if (!this.injectorChain) {
-            this.injectorChain = currChain;
-            this.injectorChain
+        currChain
                 .next(container.resolve(SyncModuleInjectorToken, { validate: container.get(IocExtModuleValidateToken), skipNext: true }))
                 .next(container.resolve(SyncModuleInjectorToken));
-        }
 
-        return this.injectorChain;
+        return currChain;
     }
 }

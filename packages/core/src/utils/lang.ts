@@ -1,6 +1,6 @@
 import { ObjectMap, Type } from '../types';
 import { isNullOrUndefined, isArray, isObject, isFunction, isClass } from './typeCheck';
-import * as objAssign from 'object-assign';
+// use core-js in browser.
 
 export namespace lang {
 
@@ -14,12 +14,6 @@ export namespace lang {
         if (isObject(target)) {
             if (isFunction(Object.keys)) {
                 return Object.keys(target);
-            } else {
-                let keys = [];
-                for (let name in target) {
-                    keys.push(name);
-                }
-                return keys;
             }
         }
         return [];
@@ -37,11 +31,7 @@ export namespace lang {
             if (isFunction(Object.values)) {
                 return Object.values(target);
             } else {
-                let values = [];
-                for (let name in target) {
-                    values.push(target[name]);
-                }
-                return values;
+                return keys(target).map(n => target[n]);
             }
         }
         return [];
@@ -61,11 +51,11 @@ export namespace lang {
         if (sources && sources.length) {
             sources.unshift(source2 || {});
             sources.unshift(source1 || {});
-            return objAssign(target as any, ...sources);
+            return Object.assign(target as any, ...sources);
         } else if (source2) {
-            return objAssign(target, source1 || {} as U, source2);
+            return Object.assign(target, source1 || {} as U, source2);
         } else {
-            return objAssign(target, source1 || {} as U);
+            return Object.assign(target, source1 || {} as U);
         }
     }
 
