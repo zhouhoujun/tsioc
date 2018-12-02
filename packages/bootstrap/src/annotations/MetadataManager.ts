@@ -1,6 +1,5 @@
 import { AnnotationConfigure, AnnotationBuilderToken } from './IAnnotationBuilder';
 import { Token, RefRegistration, Injectable, Inject, ContainerToken, IContainer, AnnotationMetaAccessorToken, Express, lang } from '@ts-ioc/core';
-import { prototype } from 'stream';
 
 /**
  * metadata manager.
@@ -17,6 +16,17 @@ export interface IMetadataManager {
      * @memberof IMetadataManager
      */
     getToken(config: AnnotationConfigure<any>): Token<any>;
+
+     /**
+     * get metadata config.
+     *
+     * @param {Token<any>} token
+     * @param {AnnotationConfigure<any>} [config]
+     * @param {Express<string, boolean>} [decorFilter]
+     * @returns {AnnotationConfigure<any>}
+     * @memberof IMetadataManager
+     */
+    getMetaConfig(token: Token<any>, config?: AnnotationConfigure<any>, decorFilter?: Express<string, boolean>): AnnotationConfigure<any>;
 
     /**
      * get metadata config.
@@ -37,7 +47,7 @@ export interface IMetadataManager {
  * @extends {RefRegistration<IMetadataManager>}
  * @template T
  */
-export class InjectMetadataManagerToken extends RefRegistration<IMetadataManager> {
+export class InjectMetadataManagerToken<T extends IMetadataManager> extends RefRegistration<T> {
     constructor(type: Token<any>) {
         super(type, 'MetadataManager');
     }

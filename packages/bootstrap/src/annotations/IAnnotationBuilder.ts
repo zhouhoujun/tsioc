@@ -1,4 +1,5 @@
 import { IContainer, Token, IAnnotationMetadata, RefRegistration } from '@ts-ioc/core';
+import { IMetadataManager } from './MetadataManager';
 
 
 /**
@@ -46,6 +47,14 @@ export interface IAnnotationBuilder<T> {
     container: IContainer;
 
     /**
+     * get metadata manager.
+     *
+     * @returns {IMetadataManager}
+     * @memberof IAnnotationBuilder
+     */
+    getMetaManager(): IMetadataManager;
+
+    /**
      * build token type via config.
      *
      * @param {Token<T>} token
@@ -76,15 +85,6 @@ export interface IAnnotationBuilder<T> {
      * @memberof IBootBuilder
      */
     getBuilder(token: Token<T>, config?: AnnotationConfigure<T>): IAnnotationBuilder<T>;
-
-    /**
-     * get annoation type token.
-     *
-     * @param {AnnotationConfigure<T>} config
-     * @returns {Token<T>}
-     * @memberof IBootstrapBuilder
-     */
-    getType(config: AnnotationConfigure<T>): Token<T>;
 
     /**
      * create token instance.

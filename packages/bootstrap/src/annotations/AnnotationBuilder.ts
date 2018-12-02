@@ -4,7 +4,7 @@ import {
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import { AnnoInstance } from './IAnnotation';
-import { AnnotationMetadataManagerToken } from './MetadataManager';
+import { AnnotationMetadataManagerToken, IMetadataManager, InjectMetadataManagerToken } from './MetadataManager';
 
 /**
  * Annotation class builder. build class with metadata and config.
@@ -29,6 +29,14 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
     }
 
+    _metaMgr: IMetadataManager;
+    getMetaManager(): IMetadataManager {
+        if (!this._metaMgr) {
+            this._metaMgr = this.container.getRefService(InjectMetadataManagerToken, lang.getClass(this));
+        }
+        return this._metaMgr;
+    }
+
     /**
      * build token type via config.
      *
@@ -42,7 +50,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         if (isClass(token) && !this.container.hasRegister(token)) {
             this.container.register(token);
         }
-        config = this.getTokenMetaConfig(token, config);
+        config = this.getMetaManager().getMetaConfig(token, config);
         let builder = this.getBuilder(token, config);
         if (!this.isEqual(builder)) {
             return await builder.build(token, config, data);
@@ -81,7 +89,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             }
             return await this.build(token, null, data);
         } else {
-            token = this.getType(config);
+            token = this.getMetaManager().getToken(config);
             if (excludeTokens.indexOf(token) >= 0) {
                 token = null;
             }
@@ -133,15 +141,10 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         return builder || this;
     }
 
-    getType(config: AnnotationConfigure<T>): Token<T> {
-        this.container.getService(AnnotationMetadataManagerToken).getToken(config);
-        return config.token || config.type;
-    }
-
     protected getRefAnnoTokens(): RefTokenType<any>[] {
         return [
             { service: AnnotationBuilderToken, isPrivate: true },
-            (tk) =>  new InjectAnnotationBuilder(tk),
+            (tk) => new InjectAnnotationBuilder(tk),
             (tk) => new InjectReference(AnnotationBuilderToken, tk),
             (tk) => new InjectReference(AnnotationBuilder, tk)
         ]
@@ -169,32 +172,6 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      */
     protected async registerExts(config?: AnnotationConfigure<T>) {
 
-    }
-
-    protected getTokenMetaConfig(token: Token<T>, config?: AnnotationConfigure<T>): AnnotationConfigure<T> {
-        let cfg: AnnotationConfigure<T>;
-        let decorator = config ? config.decorator : null;
-        if (isClass(token)) {
-            cfg = this.getMetaConfig(token, decorator);
-        } else if (isToken(token)) {
-            let tokenType = this.container ? this.container.getTokenImpl(token) : token;
-            if (isClass(tokenType)) {
-                cfg = this.getMetaConfig(tokenType, decorator);
-            }
-        }
-        if (cfg) {
-            return lang.assign({}, cfg, config || {});
-        } else {
-            return config || {};
-        }
-    }
-
-    protected getMetaConfig(token: Type<any>, decorator?: string): AnnotationConfigure<T> {
-        let accessor = this.container.resolve(AnnotationMetaAccessorToken);
-        if (accessor) {
-            return accessor.getMetadata(token, this.container);
-        }
-        return null;
     }
 
     protected isEqual(build: IAnnotationBuilder<T>) {

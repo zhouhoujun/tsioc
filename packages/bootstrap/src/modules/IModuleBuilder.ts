@@ -1,8 +1,9 @@
 import { Registration, IContainer, Token, RefRegistration } from '@ts-ioc/core';
-import { ModuleConfig } from './ModuleConfigure';
+import { ModuleConfig, ModuleConfigure } from './ModuleConfigure';
 import { ContainerPool } from '../utils';
 import { Runnable } from '../runnable';
 import { InjectedModule } from './InjectedModule';
+import { IMetadataManager, InjectMetadataManagerToken } from '../annotations';
 
 const moduleBuilderDesc = 'DI_ModuleBuilder';
 
@@ -25,6 +26,20 @@ export class InjectModuleBuilderToken<T> extends RefRegistration<IModuleBuilder<
  */
 export type ModuleEnv = IContainer | InjectedModule<any>;
 
+export interface IModuleMetaManager extends IMetadataManager {
+
+    /**
+     * get boot token.
+     *
+     * @param {ModuleConfigure} cfg
+     * @returns {Token<any>}
+     * @memberof IModuleMetaManagerToken
+     */
+    getBootToken(cfg: ModuleConfigure): Token<any>
+}
+
+
+
 
 /**
  * Generics module builder insterface.
@@ -42,6 +57,14 @@ export interface IModuleBuilder<T> {
      * @memberof IModuleBuilder
      */
     getPools(): ContainerPool;
+
+    /**
+     * get metadata manager.
+     *
+     * @param {IContainer} [container]
+     * @memberof IModuleBuilder
+     */
+    getMetaManager(container?: IContainer): IModuleMetaManager;
 
     /**
      * import module.
@@ -103,3 +126,7 @@ export const ModuleBuilderToken = new InjectModuleBuilderToken<any>(Object);
 export interface AnyModuleBuilder extends IModuleBuilder<any> {
 }
 
+/**
+ *  module metadata manager token.
+ */
+export const ModuleMetaManagerToken = new InjectMetadataManagerToken<IModuleMetaManager>(ModuleBuilderToken);

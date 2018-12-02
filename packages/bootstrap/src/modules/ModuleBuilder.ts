@@ -4,7 +4,7 @@ import {
     isToken, Inject, Registration, Container,
     AnnotationMetaAccessorToken, InjectReference, Injectable, RefTokenType
 } from '@ts-ioc/core';
-import { IModuleBuilder, ModuleBuilderToken, ModuleEnv } from './IModuleBuilder';
+import { IModuleBuilder, ModuleBuilderToken, ModuleEnv, IModuleMetaManager } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { MdInstance } from './ModuleType';
 import { ContainerPool, ContainerPoolToken } from '../utils';
@@ -14,7 +14,7 @@ import {
 } from '../runnable';
 import {
     IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder,
-    DefaultAnnotationBuilderToken, AnnotationBuilderToken, AnnotationBuilder
+    DefaultAnnotationBuilderToken, AnnotationBuilderToken, AnnotationBuilder, InjectMetadataManagerToken
 } from '../annotations';
 import { InjectedModule, InjectedModuleToken } from './InjectedModule';
 import { DIModuleInjectorToken } from './DIModuleInjector';
@@ -54,6 +54,16 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     getPools(): ContainerPool {
         return this.pools;
+    }
+
+    /**
+     * get metadata manager.
+     *
+     * @param {IContainer} [container]
+     * @memberof IModuleBuilder
+     */
+    getMetaManager(container: IContainer): IModuleMetaManager {
+        return container.getRefService(InjectMetadataManagerToken, lang.getClass(this)) as IModuleMetaManager;
     }
 
     /**
@@ -97,13 +107,13 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         let cfg = injmdl.config;
         let container = injmdl.container;
         let md = await this.build(token, injmdl, data) as MdInstance<T>;
-        let bootToken = this.getBootType(cfg);
+        let bootToken = this.getMetaManager(container).getBootToken(cfg);
         let bootInstance;
         let runable;
         if (bootToken) {
             let anBuilder = this.getAnnoBuilder(container, bootToken, cfg.annotationBuilder);
             bootInstance = await anBuilder.build(bootToken, cfg, data);
-            runable = await this.autoRun(container, bootToken ? bootToken : anBuilder.getType(cfg), cfg, bootInstance, data);
+            runable = await this.autoRun(container, bootToken, cfg, bootInstance, data);
             if (md && isFunction(md.mdOnStart)) {
                 await Promise.resolve(md.mdOnStart(bootInstance));
             }
@@ -168,7 +178,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     protected async loadViaConfig(config: ModuleConfigure, parent: IContainer): Promise<InjectedModule<T>> {
         let injmdl: InjectedModule<T>;
-        let mdtype = this.getType(config);
+        let mdtype = this.getMetaManager(parent).getToken(config);
         if (isToken(mdtype)) {
             injmdl = await this.import(mdtype, parent);
             if (injmdl instanceof InjectedModule) {
@@ -299,29 +309,5 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     protected getDefaultAnnBuilder(container: IContainer): IAnnotationBuilder<any> {
         return container.resolve(AnnotationBuilderToken);
-    }
-
-    /**
-     * get module type
-     *
-     * @protected
-     * @param {ModuleConfigure} cfg
-     * @returns {Token<T>}
-     * @memberof ModuleBuilder
-     */
-    protected getType(cfg: ModuleConfigure): Token<T> {
-        return cfg.token || cfg.type;
-    }
-
-    /**
-     * get boot type.
-     *
-     * @protected
-     * @param {ModuleConfigure} cfg
-     * @returns {Token<T>}
-     * @memberof ModuleBuilder
-     */
-    protected getBootType(cfg: ModuleConfigure): Token<T> {
-        return cfg.bootstrap;
     }
 }
