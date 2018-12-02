@@ -3,7 +3,7 @@ import {
     lang, ContainerToken, IContainer, isString
 } from '@ts-ioc/core';
 import { ModuleConfigure } from '../modules';
-import { RunnableBuilderToken, IRunnableBuilder } from './IRunnableBuilder';
+import { IRunnableBuilder } from './IRunnableBuilder';
 import { ConfigureMgrToken, ConfigureLoaderToken, IConfigureManager, DefaultConfigureToken } from './IConfigureManager';
 
 

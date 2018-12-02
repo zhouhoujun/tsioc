@@ -2,7 +2,6 @@ import { BuildHandleContext } from './BuildHandleActivity';
 import { Task, ActivityConfigure } from '@taskfr/core';
 import { CompilerToken } from './BuildHandle';
 import { NodeActivity } from './NodeActivity';
-import { BuidActivityContext } from './BuidActivityContext';
 
 
 /**

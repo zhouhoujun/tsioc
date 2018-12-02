@@ -1,7 +1,6 @@
 import { ClassMetadata } from '../core';
 import { Token, Type, Express } from '../types';
 import { IContainer } from '../IContainer';
-import { Registration } from '../Registration';
 import { RefRegistration } from '../InjectReference';
 
 /**

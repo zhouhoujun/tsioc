@@ -4,6 +4,7 @@ import {
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import { AnnoInstance } from './IAnnotation';
+import { AnnotationMetadataManagerToken } from './MetadataManager';
 
 /**
  * Annotation class builder. build class with metadata and config.
@@ -132,6 +133,11 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         return builder || this;
     }
 
+    getType(config: AnnotationConfigure<T>): Token<T> {
+        this.container.getService(AnnotationMetadataManagerToken).getToken(config);
+        return config.token || config.type;
+    }
+
     protected getRefAnnoTokens(): RefTokenType<any>[] {
         return [
             { service: AnnotationBuilderToken, isPrivate: true },
@@ -152,10 +158,6 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      */
     async buildStrategy(instance: T, config: AnnotationConfigure<T>, data?: any): Promise<T> {
         return instance;
-    }
-
-    getType(config: AnnotationConfigure<T>): Token<T> {
-        return config.token || config.type;
     }
 
     /**
