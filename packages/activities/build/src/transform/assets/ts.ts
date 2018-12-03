@@ -4,7 +4,7 @@ import * as ts from 'gulp-typescript';
 import { CtxType, OnActivityInit } from '@taskfr/core';
 import {
     AssetConfigure, AssetActivity, DestActivity, AnnotationActivity,
-    DestAcitvityToken, ITransform, TransformContext, isTransform
+    DestAcitvityToken, ITransform, TransformContext, isTransform, InjectAssetActivityToken
 } from '../core';
 import { Asset } from '../decorators';
 
@@ -34,7 +34,20 @@ export interface TsConfigure extends AssetConfigure {
     tsconfig?: CtxType<string | ObjectMap<any>>;
 }
 
-@Asset('ts')
+/**
+ * ts compile token.
+ */
+export const TsCompileToken = new InjectAssetActivityToken('ts');
+
+/**
+ * ts file compile.
+ *
+ * @export
+ * @class TsCompile
+ * @extends {AssetActivity}
+ * @implements {OnActivityInit}
+ */
+@Asset(TsCompileToken)
 export class TsCompile extends AssetActivity implements OnActivityInit {
 
     /**

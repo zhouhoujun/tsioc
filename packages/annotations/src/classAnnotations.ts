@@ -1,6 +1,8 @@
 import * as ts from 'typescript'
 import * as through from 'through2';
 
+declare let Buffer: any;
+
 /**
  * attach class Annotations before typescript ts compile.
  *

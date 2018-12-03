@@ -1,4 +1,4 @@
-import { PackModule, Pack } from '@taskfr/pack';
+import { PackModule, Pack, PackActivity } from '@taskfr/pack';
 import { TaskContainer } from '@taskfr/core';
 
 @Pack({
@@ -9,7 +9,7 @@ import { TaskContainer } from '@taskfr/core';
         ts: { dest: 'lib', annotation: true, uglify: false }
     }
 })
-export class Builder {
+export class Builder extends PackActivity {
 }
 
 TaskContainer.create(__dirname)
