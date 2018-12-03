@@ -1,8 +1,7 @@
-import { IContainer, Singleton, ProviderTypes, Token } from '@ts-ioc/core';
-import {
-    ActivityType, IActivity, UUIDToken, RandomUUIDFactory, ActivityRunnerToken, Activity, ActivityConfigure
-} from '../core';
-import { ModuleBuilder, ModuleEnv, Runnable, IService, InjectModuleBuilderToken } from '@ts-ioc/bootstrap';
+import { IContainer, Singleton, InjectModuleValidateToken, lang, Token } from '@ts-ioc/core';
+import { ActivityType, IActivity, Activity } from '../core';
+import { ModuleBuilder, ModuleEnv, Runnable, InjectModuleBuilderToken } from '@ts-ioc/bootstrap';
+import { WorkflowModuleValidateToken } from './WorkflowModuleValidate';
 
 
 /**
@@ -32,19 +31,8 @@ export class DefaultWorkflowBuilder extends ModuleBuilder<IActivity> {
         return runner;
     }
 
-    protected createUUID(container: IContainer) {
-        if (!container.has(UUIDToken)) {
-            container.register(RandomUUIDFactory);
-        }
-        return container.get(UUIDToken).generate();
-    }
-
-    protected getDefaultService(container: IContainer, ...providers: ProviderTypes[]): IService<IActivity> {
-        return container.resolve(ActivityRunnerToken, ...providers);
-    }
-
-    protected getBootType(cfg: ActivityConfigure): Token<any> {
-        return cfg.bootstrap || cfg.activity || cfg.task;
+    protected getDefaultValidateToken(): Token<any> {
+        return WorkflowModuleValidateToken;
     }
 }
 

@@ -1,5 +1,5 @@
 import { PackModule, Pack, PackActivity } from '@taskfr/pack';
-import { TaskContainer } from '@taskfr/platform-server';
+import { TaskContainer } from '@taskfr/core';
 import { Asset, CleanActivity, CleanToken, AssetActivity, TsCompile } from '@taskfr/build';
 const rename = require('gulp-rename');
 const rollup = require('gulp-rollup');
@@ -51,7 +51,7 @@ export class RollupTs extends AssetActivity {
     src: 'src',
     clean: 'lib',
     assets: {
-        ts: { dest: 'lib', annotation: true, uglify: false },
+        ts: { dest: 'lib', annotation: true, uglify: false, activity: TsCompile  },
         ts2015: {
             sequence: [
                 { src: 'src/**/*.ts', dest: 'esnext', annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },

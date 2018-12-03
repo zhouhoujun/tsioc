@@ -2,9 +2,9 @@ import 'reflect-metadata';
 import {
     IContainer, Token, ProviderTypes, lang, isFunction, isClass,
     isToken, Inject, Registration, Container,
-    AnnotationMetaAccessorToken, InjectReference, Injectable, RefTokenType
+    InjectReference, Injectable, RefTokenType, InjectModuleValidateToken, IModuleValidate
 } from '@ts-ioc/core';
-import { IModuleBuilder, ModuleBuilderToken, ModuleEnv, IModuleMetaManager } from './IModuleBuilder';
+import { IModuleBuilder, ModuleBuilderToken, ModuleEnv } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { MdInstance } from './ModuleType';
 import { ContainerPool, ContainerPoolToken } from '../utils';
@@ -14,10 +14,11 @@ import {
 } from '../runnable';
 import {
     IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder,
-    DefaultAnnotationBuilderToken, AnnotationBuilderToken, AnnotationBuilder, InjectMetadataManagerToken
+    DefaultAnnotationBuilderToken, AnnotationBuilderToken, AnnotationBuilder
 } from '../annotations';
-import { InjectedModule, InjectedModuleToken } from './InjectedModule';
+import { InjectedModule } from './InjectedModule';
 import { DIModuleInjectorToken } from './DIModuleInjector';
+import { DIModuleValidateToken } from './DIModuleValidate';
 
 /**
  * inject module load token.
@@ -56,14 +57,49 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return this.pools;
     }
 
+    private _bdVaildate: IModuleValidate;
     /**
      * get metadata manager.
      *
      * @param {IContainer} [container]
      * @memberof IModuleBuilder
      */
-    getMetaManager(container: IContainer): IModuleMetaManager {
-        return container.getRefService(InjectMetadataManagerToken, lang.getClass(this)) as IModuleMetaManager;
+    getModuleValidate(container: IContainer, token?: Token<any>): IModuleValidate {
+        let vaildate: IModuleValidate;
+        if (isToken(token)) {
+            vaildate = container.getRefService(InjectModuleValidateToken, token) as IModuleValidate;
+        }
+        if (!vaildate) {
+            if (!this._bdVaildate) {
+                this._bdVaildate = container.getRefService(InjectModuleValidateToken, lang.getClass(this), this.getDefaultValidateToken());
+            }
+            vaildate = this._bdVaildate;
+        }
+        return vaildate;
+    }
+
+    protected getDefaultValidateToken(): Token<any> {
+        return DIModuleValidateToken;
+    }
+
+    /**
+     * load module.
+     *
+     * @param {(Token<T> | ModuleConfigure)} token
+     * @param {ModuleEnv} [env]
+     * @returns {Promise<InjectedModule<T>>}
+     * @memberof ModuleBuilder
+     */
+    async load(token: Token<T> | ModuleConfigure, env?: ModuleEnv): Promise<InjectedModule<T>> {
+        if (env instanceof InjectedModule) {
+            return env;
+        }
+        let parent = await this.getParentContainer(env);
+        if (isToken(token)) {
+            return await this.loadViaToken(token, parent);
+        } else {
+            return await this.loadViaConfig(token, parent);
+        }
     }
 
     /**
@@ -107,7 +143,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         let cfg = injmdl.config;
         let container = injmdl.container;
         let md = await this.build(token, injmdl, data) as MdInstance<T>;
-        let bootToken = this.getMetaManager(container).getBootToken(cfg);
+        let bootToken = this.getModuleValidate(container, injmdl.token || injmdl.type).getBootToken(cfg, container);
         let bootInstance;
         let runable;
         if (bootToken) {
@@ -136,66 +172,20 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return this.bootstrap(token, env, data);
     }
 
-    async import(token: Token<T>, parent?: IContainer): Promise<InjectedModule<T>> {
-        if (!parent) {
-            parent = await this.getParentContainer();
-        }
-        let type = isClass(token) ? token : parent.getTokenImpl(token);
-        if (isClass(type)) {
-            let key = new InjectedModuleToken(type);
-            if (parent.hasRegister(key.toString())) {
-                return parent.get(key)
-            } else {
-                await parent.loadModule(type);
-                if (parent.has(key)) {
-                    return parent.get(key);
-                }
-            }
-        }
-        return null;
-    }
-
-    protected async load(token: Token<T> | ModuleConfigure, env?: ModuleEnv): Promise<InjectedModule<T>> {
-        if (env instanceof InjectedModule) {
-            return env;
-        }
-        let parent = await this.getParentContainer(env);
-        if (isToken(token)) {
-            return await this.loadViaToken(token, parent);
-        } else {
-            return await this.loadViaConfig(token, parent);
-        }
-    }
-
     protected async loadViaToken(token: Token<T>, parent: IContainer): Promise<InjectedModule<T>> {
-        let injmdl: InjectedModule<T> = await this.import(token, parent);
+        let vaildate = this.getModuleValidate(parent, token);
+        let mdInjector = parent.resolve(DIModuleInjectorToken, { provide: DIModuleValidateToken, useValue: vaildate });
+        let injmdl: InjectedModule<T> = await mdInjector.import(parent, token);
         if (!injmdl) {
-            let cfg = parent.get(AnnotationMetaAccessorToken).getMetadata(token, parent);
+            let cfg = vaildate.getMetaConfig(token, parent);
             injmdl = new InjectedModule(token, cfg, parent);
         }
         return injmdl;
     }
 
     protected async loadViaConfig(config: ModuleConfigure, parent: IContainer): Promise<InjectedModule<T>> {
-        let injmdl: InjectedModule<T>;
-        let mdtype = this.getMetaManager(parent).getToken(config);
-        if (isToken(mdtype)) {
-            injmdl = await this.import(mdtype, parent);
-            if (injmdl instanceof InjectedModule) {
-                let container = injmdl.container;
-                let injector = container.get(DIModuleInjectorToken);
-                await injector.importByConfig(container, config);
-                injmdl.config = lang.assign({}, injmdl.config, config);
-            }
-        } else {
-            mdtype = null;
-        }
-        if (!injmdl) {
-            let injector = parent.get(DIModuleInjectorToken);
-            await injector.importByConfig(parent, config)
-            injmdl = new InjectedModule(mdtype, config, parent);
-        }
-        return injmdl;
+        let mdInjector = parent.resolve(DIModuleInjectorToken, { provide: DIModuleValidateToken, useValue: this.getModuleValidate(parent) });
+        return await mdInjector.importByConfig(parent, config);
     }
 
     protected async getParentContainer(env?: ModuleEnv) {
@@ -251,7 +241,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
                     ServiceToken,
                     ...providers);
             }
-            console.log('has runner:', !!instance, runner);
             if (runner) {
                 await runner.run(data);
                 return runner;

@@ -167,7 +167,7 @@ export function isToken(target: any): target is Token<any> {
 }
 
 /**
- * is target promise or not.
+ * is target promise or not. now check is es6 Promise only.
  *
  * @export
  * @param {*} target
@@ -177,9 +177,14 @@ export function isPromise(target: any): target is Promise<any> {
     if (!target) {
         return false;
     }
-    if (isFunction(target.then) && isFunction(target.catch)) {
+    let type = target.constructor || target.prototype.constructor;
+    if (type && type.name === 'Promise') {
         return true;
     }
+    //  // Promise like
+    // if (isFunction(target.then) && isFunction(target.catch)) {
+    //     return true;
+    // }
     return false;
 }
 
@@ -194,7 +199,8 @@ export function isObservable(target: any): boolean {
     if (!target && !isObject(target)) {
         return false;
     }
-    if (isFunction(target.subscribe) && isFunction(target.toPromise)) {
+    let type = target.constructor || target.prototype.constructor;
+    if (type && type.name === 'Observable') {
         return true;
     }
     return false;

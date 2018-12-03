@@ -1,6 +1,6 @@
 import { IModuleInjectorChain } from './IModuleInjectorChain';
 import { IModuleInjector, InjectorResult } from './IModuleInjector';
-import { SyncModuleInjector, ModuleInjector } from './ModuleInjector';
+import { ModuleInjector } from './ModuleInjector';
 import { Type } from '../types';
 import { IContainer } from '../IContainer';
 import { PromiseUtil } from '../utils';
@@ -38,7 +38,7 @@ export class ModuleInjectorChain implements IModuleInjectorChain {
     }
 
     protected isInjector(injector: IModuleInjector) {
-        return injector instanceof ModuleInjector || injector instanceof SyncModuleInjector;
+        return injector instanceof ModuleInjector;
     }
 
     async inject(container: IContainer, modules: Type<any>[]): Promise<Type<any>[]> {
@@ -65,8 +65,8 @@ export class ModuleInjectorChain implements IModuleInjectorChain {
             if (completed) {
                 return false;
             }
-            if (jtor instanceof SyncModuleInjector) {
-                let result = jtor.inject(container, modules);
+            if (jtor instanceof ModuleInjector) {
+                let result = jtor.syncInject(container, modules);
                 types = types.concat(result.injected);
                 completed = (!result.next || result.next.length < 1);
             }

@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { ITaskContainer, SequenceActivity, ActivityRunner } from '../src';
 
 import { SimpleTask, SimpleCTask, TaskModuleTest } from './simples.task';
-import { TaskContainer } from '@taskfr/platform-server';
+import { TaskContainer } from '@taskfr/core';
 
 describe('auto register with build', () => {
 
@@ -52,13 +52,13 @@ describe('auto register with build', () => {
                 }
             ]
         });
-        // console.log('comptest:' , result.activity, result.configure);
+        console.log('configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue);
         expect(result.resultValue).eq('component task');
     });
 
     it('should bootstrap with meta IConfigure.', async () => {
         let result = await container.bootstrap(TaskModuleTest);
-        // console.log('comptest:' , result.activity, result.configure);
+        console.log('meta configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue)
         expect(result.resultValue).eq('component task');
     });
 

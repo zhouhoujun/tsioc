@@ -1,4 +1,4 @@
-import { DefaultApplicationBuilder } from '@ts-ioc/bootstrap';
+import { ApplicationBuilder } from '@ts-ioc/bootstrap';
 import { UnitModule } from './UnitModule';
 import { LoadType } from '@ts-ioc/core';
 
@@ -10,7 +10,7 @@ import { LoadType } from '@ts-ioc/core';
  * @returns {Promise<any>}
  */
 export async function unitTest(options: LoadType): Promise<any> {
-   let builder = new DefaultApplicationBuilder('.');
+   let builder = new ApplicationBuilder('.');
    builder.use(UnitModule)
       .use(options);
    // return builder.bootstrap();

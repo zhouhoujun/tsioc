@@ -1,5 +1,4 @@
 import { IContainer, Token, IAnnotationMetadata, RefRegistration } from '@ts-ioc/core';
-import { IMetadataManager } from './MetadataManager';
 
 
 /**
@@ -45,14 +44,6 @@ export interface IAnnotationBuilder<T> {
      * @memberof IBootstrapBuilder
      */
     container: IContainer;
-
-    /**
-     * get metadata manager.
-     *
-     * @returns {IMetadataManager}
-     * @memberof IAnnotationBuilder
-     */
-    getMetaManager(): IMetadataManager;
 
     /**
      * build token type via config.

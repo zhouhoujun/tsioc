@@ -1,9 +1,8 @@
-import { Registration, IContainer, Token, RefRegistration } from '@ts-ioc/core';
-import { ModuleConfig, ModuleConfigure } from './ModuleConfigure';
+import { IContainer, Token, RefRegistration } from '@ts-ioc/core';
+import { ModuleConfig } from './ModuleConfigure';
 import { ContainerPool } from '../utils';
 import { Runnable } from '../runnable';
 import { InjectedModule } from './InjectedModule';
-import { IMetadataManager, InjectMetadataManagerToken } from '../annotations';
 
 const moduleBuilderDesc = 'DI_ModuleBuilder';
 
@@ -26,19 +25,6 @@ export class InjectModuleBuilderToken<T> extends RefRegistration<IModuleBuilder<
  */
 export type ModuleEnv = IContainer | InjectedModule<any>;
 
-export interface IModuleMetaManager extends IMetadataManager {
-
-    /**
-     * get boot token.
-     *
-     * @param {ModuleConfigure} cfg
-     * @returns {Token<any>}
-     * @memberof IModuleMetaManagerToken
-     */
-    getBootToken(cfg: ModuleConfigure): Token<any>
-}
-
-
 
 
 /**
@@ -59,22 +45,14 @@ export interface IModuleBuilder<T> {
     getPools(): ContainerPool;
 
     /**
-     * get metadata manager.
+     * load module.
      *
-     * @param {IContainer} [container]
-     * @memberof IModuleBuilder
-     */
-    getMetaManager(container?: IContainer): IModuleMetaManager;
-
-    /**
-     * import module.
-     *
-     * @param {Token<T>} module
-     * @param {IContainer} [parent]
+     * @param {(Token<T> | ModuleConfig<T>)} token
+     * @param {ModuleEnv} [env]
      * @returns {Promise<InjectedModule<T>>}
      * @memberof IModuleBuilder
      */
-    import(module: Token<T>, parent?: IContainer): Promise<InjectedModule<T>>;
+    load(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): Promise<InjectedModule<T>>;
 
     /**
      * build module as ioc container.
@@ -126,7 +104,3 @@ export const ModuleBuilderToken = new InjectModuleBuilderToken<any>(Object);
 export interface AnyModuleBuilder extends IModuleBuilder<any> {
 }
 
-/**
- *  module metadata manager token.
- */
-export const ModuleMetaManagerToken = new InjectMetadataManagerToken<IModuleMetaManager>(ModuleBuilderToken);

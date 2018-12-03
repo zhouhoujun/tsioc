@@ -138,7 +138,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         return this;
     }
 
-    protected async load(token: Token<T> | ModuleConfigure, env?: ModuleEnv): Promise<InjectedModule<T>> {
+    async load(token: Token<T> | ModuleConfigure, env?: ModuleEnv): Promise<InjectedModule<T>> {
         await this.initRootContainer();
         return await super.load(token, env);
     }

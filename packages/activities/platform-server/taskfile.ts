@@ -1,5 +1,5 @@
 import { PackModule, Pack, PackActivity } from '@taskfr/pack';
-import { TaskContainer } from '@taskfr/platform-server';
+import { TaskContainer } from '@taskfr/core';
 import { CleanToken, AssetActivity, Asset, TsCompile } from '@taskfr/build';
 
 const resolve = require('rollup-plugin-node-resolve');

@@ -1,4 +1,4 @@
-import { InjectToken, Registration, Token, IContainer, ObjectMap, Type, RefRegistration } from '@ts-ioc/core';
+import { InjectToken, Token, IContainer, ObjectMap, Type, RefRegistration } from '@ts-ioc/core';
 import { IActivity } from './IActivity';
 import { ActivityConfigure, Expression } from './ActivityConfigure';
 import { ActivityBuilder } from './ActivityBuilder';

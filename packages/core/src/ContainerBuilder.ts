@@ -4,8 +4,8 @@ import { Type, Modules, LoadType, Express } from './types';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import {
     IModuleLoader, ModuleLoaderToken, DefaultModuleLoader, IModuleInjectorChain,
-    ModuleInjectorChainToken, SyncModuleInjector, IocExtModuleValidateToken,
-    SyncModuleInjectorToken, ModuleInjector, IocExtModuleValidate, ModuleInjectorChain
+    ModuleInjectorChainToken, IocExtModuleValidateToken, ModuleInjector, IocExtModuleValidate,
+    ModuleInjectorChain, ModuelValidate, ModuleValidateToken, ModuleInjectorToken
 } from './injectors';
 import { PromiseUtil } from './utils';
 
@@ -85,9 +85,9 @@ export class ContainerBuilder implements IContainerBuilder {
         return container;
     }
 
-    syncLoadModule(container: IContainer, ...modules: Modules[]) {
+    syncLoadModule(container: IContainer, ...modules: Modules[]): Type<any>[] {
         let regModules = this.loader.getTypes(modules);
-        let injTypes = [];
+        let injTypes: Type<any>[] = [];
         if (regModules && regModules.length) {
             let injChain = this.getInjectorChain(container);
             regModules.forEach(typs => {
@@ -100,16 +100,15 @@ export class ContainerBuilder implements IContainerBuilder {
 
     getInjectorChain(container: IContainer): IModuleInjectorChain {
         if (!container.has(ModuleInjectorChainToken)) {
-            container.register(SyncModuleInjector)
-                .register(ModuleInjector)
+            container.register(ModuleInjector)
+                .bindProvider(ModuleValidateToken, new ModuelValidate())
                 .bindProvider(IocExtModuleValidateToken, new IocExtModuleValidate())
-                .bindProvider(ModuleInjectorChainToken, new ModuleInjectorChain())
+                .bindProvider(ModuleInjectorChainToken,
+                    new ModuleInjectorChain()
+                        .next(container.resolve(ModuleInjectorToken, { provide: ModuleValidateToken, useValue: container.get(IocExtModuleValidateToken) }, { skipNext: true }))
+                        .next(container.resolve(ModuleInjectorToken))
+                );
         }
-        let currChain = container.get(ModuleInjectorChainToken);
-        currChain
-                .next(container.resolve(SyncModuleInjectorToken, { validate: container.get(IocExtModuleValidateToken), skipNext: true }))
-                .next(container.resolve(SyncModuleInjectorToken));
-
-        return currChain;
+        return container.get(ModuleInjectorChainToken);
     }
 }

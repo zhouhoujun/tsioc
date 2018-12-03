@@ -1,21 +1,30 @@
-import { Singleton, InjectModuleValidateToken, BaseModuelValidate, IModuleValidate } from '@ts-ioc/core';
+import { Singleton, InjectModuleValidateToken, ModuelValidate, IModuleValidate, Token, IContainer } from '@ts-ioc/core';
 import { DIModule } from '../decorators';
+import { ModuleConfigure } from './ModuleConfigure';
+
+
 
 /**
- * DIModuel Validate Token
+ * DIModule Validate Token
  */
-export const DIModuelValidateToken = new InjectModuleValidateToken<IModuleValidate>(DIModule.toString());
+export const DIModuleValidateToken = new InjectModuleValidateToken<IModuleValidate>(DIModule.toString());
+
 
 /**
  * DIModuel Validate
  *
  * @export
  * @class DIModuelValidate
- * @extends {BaseModuelValidate}
+ * @extends {ModuelValidate}
  */
-@Singleton(DIModuelValidateToken)
-export class DIModuelValidate extends BaseModuelValidate {
-    getDecorator() {
+@Singleton(DIModuleValidateToken)
+export class DIModuelValidate extends ModuelValidate {
+    getDecorator(): string | string[] {
         return DIModule.toString();
     }
+
+    protected getBootTokenInConfig(cfg: ModuleConfigure) {
+        return cfg.bootstrap;
+    }
+
 }

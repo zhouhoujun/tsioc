@@ -1,10 +1,8 @@
-import { IContainer, IContainerBuilder, Injectable } from '@ts-ioc/core';
-import { AppConfigure, DefaultApplicationBuilder, IApplicationBuilder, AnyApplicationBuilder, IConfigureLoader, ConfigureLoaderToken } from '@ts-ioc/bootstrap';
+import { IContainer, Injectable } from '@ts-ioc/core';
+import { AppConfigure, ApplicationBuilder, IApplicationBuilder, AnyApplicationBuilder, IConfigureLoader, ConfigureLoaderToken } from '@ts-ioc/bootstrap';
 import { existsSync } from 'fs';
 import * as path from 'path';
-import { ServerContainerBuilder } from '@ts-ioc/platform-server';
-
-const processRoot = path.join(path.dirname(process.cwd()), path.basename(process.cwd()));
+import { ServerModule } from '@ts-ioc/platform-server';
 
 export interface ServerBuildExts {
     /**
@@ -14,13 +12,6 @@ export interface ServerBuildExts {
      * @memberof IPlatformServer
      */
     baseURL: string;
-    /**
-     * load module from dir
-     *
-     * @param {...string[]} matchPaths
-     * @memberof ServerBuildExts
-     */
-    loadDir(...matchPaths: string[]): this;
 }
 
 /**
@@ -83,7 +74,7 @@ export class ConfigureFileLoader implements IConfigureLoader<AppConfigure> {
  * @returns {IApplicationBuilderServer<T>}
  */
 export function serverApp<T>(baseURL?: string): IApplicationBuilderServer<T> {
-    return new ApplicationBuilder<T>(baseURL);
+    return new ServerApplicationBuilder<T>(baseURL);
 }
 
 /**
@@ -92,13 +83,11 @@ export function serverApp<T>(baseURL?: string): IApplicationBuilderServer<T> {
  * @export
  * @class Bootstrap
  */
-export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implements IApplicationBuilderServer<T> {
+export class ServerApplicationBuilder<T> extends ApplicationBuilder<T> implements IApplicationBuilderServer<T> {
 
-
-    private dirMatchs: string[][];
     constructor(public baseURL: string) {
         super(baseURL);
-        this.dirMatchs = [];
+        this.use(ServerModule, ConfigureFileLoader)
     }
 
     /**
@@ -110,33 +99,7 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
      * @memberof ApplicationBuilder
      */
     static create(rootdir: string): AnyApplicationBuilderServer {
-        return new ApplicationBuilder<any>(rootdir || processRoot);
-    }
-
-    /**
-     * load module from dirs.
-     *
-     * @param {...string[]} matchPaths
-     * @returns {this}
-     * @memberof PlatformServer
-     */
-    loadDir(...matchPaths: string[]): this {
-        this.dirMatchs.push(matchPaths);
-        return this;
-    }
-
-    protected async registerByConfigure(container: IContainer, config: AppConfigure): Promise<void> {
-        await super.registerByConfigure(container, config);
-        await Promise.all(this.dirMatchs.map(dirs => {
-            return container.loadModule(container, {
-                basePath: config.baseURL,
-                files: dirs
-            });
-        }));
-    }
-
-    protected createContainerBuilder(): IContainerBuilder {
-        return new ServerContainerBuilder();
+        return new ServerApplicationBuilder<any>(rootdir);
     }
 
 }

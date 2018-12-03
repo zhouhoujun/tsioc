@@ -1,6 +1,6 @@
-import { IModuleLoader, ContainerBuilder } from '@ts-ioc/core';
+import { IModuleLoader, ContainerBuilder, IContainer } from '@ts-ioc/core';
 import { BrowserModuleLoader } from './BrowserModuleLoader';
-import 'core-js';
+import { BrowserModule } from './BrowserModule';
 
 /**
  * container builder for browser.
@@ -12,5 +12,11 @@ import 'core-js';
 export class BrowserContainerBuilder extends ContainerBuilder {
     constructor(loader?: IModuleLoader) {
         super(loader || new BrowserModuleLoader())
+    }
+
+    create(): IContainer {
+        let container = super.create();
+        container.use(BrowserModule);
+        return container;
     }
 }

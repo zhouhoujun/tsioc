@@ -28,15 +28,25 @@ export interface IModuleInjector {
      * @returns {Type<any>[]}
      * @memberof IModuleInjector
      */
-    inject(container: IContainer, modules: Type<any>[]): any;
+    inject(container: IContainer, modules: Type<any>[]): Promise<InjectorResult>;
+
+    /**
+     * sync inject module.
+     *
+     * @param {IContainer} container
+     * @param {Type<any>[]} modules
+     * @returns {InjectorResult}
+     * @memberof IModuleInjector
+     */
+    syncInject(container: IContainer, modules: Type<any>[]): InjectorResult;
 }
 
 /**
  *  inject module injector token.
  */
 export class InjectModuleInjectorToken<T extends IModuleInjector> extends Registration<T> {
-    constructor(desc: string, sync = false) {
-        super(sync ? 'DI_SyncModuleInjector' : 'DI_ModuleInjector', desc)
+    constructor(desc: string) {
+        super('DI_ModuleInjector', desc)
     }
 }
 
@@ -44,8 +54,3 @@ export class InjectModuleInjectorToken<T extends IModuleInjector> extends Regist
  * async module injector token.
  */
 export const ModuleInjectorToken = new InjectModuleInjectorToken<IModuleInjector>('');
-
-/**
- * Sync module injector token.
- */
-export const SyncModuleInjectorToken = new InjectModuleInjectorToken<IModuleInjector>('', true);

@@ -2,7 +2,7 @@
 import 'mocha';
 import { expect } from 'chai';
 import { ModuleA, ModuleB, ClassSevice } from './demo';
-import { DefaultApplicationBuilder, AnyApplicationBuilder } from '../src';
+import { ApplicationBuilder, AnyApplicationBuilder } from '../src';
 // import { AopModule } from '@ts-ioc/aop';
 // import { LogModule } from '@ts-ioc/logs';
 
@@ -11,12 +11,12 @@ describe('di module', () => {
 
     let builder: AnyApplicationBuilder;
     beforeEach(async () => {
-        builder = DefaultApplicationBuilder.create();
+        builder = ApplicationBuilder.create();
         // builder.use(AopModule).use(LogModule);
     });
 
     it('should has no bootstrap', async () => {
-        let md = await builder.import(ModuleA);
+        let md = await builder.load(ModuleA);
         expect(md).to.not.null
         expect(md.config.bootstrap).to.undefined;
         expect(md.container).to.not.undefined;
@@ -25,7 +25,7 @@ describe('di module', () => {
     });
 
     it('should has bootstrap and import provider', async () => {
-        let md = await builder.import(ModuleB);
+        let md = await builder.load(ModuleB);
         expect(md).to.not.null
         expect(md.config.bootstrap).to.eq(ClassSevice);
         expect(md.container).to.not.undefined;

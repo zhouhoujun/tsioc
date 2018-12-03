@@ -1,10 +1,9 @@
 import {
-    Token, isToken, IContainer, isClass, Inject, ContainerToken, Type, ProviderTypes,
-    lang, isFunction, Injectable, AnnotationMetaAccessorToken, Container, InjectReference, RefTokenType
+    Token, isToken, IContainer, isClass, Inject, ContainerToken, ProviderTypes,
+    lang, isFunction, Injectable, Container, InjectReference, RefTokenType, IModuleValidate, InjectModuleValidateToken, IocExtModuleValidateToken, ModuleValidateToken
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import { AnnoInstance } from './IAnnotation';
-import { AnnotationMetadataManagerToken, IMetadataManager, InjectMetadataManagerToken } from './MetadataManager';
 
 /**
  * Annotation class builder. build class with metadata and config.
@@ -29,12 +28,23 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
     }
 
-    _metaMgr: IMetadataManager;
-    getMetaManager(): IMetadataManager {
-        if (!this._metaMgr) {
-            this._metaMgr = this.container.getRefService(InjectMetadataManagerToken, lang.getClass(this));
+    private _bdVaildate: IModuleValidate;
+    getModuleValidate(token?: Token<any>): IModuleValidate {
+        let vaildate: IModuleValidate;
+        if (isToken(token)) {
+            vaildate = this.container.getRefService(InjectModuleValidateToken, token) as IModuleValidate;
         }
-        return this._metaMgr;
+        if (!vaildate) {
+            if (!this._bdVaildate) {
+                this._bdVaildate = this.container.getRefService(InjectModuleValidateToken, lang.getClass(this), this.getDefaultValidateToken());
+            }
+            vaildate = this._bdVaildate;
+        }
+        return vaildate;
+    }
+
+    protected getDefaultValidateToken(): Token<any> {
+        return ModuleValidateToken;
     }
 
     /**
@@ -50,7 +60,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         if (isClass(token) && !this.container.hasRegister(token)) {
             this.container.register(token);
         }
-        config = this.getMetaManager().getMetaConfig(token, config);
+        config = this.getModuleValidate(token).getMetaConfig(token, this.container, config);
         let builder = this.getBuilder(token, config);
         if (!this.isEqual(builder)) {
             return await builder.build(token, config, data);
@@ -89,7 +99,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             }
             return await this.build(token, null, data);
         } else {
-            token = this.getMetaManager().getToken(config);
+            token = this.getModuleValidate().getToken(config, this.container);
             if (excludeTokens.indexOf(token) >= 0) {
                 token = null;
             }

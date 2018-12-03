@@ -27,7 +27,7 @@ export const ApplicationEvents = RunnableEvents;
  * @extends {ModuleBuilder}
  * @template T
  */
-export class DefaultApplicationBuilder<T> extends RunnableBuilder<T> implements IApplicationBuilder<T>, IEvents {
+export class ApplicationBuilder<T> extends RunnableBuilder<T> implements IApplicationBuilder<T>, IEvents {
 
     protected configs: (string | AppConfigure)[];
 
@@ -38,7 +38,7 @@ export class DefaultApplicationBuilder<T> extends RunnableBuilder<T> implements 
     }
 
     static create(baseURL?: string): AnyApplicationBuilder {
-        return new DefaultApplicationBuilder<any>(baseURL);
+        return new ApplicationBuilder<any>(baseURL);
     }
 
     /**
@@ -56,7 +56,7 @@ export class DefaultApplicationBuilder<T> extends RunnableBuilder<T> implements 
         return this;
     }
 
-    protected async load(token: Token<T> | AppConfigure, env?: ModuleEnv): Promise<InjectedModule<T>> {
+    async load(token: Token<T> | AppConfigure, env?: ModuleEnv): Promise<InjectedModule<T>> {
         return await super.load(token, env);
     }
 

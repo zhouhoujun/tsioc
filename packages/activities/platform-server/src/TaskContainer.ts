@@ -1,8 +1,9 @@
-import { ITaskContainer, DefaultTaskContainer, Active, IActivityRunner } from '@taskfr/core';
+import { ITaskContainer, TaskContainer, Active, IActivityRunner } from '@taskfr/core';
 import { LoadType } from '@ts-ioc/core';
 import { TaskLogAspect, RunnerLogAspect } from './aop';
-import { ApplicationBuilder } from '@ts-ioc/platform-server/bootstrap';
+import { ApplicationBuilder } from '@ts-ioc/bootstrap';
 import { IApplicationBuilder } from '@ts-ioc/bootstrap';
+import { ServerModule } from '@ts-ioc/platform-server';
 import * as path from 'path';
 import chalk from 'chalk';
 const timestamp = require('time-stamp');
@@ -13,13 +14,14 @@ const processRoot = path.join(path.dirname(process.cwd()), path.basename(process
  *
  * @export
  * @class TaskContainer
- * @extends {DefaultTaskContainer}
+ * @extends {TaskContainer}
  */
-export class TaskContainer extends DefaultTaskContainer implements ITaskContainer {
+export class ServerTaskContainer extends TaskContainer implements ITaskContainer {
 
     constructor(baseURL?: string) {
         super(baseURL);
-        this.use(TaskLogAspect)
+        this.use(ServerModule)
+            .use(TaskLogAspect)
             .use(RunnerLogAspect);
     }
 

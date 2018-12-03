@@ -5,7 +5,7 @@ import {
 } from './core';
 import { ITaskContainer } from './ITaskContainer';
 import {
-    IApplicationBuilder, DefaultApplicationBuilder, AppConfigure, DefaultAnnotationBuilderToken,
+    IApplicationBuilder, ApplicationBuilder, AppConfigure, DefaultAnnotationBuilderToken,
     ServiceToken, ModuleBuilderToken, ApplicationEvents
 } from '@ts-ioc/bootstrap';
 import { Aspect, AopModule } from '@ts-ioc/aop';
@@ -21,9 +21,26 @@ import { WorkflowBuilderToken, WorkflowModuleInjectorToken, WorkflowModuleValida
  * @export
  * @class DefaultTaskContainer
  */
-export class DefaultTaskContainer implements ITaskContainer {
+export class TaskContainer implements ITaskContainer {
 
     constructor(public baseURL: string) {
+    }
+
+    /**
+     * create task container.
+     *
+     * @static
+     * @param {string} root
+     * @param {...ModuleType[]} modules
+     * @returns {ITaskContainer}
+     * @memberof TaskContainer
+     */
+    static create(root: string, ...modules: LoadType[]): ITaskContainer {
+        let taskContainer = new TaskContainer(root);
+        if (modules) {
+            taskContainer.use(...modules);
+        }
+        return taskContainer;
     }
 
     protected container: IContainer;
@@ -59,7 +76,7 @@ export class DefaultTaskContainer implements ITaskContainer {
     }
 
     protected createAppBuilder(): IApplicationBuilder<any> {
-        return new DefaultApplicationBuilder(this.baseURL);
+        return new ApplicationBuilder(this.baseURL);
     }
 
     /**

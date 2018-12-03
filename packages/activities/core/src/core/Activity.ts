@@ -15,7 +15,7 @@ import { IActivityContext, InputDataToken, InjectActivityContextToken } from './
  * @implements {IActivity}
  * @implements {OnActivityInit}
  */
-@Task
+@Task(ActivityToken)
 export abstract class Activity implements IActivity, OnActivityInit {
 
     /**
@@ -104,7 +104,9 @@ export abstract class Activity implements IActivity, OnActivityInit {
      */
     async run(ctx?: IActivityContext): Promise<IActivityContext> {
         this.verifyCtx(ctx);
-        await this.execute();
+        if (this.execute) {
+            await this.execute();
+        }
         return this.context;
     }
 
@@ -191,21 +193,4 @@ export abstract class Activity implements IActivity, OnActivityInit {
         return this.context.getBuilder().buildByConfig(config, this.id) as Promise<T>;
     }
 
-}
-
-
-
-/**
- * null activity. do nothing.
- *
- * @export
- * @class NullActivity
- * @extends {Activity}
- */
-@Task(ActivityToken)
-export class NullActivity extends Activity {
-
-    protected async execute(): Promise<void> {
-
-    }
 }

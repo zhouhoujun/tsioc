@@ -1,5 +1,6 @@
-import { IModuleLoader, ContainerBuilder } from '@ts-ioc/core';
+import { IModuleLoader, ContainerBuilder, IContainer } from '@ts-ioc/core';
 import { NodeModuleLoader } from './NodeModuleLoader';
+import { ServerModule } from './ServerModule';
 
 /**
  * container builder.
@@ -11,6 +12,12 @@ import { NodeModuleLoader } from './NodeModuleLoader';
 export class ServerContainerBuilder extends ContainerBuilder {
 
     constructor(loader?: IModuleLoader) {
-        super(loader || new NodeModuleLoader())
+        super(loader || new NodeModuleLoader());
+    }
+
+    create(): IContainer {
+        let container = super.create();
+        container.use(ServerModule);
+        return container;
     }
 }

@@ -1,6 +1,6 @@
-import { isUndefined, IContainerBuilder } from '@ts-ioc/core';
-import { IApplicationBuilder, DefaultApplicationBuilder, AnyApplicationBuilder, IApplication } from '@ts-ioc/bootstrap';
-import { BrowserContainerBuilder } from '@ts-ioc/platform-browser';
+import { isUndefined, } from '@ts-ioc/core';
+import { IApplicationBuilder, ApplicationBuilder, AnyApplicationBuilder } from '@ts-ioc/bootstrap';
+import { BrowserModule } from '@ts-ioc/platform-browser';
 declare let System: any;
 
 export interface IApplicationBuilderBrowser<T> extends IApplicationBuilder<T> {
@@ -29,13 +29,14 @@ export function browserApp<T>(baseURL?: string): IApplicationBuilderBrowser<T> {
  *
  * @export
  * @class ApplicationBuilder
- * @extends {DefaultApplicationBuilder}
+ * @extends {ApplicationBuilder}
  * @implements {IBroserApplicationBuilder<T>}
  */
-export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implements IApplicationBuilderBrowser<T> {
+export class BrowserApplicationBuilder<T> extends ApplicationBuilder<T> implements IApplicationBuilderBrowser<T> {
 
     constructor(baseURL?: string) {
         super(baseURL || !isUndefined(System) ? System.baseURL : location.href);
+        this.use(BrowserModule);
     }
 
     /**
@@ -47,10 +48,6 @@ export class ApplicationBuilder<T> extends DefaultApplicationBuilder<T> implemen
      * @memberof ApplicationBuilder
      */
     static create(baseURL?: string): AnyApplicationBuilderBrowser {
-        return new ApplicationBuilder<any>(baseURL);
-    }
-
-    protected createContainerBuilder(): IContainerBuilder {
-        return new BrowserContainerBuilder();
+        return new BrowserApplicationBuilder<any>(baseURL);
     }
 }

@@ -1,7 +1,7 @@
-import { ITaskContainer, DefaultTaskContainer } from '@taskfr/core';
+import { ITaskContainer, TaskContainer } from '@taskfr/core';
 import { LoadType } from '@ts-ioc/core';
 import { TaskLogAspect, RunnerLogAspect } from './aop/index';
-import { ApplicationBuilder } from '@ts-ioc/platform-browser/bootstrap';
+import { ApplicationBuilder } from '@ts-ioc/bootstrap';
 import { IApplicationBuilder } from '@ts-ioc/bootstrap';
 
 /**
@@ -9,9 +9,9 @@ import { IApplicationBuilder } from '@ts-ioc/bootstrap';
  *
  * @export
  * @class TaskContainer
- * @extends {DefaultTaskContainer}
+ * @extends {TaskContainer}
  */
-export class TaskContainer extends DefaultTaskContainer implements ITaskContainer {
+export class BrowserTaskContainer extends TaskContainer implements ITaskContainer {
 
     constructor(baseURL: string) {
         super(baseURL);

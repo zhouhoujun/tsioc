@@ -1,8 +1,7 @@
 import { Type, Token } from '../types';
-import { InjectToken } from '../InjectToken';
-import { Registration } from '../Registration';
 import { IAnnotationMetadata, IMetaAccessor } from '../core';
 import { IContainer } from '../IContainer';
+import { RefRegistration } from '../InjectReference';
 
 /**
  * module validate.
@@ -21,6 +20,25 @@ export interface IModuleValidate {
     validate(type: Type<any>): boolean;
 
     /**
+     * get token of metadata.
+     *
+     * @param {AnnotationConfigure<any>} config
+     * @returns {Token<any>}
+     * @memberof IMetadataManager
+     */
+    getToken(config: IAnnotationMetadata<any>, container?: IContainer): Token<any>;
+
+    /**
+     * get boot token of module config.
+     *
+     * @param {IAnnotationMetadata<any>} cfg
+     * @param {IContainer} [container]
+     * @returns {Token<any>}
+     * @memberof IModuleValidate
+     */
+    getBootToken(cfg: IAnnotationMetadata<any>, container?: IContainer): Token<any>
+
+    /**
      * get module metadata config.
      *
      * @param {Token<any>} token
@@ -28,7 +46,7 @@ export interface IModuleValidate {
      * @returns {ClassMetadata}
      * @memberof IModuleValidate
      */
-    getMetaConfig(token: Token<any>, container: IContainer): IAnnotationMetadata<any>;
+    getMetaConfig(token: Token<any>, container: IContainer, extConfig?: IAnnotationMetadata<any>): IAnnotationMetadata<any>;
 
     /**
      * get meta accessor.
@@ -39,7 +57,7 @@ export interface IModuleValidate {
      */
     getMetaAccessor(container: IContainer): IMetaAccessor<any>;
     /**
-     * decorator of the module.
+     * get special decorators of the module.
      *
      * @returns {(string | string[])}
      * @memberof IModuleValidate
@@ -47,21 +65,22 @@ export interface IModuleValidate {
     getDecorator(): string | string[];
 }
 
+
 /**
- * inject module validate token.
+ * inject module validate token for decorator or class.
  *
  * @export
- * @class InjectModuleValidateToken
- * @extends {Registration<T>}
+ * @class InjectMetadataManagerToken
+ * @extends {RefRegistration<IMetadataManager>}
  * @template T
  */
-export class InjectModuleValidateToken<T extends IModuleValidate> extends Registration<T> {
-    constructor(desc: string) {
-        super('DI_ModuleValidate', desc)
+export class InjectModuleValidateToken<T extends IModuleValidate> extends RefRegistration<T> {
+    constructor(type: Token<any>) {
+        super(type, 'ModuleValidate');
     }
 }
 
 /**
  * Module Validate Token
  */
-export const ModuleValidateToken = new InjectToken<IModuleValidate>('DI_ModuleValidate');
+export const ModuleValidateToken = new InjectModuleValidateToken<IModuleValidate>(Object);

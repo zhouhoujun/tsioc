@@ -2,6 +2,7 @@ export * from './IActivity';
 
 export * from './IActivityBuilder';
 export * from './ActivityBuilder';
+export * from './ActivityVaildate';
 export * from './Translator';
 export * from './ActivityConfigure';
 

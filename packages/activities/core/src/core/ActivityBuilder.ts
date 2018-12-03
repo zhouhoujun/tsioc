@@ -1,8 +1,9 @@
 import { ActivityBuilderToken, IActivityBuilder } from './IActivityBuilder';
-import { isFunction, isString, Token, Express, isToken, Injectable, lang } from '@ts-ioc/core';
+import { isFunction, isString, Token, Express, isToken, Injectable } from '@ts-ioc/core';
 import { AnnotationBuilder } from '@ts-ioc/bootstrap';
-import { IActivity, ActivityInstance, InjectAcitityToken } from './IActivity';
+import { IActivity, ActivityInstance } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
+import { ActivityVaildateToken } from './ActivityVaildate';
 
 
 /**
@@ -51,9 +52,6 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
      * @memberof ActivityBuilder
      */
     async createInstance(token: Token<IActivity>, config: ActivityConfigure, data: any): Promise<IActivity> {
-        if (isString(token)) {
-            token = this.traslateStrToken(token);
-        }
 
         let instance = await super.createInstance(token, config, data) as ActivityInstance;
         if (!instance) {
@@ -74,26 +72,15 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
         return activity;
     }
 
-    getType(config: ActivityConfigure): Token<IActivity> {
-        let token = config.activity || config.task || config.token || config.type;
-        if (isString(token)) {
-            token = this.traslateStrToken(token);
-        }
-        return token;
-    }
-
     protected resolveToken(token: Token<IActivity>): IActivity {
         let activity = this.container.resolve(token);
         return activity;
     }
 
-    protected traslateStrToken(token: string): Token<IActivity> {
-        let taskToken = new InjectAcitityToken(token);
-        if (this.container.has(taskToken)) {
-            return taskToken;
-        }
-        return token;
+    protected getDefaultValidateToken() {
+        return ActivityVaildateToken;
     }
+
 
     /**
      * to expression

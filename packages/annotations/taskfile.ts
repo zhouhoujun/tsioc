@@ -1,5 +1,5 @@
 import { PackModule, Pack } from '@taskfr/pack';
-import { TaskContainer } from '@taskfr/platform-server';
+import { TaskContainer } from '@taskfr/core';
 
 @Pack({
     src: 'src',
