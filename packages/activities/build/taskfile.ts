@@ -1,5 +1,5 @@
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
-import { TaskContainer } from '@taskfr/platform-server';
+import { TaskContainer } from '@taskfr/core';
 import { Asset, CleanToken, AssetActivity, TsCompile } from '@taskfr/build';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -50,6 +50,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 'minimist', 'gulp-sourcemaps', 'vinyl-fs', 'gulp-mocha', 'del', 'chokidar',
                 'gulp-uglify', 'execa',
                 '@taskfr/core',
+                '@taskfr/platform-server',
                 'gulp-typescript',
                 'rxjs',
                 'rxjs/operators'

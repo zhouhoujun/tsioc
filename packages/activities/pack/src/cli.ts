@@ -7,7 +7,7 @@ import * as colors from 'colors';
 import program from 'commander';
 import findup from 'findup';
 import { PackModule } from './PackModule';
-import { TaskContainer } from '@taskfr/platform-server';
+import { TaskContainer } from '@taskfr/core';
 
 const cliRoot = findup.sync(__dirname, 'package.json');
 const packageConf = require(__dirname + '/package.json');

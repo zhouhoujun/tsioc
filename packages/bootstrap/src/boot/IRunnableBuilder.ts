@@ -5,6 +5,11 @@ import { Events, IEvents } from '../utils';
 import { IConfigureManager } from './IConfigureManager';
 
 /**
+ *  process run root.
+ */
+export const ProcessRunRootToken = new InjectToken<string>('ioc_processRunRoot');
+
+/**
  * custom define module.
  */
 export type CustomRegister<T> = (container: IContainer, config?: AppConfigure, builder?: IRunnableBuilder<T>) => Token<T>[] | Promise<Token<T>[]>;

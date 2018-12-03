@@ -2,9 +2,10 @@ import { IocExt, Inject, ContainerToken, IContainer, ModuleLoaderToken, Containe
 import { NodeModuleLoader } from './NodeModuleLoader';
 import { ServerContainerBuilder } from './ContainerBuilder';
 import * as path from 'path';
+import { ProcessRunRootToken } from '@ts-ioc/bootstrap';
 
 const processRoot = path.join(path.dirname(process.cwd()), path.basename(process.cwd()));
-export const ProcessRootToken = new InjectToken<string>('processRoot');
+
 /**
  * server module for ioc. auto run setup after registered.
  * with @IocExt('setup') decorator.
@@ -25,7 +26,7 @@ export class ServerModule {
      */
     setup() {
         let container = this.container;
-        container.bindProvider(ProcessRootToken, () => processRoot);
+        container.bindProvider(ProcessRunRootToken, () => processRoot);
         container.bindProvider(ModuleLoaderToken, new NodeModuleLoader());
         container.bindProvider(ContainerBuilderToken, new ServerContainerBuilder());
     }

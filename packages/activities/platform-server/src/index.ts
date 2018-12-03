@@ -1,3 +1,3 @@
 export * from './aop';
-export * from './TaskContainer';
+export * from './runWorkflow';
 export * from './ServerTaskModule';

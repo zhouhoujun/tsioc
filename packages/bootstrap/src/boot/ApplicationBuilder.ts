@@ -32,8 +32,8 @@ export class ApplicationBuilder<T> extends RunnableBuilder<T> implements IApplic
     protected configs: (string | AppConfigure)[];
 
 
-    constructor(public baseURL?: string) {
-        super();
+    constructor(baseURL?: string) {
+        super(baseURL);
         this.configs = [];
     }
 

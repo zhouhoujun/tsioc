@@ -9,7 +9,6 @@ import { TaskLogAspect, RunnerLogAspect } from './aop';
         RunnerLogAspect
     ],
     exports: [
-        BrowserModule,
         TaskLogAspect,
         RunnerLogAspect
     ]

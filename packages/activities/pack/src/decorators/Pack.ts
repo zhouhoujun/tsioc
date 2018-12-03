@@ -11,7 +11,7 @@ import { PackBuilderToken } from '../core/IPackActivity';
  * @interface PackMetadata
  * @extends {PackConfigure}
  */
-export interface PackMetadata extends  PackConfigure {
+export interface PackMetadata extends PackConfigure {
 
 }
 

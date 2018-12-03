@@ -1,4 +1,4 @@
-import { TaskContainer } from '@taskfr/platform-server';
+import { TaskContainer } from '@taskfr/core';
 import { CleanToken, CleanActivity, AssetActivity, Asset, TsCompile } from '@taskfr/build';
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 const resolve = require('rollup-plugin-node-resolve');
@@ -44,32 +44,12 @@ const builtins = require('rollup-plugin-node-builtins');
                 '@ts-ioc/pipes',
                 '@ts-ioc/platform-server',
                 'minimist', 'gulp-sourcemaps', 'vinyl-fs', 'gulp-mocha', 'del', 'chokidar',
-                'rxjs', 'gulp-uglify', 'execa', '@ts-ioc/annotations', 'gulp-typescript',
+                'gulp-uglify', 'execa', '@ts-ioc/annotations', 'gulp-typescript',
                 '@taskfr/core',
+                '@taskfr/platform-server',
                 '@taskfr/build',
-                'rxjs/Observer',
-                'rxjs/util',
-                'rxjs/util/ObjectUnsubscribedError',
-                'rxjs/util/UnsubscriptionError',
-                'rxjs/Subject',
-                'rxjs/Observable',
-                'rxjs/Subscriber',
-                'rxjs/Subscription',
-                'rxjs/BehaviorSubject',
-                'rxjs/add/operator/map',
-                'rxjs/add/operator/mergeMap',
-                'rxjs/add/operator/delay',
-                'rxjs/add/operator/distinct',
-                'rxjs/add/operator/catch',
-                'rxjs/add/operator/distinctUntilChanged',
-                'rxjs/add/operator/timeout',
-                'rxjs/add/operator/filter',
-                'rxjs/add/observable/of',
-                'rxjs/add/observable/throw',
-                'rxjs/add/observable/fromPromise',
-                'rxjs/add/operator/toPromise',
-                'rxjs/add/observable/forkJoin',
-                'rxjs/add/observable/empty'
+                'rxjs',
+                'rxjs/operators'
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
@@ -88,7 +68,7 @@ export class RollupTs extends AssetActivity {
 @Pack({
     clean: 'lib',
     src: 'src',
-    watch: true,
+    // watch: true,
     assets: {
         ts2015: {
             sequence: [

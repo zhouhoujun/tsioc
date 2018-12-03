@@ -3,7 +3,7 @@ import {
     ContainerBuilder, IContainerBuilder, isClass,
     isToken, InjectReference, PromiseUtil, Injectable, lang, RefTokenType
 } from '@ts-ioc/core';
-import { IRunnableBuilder, CustomRegister, RunnableBuilderToken } from './IRunnableBuilder';
+import { IRunnableBuilder, CustomRegister, RunnableBuilderToken, ProcessRunRootToken } from './IRunnableBuilder';
 import {
     ModuleBuilder, ModuleEnv, DIModuleInjectorToken,
     InjectedModule, IModuleBuilder, InjectModuleBuilderToken,
@@ -64,8 +64,11 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
 
     events: Events;
 
-    constructor(public baseURL?: string) {
+    private _baseURL: string;
+
+    constructor(baseURL?: string) {
         super();
+        this._baseURL = baseURL;
         this.customRegs = [];
         this.globalModules = [];
         this.beforeInitPds = new Map();
@@ -100,6 +103,10 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
             this.createDefaultContainer();
         }
         return this.pools;
+    }
+
+    getRunRoot(container: IContainer) {
+        return this._baseURL || container.get(ProcessRunRootToken);
     }
 
     protected createContainerBuilder(): IContainerBuilder {
@@ -221,7 +228,8 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
     }
 
     protected createConfigureMgr() {
-        return this.getPools().getDefault().getService(ConfigureMgrToken, lang.getClass(this), { baseURL: this.baseURL });
+        let container = this.getPools().getDefault();
+        return container.getService(ConfigureMgrToken, lang.getClass(this), { baseURL: this.getRunRoot(container) });
     }
 
     protected async autoRun(container: IContainer, token: Token<any>, cfg: ModuleConfig<T>, instance: any, data?: any): Promise<Runnable<T>> {
@@ -286,9 +294,9 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
      * @memberof RunnableBuilder
      */
     protected async registerByConfigure(container: IContainer, config: ModuleConfig<T>): Promise<void> {
-        if (this.baseURL) {
-            config.baseURL = this.baseURL;
-        }
+
+        config.baseURL = this.getRunRoot(container);
+
         await PromiseUtil.step(this.customRegs.map(async cs => {
             let tokens = await cs(container, config, this);
             return tokens;

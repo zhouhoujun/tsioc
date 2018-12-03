@@ -1,6 +1,6 @@
 
 export * from './ITaskContainer';
-export * from './DefaultTaskContainer';
+export * from './TaskContainer';
 
 export * from './decorators';
 export * from './metadatas';

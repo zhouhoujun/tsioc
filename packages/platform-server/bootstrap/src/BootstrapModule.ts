@@ -1,34 +1,9 @@
 import { IContainer, Injectable } from '@ts-ioc/core';
-import { AppConfigure, ApplicationBuilder, IApplicationBuilder, AnyApplicationBuilder, IConfigureLoader, ConfigureLoaderToken } from '@ts-ioc/bootstrap';
+import { AppConfigure, ApplicationBuilder, IApplicationBuilder, AnyApplicationBuilder, IConfigureLoader, ConfigureLoaderToken, DIModule } from '@ts-ioc/bootstrap';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { ServerModule } from '@ts-ioc/platform-server';
 
-export interface ServerBuildExts {
-    /**
-     * root url
-     *
-     * @type {string}
-     * @memberof IPlatformServer
-     */
-    baseURL: string;
-}
-
-/**
- * server application builder.
- *
- * @export
- * @interface IServerApplicationBuilder
- * @extends {IApplicationBuilder<T>}
- * @template T
- */
-export interface IApplicationBuilderServer<T> extends IApplicationBuilder<T>, ServerBuildExts {
-
-}
-
-export interface AnyApplicationBuilderServer extends AnyApplicationBuilder, ServerBuildExts {
-
-}
 
 @Injectable(ConfigureLoaderToken)
 export class ConfigureFileLoader implements IConfigureLoader<AppConfigure> {
@@ -73,34 +48,27 @@ export class ConfigureFileLoader implements IConfigureLoader<AppConfigure> {
  * @param {string} [baseURL]
  * @returns {IApplicationBuilderServer<T>}
  */
-export function serverApp<T>(baseURL?: string): IApplicationBuilderServer<T> {
-    return new ServerApplicationBuilder<T>(baseURL);
+export function serverApp<T>(baseURL?: string): IApplicationBuilder<T> {
+    return new ApplicationBuilder<T>(baseURL).use(ServerBootstrapModule);
 }
 
+
 /**
- * application builder for server side.
+ * server boot module
  *
  * @export
- * @class Bootstrap
+ * @class ServerBootstrapModule
  */
-export class ServerApplicationBuilder<T> extends ApplicationBuilder<T> implements IApplicationBuilderServer<T> {
-
-    constructor(public baseURL: string) {
-        super(baseURL);
-        this.use(ServerModule, ConfigureFileLoader)
-    }
-
-    /**
-     * create instance.
-     *
-     * @static
-     * @param {string} rootdir
-     * @returns {ApplicationBuilder}
-     * @memberof ApplicationBuilder
-     */
-    static create(rootdir: string): AnyApplicationBuilderServer {
-        return new ServerApplicationBuilder<any>(rootdir);
-    }
+@DIModule({
+    imports: [
+        ServerModule,
+        ConfigureFileLoader
+    ],
+    exports: [
+        ConfigureFileLoader
+    ]
+})
+export class ServerBootstrapModule {
 
 }
 

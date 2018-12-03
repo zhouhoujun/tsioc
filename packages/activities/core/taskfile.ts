@@ -1,5 +1,5 @@
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
-import { TaskContainer } from '@taskfr/platform-server';
+import { TaskContainer } from '@taskfr/core';
 import { CleanActivity, Asset, AssetActivity, TsCompile } from '@taskfr/build';
 const rename = require('gulp-rename');
 const rollup = require('gulp-rollup');
