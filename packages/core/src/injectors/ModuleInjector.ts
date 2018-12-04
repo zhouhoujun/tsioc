@@ -1,5 +1,5 @@
 import { IModuleInjector, ModuleInjectorToken, InjectorResult } from './IModuleInjector';
-import { Type, Token } from '../types';
+import { Type } from '../types';
 import { IContainer } from '../IContainer';
 import { PromiseUtil } from '../utils';
 import { IModuleValidate } from './IModuleValidate';
@@ -27,35 +27,35 @@ export class ModuleInjector implements IModuleInjector {
     }
 
     async inject(container: IContainer, modules: Type<any>[]): Promise<InjectorResult> {
-        let types = (modules || []).filter(ty => this.vaild(container, ty));
+        let types = (modules || []).filter(ty => this.valid(container, ty));
         if (types.length) {
             await PromiseUtil.step(types.map(ty => {
                 return this.setup(container, ty);
             }));
         }
-        let next = this.next(modules, types);
+        let next = this.getNext(modules, types);
         return { injected: types, next: next };
     }
 
     syncInject(container: IContainer, modules: Type<any>[]): InjectorResult {
-        let types = (modules || []).filter(ty => this.vaild(container, ty));
+        let types = (modules || []).filter(ty => this.valid(container, ty));
         if (types.length) {
             types.forEach(ty => {
                 this.syncSetup(container, ty);
             });
         }
-        let next = this.next(modules, types);
+        let next = this.getNext(modules, types);
         return { injected: types, next: next };
     }
 
-    protected vaild(container: IContainer, type: Type<any>): boolean {
+    protected valid(container: IContainer, type: Type<any>): boolean {
         if (!this.validate) {
             return true;
         }
-        return this.validate.validate(type);
+        return this.validate.valid(type);
     }
 
-    protected next(all: Type<any>[], filtered: Type<any>[]): Type<any>[] {
+    protected getNext(all: Type<any>[], filtered: Type<any>[]): Type<any>[] {
         if (filtered.length === 0) {
             return all;
         }

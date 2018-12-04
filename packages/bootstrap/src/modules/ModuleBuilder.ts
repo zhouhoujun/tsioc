@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import {
     IContainer, Token, ProviderTypes, lang, isFunction, isClass,
     isToken, Inject, Registration, Container,
-    InjectReference, Injectable, RefTokenType, InjectModuleValidateToken, IModuleValidate
+    InjectReference, Injectable, RefTokenType, InjectModuleValidateToken, IModuleValidate, MetaAccessorToken, IMetaAccessor, InjectMetaAccessorToken
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
@@ -57,29 +57,23 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return this.pools;
     }
 
-    private _bdVaildate: IModuleValidate;
-    /**
-     * get metadata manager.
-     *
-     * @param {IContainer} [container]
-     * @memberof IModuleBuilder
-     */
-    getModuleValidate(container: IContainer, token?: Token<any>): IModuleValidate {
-        let vaildate: IModuleValidate;
+    private _metaAccor: IMetaAccessor<any>;
+    getMetaAccessor(container: IContainer, token?: Token<any>): IMetaAccessor<any> {
+        let accor: IMetaAccessor<any>;
         if (isToken(token)) {
-            vaildate = container.getRefService(InjectModuleValidateToken, token) as IModuleValidate;
+            accor = container.getRefService(InjectMetaAccessorToken, token);
         }
-        if (!vaildate) {
-            if (!this._bdVaildate) {
-                this._bdVaildate = container.getRefService(InjectModuleValidateToken, lang.getClass(this), this.getDefaultValidateToken());
+        if (!accor) {
+            if (!this._metaAccor) {
+                this._metaAccor = container.getRefService(InjectMetaAccessorToken, lang.getClass(this), this.getDefaultMetaAccessorToken());
             }
-            vaildate = this._bdVaildate;
+            accor = this._metaAccor;
         }
-        return vaildate;
+        return accor;
     }
 
-    protected getDefaultValidateToken(): Token<any> {
-        return DIModuleValidateToken;
+    protected getDefaultMetaAccessorToken(): Token<any> {
+        return MetaAccessorToken;
     }
 
     /**
@@ -133,7 +127,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     async createInstance(injmdl: InjectedModule<T>, data?: any): Promise<T> {
         let cfg = injmdl.config;
         let container = injmdl.container;
-        let bootToken = this.getModuleValidate(container, injmdl.token || injmdl.type).getBootToken(cfg, container);
+        let bootToken = this.getMetaAccessor(container, injmdl.token || injmdl.type).getBootToken(cfg, container);
         let bootInstance;
         if (bootToken) {
             let anBuilder = this.getAnnoBuilder(container, bootToken, cfg.annotationBuilder);
@@ -160,18 +154,18 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
     protected async loadViaToken(token: Token<T>, parent: IContainer): Promise<InjectedModule<T>> {
-        let vaildate = this.getModuleValidate(parent, token);
-        let mdInjector = parent.resolve(DIModuleInjectorToken, { provide: DIModuleValidateToken, useValue: vaildate });
+        let accor = this.getMetaAccessor(parent, token);
+        let mdInjector = parent.resolve(DIModuleInjectorToken);
         let injmdl: InjectedModule<T> = await mdInjector.import(parent, token);
         if (!injmdl) {
-            let cfg = vaildate.getMetaConfig(token, parent);
+            let cfg = accor.getMetadata(token, parent);
             injmdl = new InjectedModule(token, cfg, parent);
         }
         return injmdl;
     }
 
     protected async loadViaConfig(config: ModuleConfigure, parent: IContainer): Promise<InjectedModule<T>> {
-        let mdInjector = parent.resolve(DIModuleInjectorToken, { provide: DIModuleValidateToken, useValue: this.getModuleValidate(parent) });
+        let mdInjector = parent.resolve(DIModuleInjectorToken);
         return await mdInjector.importByConfig(parent, config);
     }
 

@@ -1,6 +1,6 @@
 import {
     Token, isToken, IContainer, isClass, Inject, ContainerToken, ProviderTypes,
-    lang, isFunction, Injectable, Container, InjectReference, RefTokenType, IModuleValidate, InjectModuleValidateToken, IocExtModuleValidateToken, ModuleValidateToken
+    lang, isFunction, Injectable, Container, InjectReference, RefTokenType, IModuleValidate, InjectModuleValidateToken, IocExtModuleValidateToken, ModuleValidateToken, IMetaAccessor, InjectMetaAccessorToken, MetaAccessorToken
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import { AnnoInstance } from './IAnnotation';
@@ -28,23 +28,23 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
     }
 
-    private _bdVaildate: IModuleValidate;
-    getModuleValidate(token?: Token<any>): IModuleValidate {
-        let vaildate: IModuleValidate;
+    private _metaAccor: IMetaAccessor<any>;
+    getMetaAccessor(token?: Token<any>): IMetaAccessor<any> {
+        let accor: IMetaAccessor<any>;
         if (isToken(token)) {
-            vaildate = this.container.getRefService(InjectModuleValidateToken, token) as IModuleValidate;
+            accor = this.container.getRefService(InjectMetaAccessorToken, token);
         }
-        if (!vaildate) {
-            if (!this._bdVaildate) {
-                this._bdVaildate = this.container.getRefService(InjectModuleValidateToken, lang.getClass(this), this.getDefaultValidateToken());
+        if (!accor) {
+            if (!this._metaAccor) {
+                this._metaAccor = this.container.getRefService(InjectMetaAccessorToken, lang.getClass(this), this.getDefaultMetaAccessorToken());
             }
-            vaildate = this._bdVaildate;
+            accor = this._metaAccor;
         }
-        return vaildate;
+        return accor;
     }
 
-    protected getDefaultValidateToken(): Token<any> {
-        return ModuleValidateToken;
+    protected getDefaultMetaAccessorToken(): Token<any> {
+        return MetaAccessorToken;
     }
 
     /**
@@ -60,7 +60,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         if (isClass(token) && !this.container.hasRegister(token)) {
             this.container.register(token);
         }
-        config = this.getModuleValidate(token).getMetaConfig(token, this.container, config);
+        config = this.getMetaAccessor(token).getMetadata(token, this.container, config);
         let builder = this.getBuilder(token, config);
         if (!this.isEqual(builder)) {
             return await builder.build(token, config, data);
@@ -99,7 +99,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             }
             return await this.build(token, null, data);
         } else {
-            token = this.getModuleValidate().getToken(config, this.container);
+            token = this.getMetaAccessor().getToken(config, this.container);
             if (excludeTokens.indexOf(token) >= 0) {
                 token = null;
             }

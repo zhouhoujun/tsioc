@@ -1,7 +1,7 @@
 import { Token, Type, Express } from '../types';
 import { IContainer } from '../IContainer';
 import { isClass, isToken, lang } from '../utils';
-import { DefaultMetaAccessorToken, IMetaAccessor, IAnnotationMetadata, InjectMetaAccessorToken } from './IMetaAccessor';
+import { IMetaAccessor, IAnnotationMetadata } from './IMetaAccessor';
 import { getClassDecorators, getTypeMetadata } from './factories';
 
 
@@ -21,8 +21,9 @@ export class MetaAccessor implements IMetaAccessor<any> {
         return getClassDecorators(type);
     }
 
-    getMetadata(token: Token<any>, container: IContainer, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
+    getMetadata(token: Token<any>, container: IContainer, extConfig?: IAnnotationMetadata<any>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
         let type = isClass(token) ? token : container.getTokenImpl(token);
+        let cfg;
         if (isClass(type)) {
             let decors = this.getDecorators(type);
             if (decorFilter) {
@@ -39,9 +40,13 @@ export class MetaAccessor implements IMetaAccessor<any> {
                     });
                 }
             });
-            return classmeta;
+            cfg = classmeta;
         }
-        return {};
+        if (cfg) {
+            return lang.assign({}, cfg, extConfig || {});
+        } else {
+            return extConfig || {};
+        }
     }
 
     find(token: Token<any>, container: IContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
@@ -92,56 +97,113 @@ export class MetaAccessor implements IMetaAccessor<any> {
         }
         return metadatas;
     }
-}
 
-
-
-/**
- * Annotation MetaAccessor.
- *
- * @export
- * @class AnnotationMetaAccessor
- * @implements {IMetaAccessor<any>}
- */
-export class AnnotationMetaAccessor extends MetaAccessor implements IMetaAccessor<any> {
-
-    constructor() {
-        super();
+    /**
+     * get token of metadata config.
+     *
+     * @param {IAnnotationMetadata<any>} config
+     * @returns {Token<any>}
+     * @memberof MetadataManager
+     */
+    getToken(config: IAnnotationMetadata<any>, container?: IContainer): Token<any> {
+        let token = this.getTokenInConfig(config);
+        if (this.validateToken(token)) {
+            return token;
+        } else {
+            return null;
+        }
     }
 
-    getMetadata(token: Token<any>, container: IContainer, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
-        if (isToken(token)) {
-            let accessor = container.getRefService(InjectMetaAccessorToken, token, DefaultMetaAccessorToken);
-            if (accessor) {
-                return accessor.getMetadata(token, container, decorFilter);
-            } else {
-                return super.getMetadata(token, container, decorFilter);
-            }
+    protected validateToken(token: Token<any>, container?: IContainer): boolean {
+        if (!isToken(token)) {
+            return false;
         }
-        return {};
+        if (container) {
+            if (container.has(token)) {
+                return true;
+            } else if (isClass(token)) {
+                return true;
+            }
+            return false;
+        }
+        return true;
     }
 
-    find(token: Token<any>, container: IContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
-        if (isToken(token)) {
-            let accessor = container.getRefService(InjectMetaAccessorToken, token);
-            if (accessor) {
-                return accessor.find(token, container, filter, decorFilter);
-            } else {
-                return super.find(token, container, filter, decorFilter);
-            }
+    protected getTokenInConfig(config: IAnnotationMetadata<any>): Token<any> {
+        return config.token || config.type;
+    }
+
+    /**
+     * get module boot token from module configure.
+     *
+     * @param {IAnnotationMetadata<any>} config
+     * @param {IContainer} [container]
+     * @returns {Token<any>}
+     * @memberof ModuelValidate
+     */
+    getBootToken(config: IAnnotationMetadata<any>, container?: IContainer): Token<any> {
+        let token = this.getBootTokenInConfig(config);
+        if (this.validateToken(token, container)) {
+            return token
+        } else {
+            return null;
         }
+    }
+
+    protected getBootTokenInConfig(config: IAnnotationMetadata<any>) {
         return null;
     }
 
-    filter(token: Token<any>, container: IContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any>[] {
-        if (isToken(token)) {
-            let accessor = container.getRefService(InjectMetaAccessorToken, token);
-            if (accessor) {
-                return accessor.filter(token, container, filter, decorFilter);
-            } else {
-                return super.filter(token, container, filter, decorFilter);
-            }
-        }
-        return [];
-    }
 }
+
+
+
+// /**
+//  * Annotation MetaAccessor.
+//  *
+//  * @export
+//  * @class AnnotationMetaAccessor
+//  * @implements {IMetaAccessor<any>}
+//  */
+// export class AnnotationMetaAccessor extends MetaAccessor implements IMetaAccessor<any> {
+
+//     constructor() {
+//         super();
+//     }
+
+//     getMetadata(token: Token<any>, container: IContainer, extConfig?: IAnnotationMetadata<any>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
+//         if (isToken(token)) {
+//             let accessor = container.getRefService(InjectMetaAccessorToken, token, DefaultMetaAccessorToken);
+//             if (accessor) {
+//                 return accessor.getMetadata(token, container, extConfig, decorFilter);
+//             } else {
+//                 return super.getMetadata(token, container, extConfig, decorFilter);
+//             }
+//         }
+//         return {};
+//     }
+
+//     find(token: Token<any>, container: IContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
+//         if (isToken(token)) {
+//             let accessor = container.getRefService(InjectMetaAccessorToken, token);
+//             if (accessor) {
+//                 return accessor.find(token, container, filter, decorFilter);
+//             } else {
+//                 return super.find(token, container, filter, decorFilter);
+//             }
+//         }
+//         return null;
+//     }
+
+//     filter(token: Token<any>, container: IContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any>[] {
+//         if (isToken(token)) {
+//             let accessor = container.getRefService(InjectMetaAccessorToken, token);
+//             if (accessor) {
+//                 return accessor.filter(token, container, filter, decorFilter);
+//             } else {
+//                 return super.filter(token, container, filter, decorFilter);
+//             }
+//         }
+//         return [];
+//     }
+// }

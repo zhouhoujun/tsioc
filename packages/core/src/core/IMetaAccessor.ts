@@ -51,11 +51,12 @@ export interface IMetaAccessor<T> {
      *
      * @param {Token<T>} type
      * @param {IContainer} container
+     * @param {IAnnotationMetadata<T>} [extConfig] ext config to merge with metadata.
      * @param {Express<string, boolean>} [decorFilter]
      * @returns {IAnnotationMetadata<T>}
      * @memberof IMetaAccessor
      */
-    getMetadata(type: Token<T>, container: IContainer, decorFilter?: Express<string, boolean>): IAnnotationMetadata<T>;
+    getMetadata(type: Token<T>, container: IContainer, extConfig?: IAnnotationMetadata<T>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<T>;
 
     /**
      * find metadata.
@@ -80,6 +81,25 @@ export interface IMetaAccessor<T> {
      * @memberof IMetaAccessor
      */
     filter(type: Token<T>, container: IContainer, filter: Express<IAnnotationMetadata<T>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<T>[];
+
+    /**
+     * get token of metadata.
+     *
+     * @param {AnnotationConfigure<any>} config
+     * @returns {Token<any>}
+     * @memberof IMetadataManager
+     */
+    getToken(config: IAnnotationMetadata<any>, container?: IContainer): Token<any>;
+
+    /**
+     * get boot token of module config.
+     *
+     * @param {IAnnotationMetadata<any>} cfg
+     * @param {IContainer} [container]
+     * @returns {Token<any>}
+     * @memberof IModuleValidate
+     */
+    getBootToken(cfg: IAnnotationMetadata<any>, container?: IContainer): Token<any>
 }
 
 /**
@@ -97,11 +117,6 @@ export class InjectMetaAccessorToken<T> extends RefRegistration<IMetaAccessor<T>
 }
 
 /**
- * default MetaAccessor token.
+ * MetaAccessor token.
  */
-export const DefaultMetaAccessorToken = new InjectMetaAccessorToken<any>('default');
-
-/**
- * Annotation MetaAccessor token.
- */
-export const AnnotationMetaAccessorToken = new InjectMetaAccessorToken<any>('Annotation');
+export const MetaAccessorToken = new InjectMetaAccessorToken<any>(Object);

@@ -1,7 +1,7 @@
 import {
     Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
     Inject, Token, ProviderTypes, Injectable, isArray, isClass,
-    IModuleInjector, Container, ProviderMap, ProviderParserToken, InjectReference, InjectClassProvidesToken, lang, isToken, InjectModuleValidateToken
+    IModuleInjector, Container, ProviderMap, ProviderParserToken, InjectReference, InjectClassProvidesToken, lang, isToken, InjectModuleValidateToken, IMetaAccessor, MetaAccessorToken, InjectMetaAccessorToken
 } from '@ts-ioc/core';
 import { DIModuleValidateToken } from './DIModuleValidate';
 import { DIModule } from '../decorators';
@@ -19,6 +19,17 @@ import { InjectedModuleToken, InjectedModule } from './InjectedModule';
  * @extends {IModuleInjector}
  */
 export interface IDIModuleInjector extends IModuleInjector {
+
+    /**
+     * get meta accessor.
+     *
+     * @template T
+     * @param {IContainer} container
+     * @param {Token<T>} token
+     * @returns {IMetaAccessor<T>}
+     * @memberof IDIModuleInjector
+     */
+    getMetaAccessor<T>(container: IContainer, token: Token<T>): IMetaAccessor<T>;
     /**
      * import module type.
      *
@@ -61,25 +72,17 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         super(validate)
     }
 
-    protected getValidate(container: IContainer, token?: Token<any>): IModuleValidate {
-        let vaildate: IModuleValidate;
-        if (isToken(token)) {
-            vaildate = container.getRefService(InjectModuleValidateToken, token) as IModuleValidate;
-        }
-        return vaildate ? vaildate : this.validate;
-    }
-
     protected async setup(container: IContainer, type: Type<any>) {
         await this.importModule(container, type);
     }
 
     protected syncSetup(container: IContainer, type: Type<any>) {
-        // do nothing.
+        this.importModule(container, type);
     }
 
     async import<T>(container: IContainer, token: Token<T>): Promise<InjectedModule<T>> {
         let type = isClass(token) ? token : container.getTokenImpl(token);
-        if (this.getValidate(container, type).validate(type)) {
+        if (this.validate.valid(type)) {
             let inMdtk = new InjectedModuleToken(type);
             if (container.has(inMdtk)) {
                 return container.get(inMdtk);
@@ -91,17 +94,30 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         }
     }
 
-    protected vaild(container: IContainer, type: Type<any>): boolean {
-        let vaildate = this.getValidate(container, type);
-        if (!vaildate) {
+    protected valid(container: IContainer, type: Type<any>): boolean {
+        if (!this.validate) {
             return true;
         }
-        return vaildate.validate(type);
+        return this.validate.valid(type);
+    }
+
+    getMetaAccessor<T>(container: IContainer, token: Token<T>, decorator?: string): IMetaAccessor<T> {
+        let metaAcc;
+        if (isToken(token)) {
+            metaAcc = container.getRefService([
+                { service: MetaAccessorToken, isPrivate: true },
+                tk => new InjectMetaAccessorToken(tk)
+            ], token);
+        }
+        if (!metaAcc) {
+            metaAcc = container.getRefService(InjectMetaAccessorToken, decorator, MetaAccessorToken);
+        }
+        return metaAcc;
     }
 
     async importByConfig<T>(container: IContainer, config: ModuleConfig<T>): Promise<InjectedModule<T>> {
         let injmd: InjectedModule<T> = null;
-        let token = this.validate.getToken(config, container);
+        let token = this.getMetaAccessor(container, this.validate.getDecorator()).getToken(config, container);
         if (token) {
             let type = isClass(token) ? token : container.getTokenImpl(token);
             let inMdtk = new InjectedModuleToken(type);
@@ -129,7 +145,8 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         let newContainer = pools.create(container);
         newContainer.register(type);
         let builder = newContainer.getBuilder();
-        let metaConfig = this.getValidate(newContainer, type).getMetaConfig(type, newContainer) as ModuleConfigure;
+        let accor = this.getMetaAccessor(newContainer, type, this.validate.getDecorator());
+        let metaConfig = accor.getMetadata(type, newContainer) as ModuleConfigure;
         metaConfig = await this.registerConfgureDepds(newContainer, metaConfig, type);
 
         let exps: Type<any>[] = [].concat(...builder.loader.getTypes(metaConfig.exports || []));

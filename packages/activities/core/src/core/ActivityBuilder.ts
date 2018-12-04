@@ -77,7 +77,7 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
         return activity;
     }
 
-    protected getDefaultValidateToken() {
+    protected getDefaultMetaAccessorToken() {
         return ActivityVaildateToken;
     }
 
