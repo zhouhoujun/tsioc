@@ -1,12 +1,11 @@
 import {
     isString, isObject, createClassDecorator, MetadataExtends, MetadataAdapter,
-    isClass, ITypeDecorator, Token, Registration, isToken, isUndefined, lang
+    isClass, ITypeDecorator, Token, Registration, isToken, isUndefined
 } from '@ts-ioc/core';
 import { ActivityMetadata } from '../metadatas/ActivityMetadata';
 import { IActivityBuilder } from '../core/IActivityBuilder';
 import { IActivityContext } from '../core/IActivityContext';
 import { IActivity } from '../core';
-import { WorkflowBuilderToken } from '../injectors/DefaultWorkflowBuilder';
 
 /**
  * task decorator, use to define class is a task element.
@@ -142,9 +141,12 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             }
 
             metadata.decorType = taskType;
+            if (annotationBuilder && !metadata.annotationBuilder) {
+                metadata.annotationBuilder = annotationBuilder;
+            }
 
-            if (lang.getBaseClasses(metadata.type).length < 2 && metadata.type.name !== 'Activity') {
-                metadata.token = defaultBoot;
+            if (defaultBoot && !metadata.activity) {
+                metadata.activity = defaultBoot;
             }
 
             return metadata;

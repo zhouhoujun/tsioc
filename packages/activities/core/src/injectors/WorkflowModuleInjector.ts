@@ -23,12 +23,10 @@ export class WorkflowModuleInjector extends DIModuleInjector {
 
     protected async importModule(container: IContainer, type: Type<any>): Promise<InjectedModule<any>> {
         container.register(type);
-        let vaildate = this.getValidate(container, type);
-        let metaConfig = vaildate.getMetaConfig(type, container);
-        metaConfig.token = metaConfig.token || vaildate.getToken(metaConfig);
+        let metaConfig = this.validate.getMetaConfig(type, container);
         await this.registerConfgureDepds(container, metaConfig);
 
-        let injMd = new InjectedModule(metaConfig.token || type, metaConfig, container, type);
+        let injMd = new InjectedModule(type, metaConfig, container);
         container.bindProvider(new InjectedModuleToken(type), injMd);
 
         return injMd;

@@ -100,14 +100,14 @@ export class ContainerBuilder implements IContainerBuilder {
 
     getInjectorChain(container: IContainer): IModuleInjectorChain {
         if (!container.has(ModuleInjectorChainToken)) {
-            container
+            container.register(ModuleInjector)
                 .bindProvider(ModuleValidateToken, new ModuelValidate())
                 .bindProvider(IocExtModuleValidateToken, new IocExtModuleValidate())
-                .register(ModuleInjector)
                 .bindProvider(ModuleInjectorChainToken,
                     new ModuleInjectorChain()
-                        .next(container.resolveValue(ModuleInjectorToken, { provide: ModuleValidateToken, useValue: container.get(IocExtModuleValidateToken) }, { skipNext: true }))
-                        .next(container.resolveValue(ModuleInjectorToken)));
+                        .next(container.resolve(ModuleInjectorToken, { provide: ModuleValidateToken, useValue: container.get(IocExtModuleValidateToken) }, { skipNext: true }))
+                        .next(container.resolve(ModuleInjectorToken))
+                );
         }
         return container.get(ModuleInjectorChainToken);
     }

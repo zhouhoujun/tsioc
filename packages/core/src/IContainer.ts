@@ -1,4 +1,4 @@
-import { Type, Token, Factory, SymbolType, ProviderTypes, Modules, LoadType, ReferenceToken, RefTokenFac } from './types';
+import { Type, Token, Factory, SymbolType, ProviderTypes, Modules, LoadType, ReferenceToken } from './types';
 import { IMethodAccessor } from './IMethodAccessor';
 import { LifeScope } from './LifeScope';
 import { InjectToken } from './InjectToken';
@@ -101,13 +101,11 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @template T
      * @param {Token<T>} token servive token.
      * @param {Token<any>} [target] service refrence target.
-     * @param {RefTokenFac<T>} [refReg] convert token ref registration token.
-     * @param {(boolean | Token<T>)} [asDefault=true]
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getService<T>(token: Token<T>, target?: Token<any>, refReg?: RefTokenFac<T>, asDefault?: boolean | Token<T>, ...providers: ProviderTypes[]): T;
+    getService<T>(token: Token<T>, target?: Token<any>, ...providers: ProviderTypes[]): T;
 
     /**
      * get target reference service.

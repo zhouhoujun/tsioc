@@ -1,7 +1,7 @@
 import {
     Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
     Inject, Token, ProviderTypes, Injectable, isArray, isClass,
-    IModuleInjector, Container, ProviderMap, ProviderParserToken, InjectReference, InjectClassProvidesToken, lang, isToken, InjectModuleValidateToken, ModuleValidateToken
+    IModuleInjector, Container, ProviderMap, ProviderParserToken, InjectReference, InjectClassProvidesToken, lang, isToken, InjectModuleValidateToken
 } from '@ts-ioc/core';
 import { DIModuleValidateToken } from './DIModuleValidate';
 import { DIModule } from '../decorators';
@@ -64,7 +64,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
     protected getValidate(container: IContainer, token?: Token<any>): IModuleValidate {
         let vaildate: IModuleValidate;
         if (isToken(token)) {
-            vaildate = container.getService(ModuleValidateToken, token, tk => new InjectModuleValidateToken(tk), false);
+            vaildate = container.getRefService(InjectModuleValidateToken, token) as IModuleValidate;
         }
         return vaildate ? vaildate : this.validate;
     }
@@ -79,8 +79,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
 
     async import<T>(container: IContainer, token: Token<T>): Promise<InjectedModule<T>> {
         let type = isClass(token) ? token : container.getTokenImpl(token);
-        let vaildate = this.getValidate(container, type);
-        if (vaildate.valid(type)) {
+        if (this.getValidate(container, type).validate(type)) {
             let inMdtk = new InjectedModuleToken(type);
             if (container.has(inMdtk)) {
                 return container.get(inMdtk);
@@ -97,7 +96,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         if (!vaildate) {
             return true;
         }
-        return vaildate.valid(type);
+        return vaildate.validate(type);
     }
 
     async importByConfig<T>(container: IContainer, config: ModuleConfig<T>): Promise<InjectedModule<T>> {
@@ -130,10 +129,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         let newContainer = pools.create(container);
         newContainer.register(type);
         let builder = newContainer.getBuilder();
-
-        let vaildate = this.getValidate(newContainer, type);
-        let metaConfig = vaildate.getMetaConfig(type, newContainer) as ModuleConfigure;
-        metaConfig.token = metaConfig.token || vaildate.getToken(metaConfig);
+        let metaConfig = this.getValidate(newContainer, type).getMetaConfig(type, newContainer) as ModuleConfigure;
         metaConfig = await this.registerConfgureDepds(newContainer, metaConfig, type);
 
         let exps: Type<any>[] = [].concat(...builder.loader.getTypes(metaConfig.exports || []));
@@ -146,7 +142,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         });
 
         let pdrMap = newContainer.resolveValue(new InjectReference(ProviderMap, type));
-        let injMd = new InjectedModule(metaConfig.token, metaConfig, newContainer, type, exps, pdrMap ? classProvides.concat(pdrMap.keys()) : classProvides);
+        let injMd = new InjectedModule(metaConfig.token || type, metaConfig, newContainer, type, exps, pdrMap ? classProvides.concat(pdrMap.keys()) : classProvides);
         container.bindProvider(new InjectedModuleToken(type), injMd);
 
         await this.importConfigExports(container, newContainer, injMd);

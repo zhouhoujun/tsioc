@@ -82,7 +82,7 @@ export class PfServerRollup extends AssetActivity {
     after: {
         shell: (ctx: IBuildHandleActivity) => {
             // let envArgs = ctx.getEnvArgs();
-            return `cd bootstrap & ts-node -r tsconfig-paths/register taskfile.ts`
+            return `cd bootstrap & tkf`
         },
         activity: 'shell'
     }

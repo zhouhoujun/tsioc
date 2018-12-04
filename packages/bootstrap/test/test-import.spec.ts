@@ -40,7 +40,7 @@ describe('di module', () => {
         // expect(md.container).to.not.undefined;
         // expect(md.container.has('mark')).to.true;
         expect(md.mark).eq('marked');
-        expect(md.state).eq('started');
+        // expect(md.state).eq('started');
     });
 
 });

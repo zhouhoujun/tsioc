@@ -36,8 +36,10 @@ export abstract class CompilerActivity extends NodeActivity {
 
     protected verifyCtx(ctx?: any) {
         if (ctx instanceof BuildHandleContext) {
+            console.log('CompilerActivity BuildHandleContext:', ctx ? ctx.constructor.name : '');
             this.context = ctx;
         } else {
+            console.log('CompilerActivity:', ctx ? ctx.constructor.name : '');
             this.setResult(ctx);
         }
     }

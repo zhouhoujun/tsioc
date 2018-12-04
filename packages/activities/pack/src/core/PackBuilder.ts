@@ -67,8 +67,7 @@ export class PackBuilder extends ActivityBuilder {
 
                         let assCfg = cfg as AssetConfigure;
                         if (!assCfg.activity && !assCfg.task) {
-                            let token = new InjectAssetActivityToken(name);
-                            assCfg.task = this.container.has(token) ? token : name;
+                            assCfg.task = new InjectAssetActivityToken(name);
                         }
 
                         if (isString(assCfg.task)) {

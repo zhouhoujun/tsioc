@@ -1,7 +1,6 @@
 import {
     Token, isToken, IContainer, isClass, Inject, ContainerToken, ProviderTypes,
-    lang, isFunction, Injectable, Container,
-    IModuleValidate, InjectModuleValidateToken, ModuleValidateToken
+    lang, isFunction, Injectable, Container, InjectReference, RefTokenType, IModuleValidate, InjectModuleValidateToken, IocExtModuleValidateToken, ModuleValidateToken
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import { AnnoInstance } from './IAnnotation';
@@ -33,15 +32,19 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
     getModuleValidate(token?: Token<any>): IModuleValidate {
         let vaildate: IModuleValidate;
         if (isToken(token)) {
-            vaildate = this.container.getService(ModuleValidateToken, token, tk => new InjectModuleValidateToken(tk), false) as IModuleValidate;
+            vaildate = this.container.getRefService(InjectModuleValidateToken, token) as IModuleValidate;
         }
         if (!vaildate) {
             if (!this._bdVaildate) {
-                this._bdVaildate = this.container.getService(ModuleValidateToken, lang.getClass(this), tk => new InjectModuleValidateToken(tk));
+                this._bdVaildate = this.container.getRefService(InjectModuleValidateToken, lang.getClass(this), this.getDefaultValidateToken());
             }
             vaildate = this._bdVaildate;
         }
         return vaildate;
+    }
+
+    protected getDefaultValidateToken(): Token<any> {
+        return ModuleValidateToken;
     }
 
     /**
@@ -57,21 +60,25 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         if (isClass(token) && !this.container.hasRegister(token)) {
             this.container.register(token);
         }
-
-        await this.registerExts(config);
-        let instance = await this.createInstance(token, config, data) as AnnoInstance<T>;
-        if (!instance) {
-            return null;
+        config = this.getModuleValidate(token).getMetaConfig(token, this.container, config);
+        let builder = this.getBuilder(token, config);
+        if (!this.isEqual(builder)) {
+            return await builder.build(token, config, data);
+        } else {
+            await this.registerExts(config);
+            let instance = await this.createInstance(token, config, data) as AnnoInstance<T>;
+            if (!instance) {
+                return null;
+            }
+            if (isFunction(instance.anBeforeInit)) {
+                await Promise.resolve(instance.anBeforeInit(config));
+            }
+            instance = await this.buildStrategy(instance, config, data) as AnnoInstance<T>;
+            if (isFunction(instance.anAfterInit)) {
+                await Promise.resolve(instance.anAfterInit(config));
+            }
+            return instance;
         }
-        if (isFunction(instance.anBeforeInit)) {
-            await Promise.resolve(instance.anBeforeInit(config));
-        }
-        instance = await this.buildStrategy(instance, config, data) as AnnoInstance<T>;
-        if (isFunction(instance.anAfterInit)) {
-            await Promise.resolve(instance.anAfterInit(config));
-        }
-        return instance;
-        // }
     }
 
     /**
@@ -96,11 +103,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             if (excludeTokens.indexOf(token) >= 0) {
                 token = null;
             }
-            if (isToken(token)) {
-                return await this.build(token, config, data);
-            } else {
-                return null;
-            }
+            return await this.build(token, config, data);
         }
     }
 
@@ -119,31 +122,43 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         return instance;
     }
 
-    // getBuilder(token: Token<T>, config?: AnnotationConfigure<T>): IAnnotationBuilder<T> {
-    //     let builder: IAnnotationBuilder<T>;
-    //     let providers = [{ provide: ContainerToken, useValue: this.container }, { provide: Container, useValue: this.container }] as ProviderTypes[];
-    //     if (config && config.annotationBuilder) {
-    //         if (isClass(config.annotationBuilder)) {
-    //             if (!this.container.has(config.annotationBuilder)) {
-    //                 this.container.register(config.annotationBuilder);
-    //             }
-    //         }
-    //         if (isToken(config.annotationBuilder)) {
-    //             builder = this.container.resolve(config.annotationBuilder, ...providers);
-    //         } else if (config.annotationBuilder instanceof AnnotationBuilder) {
-    //             builder = config.annotationBuilder;
-    //         }
-    //     }
-    //     if (!builder && isToken(token)) {
-    //         builder = this.container.getService(AnnotationBuilderToken, token, tk => new InjectAnnotationBuilder(tk), false, ...providers);
-    //     }
+    getBuilder(token: Token<T>, config?: AnnotationConfigure<T>): IAnnotationBuilder<T> {
+        let builder: IAnnotationBuilder<T>;
+        let providers = [{ provide: ContainerToken, useValue: this.container }, { provide: Container, useValue: this.container }] as ProviderTypes[];
+        if (config && config.annotationBuilder) {
+            if (isClass(config.annotationBuilder)) {
+                if (!this.container.has(config.annotationBuilder)) {
+                    this.container.register(config.annotationBuilder);
+                }
+            }
+            if (isToken(config.annotationBuilder)) {
+                builder = this.container.resolve(config.annotationBuilder, ...providers);
+            } else if (config.annotationBuilder instanceof AnnotationBuilder) {
+                builder = config.annotationBuilder;
+            }
+        }
+        if (!builder && token) {
+            builder = this.container.getRefService(
+                this.getRefAnnoTokens(),
+                token,
+                null,
+                ...providers) as IAnnotationBuilder<T>;
+        }
 
-    //     if (builder && !builder.container) {
-    //         builder.container = this.container;
-    //     }
-    //     console.log(this.constructor.name, builder ? builder.constructor.name : 'null', token);
-    //     return builder || this;
-    // }
+        if (builder && !builder.container) {
+            builder.container = this.container;
+        }
+        return builder || this;
+    }
+
+    protected getRefAnnoTokens(): RefTokenType<any>[] {
+        return [
+            { service: AnnotationBuilderToken, isPrivate: true },
+            (tk) => new InjectAnnotationBuilder(tk),
+            (tk) => new InjectReference(AnnotationBuilderToken, tk),
+            (tk) => new InjectReference(AnnotationBuilder, tk)
+        ]
+    }
 
     /**
      * bundle instance via config.

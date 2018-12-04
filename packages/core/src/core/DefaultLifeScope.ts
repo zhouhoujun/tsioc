@@ -12,7 +12,7 @@ import {
 import { ActionData } from './ActionData';
 import { ActionFactory } from './ActionFactory';
 import { IParameter } from '../IParameter';
-import { MetaAccessorToken } from './IMetaAccessor';
+import { DefaultMetaAccessorToken } from './IMetaAccessor';
 
 
 /**
@@ -201,7 +201,7 @@ export class DefaultLifeScope implements LifeScope {
         if (hasOwnClassMetadata(Singleton, type)) {
             return true;
         }
-        let metadata = this.container.get(MetaAccessorToken).find(type, this.container, m => m.singleton === true);
+        let metadata = this.container.get(DefaultMetaAccessorToken).find(type, this.container, m => m.singleton === true);
         return !!metadata;
     }
 

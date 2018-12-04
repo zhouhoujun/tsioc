@@ -1,12 +1,12 @@
-import { Type, hasClassMetadata, lang, IContainer, LoadType, isToken, Token, Factory, ModuleValidateToken } from '@ts-ioc/core';
+import { Type, hasClassMetadata, lang, IContainer, LoadType, isToken, Token, Factory } from '@ts-ioc/core';
 import {
     SequenceConfigure, Active, IActivityRunner, UUIDToken, RandomUUIDFactory,
     ActivityRunnerToken, ActivityBuilderToken, WorkflowId
 } from './core';
 import { ITaskContainer } from './ITaskContainer';
 import {
-    IApplicationBuilder, ApplicationBuilder, AppConfigure,
-    ServiceToken, ModuleBuilderToken, ApplicationEvents, AnnotationBuilderToken
+    IApplicationBuilder, ApplicationBuilder, AppConfigure, DefaultAnnotationBuilderToken,
+    ServiceToken, ModuleBuilderToken, ApplicationEvents
 } from '@ts-ioc/bootstrap';
 import { Aspect, AopModule } from '@ts-ioc/aop';
 import { SequenceActivity } from './activities';
@@ -61,14 +61,15 @@ export class TaskContainer implements ITaskContainer {
                     .register(WorkflowModuleInjector);
                 let chain = container.getBuilder().getInjectorChain(container);
                 chain.first(container.resolve(WorkflowModuleInjectorToken));
-            });
+
+            })
             this.builder
                 .use(AopModule)
                 .use(LogModule)
                 .use(CoreModule)
-                // .provider(AnnotationBuilderToken, ActivityBuilderToken)
-                // .provider(ServiceToken, ActivityRunnerToken)
-                // .provider(ModuleBuilderToken, WorkflowBuilderToken);
+                .provider(DefaultAnnotationBuilderToken, ActivityBuilderToken)
+                .provider(ServiceToken, ActivityRunnerToken)
+                .provider(ModuleBuilderToken, WorkflowBuilderToken);
 
         }
         return this.builder;

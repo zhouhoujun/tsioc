@@ -1,5 +1,5 @@
 import { ActivityBuilderToken, IActivityBuilder } from './IActivityBuilder';
-import { isFunction, isString, Token, Express, isToken, Injectable, Providers, ModuleValidateToken } from '@ts-ioc/core';
+import { isFunction, isString, Token, Express, isToken, Injectable } from '@ts-ioc/core';
 import { AnnotationBuilder } from '@ts-ioc/bootstrap';
 import { IActivity, ActivityInstance } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
@@ -15,9 +15,6 @@ import { ActivityVaildateToken } from './ActivityVaildate';
  * @implements {IActivityBuilder}
  */
 @Injectable(ActivityBuilderToken)
-@Providers([
-    { provide: ModuleValidateToken, useExisting: ActivityVaildateToken }
-])
 export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IActivityBuilder {
 
     /**

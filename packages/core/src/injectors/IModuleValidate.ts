@@ -17,7 +17,7 @@ export interface IModuleValidate {
      * @returns {boolean}
      * @memberof IModuleValidate
      */
-    valid(type: Type<any>): boolean;
+    validate(type: Type<any>): boolean;
 
     /**
      * get token of metadata.

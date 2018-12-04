@@ -67,15 +67,15 @@ export interface IAnnotationBuilder<T> {
      */
     buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any, ...excludeTokens: Token<any>[]): Promise<T>;
 
-    // /**
-    //  * get finally builder by token and config.
-    //  *
-    //  * @param {Token<T>} token
-    //  * @param {AnnotationConfigure<T>} [config]
-    //  * @returns {IAnnotationBuilder<T>}
-    //  * @memberof IBootBuilder
-    //  */
-    // getBuilder(token: Token<T>, config?: AnnotationConfigure<T>): IAnnotationBuilder<T>;
+    /**
+     * get finally builder by token and config.
+     *
+     * @param {Token<T>} token
+     * @param {AnnotationConfigure<T>} [config]
+     * @returns {IAnnotationBuilder<T>}
+     * @memberof IBootBuilder
+     */
+    getBuilder(token: Token<T>, config?: AnnotationConfigure<T>): IAnnotationBuilder<T>;
 
     /**
      * create token instance.
@@ -140,3 +140,8 @@ export class InjectAnnotationBuilder<T> extends RefRegistration<IAnnotationBuild
  * Annotation class builder token.
  */
 export const AnnotationBuilderToken = new InjectAnnotationBuilder<any>('');
+
+/**
+ * Default Annotation class builder token.
+ */
+export const DefaultAnnotationBuilderToken = new InjectAnnotationBuilder<any>('default');

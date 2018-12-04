@@ -1,7 +1,8 @@
 import { Token } from '@ts-ioc/core';
 import { IAnnotationBuilder, InjectAnnotationBuilder } from '@ts-ioc/bootstrap';
-import { IActivity, ActivityToken } from './IActivity';
+import { IActivity } from './IActivity';
 import { ActivityType } from './ActivityConfigure';
+import { Activity } from './Activity';
 
 
 /**
@@ -40,4 +41,4 @@ export interface IActivityBuilder extends IAnnotationBuilder<IActivity> {
 /**
  * activity builder token.
  */
-export const ActivityBuilderToken = new InjectAcitityBuilderToken<IActivity>(ActivityToken);
+export const ActivityBuilderToken = new InjectAcitityBuilderToken<IActivity>(Activity);

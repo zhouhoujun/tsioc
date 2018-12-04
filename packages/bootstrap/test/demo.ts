@@ -47,6 +47,13 @@ export class ClassSevice {
         console.log('-------log mark---------');
         console.log(this.mark);
     }
+    mdOnStart(instance: ClassSevice): void | Promise<any> {
+        console.log('mdOnStart...');
+        // console.log(this.container);
+        console.log(instance);
+        instance.start();
+        instance.state = 'started';
+    }
 }
 
 @Aspect

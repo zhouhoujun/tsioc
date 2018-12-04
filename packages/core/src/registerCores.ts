@@ -4,7 +4,7 @@ import {
     CacheManager, ProviderMap, ProviderMapToken, ProviderParser, ProviderParserToken,
     Injectable, Component, AutoWired, Inject, Singleton, Param, DefaultLifeScope,
     Method, Abstract, Autorun, IocExt, Refs, Providers, CoreActions, MethodAccessor,
-    MetaAccessor, AnnotationMetaAccessor, MetaAccessorToken, AnnotationMetaAccessorToken
+    MetaAccessor, AnnotationMetaAccessor, DefaultMetaAccessorToken, AnnotationMetaAccessorToken
 } from './core';
 import { CacheManagerToken } from './ICacheManager';
 import { MethodAccessorToken } from './IMethodAccessor';
@@ -25,7 +25,7 @@ export function registerCores(container: IContainer) {
     container.bindProvider(ProviderMap, ProviderMapToken);
     container.registerSingleton(ProviderParserToken, () => new ProviderParser(container));
     container.registerSingleton(MethodAccessorToken, () => new MethodAccessor(container));
-    container.registerSingleton(MetaAccessorToken, MetaAccessor);
+    container.registerSingleton(DefaultMetaAccessorToken, MetaAccessor);
     container.registerSingleton(AnnotationMetaAccessorToken, AnnotationMetaAccessor);
 
     let lifeScope = container.get(LifeScopeToken);

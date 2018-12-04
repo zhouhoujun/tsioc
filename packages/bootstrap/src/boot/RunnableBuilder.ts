@@ -156,14 +156,6 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         return await builder.bootstrap(token, injmdl, data);
     }
 
-    async createInstance(injmdl: InjectedModule<T>, data?: any): Promise<T> {
-        let instance = await super.createInstance(injmdl, data);
-        if (instance) {
-            this.emit(RunnableEvents.onModuleCreated, instance, lang.getClass(instance));
-        }
-        return instance;
-    }
-
     async run(token: Token<T> | ModuleConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
         return await this.bootstrap(token, env, data);
     }
@@ -198,12 +190,26 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
             }
         }
 
-        let tko = injmdl.token || injmdl.type;
-        if (!builder && isToken(tko)) {
-            builder = container.getService(ModuleBuilderToken, tko, tk => new InjectModuleBuilderToken(tk), false);
+        let tko = injmdl.token;
+        if (!builder && tko) {
+            builder = container.getRefService(
+                this.getRefBuilderTokens(container),
+                tko, ModuleBuilderToken);
         }
 
         return builder || this;
+    }
+
+    protected getRefBuilderTokens(container: IContainer): RefTokenType<any>[] {
+        return [
+            { service: RunnableBuilderToken, isPrivate: true },
+            { service: ModuleBuilderToken, isPrivate: true },
+            (tk) => new InjectModuleBuilderToken(tk),
+            (tk) => new InjectReference(RunnableBuilderToken, tk),
+            (tk) => new InjectReference(RunnableBuilder, tk),
+            (tk) => new InjectReference(ModuleBuilderToken, tk),
+            (tk) => new InjectReference(ModuleBuilder, tk)
+        ]
     }
 
     getConfigManager(): IConfigureManager<ModuleConfig<T>> {
@@ -215,7 +221,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
 
     protected createConfigureMgr() {
         let container = this.getPools().getDefault();
-        return container.getService(ConfigureMgrToken, lang.getClass(this), null, true, { baseURL: this.getRunRoot(container) });
+        return container.getService(ConfigureMgrToken, lang.getClass(this), { baseURL: this.getRunRoot(container) });
     }
 
     protected async autoRun(container: IContainer, token: Token<any>, cfg: ModuleConfig<T>, instance: any, data?: any): Promise<Runnable<T>> {

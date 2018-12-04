@@ -1,6 +1,6 @@
 import { ITaskDecorator, createTaskDecorator } from '@taskfr/core';
 import { PackConfigure } from '../core/PackConfigure';
-import { PackToken, PackBuilderToken } from '../core/IPackActivity';
+import { PackBuilderToken, PackToken } from '../core/IPackActivity';
 
 
 
