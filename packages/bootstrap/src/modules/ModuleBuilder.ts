@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import {
     IContainer, Token, ProviderTypes, lang, isFunction, isClass,
     isToken, Inject, Registration, Container,
-    InjectReference, Injectable, RefTokenType, InjectModuleValidateToken, IModuleValidate
+    InjectReference, Injectable, RefTokenType, InjectModuleValidateToken, IModuleValidate, ModuleValidateToken
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
@@ -14,7 +14,7 @@ import {
 } from '../runnable';
 import {
     IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder,
-    DefaultAnnotationBuilderToken, AnnotationBuilderToken, AnnotationBuilder
+    AnnotationBuilderToken, AnnotationBuilder
 } from '../annotations';
 import { InjectedModule } from './InjectedModule';
 import { DIModuleInjectorToken } from './DIModuleInjector';
@@ -67,19 +67,15 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     getModuleValidate(container: IContainer, token?: Token<any>): IModuleValidate {
         let vaildate: IModuleValidate;
         if (isToken(token)) {
-            vaildate = container.getRefService(InjectModuleValidateToken, token) as IModuleValidate;
+            vaildate = container.getService(ModuleValidateToken, token, tk => new InjectModuleValidateToken(tk), false);
         }
         if (!vaildate) {
             if (!this._bdVaildate) {
-                this._bdVaildate = container.getRefService(InjectModuleValidateToken, lang.getClass(this), this.getDefaultValidateToken());
+                this._bdVaildate = container.getService(ModuleValidateToken, lang.getClass(this), tk => new InjectModuleValidateToken(tk));
             }
             vaildate = this._bdVaildate;
         }
         return vaildate;
-    }
-
-    protected getDefaultValidateToken(): Token<any> {
-        return DIModuleValidateToken;
     }
 
     /**
@@ -103,33 +99,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
     /**
-     * build module.
-     *
-     * @param {(Token<T> | ModuleConfig<T>)} token
-     * @param {ModuleEnv} [env]
-     * @param {*} [data] bootstrap data, build data, Runnable data.
-     * @returns {Promise<T>}
-     * @memberof ModuleBuilder
-     */
-    async build(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<T> {
-        let injmdl = await this.load(token, env);
-        let container = injmdl.container;
-        let cfg = injmdl.config;
-        let annBuilder = this.getAnnoBuilder(container, injmdl.token, cfg.annotationBuilder);
-        if (!injmdl.token) {
-            let instance = await annBuilder.buildByConfig(cfg, data);
-            return instance;
-        } else {
-            let instance = await annBuilder.build(injmdl.token, cfg, data);
-            let mdlInst = instance as MdInstance<T>;
-            if (mdlInst && isFunction(mdlInst.mdOnInit)) {
-                mdlInst.mdOnInit(injmdl);
-            }
-            return instance;
-        }
-    }
-
-    /**
     * bootstrap module's main.
     *
     * @param {(Token<T> | ModuleConfig<T>)} token
@@ -142,21 +111,34 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         let injmdl = await this.load(token, env);
         let cfg = injmdl.config;
         let container = injmdl.container;
-        let md = await this.build(token, injmdl, data) as MdInstance<T>;
+        let bootInstance = await this.createInstance(injmdl) as MdInstance<T>;
+
+        let runable;
+        if (bootInstance) {
+            if (isFunction(bootInstance.mdOnInit)) {
+                await Promise.resolve(bootInstance.mdOnInit(injmdl));
+            }
+            runable = await this.autoRun(container, lang.getClass(bootInstance), cfg, bootInstance, data);
+            if (isFunction(bootInstance.mdOnStart)) {
+                await Promise.resolve(bootInstance.mdOnStart(bootInstance));
+            }
+        }
+        return runable;
+    }
+
+    async createInstance(injmdl: InjectedModule<T>, data?: any): Promise<T> {
+        let cfg = injmdl.config;
+        let container = injmdl.container;
         let bootToken = this.getModuleValidate(container, injmdl.token || injmdl.type).getBootToken(cfg, container);
         let bootInstance;
-        let runable;
         if (bootToken) {
             let anBuilder = this.getAnnoBuilder(container, bootToken, cfg.annotationBuilder);
             bootInstance = await anBuilder.build(bootToken, cfg, data);
-            runable = await this.autoRun(container, bootToken, cfg, bootInstance, data);
-            if (md && isFunction(md.mdOnStart)) {
-                await Promise.resolve(md.mdOnStart(bootInstance));
-            }
         } else {
-            runable = await this.autoRun(container, injmdl.token, cfg, md, data);
+            let mdBuilder = this.getAnnoBuilder(container, injmdl.token, cfg.annotationBuilder);
+            bootInstance = (injmdl.token || injmdl.type) ? await mdBuilder.build(injmdl.token || injmdl.type, injmdl.config, data) : mdBuilder.buildByConfig(injmdl.config, data);
         }
-        return runable;
+        return bootInstance;
     }
 
     /**
@@ -216,30 +198,10 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             return instance;
         } else {
             let providers = [{ provide: token, useValue: instance }, { token: token, instance: instance, config: cfg }] as ProviderTypes[];
-            let runner: IRunner<T> = container.getRefService(
-                [
-                    { service: RunnerToken, isPrivate: true },
-                    { service: Runner, isPrivate: true },
-                    tk => new InjectRunnerToken(tk),
-                    tk => new InjectReference(RunnerToken, tk),
-                    tk => new InjectReference(Runner, tk)
-                ],
-                token,
-                RunnerToken,
-                ...providers);
+            let runner: IRunner<T> = container.getService(RunnerToken, token, tk => new InjectRunnerToken(tk), true, ...providers);
             let service: IService<T>;
             if (!runner) {
-                service = container.getRefService(
-                    [
-                        { service: ServiceToken, isPrivate: true },
-                        { service: Service, isPrivate: true },
-                        tk => new InjectServiceToken(tk),
-                        tk => new InjectReference(ServiceToken, tk),
-                        tk => new InjectReference(Service, tk)
-                    ],
-                    token,
-                    ServiceToken,
-                    ...providers);
+                service = container.getService(ServiceToken, token, tk => new InjectServiceToken(tk), true, ...providers);
             }
             if (runner) {
                 await runner.run(data);
@@ -271,32 +233,12 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         }
 
         if (!builder && token) {
-            builder = container.getRefService(
-                this.getRefAnnoTokens(container),
-                token,
-                DefaultAnnotationBuilderToken);
+            builder = container.getService(AnnotationBuilderToken, token, tk => new InjectAnnotationBuilder(tk));
         }
 
-        if (!builder) {
-            builder = this.getDefaultAnnBuilder(container);
-        }
         if (builder) {
             builder.container = container
         }
         return builder;
-    }
-
-    protected getRefAnnoTokens(container: IContainer): RefTokenType<any>[] {
-        return [
-            { service: AnnotationBuilderToken, isPrivate: true },
-            tk => new InjectAnnotationBuilder(tk),
-            tk => new InjectReference(AnnotationBuilderToken, tk),
-            tk => new InjectReference(AnnotationBuilder, tk)
-        ]
-    }
-
-
-    protected getDefaultAnnBuilder(container: IContainer): IAnnotationBuilder<any> {
-        return container.resolve(AnnotationBuilderToken);
     }
 }

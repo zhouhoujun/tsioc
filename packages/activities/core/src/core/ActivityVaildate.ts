@@ -1,4 +1,4 @@
-import { ModuelValidate, isString, Token, IContainer, InjectModuleValidateToken, Injectable } from '@ts-ioc/core';
+import { ModuelValidate, isString, Token, IContainer, InjectModuleValidateToken, Injectable, Refs, ModuleValidateToken } from '@ts-ioc/core';
 import { ActivityConfigure } from './ActivityConfigure';
 import { InjectAcitityToken, IActivity, ActivityToken } from './IActivity';
 import { Task } from '../decorators';
@@ -7,6 +7,7 @@ import { Task } from '../decorators';
  * activity vaildate token
  */
 export const ActivityVaildateToken = new InjectModuleValidateToken(ActivityToken);
+
 
 @Injectable(ActivityVaildateToken)
 export class ActivityVaildate extends ModuelValidate {

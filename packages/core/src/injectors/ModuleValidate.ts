@@ -17,7 +17,7 @@ export class ModuelValidate implements IModuleValidate {
 
     }
 
-    validate(type: Type<any>): boolean {
+    valid(type: Type<any>): boolean {
         if (!isClass(type)) {
             return false;
         }

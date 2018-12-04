@@ -1,5 +1,5 @@
 import { AssetActivity, CleanToken, TsCompile, Asset, INodeActivityContext } from '@taskfr/build';
-import { TaskContainer } from '@taskfr/platform-server';
+import { TaskContainer } from '@taskfr/core';
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -91,7 +91,7 @@ export class PfBrowserRollup extends AssetActivity {
     after: {
         shell: (ctx: INodeActivityContext) => {
             // let envArgs = ctx.getEnvArgs();
-            return `cd bootstrap & tkf`
+            return `cd bootstrap & ts-node -r tsconfig-paths/register taskfile.ts`
         },
         activity: 'shell'
     }

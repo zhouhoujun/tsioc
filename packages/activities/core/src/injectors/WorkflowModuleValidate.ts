@@ -1,4 +1,4 @@
-import { InjectModuleValidateToken, Singleton, Token } from '@ts-ioc/core';
+import { InjectModuleValidateToken, Token, Singleton } from '@ts-ioc/core';
 import { Task, Workflow } from '../decorators';
 import { DIModuelValidate } from '@ts-ioc/bootstrap';
 import { ActivityConfigure } from '../core';
@@ -6,7 +6,7 @@ import { ActivityConfigure } from '../core';
 /**
  * workflow module validate token.
  */
-export const WorkflowModuleValidateToken = new InjectModuleValidateToken(Workflow.toString());
+export const WorkflowModuleValidateToken = new InjectModuleValidateToken('@Workflow');
 
 /**
  * workflow module validate.

@@ -9,7 +9,6 @@ import { ModuleConfigure } from './ModuleConfigure';
  */
 export const DIModuleValidateToken = new InjectModuleValidateToken<IModuleValidate>(DIModule.toString());
 
-
 /**
  * DIModuel Validate
  *

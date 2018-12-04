@@ -1,5 +1,5 @@
-import { IContainer, Singleton, InjectModuleValidateToken, lang, Token } from '@ts-ioc/core';
-import { ActivityType, IActivity, Activity } from '../core';
+import { Token, Injectable } from '@ts-ioc/core';
+import { ActivityType, IActivity, ActivityToken } from '../core';
 import { ModuleBuilder, ModuleEnv, Runnable, InjectModuleBuilderToken } from '@ts-ioc/bootstrap';
 import { WorkflowModuleValidateToken } from './WorkflowModuleValidate';
 
@@ -7,14 +7,14 @@ import { WorkflowModuleValidateToken } from './WorkflowModuleValidate';
 /**
  * workflow builder token.
  */
-export const WorkflowBuilderToken = new InjectModuleBuilderToken<IActivity>(Activity);
+export const WorkflowBuilderToken = new InjectModuleBuilderToken<IActivity>(ActivityToken);
 /**
  * default Workflow Builder.
  *
  * @export
  * @class DefaultTaskContainer
  */
-@Singleton(WorkflowBuilderToken)
+@Injectable(WorkflowBuilderToken)
 export class DefaultWorkflowBuilder extends ModuleBuilder<IActivity> {
     /**
      * bootstrap workflow via activity.
@@ -29,10 +29,6 @@ export class DefaultWorkflowBuilder extends ModuleBuilder<IActivity> {
         let injmdl = await this.load(activity, env);
         let runner = await super.bootstrap(activity, injmdl, data);
         return runner;
-    }
-
-    protected getDefaultValidateToken(): Token<any> {
-        return WorkflowModuleValidateToken;
     }
 }
 

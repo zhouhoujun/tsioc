@@ -1,7 +1,7 @@
 import { Token, Type, Express } from '../types';
 import { IContainer } from '../IContainer';
 import { isClass, isToken, lang } from '../utils';
-import { DefaultMetaAccessorToken, IMetaAccessor, IAnnotationMetadata, InjectMetaAccessorToken } from './IMetaAccessor';
+import { MetaAccessorToken, IMetaAccessor, IAnnotationMetadata, InjectMetaAccessorToken } from './IMetaAccessor';
 import { getClassDecorators, getTypeMetadata } from './factories';
 
 
@@ -111,7 +111,7 @@ export class AnnotationMetaAccessor extends MetaAccessor implements IMetaAccesso
 
     getMetadata(token: Token<any>, container: IContainer, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
         if (isToken(token)) {
-            let accessor = container.getRefService(InjectMetaAccessorToken, token, DefaultMetaAccessorToken);
+            let accessor = container.getRefService(InjectMetaAccessorToken, token, MetaAccessorToken);
             if (accessor) {
                 return accessor.getMetadata(token, container, decorFilter);
             } else {

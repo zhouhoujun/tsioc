@@ -2,9 +2,9 @@ import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
 import {
     Type, Token, Factory, SymbolType, ToInstance, IocState, ProviderTypes,
-    Modules, LoadType, ReferenceToken, IReference, RefTokenType, RefTokenFacType
+    Modules, LoadType, ReferenceToken, IReference, RefTokenType, RefTokenFacType, RefTokenFac
 } from './types';
-import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, lang, isArray } from './utils';
+import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, lang, isArray, isBoolean } from './utils';
 import { Registration, isRegistrationClass } from './Registration';
 import { MethodAccessorToken } from './IMethodAccessor';
 import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderParserToken, ProviderMap } from './core';
@@ -147,11 +147,13 @@ export class Container implements IContainer {
      * @template T
      * @param {Token<T>} token servive token.
      * @param {Token<any>} [target] service refrence target.
+     * @param {RefTokenFac<T>} [refReg] convert token ref registration token.
+     * @param {boolean} [asDefault=true]
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof Container
      */
-    getService<T>(token: Token<T>, target?: Token<any>, ...providers: ProviderTypes[]): T {
+    getService<T>(token: Token<T>, target?: Token<any>, refReg?: RefTokenFac<T>, asDefault: boolean | Token<T> = true, ...providers: ProviderTypes[]): T {
         if (isToken(target)) {
             let tokens = this.getTokenExtendsChain(token, false).map(t => {
                 return { service: token, isPrivate: true } as IReference<T>;
@@ -159,15 +161,17 @@ export class Container implements IContainer {
             return this.getRefService(
                 [
                     ...tokens,
+                    ...(refReg ? [(tk) => refReg(tk)] : []),
                     ...tokens.map(t => (tk) => new InjectReference(t.service, tk))
                 ],
                 target,
-                token,
+                isBoolean(asDefault) ? (asDefault ? token : null) : asDefault,
                 ...providers);
         } else {
-            return this.resolve(token, ...(target ? [target as ProviderTypes].concat(providers) : providers));
+            return this.resolve(token, ...providers);
         }
     }
+
 
     /**
      * get target reference service.
@@ -188,7 +192,7 @@ export class Container implements IContainer {
                     return false;
                 }
                 // exclude ref registration.
-                if (tk instanceof RefRegistration || tk instanceof InjectReference) {
+                if (tk instanceof InjectReference) {
                     return true;
                 }
                 (isArray(refToken) ? refToken : [refToken]).forEach(stk => {

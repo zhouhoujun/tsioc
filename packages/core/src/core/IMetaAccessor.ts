@@ -99,7 +99,7 @@ export class InjectMetaAccessorToken<T> extends RefRegistration<IMetaAccessor<T>
 /**
  * default MetaAccessor token.
  */
-export const DefaultMetaAccessorToken = new InjectMetaAccessorToken<any>('default');
+export const MetaAccessorToken = new InjectMetaAccessorToken<any>(Object);
 
 /**
  * Annotation MetaAccessor token.

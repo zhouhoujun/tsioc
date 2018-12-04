@@ -2,8 +2,8 @@ import { IModuleInjector, ModuleInjectorToken, InjectorResult } from './IModuleI
 import { Type, Token } from '../types';
 import { IContainer } from '../IContainer';
 import { PromiseUtil } from '../utils';
-import { IModuleValidate } from './IModuleValidate';
-import { Injectable } from '../core';
+import { IModuleValidate, ModuleValidateToken } from './IModuleValidate';
+import { Injectable, Inject } from '../core';
 
 
 /**
@@ -23,7 +23,7 @@ export class ModuleInjector implements IModuleInjector {
      * @param {boolean} [skipNext] skip next when has match module to injector.
      * @memberof BaseModuleInjector
      */
-    constructor(protected validate?: IModuleValidate, protected skipNext?: boolean) {
+    constructor(@Inject(ModuleValidateToken) protected validate?: IModuleValidate, protected skipNext?: boolean) {
     }
 
     async inject(container: IContainer, modules: Type<any>[]): Promise<InjectorResult> {
@@ -52,7 +52,7 @@ export class ModuleInjector implements IModuleInjector {
         if (!this.validate) {
             return true;
         }
-        return this.validate.validate(type);
+        return this.validate.valid(type);
     }
 
     protected next(all: Type<any>[], filtered: Type<any>[]): Type<any>[] {

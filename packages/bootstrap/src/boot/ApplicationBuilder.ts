@@ -60,10 +60,6 @@ export class ApplicationBuilder<T> extends RunnableBuilder<T> implements IApplic
         return await super.load(token, env);
     }
 
-    async build(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<T> {
-        return await super.build(token, env, data);
-    }
-
     async bootstrap(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
         return await super.bootstrap(token, env, data);
     }

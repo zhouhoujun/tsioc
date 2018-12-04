@@ -55,15 +55,14 @@ export interface IModuleBuilder<T> {
     load(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): Promise<InjectedModule<T>>;
 
     /**
-     * build module as ioc container.
+     * create injected module instace.
      *
-     * @param {(Token<T> | ModuleConfig<T>)} token
-     * @param {ModuleEnv} [env]
-     * @param {*} [data] bootstrap data, build data, Runnable data.
+     * @param {InjectedModule<T>} injmdl
+     * @param {*} [data]
      * @returns {Promise<T>}
      * @memberof IModuleBuilder
      */
-    build(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<T>;
+    createInstance(injmdl: InjectedModule<T>, data?: any): Promise<T>;
 
     /**
      * bootstrap module's main.

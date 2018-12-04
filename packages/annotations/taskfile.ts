@@ -9,7 +9,7 @@ import { TaskContainer } from '@taskfr/core';
         ts: { dest: 'lib', annotation: true, uglify: false }
     }
 })
-export class Builder extends PackActivity {
+export class Builder {
 }
 
 TaskContainer.create(__dirname)
