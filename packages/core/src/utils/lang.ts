@@ -207,4 +207,29 @@ export namespace lang {
         }
         return target.constructor || target.prototype.constructor;
     }
+
+    export type ActionHandle<T> = (ctx: T, next?: () => Promise<void>) => Promise<void>;
+
+    export function runInChain<T>(handles: ActionHandle<T>[], ctx: T, next?: () => Promise<void>): Promise<void> {
+        let index = -1;
+        return dispatch(0);
+        function dispatch(idx: number): Promise<any> {
+            if (idx <= index) {
+                return Promise.reject('next called mutiple times');
+            }
+            index = idx;
+            let handle = idx < handles.length ? handles[idx] : null;
+            if (idx === handles.length) {
+                handle = next;
+            }
+            if (!handle) {
+                return Promise.resolve();
+            }
+            try {
+                return Promise.resolve(handle(ctx, dispatch.bind(null, idx + 1)));
+            } catch (err) {
+                return Promise.reject(err);
+            }
+        }
+    }
 }

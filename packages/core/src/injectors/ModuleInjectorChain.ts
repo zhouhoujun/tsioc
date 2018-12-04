@@ -1,9 +1,9 @@
 import { IModuleInjectorChain } from './IModuleInjectorChain';
-import { IModuleInjector, InjectorResult } from './IModuleInjector';
+import { IModuleInjector } from './IModuleInjector';
 import { ModuleInjector } from './ModuleInjector';
 import { Type } from '../types';
 import { IContainer } from '../IContainer';
-import { PromiseUtil } from '../utils';
+import { lang } from '../utils';
 
 /**
  * Module Injector chain, base injector chain.
@@ -43,18 +43,17 @@ export class ModuleInjectorChain implements IModuleInjectorChain {
 
     async inject(container: IContainer, modules: Type<any>[]): Promise<Type<any>[]> {
         let types: Type<any>[] = [];
-        await PromiseUtil.forEach<InjectorResult>(
-            this.injectors.map(jtor => (ijrt: InjectorResult) => jtor.inject(container, ijrt.next)),
-            result => {
-                types = types.concat(result.injected || []);
-                return result.next && result.next.length > 0;
-            },
-            { injected: [], next: modules }
-        )
-            .catch(err => {
-                console.log(err);
-                return [];
-            });
+        await lang.runInChain(this.injectors.map(jtor => {
+            return async (mds: Type<any>[], next?: () => Promise<void>) => {
+                let ijRt = await jtor.inject(container, mds);
+                if (ijRt.injected && ijRt.injected.length) {
+                    types = types.concat(ijRt.injected);
+                }
+                if (ijRt.next && ijRt.next.length > 0) {
+                    return next();
+                }
+            }
+        }), modules);
         return types;
     }
 

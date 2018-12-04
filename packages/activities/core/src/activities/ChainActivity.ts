@@ -2,6 +2,7 @@ import { Task } from '../decorators';
 import { IActivityContext, ChainConfigure, InjectAcitityToken, IActivity, IHandleActivity, IChainActivity } from '../core';
 import { HandleActivity } from './HandleActivity';
 import { ControlActivity } from './ControlActivity';
+import { lang } from '@ts-ioc/core';
 
 
 /**
@@ -51,8 +52,7 @@ export class ChainActivity extends ControlActivity implements IChainActivity {
      * @memberof ChainActivity
      */
     protected handleRequest(ctx: IActivityContext, next?: () => Promise<void>): Promise<void> {
-        let index = -1;
-        let handles = this.handles.map(act => {
+        return lang.runInChain(this.handles.map(act => {
             return async (ctx: IActivityContext, next?: () => Promise<void>) => {
                 let called = false;
                 await act.run(ctx, () => {
@@ -63,26 +63,7 @@ export class ChainActivity extends ControlActivity implements IChainActivity {
                     await next();
                 }
             };
-        });
-        return dispatch(0);
-        function dispatch(idx: number): Promise<any> {
-            if (idx <= index) {
-                return Promise.reject('next called mutiple times');
-            }
-            index = idx;
-            let handle = idx < handles.length ? handles[idx] : null;
-            if (idx === handles.length) {
-                handle = next;
-            }
-            if (!handle) {
-                return Promise.resolve();
-            }
-            try {
-                return Promise.resolve(handle(ctx, dispatch.bind(null, idx + 1)));
-            } catch (err) {
-                return Promise.reject(err);
-            }
-        }
+        }), ctx, next);
     }
 
     use(...activities: IActivity[]) {
