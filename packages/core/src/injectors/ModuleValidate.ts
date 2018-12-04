@@ -23,15 +23,11 @@ export class ModuelValidate implements IModuleValidate {
         let decorator = this.getDecorator();
         if (isString(decorator)) {
             return hasOwnClassMetadata(decorator, type);
-        } else if (isArray(decorator) && decorator.length) {
-            if (decorator.length > 0) {
-                return decorator.some(decor => hasOwnClassMetadata(decor, type))
-            }
         }
         return true;
     }
 
-    getDecorator(): string | string[] {
+    getDecorator(): string {
         return null;
     }
 }

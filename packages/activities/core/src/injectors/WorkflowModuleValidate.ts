@@ -18,7 +18,7 @@ export const WorkflowModuleValidateToken = new InjectModuleValidateToken(Workflo
 @Singleton(WorkflowModuleValidateToken)
 export class WorkflowModuleValidate extends DIModuelValidate {
     getDecorator() {
-        return [Workflow.toString(), Task.toString()];
+        return Task.toString();
     }
 
     protected getBootTokenInConfig(cfg: ActivityConfigure): Token<any> {

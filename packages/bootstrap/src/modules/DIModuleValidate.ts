@@ -19,7 +19,7 @@ export const DIModuleValidateToken = new InjectModuleValidateToken<IModuleValida
  */
 @Singleton(DIModuleValidateToken)
 export class DIModuelValidate extends ModuelValidate {
-    getDecorator(): string | string[] {
+    getDecorator(): string {
         return DIModule.toString();
     }
 

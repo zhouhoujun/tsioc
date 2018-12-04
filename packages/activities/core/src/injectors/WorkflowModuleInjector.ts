@@ -23,7 +23,8 @@ export class WorkflowModuleInjector extends DIModuleInjector {
 
     protected async importModule(container: IContainer, type: Type<any>): Promise<InjectedModule<any>> {
         container.register(type);
-        let metaConfig = this.validate.getMetaConfig(type, container);
+        let accor = this.getMetaAccessor(container, type, this.validate.getDecorator());
+        let metaConfig = accor.getMetadata(type, container);
         await this.registerConfgureDepds(container, metaConfig);
 
         let injMd = new InjectedModule(type, metaConfig, container);
