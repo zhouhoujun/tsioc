@@ -7,7 +7,7 @@ import { Token } from '../../types';
 import { ClassMetadata } from '../metadatas';
 import { InjectReference, InjectClassProvidesToken } from '../../InjectReference';
 import { ProviderMap } from '../providers';
-import { ProviderParserToken } from '../IProviderParser';
+import { ProviderParserToken } from '../providers';
 
 /**
  * bind provider action data.
@@ -40,7 +40,7 @@ export class BindProviderAction extends ActionComposite {
         let matchs = lifeScope.getClassDecorators(type, surm => surm.actions.includes(CoreActions.bindProvider));
         let clpds = new InjectClassProvidesToken(type);
         // has binding.
-        let classPds = raiseContainer.resolveValue(clpds) || { provides: [clpds.toString()], decors: [] };
+        let classPds = raiseContainer.resolveValue(clpds) || { provides: [], decors: [] };
         if (classPds.decors.length) {
             matchs = matchs.filter(d => classPds.decors.indexOf(d.name) < 0);
         }
@@ -68,10 +68,12 @@ export class BindProviderAction extends ActionComposite {
                         let refKey = new InjectReference(c.refs.provide ? raiseContainer.getTokenKey(c.refs.provide, c.refs.alias) : c.type, c.refs.target).toString();
                         classPds.provides.push(refKey);
                         raiseContainer.bindProvider(refKey, c.type);
+                        console.log('==============ref================\n', refKey, c.type);
                     }
                     // class private provider.
                     if (c.providers && c.providers.length) {
                         let refKey = new InjectReference(ProviderMap, c.type).toString();
+                        console.log('===============provide===============\n', c.type, c.providers);
                         let maps = raiseContainer.get(ProviderParserToken).parse(c.providers);
                         if (raiseContainer.has(refKey)) {
                             raiseContainer.bindProvider(refKey, raiseContainer.get<ProviderMap>(refKey).copy(maps));

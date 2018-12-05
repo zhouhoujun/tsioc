@@ -102,11 +102,9 @@ export namespace lang {
      */
     export function forIn<T>(target: ObjectMap<T> | T[], iterator: (item: T, idx?: number | string) => void | boolean) {
         if (isArray(target)) {
-            target.forEach(iterator);
+            target.some((it, idx) => iterator(it, idx) === false);
         } else if (isObject(target)) {
-            keys(target).forEach((key, idx) => {
-                iterator(target[key], key);
-            });
+            keys(target).some((key, idx) => iterator(target[key], key) === false);
         }
     }
 
@@ -127,7 +125,7 @@ export namespace lang {
                 }
                 return true;
             } else {
-                return false;
+                return true;
             }
         })
     }

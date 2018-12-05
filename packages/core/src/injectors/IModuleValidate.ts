@@ -1,6 +1,4 @@
-import { Type, Token } from '../types';
-import { IAnnotationMetadata, IMetaAccessor } from '../core';
-import { IContainer } from '../IContainer';
+import { Type } from '../types';
 import { RefRegistration } from '../InjectReference';
 
 /**
@@ -38,12 +36,12 @@ export interface IModuleValidate {
  * @template T
  */
 export class InjectModuleValidateToken<T extends IModuleValidate> extends RefRegistration<T> {
-    constructor(type: Token<any>) {
-        super(type, 'ModuleValidate');
+    constructor(decorator: string) {
+        super(decorator, 'ModuleValidate');
     }
 }
 
 /**
  * Module Validate Token
  */
-export const ModuleValidateToken = new InjectModuleValidateToken<IModuleValidate>(Object);
+export const ModuleValidateToken = new InjectModuleValidateToken<IModuleValidate>('');

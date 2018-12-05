@@ -57,19 +57,17 @@ export class MetaAccessor implements IMetaAccessor<any> {
             if (decorFilter) {
                 decors = decors.filter(decorFilter);
             }
-            decors.forEach(decor => {
+            decors.some(decor => {
                 let metas = getTypeMetadata<IAnnotationMetadata<any>>(decor, type);
                 if (metas && metas.length) {
-                    metas.forEach(meta => {
-                        if (metadata) {
-                            return false;
-                        }
+                    return metas.some(meta => {
                         if (meta && filter(meta)) {
                             metadata = meta;
                         }
-                        return true;
+                        return !!metadata;
                     });
                 }
+                return false;
             });
         }
         return metadata;
@@ -86,11 +84,8 @@ export class MetaAccessor implements IMetaAccessor<any> {
             decors.forEach(decor => {
                 let metas = getTypeMetadata<IAnnotationMetadata<any>>(decor, type);
                 if (metas && metas.length) {
-                    metas.forEach(meta => {
-                        if (meta && filter(meta)) {
-                            metadatas.push(meta);
-                        }
-                        return true;
+                    metas.filter(meta => meta && filter(meta)).forEach(meta => {
+                        metadatas.push(meta);
                     });
                 }
             });
@@ -151,59 +146,7 @@ export class MetaAccessor implements IMetaAccessor<any> {
     }
 
     protected getBootTokenInConfig(config: IAnnotationMetadata<any>) {
-        return null;
+        return config.bootstrap;
     }
 
 }
-
-
-
-// /**
-//  * Annotation MetaAccessor.
-//  *
-//  * @export
-//  * @class AnnotationMetaAccessor
-//  * @implements {IMetaAccessor<any>}
-//  */
-// export class AnnotationMetaAccessor extends MetaAccessor implements IMetaAccessor<any> {
-
-//     constructor() {
-//         super();
-//     }
-
-//     getMetadata(token: Token<any>, container: IContainer, extConfig?: IAnnotationMetadata<any>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
-//         if (isToken(token)) {
-//             let accessor = container.getRefService(InjectMetaAccessorToken, token, DefaultMetaAccessorToken);
-//             if (accessor) {
-//                 return accessor.getMetadata(token, container, extConfig, decorFilter);
-//             } else {
-//                 return super.getMetadata(token, container, extConfig, decorFilter);
-//             }
-//         }
-//         return {};
-//     }
-
-//     find(token: Token<any>, container: IContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
-//         if (isToken(token)) {
-//             let accessor = container.getRefService(InjectMetaAccessorToken, token);
-//             if (accessor) {
-//                 return accessor.find(token, container, filter, decorFilter);
-//             } else {
-//                 return super.find(token, container, filter, decorFilter);
-//             }
-//         }
-//         return null;
-//     }
-
-//     filter(token: Token<any>, container: IContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any>[] {
-//         if (isToken(token)) {
-//             let accessor = container.getRefService(InjectMetaAccessorToken, token);
-//             if (accessor) {
-//                 return accessor.filter(token, container, filter, decorFilter);
-//             } else {
-//                 return super.filter(token, container, filter, decorFilter);
-//             }
-//         }
-//         return [];
-//     }
-// }

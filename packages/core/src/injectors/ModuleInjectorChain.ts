@@ -60,16 +60,13 @@ export class ModuleInjectorChain implements IModuleInjectorChain {
     syncInject(container: IContainer, modules: Type<any>[]): Type<any>[] {
         let types: Type<any>[] = [];
         let completed = false;
-        this.injectors.forEach(jtor => {
-            if (completed) {
-                return false;
-            }
+        this.injectors.some(jtor => {
             if (jtor instanceof ModuleInjector) {
                 let result = jtor.syncInject(container, modules);
                 types = types.concat(result.injected);
                 completed = (!result.next || result.next.length < 1);
             }
-            return true;
+            return completed;
         });
         return types;
     }

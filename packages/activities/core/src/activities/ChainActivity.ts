@@ -52,7 +52,7 @@ export class ChainActivity extends ControlActivity implements IChainActivity {
      * @memberof ChainActivity
      */
     protected handleRequest(ctx: IActivityContext, next?: () => Promise<void>): Promise<void> {
-        return lang.runInChain(this.handles.map(act => {
+        return lang.runInChain((this.handles || []).map(act => {
             return async (ctx: IActivityContext, next?: () => Promise<void>) => {
                 let called = false;
                 await act.run(ctx, () => {

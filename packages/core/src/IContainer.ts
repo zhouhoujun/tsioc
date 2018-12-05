@@ -1,4 +1,4 @@
-import { Type, Token, Factory, SymbolType, ProviderTypes, Modules, LoadType, ReferenceToken } from './types';
+import { Type, Token, Factory, SymbolType, ProviderTypes, Modules, LoadType, ReferenceToken, RefTokenFac } from './types';
 import { IMethodAccessor } from './IMethodAccessor';
 import { LifeScope } from './LifeScope';
 import { InjectToken } from './InjectToken';
@@ -100,25 +100,76 @@ export interface IContainer extends IMethodAccessor, IResolver {
      *
      * @template T
      * @param {Token<T>} token servive token.
-     * @param {Token<any>} [target] service refrence target.
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getService<T>(token: Token<T>, target?: Token<any>, ...providers: ProviderTypes[]): T;
+    getService<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
+
+    /**
+     * get service or target reference service.
+     *
+     * @template T
+     * @param {Token<T>} token servive token.
+     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
+     * @param {...ProviderTypes[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], ...providers: ProviderTypes[]): T;
+
+    /**
+     * get service or target reference service.
+     *
+     * @template T
+     * @param {Token<T>} token servive token.
+     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
+     * @param {RefTokenFac<T>} toRefToken
+     * @param {...ProviderTypes[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], toRefToken: RefTokenFac<T>, ...providers: ProviderTypes[]): T;
+
+    /**
+     * get service or target reference service.
+     *
+     * @template T
+     * @param {Token<T>} token servive token.
+     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
+     * @param {(boolean | Token<T>)} defaultToken
+     * @param {...ProviderTypes[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], defaultToken: boolean | Token<T>, ...providers: ProviderTypes[]): T;
+
+    /**
+     * get service or target reference service.
+     *
+     * @template T
+     * @param {Token<T>} token servive token.
+     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
+     * @param {RefTokenFac<T>} toRefToken
+     * @param {(boolean | Token<T>)} defaultToken
+     * @param {...ProviderTypes[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], toRefToken: RefTokenFac<T>, defaultToken: boolean | Token<T>, ...providers: ProviderTypes[]): T;
 
     /**
      * get target reference service.
      *
      * @template T
      * @param {ReferenceToken<T>} [refToken] reference service Registration Injector
-     * @param {Token<any>} target  the service reference to.
+     * @param {(Token<any> | Token<any>[])} target  the service reference to.
      * @param {Token<T>} [defaultToken] default service token.
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any>, defaultToken?: Token<T>, ...providers: ProviderTypes[]): T
+    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any> | Token<any>[], defaultToken?: Token<T>, ...providers: ProviderTypes[]): T
 
     /**
      * register type.

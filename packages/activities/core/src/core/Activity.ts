@@ -1,10 +1,11 @@
-import { Inject, Express, ContainerToken, IContainer, Token, ProviderType, lang, InjectReference } from '@ts-ioc/core';
+import { Inject, Express, ContainerToken, IContainer, Token, ProviderType, lang, Providers, MetaAccessorToken } from '@ts-ioc/core';
 import { Task } from '../decorators';
 import { IActivity, ActivityToken, WorkflowId } from './IActivity';
 import { ActivityConfigure, ExpressionType, Expression, ActivityType } from './ActivityConfigure';
 import { OnActivityInit } from './OnActivityInit';
 import { ActivityContext, ActivityContextToken } from './ActivityContext';
 import { IActivityContext, InputDataToken, InjectActivityContextToken } from './IActivityContext';
+import { ActivityMetaAccessorToken } from '../injectors';
 
 /**
  * activity base.
@@ -16,6 +17,9 @@ import { IActivityContext, InputDataToken, InjectActivityContextToken } from './
  * @implements {OnActivityInit}
  */
 @Task(ActivityToken)
+@Providers([
+    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken }
+])
 export abstract class Activity implements IActivity, OnActivityInit {
 
     /**
@@ -80,12 +84,8 @@ export abstract class Activity implements IActivity, OnActivityInit {
             return this.container.resolve(this.config.contextType, provider);
         }
 
-        return this.container.getRefService(
-            [
-                tk => new InjectActivityContextToken(tk),
-                tk => new InjectReference(ActivityContextToken, tk)
-            ],
-            type,
+        return this.container.getService(ActivityContextToken, type,
+            tk => new InjectActivityContextToken(tk),
             defCtx || ActivityContextToken, provider);
     }
 

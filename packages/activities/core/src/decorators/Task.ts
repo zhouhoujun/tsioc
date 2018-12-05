@@ -5,7 +5,7 @@ import {
 import { ActivityMetadata } from '../metadatas/ActivityMetadata';
 import { IActivityBuilder } from '../core/IActivityBuilder';
 import { IActivityContext } from '../core/IActivityContext';
-import { IActivity } from '../core';
+import { WorkflowBuilderToken } from '../injectors/DefaultWorkflowBuilder';
 
 /**
  * task decorator, use to define class is a task element.
@@ -73,8 +73,7 @@ export interface ITaskDecorator<T extends ActivityMetadata> extends ITypeDecorat
  */
 export function createTaskDecorator<T extends ActivityMetadata>(
     taskType: string,
-    annotationBuilder?: Token<IActivityBuilder> | IActivityBuilder,
-    defaultBoot?: Token<IActivity>,
+    defaultAnnoBuilder?: Token<IActivityBuilder>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): ITaskDecorator<T> {
 
@@ -110,7 +109,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
                     if (isString(arg)) {
                         metadata.name = arg;
                     } else {
-                        metadata.annotationBuilder = arg;
+                        metadata.annoBuilder = arg;
                     }
                 }
             });
@@ -141,13 +140,8 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             }
 
             metadata.decorType = taskType;
-            if (annotationBuilder && !metadata.annotationBuilder) {
-                metadata.annotationBuilder = annotationBuilder;
-            }
-
-            if (defaultBoot && !metadata.activity) {
-                metadata.activity = defaultBoot;
-            }
+            metadata.defaultBuilder = WorkflowBuilderToken;
+            metadata.defaultAnnoBuilder = defaultAnnoBuilder;
 
             return metadata;
         }) as ITaskDecorator<T>;

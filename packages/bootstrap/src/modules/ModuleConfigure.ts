@@ -67,6 +67,14 @@ export interface ModuleConfig<T> extends AnnotationConfigure<T> {
      */
     builder?: Token<IModuleBuilder<any>> | IModuleBuilder<any>;
 
+    /**
+     * DI module default Loader builder
+     *
+     * @type {Token<IModuleBuilder<any>>}
+     * @memberof ModuleConfig
+     */
+    defaultBuilder?: Token<IModuleBuilder<any>>;
+
 }
 
 /**

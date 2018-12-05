@@ -27,6 +27,14 @@ export interface IAnnotationMetadata<T> extends ClassMetadata {
      * @memberof IAnnotationMetadata
      */
     type?: Type<T>;
+
+    /**
+     * bootstrap.
+     *
+     * @type {Token<T>}
+     * @memberof IAnnotationMetadata
+     */
+    bootstrap?: Token<T>;
 }
 
 /**

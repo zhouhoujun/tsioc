@@ -1,11 +1,12 @@
-import { ProviderTypes } from '../types';
-import { Provider, ProviderMap, ParamProvider, isProviderMap, ProviderMapToken } from './providers';
+import { ProviderTypes } from '../../types';
 import {
     isClass, isArray, isFunction, isNumber,
     isUndefined, isNull, isToken, isBaseObject, lang
-} from '../utils';
+} from '../../utils';
 import { IProviderParser } from './IProviderParser';
-import { IContainer } from '../IContainer';
+import { IContainer } from '../../IContainer';
+import { ProviderMap, isProviderMap, ProviderMapToken } from './ProviderMap';
+import { Provider, ParamProvider } from './Provider';
 
 /**
  * provider matcher. use to find custome providers in resolve.
@@ -83,7 +84,7 @@ export class ProviderParser implements IProviderParser {
                         });
                     } else if (isToken(pr.useExisting)) {
                         if (this.container.has(pr.useExisting)) {
-                            map.add(pr.provide, () => this.container.resolve(pr.useExisting));
+                            map.add(pr.provide, (...providers) => this.container.resolve(pr.useExisting, ...providers));
                         }
                     } else {
                         isobjMap = true;

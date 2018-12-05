@@ -6,8 +6,6 @@ export * from './factories';
 export * from './providers';
 
 export * from './IRecognizer';
-export * from './IProviderParser';
-export * from './ProviderParser';
 export * from './ActionData';
 export * from './ActionFactory';
 export * from './DefaultLifeScope';

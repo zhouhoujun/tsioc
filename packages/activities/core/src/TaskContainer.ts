@@ -1,12 +1,10 @@
 import { Type, hasClassMetadata, lang, IContainer, LoadType, isToken, Token, Factory } from '@ts-ioc/core';
 import {
-    SequenceConfigure, Active, IActivityRunner, UUIDToken, RandomUUIDFactory,
-    ActivityRunnerToken, ActivityBuilderToken, WorkflowId
+    SequenceConfigure, Active, IActivityRunner, UUIDToken, RandomUUIDFactory, WorkflowId
 } from './core';
 import { ITaskContainer } from './ITaskContainer';
 import {
-    IApplicationBuilder, ApplicationBuilder, AppConfigure, DefaultAnnotationBuilderToken,
-    ServiceToken, ModuleBuilderToken, ApplicationEvents
+    IApplicationBuilder, ApplicationBuilder, AppConfigure, ApplicationEvents
 } from '@ts-ioc/bootstrap';
 import { Aspect, AopModule } from '@ts-ioc/aop';
 import { SequenceActivity } from './activities';
@@ -67,9 +65,9 @@ export class TaskContainer implements ITaskContainer {
                 .use(AopModule)
                 .use(LogModule)
                 .use(CoreModule)
-                .provider(DefaultAnnotationBuilderToken, ActivityBuilderToken)
-                .provider(ServiceToken, ActivityRunnerToken)
-                .provider(ModuleBuilderToken, WorkflowBuilderToken);
+                // .provider(DefaultAnnotationBuilderToken, ActivityBuilderToken)
+                // .provider(ServiceToken, ActivityRunnerToken)
+                // .provider(ModuleBuilderToken, WorkflowBuilderToken);
 
         }
         return this.builder;
@@ -148,7 +146,7 @@ export class TaskContainer implements ITaskContainer {
             boot = activity || {};
             if (!boot.token) {
                 boot.builder = boot.builder || WorkflowBuilderToken;
-                boot.annotationBuilder = boot.annotationBuilder;
+                boot.annoBuilder = boot.annoBuilder;
             }
         }
         let env = this.getBuilder().getPools().create();

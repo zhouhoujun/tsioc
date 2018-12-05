@@ -1,18 +1,12 @@
-import { ModuelValidate, isString, Token, IContainer, InjectModuleValidateToken, Injectable } from '@ts-ioc/core';
-import { ActivityConfigure } from './ActivityConfigure';
-import { InjectAcitityToken, IActivity, ActivityToken } from './IActivity';
-import { Task } from '../decorators';
+import { MetaAccessor, IContainer, Token, isString, InjectMetaAccessorToken, Injectable, Refs, MetaAccessorToken } from '@ts-ioc/core';
+import { IActivity, InjectAcitityToken, ActivityConfigure, ActivityToken, ActivityBuilderToken } from '../core';
 
-/**
- * activity vaildate token
- */
-export const ActivityVaildateToken = new InjectModuleValidateToken(ActivityToken);
+export const ActivityMetaAccessorToken = new InjectMetaAccessorToken('@Task');
 
-@Injectable(ActivityVaildateToken)
-export class ActivityVaildate extends ModuelValidate {
-    getDecorator(): string | string[] {
-        return Task.toString();
-    }
+@Injectable(ActivityMetaAccessorToken)
+@Refs(ActivityToken, MetaAccessorToken)
+@Refs(ActivityBuilderToken, MetaAccessorToken)
+export class ActivityMetaAccessor extends MetaAccessor {
 
     getToken(config: ActivityConfigure, container?: IContainer): Token<IActivity> {
         let token = this.getTokenInConfig(config);

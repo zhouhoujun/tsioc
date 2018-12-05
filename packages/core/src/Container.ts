@@ -2,9 +2,9 @@ import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
 import {
     Type, Token, Factory, SymbolType, ToInstance, IocState, ProviderTypes,
-    Modules, LoadType, ReferenceToken, IReference, RefTokenType, RefTokenFacType
+    Modules, LoadType, ReferenceToken, IReference, RefTokenType, RefTokenFacType, RefTokenFac
 } from './types';
-import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, lang, isArray } from './utils';
+import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, lang, isArray, isBoolean } from './utils';
 import { Registration, isRegistrationClass } from './Registration';
 import { MethodAccessorToken } from './IMethodAccessor';
 import { ActionComponent, CoreActions, CacheActionData, LifeState, ProviderParserToken, ProviderMap } from './core';
@@ -14,7 +14,7 @@ import { CacheManagerToken } from './ICacheManager';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { registerCores } from './registerCores';
 import { ResolverChain, ResolverChainToken } from './resolves';
-import { InjectReference, InjectClassProvidesToken, RefRegistration } from './InjectReference';
+import { InjectReference, InjectClassProvidesToken } from './InjectReference';
 
 /**
  * singleton reg token.
@@ -146,26 +146,58 @@ export class Container implements IContainer {
      *
      * @template T
      * @param {Token<T>} token servive token.
-     * @param {Token<any>} [target] service refrence target.
+     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof Container
      */
-    getService<T>(token: Token<T>, target?: Token<any>, ...providers: ProviderTypes[]): T {
-        if (isToken(target)) {
+    getService<T>(token: Token<T>, target?: Token<any> | Token<any>[] | ProviderTypes, toRefToken?: boolean | Token<T> | RefTokenFac<T> | ProviderTypes, defaultToken?: boolean | Token<T> | ProviderTypes, ...providers: ProviderTypes[]): T {
+        if (isToken(target) || isArray(target)) {
             let tokens = this.getTokenExtendsChain(token, false).map(t => {
-                return { service: token, isPrivate: true } as IReference<T>;
+                return { service: t, isPrivate: true } as IReference<T>;
             });
+            let fac: RefTokenFac<T>;
+            let defToken: Token<T>;
+            let prds: ProviderTypes[] = [];
+            if (isBoolean(toRefToken)) {
+                if (toRefToken) {
+                    defToken = token;
+                } else {
+                    defToken = null;
+                }
+            } else if (isToken(toRefToken)) {
+                defToken = toRefToken;
+            } else if (isFunction(toRefToken)) {
+                fac = toRefToken;
+                if (isBoolean(defaultToken)) {
+                    if (defaultToken) {
+                        defToken = token;
+                    } else {
+                        defToken = null;
+                    }
+                } else if (isToken(defaultToken)) {
+                    defToken = defaultToken;
+                } else if (defaultToken) {
+                    prds.push(defaultToken);
+                }
+            } else if (toRefToken) {
+                prds.unshift(toRefToken);
+            }
+
+
+            defToken = defToken === null ? null : (defToken || token);
+            providers = prds.concat(providers);
             return this.getRefService(
                 [
                     ...tokens,
+                    ...fac ? [tk => fac(tk)] : [],
                     ...tokens.map(t => (tk) => new InjectReference(t.service, tk))
                 ],
                 target,
-                token,
+                defToken,
                 ...providers);
         } else {
-            return this.resolve(token, ...(target ? [target as ProviderTypes].concat(providers) : providers));
+            return this.resolve(token, ...[target, toRefToken as ProviderTypes, defaultToken as ProviderTypes].filter(a => a).concat(providers));
         }
     }
 
@@ -174,42 +206,34 @@ export class Container implements IContainer {
      *
      * @template T
      * @param {Type<Registration<T>>} [refToken] reference service Registration Injector
-     * @param {Token<any>} target  the service reference to.
+     * @param {Token<any> | Token<any>[]} target  the service reference to.
      * @param {Token<T>} [defaultToken] default service token.
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof Container
      */
-    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any>, defaultToken?: Token<T>, ...providers: ProviderTypes[]): T {
+    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any> | Token<any>[], defaultToken?: Token<T>, ...providers: ProviderTypes[]): T {
         let service: T = null;
-        this.getTokenExtendsChain(target)
-            .forEach(tk => {
-                if (service) {
+        (isArray(target) ? target : [target])
+            .some(tag => this.getTokenExtendsChain(tag).some(tk => {
+                console.log('target:', tk);
+                // exclude ref registration.
+                if (tk instanceof InjectReference) {
                     return false;
                 }
-                // exclude ref registration.
-                if (tk instanceof RefRegistration || tk instanceof InjectReference) {
-                    return true;
-                }
-                (isArray(refToken) ? refToken : [refToken]).forEach(stk => {
-                    if (service) {
-                        return false;
-                    }
+                return (isArray(refToken) ? refToken : [refToken]).some(stk => {
                     let tokens = this.getRefToken(stk, tk);
-                    (isArray(tokens) ? tokens : [tokens]).forEach(rtk => {
-                        if (service) {
-                            return false;
-                        }
-                        service = this.resolveRef(rtk, ...providers);
-                        return !!service;
+                    return (isArray(tokens) ? tokens : [tokens]).some(rtk => {
+                        service = this.resolveRef(rtk, tk, ...providers);
+                        return service !== null;
                     });
-                    return !!service;
                 });
-                return !!service;
-            });
+            }));
         if (!service && defaultToken && this.has(defaultToken)) {
             service = this.resolve(defaultToken, ...providers);
         }
+
+        console.log('------------------\ngetRefService:', refToken, target, defaultToken, service ? service.constructor.name : 'service-null');
         return service;
     }
 
@@ -226,7 +250,7 @@ export class Container implements IContainer {
         return ref;
     }
 
-    protected resolveRef<T>(refToken: RefTokenType<T>, ...providers: ProviderTypes[]): T {
+    protected resolveRef<T>(refToken: RefTokenType<T>, target: Token<any>, ...providers: ProviderTypes[]): T {
         let tk: Token<T>;
         let isPrivate = false;
         if (isToken(refToken)) {
@@ -241,9 +265,16 @@ export class Container implements IContainer {
         }
 
         if (isPrivate) {
-            let pdrmap = this.get(new InjectReference(ProviderMap, tk));
+            if (!isClass(target)) {
+                return null;
+            }
+            let pdrmap = this.get(new InjectReference(ProviderMap, target));
+            console.log('+++++++++++++++++++++++++++++++++++++++\nis Private:', tk, target.name, pdrmap ? pdrmap['maps'] : null, (pdrmap && pdrmap.has(tk)) === true);
             return (pdrmap && pdrmap.has(tk)) ? pdrmap.resolve(tk, ...providers) : null;
         } else {
+            if (this.has(tk)) {
+                console.log('+++++++++++++++++++++++++++++++++++++++\nnot Private:', tk, this.has(tk));
+            }
             return this.resolve(tk, ...providers);
         }
     }
@@ -448,8 +479,19 @@ export class Container implements IContainer {
      * @memberof Container
      */
     getTokenExtendsChain(token: Token<any>, chain = true): Token<any>[] {
-        let type = isClass(token) ? token : this.getTokenImpl(token);
+        let type: Type<any>;
+        if (isClass(token)) {
+            type = token;
+            if (!this.has(type)) {
+                this.use(type);
+            }
+        } else {
+            type = this.getTokenImpl(token);
+        }
         if (!isClass(type)) {
+            if (!this.has(type)) {
+                this.use(type);
+            }
             return token ? [token] : [];
         }
         let types = chain ? lang.getBaseClasses(type) : [type];

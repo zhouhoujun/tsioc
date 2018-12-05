@@ -192,24 +192,10 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
 
         let tko = injmdl.token;
         if (!builder && tko) {
-            builder = container.getRefService(
-                this.getRefBuilderTokens(container),
-                tko, ModuleBuilderToken);
+            builder = container.getService(ModuleBuilderToken, tko, (tk) => new InjectModuleBuilderToken(tk), cfg.defaultBuilder || ModuleBuilderToken);
         }
 
         return builder || this;
-    }
-
-    protected getRefBuilderTokens(container: IContainer): RefTokenType<any>[] {
-        return [
-            { service: RunnableBuilderToken, isPrivate: true },
-            { service: ModuleBuilderToken, isPrivate: true },
-            (tk) => new InjectModuleBuilderToken(tk),
-            (tk) => new InjectReference(RunnableBuilderToken, tk),
-            (tk) => new InjectReference(RunnableBuilder, tk),
-            (tk) => new InjectReference(ModuleBuilderToken, tk),
-            (tk) => new InjectReference(ModuleBuilder, tk)
-        ]
     }
 
     getConfigManager(): IConfigureManager<ModuleConfig<T>> {

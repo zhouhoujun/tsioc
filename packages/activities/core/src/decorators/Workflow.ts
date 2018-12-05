@@ -1,7 +1,8 @@
 import { Registration, Token, MetadataAdapter, MetadataExtends, isString, isObject, isToken } from '@ts-ioc/core';
 import { WorkflowMetadata } from '../metadatas/WorkflowMetadata';
 import { createDIModuleDecorator, IDIModuleDecorator, IModuleBuilder } from '@ts-ioc/bootstrap';
-import { IActivityBuilder } from '../core/IActivityBuilder';
+import { IActivityBuilder, ActivityBuilderToken } from '../core/IActivityBuilder';
+import { WorkflowBuilderToken } from '../injectors/DefaultWorkflowBuilder';
 
 /**
  * workflow decorator.
@@ -89,7 +90,7 @@ export function createWorkflowDecorator<T extends WorkflowMetadata>(
                 if (isString(arg)) {
                     metadata.name = arg;
                 } else {
-                    metadata.annotationBuilder = arg;
+                    metadata.annoBuilder = arg;
                 }
             }
         });
@@ -100,7 +101,15 @@ export function createWorkflowDecorator<T extends WorkflowMetadata>(
                 metadata.name = arg;
             }
         });
-    }, metadataExtends) as IWorkflowDecorator<T>;
+    },
+    metadata => {
+        if (metadataExtends) {
+            metadata = metadataExtends(metadata as T);
+        }
+        metadata.defaultBuilder = WorkflowBuilderToken;
+        metadata.defaultAnnoBuilder = ActivityBuilderToken;
+        return metadata;
+    }) as IWorkflowDecorator<T>;
 }
 
 /**

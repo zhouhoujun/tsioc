@@ -158,7 +158,7 @@ export class DefaultModuleLoader implements IModuleLoader {
 
         if (isClass(regModule)) {
             regModules.push(regModule);
-        } else {
+        } else if (regModule) {
             let rmodules = regModule['exports'] ? regModule['exports'] : regModule;
             for (let p in rmodules) {
                 let type = rmodules[p];

@@ -1,6 +1,6 @@
 import { IModuleValidate, InjectModuleValidateToken } from './IModuleValidate';
 import { Type } from '../types';
-import { isClass, isString, isArray } from '../utils';
+import { isClass, isString } from '../utils';
 import { hasOwnClassMetadata, IocExt } from '../core';
 /**
  * base module validate.

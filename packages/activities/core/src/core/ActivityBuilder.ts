@@ -1,9 +1,9 @@
 import { ActivityBuilderToken, IActivityBuilder } from './IActivityBuilder';
-import { isFunction, isString, Token, Express, isToken, Injectable } from '@ts-ioc/core';
+import { isFunction, isString, Token, Express, isToken, Injectable, Providers, MetaAccessorToken } from '@ts-ioc/core';
 import { AnnotationBuilder } from '@ts-ioc/bootstrap';
 import { IActivity, ActivityInstance } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
-import { ActivityVaildateToken } from './ActivityVaildate';
+import { ActivityMetaAccessorToken } from '../injectors';
 
 
 /**
@@ -15,6 +15,9 @@ import { ActivityVaildateToken } from './ActivityVaildate';
  * @implements {IActivityBuilder}
  */
 @Injectable(ActivityBuilderToken)
+@Providers([
+    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken }
+])
 export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IActivityBuilder {
 
     /**
@@ -76,11 +79,6 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
         let activity = this.container.resolve(token);
         return activity;
     }
-
-    protected getDefaultMetaAccessorToken() {
-        return ActivityVaildateToken;
-    }
-
 
     /**
      * to expression

@@ -4,7 +4,7 @@ import { BindParameterProviderActionData, CoreActions, LifeState } from './actio
 import { isToken, isFunction, assert, assertExp } from '../utils';
 import { Token, ProviderTypes } from '../types';
 import { IParameter } from '../IParameter';
-import { IProviderParser, ProviderParserToken } from './IProviderParser';
+import { IProviderParser, ProviderParserToken } from './providers';
 
 /**
  * method accessor

@@ -1,12 +1,12 @@
 import {
     Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
     Inject, Token, ProviderTypes, Injectable, isArray, isClass,
-    IModuleInjector, Container, ProviderMap, ProviderParserToken, InjectReference, InjectClassProvidesToken, lang, isToken, InjectModuleValidateToken, IMetaAccessor, MetaAccessorToken, InjectMetaAccessorToken
+    IModuleInjector, Container, ProviderMap, ProviderParserToken, InjectReference, InjectClassProvidesToken, IMetaAccessor, MetaAccessorToken, InjectMetaAccessorToken
 } from '@ts-ioc/core';
 import { DIModuleValidateToken } from './DIModuleValidate';
 import { DIModule } from '../decorators';
 import { ContainerPoolToken } from '../utils';
-import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
+import { ModuleConfigure } from './ModuleConfigure';
 import { InjectedModuleToken, InjectedModule } from './InjectedModule';
 
 // const exportsProvidersFiled = '__exportProviders';
@@ -30,27 +30,27 @@ export interface IDIModuleInjector extends IModuleInjector {
      * @memberof IDIModuleInjector
      */
     getMetaAccessor<T>(container: IContainer, token: Token<T>): IMetaAccessor<T>;
-    /**
-     * import module type.
-     *
-     * @template T
-     * @param {IContainer} container
-     * @param {Token<T>} token
-     * @returns {Promise<InjectedModule<T>>}
-     * @memberof IDIModuleInjector
-     */
-    import<T>(container: IContainer, token: Token<T>): Promise<InjectedModule<T>>;
+    // /**
+    //  * import module type.
+    //  *
+    //  * @template T
+    //  * @param {IContainer} container
+    //  * @param {Token<T>} token
+    //  * @returns {Promise<InjectedModule<T>>}
+    //  * @memberof IDIModuleInjector
+    //  */
+    // import<T>(container: IContainer, token: Token<T>): Promise<InjectedModule<T>>;
 
-    /**
-     * import by config.
-     *
-     * @template T
-     * @param {IContainer} container
-     * @param {ModuleConfig<T>} config
-     * @returns {InjectedModule<T>>}
-     * @memberof IDIModuleInjector
-     */
-    importByConfig<T>(container: IContainer, config: ModuleConfig<T>): Promise<InjectedModule<T>>;
+    // /**
+    //  * import by config.
+    //  *
+    //  * @template T
+    //  * @param {IContainer} container
+    //  * @param {ModuleConfig<T>} config
+    //  * @returns {InjectedModule<T>>}
+    //  * @memberof IDIModuleInjector
+    //  */
+    // importByConfig<T>(container: IContainer, config: ModuleConfig<T>): Promise<InjectedModule<T>>;
 }
 
 /**
@@ -80,20 +80,6 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         this.importModule(container, type);
     }
 
-    async import<T>(container: IContainer, token: Token<T>): Promise<InjectedModule<T>> {
-        let type = isClass(token) ? token : container.getTokenImpl(token);
-        if (this.validate.valid(type)) {
-            let inMdtk = new InjectedModuleToken(type);
-            if (container.has(inMdtk)) {
-                return container.get(inMdtk);
-            } else {
-                return await this.importModule(container, type);
-            }
-        } else {
-            return null;
-        }
-    }
-
     protected valid(container: IContainer, type: Type<any>): boolean {
         if (!this.validate) {
             return true;
@@ -101,43 +87,8 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         return this.validate.valid(type);
     }
 
-    getMetaAccessor<T>(container: IContainer, token: Token<T>, decorator?: string): IMetaAccessor<T> {
-        let metaAcc;
-        if (isToken(token)) {
-            metaAcc = container.getRefService([
-                { service: MetaAccessorToken, isPrivate: true },
-                tk => new InjectMetaAccessorToken(tk)
-            ], token);
-        }
-        if (!metaAcc) {
-            metaAcc = container.getRefService(InjectMetaAccessorToken, decorator, MetaAccessorToken);
-        }
-        return metaAcc;
-    }
-
-    async importByConfig<T>(container: IContainer, config: ModuleConfig<T>): Promise<InjectedModule<T>> {
-        let injmd: InjectedModule<T> = null;
-        let token = this.getMetaAccessor(container, this.validate.getDecorator()).getToken(config, container);
-        if (token) {
-            let type = isClass(token) ? token : container.getTokenImpl(token);
-            let inMdtk = new InjectedModuleToken(type);
-            if (container.has(inMdtk)) {
-                injmd = container.get(inMdtk);
-            } else {
-                injmd = await this.importModule(container, type);
-            }
-        }
-
-        container = injmd ? injmd.container : container;
-
-        await this.registerConfgureDepds(container, config);
-        if (isArray(config.providers) && config.providers.length) {
-            this.bindProvider(container, config.providers);
-        }
-
-        let cfg = injmd ? lang.assign({}, injmd.config, config) : config;
-
-        return new InjectedModule(token, cfg, container);
+    getMetaAccessor<T>(container: IContainer, decorator?: string): IMetaAccessor<T> {
+        return container.getService(MetaAccessorToken, decorator);
     }
 
     protected async importModule(container: IContainer, type: Type<any>): Promise<InjectedModule<any>> {
@@ -145,8 +96,9 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         let newContainer = pools.create(container);
         newContainer.register(type);
         let builder = newContainer.getBuilder();
-        let accor = this.getMetaAccessor(newContainer, type, this.validate.getDecorator());
-        let metaConfig = accor.getMetadata(type, newContainer) as ModuleConfigure;
+        let decorator = this.validate.getDecorator();
+        let accor = this.getMetaAccessor(newContainer, decorator);
+        let metaConfig = accor.getMetadata(type, newContainer, undefined, decorator ? dec => dec === decorator : undefined) as ModuleConfigure;
         metaConfig = await this.registerConfgureDepds(newContainer, metaConfig, type);
 
         let exps: Type<any>[] = [].concat(...builder.loader.getTypes(metaConfig.exports || []));
@@ -187,14 +139,13 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
             let chain = container.getResolvers();
             chain.next(injMd);
             if (injMd.exports && injMd.exports.length) {
-                let expchs = providerContainer.getResolvers().toArray().filter(r => {
+                providerContainer.getResolvers().toArray().filter(r => {
                     if (r instanceof Container) {
                         return false;
                     } else {
                         return injMd.exports.indexOf(r.type) >= 0
                     }
-                });
-                expchs.forEach(r => {
+                }).forEach(r => {
                     chain.next(r);
                 });
             }
@@ -206,16 +157,18 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
     protected bindProvider(container: IContainer, providers: ProviderTypes[], type?: Type<any>): Token<any>[] {
         let parser = container.get(ProviderParserToken);
         let pdrmap: ProviderMap;
+        let newpMap = parser.parse(...providers);
         if (type && isClass(type)) {
             let mapRef = new InjectReference(ProviderMap, type);
             pdrmap = container.get(mapRef);
-            let newpMap = parser.parse(...providers);
             if (pdrmap) {
                 pdrmap.copy(newpMap);
             } else {
                 pdrmap = newpMap;
                 container.bindProvider(mapRef, pdrmap);
             }
+        } else {
+            pdrmap = newpMap;
         }
         let tokens = pdrmap.keys();
         tokens.forEach(key => {

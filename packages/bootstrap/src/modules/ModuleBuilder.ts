@@ -2,7 +2,8 @@ import 'reflect-metadata';
 import {
     IContainer, Token, ProviderTypes, lang, isFunction, isClass,
     isToken, Inject, Registration, Container,
-    InjectReference, Injectable, RefTokenType, InjectModuleValidateToken, IModuleValidate, MetaAccessorToken, IMetaAccessor, InjectMetaAccessorToken
+    InjectReference, Injectable, RefTokenType, MetaAccessorToken, IMetaAccessor,
+    InjectMetaAccessorToken, isArray, ProviderParserToken
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
@@ -14,11 +15,9 @@ import {
 } from '../runnable';
 import {
     IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder,
-    DefaultAnnotationBuilderToken, AnnotationBuilderToken, AnnotationBuilder
+    AnnotationBuilderToken, AnnotationBuilder
 } from '../annotations';
-import { InjectedModule } from './InjectedModule';
-import { DIModuleInjectorToken } from './DIModuleInjector';
-import { DIModuleValidateToken } from './DIModuleValidate';
+import { InjectedModule, InjectedModuleToken } from './InjectedModule';
 
 /**
  * inject module load token.
@@ -57,23 +56,8 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return this.pools;
     }
 
-    private _metaAccor: IMetaAccessor<any>;
-    getMetaAccessor(container: IContainer, token?: Token<any>): IMetaAccessor<any> {
-        let accor: IMetaAccessor<any>;
-        if (isToken(token)) {
-            accor = container.getRefService(InjectMetaAccessorToken, token);
-        }
-        if (!accor) {
-            if (!this._metaAccor) {
-                this._metaAccor = container.getRefService(InjectMetaAccessorToken, lang.getClass(this), this.getDefaultMetaAccessorToken());
-            }
-            accor = this._metaAccor;
-        }
-        return accor;
-    }
-
-    protected getDefaultMetaAccessorToken(): Token<any> {
-        return MetaAccessorToken;
+    getMetaAccessor(container: IContainer, token: Token<any>, config?: ModuleConfigure): IMetaAccessor<any> {
+        return container.getService(MetaAccessorToken, isToken(token) ? [token, lang.getClass(this)] : lang.getClass(this), tk => new InjectMetaAccessorToken(tk), config ? (config.defaultMetaAccessor || MetaAccessorToken) : MetaAccessorToken);
     }
 
     /**
@@ -127,13 +111,15 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     async createInstance(injmdl: InjectedModule<T>, data?: any): Promise<T> {
         let cfg = injmdl.config;
         let container = injmdl.container;
-        let bootToken = this.getMetaAccessor(container, injmdl.token || injmdl.type).getBootToken(cfg, container);
+        let accessor = this.getMetaAccessor(container, injmdl.token || injmdl.type);
+        let bootToken = accessor.getBootToken(cfg, container);
+        console.log('--------------\nModuleBuilder:', this.constructor.name, accessor.constructor.name, injmdl.token || injmdl.type, bootToken);
         let bootInstance;
         if (bootToken) {
-            let anBuilder = this.getAnnoBuilder(container, bootToken, cfg.annotationBuilder);
+            let anBuilder = this.getAnnoBuilder(container, bootToken, cfg);
             bootInstance = await anBuilder.build(bootToken, cfg, data);
         } else {
-            let mdBuilder = this.getAnnoBuilder(container, injmdl.token, cfg.annotationBuilder);
+            let mdBuilder = this.getAnnoBuilder(container, injmdl.token, cfg);
             bootInstance = (injmdl.token || injmdl.type) ? await mdBuilder.build(injmdl.token || injmdl.type, injmdl.config, data) : mdBuilder.buildByConfig(injmdl.config, data);
         }
         return bootInstance;
@@ -154,19 +140,59 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
     protected async loadViaToken(token: Token<T>, parent: IContainer): Promise<InjectedModule<T>> {
-        let accor = this.getMetaAccessor(parent, token);
-        let mdInjector = parent.resolve(DIModuleInjectorToken);
-        let injmdl: InjectedModule<T> = await mdInjector.import(parent, token);
+        let injmdl = await this.import(token, parent);
         if (!injmdl) {
-            let cfg = accor.getMetadata(token, parent);
+            let cfg = this.getMetaAccessor(parent, token).getMetadata(token, parent);
             injmdl = new InjectedModule(token, cfg, parent);
         }
         return injmdl;
     }
 
     protected async loadViaConfig(config: ModuleConfigure, parent: IContainer): Promise<InjectedModule<T>> {
-        let mdInjector = parent.resolve(DIModuleInjectorToken);
-        return await mdInjector.importByConfig(parent, config);
+        let injmd: InjectedModule<T> = null;
+        let token = this.getMetaAccessor(parent, null, config).getToken(config, parent);
+        if (token) {
+            injmd = await this.import(token, parent);
+            if (!injmd) {
+                let cfg = this.getMetaAccessor(parent, token).getMetadata(token, parent, config);
+                injmd = new InjectedModule(token, cfg, parent);
+            }
+        } else {
+            token = null;
+        }
+        if (isArray(config.imports) && config.imports.length) {
+            await parent.loadModule(...config.imports);
+        }
+        if (isArray(config.providers) && config.providers.length) {
+            let parser = parent.get(ProviderParserToken);
+            let pdrmap = parser.parse(...config.providers);
+            pdrmap.keys().forEach(key => {
+                parent.bindProvider(key, (...providers: ProviderTypes[]) => pdrmap.resolve(key, ...providers));
+            });
+        }
+        if (injmd) {
+            injmd.config = lang.assign({}, injmd.config, config);
+        } else {
+            injmd = new InjectedModule(token, config, parent);
+        }
+
+        return injmd;
+    }
+
+    protected async import(token: Token<T>, parent: IContainer): Promise<InjectedModule<T>> {
+        let type = isClass(token) ? token : parent.getTokenImpl(token);
+        if (isClass(type)) {
+            let key = new InjectedModuleToken(type);
+            if (parent.has(key)) {
+                return parent.get(key)
+            } else {
+                await parent.loadModule(type);
+                if (parent.has(key)) {
+                    return parent.get(key);
+                }
+            }
+        }
+        return null;
     }
 
     protected async getParentContainer(env?: ModuleEnv) {
@@ -197,30 +223,10 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             return instance;
         } else {
             let providers = [{ provide: token, useValue: instance }, { token: token, instance: instance, config: cfg }] as ProviderTypes[];
-            let runner: IRunner<T> = container.getRefService(
-                [
-                    { service: RunnerToken, isPrivate: true },
-                    { service: Runner, isPrivate: true },
-                    tk => new InjectRunnerToken(tk),
-                    tk => new InjectReference(RunnerToken, tk),
-                    tk => new InjectReference(Runner, tk)
-                ],
-                token,
-                RunnerToken,
-                ...providers);
+            let runner: IRunner<T> = container.getService(RunnerToken, token, tk => new InjectRunnerToken(tk), ...providers);
             let service: IService<T>;
             if (!runner) {
-                service = container.getRefService(
-                    [
-                        { service: ServiceToken, isPrivate: true },
-                        { service: Service, isPrivate: true },
-                        tk => new InjectServiceToken(tk),
-                        tk => new InjectReference(ServiceToken, tk),
-                        tk => new InjectReference(Service, tk)
-                    ],
-                    token,
-                    ServiceToken,
-                    ...providers);
+                service = container.getService(ServiceToken, token, tk => new InjectServiceToken(tk), ...providers);
             }
             if (runner) {
                 await runner.run(data);
@@ -237,47 +243,28 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         }
     }
 
-    protected getAnnoBuilder(container: IContainer, token: Token<any>, annBuilder: Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>): IAnyTypeBuilder {
+    protected getAnnoBuilder(container: IContainer, token: Token<any>, config: ModuleConfigure): IAnyTypeBuilder {
         let builder: IAnnotationBuilder<any>;
-        if (isClass(annBuilder)) {
-            if (!container.has(annBuilder)) {
-                container.register(annBuilder);
+        if (isClass(config.annoBuilder)) {
+            if (!container.has(config.annoBuilder)) {
+                container.register(config.annoBuilder);
             }
         }
 
-        if (isToken(annBuilder)) {
-            builder = container.resolve(annBuilder);
-        } else if (annBuilder instanceof AnnotationBuilder) {
-            builder = annBuilder;
+        if (isToken(config.annoBuilder)) {
+            builder = container.resolve(config.annoBuilder);
+        } else if (config.annoBuilder instanceof AnnotationBuilder) {
+            builder = config.annoBuilder;
         }
 
         if (!builder && token) {
-            builder = container.getRefService(
-                this.getRefAnnoTokens(container),
-                token,
-                DefaultAnnotationBuilderToken);
+            builder = container.getService(AnnotationBuilderToken, token, tk => new InjectAnnotationBuilder(tk),
+                config.defaultAnnoBuilder || AnnotationBuilderToken);
         }
 
-        if (!builder) {
-            builder = this.getDefaultAnnBuilder(container);
-        }
         if (builder) {
             builder.container = container
         }
         return builder;
-    }
-
-    protected getRefAnnoTokens(container: IContainer): RefTokenType<any>[] {
-        return [
-            { service: AnnotationBuilderToken, isPrivate: true },
-            tk => new InjectAnnotationBuilder(tk),
-            tk => new InjectReference(AnnotationBuilderToken, tk),
-            tk => new InjectReference(AnnotationBuilder, tk)
-        ]
-    }
-
-
-    protected getDefaultAnnBuilder(container: IContainer): IAnnotationBuilder<any> {
-        return container.resolve(AnnotationBuilderToken);
     }
 }

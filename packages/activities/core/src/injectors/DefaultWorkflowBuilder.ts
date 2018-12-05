@@ -1,13 +1,13 @@
-import { IContainer, Singleton, InjectModuleValidateToken, lang, Token } from '@ts-ioc/core';
-import { ActivityType, IActivity, Activity } from '../core';
-import { ModuleBuilder, ModuleEnv, Runnable, InjectModuleBuilderToken } from '@ts-ioc/bootstrap';
-import { WorkflowModuleValidateToken } from './WorkflowModuleValidate';
+import { Singleton, Providers, MetaAccessorToken } from '@ts-ioc/core';
+import { ActivityType, IActivity, ActivityToken, ActivityBuilderToken } from '../core';
+import { ModuleBuilder, ModuleEnv, Runnable, InjectModuleBuilderToken, AnnotationBuilderToken } from '@ts-ioc/bootstrap';
+import { ActivityMetaAccessorToken } from './ActivityMetaAccessor';
 
 
 /**
  * workflow builder token.
  */
-export const WorkflowBuilderToken = new InjectModuleBuilderToken<IActivity>(Activity);
+export const WorkflowBuilderToken = new InjectModuleBuilderToken<IActivity>(ActivityToken);
 /**
  * default Workflow Builder.
  *
@@ -15,6 +15,10 @@ export const WorkflowBuilderToken = new InjectModuleBuilderToken<IActivity>(Acti
  * @class DefaultTaskContainer
  */
 @Singleton(WorkflowBuilderToken)
+@Providers([
+    {provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken},
+    {provide: AnnotationBuilderToken, useExisting: ActivityBuilderToken}
+])
 export class DefaultWorkflowBuilder extends ModuleBuilder<IActivity> {
     /**
      * bootstrap workflow via activity.
@@ -29,10 +33,6 @@ export class DefaultWorkflowBuilder extends ModuleBuilder<IActivity> {
         let injmdl = await this.load(activity, env);
         let runner = await super.bootstrap(activity, injmdl, data);
         return runner;
-    }
-
-    protected getDefaultValidateToken(): Token<any> {
-        return WorkflowModuleValidateToken;
     }
 }
 

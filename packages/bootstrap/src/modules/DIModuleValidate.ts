@@ -22,9 +22,4 @@ export class DIModuelValidate extends ModuelValidate {
     getDecorator(): string {
         return DIModule.toString();
     }
-
-    protected getBootTokenInConfig(cfg: ModuleConfigure) {
-        return cfg.bootstrap;
-    }
-
 }
