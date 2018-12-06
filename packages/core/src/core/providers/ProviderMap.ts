@@ -164,13 +164,14 @@ export class ProviderMap {
      * @returns
      * @memberof ProviderMap
      */
-    copy(map: ProviderMap) {
+    copy(map: ProviderMap): this {
         if (!map) {
-            return;
+            return this;
         }
         map.forEach((val, token) => {
             this.maps.set(token, val);
         });
+        return this;
     }
 }
 

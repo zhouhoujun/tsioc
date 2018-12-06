@@ -34,6 +34,10 @@ export class Registration<T> {
      * @memberof Registration
      */
     constructor(provideType: Token<T> | Token<any>, desc: string) {
+        this.init(provideType, desc);
+    }
+
+    protected init(provideType: Token<T> | Token<any>, desc?: string) {
         if (provideType instanceof Registration) {
             if (desc) {
                 this.classType = provideType.toString();
@@ -51,7 +55,6 @@ export class Registration<T> {
     getProvide(): SymbolType<any> {
         return this.classType;
     }
-
 
     /**
      * get class.
@@ -83,12 +86,23 @@ export class Registration<T> {
      * @memberof Registration
      */
     toString(): string {
-        let name = '';
-        if (isFunction(this.classType)) {
-            name = `{${getClassName(this.classType)}}`;
-        } else if (this.classType) {
-            name = this.classType.toString();
+        return this.format(this);
+    }
+
+    protected format(reg: Token<T>): string {
+        if (reg instanceof Registration) {
+            let name = '';
+            if (isFunction(reg.classType)) {
+                name = `{${getClassName(reg.classType)}}`;
+            } else if (reg.classType) {
+                name = reg.classType.toString();
+            }
+            return [reg.type, name, reg.desc].filter(n => n).join('_');
+        } if (isFunction(reg)) {
+            return `{${getClassName(reg)}}`;
+        } else if (reg) {
+            return reg.toString();
         }
-        return [this.type, name, this.desc].filter(n => n).join('_');
+        return '';
     }
 }

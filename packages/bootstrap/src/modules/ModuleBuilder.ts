@@ -113,7 +113,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         let container = injmdl.container;
         let accessor = this.getMetaAccessor(container, injmdl.token || injmdl.type);
         let bootToken = accessor.getBootToken(cfg, container);
-        console.log('--------------\nModuleBuilder:', this.constructor.name, accessor.constructor.name, injmdl.token || injmdl.type, bootToken);
         let bootInstance;
         if (bootToken) {
             let anBuilder = this.getAnnoBuilder(container, bootToken, cfg);

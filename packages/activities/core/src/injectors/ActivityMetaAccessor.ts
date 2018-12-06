@@ -4,8 +4,8 @@ import { IActivity, InjectAcitityToken, ActivityConfigure, ActivityToken, Activi
 export const ActivityMetaAccessorToken = new InjectMetaAccessorToken('@Task');
 
 @Injectable(ActivityMetaAccessorToken)
-@Refs(ActivityToken, MetaAccessorToken)
-@Refs(ActivityBuilderToken, MetaAccessorToken)
+// @Refs(ActivityToken, MetaAccessorToken)
+// @Refs(ActivityBuilderToken, MetaAccessorToken)
 export class ActivityMetaAccessor extends MetaAccessor {
 
     getToken(config: ActivityConfigure, container?: IContainer): Token<IActivity> {

@@ -31,6 +31,10 @@ export class InjectReference<T> extends Registration<T> {
         super(provideType, '');
     }
 
+    protected init(provideType: Token<T>) {
+        this.classType = this.format(provideType);
+    }
+
     /**
      * to string.
      *
@@ -39,13 +43,8 @@ export class InjectReference<T> extends Registration<T> {
      */
     toString(): string {
         let key = super.toString();
-        let name = '';
-        if (isFunction(this.target)) {
-            name = `{${getClassName(this.target)}}`;
-        } else if (this.target) {
-            name = this.target.toString();
-        }
-        return `Ref ${key} for ${name}`;
+        let target = this.format(this.target)
+        return `Ref ${key} for ${target}`;
     }
 }
 

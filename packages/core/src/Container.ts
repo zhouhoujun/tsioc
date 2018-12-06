@@ -216,7 +216,6 @@ export class Container implements IContainer {
         let service: T = null;
         (isArray(target) ? target : [target])
             .some(tag => this.getTokenExtendsChain(tag).some(tk => {
-                console.log('target:', tk);
                 // exclude ref registration.
                 if (tk instanceof InjectReference) {
                     return false;
@@ -232,8 +231,6 @@ export class Container implements IContainer {
         if (!service && defaultToken && this.has(defaultToken)) {
             service = this.resolve(defaultToken, ...providers);
         }
-
-        console.log('------------------\ngetRefService:', refToken, target, defaultToken, service ? service.constructor.name : 'service-null');
         return service;
     }
 
@@ -269,12 +266,8 @@ export class Container implements IContainer {
                 return null;
             }
             let pdrmap = this.get(new InjectReference(ProviderMap, target));
-            console.log('+++++++++++++++++++++++++++++++++++++++\nis Private:', tk, target.name, pdrmap ? pdrmap['maps'] : null, (pdrmap && pdrmap.has(tk)) === true);
             return (pdrmap && pdrmap.has(tk)) ? pdrmap.resolve(tk, ...providers) : null;
         } else {
-            if (this.has(tk)) {
-                console.log('+++++++++++++++++++++++++++++++++++++++\nnot Private:', tk, this.has(tk));
-            }
             return this.resolve(tk, ...providers);
         }
     }
