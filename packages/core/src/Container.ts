@@ -423,7 +423,6 @@ export class Container implements IContainer {
     bindTarget(target: Token<any>, providers: ProviderTypes[], onceBinded?: (mapTokenKey: Token<any>) => void): this {
         let refKey = new InjectReference(ProviderMap, isClass(target) ? target : this.getTokenImpl(target));
         let maps = this.get(ProviderParserToken).parse(...providers);
-        console.log('bind target:', refKey.toString(), this.hasRegister(refKey), providers, maps['maps']);
         if (this.hasRegister(refKey)) {
             this.resolveValue(refKey).copy(maps);
         } else {
