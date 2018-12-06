@@ -1,6 +1,6 @@
 {
   "name": "@taskfr/build",
-  "version": "2.1.11",
+  "version": "4.0.0-beta",
   "description": "type task framework, base on AOP, Ioc container, via @ts-ioc. nodejs activities.",
   "esnext": "./es2017/activites.js",
   "es2015": "./es2015/activites.js",

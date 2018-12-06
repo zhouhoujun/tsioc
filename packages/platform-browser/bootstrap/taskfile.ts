@@ -1,4 +1,4 @@
-import { TaskContainer } from '@taskfr/platform-server';
+import { TaskContainer } from '@taskfr/core';
 import { Asset, AssetActivity, CleanToken, TsCompile } from '@taskfr/build';
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 

@@ -1,11 +1,11 @@
-import { MetaAccessor, IContainer, Token, isString, InjectMetaAccessorToken, Injectable, Refs, MetaAccessorToken } from '@ts-ioc/core';
-import { IActivity, InjectAcitityToken, ActivityConfigure, ActivityToken, ActivityBuilderToken } from '../core';
+import { MetaAccessor, IContainer, Token, isString, InjectMetaAccessorToken, Injectable } from '@ts-ioc/core';
+import { IActivity, InjectAcitityToken, ActivityConfigure } from '../core';
 
 export const ActivityMetaAccessorToken = new InjectMetaAccessorToken('@Task');
 
-@Injectable(ActivityMetaAccessorToken)
 // @Refs(ActivityToken, MetaAccessorToken)
 // @Refs(ActivityBuilderToken, MetaAccessorToken)
+@Injectable(ActivityMetaAccessorToken)
 export class ActivityMetaAccessor extends MetaAccessor {
 
     getToken(config: ActivityConfigure, container?: IContainer): Token<IActivity> {

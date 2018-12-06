@@ -1,8 +1,7 @@
 import 'mocha';
 import { expect } from 'chai';
 import {
-    Method, Inject, DefaultContainerBuilder, AutoWired, Injectable, Singleton, IContainer,
-    ParameterMetadata, Param, isFunction, hasOwnMethodMetadata, hasPropertyMetadata
+    Method, Inject, Injectable, IContainer, ContainerBuilder,
 } from '@ts-ioc/core';
 import { LogModule, Logger } from '../src';
 import { DebugLogAspect } from './DebugLogAspect';
@@ -76,7 +75,7 @@ describe('logging test', () => {
 
     let container: IContainer;
     beforeEach(async () => {
-        let builder = new DefaultContainerBuilder();
+        let builder = new ContainerBuilder();
         container = builder.create();
         await container.use(LogModule);
     });

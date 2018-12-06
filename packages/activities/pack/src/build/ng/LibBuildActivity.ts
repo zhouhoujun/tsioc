@@ -1,4 +1,4 @@
-import { BuildActivity } from '@taskfr/build';
+
 import { Pack } from '../../decorators';
 
 
@@ -22,6 +22,6 @@ import { Pack } from '../../decorators';
         }
     ]
 })
-export class NgLibBuildActivity extends BuildActivity {
+export class NgLibBuildActivity {
 
 }

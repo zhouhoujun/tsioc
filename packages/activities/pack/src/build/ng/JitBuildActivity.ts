@@ -1,4 +1,3 @@
-import { BuildActivity } from '@taskfr/build';
 import { Pack } from '../../decorators';
 
 
@@ -18,6 +17,6 @@ import { Pack } from '../../decorators';
         }
     ]
 })
-export class NgJitBuildActivity extends BuildActivity {
+export class NgJitBuildActivity {
 
 }

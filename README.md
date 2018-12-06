@@ -10,11 +10,15 @@ now package rename as [`@ts-ioc`](https://www.npmjs.com/search?q=%40ts-ioc)
 # builder
 
 ```shell
-//release version
-gulp start --release --version x.x.x
+build: npm run build
 
-// publish
-gulp start --deploy
+//build with version:
+npm run build -- --setvs=4.0.0-beta
+
+//deploy: 
+./deploy.cmd
+//or
+ npm run build -- --deploy=true
 
 ```
 

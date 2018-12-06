@@ -1,5 +1,5 @@
-import { TaskContainer } from '@taskfr/platform-server';
-import { INodeActivityContext, Asset, BuildModule, AssetActivity } from '@taskfr/build';
+import { TaskContainer } from '@taskfr/core';
+import { INodeActivityContext, Asset, BuildModule, AssetActivity, ShellModule, TransformModule } from '@taskfr/build';
 const jeditor = require('gulp-json-editor');
 
 
@@ -59,5 +59,5 @@ export class BuilderIoc {
 }
 
 TaskContainer.create(__dirname)
-    .use(BuildModule)
+    .use(BuildModule, ShellModule, TransformModule)
     .bootstrap(BuilderIoc);

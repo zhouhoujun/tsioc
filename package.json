@@ -1,6 +1,6 @@
 {
   "name": "tsioc-srcs",
-  "version": "3.2.14",
+  "version": "4.0.0-beta",
   "private": true,
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
@@ -9,19 +9,7 @@
     "build": "ts-node -r tsconfig-paths/register taskfile.ts",
     "build-act": "ts-node -r tsconfig-paths/register taskfile-act.ts"
   },
-  "keywords": [
-    "IoC",
-    "AOP",
-    "dependency",
-    "injection",
-    "framework",
-    "container",
-    "decorator",
-    "autofac",
-    "Inject",
-    "type",
-    "typescript"
-  ],
+  "keywords": ["IoC", "AOP", "dependency", "injection", "framework", "container", "decorator", "autofac", "Inject", "type", "typescript"],
   "author": "houjun <freebirds8281@hotmail.com>",
   "license": "MIT",
   "bugs": {

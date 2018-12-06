@@ -22,6 +22,6 @@ import { Pack } from '../../decorators';
         }
     ]
 })
-export class NgProdBuildActivity extends BuildActivity {
+export class NgProdBuildActivity {
 
 }

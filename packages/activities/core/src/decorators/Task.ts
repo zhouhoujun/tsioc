@@ -76,6 +76,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
     taskType: string,
     defaultAnnoBuilder?: Token<IActivityBuilder>,
     defaultBoot?: Token<IActivity>,
+    baseClassName?: string,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): ITaskDecorator<T> {
 
@@ -141,7 +142,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
                 metadata.provide = metadata.name;
             }
 
-            if (defaultBoot && !metadata.activity && !metadata.task && !lang.isExtendsClass(metadata.type, ty => getClassName(ty) === 'Activity')) {
+            if (defaultBoot && !metadata.activity && !metadata.task && !lang.isExtendsClass(metadata.type, ty => getClassName(ty) === (baseClassName || 'Activity'))) {
                 metadata.bootstrap = defaultBoot;
             }
 

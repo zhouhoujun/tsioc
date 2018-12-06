@@ -17,4 +17,4 @@ export interface AssetMetadata extends AssetConfigure {
  *
  * @AssetTask
  */
-export const Asset: ITaskDecorator<AssetMetadata> = createTaskDecorator<AssetMetadata>('Asset', AssetBuilderToken, AssetToken);
+export const Asset: ITaskDecorator<AssetMetadata> = createTaskDecorator<AssetMetadata>('Asset', AssetBuilderToken, AssetToken, 'AssetActivity');

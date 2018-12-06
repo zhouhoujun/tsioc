@@ -21,4 +21,4 @@ export interface PackMetadata extends PackConfigure {
  *
  * @Pack
  */
-export const Pack: ITaskDecorator<PackMetadata> = createTaskDecorator<PackMetadata>('Pack', PackBuilderToken, PackToken);
+export const Pack: ITaskDecorator<PackMetadata> = createTaskDecorator<PackMetadata>('Pack', PackBuilderToken, PackToken, 'PackActivity');

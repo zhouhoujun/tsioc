@@ -1,6 +1,6 @@
 {
   "name": "@taskfr/pack",
-  "version": "2.1.11",
+  "version": "4.0.0-beta",
   "description": "type task framework, base on AOP, Ioc container, via @ts-ioc. dev pack activities.",
   "esnext": "./es2017/pack.js",
   "es2015": "./es2015/pack.js",
