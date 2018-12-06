@@ -1,5 +1,5 @@
-import { Src, ContextActivity, Task, ActivityContext, InputDataToken, InjectActivityContextToken, Activity } from '@taskfr/core';
-import { Inject, Injectable, ObjectMap, Express2, isArray, isString, assertExp } from '@ts-ioc/core';
+import { Src, ContextActivity, Task, ActivityContext, InputDataToken, InjectActivityContextToken, Activity, ActivityMetaAccessorToken } from '@taskfr/core';
+import { Inject, Injectable, ObjectMap, Express2, isArray, isString, assertExp, Providers, MetaAccessorToken } from '@ts-ioc/core';
 import { toAbsolutePath } from '@ts-ioc/platform-server';
 import { existsSync, readdirSync, lstatSync } from 'fs';
 import { join, dirname, normalize } from 'path';
@@ -23,6 +23,9 @@ const del = require('del');
  * @template T
  */
 @Task
+@Providers([
+    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken }
+])
 export abstract class NodeActivity extends ContextActivity {
 
     /**

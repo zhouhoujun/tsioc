@@ -3,7 +3,7 @@ import {
     isClass, ITypeDecorator, Token, Registration, isToken, isUndefined
 } from '@ts-ioc/core';
 import { ActivityMetadata } from '../metadatas/ActivityMetadata';
-import { IActivityBuilder } from '../core/IActivityBuilder';
+import { IActivityBuilder, ActivityBuilderToken } from '../core/IActivityBuilder';
 import { IActivityContext } from '../core/IActivityContext';
 import { WorkflowBuilderToken } from '../injectors/DefaultWorkflowBuilder';
 
@@ -152,5 +152,5 @@ export function createTaskDecorator<T extends ActivityMetadata>(
  *
  * @Task
  */
-export const Task: ITaskDecorator<ActivityMetadata> = createTaskDecorator('Task');
+export const Task: ITaskDecorator<ActivityMetadata> = createTaskDecorator('Task', ActivityBuilderToken);
 

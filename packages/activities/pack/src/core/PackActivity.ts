@@ -1,10 +1,10 @@
 import { BuildActivity, CleanActivity, TestActivity } from '@taskfr/build';
 import { Pack } from '../decorators';
-import { IPackActivity } from './IPackActivity';
+import { IPackActivity, PackToken } from './IPackActivity';
 import { ServeActivity } from '../serves';
 
 
-@Pack
+@Pack(PackToken)
 export class PackActivity extends BuildActivity implements IPackActivity {
     /**
      * clean activity.

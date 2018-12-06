@@ -6,7 +6,7 @@ import { Injectable, lang, isString, isArray } from '@ts-ioc/core';
 import { PackActivity } from './PackActivity';
 import {
     CleanActivity, CleanConfigure, TestActivity, TestConfigure, AssetActivity,
-    AssetConfigure, InjectAssetActivityToken, AssetToken, BuildHandleToken, HandleContextToken, BuildHandleActivity
+    AssetConfigure, InjectAssetActivityToken, AssetToken, BuildHandleToken
 } from '@taskfr/build';
 import { PackConfigure } from './PackConfigure';
 import { PackBuilderToken } from './IPackActivity';

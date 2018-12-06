@@ -1,8 +1,8 @@
 import {
     HandleActivity, Active, Task, ExpressionType, IActivity,
-    Expression, HandleConfigure, CtxType, InjectAcitityToken
+    Expression, HandleConfigure, CtxType, InjectAcitityToken, ActivityMetaAccessorToken
 } from '@taskfr/core';
-import { isRegExp, isString, isArray, Express, isFunction, lang, InjectReference, Token } from '@ts-ioc/core';
+import { isRegExp, isString, isArray, Express, isFunction, lang, InjectReference, Token, Providers, MetaAccessorToken } from '@ts-ioc/core';
 import { BuidActivityContext } from './BuidActivityContext';
 import minimatch = require('minimatch');
 import { CompilerToken, InjectCompilerToken } from './BuildHandle';
@@ -59,6 +59,9 @@ export const BuildHandleToken = new InjectAcitityToken<BuildHandleActivity>('bui
  * @extends {HandleActivity}
  */
 @Task(BuildHandleToken)
+@Providers([
+    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken }
+])
 export class BuildHandleActivity extends HandleActivity {
 
     /**

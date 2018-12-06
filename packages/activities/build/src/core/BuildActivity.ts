@@ -1,8 +1,8 @@
 import {
     ChainActivity, Task, ChainConfigure, CtxType, Src,
-    ExpressionToken, ConfigureType, Active, IActivity, InjectAcitityToken
+    ExpressionToken, ConfigureType, Active, IActivity, InjectAcitityToken, ActivityMetaAccessorToken
 } from '@taskfr/core';
-import { isBoolean, Token } from '@ts-ioc/core';
+import { isBoolean, Token, Providers, MetaAccessorToken } from '@ts-ioc/core';
 import { WatchActivity, WatchConfigure } from './handles';
 import { BuidActivityContext } from './BuidActivityContext';
 import { BuildHandleConfigure, BuildHandleActivity } from './BuildHandleActivity';
@@ -130,6 +130,9 @@ export interface IBuildActivity extends IActivity {
  * @extends {ChainActivity}
  */
 @Task(BuildToken)
+@Providers([
+    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken }
+])
 export class BuildActivity extends ChainActivity implements IBuildActivity {
 
     /**
