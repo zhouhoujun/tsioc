@@ -6,6 +6,22 @@ This repo is for distribution on `npm`. The source for this module is in the
 `@ts-ioc/core` is AOP, Ioc container, via typescript decorator.
 
 version 2+ of [`tsioc`](https://www.npmjs.com/zhouhoujun/package/tsioc)
+
+# builder
+
+```shell
+build: npm run build
+
+//build with version:
+npm run build -- --setvs=4.0.0-beta
+
+//deploy: 
+./deploy.cmd
+//or
+ npm run build -- --deploy=true
+
+```
+
 # Install
 
 ```shell
