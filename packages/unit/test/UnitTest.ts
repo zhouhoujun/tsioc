@@ -1,5 +1,6 @@
 import { Suite, BeforeEach, UnitModule, Test } from '../src';
-import { ApplicationBuilder } from '@ts-ioc/platform-server/bootstrap';
+import { ApplicationBuilder } from '@ts-ioc/bootstrap';
+import { ServerBootstrapModule } from '@ts-ioc/platform-server/bootstrap';
 import { Defer } from '@ts-ioc/core';
 
 
@@ -36,5 +37,5 @@ export class UnitTest {
 
 
 ApplicationBuilder.create('.')
-    .use(UnitModule)
+    .use(UnitModule, ServerBootstrapModule)
     .bootstrap(UnitTest);
