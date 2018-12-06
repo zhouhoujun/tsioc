@@ -25,12 +25,7 @@ npm install @ts-ioc/platform-server
 
 
 ```ts
-
-import { DIModule, Bootstrap } from '@ts-ioc/bootstrap';
-// in server
-import { ApplicationBuilder } from '@ts-ioc/platform-server/bootstrap'
-// in browser
-import { ApplicationBuilder } from '@ts-ioc/platform-browser/bootstrap'
+import { DIModule, ApplicationBuilder } from '@ts-ioc/bootstrap';
 
 
 export class TestService {

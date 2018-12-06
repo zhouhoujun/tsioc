@@ -5,9 +5,9 @@ import { isToken, isString } from '../../utils';
 import { Token } from '../../types';
 
 /**
- * RefTo decorator, for class. use to define the class as service of target.
+ * Refs decorator, for class. use to define the class as service of target.
  *
- * @RefTo
+ * @Refs
  *
  * @export
  * @interface IRefToDecorator
@@ -15,18 +15,18 @@ import { Token } from '../../types';
  */
 export interface IRefsDecorator {
     /**
-     * RefTo decorator, for class. use to define the class as service of target.
+     * Refs decorator, for class. use to define the class as service of target.
      *
-     * @RefTo
+     * @Refs
      *
      * @param {Token<any>} target reference to target token.
      */
     (target: Token<any>): ClassDecorator;
 
     /**
-     * RefTo decorator, for class. use to define the class as service of target.
+     * Refs decorator, for class. use to define the class as service of target.
      *
-     * @RefTo
+     * @Refs
      *
      * @param {Token<any>} target reference to target token.
      * @param {Token<any>} provide define this class ref provider for provide.
@@ -35,9 +35,9 @@ export interface IRefsDecorator {
     (target: Token<any>, provide: Token<any>, alias?: string): ClassDecorator;
 
     /**
-     * RefTo decorator, for class. use to define the class as service of target.
+     * Refs decorator, for class. use to define the class as service of target.
      *
-     * @RefTo
+     * @Refs
      *
      * @param {RefMetadata} [metadata] metadata map.
      */
@@ -45,11 +45,11 @@ export interface IRefsDecorator {
 }
 
 /**
- * RefTo decorator, for class. use to define the class as service of target.
+ * Refs decorator, for class. use to define the class as service of target.
  *
- * @RefTo
+ * @Refs
  */
-export const Refs: IRefsDecorator = createDecorator<RefMetadata>('RefTo', ((args: ArgsIterator) => {
+export const Refs: IRefsDecorator = createDecorator<RefMetadata>('Refs', ((args: ArgsIterator) => {
     args.next<RefMetadata>({
         match: arg => isToken(arg),
         setMetadata: (metadata, arg) => {
