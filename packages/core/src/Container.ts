@@ -492,7 +492,7 @@ export class Container implements IContainer {
             let tokens: Token<any>[];
             let prds = this.get(new InjectClassProvidesToken(ty));
             if (prds && prds.provides && prds.provides.length) {
-                tokens = prds.provides;
+                tokens = prds.provides.slice(1);
             }
             tokens = tokens || [];
             return !tokens.concat([ty]).some(tk => express(tk, tokens) === false);
