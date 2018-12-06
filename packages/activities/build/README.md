@@ -19,7 +19,7 @@ npm install @taskfr/build
 2. install cli:
 
 ```shell
-npm install -g @taskfr/cli
+npm install -g @taskfr/pack
 ```
 
 use command: `tkf [task names] [--param param]`
