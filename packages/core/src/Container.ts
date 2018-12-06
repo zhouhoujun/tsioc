@@ -216,7 +216,7 @@ export class Container implements IContainer {
         let service: T = null;
         (isArray(target) ? target : [target])
             .some(tag => {
-                this.forInClassChain(tag, tk => {
+                this.forInTokenClassChain(tag, tk => {
                     // exclude ref registration.
                     if (tk instanceof InjectReference) {
                         return true;
@@ -469,13 +469,13 @@ export class Container implements IContainer {
     }
 
     /**
-     * iterate token  in  token class chain.
+     * iterate token  in  token class chain.  return false will break iterate.
      *
      * @param {Token<any>} token
      * @param {(token: Token<any>, classProviders?: Token<any>[]) => boolean} express
      * @memberof Container
      */
-    forInClassChain(token: Token<any>, express: (token: Token<any>, classProviders?: Token<any>[]) => boolean): void {
+    forInTokenClassChain(token: Token<any>, express: (token: Token<any>, classProviders?: Token<any>[]) => boolean): void {
         let type: Type<any>;
         if (isClass(token)) {
             type = token;
@@ -486,23 +486,17 @@ export class Container implements IContainer {
             type = this.getTokenImpl(token);
         }
         if (!isClass(type)) {
-            if (!this.has(type)) {
-                this.use(type);
-            }
             express(token, [token]);
         }
-        while (isClass(type) && type !== Object) {
-            let tokens;
-            let prds = this.get(new InjectClassProvidesToken(type));
+        lang.forInClassChain(type, ty => {
+            let tokens: Token<any>[];
+            let prds = this.get(new InjectClassProvidesToken(ty));
             if (prds && prds.provides && prds.provides.length) {
                 tokens = prds.provides;
             }
             tokens = tokens || [];
-            if ((tokens.concat([type])).some(tk => express(tk, tokens) === false)) {
-                break;
-            }
-            type = lang.getParentClass(type);
-        }
+            return !tokens.concat([ty]).some(tk => express(tk, tokens) === false);
+        });
     }
 
 
@@ -515,7 +509,7 @@ export class Container implements IContainer {
      */
     getTokenClassChain(token: Token<any>, chain = true): Token<any>[] {
         let tokens: Token<any>[] = [];
-        this.forInClassChain(token, (tk, tks) => {
+        this.forInTokenClassChain(token, (tk, tks) => {
             if (chain === false) {
                 tokens = tks;
                 return false;

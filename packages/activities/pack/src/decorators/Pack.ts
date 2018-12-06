@@ -1,6 +1,6 @@
 import { ITaskDecorator, createTaskDecorator } from '@taskfr/core';
 import { PackConfigure } from '../core/PackConfigure';
-import { PackBuilderToken } from '../core/IPackActivity';
+import { PackBuilderToken, PackToken } from '../core/IPackActivity';
 
 
 
@@ -21,4 +21,4 @@ export interface PackMetadata extends PackConfigure {
  *
  * @Pack
  */
-export const Pack: ITaskDecorator<PackMetadata> = createTaskDecorator<PackMetadata>('Pack', PackBuilderToken);
+export const Pack: ITaskDecorator<PackMetadata> = createTaskDecorator<PackMetadata>('Pack', PackBuilderToken, PackToken);

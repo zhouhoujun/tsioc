@@ -266,13 +266,13 @@ export interface IContainer extends IMethodAccessor, IResolver {
     getTokenImpl<T>(token: Token<T>, inchain?: boolean): Type<T>;
 
     /**
-     * iterate token  in  token class chain.
+     * iterate token  in  token class chain.  return false will break iterate.
      *
      * @param {Token<any>} token
      * @param {(token: Token<any>, classProviders?: Token<any>[]) => boolean} express
      * @memberof IContainer
      */
-    forInClassChain(token: Token<any>, express: (token: Token<any>, classProviders?: Token<any>[]) => boolean): void;
+    forInTokenClassChain(token: Token<any>, express: (token: Token<any>, classProviders?: Token<any>[]) => boolean): void;
 
     /**
      * get token implement class and base classes.

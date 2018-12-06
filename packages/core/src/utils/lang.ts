@@ -1,4 +1,4 @@
-import { ObjectMap, Type } from '../types';
+import { ObjectMap, Type, Token } from '../types';
 import { isNullOrUndefined, isArray, isObject, isFunction, isClass } from './typeCheck';
 // use core-js in browser.
 
@@ -130,34 +130,6 @@ export namespace lang {
         })
     }
 
-    /**
-     * get target type parent class.
-     *
-     * @export
-     * @param {Type<any>} target
-     * @returns {Type<any>}
-     */
-    export function getParentClass(target: Type<any>): Type<any> {
-        let p = Reflect.getPrototypeOf(target.prototype);
-        return isClass(p) ? p : p.constructor as Type<any>;
-    }
-
-    /**
-     * get all parent class in chain.
-     *
-     * @export
-     * @param {Type<any>} target
-     * @returns {Type<any>[]}
-     */
-    export function getBaseClasses(target: Type<any>): Type<any>[] {
-        let types: Type<any>[] = [];
-        while (isClass(target) && target !== Object) {
-            types.push(target);
-            target = lang.getParentClass(target);
-        }
-        return types;
-    }
-
 
     /**
      * first.
@@ -206,8 +178,87 @@ export namespace lang {
         return target.constructor || target.prototype.constructor;
     }
 
+    /**
+     * get target type parent class.
+     *
+     * @export
+     * @param {Type<any>} target
+     * @returns {Type<any>}
+     */
+    export function getParentClass(target: Type<any>): Type<any> {
+        let p = Reflect.getPrototypeOf(target.prototype);
+        return isClass(p) ? p : p.constructor as Type<any>;
+    }
+
+    /**
+     * get all parent class in chain.
+     *
+     * @export
+     * @param {Type<any>} target
+     * @returns {Type<any>[]}
+     */
+    export function getClassChain(target: Type<any>): Type<any>[] {
+        let types: Type<any>[] = [];
+        forInClassChain(target, type => {
+            types.push(target);
+        });
+        return types;
+    }
+
+    /**
+     * iterate base classes of target in chain. return false will break iterate.
+     *
+     * @export
+     * @param {Type<any>} target
+     * @param {(token: Type<any>) => any} express
+     */
+    export function forInClassChain(target: Type<any>, express: (token: Type<any>) => any): void {
+        while (isClass(target) && target !== Object) {
+            if (express(target) === false) {
+                break;
+            }
+            target = getParentClass(target);
+        }
+    }
+
+    /**
+     * target is extends class of baseClass or not.
+     *
+     * @export
+     * @param {Token<any>} target
+     * @param {(Type<any> | ((type: Type<any>) => boolean))} baseClass
+     * @returns {boolean}
+     */
+    export function isExtendsClass(target: Token<any>, baseClass: Type<any> | ((type: Type<any>) => boolean)): boolean {
+        let isExtnds = false;
+        if (isClass(target)) {
+            forInClassChain(target, t => {
+                if (isClass(baseClass)) {
+                    isExtnds = t === baseClass;
+                } else {
+                    isExtnds = baseClass(t);
+                }
+                return !isExtnds;
+            });
+        }
+        return isExtnds;
+    }
+
+    /**
+     *  action handle.
+     */
     export type ActionHandle<T> = (ctx: T, next?: () => Promise<void>) => Promise<void>;
 
+    /**
+     * run action in chain.
+     *
+     * @export
+     * @template T
+     * @param {ActionHandle<T>[]} handles
+     * @param {T} ctx
+     * @param {() => Promise<void>} [next]
+     * @returns {Promise<void>}
+     */
     export function runInChain<T>(handles: ActionHandle<T>[], ctx: T, next?: () => Promise<void>): Promise<void> {
         let index = -1;
         return dispatch(0);
