@@ -49,7 +49,7 @@ const commonjs = require('rollup-plugin-commonjs');
     ],
     dest: 'bundles'
 })
-export class RollupTs extends AssetActivity {
+export class RollupTs {
 }
 
 @Pack({
@@ -102,7 +102,7 @@ export class RollupTs extends AssetActivity {
         }
     }
 })
-export class CoreBuilder extends PackActivity {
+export class CoreBuilder {
 }
 
 

@@ -118,8 +118,12 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             let anBuilder = this.getAnnoBuilder(container, bootToken, cfg);
             bootInstance = await anBuilder.build(bootToken, cfg, data);
         } else {
-            let mdBuilder = this.getAnnoBuilder(container, injmdl.token, cfg);
-            bootInstance = (injmdl.token || injmdl.type) ? await mdBuilder.build(injmdl.token || injmdl.type, injmdl.config, data) : mdBuilder.buildByConfig(injmdl.config, data);
+            let mdBuilder = this.getAnnoBuilder(container, injmdl.token || injmdl.type, cfg);
+            if (injmdl.token || injmdl.type) {
+                bootInstance = await mdBuilder.build(injmdl.token || injmdl.type, injmdl.config, data);
+            } else {
+                bootInstance = await mdBuilder.buildByConfig(injmdl.config, data);
+            }
         }
         return bootInstance;
     }
