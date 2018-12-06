@@ -1,6 +1,6 @@
-import { Token, IContainer } from '@ts-ioc/core';
+import { Token, IContainer, Injectable } from '@ts-ioc/core';
 import { AppConfigure } from './AppConfigure';
-import { IApplicationBuilder, AnyApplicationBuilder } from './IApplicationBuilder';
+import { IApplicationBuilder, AnyApplicationBuilder, ApplicationBuilderToken } from './IApplicationBuilder';
 import { ModuleEnv, InjectedModule } from '../modules';
 import { IEvents } from '../utils';
 import { Runnable } from '../runnable';
@@ -27,6 +27,7 @@ export const ApplicationEvents = RunnableEvents;
  * @extends {ModuleBuilder}
  * @template T
  */
+@Injectable(ApplicationBuilderToken)
 export class ApplicationBuilder<T> extends RunnableBuilder<T> implements IApplicationBuilder<T>, IEvents {
 
     protected configs: (string | AppConfigure)[];
@@ -37,8 +38,8 @@ export class ApplicationBuilder<T> extends RunnableBuilder<T> implements IApplic
         this.configs = [];
     }
 
-    static create(baseURL?: string): AnyApplicationBuilder {
-        return new ApplicationBuilder<any>(baseURL);
+    static create<T>(baseURL?: string): IApplicationBuilder<T> {
+        return new ApplicationBuilder<T>(baseURL);
     }
 
     /**

@@ -83,9 +83,9 @@ export class ProviderParser implements IProviderParser {
                             return pr.useFactory.apply(pr, args);
                         });
                     } else if (isToken(pr.useExisting)) {
-                        if (this.container.has(pr.useExisting)) {
+                        // if (this.container.has(pr.useExisting)) {
                             map.add(pr.provide, (...providers) => this.container.resolve(pr.useExisting, ...providers));
-                        }
+                        // }
                     } else {
                         isobjMap = true;
                     }

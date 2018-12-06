@@ -216,6 +216,31 @@ export interface IContainer extends IMethodAccessor, IResolver {
     bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this;
 
     /**
+     * bind provider ref to target.
+     *
+     * @template T
+     * @param {Token<any>} target
+     * @param {Token<T>} provide
+     * @param {(Token<T> | Factory<T>)} provider
+     * @param {string} [alias]
+     * @param {(refToken: Token<T>) => void} [onceBinded]
+     * @returns {this}
+     * @memberof IContainer
+     */
+    bindRefProvider<T>(target: Token<any>, provide: Token<T>, provider: Token<T> | Factory<T>, alias?: string, onceBinded?: (refToken: Token<T>) => void): this;
+
+    /**
+     * bind providers for only target class.
+     *
+     * @param {Token<any>} target
+     * @param {ProviderTypes[]} providers
+     * @param {(mapTokenKey: Token<any>) => void} [onceBinded]
+     * @returns {this}
+     * @memberof IContainer
+     */
+    bindTarget(target: Token<any>, providers: ProviderTypes[], onceBinded?: (mapTokenKey: Token<any>) => void): this;
+
+    /**
      * unregister the token
      *
      * @template T

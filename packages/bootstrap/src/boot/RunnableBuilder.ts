@@ -1,7 +1,7 @@
 import {
     IContainer, LoadType, Factory, Token,
     ContainerBuilder, IContainerBuilder, isClass,
-    isToken, InjectReference, PromiseUtil, Injectable, lang, RefTokenType
+    isToken, PromiseUtil, Injectable, lang
 } from '@ts-ioc/core';
 import { IRunnableBuilder, CustomRegister, RunnableBuilderToken, ProcessRunRootToken } from './IRunnableBuilder';
 import {

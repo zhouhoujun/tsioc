@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
 import {
-    Type, Token, Factory, SymbolType, ToInstance, IocState, ProviderTypes, Express,
+    Type, Token, Factory, SymbolType, ToInstance, IocState, ProviderTypes,
     ReferenceToken, IReference, RefTokenType, RefTokenFacType, RefTokenFac, Modules, LoadType
 } from './types';
 import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, lang, isArray, isBoolean } from './utils';
@@ -389,6 +389,47 @@ export class Container implements IContainer {
         }
 
         this.factories.set(provideKey, factory);
+        return this;
+    }
+
+    /**
+     * bind provider ref to target.
+     *
+     * @template T
+     * @param {Token<any>} target
+     * @param {Token<T>} provide
+     * @param {(Token<T> | Factory<T>)} provider
+     * @param {string} [alias]
+     * @param {(refToken: Token<T>) => void} [onceBinded]
+     * @returns {this}
+     * @memberof Container
+     */
+    bindRefProvider<T>(target: Token<any>, provide: Token<T>, provider: Token<T> | Factory<T>, alias?: string, onceBinded?: (refToken: Token<T>) => void): this {
+        let refToken = new InjectReference(this.getTokenKey(provide, alias), target);
+        this.bindProvider(refToken, provider);
+        onceBinded && onceBinded(refToken);
+        return this;
+    }
+
+    /**
+     * bind providers for only target class.
+     *
+     * @param {Token<any>} target
+     * @param {ProviderTypes[]} providers
+     * @param {(mapTokenKey: Token<any>) => void} [onceBinded]
+     * @returns {this}
+     * @memberof Container
+     */
+    bindTarget(target: Token<any>, providers: ProviderTypes[], onceBinded?: (mapTokenKey: Token<any>) => void): this {
+        let refKey = new InjectReference(ProviderMap, isClass(target) ? target : this.getTokenImpl(target));
+        let maps = this.get(ProviderParserToken).parse(...providers);
+        console.log('bind target:', refKey.toString(), this.hasRegister(refKey), providers, maps['maps']);
+        if (this.hasRegister(refKey)) {
+            this.resolveValue(refKey).copy(maps);
+        } else {
+            this.bindProvider(refKey, maps);
+            onceBinded && onceBinded(refKey);
+        }
         return this;
     }
 

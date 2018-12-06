@@ -52,13 +52,13 @@ describe('auto register with build', () => {
                 }
             ]
         });
-        console.log('configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue);
+        // console.log('configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue);
         expect(result.resultValue).eq('component task');
     });
 
     it('should bootstrap with meta IConfigure.', async () => {
         let result = await container.bootstrap(TaskModuleTest);
-        console.log('meta configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue)
+        // console.log('meta configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue)
         expect(result.resultValue).eq('component task');
     });
 

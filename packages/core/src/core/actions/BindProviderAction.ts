@@ -5,9 +5,7 @@ import { getOwnTypeMetadata } from '../factories';
 import { IContainer } from '../../IContainer';
 import { Token } from '../../types';
 import { ClassMetadata } from '../metadatas';
-import { InjectReference, InjectClassProvidesToken } from '../../InjectReference';
-import { ProviderMap } from '../providers';
-import { ProviderParserToken } from '../providers';
+import { InjectClassProvidesToken } from '../../InjectReference';
 
 /**
  * bind provider action data.
@@ -65,20 +63,18 @@ export class BindProviderAction extends ActionComposite {
                         raiseContainer.bindProvider(provideKey, c.type);
                     }
                     if (c.refs && c.refs.target) {
-                        let refKey = new InjectReference(c.refs.provide ? raiseContainer.getTokenKey(c.refs.provide, c.refs.alias) : c.type, c.refs.target).toString();
-                        classPds.provides.push(refKey);
-                        raiseContainer.bindProvider(refKey, c.type);
+                        raiseContainer.bindRefProvider(c.refs.target,
+                            c.refs.provide ? c.refs.provide : c.type,
+                            c.type,
+                            c.refs.provide ? c.refs.alias : '',
+                            tk => classPds.provides.push(tk));
                     }
                     // class private provider.
                     if (c.providers && c.providers.length) {
-                        let refKey = new InjectReference(ProviderMap, c.type).toString();
-                        let maps = raiseContainer.get(ProviderParserToken).parse(...c.providers);
-                        if (raiseContainer.hasRegister(refKey)) {
-                            raiseContainer.get<ProviderMap>(refKey).copy(maps);
-                        } else {
-                            classPds.provides.push(refKey);
-                            raiseContainer.bindProvider(refKey, maps);
-                        }
+                        raiseContainer.bindTarget(
+                            c.type,
+                            c.providers,
+                            refKey => classPds.provides.push(refKey));
                     }
                 });
             }
