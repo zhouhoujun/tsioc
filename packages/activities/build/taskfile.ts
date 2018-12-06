@@ -90,7 +90,7 @@ export class RollupTs extends AssetActivity {
         }
     }
 })
-export class BuildBuilder extends PackActivity {
+export class BuildBuilder {
 }
 
 
