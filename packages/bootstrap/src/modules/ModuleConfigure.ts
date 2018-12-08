@@ -29,14 +29,6 @@ export interface ModuleConfig<T> extends AnnotationConfigure<T> {
     name?: string;
 
     /**
-     * providers
-     *
-     * @type {ProviderTypes[]}
-     * @memberof ModuleConfiguration
-     */
-    providers?: ProviderTypes[];
-
-    /**
      * module bootstrap token.
      *
      * @type {Token<T>}

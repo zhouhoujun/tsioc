@@ -5,6 +5,8 @@ import { Container } from '../Container';
 import { isClass } from '../utils';
 import { InjectToken } from '../InjectToken';
 import { IResolver } from '../IResolver';
+import { InjectReference } from '../InjectReference';
+import { ProviderMap } from '../core/providers';
 
 /**
  *  resolver chain token.
@@ -99,18 +101,7 @@ export class ResolverChain implements IResolver {
             if (resolver.type === token || this.container.getTokenKey(resolver.token) === token) {
                 return true;
             }
-            let exps = resolver.exports || [];
-            return exps.concat(resolver.providers || []).some(t => {
-                if (this.container.getTokenKey(t) === token) {
-                    return true;
-                } else if (!isClass(token)) {
-                    if (resolver.container.hasRegister(token)) {
-                        let type = resolver.container.getTokenImpl(token);
-                        return exps.indexOf(type) >= 0
-                    }
-                }
-                return false;
-            });
+            return resolver.hasRegister(token);
         }
     }
 
@@ -133,7 +124,7 @@ export class ResolverChain implements IResolver {
             if (resolver instanceof Container) {
                 return resolver.resolveValue(token, ...providers);
             } else {
-                return resolver.container.resolveValue(token, ...providers);
+                return resolver.resolve(token, ...providers);
             }
         } else {
             return this.container.parent.resolve(token, ...providers);

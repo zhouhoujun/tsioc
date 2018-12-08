@@ -1,7 +1,7 @@
-import { ClassMetadata } from '../core';
 import { Token, Type, Express } from '../types';
 import { IContainer } from '../IContainer';
 import { RefRegistration } from '../InjectReference';
+import { ComponentMetadata } from './metadatas';
 
 /**
  * annotation metadata.
@@ -11,7 +11,7 @@ import { RefRegistration } from '../InjectReference';
  * @extends {ClassMetadata}
  * @template T
  */
-export interface IAnnotationMetadata<T> extends ClassMetadata {
+export interface IAnnotationMetadata<T> extends ComponentMetadata {
 
     /**
      * annotation for the type.

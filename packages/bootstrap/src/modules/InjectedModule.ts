@@ -1,4 +1,4 @@
-import { Token, IContainer, Registration, Type, IExports } from '@ts-ioc/core';
+import { Token, IContainer, Registration, Type, IExports, ProviderTypes, InjectReference, ProviderMap } from '@ts-ioc/core';
 import { ModuleConfig } from './ModuleConfigure';
 
 
@@ -16,10 +16,35 @@ export class InjectedModule<T> implements IExports {
         public config: ModuleConfig<T>,
         public container: IContainer,
         public type?: Type<any>,
-        public exports?: Token<any>[],
-        public providers?: Token<any>[]
+        public exports?: Token<any>[]
     ) {
 
+    }
+
+    private _map;
+    getProviderMap(): ProviderMap {
+        if (!this._map) {
+            this._map = this.container.resolveValue(new InjectReference(ProviderMap, this.type || this.token));
+        }
+        return this._map;
+    }
+
+    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
+        let pdr = this.getProviderMap();
+        if (pdr && pdr.has(token)) {
+            return pdr.resolve(token, ...providers);
+        } else {
+            return this.container.resolveValue(token, ...providers);
+        }
+    }
+
+    hasRegister<T>(key: Token<T>): boolean {
+        if (this.container.hasRegister(key)) {
+            return true;
+        } else {
+            let pdr = this.getProviderMap();
+            return pdr && pdr.has(key);
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 import { IContainer } from '../IContainer';
 import { Token, Type } from '../types';
 import { Container } from '../Container';
+import { IResolver } from '../IResolver';
 
 /**
  * exports interface.
@@ -8,7 +9,7 @@ import { Container } from '../Container';
  * @export
  * @interface IExports
  */
-export interface IExports {
+export interface IExports extends IResolver {
     /**
      * export token of type.
      *
@@ -30,14 +31,6 @@ export interface IExports {
      * @memberof IExports
      */
     exports?: Token<any>[];
-
-    /**
-     * exports providers
-     *
-     * @type {Token<any>[]}
-     * @memberof IExports
-     */
-    providers?: Token<any>[];
 
     /**
      * ioc container, the module defined in.

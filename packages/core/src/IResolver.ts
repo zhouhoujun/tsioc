@@ -7,6 +7,16 @@ import { Token, ProviderTypes } from './types';
  * @interface IResolver
  */
 export interface IResolver {
+
+    /**
+     * current container has register.
+     *
+     * @template T
+     * @param {Token<T>} key
+     * @memberof IContainer
+     */
+    hasRegister<T>(key: Token<T>): boolean;
+
     /**
      * resolve type instance with token and param provider.
      *

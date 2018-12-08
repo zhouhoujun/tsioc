@@ -1,4 +1,4 @@
-import { IContainer, Token, IAnnotationMetadata, RefRegistration, IMetaAccessor } from '@ts-ioc/core';
+import { IContainer, Token, IAnnotationMetadata, RefRegistration, IMetaAccessor, ProviderTypes } from '@ts-ioc/core';
 
 
 /**
@@ -9,6 +9,7 @@ import { IContainer, Token, IAnnotationMetadata, RefRegistration, IMetaAccessor 
  * @template T
  */
 export interface AnnotationConfigure<T> extends IAnnotationMetadata<T> {
+
     /**
      * autorun.
      *

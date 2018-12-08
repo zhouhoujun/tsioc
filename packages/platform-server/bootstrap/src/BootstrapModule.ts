@@ -1,5 +1,5 @@
 import { IContainer, Injectable } from '@ts-ioc/core';
-import { AppConfigure, ApplicationBuilder, IApplicationBuilder, AnyApplicationBuilder, IConfigureLoader, ConfigureLoaderToken, DIModule } from '@ts-ioc/bootstrap';
+import { AppConfigure, ApplicationBuilder, IApplicationBuilder, IConfigureLoader, ConfigureLoaderToken, DIModule } from '@ts-ioc/bootstrap';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { ServerModule } from '@ts-ioc/platform-server';

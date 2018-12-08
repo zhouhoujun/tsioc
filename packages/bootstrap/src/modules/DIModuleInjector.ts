@@ -110,8 +110,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
             }
         });
 
-        let pdrMap = newContainer.resolveValue(new InjectReference(ProviderMap, type));
-        let injMd = new InjectedModule(metaConfig.token || type, metaConfig, newContainer, type, exps, pdrMap ? classProvides.concat(pdrMap.keys()) : classProvides);
+        let injMd = new InjectedModule(metaConfig.token || type, metaConfig, newContainer, type, exps);
         container.bindProvider(new InjectedModuleToken(type), injMd);
 
         await this.importConfigExports(container, newContainer, injMd);
@@ -125,8 +124,8 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
             await container.loadModule(...config.imports);
         }
 
-        if (isArray(config.providers) && config.providers.length) {
-            await this.bindProvider(container, config.providers, type);
+        if (!type && isArray(config.providers) && config.providers.length) {
+            await this.bindProvider(container, config.providers);
         }
         return config;
     }
@@ -154,22 +153,21 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         return container;
     }
 
-    protected bindProvider(container: IContainer, providers: ProviderTypes[], type?: Type<any>): Token<any>[] {
+    protected bindProvider(container: IContainer, providers: ProviderTypes[]): Token<any>[] {
         let parser = container.get(ProviderParserToken);
-        let pdrmap: ProviderMap;
-        let newpMap = parser.parse(...providers);
-        if (type && isClass(type)) {
-            let mapRef = new InjectReference(ProviderMap, type);
-            pdrmap = container.get(mapRef);
-            if (pdrmap) {
-                pdrmap.copy(newpMap);
-            } else {
-                pdrmap = newpMap;
-                container.bindProvider(mapRef, pdrmap);
-            }
-        } else {
-            pdrmap = newpMap;
-        }
+        let pdrmap = parser.parse(...providers);
+        // if (type && isClass(type)) {
+        //     let mapRef = new InjectReference(ProviderMap, type);
+        //     pdrmap = container.get(mapRef);
+        //     if (pdrmap) {
+        //         pdrmap.copy(newpMap);
+        //     } else {
+        //         pdrmap = newpMap;
+        //         container.bindProvider(mapRef, pdrmap);
+        //     }
+        // } else {
+        //     pdrmap = newpMap;
+        // }
         let tokens = pdrmap.keys();
         tokens.forEach(key => {
             container.bindProvider(key, (...providers: ProviderTypes[]) => pdrmap.resolve(key, ...providers));
