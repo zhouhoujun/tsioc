@@ -13,7 +13,7 @@ export interface IResolver {
      *
      * @template T
      * @param {Token<T>} key
-     * @memberof IContainer
+     * @memberof IResolver
      */
     hasRegister<T>(key: Token<T>): boolean;
 
