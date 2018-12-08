@@ -74,10 +74,10 @@ export class MethodAccessor implements IMethodAccessor {
     createSyncParams(params: IParameter[], ...providers: ProviderTypes[]): any[] {
         let providerMap = this.getMatcher().parse(params, ...providers);
         return params.map((param, index) => {
-            if (param.name && providerMap.has(param.name)) {
+            if (param.name && providerMap.hasRegister(param.name)) {
                 return providerMap.resolve(param.name);
             } else if (isToken(param.type)) {
-                if (providerMap.has(param.type)) {
+                if (providerMap.hasRegister(param.type)) {
                     return providerMap.resolve(param.type);
                 }
                 return this.container.resolve(param.type, providerMap);
@@ -90,10 +90,10 @@ export class MethodAccessor implements IMethodAccessor {
     createParams(params: IParameter[], ...providers: ProviderTypes[]): Promise<any[]> {
         let providerMap = this.getMatcher().parse(params, ...providers);
         return Promise.all(params.map((param, index) => {
-            if (param.name && providerMap.has(param.name)) {
+            if (param.name && providerMap.hasRegister(param.name)) {
                 return providerMap.resolve(param.name);
             } else if (isToken(param.type)) {
-                if (providerMap.has(param.type)) {
+                if (providerMap.hasRegister(param.type)) {
                     return providerMap.resolve(param.type);
                 }
                 return this.container.resolve(param.type, providerMap);

@@ -2,6 +2,7 @@ import { isToken, isNumber, isFunction, isUndefined, isObject } from '../../util
 import { Token, Factory, ProviderTypes, ToInstance, Express2, SymbolType } from '../../types';
 import { IContainer } from '../../IContainer';
 import { InjectToken } from '../../InjectToken';
+import { IResolver } from '../../IResolver';
 
 // use core-js in browser.
 
@@ -15,7 +16,7 @@ export const ProviderMapToken = new InjectToken<ProviderMap>('DI_ProviderMap');
  * @export
  * @class Providers
  */
-export class ProviderMap {
+export class ProviderMap implements IResolver {
     private maps: Map<Token<any> | number, Factory<any>>;
     constructor(private container: IContainer) {
         this.maps = new Map();
@@ -48,7 +49,7 @@ export class ProviderMap {
      * @returns {boolean}
      * @memberof ProviderMap
      */
-    has(provide: Token<any> | number): boolean {
+    hasRegister(provide: Token<any> | number): boolean {
         return this.maps.has(this.getTokenKey(provide));
     }
 

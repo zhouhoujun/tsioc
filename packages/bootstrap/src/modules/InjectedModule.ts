@@ -31,7 +31,7 @@ export class InjectedModule<T> implements IExports {
 
     resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
         let pdr = this.getProviderMap();
-        if (pdr && pdr.has(token)) {
+        if (pdr && pdr.hasRegister(token)) {
             return pdr.resolve(token, ...providers);
         } else {
             return this.container.resolveValue(token, ...providers);
@@ -43,7 +43,7 @@ export class InjectedModule<T> implements IExports {
             return true;
         } else {
             let pdr = this.getProviderMap();
-            return pdr && pdr.has(key);
+            return pdr && pdr.hasRegister(key);
         }
     }
 }

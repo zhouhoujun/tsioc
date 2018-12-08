@@ -43,10 +43,10 @@ export class InjectPropertyAction extends ActionComposite {
                 if (prop && !data.injecteds[prop.propertyKey]) {
                     let token = prop.provider ? container.getToken(prop.provider, prop.alias) : prop.type;
                     let pdrMap = container.get(new InjectReference(ProviderMap, data.targetType));
-                    if (pdrMap && pdrMap.has(token)) {
+                    if (pdrMap && pdrMap.hasRegister(token)) {
                         data.target[prop.propertyKey] = pdrMap.resolve(token, providerMap);
                         data.injecteds[prop.propertyKey] = true;
-                    } else if (providerMap && providerMap.has(token)) {
+                    } else if (providerMap && providerMap.hasRegister(token)) {
                         data.target[prop.propertyKey] = providerMap.resolve(token, providerMap);
                         data.injecteds[prop.propertyKey] = true;
                     } else if (container.has(token)) {

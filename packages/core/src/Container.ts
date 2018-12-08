@@ -271,7 +271,7 @@ export class Container implements IContainer {
                 return null;
             }
             let pdrmap = this.get(new InjectReference(ProviderMap, target));
-            return (pdrmap && pdrmap.has(tk)) ? pdrmap.resolve(tk, ...providers) : null;
+            return (pdrmap && pdrmap.hasRegister(tk)) ? pdrmap.resolve(tk, ...providers) : null;
         } else {
             return this.resolve(tk, ...providers);
         }
