@@ -156,18 +156,6 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
     protected bindProvider(container: IContainer, providers: ProviderTypes[]): Token<any>[] {
         let parser = container.get(ProviderParserToken);
         let pdrmap = parser.parse(...providers);
-        // if (type && isClass(type)) {
-        //     let mapRef = new InjectReference(ProviderMap, type);
-        //     pdrmap = container.get(mapRef);
-        //     if (pdrmap) {
-        //         pdrmap.copy(newpMap);
-        //     } else {
-        //         pdrmap = newpMap;
-        //         container.bindProvider(mapRef, pdrmap);
-        //     }
-        // } else {
-        //     pdrmap = newpMap;
-        // }
         let tokens = pdrmap.keys();
         tokens.forEach(key => {
             container.bindProvider(key, (...providers: ProviderTypes[]) => pdrmap.resolve(key, ...providers));
