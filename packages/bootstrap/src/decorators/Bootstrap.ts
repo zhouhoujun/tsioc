@@ -10,7 +10,16 @@ import { ApplicationBuilderToken } from '../boot';
 
 
 export interface BootstrapMetadata extends AppConfigure {
+    /**
+     * module bootstrap token.
+     *
+     * @type {Token<T>}
+     * @memberof AnnotationConfigure
+     */
+    bootstrap: Token<any>;
     builder?: Type<IRunnableBuilder<any>> | IRunnableBuilder<any>;
+    defaultBuilder?: Token<IRunnableBuilder<any>>,
+    defaultAnnoBuilder?: Token<IAnnotationBuilder<any>>,
     globals?: LoadType[];
 }
 
