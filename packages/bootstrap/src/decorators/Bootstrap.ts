@@ -6,7 +6,7 @@ import { AppConfigure } from '../boot/AppConfigure';
 import { IRunnableBuilder } from '../boot/IRunnableBuilder';
 import { IAnnotationBuilder, AnnotationBuilderToken } from '../annotations/IAnnotationBuilder';
 import { createDIModuleDecorator } from './DIModule';
-import { ApplicationBuilderToken } from '../boot';
+import { ApplicationBuilderToken, ApplicationBuilder } from '../boot';
 
 
 export interface BootstrapMetadata extends AppConfigure {
@@ -69,20 +69,10 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
         }
         if (metadata.builder) {
             setTimeout(() => {
-                let builderType = metadata.builder;
-                let builder: IRunnableBuilder<any>;
-                if (isClass(builderType)) {
-                    builder = isFunction(builderType['create']) ? builderType['create']() : new builderType();
-                } else if (isObject(builderType)) {
-                    builder = builderType as IRunnableBuilder<any>;
-                }
-                if (builder) {
-                    if (metadata.globals) {
-                        builder.use(...metadata.globals);
-                    }
-                    builder.bootstrap(metadata.type);
-                }
-            }, 500);
+                ApplicationBuilder.create()
+                    .use(...(metadata.globals || []))
+                    .bootstrap(metadata);
+            }, 300);
         }
         return metadata;
     }) as IBootstrapDecorator<T>;
