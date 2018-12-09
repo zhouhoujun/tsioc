@@ -1,5 +1,5 @@
 import { ITypeDecorator, Token, MetadataAdapter, MetadataExtends, createClassDecorator } from '@ts-ioc/core';
-import { IAnnotationBuilder, AnnotationConfigure } from '../annotations/IAnnotationBuilder';
+import { IAnnotationBuilder, AnnotationConfigure, AnnotationBuilderToken } from '../annotations/IAnnotationBuilder';
 
 /**
  * annotation metadata.
@@ -38,14 +38,14 @@ export interface IAnnotationDecorator<T extends AnnotationMetadata> extends ITyp
  * @template T
  * @param {string} name
  * @param {string} [decorType]
- * @param {(Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>)} [builder]
+ * @param {(Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>)} [defaultBuilder]
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IAnnotationDecorator<T>}
  */
 export function createAnnotationDecorator<T extends AnnotationMetadata>(
     name: string,
-    builder?: Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>,
+    defaultBuilder?: Token<IAnnotationBuilder<any>>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IAnnotationDecorator<T> {
 
@@ -60,8 +60,8 @@ export function createAnnotationDecorator<T extends AnnotationMetadata>(
                 metadata = metadataExtends(metadata as T);
             }
 
-            if (builder && !metadata.annoBuilder) {
-                metadata.annoBuilder = builder;
+            if (defaultBuilder && !metadata.defaultAnnoBuilder) {
+                metadata.defaultAnnoBuilder = defaultBuilder;
             }
             return metadata;
         }) as IAnnotationDecorator<T>;
@@ -73,4 +73,4 @@ export function createAnnotationDecorator<T extends AnnotationMetadata>(
  *
  * @Annotation
  */
-export const Annotation: IAnnotationDecorator<AnnotationMetadata> = createAnnotationDecorator<AnnotationMetadata>('Annotation');
+export const Annotation: IAnnotationDecorator<AnnotationMetadata> = createAnnotationDecorator<AnnotationMetadata>('Annotation', AnnotationBuilderToken);
