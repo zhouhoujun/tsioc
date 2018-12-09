@@ -4,8 +4,9 @@ import {
 } from '@ts-ioc/core';
 import { AppConfigure } from '../boot/AppConfigure';
 import { IRunnableBuilder } from '../boot/IRunnableBuilder';
-import { IAnnotationBuilder } from '../annotations/IAnnotationBuilder';
+import { IAnnotationBuilder, AnnotationBuilderToken } from '../annotations/IAnnotationBuilder';
 import { createDIModuleDecorator } from './DIModule';
+import { ApplicationBuilderToken } from '../boot';
 
 
 export interface BootstrapMetadata extends AppConfigure {
@@ -40,20 +41,20 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
  * @export
  * @template T
  * @param {string} name
- * @param {(Token<IRunnableBuilder> | IRunnableBuilder)} [builder] default builder
- * @param {(Token<IAnnotationBuilder<any>> | IAnnotationBuilder<Tany>)} [annotationBuilder] default type builder.
+ * @param {Token<IRunnableBuilder<any>>>} [builder] default builder
+ * @param {Token<IAnnotationBuilder<any>>} [defaultAnnoBuilder] default type builder.
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IBootstrapDecorator<T>}
  */
 export function createBootstrapDecorator<T extends BootstrapMetadata>(
     name: string,
-    builder?: Type<IRunnableBuilder<any>> | IRunnableBuilder<any>,
-    annotationBuilder?: Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>,
+    defaultBuilder?: Token<IRunnableBuilder<any>>,
+    defaultAnnoBuilder?: Token<IAnnotationBuilder<any>>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IBootstrapDecorator<T> {
 
-    return createDIModuleDecorator<BootstrapMetadata>(name, builder, annotationBuilder, adapter, (metadata: T) => {
+    return createDIModuleDecorator<BootstrapMetadata>(name, defaultBuilder, defaultAnnoBuilder, adapter, (metadata: T) => {
         if (metadataExtends) {
             metadataExtends(metadata);
         }
@@ -83,4 +84,4 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
  *
  * @Bootstrap
  */
-export const Bootstrap: IBootstrapDecorator<BootstrapMetadata> = createBootstrapDecorator<BootstrapMetadata>('Bootstrap');
+export const Bootstrap: IBootstrapDecorator<BootstrapMetadata> = createBootstrapDecorator<BootstrapMetadata>('Bootstrap', ApplicationBuilderToken, AnnotationBuilderToken);

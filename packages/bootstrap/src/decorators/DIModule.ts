@@ -1,7 +1,7 @@
 import { createClassDecorator, Token, MetadataAdapter, MetadataExtends, ITypeDecorator, isClass } from '@ts-ioc/core';
-import { IModuleBuilder } from '../modules/IModuleBuilder';
+import { IModuleBuilder, ModuleBuilderToken } from '../modules/IModuleBuilder';
 import { ModuleConfig } from '../modules/ModuleConfigure';
-import { IAnnotationBuilder } from '../annotations/IAnnotationBuilder';
+import { IAnnotationBuilder, AnnotationBuilderToken } from '../annotations/IAnnotationBuilder';
 
 /**
  * DI module metadata.
@@ -48,16 +48,16 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDec
  * @export
  * @template T
  * @param {string} name decorator name.
- * @param {(Token<IModuleBuilder> | IModuleBuilder)} [builder]
- * @param {(Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>)} [annotationBuilder]
+ * @param {Token<IModuleBuilder>} [defaultBuilder]
+ * @param {Token<IAnnotationBuilder<any>>} [defaultAnnoBuilder]
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IDIModuleDecorator<T>}
  */
 export function createDIModuleDecorator<T extends DIModuleMetadata>(
     name: string,
-    builder?: Token<IModuleBuilder<any>> | IModuleBuilder<any>,
-    annotationBuilder?: Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>,
+    defaultBuilder?: Token<IModuleBuilder<any>>,
+    defaultAnnoBuilder?: Token<IAnnotationBuilder<any>>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IDIModuleDecorator<T> {
 
@@ -82,11 +82,11 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
             }
 
             metadata.decorType = name;
-            if (builder && !metadata.builder) {
-                metadata.builder = builder;
+            if (defaultBuilder && !metadata.defaultBuilder) {
+                metadata.defaultBuilder = defaultBuilder;
             }
-            if (annotationBuilder && !metadata.annoBuilder) {
-                metadata.annoBuilder = annotationBuilder;
+            if (defaultAnnoBuilder && !metadata.defaultAnnoBuilder) {
+                metadata.defaultAnnoBuilder = defaultAnnoBuilder;
             }
             return metadata;
         }) as IDIModuleDecorator<T>;
@@ -97,4 +97,4 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
  *
  * @DIModule
  */
-export const DIModule: IDIModuleDecorator<DIModuleMetadata> = createDIModuleDecorator<DIModuleMetadata>('DIModule');
+export const DIModule: IDIModuleDecorator<DIModuleMetadata> = createDIModuleDecorator<DIModuleMetadata>('DIModule', ModuleBuilderToken, AnnotationBuilderToken);
