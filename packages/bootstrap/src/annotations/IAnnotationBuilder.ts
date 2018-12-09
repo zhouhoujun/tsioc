@@ -1,4 +1,4 @@
-import { IContainer, Token, IAnnotationMetadata, RefRegistration, IMetaAccessor, ProviderTypes } from '@ts-ioc/core';
+import { IContainer, Token, IAnnotationMetadata, RefRegistration, IMetaAccessor } from '@ts-ioc/core';
 
 
 /**
@@ -34,13 +34,6 @@ export interface AnnotationConfigure<T> extends IAnnotationMetadata<T> {
      */
     defaultAnnoBuilder?: Token<IAnnotationBuilder<T>>;
 
-    /**
-     * default metadata accessor.
-     *
-     * @type {Token<IMetaAccessor<T>>}
-     * @memberof AnnotationConfigure
-     */
-    defaultMetaAccessor?: Token<IMetaAccessor<T>>;
 }
 
 const annoBuilderDesc = 'DI_AnnotationBuilder';

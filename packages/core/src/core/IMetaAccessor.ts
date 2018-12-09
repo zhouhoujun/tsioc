@@ -12,7 +12,6 @@ import { ComponentMetadata } from './metadatas';
  * @template T
  */
 export interface IAnnotationMetadata<T> extends ComponentMetadata {
-
     /**
      * annotation for the type.
      *
@@ -35,6 +34,13 @@ export interface IAnnotationMetadata<T> extends ComponentMetadata {
      * @memberof IAnnotationMetadata
      */
     bootstrap?: Token<T>;
+    /**
+     * default metadata accessor.
+     *
+     * @type {Token<IMetaAccessor<T>>}
+     * @memberof AnnotationConfigure
+     */
+    defaultMetaAccessor?: Token<IMetaAccessor<T>>;
 }
 
 /**
