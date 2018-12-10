@@ -7,6 +7,7 @@ import { IActivityBuilder, ActivityBuilderToken } from '../core/IActivityBuilder
 import { IActivityContext } from '../core/IActivityContext';
 import { WorkflowBuilderToken } from '../injectors/DefaultWorkflowBuilder';
 import { IActivity, ActivityToken } from '../core';
+import { IModuleBuilder } from '@ts-ioc/bootstrap';
 
 /**
  * task decorator, use to define class is a task element.
@@ -77,6 +78,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
     defaultAnnoBuilder?: Token<IActivityBuilder>,
     defaultBoot?: Token<IActivity>,
     baseClassName?: string,
+    defaultBuilder?: Token<IModuleBuilder<T>>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): ITaskDecorator<T> {
 
@@ -147,7 +149,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             }
 
             metadata.decorType = taskType;
-            metadata.defaultBuilder = WorkflowBuilderToken;
+            metadata.defaultBuilder = defaultBuilder || WorkflowBuilderToken;
             metadata.defaultAnnoBuilder = defaultAnnoBuilder;
 
             return metadata;

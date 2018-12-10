@@ -56,20 +56,20 @@ export interface IWorkflowDecorator<T extends WorkflowMetadata> extends IDIModul
  * @export
  * @template T
  * @param {string} name
- * @param {Token<IModuleBuilder<any>>} [builder]
- * @param {(Token<IActivityBuilder> | IActivityBuilder)} [annotationBuilder]
+ * @param {Token<IModuleBuilder<any>>} [defaultBuilder]
+ * @param {(Token<IActivityBuilder> | IActivityBuilder)} [defaultAnnoBuilder]
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IWorkflowDecorator<T>}
  */
 export function createWorkflowDecorator<T extends WorkflowMetadata>(
     name: string,
-    builder?: Token<IModuleBuilder<any>>,
-    annotationBuilder?: Token<IActivityBuilder> | IActivityBuilder,
+    defaultBuilder?: Token<IModuleBuilder<any>>,
+    defaultAnnoBuilder?: Token<IActivityBuilder>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IWorkflowDecorator<T> {
 
-    return createDIModuleDecorator(name, builder, annotationBuilder, args => {
+    return createDIModuleDecorator(name, defaultBuilder, defaultAnnoBuilder, args => {
         if (adapter) {
             adapter(args);
         }
@@ -106,8 +106,6 @@ export function createWorkflowDecorator<T extends WorkflowMetadata>(
         if (metadataExtends) {
             metadata = metadataExtends(metadata as T);
         }
-        metadata.defaultBuilder = WorkflowBuilderToken;
-        metadata.defaultAnnoBuilder = ActivityBuilderToken;
         return metadata;
     }) as IWorkflowDecorator<T>;
 }

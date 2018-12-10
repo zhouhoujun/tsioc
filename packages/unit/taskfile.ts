@@ -87,7 +87,7 @@ export class BootRollup extends AssetActivity {
         }
     }
 })
-export class BootBuilder extends PackActivity {
+export class BootBuilder {
 }
 
 TaskContainer.create(__dirname)

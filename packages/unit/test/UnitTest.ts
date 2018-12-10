@@ -33,6 +33,9 @@ export class UnitTest {
         }, 100)
         return def.promise;
     }
+
+    testEqural() {
+    }
 }
 
 
