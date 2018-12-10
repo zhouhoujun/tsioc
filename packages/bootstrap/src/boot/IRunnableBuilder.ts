@@ -22,7 +22,6 @@ export type CustomRegister<T> = (container: IContainer, config?: AppConfigure, b
  * @interface IRunnableExtends
  */
 export interface IRunnableExtends {
-
     /**
      * use module
      *
@@ -31,7 +30,6 @@ export interface IRunnableExtends {
      * @memberof IRunnableBuilder
      */
     use(...modules: LoadType[]): this;
-
     /**
      * bind provider
      *
@@ -42,7 +40,6 @@ export interface IRunnableExtends {
      * @memberof IRunnableExtends
      */
     provider(provide: Token<any>, provider: Token<any> | Factory<any>, beforRootInit?: boolean): this;
-
 }
 
 
@@ -62,7 +59,6 @@ export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends
      * @memberof IRunnableBuilder
      */
     events?: Events;
-
     /**
      * get builder by token, config and env.
      *
@@ -72,7 +68,6 @@ export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends
      * @memberof IRunnableBuilder
      */
     getBuilderByConfig(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): Promise<IModuleBuilder<T>>;
-
     /**
      * get module builder
      *
@@ -81,7 +76,6 @@ export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends
      * @memberof IModuleBuilder
      */
     getBuilder(injmdl: InjectedModule<T>): IModuleBuilder<T>;
-
     /**
      * get config manager.
      *
@@ -89,7 +83,6 @@ export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends
      * @memberof IRunnableBuilder
      */
     getConfigManager(): IConfigureManager<ModuleConfig<T>>;
-
 }
 
 /**

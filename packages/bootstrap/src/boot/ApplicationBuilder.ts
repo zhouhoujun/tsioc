@@ -1,6 +1,6 @@
 import { Token, IContainer, Injectable } from '@ts-ioc/core';
 import { AppConfigure } from './AppConfigure';
-import { IApplicationBuilder, AnyApplicationBuilder, ApplicationBuilderToken } from './IApplicationBuilder';
+import { IApplicationBuilder, ApplicationBuilderToken } from './IApplicationBuilder';
 import { ModuleEnv, InjectedModule } from '../modules';
 import { IEvents } from '../utils';
 import { Runnable } from '../runnable';
@@ -12,7 +12,7 @@ import { RunnableBuilder, RunnableEvents } from './RunnableBuilder';
  * @export
  * @enum {number}
  */
-export const AppEvents = RunnableEvents
+export const AppEvents = RunnableEvents;
 
 /**
  * application events

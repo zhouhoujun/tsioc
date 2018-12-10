@@ -8,7 +8,6 @@ import { ModuleConfigure } from '../modules';
  * @interface IService
  */
 export interface IService<T> {
-
     /**
      * start application service.
      *

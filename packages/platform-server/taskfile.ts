@@ -2,7 +2,7 @@
 import { TaskContainer } from '@taskfr/core';
 import { IActivity } from '@taskfr/core';
 import { Asset, AssetActivity, CleanToken, TsCompile, IBuildHandleActivity } from '@taskfr/build';
-import { Pack, PackActivity, PackModule } from '@taskfr/pack';
+import { Pack, PackModule } from '@taskfr/pack';
 
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -88,7 +88,7 @@ export class PfServerRollup extends AssetActivity {
     }
 
 })
-export class PfServerBuilder extends PackActivity {
+export class PfServerBuilder {
 }
 
 TaskContainer.create(__dirname)

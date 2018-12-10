@@ -1,7 +1,7 @@
 import {
-    Token, isToken, IContainer, isClass, Inject, ContainerToken, ProviderTypes,
+    Token, isToken, IContainer, isClass, Inject, ContainerToken,
     lang, isFunction, Injectable, Container,  IMetaAccessor,
-    InjectMetaAccessorToken, MetaAccessorToken
+    InjectMetaAccessorToken, MetaAccessorToken, ProviderTypes
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import { AnnoInstance } from './IAnnotation';
@@ -29,8 +29,18 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
     }
 
+    /**
+     * get metadata accessor.
+     *
+     * @param {Token<any>} token
+     * @param {AnnotationConfigure<T>} [config]
+     * @returns {IMetaAccessor<any>}
+     * @memberof AnnotationBuilder
+     */
     getMetaAccessor(token: Token<any>, config?: AnnotationConfigure<T>): IMetaAccessor<any> {
-        return this.container.getService(MetaAccessorToken, isToken(token) ? [token, lang.getClass(this)] : lang.getClass(this), tk => new InjectMetaAccessorToken(tk), config ? (config.defaultMetaAccessor || MetaAccessorToken) : MetaAccessorToken);
+        return this.container.getService(MetaAccessorToken,
+            isToken(token) ? [token, lang.getClass(this)] : lang.getClass(this),
+            tk => new InjectMetaAccessorToken(tk), config ? (config.defaultMetaAccessor || MetaAccessorToken) : MetaAccessorToken);
     }
 
     /**

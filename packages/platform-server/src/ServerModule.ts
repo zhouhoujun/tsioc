@@ -1,4 +1,4 @@
-import { IocExt, Inject, ContainerToken, IContainer, ModuleLoaderToken, ContainerBuilderToken, InjectToken } from '@ts-ioc/core';
+import { IocExt, Inject, ContainerToken, IContainer, ModuleLoaderToken, ContainerBuilderToken } from '@ts-ioc/core';
 import { NodeModuleLoader } from './NodeModuleLoader';
 import { ServerContainerBuilder } from './ContainerBuilder';
 import * as path from 'path';

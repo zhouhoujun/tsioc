@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import {
-    IContainer, Token, ProviderTypes, lang, isFunction, isClass,
-    isToken, Inject, Registration, Container,
-    InjectReference, Injectable, RefTokenType, MetaAccessorToken, IMetaAccessor,
+    IContainer, Token, ProviderTypes, lang, isFunction,
+    isClass, isToken, Inject, Registration, Container,
+    Injectable, MetaAccessorToken, IMetaAccessor,
     InjectMetaAccessorToken, isArray, ProviderParserToken
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv } from './IModuleBuilder';
@@ -56,8 +56,19 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return this.pools;
     }
 
+    /**
+     * get metadata accessor.
+     *
+     * @param {IContainer} container
+     * @param {Token<any>} token
+     * @param {ModuleConfigure} [config]
+     * @returns {IMetaAccessor<any>}
+     * @memberof ModuleBuilder
+     */
     getMetaAccessor(container: IContainer, token: Token<any>, config?: ModuleConfigure): IMetaAccessor<any> {
-        return container.getService(MetaAccessorToken, isToken(token) ? [token, lang.getClass(this)] : lang.getClass(this), tk => new InjectMetaAccessorToken(tk), config ? (config.defaultMetaAccessor || MetaAccessorToken) : MetaAccessorToken);
+        return container.getService(MetaAccessorToken,
+            isToken(token) ? [token, lang.getClass(this)] : lang.getClass(this),
+            tk => new InjectMetaAccessorToken(tk), config ? (config.defaultMetaAccessor || MetaAccessorToken) : MetaAccessorToken);
     }
 
     /**
@@ -237,11 +248,8 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             } else if (service) {
                 await service.start(data);
                 return service;
-            } else if (token && cfg.autorun) {
-                await container.invoke(token, cfg.autorun, instance, { data: data });
-                return instance;
             } else {
-                return instance;
+                return null;
             }
         }
     }

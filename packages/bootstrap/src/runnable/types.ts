@@ -4,4 +4,4 @@ import { IRunner } from './Runner';
 /**
  * runn able.
  */
-export type Runnable<T> = T | IService<T> | IRunner<T>;
+export type Runnable<T> = IService<T> | IRunner<T>;

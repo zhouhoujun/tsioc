@@ -80,7 +80,7 @@ export class BootRollup extends AssetActivity {
         }
     }
 })
-export class PfServerBootBuilder extends PackActivity {
+export class PfServerBootBuilder {
 }
 
 TaskContainer.create(__dirname)

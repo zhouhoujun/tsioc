@@ -15,6 +15,13 @@ export interface ConsoleLoggerConfig extends LoggerConfig {
     level?: string;
 }
 
+/**
+ * console log manager.
+ *
+ * @export
+ * @class ConsoleLogManager
+ * @implements {ILoggerManager}
+ */
 @NonePointcut()
 @Singleton()
 @Injectable(LoggerManagerToken, 'console')
@@ -34,7 +41,12 @@ export class ConsoleLogManager implements ILoggerManager {
 
 }
 
-
+/**
+ * console log.
+ *
+ * @class ConsoleLog
+ * @implements {ILogger}
+ */
 class ConsoleLog implements ILogger {
 
     level: string;

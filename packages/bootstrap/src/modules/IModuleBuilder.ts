@@ -35,7 +35,6 @@ export type ModuleEnv = IContainer | InjectedModule<any>;
  * @template T
  */
 export interface IModuleBuilder<T> {
-
     /**
      * get container pool
      *
@@ -43,7 +42,6 @@ export interface IModuleBuilder<T> {
      * @memberof IModuleBuilder
      */
     getPools(): ContainerPool;
-
     /**
      * load module.
      *
@@ -53,7 +51,6 @@ export interface IModuleBuilder<T> {
      * @memberof IModuleBuilder
      */
     load(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): Promise<InjectedModule<T>>;
-
     /**
      * create injected module instace.
      *
@@ -63,7 +60,6 @@ export interface IModuleBuilder<T> {
      * @memberof IModuleBuilder
      */
     createInstance(injmdl: InjectedModule<T>, data?: any): Promise<T>;
-
     /**
      * bootstrap module's main.
      *
@@ -74,7 +70,6 @@ export interface IModuleBuilder<T> {
      * @memberof IGModuleBuilder
      */
     bootstrap(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<Runnable<T>>;
-
     /**
      * run module.
      *
@@ -85,7 +80,6 @@ export interface IModuleBuilder<T> {
      * @memberof IGModuleBuilder
      */
     run(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<Runnable<T>>;
-
 }
 
 /**
@@ -101,5 +95,6 @@ export const ModuleBuilderToken = new InjectModuleBuilderToken<any>(Object);
  * @extends {IModuleBuilder<any>}
  */
 export interface AnyModuleBuilder extends IModuleBuilder<any> {
+
 }
 

@@ -1,7 +1,7 @@
 import {
     Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
-    Inject, Token, ProviderTypes, Injectable, isArray, isClass,
-    IModuleInjector, Container, ProviderMap, ProviderParserToken, InjectReference, InjectClassProvidesToken, IMetaAccessor, MetaAccessorToken, InjectMetaAccessorToken
+    Inject, Token, ProviderTypes, Injectable, isArray, IModuleInjector, Container,
+    ProviderParserToken, InjectClassProvidesToken, IMetaAccessor, MetaAccessorToken
 } from '@ts-ioc/core';
 import { DIModuleValidateToken } from './DIModuleValidate';
 import { DIModule } from '../decorators';
@@ -30,27 +30,6 @@ export interface IDIModuleInjector extends IModuleInjector {
      * @memberof IDIModuleInjector
      */
     getMetaAccessor<T>(container: IContainer, token: Token<T>): IMetaAccessor<T>;
-    // /**
-    //  * import module type.
-    //  *
-    //  * @template T
-    //  * @param {IContainer} container
-    //  * @param {Token<T>} token
-    //  * @returns {Promise<InjectedModule<T>>}
-    //  * @memberof IDIModuleInjector
-    //  */
-    // import<T>(container: IContainer, token: Token<T>): Promise<InjectedModule<T>>;
-
-    // /**
-    //  * import by config.
-    //  *
-    //  * @template T
-    //  * @param {IContainer} container
-    //  * @param {ModuleConfig<T>} config
-    //  * @returns {InjectedModule<T>>}
-    //  * @memberof IDIModuleInjector
-    //  */
-    // importByConfig<T>(container: IContainer, config: ModuleConfig<T>): Promise<InjectedModule<T>>;
 }
 
 /**

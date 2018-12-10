@@ -41,7 +41,6 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDec
     (metadata: T): ClassDecorator;
 }
 
-
 /**
  * create bootstrap decorator.
  *

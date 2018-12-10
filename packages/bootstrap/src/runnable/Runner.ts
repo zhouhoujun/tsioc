@@ -9,7 +9,6 @@ import { ModuleConfigure } from '../modules';
  * @template T
  */
 export interface IRunner<T> {
-
     /**
      * run application via boot instance.
      *

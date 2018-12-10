@@ -1,4 +1,4 @@
-import { IContainer, Token, IAnnotationMetadata, RefRegistration, IMetaAccessor, ProviderTypes } from '@ts-ioc/core';
+import { IContainer, Token, IAnnotationMetadata, RefRegistration, IMetaAccessor } from '@ts-ioc/core';
 
 
 /**
@@ -9,15 +9,6 @@ import { IContainer, Token, IAnnotationMetadata, RefRegistration, IMetaAccessor,
  * @template T
  */
 export interface AnnotationConfigure<T> extends IAnnotationMetadata<T> {
-
-    /**
-     * autorun.
-     *
-     * @type {string}
-     * @memberof AnnotationConfigure
-     */
-    autorun?: string;
-
     /**
      * annotation builder.
      *
@@ -25,7 +16,6 @@ export interface AnnotationConfigure<T> extends IAnnotationMetadata<T> {
      * @memberof AnnotationConfigure
      */
     annoBuilder?: Token<IAnnotationBuilder<T>> | IAnnotationBuilder<T>;
-
     /**
      * default annotation builder token.
      *
@@ -33,7 +23,6 @@ export interface AnnotationConfigure<T> extends IAnnotationMetadata<T> {
      * @memberof AnnotationConfigure
      */
     defaultAnnoBuilder?: Token<IAnnotationBuilder<T>>;
-
     /**
      * default metadata accessor.
      *
@@ -53,7 +42,6 @@ const annoBuilderDesc = 'DI_AnnotationBuilder';
  * @interface IBootBuilder
  */
 export interface IAnnotationBuilder<T> {
-
     /**
      * container.
      *
@@ -61,7 +49,6 @@ export interface IAnnotationBuilder<T> {
      * @memberof IBootstrapBuilder
      */
     container: IContainer;
-
     /**
      * build token type via config.
      *
@@ -72,7 +59,6 @@ export interface IAnnotationBuilder<T> {
      * @memberof ITypeBuilder
      */
     build(token: Token<T>, config?: AnnotationConfigure<T>, data?: any): Promise<T>;
-
     /**
      * build instance via type config.
      *
@@ -83,7 +69,6 @@ export interface IAnnotationBuilder<T> {
      * @memberof IAnnotationBuilder
      */
     buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any, ...excludeTokens: Token<any>[]): Promise<T>;
-
     /**
      * get finally builder by token and config.
      *
@@ -93,7 +78,6 @@ export interface IAnnotationBuilder<T> {
      * @memberof IBootBuilder
      */
     getBuilder(token: Token<T>, config?: AnnotationConfigure<T>): IAnnotationBuilder<T>;
-
     /**
      * create token instance.
      *
@@ -104,7 +88,6 @@ export interface IAnnotationBuilder<T> {
      * @memberof IBootstrapBuilder
      */
     createInstance(token: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<T>;
-
     /**
      * bundle bootstrap instance via config.
      *
@@ -151,7 +134,6 @@ export class InjectAnnotationBuilder<T> extends RefRegistration<IAnnotationBuild
         super(type, annoBuilderDesc);
     }
 }
-
 
 /**
  * Annotation class builder token.
