@@ -1,4 +1,4 @@
-import { DIModule, OnModuleStart, ApplicationBuilder } from '../src';
+import { DIModule, OnModuleStart, ApplicationBuilder, Runner } from '../src';
 import { Injectable, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
 import { Aspect, AopModule, Around, Joinpoint } from '@ts-ioc/aop';
 import { LogModule } from '@ts-ioc/logs';
@@ -39,7 +39,7 @@ export class ModuleA {
 }
 
 @Injectable
-export class ClassSevice {
+export class ClassSevice extends  Runner<any> {
     @Inject('mark')
     mark: string;
     state: string;
@@ -47,6 +47,11 @@ export class ClassSevice {
         console.log('-------log mark---------');
         console.log(this.mark);
     }
+
+    async run(data?: any): Promise<any> {
+        console.log('running.....')
+    }
+
     mdOnStart(instance: ClassSevice): void | Promise<any> {
         console.log('mdOnStart...');
         // console.log(this.container);
@@ -83,29 +88,11 @@ export class Logger {
     ],
     bootstrap: ClassSevice
 })
-export class ModuleB implements OnModuleStart<ClassSevice> {
-    constructor(test: TestService, @Inject(ContainerToken) private container: IContainer) {
-        // let pools = container.get(ContainerPoolToken);
-        // console.log(pools);
-        // console.log(container.has('mark'), container.get('mark'));
-        // console.log(container);
-        // console.log('container pools defaults..................\n');
-        // console.log(pools.getDefault());
-        // console.log(container.resolveChain.toArray()[1]);
-        // console.log(container.resolve(TestService));
-        console.log(test);
-        test.test();
+export class ModuleB {
+    constructor() {
 
-        // console.log('container pools..................\n');
-        // console.log(container);
     }
-    mdOnStart(instance: ClassSevice): void | Promise<any> {
-        console.log('mdOnStart...');
-        // console.log(this.container);
-        console.log(instance);
-        instance.start();
-        instance.state = 'started';
-    }
+
 }
 
 // // test
