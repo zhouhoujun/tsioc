@@ -33,15 +33,15 @@ describe('di module', () => {
         expect(md.container.get('mark')).eq('marked');
     });
 
-    it('should has bootstrap, and auto wrid mark via inject.', async () => {
-        let md = await builder.bootstrap(ModuleB);
-        expect(md).to.not.null;
-        // expect(md.bootstrap).to.eq(ClassSevice);
-        // expect(md.container).to.not.undefined;
-        // expect(md.container.has('mark')).to.true;
-        expect(md.mark).eq('marked');
-        // expect(md.state).eq('started');
-    });
+    // it('should has bootstrap, and auto wrid mark via inject.', async () => {
+    //     let md = await builder.bootstrap(ModuleB);
+    //     expect(md).to.not.null;
+    //     // expect(md.bootstrap).to.eq(ClassSevice);
+    //     // expect(md.container).to.not.undefined;
+    //     // expect(md.container.has('mark')).to.true;
+    //     expect(md.mark).eq('marked');
+    //     // expect(md.state).eq('started');
+    // });
 
 });
 
