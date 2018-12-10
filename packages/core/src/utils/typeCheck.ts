@@ -77,7 +77,6 @@ export function getClassName(classType: AbstractType<any>): string {
     if (/^[a-z]$/.test(classType.name)) {
         return classType.classAnnations ? classType.classAnnations.name : classType.name;
     }
-
     return classType.name;
 }
 
@@ -137,7 +136,6 @@ export function isClass(target: any): target is Type<any> {
 
     return false;
 }
-
 
 /**
  * is run in nodejs or not.
@@ -256,8 +254,6 @@ export function isMetadataObject(target: any, props?: string[], extendsProps?: s
     return true;
 }
 
-
-
 /**
  * check object is class metadata or not.
  *
@@ -269,8 +265,6 @@ export function isMetadataObject(target: any, props?: string[], extendsProps?: s
 export function isClassMetadata(target, extendsProps?: string[]): boolean {
     return isMetadataObject(target, ['singleton', 'provide', 'alias', 'type'], extendsProps);
 }
-
-
 
 /**
  * check object is param metadata or not.
@@ -284,7 +278,6 @@ export function isParamMetadata(target, extendsProps?: string[]): boolean {
     return isMetadataObject(target, ['type', 'provider', 'index'], extendsProps);
 }
 
-
 /**
  * check object is param prop metadata or not.
  *
@@ -297,7 +290,6 @@ export function isParamPropMetadata(target, extendsProps?: string[]): boolean {
     return isMetadataObject(target, ['type', 'provider', 'index'], extendsProps);
 }
 
-
 /**
  * check object is property metadata or not.
  *
@@ -309,7 +301,6 @@ export function isParamPropMetadata(target, extendsProps?: string[]): boolean {
 export function isPropertyMetadata(target, extendsProps?: string[]): boolean {
     return isMetadataObject(target, ['type', 'provider'], extendsProps);
 }
-
 
 /**
  * check target is string or not.
@@ -343,7 +334,6 @@ export function isBoolean(target: any): target is boolean {
 export function isNumber(target: any): target is number {
     return typeof target === 'number';
 }
-
 
 /**
  * check target is undefined or not.

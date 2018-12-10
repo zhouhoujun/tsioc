@@ -52,6 +52,12 @@ export class Container implements IContainer {
         return root;
     }
 
+    /**
+     * get container builder.
+     *
+     * @returns {IContainerBuilder}
+     * @memberof Container
+     */
     getBuilder(): IContainerBuilder {
         return this.resolveValue(ContainerBuilderToken);
     }

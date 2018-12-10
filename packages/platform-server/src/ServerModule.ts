@@ -4,7 +4,8 @@ import { ServerContainerBuilder } from './ContainerBuilder';
 import * as path from 'path';
 import { ProcessRunRootToken } from '@ts-ioc/bootstrap';
 
-const processRoot = path.join(path.dirname(process.cwd()), path.basename(process.cwd()));
+
+declare let process: any;
 
 /**
  * server module for ioc. auto run setup after registered.
@@ -26,6 +27,7 @@ export class ServerModule {
      */
     setup() {
         let container = this.container;
+        let processRoot = path.join(path.dirname(process.cwd()), path.basename(process.cwd()));
         container.bindProvider(ProcessRunRootToken, () => processRoot);
         container.bindProvider(ModuleLoaderToken, new NodeModuleLoader());
         container.bindProvider(ContainerBuilderToken, new ServerContainerBuilder());

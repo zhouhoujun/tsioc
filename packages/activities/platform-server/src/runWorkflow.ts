@@ -2,6 +2,9 @@ import { TaskContainer, IActivityRunner, ActivityType, IActivity } from '@taskfr
 import { ServerTaskModule } from './ServerTaskModule';
 import * as path from 'path';
 
+/**
+ * process root.
+ */
 const processRoot = path.join(path.dirname(process.cwd()), path.basename(process.cwd()));
 
 /**

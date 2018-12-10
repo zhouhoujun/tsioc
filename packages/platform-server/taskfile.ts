@@ -29,7 +29,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 plugins: [
                     resolve(),
                     commonjs({
-                        exclude: ['node_modules/**', '../../node_modules/**']
+                        exclude: [ 'node_modules/**', '../../node_modules/**']
                     }),
                     // builtins(),
                     rollupSourcemaps()
@@ -37,9 +37,10 @@ const builtins = require('rollup-plugin-node-builtins');
                 external: [
                     'reflect-metadata',
                     'tslib',
-                    'object-assign',
+                    'core-js',
                     'log4js',
                     'globby', 'path', 'fs',
+                    'process',
                     '@ts-ioc/core',
                     '@ts-ioc/aop'
                 ],

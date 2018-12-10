@@ -141,7 +141,7 @@ export class DefaultModuleLoader implements IModuleLoader {
         if (typeof require !== 'undefined') {
             return (modulepath: string) => {
                 return new Promise<Modules[]>((resolve, reject) => {
-                    require([modulepath], (mud) => {
+                    require(modulepath, (mud) => {
                         resolve(mud);
                     }, err => {
                         reject(err);

@@ -21,7 +21,6 @@ export class TaskLogAspect extends LoggerAspect {
     private startHrts: ObjectMap<any>;
     constructor(@Inject(ContainerToken) container: IContainer) {
         super(container);
-
         this.startHrts = {};
     }
 

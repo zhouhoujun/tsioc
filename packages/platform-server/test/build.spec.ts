@@ -1,16 +1,18 @@
 import 'mocha';
 import { expect } from 'chai';
-import { IContainer } from '@ts-ioc/core';
-
+import { IContainer, ContainerBuilder } from '@ts-ioc/core';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom, StringIdTest, SymbolIdest } from './debug';
-import { ContainerBuilder } from '../src';
+import { ServerModule } from '../src/ServerModule';
+
 
 describe('auto register with build', () => {
 
     let container: IContainer;
     before(async () => {
         let builder = new ContainerBuilder();
-        container = await builder.build({
+        container = builder.create();
+        container.use(ServerModule);
+        await container.loadModule({
             files: __dirname + '/debug.ts'
         });
         // container.register(IocLog);

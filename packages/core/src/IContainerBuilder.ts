@@ -32,6 +32,7 @@ export interface IContainerBuilder {
      * @memberof IContainerBuilder
      */
     create(): IContainer;
+
     /**
      * create a new container and load module via options.
      *

@@ -30,7 +30,7 @@ const rename = require('gulp-rename');
                 external: [
                     'reflect-metadata',
                     'tslib',
-                    'object-assign',
+                    'core-js',
                     'log4js',
                     '@ts-ioc/core',
                     '@ts-ioc/aop'

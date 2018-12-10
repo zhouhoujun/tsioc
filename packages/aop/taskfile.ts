@@ -86,7 +86,7 @@ export class AopRollup extends AssetActivity {
         }
     }
 })
-export class AopBuilder extends PackActivity {
+export class AopBuilder {
 }
 
 TaskContainer.create(__dirname)

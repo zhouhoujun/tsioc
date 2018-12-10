@@ -26,18 +26,18 @@ const builtins = require('rollup-plugin-node-builtins');
                 sourceMap: true,
                 plugins: [
                     resolve(),
-                    commonjs({
-                        exclude: [ 'node_modules/**', '../../node_modules/**']
-                    }),
+                    commonjs(),
                     // builtins(),
                     rollupSourcemaps()
                 ],
                 external: [
                     'reflect-metadata',
                     'tslib',
-                    'object-assign',
                     'log4js',
-                    'globby', 'path', 'fs',
+                    'globby',
+                    'core-js',
+                    'path',
+                    'fs',
                     '@ts-ioc/core',
                     '@ts-ioc/aop',
                     '@ts-ioc/bootstrap',

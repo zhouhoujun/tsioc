@@ -9,7 +9,19 @@
     "build": "ts-node -r tsconfig-paths/register taskfile.ts",
     "build-act": "ts-node -r tsconfig-paths/register taskfile-act.ts"
   },
-  "keywords": ["IoC", "AOP", "dependency", "injection", "framework", "container", "decorator", "autofac", "Inject", "type", "typescript"],
+  "keywords": [
+    "IoC",
+    "AOP",
+    "dependency",
+    "injection",
+    "framework",
+    "container",
+    "decorator",
+    "autofac",
+    "Inject",
+    "type",
+    "typescript"
+  ],
   "author": "houjun <freebirds8281@hotmail.com>",
   "license": "MIT",
   "bugs": {
@@ -36,6 +48,7 @@
     "del": "^2.2.1",
     "execa": "^0.10.0",
     "findup": "^0.1.5",
+    "fs": "0.0.1-security",
     "globby": "^7.1.1",
     "gulp-html-replace": "^1.6.1",
     "gulp-json-editor": "^2.3.0",
@@ -52,7 +65,7 @@
     "minimatch": "^3.0.4",
     "minimist": "^1.2.0",
     "mocha": "^5.2.0",
-    "object-assign": "^4.1.1",
+    "path": "^0.12.7",
     "pretty-hrtime": "^1.0.3",
     "reflect-metadata": "^0.1.12",
     "rollup": "^0.64.1",
