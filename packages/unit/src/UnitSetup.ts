@@ -21,10 +21,7 @@ export class UnitSetup {
      * @memberof AopModule
      */
     setup() {
-        let container = this.container;
-
-        let lifeScope = container.get(LifeScopeToken);
-
+        let lifeScope = this.container.get(LifeScopeToken);
         lifeScope.registerDecorator(Suite, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
     }
 }
