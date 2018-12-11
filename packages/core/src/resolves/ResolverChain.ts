@@ -2,11 +2,8 @@ import { SymbolType, ProviderTypes, Type } from '../types';
 import { IContainer } from '../IContainer';
 import { ResolverType } from './ResolverType';
 import { Container } from '../Container';
-import { isClass } from '../utils';
 import { InjectToken } from '../InjectToken';
 import { IResolver } from '../IResolver';
-import { InjectReference } from '../InjectReference';
-import { ProviderMap } from '../core/providers';
 
 /**
  *  resolver chain token.

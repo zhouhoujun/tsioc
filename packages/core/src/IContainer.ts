@@ -259,6 +259,7 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @memberof IContainer
      */
     getToken<T>(target: Token<T>, alias?: string): Token<T>;
+
     /**
      * get tocken key.
      *

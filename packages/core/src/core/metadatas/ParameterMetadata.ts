@@ -1,5 +1,12 @@
 import { PropertyMetadata } from './PropertyMetadata';
 
+/**
+ * parameter metadata.
+ *
+ * @export
+ * @interface ParameterMetadata
+ * @extends {PropertyMetadata}
+ */
 export interface ParameterMetadata extends PropertyMetadata {
     /**
      * parameter index.

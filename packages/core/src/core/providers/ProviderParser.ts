@@ -102,9 +102,6 @@ export class ProviderParser implements IProviderParser {
                             } else {
                                 map.add(name, val);
                             }
-                            // else if (isFunction(val) || isString(val)) {
-                            //     map.add(name, () => val);
-                            // }
                         }
                     });
                 }
@@ -112,9 +109,6 @@ export class ProviderParser implements IProviderParser {
             } else if (isFunction(p)) {
                 map.add(name, () => p);
             }
-            // else {
-            //     map.add(index, p);
-            // }
         });
 
         return map;

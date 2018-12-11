@@ -1,6 +1,5 @@
 import { createDecorator, ArgsIterator } from '../factories';
 import { RefMetadata } from '../metadatas';
-import { Registration } from '../../Registration';
 import { isToken, isString } from '../../utils';
 import { Token } from '../../types';
 

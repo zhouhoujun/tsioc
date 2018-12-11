@@ -64,10 +64,7 @@ export class TaskContainer implements ITaskContainer {
             this.builder
                 .use(AopModule)
                 .use(LogModule)
-                .use(CoreModule)
-                // .provider(DefaultAnnotationBuilderToken, ActivityBuilderToken)
-                // .provider(ServiceToken, ActivityRunnerToken)
-                // .provider(ModuleBuilderToken, WorkflowBuilderToken);
+                .use(CoreModule);
 
         }
         return this.builder;

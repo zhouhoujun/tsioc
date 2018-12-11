@@ -1,4 +1,4 @@
-import { IActivity, InjectAcitityToken, DependenceConfigure, Activity } from '../core';
+import { IActivity, InjectAcitityToken, DependenceConfigure } from '../core';
 import { Registration, Type } from '@ts-ioc/core';
 import { Task } from '../decorators';
 import { ControlActivity } from './ControlActivity';

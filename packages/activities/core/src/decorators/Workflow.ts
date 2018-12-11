@@ -1,8 +1,7 @@
 import { Registration, Token, MetadataAdapter, MetadataExtends, isString, isObject, isToken } from '@ts-ioc/core';
 import { WorkflowMetadata } from '../metadatas/WorkflowMetadata';
 import { createDIModuleDecorator, IDIModuleDecorator, IModuleBuilder } from '@ts-ioc/bootstrap';
-import { IActivityBuilder, ActivityBuilderToken } from '../core/IActivityBuilder';
-import { WorkflowBuilderToken } from '../injectors/DefaultWorkflowBuilder';
+import { IActivityBuilder } from '../core/IActivityBuilder';
 
 /**
  * workflow decorator.

@@ -40,7 +40,6 @@ export interface ICacheManager {
      * @memberof ICacheManager
      */
     get(targetType: Type<any>, expires?: number): any;
-
     /**
      * is check expires or not.
      *
