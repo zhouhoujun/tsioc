@@ -20,7 +20,6 @@ export class ContainerPool {
         return this.containerBuilder.create();
     }
 
-
     getTokenKey(token: Token<any>): SymbolType<any> {
         if (token instanceof Registration) {
             return token.toString();
@@ -45,10 +44,10 @@ export class ContainerPool {
 
     set(token: Token<any>, container: IContainer) {
         let key = this.getTokenKey(token);
-        if (this.pools.has(token)) {
+        if (this.pools.has(key)) {
             console.log(`${token.toString()} module has loaded`);
         }
-        this.pools.set(token, container);
+        this.pools.set(key, container);
     }
 
     get(token: Token<any>): IContainer {
@@ -74,13 +73,11 @@ export class ContainerPool {
         if (this.isDefault(container)) {
             return;
         }
-        // if (!container.parent) {
         if (parent && parent !== container) {
             container.parent = parent;
         } else {
             container.parent = this.getDefault();
         }
-        // }
     }
 }
 
