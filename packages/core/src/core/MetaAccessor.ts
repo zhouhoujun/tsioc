@@ -21,6 +21,16 @@ export class MetaAccessor implements IMetaAccessor<any> {
         return getClassDecorators(type);
     }
 
+    /**
+     * get metadata config of target type. via decorators in order.
+     *
+     * @param {Token<any>} token
+     * @param {IContainer} container
+     * @param {IAnnotationMetadata<any>} [extConfig]
+     * @param {Express<string, boolean>} [decorFilter]
+     * @returns {IAnnotationMetadata<any>}
+     * @memberof MetaAccessor
+     */
     getMetadata(token: Token<any>, container: IContainer, extConfig?: IAnnotationMetadata<any>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
         let type = isClass(token) ? token : container.getTokenImpl(token);
         let cfg;
@@ -49,6 +59,16 @@ export class MetaAccessor implements IMetaAccessor<any> {
         }
     }
 
+    /**
+     * find metadata accessor.
+     *
+     * @param {Token<any>} token
+     * @param {IContainer} container
+     * @param {Express<IAnnotationMetadata<any>, boolean>} filter
+     * @param {Express<string, boolean>} [decorFilter]
+     * @returns {IAnnotationMetadata<any>}
+     * @memberof MetaAccessor
+     */
     find(token: Token<any>, container: IContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
         let type = isClass(token) ? token : container.getTokenImpl(token);
         let metadata = null;
@@ -73,6 +93,16 @@ export class MetaAccessor implements IMetaAccessor<any> {
         return metadata;
     }
 
+    /**
+     * filter metadata accessor.
+     *
+     * @param {Token<any>} token
+     * @param {IContainer} container
+     * @param {Express<IAnnotationMetadata<any>, boolean>} filter
+     * @param {Express<string, boolean>} [decorFilter]
+     * @returns {IAnnotationMetadata<any>[]}
+     * @memberof MetaAccessor
+     */
     filter(token: Token<any>, container: IContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any>[] {
         let type = isClass(token) ? token : container.getTokenImpl(token);
         let metadatas = [];
