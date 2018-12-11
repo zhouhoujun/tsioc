@@ -1,7 +1,6 @@
 
 import { Registration } from './Registration';
 import { Token } from './types';
-import { isFunction, getClassName } from './utils';
 
 /**
  * Reference registration.

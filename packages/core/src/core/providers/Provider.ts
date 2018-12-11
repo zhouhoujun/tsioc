@@ -131,7 +131,7 @@ export class Provider {
         if (isUndefined(this.value)) {
             return container.has(this.type) ? container.resolve(this.type, ...providers) : null;
         } else {
-            return this.value; // isFunction(this.value) ? this.value(container) : this.value;
+            return this.value;
         }
     }
 
@@ -161,20 +161,6 @@ export class Provider {
     static createExtends(token: Token<any>, value: any, extendsTarget?: Express2<any, ExtendsProvider, void>): ExtendsProvider {
         return new ExtendsProvider(token, value, extendsTarget);
     }
-
-    // /**
-    //  * create custom provider.
-    //  *
-    //  * @static
-    //  * @param {Token<any>} [type]
-    //  * @param {ToInstance<any>} [toInstance]
-    //  * @param {*} [value]
-    //  * @returns {CustomProvider}
-    //  * @memberof Provider
-    //  */
-    // static createCustom(type?: Token<any>, toInstance?: ToInstance<any>, value?: any): CustomProvider {
-    //     return new CustomProvider(type, toInstance, value);
-    // }
 
     /**
      * create invoked provider.
@@ -257,6 +243,15 @@ export class ParamProvider extends InvokeProvider {
         this.index = index;
     }
 
+    /**
+     * resolve param
+     *
+     * @template T
+     * @param {IContainer} container
+     * @param {...ProviderTypes[]} providers
+     * @returns {T}
+     * @memberof ParamProvider
+     */
     resolve<T>(container: IContainer, ...providers: ProviderTypes[]): T {
         return super.resolve(container, ...providers);
     }

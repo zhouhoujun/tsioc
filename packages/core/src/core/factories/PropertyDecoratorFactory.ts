@@ -50,12 +50,6 @@ export function createPropDecorator<T extends PropertyMetadata>(name: string, ad
                 metadata.provider = arg;
             }
         });
-        // args.next<T>({
-        //     match: (arg) => isString(arg),
-        //     setMetadata: (metadata, arg) => {
-        //         metadata.alias = arg;
-        //     }
-        // });
     });
     let decorator = createDecorator<T>(name, propPropAdapter, metadataExtends);
     decorator.decoratorType = DecoratorType.Property;

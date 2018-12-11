@@ -150,7 +150,14 @@ function storeMetadata<T>(name: string, metaName: string, args: any[], metadata?
     }
 }
 
-
+/**
+ * get decirator type.
+ *
+ * @param {*} target
+ * @param {Express<string, boolean>} exp
+ * @param {boolean} [own=false]
+ * @returns {string[]}
+ */
 function getDecoratorsOfType(target: any, exp: Express<string, boolean>, own = false): string[] {
     return (own ? Reflect.getOwnMetadataKeys(target) : Reflect.getMetadataKeys(target)).filter(d => {
         if (d && isString(d)) {
@@ -212,7 +219,7 @@ export function getParamDecorators(target: any, propertyKey?: string): string[] 
             return /^@\S+__params$/.test(d);
         }
         return false;
-    }).map(d => d.replace(/__params$/ig, ''));
+    }).map((d: string) => d.replace(/__params$/ig, ''));
 }
 
 /**

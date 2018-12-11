@@ -24,5 +24,5 @@ export enum DecoratorType {
     /**
      * decorator for any where.
      */
-    All = Class | Property | Property | Method
+    All = Class | Parameter | Property | Method
 }
