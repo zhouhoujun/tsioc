@@ -1,4 +1,4 @@
-import { IContainer, ActionData, ActionComposite, Provider, getClassName, ProviderTypes } from '@ts-ioc/core';
+import { IContainer, ActionData, ActionComposite, Provider, getClassName, ParamProviders } from '@ts-ioc/core';
 import { AdvisorToken } from '../IAdvisor';
 import { AopActions } from './AopActions';
 import { AdviceMetadata } from '../metadatas'
@@ -54,7 +54,7 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
             params: data.params,
             targetType: targetType
         }));
-        let providers: ProviderTypes[] = [Provider.create(Joinpoint, joinPoint)];
+        let providers: ParamProviders[] = [Provider.create(Joinpoint, joinPoint)];
 
         if (data.providerMap) {
             providers.push(data.providerMap);

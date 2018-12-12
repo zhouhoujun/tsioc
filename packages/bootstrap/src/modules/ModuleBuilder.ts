@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import {
-    IContainer, Token, ProviderTypes, lang, isFunction,
+    IContainer, Token, ParamProviders, lang, isFunction,
     isClass, isToken, Inject, Registration, Container,
     Injectable, MetaAccessorToken, IMetaAccessor,
     InjectMetaAccessorToken, isArray, ProviderParserToken
@@ -181,7 +181,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             let parser = parent.get(ProviderParserToken);
             let pdrmap = parser.parse(...config.providers);
             pdrmap.keys().forEach(key => {
-                parent.bindProvider(key, (...providers: ProviderTypes[]) => pdrmap.resolve(key, ...providers));
+                parent.bindProvider(key, (...providers: ParamProviders[]) => pdrmap.resolve(key, ...providers));
             });
         }
         if (injmd) {
@@ -236,7 +236,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             await instance.start(data);
             return instance;
         } else {
-            let providers = [{ provide: token, useValue: instance }, { token: token, instance: instance, config: cfg }] as ProviderTypes[];
+            let providers = [{ provide: token, useValue: instance }, { token: token, instance: instance, config: cfg }] as ParamProviders[];
             let runner: IRunner<T> = container.getService(RunnerToken, token, tk => new InjectRunnerToken(tk), ...providers);
             let service: IService<T>;
             if (!runner) {

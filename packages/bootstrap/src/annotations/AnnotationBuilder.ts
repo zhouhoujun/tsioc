@@ -1,6 +1,6 @@
 import {
     Token, isToken, IContainer, isClass, Inject, ContainerToken,
-    lang, isFunction, Injectable, Container,  IMetaAccessor, ProviderTypes,
+    lang, isFunction, Injectable, Container,  IMetaAccessor, ParamProviders,
     InjectMetaAccessorToken, MetaAccessorToken
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
@@ -121,7 +121,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
     getBuilder(token: Token<T>, config?: AnnotationConfigure<T>): IAnnotationBuilder<T> {
         let builder: IAnnotationBuilder<T>;
-        let providers = [{ provide: ContainerToken, useValue: this.container }, { provide: Container, useValue: this.container }] as ProviderTypes[];
+        let providers = [{ provide: ContainerToken, useValue: this.container }, { provide: Container, useValue: this.container }] as ParamProviders[];
         if (config && config.annoBuilder) {
             if (isClass(config.annoBuilder)) {
                 if (!this.container.has(config.annoBuilder)) {
