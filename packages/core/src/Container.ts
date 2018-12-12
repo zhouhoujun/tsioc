@@ -210,7 +210,7 @@ export class Container implements IContainer {
                 defToken,
                 ...providers);
         } else {
-            return this.resolve(token, ...[target, toRefToken as ParamProviders, defaultToken as ParamProviders].filter(a => a).concat(providers));
+            return this.resolve(token, ...[target, toRefToken as ParamProviders, defaultToken as ParamProviders, ...providers].filter(a => a));
         }
     }
 
