@@ -1,6 +1,7 @@
-import { Token, ProviderTypes, Express2, Type } from '../../types';
-import { IContainer } from '../../IContainer';
-import { isFunction, isObject, isUndefined } from '../../utils';
+import { Token, Express2, Type } from '../types';
+import { IContainer } from '../IContainer';
+import { isFunction, isObject, isUndefined } from '../utils';
+import { ProviderTypes } from './types';
 
 /**
  * type provider.

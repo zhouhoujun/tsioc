@@ -1,4 +1,4 @@
-import { Token, IContainer, Registration, Type, IExports, ProviderTypes, InjectReference, ProviderMap } from '@ts-ioc/core';
+import { Token, IContainer, Registration, Type, IExports, ParamProviders, InjectReference, ProviderMap } from '@ts-ioc/core';
 import { ModuleConfig } from './ModuleConfigure';
 
 
@@ -29,7 +29,7 @@ export class InjectedModule<T> implements IExports {
         return this._map;
     }
 
-    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
+    resolve<T>(token: Token<T>, ...providers: ParamProviders[]): T {
         let pdr = this.getProviderMap();
         if (pdr && pdr.hasRegister(token)) {
             return pdr.resolve(token, ...providers);

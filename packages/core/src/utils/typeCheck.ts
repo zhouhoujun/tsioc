@@ -387,8 +387,11 @@ export function isArray(target: any): target is Array<any> {
  * @returns {target is object}
  */
 export function isObject(target: any): target is object {
-    var type = typeof target;
-    return target != null && (type === 'object' || type === 'function');
+    if (isNullOrUndefined(target)) {
+        return false;
+    }
+    let type = typeof target;
+    return type === 'object' || type === 'function';
 }
 
 /**

@@ -1,14 +1,14 @@
 import { IContainer } from './IContainer';
 import { LifeScopeToken } from './LifeScope';
 import {
-    CacheManager, ProviderMap, ProviderMapToken, ProviderParser, ProviderParserToken,
-    Injectable, Component, AutoWired, Inject, Singleton, Param, DefaultLifeScope,
+    CacheManager, Injectable, Component, AutoWired, Inject, Singleton, Param, DefaultLifeScope,
     Method, Abstract, Autorun, IocExt, Refs, Providers, CoreActions, MethodAccessor,
     MetaAccessor, MetaAccessorToken,
 } from './core';
 import { CacheManagerToken } from './ICacheManager';
 import { MethodAccessorToken } from './IMethodAccessor';
 import { ResolverChain, ResolverChainToken } from './resolves';
+import { ProviderMap, ProviderMapToken, ProviderParser, ProviderParserToken } from './providers';
 
 /**
  * register core for container.

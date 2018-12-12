@@ -89,10 +89,12 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         this.events.on(name, event);
         return this;
     }
+
     off(name: string, event?: (...args: any[]) => void): this {
         this.events.off(name, event);
         return this;
     }
+
     emit(name: string, ...args: any[]): void {
         this.events.emit(name, ...args);
     }

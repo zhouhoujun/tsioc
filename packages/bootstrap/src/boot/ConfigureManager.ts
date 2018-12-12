@@ -17,7 +17,6 @@ import { ConfigureMgrToken, ConfigureLoaderToken, IConfigureManager, DefaultConf
 // @RefTo(RunnableBuilderToken)
 @Injectable(ConfigureMgrToken)
 export class ConfigureManager<T extends ModuleConfigure> implements IConfigureManager<T> {
-
     /**
      * Creates an instance of ConfigureManager.
      * @param {string} [baseURL]

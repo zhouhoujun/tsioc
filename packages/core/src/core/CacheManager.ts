@@ -23,6 +23,7 @@ export interface CacheTarget {
  * @implements {ICacheManager}
  */
 export class CacheManager implements ICacheManager {
+
     cacheTokens: Map<Type<any>, CacheTarget>;
     constructor(private container: IContainer) {
         this.cacheTokens = new Map();

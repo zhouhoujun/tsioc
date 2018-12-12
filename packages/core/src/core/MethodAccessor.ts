@@ -2,9 +2,9 @@ import { IContainer } from '../IContainer';
 import { IMethodAccessor } from '../IMethodAccessor';
 import { BindParameterProviderActionData, CoreActions, LifeState } from './actions';
 import { isToken, isFunction, assert, assertExp } from '../utils';
-import { Token, ProviderTypes } from '../types';
+import { Token } from '../types';
 import { IParameter } from '../IParameter';
-import { IProviderParser, ProviderParserToken } from './providers';
+import { IProviderParser, ProviderParserToken, ParamProviders } from '../providers';
 
 /**
  * method accessor
@@ -23,7 +23,7 @@ export class MethodAccessor implements IMethodAccessor {
         return this.container.get(ProviderParserToken);
     }
 
-    async invoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: ProviderTypes[]): Promise<T> {
+    async invoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: ParamProviders[]): Promise<T> {
         if (!target) {
             target = this.container.resolve(token, ...providers);
         }
@@ -48,7 +48,7 @@ export class MethodAccessor implements IMethodAccessor {
 
     }
 
-    syncInvoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: ProviderTypes[]): T {
+    syncInvoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: ParamProviders[]): T {
         if (!target) {
             target = this.container.resolve(token, ...providers);
         }
@@ -71,7 +71,7 @@ export class MethodAccessor implements IMethodAccessor {
         return target[propertyKey](...paramInstances) as T;
     }
 
-    createSyncParams(params: IParameter[], ...providers: ProviderTypes[]): any[] {
+    createSyncParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
         let providerMap = this.getMatcher().parse(params, ...providers);
         return params.map((param, index) => {
             if (param.name && providerMap.hasRegister(param.name)) {
@@ -87,7 +87,7 @@ export class MethodAccessor implements IMethodAccessor {
         });
     }
 
-    createParams(params: IParameter[], ...providers: ProviderTypes[]): Promise<any[]> {
+    createParams(params: IParameter[], ...providers: ParamProviders[]): Promise<any[]> {
         let providerMap = this.getMatcher().parse(params, ...providers);
         return Promise.all(params.map((param, index) => {
             if (param.name && providerMap.hasRegister(param.name)) {

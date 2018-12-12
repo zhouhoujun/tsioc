@@ -3,7 +3,6 @@ export * from './actions';
 export * from './decorators';
 export * from './metadatas';
 export * from './factories';
-export * from './providers';
 
 export * from './IRecognizer';
 export * from './ActionData';

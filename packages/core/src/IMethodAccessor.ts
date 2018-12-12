@@ -1,6 +1,7 @@
-import { Token, ProviderTypes } from './types';
+import { Token } from './types';
 import { IParameter } from './IParameter';
 import { InjectToken } from './InjectToken';
+import { ParamProviders } from './providers';
 
 /**
  * IMethodAccessor interface symbol.
@@ -22,11 +23,11 @@ export interface IMethodAccessor {
      * @param {Token<any>} token  type of object
      * @param {string} propertyKey method name
      * @param {*} [target] instance of type.
-     * @param {...ProviderTypes[]} providers param provider.
+     * @param {...ParamProviders[]} providers param provider.
      * @returns {Promise<T>}
      * @memberof IMethodAccessor
      */
-    invoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: ProviderTypes[]): Promise<T>;
+    invoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: ParamProviders[]): Promise<T>;
 
     /**
      * try to invoke the method of intance,  if no instance will create by type.
@@ -39,7 +40,7 @@ export interface IMethodAccessor {
      * @returns {T}
      * @memberof IMethodAccessor
      */
-    syncInvoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: ProviderTypes[]): T;
+    syncInvoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: ParamProviders[]): T;
 
     /**
      * create params instances with IParameter and provider.
@@ -49,7 +50,7 @@ export interface IMethodAccessor {
      * @returns {any[]}
      * @memberof IMethodAccessor
      */
-    createSyncParams(params: IParameter[], ...providers: ProviderTypes[]): any[];
+    createSyncParams(params: IParameter[], ...providers: ParamProviders[]): any[];
 
     /**
      * create params instances with IParameter and provider
@@ -59,5 +60,5 @@ export interface IMethodAccessor {
      * @returns {Promise<any[]>}
      * @memberof IMethodAccessor
      */
-    createParams(params: IParameter[], ...providers: ProviderTypes[]): Promise<any[]>;
+    createParams(params: IParameter[], ...providers: ParamProviders[]): Promise<any[]>;
 }
