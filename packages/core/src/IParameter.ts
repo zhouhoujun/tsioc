@@ -20,5 +20,5 @@ export interface IParameter {
      * @type {Token<any>}
      * @memberof IParameter
      */
-    type: Token<any>
+    type: Token<any>;
 }

@@ -17,7 +17,6 @@ import { ResolverChain, ResolverChainToken } from './resolves';
  * @param {IContainer} container
  */
 export function registerCores(container: IContainer) {
-
     container.registerSingleton(LifeScopeToken, () => new DefaultLifeScope(container));
     container.registerSingleton(CacheManagerToken, () => new CacheManager(container));
     container.registerSingleton(ResolverChainToken, () => new ResolverChain(container));
@@ -48,5 +47,4 @@ export function registerCores(container: IContainer) {
     container.register(Number, () => Number.NaN);
     container.register(Boolean, () => undefined);
     container.register(Array, () => []);
-
 }

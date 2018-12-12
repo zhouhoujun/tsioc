@@ -46,7 +46,6 @@ export const LifeScopeToken = new InjectToken<LifeScope>('DI_LifeScope');
  * @interface LifeScope
  */
 export interface LifeScope {
-
     /**
      * execute the action work.
      *

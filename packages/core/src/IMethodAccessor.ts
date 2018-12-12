@@ -8,7 +8,6 @@ import { InjectToken } from './InjectToken';
  */
 export const MethodAccessorToken = new InjectToken<IMethodAccessor>('DI_IMethodAccessor');
 
-
 /**
  * execution, invoke some type method.
  *

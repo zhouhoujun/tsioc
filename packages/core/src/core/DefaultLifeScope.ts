@@ -30,7 +30,6 @@ export class DefaultLifeScope implements LifeScope {
         this.buildAction();
     }
 
-
     addAction(action: ActionComponent, ...nodepaths: string[]): this {
         let parent = this.action;
         nodepaths.forEach(pathname => {
