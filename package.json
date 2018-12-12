@@ -51,7 +51,6 @@
     "globby": "^7.1.1",
     "gulp-html-replace": "^1.6.1",
     "gulp-json-editor": "^2.3.0",
-    "gulp-json-format": "^2.0.0",
     "gulp-mocha": "^3.0.1",
     "gulp-rename": "^1.2.2",
     "gulp-replace": "^0.5.4",

@@ -1,7 +1,6 @@
 import { TaskContainer } from '@taskfr/core';
 import { INodeActivityContext, Asset, BuildModule, AssetActivity, ShellModule, TransformModule } from '@taskfr/build';
 const jeditor = require('gulp-json-editor');
-const jsonFormat = require('gulp-json-format');
 
 
 let versionSetting = (ctx: INodeActivityContext) => {
