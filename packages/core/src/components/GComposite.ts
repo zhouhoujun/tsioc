@@ -13,7 +13,6 @@ import { GComponent } from './GComponent';
  * @template T
  */
 export class GComposite<T extends IComponent> implements GComponent<T> {
-
     parent: T;
     protected children: T[];
     constructor(public name: string) {
@@ -26,6 +25,7 @@ export class GComposite<T extends IComponent> implements GComponent<T> {
         return this;
 
     }
+
     remove(node?: string | T): this {
         let component: IComponent;
         if (isString(node)) {

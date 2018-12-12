@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { MethodMetadata } from '../metadatas';
-import { ProviderTypes} from '../../types';
+import { ParamProviders } from '../../providers';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
 import { ArgsIterator } from './ArgsIterator';
@@ -17,9 +17,9 @@ export interface IMethodDecorator<T extends MethodMetadata> {
     /**
      * create method decorator with providers.
      *
-     * @param  {ProviderTypes[]} [providers]
+     * @param  {ParamProviders[]} [providers]
      */
-    (providers?: ProviderTypes[]): MethodDecorator;
+    (providers?: ParamProviders[]): MethodDecorator;
     /**
      * create method decorator with metadata map.
      * @param {T} [metadata]

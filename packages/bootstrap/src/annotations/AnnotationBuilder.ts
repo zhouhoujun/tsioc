@@ -1,7 +1,7 @@
 import {
     Token, isToken, IContainer, isClass, Inject, ContainerToken,
-    lang, isFunction, Injectable, Container,  IMetaAccessor,
-    InjectMetaAccessorToken, MetaAccessorToken, ProviderTypes
+    lang, isFunction, Injectable, Container,  IMetaAccessor, ProviderTypes,
+    InjectMetaAccessorToken, MetaAccessorToken
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import { AnnoInstance } from './IAnnotation';

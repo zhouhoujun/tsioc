@@ -25,7 +25,6 @@ export class Composite extends GComposite<IComponent> implements IComponent {
     each<T extends IComponent>(express: Express<T, boolean | void>, mode?: Mode) {
         return super.each(express, mode);
     }
-
     eachChildren<T extends IComponent>(express: Express<T, void | boolean>) {
         super.eachChildren(express);
     }

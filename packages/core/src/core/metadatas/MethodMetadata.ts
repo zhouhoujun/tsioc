@@ -1,5 +1,5 @@
 import { Metadate } from './Metadate';
-import { ProviderTypes } from '../../types';
+import { ProviderTypes } from '../../providers';
 
 /**
  * method metadata

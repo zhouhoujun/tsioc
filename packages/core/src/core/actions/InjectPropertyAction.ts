@@ -3,7 +3,7 @@ import { IContainer } from '../../IContainer';
 import { CoreActions } from './CoreActions';
 import { ActionComposite } from './ActionComposite';
 import { InjectReference } from '../../InjectReference';
-import { ProviderMap } from '../providers';
+import { ProviderMap } from '../../providers';
 import { ObjectMap } from '../../types';
 
 

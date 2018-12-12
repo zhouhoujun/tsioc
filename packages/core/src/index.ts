@@ -14,12 +14,12 @@ export * from './ICacheManager';
 export * from './LifeScope';
 
 
-
 export * from './ContainerBuilder';
 
 export * from './utils';
 export * from './components';
 export * from './core';
 export * from './injectors';
+export * from './providers';
 export * from './resolves';
 

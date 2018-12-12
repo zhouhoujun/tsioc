@@ -45,7 +45,6 @@ export interface GComponent<T extends IComponent> extends IComponent {
      */
     remove(node: T | string): this;
 
-
     /**
      * find sub context via express.
      *

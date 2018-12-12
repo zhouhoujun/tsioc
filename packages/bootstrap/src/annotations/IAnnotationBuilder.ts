@@ -34,7 +34,6 @@ export interface AnnotationConfigure<T> extends IAnnotationMetadata<T> {
 
 const annoBuilderDesc = 'DI_AnnotationBuilder';
 
-
 /**
  * Annotation class builder.
  *

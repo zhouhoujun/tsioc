@@ -1,9 +1,10 @@
-import { SymbolType, ProviderTypes, Type } from '../types';
+import { SymbolType, Type } from '../types';
 import { IContainer } from '../IContainer';
 import { ResolverType } from './ResolverType';
 import { Container } from '../Container';
 import { InjectToken } from '../InjectToken';
 import { IResolver } from '../IResolver';
+import { ParamProviders } from '../providers';
 
 /**
  *  resolver chain token.
@@ -107,11 +108,11 @@ export class ResolverChain implements IResolver {
      *
      * @template T
      * @param {SymbolType<T>} token
-     * @param {...ProviderTypes[]} providers
+     * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof ResolverChain
      */
-    resolve<T>(token: SymbolType<T>, ...providers: ProviderTypes[]): T {
+    resolve<T>(token: SymbolType<T>, ...providers: ParamProviders[]): T {
         let resolver = this.toArray().find(r => this.hasToken(r, token));
         if (!resolver && !this.container.parent) {
             // console.log('have not register', token);

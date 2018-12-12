@@ -1,6 +1,6 @@
 import { Registration } from './Registration';
 import { IContainer } from './IContainer';
-import { ProviderMap, ProviderType } from './core/providers';
+import { ProviderTypes } from './providers';
 
 /**
  * module types.
@@ -53,11 +53,6 @@ export type SymbolType<T> = Type<T> | AbstractType<T> | string | symbol;
  */
 export type Token<T> = Registration<T> | SymbolType<T>;
 
-/**
- * providers.
- * note: ObjectMap<any> provider can not resolve token.
- */
-export type ProviderTypes = ObjectMap<any> | ProviderMap | ProviderType;
 
 /**
  * instance factory.
