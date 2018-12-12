@@ -12,7 +12,6 @@ import { IContainer } from '../IContainer';
  * @template T
  */
 export interface ActionData<T> {
-
     /**
      * the args.
      *

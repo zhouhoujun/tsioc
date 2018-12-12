@@ -52,6 +52,12 @@ export class Registration<T> {
         }
     }
 
+    /**
+     * get provide.
+     *
+     * @returns {SymbolType<any>}
+     * @memberof Registration
+     */
     getProvide(): SymbolType<any> {
         return this.classType;
     }

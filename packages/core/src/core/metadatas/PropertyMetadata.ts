@@ -15,5 +15,4 @@ export interface PropertyMetadata extends ProvideMetadata {
      * @memberof PropertyMetadata
      */
     propertyKey?: string;
-
 }

@@ -7,8 +7,11 @@ import { ArgsIterator } from './ArgsIterator';
 import { Token } from '../../types';
 
 
-
+/**
+ * property parameter decorator.
+ */
 export type PropParamDecorator = (target: Object, propertyKey: string | symbol, parameterIndex?: number) => void;
+
 /**
  * Parameter and Property decorator.
  *
@@ -27,6 +30,9 @@ export interface IParamPropDecorator<T extends ParamPropMetadata> {
      * @param {T} [metadata] define matadata map to resolve value to the parameter or property.
      */
     (metadata?: T): PropParamDecorator;
+    /**
+     * define parameter or property decorator.
+     */
     (target: object, propertyKey: string | symbol, parameterIndex?: number): void;
 }
 

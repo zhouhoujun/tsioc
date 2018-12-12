@@ -5,7 +5,6 @@ import { isToken, isPropertyMetadata } from '../../utils';
 import { ArgsIterator } from './ArgsIterator';
 import { Token } from '../../types';
 
-
 /**
  * property decorator.
  *
@@ -24,6 +23,9 @@ export interface IPropertyDecorator<T extends PropertyMetadata> {
      * @param {T} [metadata] define matadata map to resolve value to the property.
      */
     (metadata?: T): PropertyDecorator;
+    /**
+     * define property decorator.
+     */
     (target: object, propertyKey: string | symbol): void;
 }
 

@@ -4,7 +4,6 @@
  * @export
  */
 export enum CoreActions {
-
     /**
      * the action bind parameter type form metadata.
      */
@@ -29,7 +28,6 @@ export enum CoreActions {
      * bind parameter provider action.
      */
     bindParameterProviders = 'bindParameterProviders',
-
 
     /**
      * cache action.
@@ -56,7 +54,6 @@ export enum CoreActions {
      */
     singletion = 'singletion',
 
-
     /**
      * autorun action.
      */
@@ -66,5 +63,4 @@ export enum CoreActions {
      * method autorun action.
      */
     methodAutorun = 'methodAutorun'
-
 }

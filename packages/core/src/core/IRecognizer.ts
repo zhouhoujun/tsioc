@@ -12,7 +12,6 @@ export const RecognizerToken = new InjectToken<IRecognizer>('DI_IRecognizer');
  * @interface IRecognizer
  */
 export interface IRecognizer {
-
     /**
      * recognize the special alias of value.
      *

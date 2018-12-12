@@ -9,7 +9,6 @@ import { Registration } from './Registration';
  * @template T
  */
 export class InjectToken<T> extends Registration<T> {
-
     constructor(desc: string | symbol) {
         super(desc, '');
     }

@@ -1,7 +1,5 @@
 import { TypeMetadata } from './TypeMetadata';
 
-
-
 /**
  * AutoWired metadata.
  *

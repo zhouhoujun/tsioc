@@ -22,5 +22,4 @@ export interface MethodMetadata extends Metadate {
      * @memberof MethodMetadata
      */
     propertyKey?: string;
-
 }

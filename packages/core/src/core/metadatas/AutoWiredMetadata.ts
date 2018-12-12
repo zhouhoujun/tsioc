@@ -1,7 +1,6 @@
 import { ParamPropMetadata } from './ParamPropMetadata';
 
 
-
 /**
  * AutoWired metadata.
  *
@@ -10,4 +9,5 @@ import { ParamPropMetadata } from './ParamPropMetadata';
  * @extends {PropertyMetadata}
  */
 export interface AutoWiredMetadata extends ParamPropMetadata {
+
 }

@@ -16,7 +16,6 @@ import { MethodAutorun } from './actions/MethodAutorun';
  * @class ActionFactory
  */
 export class ActionFactory {
-
     /**
      * create action by action type. type in 'CoreActions'
      *

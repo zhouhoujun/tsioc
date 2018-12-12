@@ -8,7 +8,6 @@ import { SymbolType } from '../../types';
  * @interface TypeMetadata
  */
 export interface TypeMetadata extends Metadate {
-
     /**
      * property type
      *
@@ -16,5 +15,4 @@ export interface TypeMetadata extends Metadate {
      * @memberof TypeMetadata
      */
     type?: SymbolType<any>;
-
 }

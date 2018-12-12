@@ -3,6 +3,13 @@ import { ActionData } from '../ActionData';
 import { IContainer } from '../../IContainer';
 import { NullComponent } from '../../components';
 
+/**
+ * Null action.
+ *
+ * @class NullActionClass
+ * @extends {NullComponent}
+ * @implements {ActionComponent}
+ */
 class NullActionClass extends NullComponent implements ActionComponent {
 
     insert(action: ActionComponent, index: number): this {

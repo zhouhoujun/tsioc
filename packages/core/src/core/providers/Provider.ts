@@ -44,7 +44,12 @@ export interface IProvider {
  *
  */
 export interface ClassProvider extends IProvider {
-
+    /**
+     * use class for provide.
+     *
+     * @type {Type<any>}
+     * @memberof ClassProvider
+     */
     useClass: Type<any>;
     /**
      * A list of `token`s which need to be resolved by the injector. The list of values is then
@@ -53,7 +58,27 @@ export interface ClassProvider extends IProvider {
     deps?: any[];
 }
 
+/**
+ * value provider.
+ *
+ * @usageNotes
+ * ```
+ * const provider: ClassProvider = {provide: 'someToken', useClass: MyService};
+ * ```
+ * @description
+ * Configures the `Injector` to return an instance of `useValue` for a token.
+ *
+ * @export
+ * @interface ValueProvider
+ * @extends {IProvider}
+ */
 export interface ValueProvider extends IProvider {
+    /**
+     * use value for provide.
+     *
+     * @type {*}
+     * @memberof ValueProvider
+     */
     useValue: any;
 }
 
@@ -72,9 +97,9 @@ export interface ValueProvider extends IProvider {
  */
 export interface FactoryProvider extends IProvider {
     /**
-   * A function to invoke to create a value for this `token`. The function is invoked with
-   * resolved values of `token`s in the `deps` field.
-   */
+    * A function to invoke to create a value for this `token`. The function is invoked with
+    * resolved values of `token`s in the `deps` field.
+    */
     useFactory: Function;
 
     /**
@@ -84,10 +109,30 @@ export interface FactoryProvider extends IProvider {
     deps?: any[];
 }
 
+/**
+ * existing provider.
+ *
+ * @usageNotes
+ * ```
+ * const provider: ClassProvider = {provide: 'someToken', useExisting: 'registeredToken'};
+ * ```
+ * @export
+ * @interface ExistingProvider
+ * @extends {IProvider}
+ */
 export interface ExistingProvider extends IProvider {
+    /**
+     * use existing registered token for provide.
+     *
+     * @type {Token<any>}
+     * @memberof ExistingProvider
+     */
     useExisting: Token<any>
 }
 
+/**
+ * provider type.
+ */
 export type ProviderType =
     TypeProvider | ValueProvider | ClassProvider | ExistingProvider | FactoryProvider | Provider;
 

@@ -14,7 +14,6 @@ export const ProviderParserToken = new InjectToken<IProviderParser>('DI_IProvide
  * @interface IProviderParser
  */
 export interface IProviderParser {
-
     /**
      * convert to provider map.
      *
@@ -23,5 +22,4 @@ export interface IProviderParser {
      * @memberof IProviderParser
      */
     parse(...providers: ProviderTypes[]): ProviderMap;
-
 }

@@ -9,7 +9,6 @@ import { TypeMetadata } from './TypeMetadata';
  * @extends {TypeMetadata}
  */
 export interface ProvidersMetadata  extends TypeMetadata {
-
     /**
      * add ref service to the class.
      *

@@ -8,7 +8,6 @@ import { ActionData } from './ActionData';
  * @interface IExecutable
  */
 export interface IExecutable {
-
     /**
      * execute the action work.
      *

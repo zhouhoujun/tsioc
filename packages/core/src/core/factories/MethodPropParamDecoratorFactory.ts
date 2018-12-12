@@ -6,22 +6,25 @@ import { DecoratorType } from './DecoratorType';
 
 export type MethodPropParamDecorator = (target: Object, propertyKey: string | symbol, descriptor?: number | TypedPropertyDescriptor<any>) => void;
 /**
- * method and Property decorator.
+ * method, property or parameter decorator.
  *
  * @export
  * @interface IMethodPropParamDecorator
  */
 export interface IMethodPropParamDecorator<T extends TypeMetadata> {
     /**
-     * define method or property decorator with metadata map.
+     * define method, property or parameter decorator with metadata map.
      * @param {T} [metadata] metadata map
      */
     (metadata?: T): MethodPropParamDecorator;
+    /**
+     * define method, property or parameter decorator.
+     */
     (target: object, propertyKey: string | symbol, descriptor?: number | TypedPropertyDescriptor<any>): void;
 }
 
 /**
- * define method or property decorator
+ * create method, property or parameter decorator.
  *
  * @export
  * @template T

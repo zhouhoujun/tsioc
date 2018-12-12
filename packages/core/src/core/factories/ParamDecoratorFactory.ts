@@ -25,6 +25,9 @@ export interface IParameterDecorator<T extends ParameterMetadata> {
      * @param {T} [metadata] define matadata map to resolve value to the parameter.
      */
     (metadata?: T): ParameterDecorator;
+    /**
+     * define paramete decorator.
+     */
     (target: object, propertyKey: string | symbol, parameterIndex: number): void;
 }
 

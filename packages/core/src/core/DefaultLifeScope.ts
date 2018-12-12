@@ -23,7 +23,6 @@ import { MetaAccessorToken } from './IMetaAccessor';
  * @implements {LifeScope}
  */
 export class DefaultLifeScope implements LifeScope {
-
     decorators: DecorSummary[];
     action: ActionComponent;
     constructor(private container: IContainer) {

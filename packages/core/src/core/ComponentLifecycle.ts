@@ -66,7 +66,6 @@ export interface OnDestroy {
  * @interface ComponentLifecycle
  */
 export interface ComponentLifecycle {
-
     /**
      * component before init hooks. after constructor befor property inject.
      *
