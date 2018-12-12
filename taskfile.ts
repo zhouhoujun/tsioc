@@ -1,7 +1,7 @@
 import { TaskContainer } from '@taskfr/core';
 import { INodeActivityContext, Asset, BuildModule, AssetActivity, ShellModule, TransformModule } from '@taskfr/build';
 const jeditor = require('gulp-json-editor');
-
+const jsonFormat = require('gulp-json-format');
 
 
 let versionSetting = (ctx: INodeActivityContext) => {
@@ -19,9 +19,6 @@ let versionSetting = (ctx: INodeActivityContext) => {
             }
         }
         return json;
-    },
-    {
-      beautify: false
     })
 }
 
@@ -31,6 +28,7 @@ let versionSetting = (ctx: INodeActivityContext) => {
             src: ['packages/**/package.json', '!node_modules/**/package.json'],
             pipes: [
                 (act: AssetActivity) => versionSetting(act.context),
+                act => jsonFormat
             ],
             dest: 'packages',
             activity: AssetActivity
