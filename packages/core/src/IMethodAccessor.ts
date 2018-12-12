@@ -10,15 +10,14 @@ export const MethodAccessorToken = new InjectToken<IMethodAccessor>('DI_IMethodA
 
 
 /**
- * execution, invoke some type method
+ * execution, invoke some type method.
  *
  * @export
  * @interface IExecution
  */
 export interface IMethodAccessor {
-
     /**
-     * try to async invoke the method of intance,  if no instance will create by type.
+     * try to async invoke the method of intance, if no instance will create by type.
      *
      * @template T
      * @param {Token<any>} token  type of object
@@ -62,5 +61,4 @@ export interface IMethodAccessor {
      * @memberof IMethodAccessor
      */
     createParams(params: IParameter[], ...providers: ProviderTypes[]): Promise<any[]>;
-
 }

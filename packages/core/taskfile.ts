@@ -85,9 +85,8 @@ export class CoreRollup extends AssetActivity {
         }
     }
 })
-export class CoreBuilder extends PackActivity {
-    constructor(@Inject(ContainerToken) container: IContainer) {
-        super();
+export class CoreBuilder {
+    constructor() {
         // console.log(container);
     }
 }
