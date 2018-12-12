@@ -19,6 +19,9 @@ let versionSetting = (ctx: INodeActivityContext) => {
             }
         }
         return json;
+    },
+    {
+      beautify: false
     })
 }
 

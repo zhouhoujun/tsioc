@@ -13,7 +13,16 @@
     "build": "ts-node -r tsconfig-paths/register taskfile.ts",
     "prepublish": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
-  "keywords": ["activity", "workflow", "task", "framework", "IoC", "AOP", "dependency", "injection"],
+  "keywords": [
+    "activity",
+    "workflow",
+    "task",
+    "framework",
+    "IoC",
+    "AOP",
+    "dependency",
+    "injection"
+  ],
   "author": "houjun",
   "license": "MIT",
   "bugs": {
