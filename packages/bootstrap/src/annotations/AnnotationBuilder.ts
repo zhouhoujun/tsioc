@@ -123,8 +123,10 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
     async boot(runable: Token<T> | AnnotationConfigure<T>, config?: AnnotationConfigure<T>, data?: any): Promise<Runnable<T>> {
         let instance: BootHooks<T>;
         let builder: IAnnotationBuilder<T>;
+        let token;
         if (isToken(runable)) {
-            await this.build(runable, config, data, (cfg, hook, builder) => {
+            token = runable;
+            await this.build(token, config, data, (cfg, hook, builder) => {
                 config = cfg;
                 instance = hook;
                 builder = builder;
@@ -132,7 +134,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         } else {
             data = config;
             config = runable;
-            let token = this.getMetaAccessor(null, config).getToken(config, this.container);
+            token = this.getMetaAccessor(null, config).getToken(config, this.container);
             await this.build(token, config, data, (cfg, hook, builder) => {
                 config = cfg;
                 instance = hook;
@@ -141,7 +143,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         }
         builder = builder || this;
 
-        return await builder.run(instance, config, data);
+        return await builder.run(instance, config, data, token);
     }
 
     async createInstance(token: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<T> {
@@ -201,12 +203,12 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         return instance;
     }
 
-    async run(instance: T, cfg: AnnotationConfigure<T>, data?: any): Promise<Runnable<T>> {
+    async run(instance: T, cfg: AnnotationConfigure<T>, data?: any, token?: Token<T>): Promise<Runnable<T>> {
         if (!instance) {
             return null;
         }
 
-        let token = lang.getClass(instance);
+        token = token || lang.getClass(instance);
 
         if (instance instanceof Runner) {
             await instance.run(data);

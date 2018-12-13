@@ -1,6 +1,6 @@
 import { ActivityBuilderToken, IActivityBuilder } from './IActivityBuilder';
 import { isFunction, isString, Token, Express, isToken, Injectable, Providers, MetaAccessorToken } from '@ts-ioc/core';
-import { AnnotationBuilder, AnnoBuildCompleted, AnnoTokenVaild } from '@ts-ioc/bootstrap';
+import { AnnotationBuilder } from '@ts-ioc/bootstrap';
 import { IActivity, ActivityInstance } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
 import { ActivityMetaAccessorToken } from '../injectors';
@@ -20,30 +20,30 @@ import { ActivityMetaAccessorToken } from '../injectors';
 ])
 export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IActivityBuilder {
 
-    /**
-     * build activity.
-     *
-     * @param {Token<IActivity>} token
-     * @param {ActivityConfigure} config
-     * @param {*} [data]
-     * @returns {Promise<IActivity>}
-     * @memberof ActivityBuilder
-     */
-    build(token: Token<IActivity>, config: ActivityConfigure, data?: any, completed?: AnnoBuildCompleted<IActivity>): Promise<IActivity> {
-        return super.build(token, config, data, completed);
-    }
+    // /**
+    //  * build activity.
+    //  *
+    //  * @param {Token<IActivity>} token
+    //  * @param {ActivityConfigure} config
+    //  * @param {*} [data]
+    //  * @returns {Promise<IActivity>}
+    //  * @memberof ActivityBuilder
+    //  */
+    // build(token: Token<IActivity>, config: ActivityConfigure, data?: any, completed?: AnnoBuildCompleted<IActivity>): Promise<IActivity> {
+    //     return super.build(token, config, data, completed);
+    // }
 
-    /**
-     * build by config activity.
-     *
-     * @param {ActivityType<any>} activity
-     * @param {*} data
-     * @returns
-     * @memberof ActivityBuilder
-     */
-    buildByConfig(activity: ActivityType<any>, data: any, vaild?: AnnoTokenVaild<IActivity>): Promise<any> {
-        return super.buildByConfig(activity, data, vaild);
-    }
+    // /**
+    //  * build by config activity.
+    //  *
+    //  * @param {ActivityType<any>} activity
+    //  * @param {*} data
+    //  * @returns
+    //  * @memberof ActivityBuilder
+    //  */
+    // buildByConfig(activity: ActivityType<any>, data: any, vaild?: AnnoTokenVaild<IActivity>): Promise<any> {
+    //     return super.buildByConfig(activity, data, vaild);
+    // }
 
     /**
      * create instance.
@@ -91,7 +91,7 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
      */
     async toExpression<T>(exptype: ExpressionType<T>, target: IActivity): Promise<Expression<T>> {
         if (isActivityType(exptype)) {
-            return await this.buildByConfig(exptype, target.id) as Expression<T>;
+            return await this.buildByConfig(exptype, target.id) as any;
         } else {
             return exptype as Expression<T>;
         }

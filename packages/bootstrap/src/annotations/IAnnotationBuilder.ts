@@ -128,10 +128,11 @@ export interface IAnnotationBuilder<T> {
      * @param {T} instance
      * @param {AnnotationConfigure<T>} cfg
      * @param {*} [data]
+     * @param {Token<T>} [token]
      * @returns {Promise<Runnable<T>>}
      * @memberof IAnnotationBuilder
      */
-    run(instance: T, cfg: AnnotationConfigure<T>, data?: any): Promise<Runnable<T>>;
+    run(instance: T, cfg: AnnotationConfigure<T>, data?: any, token?: Token<T>): Promise<Runnable<T>>;
 
 }
 
