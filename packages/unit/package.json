@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/unit",
-  "version": "4.0.0-beta",
+  "version": "4.0.0-beta1",
   "description": "unit testing framework, base on AOP, Ioc container",
   "esnext": "./es2017/unit.js",
   "es2015": "./es2015/unit.js",
@@ -44,7 +44,7 @@
     "globby": "^7.1.1"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "^4.0.0-beta"
+    "@ts-ioc/core": "^4.0.0-beta1"
   },
   "directories": {
     "lib": "lib",

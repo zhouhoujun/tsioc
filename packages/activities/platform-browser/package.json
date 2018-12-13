@@ -1,6 +1,6 @@
 {
   "name": "@taskfr/platform-browser",
-  "version": "4.0.0-beta",
+  "version": "3.0.0-beta1",
   "description": "type task framework, base on AOP, Ioc container, via @ts-ioc",
   "esnext": "./es2017/platform-browser.js",
   "es2015": "./es2015/platform-browser.js",
@@ -36,10 +36,10 @@
   "dependencies": {
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.2",
-    "@ts-ioc/platform-browser": "^3.2.11"
+    "@ts-ioc/platform-browser": "^4.0.0-beta1"
   },
   "peerDependencies": {
-    "@taskfr/core": "^2.1.11"
+    "@taskfr/core": "^3.0.0-beta1"
   },
   "directories": {
     "lib": "lib",

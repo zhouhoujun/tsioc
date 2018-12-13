@@ -1,6 +1,6 @@
 {
   "name": "@taskfr/core",
-  "version": "4.0.0-beta",
+  "version": "3.0.0-beta1",
   "description": "type task framework, base on AOP, Ioc container, via @ts-ioc",
   "esnext": "./es2017/core.js",
   "es2015": "./es2015/core.js",
@@ -34,10 +34,10 @@
   },
   "homepage": "https://github.com/zhouhoujun/type-task#readme",
   "dependencies": {
-    "@ts-ioc/aop": "^3.2.11",
-    "@ts-ioc/bootstrap": "^3.2.11",
-    "@ts-ioc/core": "^3.2.11",
-    "@ts-ioc/logs": "^3.2.11",
+    "@ts-ioc/aop": "^4.0.0-beta1",
+    "@ts-ioc/bootstrap": "^4.0.0-beta1",
+    "@ts-ioc/core": "^4.0.0-beta1",
+    "@ts-ioc/logs": "^4.0.0-beta1",
     "reflect-metadata": "^0.1.12",
     "gulp-sourcemaps": "^2.1.1",
     "gulp-typescript": "^4.0.1",

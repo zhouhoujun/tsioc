@@ -5,7 +5,7 @@ import {
 import { IActivity } from './IActivity';
 import { ITranslator } from './Translator';
 import { Activity } from './Activity';
-import { Events, AppConfigureToken } from '@ts-ioc/bootstrap';
+import { Events, AppConfigureToken, ProcessRunRootToken } from '@ts-ioc/bootstrap';
 import { InjectActivityContextToken, InputDataToken, IActivityContextResult, CtxType } from './IActivityContext';
 import { ActivityBuilderToken } from './IActivityBuilder';
 import { ActivityBuilder } from './ActivityBuilder';
@@ -122,7 +122,7 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
 
     getRootPath(): string {
         let cfg = this.getContainer().get(AppConfigureToken) || {};
-        return cfg.baseURL || '.';
+        return cfg.baseURL || this.getContainer().get(ProcessRunRootToken)  || '.';
     }
 
 

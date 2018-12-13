@@ -1,7 +1,8 @@
 import { TaskContainer } from '@taskfr/core';
-import { Asset, AssetActivity, BuildModule, INodeActivityContext } from '@taskfr/build';
+import { Asset, AssetActivity, BuildModule, INodeActivityContext, ShellModule, TransformModule } from '@taskfr/build';
 import * as through from 'through2';
-const inplace = require('json-in-place')
+import * as fs from 'fs';
+const inplace = require('json-in-place');
 
 
 
@@ -58,7 +59,7 @@ let versionSetting = (ctx: INodeActivityContext) => {
         {
             shell: (ctx: INodeActivityContext) => {
                 let envArgs = ctx.getEnvArgs();
-                let packages = ctx.getFolders('packages/activites');
+                let packages = ctx.getFolders('packages/activities');
                 let cmd = envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
                 let cmds = packages.map(fd => {
                     return `cd ${fd} && ${cmd}`;
@@ -74,5 +75,5 @@ export class BuilderActivities {
 }
 
 TaskContainer.create(__dirname)
-    .use(BuildModule)
+    .use(BuildModule, ShellModule, TransformModule)
     .bootstrap(BuilderActivities);

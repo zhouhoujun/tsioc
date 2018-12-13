@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/platform-server",
-  "version": "4.0.0-beta",
+  "version": "4.0.0-beta1",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "esnext": "./es2017/platform-server.js",
   "es2015": "./es2015/platform-server.js",
@@ -44,7 +44,7 @@
     "globby": "^7.1.1"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "^4.0.0-beta"
+    "@ts-ioc/core": "^4.0.0-beta1"
   },
   "directories": {
     "lib": "lib",

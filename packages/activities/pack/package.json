@@ -1,6 +1,6 @@
 {
   "name": "@taskfr/pack",
-  "version": "4.0.0-beta",
+  "version": "3.0.0-beta1",
   "description": "type task framework, base on AOP, Ioc container, via @ts-ioc. dev pack activities.",
   "esnext": "./es2017/pack.js",
   "es2015": "./es2015/pack.js",
@@ -39,7 +39,7 @@
   },
   "homepage": "https://github.com/zhouhoujun/type-task#readme",
   "dependencies": {
-    "@ts-ioc/annotations": "^3.2.11",
+    "@ts-ioc/annotations": "^4.0.0-beta1",
     "@types/chai": "^3.4.34",
     "@types/execa": "^0.9.0",
     "reflect-metadata": "^0.1.12",
@@ -61,9 +61,9 @@
     "rxjs": "^5.5.11"
   },
   "peerDependencies": {
-    "@taskfr/core": "^2.1.11",
-    "@taskfr/node": "^2.1.11",
-    "@taskfr/build": "^2.1.11"
+    "@taskfr/core": "^3.0.0-beta1",
+    "@taskfr/node": "^3.0.0-beta1",
+    "@taskfr/build": "^3.0.0-beta1"
   },
   "directories": {
     "lib": "lib",

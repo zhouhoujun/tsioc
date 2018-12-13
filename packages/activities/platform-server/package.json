@@ -1,6 +1,6 @@
 {
   "name": "@taskfr/platform-server",
-  "version": "4.0.0-beta",
+  "version": "3.0.0-beta1",
   "description": "type task framework, base on AOP, Ioc container, via @ts-ioc",
   "esnext": "./es2017/platform-server.js",
   "es2015": "./es2015/platform-server.js",
@@ -35,7 +35,7 @@
   "homepage": "https://github.com/zhouhoujun/type-task#readme",
   "dependencies": {
     "@types/chalk": "^2.2.0",
-    "@ts-ioc/platform-server": "^3.2.11",
+    "@ts-ioc/platform-server": "^4.0.0-beta1",
     "bluebird": "^3.4.1",
     "chalk": "^2.3.1",
     "globby": "^7.1.1",
@@ -51,7 +51,7 @@
     "zone.js": "^0.8.12"
   },
   "peerDependencies": {
-    "@taskfr/core": "^2.1.11"
+    "@taskfr/core": "^3.0.0-beta1"
   },
   "directories": {
     "lib": "lib",
