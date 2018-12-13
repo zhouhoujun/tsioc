@@ -1,6 +1,6 @@
 {
   "name": "tsioc-srcs",
-  "version": "4.0.0-beta",
+  "version": "4.0.0-beta1",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
     "postinstall": "npm prune",
@@ -50,7 +50,6 @@
     "fs": "0.0.1-security",
     "globby": "^7.1.1",
     "gulp-html-replace": "^1.6.1",
-    "gulp-json-editor": "^2.3.0",
     "gulp-mocha": "^3.0.1",
     "gulp-rename": "^1.2.2",
     "gulp-replace": "^0.5.4",

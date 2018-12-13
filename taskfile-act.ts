@@ -1,34 +1,68 @@
 import { TaskContainer } from '@taskfr/core';
 import { Asset, AssetActivity, BuildModule, INodeActivityContext } from '@taskfr/build';
-const jeditor = require('gulp-json-editor');
+import * as through from 'through2';
+const inplace = require('json-in-place')
 
 
 
 let versionSetting = (ctx: INodeActivityContext) => {
     let envArgs = ctx.getEnvArgs();
-    return jeditor((json: any) => {
+    return through.obj(function (file, encoding, callback) {
+        if (file.isNull()) {
+            return callback(null, file);
+        }
+
+        if (file.isStream()) {
+            return callback('doesn\'t support Streams');
+        }
+
+        let contents: string = file.contents.toString('utf8');
+        let json = JSON.parse(contents);
+        let replaced = inplace(contents);
         let version = envArgs['setvs'] || '';
         if (version) {
-            json.version = version;
+            let replaced = inplace(contents)
+                .set('version', version);
             if (json.peerDependencies) {
                 Object.keys(json.peerDependencies).forEach(key => {
                     if (/^@taskfr/.test(key)) {
-                        json.peerDependencies[key] = '^' + version;
+                        replaced.set('peerDependencies.' + key, '^' + version);
                     }
-                })
+                });
             }
         }
-        return json;
+        if (json.dependencies) {
+            let iocVersion = '^' + ctx.getPackage().version;
+            Object.keys(json.dependencies).forEach(key => {
+                if (/^@ts-ioc/.test(key)) {
+                    replaced.set('dependencies.' + key, iocVersion)
+                }
+            })
+        }
+        file.contents = new Buffer(replaced.toString());
+        this.push(file);
+        callback();
     })
 }
 
 let iocVersion = (ctx: INodeActivityContext) => {
-    return jeditor((json: any) => {
-        let version = ctx.getPackage().devDependencies['@ts-ioc/core'];
+    return through.obj(function (file, encoding, callback) {
+        if (file.isNull()) {
+            return callback(null, file);
+        }
+
+        if (file.isStream()) {
+            return callback('doesn\'t support Streams');
+        }
+
+        let contents: string = file.contents.toString('utf8');
+        let version = ctx.getPackage().version;
+        let json = JSON.parse(contents);
         if (json.dependencies) {
+            let replaced = inplace(contents);
             Object.keys(json.dependencies).forEach(key => {
                 if (/^@ts-ioc/.test(key)) {
-                    json.dependencies[key] = version;
+                    replaced.set('dependencies.' + key, version)
                 }
             })
         }
