@@ -1,11 +1,23 @@
 import { Runnable } from '../runnable';
-import { AnnotationConfigure } from './IAnnotationBuilder';
+import { AnnotationConfigure, IAnnotationBuilder } from './IAnnotationBuilder';
+import { Token } from '@ts-ioc/core';
+import { BeforeAnnotationInit, AfterAnnotationInit } from './IAnnotation';
+
+
+export type AnnoBuildCompleted<T> = (config: AnnotationConfigure<T>, instance?: BootHooks<T>, builder?: IAnnotationBuilder<T>) => void;
+
+export type AnnoTokenVaild<T> = (token: Token<T>) => boolean;
+
+/**
+ * boot instance.
+ */
+export type AnnoInstance<T> = T & BeforeAnnotationInit<T> & AfterAnnotationInit<T>;
 
 
 /**
  *  boot hooks.
  */
-export type BootHooks<T> = T & BeforStart<T> & AfterStart<any>;
+export type BootHooks<T> = AnnoInstance<T> & BeforStart<T> & AfterStart<any>;
 
 
 /**

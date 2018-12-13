@@ -55,6 +55,14 @@ export class Events implements IEvents {
         return this;
     }
 
+    once(name: string, event: (...args: any[]) => void) {
+        let onceEvent = (...args: any[]) => {
+            event(...args);
+            this.off(name, onceEvent);
+        }
+        this.on(name, onceEvent);
+    }
+
     off(name: string, event?: (...args: any[]) => void) {
         if (this.eventsMap[name]) {
             if (event) {

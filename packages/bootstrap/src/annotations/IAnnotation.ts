@@ -36,9 +36,3 @@ export interface AfterAnnotationInit<T> {
      */
     anAfterInit(config?: AnnotationConfigure<T>): void | Promise<any>;
 }
-
-/**
- * boot instance.
- */
-export type AnnoInstance<T> = T & BeforeAnnotationInit<T> & AfterAnnotationInit<T>;
-

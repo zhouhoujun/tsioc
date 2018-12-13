@@ -1,6 +1,6 @@
 import { ActivityBuilderToken, IActivityBuilder } from './IActivityBuilder';
 import { isFunction, isString, Token, Express, isToken, Injectable, Providers, MetaAccessorToken } from '@ts-ioc/core';
-import { AnnotationBuilder } from '@ts-ioc/bootstrap';
+import { AnnotationBuilder, AnnoBuildCompleted, AnnoTokenVaild } from '@ts-ioc/bootstrap';
 import { IActivity, ActivityInstance } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
 import { ActivityMetaAccessorToken } from '../injectors';
@@ -29,8 +29,8 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
      * @returns {Promise<IActivity>}
      * @memberof ActivityBuilder
      */
-    build(token: Token<IActivity>, config: ActivityConfigure, data?: any): Promise<IActivity> {
-        return super.build(token, config, data);
+    build(token: Token<IActivity>, config: ActivityConfigure, data?: any, completed?: AnnoBuildCompleted<IActivity>): Promise<IActivity> {
+        return super.build(token, config, data, completed);
     }
 
     /**
@@ -41,8 +41,8 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
      * @returns
      * @memberof ActivityBuilder
      */
-    buildByConfig(activity: ActivityType<any>, data: any) {
-        return super.buildByConfig(activity, data);
+    buildByConfig(activity: ActivityType<any>, data: any, vaild?: AnnoTokenVaild<IActivity>): Promise<any> {
+        return super.buildByConfig(activity, data, vaild);
     }
 
     /**

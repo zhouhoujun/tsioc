@@ -4,12 +4,11 @@ import {
     InjectMetaAccessorToken, MetaAccessorToken
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
-import { AnnoInstance } from './IAnnotation';
 import {
     Runnable, Runner, Service, RunnerToken, IRunner, IService,
     ServiceToken, InjectServiceToken, InjectRunnerToken
 } from '../runnable';
-import { BootHooks } from './AnnoType';
+import { AnnoTokenVaild, BootHooks, AnnoBuildCompleted } from './AnnoType';
 
 /**
  * Annotation class builder. build class with metadata and config.
@@ -48,6 +47,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             tk => new InjectMetaAccessorToken(tk), config ? (config.defaultMetaAccessor || MetaAccessorToken) : MetaAccessorToken);
     }
 
+
     /**
      * build token type via config.
      *
@@ -55,9 +55,9 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      * @param {AnnotationConfigure<T>} [config]
      * @param {*} [data] build data
      * @returns {Promise<T>}
-     * @memberof ITypeBuilder
+     * @memberof AnnotationBuilder
      */
-    async build(token: Token<T>, config?: AnnotationConfigure<T>, data?: any): Promise<T> {
+    async build(token: Token<T>, config?: AnnotationConfigure<T>, data?: any, completed?: AnnoBuildCompleted<T>): Promise<T> {
         if (isClass(token) && !this.container.hasRegister(token)) {
             this.container.register(token);
         }
@@ -65,19 +65,22 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         config = this.getMetaAccessor(token, config).getMetadata(token, this.container, config);
         let builder = this.getBuilder(token, config);
         if (!this.isEqual(builder)) {
-            return await builder.build(token, config, data);
+            return await builder.build(token, config, data, completed);
         } else {
             await this.registerExts(config);
-            let instance = await this.createInstance(token, config, data) as AnnoInstance<T>;
+            let instance = await this.createInstance(token, config, data) as BootHooks<T>;
             if (!instance) {
                 return null;
             }
             if (isFunction(instance.anBeforeInit)) {
                 await Promise.resolve(instance.anBeforeInit(config));
             }
-            instance = await this.buildStrategy(instance, config, data) as AnnoInstance<T>;
+            instance = await this.buildStrategy(instance, config, data) as BootHooks<T>;
             if (isFunction(instance.anAfterInit)) {
                 await Promise.resolve(instance.anAfterInit(config));
+            }
+            if (isFunction(completed)) {
+                completed(config, instance, this);
             }
             return instance;
         }
@@ -88,21 +91,21 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      *
      * @param {(Token<T> | AnnotationConfigure<T>)} config
      * @param {*} [data] build data.
-     * @param {...Token<any>[]} excludeTokens
+     * @param {AnnoTokenVaild} [vaild]
      * @returns {Promise<T>}
      * @memberof IAnnotationBuilder
      */
-    async buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any, ...excludeTokens: Token<any>[]): Promise<T> {
+    async buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any, vaild?: AnnoTokenVaild<T>): Promise<T> {
         let token: Token<T>;
         if (isToken(config)) {
             token = config;
-            if (excludeTokens.indexOf(token) >= 0) {
+            if (vaild && !vaild(token)) {
                 token = null;
             }
             return await this.build(token, null, data);
         } else {
             token = this.getMetaAccessor(null, config).getToken(config, this.container);
-            if (excludeTokens.indexOf(token) >= 0) {
+            if (vaild && !vaild(token)) {
                 token = null;
             }
             return await this.build(token, config, data);
@@ -119,27 +122,26 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      */
     async boot(runable: Token<T> | AnnotationConfigure<T>, config?: AnnotationConfigure<T>, data?: any): Promise<Runnable<T>> {
         let instance: BootHooks<T>;
+        let builder: IAnnotationBuilder<T>;
         if (isToken(runable)) {
-            config = this.getMetaAccessor(runable, config).getMetadata(runable, this.container, config);
-            instance = await this.build(runable, config, data) as BootHooks<T>;
+            await this.build(runable, config, data, (cfg, hook, builder) => {
+                config = cfg;
+                instance = hook;
+                builder = builder;
+            });
         } else {
-            let token = this.getMetaAccessor(null, runable).getToken(runable, this.container);
             data = config;
-            config = this.getMetaAccessor(token, config).getMetadata(token, this.container, runable);
-            instance = await this.build(token, config, data) as BootHooks<T>;
+            config = runable;
+            let token = this.getMetaAccessor(null, config).getToken(config, this.container);
+            await this.build(token, config, data, (cfg, hook, builder) => {
+                config = cfg;
+                instance = hook;
+                builder = builder;
+            });
         }
+        builder = builder || this;
 
-        let runableInst: Runnable<T> = null;
-        if (instance) {
-            if (isFunction(instance.bootStarting)) {
-                await Promise.resolve(instance.bootStarting(config));
-            }
-            runableInst = await this.autoRun(this.container, lang.getClass(instance), config, instance, data);
-            if (isFunction(instance.bootStarted)) {
-                await Promise.resolve(instance.bootStarted(runableInst));
-            }
-        }
-        return runableInst;
+        return await builder.run(instance, config, data);
     }
 
     async createInstance(token: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<T> {
@@ -199,10 +201,12 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         return instance;
     }
 
-    protected async autoRun(container: IContainer, token: Token<any>, cfg: AnnotationConfigure<T>, instance: any, data: any): Promise<Runnable<T>> {
+    async run(instance: T, cfg: AnnotationConfigure<T>, data?: any): Promise<Runnable<T>> {
         if (!instance) {
             return null;
         }
+
+        let token = lang.getClass(instance);
 
         if (instance instanceof Runner) {
             await instance.run(data);
@@ -212,10 +216,10 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             return instance;
         } else {
             let providers = [{ provide: token, useValue: instance }, { token: token, instance: instance, config: cfg }] as ParamProviders[];
-            let runner: IRunner<T> = container.getService(RunnerToken, token, tk => new InjectRunnerToken(tk), ...providers);
+            let runner: IRunner<T> = this.container.getService(RunnerToken, token, tk => new InjectRunnerToken(tk), ...providers);
             let service: IService<T>;
             if (!runner) {
-                service = container.getService(ServiceToken, token, tk => new InjectServiceToken(tk), ...providers);
+                service = this.container.getService(ServiceToken, token, tk => new InjectServiceToken(tk), ...providers);
             }
             if (runner) {
                 await runner.run(data);

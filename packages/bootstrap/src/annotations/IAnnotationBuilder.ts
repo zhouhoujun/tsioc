@@ -1,5 +1,6 @@
 import { IContainer, Token, IAnnotationMetadata, RefRegistration, IMetaAccessor } from '@ts-ioc/core';
 import { Runnable } from '../runnable';
+import { AnnoTokenVaild, AnnoBuildCompleted } from './AnnoType';
 
 
 /**
@@ -49,6 +50,7 @@ export interface IAnnotationBuilder<T> {
      * @memberof IBootstrapBuilder
      */
     container: IContainer;
+
     /**
      * build token type via config.
      *
@@ -58,17 +60,17 @@ export interface IAnnotationBuilder<T> {
      * @returns {Promise<T>}
      * @memberof ITypeBuilder
      */
-    build(token: Token<T>, config?: AnnotationConfigure<T>, data?: any): Promise<T>;
+    build(token: Token<T>, config?: AnnotationConfigure<T>, data?: any, completed?: AnnoBuildCompleted<T>): Promise<T>;
+
     /**
      * build instance via type config.
      *
      * @param {(Token<T> | AnnotationConfigure<T>)} config
      * @param {*} [data] build data.
-     * @param {...Token<any>[]} excludeTokens
      * @returns {Promise<T>}
      * @memberof IAnnotationBuilder
      */
-    buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any, ...excludeTokens: Token<any>[]): Promise<T>;
+    buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any, vaild?: AnnoTokenVaild<T>): Promise<T>;
     /**
      * get finally builder by token and config.
      *
@@ -119,6 +121,17 @@ export interface IAnnotationBuilder<T> {
      * @memberof IGModuleBuilder
      */
     boot(runable: AnnotationConfigure<T>, data?: any): Promise<Runnable<T>>;
+
+    /**
+     * run runable
+     *
+     * @param {T} instance
+     * @param {AnnotationConfigure<T>} cfg
+     * @param {*} [data]
+     * @returns {Promise<Runnable<T>>}
+     * @memberof IAnnotationBuilder
+     */
+    run(instance: T, cfg: AnnotationConfigure<T>, data?: any): Promise<Runnable<T>>;
 
 }
 
