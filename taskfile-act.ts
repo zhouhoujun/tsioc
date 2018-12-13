@@ -1,6 +1,5 @@
-import { TaskContainer } from '@taskfr/platform-server';
-import { INodeActivityContext } from '@taskfr/node';
-import { Asset, AssetActivity, BuildModule } from '@taskfr/build';
+import { TaskContainer } from '@taskfr/core';
+import { Asset, AssetActivity, BuildModule, INodeActivityContext } from '@taskfr/build';
 const jeditor = require('gulp-json-editor');
 
 
@@ -42,8 +41,8 @@ let iocVersion = (ctx: INodeActivityContext) => {
         {
             src: ['packages/**/package.json', '!node_modules/**/package.json'],
             pipes: [
-                (act: AssetActivity) => versionSetting(act.getContext()),
-                (act: AssetActivity) => iocVersion(act.getContext())
+                (act: AssetActivity) => versionSetting(act.context),
+                (act: AssetActivity) => iocVersion(act.context)
             ],
             dest: 'packages',
             activity: AssetActivity
@@ -51,7 +50,7 @@ let iocVersion = (ctx: INodeActivityContext) => {
         {
             src: ['package.json'],
             pipes: [
-                (act: AssetActivity) => versionSetting(act.getContext())
+                (act: AssetActivity) => versionSetting(act.context)
             ],
             dest: '.',
             activity: AssetActivity

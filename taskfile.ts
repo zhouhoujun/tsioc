@@ -1,23 +1,38 @@
 import { TaskContainer } from '@taskfr/core';
 import { INodeActivityContext, Asset, BuildModule, AssetActivity, ShellModule, TransformModule } from '@taskfr/build';
-const jeditor = require('gulp-json-editor');
-
+import * as through from 'through2';
+const inplace = require('json-in-place')
 
 let versionSetting = (ctx: INodeActivityContext) => {
     let envArgs = ctx.getEnvArgs();
-    return jeditor((json: any) => {
+    return through.obj(function (file, encoding, callback) {
+        if (file.isNull()) {
+            return callback(null, file);
+        }
+
+        if (file.isStream()) {
+            return callback('doesn\'t support Streams');
+        }
+
+        let contents: string = file.contents.toString('utf8');
         let version = envArgs['setvs'] || '';
         if (version) {
-            json.version = version;
+            let json = JSON.parse(contents);
+            let replaced = inplace(contents)
+                .set('version', version);
             if (json.peerDependencies) {
                 Object.keys(json.peerDependencies).forEach(key => {
                     if (/^@ts-ioc/.test(key)) {
-                        json.peerDependencies[key] = '^' + version;
+                        replaced.set('peerDependencies.' + key, '^' + version);
+                        // json.peerDependencies[key] = '^' + version;
                     }
                 })
             }
+            contents = replaced.toString();
         }
-        return json;
+        file.contents = new Buffer(contents);
+        this.push(file);
+        callback();
     })
 }
 
@@ -26,8 +41,7 @@ let versionSetting = (ctx: INodeActivityContext) => {
         {
             src: ['packages/**/package.json', '!node_modules/**/package.json'],
             pipes: [
-                (act: AssetActivity) => versionSetting(act.context),
-                act => jsonFormat
+                (act: AssetActivity) => versionSetting(act.context)
             ],
             dest: 'packages',
             activity: AssetActivity
