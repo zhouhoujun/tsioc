@@ -1,4 +1,5 @@
 import { IContainer, Token, IAnnotationMetadata, RefRegistration, IMetaAccessor } from '@ts-ioc/core';
+import { Runnable } from '../runnable';
 
 
 /**
@@ -97,6 +98,28 @@ export interface IAnnotationBuilder<T> {
      * @memberof IBootstrapBuilder
      */
     buildStrategy(instance: T, config: AnnotationConfigure<T>, data?: any): Promise<T>;
+
+    /**
+     * run runable.
+     *
+     * @param {Token<T>} runable
+     * @param {AnnotationConfigure<T>} config
+     * @param {*} [data]
+     * @returns {Promise<Runnable<T>>}
+     * @memberof IAnnotationBuilder
+     */
+    boot(runable: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<Runnable<T>>;
+
+    /**
+     * run runable.
+     *
+     * @param {AnnotationConfigure<T>} runable
+     * @param {*} [data] bootstrap data, build data, Runnable data.
+     * @returns {Promise<Runnable<T>>}
+     * @memberof IGModuleBuilder
+     */
+    boot(runable: AnnotationConfigure<T>, data?: any): Promise<Runnable<T>>;
+
 }
 
 /**

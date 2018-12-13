@@ -1,10 +1,15 @@
 import {
     Token, isToken, IContainer, isClass, Inject, ContainerToken,
-    lang, isFunction, Injectable, Container,  IMetaAccessor, ParamProviders,
+    lang, isFunction, Injectable, Container, IMetaAccessor, ParamProviders,
     InjectMetaAccessorToken, MetaAccessorToken
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import { AnnoInstance } from './IAnnotation';
+import {
+    Runnable, Runner, Service, RunnerToken, IRunner, IService,
+    ServiceToken, InjectServiceToken, InjectRunnerToken
+} from '../runnable';
+import { BootHooks } from './AnnoType';
 
 /**
  * Annotation class builder. build class with metadata and config.
@@ -87,7 +92,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      * @returns {Promise<T>}
      * @memberof IAnnotationBuilder
      */
-    async buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any, ...excludeTokens: Token<any>[]): Promise<any> {
+    async buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any, ...excludeTokens: Token<any>[]): Promise<T> {
         let token: Token<T>;
         if (isToken(config)) {
             token = config;
@@ -102,6 +107,39 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             }
             return await this.build(token, config, data);
         }
+    }
+
+    /**
+     * run runable.
+     *
+     * @param {(Token<T> | AnnotationConfigure<T>)} runable
+     * @param {*} [data] bootstrap data, build data, Runnable data.
+     * @returns {Promise<Runnable<T>>}
+     * @memberof IGModuleBuilder
+     */
+    async boot(runable: Token<T> | AnnotationConfigure<T>, config?: AnnotationConfigure<T>, data?: any): Promise<Runnable<T>> {
+        let instance: BootHooks<T>;
+        if (isToken(runable)) {
+            config = this.getMetaAccessor(runable, config).getMetadata(runable, this.container, config);
+            instance = await this.build(runable, config, data) as BootHooks<T>;
+        } else {
+            let token = this.getMetaAccessor(null, runable).getToken(runable, this.container);
+            data = config;
+            config = this.getMetaAccessor(token, config).getMetadata(token, this.container, runable);
+            instance = await this.build(token, config, data) as BootHooks<T>;
+        }
+
+        let runableInst: Runnable<T> = null;
+        if (instance) {
+            if (isFunction(instance.bootStarting)) {
+                await Promise.resolve(instance.bootStarting(config));
+            }
+            runableInst = await this.autoRun(this.container, lang.getClass(instance), config, instance, data);
+            if (isFunction(instance.bootStarted)) {
+                await Promise.resolve(instance.bootStarted(runableInst));
+            }
+        }
+        return runableInst;
     }
 
     async createInstance(token: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<T> {
@@ -159,6 +197,36 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      */
     async buildStrategy(instance: T, config: AnnotationConfigure<T>, data?: any): Promise<T> {
         return instance;
+    }
+
+    protected async autoRun(container: IContainer, token: Token<any>, cfg: AnnotationConfigure<T>, instance: any, data: any): Promise<Runnable<T>> {
+        if (!instance) {
+            return null;
+        }
+
+        if (instance instanceof Runner) {
+            await instance.run(data);
+            return instance;
+        } else if (instance instanceof Service) {
+            await instance.start(data);
+            return instance;
+        } else {
+            let providers = [{ provide: token, useValue: instance }, { token: token, instance: instance, config: cfg }] as ParamProviders[];
+            let runner: IRunner<T> = container.getService(RunnerToken, token, tk => new InjectRunnerToken(tk), ...providers);
+            let service: IService<T>;
+            if (!runner) {
+                service = container.getService(ServiceToken, token, tk => new InjectServiceToken(tk), ...providers);
+            }
+            if (runner) {
+                await runner.run(data);
+                return runner;
+            } else if (service) {
+                await service.start(data);
+                return service;
+            } else {
+                return null;
+            }
+        }
     }
 
     /**

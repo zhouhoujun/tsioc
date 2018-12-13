@@ -51,22 +51,14 @@ export interface IModuleBuilder<T> {
      * @memberof IModuleBuilder
      */
     load(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): Promise<InjectedModule<T>>;
-    /**
-     * create injected module instace.
-     *
-     * @param {InjectedModule<T>} injmdl
-     * @param {*} [data]
-     * @returns {Promise<T>}
-     * @memberof IModuleBuilder
-     */
-    createInstance(injmdl: InjectedModule<T>, data?: any): Promise<T>;
+
     /**
      * bootstrap module's main.
      *
      * @param {(Token<T> | ModuleConfig<T>)} token
      * @param {ModuleEnv} [env]
      * @param {*} [data] bootstrap data, build data, Runnable data.
-     * @returns {Promise<MdInstance<T>>}
+     * @returns {Promise<Runnable<T>>}
      * @memberof IGModuleBuilder
      */
     bootstrap(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<Runnable<T>>;
@@ -76,7 +68,7 @@ export interface IModuleBuilder<T> {
      * @param {(Token<T> | ModuleConfig<T>)} token
      * @param {ModuleEnv} [env]
      * @param {*} [data] bootstrap data, build data, Runnable data.
-     * @returns {Promise<MdInstance<T>>}
+     * @returns {Promise<Runnable<T>>}
      * @memberof IGModuleBuilder
      */
     run(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<Runnable<T>>;

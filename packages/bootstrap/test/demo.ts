@@ -1,4 +1,4 @@
-import { DIModule, OnModuleStart, ApplicationBuilder, Runner } from '../src';
+import { DIModule, AfterStart, ApplicationBuilder, Runner } from '../src';
 import { Injectable, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
 import { Aspect, AopModule, Around, Joinpoint } from '@ts-ioc/aop';
 import { LogModule } from '@ts-ioc/logs';

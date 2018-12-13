@@ -32,7 +32,6 @@ export class ContainerBuilder implements IContainerBuilder {
         return this._loader;
     }
 
-
     create(): IContainer {
         let container = new Container();
         container.bindProvider(ContainerBuilderToken, () => this);

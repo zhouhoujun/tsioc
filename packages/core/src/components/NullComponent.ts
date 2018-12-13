@@ -30,21 +30,15 @@ export class NullComponent implements GComponent<any> {
     }
     each(express: Express<any, boolean | void>, mode?: Mode) {
     }
-
     trans(express: Express<any, boolean | void>) {
     }
-
     transAfter(express: Express<any, boolean | void>) {
     }
-
     routeUp(express: Express<any, boolean | void>) {
-
     }
-
     equals(node: any): boolean {
         return node === NullNode;
     }
-
     empty() {
         return NullNode;
     }

@@ -1,18 +1,14 @@
 import 'reflect-metadata';
 import {
-    IContainer, Token, ParamProviders, lang, isFunction,
+    IContainer, Token, ParamProviders, lang,
     isClass, isToken, Inject, Registration, Container,
     Injectable, MetaAccessorToken, IMetaAccessor,
     InjectMetaAccessorToken, isArray, ProviderParserToken
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
-import { MdInstance } from './ModuleType';
 import { ContainerPool, ContainerPoolToken } from '../utils';
-import {
-    InjectRunnerToken, IRunner, RunnerToken, Service, IService,
-    InjectServiceToken, ServiceToken, Runnable, Runner
-} from '../runnable';
+import { Runnable } from '../runnable';
 import {
     IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder,
     AnnotationBuilderToken, AnnotationBuilder
@@ -97,48 +93,23 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     * @param {(Token<T> | ModuleConfig<T>)} token
     * @param {ModuleEnv} [env]
     * @param {*} [data] bootstrap data, build data, Runnable data.
-    * @returns {Promise<MdInstance<T>>}
+    * @returns {Promise<Runnable<T>>}
     * @memberof ModuleBuilder
     */
     async bootstrap(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
         let injmdl = await this.load(token, env);
         let cfg = injmdl.config;
         let container = injmdl.container;
-        let bootInstance = await this.createInstance(injmdl) as MdInstance<T>;
-
-        let runable;
-        if (bootInstance) {
-            if (isFunction(bootInstance.mdOnInit)) {
-                await Promise.resolve(bootInstance.mdOnInit(injmdl));
-            }
-            runable = await this.autoRun(container, lang.getClass(bootInstance), cfg, bootInstance, data);
-            if (isFunction(bootInstance.mdOnStart)) {
-                await Promise.resolve(bootInstance.mdOnStart(bootInstance));
-            }
-        }
-        return runable;
-    }
-
-    async createInstance(injmdl: InjectedModule<T>, data?: any): Promise<T> {
-        let cfg = injmdl.config;
-        let container = injmdl.container;
         let accessor = this.getMetaAccessor(container, injmdl.token || injmdl.type);
         let bootToken = accessor.getBootToken(cfg, container);
-        let bootInstance;
         if (bootToken) {
             let anBuilder = this.getAnnoBuilder(container, bootToken, cfg);
-            bootInstance = await anBuilder.build(bootToken, cfg, data);
+            return await anBuilder.boot(bootToken, cfg, data);
         } else {
             let mdBuilder = this.getAnnoBuilder(container, injmdl.token || injmdl.type, cfg);
-            if (injmdl.token || injmdl.type) {
-                bootInstance = await mdBuilder.build(injmdl.token || injmdl.type, injmdl.config, data);
-            } else {
-                bootInstance = await mdBuilder.buildByConfig(injmdl.config, data);
-            }
+            return await mdBuilder.boot(injmdl.token || injmdl.type, cfg, data);
         }
-        return bootInstance;
     }
-
 
     /**
     * run module.
@@ -146,7 +117,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     * @param {(Token<T> | ModuleConfig<T>)} token
     * @param {ModuleEnv} [env]
     * @param {*} [data] bootstrap data, build data, Runnable data.
-    * @returns {Promise<MdInstance<T>>}
+    * @returns {Promise<Runnable<T>>}
     * @memberof ModuleBuilder
     */
     run(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
@@ -222,36 +193,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             parent = this.getPools().getDefault();
         }
         return parent;
-    }
-
-    protected async autoRun(container: IContainer, token: Token<any>, cfg: ModuleConfigure, instance: any, data: any): Promise<Runnable<T>> {
-        if (!instance) {
-            return null;
-        }
-
-        if (instance instanceof Runner) {
-            await instance.run(data);
-            return instance;
-        } else if (instance instanceof Service) {
-            await instance.start(data);
-            return instance;
-        } else {
-            let providers = [{ provide: token, useValue: instance }, { token: token, instance: instance, config: cfg }] as ParamProviders[];
-            let runner: IRunner<T> = container.getService(RunnerToken, token, tk => new InjectRunnerToken(tk), ...providers);
-            let service: IService<T>;
-            if (!runner) {
-                service = container.getService(ServiceToken, token, tk => new InjectServiceToken(tk), ...providers);
-            }
-            if (runner) {
-                await runner.run(data);
-                return runner;
-            } else if (service) {
-                await service.start(data);
-                return service;
-            } else {
-                return null;
-            }
-        }
     }
 
     protected getAnnoBuilder(container: IContainer, token: Token<any>, config: ModuleConfigure): IAnyTypeBuilder {
