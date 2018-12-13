@@ -28,6 +28,12 @@ export interface BabelCompileActivityConfig extends ShellActivityConfig {
      */
     outFile?: CtxType<string>;
 
+    /**
+     * format.
+     *
+     * @type {CtxType<string>}
+     * @memberof BabelCompileActivityConfig
+     */
     format?: CtxType<string>;
 }
 
