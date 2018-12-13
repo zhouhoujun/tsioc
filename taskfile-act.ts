@@ -21,8 +21,7 @@ let versionSetting = (ctx: INodeActivityContext) => {
         let replaced = inplace(contents);
         let version = envArgs['setvs'] || '';
         if (version) {
-            let replaced = inplace(contents)
-                .set('version', version);
+            replaced.set('version', version);
             if (json.peerDependencies) {
                 Object.keys(json.peerDependencies).forEach(key => {
                     if (/^@taskfr/.test(key)) {
@@ -45,48 +44,15 @@ let versionSetting = (ctx: INodeActivityContext) => {
     })
 }
 
-let iocVersion = (ctx: INodeActivityContext) => {
-    return through.obj(function (file, encoding, callback) {
-        if (file.isNull()) {
-            return callback(null, file);
-        }
-
-        if (file.isStream()) {
-            return callback('doesn\'t support Streams');
-        }
-
-        let contents: string = file.contents.toString('utf8');
-        let version = ctx.getPackage().version;
-        let json = JSON.parse(contents);
-        if (json.dependencies) {
-            let replaced = inplace(contents);
-            Object.keys(json.dependencies).forEach(key => {
-                if (/^@ts-ioc/.test(key)) {
-                    replaced.set('dependencies.' + key, version)
-                }
-            })
-        }
-        return json;
-    })
-}
 
 @Asset({
     pipes: [
         {
-            src: ['packages/**/package.json', '!node_modules/**/package.json'],
-            pipes: [
-                (act: AssetActivity) => versionSetting(act.context),
-                (act: AssetActivity) => iocVersion(act.context)
-            ],
-            dest: 'packages',
-            activity: AssetActivity
-        },
-        {
-            src: ['package.json'],
+            src: ['packages/activities/**/package.json', '!node_modules/**/package.json'],
             pipes: [
                 (act: AssetActivity) => versionSetting(act.context)
             ],
-            dest: '.',
+            dest: 'packages/activities',
             activity: AssetActivity
         },
         {

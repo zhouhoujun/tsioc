@@ -38,7 +38,7 @@ let versionSetting = (ctx: INodeActivityContext) => {
 @Asset({
     pipes: [
         {
-            src: ['packages/**/package.json', '!node_modules/**/package.json'],
+            src: ['packages/**/package.json', '!packages/activities/**/package.json', '!node_modules/**/package.json'],
             pipes: [
                 (act: AssetActivity) => versionSetting(act.context)
             ],
