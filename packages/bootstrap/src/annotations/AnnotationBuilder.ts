@@ -203,6 +203,16 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         return instance;
     }
 
+    /**
+     * run annotation instance.
+     *
+     * @param {T} instance
+     * @param {AnnotationConfigure<T>} cfg
+     * @param {*} [data]
+     * @param {Token<T>} [token]
+     * @returns {Promise<Runnable<T>>}
+     * @memberof AnnotationBuilder
+     */
     async run(instance: T, cfg: AnnotationConfigure<T>, data?: any, token?: Token<T>): Promise<Runnable<T>> {
         if (!instance) {
             return null;

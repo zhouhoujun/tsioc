@@ -42,7 +42,6 @@ export interface IRunnableExtends {
     provider(provide: Token<any>, provider: Token<any> | Factory<any>, beforRootInit?: boolean): this;
 }
 
-
 /**
  * runnable builder.
  *

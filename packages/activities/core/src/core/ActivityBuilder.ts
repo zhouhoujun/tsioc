@@ -20,31 +20,6 @@ import { ActivityMetaAccessorToken } from '../injectors';
 ])
 export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IActivityBuilder {
 
-    // /**
-    //  * build activity.
-    //  *
-    //  * @param {Token<IActivity>} token
-    //  * @param {ActivityConfigure} config
-    //  * @param {*} [data]
-    //  * @returns {Promise<IActivity>}
-    //  * @memberof ActivityBuilder
-    //  */
-    // build(token: Token<IActivity>, config: ActivityConfigure, data?: any, completed?: AnnoBuildCompleted<IActivity>): Promise<IActivity> {
-    //     return super.build(token, config, data, completed);
-    // }
-
-    // /**
-    //  * build by config activity.
-    //  *
-    //  * @param {ActivityType<any>} activity
-    //  * @param {*} data
-    //  * @returns
-    //  * @memberof ActivityBuilder
-    //  */
-    // buildByConfig(activity: ActivityType<any>, data: any, vaild?: AnnoTokenVaild<IActivity>): Promise<any> {
-    //     return super.buildByConfig(activity, data, vaild);
-    // }
-
     /**
      * create instance.
      *
