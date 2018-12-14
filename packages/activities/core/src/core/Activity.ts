@@ -190,7 +190,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
     }
 
     protected buildActivity<T extends IActivity>(config: ActivityType<T>): Promise<T> {
-        return this.context.getBuilder().buildByConfig(config, this.id) as Promise<T>;
+        return this.context.getBuilder().buildActivity(config, this.id) as Promise<T>;
     }
 
 }

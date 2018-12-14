@@ -1,6 +1,6 @@
 import { Inject, IContainer, ContainerToken } from '@ts-ioc/core';
 import { Aspect, Joinpoint, Before, AfterReturning } from '@ts-ioc/aop';
-import { IActivityRunner, RunState, Activity } from '../core';
+import { IWorkflowInstance, RunState, Activity } from '../core';
 import { Task } from '../decorators';
 
 /**
@@ -64,7 +64,7 @@ export class RunAspect {
     getRunner(task: any) {
         if (task instanceof Activity) {
             if (task.id && this.container.has(task.id)) {
-                return this.container.resolve<IActivityRunner<any>>(task.id);
+                return this.container.resolve<IWorkflowInstance<any>>(task.id);
             }
         }
         return null;

@@ -6,7 +6,7 @@ import { ActivityMetadata } from '../metadatas/ActivityMetadata';
 import { IActivityBuilder, ActivityBuilderToken } from '../core/IActivityBuilder';
 import { IActivityContext } from '../core/IActivityContext';
 import { WorkflowBuilderToken } from '../injectors/DefaultWorkflowBuilder';
-import { IActivity, ActivityToken } from '../core';
+import { IActivity, ActivityToken, WorkflowInstanceToken } from '../core';
 import { IModuleBuilder } from '@ts-ioc/bootstrap';
 
 /**
@@ -149,6 +149,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             }
 
             metadata.decorType = taskType;
+            metadata.defaultRunnable = WorkflowInstanceToken;
             // metadata.defaultBuilder = defaultBuilder || WorkflowBuilderToken;
             metadata.defaultAnnoBuilder = defaultAnnoBuilder;
 

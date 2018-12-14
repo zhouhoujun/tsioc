@@ -1,6 +1,6 @@
 import 'mocha';
 import { expect } from 'chai';
-import { ITaskContainer, SequenceActivity, ActivityRunner } from '../src';
+import { ITaskContainer, SequenceActivity, WorkflowInstance } from '../src';
 
 import { SimpleTask, SimpleCTask, TaskModuleTest } from './simples.task';
 import { TaskContainer } from '@taskfr/core';
@@ -14,7 +14,7 @@ describe('auto register with build', () => {
 
     it('should bootstrap with single task.', async () => {
         let runner = await container.bootstrap(SimpleTask);
-        expect(runner instanceof ActivityRunner).eq(true);
+        expect(runner instanceof WorkflowInstance).eq(true);
         let result = await runner.start();
         // console.log(result);
         expect(result).eq('simple task');

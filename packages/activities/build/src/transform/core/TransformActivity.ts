@@ -3,7 +3,7 @@ import { ITransformActivity, TransformActivityToken } from './ITransformActivity
 import { ITransform } from './ITransform';
 import { TransformType, TransformExpress, TransformConfig } from './transformTypes';
 import { ITransformConfigure } from './ITransformConfigure';
-import { Task, isActivityRunner, isActivityType } from '@taskfr/core';
+import { Task, isWorkflowInstance, isActivityType } from '@taskfr/core';
 import { StreamActivity } from './StreamActivity';
 
 /**
@@ -140,7 +140,7 @@ export class TransformActivity extends StreamActivity implements ITransformActiv
      * @memberof PipeActivityBuilder
      */
     protected async translateConfig(cfg: TransformConfig): Promise<TransformType> {
-        if (isActivityRunner(cfg)) {
+        if (isWorkflowInstance(cfg)) {
             return cfg;
         } else if (isActivityType(cfg)) {
             return await this.buildActivity(cfg);

@@ -5,8 +5,8 @@ import {
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import {
-    Runnable, Runner, Service, RunnerToken, IRunner, IService,
-    ServiceToken, InjectServiceToken, InjectRunnerToken
+    Runnable, Runner, Service, RunnerToken,
+    ServiceToken, isRunner, isService, InjectRunnableToken
 } from '../runnable';
 import { AnnoTokenVaild, BootHooks, AnnoBuildCompleted } from './AnnoType';
 
@@ -143,8 +143,42 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         }
         builder = builder || this;
 
-        return await builder.run(instance, config, data, token);
+        let runner = builder.resolveRunable(instance, config, token);
+        if (isRunner(runner)) {
+            await runner.run(data);
+        } else if (isService(runner)) {
+            await runner.start(data);
+        }
+        return runner;
     }
+
+    /**
+     * run annotation instance.
+     *
+     * @param {T} instance
+     * @param {AnnotationConfigure<T>} [config]
+     * @param {Token<T>} [token]
+     * @returns {Promise<Runnable<T>>}
+     * @memberof AnnotationBuilder
+     */
+    resolveRunable(instance: T, config?: AnnotationConfigure<T>, token?: Token<T>): Runnable<T> {
+        if (!instance) {
+            return null;
+        }
+
+        token = token || lang.getClass(instance);
+        if (!config) {
+            config = this.getMetaAccessor(token).getMetadata(token, this.container);
+        }
+
+        if (instance instanceof Runner || instance instanceof Service) {
+            return instance;
+        } else {
+            let providers = [{ provide: token, useValue: instance }, { token: token, instance: instance, config: config }] as ParamProviders[];
+            return this.container.getService([RunnerToken, ServiceToken], token, tk => new InjectRunnableToken(tk), config.defaultRunnable || true, ...providers);
+        }
+    }
+
 
     async createInstance(token: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<T> {
         if (!token) {
@@ -201,48 +235,6 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      */
     async buildStrategy(instance: T, config: AnnotationConfigure<T>, data?: any): Promise<T> {
         return instance;
-    }
-
-    /**
-     * run annotation instance.
-     *
-     * @param {T} instance
-     * @param {AnnotationConfigure<T>} config
-     * @param {*} [data]
-     * @param {Token<T>} [token]
-     * @returns {Promise<Runnable<T>>}
-     * @memberof AnnotationBuilder
-     */
-    async run(instance: T, config: AnnotationConfigure<T>, data?: any, token?: Token<T>): Promise<Runnable<T>> {
-        if (!instance) {
-            return null;
-        }
-
-        token = token || lang.getClass(instance);
-
-        if (instance instanceof Runner) {
-            await instance.run(data);
-            return instance;
-        } else if (instance instanceof Service) {
-            await instance.start(data);
-            return instance;
-        } else {
-            let providers = [{ provide: token, useValue: instance }, { token: token, instance: instance, config: config }] as ParamProviders[];
-            let runner: IRunner<T> = this.container.getService(RunnerToken, token, tk => new InjectRunnerToken(tk), ...providers);
-            let service: IService<T>;
-            if (!runner) {
-                service = this.container.getService(ServiceToken, token, tk => new InjectServiceToken(tk), ...providers);
-            }
-            if (runner) {
-                await runner.run(data);
-                return runner;
-            } else if (service) {
-                await service.start(data);
-                return service;
-            } else {
-                return null;
-            }
-        }
     }
 
     /**

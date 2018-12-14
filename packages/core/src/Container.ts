@@ -137,6 +137,24 @@ export class Container implements IContainer {
     }
 
     /**
+     * resolve first token when not null.
+     *
+     * @template T
+     * @param {Token<T>[]} tokens
+     * @param {...ParamProviders[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    resolveFirst<T>(tokens: Token<T>[], ...providers: ParamProviders[]): T {
+        let inst: T;
+        tokens.some(tk => {
+            inst = this.resolve(tk, ...providers);
+            return inst !== null;
+        })
+        return inst;
+    }
+
+    /**
      * resolve token value in this container only.
      *
      * @template T
@@ -158,19 +176,22 @@ export class Container implements IContainer {
      * get service or target reference service.
      *
      * @template T
-     * @param {Token<T>} token servive token.
+     * @param {(Token<T> | Token<any>[])} token servive token.
      * @param {(Token<any> | Token<any>[])} [target] service refrence target.
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof Container
      */
-    getService<T>(token: Token<T>, target?: Token<any> | Token<any>[] | ParamProviders, toRefToken?: boolean | Token<T> | RefTokenFac<T> | ParamProviders, defaultToken?: boolean | Token<T> | ParamProviders, ...providers: ParamProviders[]): T {
+    getService<T>(token: Token<T> | Token<any>[], target?: Token<any> | Token<any>[] | ParamProviders, toRefToken?: boolean | Token<T> | RefTokenFac<T> | ParamProviders, defaultToken?: boolean | Token<T> | ParamProviders, ...providers: ParamProviders[]): T {
         if (isToken(target) || isArray(target)) {
-            let tokens = this.getTokenClassChain(token, false).map(t => {
-                return { service: t, isPrivate: true } as IReference<T>;
+            let tokens = [];
+            (isArray(token) ? token : [token]).forEach(tk => {
+                tokens = tokens.concat(this.getTokenClassChain(tk, false).map(t => {
+                    return { service: t, isPrivate: true } as IReference<T>;
+                }));
             });
             let fac: RefTokenFac<T>;
-            let defToken: Token<T>;
+            let defToken: Token<T> | Token<any>[];
             let prds: ParamProviders[] = [];
             if (isBoolean(toRefToken)) {
                 if (toRefToken) {
@@ -210,7 +231,7 @@ export class Container implements IContainer {
                 defToken,
                 ...providers);
         } else {
-            return this.resolve(token, ...[target, toRefToken as ParamProviders, defaultToken as ParamProviders, ...providers].filter(a => a));
+            return this.resolveFirst(isArray(token) ? token : [token], ...[target, toRefToken as ParamProviders, defaultToken as ParamProviders, ...providers].filter(a => a));
         }
     }
 
@@ -225,7 +246,7 @@ export class Container implements IContainer {
      * @returns {T}
      * @memberof Container
      */
-    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any> | Token<any>[], defaultToken?: Token<T>, ...providers: ParamProviders[]): T {
+    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any> | Token<any>[], defaultToken?: Token<T> | Token<any>[], ...providers: ParamProviders[]): T {
         let service: T = null;
         (isArray(target) ? target : [target])
             .some(tag => {
@@ -245,8 +266,8 @@ export class Container implements IContainer {
                 return service !== null;
             });
 
-        if (!service && defaultToken && this.has(defaultToken)) {
-            service = this.resolve(defaultToken, ...providers);
+        if (!service && defaultToken) {
+            service = this.resolveFirst(isArray(defaultToken) ? defaultToken : [defaultToken], ...providers);
         }
 
         return service;

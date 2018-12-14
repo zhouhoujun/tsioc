@@ -1,11 +1,13 @@
 import { Inject, IContainer, ContainerToken, Token, Injectable } from '@ts-ioc/core';
 import { ActivityConfigure } from './ActivityConfigure';
 import { IActivity } from './IActivity';
-import { IActivityRunner, ActivityRunnerToken, RunState } from './IActivityRunner';
+import { IWorkflowInstance, WorkflowInstanceToken, RunState } from './IWorkflowInstance';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { Joinpoint } from '@ts-ioc/aop';
 import { ActivityContext } from './ActivityContext';
+import { IActivityContextResult } from './IActivityContext';
+import { Service } from '@ts-ioc/bootstrap';
 
 /**
  * task runner.
@@ -14,10 +16,10 @@ import { ActivityContext } from './ActivityContext';
  * @class TaskRunner
  * @implements {ITaskRunner}
  */
-@Injectable(ActivityRunnerToken)
-export class ActivityRunner<T> implements IActivityRunner<T> {
+@Injectable(WorkflowInstanceToken)
+export class WorkflowInstance<T extends IActivity> extends Service<T> implements IWorkflowInstance<T> {
 
-    get activity(): Token<IActivity> {
+    get activity(): Token<T> {
         return this.token;
     }
     get configure(): ActivityConfigure {
@@ -42,13 +44,18 @@ export class ActivityRunner<T> implements IActivityRunner<T> {
     container: IContainer;
 
     constructor(
-        public token: Token<IActivity>,
-        public config: ActivityConfigure,
-        public instance: IActivity) {
+        token: Token<T>,
+        instance: T,
+        config: ActivityConfigure) {
+        super(token, instance, config);
         this.stateChanged = new BehaviorSubject(RunState.init);
     }
 
-    async start(data?: any): Promise<T> {
+    run(data?: any): Promise<IActivityContextResult<T>> {
+        return this.start(data);
+    }
+
+    async start(data?: any): Promise<IActivityContextResult<T>> {
         let ctx = data instanceof ActivityContext ? data : this.instance.createContext(data);
         return await this.instance.run(ctx)
             .then(ctx => {
@@ -56,7 +63,7 @@ export class ActivityRunner<T> implements IActivityRunner<T> {
                 this.stateChanged.next(this.state);
                 this._resultValue = ctx.result;
                 this._result.next(ctx.result);
-                return ctx.result;
+                return ctx;
             });
     }
 

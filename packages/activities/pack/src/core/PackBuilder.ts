@@ -1,12 +1,12 @@
 import {
     IActivity, Src, ActivityBuilder, Activity, SequenceConfigure,
-    SequenceActivityToken, ParallelConfigure, ParallelActivityToken
+    SequenceActivityToken, ParallelConfigure, ParallelActivityToken, SequenceActivity, ParallelActivity
 } from '@taskfr/core';
-import { Injectable, lang, isString, isArray } from '@ts-ioc/core';
+import { Injectable, lang, isString, isArray, hasClassMetadata } from '@ts-ioc/core';
 import { PackActivity } from './PackActivity';
 import {
     CleanActivity, CleanConfigure, TestActivity, TestConfigure, AssetActivity,
-    AssetConfigure, InjectAssetActivityToken, AssetToken, BuildHandleToken
+    AssetConfigure, InjectAssetActivityToken, AssetToken, BuildHandleToken, Asset
 } from '@taskfr/build';
 import { PackConfigure } from './PackConfigure';
 import { PackBuilderToken } from './IPackActivity';
@@ -37,7 +37,16 @@ export class PackBuilder extends ActivityBuilder {
 
             let assets = await Promise.all(lang.keys(config.assets).map(name => {
                 return this.toActivity<Src, AssetActivity, AssetConfigure>(config.assets[name], activity,
-                    act => act instanceof Activity,
+                    (act: any) => {
+                        let flag = act instanceof AssetActivity
+                            || act instanceof SequenceActivity
+                            || act instanceof ParallelActivity;
+                        if (flag) {
+                            return true;
+                        } else {
+                            return hasClassMetadata(Asset, lang.getClass(act));
+                        }
+                    },
                     src => {
                         if (isString(src) || isArray(src)) {
                             return <AssetConfigure>{ src: src };

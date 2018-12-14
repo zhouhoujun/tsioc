@@ -87,59 +87,70 @@ export interface IContainer extends IMethodAccessor, IResolver {
     resolveValue<T>(token: Token<T>, ...providers: ParamProviders[]): T;
 
     /**
-     * get service or target reference service.
+     * resolve first token when not null.
      *
      * @template T
-     * @param {Token<T>} token servive token.
+     * @param {Token<any>[]} tokens
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getService<T>(token: Token<T>, ...providers: ParamProviders[]): T;
+    resolveFirst<T>(tokens: Token<any>[], ...providers: ParamProviders[]): T;
 
     /**
      * get service or target reference service.
      *
      * @template T
-     * @param {Token<T>} token servive token.
+     * @param {(Token<T> | Token<any>[])} token servive token.
+     * @param {...ParamProviders[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    getService<T>(token: Token<T> | Token<any>[], ...providers: ParamProviders[]): T;
+
+    /**
+     * get service or target reference service.
+     *
+     * @template T
+     * @param {(Token<T> | Token<any>[])} token servive token.
      * @param {(Token<any> | Token<any>[])} [target] service refrence target.
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], ...providers: ParamProviders[]): T;
+    getService<T>(token: Token<T> | Token<any>[], target: Token<any> | Token<any>[], ...providers: ParamProviders[]): T;
 
     /**
      * get service or target reference service.
      *
      * @template T
-     * @param {Token<T>} token servive token.
+     * @param {(Token<T> | Token<any>[])} token servive token.
      * @param {(Token<any> | Token<any>[])} [target] service refrence target.
      * @param {RefTokenFac<T>} toRefToken
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], toRefToken: RefTokenFac<T>, ...providers: ParamProviders[]): T;
+    getService<T>(token: Token<T> | Token<any>[], target: Token<any> | Token<any>[], toRefToken: RefTokenFac<T>, ...providers: ParamProviders[]): T;
 
     /**
      * get service or target reference service.
      *
      * @template T
-     * @param {Token<T>} token servive token.
+     * @param {(Token<T> | Token<any>[])} token servive token.
      * @param {(Token<any> | Token<any>[])} [target] service refrence target.
      * @param {(boolean | Token<T>)} defaultToken
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], defaultToken: boolean | Token<T>, ...providers: ParamProviders[]): T;
+    getService<T>(token: Token<T> | Token<any>[], target: Token<any> | Token<any>[], defaultToken: boolean | Token<T>, ...providers: ParamProviders[]): T;
 
     /**
      * get service or target reference service.
      *
      * @template T
-     * @param {Token<T>} token servive token.
+     * @param {(Token<T> | Token<any>[])} token servive token.
      * @param {(Token<any> | Token<any>[])} [target] service refrence target.
      * @param {RefTokenFac<T>} toRefToken
      * @param {(boolean | Token<T>)} defaultToken
@@ -147,7 +158,7 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @returns {T}
      * @memberof IContainer
      */
-    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], toRefToken: RefTokenFac<T>, defaultToken: boolean | Token<T>, ...providers: ParamProviders[]): T;
+    getService<T>(token: Token<T> | Token<any>[], target: Token<any> | Token<any>[], toRefToken: RefTokenFac<T>, defaultToken: boolean | Token<T>, ...providers: ParamProviders[]): T;
 
     /**
      * get target reference service.
@@ -160,7 +171,7 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @returns {T}
      * @memberof IContainer
      */
-    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any> | Token<any>[], defaultToken?: Token<T>, ...providers: ParamProviders[]): T
+    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any> | Token<any>[], defaultToken?: Token<T>| Token<any>[], ...providers: ParamProviders[]): T
 
     /**
      * register type.

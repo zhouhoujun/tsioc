@@ -1,7 +1,7 @@
 import { ObjectMap, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@ts-ioc/aop';
 import { LoggerAspect } from '@ts-ioc/logs';
-import { IActivityRunner, ActivityRunner } from '@taskfr/core';
+import { IWorkflowInstance, WorkflowInstance } from '@taskfr/core';
 /**
  * Task Log
  *
@@ -10,7 +10,7 @@ import { IActivityRunner, ActivityRunner } from '@taskfr/core';
  */
 @Aspect({
     // annotation: Workflow,
-    within: ActivityRunner,
+    within: WorkflowInstance,
     singleton: true
 })
 export class RunnerLogAspect extends LoggerAspect {
@@ -25,9 +25,9 @@ export class RunnerLogAspect extends LoggerAspect {
     @Around('execution(*.start)')
     logStart(joinPoint: Joinpoint) {
         let logger = this.logger;
-        let runner = joinPoint.target as IActivityRunner<any>;
-        let uuid = runner.instance.id;
-        let name = runner.instance.name;
+        let runner = joinPoint.target as IWorkflowInstance<any>;
+        let uuid = runner.getTarget().id;
+        let name = runner.getTarget().name;
         let start: Date, end: Date;
         let taskname = '\'' + name + '\'';
         if (joinPoint.state === JoinpointState.Before) {

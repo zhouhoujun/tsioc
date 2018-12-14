@@ -18,6 +18,15 @@ export interface AnnotationConfigure<T> extends IAnnotationMetadata<T> {
      * @memberof AnnotationConfigure
      */
     annoBuilder?: Token<IAnnotationBuilder<T>> | IAnnotationBuilder<T>;
+
+    /**
+     * default runnable.
+     *
+     * @type {Token<Runnable<T>>}
+     * @memberof AnnotationConfigure
+     */
+    defaultRunnable?: Token<Runnable<T>>;
+
     /**
      * default annotation builder token.
      *
@@ -123,16 +132,15 @@ export interface IAnnotationBuilder<T> {
     boot(runable: AnnotationConfigure<T>, data?: any): Promise<Runnable<T>>;
 
     /**
-     * run runable
+     * reolve runable
      *
      * @param {T} instance
-     * @param {AnnotationConfigure<T>} config
-     * @param {*} [data]
+     * @param {AnnotationConfigure<T>} [config]
      * @param {Token<T>} [token]
-     * @returns {Promise<Runnable<T>>}
+     * @returns {Runnable<T>}
      * @memberof IAnnotationBuilder
      */
-    run(instance: T, config: AnnotationConfigure<T>, data?: any, token?: Token<T>): Promise<Runnable<T>>;
+    resolveRunable(instance: T, config?: AnnotationConfigure<T>, token?: Token<T>): Runnable<T>;
 
 }
 

@@ -1,4 +1,4 @@
-import { Token, RefRegistration } from '@ts-ioc/core';
+import { Token, isFunction } from '@ts-ioc/core';
 import { ModuleConfigure } from '../modules';
 
 /**
@@ -10,6 +10,14 @@ import { ModuleConfigure } from '../modules';
  */
 export interface IRunner<T> {
     /**
+     * target instance.
+     *
+     * @type {T}
+     * @memberof IRunner
+     */
+    getTarget?(): T;
+
+    /**
      * run application via boot instance.
      *
      * @param {*} [data]
@@ -18,6 +26,8 @@ export interface IRunner<T> {
      */
     run(data?: any): Promise<any>;
 }
+
+
 
 /**
  * boot element.
@@ -31,6 +41,10 @@ export abstract class Runner<T> implements IRunner<T> {
 
     constructor(protected token?: Token<T>, protected instance?: T, protected config?: ModuleConfigure) {
 
+    }
+
+    getTarget?(): T {
+        return this.instance;
     }
 
     /**
@@ -59,20 +73,18 @@ export abstract class Boot extends Runner<any> {
 
 
 /**
- * application runner token.
+ * target is runner or not.
  *
  * @export
- * @class InjectRunnerToken
- * @extends {Registration<IRunner<T>>}
- * @template T
+ * @param {*} target
+ * @returns {target is IRunner<any>}
  */
-export class InjectRunnerToken<T> extends RefRegistration<IRunner<T>> {
-    constructor(type: Token<T>) {
-        super(type, 'runner');
+export function isRunner(target: any): target is IRunner<any> {
+    if (target instanceof Runner) {
+        return true;
     }
+    if (target && isFunction(target.run)) {
+        return true;
+    }
+    return false;
 }
-
-/**
- * default runner token.
- */
-export const RunnerToken = new InjectRunnerToken<any>(Object);

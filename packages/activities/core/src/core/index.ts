@@ -12,8 +12,8 @@ export * from './IHandleActivity';
 export * from './AssignActivity';
 export * from './ExpressionActivity';
 
-export * from './IActivityRunner';
-export * from './ActivityRunner';
+export * from './IWorkflowInstance';
+export * from './WorkflowInstance';
 export * from './IActivityContext';
 export * from './ActivityContext';
 

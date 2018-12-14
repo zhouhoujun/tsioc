@@ -1,8 +1,8 @@
 import { IActivity, IActivityResult } from './IActivity';
 import { Token, isToken, isMetadataObject, isString } from '@ts-ioc/core';
 import { ModuleConfig } from '@ts-ioc/bootstrap';
-import { IActivityRunner } from './IActivityRunner';
-import { ActivityRunner } from './ActivityRunner';
+import { IWorkflowInstance } from './IWorkflowInstance';
+import { WorkflowInstance } from './WorkflowInstance';
 import { IActivityContext } from './IActivityContext';
 import { IHandleActivity } from './IHandleActivity';
 import { ExpressionActivity } from './ExpressionActivity';
@@ -29,7 +29,7 @@ export type AsyncResult<T> = (activity?: IActivity, ctx?: IActivityContext) => P
 /**
  * activity result.
  */
-export type ExecuteResult<T> = Promise<T> | AsyncResult<T> | IActivityRunner<T>;
+export type ExecuteResult<T> = Promise<T> | AsyncResult<T> | IWorkflowInstance<T>;
 
 /**
  * expression.
@@ -85,14 +85,14 @@ export type Active = ActivityType<IActivity>;
 export type ConfigureType<T extends IActivity, TC extends ActivityConfigure> = Token<T> | TC;
 
 /**
- * target is activity runner.
+ * target is workflow instance or not.
  *
  * @export
  * @param {*} target
- * @returns {target is IActivityRunner<any>}
+ * @returns {target is IWorkflowInstance<any>}
  */
-export function isActivityRunner(target: any): target is IActivityRunner<any> {
-    return target instanceof ActivityRunner;
+export function isWorkflowInstance(target: any): target is IWorkflowInstance<any> {
+    return target instanceof WorkflowInstance;
 }
 
 /**
@@ -107,7 +107,7 @@ export function isActivityType(target: any, check = true): target is ActivityTyp
         return false;
     }
 
-    if (isActivityRunner(target)) {
+    if (isWorkflowInstance(target)) {
         return false;
     }
 

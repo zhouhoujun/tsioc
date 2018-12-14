@@ -1,5 +1,5 @@
 import { Task } from '../decorators';
-import { IActivity, InjectAcitityToken, SequenceConfigure, ActivityType } from '../core';
+import { IActivity, InjectAcitityToken, SequenceConfigure, ActivityType, Activity } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 /**
@@ -52,7 +52,13 @@ export class SequenceActivity extends ControlActivity {
     protected async execute(): Promise<void> {
         let execPromise = Promise.resolve(this.context);
         this.activities.forEach(task => {
-            execPromise = execPromise.then(ctx => task.run(ctx));
+            execPromise = execPromise.then(ctx => {
+                if (task instanceof Activity) {
+                    return task.run(ctx);
+                } else {
+                    return this.context.getBuilder().resolveRunable(task).run(ctx);
+                }
+            });
         });
         await execPromise;
     }

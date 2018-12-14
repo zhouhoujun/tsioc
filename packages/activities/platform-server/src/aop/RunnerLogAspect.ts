@@ -2,7 +2,7 @@ import { ObjectMap, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@ts-ioc/aop';
 import { LoggerAspect } from '@ts-ioc/logs';
 import chalk from 'chalk';
-import { IActivityRunner, ActivityRunner } from '@taskfr/core';
+import { IWorkflowInstance, WorkflowInstance } from '@taskfr/core';
 const timestamp = require('time-stamp');
 const prettyTime = require('pretty-hrtime');
 /**
@@ -13,7 +13,7 @@ const prettyTime = require('pretty-hrtime');
  */
 @Aspect({
     // annotation: Workflow,
-    within: ActivityRunner,
+    within: WorkflowInstance,
     singleton: true
 })
 export class RunnerLogAspect extends LoggerAspect {
@@ -27,9 +27,9 @@ export class RunnerLogAspect extends LoggerAspect {
     @Around('execution(*.start)')
     logStart(joinPoint: Joinpoint) {
         let logger = this.logger;
-        let runner = joinPoint.target as IActivityRunner<any>;
-        let uuid = runner.instance.id;
-        let name = runner.instance.name;
+        let runner = joinPoint.target as IWorkflowInstance<any>;
+        let uuid = runner.getTarget().id;
+        let name = runner.getTarget().name;
         let start, end;
         let taskname = '\'' + chalk.cyan(name) + '\'';
         if (joinPoint.state === JoinpointState.Before) {

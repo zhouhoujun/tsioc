@@ -4,6 +4,7 @@ import { AnnotationBuilder } from '@ts-ioc/bootstrap';
 import { IActivity, ActivityInstance } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
 import { ActivityMetaAccessorToken } from '../injectors';
+import { IWorkflowInstance } from './IWorkflowInstance';
 
 
 /**
@@ -30,7 +31,6 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
      * @memberof ActivityBuilder
      */
     async createInstance(token: Token<IActivity>, config: ActivityConfigure, data: any): Promise<IActivity> {
-
         let instance = await super.createInstance(token, config, data) as ActivityInstance;
         if (!instance) {
             return null;
@@ -72,6 +72,23 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
         }
     }
 
+    async buildActivity<T extends IActivity>(config: ActivityType<T>, id: string): Promise<T> {
+        return await this.buildByConfig(config, id) as T;
+    }
+
+    /**
+     * run annotation instance.
+     *
+     * @param {T} instance
+     * @param {AnnotationConfigure<T>} [config]
+     * @param {Token<T>} [token]
+     * @returns {Promise<Runnable<T>>}
+     * @memberof AnnotationBuilder
+     */
+    resolveRunable(instance: IActivity, config?: ActivityConfigure, token?: Token<any>): IWorkflowInstance<any> {
+        return super.resolveRunable(instance, config, token) as IWorkflowInstance<any>;
+    }
+
     /**
     * to activity.
     *
@@ -88,6 +105,7 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
     */
     async toActivity<Tr, Ta extends IActivity, TCfg extends ActivityConfigure>(exptype: ExpressionType<Tr> | ActivityType<Ta>, target: IActivity, isRightActivity: Express<Ta, boolean>, toConfig: Express<Tr, TCfg>, valify?: Express<TCfg, TCfg>): Promise<Ta> {
         let result;
+        let config;
         if (isActivityType(exptype, !valify)) {
             if (valify) {
                 result = await this.buildByConfig(isToken(exptype) ? exptype : valify(exptype as TCfg), target.id);
@@ -98,26 +116,23 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
             result = exptype;
         }
 
-        if (isRightActivity(result)) {
-            return result;
+        if (!isRightActivity(result)) {
+            let rt;
+            if (isString(result)) {
+                rt = result;
+            } else {
+                rt = await target.context.exec(target, result);
+            }
+            config = toConfig(rt);
+            if (valify) {
+                config = valify(config);
+            }
+            if (config) {
+                result = await this.buildByConfig(config, target.id);
+            } else {
+                result = null;
+            }
         }
-
-        let rt;
-        if (isString(result)) {
-            rt = result;
-        } else {
-            rt = await target.context.exec(target, result);
-        }
-        let config = toConfig(rt);
-        if (valify) {
-            config = valify(config);
-        }
-        if (config) {
-            result = await this.buildByConfig(config, target.id);
-        } else {
-            result = null;
-        }
-        return result;
+        return result
     }
-
 }

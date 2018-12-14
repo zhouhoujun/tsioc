@@ -1,4 +1,4 @@
-import { Token, RefRegistration } from '@ts-ioc/core';
+import { Token, isFunction } from '@ts-ioc/core';
 import { ModuleConfigure } from '../modules';
 
 /**
@@ -8,6 +8,13 @@ import { ModuleConfigure } from '../modules';
  * @interface IService
  */
 export interface IService<T> {
+    /**
+     * target instance.
+     *
+     * @type {T}
+     * @memberof IRunner
+     */
+    getTarget?(): T;
     /**
      * start application service.
      *
@@ -38,6 +45,16 @@ export abstract class Service<T> implements IService<T> {
     constructor(protected token?: Token<T>, protected instance?: T, protected config?: ModuleConfigure) {
 
     }
+
+    /**
+     * get target.
+     *
+     * @returns {T}
+     * @memberof Service
+     */
+    getTarget(): T {
+        return this.instance;
+    }
     /**
      * start service.
      *
@@ -57,22 +74,19 @@ export abstract class Service<T> implements IService<T> {
     abstract stop(): Promise<any>;
 }
 
-
 /**
- * application service token.
+ * target is service or not.
  *
  * @export
- * @class InjectServiceToken
- * @extends {Registration<IService<T>>}
- * @template T
+ * @param {*} target
+ * @returns {target is IService<any>}
  */
-export class InjectServiceToken<T> extends RefRegistration<IService<T>> {
-    constructor(type: Token<T>) {
-        super(type, 'service');
+export function isService(target: any): target is IService<any> {
+    if (target instanceof Service) {
+        return true;
     }
+    if (target && isFunction(target.start)) {
+        return true;
+    }
+    return false;
 }
-
-/**
- * default service token.
- */
-export const ServiceToken = new InjectServiceToken<any>(Object);

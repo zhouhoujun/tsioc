@@ -9,8 +9,7 @@ import { Events, AppConfigureToken, ProcessRunRootToken } from '@ts-ioc/bootstra
 import { InjectActivityContextToken, InputDataToken, IActivityContextResult, CtxType } from './IActivityContext';
 import { ActivityBuilderToken } from './IActivityBuilder';
 import { ActivityBuilder } from './ActivityBuilder';
-import { Expression, ActivityConfigure } from './ActivityConfigure';
-import { ActivityRunner } from './ActivityRunner';
+import { Expression, ActivityConfigure, isWorkflowInstance } from './ActivityConfigure';
 import { Task } from '../decorators';
 
 
@@ -157,8 +156,8 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
             return expression;
         } else if (expression instanceof Activity) {
             return expression.run(this).then(ctx => ctx.result);
-        } else if (expression instanceof ActivityRunner) {
-            return expression.start(this);
+        } else if (isWorkflowInstance(expression)) {
+            return expression.start(this).then(ctx => ctx.result);
         } else {
             return Promise.resolve(expression as T);
         }

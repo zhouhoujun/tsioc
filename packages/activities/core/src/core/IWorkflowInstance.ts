@@ -4,14 +4,15 @@ import { IActivityResult, IActivity } from './IActivity';
 import { Observable } from 'rxjs';
 import { Joinpoint } from '@ts-ioc/aop';
 import { Activity } from './Activity';
-import { IService, InjectServiceToken } from '@ts-ioc/bootstrap';
+import { IService, IRunner, InjectRunnableToken } from '@ts-ioc/bootstrap';
+import { IActivityContextResult } from './IActivityContext';
 
 
 
 /**
  * activity runner token.
  */
-export const ActivityRunnerToken = new InjectServiceToken<IActivity>(Activity);
+export const WorkflowInstanceToken = new InjectRunnableToken<IActivity>(Activity);
 
 /**
  *run state.
@@ -48,30 +49,7 @@ export enum RunState {
  * @export
  * @interface ITaskRunner
  */
-export interface IActivityRunner<T> extends IService<IActivityResult<T>> {
-    /**
-     * actvity to run.
-     *
-     * @type {Token<IActivity>}
-     * @memberof ITaskRunner
-     */
-    readonly activity: Token<IActivity>;
-
-    /**
-     * configure.
-     *
-     * @type {ActivityConfigure}
-     * @memberof IActivityRunner
-     */
-    readonly configure: ActivityConfigure;
-
-    /**
-     * activity instance
-     *
-     * @type {IActivityResult}
-     * @memberof ITaskRunner
-     */
-    readonly instance: IActivityResult<T>;
+export interface IWorkflowInstance<T> extends IService<IActivityResult<T>>, IRunner<IActivityResult<T>> {
 
     /**
      * current run task data.
@@ -112,7 +90,7 @@ export interface IActivityRunner<T> extends IService<IActivityResult<T>> {
      * @returns {Promise<T>}
      * @memberof ITask
      */
-    start(data?: any): Promise<T>;
+    start(data?: any): Promise<IActivityContextResult<T>>;
 
     /**
      * stop running activity.
