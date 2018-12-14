@@ -24,7 +24,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      * ioc container.
      *
      * @type {IContainer}
-     * @memberof BootBuilder
+     * @memberof AnnotationBuilder
      */
     @Inject(ContainerToken)
     public container: IContainer;
@@ -197,7 +197,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      * @param {AnnotationConfigure} config
      * @param {IContainer} [container]
      * @returns {Promise<T>}
-     * @memberof BootBuilder
+     * @memberof AnnotationBuilder
      */
     async buildStrategy(instance: T, config: AnnotationConfigure<T>, data?: any): Promise<T> {
         return instance;
@@ -207,13 +207,13 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      * run annotation instance.
      *
      * @param {T} instance
-     * @param {AnnotationConfigure<T>} cfg
+     * @param {AnnotationConfigure<T>} config
      * @param {*} [data]
      * @param {Token<T>} [token]
      * @returns {Promise<Runnable<T>>}
      * @memberof AnnotationBuilder
      */
-    async run(instance: T, cfg: AnnotationConfigure<T>, data?: any, token?: Token<T>): Promise<Runnable<T>> {
+    async run(instance: T, config: AnnotationConfigure<T>, data?: any, token?: Token<T>): Promise<Runnable<T>> {
         if (!instance) {
             return null;
         }
@@ -227,7 +227,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             await instance.start(data);
             return instance;
         } else {
-            let providers = [{ provide: token, useValue: instance }, { token: token, instance: instance, config: cfg }] as ParamProviders[];
+            let providers = [{ provide: token, useValue: instance }, { token: token, instance: instance, config: config }] as ParamProviders[];
             let runner: IRunner<T> = this.container.getService(RunnerToken, token, tk => new InjectRunnerToken(tk), ...providers);
             let service: IService<T>;
             if (!runner) {

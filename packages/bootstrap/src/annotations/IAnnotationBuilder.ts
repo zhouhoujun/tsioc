@@ -47,7 +47,7 @@ export interface IAnnotationBuilder<T> {
      * container.
      *
      * @type {IContainer}
-     * @memberof IBootstrapBuilder
+     * @memberof IAnnotationBuilder
      */
     container: IContainer;
 
@@ -87,7 +87,7 @@ export interface IAnnotationBuilder<T> {
      * @param {AnnotationConfigure<T>} config
      * @param {*} [data] the data to init instance.
      * @returns {Promise<T>}
-     * @memberof IBootstrapBuilder
+     * @memberof IAnnotationBuilder
      */
     createInstance(token: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<T>;
     /**
@@ -97,7 +97,7 @@ export interface IAnnotationBuilder<T> {
      * @param {AnnotationConfigure<T>} config
      * @param {*} [data] the data to init instance.
      * @returns {Promise<T>}
-     * @memberof IBootstrapBuilder
+     * @memberof IAnnotationBuilder
      */
     buildStrategy(instance: T, config: AnnotationConfigure<T>, data?: any): Promise<T>;
 
@@ -118,7 +118,7 @@ export interface IAnnotationBuilder<T> {
      * @param {AnnotationConfigure<T>} runable
      * @param {*} [data] bootstrap data, build data, Runnable data.
      * @returns {Promise<Runnable<T>>}
-     * @memberof IGModuleBuilder
+     * @memberof IAnnotationBuilder
      */
     boot(runable: AnnotationConfigure<T>, data?: any): Promise<Runnable<T>>;
 
@@ -126,13 +126,13 @@ export interface IAnnotationBuilder<T> {
      * run runable
      *
      * @param {T} instance
-     * @param {AnnotationConfigure<T>} cfg
+     * @param {AnnotationConfigure<T>} config
      * @param {*} [data]
      * @param {Token<T>} [token]
      * @returns {Promise<Runnable<T>>}
      * @memberof IAnnotationBuilder
      */
-    run(instance: T, cfg: AnnotationConfigure<T>, data?: any, token?: Token<T>): Promise<Runnable<T>>;
+    run(instance: T, config: AnnotationConfigure<T>, data?: any, token?: Token<T>): Promise<Runnable<T>>;
 
 }
 
