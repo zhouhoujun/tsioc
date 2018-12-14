@@ -78,7 +78,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
     defaultAnnoBuilder?: Token<IActivityBuilder>,
     defaultBoot?: Token<IActivity>,
     baseClassName?: string,
-    defaultBuilder?: Token<IModuleBuilder<T>>,
+    // defaultBuilder?: Token<IModuleBuilder<T>>,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): ITaskDecorator<T> {
 
@@ -149,7 +149,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             }
 
             metadata.decorType = taskType;
-            metadata.defaultBuilder = defaultBuilder || WorkflowBuilderToken;
+            // metadata.defaultBuilder = defaultBuilder || WorkflowBuilderToken;
             metadata.defaultAnnoBuilder = defaultAnnoBuilder;
 
             return metadata;

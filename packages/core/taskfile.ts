@@ -2,7 +2,6 @@ import { PackModule, Pack, PackActivity } from '@taskfr/pack';
 import { TaskContainer } from '@taskfr/core';
 import { IActivity } from '@taskfr/core';
 import { Asset, AssetActivity, TsCompile, CleanToken } from '@taskfr/build';
-import { ContainerToken, IContainer, Inject } from '@ts-ioc/core';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');

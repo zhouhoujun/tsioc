@@ -141,10 +141,6 @@ export class TaskContainer implements ITaskContainer {
             boot = activity;
         } else {
             boot = activity || {};
-            if (!boot.token) {
-                boot.builder = boot.builder || WorkflowBuilderToken;
-                boot.annoBuilder = boot.annoBuilder;
-            }
         }
         let env = this.getBuilder().getPools().create();
         this.getContainer().bindProvider(WorkflowId, workflowId);
