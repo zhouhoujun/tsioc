@@ -10,9 +10,8 @@ declare let process: any;
  * @export
  * @param {*} param
  * @param {(string | Function)} msg
- * @param {(target: any) => boolean} [checkExp]
  */
-export function assert(param: any, msg: string | Function, checkExp?: (target: any) => boolean) {
+export function assert(param: any, msg: string | Function) {
     if (isNullOrUndefined(param)) {
         throw new Error(isFunction(msg) ? msg(param) : msg);
     }

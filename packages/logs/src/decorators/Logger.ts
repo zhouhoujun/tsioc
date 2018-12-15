@@ -1,7 +1,17 @@
 import { Level } from '../Level';
-import { Express, TypeMetadata, IClassMethodDecorator, createClassMethodDecorator, ClassMethodDecorator, isClassMetadata, isString, isFunction } from '@ts-ioc/core';
+import {
+    Express, TypeMetadata, IClassMethodDecorator, createClassMethodDecorator,
+    ClassMethodDecorator, isClassMetadata, isString, isFunction
+} from '@ts-ioc/core';
 
 
+/**
+ * logger metadata.
+ *
+ * @export
+ * @interface LoggerMetadata
+ * @extends {TypeMetadata}
+ */
 export interface LoggerMetadata extends TypeMetadata {
     /**
      * set the special name to get logger from logger manager.

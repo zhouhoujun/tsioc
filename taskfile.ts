@@ -26,6 +26,11 @@ let versionSetting = (ctx: INodeActivityContext) => {
                         replaced.set('peerDependencies.' + key, '^' + version);
                     }
                 });
+                Object.keys(json.dependencies).forEach(key => {
+                    if (/^@ts-ioc/.test(key)) {
+                        replaced.set('dependencies.' + key, '^' + version);
+                    }
+                });
             }
             contents = replaced.toString();
         }

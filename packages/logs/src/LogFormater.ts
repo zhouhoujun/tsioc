@@ -1,4 +1,7 @@
-import { Singleton, isString, isSymbol, IParameter, isDate, isFunction, isArray, isObject, isBaseType, getClassName, isClass, InjectToken } from '@ts-ioc/core';
+import {
+    Singleton, isString, isSymbol, IParameter, isDate, isFunction, isArray,
+    isObject, isBaseType, getClassName, isClass, InjectToken
+} from '@ts-ioc/core';
 import { Joinpoint, JoinpointState, NonePointcut } from '@ts-ioc/aop';
 
 

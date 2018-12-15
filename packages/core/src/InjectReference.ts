@@ -1,4 +1,3 @@
-
 import { Registration } from './Registration';
 import { Token } from './types';
 
