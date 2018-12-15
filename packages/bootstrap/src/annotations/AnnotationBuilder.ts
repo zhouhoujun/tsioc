@@ -3,12 +3,13 @@ import {
     lang, isFunction, Injectable, Container, IMetaAccessor, ParamProviders,
     InjectMetaAccessorToken, MetaAccessorToken
 } from '@ts-ioc/core';
-import { IAnnotationBuilder, AnnotationBuilderToken, AnnotationConfigure, InjectAnnotationBuilder } from './IAnnotationBuilder';
+import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import {
     Runnable, Runner, Service, RunnerToken,
     ServiceToken, isRunner, isService, InjectRunnableToken
 } from '../runnable';
 import { AnnoTokenVaild, BootHooks, AnnoBuildCompleted } from './AnnoType';
+import { AnnotationConfigure } from './AnnotationConfigure';
 
 /**
  * Annotation class builder. build class with metadata and config.

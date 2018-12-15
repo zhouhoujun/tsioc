@@ -1,7 +1,8 @@
 import { Runnable } from '../runnable';
-import { AnnotationConfigure, IAnnotationBuilder } from './IAnnotationBuilder';
+import { IAnnotationBuilder } from './IAnnotationBuilder';
 import { Token } from '@ts-ioc/core';
 import { BeforeAnnotationInit, AfterAnnotationInit } from './IAnnotation';
+import { AnnotationConfigure } from './AnnotationConfigure';
 
 
 export type AnnoBuildCompleted<T> = (config: AnnotationConfigure<T>, instance?: BootHooks<T>, builder?: IAnnotationBuilder<T>) => void;

@@ -1,47 +1,7 @@
-import { IContainer, Token, IAnnotationMetadata, RefRegistration, IMetaAccessor } from '@ts-ioc/core';
+import { IContainer, Token, RefRegistration } from '@ts-ioc/core';
 import { Runnable } from '../runnable';
 import { AnnoTokenVaild, AnnoBuildCompleted } from './AnnoType';
-
-
-/**
- * type build config.
- *
- * @export
- * @interface TypeConfigure
- * @template T
- */
-export interface AnnotationConfigure<T> extends IAnnotationMetadata<T> {
-    /**
-     * annotation builder.
-     *
-     * @type {(Token<IAnnotationBuilder<T>> | IAnnotationBuilder<T>)}
-     * @memberof AnnotationConfigure
-     */
-    annoBuilder?: Token<IAnnotationBuilder<T>> | IAnnotationBuilder<T>;
-
-    /**
-     * default runnable.
-     *
-     * @type {Token<Runnable<T>>}
-     * @memberof AnnotationConfigure
-     */
-    defaultRunnable?: Token<Runnable<T>>;
-
-    /**
-     * default annotation builder token.
-     *
-     * @type {Token<IAnnotationBuilder<T>>}
-     * @memberof AnnotationConfigure
-     */
-    defaultAnnoBuilder?: Token<IAnnotationBuilder<T>>;
-    /**
-     * default metadata accessor.
-     *
-     * @type {Token<IMetaAccessor<T>>}
-     * @memberof AnnotationConfigure
-     */
-    defaultMetaAccessor?: Token<IMetaAccessor<T>>;
-}
+import { AnnotationConfigure } from './AnnotationConfigure';
 
 const annoBuilderDesc = 'DI_AnnotationBuilder';
 

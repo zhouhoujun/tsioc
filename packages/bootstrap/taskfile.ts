@@ -43,7 +43,7 @@ const rename = require('gulp-rename');
         (act) => rename(act.config.data.name)
     ]
 })
-export class BootRollup extends AssetActivity {
+export class BootRollup {
 }
 
 @Pack({

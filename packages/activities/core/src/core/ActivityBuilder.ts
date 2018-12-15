@@ -5,6 +5,7 @@ import { IActivity, ActivityInstance } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
 import { ActivityMetaAccessorToken } from '../injectors';
 import { IWorkflowInstance } from './IWorkflowInstance';
+import { Activity } from './Activity';
 
 
 /**
@@ -26,14 +27,19 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
      *
      * @param {Token<IActivity>} token
      * @param {ActivityConfigure} config
-     * @param {any} data
+     * @param {any} [data]
      * @returns {Promise<IActivity>}
      * @memberof ActivityBuilder
      */
-    async createInstance(token: Token<IActivity>, config: ActivityConfigure, data: any): Promise<IActivity> {
+    async createInstance(token: Token<IActivity>, config: ActivityConfigure, data?: any): Promise<IActivity> {
         let instance = await super.createInstance(token, config, data) as ActivityInstance;
         if (!instance) {
             return null;
+        }
+
+        if (!(instance instanceof Activity)) {
+            let boot = this.getMetaAccessor(token, config).getBootToken(config);
+            instance = await super.createInstance(boot, config, data) as ActivityInstance
         }
 
         if (isFunction(instance.onActivityInit)) {

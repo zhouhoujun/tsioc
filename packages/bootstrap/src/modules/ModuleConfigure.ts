@@ -29,14 +29,6 @@ export interface ModuleConfig<T> extends AnnotationConfigure<T> {
     name?: string;
 
     /**
-     * module bootstrap token.
-     *
-     * @type {Token<T>}
-     * @memberof AnnotationConfigure
-     */
-    bootstrap?: Token<T>;
-
-    /**
      * imports dependens modules
      *
      * @type {LoadType[]}

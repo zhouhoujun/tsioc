@@ -1,5 +1,6 @@
 import { ITypeDecorator, Token, MetadataAdapter, MetadataExtends, createClassDecorator } from '@ts-ioc/core';
-import { IAnnotationBuilder, AnnotationConfigure, AnnotationBuilderToken } from '../annotations/IAnnotationBuilder';
+import { IAnnotationBuilder, AnnotationBuilderToken } from '../annotations/IAnnotationBuilder';
+import { AnnotationConfigure } from '../annotations/AnnotationConfigure';
 
 /**
  * annotation metadata.
