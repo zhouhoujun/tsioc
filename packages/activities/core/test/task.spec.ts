@@ -17,7 +17,7 @@ describe('auto register with build', () => {
         expect(runner instanceof WorkflowInstance).eq(true);
         let result = await runner.start();
         // console.log(result);
-        expect(result).eq('simple task');
+        expect(result.result).eq('simple task');
     });
 
     it('should bootstrap with single task via name or provider.', async () => {
