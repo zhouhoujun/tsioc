@@ -1,4 +1,5 @@
 import { Pack } from '../../decorators';
+import { PackActivity } from '../../core';
 
 /**
  * dev build activity.
@@ -27,6 +28,6 @@ import { Pack } from '../../decorators';
         }
     ]
 })
-export class NgDevBuildActivity {
+export class NgDevBuildActivity extends PackActivity {
 
 }

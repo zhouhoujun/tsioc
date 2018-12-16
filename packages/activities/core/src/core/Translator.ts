@@ -1,6 +1,11 @@
 import { Registration, Token } from '@ts-ioc/core';
 
-
+/**
+ * translator.
+ *
+ * @export
+ * @interface ITranslator
+ */
 export interface ITranslator {
     /**
      * translate target to.

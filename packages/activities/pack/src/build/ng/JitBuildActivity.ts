@@ -1,4 +1,5 @@
 import { Pack } from '../../decorators';
+import { PackActivity } from '../../core';
 
 
 @Pack({
@@ -17,6 +18,6 @@ import { Pack } from '../../decorators';
         }
     ]
 })
-export class NgJitBuildActivity {
+export class NgJitBuildActivity  extends PackActivity {
 
 }

@@ -1,5 +1,6 @@
 import { Task } from '../decorators';
 import { Activity } from '../core';
+import { lang, getClassName } from '@ts-ioc/core';
 
 /**
  * control activity.
@@ -11,14 +12,13 @@ import { Activity } from '../core';
  */
 @Task
 export abstract class ControlActivity extends Activity {
-
-    // /**
-    //  * to string.
-    //  *
-    //  * @returns {string}
-    //  * @memberof ControlActivity
-    //  */
-    // toString(): string  {
-    //     return '';
-    // }
+    /**
+     * to string.
+     *
+     * @returns {string}
+     * @memberof ControlActivity
+     */
+    toString(): string {
+        return `[${getClassName(lang.getClass(this))}]`;
+    }
 }

@@ -8,6 +8,13 @@ import { ActivityValidateToken } from './ActivityValidate';
  */
 export const ActivityModuleInjectorToken = new InjectModuleInjectorToken(Task.toString());
 
+/**
+ * activity module injector.
+ *
+ * @export
+ * @class ActivityModuleInjector
+ * @extends {DIModuleInjector}
+ */
 @Injectable(ActivityModuleInjectorToken)
 export class ActivityModuleInjector  extends DIModuleInjector {
 

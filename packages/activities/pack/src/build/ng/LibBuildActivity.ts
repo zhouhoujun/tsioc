@@ -1,5 +1,5 @@
-
 import { Pack } from '../../decorators';
+import { PackActivity } from '../../core';
 
 
 @Pack({
@@ -22,6 +22,6 @@ import { Pack } from '../../decorators';
         }
     ]
 })
-export class NgLibBuildActivity {
+export class NgLibBuildActivity extends PackActivity {
 
 }

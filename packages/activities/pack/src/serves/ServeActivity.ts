@@ -10,6 +10,13 @@ import { NodeActivity } from '@taskfr/build';
  */
 export interface ServeConfigure extends ActivityConfigure {
     /**
+     * serve port.
+     *
+     * @type {number}
+     * @memberof ServeConfigure
+     */
+    port?: number;
+    /**
      * dirs.
      *
      * @type {CtxType<Src>}
@@ -29,6 +36,14 @@ export interface ServeConfigure extends ActivityConfigure {
 export class ServeActivity extends NodeActivity {
 
     /**
+     * serve port.
+     *
+     * @type {number}
+     * @memberof ServeActivity
+     */
+    port: number;
+
+    /**
      * dirs.
      *
      * @type {Src}
@@ -40,9 +55,10 @@ export class ServeActivity extends NodeActivity {
         super();
     }
 
-    async onActivityInit(config: ServeConfigure): Promise<any> {
+    async onActivityInit(config: ServeConfigure): Promise<void> {
         await super.onActivityInit(config);
         this.dirs = await this.context.to(config.dirs);
+        this.port = await this.context.to(config.port);
     }
 
     /**

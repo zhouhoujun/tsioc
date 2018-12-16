@@ -1,5 +1,5 @@
-import { BuildActivity } from '@taskfr/build';
 import { Pack } from '../../decorators';
+import { PackActivity } from '../../core';
 
 
 @Pack({
@@ -22,6 +22,6 @@ import { Pack } from '../../decorators';
         }
     ]
 })
-export class NgProdBuildActivity {
+export class NgProdBuildActivity extends PackActivity {
 
 }

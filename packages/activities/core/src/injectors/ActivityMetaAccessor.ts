@@ -1,11 +1,19 @@
-import { MetaAccessor, IContainer, Token, isString, InjectMetaAccessorToken, Injectable, Refs, MetaAccessorToken } from '@ts-ioc/core';
+import {
+    MetaAccessor, IContainer, Token, isString, InjectMetaAccessorToken,
+    Injectable, Refs, MetaAccessorToken
+} from '@ts-ioc/core';
 import { IActivity, InjectAcitityToken, ActivityConfigure } from '../core';
 import { ApplicationBuilderToken } from '@ts-ioc/bootstrap';
 
 export const ActivityMetaAccessorToken = new InjectMetaAccessorToken('@Task');
 
-// @Refs(ActivityToken, MetaAccessorToken)
-// @Refs(ActivityBuilderToken, MetaAccessorToken)
+/**
+ * activity metadata accessor.
+ *
+ * @export
+ * @class ActivityMetaAccessor
+ * @extends {MetaAccessor}
+ */
 @Injectable(ActivityMetaAccessorToken)
 @Refs(ApplicationBuilderToken, MetaAccessorToken)
 export class ActivityMetaAccessor extends MetaAccessor {

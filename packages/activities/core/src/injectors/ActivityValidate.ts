@@ -6,6 +6,13 @@ import { Task } from '../decorators';
  */
 export const ActivityValidateToken = new InjectModuleValidateToken(Task.toString());
 
+/**
+ * activity validate.
+ *
+ * @export
+ * @class ActivityValidate
+ * @extends {ModuelValidate}
+ */
 @Injectable(ActivityValidateToken)
 export class ActivityValidate extends ModuelValidate {
     getDecorator(): string {

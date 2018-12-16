@@ -5,9 +5,7 @@ import {
 import { ActivityMetadata } from '../metadatas/ActivityMetadata';
 import { IActivityBuilder, ActivityBuilderToken } from '../core/IActivityBuilder';
 import { IActivityContext } from '../core/IActivityContext';
-import { WorkflowBuilderToken } from '../injectors/DefaultWorkflowBuilder';
 import { IActivity, ActivityToken, WorkflowInstanceToken } from '../core';
-import { IModuleBuilder } from '@ts-ioc/bootstrap';
 
 /**
  * task decorator, use to define class is a task element.
