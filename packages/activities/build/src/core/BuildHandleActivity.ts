@@ -101,10 +101,7 @@ export class BuildHandleActivity extends HandleActivity {
         if (config.compiler) {
             this.compiler = await this.buildActivity(config.compiler);
         } else {
-            this.compiler = this.container.getRefService([
-                tk => new InjectCompilerToken(tk),
-                tk => new InjectReference(CompilerToken, tk)
-            ], lang.getClass(this));
+            this.compiler = this.container.getService(CompilerToken, lang.getClass(this), tk => new InjectCompilerToken(tk));
         }
         this.test = await this.toExpression(config.test);
         this.subDist = this.context.to(config.subDist) || '';

@@ -14,8 +14,8 @@ import { CompilerToken, UglifyToken, UglifyActivity } from '../../core';
  * @extends {Activity<ITransform>}
  * @implements {OnActivityInit}
  */
-@Task
 @Refs(UglifyToken, CompilerToken)
+@Task
 export class UglifyCompilerActivity extends StreamActivity implements OnActivityInit {
 
     protected async execute(): Promise<void> {
