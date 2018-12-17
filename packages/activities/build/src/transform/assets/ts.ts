@@ -1,12 +1,10 @@
-import { isBoolean, ObjectMap, isString } from '@ts-ioc/core';
-import { classAnnotations } from '@ts-ioc/annotations';
+import { isBoolean, ObjectMap, isString, Providers } from '@ts-ioc/core';
 import * as ts from 'gulp-typescript';
-import { CtxType, OnActivityInit } from '@taskfr/core';
-import {
-    AssetConfigure, AssetActivity, DestActivity, AnnotationActivity,
-    DestAcitvityToken, ITransform, TransformContext, isTransform, InjectAssetActivityToken
-} from '../core';
-import { Asset } from '../decorators';
+import { CtxType, OnActivityInit, Task } from '@taskfr/core';
+import { DestActivity, DestAcitvityToken, ITransform, TransformContext, isTransform, ITransformConfigure, TransformActivity } from '../core';
+import { AssetConfigure, CompilerToken, InjectCompilerToken, InjectAssetToken } from '../../core';
+import { Asset } from '../../decorators';
+import { StreamAssetActivity } from '../AssetActivity';
 
 
 /**
@@ -16,7 +14,7 @@ import { Asset } from '../decorators';
  * @interface TsConfigure
  * @extends {AssetConfigure}
  */
-export interface TsConfigure extends AssetConfigure {
+export interface TsConfigure extends AssetConfigure, ITransformConfigure {
     /**
      * tds config.
      *
@@ -34,51 +32,11 @@ export interface TsConfigure extends AssetConfigure {
     tsconfig?: CtxType<string | ObjectMap<any>>;
 }
 
-/**
- * ts compile token.
- */
-export const TsCompileToken = new InjectAssetActivityToken('ts');
+export const TsCompileToken = new InjectAssetToken('ts');
 
-/**
- * ts file compile.
- *
- * @export
- * @class TsCompile
- * @extends {AssetActivity}
- * @implements {OnActivityInit}
- */
-@Asset(TsCompileToken)
-export class TsCompile extends AssetActivity implements OnActivityInit {
 
-    /**
-     * tds dest.
-     *
-     * @type {(DestActivity | boolean)}
-     * @memberof TsCompile
-     */
-    tdsDest: DestActivity | boolean;
-    /**
-     * on task init.
-     *
-     * @param {TsConfigure} cfg
-     * @memberof TsCompile
-     */
-    async onActivityInit(cfg: TsConfigure) {
-        await super.onActivityInit(cfg);
-        this.defaultAnnotation = { annotationFramework: () => classAnnotations(), task: AnnotationActivity };
-        let tds = this.context.to(cfg.tds);
-        if (tds !== false) {
-            if (isString(tds)) {
-                this.tdsDest = this.container.resolve(DestAcitvityToken);
-                this.tdsDest.dest = tds;
-            } else {
-                this.tdsDest = true;
-            }
-        }
-        if (!cfg.sourcemaps && cfg.sourcemaps !== false) {
-            cfg.sourcemaps = true;
-        }
-    }
+@Task
+export class TsCompiler extends TransformActivity {
 
     /**
      * execute ts pipe.
@@ -118,6 +76,53 @@ export class TsCompile extends AssetActivity implements OnActivityInit {
             return ts(tsconfig);
         }
     }
+}
+
+
+/**
+ * ts file compile.
+ *
+ * @export
+ * @class TsCompile
+ * @extends {AssetActivity}
+ * @implements {OnActivityInit}
+ */
+@Asset(TsCompileToken)
+@Providers([
+    { provide: CompilerToken, useClass: TsCompiler }
+])
+export class TsCompile extends StreamAssetActivity implements OnActivityInit {
+
+    /**
+     * tds dest.
+     *
+     * @type {(DestActivity | boolean)}
+     * @memberof TsCompile
+     */
+    tdsDest: DestActivity | boolean;
+
+    /**
+     * on task init.
+     *
+     * @param {TsConfigure} cfg
+     * @memberof TsCompile
+     */
+    async onActivityInit(cfg: TsConfigure) {
+        if (!cfg.sourcemaps && cfg.sourcemaps !== false) {
+            cfg.sourcemaps = true;
+        }
+        await super.onActivityInit(cfg);
+        let tds = this.context.to(cfg.tds);
+        if (tds !== false) {
+            if (isString(tds)) {
+                this.tdsDest = this.container.resolve(DestAcitvityToken);
+                this.tdsDest.dest = tds;
+            } else {
+                this.tdsDest = true;
+            }
+        }
+    }
+
     /**
      * execyte uglify.
      *
@@ -125,11 +130,11 @@ export class TsCompile extends AssetActivity implements OnActivityInit {
      * @returns
      * @memberof TsCompile
      */
-    protected async executeUglify() {
+    protected async execUglify(ctx: TransformContext) {
         if (this.uglify) {
-            let ugCtx = this.createContext(this.context.result.js);
+            let ugCtx = this.createContext(ctx.result.js);
             await this.uglify.run(ugCtx);
-            this.context.result.js = ugCtx.result;
+            ctx.result.js = ugCtx.result;
         }
     }
     /**
@@ -140,7 +145,7 @@ export class TsCompile extends AssetActivity implements OnActivityInit {
      * @returns
      * @memberof TsCompile
      */
-    protected async executeDest(ds: DestActivity) {
+    protected async execDest(ds: DestActivity, ctx: TransformContext) {
         if (!ds || !this.context.result) {
             return;
         }

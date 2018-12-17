@@ -252,9 +252,6 @@ export class Container implements IContainer {
             .some(tag => {
                 this.forInTokenClassChain(tag, tk => {
                     // exclude ref registration.
-                    if (tk instanceof InjectReference) {
-                        return true;
-                    }
                     return !(isArray(refToken) ? refToken : [refToken]).some(stk => {
                         let tokens = this.getRefToken(stk, tk);
                         return (isArray(tokens) ? tokens : [tokens]).some(rtk => {
@@ -293,22 +290,24 @@ export class Container implements IContainer {
             tk = refToken;
         } else {
             tk = refToken.service;
-            isPrivate = refToken.isPrivate === true;
+            isPrivate = refToken.isPrivate !== false;
         }
 
         if (!tk) {
             return null;
         }
-
-        if (isPrivate) {
-            if (!isClass(target)) {
-                return null;
-            }
+        // resolve private first.
+        if (isClass(target)) {
             let pdrmap = this.get(new InjectReference(ProviderMap, target));
-            return (pdrmap && pdrmap.hasRegister(tk)) ? pdrmap.resolve(tk, ...providers) : null;
-        } else {
-            return this.resolve(tk, ...providers);
+            if (pdrmap && pdrmap.hasRegister(tk)) {
+                return pdrmap.resolve(tk, ...providers);
+            }
         }
+        // have not private registered.
+        if (isPrivate) {
+            return null;
+        }
+        return this.resolve(tk, ...providers);
     }
 
     /**

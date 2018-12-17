@@ -52,7 +52,7 @@ export interface ShellUglifyConfigure extends ShellActivityConfig {
  * @class UglifyActivity
  * @extends {ShellActivity}
  */
-@Task('uglify')
+@Task
 export class ShellUglifyActivity extends ShellActivity {
 
     /**

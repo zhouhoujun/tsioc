@@ -1,11 +1,8 @@
 import { src, SrcOptions } from 'vinyl-fs';
-import { Src, Expression, ExpressionType, Task, InjectAcitityToken, ActivityConfigure } from '@taskfr/core';
+import { Src, Expression, ExpressionType, Task } from '@taskfr/core';
 import { StreamActivity } from './StreamActivity';
-
-/**
- * source activity token.
- */
-export const SourceAcitvityToken = new InjectAcitityToken<SourceActivity>('source');
+import { ITransformConfigure } from './ITransformConfigure';
+import { SourceConfigure } from '../../core';
 
 /**
  * source pipe configure.
@@ -14,14 +11,7 @@ export const SourceAcitvityToken = new InjectAcitityToken<SourceActivity>('sourc
  * @interface ITransformSourceConfigure
  * @extends {ITransformConfigure}
  */
-export interface SourceConfigure extends ActivityConfigure {
-    /**
-     * transform source.
-     *
-     * @type {TransformSource}
-     * @memberof ITransformConfigure
-     */
-    src: ExpressionType<Src>;
+export interface StreamSourceConfigure extends ITransformConfigure, SourceConfigure {
 
     /**
      * src options.
@@ -39,7 +29,7 @@ export interface SourceConfigure extends ActivityConfigure {
  * @class SourceActivity
  * @extends {TransformActivity}
  */
-@Task(SourceAcitvityToken)
+@Task
 export class SourceActivity extends StreamActivity {
     /**
      * source
@@ -57,7 +47,7 @@ export class SourceActivity extends StreamActivity {
      */
     srcOptions: Expression<SrcOptions>;
 
-    async onActivityInit(config: SourceConfigure) {
+    async onActivityInit(config: StreamSourceConfigure) {
         await super.onActivityInit(config);
         this.src = await this.toExpression(config.src);
 

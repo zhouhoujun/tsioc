@@ -1,5 +1,58 @@
-import { IHandleActivity, IActivity, Expression } from '@taskfr/core';
+import { IHandleActivity, IActivity, Expression, Src } from '@taskfr/core';
 import { Express, Registration, Token } from '@ts-ioc/core';
+import { BuildHandleContext } from './BuildHandleActivity';
+
+/**
+ * compiler activity
+ *
+ * @export
+ * @interface ICompiler
+ * @extends {IActivity}
+ */
+export interface ICompiler extends IActivity {
+
+}
+
+/**
+ * source compiler.
+ *
+ * @export
+ * @interface ISourceCompiler
+ * @extends {ICompiler}
+ */
+export interface ISourceCompiler extends ICompiler {
+    /**
+     * get source.
+     *
+     * @returns {Src}
+     * @memberof ISourceCompiler
+     */
+    getSource(): Src;
+}
+
+/**
+ * sourcemaps compiler
+ *
+ * @export
+ * @interface ISourcemapCompiler
+ * @extends {ICompiler}
+ */
+export interface ISourcemapsCompiler extends ICompiler {
+    /**
+     * init sourcemaps.
+     *
+     * @param {BuildHandleContext<any>} ctx
+     * @memberof ISourcemapsCompiler
+     */
+    init(ctx: BuildHandleContext<any>);
+    /**
+     * write sourcemaps.
+     *
+     * @param {BuildHandleContext<any>} ctx
+     * @memberof ISourcemapsCompiler
+     */
+    write(ctx: BuildHandleContext<any>);
+}
 
 /**
  * build handle activity.
@@ -12,10 +65,10 @@ export interface IBuildHandleActivity extends IHandleActivity {
     /**
      * compiler
      *
-     * @type {IActivity}
+     * @type {ICompiler}
      * @memberof IBuildHandleActivity
      */
-    compiler: IActivity;
+    compiler: ICompiler;
 
     /**
      * test files macth or not to deal with.
@@ -24,17 +77,6 @@ export interface IBuildHandleActivity extends IHandleActivity {
      * @memberof IBuildHandleActivity
      */
     test: Expression<string | RegExp | Express<string, boolean>>;
-}
-
-/**
- * compiler activity
- *
- * @export
- * @interface ICompiler
- * @extends {IActivity}
- */
-export interface ICompiler extends IActivity {
-
 }
 
 /**

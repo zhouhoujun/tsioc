@@ -1,6 +1,7 @@
 import { CtxType, ExpressionType, Expression, Task, InjectAcitityToken, IActivity, Active, Src } from '@taskfr/core';
 import { isUndefined } from '@ts-ioc/core';
 import { BuildHandleActivity, BuildHandleConfigure, BuildHandleContext } from '../BuildHandleActivity';
+import { InjectCompilerToken } from '../BuildHandle';
 
 /**
  * test activity configure.
@@ -10,7 +11,6 @@ import { BuildHandleActivity, BuildHandleConfigure, BuildHandleContext } from '.
  * @extends {SourceConfigure}
  */
 export interface TestConfigure extends BuildHandleConfigure {
-
     /**
      * test source.
      *
@@ -26,14 +26,6 @@ export interface TestConfigure extends BuildHandleConfigure {
      * @memberof TestConfigure
      */
     enable?: ExpressionType<boolean>;
-
-    /**
-     * test framework.
-     *
-     * @type {Active}
-     * @memberof TestConfigure
-     */
-    framework?: Active;
     /**
      * test options.
      *
@@ -47,6 +39,11 @@ export interface TestConfigure extends BuildHandleConfigure {
  * test activity token.
  */
 export const TestToken = new InjectAcitityToken<IActivity>('test');
+
+/**
+ * test compiler
+ */
+export const TestCompilerToken = new InjectCompilerToken(TestToken);
 
 /**
  * test activity.

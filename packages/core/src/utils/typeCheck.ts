@@ -1,6 +1,7 @@
 import { Type, AbstractType, Token } from '../types';
 import { Registration } from '../Registration';
 import { lang } from './lang';
+import { IAnnotationMetadata } from '../core';
 
 declare let process: any;
 
@@ -251,6 +252,17 @@ export function isMetadataObject(target: any, props?: string[], extendsProps?: s
     }
 
     return true;
+}
+
+/**
+ * target is annotation metadata.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is IAnnotationMetadata<any>}
+ */
+export function isAnnotationMetadata(target: any): target is IAnnotationMetadata<any> {
+    return isMetadataObject(target, ['type', 'token', 'bootstrap']);
 }
 
 /**

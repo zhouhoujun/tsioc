@@ -1,4 +1,4 @@
-import { isPromise, isMetadataObject, assertExp, isFunction, Providers } from '@ts-ioc/core';
+import { isPromise, isMetadataObject, assertExp, isFunction } from '@ts-ioc/core';
 import { ITransformActivity, TransformActivityToken } from './ITransformActivity';
 import { ITransform } from './ITransform';
 import { TransformType, TransformExpress, TransformConfig } from './transformTypes';
@@ -14,9 +14,6 @@ import { StreamActivity } from './StreamActivity';
  * @implements {ITask}
  */
 @Task(TransformActivityToken)
-// @Providers([
-//     { provide }
-// ])
 export class TransformActivity extends StreamActivity implements ITransformActivity {
 
     /**

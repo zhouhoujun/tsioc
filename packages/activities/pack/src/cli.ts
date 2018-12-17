@@ -8,8 +8,7 @@ import program from 'commander';
 import findup from 'findup';
 import { PackModule } from './PackModule';
 import { TaskContainer } from '@taskfr/core';
-import { isClass } from 'packages/core/lib';
-import { isMetadataObject } from '@ts-ioc/core';
+import { isMetadataObject, isClass } from '@ts-ioc/core';
 import { PackConfigure } from './core';
 
 const cliRoot = findup.sync(__dirname, 'package.json');

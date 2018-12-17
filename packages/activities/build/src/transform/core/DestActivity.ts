@@ -4,6 +4,7 @@ import { SourceMapsActivity } from './SourceMapsActivity';
 import { TransformContext } from './StreamActivity';
 import { TransformActivity } from './TransformActivity';
 import { ITransformConfigure } from './ITransformConfigure';
+import { DestConfigure } from '../../core';
 
 
 /**
@@ -18,15 +19,7 @@ export const DestAcitvityToken = new InjectAcitityToken<DestActivity>('dest');
  * @interface ITransformDestConfigure
  * @extends {ITransformConfigure}
  */
-export interface DestConfigure extends ITransformConfigure {
-
-    /**
-     * pipe dest.
-     *
-     * @type {ExpressionType<string>}
-     * @memberof ITransformConfigure
-     */
-    dest?: ExpressionType<string>;
+export interface StreamDestConfigure extends ITransformConfigure, DestConfigure {
 
     /**
      * dest options.
@@ -66,7 +59,7 @@ export class DestActivity extends TransformActivity {
      */
     destOptions: Expression<DestOptions>;
 
-    async onActivityInit(config: DestConfigure) {
+    async onActivityInit(config: StreamDestConfigure) {
         await super.onActivityInit(config);
         this.dest = await this.toExpression(config.dest);
 

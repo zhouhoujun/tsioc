@@ -25,11 +25,11 @@ export interface IAnnotationBuilder<T> {
      *
      * @param {Token<T>} token
      * @param {AnnotationConfigure<T>} [config]
-     * @param {*} [data] build data
+     * @param {*} [target] build data
      * @returns {Promise<T>}
      * @memberof ITypeBuilder
      */
-    build(token: Token<T>, config?: AnnotationConfigure<T>, data?: any, completed?: AnnoBuildCompleted<T>): Promise<T>;
+    build(token: Token<T>, config?: AnnotationConfigure<T>, target?: any, completed?: AnnoBuildCompleted<T>): Promise<T>;
 
     /**
      * build instance via type config.
@@ -39,7 +39,7 @@ export interface IAnnotationBuilder<T> {
      * @returns {Promise<T>}
      * @memberof IAnnotationBuilder
      */
-    buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any, vaild?: AnnoTokenVaild<T>): Promise<T>;
+    buildByConfig(config: Token<T> | AnnotationConfigure<T>, target?: any, vaild?: AnnoTokenVaild<T>): Promise<T>;
     /**
      * get finally builder by token and config.
      *

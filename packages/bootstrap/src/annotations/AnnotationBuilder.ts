@@ -1,7 +1,7 @@
 import {
     Token, isToken, IContainer, isClass, Inject, ContainerToken,
     lang, isFunction, Injectable, Container, IMetaAccessor, ParamProviders,
-    InjectMetaAccessorToken, MetaAccessorToken
+    InjectMetaAccessorToken, MetaAccessorToken, isNullOrUndefined
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import {
@@ -54,11 +54,11 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      *
      * @param {Token<T>} token
      * @param {AnnotationConfigure<T>} [config]
-     * @param {*} [data] build data
+     * @param {*} [target] build target
      * @returns {Promise<T>}
      * @memberof AnnotationBuilder
      */
-    async build(token: Token<T>, config?: AnnotationConfigure<T>, data?: any, completed?: AnnoBuildCompleted<T>): Promise<T> {
+    async build(token: Token<T>, config?: AnnotationConfigure<T>, target?: any, completed?: AnnoBuildCompleted<T>): Promise<T> {
         if (isClass(token) && !this.container.hasRegister(token)) {
             this.container.register(token);
         }
@@ -66,17 +66,17 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         config = this.getMetaAccessor(token, config).getMetadata(token, this.container, config);
         let builder = this.getBuilder(token, config);
         if (!this.isEqual(builder)) {
-            return await builder.build(token, config, data, completed);
+            return await builder.build(token, config, target, completed);
         } else {
             await this.registerExts(config);
-            let instance = await this.createInstance(token, config, data) as BootHooks<T>;
+            let instance = await this.createInstance(token, config, target) as BootHooks<T>;
             if (!instance) {
                 return null;
             }
             if (isFunction(instance.anBeforeInit)) {
                 await Promise.resolve(instance.anBeforeInit(config));
             }
-            instance = await this.buildStrategy(instance, config, data) as BootHooks<T>;
+            instance = await this.buildStrategy(instance, config, target) as BootHooks<T>;
             if (isFunction(instance.anAfterInit)) {
                 await Promise.resolve(instance.anAfterInit(config));
             }
@@ -91,25 +91,25 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      * build instance via type config.
      *
      * @param {(Token<T> | AnnotationConfigure<T>)} config
-     * @param {*} [data] build data.
+     * @param {*} [target] build data.
      * @param {AnnoTokenVaild} [vaild]
      * @returns {Promise<T>}
      * @memberof IAnnotationBuilder
      */
-    async buildByConfig(config: Token<T> | AnnotationConfigure<T>, data?: any, vaild?: AnnoTokenVaild<T>): Promise<T> {
+    async buildByConfig(config: Token<T> | AnnotationConfigure<T>, target?: any, vaild?: AnnoTokenVaild<T>): Promise<T> {
         let token: Token<T>;
         if (isToken(config)) {
             token = config;
             if (vaild && !vaild(token)) {
                 token = null;
             }
-            return await this.build(token, null, data);
+            return await this.build(token, null, target);
         } else {
             token = this.getMetaAccessor(null, config).getToken(config, this.container);
             if (vaild && !vaild(token)) {
                 token = null;
             }
-            return await this.build(token, config, data);
+            return await this.build(token, config, target);
         }
     }
 
@@ -181,18 +181,17 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
     }
 
 
-    async createInstance(token: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<T> {
+    async createInstance(token: Token<T>, config: AnnotationConfigure<T>, target?: any): Promise<T> {
         if (!token) {
             return null;
         }
 
-        if (!this.container.has(token)) {
+        let instance = this.resolveToken(token, target);
+        if (isNullOrUndefined(instance)) {
             console.log(`can not find token ${token ? token.toString() : null} in container.`);
             return null;
         }
 
-
-        let instance = this.resolveToken(token, data);
         return instance;
     }
 
@@ -262,7 +261,12 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         return false;
     }
 
-    protected resolveToken(token: Token<T>, data?: any) {
+    protected resolveToken(token: Token<T>, target?: any) {
+        let targClass = target ? lang.getClass(target) : null;
+        targClass === Object ? null : targClass;
+        if (targClass) {
+            return this.container.getService(token, targClass);
+        }
         return this.container.resolve(token);
     }
 }

@@ -1,6 +1,6 @@
 
 import { IActivity, ExpressionType, Src, Expression, InjectAcitityToken, Task, Active, InjectTranslatorToken } from '@taskfr/core';
-import { Defer, isArray, Token, lang, InjectReference } from '@ts-ioc/core';
+import { Defer, isArray, Token, lang } from '@ts-ioc/core';
 import { fromEventPattern } from 'rxjs';
 import { bufferTime, flatMap, filter } from 'rxjs/operators';
 import { BuildHandleActivity, BuildHandleConfigure, BuildHandleContext } from '../BuildHandleActivity';
@@ -278,13 +278,9 @@ export class WatchActivity extends BuildHandleActivity {
                             chg.removed = chg.removed.concat(fc.removed);
                         }
                     });
-                    return this.container.getRefService(
-                        [
-                            tk => new InjectTranslatorToken<FileChanged, Promise<string[]>>(tk),
-                            tk => new InjectReference(FileChangedTransToken, tk)
-                        ],
+                    return this.container.getService(FileChangedTransToken,
                         lang.getClass(this),
-                        FileChangedTransToken)
+                        tk => new InjectTranslatorToken<FileChanged, Promise<string[]>>(tk))
                         .translate(chg);
                 })
             )

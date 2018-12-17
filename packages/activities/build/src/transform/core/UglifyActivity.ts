@@ -1,10 +1,13 @@
-
 import * as uglify from 'gulp-uglify';
 import { Task, OnActivityInit } from '@taskfr/core';
 import { StreamActivity } from './StreamActivity';
-import { Refs } from '@ts-ioc/core';
-import { CompilerToken, UglifyToken, UglifyActivity } from '../../core';
+import { ITransformConfigure } from './ITransformConfigure';
+import { UglifyConfigure } from '../../core';
 
+export interface StreamUglifyConfigure extends ITransformConfigure, UglifyConfigure {
+
+
+}
 
 /**
  * uglify activity.
@@ -14,13 +17,17 @@ import { CompilerToken, UglifyToken, UglifyActivity } from '../../core';
  * @extends {Activity<ITransform>}
  * @implements {OnActivityInit}
  */
-@Refs(UglifyToken, CompilerToken)
 @Task
-export class UglifyCompilerActivity extends StreamActivity implements OnActivityInit {
+export class StreamUglifyActivity extends StreamActivity implements OnActivityInit {
+    uglifyOptions: any;
+
+    async onActivityInit(config: StreamUglifyConfigure) {
+        await super.onActivityInit(config);
+        this.uglifyOptions = this.context.to(config.uglifyOptions);
+    }
 
     protected async execute(): Promise<void> {
-        let hd = this.context.handle as UglifyActivity;
-        let uglifyOptions = hd.uglifyOptions;
-        this.context.result = await this.executePipe(this.context.result, uglifyOptions ? uglify(uglifyOptions) : uglify());
+        let hd = this.context.handle;
+        this.context.result = await this.executePipe(this.context.result, this.uglifyOptions ? uglify(this.uglifyOptions) : uglify());
     }
 }

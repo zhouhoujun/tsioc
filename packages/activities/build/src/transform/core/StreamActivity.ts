@@ -138,8 +138,6 @@ export const TransformContextToken = new InjectActivityContextToken(StreamActivi
 @Injectable(TransformContextToken)
 export class TransformContext extends BuildHandleContext<ITransform> {
 
-    sourceMaps: ISourceMapsActivity;
-
     constructor(@Inject(InputDataToken) input: any) {
         super(input);
     }

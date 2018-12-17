@@ -1,12 +1,8 @@
-import { Task, InjectAcitityToken } from '@taskfr/core';
+import { Task } from '@taskfr/core';
 import { ITransformConfigure } from './ITransformConfigure';
 import { TransformType } from './transformTypes';
 import { StreamActivity } from './StreamActivity';
-
-/**
- * annotation activity token
- */
-export const AnnotationAcitvityToken = new InjectAcitityToken<AnnotationActivity>('Annotation');
+import { classAnnotations } from '@ts-ioc/annotations';
 
 
 export interface AnnotationsConfigure extends ITransformConfigure {
@@ -26,7 +22,7 @@ export interface AnnotationsConfigure extends ITransformConfigure {
  * @class AnnotationActivity
  * @extends {PipeActivity}
  */
-@Task(AnnotationAcitvityToken)
+@Task
 export class AnnotationActivity extends StreamActivity {
 
     /**
@@ -50,8 +46,6 @@ export class AnnotationActivity extends StreamActivity {
      * @memberof AnnotationActivity
      */
     protected async execute(): Promise<void> {
-        if (this.annotationFramework) {
-            this.context.result = await this.executePipe(this.context.result, this.annotationFramework);
-        }
+        this.context.result = await this.executePipe(this.context.result, this.annotationFramework || (() => classAnnotations()));
     }
 }

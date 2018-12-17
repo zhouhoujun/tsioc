@@ -1,5 +1,5 @@
-import { ActivityConfigure } from '@taskfr/core';
 import { TransformExpress } from './transformTypes';
+import { CompilerConfigure } from '../../core';
 
 /**
  * pipe configure.
@@ -8,7 +8,7 @@ import { TransformExpress } from './transformTypes';
  * @interface ITransformConfigure
  * @extends {ActivityConfigure}
  */
-export interface ITransformConfigure extends ActivityConfigure {
+export interface ITransformConfigure extends CompilerConfigure {
     /**
      * transform pipes
      *

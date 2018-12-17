@@ -1,12 +1,12 @@
 import {
-    IActivity, Src, ActivityBuilder, Activity, SequenceConfigure,
+    IActivity, Src, ActivityBuilder, SequenceConfigure,
     SequenceActivityToken, ParallelConfigure, ParallelActivityToken, SequenceActivity, ParallelActivity
 } from '@taskfr/core';
 import { Injectable, lang, isString, isArray, hasClassMetadata } from '@ts-ioc/core';
 import { PackActivity } from './PackActivity';
 import {
     CleanActivity, CleanConfigure, TestActivity, TestConfigure, AssetActivity,
-    AssetConfigure, InjectAssetActivityToken, AssetToken, BuildHandleToken, Asset
+    AssetConfigure, InjectAssetToken, AssetToken, BuildHandleToken, Asset
 } from '@taskfr/build';
 import { PackConfigure } from './PackConfigure';
 import { PackBuilderToken } from './IPackActivity';
@@ -76,11 +76,11 @@ export class PackBuilder extends ActivityBuilder {
 
                         let assCfg = cfg as AssetConfigure;
                         if (!assCfg.activity && !assCfg.task) {
-                            assCfg.task = new InjectAssetActivityToken(name);
+                            assCfg.task = new InjectAssetToken(name);
                         }
 
                         if (isString(assCfg.task)) {
-                            assCfg.task = new InjectAssetActivityToken(assCfg.task);
+                            assCfg.task = new InjectAssetToken(assCfg.task);
                         }
                         if (!this.container.has(assCfg.task)) {
                             assCfg.task = AssetToken;

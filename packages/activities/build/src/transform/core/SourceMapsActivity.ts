@@ -1,22 +1,9 @@
-import { CtxType, ActivityConfigure, InjectAcitityToken, IActivityResult, Task } from '@taskfr/core';
+import { IActivityResult, Task } from '@taskfr/core';
 import { ITransform } from './ITransform';
 import { TransformContext } from './StreamActivity';
 import { StreamActivity } from './StreamActivity';
+import { SourceMapsConfigure } from '../../core';
 
-
-/**
- * source map configure
- *
- * @export
- * @interface SourceMapsConfigure
- * @extends {ActivityConfigure}
- */
-export interface SourceMapsConfigure extends ActivityConfigure {
-    /**
-     * sourcemaps.
-     */
-    sourcemaps?: CtxType<string>;
-}
 
 /**
  * source map activity.
@@ -29,12 +16,6 @@ export interface ISourceMapsActivity extends IActivityResult<ITransform> {
     sourcemaps: string;
 }
 
-/**
- * source maps token.
- */
-export const SourceMapsToken = new InjectAcitityToken<ISourceMapsActivity>('sourcemaps');
-
-
 
 /**
  * source maps token.
@@ -44,7 +25,7 @@ export const SourceMapsToken = new InjectAcitityToken<ISourceMapsActivity>('sour
  * @extends {Activity<ITransform>}
  * @implements {OnActivityInit}
  */
-@Task(SourceMapsToken)
+@Task
 export class SourceMapsActivity extends StreamActivity implements ISourceMapsActivity {
     sourcemaps: string;
 
