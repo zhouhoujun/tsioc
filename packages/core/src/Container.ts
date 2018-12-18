@@ -252,6 +252,9 @@ export class Container implements IContainer {
             .some(tag => {
                 this.forInTokenClassChain(tag, tk => {
                     // exclude ref registration.
+                    if (tk instanceof InjectReference) {
+                        return true;
+                    }
                     return !(isArray(refToken) ? refToken : [refToken]).some(stk => {
                         let tokens = this.getRefToken(stk, tk);
                         return (isArray(tokens) ? tokens : [tokens]).some(rtk => {
@@ -367,14 +370,12 @@ export class Container implements IContainer {
      */
     registerValue<T>(token: Token<T>, value: T): this {
         let key = this.getTokenKey(token);
-
         this.getSingleton().set(key, value);
         if (!this.factories.has(key)) {
             this.factories.set(key, () => {
                 return this.getSingleton().get(key);
             });
         }
-
         return this;
     }
 
@@ -558,7 +559,7 @@ export class Container implements IContainer {
         } else {
             type = this.getTokenImpl(token);
         }
-        if (!isClass(type)) {
+        if (!isFunction(type)) {
             express(token, [token]);
         }
         lang.forInClassChain(type, ty => {
@@ -568,7 +569,7 @@ export class Container implements IContainer {
                 tokens = prds.provides.slice(1);
             }
             tokens = tokens || [];
-            return !tokens.concat([ty]).some(tk => express(tk, tokens) === false);
+            return ![ty, ...tokens].some(tk => express(tk, tokens) === false);
         });
     }
 
@@ -674,7 +675,6 @@ export class Container implements IContainer {
         this.factories = new Map();
         this.provideTypes = new Map();
         this.bindProvider(ContainerToken, () => this);
-
         registerCores(this);
     }
 
@@ -842,5 +842,3 @@ export class Container implements IContainer {
 
     }
 }
-
-

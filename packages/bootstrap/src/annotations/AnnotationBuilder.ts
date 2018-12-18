@@ -1,7 +1,7 @@
 import {
     Token, isToken, IContainer, isClass, Inject, ContainerToken,
     lang, isFunction, Injectable, Container, IMetaAccessor, ParamProviders,
-    InjectMetaAccessorToken, MetaAccessorToken, isNullOrUndefined
+    InjectMetaAccessorToken, MetaAccessorToken, isNullOrUndefined, isBaseType
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import {
@@ -262,10 +262,12 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
     }
 
     protected resolveToken(token: Token<T>, target?: any) {
-        let targClass = target ? lang.getClass(target) : null;
-        targClass === Object ? null : targClass;
-        if (targClass) {
-            return this.container.getService(token, targClass);
+        let targetClass;
+        if (target && !isBaseType(target)) {
+            targetClass = lang.getClass(target);
+        }
+        if (targetClass) {
+            return this.container.getService(token, targetClass);
         }
         return this.container.resolve(token);
     }

@@ -2,10 +2,10 @@ import {
     HandleActivity, Active, Task, ExpressionType, IActivity,
     Expression, HandleConfigure, CtxType, InjectAcitityToken, ActivityMetaAccessorToken
 } from '@taskfr/core';
-import { isRegExp, isString, isArray, Express, isFunction, lang, Token, Providers, MetaAccessorToken } from '@ts-ioc/core';
+import { isRegExp, isString, isArray, Express, isFunction, Token, Providers, MetaAccessorToken } from '@ts-ioc/core';
 import { BuidActivityContext } from './BuidActivityContext';
 import minimatch = require('minimatch');
-import { CompilerToken, InjectCompilerToken, ICompiler } from './BuildHandle';
+import { CompilerToken, ICompiler } from './BuildHandle';
 import { BuildActivity } from './BuildActivity';
 import { Inject, Injectable, Refs } from '@ts-ioc/core';
 import { InputDataToken, InjectActivityContextToken, ActivityContextToken } from '@taskfr/core';

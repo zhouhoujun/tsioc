@@ -4,15 +4,12 @@ import { isUndefined, Token } from '@ts-ioc/core';
 import { TransformType, isTransform } from './transformTypes';
 import { InputDataToken, InjectActivityContextToken } from '@taskfr/core';
 import { Injectable, Inject, isArray, isString } from '@ts-ioc/core';
-import { ISourceMapsActivity } from './SourceMapsActivity';
 import { src } from 'vinyl-fs';
 import { Stream } from 'stream';
 import { CompilerActivity, BuildHandleContext } from '../../core';
 
 @Task
 export abstract class StreamActivity extends CompilerActivity {
-
-
     /**
      * stream context.
      *

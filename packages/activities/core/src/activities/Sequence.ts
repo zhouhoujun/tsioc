@@ -45,6 +45,7 @@ export class SequenceActivity extends ControlActivity {
 
     async buildChildren(activity: SequenceActivity, configs: ActivityType<IActivity>[]) {
         let sequence = await Promise.all(configs.map(cfg => this.buildActivity(cfg)));
+        console.log(sequence);
         activity.activities = sequence;
         return activity;
     }

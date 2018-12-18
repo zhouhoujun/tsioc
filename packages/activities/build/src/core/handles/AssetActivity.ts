@@ -1,8 +1,11 @@
 import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
 import { Src } from '@taskfr/core';
 import { ICompiler, ISourcemapsCompiler, ISourceCompiler } from '../BuildHandle';
-import { AssetConfigure, SourceConfigure, SourceCompilerToken, DestConfigure, DestCompilerToken, UglifyConfigure, UglifyCompilerToken, SourceMapsConfigure, SourcemapsCompilerToken } from './AssetConfigure';
-import { lang, isBoolean } from '@ts-ioc/core';
+import {
+    AssetConfigure, SourceConfigure, SourceCompilerToken, DestConfigure, DestCompilerToken,
+    UglifyConfigure, UglifyCompilerToken, SourceMapsConfigure, SourcemapsCompilerToken
+} from './AssetConfigure';
+import { isBoolean } from '@ts-ioc/core';
 import { CompilerActivity } from '../CompilerActivity';
 import { WatchActivity, WatchConfigure, WatchAcitvityToken } from './WatchActivity';
 import { Asset } from '../../decorators';
@@ -68,7 +71,7 @@ export class AssetActivity extends BuildHandleActivity {
                     if (!src) {
                         return null;
                     }
-                    return { src: src, task: SourceCompilerToken };
+                    return { src: src, activity: SourceCompilerToken };
                 });
         }
 
@@ -78,11 +81,11 @@ export class AssetActivity extends BuildHandleActivity {
                 sourcemaps => {
                     if (isBoolean(sourcemaps)) {
                         if (sourcemaps) {
-                            return { sourcemaps: '', task: SourcemapsCompilerToken };
+                            return { sourcemaps: '', activity: SourcemapsCompilerToken };
                         }
                         return null;
                     }
-                    return { sourcemaps: sourcemaps, task: SourcemapsCompilerToken };
+                    return { sourcemaps: sourcemaps, activity: SourcemapsCompilerToken };
                 });
         }
 
@@ -94,7 +97,7 @@ export class AssetActivity extends BuildHandleActivity {
                     if (!dest) {
                         return null;
                     }
-                    return { dest: dest, task: DestCompilerToken };
+                    return { dest: dest, activity: DestCompilerToken };
                 });
         }
 
@@ -104,11 +107,11 @@ export class AssetActivity extends BuildHandleActivity {
                 uglify => {
                     if (isBoolean(uglify)) {
                         if (uglify) {
-                            return { task: UglifyCompilerToken };
+                            return { activity: UglifyCompilerToken };
                         }
                         return null;
                     }
-                    return <UglifyConfigure>{ uglifyOptions: uglify, task: UglifyCompilerToken };
+                    return <UglifyConfigure>{ uglifyOptions: uglify, activity: UglifyCompilerToken };
                 });
         }
 
@@ -118,11 +121,11 @@ export class AssetActivity extends BuildHandleActivity {
                 watch => {
                     if (isBoolean(watch)) {
                         if (watch && this.src) {
-                            return <WatchConfigure>{ src: this.src.getSource(), task: WatchAcitvityToken };
+                            return <WatchConfigure>{ src: this.src.getSource(), activity: WatchAcitvityToken };
                         }
                         return null;
                     }
-                    return <WatchConfigure>{ src: watch, task: WatchAcitvityToken };
+                    return <WatchConfigure>{ src: watch, activity: WatchAcitvityToken };
                 });
         }
     }

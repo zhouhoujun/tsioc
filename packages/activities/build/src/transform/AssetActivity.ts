@@ -1,10 +1,10 @@
 import { Providers, Token } from '@ts-ioc/core';
 import {
     UglifyCompilerToken, AssetActivity, InjectAssetToken, AnnotationCompilerToken,
-    SourceCompilerToken, SourcemapsCompilerToken, TestCompilerToken, ICompiler, BuildHandleContext, BuidActivityContext, AssetConfigure
+    SourceCompilerToken, SourcemapsCompilerToken, TestCompilerToken, ICompiler, BuildHandleContext, BuidActivityContext
 } from '../core';
 import { Asset } from '../decorators';
-import { StreamUglifyActivity, AnnotationActivity, SourceActivity, SourceMapsActivity, MochaTestActivity, TransformContext, TransformContextToken, ITransformConfigure } from './core';
+import { StreamUglifyActivity, AnnotationActivity, SourceActivity, SourceMapsActivity, MochaTestActivity, TransformContext, TransformContextToken } from './core';
 import { IActivity, ActivityContextToken } from '@taskfr/core';
 
 /**

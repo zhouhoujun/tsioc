@@ -3,7 +3,7 @@ import {
     ExpressionToken, ConfigureType, Active, IActivity, InjectAcitityToken, ActivityMetaAccessorToken
 } from '@taskfr/core';
 import { isBoolean, Token, Providers, MetaAccessorToken } from '@ts-ioc/core';
-import { WatchActivity, WatchConfigure } from './handles';
+import { WatchActivity, WatchConfigure, WatchAcitvityToken } from './handles';
 import { BuidActivityContext } from './BuidActivityContext';
 import { BuildHandleConfigure, BuildHandleActivity } from './BuildHandleActivity';
 
@@ -64,6 +64,9 @@ export interface BuildConfigure extends ChainConfigure {
     after?: Active;
 }
 
+/**
+ * build token.
+ */
 export const BuildToken = new InjectAcitityToken<BuildActivity>('build');
 
 /**
@@ -74,7 +77,6 @@ export const BuildToken = new InjectAcitityToken<BuildActivity>('build');
  * @extends {IActivity}
  */
 export interface IBuildActivity extends IActivity {
-
     /**
      * build context.
      *
@@ -89,7 +91,6 @@ export interface IBuildActivity extends IActivity {
      * @memberof BuildActivity
      */
     src: Src;
-
     /**
      * build dist.
      *
@@ -104,7 +105,6 @@ export interface IBuildActivity extends IActivity {
      * @memberof BuildActivity
      */
     watch: WatchActivity;
-
     /**
      * before build body.
      *
@@ -112,7 +112,6 @@ export interface IBuildActivity extends IActivity {
      * @memberof BuildActivity
      */
     before: IActivity;
-
     /**
      * do sth, after build completed.
      *
@@ -134,7 +133,6 @@ export interface IBuildActivity extends IActivity {
     { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken }
 ])
 export class BuildActivity extends ChainActivity implements IBuildActivity {
-
     /**
      * build context.
      *
@@ -142,7 +140,6 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
      * @memberof BuildActivity
      */
     context: BuidActivityContext;
-
     /**
      * build src root.
      *
@@ -150,7 +147,6 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
      * @memberof BuildActivity
      */
     src: Src;
-
     /**
      * build dist.
      *
@@ -165,7 +161,6 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
      * @memberof BuildActivity
      */
     watch: WatchActivity;
-
     /**
      * before build body.
      *
@@ -173,7 +168,6 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
      * @memberof BuildActivity
      */
     before: IActivity;
-
     /**
      * do sth, after build completed.
      *
@@ -192,11 +186,11 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
                 watch => {
                     if (isBoolean(watch)) {
                         if (watch && this.src) {
-                            return <WatchConfigure>{ src: this.src, task: WatchActivity };
+                            return <WatchConfigure>{ src: this.src, activity: WatchAcitvityToken };
                         }
                         return null;
                     }
-                    return <WatchConfigure>{ src: watch, task: WatchActivity };
+                    return <WatchConfigure>{ src: watch, activity: WatchAcitvityToken };
                 });
         }
 

@@ -42,7 +42,6 @@ export interface StreamDestConfigure extends ITransformConfigure, DestConfigure 
  */
 @Task(DestAcitvityToken)
 export class DestActivity extends TransformActivity {
-
     /**
      * source
      *

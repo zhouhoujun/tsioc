@@ -278,7 +278,8 @@ export class WatchActivity extends BuildHandleActivity {
                             chg.removed = chg.removed.concat(fc.removed);
                         }
                     });
-                    return this.container.getService(FileChangedTransToken,
+                    return this.container.getService(
+                        FileChangedTransToken,
                         lang.getClass(this),
                         tk => new InjectTranslatorToken<FileChanged, Promise<string[]>>(tk))
                         .translate(chg);

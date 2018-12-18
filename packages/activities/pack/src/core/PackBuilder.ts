@@ -6,7 +6,7 @@ import { Injectable, lang, isString, isArray, hasClassMetadata } from '@ts-ioc/c
 import { PackActivity } from './PackActivity';
 import {
     CleanActivity, CleanConfigure, TestActivity, TestConfigure, AssetActivity,
-    AssetConfigure, InjectAssetToken, AssetToken, BuildHandleToken, Asset
+    AssetConfigure, InjectAssetToken, BuildHandleToken, Asset, BuildHandleActivity, CleanToken, TestToken, StreamAssetToken, AssetToken
 } from '@taskfr/build';
 import { PackConfigure } from './PackConfigure';
 import { PackBuilderToken } from './IPackActivity';
@@ -34,18 +34,18 @@ export class PackBuilder extends ActivityBuilder {
         await super.buildStrategy(activity, config);
         if (activity instanceof PackActivity) {
             let srcRoot = activity.src = activity.context.to(config.src);
-
             let assets = await Promise.all(lang.keys(config.assets).map(name => {
                 return this.toActivity<Src, AssetActivity, AssetConfigure>(config.assets[name], activity,
                     (act: any) => {
-                        let flag = act instanceof AssetActivity
+                        let flag = act instanceof BuildHandleActivity
                             || act instanceof SequenceActivity
-                            || act instanceof ParallelActivity;
+                            || act instanceof ParallelActivity
                         if (flag) {
                             return true;
-                        } else {
+                        } else if (act) {
                             return hasClassMetadata(Asset, lang.getClass(act));
                         }
+                        return false;
                     },
                     src => {
                         if (isString(src) || isArray(src)) {
@@ -95,12 +95,14 @@ export class PackBuilder extends ActivityBuilder {
                         if (!a) {
                             return null;
                         }
-                        let handle = this.container.resolve(BuildHandleToken);
+                        if (!(a instanceof BuildHandleActivity)) {
+                            let handle = this.container.resolve(BuildHandleToken);
 
-                        handle.compiler = a;
-                        handle.name = 'handle-' + name;
-                        return handle;
-
+                            handle.compiler = a;
+                            handle.name = 'handle-' + name;
+                            return handle;
+                        }
+                        return a;
                     })
             }));
             activity.use(...assets.filter(a => a));
@@ -109,7 +111,7 @@ export class PackBuilder extends ActivityBuilder {
                 activity.clean = await this.toActivity<Src, CleanActivity, CleanConfigure>(config.clean, activity,
                     act => act instanceof CleanActivity,
                     src => {
-                        return <CleanConfigure>{ clean: src, activity: CleanActivity };
+                        return <CleanConfigure>{ clean: src, activity: CleanToken };
                     }
                 );
             }
@@ -121,7 +123,7 @@ export class PackBuilder extends ActivityBuilder {
                         if (!src) {
                             return null;
                         }
-                        return <TestConfigure>{ src: src, activity: TestActivity };
+                        return <TestConfigure>{ src: src, activity: TestToken };
                     }
                 );
             }

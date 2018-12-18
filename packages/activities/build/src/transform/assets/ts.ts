@@ -2,7 +2,7 @@ import { isBoolean, ObjectMap, isString, Providers } from '@ts-ioc/core';
 import * as ts from 'gulp-typescript';
 import { CtxType, OnActivityInit, Task } from '@taskfr/core';
 import { DestActivity, DestAcitvityToken, ITransform, TransformContext, isTransform, ITransformConfigure, TransformActivity } from '../core';
-import { AssetConfigure, CompilerToken, InjectCompilerToken, InjectAssetToken } from '../../core';
+import { AssetConfigure, CompilerToken, InjectAssetToken } from '../../core';
 import { Asset } from '../../decorators';
 import { StreamAssetActivity } from '../AssetActivity';
 
@@ -31,9 +31,6 @@ export interface TsConfigure extends AssetConfigure, ITransformConfigure {
      */
     tsconfig?: CtxType<string | ObjectMap<any>>;
 }
-
-export const TsCompileToken = new InjectAssetToken('ts');
-
 
 @Task
 export class TsCompiler extends TransformActivity {
@@ -78,6 +75,11 @@ export class TsCompiler extends TransformActivity {
     }
 }
 
+
+/**
+ * ts compile token.
+ */
+export const TsCompileToken = new InjectAssetToken('ts');
 
 /**
  * ts file compile.

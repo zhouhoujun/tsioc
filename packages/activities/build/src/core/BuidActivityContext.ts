@@ -37,6 +37,7 @@ export class BuidActivityContext extends NodeActivityContext<string[]> {
     constructor(@Inject(InputDataToken) input: any) {
         super(input);
     }
+
     /**
      * is completed or not.
      *
