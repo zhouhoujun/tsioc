@@ -1,7 +1,7 @@
 import {
     Token, isToken, IContainer, isClass, Inject, ContainerToken,
     lang, isFunction, Injectable, Container, IMetaAccessor, ParamProviders,
-    InjectMetaAccessorToken, MetaAccessorToken, isNullOrUndefined, isBaseType
+    InjectMetaAccessorToken, MetaAccessorToken, isNullOrUndefined, isBaseType, ProviderMap
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import {
@@ -182,7 +182,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
 
     async createInstance(token: Token<T>, config: AnnotationConfigure<T>, target?: any): Promise<T> {
-        if (!token) {
+        if (!isToken(token)) {
             return null;
         }
 
@@ -267,7 +267,11 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             targetClass = lang.getClass(target);
         }
         if (targetClass) {
-            return this.container.getService(token, targetClass);
+            let ist = this.container.getService(token, targetClass);
+            // if (ist instanceof ProviderMap) {
+            //     console.log(token, targetClass)
+            // }
+            return ist;
         }
         return this.container.resolve(token);
     }

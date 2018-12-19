@@ -58,13 +58,11 @@ export class TryCatchActivity extends ChainActivity {
 
     protected async execute(): Promise<void> {
         try {
-            await this.try.run(this.context);
+            await this.execActivity(this.try, this.context);
         } catch (err) {
             await super.run(this.context);
         } finally {
-            if (this.finally) {
-                await this.finally.run(this.context);
-            }
+            await this.execActivity(this.finally, this.context);
         }
     }
 }

@@ -1,4 +1,4 @@
-import { Inject, Express, ContainerToken, IContainer, Token, ProviderType, lang, Providers, MetaAccessorToken } from '@ts-ioc/core';
+import { Inject, Express, ContainerToken, IContainer, Token, ProviderType, lang, Providers, MetaAccessorToken, isFunction } from '@ts-ioc/core';
 import { Task } from '../decorators';
 import { IActivity, ActivityToken, WorkflowId } from './IActivity';
 import { ActivityConfigure, ExpressionType, Expression, ActivityType } from './ActivityConfigure';
@@ -108,6 +108,29 @@ export abstract class Activity implements IActivity, OnActivityInit {
             await this.execute();
         }
         return this.context;
+    }
+
+    /**
+     * execute activity.
+     *
+     * @param {IActivity} activity
+     * @param {IActivityContext} ctx
+     * @returns
+     * @memberof Activity
+     */
+    protected async execActivity(activity: IActivity, ctx: IActivityContext | (() => IActivityContext)): Promise<IActivityContext> {
+        if (!activity) {
+            return null;
+        }
+        if (activity instanceof Activity) {
+            return await activity.run(isFunction(ctx) ? ctx() : ctx);
+        } else {
+            let runner = this.context.getBuilder().resolveRunable(activity, activity.config);
+            if (runner) {
+                return await runner.run(isFunction(ctx) ? ctx() : ctx);
+            }
+        }
+        return null;
     }
 
     /**

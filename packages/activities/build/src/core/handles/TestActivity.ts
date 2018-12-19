@@ -1,49 +1,8 @@
-import { CtxType, ExpressionType, Expression, Task, InjectAcitityToken, IActivity, Active, Src } from '@taskfr/core';
+import { Expression, Task, Src } from '@taskfr/core';
 import { isUndefined } from '@ts-ioc/core';
-import { BuildHandleActivity, BuildHandleConfigure, BuildHandleContext } from '../BuildHandleActivity';
-import { InjectCompilerToken } from '../BuildHandle';
+import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
+import { TestToken, ITestActivity, TestConfigure } from './ITestActivity';
 
-/**
- * test activity configure.
- *
- * @export
- * @interface TestConfigure
- * @extends {SourceConfigure}
- */
-export interface TestConfigure extends BuildHandleConfigure {
-    /**
-     * test source.
-     *
-     * @type {TransformSource}
-     * @memberof ITransformConfigure
-     */
-    src: ExpressionType<Src>;
-
-    /**
-     * set match test file source.
-     *
-     * @type {ExpressionType<boolean>}
-     * @memberof TestConfigure
-     */
-    enable?: ExpressionType<boolean>;
-    /**
-     * test options.
-     *
-     * @type {CtxType<any>}
-     * @memberof TestConfigure
-     */
-    options?: CtxType<any>;
-}
-
-/**
- * test activity token.
- */
-export const TestToken = new InjectAcitityToken<IActivity>('test');
-
-/**
- * test compiler
- */
-export const TestCompilerToken = new InjectCompilerToken(TestToken);
 
 /**
  * test activity.
@@ -53,7 +12,7 @@ export const TestCompilerToken = new InjectCompilerToken(TestToken);
  * @extends {SourceActivity}
  */
 @Task(TestToken)
-export class TestActivity extends BuildHandleActivity {
+export class TestActivity extends BuildHandleActivity implements ITestActivity {
 
     /**
      * test src files
@@ -95,8 +54,8 @@ export class TestActivity extends BuildHandleActivity {
         if (testSrc) {
             ctx.setAsResult(testSrc);
         }
-        if (test !== false && this.compiler) {
-            await this.compiler.run(ctx);
+        if (test !== false) {
+            await this.execActivity(this.compiler, ctx);
         }
     }
 }

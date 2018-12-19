@@ -38,10 +38,10 @@ export class DoWhileActivity extends ControlActivity {
     }
 
     protected async execute(): Promise<any> {
-        await this.body.run(this.context);
+        await this.execActivity(this.body, this.context);
         let condition = await this.context.exec(this, this.condition);
         while (condition) {
-            await this.body.run(this.context);
+            await this.execActivity(this.body, this.context);
             condition = await this.context.exec(this, this.condition);
         }
     }

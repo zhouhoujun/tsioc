@@ -1,54 +1,17 @@
 import {
-    HandleActivity, Active, Task, ExpressionType, IActivity,
-    Expression, HandleConfigure, CtxType, InjectAcitityToken, ActivityMetaAccessorToken
+    HandleActivity, Task, IActivity,
+    Expression, ActivityMetaAccessorToken
 } from '@taskfr/core';
 import { isRegExp, isString, isArray, Express, isFunction, Token, Providers, MetaAccessorToken } from '@ts-ioc/core';
 import { BuidActivityContext } from './BuidActivityContext';
 import minimatch = require('minimatch');
-import { CompilerToken, ICompiler } from './BuildHandle';
+import { CompilerToken, ICompiler } from './ICompiler';
 import { BuildActivity } from './BuildActivity';
 import { Inject, Injectable, Refs } from '@ts-ioc/core';
 import { InputDataToken, InjectActivityContextToken, ActivityContextToken } from '@taskfr/core';
 import { NodeActivityContext } from './NodeActivity';
-
-
-/**
- * handle config
- *
- * @export
- * @interface BuildHandleConfigure
- * @extends {ActivityConfigure}
- */
-export interface BuildHandleConfigure extends HandleConfigure {
-    /**
-     * file filter
-     *
-     * @type {ExpressionType<string | RegExp| Express<string, boolean>>}
-     * @memberof BuildHandleConfigure
-     */
-    test?: ExpressionType<string | RegExp | Express<string, boolean>>;
-
-    /**
-     * compiler
-     *
-     * @type {Active}
-     * @memberof BuildHandleConfigure
-     */
-    compiler?: Active;
-
-    /**
-     * sub dist
-     *
-     * @type {CtxType<string>}
-     * @memberof BuildHandleConfigure
-     */
-    subDist?: CtxType<string>;
-}
-
-/**
- * build handle token.
- */
-export const BuildHandleToken = new InjectAcitityToken<BuildHandleActivity>('build-handle');
+import { BuildHandleToken, BuildHandleConfigure } from './BuildHandle';
+import { CompilerActivity } from './CompilerActivity';
 
 /**
  * build handle activity.
@@ -60,7 +23,8 @@ export const BuildHandleToken = new InjectAcitityToken<BuildHandleActivity>('bui
  */
 @Task(BuildHandleToken)
 @Providers([
-    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken }
+    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken },
+    { provide: CompilerToken, useClass: CompilerActivity }
 ])
 export class BuildHandleActivity extends HandleActivity {
 
@@ -150,7 +114,7 @@ export class BuildHandleActivity extends HandleActivity {
      * @memberof BuildHandleActivity
      */
     protected async compile(ctx: BuildHandleContext<any>) {
-        await this.compiler.run(ctx);
+        await this.execActivity(this.compiler, ctx);
     }
 
     /**

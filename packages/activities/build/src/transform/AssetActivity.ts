@@ -1,16 +1,12 @@
 import { Providers, Token } from '@ts-ioc/core';
 import {
-    UglifyCompilerToken, AssetActivity, InjectAssetToken, AnnotationCompilerToken,
+    UglifyCompilerToken, AssetActivity, AnnotationCompilerToken,
     SourceCompilerToken, SourcemapsCompilerToken, TestCompilerToken, ICompiler, BuildHandleContext, BuidActivityContext
 } from '../core';
 import { Asset } from '../decorators';
 import { StreamUglifyActivity, AnnotationActivity, SourceActivity, SourceMapsActivity, MochaTestActivity, TransformContext, TransformContextToken } from './core';
 import { IActivity, ActivityContextToken } from '@taskfr/core';
-
-/**
- *  stream asset token.
- */
-export const StreamAssetToken = new InjectAssetToken('stream-asset');
+import { StreamAssetToken } from './StreamAssetConfigure';
 
 
 /**
@@ -85,9 +81,7 @@ export class StreamAssetActivity extends AssetActivity {
      * @memberof AssetActivity
      */
     protected async execUglify(ctx: TransformContext) {
-        if (this.uglify) {
-            await this.uglify.run(ctx);
-        }
+        await this.execActivity(this.uglify, ctx);
     }
 
     /**
@@ -100,10 +94,6 @@ export class StreamAssetActivity extends AssetActivity {
      * @memberof AssetActivity
      */
     protected async execDest(ds: ICompiler, ctx: TransformContext) {
-        if (!ds) {
-            return;
-        }
-        await ds.run(ctx);
+        await this.execActivity(ds, ctx);
     }
-
 }

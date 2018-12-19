@@ -1,7 +1,9 @@
 import { ITaskDecorator, createTaskDecorator, ActivityBuilderToken } from '@taskfr/core';
-import { AssetConfigure } from '../core/handles/AssetConfigure';
-import { AssetToken } from '../core/handles/IAssetActivity';
-import { StreamAssetConfigure } from '../transform/StreamAssetConfigure';
+import { AssetToken, AssetConfigure } from '../core/handles/IAssetActivity';
+import { StreamAssetConfigure, StreamAssetToken } from '../transform/StreamAssetConfigure';
+import { isArray } from '@ts-ioc/core';
+
+
 /**
  * asset task metadata.
  *
@@ -18,4 +20,4 @@ export interface AssetMetadata extends AssetConfigure, StreamAssetConfigure {
  *
  * @AssetTask
  */
-export const Asset: ITaskDecorator<AssetMetadata> = createTaskDecorator<AssetMetadata>('Asset', ActivityBuilderToken, AssetToken, 'AssetActivity');
+export const Asset: ITaskDecorator<AssetMetadata> = createTaskDecorator<AssetMetadata>('Asset', ActivityBuilderToken, (meta) => isArray(meta.pipes) ? StreamAssetToken : AssetToken, 'AssetActivity');

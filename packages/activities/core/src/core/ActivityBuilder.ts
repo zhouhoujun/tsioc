@@ -1,5 +1,5 @@
 import { ActivityBuilderToken, IActivityBuilder } from './IActivityBuilder';
-import { isFunction, isString, Token, Express, isToken, Injectable, Providers, MetaAccessorToken, isMetadataObject, isAnnotationMetadata } from '@ts-ioc/core';
+import { isFunction, isString, Token, Express, isToken, Injectable, Providers, MetaAccessorToken } from '@ts-ioc/core';
 import { AnnotationBuilder } from '@ts-ioc/bootstrap';
 import { IActivity, ActivityInstance } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
@@ -38,7 +38,14 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
         }
         if (!(instance instanceof Activity)) {
             let boot = this.getMetaAccessor(token, config).getBootToken(config);
-            instance = await super.createInstance(boot, config, target) as ActivityInstance
+            if (isToken(boot)) {
+                instance = await super.createInstance(boot, config, target) as ActivityInstance;
+            } else {
+                instance = null;
+            }
+        }
+        if (!(instance instanceof Activity)) {
+            instance = null;
         }
 
         if (!instance) {
@@ -83,7 +90,7 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
     /**
      * run annotation instance.
      *
-     * @param {T} instance
+     * @param {IActivity} instance
      * @param {AnnotationConfigure<T>} [config]
      * @param {Token<T>} [token]
      * @returns {Promise<Runnable<T>>}

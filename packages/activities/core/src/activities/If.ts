@@ -59,11 +59,11 @@ export class IfActivity extends ControlActivity {
     }
 
     protected async execIf(): Promise<void> {
-        await this.ifBody.run(this.context);
+        await this.execActivity(this.ifBody, this.context)
     }
 
     protected async execElse(): Promise<void> {
-        await this.elseBody.run(this.context);
+        await this.execActivity(this.elseBody, this.context);
     }
 
 }

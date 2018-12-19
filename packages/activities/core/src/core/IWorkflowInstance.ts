@@ -1,5 +1,3 @@
-import { ActivityConfigure } from './ActivityConfigure';
-import { Token } from '@ts-ioc/core';
 import { IActivityResult, IActivity } from './IActivity';
 import { Observable } from 'rxjs';
 import { Joinpoint } from '@ts-ioc/aop';

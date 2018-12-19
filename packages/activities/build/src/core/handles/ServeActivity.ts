@@ -86,8 +86,6 @@ export class ServeActivity extends BuildHandleActivity {
     }
 
     protected async compile(ctx: BuildHandleContext<any>): Promise<void> {
-        if (this.compiler) {
-            await this.compiler.run(ctx);
-        }
+        await this.execActivity(this.compiler, ctx);
     }
 }

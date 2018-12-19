@@ -5,7 +5,6 @@ import { IWorkflowInstance, WorkflowInstanceToken, RunState } from './IWorkflowI
 import { BehaviorSubject, Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { Joinpoint } from '@ts-ioc/aop';
-import { ActivityContext } from './ActivityContext';
 import { IActivityContextResult } from './IActivityContext';
 import { Service } from '@ts-ioc/bootstrap';
 
@@ -56,8 +55,7 @@ export class WorkflowInstance<T extends IActivity> extends Service<T> implements
     }
 
     async start(data?: any): Promise<IActivityContextResult<T>> {
-        let ctx = data instanceof ActivityContext ? data : this.instance.createContext(data);
-        return await this.instance.run(ctx)
+        return await this.instance.run(data)
             .then(ctx => {
                 this.state = RunState.complete;
                 this.stateChanged.next(this.state);

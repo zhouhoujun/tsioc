@@ -1,29 +1,7 @@
-import { Src, InjectAcitityToken, Task, Expression, ExpressionType } from '@taskfr/core';
-import { BuildHandleActivity, BuildHandleConfigure, BuildHandleContext } from '../BuildHandleActivity';
+import { Src, Task, Expression } from '@taskfr/core';
+import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
+import { CleanToken, CleanConfigure } from './ICleanActivity';
 
-
-
-/**
- * clean task token.
- */
-export const CleanToken = new InjectAcitityToken<CleanActivity>('clean');
-
-/**
- * clean configure
- *
- * @export
- * @interface ICleanConfigure
- * @extends {ActivityConfigure}
- */
-export interface CleanConfigure extends BuildHandleConfigure {
-    /**
-     * clean match.
-     *
-     * @type {ExpressionType<Src>}
-     * @memberof ICleanConfigure
-     */
-    clean: ExpressionType<Src>;
-}
 
 
 /**

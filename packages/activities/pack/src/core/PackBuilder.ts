@@ -6,7 +6,8 @@ import { Injectable, lang, isString, isArray, hasClassMetadata } from '@ts-ioc/c
 import { PackActivity } from './PackActivity';
 import {
     CleanActivity, CleanConfigure, TestActivity, TestConfigure, AssetActivity,
-    AssetConfigure, InjectAssetToken, BuildHandleToken, Asset, BuildHandleActivity, CleanToken, TestToken, StreamAssetToken, AssetToken
+    AssetConfigure, InjectAssetToken, BuildHandleToken, Asset,
+    BuildHandleActivity, CleanToken, TestToken, AssetToken, StreamAssetToken, StreamAssetConfigure
 } from '@taskfr/build';
 import { PackConfigure } from './PackConfigure';
 import { PackBuilderToken } from './IPackActivity';
@@ -74,7 +75,7 @@ export class PackBuilder extends ActivityBuilder {
                             return parcfg;
                         }
 
-                        let assCfg = cfg as AssetConfigure;
+                        let assCfg = cfg as StreamAssetConfigure;
                         if (!assCfg.activity && !assCfg.task) {
                             assCfg.task = new InjectAssetToken(name);
                         }
@@ -83,7 +84,7 @@ export class PackBuilder extends ActivityBuilder {
                             assCfg.task = new InjectAssetToken(assCfg.task);
                         }
                         if (!this.container.has(assCfg.task)) {
-                            assCfg.task = AssetToken;
+                            assCfg.task = isArray(assCfg.pipes) ? StreamAssetToken : AssetToken;
                         }
 
                         if (srcRoot && !assCfg.src) {
@@ -105,6 +106,7 @@ export class PackBuilder extends ActivityBuilder {
                         return a;
                     })
             }));
+
             activity.use(...assets.filter(a => a));
 
             if (config.clean) {
@@ -128,7 +130,6 @@ export class PackBuilder extends ActivityBuilder {
                 );
             }
         }
-
         return activity;
     }
 }

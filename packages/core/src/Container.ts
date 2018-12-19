@@ -220,7 +220,7 @@ export class Container implements IContainer {
 
 
             defToken = defToken === null ? null : (defToken || token);
-            providers = prds.concat(providers);
+            prds = prds.concat(providers);
             return this.getRefService(
                 [
                     ...tokens,
@@ -229,7 +229,7 @@ export class Container implements IContainer {
                 ],
                 target,
                 defToken,
-                ...providers);
+                ...prds);
         } else {
             return this.resolveFirst(isArray(token) ? token : [token], ...[target, toRefToken as ParamProviders, defaultToken as ParamProviders, ...providers].filter(a => a));
         }
@@ -301,7 +301,7 @@ export class Container implements IContainer {
         }
         // resolve private first.
         if (isClass(target)) {
-            let pdrmap = this.get(new InjectReference(ProviderMap, target));
+            let pdrmap = this.resolve(new InjectReference(ProviderMap, target));
             if (pdrmap && pdrmap.hasRegister(tk)) {
                 return pdrmap.resolve(tk, ...providers);
             }
@@ -559,7 +559,7 @@ export class Container implements IContainer {
         } else {
             type = this.getTokenImpl(token);
         }
-        if (!isFunction(type)) {
+        if (!isClass(type)) {
             express(token, [token]);
         }
         lang.forInClassChain(type, ty => {

@@ -139,6 +139,23 @@ export class MetaAccessor implements IMetaAccessor<any> {
         }
     }
 
+    /**
+     * get module boot token from module configure.
+     *
+     * @param {IAnnotationMetadata<any>} config
+     * @param {IContainer} [container]
+     * @returns {Token<any>}
+     * @memberof ModuelValidate
+     */
+    getBootToken(config: IAnnotationMetadata<any>, container?: IContainer): Token<any> {
+        let token = this.getBootTokenInConfig(config);
+        if (this.validateToken(token, container)) {
+            return token
+        } else {
+            return null;
+        }
+    }
+
     protected validateToken(token: Token<any>, container?: IContainer): boolean {
         if (!isToken(token)) {
             return false;
@@ -156,23 +173,6 @@ export class MetaAccessor implements IMetaAccessor<any> {
 
     protected getTokenInConfig(config: IAnnotationMetadata<any>): Token<any> {
         return config.token || config.type;
-    }
-
-    /**
-     * get module boot token from module configure.
-     *
-     * @param {IAnnotationMetadata<any>} config
-     * @param {IContainer} [container]
-     * @returns {Token<any>}
-     * @memberof ModuelValidate
-     */
-    getBootToken(config: IAnnotationMetadata<any>, container?: IContainer): Token<any> {
-        let token = this.getBootTokenInConfig(config);
-        if (this.validateToken(token, container)) {
-            return token
-        } else {
-            return null;
-        }
     }
 
     protected getBootTokenInConfig(config: IAnnotationMetadata<any>) {

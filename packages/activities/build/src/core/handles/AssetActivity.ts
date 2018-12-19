@@ -1,15 +1,15 @@
 import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
 import { Src } from '@taskfr/core';
-import { ICompiler, ISourcemapsCompiler, ISourceCompiler } from '../BuildHandle';
+import { ICompiler, ISourcemapsCompiler, ISourceCompiler } from '../ICompiler';
 import {
     AssetConfigure, SourceConfigure, SourceCompilerToken, DestConfigure, DestCompilerToken,
-    UglifyConfigure, UglifyCompilerToken, SourceMapsConfigure, SourcemapsCompilerToken
-} from './AssetConfigure';
+    UglifyConfigure, UglifyCompilerToken, SourceMapsConfigure, SourcemapsCompilerToken, AssetToken
+} from './IAssetActivity';
 import { isBoolean } from '@ts-ioc/core';
 import { CompilerActivity } from '../CompilerActivity';
-import { WatchActivity, WatchConfigure, WatchAcitvityToken } from './WatchActivity';
+import { IWatchActivity, WatchConfigure, WatchAcitvityToken } from './IWatchActivity';
 import { Asset } from '../../decorators';
-import { AssetToken } from './IAssetActivity';
+import { WatchActivity } from './WatchActivity';
 
 @Asset(AssetToken)
 export class AssetActivity extends BuildHandleActivity {
@@ -56,7 +56,7 @@ export class AssetActivity extends BuildHandleActivity {
      * @type {WatchActivity}
      * @memberof AssetActivity
      */
-    watch: WatchActivity;
+    watch: IWatchActivity;
 
     async onActivityInit(config: AssetConfigure) {
         await super.onActivityInit(config);
@@ -141,22 +141,18 @@ export class AssetActivity extends BuildHandleActivity {
 
     protected async execWatch(ctx: BuildHandleContext<any>) {
         if (!(this.watch && ctx.target === this.watch)) {
-            if (this.src) {
-                await this.src.run(ctx);
-            }
-            if (this.watch) {
+            await this.execActivity(this.src, ctx);
+            await this.execActivity(this.watch, () => {
                 this.watch.body = this;
                 let watchCtx = this.createContext();
                 watchCtx.target = this.watch;
-                this.watch.run(watchCtx);
-            }
+                return watchCtx;
+            });
         }
     }
 
     protected async execAnnotation(ctx: BuildHandleContext<any>) {
-        if (this.annotation) {
-            await this.annotation.run(ctx);
-        }
+        await this.execActivity(this.annotation, ctx);
     }
 
     protected async execSourcemapsInit(ctx: BuildHandleContext<any>) {
@@ -167,7 +163,7 @@ export class AssetActivity extends BuildHandleActivity {
     }
 
     protected async execCompiler(ctx: BuildHandleContext<any>) {
-        await this.compiler.run(ctx);
+        await this.execActivity(this.compiler, ctx);
     }
 
     /**
@@ -179,9 +175,7 @@ export class AssetActivity extends BuildHandleActivity {
      * @memberof AssetActivity
      */
     protected async execUglify(ctx: BuildHandleContext<any>) {
-        if (this.uglify) {
-            await this.uglify.run(ctx);
-        }
+        await this.execActivity(this.uglify, ctx);
     }
 
     /**
@@ -194,9 +188,6 @@ export class AssetActivity extends BuildHandleActivity {
      * @memberof AssetActivity
      */
     protected async execDest(ds: ICompiler, ctx: BuildHandleContext<any>) {
-        if (!ds) {
-            return;
-        }
-        await ds.run(ctx);
+        await this.execActivity(ds, ctx);
     }
 }

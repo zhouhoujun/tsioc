@@ -70,9 +70,7 @@ export abstract class ContextActivity extends Activity {
      */
     protected async executeBefore(): Promise<void> {
         let dep = this.context.getContainer().getRefService(InjectBeforeActivity, lang.getClass(this));
-        if (dep) {
-            await dep.run(this.context);
-        }
+        await this.execActivity(dep, this.context);
     }
 
     /**
@@ -93,8 +91,6 @@ export abstract class ContextActivity extends Activity {
      */
     protected async executeAfter(): Promise<void> {
         let dep = this.context.getContainer().getRefService(InjectAfterActivity, lang.getClass(this));
-        if (dep) {
-            await dep.run(this.context);
-        }
+        await this.execActivity(dep, this.context);
     }
 }

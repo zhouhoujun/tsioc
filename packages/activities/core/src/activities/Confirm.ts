@@ -33,7 +33,7 @@ export class ConfirmActivity extends ControlActivity {
      */
     body: IActivity;
 
-    async onActivityInit(config: ConfirmConfigure): Promise<any> {
+    async onActivityInit(config: ConfirmConfigure): Promise<void> {
         await super.onActivityInit(config);
         this.confirm = await this.toExpression(config.confirm, this);
         this.body = await this.buildActivity(config.body);
@@ -42,7 +42,7 @@ export class ConfirmActivity extends ControlActivity {
     protected async execute() {
         let confirm = this.context.exec(this, this.confirm);
         if (confirm) {
-            this.body.run(this.context);
+            this.execActivity(this.body, this.context);
         }
     }
 }

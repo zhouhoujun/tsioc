@@ -59,8 +59,8 @@ export class TaskContainer implements ITaskContainer {
                     .register(WorkflowModuleInjector);
                 let chain = container.getBuilder().getInjectorChain(container);
                 chain.first(container.resolve(WorkflowModuleInjectorToken));
+            });
 
-            })
             this.builder
                 .use(AopModule)
                 .use(LogModule)

@@ -1,19 +1,7 @@
 import { BuildHandleContext } from './BuildHandleActivity';
-import { Task, ActivityConfigure } from '@taskfr/core';
-import { CompilerToken } from './BuildHandle';
+import { Task } from '@taskfr/core';
 import { NodeActivity } from './NodeActivity';
 
-
-/**
- * compiler configure.
- *
- * @export
- * @interface CompilerConfigure
- * @extends {ActivityConfigure}
- */
-export interface CompilerConfigure extends ActivityConfigure {
-
-}
 
 /**
  * compiler activity.
@@ -23,7 +11,7 @@ export interface CompilerConfigure extends ActivityConfigure {
  * @class CompilerActivity
  * @extends {NodeActivity}
  */
-@Task(CompilerToken)
+@Task
 export abstract class CompilerActivity extends NodeActivity {
 
     /**

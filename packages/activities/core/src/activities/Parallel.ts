@@ -1,5 +1,5 @@
 import { Task } from '../decorators';
-import { IActivity, InjectAcitityToken, ParallelConfigure, ActivityType, } from '../core';
+import { IActivity, InjectAcitityToken, ParallelConfigure, ActivityType } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 
@@ -58,7 +58,6 @@ export class ParallelActivity extends ControlActivity {
      * @memberof ParallelActivity
      */
     protected async execute(): Promise<void> {
-        await Promise.all(this.activities.map(task => task.run(this.context)));
+        await Promise.all(this.activities.map(act => this.execActivity(act, this.context)));
     }
-
 }

@@ -70,7 +70,7 @@ export class DestActivity extends TransformActivity {
     protected async afterPipe(): Promise<void> {
         await super.afterPipe();
         if (this.context.sourceMaps instanceof SourceMapsActivity) {
-            await this.context.sourceMaps.run(this.context);
+            await this.execActivity(this.context.sourceMaps, this.context);
         }
         await this.writeStream(this.context);
     }

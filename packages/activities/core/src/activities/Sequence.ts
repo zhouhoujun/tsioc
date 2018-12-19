@@ -1,5 +1,5 @@
 import { Task } from '../decorators';
-import { IActivity, InjectAcitityToken, SequenceConfigure, ActivityType, Activity } from '../core';
+import { IActivity, InjectAcitityToken, SequenceConfigure, ActivityType } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 /**
@@ -45,21 +45,14 @@ export class SequenceActivity extends ControlActivity {
 
     async buildChildren(activity: SequenceActivity, configs: ActivityType<IActivity>[]) {
         let sequence = await Promise.all(configs.map(cfg => this.buildActivity(cfg)));
-        console.log(sequence);
         activity.activities = sequence;
         return activity;
     }
 
     protected async execute(): Promise<void> {
         let execPromise = Promise.resolve(this.context);
-        this.activities.forEach(task => {
-            execPromise = execPromise.then(ctx => {
-                if (task instanceof Activity) {
-                    return task.run(ctx);
-                } else {
-                    return this.context.getBuilder().resolveRunable(task).run(ctx);
-                }
-            });
+        this.activities.forEach(act => {
+            execPromise = execPromise.then(ctx => this.execActivity(act, ctx));
         });
         await execPromise;
     }

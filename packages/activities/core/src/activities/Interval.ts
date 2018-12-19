@@ -43,7 +43,7 @@ export class IntervalActivity extends ControlActivity {
     protected async execute(): Promise<void> {
         let interval = await this.context.exec(this, this.interval);
         setInterval(() => {
-            this.body.run(this.context);
+            this.execActivity(this.body, this.context);
         }, interval);
     }
 }

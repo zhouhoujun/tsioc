@@ -5,7 +5,7 @@ import {
 import { isBoolean, Token, Providers, MetaAccessorToken } from '@ts-ioc/core';
 import { WatchActivity, WatchConfigure, WatchAcitvityToken } from './handles';
 import { BuidActivityContext } from './BuidActivityContext';
-import { BuildHandleConfigure, BuildHandleActivity } from './BuildHandleActivity';
+import { BuildHandleConfigure, IBuildHandleActivity } from './BuildHandle';
 
 /**
  * builder configure.
@@ -37,7 +37,7 @@ export interface BuildConfigure extends ChainConfigure {
      * @type {(BuildHandleConfigure | Token<BuildHandleActivity>)[];}
      * @memberof ChainConfigure
      */
-    handles?: (BuildHandleConfigure | Token<BuildHandleActivity>)[];
+    handles?: (BuildHandleConfigure | Token<IBuildHandleActivity>)[];
 
     /**
      * watch
@@ -211,12 +211,12 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
      * @memberof BuildActivity
      */
     protected async execOnce(): Promise<void> {
-        if (this.watch) {
+        await this.execActivity(this.watch, () => {
             this.watch.body = this;
             let watchCtx = this.createContext();
             watchCtx.target = this.watch;
-            this.watch.run(watchCtx);
-        }
+            return watchCtx;
+        });
         await this.getInputFiles(this.context);
     }
 
@@ -254,15 +254,11 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
     }
 
     protected async beforeBuild() {
-        if (this.before) {
-            await this.before.run(this.context);
-        }
+        await this.execActivity(this.before, this.context);
     }
 
     protected async afterBuild() {
-        if (this.after) {
-            await this.after.run(this.context);
-        }
+        await this.execActivity(this.after, this.context);
     }
 
     protected verifyCtx(ctx?: any) {

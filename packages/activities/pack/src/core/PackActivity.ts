@@ -37,26 +37,17 @@ export class PackActivity extends BuildActivity implements IPackActivity {
      * @memberof PackActivity
      */
     protected async execOnce(): Promise<void> {
-        if (this.clean) {
-            await this.clean.run(this.context);
-        }
+        await this.execActivity(this.clean, this.context);
         await super.execOnce();
     }
 
     protected async beforeBuild() {
-        if (this.test) {
-            await this.test.run(this.context);
-        }
-        if (this.before) {
-            await this.before.run(this.context);
-        }
+        await this.execActivity(this.test, this.context);
+        await this.execActivity(this.before, this.context);
     }
 
     protected async afterBuild() {
         await super.afterBuild();
-        if (this.serve) {
-            await this.serve.run(this.context);
-        }
-
+        await this.execActivity(this.serve, this.context);
     }
 }

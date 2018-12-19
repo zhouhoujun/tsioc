@@ -50,9 +50,7 @@ export class DelayActivity extends ControlActivity implements OnActivityInit {
             clearTimeout(timmer);
         }, delay);
         await defer.promise;
-        if (this.body) {
-            await this.body.run(this.context);
-        }
+        await this.execActivity(this.body, this.context);
     }
 }
 

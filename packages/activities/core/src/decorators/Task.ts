@@ -1,6 +1,6 @@
 import {
     isString, isObject, createClassDecorator, MetadataExtends, MetadataAdapter,
-    isClass, ITypeDecorator, Token, Registration, isToken, isUndefined, lang, getClassName
+    isClass, ITypeDecorator, Token, Registration, isToken, isUndefined, lang, getClassName, isFunction
 } from '@ts-ioc/core';
 import { ActivityMetadata } from '../metadatas/ActivityMetadata';
 import { IActivityBuilder, ActivityBuilderToken } from '../core/IActivityBuilder';
@@ -74,7 +74,7 @@ export interface ITaskDecorator<T extends ActivityMetadata> extends ITypeDecorat
 export function createTaskDecorator<T extends ActivityMetadata>(
     taskType: string,
     defaultAnnoBuilder?: Token<IActivityBuilder>,
-    defaultBoot?: Token<IActivity>,
+    defaultBoot?: Token<IActivity> | ((meta: T) => Token<IActivity>),
     baseClassName?: string,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): ITaskDecorator<T> {
@@ -141,8 +141,15 @@ export function createTaskDecorator<T extends ActivityMetadata>(
                 metadata.provide = metadata.name;
             }
 
-            if (defaultBoot && !metadata.activity && !metadata.task && !lang.isExtendsClass(metadata.type, ty => getClassName(ty) === (baseClassName || 'Activity'))) {
-                metadata.bootstrap = defaultBoot;
+            if (defaultBoot
+                && !metadata.activity
+                && !metadata.task
+                && !lang.isExtendsClass(metadata.type, ty => getClassName(ty) === (baseClassName || 'Activity'))) {
+                if (isToken(defaultBoot)) {
+                    metadata.bootstrap = defaultBoot;
+                } else if (isFunction(defaultBoot)) {
+                    metadata.bootstrap = defaultBoot(metadata as T);
+                }
             }
 
             metadata.decorType = taskType;
