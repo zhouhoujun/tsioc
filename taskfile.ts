@@ -1,5 +1,5 @@
 import { TaskContainer } from '@taskfr/core';
-import { INodeActivityContext, Asset, BuildModule, AssetActivity, ShellModule, TransformModule } from '@taskfr/build';
+import { INodeActivityContext, Asset, BuildModule, AssetActivity, ShellModule, TransformModule, StreamAssetToken } from '@taskfr/build';
 import * as through from 'through2';
 const inplace = require('json-in-place')
 
@@ -45,18 +45,18 @@ let versionSetting = (ctx: INodeActivityContext) => {
         {
             src: ['packages/**/package.json', '!packages/activities/**/package.json', '!node_modules/**/package.json'],
             pipes: [
-                (act: AssetActivity) => versionSetting(act.context)
+                act => versionSetting(act.context)
             ],
             dest: 'packages',
-            activity: AssetActivity
+            activity: StreamAssetToken
         },
         {
             src: ['package.json'],
             pipes: [
-                (act: AssetActivity) => versionSetting(act.context)
+                act => versionSetting(act.context)
             ],
             dest: '.',
-            activity: AssetActivity
+            activity: StreamAssetToken
         },
         {
             shell: (ctx: INodeActivityContext) => {

@@ -56,7 +56,7 @@ const builtins = require('rollup-plugin-node-builtins');
         (act) => rename(act.config.data.name)
     ]
 })
-export class PfServerRollup extends AssetActivity {
+export class PfServerRollup {
 }
 
 @Pack({

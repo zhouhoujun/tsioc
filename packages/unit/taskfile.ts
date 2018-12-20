@@ -1,7 +1,7 @@
 
 import { TaskContainer } from '@taskfr/core';
 import { IActivity } from '@taskfr/core';
-import { Asset, AssetActivity, CleanToken, TsCompile } from '@taskfr/build';
+import { Asset, AssetActivity, CleanToken, TsCompile, StreamAssetToken } from '@taskfr/build';
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -48,7 +48,7 @@ const rename = require('gulp-rename');
         (act) => rename(act.config.data.name)
     ]
 })
-export class BootRollup extends AssetActivity {
+export class BootRollup {
 }
 
 @Pack({
@@ -69,7 +69,7 @@ export class BootRollup extends AssetActivity {
                     pipes: [
                         () => rename('unit.umd.min.js')
                     ],
-                    task: AssetActivity
+                    activity: StreamAssetToken
                 }
             ]
         },
