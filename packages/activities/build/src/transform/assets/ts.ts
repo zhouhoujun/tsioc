@@ -1,8 +1,14 @@
 import { isBoolean, ObjectMap, isString, Providers } from '@ts-ioc/core';
 import * as ts from 'gulp-typescript';
 import { CtxType, OnActivityInit, Task } from '@taskfr/core';
-import { DestActivity, DestAcitvityToken, ITransform, TransformContext, isTransform, ITransformConfigure, TransformActivity } from '../core';
-import { AssetConfigure, CompilerToken, InjectAssetToken } from '../../core';
+import {
+    ITransform, TransformContext,
+    isTransform, ITransformConfigure, TransformActivity
+} from '../core';
+import {
+    AssetConfigure, CompilerToken, InjectAssetToken,
+    DestCompilerToken, CompilerActivity, DestConfigure, IDestCompiler
+} from '../../core';
 import { Asset } from '../../decorators';
 import { StreamAssetActivity } from '../AssetActivity';
 
@@ -34,7 +40,6 @@ export interface TsConfigure extends AssetConfigure, ITransformConfigure {
 
 @Task
 export class TsCompiler extends TransformActivity {
-
     /**
      * execute ts pipe.
      *
@@ -54,7 +59,7 @@ export class TsCompiler extends TransformActivity {
      */
     protected async beforePipe(): Promise<void> {
         await super.beforePipe();
-        this.context.result = await this.executePipe(this.context.result, this.getTsCompilePipe());
+        this.context.result = await this.executePipe(this.context.result, this.getTsCompilePipe(this.context.config));
     }
     /**
      * get ts configue compile.
@@ -63,8 +68,7 @@ export class TsCompiler extends TransformActivity {
      * @returns {ITransform}
      * @memberof TsCompile
      */
-    private getTsCompilePipe(): ITransform {
-        let cfg = this.config as TsConfigure;
+    private getTsCompilePipe(cfg: TsConfigure): ITransform {
         let tsconfig = this.context.to(cfg.tsconfig || './tsconfig.json');
         if (isString(tsconfig)) {
             let tsProject = ts.createProject(this.context.toRootPath(tsconfig));
@@ -98,10 +102,10 @@ export class TsCompile extends StreamAssetActivity implements OnActivityInit {
     /**
      * tds dest.
      *
-     * @type {(DestActivity | boolean)}
+     * @type {DestActivity}
      * @memberof TsCompile
      */
-    tdsDest: DestActivity | boolean;
+    tdsDest: IDestCompiler;
 
     /**
      * on task init.
@@ -114,14 +118,23 @@ export class TsCompile extends StreamAssetActivity implements OnActivityInit {
             cfg.sourcemaps = true;
         }
         await super.onActivityInit(cfg);
-        let tds = this.context.to(cfg.tds);
-        if (tds !== false) {
-            if (isString(tds)) {
-                this.tdsDest = this.container.resolve(DestAcitvityToken);
-                this.tdsDest.dest = tds;
-            } else {
-                this.tdsDest = true;
-            }
+        if (cfg.tds !== false) {
+            cfg.tds = true;
+        }
+        if (cfg.tds) {
+            let dist = this.dest ? this.dest.getDest() : '';
+            this.tdsDest = await this.toActivity<string | boolean, IDestCompiler, DestConfigure>(cfg.tds,
+                act => act instanceof CompilerActivity,
+                dest => {
+                    if (isBoolean(dest)) {
+                        if (dest && dist) {
+                            return { dest: dist, activity: DestCompilerToken };
+                        }
+                    } else if (isString(dest)) {
+                        return { dest: dest, activity: DestCompilerToken };
+                    }
+                    return null;
+                });
         }
     }
 
@@ -147,24 +160,23 @@ export class TsCompile extends StreamAssetActivity implements OnActivityInit {
      * @returns
      * @memberof TsCompile
      */
-    protected async execDest(ds: DestActivity, ctx: TransformContext) {
-        if (!ds || !this.context.result) {
+    protected async execDest(ctx: TransformContext) {
+        if (!ctx.result) {
             return;
         }
 
-        let stream = this.context.result;
-        if (this.tdsDest && isTransform(stream.dts)) {
-            let dts = isBoolean(this.tdsDest) ? ds : (this.tdsDest || ds);
-            await dts.run(this.createContext(stream.dts));
+        let stream = ctx.result;
+        if (isTransform(stream.dts)) {
+            await this.execActivity(this.tdsDest, this.createContext(stream.dts));
         }
         if (isTransform(stream.js)) {
             let jsCtx = this.createContext(stream.js) as TransformContext;
-            jsCtx.sourceMaps = this.context.sourceMaps;
-            await ds.run(jsCtx);
+            await this.execActivity(this.sourcemaps, jsCtx);
+            await this.execActivity(this.dest, jsCtx);
         } else if (isTransform(stream)) {
             let newCtx = this.createContext(stream) as TransformContext;
-            newCtx.sourceMaps = this.context.sourceMaps;
-            await ds.run(newCtx);
+            await this.execActivity(this.sourcemaps, newCtx);
+            await this.execActivity(this.dest, newCtx);
         }
     }
 }

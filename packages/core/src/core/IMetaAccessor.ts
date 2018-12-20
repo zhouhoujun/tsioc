@@ -93,6 +93,7 @@ export interface IMetaAccessor<T> {
      *
      * @param {AnnotationConfigure<any>} config
      * @returns {Token<any>}
+     * @param {IContainer} [container]  vaild container.
      * @memberof IMetadataManager
      */
     getToken(config: IAnnotationMetadata<any>, container?: IContainer): Token<any>;
@@ -101,7 +102,7 @@ export interface IMetaAccessor<T> {
      * get boot token of module config.
      *
      * @param {IAnnotationMetadata<any>} cfg
-     * @param {IContainer} [container]
+     * @param {IContainer} [container]  vaild container.
      * @returns {Token<any>}
      * @memberof IModuleValidate
      */

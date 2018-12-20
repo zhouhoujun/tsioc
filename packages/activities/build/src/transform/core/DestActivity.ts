@@ -1,16 +1,9 @@
 import { dest, DestOptions } from 'vinyl-fs';
-import { Expression, ExpressionType, Task, InjectAcitityToken } from '@taskfr/core';
-import { SourceMapsActivity } from './SourceMapsActivity';
-import { TransformContext } from './StreamActivity';
-import { TransformActivity } from './TransformActivity';
+import { Expression, ExpressionType, Task } from '@taskfr/core';
+import { StreamActivity } from './StreamActivity';
 import { ITransformConfigure } from './ITransformConfigure';
-import { DestConfigure } from '../../core';
+import { DestConfigure, IDestCompiler } from '../../core';
 
-
-/**
- * dest activity token.
- */
-export const DestAcitvityToken = new InjectAcitityToken<DestActivity>('dest');
 
 /**
  * dest pipe configure.
@@ -40,8 +33,9 @@ export interface StreamDestConfigure extends ITransformConfigure, DestConfigure 
  * @implements {ITransformDest}
  * @implements {OnTaskInit}
  */
-@Task(DestAcitvityToken)
-export class DestActivity extends TransformActivity {
+@Task
+export class DestActivity extends StreamActivity implements IDestCompiler {
+
     /**
      * source
      *
@@ -67,29 +61,17 @@ export class DestActivity extends TransformActivity {
         }
     }
 
-    protected async afterPipe(): Promise<void> {
-        await super.afterPipe();
-        if (this.context.sourceMaps instanceof SourceMapsActivity) {
-            await this.execActivity(this.context.sourceMaps, this.context);
-        }
-        await this.writeStream(this.context);
+    getDest(): Promise<string> {
+        return this.reolverExpression(this.dest);
     }
 
-    /**
-     * write dest stream.
-     *
-     * @protected
-     * @param {TransformContext} ctx
-     * @returns {Promise<ITransform>}
-     * @memberof DestActivity
-     */
-    protected async writeStream(ctx: TransformContext): Promise<void> {
-        let dist = await ctx.exec(this, this.dest);
+    protected async execute(): Promise<void> {
+        let dist = await this.getDest();
         let destOptions = undefined;
         if (this.destOptions) {
-            destOptions = await ctx.exec(this, this.destOptions);
+            destOptions = await this.context.exec(this, this.destOptions);
         }
-        dist = ctx.toRootPath(dist);
-        ctx.result = await this.executePipe(ctx.result, dest(dist, destOptions), true);
+        dist = this.context.toRootPath(dist);
+        this.context.result = await this.executePipe(this.context.result, dest(dist, destOptions), true);
     }
 }

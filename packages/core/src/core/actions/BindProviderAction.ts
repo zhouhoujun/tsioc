@@ -67,14 +67,14 @@ export class BindProviderAction extends ActionComposite {
                             c.refs.provide ? c.refs.provide : c.type,
                             c.type,
                             c.refs.provide ? c.refs.alias : '',
-                            tk => classPds.provides.push(tk));
+                            tk => classPds.provides.push(raiseContainer.getTokenKey(tk)));
                     }
                     // class private provider.
                     if (c.providers && c.providers.length) {
                         raiseContainer.bindTarget(
                             c.type,
                             c.providers,
-                            refKey => classPds.provides.push(refKey));
+                            refKey => classPds.provides.push(raiseContainer.getTokenKey(refKey)));
                     }
                 });
             }

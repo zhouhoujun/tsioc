@@ -90,6 +90,15 @@ export type CtxType<T> = T | ((context?: IContext, config?: ActivityConfigure) =
  * @interface IActivityContext
  */
 export interface IActivityContext extends IContext {
+
+    /**
+     * build config.
+     *
+     * @type {*}
+     * @memberof BuidActivityContext
+     */
+    config: any;
+
     /**
      * input data
      *

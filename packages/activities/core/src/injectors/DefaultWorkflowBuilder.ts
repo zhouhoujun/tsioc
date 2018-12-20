@@ -15,10 +15,10 @@ export const WorkflowBuilderToken = new InjectModuleBuilderToken<IActivity>(Acti
  * @class DefaultTaskContainer
  */
 @Singleton(WorkflowBuilderToken)
-// @Providers([
-//     {provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken},
-//     {provide: AnnotationBuilderToken, useExisting: ActivityBuilderToken}
-// ])
+@Providers([
+    {provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken},
+    {provide: AnnotationBuilderToken, useExisting: ActivityBuilderToken}
+])
 export class DefaultWorkflowBuilder extends ModuleBuilder<IActivity> {
     /**
      * bootstrap workflow via activity.

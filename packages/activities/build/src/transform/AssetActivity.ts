@@ -1,10 +1,14 @@
 import { Providers, Token } from '@ts-ioc/core';
 import {
     UglifyCompilerToken, AssetActivity, AnnotationCompilerToken,
-    SourceCompilerToken, SourcemapsCompilerToken, TestCompilerToken, ICompiler, BuildHandleContext, BuidActivityContext
+    SourceCompilerToken, SourcemapsCompilerToken, TestCompilerToken,
+    BuildHandleContext, BuidActivityContext, DestCompilerToken
 } from '../core';
 import { Asset } from '../decorators';
-import { StreamUglifyActivity, AnnotationActivity, SourceActivity, SourceMapsActivity, MochaTestActivity, TransformContext, TransformContextToken } from './core';
+import {
+    StreamUglifyActivity, AnnotationActivity, SourceActivity,
+    SourceMapsActivity, MochaTestActivity, TransformContext, TransformContextToken, DestActivity
+} from './core';
 import { IActivity, ActivityContextToken } from '@taskfr/core';
 import { StreamAssetToken } from './StreamAssetConfigure';
 
@@ -24,9 +28,10 @@ import { StreamAssetToken } from './StreamAssetConfigure';
     { provide: SourceCompilerToken, useClass: SourceActivity },
     { provide: SourcemapsCompilerToken, useClass: SourceMapsActivity },
     { provide: TestCompilerToken, useClass: MochaTestActivity },
-    { provide: ActivityContextToken, useExisting: TransformContextToken }
+    { provide: ActivityContextToken, useExisting: TransformContextToken },
+    { provide: DestCompilerToken, useClass: DestActivity }
 ])
-export class StreamAssetActivity extends AssetActivity {
+export class StreamAssetActivity extends AssetActivity<TransformContext> {
     constructor() {
         super();
     }
@@ -65,35 +70,5 @@ export class StreamAssetActivity extends AssetActivity {
                 this.context.handle = ctx.handle;
             }
         }
-    }
-
-
-    protected async compile(ctx: TransformContext): Promise<void> {
-        await super.compile(ctx);
-    }
-
-    /**
-     * execute uglify.
-     *
-     * @protected
-     * @param {TransformActivityContext} ctx
-     * @returns
-     * @memberof AssetActivity
-     */
-    protected async execUglify(ctx: TransformContext) {
-        await this.execActivity(this.uglify, ctx);
-    }
-
-    /**
-     * execute dest activity.
-     *
-     * @protected
-     * @param {DestActivity} ds
-     * @param {TransformActivityContext} ctx
-     * @returns
-     * @memberof AssetActivity
-     */
-    protected async execDest(ds: ICompiler, ctx: TransformContext) {
-        await this.execActivity(ds, ctx);
     }
 }

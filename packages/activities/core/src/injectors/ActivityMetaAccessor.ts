@@ -18,9 +18,9 @@ export const ActivityMetaAccessorToken = new InjectMetaAccessorToken('@Task');
 @Refs(ApplicationBuilderToken, MetaAccessorToken)
 export class ActivityMetaAccessor extends MetaAccessor {
 
-    getToken(config: ActivityConfigure, container?: IContainer): Token<IActivity> {
+    getToken(config: ActivityConfigure, container: IContainer): Token<IActivity> {
         let token = this.getTokenInConfig(config);
-        if (this.validateToken(token, container)) {
+        if (this.validateToken(token)) {
             return token;
         } else if (isString(token)) {
             return this.traslateStrToken(token, container);
@@ -32,7 +32,7 @@ export class ActivityMetaAccessor extends MetaAccessor {
         return config.activity || config.task || config.token || config.type;
     }
 
-    protected traslateStrToken(token: string, container?: IContainer): Token<IActivity> {
+    protected traslateStrToken(token: string, container: IContainer): Token<IActivity> {
         let taskToken = new InjectAcitityToken(token);
         if (container && container.has(taskToken)) {
             return taskToken;

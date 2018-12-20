@@ -127,12 +127,13 @@ export class MetaAccessor implements IMetaAccessor<any> {
      * get token of metadata config.
      *
      * @param {IAnnotationMetadata<any>} config
+     * @param {IContainer} [container] vaild token in container or not.
      * @returns {Token<any>}
      * @memberof MetadataManager
      */
     getToken(config: IAnnotationMetadata<any>, container?: IContainer): Token<any> {
         let token = this.getTokenInConfig(config);
-        if (this.validateToken(token)) {
+        if (this.validateToken(token, container)) {
             return token;
         } else {
             return null;
@@ -143,7 +144,7 @@ export class MetaAccessor implements IMetaAccessor<any> {
      * get module boot token from module configure.
      *
      * @param {IAnnotationMetadata<any>} config
-     * @param {IContainer} [container]
+     * @param {IContainer} [container]  vaild container.
      * @returns {Token<any>}
      * @memberof ModuelValidate
      */

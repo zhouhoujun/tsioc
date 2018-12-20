@@ -58,10 +58,38 @@ export interface ISourceCompiler extends ICompiler {
     /**
      * get source.
      *
-     * @returns {Src}
+     * @returns {Promise<Src>}
      * @memberof ISourceCompiler
      */
-    getSource(): Src;
+    getSource(): Promise<Src>;
+}
+
+/**
+ * dest compiler.
+ *
+ * @export
+ * @interface IDestCompiler
+ * @extends {ICompiler}
+ */
+export interface IDestCompiler extends ICompiler {
+    /**
+     * get compiler to dist.
+     *
+     * @returns {Promise<string>;}
+     * @memberof IDestCompiler
+     */
+    getDest(): Promise<string>;
+}
+
+/**
+ * annotation compiler.
+ *
+ * @export
+ * @interface IAnnotationCompiler
+ * @extends {ICompiler}
+ */
+export interface IAnnotationCompiler extends ICompiler {
+
 }
 
 /**

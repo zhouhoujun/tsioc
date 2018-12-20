@@ -33,22 +33,13 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
      */
     async createInstance(token: Token<IActivity>, config: ActivityConfigure, target?: any): Promise<IActivity> {
         let instance = await super.createInstance(token, config, target) as ActivityInstance;
-        if (!instance) {
-            return null;
-        }
-        if (!(instance instanceof Activity)) {
-            let boot = this.getMetaAccessor(token, config).getBootToken(config);
+        if (!instance || !(instance instanceof Activity)) {
+            let boot = this.getMetaAccessor(token, config).getBootToken(config, this.container);
             if (isToken(boot)) {
                 instance = await super.createInstance(boot, config, target) as ActivityInstance;
-            } else {
-                instance = null;
             }
         }
-        if (!(instance instanceof Activity)) {
-            instance = null;
-        }
-
-        if (!instance) {
+        if (!instance || !(instance instanceof Activity)) {
             return null;
         }
 
@@ -147,8 +138,6 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
             }
             if (config) {
                 result = await this.buildActivity(config, target);
-            } else {
-                result = null;
             }
         }
         return result;

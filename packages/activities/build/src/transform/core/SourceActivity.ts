@@ -2,7 +2,7 @@ import { src, SrcOptions } from 'vinyl-fs';
 import { Src, Expression, ExpressionType, Task } from '@taskfr/core';
 import { StreamActivity } from './StreamActivity';
 import { ITransformConfigure } from './ITransformConfigure';
-import { SourceConfigure } from '../../core';
+import { SourceConfigure, ISourceCompiler } from '../../core';
 
 /**
  * source pipe configure.
@@ -30,7 +30,8 @@ export interface StreamSourceConfigure extends ITransformConfigure, SourceConfig
  * @extends {TransformActivity}
  */
 @Task
-export class SourceActivity extends StreamActivity {
+export class SourceActivity extends StreamActivity implements ISourceCompiler {
+
     /**
      * source
      *
@@ -56,9 +57,13 @@ export class SourceActivity extends StreamActivity {
         }
     }
 
+    getSource(): Promise<Src> {
+        return this.reolverExpression(this.src);
+    }
+
     protected async execute(): Promise<void> {
         if (this.src) {
-            let strSrc = await this.context.exec(this, this.src);
+            let strSrc = await this.getSource();
             let options = await this.context.exec(this, this.srcOptions);
             this.context.result = src(strSrc, options || undefined);
         }

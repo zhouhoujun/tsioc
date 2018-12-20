@@ -56,7 +56,3 @@ export class InjectPackToken<T extends IPackActivity> extends Registration<T> {
  */
 export const PackToken = new InjectPackToken<IPackActivity>('');
 
-/**
- * pack build activity builder token.
- */
-export const PackBuilderToken = new InjectAcitityBuilderToken<IPackActivity>(PackToken);

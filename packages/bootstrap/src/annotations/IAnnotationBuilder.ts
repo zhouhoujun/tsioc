@@ -1,4 +1,4 @@
-import { IContainer, Token, RefRegistration } from '@ts-ioc/core';
+import { IContainer, Token, RefRegistration, IMetaAccessor } from '@ts-ioc/core';
 import { Runnable } from '../runnable';
 import { AnnoTokenVaild, AnnoBuildCompleted } from './AnnoType';
 import { AnnotationConfigure } from './AnnotationConfigure';
@@ -102,6 +102,31 @@ export interface IAnnotationBuilder<T> {
      */
     resolveRunable(instance: T, config?: AnnotationConfigure<T>, token?: Token<T>): Runnable<T>;
 
+    /**
+     * get meta accessor.
+     *
+     * @param {Token<any>} token
+     * @returns {IMetaAccessor<any>}
+     * @memberof IAnnotationBuilder
+     */
+    getMetaAccessor(token: Token<any>): IMetaAccessor<any>;
+    /**
+     * get meta accessor.
+     *
+     * @param {AnnotationConfigure<T>} config
+     * @returns {IMetaAccessor<any>}
+     * @memberof IAnnotationBuilder
+     */
+    getMetaAccessor(config: AnnotationConfigure<T>): IMetaAccessor<any>;
+    /**
+     * get meta accessor.
+     *
+     * @param {Token<any>} token
+     * @param {AnnotationConfigure<T>} config
+     * @returns {IMetaAccessor<any>}
+     * @memberof IAnnotationBuilder
+     */
+    getMetaAccessor(token: Token<any>, config: AnnotationConfigure<T>): IMetaAccessor<any>;
 }
 
 /**

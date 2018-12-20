@@ -1,7 +1,7 @@
 import {
     Token, isToken, IContainer, isClass, Inject, ContainerToken,
     lang, isFunction, Injectable, Container, IMetaAccessor, ParamProviders,
-    InjectMetaAccessorToken, MetaAccessorToken, isNullOrUndefined, isBaseType, ProviderMap
+    InjectMetaAccessorToken, MetaAccessorToken, isNullOrUndefined, isBaseType
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import {
@@ -37,12 +37,12 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
     /**
      * get metadata accessor.
      *
-     * @param {Token<any>} token
+     * @param {(Token<any>|| AnnotationConfigure<T>)} token
      * @param {AnnotationConfigure<T>} [config]
      * @returns {IMetaAccessor<any>}
      * @memberof AnnotationBuilder
      */
-    getMetaAccessor(token: Token<any>, config?: AnnotationConfigure<T>): IMetaAccessor<any> {
+    getMetaAccessor(token: Token<any> | AnnotationConfigure<T>, config?: AnnotationConfigure<T>): IMetaAccessor<any> {
         return this.container.getService(MetaAccessorToken,
             isToken(token) ? [token, lang.getClass(this)] : lang.getClass(this),
             tk => new InjectMetaAccessorToken(tk), config ? (config.defaultMetaAccessor || MetaAccessorToken) : MetaAccessorToken);
@@ -105,7 +105,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             }
             return await this.build(token, null, target);
         } else {
-            token = this.getMetaAccessor(null, config).getToken(config, this.container);
+            token = this.getMetaAccessor(config).getToken(config, this.container);
             if (vaild && !vaild(token)) {
                 token = null;
             }
@@ -135,7 +135,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         } else {
             data = config;
             config = runable;
-            token = this.getMetaAccessor(null, config).getToken(config, this.container);
+            token = this.getMetaAccessor(config).getToken(config, this.container);
             await this.build(token, config, data, (cfg, hook, builder) => {
                 config = cfg;
                 instance = hook;
@@ -267,11 +267,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             targetClass = lang.getClass(target);
         }
         if (targetClass) {
-            let ist = this.container.getService(token, targetClass);
-            // if (ist instanceof ProviderMap) {
-            //     console.log(token, targetClass)
-            // }
-            return ist;
+            return this.container.getService(token, targetClass);
         }
         return this.container.resolve(token);
     }

@@ -564,9 +564,12 @@ export class Container implements IContainer {
         }
         lang.forInClassChain(type, ty => {
             let tokens: Token<any>[];
-            let prds = this.get(new InjectClassProvidesToken(ty));
+            let prdKey = new InjectClassProvidesToken(ty);
+            let prds = this.get(prdKey);
             if (prds && prds.provides && prds.provides.length) {
-                tokens = prds.provides.slice(1);
+                let ppdkey = prdKey.toString();
+                let pmapKey = new InjectReference(ProviderMap, ty).toString();
+                tokens = prds.provides.filter(p => p !== ppdkey && p !== pmapKey);
             }
             tokens = tokens || [];
             return ![ty, ...tokens].some(tk => express(tk, tokens) === false);

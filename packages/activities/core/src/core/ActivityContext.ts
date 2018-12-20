@@ -36,6 +36,14 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
     private _actBuilder: ActivityBuilder;
 
     /**
+     * build config.
+     *
+     * @type {*}
+     * @memberof BuidActivityContext
+     */
+    config: any;
+
+    /**
      * execute data.
      *
      * @type {T}
@@ -106,6 +114,9 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
         }
         if (data instanceof ActivityContext) {
             this.target = data.target;
+            if (!this.config) {
+                this.config = data.config;
+            }
             data = data.result;
         }
         let translator = this.getTranslator(data);
@@ -121,7 +132,7 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
 
     getRootPath(): string {
         let cfg = this.getContainer().get(AppConfigureToken) || {};
-        return cfg.baseURL || this.getContainer().get(ProcessRunRootToken)  || '.';
+        return cfg.baseURL || this.getContainer().get(ProcessRunRootToken) || '.';
     }
 
 

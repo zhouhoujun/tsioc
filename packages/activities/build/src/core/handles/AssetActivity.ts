@@ -1,18 +1,18 @@
 import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
 import { Src } from '@taskfr/core';
-import { ICompiler, ISourcemapsCompiler, ISourceCompiler } from '../ICompiler';
+import { ICompiler, ISourcemapsCompiler, ISourceCompiler, CompilerConfigure, IAnnotationCompiler, IDestCompiler } from '../ICompiler';
 import {
     AssetConfigure, SourceConfigure, SourceCompilerToken, DestConfigure, DestCompilerToken,
-    UglifyConfigure, UglifyCompilerToken, SourceMapsConfigure, SourcemapsCompilerToken, AssetToken
+    UglifyConfigure, UglifyCompilerToken, SourceMapsConfigure, SourcemapsCompilerToken, AssetToken, AnnotationCompilerToken
 } from './IAssetActivity';
-import { isBoolean } from '@ts-ioc/core';
+import { isBoolean, isToken } from '@ts-ioc/core';
 import { CompilerActivity } from '../CompilerActivity';
 import { IWatchActivity, WatchConfigure, WatchAcitvityToken } from './IWatchActivity';
 import { Asset } from '../../decorators';
 import { WatchActivity } from './WatchActivity';
 
 @Asset(AssetToken)
-export class AssetActivity extends BuildHandleActivity {
+export class AssetActivity<T extends BuildHandleContext<any>> extends BuildHandleActivity {
     /**
      * source compiler
      *
@@ -45,10 +45,10 @@ export class AssetActivity extends BuildHandleActivity {
     /**
      * dest compiler.
      *
-     * @type {ICompiler}
+     * @type {IDestCompiler}
      * @memberof AssetActivity
      */
-    dest: ICompiler;
+    dest: IDestCompiler;
 
     /**
      * watch activity.
@@ -61,7 +61,20 @@ export class AssetActivity extends BuildHandleActivity {
     async onActivityInit(config: AssetConfigure) {
         await super.onActivityInit(config);
         if (config.annotation) {
-            this.annotation = await this.buildActivity(config.annotation);
+            this.annotation = await this.toActivity<boolean | string, IAnnotationCompiler, CompilerConfigure>(config.annotation,
+                act => act instanceof CompilerActivity,
+                ann => {
+                    if (isBoolean(ann)) {
+                        if (ann) {
+                            return { activity: AnnotationCompilerToken };
+                        }
+                        return null;
+                    }
+                    if (isToken(ann)) {
+                        return { activity: ann }
+                    }
+                    return ann;
+                });
         }
 
         if (config.src) {
@@ -71,7 +84,7 @@ export class AssetActivity extends BuildHandleActivity {
                     if (!src) {
                         return null;
                     }
-                    return { src: src, activity: SourceCompilerToken };
+                    return { src: src, token: SourceCompilerToken };
                 });
         }
 
@@ -89,9 +102,8 @@ export class AssetActivity extends BuildHandleActivity {
                 });
         }
 
-
         if (config.dest) {
-            this.dest = await this.toActivity<string, CompilerActivity, DestConfigure>(config.dest,
+            this.dest = await this.toActivity<string, IDestCompiler, DestConfigure>(config.dest,
                 act => act instanceof CompilerActivity,
                 dest => {
                     if (!dest) {
@@ -130,16 +142,16 @@ export class AssetActivity extends BuildHandleActivity {
         }
     }
 
-    protected async compile(ctx: BuildHandleContext<any>): Promise<void> {
-        await this.execWatch(ctx);
+    protected async compile(ctx: T): Promise<void> {
+        await this.execSource(ctx);
         await this.execAnnotation(ctx);
         await this.execSourcemapsInit(ctx);
         await this.execCompiler(ctx);
         await this.execUglify(ctx);
-        await this.execDest(this.dest, ctx);
+        await this.execDest(ctx);
     }
 
-    protected async execWatch(ctx: BuildHandleContext<any>) {
+    protected async execSource(ctx: T) {
         if (!(this.watch && ctx.target === this.watch)) {
             await this.execActivity(this.src, ctx);
             await this.execActivity(this.watch, () => {
@@ -151,18 +163,17 @@ export class AssetActivity extends BuildHandleActivity {
         }
     }
 
-    protected async execAnnotation(ctx: BuildHandleContext<any>) {
+    protected async execAnnotation(ctx: T) {
         await this.execActivity(this.annotation, ctx);
     }
 
-    protected async execSourcemapsInit(ctx: BuildHandleContext<any>) {
+    protected async execSourcemapsInit(ctx: T) {
         if (this.sourcemaps) {
-            ctx.sourceMaps = this.sourcemaps;
             await this.sourcemaps.init(ctx);
         }
     }
 
-    protected async execCompiler(ctx: BuildHandleContext<any>) {
+    protected async execCompiler(ctx: T) {
         await this.execActivity(this.compiler, ctx);
     }
 
@@ -170,11 +181,11 @@ export class AssetActivity extends BuildHandleActivity {
      * execute uglify.
      *
      * @protected
-     * @param {TransformActivityContext} ctx
+     * @param {T} ctx
      * @returns
      * @memberof AssetActivity
      */
-    protected async execUglify(ctx: BuildHandleContext<any>) {
+    protected async execUglify(ctx: T) {
         await this.execActivity(this.uglify, ctx);
     }
 
@@ -182,12 +193,12 @@ export class AssetActivity extends BuildHandleActivity {
      * execute dest activity.
      *
      * @protected
-     * @param {DestActivity} ds
-     * @param {TransformActivityContext} ctx
+     * @param {T} ctx
      * @returns
      * @memberof AssetActivity
      */
-    protected async execDest(ds: ICompiler, ctx: BuildHandleContext<any>) {
-        await this.execActivity(ds, ctx);
+    protected async execDest(ctx: T) {
+        await this.execActivity(this.sourcemaps, ctx);
+        await this.execActivity(this.dest, ctx);
     }
 }

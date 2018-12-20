@@ -1,6 +1,7 @@
-import { CtxType, ExpressionType, Expression, Task, InjectAcitityToken, IActivity, Active, Src } from '@taskfr/core';
+import { CtxType, ExpressionType, Expression, Task, InjectAcitityToken, IActivity, Src } from '@taskfr/core';
 import { isUndefined } from '@ts-ioc/core';
-import { BuildHandleActivity, BuildHandleConfigure, BuildHandleContext } from '../BuildHandleActivity';
+import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
+import { BuildHandleConfigure } from '../BuildHandle';
 
 /**
  * Serve activity configure.
