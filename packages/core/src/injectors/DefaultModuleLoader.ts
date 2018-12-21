@@ -170,5 +170,4 @@ export class DefaultModuleLoader implements IModuleLoader {
 
         return regModules;
     }
-
 }

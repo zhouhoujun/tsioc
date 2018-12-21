@@ -1,7 +1,6 @@
 import { Registration } from './Registration';
 import { IContainer } from './IContainer';
 import { ProviderTypes } from './providers';
-import { type } from 'os';
 
 /**
  * module types.
@@ -180,7 +179,7 @@ export enum RefTagLevel {
     /**
      * ref taget provider.
      */
-    providers = 1 >> 1,
+    providers = 1 << 1,
     /**
      * self provider
      */
@@ -188,7 +187,7 @@ export enum RefTagLevel {
     /**
      * ref target class chain.
      */
-    chain = 1 >> 2,
+    chain = 1 << 2,
     /**
      * chain providers.
      */
@@ -227,7 +226,7 @@ export interface IRefTarget {
 /**
  * reference target.
  */
-export type RefTarget = IRefTarget | Token<any>;
+export type RefTarget = IRefTarget | Token<any> | Object;
 
 /**
  * express.

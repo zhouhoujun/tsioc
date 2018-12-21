@@ -1,6 +1,5 @@
 import { CleanActivity, TestActivity, IBuildActivity } from '@taskfr/build';
 import { Registration } from '@ts-ioc/core';
-import { InjectAcitityBuilderToken } from '@taskfr/core';
 import { ServeActivity } from '../serves';
 
 /**

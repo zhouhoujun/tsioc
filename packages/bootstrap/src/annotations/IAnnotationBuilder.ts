@@ -24,33 +24,43 @@ export interface IAnnotationBuilder<T> {
      * build annotation class.
      *
      * @param {Token<T>} token
-     * @param {AnnotationConfigure<T>} [config]
      * @param {BuildOptions<T>} [options]
      * @returns {Promise<T>}
      * @memberof IAnnotationBuilder
      */
-    build(token: Token<T>, config?: AnnotationConfigure<T>, options?: BuildOptions<T>): Promise<T>;
+    build(token: Token<T>, options?: BuildOptions<T>): Promise<T>;
 
     /**
      * build annotation class.
      *
      * @param {AnnotationConfigure<T>} config
-     * @param {*} [target]
      * @param {BuildOptions<T>} [options]
      * @returns {Promise<T>}
      * @memberof IAnnotationBuilder
      */
-    build(config: AnnotationConfigure<T>, target?: any, options?: BuildOptions<T>): Promise<T>;
+    build(config: AnnotationConfigure<T>,  options?: BuildOptions<T>): Promise<T>;
+
+    /**
+     * build annotation class.
+     *
+     * @param {Token<T>} token
+     * @param {AnnotationConfigure<T>} [config]
+     * @param {BuildOptions<T>} [options]
+     * @returns {Promise<T>}
+     * @memberof IAnnotationBuilder
+     */
+    build(token: Token<T>, config: AnnotationConfigure<T>, options?: BuildOptions<T>): Promise<T>;
 
     /**
      * get finally builder by token and config.
      *
      * @param {Token<T>} token
      * @param {AnnotationConfigure<T>} [config]
+     * @param {BuildOptions<T>} [options]
      * @returns {IAnnotationBuilder<T>}
      * @memberof IBootBuilder
      */
-    getBuilder(token: Token<T>, config?: AnnotationConfigure<T>): IAnnotationBuilder<T>;
+    getBuilder(token: Token<T>, config?: AnnotationConfigure<T>, options?: BuildOptions<T>): IAnnotationBuilder<T>;
     /**
      * create token instance.
      *

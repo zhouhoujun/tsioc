@@ -1,4 +1,4 @@
-import { Type, AbstractType, Token } from '../types';
+import { Type, AbstractType, Token, IRefTarget } from '../types';
 import { Registration } from '../Registration';
 import { lang } from './lang';
 import { IAnnotationMetadata } from '../core';
@@ -255,6 +255,20 @@ export function isMetadataObject(target: any, props?: string[], extendsProps?: s
 }
 
 /**
+ * is reftarget options or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is IRefTarget}
+ */
+export function isRefTarget(target: any): target is IRefTarget {
+    if (isBaseObject(target) !== true) {
+        return false
+    }
+    return isToken(target.target);
+}
+
+/**
  * target is annotation metadata.
  *
  * @export
@@ -403,6 +417,25 @@ export function isObject(target: any): target is object {
     }
     let type = typeof target;
     return type === 'object' || type === 'function';
+}
+
+/**
+ * is custom class type instance or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {boolean}
+ */
+export function isTypeObject(target: any): boolean {
+    if (!isObject(target)) {
+        return false;
+    }
+    let classname = getClassName(lang.getClass(target));
+    if (classname === 'Date'
+        || classname === 'Object') {
+        return false;
+    }
+    return true;
 }
 
 /**

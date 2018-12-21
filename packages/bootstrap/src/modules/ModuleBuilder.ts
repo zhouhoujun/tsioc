@@ -61,9 +61,15 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      * @returns {IMetaAccessor<any>}
      * @memberof ModuleBuilder
      */
-    getMetaAccessor(container: IContainer, token: Token<any>, config?: ModuleConfigure): IMetaAccessor<any> {
+    getMetaAccessor(container: IContainer, token: Token<any> | ModuleConfigure, config?: ModuleConfigure): IMetaAccessor<any> {
+        let mtk: Token<any>;
+        if (isToken(token)) {
+            mtk = token;
+        } else {
+            config = token;
+        }
         return container.getService(MetaAccessorToken,
-            isToken(token) ? [token, lang.getClass(this)] : lang.getClass(this),
+            mtk ? [mtk, lang.getClass(this)] : lang.getClass(this),
             tk => new InjectMetaAccessorToken(tk), config ? (config.defaultMetaAccessor || MetaAccessorToken) : MetaAccessorToken);
     }
 
@@ -135,7 +141,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     protected async loadViaConfig(config: ModuleConfigure, parent: IContainer): Promise<InjectedModule<T>> {
         let injmd: InjectedModule<T> = null;
-        let token = this.getMetaAccessor(parent, null, config).getToken(config, parent);
+        let token = this.getMetaAccessor(parent, config).getToken(config, parent);
         if (token) {
             injmd = await this.import(token, parent);
             if (!injmd) {

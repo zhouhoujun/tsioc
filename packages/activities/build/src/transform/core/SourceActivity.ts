@@ -50,7 +50,6 @@ export class SourceActivity extends StreamActivity implements ISourceCompiler {
 
     async onActivityInit(config: StreamSourceConfigure) {
         await super.onActivityInit(config);
-        console.log('source init:', config);
         this.src = await this.toExpression(config.src);
 
         if (config.srcOptions) {
@@ -67,7 +66,6 @@ export class SourceActivity extends StreamActivity implements ISourceCompiler {
             let strSrc = await this.getSource();
             let options = await this.context.exec(this, this.srcOptions);
             this.context.result = src(strSrc, options || undefined);
-            console.log('source result:', this.context.config, strSrc, this.context.result);
         }
     }
 }

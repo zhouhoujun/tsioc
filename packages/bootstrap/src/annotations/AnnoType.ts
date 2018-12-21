@@ -12,6 +12,14 @@ import { AnnotationConfigure } from './AnnotationConfigure';
  * @template T
  */
 export interface BuildOptions<T> extends ObjectMap<any> {
+
+    /**
+     * annotation builder.
+     *
+     * @type {IAnnotationBuilder<T>}
+     * @memberof BuildOptions
+     */
+    builder?: IAnnotationBuilder<T>;
     /**
      * on build completed.
      *
