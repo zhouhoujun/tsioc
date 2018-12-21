@@ -231,17 +231,9 @@ export function isBaseObject(target: any): target is object {
  * @returns {boolean}
  */
 export function isMetadataObject(target: any, props?: string[], extendsProps?: string[]): boolean {
-    if (!target) {
+    if (!isBaseObject(target)) {
         return false;
     }
-    if (isBaseType(target) || isSymbol(target) || target instanceof Registration || target instanceof RegExp || target instanceof Date) {
-        return false;
-    }
-
-    if (target.constructor && target.constructor.name !== 'Object') {
-        return false;
-    }
-
     props = props || [];
     if (extendsProps) {
         props = extendsProps.concat(props);
@@ -479,5 +471,5 @@ export function isRegExp(target: any): target is RegExp {
  * @returns {boolean}
  */
 export function isBaseType(target: any): boolean {
-    return isBoolean(target) || isString(target) || isNumber(target) || isDate(target);
+    return isBoolean(target) || isString(target) || isNumber(target) || isDate(target) || isSymbol(target);
 }

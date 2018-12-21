@@ -560,7 +560,7 @@ export class Container implements IContainer {
             if (isRefTarget(target)) {
                 token = target.target;
                 level = target.level || RefTagLevel.self;
-            } else if (!isBaseType(target)) {
+            } else if (isTypeObject(target)) {
                 token = lang.getClass(target);
                 level = RefTagLevel.all;
             }

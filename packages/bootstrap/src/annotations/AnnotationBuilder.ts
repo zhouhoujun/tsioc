@@ -1,7 +1,7 @@
 import {
     Token, isToken, IContainer, isClass, Inject, ContainerToken,
     lang, isFunction, Injectable, Container, IMetaAccessor, ParamProviders,
-    InjectMetaAccessorToken, MetaAccessorToken, isNullOrUndefined, isBaseType, RefTagLevel
+    InjectMetaAccessorToken, MetaAccessorToken, isNullOrUndefined, RefTagLevel, isTypeObject
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import {
@@ -287,7 +287,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
     protected resolveToken(token: Token<T>, target?: any) {
         let targetClass;
-        if (target && !isBaseType(target)) {
+        if (isTypeObject(target)) {
             targetClass = lang.getClass(target);
         }
         if (targetClass) {

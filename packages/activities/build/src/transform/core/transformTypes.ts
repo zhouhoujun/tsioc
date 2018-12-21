@@ -1,6 +1,6 @@
 import { CtxType, Expression, ExpressionType } from '@taskfr/core';
 import { ITransform } from './ITransform';
-import { ObjectMap, isMetadataObject, isObservable, isBaseType } from '@ts-ioc/core';
+import { ObjectMap, isObservable, isObject } from '@ts-ioc/core';
 import { isFunction } from '@ts-ioc/core';
 import { Stream } from 'stream';
 
@@ -9,7 +9,7 @@ import { Stream } from 'stream';
 /**
  * transform type.
  */
-export type TransformType =  Expression<ITransform>;
+export type TransformType = Expression<ITransform>;
 
 /**
  * transform config type.
@@ -35,11 +35,5 @@ export type DestExpress = ObjectMap<TransformExpress> | TransformExpress;
  * @returns {boolean}
  */
 export function isTransform(target: any): boolean {
-    if (isBaseType(target)
-        || isMetadataObject(target)
-        || isObservable(target)) {
-        return false;
-    }
-
-    return target && (target instanceof Stream || isFunction(target.pipe));
+    return (isObject(target) === true) && (target instanceof Stream || (isFunction(target.pipe) && !isObservable(target)));
 }
