@@ -10,8 +10,8 @@ import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { ContainerPool, ContainerPoolToken } from '../utils';
 import { Runnable } from '../runnable';
 import {
-    IAnnotationBuilder, IAnyTypeBuilder, InjectAnnotationBuilder,
-    AnnotationBuilderToken, AnnotationBuilder
+    IAnnotationBuilder, InjectAnnotationBuilder,
+    AnnotationBuilderToken, AnnotationBuilder, BuildOptions
 } from '../annotations';
 import { InjectedModule, InjectedModuleToken } from './InjectedModule';
 
@@ -92,11 +92,11 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     *
     * @param {(Token<T> | ModuleConfig<T>)} token
     * @param {ModuleEnv} [env]
-    * @param {*} [data] bootstrap data, build data, Runnable data.
+    * @param {BuildOptions<T>} [options] bootstrap build options.
     * @returns {Promise<Runnable<T>>}
     * @memberof ModuleBuilder
     */
-    async bootstrap(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
+    async bootstrap(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, options?: BuildOptions<T>): Promise<Runnable<T>> {
         let injmdl = await this.load(token, env);
         let cfg = injmdl.config;
         let container = injmdl.container;
@@ -104,10 +104,10 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         let bootToken = accessor.getBootToken(cfg, container);
         if (bootToken) {
             let anBuilder = this.getAnnoBuilder(container, bootToken, cfg);
-            return await anBuilder.boot(bootToken, cfg, data);
+            return await anBuilder.boot(bootToken, cfg, options);
         } else {
             let mdBuilder = this.getAnnoBuilder(container, injmdl.token || injmdl.type, cfg);
-            return await mdBuilder.boot(injmdl.token || injmdl.type, cfg, data);
+            return await mdBuilder.boot(injmdl.token || injmdl.type, cfg, options);
         }
     }
 
@@ -116,12 +116,12 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     *
     * @param {(Token<T> | ModuleConfig<T>)} token
     * @param {ModuleEnv} [env]
-    * @param {*} [data] bootstrap data, build data, Runnable data.
+    * @param {BuildOptions<T>} [options] bootstrap build options.
     * @returns {Promise<Runnable<T>>}
     * @memberof ModuleBuilder
     */
-    run(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
-        return this.bootstrap(token, env, data);
+    run(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, options?: BuildOptions<T>): Promise<Runnable<T>> {
+        return this.bootstrap(token, env, options);
     }
 
     protected async loadViaToken(token: Token<T>, parent: IContainer): Promise<InjectedModule<T>> {
@@ -195,7 +195,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return parent;
     }
 
-    protected getAnnoBuilder(container: IContainer, token: Token<any>, config: ModuleConfigure): IAnyTypeBuilder {
+    protected getAnnoBuilder(container: IContainer, token: Token<any>, config: ModuleConfigure): IAnnotationBuilder<any> {
         let builder: IAnnotationBuilder<any>;
         if (isClass(config.annoBuilder)) {
             if (!container.has(config.annoBuilder)) {

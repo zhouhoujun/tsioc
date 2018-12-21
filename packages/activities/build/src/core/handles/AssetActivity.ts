@@ -58,6 +58,14 @@ export class AssetActivity<T extends BuildHandleContext<any>> extends BuildHandl
      */
     watch: IWatchActivity;
 
+    /**
+     * build handle context.
+     *
+     * @type {T}
+     * @memberof AssetActivity
+     */
+    context: T;
+
     async onActivityInit(config: AssetConfigure) {
         await super.onActivityInit(config);
         if (config.annotation) {

@@ -48,6 +48,7 @@ export class TsCompiler extends TransformActivity {
      * @memberof TsCompile
      */
     protected async pipe(): Promise<void> {
+        console.log(this.context.constructor.name, this.context.result)
         this.context.result.js = await this.pipeStream(this.context.result.js, ...this.pipes);
     }
     /**

@@ -1,6 +1,7 @@
 import { Registration } from './Registration';
 import { IContainer } from './IContainer';
 import { ProviderTypes } from './providers';
+import { type } from 'os';
 
 /**
  * module types.
@@ -127,7 +128,14 @@ export interface AbstractType<T> extends Function {
     classAnnations?: ClassAnnations;
 }
 
-export interface IReference<T> {
+/**
+ * ref service
+ *
+ * @export
+ * @interface IRefService
+ * @template T
+ */
+export interface IRefService<T> {
     /**
      * ref service
      *
@@ -147,7 +155,7 @@ export interface IReference<T> {
 /**
  * reference token type.
  */
-export type RefTokenType<T> = IReference<T> | Token<T>;
+export type RefTokenType<T> = IRefService<T> | Token<T>;
 
 export type RefTokenFac<T> = (token: Token<any>) => RefTokenType<T> | RefTokenType<T>[];
 
@@ -158,6 +166,68 @@ export type RefTokenFacType<T> = Type<Registration<T>> | RefTokenType<T> | RefTo
  */
 export type ReferenceToken<T> = RefTokenFacType<T> | RefTokenFacType<T>[];
 
+/**
+ * reference target level.
+ *
+ * @export
+ * @enum {number}
+ */
+export enum RefTagLevel {
+    /**
+     * ref taget self only
+     */
+    self = 1,
+    /**
+     * ref taget provider.
+     */
+    providers = 1 >> 1,
+    /**
+     * self provider
+     */
+    selfProviders = self | providers,
+    /**
+     * ref target class chain.
+     */
+    chain = 1 >> 2,
+    /**
+     * chain providers.
+     */
+    chainProviders = chain | providers,
+    /**
+     * ref all.
+     */
+    all = self | providers | chain
+
+}
+
+/**
+ * ref target
+ *
+ * @export
+ * @interface IRefTarget
+ */
+export interface IRefTarget {
+    /**
+     * ref target.
+     *
+     * @type {Token<any>}
+     * @memberof IRefTarget
+     */
+    target: Token<any>;
+    /**
+     * ref target level.
+     *
+     * @type {RefTagLevel}
+     * @memberof IRefTarget
+     */
+    level: RefTagLevel;
+
+}
+
+/**
+ * reference target.
+ */
+export type RefTarget = IRefTarget | Token<any>;
 
 /**
  * express.

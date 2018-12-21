@@ -25,15 +25,7 @@ export class InjectAcitityBuilderToken<T extends IActivity> extends InjectAnnota
  * @extends {IAnnotationBuilder<IActivity>}
  */
 export interface IActivityBuilder extends IAnnotationBuilder<IActivity> {
-    /**
-     * build by config.
-     *
-     * @param {ActivityType<any>} activity
-     * @param {*} data
-     * @returns {Promise<IActivity>}
-     * @memberof IActivityTypeBuilder
-     */
-    buildByConfig(activity: ActivityType<any>, data: any): Promise<IActivity>;
+
 }
 
 /**

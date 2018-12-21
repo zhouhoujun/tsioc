@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
 import {
     Type, Token, Factory, SymbolType, ToInstance, IocState,
-    ReferenceToken, IReference, RefTokenType, RefTokenFacType, RefTokenFac, Modules, LoadType
+    ReferenceToken, IRefService, RefTokenType, RefTokenFacType, RefTokenFac, Modules, LoadType, RefTarget, IRefTarget, RefTagLevel
 } from './types';
 import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, lang, isArray, isBoolean } from './utils';
 import { Registration, isRegistrationClass } from './Registration';
@@ -177,17 +177,17 @@ export class Container implements IContainer {
      *
      * @template T
      * @param {(Token<T> | Token<any>[])} token servive token.
-     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
+     * @param {(RefTarget | RefTarget[])} [target] service refrence target.
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof Container
      */
-    getService<T>(token: Token<T> | Token<any>[], target?: Token<any> | Token<any>[] | ParamProviders, toRefToken?: boolean | Token<T> | RefTokenFac<T> | ParamProviders, defaultToken?: boolean | Token<T> | ParamProviders, ...providers: ParamProviders[]): T {
-        if (isToken(target) || isArray(target)) {
+    getService<T>(token: Token<T> | Token<any>[], target?: RefTarget | RefTarget[] | ParamProviders, toRefToken?: boolean | Token<T> | RefTokenFac<T> | ParamProviders, defaultToken?: boolean | Token<T> | ParamProviders, ...providers: ParamProviders[]): T {
+        if (isArray(target) || (isToken(target) || isToken((<IRefTarget>target).target))) {
             let tokens = [];
             (isArray(token) ? token : [token]).forEach(tk => {
                 tokens = tokens.concat(this.getTokenClassChain(tk, false).map(t => {
-                    return { service: t, isPrivate: true } as IReference<T>;
+                    return { service: t, isPrivate: true } as IRefService<T>;
                 }));
             });
             let fac: RefTokenFac<T>;
@@ -227,7 +227,7 @@ export class Container implements IContainer {
                     ...fac ? [tk => fac(tk)] : [],
                     ...tokens.map(t => (tk) => new InjectReference(t.service, tk))
                 ],
-                target,
+                target as RefTarget | RefTarget[],
                 defToken,
                 ...prds);
         } else {
@@ -240,17 +240,17 @@ export class Container implements IContainer {
      *
      * @template T
      * @param {Type<Registration<T>>} [refToken] reference service Registration Injector
-     * @param {Token<any> | Token<any>[]} target  the service reference to.
+     * @param {RefTarget | RefTarget[]} target  the service reference to.
      * @param {Token<T>} [defaultToken] default service token.
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof Container
      */
-    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any> | Token<any>[], defaultToken?: Token<T> | Token<any>[], ...providers: ParamProviders[]): T {
+    getRefService<T>(refToken: ReferenceToken<T>, target: RefTarget | RefTarget[], defaultToken?: Token<T> | Token<any>[], ...providers: ParamProviders[]): T {
         let service: T = null;
         (isArray(target) ? target : [target])
             .some(tag => {
-                this.forInTokenClassChain(tag, tk => {
+                this.forInRefTarget(tag, tk => {
                     // exclude ref registration.
                     if (tk instanceof InjectReference) {
                         return true;
@@ -545,37 +545,66 @@ export class Container implements IContainer {
     /**
      * iterate token  in  token class chain.  return false will break iterate.
      *
-     * @param {Token<any>} token
+     * @param {RefTarget} target
      * @param {(token: Token<any>, classProviders?: Token<any>[]) => boolean} express
      * @memberof Container
      */
-    forInTokenClassChain(token: Token<any>, express: (token: Token<any>, classProviders?: Token<any>[]) => boolean): void {
+    forInRefTarget(target: RefTarget, express: (token: Token<any>, classProviders?: Token<any>[]) => boolean): void {
         let type: Type<any>;
+        let token: Token<any>;
+        let level: RefTagLevel;
+        if (isToken(target)) {
+            token = target;
+            level = RefTagLevel.all;
+        } else if (target && isToken(target.target)) {
+            token = target.target;
+            level = target.level || RefTagLevel.self;
+        }
+
         if (isClass(token)) {
             type = token;
             if (!this.has(type)) {
                 this.use(type);
             }
-        } else {
+        } else if (token) {
             type = this.getTokenImpl(token);
         }
+
         if (!isClass(type)) {
             express(token, [token]);
+            return;
         }
-        lang.forInClassChain(type, ty => {
-            let tokens: Token<any>[];
-            let prdKey = new InjectClassProvidesToken(ty);
-            let prds = this.get(prdKey);
-            if (prds && prds.provides && prds.provides.length) {
-                let ppdkey = prdKey.toString();
-                let pmapKey = new InjectReference(ProviderMap, ty).toString();
-                tokens = prds.provides.filter(p => p !== ppdkey && p !== pmapKey);
+
+        let inChain = (level & RefTagLevel.chain) > 0;
+        let inProviders = (level & RefTagLevel.providers) > 0;
+        let isSelf = (level & RefTagLevel.self) > 0;
+        if (!inProviders && !inChain) {
+            if (level & RefTagLevel.self) {
+                express(token, [token])
             }
-            tokens = tokens || [];
-            return ![ty, ...tokens].some(tk => express(tk, tokens) === false);
+            return;
+        }
+
+        lang.forInClassChain(type, ty => {
+            if (ty === type && !isSelf) {
+                return true;
+            }
+            let tokens: Token<any>[];
+            if (inProviders) {
+                let prdKey = new InjectClassProvidesToken(ty);
+                let prds = this.get(prdKey);
+                if (prds && prds.provides && prds.provides.length) {
+                    let ppdkey = prdKey.toString();
+                    let pmapKey = new InjectReference(ProviderMap, ty).toString();
+                    tokens = prds.provides.filter(p => p !== ppdkey && p !== pmapKey);
+                }
+                tokens = [ty, ...(tokens || [])];
+            } else {
+                tokens = [ty];
+            }
+            return inChain && !tokens.some(tk => express(tk, tokens) === false);
         });
     }
-
 
     /**
      * get token implement class and base classes.
@@ -586,7 +615,7 @@ export class Container implements IContainer {
      */
     getTokenClassChain(token: Token<any>, chain = true): Token<any>[] {
         let tokens: Token<any>[] = [];
-        this.forInTokenClassChain(token, (tk, tks) => {
+        this.forInRefTarget(token, (tk, tks) => {
             if (chain === false) {
                 tokens = tks;
                 return false;

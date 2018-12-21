@@ -1,13 +1,51 @@
 import { Runnable } from '../runnable';
 import { IAnnotationBuilder } from './IAnnotationBuilder';
-import { Token } from '@ts-ioc/core';
+import { Token, ObjectMap } from '@ts-ioc/core';
 import { BeforeAnnotationInit, AfterAnnotationInit } from './IAnnotation';
 import { AnnotationConfigure } from './AnnotationConfigure';
 
+/**
+ * build options.
+ *
+ * @export
+ * @interface BuildOptions
+ * @template T
+ */
+export interface BuildOptions<T> extends ObjectMap<any> {
+    /**
+     * on build completed.
+     *
+     * @param {Token<any>} token
+     * @param {AnnotationConfigure<T>} config
+     * @param {BootHooks<T>} [instance]
+     * @param {IAnnotationBuilder<T>} [builder]
+     * @memberof BuildOptions
+     */
+    onCompleted?(token: Token<T>, config: AnnotationConfigure<T>, instance?: BootHooks<T>, builder?: IAnnotationBuilder<T>);
+    /**
+     * vaild toke completed.
+     *
+     * @param {Token<any>} token
+     * @returns {boolean}
+     * @memberof BuildOptions
+     */
+    vaild?(token: Token<any>): boolean;
+    /**
+     * build base on target.
+     *
+     * @type {*}
+     * @memberof BuildOptions
+     */
+    target?: any;
 
-export type AnnoBuildCompleted<T> = (config: AnnotationConfigure<T>, instance?: BootHooks<T>, builder?: IAnnotationBuilder<T>) => void;
-
-export type AnnoTokenVaild<T> = (token: Token<T>) => boolean;
+    /**
+     * runner default data.
+     *
+     * @type {*}
+     * @memberof BuildOptions
+     */
+    data?: any;
+}
 
 /**
  * boot instance.

@@ -1,6 +1,6 @@
 import { ActivityBuilderToken, IActivityBuilder } from './IActivityBuilder';
 import { isFunction, isString, Token, Express, isToken, Injectable, Providers, MetaAccessorToken } from '@ts-ioc/core';
-import { AnnotationBuilder } from '@ts-ioc/bootstrap';
+import { AnnotationBuilder, BuildOptions } from '@ts-ioc/bootstrap';
 import { IActivity, ActivityInstance } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
 import { ActivityMetaAccessorToken } from '../injectors';
@@ -27,16 +27,16 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
      *
      * @param {Token<IActivity>} token
      * @param {ActivityConfigure} config
-     * @param {any} [target]
+     * @param {BuildOptions<IActivity>} [options]
      * @returns {Promise<IActivity>}
      * @memberof ActivityBuilder
      */
-    async createInstance(token: Token<IActivity>, config: ActivityConfigure, target?: any): Promise<IActivity> {
-        let instance = await super.createInstance(token, config, target) as ActivityInstance;
+    async createInstance(token: Token<IActivity>, config: ActivityConfigure, options?: BuildOptions<IActivity>): Promise<IActivity> {
+        let instance = await super.createInstance(token, config, options) as ActivityInstance;
         if (!instance || !(instance instanceof Activity)) {
             let boot = this.getMetaAccessor(token, config).getBootToken(config, this.container);
             if (isToken(boot)) {
-                instance = await super.createInstance(boot, config, target) as ActivityInstance;
+                instance = await super.createInstance(boot, config, options) as ActivityInstance;
             }
         }
         if (!instance || !(instance instanceof Activity)) {
@@ -49,7 +49,7 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
         return instance;
     }
 
-    async buildStrategy(activity: IActivity, config: ActivityConfigure, data?: any): Promise<IActivity> {
+    async buildStrategy(activity: IActivity, config: ActivityConfigure, options?: BuildOptions<IActivity>): Promise<IActivity> {
         if (config.name) {
             activity.name = config.name;
         }
@@ -75,7 +75,7 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
     }
 
     async buildActivity<T extends IActivity>(config: ActivityType<T>, target: IActivity): Promise<T> {
-        return await this.buildByConfig(config, target) as T;
+        return await this.build(config, { target: target }) as T;
     }
 
     /**
@@ -87,8 +87,8 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
      * @returns {Promise<Runnable<T>>}
      * @memberof AnnotationBuilder
      */
-    resolveRunable(instance: IActivity, config?: ActivityConfigure, token?: Token<any>): IWorkflowInstance<any> {
-        return super.resolveRunable(instance, config, token) as IWorkflowInstance<any>;
+    resolveRunable(instance: IActivity, config?: ActivityConfigure, token?: Token<any> | BuildOptions<IActivity>, options?: BuildOptions<IActivity>): IWorkflowInstance<any> {
+        return super.resolveRunable(instance, config, token, options) as IWorkflowInstance<any>;
     }
 
     /**

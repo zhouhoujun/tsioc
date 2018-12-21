@@ -1,6 +1,6 @@
 import { IContainer, Token, RefRegistration, IMetaAccessor } from '@ts-ioc/core';
 import { Runnable } from '../runnable';
-import { AnnoTokenVaild, AnnoBuildCompleted } from './AnnoType';
+import { BuildOptions } from './AnnoType';
 import { AnnotationConfigure } from './AnnotationConfigure';
 
 const annoBuilderDesc = 'DI_AnnotationBuilder';
@@ -21,25 +21,27 @@ export interface IAnnotationBuilder<T> {
     container: IContainer;
 
     /**
-     * build token type via config.
+     * build annotation class.
      *
      * @param {Token<T>} token
      * @param {AnnotationConfigure<T>} [config]
-     * @param {*} [target] build data
-     * @returns {Promise<T>}
-     * @memberof ITypeBuilder
-     */
-    build(token: Token<T>, config?: AnnotationConfigure<T>, target?: any, completed?: AnnoBuildCompleted<T>): Promise<T>;
-
-    /**
-     * build instance via type config.
-     *
-     * @param {(Token<T> | AnnotationConfigure<T>)} config
-     * @param {*} [data] build data.
+     * @param {BuildOptions<T>} [options]
      * @returns {Promise<T>}
      * @memberof IAnnotationBuilder
      */
-    buildByConfig(config: Token<T> | AnnotationConfigure<T>, target?: any, vaild?: AnnoTokenVaild<T>): Promise<T>;
+    build(token: Token<T>, config?: AnnotationConfigure<T>, options?: BuildOptions<T>): Promise<T>;
+
+    /**
+     * build annotation class.
+     *
+     * @param {AnnotationConfigure<T>} config
+     * @param {*} [target]
+     * @param {BuildOptions<T>} [options]
+     * @returns {Promise<T>}
+     * @memberof IAnnotationBuilder
+     */
+    build(config: AnnotationConfigure<T>, target?: any, options?: BuildOptions<T>): Promise<T>;
+
     /**
      * get finally builder by token and config.
      *
@@ -54,42 +56,53 @@ export interface IAnnotationBuilder<T> {
      *
      * @param {Token<T>} token
      * @param {AnnotationConfigure<T>} config
-     * @param {*} [data] the data to init instance.
+     * @param {BuildOptions<T>} [options] the  build options to create instance.
      * @returns {Promise<T>}
      * @memberof IAnnotationBuilder
      */
-    createInstance(token: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<T>;
+    createInstance(token: Token<T>, config: AnnotationConfigure<T>, options?: BuildOptions<T>): Promise<T>;
     /**
      * bundle bootstrap instance via config.
      *
      * @param {T} instance
      * @param {AnnotationConfigure<T>} config
-     * @param {*} [data] the data to init instance.
+     * @param {BuildOptions<T>} [options] the build options to init instance.
      * @returns {Promise<T>}
      * @memberof IAnnotationBuilder
      */
-    buildStrategy(instance: T, config: AnnotationConfigure<T>, data?: any): Promise<T>;
+    buildStrategy(instance: T, config: AnnotationConfigure<T>, options?: BuildOptions<T>): Promise<T>;
 
     /**
      * run runable.
      *
      * @param {Token<T>} runable
      * @param {AnnotationConfigure<T>} config
-     * @param {*} [data]
+     * @param {BuildOptions<T>} [options] the build options build instance.
      * @returns {Promise<Runnable<T>>}
      * @memberof IAnnotationBuilder
      */
-    boot(runable: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<Runnable<T>>;
+    boot(runable: Token<T>, config: AnnotationConfigure<T>, options?: BuildOptions<T>): Promise<Runnable<T>>;
 
     /**
      * run runable.
      *
      * @param {AnnotationConfigure<T>} runable
-     * @param {*} [data] bootstrap data, build data, Runnable data.
+     * @param {BuildOptions<T>} [options] the build options build instance.
      * @returns {Promise<Runnable<T>>}
      * @memberof IAnnotationBuilder
      */
-    boot(runable: AnnotationConfigure<T>, data?: any): Promise<Runnable<T>>;
+    boot(runable: AnnotationConfigure<T>, options?: BuildOptions<T>): Promise<Runnable<T>>;
+
+    /**
+     * resove runnable.
+     *
+     * @param {T} instance
+     * @param {AnnotationConfigure<T>} [config]
+     * @param {BuildOptions<T>} [options]
+     * @returns {Runnable<T>}
+     * @memberof IAnnotationBuilder
+     */
+    resolveRunable(instance: T, config?: AnnotationConfigure<T>, options?: BuildOptions<T>): Runnable<T>;
 
     /**
      * reolve runable
@@ -97,10 +110,12 @@ export interface IAnnotationBuilder<T> {
      * @param {T} instance
      * @param {AnnotationConfigure<T>} [config]
      * @param {Token<T>} [token]
+     * @param {BuildOptions<T>} [options]
      * @returns {Runnable<T>}
      * @memberof IAnnotationBuilder
      */
-    resolveRunable(instance: T, config?: AnnotationConfigure<T>, token?: Token<T>): Runnable<T>;
+    resolveRunable(instance: T, config?: AnnotationConfigure<T>, token?: Token<T>, options?: BuildOptions<T>): Runnable<T>;
+
 
     /**
      * get meta accessor.
@@ -127,27 +142,6 @@ export interface IAnnotationBuilder<T> {
      * @memberof IAnnotationBuilder
      */
     getMetaAccessor(token: Token<any>, config: AnnotationConfigure<T>): IMetaAccessor<any>;
-}
-
-/**
- * any class bootstrap builder
- *
- * @export
- * @interface AnyBootstrapBuilder
- * @extends {IAnnotationBuilder<any>}
- */
-export interface IAnyTypeBuilder extends IAnnotationBuilder<any> {
-    /**
-     * bootstrap ioc module.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {AnnotationConfigure<T>} config
-     * @param {*} [data]
-     * @returns {Promise<T>}
-     * @memberof AnyBootstrapBuilder
-     */
-    build<T>(token: Token<T>, config: AnnotationConfigure<T>, data?: any): Promise<T>;
 }
 
 /**
