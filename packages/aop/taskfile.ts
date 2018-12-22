@@ -1,6 +1,6 @@
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 import { TaskContainer } from '@taskfr/core';
-import { Asset, AssetActivity, TsCompile, CleanToken } from '@taskfr/build';
+import { Asset, AssetActivity, TsCompile, CleanToken, StreamAssetActivity } from '@taskfr/build';
 import { IActivity } from '@taskfr/core';
 
 const resolve = require('rollup-plugin-node-resolve');
@@ -46,7 +46,7 @@ const rename = require('gulp-rename');
         (act) => rename(act.config.data.name)
     ]
 })
-export class AopRollup extends AssetActivity {
+export class AopRollup extends StreamAssetActivity {
 }
 
 @Pack({
