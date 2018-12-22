@@ -1,8 +1,8 @@
 import {
     BuildActivity, CleanActivity, TestActivity,
     AssetConfigure, BuildHandleActivity, Asset, StreamAssetConfigure,
-    InjectAssetToken, StreamAssetToken, AssetToken, BuildHandleToken,
-    CleanConfigure, CleanToken, TestConfigure, TestToken, IAssetActivity
+    InjectAssetToken, AssetToken, BuildHandleToken,
+    CleanConfigure, CleanToken, TestConfigure, TestToken, IAssetBuildHandle
 } from '@taskfr/build';
 import { Pack } from '../decorators';
 import { IPackActivity, PackToken } from './IPackActivity';
@@ -66,7 +66,7 @@ export class PackActivity extends BuildActivity implements IPackActivity {
         await super.onActivityInit(config);
         let srcRoot = this.src = this.context.to(config.src);
         let assets = await Promise.all(lang.keys(config.assets).map(name => {
-            return this.toActivity<Src, IAssetActivity, AssetConfigure>(config.assets[name],
+            return this.toActivity<Src, IAssetBuildHandle, AssetConfigure>(config.assets[name],
                 (act: any) => {
                     let flag = act instanceof BuildHandleActivity
                         || act instanceof SequenceActivity
@@ -114,7 +114,7 @@ export class PackActivity extends BuildActivity implements IPackActivity {
                         assCfg.task = new InjectAssetToken(assCfg.task);
                     }
                     if (!this.container.has(assCfg.task)) {
-                        assCfg.task = isArray(assCfg.pipes) ? StreamAssetToken : AssetToken;
+                        assCfg.task = AssetToken;
                     }
 
                     if (srcRoot && !assCfg.src) {

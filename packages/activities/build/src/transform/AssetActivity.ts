@@ -1,8 +1,8 @@
 import { Providers, Token } from '@ts-ioc/core';
 import {
-    UglifyCompilerToken, AssetActivity, AnnotationCompilerToken,
+    UglifyCompilerToken, AnnotationCompilerToken,
     SourceCompilerToken, SourcemapsCompilerToken, TestCompilerToken,
-    BuildHandleContext, BuidActivityContext, DestCompilerToken
+    BuildHandleContext, BuidActivityContext, DestCompilerToken, AssetBuildHanlde, AssetToken
 } from '../core';
 import { Asset } from '../decorators';
 import {
@@ -10,8 +10,6 @@ import {
     SourceMapsActivity, MochaTestActivity, TransformContext, TransformContextToken, DestActivity
 } from './core';
 import { IActivity, ActivityContextToken } from '@taskfr/core';
-import { StreamAssetToken } from './StreamAssetConfigure';
-
 
 /**
  * Asset Activity
@@ -21,7 +19,7 @@ import { StreamAssetToken } from './StreamAssetConfigure';
  * @extends {TaskElement}
  * @implements {IAssetActivity}
  */
-@Asset(StreamAssetToken)
+@Asset(AssetToken)
 @Providers([
     { provide: UglifyCompilerToken, useClass: StreamUglifyActivity },
     { provide: AnnotationCompilerToken, useClass: AnnotationActivity },
@@ -31,7 +29,7 @@ import { StreamAssetToken } from './StreamAssetConfigure';
     { provide: ActivityContextToken, useExisting: TransformContextToken },
     { provide: DestCompilerToken, useClass: DestActivity }
 ])
-export class StreamAssetActivity extends AssetActivity<TransformContext> {
+export class AssetActivity extends AssetBuildHanlde<TransformContext> {
     constructor() {
         super();
     }

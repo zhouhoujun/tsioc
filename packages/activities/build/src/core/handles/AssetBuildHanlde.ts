@@ -1,18 +1,17 @@
 import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
-import { Src } from '@taskfr/core';
+import { Src, Task } from '@taskfr/core';
 import { ICompiler, ISourcemapsCompiler, ISourceCompiler, CompilerConfigure, IAnnotationCompiler, IDestCompiler } from '../ICompiler';
 import {
     AssetConfigure, SourceConfigure, SourceCompilerToken, DestConfigure, DestCompilerToken,
-    UglifyConfigure, UglifyCompilerToken, SourceMapsConfigure, SourcemapsCompilerToken, AssetToken, AnnotationCompilerToken
-} from './IAssetActivity';
+    UglifyConfigure, UglifyCompilerToken, SourceMapsConfigure, SourcemapsCompilerToken, AnnotationCompilerToken, IAssetBuildHandle
+} from './IAssetBuildHandle';
 import { isBoolean, isToken } from '@ts-ioc/core';
 import { CompilerActivity } from '../CompilerActivity';
 import { IWatchActivity, WatchConfigure, WatchAcitvityToken } from './IWatchActivity';
-import { Asset } from '../../decorators';
 import { WatchActivity } from './WatchActivity';
 
-@Asset(AssetToken)
-export class AssetActivity<T extends BuildHandleContext<any>> extends BuildHandleActivity {
+@Task
+export class AssetBuildHanlde<T extends BuildHandleContext<any>> extends BuildHandleActivity implements IAssetBuildHandle {
     /**
      * source compiler
      *
@@ -210,3 +209,4 @@ export class AssetActivity<T extends BuildHandleContext<any>> extends BuildHandl
         await this.execActivity(this.dest, ctx);
     }
 }
+

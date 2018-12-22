@@ -1,7 +1,8 @@
 import { ITaskDecorator, createTaskDecorator, ActivityBuilderToken } from '@taskfr/core';
-import { AssetToken, AssetConfigure } from '../core/handles/IAssetActivity';
-import { StreamAssetConfigure, StreamAssetToken } from '../transform/StreamAssetConfigure';
-import { isArray } from '@ts-ioc/core';
+import { AssetToken, AssetConfigure } from '../core/handles/IAssetBuildHandle';
+import { StreamAssetConfigure } from '../transform/StreamAssetConfigure';
+import { isArray, isNullOrUndefined } from '@ts-ioc/core';
+import { ShellAssetConfigure, ShellAssetToken } from '../shells/IShellAssetActivity';
 
 
 /**
@@ -11,7 +12,7 @@ import { isArray } from '@ts-ioc/core';
  * @interface AssetTaskMetadata
  * @extends {AssetConfigure}
  */
-export interface AssetMetadata extends AssetConfigure, StreamAssetConfigure {
+export interface AssetMetadata extends AssetConfigure, StreamAssetConfigure, ShellAssetConfigure {
 
 }
 
@@ -20,4 +21,4 @@ export interface AssetMetadata extends AssetConfigure, StreamAssetConfigure {
  *
  * @AssetTask
  */
-export const Asset: ITaskDecorator<AssetMetadata> = createTaskDecorator<AssetMetadata>('Asset', ActivityBuilderToken, (meta) => isArray(meta.pipes) ? StreamAssetToken : AssetToken, 'AssetActivity');
+export const Asset: ITaskDecorator<AssetMetadata> = createTaskDecorator<AssetMetadata>('Asset', ActivityBuilderToken, (meta) => isNullOrUndefined(meta.src) ? ShellAssetToken : AssetToken, 'AssetActivity');

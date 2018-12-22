@@ -10,7 +10,7 @@ import {
     DestCompilerToken, CompilerActivity, DestConfigure, IDestCompiler
 } from '../../core';
 import { Asset } from '../../decorators';
-import { StreamAssetActivity } from '../AssetActivity';
+import { AssetActivity } from '../AssetActivity';
 
 
 /**
@@ -98,7 +98,7 @@ export const TsCompileToken = new InjectAssetToken('ts');
 @Providers([
     { provide: CompilerToken, useClass: TsCompiler }
 ])
-export class TsCompile extends StreamAssetActivity implements OnActivityInit {
+export class TsCompile extends AssetActivity implements OnActivityInit {
 
     /**
      * tds dest.

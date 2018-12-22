@@ -1,17 +1,17 @@
 import { DIModule } from '@ts-ioc/bootstrap';
 import * as core from './core';
 import * as assets from './assets';
-import { StreamAssetActivity } from './AssetActivity';
+import { AssetActivity } from './AssetActivity';
 
 @DIModule({
     imports: [
         core,
-        StreamAssetActivity,
+        AssetActivity,
         assets
     ],
     exports: [
         core,
-        StreamAssetActivity,
+        AssetActivity,
         assets
     ]
 })

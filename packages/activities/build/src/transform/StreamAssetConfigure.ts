@@ -1,6 +1,6 @@
 
 import { ITransformConfigure } from './core/ITransformConfigure';
-import { InjectAssetToken, AssetConfigure } from '../core/handles/IAssetActivity';
+import { AssetConfigure } from '../core/handles/IAssetBuildHandle';
 
 /**
  * stream asset configure
@@ -14,8 +14,3 @@ export interface StreamAssetConfigure extends AssetConfigure, ITransformConfigur
 
 }
 
-
-/**
- *  stream asset token.
- */
-export const StreamAssetToken = new InjectAssetToken('stream-asset');

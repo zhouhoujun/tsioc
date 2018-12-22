@@ -11,7 +11,7 @@ import { ExpressionToken, ConfigureType, CtxType, ExpressionType, Src } from '@t
  * @interface IAssetActivity
  * @extends {IBuildHandleActivity}
  */
-export interface IAssetActivity extends IBuildHandleActivity {
+export interface IAssetBuildHandle extends IBuildHandleActivity {
     /**
      * source compiler
      *
@@ -66,7 +66,7 @@ export interface IAssetActivity extends IBuildHandleActivity {
  * @extends {Registration<T>}
  * @template T
  */
-export class InjectAssetToken<T extends IAssetActivity> extends Registration<T> {
+export class InjectAssetToken<T extends IAssetBuildHandle> extends Registration<T> {
     constructor(desc: string) {
         super('AssetActivity', desc);
     }
@@ -75,7 +75,7 @@ export class InjectAssetToken<T extends IAssetActivity> extends Registration<T> 
 /**
  * asset token.
  */
-export const AssetToken = new InjectAssetToken<IAssetActivity>('');
+export const AssetToken = new InjectAssetToken<IAssetBuildHandle>('');
 
 
 /**
