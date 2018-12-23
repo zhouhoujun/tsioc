@@ -4,7 +4,7 @@ import {
 } from '@taskfr/core';
 import {
     isRegExp, isString, isArray, Express, isFunction,
-    Token, Providers, MetaAccessorToken
+    Token, Providers, MetaAccessorToken, hasClassMetadata
 } from '@ts-ioc/core';
 import { BuidActivityContext } from './BuidActivityContext';
 import minimatch = require('minimatch');

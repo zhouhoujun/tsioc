@@ -1,7 +1,8 @@
-import { IActivity } from './IActivity';
+import { IActivity, ActivityToken } from './IActivity';
 import { ActivityBuilder } from './ActivityBuilder';
 import { ActivityConfigure, Expression } from './ActivityConfigure';
 import { InjectToken, Token, IContainer, ObjectMap, Type, RefRegistration } from '@ts-ioc/core';
+import { InjectAnnoBuildStrategyToken } from '@ts-ioc/bootstrap';
 
 
 
@@ -176,3 +177,10 @@ export class InjectActivityContextToken extends RefRegistration<IActivityContext
         super(type, 'ActivityContext');
     }
 }
+
+
+
+/**
+ * Activity execute Context Token.
+ */
+export const ActivityContextToken = new InjectActivityContextToken(ActivityToken);

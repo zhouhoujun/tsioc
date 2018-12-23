@@ -7,7 +7,7 @@ import {
 } from './types';
 import {
     isClass, isFunction, isSymbol, isToken, isString, isUndefined,
-    lang, isArray, isBoolean, isRefTarget, isTypeObject
+    lang, isArray, isBoolean, isRefTarget, isTypeObject, isAbstractClass
 } from './utils';
 import { Registration, isRegistrationClass } from './Registration';
 import { MethodAccessorToken } from './IMethodAccessor';
@@ -256,17 +256,13 @@ export class Container implements IContainer {
             .some(tag => {
                 this.forInRefTarget(tag, tk => {
                     // exclude ref registration.
-                    if (tk instanceof InjectReference) {
-                        return true;
-                    }
+                    // if (tk instanceof InjectReference) {
+                    //     return true;
+                    // }
                     return !(isArray(refToken) ? refToken : [refToken]).some(stk => {
                         let tokens = this.getRefToken(stk, tk);
                         return (isArray(tokens) ? tokens : [tokens]).some(rtk => {
                             service = this.resolveRef(rtk, tk, ...providers);
-                            console.log(
-                                isToken(rtk) ? this.getTokenKey(rtk) : rtk,
-                                this.getTokenKey(tk));
-                            console.log( service ? service.constructor.name : 'null...');
                             return service !== null;
                         });
                     });
@@ -277,7 +273,6 @@ export class Container implements IContainer {
         if (!service && defaultToken) {
             service = this.resolveFirst(isArray(defaultToken) ? defaultToken : [defaultToken], ...providers);
         }
-        console.log('--------------------\n');
         return service;
     }
 
@@ -308,9 +303,9 @@ export class Container implements IContainer {
             return null;
         }
         // resolve private first.
-        if (isClass(target)) {
+        if (isClass(target) || isAbstractClass(target)) {
             let pdrmap = this.resolve(new InjectReference(ProviderMap, target));
-            console.log('..........\nhave private token:', this.getTokenKey(tk), target, pdrmap && pdrmap.hasRegister(tk));
+            // console.log('..........\nhave private token:', this.getTokenKey(tk), target, pdrmap && pdrmap.hasRegister(tk));
             if (pdrmap && pdrmap.hasRegister(tk)) {
                 return pdrmap.resolve(tk, ...providers);
             }
@@ -319,7 +314,7 @@ export class Container implements IContainer {
         if (isPrivate) {
             return null;
         }
-        console.log('..........\nhave token:', this.getTokenKey(tk), this.has(tk));
+        // console.log('..........\nhave token:', this.getTokenKey(tk), this.has(tk));
         return this.resolve(tk, ...providers);
     }
 
@@ -589,7 +584,7 @@ export class Container implements IContainer {
             type = this.getTokenImpl(token);
         }
 
-        if (!isClass(type)) {
+        if (!isClass(type) && !isAbstractClass(target)) {
             express(token);
             return;
         }

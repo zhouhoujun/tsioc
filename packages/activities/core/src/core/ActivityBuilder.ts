@@ -1,18 +1,12 @@
 import { ActivityBuilderToken, IActivityBuilder } from './IActivityBuilder';
 import { isString, Token, Express, isToken, Providers, MetaAccessorToken, Singleton } from '@ts-ioc/core';
-import { AnnotationBuilder, BuildOptions, IAnnoBuildStrategy, InjectAnnoBuildStrategyToken, AnnoBuildStrategyToken } from '@ts-ioc/bootstrap';
-import { IActivity, ActivityInstance } from './IActivity';
+import { AnnotationBuilder, BuildOptions, IAnnoBuildStrategy, AnnoBuildStrategyToken } from '@ts-ioc/bootstrap';
+import { IActivity, ActivityInstance, ActivityBuildStrategyToken } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
 import { ActivityMetaAccessorToken } from '../injectors';
 import { IWorkflowInstance } from './IWorkflowInstance';
-import { Activity } from './Activity';
+import { isAcitvity } from './Activity';
 
-
-
-/**
- *  activity build strategy token.
- */
-export const ActivityBuildStrategyToken = new InjectAnnoBuildStrategyToken(Activity);
 
 /**
  * activity builder.
@@ -40,13 +34,13 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
      */
     async createInstance(token: Token<IActivity>, config: ActivityConfigure, options?: BuildOptions<IActivity>): Promise<IActivity> {
         let instance = await super.createInstance(token, config, options) as ActivityInstance;
-        if (!instance || !(instance instanceof Activity)) {
+        if (!instance || !isAcitvity(instance)) {
             let boot = this.getMetaAccessor(token, config).getBootToken(config, this.container);
             if (isToken(boot)) {
                 instance = await super.createInstance(boot, config, options) as ActivityInstance;
             }
         }
-        if (!instance || !(instance instanceof Activity)) {
+        if (!instance || !isAcitvity(instance)) {
             return null;
         }
         return instance;
@@ -149,11 +143,10 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
  */
 @Singleton(ActivityBuildStrategyToken)
 export class ActivityBuildStrategy implements IAnnoBuildStrategy<IActivity> {
-    async build(instance: Activity, config: ActivityConfigure, options: BuildOptions<IActivity>): Promise<void> {
+    async build(instance: IActivity, config: ActivityConfigure, options: BuildOptions<IActivity>): Promise<void> {
         if (!instance) {
             return;
         }
-        console.log(instance.name, config.name);
         if (config.name) {
             instance.name = config.name;
         }

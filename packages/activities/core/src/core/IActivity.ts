@@ -2,6 +2,7 @@ import { ActivityConfigure } from './ActivityConfigure';
 import { OnActivityInit } from './OnActivityInit';
 import { IActivityContext, IActivityContextResult } from './IActivityContext';
 import { Registration, IContainer, Token, InjectToken } from '@ts-ioc/core';
+import { InjectAnnoBuildStrategyToken } from '@ts-ioc/bootstrap';
 
 /**
  * Inject AcitityToken
@@ -23,6 +24,13 @@ export const WorkflowId = new InjectToken<string>('Workflow_ID');
  * task token.
  */
 export const ActivityToken = new InjectAcitityToken<IActivity>('');
+
+
+
+/**
+ *  activity build strategy token.
+ */
+export const ActivityBuildStrategyToken = new InjectAnnoBuildStrategyToken(ActivityToken);
 
 /**
  * activity instance.
@@ -95,6 +103,15 @@ export interface IActivity {
      * @memberof IActivityObject
      */
     run(ctx?: IActivityContext): Promise<IActivityContext>;
+
+    /**
+     * task init.
+     *
+     * @param {ActivityConfigure} config
+     * @returns {Promise<void>}
+     * @memberof IActivity
+     */
+    onActivityInit(config: ActivityConfigure): Promise<void>;
 }
 
 /**

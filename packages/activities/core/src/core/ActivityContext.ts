@@ -4,20 +4,15 @@ import {
 } from '@ts-ioc/core';
 import { IActivity } from './IActivity';
 import { ITranslator } from './Translator';
-import { Activity } from './Activity';
 import { Events, AppConfigureToken, ProcessRunRootToken } from '@ts-ioc/bootstrap';
-import { InjectActivityContextToken, InputDataToken, IActivityContextResult, CtxType } from './IActivityContext';
+import { InputDataToken, IActivityContextResult, CtxType, ActivityContextToken } from './IActivityContext';
 import { ActivityBuilderToken } from './IActivityBuilder';
 import { ActivityBuilder } from './ActivityBuilder';
 import { Expression, ActivityConfigure, isWorkflowInstance } from './ActivityConfigure';
 import { Task } from '../decorators';
+import { isAcitvity } from './Activity';
 
 
-
-/**
- * Activity execute Context Token.
- */
-export const ActivityContextToken = new InjectActivityContextToken(Activity);
 
 /**
  * base activity execute context.
@@ -165,7 +160,7 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
             return Promise.resolve(expression(target, this));
         } else if (isPromise(expression)) {
             return expression;
-        } else if (expression instanceof Activity) {
+        } else if (isAcitvity(expression)) {
             return expression.run(this).then(ctx => ctx.result);
         } else if (isWorkflowInstance(expression)) {
             return expression.start(this).then(ctx => ctx.result);

@@ -20,8 +20,8 @@ export class CoreModule {
     setup() {
         let container = this.container;
         let lifeScope = container.getLifeScope();
-        lifeScope.registerDecorator(Workflow, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
-        lifeScope.registerDecorator(Task, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
+        lifeScope.registerDecorator(Workflow, CoreActions.bindProvider);
+        lifeScope.registerDecorator(Task, CoreActions.bindProvider);
 
         container.bindProvider(InputDataToken, null);
         container.use(injectors)

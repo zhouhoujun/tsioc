@@ -1,5 +1,5 @@
 import { Type, AbstractType, Token, SymbolType } from './types';
-import { isClass, isFunction, getClassName } from './utils';
+import { isClass, isFunction, getClassName, isAbstractClass } from './utils';
 
 
 /**
@@ -69,7 +69,7 @@ export class Registration<T> {
      * @memberof Registration
      */
     getClass(): Type<T> | AbstractType<T> {
-        if (isClass(this.classType)) {
+        if (isClass(this.classType) || isAbstractClass(this.classType)) {
             return this.classType;
         }
         return null;
@@ -98,14 +98,18 @@ export class Registration<T> {
     protected format(reg: Token<T>): string {
         if (reg instanceof Registration) {
             let name = '';
-            if (isFunction(reg.classType)) {
+            if (isClass(reg.classType) || isAbstractClass(reg.classType)) {
                 name = `{${getClassName(reg.classType)}}`;
+            } else if (isFunction(reg.classType)) {
+                name = reg.classType.name;
             } else if (reg.classType) {
                 name = reg.classType.toString();
             }
             return [reg.type, name, reg.desc].filter(n => n).join('_');
-        } else if (isFunction(reg)) {
+        } else if (isClass(reg) || isAbstractClass(reg)) {
             return `{${getClassName(reg)}}`;
+        } else if (isFunction(reg)) {
+            return reg.name;
         } else if (reg) {
             return reg.toString();
         }

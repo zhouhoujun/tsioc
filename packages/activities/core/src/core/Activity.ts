@@ -4,11 +4,11 @@ import {
 } from '@ts-ioc/core';
 import { Task } from '../decorators';
 import { OnActivityInit } from './OnActivityInit';
+import { ActivityContext } from './ActivityContext';
 import { ActivityMetaAccessorToken } from '../injectors';
 import { IActivity, ActivityToken, WorkflowId } from './IActivity';
 import { ActivityConfigure, ExpressionType, Expression, ActivityType } from './ActivityConfigure';
-import { ActivityContext, ActivityContextToken } from './ActivityContext';
-import { IActivityContext, InputDataToken, InjectActivityContextToken } from './IActivityContext';
+import { IActivityContext, InputDataToken, InjectActivityContextToken, ActivityContextToken } from './IActivityContext';
 
 
 /**
@@ -230,4 +230,15 @@ export abstract class Activity implements IActivity, OnActivityInit {
         return this.context.getBuilder().buildActivity(config, this) as Promise<T>;
     }
 
+}
+
+/**
+ * is acitivty or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is Activity}
+ */
+export function isAcitvity(target: any): target is Activity {
+    return target instanceof Activity;
 }
