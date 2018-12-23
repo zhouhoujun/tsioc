@@ -1,4 +1,4 @@
-import { Src, ContextActivity, Task, ActivityContext, InputDataToken, InjectActivityContextToken, Activity, ActivityMetaAccessorToken } from '@taskfr/core';
+import { Src, ContextActivity, Task, ActivityContext, InputDataToken, InjectActivityContextToken, ActivityMetaAccessorToken } from '@taskfr/core';
 import { Inject, Injectable, ObjectMap, Express2, isArray, isString, assertExp, Providers, MetaAccessorToken } from '@ts-ioc/core';
 import { toAbsolutePath } from '@ts-ioc/platform-server';
 import { existsSync, readdirSync, lstatSync } from 'fs';

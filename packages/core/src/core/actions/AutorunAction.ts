@@ -8,8 +8,6 @@ import { hasClassMetadata, getTypeMetadata } from '../factories';
 import { Autorun, IocExt } from '../decorators';
 
 
-
-
 /**
  * auto run action data.
  *

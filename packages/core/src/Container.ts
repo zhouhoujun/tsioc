@@ -263,10 +263,6 @@ export class Container implements IContainer {
                         let tokens = this.getRefToken(stk, tk);
                         return (isArray(tokens) ? tokens : [tokens]).some(rtk => {
                             service = this.resolveRef(rtk, tk, ...providers);
-                            // service && console.log(
-                            //     isToken(rtk) ? this.getTokenKey(rtk) : rtk,
-                            //     this.getTokenKey(tk),
-                            //     service ? service.constructor.name : 'null...');
                             return service !== null;
                         });
                     });

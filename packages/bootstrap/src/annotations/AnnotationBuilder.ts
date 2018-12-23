@@ -1,7 +1,8 @@
 import {
     Token, isToken, IContainer, isClass, Inject, ContainerToken,
     lang, isFunction, Container, IMetaAccessor, ParamProviders,
-    InjectMetaAccessorToken, MetaAccessorToken, isNullOrUndefined, RefTagLevel, isTypeObject, isUndefined, Singleton
+    InjectMetaAccessorToken, MetaAccessorToken, isNullOrUndefined,
+    RefTagLevel, isUndefined, Singleton
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import {
@@ -103,7 +104,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             if (strategy) {
                 await strategy.build(instance, cfg, options);
             }
-            if (options && isFunction(options.onCompleted)) {
+           if (options && isFunction(options.onCompleted)) {
                 options.onCompleted(tk, cfg, instance, this);
             }
             return instance;
@@ -123,15 +124,13 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         let builder: IAnnotationBuilder<T>;
         let tk: Token<T>;
         let cfg: AnnotationConfigure<T>;
-        let onComplete = (token, config, hook, builder) => {
-            console.log('has build complete....')
+        let onCompleted = (token, config, hook, builder) => {
             tk = token;
             cfg = config;
             instance = hook;
             builder = builder;
         };
         if (isToken(runable)) {
-            console.log('boot with token')
             if (isUndefined(options)) {
                 options = config as BuildOptions<T>;
                 cfg = null;
@@ -139,18 +138,16 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
                 cfg = config as AnnotationConfigure<T>;
             }
             await this.build(runable, cfg, lang.assign({
-                onComplete: onComplete
+                onCompleted: onCompleted
             }, options));
         } else {
-            console.log('boot with config')
             await this.build(runable, lang.assign({
-                onComplete: onComplete
+                onCompleted: onCompleted
             }, config));
         }
         builder = builder || this;
 
         let runner = builder.resolveRunable(instance, cfg, tk, options);
-        console.log('runner:', runner, instance, cfg, tk, options);
         let data = options ? options.data : undefined;
         if (isRunner(runner)) {
             await runner.run(data);
@@ -277,12 +274,8 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
     }
 
     protected resolveToken(token: Token<T>, target?: any) {
-        let targetClass;
-        if (isTypeObject(target)) {
-            targetClass = lang.getClass(target);
-        }
-        if (targetClass) {
-            return this.container.getService(token, targetClass);
+        if (target) {
+            return this.container.getService(token, target);
         }
         return this.container.resolve(token);
     }
