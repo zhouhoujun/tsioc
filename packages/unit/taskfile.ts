@@ -1,8 +1,8 @@
 
 import { TaskContainer } from '@taskfr/core';
 import { IActivity } from '@taskfr/core';
-import { Asset, AssetActivity, CleanToken, TsCompile, StreamAssetToken } from '@taskfr/build';
-import { Pack, PackActivity, PackModule } from '@taskfr/pack';
+import { Asset, CleanToken, TsCompile, AssetToken } from '@taskfr/build';
+import { Pack, PackModule } from '@taskfr/pack';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
@@ -69,7 +69,7 @@ export class BootRollup {
                     pipes: [
                         () => rename('unit.umd.min.js')
                     ],
-                    activity: StreamAssetToken
+                    activity: AssetToken
                 }
             ]
         },

@@ -3,12 +3,13 @@ import {
     Providers, MetaAccessorToken, isFunction
 } from '@ts-ioc/core';
 import { Task } from '../decorators';
+import { OnActivityInit } from './OnActivityInit';
+import { ActivityMetaAccessorToken } from '../injectors';
 import { IActivity, ActivityToken, WorkflowId } from './IActivity';
 import { ActivityConfigure, ExpressionType, Expression, ActivityType } from './ActivityConfigure';
-import { OnActivityInit } from './OnActivityInit';
 import { ActivityContext, ActivityContextToken } from './ActivityContext';
 import { IActivityContext, InputDataToken, InjectActivityContextToken } from './IActivityContext';
-import { ActivityMetaAccessorToken } from '../injectors';
+
 
 /**
  * activity base.

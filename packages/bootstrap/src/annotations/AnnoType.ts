@@ -1,6 +1,6 @@
 import { Runnable } from '../runnable';
 import { IAnnotationBuilder } from './IAnnotationBuilder';
-import { Token, ObjectMap } from '@ts-ioc/core';
+import { Token } from '@ts-ioc/core';
 import { BeforeAnnotationInit, AfterAnnotationInit } from './IAnnotation';
 import { AnnotationConfigure } from './AnnotationConfigure';
 
@@ -11,7 +11,7 @@ import { AnnotationConfigure } from './AnnotationConfigure';
  * @interface BuildOptions
  * @template T
  */
-export interface BuildOptions<T> extends ObjectMap<any> {
+export interface BuildOptions<T> {
 
     /**
      * annotation builder.
@@ -25,11 +25,11 @@ export interface BuildOptions<T> extends ObjectMap<any> {
      *
      * @param {Token<any>} token
      * @param {AnnotationConfigure<T>} config
-     * @param {BootHooks<T>} [instance]
+     * @param {T} [instance]
      * @param {IAnnotationBuilder<T>} [builder]
      * @memberof BuildOptions
      */
-    onCompleted?(token: Token<T>, config: AnnotationConfigure<T>, instance?: BootHooks<T>, builder?: IAnnotationBuilder<T>);
+    onCompleted?(token: Token<T>, config: AnnotationConfigure<T>, instance?: T, builder?: IAnnotationBuilder<T>);
     /**
      * vaild toke completed.
      *

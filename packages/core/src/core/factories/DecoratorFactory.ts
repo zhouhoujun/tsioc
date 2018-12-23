@@ -2,8 +2,11 @@ import 'reflect-metadata';
 import { PropertyMetadata, MethodMetadata, ParameterMetadata, Metadate, ClassMetadata } from '../metadatas';
 import { DecoratorType } from './DecoratorType';
 import { ArgsIterator } from './ArgsIterator';
-import { isClass, isAbstractClass, isMetadataObject, isUndefined, isFunction, isNumber, isArray, lang, isString } from '../../utils';
-import { Type, AbstractType, ObjectMap, Express } from '../../types';
+import {
+    isClass, isAbstractClass, isMetadataObject, isUndefined, isFunction,
+    isNumber, isArray, lang, isString
+} from '../../utils';
+import { Type, AbstractType, ObjectMap } from '../../types';
 
 
 export const ParamerterName = 'paramerter_names';
@@ -151,23 +154,6 @@ function storeMetadata<T>(name: string, metaName: string, args: any[], metadata?
 }
 
 /**
- * get decirator type.
- *
- * @param {*} target
- * @param {Express<string, boolean>} exp
- * @param {boolean} [own=false]
- * @returns {string[]}
- */
-function getDecoratorsOfType(target: any, exp: Express<string, boolean>, own = false): string[] {
-    return (own ? Reflect.getOwnMetadataKeys(target) : Reflect.getMetadataKeys(target)).filter(d => {
-        if (d && isString(d)) {
-            return exp(d);
-        }
-        return false;
-    });
-}
-
-/**
  * get type decorators of class.
  *
  * @export
@@ -175,12 +161,16 @@ function getDecoratorsOfType(target: any, exp: Express<string, boolean>, own = f
  * @returns {string[]}
  */
 export function getClassDecorators(target: Type<any> | AbstractType<any>): string[] {
-    return getDecoratorsOfType(target, (d) => {
-        if (!/^@/.test(d)) {
-            return false;
-        }
-        return !/__\w+$/.test(d);
-    }, true);
+    return Reflect.getOwnMetadataKeys(target)
+        .filter(d => {
+            if (!(d && isString(d))) {
+                return false;
+            }
+            if (!/^@/.test(d)) {
+                return false;
+            }
+            return !/__\w+$/.test(d);
+        });
 }
 
 /**
@@ -191,7 +181,9 @@ export function getClassDecorators(target: Type<any> | AbstractType<any>): strin
  * @returns {string[]}
  */
 export function getMethodDecorators(target: Type<any> | AbstractType<any>): string[] {
-    return getDecoratorsOfType(target, (d) => /^@\S+__method$/.test(d)).map(d => d.replace(/__method$/ig, ''));
+    return Reflect.getMetadataKeys(target)
+        .filter(d => d && isString(d) && /^@\S+__method$/.test(d))
+        .map(d => d.replace(/__method$/ig, ''));
 }
 
 
@@ -203,7 +195,9 @@ export function getMethodDecorators(target: Type<any> | AbstractType<any>): stri
  * @returns {string[]}
  */
 export function getPropDecorators(target: Type<any> | AbstractType<any>): string[] {
-    return getDecoratorsOfType(target, (d) => /^@\S+__props$/.test(d)).map(d => d.replace(/__props$/ig, ''));
+    return Reflect.getMetadataKeys(target)
+        .filter(d => d && isString(d) && /^@\S+__props$/.test(d))
+        .map(d => d.replace(/__props$/ig, ''));
 }
 
 /**
@@ -214,12 +208,9 @@ export function getPropDecorators(target: Type<any> | AbstractType<any>): string
  * @returns {string[]}
  */
 export function getParamDecorators(target: any, propertyKey?: string): string[] {
-    return ((propertyKey && propertyKey !== 'constructor') ? Reflect.getMetadataKeys(target, propertyKey) : Reflect.getOwnMetadataKeys(lang.getClass(target)) || []).filter(d => {
-        if (d && isString(d)) {
-            return /^@\S+__params$/.test(d);
-        }
-        return false;
-    }).map((d: string) => d.replace(/__params$/ig, ''));
+    return ((propertyKey && propertyKey !== 'constructor') ? Reflect.getMetadataKeys(target, propertyKey) : Reflect.getOwnMetadataKeys(lang.getClass(target)) || [])
+        .filter(d => d && isString(d) && /^@\S+__params$/.test(d))
+        .map((d: string) => d.replace(/__params$/ig, ''));
 }
 
 /**

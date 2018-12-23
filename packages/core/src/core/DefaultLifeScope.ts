@@ -80,6 +80,28 @@ export class DefaultLifeScope implements LifeScope {
         }
     }
 
+    hasDecorator(target: Type<any> | any, dtype: DecoratorType, match?: Express<DecorSummary, boolean>): boolean {
+        let decors;
+        switch (dtype) {
+            case DecoratorType.Class:
+                decors = getClassDecorators(target);
+                break;
+            case DecoratorType.Property:
+                decors = getPropDecorators(target);
+                break;
+            case DecoratorType.Parameter:
+                decors = getParamDecorators(target);
+                break;
+            case DecoratorType.Method:
+                decors = getMethodDecorators(target);
+                break;
+        }
+        if (decors) {
+            return decors.some(dec => this.decorators.some(d => d.name === dec && match(d)));
+        }
+        return false;
+    }
+
     getClassDecorators(type: Type<any>, match?: Express<DecorSummary, boolean>): DecorSummary[] {
         return getClassDecorators(type)
             .map(dec => this.decorators.find(d => d.name === dec))

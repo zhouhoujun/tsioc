@@ -49,7 +49,7 @@ export interface IAnnotationBuilder<T> {
      * @returns {Promise<T>}
      * @memberof IAnnotationBuilder
      */
-    build(token: Token<T>, config: AnnotationConfigure<T>, options?: BuildOptions<T>): Promise<T>;
+    build(token: Token<T>, config: AnnotationConfigure<T>, options: BuildOptions<T>): Promise<T>;
 
     /**
      * get finally builder by token and config.
@@ -71,27 +71,6 @@ export interface IAnnotationBuilder<T> {
      * @memberof IAnnotationBuilder
      */
     createInstance(token: Token<T>, config: AnnotationConfigure<T>, options?: BuildOptions<T>): Promise<T>;
-    /**
-     * bundle bootstrap instance via config.
-     *
-     * @param {T} instance
-     * @param {AnnotationConfigure<T>} config
-     * @param {BuildOptions<T>} [options] the build options to init instance.
-     * @returns {Promise<T>}
-     * @memberof IAnnotationBuilder
-     */
-    buildStrategy(instance: T, config: AnnotationConfigure<T>, options?: BuildOptions<T>): Promise<T>;
-
-    /**
-     * run runable.
-     *
-     * @param {Token<T>} runable
-     * @param {AnnotationConfigure<T>} config
-     * @param {BuildOptions<T>} [options] the build options build instance.
-     * @returns {Promise<Runnable<T>>}
-     * @memberof IAnnotationBuilder
-     */
-    boot(runable: Token<T>, config: AnnotationConfigure<T>, options?: BuildOptions<T>): Promise<Runnable<T>>;
 
     /**
      * run runable.
@@ -102,6 +81,27 @@ export interface IAnnotationBuilder<T> {
      * @memberof IAnnotationBuilder
      */
     boot(runable: AnnotationConfigure<T>, options?: BuildOptions<T>): Promise<Runnable<T>>;
+
+    /**
+     * run runable.
+     *
+     * @param {Token<T>} runable
+     * @param {BuildOptions<T>} [options]
+     * @returns {Promise<Runnable<T>>}
+     * @memberof IAnnotationBuilder
+     */
+    boot(runable: Token<T>, options?: BuildOptions<T>): Promise<Runnable<T>>;
+
+    /**
+     * run runable.
+     *
+     * @param {Token<T>} runable
+     * @param {AnnotationConfigure<T>} config
+     * @param {BuildOptions<T>} options the build options build instance.
+     * @returns {Promise<Runnable<T>>}
+     * @memberof IAnnotationBuilder
+     */
+    boot(runable: Token<T>, config: AnnotationConfigure<T>, options: BuildOptions<T>): Promise<Runnable<T>>;
 
     /**
      * resove runnable.

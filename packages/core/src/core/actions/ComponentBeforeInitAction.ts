@@ -5,6 +5,7 @@ import { IContainer } from '../../IContainer';
 import { BeforeInit } from '../ComponentLifecycle';
 import { isFunction } from '../../utils';
 import { CoreActions } from './CoreActions';
+import { DecoratorType } from '../factories';
 
 
 
@@ -37,9 +38,11 @@ export class ComponentBeforeInitAction extends ActionComposite {
             return;
         }
         if (data.targetType && data.target) {
-            let component = data.target as BeforeInit;
-            if (isFunction(component.beforeInit)) {
-                container.syncInvoke(data.targetType, 'beforeInit', data.target);
+            if (container.getLifeScope().hasDecorator(data.targetType, DecoratorType.Class, surm => surm.actions.includes(CoreActions.componentBeforeInit))) {
+                let component = data.target as BeforeInit;
+                if (isFunction(component.beforeInit)) {
+                    container.syncInvoke(data.targetType, 'beforeInit', data.target);
+                }
             }
         }
     }

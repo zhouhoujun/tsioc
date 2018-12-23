@@ -106,6 +106,16 @@ export interface LifeScope {
      */
     filerDecorators(express: Express<DecorSummary, boolean>): DecorSummary[];
 
+    /**
+     * has decorator.
+     *
+     * @param {(Type<any> | any)} target
+     * @param {DecoratorType} dtype
+     * @param {Express<DecorSummary, boolean>} [match]
+     * @returns {boolean}
+     * @memberof LifeScope
+     */
+    hasDecorator(target: Type<any> | any, dtype: DecoratorType, match?: Express<DecorSummary, boolean>): boolean;
 
     /**
      * get class decorators

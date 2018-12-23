@@ -1,5 +1,5 @@
-import { ExecuteActivity } from './ExecuteActivity';
 import { Task } from '../decorators';
+import { ExecuteActivity } from './ExecuteActivity';
 
 
 /**

@@ -1,6 +1,7 @@
 import {
     ChainActivity, Task, ChainConfigure, CtxType, Src,
-    ExpressionToken, ConfigureType, Active, IActivity, InjectAcitityToken, ActivityMetaAccessorToken
+    ExpressionToken, ConfigureType, Active, IActivity,
+    InjectAcitityToken, ActivityMetaAccessorToken
 } from '@taskfr/core';
 import { isBoolean, Token, Providers, MetaAccessorToken } from '@ts-ioc/core';
 import { WatchActivity, WatchConfigure, WatchAcitvityToken } from './handles';

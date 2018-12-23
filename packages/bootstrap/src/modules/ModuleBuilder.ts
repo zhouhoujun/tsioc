@@ -110,11 +110,9 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         let bootToken = accessor.getBootToken(cfg, container);
         if (bootToken) {
             let anBuilder = this.getAnnoBuilder(container, bootToken, cfg);
-            return await anBuilder.boot(bootToken, cfg, options);
-        } else {
-            let mdBuilder = this.getAnnoBuilder(container, injmdl.token || injmdl.type, cfg);
-            return await mdBuilder.boot(injmdl.token || injmdl.type, cfg, options);
+            return await anBuilder.boot(bootToken, cfg, options || null);
         }
+        return null;
     }
 
     /**

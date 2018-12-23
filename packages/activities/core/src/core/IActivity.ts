@@ -1,7 +1,7 @@
-import { Registration, IContainer, Token, InjectToken } from '@ts-ioc/core';
 import { ActivityConfigure } from './ActivityConfigure';
 import { OnActivityInit } from './OnActivityInit';
 import { IActivityContext, IActivityContextResult } from './IActivityContext';
+import { Registration, IContainer, Token, InjectToken } from '@ts-ioc/core';
 
 /**
  * Inject AcitityToken

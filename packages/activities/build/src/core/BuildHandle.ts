@@ -1,4 +1,7 @@
-import { IHandleActivity, Expression, HandleConfigure, ExpressionType, Active, CtxType, InjectAcitityToken } from '@taskfr/core';
+import {
+    IHandleActivity, Expression, HandleConfigure, ExpressionType,
+    Active, CtxType, InjectAcitityToken
+} from '@taskfr/core';
 import { Express } from '@ts-ioc/core';
 import { ICompiler } from './ICompiler';
 

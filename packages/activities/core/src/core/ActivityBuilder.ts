@@ -1,6 +1,6 @@
 import { ActivityBuilderToken, IActivityBuilder } from './IActivityBuilder';
-import { isFunction, isString, Token, Express, isToken, Injectable, Providers, MetaAccessorToken } from '@ts-ioc/core';
-import { AnnotationBuilder, BuildOptions } from '@ts-ioc/bootstrap';
+import { isString, Token, Express, isToken, Injectable, Providers, MetaAccessorToken, Singleton } from '@ts-ioc/core';
+import { AnnotationBuilder, BuildOptions, IAnnoBuildStrategy, InjectAnnoBuildStrategyToken } from '@ts-ioc/bootstrap';
 import { IActivity, ActivityInstance } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
 import { ActivityMetaAccessorToken } from '../injectors';
@@ -16,7 +16,7 @@ import { Activity } from './Activity';
  * @extends {AnnotationBuilder<IActivity>}
  * @implements {IActivityBuilder}
  */
-@Injectable(ActivityBuilderToken)
+@Singleton(ActivityBuilderToken)
 @Providers([
     { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken }
 ])
@@ -42,19 +42,7 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
         if (!instance || !(instance instanceof Activity)) {
             return null;
         }
-
-        if (isFunction(instance.onActivityInit)) {
-            await Promise.resolve(instance.onActivityInit(config));
-        }
         return instance;
-    }
-
-    async buildStrategy(activity: IActivity, config: ActivityConfigure, options?: BuildOptions<IActivity>): Promise<IActivity> {
-        if (config.name) {
-            activity.name = config.name;
-        }
-        activity.config = config;
-        return activity;
     }
 
     /**
@@ -143,3 +131,28 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
         return result;
     }
 }
+
+
+export const ActivityBuildStrategyToken = new InjectAnnoBuildStrategyToken(Activity);
+
+/**
+ * activity build strategy.
+ *
+ * @export
+ * @class ActivityBuildStrategy
+ * @implements {IAnnoBuildStrategy<IActivity>}
+ */
+@Singleton(ActivityBuildStrategyToken)
+export class ActivityBuildStrategy implements IAnnoBuildStrategy<IActivity> {
+    async build(instance: Activity, config: ActivityConfigure, options: BuildOptions<IActivity>): Promise<void> {
+        if (!instance) {
+            return;
+        }
+        if (config.name) {
+            instance.name = config.name;
+        }
+        instance.config = config;
+        await instance.onActivityInit(config);
+    }
+}
+

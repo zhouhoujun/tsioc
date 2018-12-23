@@ -8,13 +8,14 @@ import {
 } from '@ts-ioc/core';
 import { BuidActivityContext } from './BuidActivityContext';
 import minimatch = require('minimatch');
-import { CompilerToken, ICompiler } from './ICompiler';
+import { CompilerToken } from './ICompiler';
+import { CompilerActivity } from './CompilerActivity';
 import { BuildActivity } from './BuildActivity';
 import { Inject, Injectable, Refs } from '@ts-ioc/core';
 import { InputDataToken, InjectActivityContextToken, ActivityContextToken } from '@taskfr/core';
 import { NodeActivityContext } from './NodeActivity';
 import { BuildHandleToken, BuildHandleConfigure } from './BuildHandle';
-import { CompilerActivity } from './CompilerActivity';
+
 
 /**
  * build handle activity.
