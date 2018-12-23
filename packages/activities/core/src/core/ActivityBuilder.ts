@@ -1,12 +1,18 @@
 import { ActivityBuilderToken, IActivityBuilder } from './IActivityBuilder';
-import { isString, Token, Express, isToken, Injectable, Providers, MetaAccessorToken, Singleton } from '@ts-ioc/core';
-import { AnnotationBuilder, BuildOptions, IAnnoBuildStrategy, InjectAnnoBuildStrategyToken } from '@ts-ioc/bootstrap';
+import { isString, Token, Express, isToken, Providers, MetaAccessorToken, Singleton } from '@ts-ioc/core';
+import { AnnotationBuilder, BuildOptions, IAnnoBuildStrategy, InjectAnnoBuildStrategyToken, AnnoBuildStrategyToken } from '@ts-ioc/bootstrap';
 import { IActivity, ActivityInstance } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
 import { ActivityMetaAccessorToken } from '../injectors';
 import { IWorkflowInstance } from './IWorkflowInstance';
 import { Activity } from './Activity';
 
+
+
+/**
+ *  activity build strategy token.
+ */
+export const ActivityBuildStrategyToken = new InjectAnnoBuildStrategyToken(Activity);
 
 /**
  * activity builder.
@@ -18,7 +24,8 @@ import { Activity } from './Activity';
  */
 @Singleton(ActivityBuilderToken)
 @Providers([
-    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken }
+    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken },
+    { provide: AnnoBuildStrategyToken, useExisting: ActivityBuildStrategyToken }
 ])
 export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IActivityBuilder {
 
@@ -133,8 +140,6 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
 }
 
 
-export const ActivityBuildStrategyToken = new InjectAnnoBuildStrategyToken(Activity);
-
 /**
  * activity build strategy.
  *
@@ -148,6 +153,7 @@ export class ActivityBuildStrategy implements IAnnoBuildStrategy<IActivity> {
         if (!instance) {
             return;
         }
+        console.log(instance.name, config.name);
         if (config.name) {
             instance.name = config.name;
         }

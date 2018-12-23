@@ -56,7 +56,6 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             tk => new InjectMetaAccessorToken(tk), config ? (config.defaultMetaAccessor || MetaAccessorToken) : MetaAccessorToken);
     }
 
-
     /**
      * build token type with config.
      *
@@ -100,11 +99,18 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             if (!instance) {
                 return null;
             }
-            let strategy = this.container.getService(AnnoBuildStrategyToken, tk, tk => new InjectAnnoBuildStrategyToken(tk))
+            let strategy = this.container.getService(AnnoBuildStrategyToken,
+                [
+                    instance,
+                    tk,
+                    ...((options && options.target) ? [{ target: lang.getClass(options.target), level: RefTagLevel.self }] : []),
+                    { target: lang.getClass(this), level: RefTagLevel.self }
+
+                ], tk => new InjectAnnoBuildStrategyToken(tk));
             if (strategy) {
                 await strategy.build(instance, cfg, options);
             }
-           if (options && isFunction(options.onCompleted)) {
+            if (options && isFunction(options.onCompleted)) {
                 options.onCompleted(tk, cfg, instance, this);
             }
             return instance;
@@ -190,9 +196,9 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             return this.container.getService(
                 [RunnerToken, ServiceToken],
                 [
-                    { target: tk, level: RefTagLevel.selfProviders },
+                    tk,
                     ...((options && options.target) ? [{ target: lang.getClass(options.target), level: RefTagLevel.self }] : []),
-                    { target: tk, level: RefTagLevel.chainProviders }
+                    { target: lang.getClass(this), level: RefTagLevel.self }
 
                 ],
                 tk => new InjectRunnableToken(tk), config.defaultRunnable || true, ...providers);
@@ -216,7 +222,6 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
     getBuilder(token: Token<T>, config?: AnnotationConfigure<T>, options?: BuildOptions<T>): IAnnotationBuilder<T> {
         let builder: IAnnotationBuilder<T>;
-        let providers = [{ provide: ContainerToken, useValue: this.container }, { provide: Container, useValue: this.container }] as ParamProviders[];
         if (config && config.annoBuilder) {
             if (isClass(config.annoBuilder)) {
                 if (!this.container.has(config.annoBuilder)) {
@@ -224,7 +229,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
                 }
             }
             if (isToken(config.annoBuilder)) {
-                builder = this.container.resolve(config.annoBuilder, ...providers);
+                builder = this.container.resolve(config.annoBuilder);
             } else if (config.annoBuilder instanceof AnnotationBuilder) {
                 builder = config.annoBuilder;
             }
@@ -239,8 +244,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
                     ...(options && options.target) ? [{ target: lang.getClass(options.target), level: RefTagLevel.self }] : []
                 ],
                 (tk) => new InjectAnnotationBuilder(tk),
-                config.defaultAnnoBuilder || AnnotationBuilderToken,
-                ...providers) as IAnnotationBuilder<T>;
+                config.defaultAnnoBuilder || AnnotationBuilderToken) as IAnnotationBuilder<T>;
         }
 
         if (builder && !builder.container) {

@@ -263,6 +263,10 @@ export class Container implements IContainer {
                         let tokens = this.getRefToken(stk, tk);
                         return (isArray(tokens) ? tokens : [tokens]).some(rtk => {
                             service = this.resolveRef(rtk, tk, ...providers);
+                            console.log(
+                                isToken(rtk) ? this.getTokenKey(rtk) : rtk,
+                                this.getTokenKey(tk));
+                            console.log( service ? service.constructor.name : 'null...');
                             return service !== null;
                         });
                     });
@@ -273,7 +277,7 @@ export class Container implements IContainer {
         if (!service && defaultToken) {
             service = this.resolveFirst(isArray(defaultToken) ? defaultToken : [defaultToken], ...providers);
         }
-
+        console.log('--------------------\n');
         return service;
     }
 
@@ -306,6 +310,7 @@ export class Container implements IContainer {
         // resolve private first.
         if (isClass(target)) {
             let pdrmap = this.resolve(new InjectReference(ProviderMap, target));
+            console.log('..........\nhave private token:', this.getTokenKey(tk), target, pdrmap && pdrmap.hasRegister(tk));
             if (pdrmap && pdrmap.hasRegister(tk)) {
                 return pdrmap.resolve(tk, ...providers);
             }
@@ -314,6 +319,7 @@ export class Container implements IContainer {
         if (isPrivate) {
             return null;
         }
+        console.log('..........\nhave token:', this.getTokenKey(tk), this.has(tk));
         return this.resolve(tk, ...providers);
     }
 

@@ -173,6 +173,6 @@ export interface IActivityContextResult<T> extends IActivityContext {
  */
 export class InjectActivityContextToken extends RefRegistration<IActivityContext> {
     constructor(type: Token<IActivity>) {
-        super(type, 'Activity_Context');
+        super(type, 'ActivityContext');
     }
 }
