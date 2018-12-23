@@ -17,7 +17,19 @@ import { ExpressionActivity } from './ExpressionActivity';
  * @template TVal
  */
 export interface KeyValue<TKey, TVal> {
+    /**
+     * key of keyvalue pair.
+     *
+     * @type {TKey}
+     * @memberof KeyValue
+     */
     key: TKey;
+    /**
+     * value of keyvalue pair.
+     *
+     * @type {TVal}
+     * @memberof KeyValue
+     */
     value: TVal;
 }
 

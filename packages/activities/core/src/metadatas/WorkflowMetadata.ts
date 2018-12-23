@@ -1,4 +1,3 @@
-
 import { CoreActivityConfigs } from '../core/ActivityConfigure';
 
 /**

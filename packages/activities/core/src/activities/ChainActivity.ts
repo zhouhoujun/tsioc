@@ -1,5 +1,8 @@
 import { Task } from '../decorators';
-import { IActivityContext, ChainConfigure, InjectAcitityToken, IActivity, IHandleActivity, IChainActivity } from '../core';
+import {
+    IActivityContext, ChainConfigure, InjectAcitityToken,
+    IActivity, IHandleActivity, IChainActivity
+} from '../core';
 import { HandleActivity } from './HandleActivity';
 import { ControlActivity } from './ControlActivity';
 import { lang } from '@ts-ioc/core';

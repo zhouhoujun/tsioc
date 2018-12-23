@@ -1,4 +1,7 @@
-import { Inject, Express, ContainerToken, IContainer, Token, ProviderType, lang, Providers, MetaAccessorToken, isFunction } from '@ts-ioc/core';
+import {
+    Inject, Express, ContainerToken, IContainer, Token, ProviderType, lang,
+    Providers, MetaAccessorToken, isFunction
+} from '@ts-ioc/core';
 import { Task } from '../decorators';
 import { IActivity, ActivityToken, WorkflowId } from './IActivity';
 import { ActivityConfigure, ExpressionType, Expression, ActivityType } from './ActivityConfigure';
@@ -30,7 +33,6 @@ export abstract class Activity implements IActivity, OnActivityInit {
      */
     @Inject(ContainerToken)
     container: IContainer;
-
 
     /**
      *  activity execute context.

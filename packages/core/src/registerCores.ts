@@ -1,10 +1,10 @@
 import { IContainer } from './IContainer';
 import { LifeScopeToken } from './LifeScope';
 import {
-    CacheManager, Injectable, Component, AutoWired, Inject, Singleton, Param, DefaultLifeScope,
+    CacheManager, Injectable, Component, AutoWired, Inject, Singleton, Param,
     Method, Abstract, Autorun, IocExt, Refs, Providers, CoreActions, MethodAccessor,
-    MetaAccessor, MetaAccessorToken,
-} from './core';
+    MetaAccessor, MetaAccessorToken, DefaultLifeScope
+} from './core'
 import { CacheManagerToken } from './ICacheManager';
 import { MethodAccessorToken } from './IMethodAccessor';
 import { ResolverChain, ResolverChainToken } from './resolves';
