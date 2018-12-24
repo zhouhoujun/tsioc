@@ -150,7 +150,7 @@ export class ActivityBuildStrategy implements IAnnoBuildStrategy<IActivity> {
         if (config.name) {
             instance.name = config.name;
         }
-        instance.config = config;
+        // instance.config = config;
         await instance.onActivityInit(config);
     }
 }

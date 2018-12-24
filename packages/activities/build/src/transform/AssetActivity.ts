@@ -1,4 +1,4 @@
-import { Providers, Token } from '@ts-ioc/core';
+import { Providers, Token, lang } from '@ts-ioc/core';
 import {
     UglifyCompilerToken, AnnotationCompilerToken,
     SourceCompilerToken, SourcemapsCompilerToken, TestCompilerToken,
@@ -30,9 +30,6 @@ import { IActivity, ActivityContextToken } from '@taskfr/core';
     { provide: DestCompilerToken, useClass: DestActivity }
 ])
 export class AssetActivity extends AssetBuildHanlde<TransformContext> {
-    constructor() {
-        super();
-    }
 
     /**
     * create context.
@@ -45,6 +42,7 @@ export class AssetActivity extends AssetBuildHanlde<TransformContext> {
     */
     createContext(data?: any, type?: Token<IActivity>, defCtx?: Token<any>): TransformContext {
         let context = super.createContext(data, type, defCtx) as TransformContext;
+        console.log('asset ctx:', lang.getClassName(this), lang.getClassName(context))
         if (this.context) {
             context.builder = this.context.builder;
             context.origin = this.context.origin;

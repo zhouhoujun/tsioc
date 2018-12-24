@@ -2,8 +2,6 @@ import { IActivity, ActivityToken } from './IActivity';
 import { ActivityBuilder } from './ActivityBuilder';
 import { ActivityConfigure, Expression } from './ActivityConfigure';
 import { InjectToken, Token, IContainer, ObjectMap, Type, RefRegistration } from '@ts-ioc/core';
-import { InjectAnnoBuildStrategyToken } from '@ts-ioc/bootstrap';
-
 
 
 /**

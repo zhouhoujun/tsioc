@@ -79,9 +79,9 @@ export function isClass(target: any): target is Type<any> {
             return false;
         }
 
-        if (Reflect.hasOwnMetadata('@Abstract', target)) {
-            return false;
-        }
+        // if (Reflect.hasOwnMetadata('@Abstract', target)) {
+        //     return false;
+        // }
 
         let type = target as Type<any>;
 

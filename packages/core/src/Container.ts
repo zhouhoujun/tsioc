@@ -16,7 +16,7 @@ import { CacheManagerToken } from './ICacheManager';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { registerCores } from './registerCores';
 import { ResolverChain, ResolverChainToken } from './resolves';
-import { InjectReference, InjectClassProvidesToken } from './InjectReference';
+import { InjectReference, InjectClassProvidesToken, isInjectReference } from './InjectReference';
 import { LifeScope, LifeScopeToken } from './LifeScope';
 import { IParameter } from './IParameter';
 import { ParamProviders, ProviderMap, ProviderParserToken } from './providers';
@@ -188,12 +188,14 @@ export class Container implements IContainer {
      */
     getService<T>(token: Token<T> | Token<any>[], target?: RefTarget | RefTarget[] | ParamProviders, toRefToken?: boolean | Token<T> | RefTokenFac<T> | ParamProviders, defaultToken?: boolean | Token<T> | ParamProviders, ...providers: ParamProviders[]): T {
         if (isArray(target) || isToken(target) || isRefTarget(target) || isTypeObject(target)) {
-            let tokens = [];
+            let tokens: Token<any>[] = [];
             (isArray(token) ? token : [token]).forEach(tk => {
-                tokens = tokens.concat(this.getTokenClassChain(tk, false).map(t => {
-                    return { service: t, isPrivate: true } as IRefService<T>;
-                }));
+                tokens.push(tk);
+                if (!isClass(tk)) {
+                    tokens.push(this.getTokenImpl(tk));
+                }
             });
+
             let fac: RefTokenFac<T>;
             let defToken: Token<T> | Token<any>[];
             let prds: ParamProviders[] = [];
@@ -227,9 +229,9 @@ export class Container implements IContainer {
             prds = prds.concat(providers);
             return this.getRefService(
                 [
-                    ...tokens,
+                    ...tokens.map(tk => { return { service: tk, isPrivate: true } }),
                     ...fac ? [tk => fac(tk)] : [],
-                    ...tokens.map(t => (tk) => new InjectReference(t.service, tk))
+                    ...tokens.map(t => (tk) => new InjectReference(t, tk))
                 ],
                 target as RefTarget | RefTarget[],
                 defToken,
@@ -256,14 +258,14 @@ export class Container implements IContainer {
             .some(tag => {
                 this.forInRefTarget(tag, tk => {
                     // exclude ref registration.
-                    if (tk instanceof InjectReference) {
+                    if (isInjectReference(tk)) {
                         return true;
                     }
                     return !(isArray(refToken) ? refToken : [refToken]).some(stk => {
                         let tokens = this.getRefToken(stk, tk);
                         return (isArray(tokens) ? tokens : [tokens]).some(rtk => {
                             service = this.resolveRef(rtk, tk, ...providers);
-                            // service && console.log(rtk, tk, lang.getClassName(service));
+                            // console.log(rtk, tk, !!service, lang.getClassName(service));
                             return service !== null;
                         });
                     });
@@ -304,7 +306,7 @@ export class Container implements IContainer {
             return null;
         }
         // resolve private first.
-        if (isClass(target)) {
+        if (isClass(target) && !isInjectReference(tk)) {
             let pdrmap = this.resolve(new InjectReference(ProviderMap, target));
             if (pdrmap && pdrmap.hasRegister(tk)) {
                 return pdrmap.resolve(tk, ...providers);
@@ -603,8 +605,8 @@ export class Container implements IContainer {
                     });
                 }
             }
-            tokens = [ty, ... (tokens || [])];
-            return !(tokens.some(tk => express(tk) === false)) && inChain;
+            tokens = tokens || [];
+            return !(tokens.concat(ty).some(tk => express(tk) === false)) && inChain;
         });
     }
 

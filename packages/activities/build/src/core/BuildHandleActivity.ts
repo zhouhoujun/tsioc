@@ -169,7 +169,6 @@ export const HandleContextToken = new InjectActivityContextToken(BuildHandleActi
  * @extends {NodeActivityContext}
  */
 @Injectable(HandleContextToken)
-@Refs(CompilerToken, ActivityContextToken)
 export class BuildHandleContext<T> extends NodeActivityContext<T> {
 
     /**

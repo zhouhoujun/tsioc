@@ -86,7 +86,6 @@ export abstract class Activity implements IActivity, OnActivityInit {
         if (this.config && this.config.contextType) {
             return this.container.resolve(this.config.contextType, provider);
         }
-
         let ctx = this.container.getService(ActivityContextToken, type,
             tk => new InjectActivityContextToken(tk),
             defCtx || ActivityContextToken, provider);

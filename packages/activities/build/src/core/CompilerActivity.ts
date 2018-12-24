@@ -1,6 +1,7 @@
-import { BuildHandleContext } from './BuildHandleActivity';
-import { Task } from '@taskfr/core';
+import { BuildHandleContext, HandleContextToken } from './BuildHandleActivity';
+import { Task, ActivityContextToken } from '@taskfr/core';
 import { NodeActivity } from './NodeActivity';
+import { Providers } from '@ts-ioc/core';
 
 
 /**
@@ -12,6 +13,9 @@ import { NodeActivity } from './NodeActivity';
  * @extends {NodeActivity}
  */
 @Task
+@Providers([
+    { provide: ActivityContextToken,  useExisting: HandleContextToken }
+])
 export abstract class CompilerActivity extends NodeActivity {
 
     /**

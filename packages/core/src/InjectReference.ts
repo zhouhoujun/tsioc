@@ -1,5 +1,6 @@
 import { Registration } from './Registration';
 import { Token } from './types';
+import { isString } from 'util';
 
 /**
  * Reference registration.
@@ -44,6 +45,21 @@ export class InjectReference<T> extends Registration<T> {
         let target = this.format(this.target)
         return `Ref ${key} for ${target}`;
     }
+}
+
+/**
+ * is inject reference token or not.
+ *
+ * @export
+ * @template T
+ * @param {*} target
+ * @returns {target is InjectReference<T>}
+ */
+export function isInjectReference<T>(target: any): target is InjectReference<T> {
+    if (!target) {
+        return false;
+    }
+    return target instanceof InjectReference || (isString(target) && /^Ref\s+[\w\{\}]+\sfor/.test(target));
 }
 
 /**
