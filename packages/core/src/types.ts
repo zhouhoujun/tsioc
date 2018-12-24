@@ -329,6 +329,5 @@ export enum Mode {
     /**
      * iterate as tree map. node last
      */
-    traverseLast,
-
+    traverseLast
 }

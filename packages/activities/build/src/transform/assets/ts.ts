@@ -59,6 +59,7 @@ export class TsCompiler extends TransformActivity {
      */
     protected async beforePipe(): Promise<void> {
         await super.beforePipe();
+        console.log(this.context.constructor.name, this.context.config);
         this.context.result = await this.executePipe(this.context.result, this.getTsCompilePipe(this.context.config));
     }
     /**

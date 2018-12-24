@@ -1,6 +1,6 @@
 import {
     Token, isToken, IContainer, isClass, Inject, ContainerToken,
-    lang, isFunction, Container, IMetaAccessor, ParamProviders,
+    lang, isFunction, IMetaAccessor, ParamProviders,
     InjectMetaAccessorToken, MetaAccessorToken, isNullOrUndefined,
     RefTagLevel, isUndefined, Singleton
 } from '@ts-ioc/core';

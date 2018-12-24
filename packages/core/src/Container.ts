@@ -7,7 +7,7 @@ import {
 } from './types';
 import {
     isClass, isFunction, isSymbol, isToken, isString, isUndefined,
-    lang, isArray, isBoolean, isRefTarget, isTypeObject, isAbstractClass, isMetadataObject
+    lang, isArray, isBoolean, isRefTarget, isTypeObject
 } from './utils';
 import { Registration, isRegistrationClass } from './Registration';
 import { MethodAccessorToken } from './IMethodAccessor';
@@ -254,9 +254,6 @@ export class Container implements IContainer {
         let service: T = null;
         (isArray(target) ? target : [target])
             .some(tag => {
-                console.log('====================================\n\n');
-                console.log('ref target:', isMetadataObject(tag) ? tag : lang.getClassName(tag));
-
                 this.forInRefTarget(tag, tk => {
                     // exclude ref registration.
                     if (tk instanceof InjectReference) {
@@ -266,7 +263,7 @@ export class Container implements IContainer {
                         let tokens = this.getRefToken(stk, tk);
                         return (isArray(tokens) ? tokens : [tokens]).some(rtk => {
                             service = this.resolveRef(rtk, tk, ...providers);
-                            service && console.log(rtk, tk, !!service, lang.getClassName(service));
+                            // service && console.log(rtk, tk, lang.getClassName(service));
                             return service !== null;
                         });
                     });
@@ -307,7 +304,7 @@ export class Container implements IContainer {
             return null;
         }
         // resolve private first.
-        if (isClass(target) || isAbstractClass(target)) {
+        if (isClass(target)) {
             let pdrmap = this.resolve(new InjectReference(ProviderMap, target));
             if (pdrmap && pdrmap.hasRegister(tk)) {
                 return pdrmap.resolve(tk, ...providers);
@@ -585,18 +582,13 @@ export class Container implements IContainer {
         } else {
             type = this.getTokenImpl(token);
         }
-        if (!isClass(type)) {
+        if (!isClass(type) || (RefTagLevel.self === level)) {
             express(token);
             return;
         }
 
         let inChain = (level & RefTagLevel.chain) > 0;
         let inProviders = (level & RefTagLevel.providers) > 0;
-        let isSelf = (level & RefTagLevel.self) > 0;
-
-        if (isSelf && !express(type)) {
-            return;
-        }
         lang.forInClassChain(type, ty => {
             let tokens: Token<any>[];
             if (inProviders) {
@@ -611,8 +603,7 @@ export class Container implements IContainer {
                     });
                 }
             }
-            tokens = tokens || [];
-            console.log('toke and tokens', ty, tokens);
+            tokens = [ty, ... (tokens || [])];
             return !(tokens.some(tk => express(tk) === false)) && inChain;
         });
     }
