@@ -3,7 +3,7 @@ import { AdviceMetadata, AspectMetadata } from './metadatas';
 import {
     Inject, getParamerterNames, getOwnMethodMetadata, hasOwnMethodMetadata,
     hasOwnClassMetadata, Singleton, IContainer, isString, isRegExp, isUndefined,
-    Type, ObjectMap, getClassName, lang, ContainerToken, getOwnTypeMetadata,
+    Type, ObjectMap, lang, ContainerToken, getOwnTypeMetadata,
     isArray, isFunction
 } from '@ts-ioc/core';
 import { IPointcut, MatchPointcut } from './joinpoints';
@@ -48,7 +48,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             }
         }
 
-        let className = getClassName(targetType);
+        let className = lang.getClassName(targetType);
         adviceMetas = adviceMetas || getOwnMethodMetadata<AdviceMetadata>(Advice, targetType);
         let matched: MatchPointcut[] = [];
 
@@ -226,7 +226,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             }
         } else if (/^@within\(\s*\w+/.test(strExp)) {
             let classnames = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).split(',').map(n => n.trim());
-            return (name: string, fullName: string, targetType?: Type<any>) => classnames.indexOf(getClassName(targetType)) >= 0;
+            return (name: string, fullName: string, targetType?: Type<any>) => classnames.indexOf(lang.getClassName(targetType)) >= 0;
         } else if (/^@target\(\s*\w+/.test(strExp)) {
             let torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
             return (name: string, fullName: string, targetType?: Type<any>) => this.container.getTokenImpl(torken) === targetType;

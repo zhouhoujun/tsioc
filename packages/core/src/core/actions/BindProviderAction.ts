@@ -58,23 +58,23 @@ export class BindProviderAction extends ActionComposite {
                         return;
                     }
                     if (c.provide) {
-                        let provideKey = raiseContainer.getTokenKey(c.provide, c.alias);
-                        classPds.provides.push(provideKey);
-                        raiseContainer.bindProvider(provideKey, c.type);
+                        let provide = raiseContainer.getToken(c.provide, c.alias);
+                        classPds.provides.push(provide);
+                        raiseContainer.bindProvider(provide, c.type);
                     }
                     if (c.refs && c.refs.target) {
                         raiseContainer.bindRefProvider(c.refs.target,
                             c.refs.provide ? c.refs.provide : c.type,
                             c.type,
                             c.refs.provide ? c.refs.alias : '',
-                            tk => classPds.provides.push(raiseContainer.getTokenKey(tk)));
+                            tk => classPds.provides.push(tk));
                     }
                     // class private provider.
                     if (c.providers && c.providers.length) {
                         raiseContainer.bindTarget(
                             c.type,
                             c.providers,
-                            refKey => classPds.provides.push(raiseContainer.getTokenKey(refKey)));
+                            refKey => classPds.provides.push(refKey));
                     }
                 });
             }

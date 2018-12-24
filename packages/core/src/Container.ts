@@ -7,7 +7,7 @@ import {
 } from './types';
 import {
     isClass, isFunction, isSymbol, isToken, isString, isUndefined,
-    lang, isArray, isBoolean, isRefTarget, isTypeObject, isAbstractClass
+    lang, isArray, isBoolean, isRefTarget, isTypeObject, isAbstractClass, isMetadataObject
 } from './utils';
 import { Registration, isRegistrationClass } from './Registration';
 import { MethodAccessorToken } from './IMethodAccessor';
@@ -254,15 +254,19 @@ export class Container implements IContainer {
         let service: T = null;
         (isArray(target) ? target : [target])
             .some(tag => {
+                console.log('====================================\n\n');
+                console.log('ref target:', isMetadataObject(tag) ? tag : lang.getClassName(tag));
+
                 this.forInRefTarget(tag, tk => {
                     // exclude ref registration.
-                    // if (tk instanceof InjectReference) {
-                    //     return true;
-                    // }
+                    if (tk instanceof InjectReference) {
+                        return true;
+                    }
                     return !(isArray(refToken) ? refToken : [refToken]).some(stk => {
                         let tokens = this.getRefToken(stk, tk);
                         return (isArray(tokens) ? tokens : [tokens]).some(rtk => {
                             service = this.resolveRef(rtk, tk, ...providers);
+                            service && console.log(rtk, tk, !!service, lang.getClassName(service));
                             return service !== null;
                         });
                     });
@@ -305,7 +309,6 @@ export class Container implements IContainer {
         // resolve private first.
         if (isClass(target) || isAbstractClass(target)) {
             let pdrmap = this.resolve(new InjectReference(ProviderMap, target));
-            // console.log('..........\nhave private token:', this.getTokenKey(tk), target, pdrmap && pdrmap.hasRegister(tk));
             if (pdrmap && pdrmap.hasRegister(tk)) {
                 return pdrmap.resolve(tk, ...providers);
             }
@@ -314,7 +317,6 @@ export class Container implements IContainer {
         if (isPrivate) {
             return null;
         }
-        // console.log('..........\nhave token:', this.getTokenKey(tk), this.has(tk));
         return this.resolve(tk, ...providers);
     }
 
@@ -583,8 +585,7 @@ export class Container implements IContainer {
         } else {
             type = this.getTokenImpl(token);
         }
-
-        if (!isClass(type) && !isAbstractClass(target)) {
+        if (!isClass(type)) {
             express(token);
             return;
         }
@@ -593,12 +594,10 @@ export class Container implements IContainer {
         let inProviders = (level & RefTagLevel.providers) > 0;
         let isSelf = (level & RefTagLevel.self) > 0;
 
+        if (isSelf && !express(type)) {
+            return;
+        }
         lang.forInClassChain(type, ty => {
-            if (ty === type) {
-                if (isSelf && !express(ty)) {
-                    return false;
-                }
-            }
             let tokens: Token<any>[];
             if (inProviders) {
                 let prdKey = new InjectClassProvidesToken(ty);
@@ -606,11 +605,15 @@ export class Container implements IContainer {
                 if (prds && prds.provides && prds.provides.length) {
                     let ppdkey = prdKey.toString();
                     let pmapKey = new InjectReference(ProviderMap, ty).toString();
-                    tokens = prds.provides.filter(p => p !== ppdkey && p !== pmapKey);
+                    tokens = prds.provides.slice(1).filter(p => {
+                        let key = this.getTokenKey(p);
+                        return key !== ppdkey && key !== pmapKey
+                    });
                 }
             }
             tokens = tokens || [];
-            return !tokens.some(tk => express(tk) === false) && inChain;
+            console.log('toke and tokens', ty, tokens);
+            return !(tokens.some(tk => express(tk) === false)) && inChain;
         });
     }
 
@@ -625,10 +628,7 @@ export class Container implements IContainer {
         let tokens: Token<any>[] = [];
         this.forInRefTarget(token, tk => {
             tokens.push(tk);
-            if (chain === false) {
-                return false;
-            }
-            return true;
+            return chain;
         });
         return tokens;
     }

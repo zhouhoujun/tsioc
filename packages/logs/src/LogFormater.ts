@@ -1,6 +1,6 @@
 import {
     Singleton, isString, isSymbol, IParameter, isDate, isFunction, isArray,
-    isObject, isBaseType, getClassName, isClass, InjectToken
+    isObject, isBaseType, isClass, InjectToken, lang
 } from '@ts-ioc/core';
 import { Joinpoint, JoinpointState, NonePointcut } from '@ts-ioc/aop';
 
@@ -99,7 +99,7 @@ export class LogFormater {
         } else if (isBaseType(target)) {
             return target;
         } else if (isClass(target)) {
-            return `[class ${getClassName(target)}]`;
+            return `[class ${lang.getClassName(target)}]`;
         } else if (isFunction(target) || isDate(target) || isSymbol(target)) {
             return target.toString();
         } else if (isObject(target)) {

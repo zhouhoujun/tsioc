@@ -1,6 +1,6 @@
 import {
     IContainer, Singleton, getOwnMethodMetadata,
-    Type, ObjectMap, getClassName, lang, ParamProviders
+    Type, ObjectMap, lang, ParamProviders
 } from '@ts-ioc/core';
 import { Advices } from './advices';
 import { Advice, NonePointcut } from './decorators';
@@ -83,7 +83,7 @@ export class Advisor implements IAdvisor {
      */
     hasRegisterAdvices(targetType: Type<any>): boolean {
         let methods = lang.keys(Object.getOwnPropertyDescriptors(targetType.prototype));
-        let className = getClassName(targetType);
+        let className = lang.getClassName(targetType);
         return methods.some(m => this.advices.has(`${className}.${m}`));
     }
 

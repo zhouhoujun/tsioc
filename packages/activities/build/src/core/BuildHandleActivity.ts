@@ -4,7 +4,7 @@ import {
 } from '@taskfr/core';
 import {
     isRegExp, isString, isArray, Express, isFunction,
-    Token, Providers, MetaAccessorToken, hasClassMetadata
+    Token, Providers, MetaAccessorToken
 } from '@ts-ioc/core';
 import { BuidActivityContext } from './BuidActivityContext';
 import minimatch = require('minimatch');
@@ -171,14 +171,6 @@ export const HandleContextToken = new InjectActivityContextToken(BuildHandleActi
 @Injectable(HandleContextToken)
 @Refs(CompilerToken, ActivityContextToken)
 export class BuildHandleContext<T> extends NodeActivityContext<T> {
-
-    // /**
-    //  * source maps.
-    //  *
-    //  * @type {ICompiler}
-    //  * @memberof BuildHandleContext
-    //  */
-    // sourceMaps?: ICompiler;
 
     /**
      * origin build handle

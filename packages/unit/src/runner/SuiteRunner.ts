@@ -1,5 +1,5 @@
 import { IRunner, Runner, ModuleConfigure, RunnerToken } from '@ts-ioc/bootstrap';
-import { Token, getMethodMetadata, isNumber, lang, ContainerToken, IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Defer, Injectable, getClassName } from '@ts-ioc/core';
+import { Token, getMethodMetadata, isNumber, lang, ContainerToken, IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Defer, Injectable } from '@ts-ioc/core';
 import { Before, BeforeEach, Test, Suite } from '../core/decorators';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../core';
 
@@ -54,7 +54,7 @@ export class SuiteRunner extends Runner<any> implements IRunner<any> {
         let metas = getOwnTypeMetadata<SuiteMetadata>(Suite, type);
         let meta = metas.find(m => isNumber(m.timeout));
         this.timeout = meta ? meta.timeout : (3 * 60 * 60 * 1000);
-        this.describe = metas.map(m => m.describe).filter(d => d).join('; ') || getClassName(type);
+        this.describe = metas.map(m => m.describe).filter(d => d).join('; ') || lang.getClassName(type);
         return {
             timeout: this.timeout,
             describe: this.describe

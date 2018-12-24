@@ -1,7 +1,6 @@
-import { IActivityResult, IActivity } from './IActivity';
+import { IActivityResult, IActivity, ActivityToken } from './IActivity';
 import { Observable } from 'rxjs';
 import { Joinpoint } from '@ts-ioc/aop';
-import { Activity } from './Activity';
 import { IService, IRunner, InjectRunnableToken } from '@ts-ioc/bootstrap';
 import { IActivityContextResult } from './IActivityContext';
 
@@ -10,7 +9,7 @@ import { IActivityContextResult } from './IActivityContext';
 /**
  * activity runner token.
  */
-export const WorkflowInstanceToken = new InjectRunnableToken<IActivity>(Activity);
+export const WorkflowInstanceToken = new InjectRunnableToken<IActivity>(ActivityToken);
 
 /**
  *run state.

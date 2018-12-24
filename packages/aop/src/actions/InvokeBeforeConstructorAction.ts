@@ -1,4 +1,4 @@
-import { IContainer, ActionData, ActionComposite, Provider, getClassName, ParamProviders } from '@ts-ioc/core';
+import { IContainer, ActionData, ActionComposite, Provider, ParamProviders, lang } from '@ts-ioc/core';
 import { AdvisorToken } from '../IAdvisor';
 import { AopActions } from './AopActions';
 import { AdviceMetadata } from '../metadatas'
@@ -36,7 +36,7 @@ export class InvokeBeforeConstructorAction extends ActionComposite {
         }
 
         let advisor = container.get(AdvisorToken);
-        let className = getClassName(data.targetType);
+        let className = lang.getClassName(data.targetType);
         let advices = advisor.getAdvices(className + '.constructor');
         if (!advices) {
             return;

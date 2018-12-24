@@ -101,8 +101,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             }
             let strategy = this.container.getService(AnnoBuildStrategyToken,
                 [
-                    instance,
-                    tk,
+                    tk || lang.getClass(instance),
                     ...((options && options.target) ? [{ target: lang.getClass(options.target), level: RefTagLevel.self }] : []),
                     { target: lang.getClass(this), level: RefTagLevel.self }
 

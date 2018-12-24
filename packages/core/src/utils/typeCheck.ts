@@ -62,25 +62,6 @@ export function isAbstractClass(target: any): target is AbstractType<any> {
     return false;
 }
 
-
-/**
- * get class name.
- *
- * @export
- * @param {AbstractType<any>} classType
- * @returns {string}
- */
-export function getClassName(classType: AbstractType<any>): string {
-    if (!isFunction(classType)) {
-        return '';
-    }
-    if (/^[a-z]$/.test(classType.name)) {
-        return classType.classAnnations ? classType.classAnnations.name : classType.name;
-    }
-    return classType.name;
-}
-
-
 /**
  * check target is class or not.
  *
@@ -158,7 +139,7 @@ export function isToken(target: any): target is Token<any> {
     if (!target) {
         return false;
     }
-    if (isString(target) || isSymbol(target) || isClass(target) || (isObject(target) && target instanceof Registration)) {
+    if (isString(target) || isSymbol(target) || isClass(target) || (target instanceof Registration)) {
         return true
     }
     return false;
@@ -179,10 +160,6 @@ export function isPromise(target: any): target is Promise<any> {
     if (type && type.name === 'Promise') {
         return true;
     }
-    //  // Promise like
-    // if (isFunction(target.then) && isFunction(target.catch)) {
-    //     return true;
-    // }
     return false;
 }
 
@@ -419,12 +396,14 @@ export function isObject(target: any): target is object {
  * @returns {boolean}
  */
 export function isTypeObject(target: any): boolean {
-    if (!isObject(target)) {
+    if (isNullOrUndefined(target)) {
         return false;
     }
-    let classname = getClassName(lang.getClass(target));
-    if (classname === 'Date'
-        || classname === 'Object') {
+    if (typeof target !== 'object') {
+        return false;
+    }
+    let type = lang.getClassName(target);
+    if (type === 'Date' || type === 'Object') {
         return false;
     }
     return true;

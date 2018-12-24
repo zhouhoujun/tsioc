@@ -1,5 +1,5 @@
 
-import { IContainer, ActionData, ActionComposite, getParamerterNames, isUndefined, getClassName, lang } from '@ts-ioc/core';
+import { IContainer, ActionData, ActionComposite, getParamerterNames, isUndefined, lang } from '@ts-ioc/core';
 import { AopActions } from './AopActions';
 import { IPointcut, Joinpoint } from '../joinpoints';
 import { isValideAspectTarget } from '../isValideAspectTarget';
@@ -43,7 +43,7 @@ export class BindMethodPointcutAction extends ActionComposite {
         let target = data.target;
         let targetType = data.targetType;
 
-        let className = getClassName(targetType);
+        let className = lang.getClassName(targetType);
         let methods: IPointcut[] = [];
         let decorators = Object.getOwnPropertyDescriptors(targetType.prototype);
 

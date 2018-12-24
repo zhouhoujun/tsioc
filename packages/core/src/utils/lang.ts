@@ -1,4 +1,4 @@
-import { ObjectMap, Type, Token } from '../types';
+import { ObjectMap, Type, Token, AbstractType } from '../types';
 import { isNullOrUndefined, isArray, isObject, isFunction, isClass } from './typeCheck';
 // use core-js in browser.
 
@@ -176,6 +176,24 @@ export namespace lang {
             return target;
         }
         return target.constructor || target.prototype.constructor;
+    }
+
+    /**
+     * get class name.
+     *
+     * @export
+     * @param {AbstractType<any>} target
+     * @returns {string}
+     */
+    export function getClassName(target: any): string {
+        let classType = isFunction(target) ? target : getClass(target);
+        if (!isFunction(classType)) {
+            return '';
+        }
+        if (/^[a-z]$/.test(classType.name)) {
+            return classType.classAnnations ? classType.classAnnations.name : classType.name;
+        }
+        return classType.name;
     }
 
     /**

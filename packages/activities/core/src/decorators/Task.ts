@@ -1,6 +1,6 @@
 import {
     isString, isObject, createClassDecorator, MetadataExtends, MetadataAdapter,
-    isClass, ITypeDecorator, Token, Registration, isToken, isUndefined, lang, getClassName, isFunction
+    isClass, ITypeDecorator, Token, Registration, isToken, isUndefined, lang, isFunction
 } from '@ts-ioc/core';
 import { ActivityMetadata } from '../metadatas/ActivityMetadata';
 import { IActivityBuilder, ActivityBuilderToken } from '../core/IActivityBuilder';
@@ -144,7 +144,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             if (defaultBoot
                 && !metadata.activity
                 && !metadata.task
-                && !lang.isExtendsClass(metadata.type, ty => getClassName(ty) === (baseClassName || 'Activity'))) {
+                && !lang.isExtendsClass(metadata.type, ty => lang.getClassName(ty) === (baseClassName || 'Activity'))) {
                 if (isToken(defaultBoot)) {
                     metadata.bootstrap = defaultBoot;
                 } else if (isFunction(defaultBoot)) {
