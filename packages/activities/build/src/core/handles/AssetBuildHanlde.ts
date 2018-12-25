@@ -126,7 +126,6 @@ export class AssetBuildHanlde<T extends BuildHandleContext<any>> extends BuildHa
     }
 
     protected async compile(ctx: T): Promise<void> {
-        console.log(ctx.config);
         await this.execSource(ctx);
         await this.execAnnotation(ctx);
         await this.execSourcemapsInit(ctx);

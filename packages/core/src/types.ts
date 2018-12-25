@@ -189,6 +189,10 @@ export enum RefTagLevel {
      */
     chain = 1 << 2,
     /**
+     * self chain.
+     */
+     selfChain = self | chain,
+    /**
      * chain providers.
      */
     chainProviders = chain | providers,

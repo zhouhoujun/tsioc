@@ -200,7 +200,8 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
                     { target: lang.getClass(this), level: RefTagLevel.self }
 
                 ],
-                tk => new InjectRunnableToken(tk), config.defaultRunnable || true, ...providers);
+                tk => new InjectRunnableToken(tk),
+                config.defaultRunnable || true, ...providers);
         }
     }
 
