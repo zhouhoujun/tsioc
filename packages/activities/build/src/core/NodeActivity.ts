@@ -36,12 +36,8 @@ export abstract class NodeActivity extends ContextActivity {
      */
     context: NodeActivityContext<any>;
 
-    protected verifyCtx(ctx?: any) {
-        if (ctx instanceof NodeActivityContext) {
-            this.context = ctx;
-        } else {
-            this.setResult(ctx);
-        }
+    protected isValidContext(ctx: any): boolean {
+        return ctx instanceof NodeActivityContext;
     }
 
     /**

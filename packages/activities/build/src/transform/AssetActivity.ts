@@ -1,8 +1,8 @@
-import { Providers, Token, lang } from '@ts-ioc/core';
+import { Providers, Token } from '@ts-ioc/core';
 import {
-    UglifyCompilerToken, AnnotationCompilerToken,
+    UglifyCompilerToken, AnnotationCompilerToken, AssetToken,
     SourceCompilerToken, SourcemapsCompilerToken, TestCompilerToken,
-    BuildHandleContext, BuidActivityContext, DestCompilerToken, AssetBuildHanlde, AssetToken
+    BuildHandleContext, BuidActivityContext, DestCompilerToken, AssetBuildHanlde
 } from '../core';
 import { Asset } from '../decorators';
 import {
@@ -42,7 +42,6 @@ export class AssetActivity extends AssetBuildHanlde<TransformContext> {
     */
     createContext(data?: any, type?: Token<IActivity>, defCtx?: Token<any>): TransformContext {
         let context = super.createContext(data, type, defCtx) as TransformContext;
-        console.log('asset ctx:', lang.getClassName(this), lang.getClassName(context))
         if (this.context) {
             context.builder = this.context.builder;
             context.origin = this.context.origin;
@@ -51,20 +50,20 @@ export class AssetActivity extends AssetBuildHanlde<TransformContext> {
         return context;
     }
 
-    protected verifyCtx(ctx?: any) {
-        if (ctx instanceof TransformContext) {
-            this.context = ctx;
-        } else {
-            this.setResult(ctx);
-            if (ctx instanceof BuidActivityContext) {
-                this.context.builder = ctx.builder;
-                this.context.origin = this;
-                this.context.handle = this;
-            } else if (ctx instanceof BuildHandleContext) {
-                this.context.builder = ctx.builder;
-                this.context.origin = ctx.origin;
-                this.context.handle = ctx.handle;
-            }
+    protected isValidContext(ctx: any): boolean {
+        return ctx instanceof TransformContext;
+    }
+
+    protected setResult(ctx?: any) {
+        super.setResult(ctx);
+        if (ctx instanceof BuidActivityContext) {
+            this.context.builder = ctx.builder;
+            this.context.origin = this;
+            this.context.handle = this;
+        } else if (ctx instanceof BuildHandleContext) {
+            this.context.builder = ctx.builder;
+            this.context.origin = ctx.origin;
+            this.context.handle = ctx.handle;
         }
     }
 }

@@ -55,13 +55,7 @@ export const CompilerToken = new InjectCompilerToken<ICompiler>('handle');
  * @extends {ICompiler}
  */
 export interface ISourceCompiler extends ICompiler {
-    /**
-     * get source.
-     *
-     * @returns {Promise<Src>}
-     * @memberof ISourceCompiler
-     */
-    getSource(): Promise<Src>;
+
 }
 
 /**
@@ -72,13 +66,7 @@ export interface ISourceCompiler extends ICompiler {
  * @extends {ICompiler}
  */
 export interface IDestCompiler extends ICompiler {
-    /**
-     * get compiler to dist.
-     *
-     * @returns {Promise<string>;}
-     * @memberof IDestCompiler
-     */
-    getDest(): Promise<string>;
+
 }
 
 /**

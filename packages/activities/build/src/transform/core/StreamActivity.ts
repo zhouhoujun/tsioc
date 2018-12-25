@@ -28,24 +28,6 @@ export abstract class StreamActivity extends CompilerActivity {
      */
     protected abstract async execute(): Promise<void>;
 
-    /**
-     * create activity context.
-     *
-     * @protected
-     * @memberof PipeActivity
-     */
-    protected verifyCtx(ctx?: any) {
-        if (ctx instanceof TransformContext) {
-            this.context = ctx;
-        } else {
-            this.setResult(ctx);
-            if (ctx instanceof BuildHandleContext) {
-                this.context.builder = ctx.builder;
-                this.context.origin = ctx.origin;
-                this.context.handle = ctx.handle;
-            }
-        }
-    }
 
     /**
      * create context.
@@ -114,9 +96,20 @@ export abstract class StreamActivity extends CompilerActivity {
             }
         }
         return next;
-
     }
 
+    protected isValidContext(ctx: any): boolean {
+        return ctx instanceof TransformContext;
+    }
+
+    protected setResult(ctx?: any) {
+        super.setResult(ctx);
+        if (ctx instanceof BuildHandleContext) {
+            this.context.builder = ctx.builder;
+            this.context.origin = ctx.origin;
+            this.context.handle = ctx.handle;
+        }
+    }
 }
 
 /**

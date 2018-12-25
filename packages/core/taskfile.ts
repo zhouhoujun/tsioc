@@ -54,7 +54,7 @@ export class CoreRollup {
     assets: {
         ts: {
             sequence: [
-                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: true, activity: TsCompile },
+                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, activity: TsCompile },
                 CoreRollup,
                 {
                     name: 'zip',
@@ -85,11 +85,11 @@ export class CoreRollup {
         }
     }
 })
-export class CoreBuilder extends PackActivity {
-    constructor(@Inject(ContainerToken) container: IContainer) {
-        super();
-        // console.log(container);
-    }
+export class CoreBuilder {
+    // constructor(@Inject(ContainerToken) container: IContainer) {
+    //     super();
+    //     // console.log(container);
+    // }
 }
 
 TaskContainer.create(__dirname)

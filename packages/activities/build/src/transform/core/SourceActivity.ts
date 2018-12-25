@@ -33,38 +33,22 @@ export interface StreamSourceConfigure extends ITransformConfigure, SourceConfig
 export class SourceActivity extends StreamActivity implements ISourceCompiler {
 
     /**
-     * source
+     * soucre config.
      *
-     * @type {TransformSource}
-     * @memberof ITransformSource
+     * @type {StreamSourceConfigure}
+     * @memberof SourceActivity
      */
-    src: Expression<Src>;
+    config: StreamSourceConfigure;
 
-    /**
-     * source options.
-     *
-     * @type {SrcOptions}
-     * @memberof TransformSource
-     */
-    srcOptions: Expression<SrcOptions>;
-
-    async onActivityInit(config: StreamSourceConfigure) {
-        await super.onActivityInit(config);
-        this.src = await this.toExpression(config.src);
-
-        if (config.srcOptions) {
-            this.srcOptions = await this.toExpression(config.srcOptions)
-        }
-    }
-
-    getSource(): Promise<Src> {
-        return this.reolverExpression(this.src);
-    }
 
     protected async execute(): Promise<void> {
-        if (this.src) {
-            let strSrc = await this.getSource();
-            let options = await this.context.exec(this, this.srcOptions);
+        let config = this.config || this.context.config;
+        if (config.src) {
+            let strSrc = await this.resolveExpression(config.src);
+            let options;
+            if (config.srcOptions) {
+                options = await this.resolveExpression(config.srcOptions);
+            }
             this.context.result = src(strSrc, options || undefined);
         }
     }

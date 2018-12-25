@@ -48,14 +48,6 @@ export interface IAssetBuildHandle extends IBuildHandleActivity {
      * @memberof AssetActivity
      */
     dest: ICompiler;
-
-    /**
-     * watch activity.
-     *
-     * @type {IWatchActivity}
-     * @memberof AssetActivity
-     */
-    watch: IWatchActivity;
 }
 
 /**
@@ -128,7 +120,7 @@ export interface SourceConfigure extends CompilerConfigure {
      * @type {TransformSource}
      * @memberof ITransformConfigure
      */
-    src: ExpressionType<Src>;
+    src?: ExpressionType<Src>;
 }
 
 /**

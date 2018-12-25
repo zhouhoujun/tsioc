@@ -2,6 +2,7 @@ import { BuildHandleContext, HandleContextToken } from './BuildHandleActivity';
 import { Task, ActivityContextToken } from '@taskfr/core';
 import { NodeActivity } from './NodeActivity';
 import { Providers } from '@ts-ioc/core';
+import { CompilerToken } from './ICompiler';
 
 
 /**
@@ -14,7 +15,7 @@ import { Providers } from '@ts-ioc/core';
  */
 @Task
 @Providers([
-    { provide: ActivityContextToken,  useExisting: HandleContextToken }
+    { provide: ActivityContextToken, useExisting: HandleContextToken }
 ])
 export abstract class CompilerActivity extends NodeActivity {
 
@@ -26,13 +27,10 @@ export abstract class CompilerActivity extends NodeActivity {
      */
     context: BuildHandleContext<any>;
 
-    protected verifyCtx(ctx?: any) {
-        if (ctx instanceof BuildHandleContext) {
-            this.context = ctx;
-        } else {
-            this.setResult(ctx);
-        }
+    protected isValidContext(ctx: any): boolean {
+        return ctx instanceof BuildHandleContext;
     }
+
     /**
      * execute build activity.
      *
@@ -41,5 +39,12 @@ export abstract class CompilerActivity extends NodeActivity {
      * @returns {Promise<void>}
      * @memberof NodeActivity
      */
-    protected abstract async execute(): Promise<void>;
+    protected abstract execute(): Promise<void>;
+}
+
+@Task(CompilerToken)
+export class EmptyCompiler extends CompilerActivity {
+    protected async execute(): Promise<void> {
+
+    }
 }

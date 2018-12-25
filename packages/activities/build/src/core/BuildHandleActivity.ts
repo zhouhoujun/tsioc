@@ -11,8 +11,8 @@ import minimatch = require('minimatch');
 import { CompilerToken } from './ICompiler';
 import { CompilerActivity } from './CompilerActivity';
 import { BuildActivity } from './BuildActivity';
-import { Inject, Injectable, Refs } from '@ts-ioc/core';
-import { InputDataToken, InjectActivityContextToken, ActivityContextToken } from '@taskfr/core';
+import { Inject, Injectable } from '@ts-ioc/core';
+import { InputDataToken, InjectActivityContextToken } from '@taskfr/core';
 import { NodeActivityContext } from './NodeActivity';
 import { BuildHandleToken, BuildHandleConfigure } from './BuildHandle';
 
@@ -27,8 +27,7 @@ import { BuildHandleToken, BuildHandleConfigure } from './BuildHandle';
  */
 @Task(BuildHandleToken)
 @Providers([
-    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken },
-    { provide: CompilerToken, useClass: CompilerActivity }
+    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken }
 ])
 export class BuildHandleActivity extends HandleActivity {
 
@@ -142,16 +141,16 @@ export class BuildHandleActivity extends HandleActivity {
         return context;
     }
 
-    protected verifyCtx(ctx?: any) {
-        if (ctx instanceof BuildHandleContext) {
-            this.context = ctx;
-        } else {
-            this.setResult(ctx);
-            if (ctx instanceof BuidActivityContext) {
-                this.context.builder = ctx.builder;
-                this.context.origin = this;
-                this.context.handle = this;
-            }
+    protected isValidContext(ctx: any): boolean {
+        return ctx instanceof BuildHandleContext;
+    }
+
+    protected setResult(ctx?: any) {
+        super.setResult(ctx);
+        if (ctx instanceof BuidActivityContext) {
+            this.context.builder = ctx.builder;
+            this.context.origin = this;
+            this.context.handle = this;
         }
     }
 }

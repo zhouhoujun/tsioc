@@ -3,6 +3,7 @@ import { ITransform } from './ITransform';
 import { TransformContext } from './StreamActivity';
 import { StreamActivity } from './StreamActivity';
 import { SourceMapsConfigure } from '../../core';
+import { isBoolean } from '@ts-ioc/core';
 
 
 /**
@@ -13,7 +14,7 @@ import { SourceMapsConfigure } from '../../core';
  * @extends {IActivityResult<ITransform>}
  */
 export interface ISourceMapsActivity extends IActivityResult<ITransform> {
-    sourcemaps: string;
+    config: SourceMapsConfigure;
 }
 
 
@@ -27,22 +28,23 @@ export interface ISourceMapsActivity extends IActivityResult<ITransform> {
  */
 @Task
 export class SourceMapsActivity extends StreamActivity implements ISourceMapsActivity {
-    sourcemaps: string;
+
+    config: SourceMapsConfigure;
 
     private hasInit = false;
 
-    async onActivityInit(config: SourceMapsConfigure) {
-        await super.onActivityInit(config);
-        this.sourcemaps = this.context.to(config.sourcemaps) || './sourcemaps';
-    }
-
     protected async execute() {
+        let config = this.config || this.context.config;
         const sourcemaps = require('gulp-sourcemaps');
         if (!sourcemaps) {
             console.error('not found gulp-sourcemaps');
             return;
         }
-        this.context.result = await this.executePipe(this.context.result, this.hasInit ? () => sourcemaps.write(this.sourcemaps) : () => sourcemaps.init());
+        let dist = this.context.to(config.sourcemaps);
+        if (!dist || isBoolean(dist)) {
+            dist = './sourcemaps';
+        }
+        this.context.result = await this.executePipe(this.context.result, this.hasInit ? () => sourcemaps.write(dist) : () => sourcemaps.init());
     }
 
     async init(ctx: TransformContext) {

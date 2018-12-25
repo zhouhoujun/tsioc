@@ -3,6 +3,7 @@ import { Expression, ExpressionType, Task } from '@taskfr/core';
 import { StreamActivity } from './StreamActivity';
 import { ITransformConfigure } from './ITransformConfigure';
 import { DestConfigure, IDestCompiler } from '../../core';
+import { lang } from '@ts-ioc/core';
 
 
 /**
@@ -36,40 +37,12 @@ export interface StreamDestConfigure extends ITransformConfigure, DestConfigure 
 @Task
 export class DestActivity extends StreamActivity implements IDestCompiler {
 
-    /**
-     * source
-     *
-     * @type {Expression<string>}
-     * @memberof ITransformDest
-     */
-    dest: Expression<string>;
-
-    /**
-     * source options.
-     *
-     * @type {Expression<DestOptions>}
-     * @memberof TransformDest
-     */
-    destOptions: Expression<DestOptions>;
-
-    async onActivityInit(config: StreamDestConfigure) {
-        await super.onActivityInit(config);
-        this.dest = await this.toExpression(config.dest);
-
-        if (config.destOptions) {
-            this.destOptions = await this.toExpression(config.destOptions);
-        }
-    }
-
-    getDest(): Promise<string> {
-        return this.reolverExpression(this.dest);
-    }
-
     protected async execute(): Promise<void> {
-        let dist = await this.getDest();
+        let config = this.context.config as StreamDestConfigure;
+        let dist = await this.resolveExpression(config.dest);
         let destOptions = undefined;
-        if (this.destOptions) {
-            destOptions = await this.context.exec(this, this.destOptions);
+        if (config.destOptions) {
+            destOptions = await this.resolveExpression(config.destOptions);
         }
         dist = this.context.toRootPath(dist);
         this.context.result = await this.executePipe(this.context.result, dest(dist, destOptions), true);

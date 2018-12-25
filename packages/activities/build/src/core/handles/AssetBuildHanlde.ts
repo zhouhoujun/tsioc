@@ -7,8 +7,6 @@ import {
 } from './IAssetBuildHandle';
 import { isBoolean, isToken } from '@ts-ioc/core';
 import { CompilerActivity } from '../CompilerActivity';
-import { IWatchActivity, WatchConfigure, WatchAcitvityToken } from './IWatchActivity';
-import { WatchActivity } from './WatchActivity';
 
 @Task
 export class AssetBuildHanlde<T extends BuildHandleContext<any>> extends BuildHandleActivity implements IAssetBuildHandle {
@@ -50,14 +48,6 @@ export class AssetBuildHanlde<T extends BuildHandleContext<any>> extends BuildHa
     dest: IDestCompiler;
 
     /**
-     * watch activity.
-     *
-     * @type {WatchActivity}
-     * @memberof AssetActivity
-     */
-    watch: IWatchActivity;
-
-    /**
      * build handle context.
      *
      * @type {T}
@@ -89,9 +79,9 @@ export class AssetBuildHanlde<T extends BuildHandleContext<any>> extends BuildHa
                 act => act instanceof CompilerActivity,
                 src => {
                     if (!src) {
-                        return null;
+                        return { activity: SourceCompilerToken };
                     }
-                    return { src: src, token: SourceCompilerToken };
+                    return { src: src, activity: SourceCompilerToken };
                 });
         }
 
@@ -101,7 +91,7 @@ export class AssetBuildHanlde<T extends BuildHandleContext<any>> extends BuildHa
                 sourcemaps => {
                     if (isBoolean(sourcemaps)) {
                         if (sourcemaps) {
-                            return { sourcemaps: '', activity: SourcemapsCompilerToken };
+                            return { activity: SourcemapsCompilerToken };
                         }
                         return null;
                     }
@@ -114,7 +104,7 @@ export class AssetBuildHanlde<T extends BuildHandleContext<any>> extends BuildHa
                 act => act instanceof CompilerActivity,
                 dest => {
                     if (!dest) {
-                        return null;
+                        return { activity: DestCompilerToken };
                     }
                     return { dest: dest, activity: DestCompilerToken };
                 });
@@ -133,23 +123,10 @@ export class AssetBuildHanlde<T extends BuildHandleContext<any>> extends BuildHa
                     return <UglifyConfigure>{ uglifyOptions: uglify, activity: UglifyCompilerToken };
                 });
         }
-
-        if (config.watch) {
-            this.watch = await this.toActivity<Src | boolean, WatchActivity, WatchConfigure>(config.watch,
-                act => act instanceof WatchActivity,
-                watch => {
-                    if (isBoolean(watch)) {
-                        if (watch && this.src) {
-                            return <WatchConfigure>{ src: this.src.getSource(), activity: WatchAcitvityToken };
-                        }
-                        return null;
-                    }
-                    return <WatchConfigure>{ src: watch, activity: WatchAcitvityToken };
-                });
-        }
     }
 
     protected async compile(ctx: T): Promise<void> {
+        console.log(ctx.config);
         await this.execSource(ctx);
         await this.execAnnotation(ctx);
         await this.execSourcemapsInit(ctx);
@@ -159,15 +136,7 @@ export class AssetBuildHanlde<T extends BuildHandleContext<any>> extends BuildHa
     }
 
     protected async execSource(ctx: T) {
-        if (!(this.watch && ctx.target === this.watch)) {
-            await this.execActivity(this.src, ctx);
-            await this.execActivity(this.watch, () => {
-                this.watch.body = this;
-                let watchCtx = this.createContext();
-                watchCtx.target = this.watch;
-                return watchCtx;
-            });
-        }
+        await this.execActivity(this.src, ctx);
     }
 
     protected async execAnnotation(ctx: T) {

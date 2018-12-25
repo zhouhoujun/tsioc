@@ -89,7 +89,9 @@ export abstract class Activity implements IActivity, OnActivityInit {
         let ctx = this.container.getService(ActivityContextToken, type,
             tk => new InjectActivityContextToken(tk),
             defCtx || ActivityContextToken, provider);
-        ctx.config = this.config;
+        if (this.config) {
+            ctx.config = this.config;
+        }
         return ctx;
     }
 
@@ -116,11 +118,11 @@ export abstract class Activity implements IActivity, OnActivityInit {
         return this.context;
     }
 
-    protected reolverExpression<T>(express: Expression<T>) {
+    protected async resolveExpression<T>(express: ExpressionType<T>): Promise<T> {
         if (!this.context) {
             this.context = this.createContext();
         }
-        return this.context.exec(this, express);
+        return await this.context.exec(this, await this.toExpression(express));
     }
 
     /**
@@ -165,11 +167,18 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @memberof Activity
      */
     protected verifyCtx(ctx?: any) {
-        if (ctx instanceof ActivityContext) {
+        if (this.isValidContext(ctx)) {
             this.context = ctx;
+            if (this.config) {
+                this.context.config = lang.assign({}, this.context.config, this.config);
+            }
         } else {
             this.setResult(ctx);
         }
+    }
+
+    protected isValidContext(ctx: any): boolean {
+        return ctx instanceof ActivityContext;
     }
 
     /**

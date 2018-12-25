@@ -19,15 +19,12 @@ export interface StreamUglifyConfigure extends ITransformConfigure, UglifyConfig
  */
 @Task
 export class StreamUglifyActivity extends StreamActivity implements OnActivityInit {
-    uglifyOptions: any;
 
-    async onActivityInit(config: StreamUglifyConfigure) {
-        await super.onActivityInit(config);
-        this.uglifyOptions = this.context.to(config.uglifyOptions);
-    }
+    config: StreamUglifyConfigure;
 
     protected async execute(): Promise<void> {
-        let hd = this.context.handle;
-        this.context.result = await this.executePipe(this.context.result, this.uglifyOptions ? uglify(this.uglifyOptions) : uglify());
+        let config = this.config || this.context.config;
+        let uglifyOptions = await this.context.to(config.uglifyOptions);
+        this.context.result = await this.executePipe(this.context.result, uglifyOptions ? uglify(uglifyOptions) : uglify());
     }
 }

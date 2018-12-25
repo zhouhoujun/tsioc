@@ -262,12 +262,12 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
         await this.execActivity(this.after, this.context);
     }
 
-    protected verifyCtx(ctx?: any) {
-        if (ctx instanceof BuidActivityContext) {
-            this.context = ctx;
-        } else {
-            this.setResult(ctx);
-            this.context.builder = this;
-        }
+    protected isValidContext(ctx: any): boolean {
+        return ctx instanceof BuidActivityContext;
+    }
+
+    protected setResult(ctx?: any) {
+        super.setResult(ctx);
+        this.context.builder = this;
     }
 }

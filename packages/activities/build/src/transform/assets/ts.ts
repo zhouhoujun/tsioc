@@ -59,7 +59,6 @@ export class TsCompiler extends TransformActivity {
      */
     protected async beforePipe(): Promise<void> {
         await super.beforePipe();
-        console.log(this.context.constructor.name, this.context.config);
         this.context.result = await this.executePipe(this.context.result, this.getTsCompilePipe(this.context.config));
     }
     /**
@@ -123,13 +122,12 @@ export class TsCompile extends AssetActivity implements OnActivityInit {
             cfg.tds = true;
         }
         if (cfg.tds) {
-            let dist = this.dest ? this.dest.getDest() : '';
             this.tdsDest = await this.toActivity<string | boolean, IDestCompiler, DestConfigure>(cfg.tds,
                 act => act instanceof CompilerActivity,
                 dest => {
                     if (isBoolean(dest)) {
-                        if (dest && dist) {
-                            return { dest: dist, activity: DestCompilerToken };
+                        if (dest) {
+                            return { activity: DestCompilerToken };
                         }
                     } else if (isString(dest)) {
                         return { dest: dest, activity: DestCompilerToken };

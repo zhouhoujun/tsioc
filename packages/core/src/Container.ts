@@ -2,13 +2,14 @@ import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
 import {
     Type, Token, Factory, SymbolType, ToInstance, IocState,
-    ReferenceToken, IRefService, RefTokenType, RefTokenFacType,
+    ReferenceToken, RefTokenType, RefTokenFacType,
     RefTokenFac, Modules, LoadType, RefTarget, RefTagLevel
 } from './types';
 import {
     isClass, isFunction, isSymbol, isToken, isString, isUndefined,
     lang, isArray, isBoolean, isRefTarget, isTypeObject
 } from './utils';
+import { IParameter } from './IParameter';
 import { Registration, isRegistrationClass } from './Registration';
 import { MethodAccessorToken } from './IMethodAccessor';
 import { CoreActions, CacheActionData, LifeState, ActionComponent } from './core';
@@ -18,7 +19,6 @@ import { registerCores } from './registerCores';
 import { ResolverChain, ResolverChainToken } from './resolves';
 import { InjectReference, InjectClassProvidesToken, isInjectReference } from './InjectReference';
 import { LifeScope, LifeScopeToken } from './LifeScope';
-import { IParameter } from './IParameter';
 import { ParamProviders, ProviderMap, ProviderParserToken } from './providers';
 
 /**
