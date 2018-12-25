@@ -147,7 +147,8 @@ export abstract class Activity implements IActivity, OnActivityInit {
                 return runner.context;
             }
         }
-        return null;
+        console.log(activity, 'param is not vaild activity');
+        throw new Error('param is not vaild activity');
     }
 
     /**
