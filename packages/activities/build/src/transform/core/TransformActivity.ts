@@ -16,28 +16,28 @@ import { StreamActivity } from './StreamActivity';
 @Task(TransformActivityToken)
 export class TransformActivity extends StreamActivity implements ITransformActivity {
 
-    /**
-     * pipes.
-     *
-     * @type {TransformType[]}
-     * @memberof PipeComponent
-     */
-    pipes: TransformType[];
+    // /**
+    //  * pipes.
+    //  *
+    //  * @type {TransformType[]}
+    //  * @memberof PipeComponent
+    //  */
+    // pipes: TransformType[];
 
-    /**
-     * pipe config.
-     *
-     * @type {ITransformConfigure}
-     * @memberof PipeActivity
-     */
-    config: ITransformConfigure;
+    // /**
+    //  * pipe config.
+    //  *
+    //  * @type {ITransformConfigure}
+    //  * @memberof PipeActivity
+    //  */
+    // config: ITransformConfigure;
 
-    async onActivityInit(config: ITransformConfigure) {
-        await super.onActivityInit(config);
-        if (config.pipes) {
-            this.pipes = await this.translate(config.pipes);
-        }
-    }
+    // async onActivityInit(config: ITransformConfigure) {
+    //     await super.onActivityInit(config);
+    //     if (config.pipes) {
+    //         this.pipes = await this.translate(config.pipes);
+    //     }
+    // }
 
     /**
      * run task.
@@ -47,8 +47,14 @@ export class TransformActivity extends StreamActivity implements ITransformActiv
      * @memberof Activity
      */
     protected async execute() {
+        let config = this.context.config as ITransformConfigure;
+        let pipes: TransformType[];
+        if (config.pipes) {
+            pipes = await this.translate(config.pipes);
+        }
+        pipes = pipes || [];
         await this.beforePipe();
-        await this.pipe();
+        await this.pipe(...pipes);
         await this.afterPipe();
     }
 
@@ -59,8 +65,8 @@ export class TransformActivity extends StreamActivity implements ITransformActiv
      * @returns {Promise<void>}
      * @memberof PipeActivity
      */
-    protected async pipe(): Promise<void> {
-        this.context.result = await this.pipeStream(this.context.result, ...this.pipes);
+    protected async pipe(...pipes: TransformType[]): Promise<void> {
+        this.context.result = await this.pipeStream(this.context.result, ...pipes);
     }
 
     /**
@@ -145,7 +151,7 @@ export class TransformActivity extends StreamActivity implements ITransformActiv
         } else if (isActivityType(cfg)) {
             return await this.buildActivity(cfg);
         } else if (isFunction(cfg)) {
-            return await Promise.resolve(cfg(this, this.context));
+            return await Promise.resolve(cfg(this.context, this));
         }
 
         if (isPromise(cfg)) {

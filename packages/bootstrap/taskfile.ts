@@ -17,8 +17,8 @@ const rename = require('gulp-rename');
     },
     sourcemaps: true,
     pipes: [
-        (act) => rollup({
-            name: act.config.data.name,
+        (ctx) => rollup({
+            name: ctx.config.data.name,
             format: 'umd',
             sourceMap: true,
             plugins: [
@@ -38,9 +38,9 @@ const rename = require('gulp-rename');
             globals: {
                 'reflect-metadata': 'Reflect'
             },
-            input: act.config.data.input
+            input: ctx.config.data.input
         }),
-        (act) => rename(act.config.data.name)
+        (ctx) => rename(ctx.config.data.name)
     ]
 })
 export class BootRollup {
@@ -49,7 +49,7 @@ export class BootRollup {
 @Pack({
     src: 'src',
     clean: 'lib',
-    test: (act: IActivity) => act.context.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
+    test: (ctx) => ctx.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
     assets: {
         ts: {
             sequence: [

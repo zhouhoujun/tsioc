@@ -3,7 +3,7 @@ import * as ts from 'gulp-typescript';
 import { CtxType, OnActivityInit, Task } from '@taskfr/core';
 import {
     ITransform, TransformContext,
-    isTransform, ITransformConfigure, TransformActivity
+    isTransform, ITransformConfigure, TransformActivity, TransformType
 } from '../core';
 import {
     AssetConfigure, CompilerToken, InjectAssetToken,
@@ -47,8 +47,8 @@ export class TsCompiler extends TransformActivity {
      * @returns {Promise<void>}
      * @memberof TsCompile
      */
-    protected async pipe(): Promise<void> {
-        this.context.result.js = await this.pipeStream(this.context.result.js, ...this.pipes);
+    protected async pipe(...pipes: TransformType[]): Promise<void> {
+        this.context.result.js = await this.pipeStream(this.context.result.js, ...pipes);
     }
     /**
      * begin pipe.

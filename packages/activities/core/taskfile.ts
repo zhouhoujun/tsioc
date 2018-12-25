@@ -17,8 +17,8 @@ const commonjs = require('rollup-plugin-commonjs');
         input: 'lib/index.js'
     },
     pipes: [
-        (act) => rollup({
-            name: act.config.data.name,
+        (ctx) => rollup({
+            name: ctx.config.data.name,
             format: 'umd',
             sourceMap: true,
             plugins: [
@@ -43,9 +43,9 @@ const commonjs = require('rollup-plugin-commonjs');
             globals: {
                 'reflect-metadata': 'Reflect'
             },
-            input: act.config.data.input
+            input: ctx.config.data.input
         }),
-        (act) => rename(act.config.data.name)
+        (ctx) => rename(ctx.config.data.name)
     ],
     dest: 'bundles'
 })

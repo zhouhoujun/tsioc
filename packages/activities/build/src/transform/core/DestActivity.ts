@@ -43,7 +43,6 @@ export class DestActivity extends StreamActivity implements IDestCompiler {
         if (config.destOptions) {
             destOptions = await this.resolveExpression(config.destOptions);
         }
-        console.log(dist);
         dist = this.context.toRootPath(dist);
         this.context.result = await this.executePipe(this.context.result, dest(dist, destOptions), true);
     }

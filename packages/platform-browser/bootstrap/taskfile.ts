@@ -18,9 +18,9 @@ const rename = require('gulp-rename');
     },
     sourcemaps: true,
     pipes: [
-        (act) => {
+        (ctx) => {
             return rollup({
-                name: act.config.data.name,
+                name: ctx.config.data.name,
                 format: 'umd',
                 sourceMap: true,
                 plugins: [
@@ -45,7 +45,7 @@ const rename = require('gulp-rename');
                     '@ts-ioc/core': '@ts-ioc/core',
                     '@ts-ioc/aop': '@ts-ioc/aop'
                 },
-                input: act.config.data.input
+                input: ctx.config.data.input
             })
         },
         (act) => rename(act.config.data.name)

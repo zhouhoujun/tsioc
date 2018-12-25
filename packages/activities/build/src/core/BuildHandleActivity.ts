@@ -9,12 +9,12 @@ import {
 import { BuidActivityContext } from './BuidActivityContext';
 import minimatch = require('minimatch');
 import { CompilerToken } from './ICompiler';
-import { CompilerActivity } from './CompilerActivity';
 import { BuildActivity } from './BuildActivity';
 import { Inject, Injectable } from '@ts-ioc/core';
 import { InputDataToken, InjectActivityContextToken } from '@taskfr/core';
 import { NodeActivityContext } from './NodeActivity';
 import { BuildHandleToken, BuildHandleConfigure } from './BuildHandle';
+import { EmptyCompiler } from './CompilerActivity';
 
 
 /**
@@ -27,7 +27,8 @@ import { BuildHandleToken, BuildHandleConfigure } from './BuildHandle';
  */
 @Task(BuildHandleToken)
 @Providers([
-    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken }
+    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken },
+    { provide: CompilerToken, useClass: EmptyCompiler }
 ])
 export class BuildHandleActivity extends HandleActivity {
 

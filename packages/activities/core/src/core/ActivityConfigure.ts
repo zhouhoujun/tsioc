@@ -36,7 +36,7 @@ export interface KeyValue<TKey, TVal> {
 /**
  * async result.
  */
-export type AsyncResult<T> = (activity?: IActivity, ctx?: IActivityContext) => Promise<T>;
+export type AsyncResult<T> = (ctx?: IActivityContext, activity?: IActivity) => Promise<T>;
 
 /**
  * activity result.

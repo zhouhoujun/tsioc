@@ -157,7 +157,7 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
      */
     exec<T>(target: IActivity, expression: Expression<T>): Promise<T> {
         if (isFunction(expression)) {
-            return Promise.resolve(expression(target, this));
+            return Promise.resolve(expression(this, target));
         } else if (isPromise(expression)) {
             return expression;
         } else if (isAcitvity(expression)) {

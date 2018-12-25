@@ -21,9 +21,9 @@ const builtins = require('rollup-plugin-node-builtins');
     },
     sourcemaps: true,
     pipes: [
-        (act) => {
+        (ctx) => {
             return rollup({
-                name: act.config.data.name,
+                name: ctx.config.data.name,
                 format: 'umd',
                 sourceMap: true,
                 plugins: [
@@ -50,10 +50,10 @@ const builtins = require('rollup-plugin-node-builtins');
                     '@ts-ioc/core': '@ts-ioc/core',
                     '@ts-ioc/aop': '@ts-ioc/aop'
                 },
-                input: act.config.data.input
+                input: ctx.config.data.input
             })
         },
-        (act) => rename(act.config.data.name)
+        (ctx) => rename(ctx.config.data.name)
     ]
 })
 export class PfServerRollup {

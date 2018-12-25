@@ -26,19 +26,6 @@ export interface AnnotationsConfigure extends ITransformConfigure {
 export class AnnotationActivity extends StreamActivity {
 
     /**
-     * annotation framework.
-     *
-     * @type {TransformType}
-     * @memberof AssetActivity
-     */
-    annotationFramework: TransformType;
-
-    async onActivityInit(config: AnnotationsConfigure) {
-        await super.onActivityInit(config);
-        this.annotationFramework = await this.toExpression(config.annotationFramework);
-    }
-
-    /**
      * begin pipe.
      *
      * @protected
@@ -46,6 +33,7 @@ export class AnnotationActivity extends StreamActivity {
      * @memberof AnnotationActivity
      */
     protected async execute(): Promise<void> {
-        this.context.result = await this.executePipe(this.context.result, this.annotationFramework || (() => classAnnotations()));
+        let annotation = await this.toExpression(this.context.config.annotationFramework);
+        this.context.result = await this.executePipe(this.context.result, annotation || (() => classAnnotations()));
     }
 }

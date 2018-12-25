@@ -18,9 +18,9 @@ const rename = require('gulp-rename');
     },
     sourcemaps: true,
     pipes: [
-        (act) => {
+        (ctx) => {
             return rollup({
-                name: act.config.data.name,
+                name: ctx.config.data.name,
                 format: 'umd',
                 sourceMap: true,
                 plugins: [
@@ -39,10 +39,10 @@ const rename = require('gulp-rename');
                     'log4js': 'log4js',
                     '@ts-ioc/core': '@ts-ioc/core'
                 },
-                input: act.config.data.input
+                input: ctx.config.data.input
             })
         },
-        (act) => rename(act.config.data.name)
+        (ctx) => rename(ctx.config.data.name)
     ]
 })
 export class CoreRollup {
@@ -50,7 +50,7 @@ export class CoreRollup {
 
 @Pack({
     clean: 'lib',
-    test: (act: IActivity) => act.context.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
+    test: (ctx)  => ctx.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
     assets: {
         ts: {
             sequence: [
