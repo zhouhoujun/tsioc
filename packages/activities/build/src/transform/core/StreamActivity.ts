@@ -1,6 +1,6 @@
-import { Task, IActivity } from '@taskfr/core';
+import { Task } from '@taskfr/core';
 import { ITransform } from './ITransform';
-import { isUndefined, Token } from '@ts-ioc/core';
+import { isUndefined } from '@ts-ioc/core';
 import { TransformType, isTransform } from './transformTypes';
 import { InputDataToken, InjectActivityContextToken } from '@taskfr/core';
 import { Injectable, Inject, isArray, isString } from '@ts-ioc/core';

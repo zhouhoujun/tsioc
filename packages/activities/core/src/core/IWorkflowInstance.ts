@@ -70,7 +70,15 @@ export interface IWorkflowInstance<T> extends IService<IActivityResult<T>>, IRun
      * @type {*}
      * @memberof ITaskRunner
      */
-    readonly resultValue: any
+    readonly resultValue: any;
+
+    /**
+     * context.
+     *
+     * @type {IActivityContextResult<T>}
+     * @memberof IWorkflowInstance
+     */
+    readonly context: IActivityContextResult<T>;
 
     /**
      *state changed.

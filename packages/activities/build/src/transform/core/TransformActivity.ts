@@ -16,29 +16,6 @@ import { StreamActivity } from './StreamActivity';
 @Task(TransformActivityToken)
 export class TransformActivity extends StreamActivity implements ITransformActivity {
 
-    // /**
-    //  * pipes.
-    //  *
-    //  * @type {TransformType[]}
-    //  * @memberof PipeComponent
-    //  */
-    // pipes: TransformType[];
-
-    // /**
-    //  * pipe config.
-    //  *
-    //  * @type {ITransformConfigure}
-    //  * @memberof PipeActivity
-    //  */
-    // config: ITransformConfigure;
-
-    // async onActivityInit(config: ITransformConfigure) {
-    //     await super.onActivityInit(config);
-    //     if (config.pipes) {
-    //         this.pipes = await this.translate(config.pipes);
-    //     }
-    // }
-
     /**
      * run task.
      *
@@ -50,7 +27,7 @@ export class TransformActivity extends StreamActivity implements ITransformActiv
         let config = this.context.config as ITransformConfigure;
         let pipes: TransformType[];
         if (config.pipes) {
-            pipes = await this.translate(config.pipes);
+            pipes = await this.buildPipes(config.pipes);
         }
         pipes = pipes || [];
         await this.beforePipe();
@@ -130,7 +107,7 @@ export class TransformActivity extends StreamActivity implements ITransformActiv
      * @returns {Promise<TransformType[]>}
      * @memberof PipeActivityBuilder
      */
-    protected translate(pipes: TransformExpress): Promise<TransformType[]> {
+    protected buildPipes(pipes: TransformExpress): Promise<TransformType[]> {
         let trsfs: TransformConfig[] = this.context.to(pipes);
         if (!trsfs || trsfs.length < 1) {
             return Promise.resolve([]);
@@ -149,7 +126,8 @@ export class TransformActivity extends StreamActivity implements ITransformActiv
         if (isWorkflowInstance(cfg)) {
             return cfg;
         } else if (isActivityType(cfg)) {
-            return await this.buildActivity(cfg);
+            let inst = await this.buildActivity(cfg);
+            return inst;
         } else if (isFunction(cfg)) {
             return await Promise.resolve(cfg(this.context, this));
         }

@@ -35,6 +35,11 @@ export class WorkflowInstance<T extends IActivity> extends Service<T> implements
         return this._resultValue;
     }
 
+    private _ctx: any;
+    get context(): IActivityContextResult<T> {
+        return this._ctx;
+    }
+
 
     state: RunState;
     stateChanged: BehaviorSubject<RunState>;
@@ -55,14 +60,14 @@ export class WorkflowInstance<T extends IActivity> extends Service<T> implements
     }
 
     async start(data?: any): Promise<IActivityContextResult<T>> {
-        return await this.instance.run(data)
-            .then(ctx => {
-                this.state = RunState.complete;
-                this.stateChanged.next(this.state);
-                this._resultValue = ctx.result;
-                this._result.next(ctx.result);
-                return ctx;
-            });
+        let ctx = await this.instance.run(data)
+        this._ctx = ctx;
+        this.state = RunState.complete;
+        this.stateChanged.next(this.state);
+        this._resultValue = ctx.result;
+        this._result.next(ctx.result);
+        return ctx;
+
     }
 
     _currState: Joinpoint;

@@ -3,6 +3,7 @@ import { ITransform } from './ITransform';
 import { ObjectMap, isObservable, isObject } from '@ts-ioc/core';
 import { isFunction } from '@ts-ioc/core';
 import { Stream } from 'stream';
+import { AssetConfigure } from '../../core';
 
 
 
@@ -14,7 +15,7 @@ export type TransformType = Expression<ITransform>;
 /**
  * transform config type.
  */
-export type TransformConfig = ExpressionType<ITransform>;
+export type TransformConfig = ExpressionType<ITransform> | AssetConfigure;
 
 /**
  * task transform express.

@@ -1,14 +1,15 @@
 import {
     Inject, Express, ContainerToken, IContainer, Token, ProviderType, lang,
-    Providers, MetaAccessorToken, isFunction
+    Providers, MetaAccessorToken, isFunction, isToken, isBaseObject
 } from '@ts-ioc/core';
 import { Task } from '../decorators';
 import { OnActivityInit } from './OnActivityInit';
 import { ActivityContext } from './ActivityContext';
 import { ActivityMetaAccessorToken } from '../injectors';
 import { IActivity, ActivityToken, WorkflowId } from './IActivity';
-import { ActivityConfigure, ExpressionType, Expression, ActivityType } from './ActivityConfigure';
+import { ActivityConfigure, ExpressionType, Expression, ActivityType, Active } from './ActivityConfigure';
 import { IActivityContext, InputDataToken, InjectActivityContextToken, ActivityContextToken } from './IActivityContext';
+import { IWorkflowInstance } from './IWorkflowInstance';
 
 
 /**
@@ -133,16 +134,17 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @returns
      * @memberof Activity
      */
-    protected async execActivity(activity: IActivity, ctx: IActivityContext | (() => IActivityContext)): Promise<IActivityContext> {
+    protected async execActivity(activity: Activity | Active, ctx: IActivityContext | (() => IActivityContext)): Promise<IActivityContext> {
         if (!activity) {
             return null;
         }
+        let rctx = isFunction(ctx) ? ctx() : ctx;
         if (activity instanceof Activity) {
-            return await activity.run(isFunction(ctx) ? ctx() : ctx);
-        } else {
-            let runner = this.context.getBuilder().resolveRunable(activity, activity.config);
+            return await activity.run(rctx);
+        } else if (isToken(activity) || isBaseObject(activity)) {
+            let runner = await this.context.getBuilder().boot(activity, { target: this, data: rctx }) as IWorkflowInstance<any>;
             if (runner) {
-                return await runner.run(isFunction(ctx) ? ctx() : ctx);
+                return runner.context;
             }
         }
         return null;

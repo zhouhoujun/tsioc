@@ -1,6 +1,6 @@
 import { Registration } from './Registration';
 import { Token } from './types';
-import { isString } from 'util';
+import { isString } from './utils';
 
 /**
  * Reference registration.
