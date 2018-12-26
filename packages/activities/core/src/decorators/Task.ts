@@ -136,20 +136,18 @@ export function createTaskDecorator<T extends ActivityMetadata>(
                 metadata.provide = metadata.name;
             }
 
-            if (defaultBoot
-                && !metadata.activity
-                && !metadata.task
-                && !lang.isExtendsClass(metadata.type, ty => lang.getClassName(ty) === (baseClassName || 'Activity'))) {
-                if (isToken(defaultBoot)) {
-                    metadata.bootstrap = defaultBoot;
-                } else if (isFunction(defaultBoot)) {
-                    metadata.bootstrap = defaultBoot(metadata as T);
-                }
-            }
-
             metadata.decorType = taskType;
             metadata.defaultRunnable = WorkflowInstanceToken;
             metadata.defaultAnnoBuilder = defaultAnnoBuilder;
+
+            let defboot = isToken(defaultBoot) ? defaultBoot : defaultBoot(metadata as T);
+
+            if (defboot
+                && !metadata.activity
+                && !metadata.task
+                && !lang.isExtendsClass(metadata.type, ty => lang.getClassName(ty) === (baseClassName || 'Activity'))) {
+                metadata.bootstrap = defboot;
+            }
 
             return metadata;
         }) as ITaskDecorator<T>;

@@ -7,9 +7,10 @@ import * as colors from 'colors';
 import program from 'commander';
 import findup from 'findup';
 import { PackModule } from './PackModule';
-import { TaskContainer } from '@taskfr/core';
-import { isMetadataObject, isClass } from '@ts-ioc/core';
+import { Workflow, Task } from '@taskfr/core';
+import { isMetadataObject, isClass, hasClassMetadata } from '@ts-ioc/core';
 import { PackConfigure } from './core';
+import { Pack } from './decorators';
 
 const cliRoot = findup.sync(__dirname, 'package.json');
 const packageConf = require(__dirname + '/package.json');
@@ -31,9 +32,16 @@ program
         if (options.boot) {
             exec('node -r ts-node/register tsconfig-paths/register ' + fileName);
         } else {
-            let taskContainer = TaskContainer.create(processRoot).use(PackModule);
-            let activites = require(fileName);
-            taskContainer.bootstrap(...Object.values(activites).filter(v => v && (isClass(v) || isMetadataObject(v, ['token', 'activity']))));
+            let wf = Workflow.create(processRoot).use(PackModule);
+            let md = require(fileName);
+            let activites = Object.values(md);
+            if (activites.some(v => isClass(v) && hasClassMetadata(Pack, v))) {
+                wf.sequence(...activites.filter(v => isClass(v) && hasClassMetadata(Pack, v)));
+            } else if (activites.some(v => isClass(v) && hasClassMetadata(Task, v))) {
+                wf.sequence(...activites.filter(v => isClass(v) && hasClassMetadata(Task, v)));
+            } else {
+                wf.bootstrap(md);
+            }
         }
     })
     .command('build [env]', 'build the application')
@@ -46,7 +54,7 @@ program
     .option('--closure [bool]', 'bundle and optimize with closure compiler (default)')
     .option('-r, --rollup [bool]', 'bundle with rollup and optimize with closure compiler')
     .action((env, options) => {
-        let taskContainer = TaskContainer.create(processRoot).use(PackModule);
+        let taskContainer = Workflow.create(processRoot).use(PackModule);
         let config = require(path.join(processRoot, env)) as PackConfigure;
         config.watch = options.watch === true;
 
@@ -62,7 +70,7 @@ program
     .option('--closure [bool]', 'bundle and optimize with closure compiler (default)')
     .option('-r, --rollup [bool]', 'bundle with rollup and optimize with closure compiler')
     .action((serve, options) => {
-        let taskContainer = TaskContainer.create(processRoot).use(PackModule);
+        let taskContainer = Workflow.create(processRoot).use(PackModule);
         let config = require(path.join(processRoot, serve)) as PackConfigure;
         config.watch = options.watch === true;
 
@@ -86,7 +94,7 @@ program
     .command('g, generate [string]', 'generate schematics packaged with cmd')
     .option('--ng [bool]', 'generate angular project')
     .action((build, options) => {
-        let taskContainer = TaskContainer.create(processRoot).use(PackModule);
+        let taskContainer = Workflow.create(processRoot).use(PackModule);
         taskContainer.run();
     })
     .parse(process.argv);

@@ -12,6 +12,8 @@ import { Workflow } from '@taskfr/core';
 export class Builder {
 }
 
-Workflow.create(__dirname)
+// if (process.cwd() === __dirname) {
+Workflow.create()
     .use(PackModule)
     .bootstrap(Builder);
+// }

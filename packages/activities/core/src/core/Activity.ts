@@ -66,7 +66,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @type {ActivityConfigure}
      * @memberof Activity
      */
-    config: ActivityConfigure;
+    protected config: ActivityConfigure;
 
     constructor() {
 

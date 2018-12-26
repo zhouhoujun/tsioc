@@ -1,5 +1,5 @@
 import { Singleton, Providers, MetaAccessorToken } from '@ts-ioc/core';
-import { ActivityType, IActivity, ActivityToken, ActivityBuilderToken, CoreActivityConfigs } from '../core';
+import { ActivityType, IActivity, ActivityToken, ActivityBuilderToken, CoreActivityConfigs, Active } from '../core';
 import { ModuleBuilder, Runnable, InjectModuleBuilderToken, AnnotationBuilderToken, BootOptions } from '@ts-ioc/bootstrap';
 import { ActivityMetaAccessorToken } from './ActivityMetaAccessor';
 
@@ -29,7 +29,7 @@ export class DefaultWorkflowBuilder extends ModuleBuilder<IActivity> {
      * @returns {Promise<IActivityRunner<any>>}
      * @memberof DefaultWorkflowBuilder
      */
-    async bootstrap(activity: ActivityType<IActivity>, config?: CoreActivityConfigs|BootOptions<IActivity>, options?: BootOptions<IActivity>): Promise<Runnable<IActivity>> {
+    async bootstrap(activity: Active, config?: CoreActivityConfigs|BootOptions<IActivity>, options?: BootOptions<IActivity>): Promise<Runnable<IActivity>> {
         return await super.bootstrap(activity, config, options);
     }
 }

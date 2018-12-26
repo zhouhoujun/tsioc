@@ -126,6 +126,9 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
     }
 
     getRootPath(): string {
+        if (this.config && this.config.baseURL) {
+            return this.config.baseURL;
+        }
         let cfg = this.getContainer().get(AppConfigureToken) || {};
         return cfg.baseURL || this.getContainer().get(ProcessRunRootToken) || '.';
     }

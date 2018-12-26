@@ -87,13 +87,13 @@ export interface IActivity {
      */
     createContext(data?: any, type?: Token<IActivity>, defCtx?: Token<any>): IActivityContext
 
-    /**
-     * config.
-     *
-     * @type {ActivityConfigure}
-     * @memberof IActivity
-     */
-    config: ActivityConfigure;
+    // /**
+    //  * config.
+    //  *
+    //  * @type {ActivityConfigure}
+    //  * @memberof IActivity
+    //  */
+    // config: ActivityConfigure;
 
     /**
      * run task.

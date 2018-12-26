@@ -1,5 +1,5 @@
 
-import { TaskContainer } from '@taskfr/core';
+import { Workflow } from '@taskfr/core';
 import { IActivity } from '@taskfr/core';
 import { Asset, CleanToken, TsCompile, AssetToken } from '@taskfr/build';
 import { Pack, PackModule } from '@taskfr/pack';
@@ -92,6 +92,6 @@ export class BootRollup {
 export class BootBuilder {
 }
 
-TaskContainer.create(__dirname)
+Workflow.create(__dirname)
     .use(PackModule)
     .bootstrap(BootBuilder);

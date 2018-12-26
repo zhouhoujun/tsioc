@@ -5,15 +5,6 @@ import { Token } from '@ts-ioc/core';
 export interface IWorkflow extends IApplicationBuilder<IActivity> {
 
     /**
-     * bootstrap activity.
-     *
-     * @param {Token<IActivity>} token
-     * @param {BootOptions<IActivity>} [options]
-     * @returns {Promise<IWorkflowInstance<any>>}
-     * @memberof IWorkflow
-     */
-    bootstrap(token: Token<IActivity>, options?: BootOptions<IActivity>): Promise<IWorkflowInstance<any>>;
-    /**
      * bootstrap by activity config.
      *
      * @param {CoreActivityConfigs} config
@@ -21,7 +12,7 @@ export interface IWorkflow extends IApplicationBuilder<IActivity> {
      * @returns {Promise<IWorkflowInstance<any>>}
      * @memberof IWorkflow
      */
-    bootstrap(config: CoreActivityConfigs, options?: BootOptions<IActivity>): Promise<IWorkflowInstance<any>>;
+    bootstrap(config: Active, options?: BootOptions<IActivity>): Promise<IWorkflowInstance<any>>;
     /**
      * bootstrap with module and config.
      *

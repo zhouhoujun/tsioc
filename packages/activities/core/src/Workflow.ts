@@ -32,12 +32,12 @@ export class Workflow extends ApplicationBuilder<IActivity> implements IWorkflow
      * create task container.
      *
      * @static
-     * @param {string} root
+     * @param {string} [root]
      * @param {...ModuleType[]} modules
      * @returns {ITaskContainer}
      * @memberof TaskContainer
      */
-    static create(root: string, ...modules: LoadType[]): IWorkflow {
+    static create(root?: string, ...modules: LoadType[]): IWorkflow {
         let workflow = new Workflow(root);
         if (modules) {
             workflow.use(...modules);
