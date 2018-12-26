@@ -2,16 +2,16 @@
 import 'mocha';
 import { expect } from 'chai';
 import { ModuleA, ModuleB, ClassSevice } from './demo';
-import { ApplicationBuilder, AnyApplicationBuilder } from '../src';
+import { ApplicationBuilder, IApplicationBuilder } from '../src';
 // import { AopModule } from '@ts-ioc/aop';
 // import { LogModule } from '@ts-ioc/logs';
 
 
 describe('di module', () => {
 
-    let builder: AnyApplicationBuilder;
+    let builder: IApplicationBuilder<any>;
     beforeEach(async () => {
-        builder = ApplicationBuilder.create();
+        builder = new ApplicationBuilder();
         // builder.use(AopModule).use(LogModule);
     });
 

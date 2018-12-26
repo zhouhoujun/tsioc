@@ -37,16 +37,4 @@ export interface IApplicationBuilder<T> extends IRunnableBuilder<T>, IApplicatio
 /**
  *  application builder token.
  */
-export const ApplicationBuilderToken = new InjectToken<AnyApplicationBuilder>('DI_AppBuilder');
-
-/**
- * application builder. objected generics to any
- *
- * @export
- * @interface AnyApplicationBuilder
- * @extends {IApplicationBuilder<any>}
- * @template T
- */
-export interface AnyApplicationBuilder extends IApplicationBuilder<any> {
-
-}
+export const ApplicationBuilderToken = new InjectToken<IApplicationBuilder<any>>('DI_AppBuilder');
