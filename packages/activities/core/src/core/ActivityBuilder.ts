@@ -36,7 +36,6 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
         let instance = await super.createInstance(token, config, options) as ActivityInstance;
         if (!instance || !isAcitvity(instance)) {
             let boot = this.getMetaAccessor(token, config).getBootToken(config, this.container);
-            console.log(token, boot, config);
             if (isToken(boot)) {
                 instance = await super.createInstance(boot, config, options) as ActivityInstance;
             }
