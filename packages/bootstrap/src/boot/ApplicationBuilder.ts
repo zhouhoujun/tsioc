@@ -1,9 +1,7 @@
-import { Token, IContainer, Injectable } from '@ts-ioc/core';
+import { IContainer, Injectable } from '@ts-ioc/core';
 import { AppConfigure } from './AppConfigure';
 import { IApplicationBuilder, ApplicationBuilderToken } from './IApplicationBuilder';
-import { ModuleEnv, InjectedModule } from '../modules';
 import { IEvents } from '../utils';
-import { Runnable } from '../runnable';
 import { RunnableBuilder, RunnableEvents } from './RunnableBuilder';
 
 /**
@@ -37,10 +35,6 @@ export class ApplicationBuilder<T> extends RunnableBuilder<T> implements IApplic
         this.configs = [];
     }
 
-    static create<T>(baseURL?: string): IApplicationBuilder<T> {
-        return new ApplicationBuilder<T>(baseURL);
-    }
-
     /**
      * use configuration.
      *
@@ -54,18 +48,6 @@ export class ApplicationBuilder<T> extends RunnableBuilder<T> implements IApplic
         }
         this.configs.push(config);
         return this;
-    }
-
-    async load(token: Token<T> | AppConfigure, env?: ModuleEnv): Promise<InjectedModule<T>> {
-        return await super.load(token, env);
-    }
-
-    async bootstrap(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
-        return await super.bootstrap(token, env, data);
-    }
-
-    async run(token: Token<T> | AppConfigure, env?: ModuleEnv, data?: any): Promise<Runnable<T>> {
-        return await super.run(token, env, data);
     }
 
     protected createConfigureMgr() {

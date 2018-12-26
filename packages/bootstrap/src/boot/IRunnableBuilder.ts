@@ -1,6 +1,6 @@
 import { Token, InjectToken, IContainer, LoadType, Factory } from '@ts-ioc/core';
 import { AppConfigure } from './AppConfigure';
-import { IModuleBuilder, ModuleEnv, ModuleConfig, InjectedModule } from '../modules';
+import { IModuleBuilder, ModuleEnv, ModuleConfig, InjectedModule, BootOptions } from '../modules';
 import { Events, IEvents } from '../utils';
 import { IConfigureManager } from './IConfigureManager';
 
@@ -62,11 +62,11 @@ export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends
      * get builder by token, config and env.
      *
      * @param {(Token<T> | ModuleConfig<T>)} token
-     * @param {ModuleEnv} [env]
+     * @param {BootOptions<T>} [options]
      * @returns {Promise<IModuleBuilder<T>>}
      * @memberof IRunnableBuilder
      */
-    getBuilderByConfig(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv): Promise<IModuleBuilder<T>>;
+    getBuilderByConfig(token: Token<T> | ModuleConfig<T>, options?: BootOptions<T>): Promise<IModuleBuilder<T>>;
     /**
      * get module builder
      *
@@ -84,20 +84,9 @@ export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends
     getConfigManager(): IConfigureManager<ModuleConfig<T>>;
 }
 
-/**
- * runnable builder. objected generics to any
- *
- * @export
- * @interface AnyRunnableBuilder
- * @extends {IRunnableBuilder<any>}
- * @template T
- */
-export interface AnyRunnableBuilder extends IRunnableBuilder<any> {
-
-}
 
 /**
  * runable builder token.
  */
-export const RunnableBuilderToken = new InjectToken<AnyRunnableBuilder>('DI_RunnableBuilder');
+export const RunnableBuilderToken = new InjectToken<IRunnableBuilder<any>>('DI_RunnableBuilder');
 

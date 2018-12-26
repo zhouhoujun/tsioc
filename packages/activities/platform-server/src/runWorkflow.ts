@@ -1,4 +1,4 @@
-import { TaskContainer, IWorkflowInstance, ActivityType, IActivity } from '@taskfr/core';
+import { IWorkflowInstance, ActivityType, IActivity, Workflow } from '@taskfr/core';
 import { ServerTaskModule } from './ServerTaskModule';
 import * as path from 'path';
 
@@ -17,8 +17,8 @@ const processRoot = path.join(path.dirname(process.cwd()), path.basename(process
  * @returns {Promise<IWorkflowInstance<T>>}
  */
 export function runWorkflow<T extends IActivity>(activity: ActivityType<T>, root?: string): Promise<IWorkflowInstance<T>> {
-    let taskContainer = new TaskContainer(root || processRoot);
+    let taskContainer = new Workflow(root || processRoot);
     taskContainer.use(ServerTaskModule);
-    return taskContainer.bootstrap(activity);
+    return taskContainer.run(activity);
 }
 

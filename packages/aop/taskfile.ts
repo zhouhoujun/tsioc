@@ -1,5 +1,5 @@
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
-import { TaskContainer } from '@taskfr/core';
+import { Workflow } from '@taskfr/core';
 import { Asset, AssetActivity, TsCompile, CleanToken } from '@taskfr/build';
 import { IActivity } from '@taskfr/core';
 
@@ -89,6 +89,6 @@ export class AopRollup extends AssetActivity {
 export class AopBuilder {
 }
 
-TaskContainer.create(__dirname)
+Workflow.create(__dirname)
     .use(PackModule)
     .bootstrap(AopBuilder);

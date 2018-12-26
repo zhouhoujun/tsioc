@@ -8,7 +8,7 @@ import { IService } from '../runnable';
  * @export
  * @interface IApplication
  */
-export interface IApplication extends IService<any> {
+export interface IApplication<T> extends IService<T> {
     /**
      * application name
      *

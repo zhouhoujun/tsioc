@@ -1,5 +1,5 @@
 import { PackModule, Pack, PackActivity } from '@taskfr/pack';
-import { TaskContainer } from '@taskfr/core';
+import { Workflow } from '@taskfr/core';
 
 @Pack({
     src: 'src',
@@ -12,6 +12,6 @@ import { TaskContainer } from '@taskfr/core';
 export class Builder {
 }
 
-TaskContainer.create(__dirname)
+Workflow.create(__dirname)
     .use(PackModule)
     .bootstrap(Builder);

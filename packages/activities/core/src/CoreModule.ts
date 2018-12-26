@@ -1,5 +1,5 @@
 import { IContainer, CoreActions, Inject, ContainerToken, IocExt } from '@ts-ioc/core';
-import { Task, Workflow } from './decorators';
+import { Task } from './decorators';
 import { RunAspect } from './aop';
 import * as injectors from './injectors';
 import * as activites from './activities';
@@ -20,7 +20,7 @@ export class CoreModule {
     setup() {
         let container = this.container;
         let lifeScope = container.getLifeScope();
-        lifeScope.registerDecorator(Workflow, CoreActions.bindProvider);
+        // lifeScope.registerDecorator(Workflow, CoreActions.bindProvider);
         lifeScope.registerDecorator(Task, CoreActions.bindProvider);
 
         container.bindProvider(InputDataToken, null);

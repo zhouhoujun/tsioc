@@ -1,4 +1,4 @@
-import { TaskContainer } from '@taskfr/core';
+import { Workflow } from '@taskfr/core';
 import { CleanToken, CleanActivity, AssetActivity, Asset, TsCompile } from '@taskfr/build';
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 const resolve = require('rollup-plugin-node-resolve');
@@ -90,6 +90,6 @@ export class PackBuilder {
 }
 
 
-TaskContainer.create(__dirname)
+Workflow.create(__dirname)
     .use(PackModule)
     .bootstrap(PackBuilder);

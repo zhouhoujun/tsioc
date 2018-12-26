@@ -96,7 +96,7 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
         }
         if (metadata.builder) {
             setTimeout(() => {
-                ApplicationBuilder.create()
+                new ApplicationBuilder()
                     .use(...(metadata.globals || []))
                     .bootstrap(metadata);
             }, 300);

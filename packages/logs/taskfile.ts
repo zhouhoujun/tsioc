@@ -1,5 +1,5 @@
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
-import { TaskContainer } from '@taskfr/core';
+import { Workflow } from '@taskfr/core';
 import { IActivity } from '@taskfr/core';
 import { Asset, AssetActivity, TsCompile, CleanToken } from '@taskfr/build';
 const resolve = require('rollup-plugin-node-resolve');
@@ -91,6 +91,6 @@ export class LogsRollup extends AssetActivity {
 export class LogsBuilder extends PackActivity {
 }
 
-TaskContainer.create(__dirname)
+Workflow.create(__dirname)
     .use(PackModule)
     .bootstrap(LogsBuilder);

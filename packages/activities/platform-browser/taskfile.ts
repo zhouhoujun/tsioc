@@ -1,5 +1,5 @@
 import { PackModule, Pack, PackActivity } from '@taskfr/pack';
-import { TaskContainer } from '@taskfr/core';
+import { Workflow } from '@taskfr/core';
 import { Asset, CleanActivity, CleanToken, AssetActivity, TsCompile } from '@taskfr/build';
 const rename = require('gulp-rename');
 const rollup = require('gulp-rollup');
@@ -71,6 +71,6 @@ export class RollupTs extends AssetActivity {
 export class PfBrowserBuilder extends PackActivity {
 }
 
-TaskContainer.create(__dirname)
+Workflow.create(__dirname)
     .use(PackModule)
     .bootstrap(PfBrowserBuilder);

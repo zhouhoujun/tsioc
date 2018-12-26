@@ -1,6 +1,6 @@
 
-export * from './ITaskContainer';
-export * from './TaskContainer';
+export * from './IWorkflow';
+export * from './Workflow';
 
 export * from './decorators';
 export * from './metadatas';

@@ -1,5 +1,5 @@
 import { PackModule, Pack, PackActivity } from '@taskfr/pack';
-import { TaskContainer } from '@taskfr/core';
+import { Workflow } from '@taskfr/core';
 import { CleanToken, AssetActivity, Asset, TsCompile } from '@taskfr/build';
 
 const resolve = require('rollup-plugin-node-resolve');
@@ -82,6 +82,6 @@ export class PfServerBuilder extends PackActivity {
 }
 
 
-TaskContainer.create(__dirname)
+Workflow.create(__dirname)
     .use(PackModule)
     .bootstrap(PfServerBuilder);

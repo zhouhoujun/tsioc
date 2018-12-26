@@ -1,5 +1,5 @@
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
-import { TaskContainer } from '@taskfr/core';
+import { Workflow } from '@taskfr/core';
 import { Asset, CleanToken, AssetActivity, TsCompile } from '@taskfr/build';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -94,6 +94,6 @@ export class BuildBuilder {
 }
 
 
-TaskContainer.create(__dirname)
+Workflow.create(__dirname)
     .use(PackModule)
     .bootstrap(BuildBuilder);

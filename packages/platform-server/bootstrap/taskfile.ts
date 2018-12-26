@@ -1,4 +1,4 @@
-import { TaskContainer } from '@taskfr/core';
+import { Workflow } from '@taskfr/core';
 import { Asset, AssetActivity, CleanToken, TsCompile } from '@taskfr/build';
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 
@@ -83,6 +83,6 @@ export class BootRollup extends AssetActivity {
 export class PfServerBootBuilder {
 }
 
-TaskContainer.create(__dirname)
+Workflow.create(__dirname)
     .use(PackModule)
     .bootstrap(PfServerBootBuilder);

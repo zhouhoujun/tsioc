@@ -1,5 +1,5 @@
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
-import { TaskContainer } from '@taskfr/core';
+import { Workflow } from '@taskfr/core';
 import { CleanActivity, Asset, AssetActivity, TsCompile } from '@taskfr/build';
 const rename = require('gulp-rename');
 const rollup = require('gulp-rollup');
@@ -107,6 +107,6 @@ export class CoreBuilder {
 
 
 
-TaskContainer.create(__dirname)
+Workflow.create(__dirname)
     .use(PackModule)
     .bootstrap(CoreBuilder);

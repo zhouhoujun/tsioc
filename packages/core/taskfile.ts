@@ -1,5 +1,5 @@
 import { PackModule, Pack, PackActivity } from '@taskfr/pack';
-import { TaskContainer } from '@taskfr/core';
+import { Workflow } from '@taskfr/core';
 import { IActivity } from '@taskfr/core';
 import { Asset, AssetActivity, TsCompile, CleanToken } from '@taskfr/build';
 import { Inject, ContainerToken, IContainer } from '@ts-ioc/core';
@@ -92,6 +92,6 @@ export class CoreBuilder {
     // }
 }
 
-TaskContainer.create(__dirname)
+Workflow.create(__dirname)
     .use(PackModule)
     .bootstrap(CoreBuilder);

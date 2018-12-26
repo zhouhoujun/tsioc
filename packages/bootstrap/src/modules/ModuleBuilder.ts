@@ -3,9 +3,9 @@ import {
     IContainer, Token, ParamProviders, lang,
     isClass, isToken, Inject, Registration, Container,
     Injectable, MetaAccessorToken, IMetaAccessor,
-    InjectMetaAccessorToken, isArray, ProviderParserToken
+    InjectMetaAccessorToken, isArray, ProviderParserToken, isUndefined
 } from '@ts-ioc/core';
-import { IModuleBuilder, ModuleBuilderToken, ModuleEnv } from './IModuleBuilder';
+import { IModuleBuilder, ModuleBuilderToken, ModuleEnv, BootOptions } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { ContainerPool, ContainerPoolToken } from '../utils';
 import { Runnable } from '../runnable';
@@ -77,57 +77,80 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      * load module.
      *
      * @param {(Token<T> | ModuleConfigure)} token
-     * @param {ModuleEnv} [env]
+     * @param {(ModuleConfig<T> | BootOptions<T>)} [config]
+     * @param {BootOptions<T>} [options]
      * @returns {Promise<InjectedModule<T>>}
      * @memberof ModuleBuilder
      */
-    async load(token: Token<T> | ModuleConfigure, env?: ModuleEnv): Promise<InjectedModule<T>> {
+    async load(token: Token<T> | ModuleConfigure, config?: ModuleConfig<T> | BootOptions<T>, options?: BootOptions<T>): Promise<InjectedModule<T>> {
+        let params = this.vaildParams(token, config, options);
+        let env = params.options ? params.options.env : null;
         if (env instanceof InjectedModule) {
             return env;
         }
         let parent = await this.getParentContainer(env);
-        if (isToken(token)) {
-            return await this.loadViaToken(token, parent);
+        if (params.token) {
+            let injmd = await this.loadViaToken(params.token, parent);
+            if (params.config) {
+                await this.loadViaConfig(params.config, injmd.container || parent);
+            }
+            return injmd;
         } else {
-            return await this.loadViaConfig(token, parent);
+            return await this.loadViaConfig(params.config, parent);
         }
     }
 
     /**
-    * bootstrap module's main.
-    *
-    * @param {(Token<T> | ModuleConfig<T>)} token
-    * @param {ModuleEnv} [env]
-    * @param {BuildOptions<T>} [options] bootstrap build options.
-    * @returns {Promise<Runnable<T>>}
-    * @memberof ModuleBuilder
-    */
-    async bootstrap(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, options?: BuildOptions<T>): Promise<Runnable<T>> {
-        let injmdl = await this.load(token, env);
+     * bootstrap with module and config.
+     *
+     * @param {(Token<T> | ModuleConfig<T>)} token
+     * @param {(ModuleConfig<T> | BootOptions<T>)} [config]
+     * @param {BootOptions<T>} [options]
+     * @returns {Promise<Runnable<T>>}
+     * @memberof ModuleBuilder
+     */
+    async bootstrap(token: Token<T> | ModuleConfig<T>, config?: ModuleConfig<T> | BootOptions<T>, options?: BootOptions<T>): Promise<Runnable<T>> {
+        let params = this.vaildParams(token, config, options);
+        options = params.options || {};
+        let injmdl: InjectedModule<T>;
+        if (params.token) {
+            injmdl = await this.load(params.token, params.config, options);
+        } else {
+            injmdl = await this.load(params.config, options);
+        }
+        options.env = injmdl;
         let cfg = injmdl.config;
+        let tk = injmdl.token || injmdl.type;
         let container = injmdl.container;
-        let accessor = this.getMetaAccessor(container, injmdl.token || injmdl.type);
+        let accessor = this.getMetaAccessor(container, tk);
         let bootToken = accessor.getBootToken(cfg, container);
         if (bootToken) {
             let anBuilder = this.getAnnoBuilder(container, bootToken, cfg);
-            return await anBuilder.boot(bootToken, cfg, options || null);
+            return await anBuilder.boot(bootToken, cfg, options);
         } else {
-            let mdBuilder = this.getAnnoBuilder(container, injmdl.token || injmdl.type, cfg);
-            return await mdBuilder.boot(injmdl.token || injmdl.type, cfg, options || null);
+            let mdBuilder = this.getAnnoBuilder(container, tk, cfg);
+            return await mdBuilder.boot(tk, cfg, options);
         }
     }
 
-    /**
-    * run module.
-    *
-    * @param {(Token<T> | ModuleConfig<T>)} token
-    * @param {ModuleEnv} [env]
-    * @param {BuildOptions<T>} [options] bootstrap build options.
-    * @returns {Promise<Runnable<T>>}
-    * @memberof ModuleBuilder
-    */
-    run(token: Token<T> | ModuleConfig<T>, env?: ModuleEnv, options?: BuildOptions<T>): Promise<Runnable<T>> {
-        return this.bootstrap(token, env, options);
+    protected vaildParams(token: Token<T> | ModuleConfig<T>, config?: ModuleConfig<T> | BootOptions<T>, options?: BootOptions<T>) {
+        let params: {
+            token?: Token<T>;
+            config?: ModuleConfig<T>;
+            options?: BootOptions<T>
+        } = {};
+        if (isToken(token)) {
+            params.token = token;
+            if (isUndefined(options)) {
+                params.options = config as BuildOptions<T>;
+            } else {
+                params.config = config as ModuleConfig<T>;
+            }
+        } else {
+            params.config = token;
+            params.options = config as BootOptions<T>;
+        }
+        return params;
     }
 
     protected async loadViaToken(token: Token<T>, parent: IContainer): Promise<InjectedModule<T>> {
