@@ -142,9 +142,9 @@ export abstract class Activity implements IActivity, OnActivityInit {
         if (activity instanceof Activity) {
             return await activity.run(rctx);
         } else if (isToken(activity) || isBaseObject(activity)) {
-            let runner = await this.context.getBuilder().boot(activity, { target: this, data: rctx }) as IWorkflowInstance<any>;
-            if (runner) {
-                return runner.context;
+            let act = await this.buildActivity(activity);
+            if (act && act instanceof Activity) {
+                return act.run(rctx);
             }
         }
         console.error('execute activity is not vaild activity:', activity);
