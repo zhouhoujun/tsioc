@@ -1,7 +1,7 @@
 import {
     Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
-    Inject, Token, ParamProviders, Injectable, isArray, IModuleInjector, Container,
-    ProviderParserToken, InjectClassProvidesToken, IMetaAccessor, MetaAccessorToken
+    Inject, Token, ParamProviders, isArray, IModuleInjector, Container, ProviderParserToken,
+    InjectClassProvidesToken, IMetaAccessor, MetaAccessorToken, Singleton
 } from '@ts-ioc/core';
 import { DIModuleValidateToken } from './DIModuleValidate';
 import { DIModule } from '../decorators';
@@ -44,7 +44,7 @@ export const DIModuleInjectorToken = new InjectModuleInjectorToken<IDIModuleInje
  * @class DIModuleInjector
  * @extends {ModuleInjector}
  */
-@Injectable(DIModuleInjectorToken)
+@Singleton(DIModuleInjectorToken)
 export class DIModuleInjector extends ModuleInjector implements IDIModuleInjector {
 
     constructor(@Inject(DIModuleValidateToken) validate: IModuleValidate) {

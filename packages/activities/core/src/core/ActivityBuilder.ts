@@ -42,8 +42,9 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
         }
         if (!instance || !isAcitvity(instance)) {
             return null;
+        } else {
+            return instance;
         }
-        return instance;
     }
 
     /**

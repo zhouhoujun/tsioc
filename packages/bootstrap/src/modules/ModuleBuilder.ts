@@ -2,8 +2,8 @@ import 'reflect-metadata';
 import {
     IContainer, Token, ParamProviders, lang,
     isClass, isToken, Inject, Registration, Container,
-    Injectable, MetaAccessorToken, IMetaAccessor,
-    InjectMetaAccessorToken, isArray, ProviderParserToken, isUndefined
+    MetaAccessorToken, IMetaAccessor, isUndefined, Singleton,
+    InjectMetaAccessorToken, isArray, ProviderParserToken
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv, BootOptions } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
@@ -38,7 +38,7 @@ export class InjectModuleLoadToken<T> extends Registration<T> {
  * @implements {IModuleBuilder}
  * @template T
  */
-@Injectable(ModuleBuilderToken)
+@Singleton(ModuleBuilderToken)
 export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     @Inject(ContainerPoolToken)

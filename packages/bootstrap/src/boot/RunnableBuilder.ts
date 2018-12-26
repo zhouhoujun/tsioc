@@ -5,7 +5,7 @@ import {
 } from '@ts-ioc/core';
 import { IRunnableBuilder, CustomRegister, RunnableBuilderToken, ProcessRunRootToken } from './IRunnableBuilder';
 import {
-    ModuleBuilder, ModuleEnv, DIModuleInjectorToken,
+    ModuleBuilder, DIModuleInjectorToken,
     InjectedModule, IModuleBuilder, InjectModuleBuilderToken,
     ModuleBuilderToken, ModuleConfig, ModuleConfigure, BootOptions
 } from '../modules';
