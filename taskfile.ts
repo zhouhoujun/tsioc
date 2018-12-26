@@ -1,4 +1,4 @@
-import { TaskContainer } from '@taskfr/core';
+import { Workflow } from '@taskfr/core';
 import { INodeActivityContext, Asset, BuildModule, AssetToken, ShellModule, TransformModule } from '@taskfr/build';
 import * as through from 'through2';
 const inplace = require('json-in-place')
@@ -76,6 +76,6 @@ let versionSetting = (ctx: INodeActivityContext) => {
 export class BuilderIoc {
 }
 
-TaskContainer.create(__dirname)
+Workflow.create(__dirname)
     .use(BuildModule, ShellModule, TransformModule)
     .bootstrap(BuilderIoc);

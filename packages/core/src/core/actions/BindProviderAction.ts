@@ -71,7 +71,7 @@ export class BindProviderAction extends ActionComposite {
                     }
                     // class private provider.
                     if (c.providers && c.providers.length) {
-                        raiseContainer.bindTarget(
+                        raiseContainer.bindProviders(
                             c.type,
                             c.providers,
                             refKey => classPds.provides.push(refKey));

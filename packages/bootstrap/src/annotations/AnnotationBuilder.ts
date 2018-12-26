@@ -80,7 +80,11 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         } else {
             options = config as BuildOptions<T>;
             cfg = token;
-            tk = this.getMetaAccessor(cfg).getToken(cfg, this.container);
+            let accessor = this.getMetaAccessor(cfg);
+            tk = accessor.getToken(cfg, this.container);
+            if (isToken(tk)) {
+                cfg = accessor.getMetadata(tk, this.container, cfg);
+            }
         }
 
         if (isClass(tk) && !this.container.hasRegister(tk)) {

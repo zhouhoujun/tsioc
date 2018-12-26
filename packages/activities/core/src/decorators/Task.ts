@@ -129,12 +129,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             }
 
             if (!metadata.name && isClass(metadata.type)) {
-                let isuglify = /^[a-z]$/.test(metadata.type.name);
-                if (isuglify && metadata.type.classAnnations) {
-                    metadata.name = metadata.type.classAnnations.name;
-                } else {
-                    metadata.name = metadata.type.name;
-                }
+                metadata.name = lang.getClassName(metadata.type);
             }
 
             if (isUndefined(metadata.provide)) {

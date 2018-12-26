@@ -1,4 +1,4 @@
-import { ObjectMap, Type, Token, AbstractType } from '../types';
+import { ObjectMap, Type, Token } from '../types';
 import { isNullOrUndefined, isArray, isObject, isFunction, isClass } from './typeCheck';
 // use core-js in browser.
 

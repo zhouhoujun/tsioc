@@ -34,7 +34,21 @@ const SingletonRegToken = '___IOC__Singleton___';
  * @implements {IContainer}
  */
 export class Container implements IContainer {
+    /**
+     * provide types.
+     *
+     * @protected
+     * @type {Map<Token<any>, Type<any>>}
+     * @memberof Container
+     */
     protected provideTypes: Map<Token<any>, Type<any>>;
+    /**
+     * factories.
+     *
+     * @protected
+     * @type {Map<Token<any>, Function>}
+     * @memberof Container
+     */
     protected factories: Map<Token<any>, Function>;
 
     /**
@@ -433,6 +447,27 @@ export class Container implements IContainer {
     }
 
     /**
+     * bind providers for only target class.
+     *
+     * @param {Token<any>} target
+     * @param {ParamProviders[]} providers
+     * @param {(mapTokenKey: Token<any>) => void} [onceBinded]
+     * @returns {this}
+     * @memberof Container
+     */
+    bindProviders(target: Token<any>, providers: ParamProviders[], onceBinded?: (mapTokenKey: Token<any>) => void): this {
+        let refKey = new InjectReference(ProviderMap, isClass(target) ? target : this.getTokenImpl(target));
+        let maps = this.get(ProviderParserToken).parse(...providers);
+        if (this.hasRegister(refKey)) {
+            this.resolveValue(refKey).copy(maps);
+        } else {
+            this.bindProvider(refKey, maps);
+            onceBinded && onceBinded(refKey);
+        }
+        return this;
+    }
+
+    /**
      * bind provider ref to target.
      *
      * @template T
@@ -448,27 +483,6 @@ export class Container implements IContainer {
         let refToken = new InjectReference(this.getTokenKey(provide, alias), target);
         this.bindProvider(refToken, provider);
         onceBinded && onceBinded(refToken);
-        return this;
-    }
-
-    /**
-     * bind providers for only target class.
-     *
-     * @param {Token<any>} target
-     * @param {ParamProviders[]} providers
-     * @param {(mapTokenKey: Token<any>) => void} [onceBinded]
-     * @returns {this}
-     * @memberof Container
-     */
-    bindTarget(target: Token<any>, providers: ParamProviders[], onceBinded?: (mapTokenKey: Token<any>) => void): this {
-        let refKey = new InjectReference(ProviderMap, isClass(target) ? target : this.getTokenImpl(target));
-        let maps = this.get(ProviderParserToken).parse(...providers);
-        if (this.hasRegister(refKey)) {
-            this.resolveValue(refKey).copy(maps);
-        } else {
-            this.bindProvider(refKey, maps);
-            onceBinded && onceBinded(refKey);
-        }
         return this;
     }
 

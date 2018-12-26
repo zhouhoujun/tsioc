@@ -1,8 +1,6 @@
 import { PackModule, Pack, PackActivity } from '@taskfr/pack';
 import { Workflow } from '@taskfr/core';
-import { IActivity } from '@taskfr/core';
 import { Asset, AssetActivity, TsCompile, CleanToken } from '@taskfr/build';
-import { Inject, ContainerToken, IContainer } from '@ts-ioc/core';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
@@ -86,10 +84,6 @@ export class CoreRollup {
     }
 })
 export class CoreBuilder {
-    // constructor(@Inject(ContainerToken) container: IContainer) {
-    //     super();
-    //     // console.log(container);
-    // }
 }
 
 Workflow.create(__dirname)

@@ -1,4 +1,4 @@
-import { TaskContainer } from '@taskfr/core';
+import { Workflow } from '@taskfr/core';
 import { Asset, AssetToken, AssetActivity, BuildModule, INodeActivityContext, ShellModule, TransformModule } from '@taskfr/build';
 import * as through from 'through2';
 import * as fs from 'fs';
@@ -79,6 +79,6 @@ let versionSetting = (ctx: INodeActivityContext) => {
 export class BuilderActivities {
 }
 
-TaskContainer.create(__dirname)
+Workflow.create(__dirname)
     .use(BuildModule, ShellModule, TransformModule)
     .bootstrap(BuilderActivities);

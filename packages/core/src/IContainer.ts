@@ -221,6 +221,17 @@ export interface IContainer extends IMethodAccessor, IResolver {
     bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this;
 
     /**
+     * bind providers for only target class.
+     *
+     * @param {Token<any>} target
+     * @param {ParamProviders[]} providers
+     * @param {(mapTokenKey: Token<any>) => void} [onceBinded]
+     * @returns {this}
+     * @memberof IContainer
+     */
+    bindProviders(target: Token<any>, providers: ParamProviders[], onceBinded?: (mapTokenKey: Token<any>) => void): this;
+
+    /**
      * bind provider ref to target.
      *
      * @template T
@@ -233,17 +244,6 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @memberof IContainer
      */
     bindRefProvider<T>(target: Token<any>, provide: Token<T>, provider: Token<T> | Factory<T>, alias?: string, onceBinded?: (refToken: Token<T>) => void): this;
-
-    /**
-     * bind providers for only target class.
-     *
-     * @param {Token<any>} target
-     * @param {ParamProviders[]} providers
-     * @param {(mapTokenKey: Token<any>) => void} [onceBinded]
-     * @returns {this}
-     * @memberof IContainer
-     */
-    bindTarget(target: Token<any>, providers: ParamProviders[], onceBinded?: (mapTokenKey: Token<any>) => void): this;
 
     /**
      * unregister the token

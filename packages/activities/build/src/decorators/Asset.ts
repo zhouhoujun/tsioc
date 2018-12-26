@@ -1,8 +1,7 @@
 import { ITaskDecorator, createTaskDecorator, ActivityBuilderToken } from '@taskfr/core';
 import { AssetToken, AssetConfigure } from '../core/handles/IAssetBuildHandle';
 import { StreamAssetConfigure } from '../transform/StreamAssetConfigure';
-import { isNullOrUndefined } from '@ts-ioc/core';
-import { ShellAssetConfigure, ShellAssetToken } from '../shells/IShellAssetActivity';
+import { ShellAssetConfigure } from '../shells/IShellAssetActivity';
 
 
 /**
