@@ -1,8 +1,12 @@
 import { Task } from '../decorators';
 import { Activity } from './Activity';
-import { IActivityResult } from './IActivity';
+import { IActivityResult, InjectAcitityToken, IActivity } from './IActivity';
 import { OnActivityInit } from './OnActivityInit';
 import { IActivityContextResult, IActivityContext } from './IActivityContext';
+import { Expression, Active, ExecuteConfigure } from './ActivityConfigure';
+
+
+export const ExecuteToken = new InjectAcitityToken<ExecuteActivity<any>>('Execute')
 
 /**
  * execute activity.
@@ -12,9 +16,8 @@ import { IActivityContextResult, IActivityContext } from './IActivityContext';
  * @implements {GActivity<T>}
  * @template T
  */
-@Task
-export abstract class ExecuteActivity<T> extends Activity implements IActivityResult<T>, OnActivityInit {
-
+@Task(ExecuteToken)
+export class ExecuteActivity<T> extends Activity implements IActivityResult<T>, OnActivityInit {
     /**
      *  activity execute context.
      *
@@ -35,5 +38,14 @@ export abstract class ExecuteActivity<T> extends Activity implements IActivityRe
         await this.execute();
         return this.context;
     }
+
+    protected async execute(): Promise<void> {
+        let cfg = this.context.config as ExecuteConfigure;
+        if (cfg.execute) {
+            let body = await this.resolveExpression(cfg.execute);
+            await this.execActivity(body, this.context);
+        }
+    }
+
 
 }

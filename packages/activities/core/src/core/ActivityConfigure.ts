@@ -70,14 +70,14 @@ export type ExpressionType<T> = Expression<T> | ActivityResultType<T>;
 /**
  * core activities configures.
  */
-export type GCoreActivityConfigs<T> = ActivityConfigure | ChainConfigure | IDependenceConfigure<T> | ConfirmConfigure | IDelayConfigure<T> | IDoWhileConfigure<T>
+export type GCoreActivityConfigs<T> = ActivityConfigure | ChainConfigure | IExecuteConfigure<T> | IDependenceConfigure<T> | ConfirmConfigure | IDelayConfigure<T> | IDoWhileConfigure<T>
     | IIfConfigure<T> | IIntervalConfigure<T> | IParallelConfigure<T> | ISequenceConfigure<T> | ISwitchConfigure<T>
     | ThrowConfigure | ITryCatchConfigure<T> | IWhileConfigure<T>;
 
 /**
  * core activities configures.
  */
-export type CoreActivityConfigs = ActivityConfigure | ChainConfigure | DependenceConfigure | ConfirmConfigure | DelayConfigure | DoWhileConfigure
+export type CoreActivityConfigs = ActivityConfigure | ChainConfigure | ExecuteConfigure | DependenceConfigure | ConfirmConfigure | DelayConfigure | DoWhileConfigure
     | IfConfigure | IntervalConfigure | ParallelConfigure | SequenceConfigure | SwitchConfigure
     | ThrowConfigure | TryCatchConfigure | WhileConfigure;
 
@@ -218,6 +218,35 @@ export interface IActivityConfigure<T> extends ModuleConfig<T> {
  * @extends {IActivityConfigure<IActivity>}
  */
 export interface ActivityConfigure extends IActivityConfigure<IActivity> {
+
+}
+
+/**
+ * execute activity configure.
+ *
+ * @export
+ * @interface ExecuteConfigure
+ * @extends {ActivityConfigure}
+ * @template T
+ */
+export interface IExecuteConfigure<T> extends ActivityConfigure {
+    /**
+     * execute activity body.
+     *
+     * @type {ExpressionToken<T>}
+     * @memberof ExecuteConfigure
+     */
+    execute?: ExpressionToken<T>;
+}
+
+/**
+ * execute activity configure.
+ *
+ * @export
+ * @interface ExecuteConfigure
+ * @extends {IExecuteConfigure<Active>}
+ */
+export interface ExecuteConfigure extends IExecuteConfigure<Active> {
 
 }
 
