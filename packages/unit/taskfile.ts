@@ -54,7 +54,7 @@ export class BootRollup {
 @Pack({
     src: 'src',
     clean: 'lib',
-    test: (act: IActivity) => act.context.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
+    test: ctx => ctx.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
     assets: {
         ts: {
             sequence: [
@@ -89,9 +89,12 @@ export class BootRollup {
         }
     }
 })
-export class BootBuilder {
+export class UnitBuilder {
 }
 
-Workflow.create(__dirname)
-    .use(PackModule)
-    .bootstrap(BootBuilder);
+if (process.cwd() === __dirname) {
+    Workflow.create(__dirname)
+        .use(PackModule)
+        .bootstrap(UnitBuilder);
+
+}

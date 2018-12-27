@@ -1,4 +1,4 @@
-import { ModuelValidate, InjectModuleValidateToken, Injectable } from '@ts-ioc/core';
+import { ModuelValidate, InjectModuleValidateToken, Singleton } from '@ts-ioc/core';
 import { Task } from '../decorators';
 
 /**
@@ -13,7 +13,7 @@ export const ActivityValidateToken = new InjectModuleValidateToken(Task.toString
  * @class ActivityValidate
  * @extends {ModuelValidate}
  */
-@Injectable(ActivityValidateToken)
+@Singleton(ActivityValidateToken)
 export class ActivityValidate extends ModuelValidate {
     getDecorator(): string {
         return Task.toString();

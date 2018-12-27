@@ -6,7 +6,7 @@ import { ServeActivity, ServeConfigure } from '../serves';
 /**
  * pack configure.
  */
-export type PackConfigures<T> = PackConfigure | BuildConfigures<T>;
+export type PackConfigures<T> = PackConfigure | BuildConfigures<T> | Token<IActivity>;
 
 /**
  * pack activity type, configy.

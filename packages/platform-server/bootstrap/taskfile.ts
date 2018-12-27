@@ -83,6 +83,8 @@ export class BootRollup extends AssetActivity {
 export class PfServerBootBuilder {
 }
 
-Workflow.create(__dirname)
-    .use(PackModule)
-    .bootstrap(PfServerBootBuilder);
+if (process.cwd() === __dirname) {
+    Workflow.create(__dirname)
+        .use(PackModule)
+        .bootstrap(PfServerBootBuilder);
+}

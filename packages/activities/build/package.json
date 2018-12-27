@@ -10,8 +10,7 @@
   "scripts": {
     "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",
-    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
-    "prepublish": "ts-node -r tsconfig-paths/register taskfile.ts"
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
     "activity",
@@ -47,9 +46,9 @@
     "globby": "^7.1.1",
     "gulp-mocha": "^3.0.1",
     "gulp-sourcemaps": "^2.6.4",
-    "gulp-typescript": "^5.0.0-alpha.3",
-    "gulp-uglify": "^3.0.0",
-    "shelljs": "^0.8.2",
+    "gulp-typescript": "^5.0.0",
+    "gulp-uglify": "^3.0.1",
+    "shelljs": "^0.8.3",
     "execa": "1.0.0",
     "del": "^2.2.1",
     "chalk": "^2.3.1",

@@ -29,7 +29,7 @@ export interface IDIModuleInjector extends IModuleInjector {
      * @returns {IMetaAccessor<T>}
      * @memberof IDIModuleInjector
      */
-    getMetaAccessor<T>(container: IContainer, token: Token<T>): IMetaAccessor<T>;
+    getMetaAccessor<T>(container: IContainer, token: Token<T> | Token<T>[]): IMetaAccessor<T>;
 }
 
 /**
@@ -66,8 +66,8 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         return this.validate.valid(type);
     }
 
-    getMetaAccessor<T>(container: IContainer, decorator?: string): IMetaAccessor<T> {
-        return container.getService(MetaAccessorToken, decorator);
+    getMetaAccessor<T>(container: IContainer, token: Token<T> | Token<T>[]): IMetaAccessor<T> {
+        return container.getService(MetaAccessorToken, token);
     }
 
     protected async importModule(container: IContainer, type: Type<any>): Promise<InjectedModule<any>> {

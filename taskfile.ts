@@ -1,7 +1,10 @@
-import { Workflow, IfActivityToken, SequenceActivityToken } from '@taskfr/core';
+import { Workflow, IfActivityToken, SequenceActivityToken, ExecuteToken } from '@taskfr/core';
 import { INodeActivityContext, Asset, BuildModule, AssetToken, ShellModule, TransformModule, NodeActivityContext } from '@taskfr/build';
 import * as through from 'through2';
-const inplace = require('json-in-place')
+import * as path from 'path';
+import { isPackClass } from '@taskfr/pack';
+const inplace = require('json-in-place');
+
 
 let versionSetting = (ctx: INodeActivityContext) => {
     let envArgs = ctx.getEnvArgs();
@@ -68,17 +71,35 @@ let versionSetting = (ctx: INodeActivityContext) => {
             activity: IfActivityToken
         },
         {
-            shell: (ctx: INodeActivityContext) => {
+            execute: (ctx: INodeActivityContext) => {
                 let envArgs = ctx.getEnvArgs();
                 let packages = ctx.getFolders('packages').filter(f => !/activities/.test(f)); // (f => !/(annotations|aop|bootstrap)/.test(f));
-                let cmd = envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
-                let cmds = packages.map(fd => {
-                    return `cd ${fd} && ${cmd}`;
+
+                let activities = [];
+                packages.forEach(fd => {
+                    let objs = require(path.join(fd, 'taskfile.ts'));
+                    let builder = Object.values(objs).find(v => isPackClass(v));
+                    activities.push(builder);
                 });
-                console.log(cmds);
-                return cmds;
+                if (envArgs.deploy) {
+                    let cmd = 'npm publish --access=public'; // envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
+                    let cmds = packages.map(fd => {
+                        return `cd ${fd} && ${cmd}`;
+                    });
+                    console.log(cmds);
+                    activities.push({
+                        shells: cmds,
+                        activity: 'shell'
+                    });
+                }
+                console.log(activities);
+                return {
+                    contextType: NodeActivityContext,
+                    sequence: activities,
+                    activity: SequenceActivityToken
+                }
             },
-            activity: 'shell'
+            activity: ExecuteToken
         }
     ]
 })

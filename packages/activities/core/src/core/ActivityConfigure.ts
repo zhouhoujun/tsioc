@@ -84,7 +84,7 @@ export type CoreActivityConfigs = ActivityConfigure | ChainConfigure | ExecuteCo
 /**
  * activity type.
  */
-export type ActivityType<T extends IActivity> = Token<T> | CoreActivityConfigs;
+export type ActivityType<T extends IActivity> = Token<T> | Token<IActivity> | CoreActivityConfigs;
 
 /**
  * active
@@ -94,7 +94,7 @@ export type Active = ActivityType<IActivity>;
 /**
  * activity configure type.
  */
-export type ConfigureType<T extends IActivity, TC extends ActivityConfigure> = Token<T> | TC;
+export type ConfigureType<T extends IActivity, TC extends ActivityConfigure> = Token<T> | TC | Token<IActivity>;
 
 /**
  * target is workflow instance or not.

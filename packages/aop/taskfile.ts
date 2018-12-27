@@ -1,7 +1,6 @@
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 import { Workflow } from '@taskfr/core';
 import { Asset, AssetActivity, TsCompile, CleanToken } from '@taskfr/build';
-import { IActivity } from '@taskfr/core';
 
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -89,6 +88,8 @@ export class AopRollup extends AssetActivity {
 export class AopBuilder {
 }
 
-Workflow.create(__dirname)
-    .use(PackModule)
-    .bootstrap(AopBuilder);
+if (process.cwd() === __dirname) {
+    Workflow.create(__dirname)
+        .use(PackModule)
+        .bootstrap(AopBuilder);
+}

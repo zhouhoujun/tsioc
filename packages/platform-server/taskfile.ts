@@ -3,6 +3,7 @@ import { Workflow } from '@taskfr/core';
 import { IActivity } from '@taskfr/core';
 import { Asset, AssetActivity, CleanToken, TsCompile, IBuildHandleActivity } from '@taskfr/build';
 import { Pack, PackModule } from '@taskfr/pack';
+import { PfServerBootBuilder } from './bootstrap/taskfile';
 
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -29,7 +30,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 plugins: [
                     resolve(),
                     commonjs({
-                        exclude: [ 'node_modules/**', '../../node_modules/**']
+                        exclude: ['node_modules/**', '../../node_modules/**']
                     }),
                     // builtins(),
                     rollupSourcemaps()
@@ -80,19 +81,14 @@ export class PfServerRollup {
             ]
         }
     },
-    after: {
-        shell: (ctx: IBuildHandleActivity) => {
-            // let envArgs = ctx.getEnvArgs();
-            return `cd bootstrap & ts-node -r tsconfig-paths/register taskfile.ts`
-        },
-        activity: 'shell'
-    }
-
+    after: PfServerBootBuilder
 })
 export class PfServerBuilder {
 }
 
-Workflow.create(__dirname)
-    .use(PackModule)
-    .bootstrap(PfServerBuilder);
+if (process.cwd() === __dirname) {
+    Workflow.create(__dirname)
+        .use(PackModule)
+        .bootstrap(PfServerBuilder);
+}
 

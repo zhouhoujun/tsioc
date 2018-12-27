@@ -10,8 +10,7 @@
   "scripts": {
     "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",
-    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
-    "prepublish": "ts-node -r tsconfig-paths/register taskfile.ts"
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
     "activity",
@@ -40,10 +39,10 @@
     "@ts-ioc/logs": "^4.0.0-beta1",
     "reflect-metadata": "^0.1.12",
     "gulp-sourcemaps": "^2.1.1",
-    "gulp-typescript": "^4.0.1",
-    "rxjs": "^5.5.11",
-    "shelljs": "^0.8.2",
-    "tslib": "^1.9.2"
+    "gulp-typescript": "^5.0.0",
+    "rxjs": "^6.3.3",
+    "shelljs": "^0.8.3",
+    "tslib": "^1.9.3"
   },
   "directories": {
     "lib": "lib"

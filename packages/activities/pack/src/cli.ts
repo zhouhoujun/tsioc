@@ -7,10 +7,8 @@ import * as colors from 'colors';
 import program from 'commander';
 import findup from 'findup';
 import { PackModule } from './PackModule';
-import { Workflow, Task } from '@taskfr/core';
-import { isMetadataObject, isClass, hasClassMetadata } from '@ts-ioc/core';
-import { PackConfigure } from './core';
-import { Pack } from './decorators';
+import { Workflow, isAcitvityClass } from '@taskfr/core';
+import { PackConfigure, isPackClass } from './core';
 
 const cliRoot = findup.sync(__dirname, 'package.json');
 const packageConf = require(__dirname + '/package.json');
@@ -35,10 +33,10 @@ program
             let wf = Workflow.create(processRoot).use(PackModule);
             let md = require(fileName);
             let activites = Object.values(md);
-            if (activites.some(v => isClass(v) && hasClassMetadata(Pack, v))) {
-                wf.sequence(...activites.filter(v => isClass(v) && hasClassMetadata(Pack, v)));
-            } else if (activites.some(v => isClass(v) && hasClassMetadata(Task, v))) {
-                wf.sequence(...activites.filter(v => isClass(v) && hasClassMetadata(Task, v)));
+            if (activites.some(v => isPackClass(v))) {
+                wf.sequence(...activites.filter(v => isPackClass(v)));
+            } else if (activites.some(v => isAcitvityClass(v))) {
+                wf.sequence(...activites.filter(v => isAcitvityClass(v)));
             } else {
                 wf.bootstrap(md);
             }

@@ -1,6 +1,6 @@
 import {
     Inject, Express, ContainerToken, IContainer, Token, ProviderType, lang,
-    Providers, MetaAccessorToken, isFunction, isToken, isBaseObject
+    Providers, MetaAccessorToken, isFunction, isToken, isBaseObject, isClass, Type, hasClassMetadata, getOwnTypeMetadata
 } from '@ts-ioc/core';
 import { Task } from '../decorators';
 import { OnActivityInit } from './OnActivityInit';
@@ -9,7 +9,7 @@ import { ActivityMetaAccessorToken } from '../injectors';
 import { IActivity, ActivityToken, WorkflowId } from './IActivity';
 import { ActivityConfigure, ExpressionType, Expression, ActivityType, Active } from './ActivityConfigure';
 import { IActivityContext, InputDataToken, InjectActivityContextToken, ActivityContextToken } from './IActivityContext';
-import { IWorkflowInstance } from './IWorkflowInstance';
+import { IActivityMetadata } from '../metadatas';
 
 
 /**
@@ -244,7 +244,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
 }
 
 /**
- * is acitivty or not.
+ * is acitivty instance or not.
  *
  * @export
  * @param {*} target
@@ -252,4 +252,24 @@ export abstract class Activity implements IActivity, OnActivityInit {
  */
 export function isAcitvity(target: any): target is Activity {
     return target instanceof Activity;
+}
+
+/**
+ * target is activity class.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is Type<IActivity>}
+ */
+export function isAcitvityClass(target: any, ext?: (meta: IActivityMetadata) => boolean): target is Type<IActivity> {
+    if (!isClass(target)) {
+        return false;
+    }
+    if (hasClassMetadata(Task, target)) {
+        if (ext) {
+            return getOwnTypeMetadata(Task, target).some(meta => meta && ext(meta));
+        }
+        return true;
+    }
+    return false;
 }

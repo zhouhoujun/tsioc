@@ -1,7 +1,8 @@
 import { IModuleValidate, InjectModuleValidateToken } from './IModuleValidate';
 import { Type } from '../types';
-import { isClass, isString } from '../utils';
+import { isClass, isString, isArray } from '../utils';
 import { hasOwnClassMetadata, IocExt } from '../core';
+
 /**
  * base module validate.
  *
@@ -23,11 +24,13 @@ export class ModuelValidate implements IModuleValidate {
         let decorator = this.getDecorator();
         if (isString(decorator)) {
             return hasOwnClassMetadata(decorator, type);
+        } else if (isArray(decorator)) {
+            return decorator.some(d => hasOwnClassMetadata(d, type));
         }
         return true;
     }
 
-    getDecorator(): string {
+    getDecorator(): string | string[] {
         return null;
     }
 }
@@ -45,7 +48,7 @@ export const IocExtModuleValidateToken = new InjectModuleValidateToken(IocExt.to
  * @implements {IModuleValidate}
  */
 export class IocExtModuleValidate extends ModuelValidate implements IModuleValidate {
-    getDecorator(): string {
+    getDecorator(): string | string[] {
         return IocExt.toString();
     }
 }

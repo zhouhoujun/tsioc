@@ -89,7 +89,8 @@ export class RollupTs extends AssetActivity {
 export class PackBuilder {
 }
 
-
-Workflow.create(__dirname)
-    .use(PackModule)
-    .bootstrap(PackBuilder);
+if (process.cwd() === __dirname) {
+    Workflow.create(__dirname)
+        .use(PackModule)
+        .bootstrap(PackBuilder);
+}

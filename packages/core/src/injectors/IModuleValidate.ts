@@ -23,7 +23,7 @@ export interface IModuleValidate {
      * @returns {string}
      * @memberof IModuleValidate
      */
-    getDecorator(): string;
+    getDecorator(): string | string[];
 }
 
 

@@ -1,7 +1,7 @@
-import { ApplicationBuilder, ApplicationEvents, BootOptions } from '@ts-ioc/bootstrap';
+import { ApplicationBuilder, BootOptions } from '@ts-ioc/bootstrap';
 import { IActivity, IWorkflowInstance, Active, SequenceConfigure, WorkflowId, UUIDToken, RandomUUIDFactory, CoreActivityConfigs } from './core';
 import { IWorkflow } from './IWorkflow';
-import { LoadType, IContainer, lang, isToken } from '@ts-ioc/core';
+import { LoadType, lang, isToken } from '@ts-ioc/core';
 // import { WorkflowModuleValidate, WorkflowModuleInjector, WorkflowModuleInjectorToken } from './injectors';
 import { AopModule } from '@ts-ioc/aop';
 import { LogModule } from '@ts-ioc/logs';

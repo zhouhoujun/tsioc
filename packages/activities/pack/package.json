@@ -13,8 +13,7 @@
   "scripts": {
     "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",
-    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
-    "prepublish": "ts-node -r tsconfig-paths/register taskfile.ts"
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
     "activity",
@@ -46,7 +45,7 @@
     "@types/chai": "^3.4.34",
     "@types/execa": "^0.9.0",
     "reflect-metadata": "^0.1.12",
-    "tslib": "^1.9.2",
+    "tslib": "^1.9.3",
     "minimist": "^1.2.0",
     "globby": "^7.1.1",
     "del": "^2.2.1",

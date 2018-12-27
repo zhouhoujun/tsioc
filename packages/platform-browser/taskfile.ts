@@ -1,6 +1,7 @@
 import { AssetActivity, CleanToken, TsCompile, Asset, INodeActivityContext } from '@taskfr/build';
 import { Workflow } from '@taskfr/core';
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
+import { PfBrowserBootBuilder } from './bootstrap/taskfile';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
@@ -88,18 +89,14 @@ export class PfBrowserRollup extends AssetActivity {
             ]
         }
     },
-    after: {
-        shell: (ctx: INodeActivityContext) => {
-            // let envArgs = ctx.getEnvArgs();
-            return `cd bootstrap & ts-node -r tsconfig-paths/register taskfile.ts`
-        },
-        activity: 'shell'
-    }
+    after: PfBrowserBootBuilder
 
 })
 export class PfBrowserBuilder extends PackActivity {
 }
 
-Workflow.create(__dirname)
-    .use(PackModule)
-    .bootstrap(PfBrowserBuilder);
+if (process.cwd() === __dirname) {
+    Workflow.create(__dirname)
+        .use(PackModule)
+        .bootstrap(PfBrowserBuilder);
+}

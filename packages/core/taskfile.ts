@@ -35,6 +35,7 @@ const rename = require('gulp-rename');
                 globals: {
                     'reflect-metadata': 'Reflect',
                     'log4js': 'log4js',
+                    'tslib': 'tslib',
                     '@ts-ioc/core': '@ts-ioc/core'
                 },
                 input: ctx.config.data.input
@@ -48,7 +49,7 @@ export class CoreRollup {
 
 @Pack({
     clean: 'lib',
-    test: (ctx)  => ctx.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
+    test: (ctx) => ctx.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
     assets: {
         ts: {
             sequence: [
@@ -86,6 +87,8 @@ export class CoreRollup {
 export class CoreBuilder {
 }
 
-Workflow.create(__dirname)
-    .use(PackModule)
-    .bootstrap(CoreBuilder);
+if (process.cwd() === __dirname) {
+    Workflow.create(__dirname)
+        .use(PackModule)
+        .bootstrap(CoreBuilder);
+}

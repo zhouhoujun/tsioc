@@ -9,11 +9,11 @@ import { Workflow } from '@taskfr/core';
         ts: { dest: 'lib', annotation: true, uglify: false }
     }
 })
-export class Builder {
+export class AnnoBuilder {
 }
 
-// if (process.cwd() === __dirname) {
-Workflow.create()
-    .use(PackModule)
-    .bootstrap(Builder);
-// }
+if (process.cwd() === __dirname) {
+    Workflow.create()
+        .use(PackModule)
+        .bootstrap(AnnoBuilder);
+}

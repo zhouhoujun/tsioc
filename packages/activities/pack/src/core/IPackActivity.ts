@@ -1,6 +1,7 @@
 import { CleanActivity, TestActivity, IBuildActivity } from '@taskfr/build';
-import { Registration } from '@ts-ioc/core';
+import { Registration, Type } from '@ts-ioc/core';
 import { ServeActivity } from '../serves';
+import { isAcitvityClass } from '@taskfr/core';
 
 /**
  * package activity.
@@ -55,3 +56,13 @@ export class InjectPackToken<T extends IPackActivity> extends Registration<T> {
  */
 export const PackToken = new InjectPackToken<IPackActivity>('');
 
+/**
+ * is Pack class or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns
+ */
+export function isPackClass(target: any): target is Type<IPackActivity> {
+    return isAcitvityClass(target, meta => meta.decorType === 'Pack');
+}

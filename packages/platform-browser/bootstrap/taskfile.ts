@@ -95,6 +95,8 @@ export class BootRollup extends AssetActivity {
 export class PfBrowserBootBuilder extends PackActivity {
 }
 
-Workflow.create(__dirname)
-    .use(PackModule)
-    .bootstrap(PfBrowserBootBuilder);
+if (process.cwd() === __dirname) {
+    Workflow.create(__dirname)
+        .use(PackModule)
+        .bootstrap(PfBrowserBootBuilder);
+}

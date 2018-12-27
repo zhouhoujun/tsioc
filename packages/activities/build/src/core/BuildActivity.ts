@@ -106,20 +106,6 @@ export interface IBuildActivity extends IActivity {
      * @memberof BuildActivity
      */
     watch: WatchActivity;
-    /**
-     * before build body.
-     *
-     * @type {IActivity}
-     * @memberof BuildActivity
-     */
-    before: IActivity;
-    /**
-     * do sth, after build completed.
-     *
-     * @type {IActivity}
-     * @memberof BuildActivity
-     */
-    after: IActivity;
 }
 
 /**
@@ -162,20 +148,6 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
      * @memberof BuildActivity
      */
     watch: WatchActivity;
-    /**
-     * before build body.
-     *
-     * @type {IActivity}
-     * @memberof BuildActivity
-     */
-    before: IActivity;
-    /**
-     * do sth, after build completed.
-     *
-     * @type {IActivity}
-     * @memberof BuildActivity
-     */
-    after: IActivity;
 
     async onActivityInit(config: BuildConfigure) {
         await super.onActivityInit(config);
@@ -193,13 +165,6 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
                     }
                     return <WatchConfigure>{ src: watch, activity: WatchAcitvityToken };
                 });
-        }
-
-        if (config.before) {
-            this.before = await this.buildActivity(config.before);
-        }
-        if (config.after) {
-            this.after = await this.buildActivity(config.after);
         }
     }
 
@@ -255,11 +220,17 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
     }
 
     protected async beforeBuild() {
-        await this.execActivity(this.before, this.context);
+        let cfg = this.context.config as BuildConfigure;
+        if (cfg.before) {
+            await this.execActivity(cfg.before, this.context);
+        }
     }
 
     protected async afterBuild() {
-        await this.execActivity(this.after, this.context);
+        let cfg = this.context.config as BuildConfigure;
+        if (cfg.after) {
+            await this.execActivity(cfg.after, this.context);
+        }
     }
 
     protected isValidContext(ctx: any): boolean {

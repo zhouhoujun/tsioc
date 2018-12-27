@@ -54,7 +54,7 @@ export class PackActivity extends BuildActivity implements IPackActivity {
 
     protected async beforeBuild() {
         await this.execActivity(this.test, this.context);
-        await this.execActivity(this.before, this.context);
+        await super.beforeBuild();
     }
 
     protected async afterBuild() {

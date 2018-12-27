@@ -1,4 +1,4 @@
-import { InjectModuleInjectorToken, Injectable, Inject, IModuleValidate, IContainer, Type } from '@ts-ioc/core';
+import { InjectModuleInjectorToken, Inject, IModuleValidate, IContainer, Type, Singleton } from '@ts-ioc/core';
 import { Task } from '../decorators';
 import { DIModuleInjector, InjectedModule, InjectedModuleToken } from '@ts-ioc/bootstrap';
 import { ActivityValidateToken } from './ActivityValidate';
@@ -15,7 +15,7 @@ export const ActivityModuleInjectorToken = new InjectModuleInjectorToken(Task.to
  * @class ActivityModuleInjector
  * @extends {DIModuleInjector}
  */
-@Injectable(ActivityModuleInjectorToken)
+@Singleton(ActivityModuleInjectorToken)
 export class ActivityModuleInjector  extends DIModuleInjector {
 
     constructor(@Inject(ActivityValidateToken) validate: IModuleValidate) {

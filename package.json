@@ -55,7 +55,7 @@
     "gulp-replace": "^0.5.4",
     "gulp-rollup": "^2.16.2",
     "gulp-sourcemaps": "^2.6.4",
-    "gulp-typescript": "^5.0.0-alpha.3",
+    "gulp-typescript": "^5.0.0",
     "gulp-uglify": "^3.0.0",
     "interpret": "^1.1.0",
     "json-in-place": "^1.0.1",
@@ -85,6 +85,7 @@
     "tslint-stylish": "^2.1.0",
     "typescript": "^3.0.1",
     "vinyl-buffer": "^1.0.0",
+    "vinyl-fs": "^3.0.3",
     "vinyl-paths": "^2.1.0",
     "zone.js": "^0.8.5"
   },

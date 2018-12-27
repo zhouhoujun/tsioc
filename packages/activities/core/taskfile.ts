@@ -106,7 +106,8 @@ export class CoreBuilder {
 }
 
 
-
-Workflow.create(__dirname)
-    .use(PackModule)
-    .bootstrap(CoreBuilder);
+if (process.cwd() === __dirname) {
+    Workflow.create(__dirname)
+        .use(PackModule)
+        .bootstrap(CoreBuilder);
+}

@@ -88,9 +88,11 @@ export class LogsRollup extends AssetActivity {
         }
     }
 })
-export class LogsBuilder extends PackActivity {
+export class LogsBuilder {
 }
 
-Workflow.create(__dirname)
-    .use(PackModule)
-    .bootstrap(LogsBuilder);
+if (process.cwd() === __dirname) {
+    Workflow.create(__dirname)
+        .use(PackModule)
+        .bootstrap(LogsBuilder);
+}

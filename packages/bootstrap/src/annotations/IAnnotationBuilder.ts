@@ -9,7 +9,7 @@ const annoBuilderDesc = 'DI_AnnotationBuilder';
  * Annotation class builder.
  *
  * @export
- * @interface IBootBuilder
+ * @interface IAnnotationBuilder
  */
 export interface IAnnotationBuilder<T> {
     /**
@@ -58,7 +58,7 @@ export interface IAnnotationBuilder<T> {
      * @param {AnnotationConfigure<T>} [config]
      * @param {BuildOptions<T>} [options]
      * @returns {IAnnotationBuilder<T>}
-     * @memberof IBootBuilder
+     * @memberof IAnnotationBuilder
      */
     getBuilder(token: Token<T>, config?: AnnotationConfigure<T>, options?: BuildOptions<T>): IAnnotationBuilder<T>;
     /**
