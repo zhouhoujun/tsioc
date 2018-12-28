@@ -1,5 +1,5 @@
 import { Task } from '../decorators';
-import { IActivity, InjectAcitityToken, ParallelConfigure, ActivityType } from '../core';
+import { IActivity, InjectAcitityToken, ParallelConfigure, ActivityType, Active } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 
@@ -22,10 +22,10 @@ export class ParallelActivity extends ControlActivity {
     /**
      * activites
      *
-     * @type {IActivity[]}
+     * @type {Active[]}
      * @memberof ParallelActivity
      */
-    activities: IActivity[] = [];
+    activities: Active[] = [];
 
     /**
      * add activity.
@@ -40,14 +40,8 @@ export class ParallelActivity extends ControlActivity {
     async onActivityInit(config: ParallelConfigure): Promise<any> {
         await super.onActivityInit(config);
         if (config.parallel && config.parallel.length) {
-            await this.buildChildren(this, config.parallel);
+            this.activities.push(...config.parallel);
         }
-    }
-
-    async buildChildren(activity: ParallelActivity, configs: ActivityType<IActivity>[]) {
-        let children = await Promise.all(configs.map(cfg => this.buildActivity(cfg)));
-        activity.activities = children;
-        return activity;
     }
 
     /**

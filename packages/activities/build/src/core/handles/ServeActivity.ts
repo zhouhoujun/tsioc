@@ -66,7 +66,6 @@ export class ServeActivity extends BuildHandleActivity {
      * @memberof IPipeServe
      */
     options: any;
-
     /**
      * eanble Serve or not.
      *

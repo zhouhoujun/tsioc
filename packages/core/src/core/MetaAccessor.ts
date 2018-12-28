@@ -161,14 +161,14 @@ export class MetaAccessor implements IMetaAccessor<any> {
         if (!isToken(token)) {
             return false;
         }
-        if (container) {
-            if (container.has(token)) {
-                return true;
-            } else if (isClass(token)) {
-                return true;
-            }
-            return false;
-        }
+        // if (container) {
+        //     if (container.has(token)) {
+        //         return true;
+        //     } else if (isClass(token)) {
+        //         return true;
+        //     }
+        //     return false;
+        // }
         return true;
     }
 

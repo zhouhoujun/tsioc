@@ -32,7 +32,6 @@ export interface IBuildHandleActivity extends IHandleActivity {
 }
 
 
-
 /**
  * handle config
  *

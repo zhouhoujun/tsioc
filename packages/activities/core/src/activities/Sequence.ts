@@ -1,5 +1,5 @@
 import { Task } from '../decorators';
-import { IActivity, InjectAcitityToken, SequenceConfigure, ActivityType } from '../core';
+import { IActivity, InjectAcitityToken, SequenceConfigure, ActivityType, Active } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 /**
@@ -20,16 +20,16 @@ export class SequenceActivity extends ControlActivity {
     /**
      * sequence activites.
      *
-     * @type {IActivity[]}
+     * @type {Active[]}
      * @memberof SequenceActivity
      */
-    activities: IActivity[] = [];
+    activities: Active[] = [];
 
     async onActivityInit(config: SequenceConfigure): Promise<void> {
         await super.onActivityInit(config);
         this.activities = this.activities || [];
         if (config.sequence && config.sequence.length) {
-            await this.buildChildren(this, config.sequence);
+            this.activities.push(...config.sequence);
         }
     }
 
@@ -43,11 +43,6 @@ export class SequenceActivity extends ControlActivity {
         this.activities.push(activity);
     }
 
-    async buildChildren(activity: SequenceActivity, configs: ActivityType<IActivity>[]) {
-        let sequence = await Promise.all(configs.map(cfg => this.buildActivity(cfg)));
-        activity.activities = sequence;
-        return activity;
-    }
 
     protected async execute(): Promise<void> {
         let execPromise = Promise.resolve(this.context);

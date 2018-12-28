@@ -2,7 +2,7 @@ import { Workflow, IfActivityToken, SequenceActivityToken, ExecuteToken } from '
 import { INodeActivityContext, Asset, BuildModule, AssetToken, ShellModule, TransformModule, NodeActivityContext } from '@taskfr/build';
 import * as through from 'through2';
 import * as path from 'path';
-import { isPackClass } from '@taskfr/pack';
+import { isPackClass, PackModule } from '@taskfr/pack';
 const inplace = require('json-in-place');
 
 
@@ -186,7 +186,7 @@ export class BuilderActivities {
 
 
 Workflow.create(__dirname)
-    .use(BuildModule, ShellModule, TransformModule)
+    .use(PackModule)
     .bootstrap({
         contextType: NodeActivityContext,
         if: ctx => ctx.getEnvArgs().act,

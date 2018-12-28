@@ -170,7 +170,6 @@ export const HandleContextToken = new InjectActivityContextToken(BuildHandleActi
  */
 @Injectable(HandleContextToken)
 export class BuildHandleContext<T> extends NodeActivityContext<T> {
-
     /**
      * origin build handle
      *

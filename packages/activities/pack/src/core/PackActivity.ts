@@ -4,18 +4,17 @@ import {
     InjectAssetToken, AssetToken, BuildHandleToken,
     CleanConfigure, CleanToken, TestConfigure, TestToken, IAssetBuildHandle
 } from '@taskfr/build';
-import { Pack } from '../decorators';
 import { IPackActivity, PackToken } from './IPackActivity';
 import { ServeActivity } from '../serves';
 import { PackConfigure } from './PackConfigure';
 import { lang, hasClassMetadata, isString, isArray } from '@ts-ioc/core';
 import {
     Src, SequenceActivity, ParallelActivity, SequenceConfigure,
-    SequenceActivityToken, ParallelConfigure, ParallelActivityToken
+    SequenceActivityToken, ParallelConfigure, ParallelActivityToken, Task
 } from '@taskfr/core';
 
 
-@Pack(PackToken)
+@Task(PackToken)
 export class PackActivity extends BuildActivity implements IPackActivity {
     /**
      * clean activity.

@@ -1,4 +1,4 @@
-import { Providers, Token } from '@ts-ioc/core';
+import { Providers } from '@ts-ioc/core';
 import {
     UglifyCompilerToken, AnnotationCompilerToken, AssetToken,
     SourceCompilerToken, SourcemapsCompilerToken, TestCompilerToken,
@@ -9,7 +9,7 @@ import {
     StreamUglifyActivity, AnnotationActivity, SourceActivity, TransformContextToken,
     SourceMapsActivity, MochaTestActivity, TransformContext, DestActivity, TransformActivityToken
 } from './core';
-import { IActivity, ActivityContextToken } from '@taskfr/core';
+import { ActivityContextToken } from '@taskfr/core';
 
 /**
  * Asset Activity
