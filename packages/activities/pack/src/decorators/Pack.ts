@@ -23,7 +23,8 @@ export interface PackMetadata extends PackConfigure {
  */
 export const Pack: ITaskDecorator<PackMetadata> = createTaskDecorator<PackMetadata>('Pack', ActivityBuilderToken, (meta) => {
     if (!meta.baseURL) {
-        meta.baseURL = path.join(path.dirname(process.cwd()), path.basename(process.cwd()));
+        let cwd = process.cwd();
+        meta.baseURL = path.join(path.dirname(cwd), path.basename(cwd));
     }
     return PackToken;
 }, 'PackActivity');

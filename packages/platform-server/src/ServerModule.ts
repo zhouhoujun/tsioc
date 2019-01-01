@@ -27,7 +27,8 @@ export class ServerModule {
      */
     setup() {
         let container = this.container;
-        let processRoot = path.join(path.dirname(process.cwd()), path.basename(process.cwd()));
+        let cwd = process.cwd();
+        let processRoot = path.join(path.dirname(cwd), path.basename(cwd));
         container.bindProvider(ProcessRunRootToken, () => processRoot);
         container.bindProvider(ModuleLoaderToken, new NodeModuleLoader());
         container.bindProvider(ContainerBuilderToken, new ServerContainerBuilder());
