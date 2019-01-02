@@ -1,5 +1,5 @@
 import { Task } from '../decorators';
-import { IActivity, InjectAcitityToken, SequenceConfigure, ActivityType, Active } from '../core';
+import { IActivity, InjectAcitityToken, SequenceConfigure, Active } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 /**
@@ -14,7 +14,7 @@ export const SequenceActivityToken = new InjectAcitityToken<SequenceActivity>('s
  * @class SequenceActivity
  * @extends {ControlActivity}
  */
-@Task(SequenceActivityToken)
+@Task(SequenceActivityToken, 'sequence')
 export class SequenceActivity extends ControlActivity {
 
     /**

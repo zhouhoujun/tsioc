@@ -1,8 +1,8 @@
 import {
-    MetaAccessor, IContainer, Token, isString, InjectMetaAccessorToken,
-    Refs, MetaAccessorToken, Singleton
+    MetaAccessor, IContainer, Token, InjectMetaAccessorToken,
+    Refs, MetaAccessorToken, Singleton, isToken
 } from '@ts-ioc/core';
-import { IActivity, InjectAcitityToken, ActivityConfigure } from '../core';
+import { IActivity, ActivityConfigure } from '../core';
 import { ApplicationBuilderToken } from '@ts-ioc/bootstrap';
 
 export const ActivityMetaAccessorToken = new InjectMetaAccessorToken('@Task');
@@ -22,8 +22,6 @@ export class ActivityMetaAccessor extends MetaAccessor {
         let token = this.getTokenInConfig(config);
         if (this.validateToken(token)) {
             return token;
-        } else if (isString(token)) {
-            return this.traslateStrToken(token, container);
         }
         return null;
     }
@@ -32,11 +30,18 @@ export class ActivityMetaAccessor extends MetaAccessor {
         return config.activity || config.task || config.token || config.type;
     }
 
-    protected traslateStrToken(token: string, container: IContainer): Token<IActivity> {
-        let taskToken = new InjectAcitityToken(token);
-        if (container && container.has(taskToken)) {
-            return taskToken;
+    getBootToken(config: ActivityConfigure, container?: IContainer): Token<any> {
+        let token = this.getBootTokenInConfig(config);
+        if (this.validateToken(token, container)) {
+            return token
         }
-        return token;
+
+        // if (isToken(config.selector)) {
+        //     let sel = container.resolve(config.selector);
+        //     if (sel) {
+        //         return sel.getToken(config);
+        //     }
+        // }
+        return null;
     }
 }

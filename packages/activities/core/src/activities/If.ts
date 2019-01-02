@@ -15,7 +15,7 @@ export const IfActivityToken = new InjectAcitityToken<IfActivity>('if');
  * @class IfActivity
  * @extends {ControlActivity}
  */
-@Task(IfActivityToken)
+@Task(IfActivityToken, 'if')
 export class IfActivity extends ControlActivity {
 
     /**
@@ -25,45 +25,33 @@ export class IfActivity extends ControlActivity {
      * @memberof IfActivity
      */
     condition: Condition;
-    /**
-     * if body.
-     *
-     * @type {IActivity}
-     * @memberof IfActivity
-     */
-    ifBody: IActivity;
-    /**
-     * else body.
-     *
-     * @type {IActivity}
-     * @memberof IfActivity
-     */
-    elseBody?: IActivity;
 
     async onActivityInit(config: IfConfigure): Promise<any> {
         await super.onActivityInit(config);
-        this.ifBody = await this.buildActivity(config.ifBody);
         this.condition = await this.toExpression(config.if);
-        if (config.elseBody) {
-            this.elseBody = await this.buildActivity(config.elseBody);
-        }
     }
 
     protected async execute(): Promise<void> {
         let condition = await this.context.exec(this, this.condition);
         if (condition) {
             await this.execIf();
-        } else if (this.elseBody) {
+        } else {
             await this.execElse();
         }
     }
 
     protected async execIf(): Promise<void> {
-        await this.execActivity(this.ifBody, this.context)
+        let confg = this.context.config as IfConfigure;
+        if (confg.ifBody) {
+            await this.execActivity(confg.ifBody, this.context)
+        }
     }
 
     protected async execElse(): Promise<void> {
-        await this.execActivity(this.elseBody, this.context);
+        let confg = this.context.config as IfConfigure;
+        if (confg.elseBody) {
+            await this.execActivity(confg.elseBody, this.context);
+        }
     }
 
 }

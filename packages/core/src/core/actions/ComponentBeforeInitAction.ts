@@ -41,7 +41,7 @@ export class ComponentBeforeInitAction extends ActionComposite {
             if (container.getLifeScope().hasDecorator(data.targetType, DecoratorType.Class, surm => surm.actions.includes(CoreActions.componentBeforeInit))) {
                 let component = data.target as BeforeInit;
                 if (isFunction(component.beforeInit)) {
-                    container.syncInvoke(data.targetType, 'beforeInit', data.target);
+                    container.syncInvoke(data.target || data.targetType, 'beforeInit', data.target);
                 }
             }
         }

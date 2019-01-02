@@ -1,4 +1,7 @@
 import { IActivity } from './IActivity';
+import { Token } from '@ts-ioc/core';
+import { IHandleActivity } from './IHandleActivity';
+import { HandleConfigure } from './ActivityConfigure';
 
 /**
  * chain activity.
@@ -14,5 +17,5 @@ export interface IChainActivity extends IActivity {
      * @param {...IActivity[]} activities
      * @memberof IChainActivity
      */
-    use(...activities: IActivity[]): void;
+    use(...activities: (IHandleActivity | Token<IHandleActivity> | HandleConfigure)[]): void;
 }

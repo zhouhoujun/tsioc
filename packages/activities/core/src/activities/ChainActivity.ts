@@ -1,11 +1,11 @@
 import { Task } from '../decorators';
 import {
     IActivityContext, ChainConfigure, InjectAcitityToken,
-    IActivity, IHandleActivity, IChainActivity
+    IActivity, IHandleActivity, IChainActivity, Activity, Active, HandleConfigure
 } from '../core';
 import { HandleActivity } from './HandleActivity';
 import { ControlActivity } from './ControlActivity';
-import { lang } from '@ts-ioc/core';
+import { lang, isFunction, isToken, isBaseObject, Token } from '@ts-ioc/core';
 
 
 /**
@@ -21,18 +21,10 @@ export const ChainActivityToken = new InjectAcitityToken<ChainActivity>('chain')
  * @class ChainActivity
  * @extends {ControlActivity}
  */
-@Task(ChainActivityToken)
+@Task(ChainActivityToken, 'handles')
 export class ChainActivity extends ControlActivity implements IChainActivity {
 
-    protected handles: IHandleActivity[];
-
-    async onActivityInit(config: ChainConfigure): Promise<any> {
-        await super.onActivityInit(config);
-        if (config.handles && config.handles.length) {
-            this.handles = await Promise.all(config.handles.map(cfg => this.buildActivity(cfg)))
-        }
-        this.handles = (this.handles || []).filter(act => act instanceof HandleActivity);
-    }
+    protected handles: (IHandleActivity | Token<IHandleActivity> | HandleConfigure)[];
 
     /**
      * execute.
@@ -46,6 +38,29 @@ export class ChainActivity extends ControlActivity implements IChainActivity {
     }
 
     /**
+     * execute activity.
+     *
+     * @param {IActivity} activity
+     * @param {IActivityContext} ctx
+     * @returns
+     * @memberof Activity
+     */
+    protected async execActivity(activity: Activity | Active, ctx: IActivityContext | (() => IActivityContext), next?: () => Promise<void>): Promise<IActivityContext> {
+        if (!activity) {
+            return null;
+        }
+        let rctx = isFunction(ctx) ? ctx() : ctx;
+        if (activity instanceof HandleActivity) {
+            return await activity.run(rctx, next);
+        } else if (isToken(activity) || isBaseObject(activity)) {
+            let act = await this.buildActivity(activity);
+            if (act && act instanceof HandleActivity) {
+                return act.run(rctx, next);
+            }
+        }
+    }
+
+    /**
      * handle request.
      *
      * @protected
@@ -55,10 +70,11 @@ export class ChainActivity extends ControlActivity implements IChainActivity {
      * @memberof ChainActivity
      */
     protected handleRequest(ctx: IActivityContext, next?: () => Promise<void>): Promise<void> {
-        return lang.runInChain((this.handles || []).map(act => {
+        let config = ctx.config as ChainConfigure;
+        return lang.runInChain((config.handles || []).concat(this.handles || []).map(act => {
             return async (ctx: IActivityContext, next?: () => Promise<void>) => {
                 let called = false;
-                await act.run(ctx, () => {
+                await this.execActivity(act, ctx, () => {
                     called = true;
                     return next()
                 });
@@ -69,9 +85,10 @@ export class ChainActivity extends ControlActivity implements IChainActivity {
         }), ctx, next);
     }
 
-    use(...activities: IActivity[]) {
+    use(...activities: (IHandleActivity | Token<IHandleActivity> | HandleConfigure)[]) {
+        this.handles = this.handles || [];
         activities.forEach(activity => {
-            if (activity instanceof HandleActivity) {
+            if (activity) {
                 this.handles.push(activity);
             }
         });

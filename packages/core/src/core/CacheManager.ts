@@ -111,7 +111,7 @@ export class CacheManager implements ICacheManager {
         try {
             let component = target as OnDestroy;
             if (isFunction(component.onDestroy)) {
-                this.container.syncInvoke(targetType, 'onDestroy', target);
+                this.container.syncInvoke(target || targetType, 'onDestroy', target);
             }
             this.cacheTokens.delete(targetType);
         } catch (err) {

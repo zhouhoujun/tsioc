@@ -13,7 +13,7 @@ export const ThrowActivityToken = new InjectAcitityToken<ThrowActivity>('throw')
  * @class ThrowActivity
  * @extends {ControlActivity}
  */
-@Task(ThrowActivityToken)
+@Task(ThrowActivityToken, 'exception')
 export class ThrowActivity extends ControlActivity {
     /**
      * throw exception error.

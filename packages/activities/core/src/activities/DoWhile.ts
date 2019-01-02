@@ -14,7 +14,7 @@ export const DoWhileActivityToken = new InjectAcitityToken<DoWhileActivity>('dow
  * @class DoWhileActivity
  * @extends {ControlActivity}
  */
-@Task(DoWhileActivityToken)
+@Task(DoWhileActivityToken, 'do & while')
 export class DoWhileActivity extends ControlActivity {
     /**
      * do while condition.
@@ -22,27 +22,20 @@ export class DoWhileActivity extends ControlActivity {
      * @type {Condition}
      * @memberof DoWhileActivity
      */
-    condition: Condition;
-    /**
-     * do while body.
-     *
-     * @type {IActivity}
-     * @memberof DoWhileActivity
-     */
-    body: IActivity;
+    while: Condition;
 
     async onActivityInit(config: DoWhileConfigure): Promise<any> {
         await super.onActivityInit(config);
-        this.body = await this.buildActivity(config.do);
-        this.condition = await this.toExpression(config.while);
+        this.while = await this.toExpression(config.while);
     }
 
     protected async execute(): Promise<any> {
-        await this.execActivity(this.body, this.context);
-        let condition = await this.context.exec(this, this.condition);
+        let config = this.context.config as DoWhileConfigure;
+        await this.execActivity(config.do, this.context);
+        let condition = await this.context.exec(this, this.while);
         while (condition) {
-            await this.execActivity(this.body, this.context);
-            condition = await this.context.exec(this, this.condition);
+            await this.execActivity(config.do, this.context);
+            condition = await this.context.exec(this, this.while);
         }
     }
 }

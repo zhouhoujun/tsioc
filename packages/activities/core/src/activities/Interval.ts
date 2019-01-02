@@ -15,7 +15,7 @@ export const IntervalActivityToken = new InjectAcitityToken<IntervalActivity>('i
  * @class IntervalActivity
  * @extends {ControlActivity}
  */
-@Task(IntervalActivityToken)
+@Task(IntervalActivityToken, 'interval')
 export class IntervalActivity extends ControlActivity {
 
     /**
@@ -26,24 +26,16 @@ export class IntervalActivity extends ControlActivity {
      */
     interval: Expression<number>;
 
-    /**
-     * body.
-     *
-     * @type {IActivity}
-     * @memberof IntervalActivity
-     */
-    body: IActivity;
-
     async onActivityInit(config: IntervalConfigure): Promise<void> {
         await super.onActivityInit(config);
         this.interval = await this.toExpression(config.interval);
-        this.body = await this.buildActivity(config.body);
     }
 
     protected async execute(): Promise<void> {
         let interval = await this.context.exec(this, this.interval);
+        let config = this.context.config as IntervalConfigure;
         setInterval(() => {
-            this.execActivity(this.body, this.context);
+            this.execActivity(config.body, this.context);
         }, interval);
     }
 }

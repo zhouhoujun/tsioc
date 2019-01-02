@@ -6,6 +6,8 @@ import { ActivityMetadata } from '../metadatas/ActivityMetadata';
 import { IActivityBuilder, ActivityBuilderToken } from '../core/IActivityBuilder';
 import { IActivityContext } from '../core/IActivityContext';
 import { IActivity, ActivityToken, WorkflowInstanceToken } from '../core';
+import { Src } from '../utils';
+import { isArray } from 'util';
 
 /**
  * task decorator, use to define class is a task element.
@@ -29,18 +31,20 @@ export interface ITaskDecorator<T extends ActivityMetadata> extends ITypeDecorat
      *
      * @Task
      * @param {string} provide Activity name or provide.
+     * @param {string} selector metadata selector.
      * @param {string} [alias] Activity alias name.
      */
-    (provide: Registration<any> | symbol | string, alias?: string): ClassDecorator;
+    (provide: Registration<any> | symbol | string, selector?: string, alias?: string): ClassDecorator;
     /**
      * Activity decorator, use to define class as Activity element.
      *
      * @Task
      * @param {string} provide Activity name or provide.
      * @param {string} ctxType Activity context token.
+     * @param {string} selector metadata selector.
      * @param {string} [alias]  Activity alias name
      */
-    (provide: Registration<any> | symbol | string, ctxType: Token<IActivityContext>, alias?: string): ClassDecorator;
+    (provide: Registration<any> | symbol | string, ctxType: Token<IActivityContext>, selector?: string, alias?: string): ClassDecorator;
     /**
      * Activity decorator, use to define class as Activity element.
      *
@@ -48,9 +52,10 @@ export interface ITaskDecorator<T extends ActivityMetadata> extends ITypeDecorat
      * @param {string} provide Activity name or provide.
      * @param {string} ctxType Activity context token.
      * @param {string} builder Activity builder token.
+     * @param {string} selector metadata selector.
      * @param {string} [alias]  Activity alias name
      */
-    (provide: Registration<any> | symbol | string, ctxType: Token<IActivityContext>, builder: Token<IActivityBuilder>, alias?: string): ClassDecorator;
+    (provide: Registration<any> | symbol | string, ctxType: Token<IActivityContext>, builder: Token<IActivityBuilder>, selector?: string, alias?: string): ClassDecorator;
     /**
      * task decorator, use to define class as task element.
      *
@@ -95,10 +100,10 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             });
 
             args.next<ActivityMetadata>({
-                match: (arg) => isToken(arg) || isToken(arg),
+                match: (arg) => isToken(arg) || isString(arg),
                 setMetadata: (metadata, arg) => {
                     if (isString(arg)) {
-                        metadata.name = arg;
+                        metadata.selector = arg;
                     } else {
                         metadata.contextType = arg;
                     }
@@ -106,10 +111,10 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             });
 
             args.next<ActivityMetadata>({
-                match: (arg) => isString(arg) || isToken(arg),
+                match: (arg) => isToken(arg) || isString(arg),
                 setMetadata: (metadata, arg) => {
                     if (isString(arg)) {
-                        metadata.name = arg;
+                        metadata.selector = arg;
                     } else {
                         metadata.annoBuilder = arg;
                     }
@@ -119,7 +124,14 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             args.next<ActivityMetadata>({
                 match: (arg) => isString(arg),
                 setMetadata: (metadata, arg) => {
-                    metadata.name = arg;
+                    metadata.selector = arg;
+                }
+            });
+
+            args.next<ActivityMetadata>({
+                match: (arg) => isString(arg),
+                setMetadata: (metadata, arg) => {
+                    metadata.alias = arg;
                 }
             });
         },
@@ -134,6 +146,10 @@ export function createTaskDecorator<T extends ActivityMetadata>(
 
             if (isUndefined(metadata.provide)) {
                 metadata.provide = metadata.name;
+            }
+
+            if (metadata.selector) {
+                metadata.refs = { provide: metadata.selector, target: metadata.type }
             }
 
             metadata.decorType = taskType;

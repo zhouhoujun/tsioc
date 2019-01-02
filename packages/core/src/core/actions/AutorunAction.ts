@@ -52,7 +52,7 @@ export class AutorunAction extends ActionComposite {
                     if (meta) {
                         let instance = container.get(data.tokenKey);
                         if (instance && meta.autorun && isFunction(instance[meta.autorun])) {
-                            container.syncInvoke(data.tokenKey, meta.autorun, instance);
+                            container.syncInvoke(instance, meta.autorun);
                         }
                     }
                 }

@@ -15,7 +15,7 @@ export const DelayActivityToken = new InjectAcitityToken<DelayActivity>('delay')
  * @class DelayActivity
  * @extends {ControlActivity}
  */
-@Task(DelayActivityToken)
+@Task(DelayActivityToken, 'delay')
 export class DelayActivity extends ControlActivity implements OnActivityInit {
 
     /**

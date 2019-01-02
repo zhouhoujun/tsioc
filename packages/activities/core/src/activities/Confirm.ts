@@ -15,7 +15,7 @@ export const ConfirmActivityToken = new InjectAcitityToken<ConfirmActivity>('con
  * @class ConfirmActivity
  * @extends {ControlActivity}
  */
-@Task(ConfirmActivityToken)
+@Task(ConfirmActivityToken, 'confirm')
 export class ConfirmActivity extends ControlActivity {
     /**
      * Confirm time.

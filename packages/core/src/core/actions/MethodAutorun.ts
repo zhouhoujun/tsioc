@@ -57,7 +57,7 @@ export class MethodAutorun extends ActionComposite {
                 lastmetas.sort((au1, au2) => {
                     return au1.order - au1.order;
                 }).forEach(aut => {
-                    container.syncInvoke(data.targetType, aut.autorun, data.target);
+                    container.syncInvoke(data.target || data.targetType, aut.autorun, data.target);
                 });
             }
 

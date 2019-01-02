@@ -16,7 +16,7 @@ export const ParallelActivityToken = new InjectAcitityToken<ParallelActivity>('p
  * @class ParallelActivity
  * @extends {ControlActivity}
  */
-@Task(ParallelActivityToken)
+@Task(ParallelActivityToken, 'parallel')
 export class ParallelActivity extends ControlActivity {
 
     /**

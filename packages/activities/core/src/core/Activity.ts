@@ -172,11 +172,11 @@ export abstract class Activity implements IActivity, OnActivityInit {
     protected verifyCtx(ctx?: any) {
         if (this.isValidContext(ctx)) {
             this.context = ctx;
-            if (this.config) {
-                this.context.config = lang.assign({}, this.context.config, this.config);
-            }
         } else {
             this.setResult(ctx);
+        }
+        if (this.config) {
+            this.context.config = lang.assign({}, this.context.config, this.config);
         }
     }
 

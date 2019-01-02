@@ -30,7 +30,7 @@ export const DependenceActivityToken = new InjectAcitityToken<DependenceActivity
  * @class DependenceActivity
  * @extends {ControlActivity}
  */
-@Task(DependenceActivityToken)
+@Task(DependenceActivityToken, 'dependence')
 export class DependenceActivity extends ControlActivity {
 
     /**

@@ -40,7 +40,7 @@ export class ComponentAfterInitAction extends ActionComposite {
             if (container.getLifeScope().hasDecorator(data.targetType, DecoratorType.Class, surm => surm.actions.includes(CoreActions.componentAfterInit))) {
                 let component = data.target as AfterInit;
                 if (isFunction(component.afterInit)) {
-                    container.syncInvoke(data.targetType, 'afterInit', data.target);
+                    container.syncInvoke(data.target || data.targetType, 'afterInit', data.target);
                 }
             }
         }

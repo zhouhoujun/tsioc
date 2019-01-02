@@ -1,5 +1,5 @@
 import { Task } from '../decorators';
-import { IActivity, InjectAcitityToken, Expression, SwitchConfigure } from '../core';
+import { InjectAcitityToken, Expression, SwitchConfigure } from '../core';
 import { isUndefined } from '@ts-ioc/core';
 import { ControlActivity } from './ControlActivity';
 
@@ -15,7 +15,7 @@ export const SwitchActivityToken = new InjectAcitityToken<SwitchActivity>('switc
  * @class SwitchActivity
  * @extends {ControlActivity}
  */
-@Task(SwitchActivityToken)
+@Task(SwitchActivityToken, 'switch')
 export class SwitchActivity extends ControlActivity {
     /**
      * Switch condition.
@@ -23,45 +23,22 @@ export class SwitchActivity extends ControlActivity {
      * @type {Expression<any>}
      * @memberof SwitchActivity
      */
-    expression: Expression<any>;
-    /**
-     * Switch body.
-     *
-     * @type {Map<any, IActivity>}
-     * @memberof SwitchActivity
-     */
-    cases: Map<any, IActivity> = new Map();
-
-    /**
-     * default activity.
-     *
-     * @type {IActivity}
-     * @memberof SwitchActivity
-     */
-    defaultBody?: IActivity;
+    switch: Expression<any>;
 
     async onActivityInit(config: SwitchConfigure): Promise<void> {
         await super.onActivityInit(config);
-        this.expression = await this.toExpression(config.expression);
-        if (config.cases && config.cases.length) {
-            await Promise.all(config.cases.map(async (cs) => {
-                let val = await this.buildActivity(cs.value);
-                this.cases.set(cs.key, val);
-                return val;
-            }));
-        }
-
-        if (config.defaultBody) {
-            this.defaultBody = await this.buildActivity(config.defaultBody);
-        }
+        this.switch = await this.toExpression(config.switch);
     }
 
     protected async execute(): Promise<void> {
-        let matchkey = await this.context.exec(this, this.expression);
-        if (!isUndefined(matchkey) && this.cases.has(matchkey)) {
-            await this.execActivity(this.cases.get(matchkey), this.context);
+        let matchkey = await this.context.exec(this, this.switch);
+        let config = this.context.config as SwitchConfigure;
+        if (!isUndefined(matchkey)
+            && config.cases.length
+            && config.cases.some(it => it.key === matchkey)) {
+            await this.execActivity(config.cases.find(it => it.key === matchkey).value, this.context);
         } else {
-            await this.execActivity(this.defaultBody, this.context);
+            await this.execActivity(config.defaultBody, this.context);
         }
     }
 }

@@ -189,6 +189,6 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
             providers.push(Provider.create(metadata.throwing, joinPoint.throwing));
         }
 
-        return this.advisor.getContainer(advicer.aspectType, this.container).syncInvoke<any>(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
+        return this.advisor.getContainer(advicer.aspectType, this.container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
     }
 }

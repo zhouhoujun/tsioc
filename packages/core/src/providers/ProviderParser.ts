@@ -1,7 +1,7 @@
 import { ParamProviders } from './types';
 import {
     isClass, isArray, isFunction, isNumber,
-    isUndefined, isNull, isToken, isBaseObject, lang
+    isUndefined, isNull, isToken, isBaseObject, lang, isTypeObject
 } from '../utils';
 import { IProviderParser } from './IProviderParser';
 import { IContainer } from '../IContainer';
@@ -113,4 +113,8 @@ export class ProviderParser implements IProviderParser {
 
         return map;
     }
+}
+
+export function isProvider(target: any): boolean {
+    return  isProviderMap(target) || isBaseObject(target) || target instanceof Provider;
 }

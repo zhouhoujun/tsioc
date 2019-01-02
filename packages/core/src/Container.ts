@@ -677,30 +677,30 @@ export class Container implements IContainer {
      * invoke method async.
      *
      * @template T
-     * @param {Token<any>} token
+     * @param {any} target
      * @param {string} propertyKey
      * @param {*} [instance]
      * @param {...ParamProviders[]} providers
      * @returns {Promise<T>}
      * @memberof Container
      */
-    invoke<T>(token: Token<any>, propertyKey: string, instance?: any, ...providers: ParamProviders[]): Promise<T> {
-        return this.resolveValue(MethodAccessorToken).invoke(token, propertyKey, instance, ...providers);
+    invoke<T>(target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): Promise<T> {
+        return this.resolveValue(MethodAccessorToken).invoke(target, propertyKey, instance, ...providers);
     }
 
     /**
      * invoke method.
      *
      * @template T
-     * @param {Token<any>} token
+     * @param {any} target
      * @param {string} propertyKey
      * @param {*} [instance]
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof Container
      */
-    syncInvoke<T>(token: Token<any>, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
-        return this.resolveValue(MethodAccessorToken).syncInvoke(token, propertyKey, instance, ...providers);
+    syncInvoke<T>(target: Token<any>, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
+        return this.resolveValue(MethodAccessorToken).syncInvoke(target, propertyKey, instance, ...providers);
     }
 
     createSyncParams(params: IParameter[], ...providers: ParamProviders[]): any[] {

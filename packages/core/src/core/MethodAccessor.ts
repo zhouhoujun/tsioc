@@ -1,10 +1,10 @@
 import { IContainer } from '../IContainer';
 import { IMethodAccessor } from '../IMethodAccessor';
 import { BindParameterProviderActionData, CoreActions, LifeState } from './actions';
-import { isToken, isFunction, assert, assertExp } from '../utils';
-import { Token } from '../types';
+import { isToken, isFunction, assert, assertExp, lang, isUndefined, isNullOrUndefined } from '../utils';
+import { Token, Type } from '../types';
 import { IParameter } from '../IParameter';
-import { IProviderParser, ProviderParserToken, ParamProviders } from '../providers';
+import { IProviderParser, ProviderParserToken, ParamProviders, isProvider } from '../providers';
 
 /**
  * method accessor
@@ -23,16 +23,27 @@ export class MethodAccessor implements IMethodAccessor {
         return this.container.get(ProviderParserToken);
     }
 
-    async invoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: ParamProviders[]): Promise<T> {
-        if (!target) {
-            target = this.container.resolve(token, ...providers);
+    async invoke<T>(target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): Promise<T> {
+
+        let targetClass: Type<any>;
+        if (isProvider(instance)) {
+            providers.unshift(instance);
+            instance = undefined;
+        }
+        if (isToken(target)) {
+            targetClass = this.container.getTokenImpl(target);
+            assert(targetClass, target.toString() + ' is not implements by any class.');
+            if (isNullOrUndefined(instance)) {
+                instance = this.container.resolve(target, ...providers);
+            }
+        } else {
+            targetClass = lang.getClass(target);
+            instance = target;
         }
 
-        let targetClass = this.container.getTokenImpl(token);
-        assert(targetClass, token.toString() + ' is not implements by any class.');
-        assertExp(target && isFunction(target[propertyKey]), `type: ${targetClass} has no method ${propertyKey.toString()}.`);
+        assertExp(instance && isFunction(instance[propertyKey]), `type: ${targetClass} has no method ${propertyKey.toString()}.`);
         let actionData = {
-            target: target,
+            target: instance,
             targetType: targetClass,
             propertyKey: propertyKey,
         } as BindParameterProviderActionData;
@@ -40,24 +51,34 @@ export class MethodAccessor implements IMethodAccessor {
         lifeScope.execute(actionData, LifeState.onInit, CoreActions.bindParameterProviders);
         providers = providers.concat(actionData.execResult);
 
-        let parameters = lifeScope.getMethodParameters(targetClass, target, propertyKey);
+        let parameters = lifeScope.getMethodParameters(targetClass, instance, propertyKey);
 
         let paramInstances = await this.createParams(parameters, ...providers);
 
-        return target[propertyKey](...paramInstances) as T;
+        return instance[propertyKey](...paramInstances) as T;
 
     }
 
-    syncInvoke<T>(token: Token<any>, propertyKey: string, target?: any, ...providers: ParamProviders[]): T {
-        if (!target) {
-            target = this.container.resolve(token, ...providers);
+    syncInvoke<T>(target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
+        let targetClass: Type<any>;
+        if (isProvider(instance)) {
+            providers.unshift(instance);
+            instance = undefined;
         }
-        let targetClass = this.container.getTokenImpl(token);
-        assert(targetClass, token.toString() + ' is not implements by any class.');
-        assertExp(target && isFunction(target[propertyKey]), `type: ${targetClass} has no method ${propertyKey.toString()}.`);
+        if (isToken(target)) {
+            targetClass = this.container.getTokenImpl(target);
+            assert(targetClass, target.toString() + ' is not implements by any class.');
+            if (isNullOrUndefined(instance)) {
+                instance = this.container.resolve(target, ...providers);
+            }
+        } else {
+            targetClass = lang.getClass(target);
+            instance = target;
+        }
+        assertExp(instance && isFunction(instance[propertyKey]), `type: ${targetClass} has no method ${propertyKey.toString()}.`);
 
         let actionData = {
-            target: target,
+            target: instance,
             targetType: targetClass,
             propertyKey: propertyKey,
         } as BindParameterProviderActionData;
@@ -65,10 +86,10 @@ export class MethodAccessor implements IMethodAccessor {
         lifeScope.execute(actionData, LifeState.onInit, CoreActions.bindParameterProviders);
 
         providers = providers.concat(actionData.execResult);
-        let parameters = lifeScope.getMethodParameters(targetClass, target, propertyKey);
+        let parameters = lifeScope.getMethodParameters(targetClass, instance, propertyKey);
         let paramInstances = this.createSyncParams(parameters, ...providers);
 
-        return target[propertyKey](...paramInstances) as T;
+        return instance[propertyKey](...paramInstances) as T;
     }
 
     createSyncParams(params: IParameter[], ...providers: ParamProviders[]): any[] {

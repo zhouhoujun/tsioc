@@ -14,7 +14,7 @@ export const TryCatchActivityToken = new InjectAcitityToken<TryCatchActivity>('t
  * @class TryCatchActivity
  * @extends {ControlActivity}
  */
-@Task(TryCatchActivityToken)
+@Task(TryCatchActivityToken, 'try')
 export class TryCatchActivity extends ChainActivity {
     /**
      * while condition.

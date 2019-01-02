@@ -1,6 +1,6 @@
 import { Task } from '../decorators';
 import { InjectAcitityToken, ActivityContext } from '../core';
-import { Token, ObjectMap } from '@ts-ioc/core';
+import { Token, ObjectMap, lang } from '@ts-ioc/core';
 import { ControlActivity } from './ControlActivity';
 
 /**
@@ -15,7 +15,7 @@ export const InvokeActivityToken = new InjectAcitityToken<InvokeActivity>('invok
  * @class InvokeActivity
  * @extends {ControlActivity}
  */
-@Task(InvokeActivityToken)
+@Task(InvokeActivityToken, 'invoke')
 export class InvokeActivity extends ControlActivity {
     /**
      * while condition.
@@ -32,15 +32,9 @@ export class InvokeActivity extends ControlActivity {
      * @memberof InvokeActivity
      */
     target?: any;
-    /**
-     * invoke target token.
-     *
-     * @type {Token<any>}
-     * @memberof InvokeActivity
-     */
-    targetType: Token<any>;
+
 
     protected async execute(): Promise<any> {
-        return this.context.getContainer().invoke(this.targetType, this.target, this.args, { provide: ActivityContext, useValue: this.context });
+        return this.execActivity(this.context.config.invoke, this.context);
     }
 }

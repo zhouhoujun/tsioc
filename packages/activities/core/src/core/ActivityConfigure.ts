@@ -6,6 +6,7 @@ import { WorkflowInstance } from './WorkflowInstance';
 import { IActivityContext } from './IActivityContext';
 import { IHandleActivity } from './IHandleActivity';
 import { ExpressionActivity } from './ExpressionActivity';
+import { Src } from '../utils';
 
 
 /**
@@ -218,7 +219,13 @@ export interface IActivityConfigure<T> extends ModuleConfig<T> {
  * @extends {IActivityConfigure<IActivity>}
  */
 export interface ActivityConfigure extends IActivityConfigure<IActivity> {
-
+    /**
+     * selector.
+     *
+     * @type {string}
+     * @memberof ActivityConfigure
+     */
+    selector?: string;
 }
 
 /**
@@ -573,12 +580,12 @@ export interface SequenceConfigure extends ISequenceConfigure<Active> {
 export interface ISwitchConfigure<T> extends ActivityConfigure {
 
     /**
-     * while condition
+     * switch condition
      *
      * @type {ExpressionType<any>}
      * @memberof SwitchConfigure
      */
-    expression: ExpressionType<any>;
+    switch: ExpressionType<any>;
 
     /**
      * if body

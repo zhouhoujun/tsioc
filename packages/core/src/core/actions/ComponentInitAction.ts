@@ -39,7 +39,7 @@ export class ComponentInitAction extends ActionComposite {
         if (data.targetType && data.target) {
             let component = data.target as OnInit;
             if (isFunction(component.onInit)) {
-                container.syncInvoke(data.targetType, 'onInit', data.target);
+                container.syncInvoke(data.target || data.targetType, 'onInit', data.target);
             }
         }
     }
