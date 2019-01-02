@@ -31,11 +31,13 @@ export class MethodAccessor implements IMethodAccessor {
             instance = undefined;
         }
         if (isToken(target)) {
-            targetClass = this.container.getTokenImpl(target);
-            assert(targetClass, target.toString() + ' is not implements by any class.');
             if (isNullOrUndefined(instance)) {
+                targetClass = this.container.getTokenImpl(target);
                 instance = this.container.resolve(target, ...providers);
+            } else {
+                targetClass = lang.getClass(instance) || this.container.getTokenImpl(target);
             }
+            assert(targetClass, target.toString() + ' is not implements by any class.');
         } else {
             targetClass = lang.getClass(target);
             instance = target;

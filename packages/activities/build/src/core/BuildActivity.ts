@@ -1,7 +1,7 @@
 import {
     ChainActivity, Task, ChainConfigure, CtxType, Src,
     ExpressionToken, ConfigureType, Active, IActivity,
-    InjectAcitityToken, ActivityMetaAccessorToken
+    InjectAcitityToken, ActivityMetaAccessorToken, HandleType
 } from '@taskfr/core';
 import { isBoolean, Token, Providers, MetaAccessorToken } from '@ts-ioc/core';
 import { WatchActivity, WatchConfigure, WatchAcitvityToken } from './handles';
@@ -35,10 +35,10 @@ export interface BuildConfigure extends ChainConfigure {
     /**
      * handle activities.
      *
-     * @type {(BuildHandleConfigure | Token<BuildHandleActivity>)[];}
+     * @type {(HandleType | BuildHandleConfigure | Token<BuildHandleActivity>)[];}
      * @memberof ChainConfigure
      */
-    handles?: (BuildHandleConfigure | Token<IBuildHandleActivity>)[];
+    handles?: (HandleType | BuildHandleConfigure | Token<IBuildHandleActivity>)[];
 
     /**
      * watch
@@ -210,11 +210,12 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
      */
     protected async execute(): Promise<void> {
         let ctx = this.context;
+        let config = this.context.config as BuildConfigure;
         if (!(this.watch && ctx.target === this.watch)) {
             await this.execOnce();
         }
         await this.beforeBuild();
-        await this.handleRequest(this.context);
+        await super.execute();
         await this.afterBuild();
 
     }

@@ -16,53 +16,20 @@ export const TryCatchActivityToken = new InjectAcitityToken<TryCatchActivity>('t
  */
 @Task(TryCatchActivityToken, 'try')
 export class TryCatchActivity extends ChainActivity {
-    /**
-     * while condition.
-     *
-     * @type {Condition}
-     * @memberof TryCatchActivity
-     */
-    condition: Condition;
-    /**
-     * try activity.
-     *
-     * @type {IActivity}
-     * @memberof TryCatchActivity
-     */
-    try: IActivity;
-    /**
-     * catch activities.
-     *
-     * @type {IHandleActivity[]}
-     * @memberof TryCatchActivity
-     */
-    get catchs(): IHandleActivity[] {
-        return this.handles;
-    }
-
-    /**
-     * finally activity.
-     *
-     * @memberof TryCatchActivity
-     */
-    finally?: IActivity;
 
     async onActivityInit(config: TryCatchConfigure): Promise<void> {
-        config.handles = config.catchs
         await super.onActivityInit(config);
-        this.try = await this.buildActivity(config.try);
-        if (config.finally) {
-            this.finally = await this.buildActivity(config.finally);
-        }
     }
 
     protected async execute(): Promise<void> {
+        let config = this.context.config as TryCatchConfigure;
         try {
-            await this.execActivity(this.try, this.context);
+            await this.execActivity(config.try, this.context);
         } catch (err) {
-            await super.run(this.context);
+            let ctx = this.createContext(err);
+            await this.handleRequest(ctx, (config.catchs || []).concat(this.handles || []));
         } finally {
-            await this.execActivity(this.finally, this.context);
+            await this.execActivity(config.finally, this.context);
         }
     }
 }

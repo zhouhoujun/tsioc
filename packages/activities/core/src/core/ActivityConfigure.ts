@@ -268,6 +268,9 @@ export interface HandleConfigure extends ActivityConfigure {
 
 }
 
+
+export type HandleType = IHandleActivity | Token<IHandleActivity> | HandleConfigure;
+
 /**
  * chain configure.
  *
@@ -279,10 +282,10 @@ export interface ChainConfigure extends ActivityConfigure {
     /**
      * handle activities.
      *
-     * @type {ActivityType<IHandleActivity>[]}
+     * @type {HandleType[]}
      * @memberof ChainConfigure
      */
-    handles?: (Token<IHandleActivity> | HandleConfigure)[];
+    handles?: HandleType[];
 }
 
 /**
@@ -656,7 +659,7 @@ export interface ITryCatchConfigure<T> extends ChainConfigure {
      * @type {T[]}
      * @memberof TryCatchConfigure
      */
-    catchs: IHandleActivity[];
+    catchs: HandleType[];
 
     /**
      * finally activity.
