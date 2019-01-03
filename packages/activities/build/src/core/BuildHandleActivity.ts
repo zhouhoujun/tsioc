@@ -124,28 +124,6 @@ export class BuildHandleActivity extends HandleActivity {
         super.initContext(ctx);
         ctx.target = this;
     }
-
-    // /**
-    //  * create context.
-    //  *
-    //  * @param {*} [data]
-    //  * @param {Token<IActivity>} [type]
-    //  * @param {Token<any>} [defCtx]
-    //  * @returns {BuildHandleContext<any>}
-    //  * @memberof BuildHandleActivity
-    //  */
-    // createContext(data?: any, type?: Token<IActivity>, defCtx?: Token<any>): BuildHandleContext<any> {
-    //     let context = super.createContext(data, type, defCtx) as BuildHandleContext<any>;
-    //     if (this.context) {
-    //         context.builder = this.context.builder;
-    //         context.origin = this.context.origin;
-    //         context.handle = this.context.handle || this;
-    //     } else {
-    //         context.handle = this;
-    //     }
-    //     return context;
-    // }
-
 }
 
 /**
@@ -169,7 +147,7 @@ export class BuildHandleContext<T> extends NodeActivityContext<T> {
     }
 
     protected setConfig(config: BuildHandleConfigure, ctx?: IActivityContext) {
-        this.config = lang.assign({}, (ctx ? ctx.config : {}), config);
+        this.config =  lang.assign({}, (ctx ? ctx.config : {}), config);
     }
 
     getBuilderContext(): BuidActivityContext {

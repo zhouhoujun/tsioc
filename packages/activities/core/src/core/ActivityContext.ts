@@ -109,21 +109,19 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
     }
 
     setState(state: any, config: ActivityConfigure) {
-        let data: any;
         if (state instanceof ActivityContext) {
             this.parent = state;
             this.target = state.target;
-            data = state.result;
             this.setConfig(config, state);
+            state = state.result;
         } else {
-            data = state;
             this.setConfig(config);
         }
-        this.setAsResult(data);
+        this.setAsResult(state);
     }
 
     protected setConfig(config: ActivityConfigure, ctx?: IActivityContext) {
-        this.config = config;
+        this.config = config || {};
     }
 
     route(express: Express<IActivityContext, boolean | void>): void {

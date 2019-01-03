@@ -205,7 +205,6 @@ export class NodeActivityContext<T> extends ActivityContext<T> implements INodeA
      */
     toRootPath(pathstr: string): string {
         let root = this.getRootPath();
-        console.log('toRootPath:', root, pathstr);
         return root ? toAbsolutePath(root, pathstr) : pathstr;
     }
 
