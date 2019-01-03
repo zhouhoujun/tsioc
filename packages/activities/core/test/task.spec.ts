@@ -1,15 +1,14 @@
 import 'mocha';
 import { expect } from 'chai';
-import { ITaskContainer, SequenceActivity, WorkflowInstance } from '../src';
+import { Workflow, IWorkflow, SequenceActivity, WorkflowInstance } from '../src';
 
 import { SimpleTask, SimpleCTask, TaskModuleTest } from './simples.task';
-import { TaskContainer } from '@taskfr/core';
 
 describe('auto register with build', () => {
 
-    let container: ITaskContainer;
+    let container: IWorkflow;
     before(async () => {
-        container = TaskContainer.create(__dirname);
+        container = Workflow.create(__dirname);
     });
 
     it('should bootstrap with single task.', async () => {
