@@ -8,7 +8,7 @@ describe('auto register with build', () => {
 
     let container: IWorkflow;
     before(async () => {
-        container = Workflow.create(__dirname);
+        container = Workflow.create();
     });
 
     it('should bootstrap with single task.', async () => {

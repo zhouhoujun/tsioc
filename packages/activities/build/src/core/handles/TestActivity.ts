@@ -52,7 +52,7 @@ export class TestActivity extends BuildHandleActivity implements ITestActivity {
         let test = await ctx.exec(this, this.enable);
         let testSrc = await ctx.exec(this, this.src);
         if (testSrc) {
-            ctx.setAsResult(testSrc);
+            ctx.setAsResult(ctx.toRootSrc(testSrc));
         }
         if (test !== false) {
             await this.execActivity(this.compiler, ctx);

@@ -1,11 +1,11 @@
 import {
     Injectable, isNullOrUndefined, Inject, IContainer, ContainerToken, isFunction,
-    isPromise, Type, hasOwnClassMetadata, ObjectMap, isClass
+    isPromise, Type, hasOwnClassMetadata, ObjectMap, isClass, Express
 } from '@ts-ioc/core';
 import { IActivity } from './IActivity';
 import { ITranslator } from './Translator';
-import { Events, AppConfigureToken, ProcessRunRootToken } from '@ts-ioc/bootstrap';
-import { InputDataToken, IActivityContextResult, CtxType, ActivityContextToken } from './IActivityContext';
+import { Events, ProcessRunRootToken } from '@ts-ioc/bootstrap';
+import { InputDataToken, IActivityContextResult, CtxType, ActivityContextToken, IActivityContext } from './IActivityContext';
 import { ActivityBuilderToken } from './IActivityBuilder';
 import { ActivityBuilder } from './ActivityBuilder';
 import { Expression, ActivityConfigure, isWorkflowInstance } from './ActivityConfigure';
@@ -29,6 +29,8 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
 
     @Inject(ActivityBuilderToken)
     private _actBuilder: ActivityBuilder;
+
+    parent: IActivityContext;
 
     /**
      * build config.
@@ -96,6 +98,9 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
         if (data !== this.data) {
             this.emit('resultChanged', data);
         }
+        if (this.parent) {
+            this.parent.result = data;
+        }
         this.data = data;
     }
 
@@ -103,13 +108,50 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
         this.result = this.translate(data);
     }
 
+    setState(state: any, config: ActivityConfigure) {
+        if (state instanceof ActivityContext) {
+            this.parent = state;
+            this.target = state.target;
+            state = state.result;
+            this.setConfig(config, state);
+        } else {
+            this.setConfig(config);
+        }
+        this.setAsResult(state);
+    }
+
+    protected setConfig(config: ActivityConfigure, ctx?: IActivityContext) {
+        this.config = config;
+    }
+
+    route(express: Express<IActivityContext, boolean | void>): void {
+        let stop = false;
+        let node: IActivityContext = this;
+        while (!stop && node) {
+            stop = !express(node);
+            node = node.parent;
+        }
+    }
+
+    find<T extends IActivityContext>(express: T | Express<T, boolean>): T {
+        let context: T;
+        this.route(item => {
+            if (context) {
+                return false;
+            }
+            let isFinded = isFunction(express) ? express(item as T) : express === item;
+            if (isFinded) {
+                context = item as T;
+                return false;
+            }
+            return true;
+        });
+        return context as T;
+    }
+
     protected translate(data: any): any {
         if (isNullOrUndefined(data)) {
             return null;
-        }
-        if (data instanceof ActivityContext) {
-            this.target = data.target;
-            data = data.result;
         }
         let translator = this.getTranslator(data);
         if (translator) {

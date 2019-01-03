@@ -53,6 +53,7 @@ export class RollupTs {
 }
 
 @Pack({
+    baseURL: __dirname,
     clean: 'lib',
     test: 'test/**/*.spec.ts',
     assets: {
@@ -107,7 +108,7 @@ export class CoreBuilder {
 
 
 if (process.cwd() === __dirname) {
-    Workflow.create(__dirname)
+    Workflow.create()
         .use(PackModule)
         .bootstrap(CoreBuilder);
 }

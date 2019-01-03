@@ -2,6 +2,7 @@ import { IActivity, ActivityToken } from './IActivity';
 import { ActivityBuilder } from './ActivityBuilder';
 import { ActivityConfigure, Expression } from './ActivityConfigure';
 import { InjectToken, Token, IContainer, ObjectMap, Type, RefRegistration } from '@ts-ioc/core';
+import { IEvents } from '@ts-ioc/bootstrap';
 
 
 /**
@@ -89,8 +90,14 @@ export type CtxType<T> = T | ((context?: IContext, config?: ActivityConfigure) =
  * @export
  * @interface IActivityContext
  */
-export interface IActivityContext extends IContext {
-
+export interface IActivityContext extends IContext, IEvents {
+    /**
+     * parent context.
+     *
+     * @type {IActivityContext}
+     * @memberof IActivityContext
+     */
+    parent?: IActivityContext;
     /**
      * build config.
      *
@@ -138,6 +145,8 @@ export interface IActivityContext extends IContext {
      * @memberof IActivityContext
      */
     setAsResult(data: any);
+
+    setState(state: any,  config: ActivityConfigure);
 }
 
 /**

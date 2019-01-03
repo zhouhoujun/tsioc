@@ -30,7 +30,7 @@ program
         if (options.boot) {
             exec('node -r ts-node/register tsconfig-paths/register ' + fileName);
         } else {
-            let wf = Workflow.create(processRoot).use(PackModule);
+            let wf = Workflow.create().use(PackModule);
             let md = require(fileName);
             let activites = Object.values(md);
             if (activites.some(v => isPackClass(v))) {
@@ -52,7 +52,7 @@ program
     .option('--closure [bool]', 'bundle and optimize with closure compiler (default)')
     .option('-r, --rollup [bool]', 'bundle with rollup and optimize with closure compiler')
     .action((env, options) => {
-        let taskContainer = Workflow.create(processRoot).use(PackModule);
+        let taskContainer = Workflow.create().use(PackModule);
         let config = require(path.join(processRoot, env)) as PackConfigure;
         config.watch = options.watch === true;
 
@@ -68,7 +68,7 @@ program
     .option('--closure [bool]', 'bundle and optimize with closure compiler (default)')
     .option('-r, --rollup [bool]', 'bundle with rollup and optimize with closure compiler')
     .action((serve, options) => {
-        let taskContainer = Workflow.create(processRoot).use(PackModule);
+        let taskContainer = Workflow.create().use(PackModule);
         let config = require(path.join(processRoot, serve)) as PackConfigure;
         config.watch = options.watch === true;
 
@@ -92,7 +92,7 @@ program
     .command('g, generate [string]', 'generate schematics packaged with cmd')
     .option('--ng [bool]', 'generate angular project')
     .action((build, options) => {
-        let taskContainer = Workflow.create(processRoot).use(PackModule);
+        let taskContainer = Workflow.create().use(PackModule);
         taskContainer.run();
     })
     .parse(process.argv);

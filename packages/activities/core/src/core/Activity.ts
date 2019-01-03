@@ -7,7 +7,7 @@ import { OnActivityInit } from './OnActivityInit';
 import { ActivityContext } from './ActivityContext';
 import { ActivityMetaAccessorToken } from '../injectors';
 import { IActivity, ActivityToken, WorkflowId } from './IActivity';
-import { ActivityConfigure, ExpressionType, Expression, ActivityType, Active } from './ActivityConfigure';
+import { ActivityConfigure, ExpressionType, Expression, ActivityType, Active, ExpressionToken } from './ActivityConfigure';
 import { IActivityContext, InputDataToken, InjectActivityContextToken, ActivityContextToken } from './IActivityContext';
 import { IActivityMetadata } from '../metadatas';
 
@@ -90,10 +90,13 @@ export abstract class Activity implements IActivity, OnActivityInit {
         let ctx = this.container.getService(ActivityContextToken, type,
             tk => new InjectActivityContextToken(tk),
             defCtx || ActivityContextToken, provider);
-        if (this.config) {
-            ctx.config = this.config;
-        }
+
+        this.initContext(ctx);
         return ctx;
+    }
+
+    protected initContext(ctx: IActivityContext) {
+        ctx.config = this.config;
     }
 
 
@@ -119,13 +122,6 @@ export abstract class Activity implements IActivity, OnActivityInit {
         return this.context;
     }
 
-    protected async resolveExpression<T>(express: ExpressionType<T>): Promise<T> {
-        if (!this.context) {
-            this.context = this.createContext();
-        }
-        return await this.context.exec(this, await this.toExpression(express));
-    }
-
     /**
      * execute activity.
      *
@@ -134,17 +130,23 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @returns
      * @memberof Activity
      */
-    protected async execActivity(activity: Activity | Active, ctx: IActivityContext | (() => IActivityContext)): Promise<IActivityContext> {
+    protected async execActivity(activity: Activity | Active | ExpressionToken<any>, ctx: IActivityContext | (() => IActivityContext)): Promise<IActivityContext> {
         if (!activity) {
             return null;
         }
         let rctx = isFunction(ctx) ? ctx() : ctx;
         if (activity instanceof Activity) {
             return await activity.run(rctx);
-        } else if (isToken(activity) || isBaseObject(activity)) {
-            let act = await this.buildActivity(activity);
-            if (act && act instanceof Activity) {
-                return act.run(rctx);
+        } else {
+            let act = activity;
+            if (!isToken(activity) && isFunction(activity)) {
+                act = await activity(rctx);
+            }
+            if (isToken(act) || isBaseObject(act)) {
+                let at = await this.buildActivity(act);
+                if (at && at instanceof Activity) {
+                    return at.run(rctx);
+                }
             }
         }
         console.error('execute activity is not vaild activity:', activity);
@@ -170,35 +172,10 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @memberof Activity
      */
     protected verifyCtx(ctx?: any) {
-        if (this.isValidContext(ctx)) {
-            this.context = ctx;
-            this.resetContextConfig(this.context);
-        } else {
-            this.setResult(ctx);
-        }
-    }
-
-    protected isValidContext(ctx: any): boolean {
-        return ctx instanceof ActivityContext;
-    }
-
-    protected resetContextConfig(ctx: IActivityContext) {
-        ctx.config = this.config;
-    }
-
-    /**
-     * set context result.
-     *
-     * @protected
-     * @param {*} [ctx]
-     * @memberof Activity
-     */
-    protected setResult(ctx?: any) {
         if (!this.context) {
-            this.context = this.createContext(ctx);
-        } else {
-            this.context.setAsResult(ctx);
+            this.context = this.createContext();
         }
+        this.context.setState(ctx, this.config);
     }
 
     /**
@@ -211,9 +188,31 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @returns {Promise<Expression<T>>}
      * @memberof Activity
      */
-    protected toExpression<T>(exptype: ExpressionType<T>, target?: IActivity): Promise<Expression<T>> {
-        return this.context.getBuilder().toExpression(exptype, target || this);
+    protected toExpression<T>(exptype: ExpressionType<T>, target?: IActivity, ctx?: IActivityContext): Promise<Expression<T>> {
+        return (ctx || this.context).getBuilder().toExpression(exptype, target || this);
     }
+
+    /**
+     * resolve expression.
+     *
+     * @protected
+     * @template T
+     * @param {ExpressionType<T>} express
+     * @param {IActivityContext} [ctx]
+     * @returns {Promise<T>}
+     * @memberof Activity
+     */
+    protected async resolveExpression<T>(express: ExpressionType<T>, ctx?: IActivityContext): Promise<T> {
+        if (!this.context) {
+            this.context = this.createContext();
+        }
+        let exp = await this.toExpression(express, this, ctx);
+        if (exp) {
+            return await (ctx || this.context).exec(this, exp);
+        }
+        return null;
+    }
+
 
     /**
      * convert to activity.

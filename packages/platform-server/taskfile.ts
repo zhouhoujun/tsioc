@@ -61,6 +61,7 @@ export class PfServerRollup {
 }
 
 @Pack({
+    baseURL: __dirname,
     src: 'src',
     clean: 'lib',
     test: (act: IActivity) => act.context.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
@@ -87,7 +88,7 @@ export class PfServerBuilder {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.create(__dirname)
+    Workflow.create()
         .use(PackModule)
         .bootstrap(PfServerBuilder);
 }

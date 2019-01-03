@@ -9,13 +9,6 @@ import { IBuildHandleActivity, BuildHandleConfigure } from '../BuildHandle';
  * @extends {IBuildHandleActivity}
  */
 export interface IWatchActivity extends IBuildHandleActivity {
-    /**
-     * watch src.
-     *
-     * @type {Expression<Src>}
-     * @memberof IWatchActivity
-     */
-    src: Expression<Src>;
 
     /**
      * watch body.
@@ -24,13 +17,6 @@ export interface IWatchActivity extends IBuildHandleActivity {
      * @memberof IWatchActivity
      */
     body?: IActivity;
-    /**
-     * watch options.
-     *
-     * @type {Expression<WatchOptions>}
-     * @memberof IWatchActivity
-     */
-    options: Expression<WatchOptions>;
 }
 
 /**

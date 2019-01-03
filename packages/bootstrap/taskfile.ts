@@ -47,6 +47,7 @@ export class BootRollup {
 }
 
 @Pack({
+    baseURL: __dirname,
     src: 'src',
     clean: 'lib',
     test: (ctx) => ctx.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
@@ -88,7 +89,7 @@ export class BootBuilder {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.create(__dirname)
+    Workflow.create()
         .use(PackModule)
         .bootstrap(BootBuilder);
 }

@@ -20,27 +20,12 @@ const chokidar = require('chokidar');
 export class WatchActivity extends BuildHandleActivity implements IWatchActivity {
 
     /**
-     * watch src.
-     *
-     * @type {Expression<Src>}
-     * @memberof WatchActivity
-     */
-    src: Expression<Src>;
-
-    /**
      * watch body.
      *
      * @type {IActivity}
      * @memberof WatchActivity
      */
     body?: IActivity;
-    /**
-     * watch options.
-     *
-     * @type {Expression<WatchOptions>}
-     * @memberof WatchActivity
-     */
-    options: Expression<WatchOptions>;
 
     /**
      * default translator token.
@@ -56,20 +41,18 @@ export class WatchActivity extends BuildHandleActivity implements IWatchActivity
 
     async onActivityInit(config: WatchConfigure) {
         await super.onActivityInit(config);
-        this.src = await this.toExpression(config.src);
         if (config.body) {
             this.body = await this.buildActivity(config.body);
-        }
-        if (config.options) {
-            this.options = await this.toExpression(config.options)
         }
     }
 
     protected async watch(ctx: BuildHandleContext<any>) {
-        let watchSrc = await ctx.exec(this, this.src);
-        let options = await ctx.exec(this, this.options);
+        let config = ctx.config as WatchConfigure;
+        let watchSrc = await this.resolveExpression(config.src, ctx);
+        watchSrc = ctx.toRootSrc(watchSrc);
+        let options = await this.resolveExpression(config.options, ctx);
         let watcher = chokidar.watch(watchSrc, lang.assign({ ignored: /[\/\\]\./, ignoreInitial: true }, options));
-        let watchBody = this.body || ctx.builder || ctx.target;
+        let watchBody = this.body || ctx.target;
 
         let defer = new Defer();
         fromEventPattern<IFileChanged>(

@@ -66,6 +66,7 @@ export class RollupTs extends AssetActivity {
 }
 
 @Pack({
+    baseURL: __dirname,
     clean: 'lib',
     src: 'src',
     // watch: true,
@@ -90,7 +91,7 @@ export class PackBuilder {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.create(__dirname)
+    Workflow.create()
         .use(PackModule)
         .bootstrap(PackBuilder);
 }

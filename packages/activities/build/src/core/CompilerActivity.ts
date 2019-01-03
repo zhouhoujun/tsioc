@@ -26,15 +26,6 @@ export abstract class CompilerActivity extends NodeActivity {
      */
     context: BuildHandleContext<any>;
 
-
-    protected resetContextConfig(ctx: IActivityContext) {
-        ctx.config = lang.assign({}, ctx.config, this.config);
-    }
-
-    protected isValidContext(ctx: any): boolean {
-        return ctx instanceof BuildHandleContext;
-    }
-
     /**
      * execute build activity.
      *

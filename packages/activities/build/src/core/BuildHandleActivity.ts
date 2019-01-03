@@ -1,20 +1,20 @@
 import {
     HandleActivity, Task, IActivity,
-    Expression, ActivityMetaAccessorToken
+    Expression, ActivityMetaAccessorToken, IActivityContext, Src
 } from '@taskfr/core';
 import {
     isRegExp, isString, isArray, Express, isFunction,
-    Token, Providers, MetaAccessorToken
+    Providers, MetaAccessorToken, lang
 } from '@ts-ioc/core';
 import { BuidActivityContext } from './BuidActivityContext';
 import minimatch = require('minimatch');
 import { CompilerToken } from './ICompiler';
-import { BuildActivity } from './BuildActivity';
 import { Inject, Injectable } from '@ts-ioc/core';
 import { InputDataToken, InjectActivityContextToken } from '@taskfr/core';
 import { NodeActivityContext } from './NodeActivity';
 import { BuildHandleToken, BuildHandleConfigure } from './BuildHandle';
 import { EmptyCompiler } from './CompilerActivity';
+import { ProcessRunRootToken } from '@ts-ioc/bootstrap';
 
 
 /**
@@ -84,8 +84,8 @@ export class BuildHandleActivity extends HandleActivity {
      * @memberof BuildHandleActivity
      */
     protected async execute(next?: () => Promise<any>): Promise<void> {
-        if (this.test && this.context.builder) {
-            let bdrCtx = this.context.builder.context;
+        if (this.test && this.context.parent instanceof BuidActivityContext) {
+            let bdrCtx = this.context.parent;
             if (bdrCtx.isCompleted()) {
                 return;
             }
@@ -121,39 +121,32 @@ export class BuildHandleActivity extends HandleActivity {
         await this.execActivity(this.compiler, ctx);
     }
 
-    /**
-     * create context.
-     *
-     * @param {*} [data]
-     * @param {Token<IActivity>} [type]
-     * @param {Token<any>} [defCtx]
-     * @returns {BuildHandleContext<any>}
-     * @memberof BuildHandleActivity
-     */
-    createContext(data?: any, type?: Token<IActivity>, defCtx?: Token<any>): BuildHandleContext<any> {
-        let context = super.createContext(data, type, defCtx) as BuildHandleContext<any>;
-        if (this.context) {
-            context.builder = this.context.builder;
-            context.origin = this.context.origin;
-            context.handle = this.context.handle || this;
-        } else {
-            context.handle = this;
-        }
-        return context;
+    protected initContext(ctx: BuildHandleContext<any>) {
+        super.initContext(ctx);
+        ctx.target = this;
     }
 
-    protected isValidContext(ctx: any): boolean {
-        return ctx instanceof BuildHandleContext;
-    }
+    // /**
+    //  * create context.
+    //  *
+    //  * @param {*} [data]
+    //  * @param {Token<IActivity>} [type]
+    //  * @param {Token<any>} [defCtx]
+    //  * @returns {BuildHandleContext<any>}
+    //  * @memberof BuildHandleActivity
+    //  */
+    // createContext(data?: any, type?: Token<IActivity>, defCtx?: Token<any>): BuildHandleContext<any> {
+    //     let context = super.createContext(data, type, defCtx) as BuildHandleContext<any>;
+    //     if (this.context) {
+    //         context.builder = this.context.builder;
+    //         context.origin = this.context.origin;
+    //         context.handle = this.context.handle || this;
+    //     } else {
+    //         context.handle = this;
+    //     }
+    //     return context;
+    // }
 
-    protected setResult(ctx?: any) {
-        super.setResult(ctx);
-        if (ctx instanceof BuidActivityContext) {
-            this.context.builder = ctx.builder;
-            this.context.origin = this;
-            this.context.handle = this;
-        }
-    }
 }
 
 /**
@@ -170,29 +163,46 @@ export const HandleContextToken = new InjectActivityContextToken(BuildHandleActi
  */
 @Injectable(HandleContextToken)
 export class BuildHandleContext<T> extends NodeActivityContext<T> {
-    /**
-     * origin build handle
-     *
-     * @type {BuildHandleActivity}
-     * @memberof BuildHandleContext
-     */
-    origin: BuildHandleActivity;
-    /**
-     * the builder
-     *
-     * @type {BuildActivity}
-     * @memberof BuidActivityContext
-     */
-    builder: BuildActivity;
-    /**
-     * build handle.
-     *
-     * @type {BuildHandleActivity}
-     * @memberof CompilerContext
-     */
-    handle: BuildHandleActivity;
+
 
     constructor(@Inject(InputDataToken) input: any) {
         super(input);
+    }
+
+    protected setConfig(config: BuildHandleConfigure, ctx?: IActivityContext) {
+        this.config = lang.assign({}, (ctx ? ctx.config : {}), config);
+    }
+
+    getBuilderContext(): BuidActivityContext {
+        let node: IActivityContext = this;
+        let ctx = null;
+        while (!ctx && node) {
+            if (node instanceof BuidActivityContext) {
+                ctx = node;
+            }
+            node = node.parent;
+        }
+        return ctx;
+    }
+
+    getRootPath(): string {
+        if (this.config && this.config.baseURL) {
+            return this.config.baseURL;
+        }
+        let bctx = this.getBuilderContext();
+        if (bctx && bctx.config && bctx.config.baseURL) {
+            return bctx.config.baseURL;
+        }
+        return this.getContainer().get(ProcessRunRootToken) || '.';
+    }
+
+    getSrc(): Expression<Src> {
+        let ctx = this.find(n => n.config && n.config.src);
+        return ctx ? ctx.config.src : null;
+    }
+
+    getDist(): Expression<string> {
+        let ctx = this.find(n => n.config && n.config.dest);
+        return ctx ? ctx.config.dest : null;
     }
 }

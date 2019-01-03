@@ -18,22 +18,6 @@ export const BuidActivityContextToken = new InjectActivityContextToken(BuildActi
 @Injectable(BuidActivityContextToken)
 export class BuidActivityContext extends NodeActivityContext<string[]> {
 
-    /**
-     * all files input to handle.
-     *
-     * @type {string[]}
-     * @memberof BuidActivityContext
-     */
-    input: any;
-
-    /**
-     * the builder
-     *
-     * @type {BuildActivity}
-     * @memberof BuidActivityContext
-     */
-    builder: BuildActivity;
-
     constructor(@Inject(InputDataToken) input: any) {
         super(input);
     }

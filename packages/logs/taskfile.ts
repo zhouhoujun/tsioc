@@ -52,6 +52,7 @@ export class LogsRollup extends AssetActivity {
 }
 
 @Pack({
+    baseURL: __dirname,
     clean: 'lib',
     test: (ctx) => ctx.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
     assets: {
@@ -92,7 +93,7 @@ export class LogsBuilder {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.create(__dirname)
+    Workflow.create()
         .use(PackModule)
         .bootstrap(LogsBuilder);
 }

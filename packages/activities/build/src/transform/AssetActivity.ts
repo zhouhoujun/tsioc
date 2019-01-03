@@ -32,20 +32,4 @@ import { ActivityContextToken } from '@taskfr/core';
 ])
 export class AssetActivity extends AssetBuildHanlde<TransformContext> {
 
-    protected isValidContext(ctx: any): boolean {
-        return ctx instanceof TransformContext;
-    }
-
-    protected setResult(ctx?: any) {
-        super.setResult(ctx);
-        if (ctx instanceof BuidActivityContext) {
-            this.context.builder = ctx.builder;
-            this.context.origin = this;
-            this.context.handle = this;
-        } else if (ctx instanceof BuildHandleContext) {
-            this.context.builder = ctx.builder;
-            this.context.origin = ctx.origin;
-            this.context.handle = ctx.handle;
-        }
-    }
 }

@@ -92,13 +92,14 @@ let versionSetting = (ctx: INodeActivityContext) => {
                         activity: 'shell'
                     });
                 }
-                console.log(activities);
+                // console.log(activities);
                 return {
                     contextType: NodeActivityContext,
                     sequence: activities,
                     activity: SequenceActivityToken
                 }
             },
+            contextType: NodeActivityContext,
             activity: ExecuteToken
         }
     ]
@@ -185,7 +186,7 @@ export class BuilderActivities {
 
 
 
-Workflow.create(__dirname)
+Workflow.create()
     .use(PackModule)
     .bootstrap({
         contextType: NodeActivityContext,

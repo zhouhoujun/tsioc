@@ -77,19 +77,6 @@ export abstract class StreamActivity extends CompilerActivity {
         }
         return next;
     }
-
-    protected isValidContext(ctx: any): boolean {
-        return ctx instanceof TransformContext;
-    }
-
-    protected setResult(ctx?: any) {
-        super.setResult(ctx);
-        if (ctx instanceof BuildHandleContext) {
-            this.context.builder = ctx.builder;
-            this.context.origin = ctx.origin;
-            this.context.handle = ctx.handle;
-        }
-    }
 }
 
 /**

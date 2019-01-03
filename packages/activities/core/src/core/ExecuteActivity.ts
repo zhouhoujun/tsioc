@@ -1,9 +1,9 @@
 import { Task } from '../decorators';
 import { Activity } from './Activity';
-import { IActivityResult, InjectAcitityToken, IActivity } from './IActivity';
+import { IActivityResult, InjectAcitityToken } from './IActivity';
 import { OnActivityInit } from './OnActivityInit';
 import { IActivityContextResult, IActivityContext } from './IActivityContext';
-import { Expression, Active, ExecuteConfigure } from './ActivityConfigure';
+import { ExecuteConfigure } from './ActivityConfigure';
 
 
 export const ExecuteToken = new InjectAcitityToken<ExecuteActivity<any>>('Execute')
@@ -42,10 +42,7 @@ export class ExecuteActivity<T> extends Activity implements IActivityResult<T>, 
     protected async execute(): Promise<void> {
         let cfg = this.context.config as ExecuteConfigure;
         if (cfg.execute) {
-            let body = await this.resolveExpression(cfg.execute);
-            await this.execActivity(body, this.context);
+            await this.execActivity(cfg.execute, this.context);
         }
     }
-
-
 }

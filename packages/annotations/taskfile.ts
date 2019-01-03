@@ -2,6 +2,7 @@ import { PackModule, Pack, PackActivity } from '@taskfr/pack';
 import { Workflow } from '@taskfr/core';
 
 @Pack({
+    baseURL: __dirname,
     src: 'src',
     clean: 'lib',
     test: 'test/**/*.spec.ts',

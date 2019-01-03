@@ -142,7 +142,7 @@ export class PackActivity extends BuildActivity implements IPackActivity {
             this.clean = await this.toActivity<Src, CleanActivity, CleanConfigure>(config.clean,
                 act => act instanceof CleanActivity,
                 src => {
-                    return <CleanConfigure>{ clean: src, activity: CleanToken };
+                    return <CleanConfigure>{ clean: src, activity: CleanToken, baseURL: config.baseURL };
                 }
             );
         }
@@ -154,7 +154,7 @@ export class PackActivity extends BuildActivity implements IPackActivity {
                     if (!src) {
                         return null;
                     }
-                    return <TestConfigure>{ src: src, activity: TestToken };
+                    return <TestConfigure>{ src: src, activity: TestToken, baseURL: config.baseURL };
                 }
             );
         }

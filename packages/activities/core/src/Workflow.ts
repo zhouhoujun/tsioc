@@ -10,8 +10,8 @@ import { SequenceActivity } from './activities';
 
 
 export class Workflow extends ApplicationBuilder<IActivity> implements IWorkflow {
-    constructor(baseURL: string) {
-        super(baseURL);
+    constructor() {
+        super();
         this.onInit();
     }
 
@@ -37,8 +37,8 @@ export class Workflow extends ApplicationBuilder<IActivity> implements IWorkflow
      * @returns {ITaskContainer}
      * @memberof TaskContainer
      */
-    static create(root?: string, ...modules: LoadType[]): IWorkflow {
-        let workflow = new Workflow(root);
+    static create(...modules: LoadType[]): IWorkflow {
+        let workflow = new Workflow();
         if (modules) {
             workflow.use(...modules);
         }

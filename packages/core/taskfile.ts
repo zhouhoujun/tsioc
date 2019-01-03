@@ -48,6 +48,7 @@ export class CoreRollup {
 }
 
 @Pack({
+    baseURL: __dirname,
     clean: 'lib',
     test: (ctx) => ctx.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
     assets: {
@@ -88,7 +89,7 @@ export class CoreBuilder {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.create(__dirname)
+    Workflow.create()
         .use(PackModule)
         .bootstrap(CoreBuilder);
 }

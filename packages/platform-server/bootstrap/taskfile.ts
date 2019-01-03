@@ -59,6 +59,7 @@ export class BootRollup extends AssetActivity {
 }
 
 @Pack({
+    baseURL: __dirname,
     src: 'src',
     clean: 'lib',
     test: 'test/**/*.spec.ts',
@@ -84,7 +85,7 @@ export class PfServerBootBuilder {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.create(__dirname)
+    Workflow.create()
         .use(PackModule)
         .bootstrap(PfServerBootBuilder);
 }

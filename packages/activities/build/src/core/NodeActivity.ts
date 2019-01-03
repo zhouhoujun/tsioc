@@ -204,7 +204,29 @@ export class NodeActivityContext<T> extends ActivityContext<T> implements INodeA
      * @memberof NodeContext
      */
     toRootPath(pathstr: string): string {
-        return toAbsolutePath(this.getRootPath(), pathstr);
+        let root = this.getRootPath();
+        return root ? toAbsolutePath(root, pathstr) : pathstr;
+    }
+
+    toRootSrc(src: Src): Src {
+        let root = this.getRootPath();
+        if (root) {
+            if (isString(src)) {
+                return this.prefixSrc(root, src);
+            } else {
+                return src.map(s => this.prefixSrc(root, s));
+            }
+        }
+        return src;
+    }
+
+    private prefixSrc(root: string, strSrc: string): string {
+        let prefix = '';
+        if (/^!/.test(strSrc)) {
+            prefix = '!';
+            strSrc = strSrc.substring(1, strSrc.length);
+        }
+        return prefix + toAbsolutePath(root, strSrc);
     }
 
     private _package: any;

@@ -233,12 +233,8 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
         }
     }
 
-    protected isValidContext(ctx: any): boolean {
-        return ctx instanceof BuidActivityContext;
-    }
-
-    protected setResult(ctx?: any) {
-        super.setResult(ctx);
-        this.context.builder = this;
+    protected initContext(ctx: BuidActivityContext) {
+        super.initContext(ctx);
+        ctx.target = this;
     }
 }

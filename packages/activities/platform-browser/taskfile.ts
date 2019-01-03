@@ -48,6 +48,7 @@ export class RollupTs extends AssetActivity {
 }
 
 @Pack({
+    baseURL: __dirname,
     src: 'src',
     clean: 'lib',
     assets: {
@@ -72,7 +73,7 @@ export class ActPfBrowserBuilder extends PackActivity {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.create(__dirname)
+    Workflow.create()
         .use(PackModule)
         .bootstrap(ActPfBrowserBuilder);
 }

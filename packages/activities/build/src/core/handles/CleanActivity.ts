@@ -34,7 +34,7 @@ export class CleanActivity extends BuildHandleActivity {
     protected async compile(ctx: BuildHandleContext<any>): Promise<void> {
         let clean = await ctx.exec(this, this.clean);
         if (clean) {
-            await ctx.del(clean);
+            await ctx.del(ctx.toRootSrc(clean));
         }
     }
 }
