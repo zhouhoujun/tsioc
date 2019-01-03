@@ -22,9 +22,12 @@ export class SassBuilderActivity extends ShellActivity {
 
     protected async execute(): Promise<void> {
         let ctx = this.context;
-        let dist = path.join(ctx.builder.dist, ctx.handle.subDist);
-        if (fs.existsSync(dist)) {
-            mkdir('-p', dist);
+        let dist = await this.resolveExpression(ctx.getDist());
+        if (dist) {
+            dist = ctx.toRootPath(dist);
+            if (fs.existsSync(dist)) {
+                mkdir('-p', dist);
+            }
         }
     }
 }

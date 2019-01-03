@@ -3,7 +3,6 @@ import { ExpressionType, Task } from '@taskfr/core';
 import { StreamActivity } from './StreamActivity';
 import { ITransformConfigure } from './ITransformConfigure';
 import { DestConfigure, IDestCompiler } from '../../core';
-import { lang } from '@ts-ioc/core';
 
 
 /**

@@ -109,15 +109,17 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
     }
 
     setState(state: any, config: ActivityConfigure) {
+        let data: any;
         if (state instanceof ActivityContext) {
             this.parent = state;
             this.target = state.target;
-            state = state.result;
+            data = state.result;
             this.setConfig(config, state);
         } else {
+            data = state;
             this.setConfig(config);
         }
-        this.setAsResult(state);
+        this.setAsResult(data);
     }
 
     protected setConfig(config: ActivityConfigure, ctx?: IActivityContext) {
@@ -165,8 +167,9 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
     }
 
     getRootPath(): string {
-        if (this.config && this.config.baseURL) {
-            return this.config.baseURL;
+        let ctx = this.find(c => c.config && c.config.baseURL);
+        if (ctx) {
+            return ctx.config.baseURL;
         }
         return this.getContainer().get(ProcessRunRootToken) || '.';
     }

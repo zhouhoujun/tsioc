@@ -14,7 +14,6 @@ import { InputDataToken, InjectActivityContextToken } from '@taskfr/core';
 import { NodeActivityContext } from './NodeActivity';
 import { BuildHandleToken, BuildHandleConfigure } from './BuildHandle';
 import { EmptyCompiler } from './CompilerActivity';
-import { ProcessRunRootToken } from '@ts-ioc/bootstrap';
 
 
 /**
@@ -183,17 +182,6 @@ export class BuildHandleContext<T> extends NodeActivityContext<T> {
             node = node.parent;
         }
         return ctx;
-    }
-
-    getRootPath(): string {
-        if (this.config && this.config.baseURL) {
-            return this.config.baseURL;
-        }
-        let bctx = this.getBuilderContext();
-        if (bctx && bctx.config && bctx.config.baseURL) {
-            return bctx.config.baseURL;
-        }
-        return this.getContainer().get(ProcessRunRootToken) || '.';
     }
 
     getSrc(): Expression<Src> {

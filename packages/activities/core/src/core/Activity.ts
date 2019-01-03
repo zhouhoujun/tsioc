@@ -1,10 +1,10 @@
 import {
     Inject, Express, ContainerToken, IContainer, Token, ProviderType, lang,
-    Providers, MetaAccessorToken, isFunction, isToken, isBaseObject, isClass, Type, hasClassMetadata, getOwnTypeMetadata
+    Providers, MetaAccessorToken, isFunction, isToken, isBaseObject, isClass,
+    Type, hasClassMetadata, getOwnTypeMetadata
 } from '@ts-ioc/core';
 import { Task } from '../decorators';
 import { OnActivityInit } from './OnActivityInit';
-import { ActivityContext } from './ActivityContext';
 import { ActivityMetaAccessorToken } from '../injectors';
 import { IActivity, ActivityToken, WorkflowId } from './IActivity';
 import { ActivityConfigure, ExpressionType, Expression, ActivityType, Active, ExpressionToken } from './ActivityConfigure';
@@ -125,37 +125,6 @@ export abstract class Activity implements IActivity, OnActivityInit {
     /**
      * execute activity.
      *
-     * @param {IActivity} activity
-     * @param {IActivityContext} ctx
-     * @returns
-     * @memberof Activity
-     */
-    protected async execActivity(activity: Activity | Active | ExpressionToken<any>, ctx: IActivityContext | (() => IActivityContext)): Promise<IActivityContext> {
-        if (!activity) {
-            return null;
-        }
-        let rctx = isFunction(ctx) ? ctx() : ctx;
-        if (activity instanceof Activity) {
-            return await activity.run(rctx);
-        } else {
-            let act = activity;
-            if (!isToken(activity) && isFunction(activity)) {
-                act = await activity(rctx);
-            }
-            if (isToken(act) || isBaseObject(act)) {
-                let at = await this.buildActivity(act);
-                if (at && at instanceof Activity) {
-                    return at.run(rctx);
-                }
-            }
-        }
-        console.error('execute activity is not vaild activity:', activity);
-        throw new Error('execActivity activity param is not vaild.');
-    }
-
-    /**
-     * execute activity.
-     *
      * @protected
      * @abstract
      * @returns {Promise<void>}
@@ -211,6 +180,37 @@ export abstract class Activity implements IActivity, OnActivityInit {
             return await (ctx || this.context).exec(this, exp);
         }
         return null;
+    }
+
+     /**
+     * execute activity.
+     *
+     * @param {IActivity} activity
+     * @param {IActivityContext} ctx
+     * @returns
+     * @memberof Activity
+     */
+    protected async execActivity(activity: Activity | Active | ExpressionToken<any>, ctx: IActivityContext | (() => IActivityContext)): Promise<IActivityContext> {
+        if (!activity) {
+            return null;
+        }
+        let rctx = isFunction(ctx) ? ctx() : ctx;
+        if (activity instanceof Activity) {
+            return await activity.run(rctx);
+        } else {
+            let act = activity;
+            if (!isToken(activity) && isFunction(activity)) {
+                act = await activity(rctx);
+            }
+            if (isToken(act) || isBaseObject(act)) {
+                let at = await this.buildActivity(act);
+                if (at && at instanceof Activity) {
+                    return at.run(rctx);
+                }
+            }
+        }
+        console.error('execute activity is not vaild activity:', activity);
+        throw new Error('execActivity activity param is not vaild.');
     }
 
 
