@@ -109,9 +109,6 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
         }
         if (data instanceof ActivityContext) {
             this.target = data.target;
-            if (!this.config) {
-                this.config = data.config;
-            }
             data = data.result;
         }
         let translator = this.getTranslator(data);

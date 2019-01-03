@@ -17,10 +17,6 @@ export const TryCatchActivityToken = new InjectAcitityToken<TryCatchActivity>('t
 @Task(TryCatchActivityToken, 'try')
 export class TryCatchActivity extends ChainActivity {
 
-    async onActivityInit(config: TryCatchConfigure): Promise<void> {
-        await super.onActivityInit(config);
-    }
-
     protected async execute(): Promise<void> {
         let config = this.context.config as TryCatchConfigure;
         try {

@@ -17,25 +17,13 @@ export const WhileActivityToken = new InjectAcitityToken<WhileActivity>('while')
  */
 @Task(WhileActivityToken, 'while & body')
 export class WhileActivity extends ControlActivity {
-    /**
-     * while condition.
-     *
-     * @type {Condition}
-     * @memberof WhileActivity
-     */
-    while: Condition;
-
-    async onActivityInit(config: WhileConfigure): Promise<void> {
-        await super.onActivityInit(config);
-        this.while = await this.toExpression(config.while);
-    }
 
     protected async execute(): Promise<any> {
-        let condition = await this.context.exec(this, this.while);
         let config = this.context.config as WhileConfigure;
+        let condition = await this.resolveExpression(config.while);
         while (condition) {
             await this.execActivity(config.body, this.context);
-            condition = await this.context.exec(this, this.while)
+            condition = await this.resolveExpression(config.while);
         }
     }
 }

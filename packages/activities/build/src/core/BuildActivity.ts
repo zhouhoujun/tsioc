@@ -210,7 +210,6 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
      */
     protected async execute(): Promise<void> {
         let ctx = this.context;
-        let config = this.context.config as BuildConfigure;
         if (!(this.watch && ctx.target === this.watch)) {
             await this.execOnce();
         }

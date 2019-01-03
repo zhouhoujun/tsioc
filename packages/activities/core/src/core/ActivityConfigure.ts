@@ -6,7 +6,6 @@ import { WorkflowInstance } from './WorkflowInstance';
 import { IActivityContext } from './IActivityContext';
 import { IHandleActivity } from './IHandleActivity';
 import { ExpressionActivity } from './ExpressionActivity';
-import { Src } from '../utils';
 
 
 /**
@@ -255,6 +254,13 @@ export interface IExecuteConfigure<T> extends ActivityConfigure {
  */
 export interface ExecuteConfigure extends IExecuteConfigure<Active> {
 
+}
+
+
+export interface InvokeConfigure extends ActivityConfigure {
+    target: ExpressionToken<any>;
+    invoke: ExpressionToken<string>;
+    args: ExpressionToken<any[]>;
 }
 
 /**
@@ -632,7 +638,7 @@ export interface ThrowConfigure extends ActivityConfigure {
      * @type {CtxType<number>}
      * @memberof ThrowConfigure
      */
-    exception?: Expression<Error> | ActivityResultType<Error>;
+    throw?: Expression<Error> | ActivityResultType<Error>;
 }
 
 

@@ -18,39 +18,16 @@ export const DelayActivityToken = new InjectAcitityToken<DelayActivity>('delay')
 @Task(DelayActivityToken, 'delay')
 export class DelayActivity extends ControlActivity implements OnActivityInit {
 
-    /**
-     * delay time.
-     *
-     * @type {Expression<number>}
-     * @memberof DelayActivity
-     */
-    delay: Expression<number>;
-
-    /**
-     * delay body.
-     *
-     * @type {IActivity}
-     * @memberof DelayActivity
-     */
-    body?: IActivity;
-
-    async onActivityInit(config: DelayConfigure): Promise<void> {
-        await super.onActivityInit(config);
-        this.delay = await this.toExpression(config.delay, this);
-        if (config.body) {
-            this.body = await this.buildActivity(config.body);
-        }
-    }
-
     protected async execute(): Promise<any> {
-        let delay = await this.context.exec(this, this.delay);
+        let config = this.context.config as DelayConfigure;
+        let delay = await this.resolveExpression(config.delay);
         let defer = new Defer<any>();
         let timmer = setTimeout(() => {
             defer.resolve();
             clearTimeout(timmer);
         }, delay);
         await defer.promise;
-        await this.execActivity(this.body, this.context);
+        await this.execActivity(config.body, this.context);
     }
 }
 

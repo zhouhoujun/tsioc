@@ -1,5 +1,5 @@
 import { Task } from '../decorators';
-import { InjectAcitityToken, Expression, ConfirmConfigure, IActivity } from '../core';
+import { InjectAcitityToken, Expression, ConfirmConfigure } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 
@@ -17,32 +17,12 @@ export const ConfirmActivityToken = new InjectAcitityToken<ConfirmActivity>('con
  */
 @Task(ConfirmActivityToken, 'confirm')
 export class ConfirmActivity extends ControlActivity {
-    /**
-     * Confirm time.
-     *
-     * @type {Expression<number>}
-     * @memberof ConfirmActivity
-     */
-    confirm: Expression<boolean>;
-
-    /**
-     * confirm execute body.
-     *
-     * @type {IActivity}
-     * @memberof ConfirmActivity
-     */
-    body: IActivity;
-
-    async onActivityInit(config: ConfirmConfigure): Promise<void> {
-        await super.onActivityInit(config);
-        this.confirm = await this.toExpression(config.confirm, this);
-        this.body = await this.buildActivity(config.body);
-    }
 
     protected async execute() {
-        let confirm = this.context.exec(this, this.confirm);
+        let config = this.context.config as ConfirmConfigure;
+        let confirm = this.resolveExpression(config.confirm);
         if (confirm) {
-            this.execActivity(this.body, this.context);
+            this.execActivity(config.body, this.context);
         }
     }
 }

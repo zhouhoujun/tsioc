@@ -1,7 +1,7 @@
 import { BuildHandleContext, HandleContextToken } from './BuildHandleActivity';
-import { Task, ActivityContextToken } from '@taskfr/core';
+import { Task, ActivityContextToken, IActivityContext } from '@taskfr/core';
 import { NodeActivity } from './NodeActivity';
-import { Providers } from '@ts-ioc/core';
+import { Providers, lang } from '@ts-ioc/core';
 
 
 /**
@@ -25,6 +25,11 @@ export abstract class CompilerActivity extends NodeActivity {
      * @memberof CompilerActivity
      */
     context: BuildHandleContext<any>;
+
+
+    protected resetContextConfig(ctx: IActivityContext) {
+        ctx.config = lang.assign({}, ctx.config, this.config);
+    }
 
     protected isValidContext(ctx: any): boolean {
         return ctx instanceof BuildHandleContext;

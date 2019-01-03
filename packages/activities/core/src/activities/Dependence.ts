@@ -34,37 +34,13 @@ export const DependenceActivityToken = new InjectAcitityToken<DependenceActivity
 export class DependenceActivity extends ControlActivity {
 
     /**
-     * custom dependence
-     *
-     * @type {IActivity}
-     * @memberof DependenceActivity
-     */
-    dependence: IActivity;
-
-    /**
-     * body
-     *
-     * @type {IActivity}
-     * @memberof DependenceActivity
-     */
-    body: IActivity;
-
-    async onActivityInit(config: DependenceConfigure): Promise<any> {
-        await super.onActivityInit(config);
-        this.dependence = await this.buildActivity(config.dependence);
-        this.body = await this.buildActivity(config.body);
-    }
-
-
-    /**
      * execute body.
      *
      * @protected
      * @memberof DependenceActivity
      */
     protected async execute() {
-        await this.execActivity(this.dependence, this.context);
-        await this.execActivity(this.body, this.context);
+        let config = this.context.config as DependenceConfigure;
+        await this.execActivity(config.dependence, this.context);
     }
-
 }

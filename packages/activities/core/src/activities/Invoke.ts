@@ -1,7 +1,8 @@
 import { Task } from '../decorators';
-import { InjectAcitityToken, ActivityContext } from '../core';
-import { Token, ObjectMap, lang } from '@ts-ioc/core';
+import { InjectAcitityToken, ActivityContext, InvokeConfigure, Expression } from '../core';
+import { Token, ObjectMap, lang, ParamProviders } from '@ts-ioc/core';
 import { ControlActivity } from './ControlActivity';
+import { config } from 'shelljs';
 
 /**
  * while activity token.
@@ -17,24 +18,18 @@ export const InvokeActivityToken = new InjectAcitityToken<InvokeActivity>('invok
  */
 @Task(InvokeActivityToken, 'invoke')
 export class InvokeActivity extends ControlActivity {
-    /**
-     * while condition.
-     *
-     * @type {Condition}
-     * @memberof InvokeActivity
-     */
-    args: ObjectMap<any>;
-
-    /**
-     * target instance.
-     *
-     * @type {*}
-     * @memberof InvokeActivity
-     */
-    target?: any;
-
 
     protected async execute(): Promise<any> {
-        return this.execActivity(this.context.config.invoke, this.context);
+        let config = this.context.config as InvokeConfigure;
+        if (config.target && config.invoke) {
+            let target = await this.resolveExpression(config.target);
+            let invoke = await this.resolveExpression(config.invoke);
+            let args: ParamProviders[];
+            if (config.args) {
+                args = await this.resolveExpression(config.args);
+            }
+            args = args || [];
+            return this.container.invoke(target, invoke, ...args);
+        }
     }
 }
