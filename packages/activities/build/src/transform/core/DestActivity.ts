@@ -4,6 +4,7 @@ import { StreamActivity } from './StreamActivity';
 import { ITransformConfigure } from './ITransformConfigure';
 import { DestConfigure, IDestCompiler } from '../../core';
 import { lang } from '@ts-ioc/core';
+import { fstat, existsSync, mkdirSync } from 'fs';
 
 
 /**
@@ -45,7 +46,6 @@ export class DestActivity extends StreamActivity implements IDestCompiler {
             destOptions = await this.resolveExpression(config.destOptions);
         }
         dist = this.context.toRootPath(dist);
-        let restult = await this.executePipe(this.context.result, dest(dist, destOptions), true);
-        this.context.result = restult;
+        this.context.result = await this.executePipe(this.context.result, dest(dist, destOptions), true);
     }
 }

@@ -67,6 +67,7 @@ export abstract class StreamActivity extends CompilerActivity {
                     next.removeAllListeners('error');
                     next.removeAllListeners('end');
                     if (!isUndefined(process)) {
+                        console.error(err);
                         process.exit(1);
                         return err;
                     } else {
