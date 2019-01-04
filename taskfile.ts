@@ -92,7 +92,6 @@ let versionSetting = (ctx: INodeActivityContext) => {
                         activity: 'shell'
                     });
                 }
-                console.log(activities);
                 return {
                     contextType: NodeActivityContext,
                     sequence: activities,

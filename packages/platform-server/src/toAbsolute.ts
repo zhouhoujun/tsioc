@@ -11,9 +11,9 @@ import * as path from 'path';
  */
 export function toAbsolutePath(root: string, pathstr: string): string {
     if (!root || path.isAbsolute(pathstr)) {
-        return pathstr;
+        return path.normalize(pathstr);
     }
-    return path.join(root, pathstr);
+    return path.join(path.normalize(root), path.normalize(pathstr));
 }
 
 /**
