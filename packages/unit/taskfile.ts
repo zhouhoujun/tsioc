@@ -1,7 +1,7 @@
 
 import { Workflow } from '@taskfr/core';
 import { IActivity } from '@taskfr/core';
-import { Asset, CleanToken, TsCompile, AssetToken } from '@taskfr/build';
+import { Asset, CleanToken, TsCompile, AssetToken, TransformContext } from '@taskfr/build';
 import { Pack, PackModule } from '@taskfr/pack';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -18,34 +18,32 @@ const rename = require('gulp-rename');
     },
     sourcemaps: true,
     pipes: [
-        (act) => {
-            return rollup({
-                name: act.config.data.name,
-                format: 'umd',
-                sourceMap: true,
-                plugins: [
-                    resolve(),
-                    commonjs(),
-                    rollupSourcemaps()
-                ],
-                external: [
-                    'reflect-metadata',
-                    'events',
-                    'tslib',
-                    'core-js',
-                    'log4js',
-                    '@ts-ioc/core',
-                    '@ts-ioc/aop',
-                    '@ts-ioc/logs',
-                    '@ts-ioc/bootstrap'
-                ],
-                globals: {
-                    'reflect-metadata': 'Reflect'
-                },
-                input: act.config.data.input
-            })
-        },
-        (act) => rename(act.config.data.name)
+        (ctx: TransformContext) => rollup({
+            name: ctx.config.data.name,
+            format: 'umd',
+            sourceMap: true,
+            plugins: [
+                resolve(),
+                commonjs(),
+                rollupSourcemaps()
+            ],
+            external: [
+                'reflect-metadata',
+                'events',
+                'tslib',
+                'core-js',
+                'log4js',
+                '@ts-ioc/core',
+                '@ts-ioc/aop',
+                '@ts-ioc/logs',
+                '@ts-ioc/bootstrap'
+            ],
+            globals: {
+                'reflect-metadata': 'Reflect'
+            },
+            input: ctx.toRootPath(ctx.config.data.input)
+        }),
+        (ctx) => rename(ctx.config.data.name)
     ]
 })
 export class BootRollup {

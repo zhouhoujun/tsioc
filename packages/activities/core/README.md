@@ -146,7 +146,7 @@ TaskContainer.create(__dirname)
         <IAssetConfigure>{
             src: 'lib/**/*.js',
             pipes: [
-                () => rollup({
+                (ctx: TransformContext) => rollup({
                     name: 'core.umd.js',
                     format: 'umd',
                     plugins: [
@@ -165,7 +165,7 @@ TaskContainer.create(__dirname)
                     globals: {
                         'reflect-metadata': 'Reflect'
                     },
-                    input: 'lib/index.js'
+                    input: ctx.toRootPath('lib/index.js')
                 }),
                 () => rename('core.umd.js')
             ],
@@ -194,8 +194,8 @@ const builtins = require('rollup-plugin-node-builtins');
         input: 'esnext/index.js'
     },
     pipes: [
-        (act) => rollup({
-            name: act.config.data.name,
+        (ctx: TransformContext) => rollup({
+            name: ctx.config.data.name,
             format: 'umd',
             sourceMap: true,
             plugins: [
@@ -213,9 +213,9 @@ const builtins = require('rollup-plugin-node-builtins');
             globals: {
                 'reflect-metadata': 'Reflect'
             },
-            input: act.config.data.input
+            input: ctx.toRootPath(ctx.config.data.input)
         }),
-        (act) => rename(act.config.data.name)
+        (ctx) => rename(ctx.config.data.name)
     ],
 })
 export class RollupTs extends AssetActivity {

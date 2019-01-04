@@ -1,5 +1,5 @@
 import { Workflow } from '@taskfr/core';
-import { Asset, AssetActivity, CleanToken, TsCompile } from '@taskfr/build';
+import { Asset, AssetActivity, CleanToken, TsCompile, TransformContext } from '@taskfr/build';
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 
 const resolve = require('rollup-plugin-node-resolve');
@@ -19,39 +19,37 @@ const builtins = require('rollup-plugin-node-builtins');
     },
     sourcemaps: true,
     pipes: [
-        (ctx) => {
-            return rollup({
-                name: ctx.config.data.name,
-                format: 'umd',
-                sourceMap: true,
-                plugins: [
-                    resolve(),
-                    commonjs(),
-                    // builtins(),
-                    rollupSourcemaps()
-                ],
-                external: [
-                    'reflect-metadata',
-                    'tslib',
-                    'log4js',
-                    'globby',
-                    'core-js',
-                    'path',
-                    'fs',
-                    '@ts-ioc/core',
-                    '@ts-ioc/aop',
-                    '@ts-ioc/bootstrap',
-                    '@ts-ioc/platform-server'
-                ],
-                globals: {
-                    'reflect-metadata': 'Reflect',
-                    'log4js': 'log4js',
-                    '@ts-ioc/core': '@ts-ioc/core',
-                    '@ts-ioc/aop': '@ts-ioc/aop'
-                },
-                input: ctx.config.data.input
-            })
-        },
+        (ctx: TransformContext) => rollup({
+            name: ctx.config.data.name,
+            format: 'umd',
+            sourceMap: true,
+            plugins: [
+                resolve(),
+                commonjs(),
+                // builtins(),
+                rollupSourcemaps()
+            ],
+            external: [
+                'reflect-metadata',
+                'tslib',
+                'log4js',
+                'globby',
+                'core-js',
+                'path',
+                'fs',
+                '@ts-ioc/core',
+                '@ts-ioc/aop',
+                '@ts-ioc/bootstrap',
+                '@ts-ioc/platform-server'
+            ],
+            globals: {
+                'reflect-metadata': 'Reflect',
+                'log4js': 'log4js',
+                '@ts-ioc/core': '@ts-ioc/core',
+                '@ts-ioc/aop': '@ts-ioc/aop'
+            },
+            input: ctx.toRootPath(ctx.config.data.input)
+        }),
         (ctx) => rename(ctx.config.data.name)
     ]
 })

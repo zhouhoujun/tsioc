@@ -12,20 +12,20 @@ import { ExpressionToken, ConfigureType, CtxType, ExpressionType, Src } from '@t
  * @extends {IBuildHandleActivity}
  */
 export interface IAssetBuildHandle extends IBuildHandleActivity {
-    // /**
-    //  * source compiler
-    //  *
-    //  * @type {ISourceCompiler}
-    //  * @memberof AssetActivity
-    //  */
-    // src: ISourceCompiler;
-    // /**
-    //  * asset annotation.
-    //  *
-    //  * @type {AnnotationActivity}
-    //  * @memberof AssetActivity
-    //  */
-    // annotation: ICompiler;
+    /**
+     * source compiler
+     *
+     * @type {ISourceCompiler}
+     * @memberof AssetActivity
+     */
+    source: ISourceCompiler;
+    /**
+     * asset annotation.
+     *
+     * @type {AnnotationActivity}
+     * @memberof AssetActivity
+     */
+    annotation: ICompiler;
     /**
      * source maps compiler.
      *
@@ -33,21 +33,21 @@ export interface IAssetBuildHandle extends IBuildHandleActivity {
      * @memberof AssetActivity
      */
     sourcemaps: ISourcemapsCompiler;
-    // /**
-    //  * uglify compiler
-    //  *
-    //  * @type {ICompiler}
-    //  * @memberof AssetActivity
-    //  */
-    // uglify: ICompiler;
+    /**
+     * uglify compiler
+     *
+     * @type {ICompiler}
+     * @memberof AssetActivity
+     */
+    uglify: ICompiler;
 
-    // /**
-    //  * dest compiler.
-    //  *
-    //  * @type {ICompiler}
-    //  * @memberof AssetActivity
-    //  */
-    // dest: ICompiler;
+    /**
+     * dest compiler.
+     *
+     * @type {ICompiler}
+     * @memberof AssetActivity
+     */
+    dest: ICompiler;
 }
 
 /**

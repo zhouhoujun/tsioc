@@ -1,4 +1,4 @@
-import { isBoolean, ObjectMap, isString, Providers, lang } from '@ts-ioc/core';
+import { isBoolean, ObjectMap, isString, Providers } from '@ts-ioc/core';
 import * as ts from 'gulp-typescript';
 import { CtxType, OnActivityInit, Task } from '@taskfr/core';
 import {
@@ -100,6 +100,14 @@ export const TsCompileToken = new InjectAssetToken('ts');
 export class TsCompile extends AssetActivity implements OnActivityInit {
 
     /**
+     * tds dest.
+     *
+     * @type {DestActivity}
+     * @memberof TsCompile
+     */
+    tdsDest: IDestCompiler;
+
+    /**
      * on task init.
      *
      * @param {TsConfigure} cfg
@@ -109,10 +117,24 @@ export class TsCompile extends AssetActivity implements OnActivityInit {
         if (!cfg.sourcemaps && cfg.sourcemaps !== false) {
             cfg.sourcemaps = true;
         }
+        await super.onActivityInit(cfg);
         if (cfg.tds !== false) {
             cfg.tds = true;
         }
-        await super.onActivityInit(cfg);
+        if (cfg.tds) {
+            this.tdsDest = await this.toActivity<string | boolean, IDestCompiler, DestConfigure>(cfg.tds,
+                act => act instanceof CompilerActivity,
+                dest => {
+                    if (isBoolean(dest)) {
+                        if (dest) {
+                            return { activity: DestCompilerToken };
+                        }
+                    } else if (isString(dest)) {
+                        return { dest: dest, activity: DestCompilerToken };
+                    }
+                    return null;
+                });
+        }
     }
 
     /**
@@ -123,11 +145,12 @@ export class TsCompile extends AssetActivity implements OnActivityInit {
      * @memberof TsCompile
      */
     protected async execUglify(ctx: TransformContext) {
-        let ugCtx = this.createContext(ctx.result.js) as TransformContext;
-        await super.execUglify(ugCtx);
-        ctx.result.js = ugCtx.result;
+        if (this.uglify) {
+            let ugCtx = this.createContext(ctx.result.js, true);
+            await this.uglify.run(ugCtx);
+            ctx.result.js = ugCtx.result;
+        }
     }
-
     /**
      * execute dest activity.
      *
@@ -142,32 +165,19 @@ export class TsCompile extends AssetActivity implements OnActivityInit {
         }
 
         let stream = ctx.result;
-        let config = ctx.config as TsConfigure;
         if (isTransform(stream.dts)) {
-            if (config.tds) {
-                let tdsDest = await this.toActivity<string | boolean, IDestCompiler, DestConfigure>(config.tds,
-                    act => act instanceof CompilerActivity,
-                    dest => {
-                        if (isBoolean(dest)) {
-                            if (dest) {
-                                return { activity: DestCompilerToken };
-                            }
-                        } else if (isString(dest)) {
-                            return { dest: dest, activity: DestCompilerToken };
-                        }
-                        return null;
-                    });
-                await this.execActivity(tdsDest, this.createContext(stream.dts));
-            }
+            let dtsCtx = this.createContext(stream.dts, true);
+            dtsCtx.parent = ctx;
+            await this.execActivity(this.tdsDest, dtsCtx);
         }
         if (isTransform(stream.js)) {
-            let jsCtx = this.createContext(stream.js) as TransformContext;
-            jsCtx.config = ctx.config;
-            await super.execDest(jsCtx);
+            let jsCtx = this.createContext(stream.js, true) as TransformContext;
+            await this.execActivity(this.sourcemaps, jsCtx);
+            await this.execActivity(this.dest, jsCtx);
         } else if (isTransform(stream)) {
-            let newCtx = this.createContext(stream) as TransformContext;
-            newCtx.config = ctx.config;
-            await super.execDest(newCtx);
+            let newCtx = this.createContext(stream, true) as TransformContext;
+            await this.execActivity(this.sourcemaps, newCtx);
+            await this.execActivity(this.dest, newCtx);
         }
     }
 }

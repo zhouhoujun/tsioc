@@ -1,6 +1,6 @@
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 import { Workflow } from '@taskfr/core';
-import { Asset, CleanToken, AssetActivity, TsCompile } from '@taskfr/build';
+import { Asset, CleanToken, AssetActivity, TsCompile, TransformContext } from '@taskfr/build';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
@@ -19,7 +19,7 @@ const builtins = require('rollup-plugin-node-builtins');
         input: 'lib/index.js'
     },
     pipes: [
-        (ctx) => rollup({
+        (ctx: TransformContext) => rollup({
             name: ctx.config.data.name,
             format: 'umd',
             sourceMap: true,
@@ -61,7 +61,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 '@ts-ioc/core': '@ts-ioc/core',
                 '@ts-ioc/aop': '@ts-ioc/aop'
             },
-            input: ctx.config.data.input
+            input: ctx.toRootPath(ctx.config.data.input)
         }),
         (ctx) => rename(ctx.config.data.name)
     ],

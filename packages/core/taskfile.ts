@@ -1,6 +1,6 @@
 import { PackModule, Pack, PackActivity } from '@taskfr/pack';
 import { Workflow } from '@taskfr/core';
-import { Asset, AssetActivity, TsCompile, CleanToken } from '@taskfr/build';
+import { Asset, AssetActivity, TsCompile, CleanToken, TransformContext } from '@taskfr/build';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
@@ -16,31 +16,29 @@ const rename = require('gulp-rename');
     },
     sourcemaps: true,
     pipes: [
-        (ctx) => {
-            return rollup({
-                name: ctx.config.data.name,
-                format: 'umd',
-                sourceMap: true,
-                plugins: [
-                    resolve(),
-                    commonjs(),
-                    rollupSourcemaps()
-                ],
-                external: [
-                    'reflect-metadata',
-                    'log4js',
-                    'tslib',
-                    '@ts-ioc/core'
-                ],
-                globals: {
-                    'reflect-metadata': 'Reflect',
-                    'log4js': 'log4js',
-                    'tslib': 'tslib',
-                    '@ts-ioc/core': '@ts-ioc/core'
-                },
-                input: ctx.config.data.input
-            })
-        },
+        (ctx: TransformContext) => rollup({
+            name: ctx.config.data.name,
+            format: 'umd',
+            sourceMap: true,
+            plugins: [
+                resolve(),
+                commonjs(),
+                rollupSourcemaps()
+            ],
+            external: [
+                'reflect-metadata',
+                'log4js',
+                'tslib',
+                '@ts-ioc/core'
+            ],
+            globals: {
+                'reflect-metadata': 'Reflect',
+                'log4js': 'log4js',
+                'tslib': 'tslib',
+                '@ts-ioc/core': '@ts-ioc/core'
+            },
+            input: ctx.toRootPath(ctx.config.data.input)
+        }),
         (ctx) => rename(ctx.config.data.name)
     ]
 })

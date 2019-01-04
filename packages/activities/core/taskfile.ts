@@ -1,6 +1,6 @@
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 import { Workflow } from '@taskfr/core';
-import { CleanActivity, Asset, AssetActivity, TsCompile } from '@taskfr/build';
+import { CleanActivity, Asset, AssetActivity, TsCompile, TransformContext } from '@taskfr/build';
 const rename = require('gulp-rename');
 const rollup = require('gulp-rollup');
 const resolve = require('rollup-plugin-node-resolve');
@@ -17,7 +17,7 @@ const commonjs = require('rollup-plugin-commonjs');
         input: 'lib/index.js'
     },
     pipes: [
-        (ctx) => rollup({
+        (ctx: TransformContext) => rollup({
             name: ctx.config.data.name,
             format: 'umd',
             sourceMap: true,
@@ -43,7 +43,7 @@ const commonjs = require('rollup-plugin-commonjs');
             globals: {
                 'reflect-metadata': 'Reflect'
             },
-            input: ctx.config.data.input
+            input: ctx.toRootPath(ctx.config.data.input)
         }),
         (ctx) => rename(ctx.config.data.name)
     ],

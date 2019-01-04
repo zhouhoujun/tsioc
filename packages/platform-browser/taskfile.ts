@@ -1,4 +1,4 @@
-import { AssetActivity, CleanToken, TsCompile, Asset, INodeActivityContext } from '@taskfr/build';
+import { AssetActivity, CleanToken, TsCompile, Asset, INodeActivityContext, TransformContext } from '@taskfr/build';
 import { Workflow } from '@taskfr/core';
 import { Pack, PackActivity, PackModule } from '@taskfr/pack';
 import { PfBrowserBootBuilder } from './bootstrap/taskfile';
@@ -18,33 +18,31 @@ const rename = require('gulp-rename');
     },
     sourcemaps: true,
     pipes: [
-        (ctx) => {
-            return rollup({
-                name: ctx.config.data.name,
-                format: 'umd',
-                sourceMap: true,
-                plugins: [
-                    resolve(),
-                    commonjs(),
-                    rollupSourcemaps()
-                ],
-                external: [
-                    'reflect-metadata',
-                    'tslib',
-                    'core-js',
-                    'log4js',
-                    '@ts-ioc/core',
-                    '@ts-ioc/aop'
-                ],
-                globals: {
-                    'reflect-metadata': 'Reflect',
-                    'log4js': 'log4js',
-                    '@ts-ioc/core': '@ts-ioc/core',
-                    '@ts-ioc/aop': '@ts-ioc/aop'
-                },
-                input: ctx.config.data.input
-            })
-        },
+        (ctx: TransformContext) => rollup({
+            name: ctx.config.data.name,
+            format: 'umd',
+            sourceMap: true,
+            plugins: [
+                resolve(),
+                commonjs(),
+                rollupSourcemaps()
+            ],
+            external: [
+                'reflect-metadata',
+                'tslib',
+                'core-js',
+                'log4js',
+                '@ts-ioc/core',
+                '@ts-ioc/aop'
+            ],
+            globals: {
+                'reflect-metadata': 'Reflect',
+                'log4js': 'log4js',
+                '@ts-ioc/core': '@ts-ioc/core',
+                '@ts-ioc/aop': '@ts-ioc/aop'
+            },
+            input: ctx.toRootPath(ctx.config.data.input)
+        }),
         (ctx) => rename(ctx.config.data.name)
     ]
 })

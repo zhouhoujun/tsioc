@@ -10,6 +10,7 @@ import { IActivity, ActivityToken, WorkflowId } from './IActivity';
 import { ActivityConfigure, ExpressionType, Expression, ActivityType, Active, ExpressionToken } from './ActivityConfigure';
 import { IActivityContext, InputDataToken, InjectActivityContextToken, ActivityContextToken } from './IActivityContext';
 import { IActivityMetadata } from '../metadatas';
+import { isBoolean } from 'util';
 
 
 /**
@@ -66,7 +67,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @type {ActivityConfigure}
      * @memberof Activity
      */
-    protected config: ActivityConfigure;
+    private _config: ActivityConfigure;
 
     constructor() {
 
@@ -81,27 +82,39 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @returns {T}
      * @memberof ContextFactory
      */
-    createContext(data?: any, type?: Token<IActivity>, defCtx?: Token<any>): IActivityContext {
+    createContext(data?: any, type?: Token<IActivity> | boolean, defCtx?: Token<any> | boolean, subctx?: boolean): IActivityContext {
+        if (isBoolean(type)) {
+            subctx = type;
+            defCtx = undefined;
+            type = undefined;
+        } else if (isBoolean(defCtx)) {
+            subctx = defCtx;
+            type = undefined;
+        }
+
         let provider = { provide: InputDataToken, useValue: data } as ProviderType;
         type = type || lang.getClass(this);
-        if (this.config && this.config.contextType) {
-            return this.container.resolve(this.config.contextType, provider);
+        if (this._config && this._config.contextType) {
+            return this.container.resolve(this._config.contextType, provider);
         }
-        let ctx = this.container.getService(ActivityContextToken, type,
+        let ctx = this.container.getService<IActivityContext>(ActivityContextToken, type,
             tk => new InjectActivityContextToken(tk),
-            defCtx || ActivityContextToken, provider);
+            (defCtx || ActivityContextToken), provider);
 
         this.initContext(ctx);
+        if (subctx === true) {
+            ctx.parent = this.context;
+        }
         return ctx;
     }
 
     protected initContext(ctx: IActivityContext) {
-        ctx.config = this.config;
+        ctx.config = this._config;
     }
 
 
     async onActivityInit(config: ActivityConfigure) {
-        this.config = config;
+        this._config = config;
         if (!this.context) {
             this.context = this.createContext();
         }
@@ -144,7 +157,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
         if (!this.context) {
             this.context = this.createContext();
         }
-        this.context.setState(ctx, this.config);
+        this.context.setState(ctx, this._config);
     }
 
     /**
@@ -182,14 +195,14 @@ export abstract class Activity implements IActivity, OnActivityInit {
         return null;
     }
 
-     /**
-     * execute activity.
-     *
-     * @param {IActivity} activity
-     * @param {IActivityContext} ctx
-     * @returns
-     * @memberof Activity
-     */
+    /**
+    * execute activity.
+    *
+    * @param {IActivity} activity
+    * @param {IActivityContext} ctx
+    * @returns
+    * @memberof Activity
+    */
     protected async execActivity(activity: Activity | Active | ExpressionToken<any>, ctx: IActivityContext | (() => IActivityContext)): Promise<IActivityContext> {
         if (!activity) {
             return null;

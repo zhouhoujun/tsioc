@@ -79,21 +79,50 @@ export interface IActivity {
     /**
      * create context.
      *
-     * @param {*} [data]
-     * @param {Token<IActivity>} [type]
-     * @param {Token<T>} [defCtx]
-     * @returns {T}
+     * @returns {IActivityContext}
      * @memberof IActivity
      */
-    createContext(data?: any, type?: Token<IActivity>, defCtx?: Token<any>): IActivityContext
+    createContext(): IActivityContext;
 
-    // /**
-    //  * config.
-    //  *
-    //  * @type {ActivityConfigure}
-    //  * @memberof IActivity
-    //  */
-    // config: ActivityConfigure;
+    /**
+     * create context with init data.
+     *
+     * @param {*} data
+     * @returns {IActivityContext}
+     * @memberof IActivity
+     */
+    createContext(data: any): IActivityContext;
+
+    /**
+     * create context or child context.
+     *
+     * @param {*} data init data.
+     * @param {boolean} subctx create child context or not.
+     * @returns {IActivityContext}
+     * @memberof IActivity
+     */
+    createContext(data: any, subctx: boolean): IActivityContext;
+    /**
+     * create context of type target.
+     *
+     * @param {*} data init data.
+     * @param {Token<IActivity>} type context of target type.
+     * @param {boolean} [subctx] create child context or not.
+     * @memberof IActivity
+     */
+    createContext(data: any, type: Token<IActivity>, subctx?: boolean);
+
+    /**
+     * create context of type target. default with create `defCtx`.
+     *
+     * @param {*} data init data.
+     * @param {Token<IActivity>} type context of target type.
+     * @param {Token<any>} defCtx can't find context match target type, will create as default context.
+     * @param {boolean} [subctx] create child context or not.
+     * @returns {IActivityContext}
+     * @memberof IActivity
+     */
+    createContext(data: any, type: Token<IActivity>, defCtx: Token<any>, subctx?: boolean): IActivityContext;
 
     /**
      * run task.

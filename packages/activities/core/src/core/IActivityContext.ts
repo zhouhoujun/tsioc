@@ -81,7 +81,7 @@ export interface IContext {
 /**
  * context type.
  */
-export type CtxType<T> = T | ((context?: IContext, config?: ActivityConfigure) => T);
+export type CtxType<T> = T | ((context?: IActivityContext, config?: ActivityConfigure) => T);
 
 
 /**

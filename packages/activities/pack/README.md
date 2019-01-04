@@ -136,7 +136,7 @@ TaskContainer.create(__dirname)
         <IAssetConfigure>{
             src: 'lib/**/*.js',
             pipes: [
-                () => rollup({
+                (ctx: TransformContext) => rollup({
                     name: 'core.umd.js',
                     format: 'umd',
                     plugins: [
@@ -155,7 +155,7 @@ TaskContainer.create(__dirname)
                     globals: {
                         'reflect-metadata': 'Reflect'
                     },
-                    input: 'lib/index.js'
+                    input: ctx.toRootPath('lib/index.js')
                 }),
                 () => rename('core.umd.js')
             ],
