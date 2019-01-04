@@ -34,7 +34,7 @@ export class TaskLogAspect extends LoggerAspect {
         let taskname = '\'' + name + '\'';
         if (joinPoint.state === JoinpointState.Before) {
             if (target.context && target.context.config && target.context.config.title) {
-                logger.log(target.context.config.title);
+                logger.log('\n' + target.context.config.title + taskname + '\n');
             }
             start = new Date();
             this.startHrts[name] = start;

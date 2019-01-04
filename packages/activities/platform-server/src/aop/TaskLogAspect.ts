@@ -36,7 +36,7 @@ export class TaskLogAspect extends LoggerAspect {
         let taskname = '\'' + chalk.cyan(name) + '\'';
         if (joinPoint.state === JoinpointState.Before) {
             if (target.context && target.context.config && target.context.config.title) {
-                logger.log(chalk.grey(target.context.config.title));
+                logger.log('\n' + chalk.grey(target.context.config.title + ' ' + name + '\n'));
             }
             start = process.hrtime();
             this.startHrts[name] = start;

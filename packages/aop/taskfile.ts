@@ -30,12 +30,12 @@ const rename = require('gulp-rename');
                 'reflect-metadata',
                 'log4js',
                 'tslib',
-                'object-assign',
                 '@ts-ioc/core'
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
                 'log4js': 'log4js',
+                'tslib': 'tslib',
                 '@ts-ioc/core': '@ts-ioc/core'
             },
             input: ctx.toRootPath(ctx.config.data.input)

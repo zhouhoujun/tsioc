@@ -148,6 +148,7 @@ export class BuildHandleContext<T> extends NodeActivityContext<T> {
 
     protected setConfig(config: BuildHandleConfigure, ctx?: IActivityContext) {
         this.config =  lang.assign({}, (ctx ? ctx.config : {}), config);
+        this.config.title = '';
     }
 
     getBuilderContext(): BuidActivityContext {

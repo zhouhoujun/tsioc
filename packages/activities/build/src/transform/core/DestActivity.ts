@@ -3,6 +3,7 @@ import { ExpressionType, Task } from '@taskfr/core';
 import { StreamActivity } from './StreamActivity';
 import { ITransformConfigure } from './ITransformConfigure';
 import { DestConfigure, IDestCompiler } from '../../core';
+import { lang } from '@ts-ioc/core';
 
 
 /**
@@ -44,6 +45,7 @@ export class DestActivity extends StreamActivity implements IDestCompiler {
             destOptions = await this.resolveExpression(config.destOptions);
         }
         dist = this.context.toRootPath(dist);
-        this.context.result = await this.executePipe(this.context.result, dest(dist, destOptions), true);
+        let restult = await this.executePipe(this.context.result, dest(dist, destOptions), true);
+        this.context.result = restult;
     }
 }

@@ -37,7 +37,6 @@ const builtins = require('rollup-plugin-node-builtins');
             external: [
                 'reflect-metadata',
                 'tslib',
-                'core-js',
                 'log4js',
                 'globby', 'path', 'fs',
                 'process',
@@ -47,6 +46,9 @@ const builtins = require('rollup-plugin-node-builtins');
             globals: {
                 'reflect-metadata': 'Reflect',
                 'log4js': 'log4js',
+                'tslib': 'tslib',
+                'path': 'path',
+                'globby': 'globby',
                 '@ts-ioc/core': '@ts-ioc/core',
                 '@ts-ioc/aop': '@ts-ioc/aop'
             },
@@ -62,7 +64,7 @@ export class PfServerRollup {
     baseURL: __dirname,
     src: 'src',
     clean: 'lib',
-    test: (act: IActivity) => act.context.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
+    test: ctx => ctx.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
     assets: {
         ts: { dest: 'lib', annotation: true, uglify: false },
         ts2015: {

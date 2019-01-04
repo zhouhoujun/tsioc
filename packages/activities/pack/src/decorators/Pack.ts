@@ -27,7 +27,7 @@ export const Pack: ITaskDecorator<PackMetadata> = createTaskDecorator<PackMetada
         meta.baseURL = path.join(path.dirname(cwd), path.basename(cwd));
     }
     if (!meta.title) {
-        meta.title = '\n        Build Pack\n';
+        meta.title = '        Build Pack';
     }
     return PackToken;
 }, 'PackActivity');

@@ -39,7 +39,13 @@ const rename = require('gulp-rename');
                 '@ts-ioc/bootstrap'
             ],
             globals: {
-                'reflect-metadata': 'Reflect'
+                'reflect-metadata': 'Reflect',
+                'tslib': 'tslib',
+                '@ts-ioc/core': '@ts-ioc/core',
+                '@ts-ioc/aop': '@ts-ioc/aop',
+                '@ts-ioc/logs': '@ts-ioc/logs',
+                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap'
+
             },
             input: ctx.toRootPath(ctx.config.data.input)
         }),

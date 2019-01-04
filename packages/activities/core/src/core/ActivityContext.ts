@@ -98,7 +98,7 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
         if (data !== this.data) {
             this.emit('resultChanged', data);
         }
-        if (this.parent) {
+        if (this.parent && this.parent !== this) {
             this.parent.result = data;
         }
         this.data = data;

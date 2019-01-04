@@ -1,8 +1,6 @@
 import { IocExt, Inject, ContainerToken, IContainer, ModuleLoaderToken, ContainerBuilderToken } from '@ts-ioc/core';
 import { NodeModuleLoader } from './NodeModuleLoader';
 import { ServerContainerBuilder } from './ContainerBuilder';
-import * as path from 'path';
-import { ProcessRunRootToken } from '@ts-ioc/bootstrap';
 
 
 declare let process: any;
@@ -27,9 +25,6 @@ export class ServerModule {
      */
     setup() {
         let container = this.container;
-        let cwd = process.cwd();
-        let processRoot = path.join(path.dirname(cwd), path.basename(cwd));
-        container.bindProvider(ProcessRunRootToken, () => processRoot);
         container.bindProvider(ModuleLoaderToken, new NodeModuleLoader());
         container.bindProvider(ContainerBuilderToken, new ServerContainerBuilder());
     }

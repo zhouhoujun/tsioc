@@ -1,5 +1,5 @@
 import { IContainer, Injectable } from '@ts-ioc/core';
-import { AppConfigure, ApplicationBuilder, IApplicationBuilder, IConfigureLoader, ConfigureLoaderToken, DIModule } from '@ts-ioc/bootstrap';
+import { AppConfigure, ApplicationBuilder, IApplicationBuilder, IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken } from '@ts-ioc/bootstrap';
 import * as path from 'path';
 import { ServerModule } from '@ts-ioc/platform-server';
 
@@ -53,6 +53,8 @@ export function serverApp<T>(baseURL?: string): IApplicationBuilder<T> {
     return new ApplicationBuilder<T>(baseURL).use(ServerBootstrapModule);
 }
 
+let cwd = process.cwd();
+let processRoot = path.join(path.dirname(cwd), path.basename(cwd));
 
 /**
  * server boot module
@@ -64,6 +66,9 @@ export function serverApp<T>(baseURL?: string): IApplicationBuilder<T> {
     imports: [
         ServerModule,
         ConfigureFileLoader
+    ],
+    providers: [
+        { provide: ProcessRunRootToken, useValue: processRoot }
     ],
     exports: [
         ConfigureFileLoader
