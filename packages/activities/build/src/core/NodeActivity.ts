@@ -2,13 +2,14 @@ import { Src, ContextActivity, Task, ActivityContext, InputDataToken, InjectActi
 import { Inject, Injectable, ObjectMap, Express2, isArray, isString, assertExp, Providers, MetaAccessorToken } from '@ts-ioc/core';
 import { toAbsolutePath } from '@ts-ioc/platform-server';
 import { existsSync, readdirSync, lstatSync } from 'fs';
-import { join, dirname, normalize } from 'path';
+import { join, dirname, normalize, relative } from 'path';
 import {
     mkdir, cp, rm
     /* ls, test, cd, ShellString, pwd, ShellArray, find, mv, TestOptions, cat, sed */
 } from 'shelljs';
 import * as globby from 'globby';
 import { CmdOptions, INodeActivityContext } from './INodeContext';
+import { ProcessRunRootToken } from '@ts-ioc/bootstrap';
 
 const minimist = require('minimist');
 const del = require('del');
@@ -208,6 +209,19 @@ export class NodeActivityContext<T> extends ActivityContext<T> implements INodeA
         return root ? toAbsolutePath(root, pathstr) : pathstr;
     }
 
+    /**
+     * convert path to relative root path.
+     *
+     * @param {string} pathstr
+     * @returns {string}
+     * @memberof NodeActivityContext
+     */
+    relativeRoot(pathstr: string): string {
+        let fullpath = this.toRootPath(pathstr);
+        let root = this.getContainer().get(ProcessRunRootToken) || process.cwd();
+        return relative(root, fullpath);
+    }
+
     toRootSrc(src: Src): Src {
         let root = this.getRootPath();
         if (root) {
@@ -237,7 +251,7 @@ export class NodeActivityContext<T> extends ActivityContext<T> implements INodeA
      * @memberof NodeContext
      */
     getPackage(): any {
-        let filename = this.toRootPath(this.packageFile);
+        let filename = this.relativeRoot(this.packageFile);
         if (!this._package) {
             this._package = require(filename);
         }

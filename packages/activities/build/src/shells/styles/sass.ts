@@ -24,7 +24,7 @@ export class SassBuilderActivity extends ShellActivity {
         let ctx = this.context;
         let dist = await this.resolveExpression(ctx.getDist());
         if (dist) {
-            dist = ctx.toRootPath(dist);
+            dist = ctx.relativeRoot(dist);
             if (fs.existsSync(dist)) {
                 mkdir('-p', dist);
             }

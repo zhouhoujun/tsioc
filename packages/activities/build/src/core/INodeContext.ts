@@ -121,7 +121,7 @@ export interface INodeActivityContext extends IActivityContext {
      * @returns {string}
      * @memberof INodeContext
      */
-    toRootPath(pathstr: string): string;
+    relativeRoot(pathstr: string): string;
 
     /**
      * get package.

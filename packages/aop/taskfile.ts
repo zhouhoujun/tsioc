@@ -38,7 +38,7 @@ const rename = require('gulp-rename');
                 'tslib': 'tslib',
                 '@ts-ioc/core': '@ts-ioc/core'
             },
-            input: ctx.toRootPath(ctx.config.data.input)
+            input: ctx.relativeRoot(ctx.config.data.input)
         }),
         (ctx) => rename(ctx.config.data.name)
     ]

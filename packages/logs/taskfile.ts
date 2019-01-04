@@ -41,7 +41,7 @@ const rename = require('gulp-rename');
                 '@ts-ioc/core': '@ts-ioc/core',
                 '@ts-ioc/aop': '@ts-ioc/aop'
             },
-            input: ctx.toRootPath(ctx.config.data.input)
+            input: ctx.relativeRoot(ctx.config.data.input)
         }),
         (ctx) => rename(ctx.config.data.name)
     ]

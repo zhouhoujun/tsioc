@@ -71,7 +71,7 @@ export class TsCompiler extends TransformActivity {
     private getTsCompilePipe(cfg: TsConfigure): ITransform {
         let tsconfig = this.context.to(cfg.tsconfig || './tsconfig.json');
         if (isString(tsconfig)) {
-            let tsProject = ts.createProject(this.context.toRootPath(tsconfig));
+            let tsProject = ts.createProject(this.context.relativeRoot(tsconfig));
             return tsProject();
         } else {
             return ts(tsconfig);

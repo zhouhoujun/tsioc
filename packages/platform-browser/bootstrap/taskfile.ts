@@ -47,7 +47,7 @@ const rename = require('gulp-rename');
                 '@ts-ioc/bootstrap': '@ts-ioc/bootstrap',
                 '@ts-ioc/platform-browser': '@ts-ioc/platform-browser'
             },
-            input: ctx.toRootPath(ctx.config.data.input)
+            input: ctx.relativeRoot(ctx.config.data.input)
         }),
         (act) => rename(act.config.data.name)
     ]
