@@ -151,7 +151,13 @@ export function isActivityType(target: any, check = true): target is ActivityTyp
  * @template T
  */
 export interface IActivityConfigure<T> extends ModuleConfig<T> {
-
+    /**
+     * task title.
+     *
+     * @type {string}
+     * @memberof IActivityConfigure
+     */
+    title?: string;
     /**
      * workflow uuid.
      *

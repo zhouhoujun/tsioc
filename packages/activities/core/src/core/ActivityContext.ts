@@ -129,7 +129,7 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
         let node: IActivityContext = this;
         while (!stop && node) {
             stop = !express(node);
-            node = node.parent;
+            node = node === node.parent ? null : node.parent;
         }
     }
 

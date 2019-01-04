@@ -10,11 +10,12 @@ import { PackConfigure } from './PackConfigure';
 import { lang, hasClassMetadata, isString, isArray } from '@ts-ioc/core';
 import {
     Src, SequenceActivity, ParallelActivity, SequenceConfigure,
-    SequenceActivityToken, ParallelConfigure, ParallelActivityToken, Task
+    SequenceActivityToken, ParallelConfigure, ParallelActivityToken
 } from '@taskfr/core';
+import { Pack } from '../decorators';
 
 
-@Task(PackToken)
+@Pack(PackToken)
 export class PackActivity extends BuildActivity implements IPackActivity {
     /**
      * clean activity.

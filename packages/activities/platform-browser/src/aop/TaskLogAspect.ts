@@ -25,14 +25,17 @@ export class TaskLogAspect extends LoggerAspect {
     @Around('execution(*.run)')
     logging(joinPoint: Joinpoint) {
         let logger = this.logger;
-
-        let name = joinPoint.target.name;
+        let target = joinPoint.target;
+        let name = target.name;
         if (!name) {
             name = joinPoint.targetType.classAnnations ? joinPoint.targetType.classAnnations.name : joinPoint.targetType.name;
         }
         let start: Date, end: Date;
         let taskname = '\'' + name + '\'';
         if (joinPoint.state === JoinpointState.Before) {
+            if (target.context && target.context.config && target.context.config.title) {
+                logger.log(target.context.config.title);
+            }
             start = new Date();
             this.startHrts[name] = start;
             logger.log('[' + start.toString() + ']', 'Starting', taskname, '...');
