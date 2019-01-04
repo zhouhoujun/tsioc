@@ -1,4 +1,4 @@
-import { IRunner, Runner, ModuleConfigure, RunnerToken } from '@ts-ioc/bootstrap';
+import { IRunner, Runner, ModuleConfigure, RunnerToken, InjectRunnableToken } from '@ts-ioc/bootstrap';
 import { Token, getMethodMetadata, isNumber, lang, ContainerToken, IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Defer, Injectable } from '@ts-ioc/core';
 import { Before, BeforeEach, Test, Suite } from '../core/decorators';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../core';
@@ -22,6 +22,7 @@ export interface ICaseDescribe {
 }
 
 declare let process: any;
+export const SuiteRunnerToken = new InjectRunnableToken('@Suite');
 
 /**
  * Suite runner.
@@ -30,7 +31,7 @@ declare let process: any;
  * @class SuiteRunner
  * @implements {IRunner<any>}
  */
-@Injectable(RunnerToken)
+@Injectable(SuiteRunnerToken)
 export class SuiteRunner extends Runner<any> implements IRunner<any> {
 
     @Inject(ContainerToken)
@@ -90,26 +91,28 @@ export class SuiteRunner extends Runner<any> implements IRunner<any> {
 
     async runBefore(describe: ISuiteDescribe) {
         let methodMaps = getMethodMetadata<BeforeTestMetadata>(Before, this.instance);
-        await PromiseUtil.step(lang.keys(methodMaps)
-            .map(key => {
-                let meta = methodMaps[key].find(m => isNumber(m.timeout));
-                return this.runTimeout(
-                    () => this.container.invoke(this.token, key, this.instance),
-                    'sutie before ' + key,
-                    meta ? meta.timeout : describe.timeout)
-            }));
+        await PromiseUtil.step(
+            lang.keys(methodMaps)
+                .map(key => {
+                    let meta = methodMaps[key].find(m => isNumber(m.timeout));
+                    return this.runTimeout(
+                        () => this.container.invoke(this.token, key, this.instance),
+                        'sutie before ' + key,
+                        meta ? meta.timeout : describe.timeout)
+                }));
     }
 
     async runBeforeEach() {
         let methodMaps = getMethodMetadata<BeforeEachTestMetadata>(BeforeEach, this.instance);
-        await PromiseUtil.step(lang.keys(methodMaps)
-            .map(key => {
-                let meta = methodMaps[key].find(m => isNumber(m.timeout));
-                return this.runTimeout(
-                    () => this.container.invoke(this.token, key, this.instance),
-                    'before each ' + key,
-                    meta ? meta.timeout : this.timeout);
-            }));
+        await PromiseUtil.step(
+            lang.keys(methodMaps)
+                .map(key => {
+                    let meta = methodMaps[key].find(m => isNumber(m.timeout));
+                    return this.runTimeout(
+                        () => this.container.invoke(this.token, key, this.instance),
+                        'before each ' + key,
+                        meta ? meta.timeout : this.timeout);
+                }));
     }
 
     async runTest() {

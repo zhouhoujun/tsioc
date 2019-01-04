@@ -1,4 +1,4 @@
-import { ClassMetadata } from '@ts-ioc/core';
+import { AnnotationConfigure } from '@ts-ioc/bootstrap';
 
 /**
  * Suite metadata.
@@ -7,7 +7,7 @@ import { ClassMetadata } from '@ts-ioc/core';
  * @interface SuiteMetadata
  * @extends {ClassMetadata}
  */
-export interface SuiteMetadata extends ClassMetadata {
+export interface SuiteMetadata extends AnnotationConfigure<any> {
     /**
      * test suite describe message.
      *

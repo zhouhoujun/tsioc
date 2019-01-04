@@ -3,6 +3,7 @@ import {
     isString, ITypeDecorator, isNumber
 } from '@ts-ioc/core';
 import { SuiteMetadata } from '../metadata';
+import { SuiteRunnerToken } from '../../runner';
 
 
 /**
@@ -53,8 +54,9 @@ export function createSuiteDecorator<T extends SuiteMetadata>(
                 metadata = metaExtends(metadata);
             }
             metadata.singleton = true;
+            metadata.defaultRunnable = SuiteRunnerToken;
             return metadata;
         }) as ISuiteDecorator<T>;
 }
 
-export const Suite: ISuiteDecorator<SuiteMetadata> = createSuiteDecorator<TypeMetadata>();
+export const Suite: ISuiteDecorator<SuiteMetadata> = createSuiteDecorator<SuiteMetadata>();

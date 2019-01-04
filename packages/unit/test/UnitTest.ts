@@ -39,6 +39,6 @@ export class UnitTest {
 }
 
 
-ApplicationBuilder.create('.')
+new ApplicationBuilder()
     .use(UnitModule, ServerBootstrapModule)
     .bootstrap(UnitTest);
