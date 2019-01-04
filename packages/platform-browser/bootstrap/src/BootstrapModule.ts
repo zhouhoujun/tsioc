@@ -1,8 +1,9 @@
-import { IApplicationBuilder, ApplicationBuilder, DIModule } from '@ts-ioc/bootstrap';
+import { IApplicationBuilder, ApplicationBuilder, DIModule, ProcessRunRootToken } from '@ts-ioc/bootstrap';
 import { BrowserModule } from '@ts-ioc/platform-browser';
+import { isUndefined } from '@ts-ioc/core';
+declare let System: any;
 
-
-
+let processRoot = !isUndefined(System) ? System.baseURL : '.';
 /**
  * browser app.
  *
@@ -18,6 +19,9 @@ export function browserApp<T>(baseURL?: string): IApplicationBuilder<T> {
 @DIModule({
     imports: [
         BrowserModule
+    ],
+    providers: [
+        { provide: ProcessRunRootToken, useValue: processRoot }
     ],
     exports: [
     ]

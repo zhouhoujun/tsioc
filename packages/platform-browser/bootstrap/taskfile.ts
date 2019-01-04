@@ -44,7 +44,8 @@ const rename = require('gulp-rename');
                 'core-js': 'core-js',
                 '@ts-ioc/core': '@ts-ioc/core',
                 '@ts-ioc/aop': '@ts-ioc/aop',
-                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap'
+                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap',
+                '@ts-ioc/platform-browser': '@ts-ioc/platform-browser'
             },
             input: ctx.toRootPath(ctx.config.data.input)
         }),
