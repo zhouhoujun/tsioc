@@ -54,8 +54,13 @@ const builtins = require('rollup-plugin-node-builtins');
             globals: {
                 'reflect-metadata': 'Reflect',
                 'log4js': 'log4js',
+                'tslib': 'tslib',
+                'path': 'path',
                 '@ts-ioc/core': '@ts-ioc/core',
-                '@ts-ioc/aop': '@ts-ioc/aop'
+                '@ts-ioc/aop': '@ts-ioc/aop',
+                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap',
+                '@taskfr/core': '@taskfr/core',
+                '@taskfr/build': '@taskfr/build'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),

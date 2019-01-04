@@ -41,7 +41,14 @@ const commonjs = require('rollup-plugin-commonjs');
                 'rxjs/operators'
             ],
             globals: {
-                'reflect-metadata': 'Reflect'
+                'reflect-metadata': 'Reflect',
+                'tslib': 'tslib',
+                'rxjs': 'rxjs',
+                'rxjs/operators': 'rxjs/operators',
+                '@ts-ioc/core': '@ts-ioc/core',
+                '@ts-ioc/aop': '@ts-ioc/aop',
+                '@ts-ioc/logs': '@ts-ioc/logs',
+                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),

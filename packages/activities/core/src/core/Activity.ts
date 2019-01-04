@@ -1,7 +1,7 @@
 import {
     Inject, Express, ContainerToken, IContainer, Token, ProviderType, lang,
     Providers, MetaAccessorToken, isFunction, isToken, isBaseObject, isClass,
-    Type, hasClassMetadata, getOwnTypeMetadata
+    Type, hasClassMetadata, getOwnTypeMetadata, isBoolean
 } from '@ts-ioc/core';
 import { Task } from '../decorators';
 import { OnActivityInit } from './OnActivityInit';
@@ -10,7 +10,6 @@ import { IActivity, ActivityToken, WorkflowId } from './IActivity';
 import { ActivityConfigure, ExpressionType, Expression, ActivityType, Active, ExpressionToken } from './ActivityConfigure';
 import { IActivityContext, InputDataToken, InjectActivityContextToken, ActivityContextToken } from './IActivityContext';
 import { IActivityMetadata } from '../metadatas';
-import { isBoolean } from 'util';
 
 
 /**

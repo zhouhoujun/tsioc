@@ -33,10 +33,24 @@ const builtins = require('rollup-plugin-node-builtins');
                 '@ts-ioc/core',
                 '@ts-ioc/aop',
                 '@ts-ioc/logs',
-                '@taskfr/core'
+                '@ts-ioc/bootstrap',
+                '@ts-ioc/platform-browser',
+                '@ts-ioc/platform-browser/bootstrap',
+                '@taskfr/core',
+                '@taskfr/platform-browser'
             ],
             globals: {
-                'reflect-metadata': 'Reflect'
+                'reflect-metadata': 'Reflect',
+                'tslib': 'tslib',
+                '@ts-ioc/core': '@ts-ioc/core',
+                '@ts-ioc/aop': '@ts-ioc/aop',
+                '@ts-ioc/logs': '@ts-ioc/logs',
+                '@ts-ioc/annotations': '@ts-ioc/annotations',
+                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap',
+                '@ts-ioc/platform-browser': '@ts-ioc/platform-browser',
+                '@ts-ioc/platform-browser/bootstrap': '@ts-ioc/platform-browser/bootstrap',
+                '@taskfr/core': '@taskfr/core',
+                '@taskfr/platform-browser': '@taskfr/platform-browser'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),

@@ -166,17 +166,35 @@ let actVersionSetting = (ctx: INodeActivityContext) => {
             activity: IfActivityToken
         },
         {
-            shell: (ctx: INodeActivityContext) => {
+            execute: (ctx: INodeActivityContext) => {
                 let envArgs = ctx.getEnvArgs();
                 let packages = ctx.getFolders('packages/activities');
-                let cmd = envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
-                let cmds = packages.map(fd => {
-                    return `cd ${fd} && ${cmd}`;
+
+                let activities = [];
+                packages.forEach(fd => {
+                    let objs = require(path.join(fd, 'taskfile.ts'));
+                    let builder = Object.values(objs).find(v => isPackClass(v));
+                    activities.push(builder);
                 });
-                console.log(cmds);
-                return cmds;
+                if (envArgs.deploy) {
+                    let cmd = 'npm publish --access=public';
+                    let cmds = packages.map(fd => {
+                        return `cd ${fd} && ${cmd}`;
+                    });
+                    console.log(cmds);
+                    activities.push({
+                        shells: cmds,
+                        activity: 'shell'
+                    });
+                }
+                return {
+                    contextType: NodeActivityContext,
+                    sequence: activities,
+                    activity: SequenceActivityToken
+                }
             },
-            activity: 'shell'
+            contextType: NodeActivityContext,
+            activity: ExecuteToken
         }
     ]
 })
