@@ -1,7 +1,7 @@
 {
   "name": "@ts-ioc/unit/console",
   "version": "4.0.0-beta1",
-  "description": "tsioc is AOP, Ioc container, via typescript decorator",
+  "description": "unit testing console reporter",
   "esnext": "../es2017/platform-server-bootstrap.js",
   "es2015": "../es2015/platform-server-bootstrap.js",
   "module": "./lib/index.js",
@@ -46,7 +46,7 @@
     "@ts-ioc/core": "^4.0.0-beta1",
     "@ts-ioc/bootstrap": "^4.0.0-beta1",
     "@ts-ioc/platform-server": "^4.0.0-beta1",
-    "@ts-ioc/unit": "^4.0.0-beta1",
+    "@ts-ioc/unit": "^4.0.0-beta1"
   },
   "directories": {
     "lib": "lib",

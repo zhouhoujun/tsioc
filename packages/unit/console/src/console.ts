@@ -46,5 +46,8 @@ export class ConsoleReporter extends Reporter {
             })
         }
         console.log(reportStr);
+        if (fails.length) {
+            process.exit(1);
+        }
     }
 }

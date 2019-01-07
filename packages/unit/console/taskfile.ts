@@ -59,7 +59,7 @@ const builtins = require('rollup-plugin-node-builtins');
         (ctx) => rename(ctx.config.data.name)
     ]
 })
-export class BootRollup extends AssetActivity {
+export class ConsoleRollup extends AssetActivity {
 }
 
 @Pack({
@@ -72,24 +72,24 @@ export class BootRollup extends AssetActivity {
         ts2015: {
             sequence: [
                 { src: 'src/**/*.ts', dest: 'esnext', annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
-                BootRollup
+                ConsoleRollup
             ]
         },
         es2017: {
             sequence: [
                 { clean: 'esnext', activity: CleanToken },
                 { src: 'src/**/*.ts', dest: 'esnext', annotation: true, uglify: false, tsconfig: './tsconfig.es2017.json', activity: TsCompile },
-                { src: 'esnext/**/*.js', dest: '../es2017', activity: BootRollup },
+                { src: 'esnext/**/*.js', dest: '../es2017', activity: ConsoleRollup },
                 { clean: 'esnext', activity: CleanToken }
             ]
         }
     }
 })
-export class PfServerBootBuilder {
+export class ConsoleReporterBuilder {
 }
 
 if (process.cwd() === __dirname) {
     Workflow.create()
         .use(PackModule)
-        .bootstrap(PfServerBootBuilder);
+        .bootstrap(ConsoleReporterBuilder);
 }

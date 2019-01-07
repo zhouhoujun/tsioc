@@ -26,89 +26,52 @@ npm install @ts-ioc/platform-server
 
 ```ts
 
-import { DIModule, Bootstrap } from '@ts-ioc/unit';
-// in server
-import { ApplicationBuilder } from '@ts-ioc/platform-server/unit'
-// in browser
-import { ApplicationBuilder } from '@ts-ioc/platform-browser/unit'
+import { Suite, BeforeEach, UnitTest, Test } from '@ts-ioc/unit';
+import { ConsoleReporter } from '@ts-ioc/unit/console';
+import { ServerBootstrapModule } from '@ts-ioc/platform-server/bootstrap';
+import { Defer } from '@ts-ioc/core';
 
 
-export class TestService {
-    testFiled = 'test';
-    test() {
-        console.log('test');
+@Suite('Unit Test')
+export class SuiteTest {
+
+    // testContainer: AnyApplicationBuilder;
+
+    @BeforeEach()
+    async initTest() {
+        console.log('---------beofre test-----------');
     }
-}
 
-@DIModule({
-    providers: [
-        { provide: 'mark', useFactory: () => 'marked' },
-        TestService
-    ],
-    exports: [
-
-    ]
-})
-export class ModuleA {
-
-}
-
-@Injectable
-export class ClassSevice {
-    @Inject('mark')
-    mark: string;
-    state: string;
-    start() {
-        console.log(this.mark);
+    @Test('assert test timeout', 200)
+    testTimeout() {
+        console.log('--------assert test timeout------');
+        let def = new Defer();
+        setTimeout(() => {
+            def.resolve('out time do...')
+        }, 300)
+        return def.promise;
     }
-}
 
-@Aspect
-export class Logger {
+    @Test('assert test in time', 200)
+    testInTime() {
+        console.log('--------assert test in time------');
+        let def = new Defer();
+        setTimeout(() => {
+            def.resolve('in time do...')
+        }, 100)
+        return def.promise;
+    }
 
-    @Around('execution(*.start)')
-    log() {
-        console.log('start........');
+    testEqural() {
     }
 }
 
 
-@DIModule({
-    imports: [
-        AopModule,
-        Logger,
-        ModuleA
-    ],
-    exports: [
-        ClassSevice
-    ],
-    unit: ClassSevice
-})
-export class ModuleB implements OnModuleStart<ClassSevice> {
-    constructor(test: TestService, @Inject(ContainerToken) private container: IContainer) {
-        console.log(test);
-        test.test();
-        // console.log(container);
-        // console.log('container pools..................\n');
-        let pools = container.get(ContainerPoolToken);
-        // console.log(pools);
-        console.log('container pools defaults..................\n');
-        console.log(pools.defaults);
-    }
-    mdOnStart(instance: ClassSevice): void | Promise<any> {
-        console.log('mdOnStart...');
-        console.log(this.container);
-        instance.start();
-        instance.state = 'started';
-    }
-}
+new UnitTest()
+    .use(ServerBootstrapModule)
+    .useReporter(ConsoleReporter)
+    .test(SuiteTest);
 
-
-ApplicationBuilder.create(__dirname)
-    .unit(Application)
-
-ApplicationBuilder.create(baseURL)
-    .unit(Application)
 
 ```
 
