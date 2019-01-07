@@ -25,7 +25,9 @@ const builtins = require('rollup-plugin-node-builtins');
             sourceMap: true,
             plugins: [
                 resolve(),
-                commonjs(),
+                commonjs({
+                    exclude: ['node_modules/**', '../../node_modules/**']
+                }),
                 // builtins(),
                 rollupSourcemaps()
             ],
@@ -36,6 +38,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 'globby',
                 'path',
                 'fs',
+                'process',
                 '@ts-ioc/core',
                 '@ts-ioc/aop',
                 '@ts-ioc/bootstrap',
@@ -48,6 +51,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 'tslib': 'tslib',
                 'path': 'path',
                 'globby': 'globby',
+                'process': 'process',
                 '@ts-ioc/core': '@ts-ioc/core',
                 '@ts-ioc/aop': '@ts-ioc/aop',
                 '@ts-ioc/bootstrap': '@ts-ioc/bootstrap',
