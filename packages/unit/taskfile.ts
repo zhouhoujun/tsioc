@@ -31,13 +31,14 @@ const rename = require('gulp-rename');
                 'reflect-metadata',
                 'events',
                 'tslib',
-                'globby', 'path', 'fs',
+                'globby', 'path',
                 'process',
                 'log4js',
                 '@ts-ioc/core',
                 '@ts-ioc/aop',
                 '@ts-ioc/logs',
-                '@ts-ioc/bootstrap'
+                '@ts-ioc/bootstrap',
+                '@ts-ioc/platform-server'
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
@@ -48,7 +49,8 @@ const rename = require('gulp-rename');
                 '@ts-ioc/core': '@ts-ioc/core',
                 '@ts-ioc/aop': '@ts-ioc/aop',
                 '@ts-ioc/logs': '@ts-ioc/logs',
-                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap'
+                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap',
+                '@ts-ioc/platform-server': '@ts-ioc/platform-server'
 
             },
             input: ctx.relativeRoot(ctx.config.data.input)

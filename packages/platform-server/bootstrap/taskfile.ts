@@ -49,7 +49,8 @@ const builtins = require('rollup-plugin-node-builtins');
                 'globby': 'globby',
                 '@ts-ioc/core': '@ts-ioc/core',
                 '@ts-ioc/aop': '@ts-ioc/aop',
-                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap'
+                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap',
+                '@ts-ioc/platform-server': '@ts-ioc/platform-server'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),
