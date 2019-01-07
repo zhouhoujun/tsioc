@@ -53,7 +53,7 @@ export abstract class NodeActivity extends ContextActivity {
     protected abstract async execute(): Promise<void>;
 
     protected vaildExecAcitve(config: ActivityConfigure) {
-        config.defaultContextType = NodeActivityContext;
+        config.baseContextType = NodeActivityContext;
     }
 }
 

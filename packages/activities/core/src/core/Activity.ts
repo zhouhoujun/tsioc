@@ -96,11 +96,16 @@ export abstract class Activity implements IActivity, OnActivityInit {
         if (this._config && this._config.contextType) {
             return this.container.resolve(this._config.contextType, provider);
         }
-        let cfgdefCtx = this._config ? this._config.defaultContextType : null;
+        let cfgdefCtx = this._config ? this._config.baseContextType : null;
         let ctx = this.container.getService<IActivityContext>(ActivityContextToken, type,
             tk => new InjectActivityContextToken(tk),
             (defCtx || cfgdefCtx || ActivityContextToken), provider);
-
+        if (cfgdefCtx) {
+            let defType = this.container.getTokenImpl(cfgdefCtx);
+            if (!(ctx instanceof defType)) {
+                ctx = this.container.resolve(cfgdefCtx, provider);
+            }
+        }
         this.initContext(ctx);
         if (subctx === true) {
             ctx.parent = this.context;

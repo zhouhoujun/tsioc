@@ -5,6 +5,7 @@ import { TransformType, TransformExpress, TransformConfig } from './transformTyp
 import { ITransformConfigure } from './ITransformConfigure';
 import { Task, isWorkflowInstance, isActivityType } from '@taskfr/core';
 import { StreamActivity, TransformContextToken } from './StreamActivity';
+import { NodeActivityContextToken } from '../../core';
 
 
 /**
@@ -128,7 +129,7 @@ export class TransformActivity extends StreamActivity implements ITransformActiv
             return cfg;
         } else if (isActivityType(cfg)) {
             if (!isToken(cfg)) {
-                cfg.contextType = TransformContextToken;
+                cfg.baseContextType = NodeActivityContextToken;
             }
             let inst = await this.buildActivity(cfg);
             return inst;

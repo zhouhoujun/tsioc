@@ -80,7 +80,7 @@ export abstract class StreamActivity extends CompilerActivity {
     }
 
     protected vaildExecAcitve(config: ActivityConfigure) {
-        config.defaultContextType = TransformContextToken;
+        config.baseContextType = TransformContextToken;
     }
 }
 

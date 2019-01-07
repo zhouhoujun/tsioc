@@ -215,12 +215,12 @@ export interface IActivityConfigure<T> extends ModuleConfig<T> {
     contextType?: Token<IActivityContext>;
 
     /**
-     * default context type.
+     * the context type must extends of the type.
      *
      * @type {Token<IActivityContext>}
      * @memberof IActivityConfigure
      */
-    defaultContextType?: Token<IActivityContext>;
+    baseContextType?: Token<IActivityContext>;
 
 }
 
