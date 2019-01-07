@@ -2,7 +2,7 @@
 `@taskfr` type task framework, base on AOP, Ioc container, via @ts-ioc. file stream pipes activities.
 
 This repo is for distribution on `npm`. The source for this module is in the
-[main repo](https://github.com/zhouhoujun/type-task).
+[main repo](https://github.com/zhouhoujun/tsioc).
 Please file issues and pull requests against that repo.
 
 `@taskfr/pack` file stream pipes activities.

@@ -1,10 +1,11 @@
-import { isPromise, isMetadataObject, assertExp, isFunction } from '@ts-ioc/core';
+import { isPromise, isToken, isMetadataObject, assertExp, isFunction } from '@ts-ioc/core';
 import { ITransformActivity, TransformActivityToken } from './ITransformActivity';
 import { ITransform } from './ITransform';
 import { TransformType, TransformExpress, TransformConfig } from './transformTypes';
 import { ITransformConfigure } from './ITransformConfigure';
 import { Task, isWorkflowInstance, isActivityType } from '@taskfr/core';
-import { StreamActivity } from './StreamActivity';
+import { StreamActivity, TransformContextToken } from './StreamActivity';
+
 
 /**
  * Transform activity.
@@ -126,6 +127,9 @@ export class TransformActivity extends StreamActivity implements ITransformActiv
         if (isWorkflowInstance(cfg)) {
             return cfg;
         } else if (isActivityType(cfg)) {
+            if (!isToken(cfg)) {
+                cfg.contextType = TransformContextToken;
+            }
             let inst = await this.buildActivity(cfg);
             return inst;
         } else if (isFunction(cfg)) {

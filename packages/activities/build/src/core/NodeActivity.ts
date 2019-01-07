@@ -1,4 +1,4 @@
-import { Src, ContextActivity, Task, ActivityContext, InputDataToken, InjectActivityContextToken, ActivityMetaAccessorToken } from '@taskfr/core';
+import { Src, ContextActivity, Task, ActivityContext, InputDataToken, InjectActivityContextToken, ActivityMetaAccessorToken, ActivityConfigure } from '@taskfr/core';
 import { Inject, Injectable, ObjectMap, Express2, isArray, isString, assertExp, Providers, MetaAccessorToken } from '@ts-ioc/core';
 import { toAbsolutePath } from '@ts-ioc/platform-server';
 import { existsSync, readdirSync, lstatSync } from 'fs';
@@ -51,6 +51,10 @@ export abstract class NodeActivity extends ContextActivity {
      * @memberof NodeActivity
      */
     protected abstract async execute(): Promise<void>;
+
+    protected vaildExecAcitve(config: ActivityConfigure) {
+        config.defaultContextType = NodeActivityContext;
+    }
 }
 
 
@@ -220,6 +224,14 @@ export class NodeActivityContext<T> extends ActivityContext<T> implements INodeA
         let fullpath = this.toRootPath(pathstr);
         let root = this.getContainer().get(ProcessRunRootToken) || process.cwd();
         return relative(root, fullpath);
+    }
+
+    getRootPath(): string {
+        let ctx = this.find(c => c.config && c.config.baseURL);
+        if (ctx) {
+            return ctx.config.baseURL;
+        }
+        return this.getContainer().get(ProcessRunRootToken) || process.cwd();
     }
 
     toRootSrc(src: Src): Src {

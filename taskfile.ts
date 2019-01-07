@@ -98,7 +98,6 @@ let versionSetting = (ctx: INodeActivityContext) => {
                     activity: SequenceActivityToken
                 }
             },
-            contextType: NodeActivityContext,
             activity: ExecuteToken
         }
     ]
@@ -172,6 +171,7 @@ let actVersionSetting = (ctx: INodeActivityContext) => {
 
                 let activities = [];
                 packages.forEach(fd => {
+                    // console.log(path.join(fd, 'taskfile.ts'));
                     let objs = require(path.join(fd, 'taskfile.ts'));
                     let builder = Object.values(objs).find(v => isPackClass(v));
                     activities.push(builder);
@@ -188,12 +188,10 @@ let actVersionSetting = (ctx: INodeActivityContext) => {
                     });
                 }
                 return {
-                    contextType: NodeActivityContext,
                     sequence: activities,
                     activity: SequenceActivityToken
                 }
             },
-            contextType: NodeActivityContext,
             activity: ExecuteToken
         }
     ]

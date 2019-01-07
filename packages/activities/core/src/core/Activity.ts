@@ -1,7 +1,7 @@
 import {
     Inject, Express, ContainerToken, IContainer, Token, ProviderType, lang,
     Providers, MetaAccessorToken, isFunction, isToken, isBaseObject, isClass,
-    Type, hasClassMetadata, getOwnTypeMetadata, isBoolean
+    Type, hasClassMetadata, getOwnTypeMetadata, isBoolean, isNullOrUndefined
 } from '@ts-ioc/core';
 import { Task } from '../decorators';
 import { OnActivityInit } from './OnActivityInit';
@@ -96,9 +96,10 @@ export abstract class Activity implements IActivity, OnActivityInit {
         if (this._config && this._config.contextType) {
             return this.container.resolve(this._config.contextType, provider);
         }
+        let cfgdefCtx = this._config ? this._config.defaultContextType : null;
         let ctx = this.container.getService<IActivityContext>(ActivityContextToken, type,
             tk => new InjectActivityContextToken(tk),
-            (defCtx || ActivityContextToken), provider);
+            (defCtx || cfgdefCtx || ActivityContextToken), provider);
 
         this.initContext(ctx);
         if (subctx === true) {
@@ -199,30 +200,48 @@ export abstract class Activity implements IActivity, OnActivityInit {
     *
     * @param {IActivity} activity
     * @param {IActivityContext} ctx
+    * @param {any} [data]
     * @returns
     * @memberof Activity
     */
-    protected async execActivity(activity: Activity | Active | ExpressionToken<any>, ctx: IActivityContext | (() => IActivityContext)): Promise<IActivityContext> {
+    protected async execActivity(activity: Activity | Active | ExpressionToken<any>, ctx: IActivityContext | (() => IActivityContext), data?: any): Promise<IActivityContext> {
         if (!activity) {
             return null;
         }
         let rctx = isFunction(ctx) ? ctx() : ctx;
         if (activity instanceof Activity) {
-            return await activity.run(rctx);
+            return await this.runActivity(activity, rctx, data);
         } else {
             let act = activity;
             if (!isToken(activity) && isFunction(activity)) {
                 act = await activity(rctx);
             }
-            if (isToken(act) || isBaseObject(act)) {
-                let at = await this.buildActivity(act);
-                if (at && at instanceof Activity) {
-                    return at.run(rctx);
-                }
+            let at;
+            if (isToken(act)) {
+                at = await this.buildActivity(act);
+            } else if (isBaseObject(act)) {
+                this.vaildExecAcitve(act);
+                at = await this.buildActivity(act);
             }
+
+            if (at && at instanceof Activity) {
+                return await this.runActivity(at, rctx, data);
+            }
+
         }
         console.error('execute activity is not vaild activity:', activity);
         throw new Error('execActivity activity param is not vaild.');
+    }
+
+    protected runActivity(activity: Activity, ctx: IActivityContext, data?: any) {
+        if (!isNullOrUndefined(data)) {
+            ctx.setAsResult(data);
+        }
+        return activity.run(ctx);
+    }
+
+    protected vaildExecAcitve(config: ActivityConfigure) {
+
     }
 
 

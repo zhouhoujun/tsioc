@@ -5,7 +5,7 @@ import {
 } from '../core';
 import { HandleActivity } from './HandleActivity';
 import { ControlActivity } from './ControlActivity';
-import { lang, isFunction, isToken, isBaseObject } from '@ts-ioc/core';
+import { lang, isFunction, isToken, isBaseObject, isNullOrUndefined } from '@ts-ioc/core';
 
 
 /**
@@ -47,27 +47,18 @@ export class ChainActivity extends ControlActivity implements IChainActivity {
      * @memberof Activity
      */
     protected async execActivity(activity: Activity | Active, ctx: IActivityContext | (() => IActivityContext), next?: () => Promise<void>): Promise<IActivityContext> {
-        if (!activity) {
-            return null;
-        }
-        let rctx = isFunction(ctx) ? ctx() : ctx;
-        if (activity instanceof HandleActivity) {
-            return await activity.run(rctx, next);
-        } if (activity instanceof Activity) {
-            return await activity.run(rctx);
-        } else if (isToken(activity) || isBaseObject(activity)) {
-            let act = await this.buildActivity(activity);
-            if (act && act instanceof Activity) {
-                if (activity instanceof HandleActivity) {
-                    return await activity.run(rctx, next);
-                } else {
-                    return await act.run(rctx);
-                }
-            } else {
-                console.log(act)
+        return super.execActivity(activity, ctx, next);
+    }
+
+    protected runActivity(activity: Activity, ctx: IActivityContext, data?: any) {
+        if (isFunction(data) && activity instanceof HandleActivity) {
+            return activity.run(ctx, data)
+        } else {
+            if (!isNullOrUndefined(data)) {
+                ctx.setAsResult(data);
             }
+            return activity.run(ctx);
         }
-        return null;
     }
 
     /**

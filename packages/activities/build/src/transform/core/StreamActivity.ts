@@ -1,4 +1,4 @@
-import { Task } from '@taskfr/core';
+import { Task, ActivityConfigure } from '@taskfr/core';
 import { ITransform } from './ITransform';
 import { isUndefined } from '@ts-ioc/core';
 import { TransformType, isTransform } from './transformTypes';
@@ -77,6 +77,10 @@ export abstract class StreamActivity extends CompilerActivity {
             }
         }
         return next;
+    }
+
+    protected vaildExecAcitve(config: ActivityConfigure) {
+        config.defaultContextType = TransformContextToken;
     }
 }
 
