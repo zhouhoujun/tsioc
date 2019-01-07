@@ -1,5 +1,5 @@
 import {
-    TypeMetadata, MetadataAdapter, MetadataExtends, createClassDecorator,
+    MetadataAdapter, MetadataExtends, createClassDecorator,
     isString, ITypeDecorator, isNumber
 } from '@ts-ioc/core';
 import { SuiteMetadata } from '../metadata';
@@ -14,7 +14,16 @@ import { SuiteRunnerToken } from '../../runner';
  * @template T
  */
 export interface ISuiteDecorator<T extends SuiteMetadata> extends ITypeDecorator<T> {
+    /**
+     * suite decorator.
+     * @param {string} suite describe.
+     */
     (describe: string): ClassDecorator;
+    /**
+     * suite decorator.
+     * @param {string} suite describe.
+     * @param {number} timeout suite timeout.
+     */
     (describe: string, timeout: number): ClassDecorator;
 }
 

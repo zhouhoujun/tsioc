@@ -1,4 +1,4 @@
-import { Token, isFunction } from '@ts-ioc/core';
+import { Token, isFunction, lang } from '@ts-ioc/core';
 import { ModuleConfigure } from '../modules';
 
 /**
@@ -16,6 +16,14 @@ export interface IRunner<T> {
      * @memberof IRunner
      */
     getTarget?(): T;
+
+    /**
+     * get target token.
+     *
+     * @returns {Token<T>}
+     * @memberof IRunner
+     */
+    getTargetToken?(): Token<T>;
 
     /**
      * run application via boot instance.
@@ -45,6 +53,10 @@ export abstract class Runner<T> implements IRunner<T> {
 
     getTarget?(): T {
         return this.instance;
+    }
+
+    getTargetToken?(): Token<T> {
+        return this.token || lang.getClass(this.instance);
     }
 
     /**

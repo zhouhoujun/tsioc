@@ -1,4 +1,4 @@
-import { Token, isFunction } from '@ts-ioc/core';
+import { Token, isFunction, lang } from '@ts-ioc/core';
 import { ModuleConfigure } from '../modules';
 
 /**
@@ -15,6 +15,13 @@ export interface IService<T> {
      * @memberof IRunner
      */
     getTarget?(): T;
+    /**
+     * get target token.
+     *
+     * @returns {Token<T>}
+     * @memberof IService
+     */
+    getTargetToken?(): Token<T>;
     /**
      * start application service.
      *
@@ -55,6 +62,11 @@ export abstract class Service<T> implements IService<T> {
     getTarget(): T {
         return this.instance;
     }
+
+    getTargetToken?(): Token<T> {
+        return this.token || lang.getClass(this.instance);
+    }
+
     /**
      * start service.
      *

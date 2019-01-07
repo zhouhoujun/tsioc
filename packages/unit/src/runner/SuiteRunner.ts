@@ -1,25 +1,12 @@
-import { IRunner, Runner, ModuleConfigure, RunnerToken, InjectRunnableToken } from '@ts-ioc/bootstrap';
-import { Token, getMethodMetadata, isNumber, lang, ContainerToken, IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Defer, Injectable } from '@ts-ioc/core';
+import { IRunner, Runner, ModuleConfigure, InjectRunnableToken } from '@ts-ioc/bootstrap';
+import {
+    Token, getMethodMetadata, isNumber, lang, ContainerToken,
+    IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Defer, Injectable
+} from '@ts-ioc/core';
 import { Before, BeforeEach, Test, Suite } from '../core/decorators';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../core';
+import { ISuiteDescribe, ICaseDescribe, TestReport } from '../reports';
 
-export interface ISuiteDescribe {
-    describe: string;
-    timeout?: number;
-}
-
-/**
- * test case decribe.
- *
- * @export
- * @interface ICaseDescribe
- */
-export interface ICaseDescribe {
-    key: string;
-    order: number;
-    timeout: number;
-    title: string;
-}
 
 declare let process: any;
 export const SuiteRunnerToken = new InjectRunnableToken('@Suite');
@@ -58,17 +45,23 @@ export class SuiteRunner extends Runner<any> implements IRunner<any> {
         this.describe = metas.map(m => m.describe).filter(d => d).join('; ') || lang.getClassName(type);
         return {
             timeout: this.timeout,
-            describe: this.describe
+            describe: this.describe,
+            cases: []
         }
     }
 
     async run(data?: any): Promise<any> {
         try {
-            await this.runBefore(this.getSuiteDescribe());
-            return await this.runTest();
+            let desc = this.getSuiteDescribe();
+            await this.runSuite(desc);
         } catch (err) {
-            console.error(err);
+            // console.error(err);
         }
+    }
+
+    async runSuite(desc: ISuiteDescribe): Promise<void> {
+        await this.runBefore(desc);
+        await this.runTest(desc);
     }
 
     runTimeout(action: () => Promise<any>, describe: string, timeout: number): Promise<any> {
@@ -115,22 +108,21 @@ export class SuiteRunner extends Runner<any> implements IRunner<any> {
                 }));
     }
 
-    async runTest() {
+    async runTest(desc: ISuiteDescribe) {
         let methodMaps = getMethodMetadata<TestCaseMetadata>(Test, this.instance);
         let keys = lang.keys(methodMaps);
-        await PromiseUtil.step(
-            keys
-                .map(key => {
-                    let meta = methodMaps[key].find(m => isNumber(m.setp));
-                    let timeoutMeta = methodMaps[key].find(m => isNumber(m.timeout));
-                    let title = methodMaps[key].map(m => m.title).filter(t => t).join('; ');
-                    return {
-                        key: key,
-                        order: meta ? meta.setp : keys.length,
-                        timeout: timeoutMeta ? timeoutMeta.timeout : this.timeout,
-                        title: title
-                    } as ICaseDescribe;
-                })
+        await Promise.all(
+            keys.map(key => {
+                let meta = methodMaps[key].find(m => isNumber(m.setp));
+                let timeoutMeta = methodMaps[key].find(m => isNumber(m.timeout));
+                let title = methodMaps[key].map(m => m.title).filter(t => t).join('; ');
+                return {
+                    key: key,
+                    order: meta ? meta.setp : keys.length,
+                    timeout: timeoutMeta ? timeoutMeta.timeout : this.timeout,
+                    title: title
+                } as ICaseDescribe;
+            })
                 .sort((a, b) => {
                     return b.order - a.order;
                 })
@@ -139,13 +131,18 @@ export class SuiteRunner extends Runner<any> implements IRunner<any> {
                 }));
     }
 
-    async runCase(caseDesc: ICaseDescribe): Promise<any> {
-        await this.runBeforeEach();
-        return await this.runTimeout(
-            () => this.container.invoke(this.token, caseDesc.key, this.instance),
-            caseDesc.title,
-            caseDesc.timeout);
+    async runCase(caseDesc: ICaseDescribe): Promise<ICaseDescribe> {
+        try {
+            await this.runBeforeEach();
+            await this.runTimeout(
+                () => this.container.invoke(this.instance || this.token, caseDesc.key, this.instance),
+                caseDesc.title,
+                caseDesc.timeout);
 
+        } catch (err) {
+            caseDesc.error = err;
+        }
+        return caseDesc;
     }
 
 }

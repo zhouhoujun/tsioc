@@ -4,6 +4,7 @@ import { LogModule } from '@ts-ioc/logs';
 import { UnitSetup } from './UnitSetup';
 import * as aops from './aop';
 import * as runners from './runner';
+import * as reports from './reports';
 
 @DIModule({
     imports: [
@@ -11,10 +12,12 @@ import * as runners from './runner';
         LogModule,
         aops,
         UnitSetup,
-        runners
+        runners,
+        reports
     ],
     exports: [
-        runners
+        runners,
+        reports
     ]
 })
 export class UnitModule {

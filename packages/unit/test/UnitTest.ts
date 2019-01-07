@@ -1,11 +1,11 @@
-import { Suite, BeforeEach, UnitModule, Test } from '../src';
-import { ApplicationBuilder } from '@ts-ioc/bootstrap';
+import { Suite, BeforeEach, UnitTest, Test } from '../src';
 import { ServerBootstrapModule } from '@ts-ioc/platform-server/bootstrap';
 import { Defer } from '@ts-ioc/core';
+import { ConsoleReporter } from '@ts-ioc/unit/console';
 
 
 @Suite('Unit Test')
-export class UnitTest {
+export class SuiteTest {
 
     // testContainer: AnyApplicationBuilder;
 
@@ -39,6 +39,7 @@ export class UnitTest {
 }
 
 
-new ApplicationBuilder()
-    .use(UnitModule, ServerBootstrapModule)
-    .bootstrap(UnitTest);
+new UnitTest()
+    .use(ServerBootstrapModule)
+    .useReporter(ConsoleReporter)
+    .test(SuiteTest);

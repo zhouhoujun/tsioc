@@ -1,7 +1,7 @@
 import {
     IContainer, LoadType, Factory, Token,
     ContainerBuilder, IContainerBuilder, isClass,
-    isToken, PromiseUtil, Injectable, lang
+    isToken, PromiseUtil, Injectable, lang, isFunction
 } from '@ts-ioc/core';
 import { IRunnableBuilder, CustomRegister, RunnableBuilderToken, ProcessRunRootToken } from './IRunnableBuilder';
 import {
@@ -126,17 +126,25 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
      * @template T
      * @param {Token<T>} provide
      * @param {Token<T> | Factory<T>} provider
-     * @param {boolean} [beforRootInit]
+     * @param {boolean} [beforeInit]
      * @returns {this}
      * @memberof RunnableBuilder
      */
-    provider(provide: Token<any>, provider: Token<any> | Factory<any>, beforRootInit?: boolean): this {
-        if (beforRootInit) {
+    provider(provide: Token<any>, provider: Token<any> | Factory<any>, beforeInit?: boolean): this {
+        if (beforeInit) {
             this.beforeInitPds.set(provide, provider);
         } else {
             this.afterInitPds.set(provide, provider);
         }
         return this;
+    }
+
+    getProvider(provide: Token<any>, beforeInit?: boolean): Token<any> | Factory<any> {
+        if (beforeInit) {
+            return this.beforeInitPds.has(provide) ? this.beforeInitPds.get(provide) : null;
+        } else {
+            return this.afterInitPds.has(provide) ? this.afterInitPds.get(provide) : null;
+        }
     }
 
     async load(token: Token<T> | ModuleConfigure, config?: ModuleConfig<T> | BootOptions<T>, options?: BootOptions<T>): Promise<InjectedModule<T>> {
@@ -258,9 +266,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
      * @memberof RunnableBuilder
      */
     protected async registerByConfigure(container: IContainer, config: ModuleConfig<T>): Promise<void> {
-
         config.baseURL = this.getRunRoot(container);
-
         await PromiseUtil.step(this.customRegs.map(async cs => {
             let tokens = await cs(container, config, this);
             return tokens;

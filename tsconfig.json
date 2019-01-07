@@ -33,6 +33,9 @@
       "@ts-ioc/unit": [
         "packages/unit/src"
       ],
+      "@ts-ioc/unit/console": [
+        "packages/unit/console/src"
+      ],
       "@taskfr/core": [
         "packages/activities/core/src"
       ],

@@ -40,6 +40,16 @@ export interface IRunnableExtends {
      * @memberof IRunnableExtends
      */
     provider(provide: Token<any>, provider: Token<any> | Factory<any>, beforRootInit?: boolean): this;
+
+    /**
+     * get provider.
+     *
+     * @param {Token<any>} provide
+     * @param {boolean} [beforeInit]
+     * @returns {(Token<any> | Factory<any>)}
+     * @memberof IRunnableExtends
+     */
+    getProvider(provide: Token<any>, beforeInit?: boolean): Token<any> | Factory<any>;
 }
 
 /**

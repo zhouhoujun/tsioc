@@ -1,19 +1,21 @@
-
 import { Workflow } from '@taskfr/core';
-import { Asset, CleanToken, TsCompile, AssetToken, TransformContext } from '@taskfr/build';
-import { Pack, PackModule } from '@taskfr/pack';
+import { Asset, AssetActivity, CleanToken, TsCompile, TransformContext } from '@taskfr/build';
+import { Pack, PackActivity, PackModule } from '@taskfr/pack';
+
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
+// import { rollup } from 'rollup';
 const rollup = require('gulp-rollup');
 const rename = require('gulp-rename');
+const builtins = require('rollup-plugin-node-builtins');
 
 @Asset({
-    src: 'lib/**/*.js',
-    dest: 'bundles',
+    src: 'esnext/**/*.js',
+    dest: '../es2015',
     data: {
-        name: 'unit.umd.js',
-        input: 'lib/index.js'
+        name: 'unit-reporter-console.js',
+        input: 'esnext/index.js'
     },
     sourcemaps: true,
     pipes: [
@@ -24,81 +26,70 @@ const rename = require('gulp-rename');
             plugins: [
                 resolve(),
                 commonjs(),
+                // builtins(),
                 rollupSourcemaps()
             ],
             external: [
                 'reflect-metadata',
-                'events',
                 'tslib',
-                'core-js',
                 'log4js',
+                'globby',
+                'path',
+                'fs',
                 '@ts-ioc/core',
                 '@ts-ioc/aop',
-                '@ts-ioc/logs',
-                '@ts-ioc/bootstrap'
+                '@ts-ioc/bootstrap',
+                '@ts-ioc/platform-server',
+                '@ts-ioc/unit'
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
+                'log4js': 'log4js',
                 'tslib': 'tslib',
+                'path': 'path',
+                'globby': 'globby',
                 '@ts-ioc/core': '@ts-ioc/core',
                 '@ts-ioc/aop': '@ts-ioc/aop',
-                '@ts-ioc/logs': '@ts-ioc/logs',
-                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap'
-
+                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap',
+                '@ts-ioc/platform-server': '@ts-ioc/platform-server',
+                '@ts-ioc/unit': '@ts-ioc/unit',
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),
         (ctx) => rename(ctx.config.data.name)
     ]
 })
-export class BootRollup {
+export class BootRollup extends AssetActivity {
 }
 
 @Pack({
     baseURL: __dirname,
     src: 'src',
     clean: 'lib',
-    test: ctx => ctx.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
+    test: 'test/**/*.spec.ts',
     assets: {
-        ts: {
-            sequence: [
-                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, activity: TsCompile },
-                BootRollup,
-                {
-                    name: 'zip',
-                    src: 'bundles/unit.umd.js',
-                    dest: 'bundles',
-                    sourcemaps: true,
-                    uglify: true,
-                    pipes: [
-                        () => rename('unit.umd.min.js')
-                    ],
-                    activity: AssetToken
-                }
-            ]
-        },
+        ts: { dest: 'lib', annotation: true, uglify: false },
         ts2015: {
             sequence: [
                 { src: 'src/**/*.ts', dest: 'esnext', annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
-                { src: 'esnext/**/*.js', dest: 'es2015', data: { name: 'unit.js', input: './esnext/index.js' }, activity: BootRollup }
+                BootRollup
             ]
         },
         es2017: {
             sequence: [
                 { clean: 'esnext', activity: CleanToken },
                 { src: 'src/**/*.ts', dest: 'esnext', annotation: true, uglify: false, tsconfig: './tsconfig.es2017.json', activity: TsCompile },
-                { src: 'esnext/**/*.js', dest: 'es2017', data: { name: 'unit.js', input: './esnext/index.js' }, activity: BootRollup },
+                { src: 'esnext/**/*.js', dest: '../es2017', activity: BootRollup },
                 { clean: 'esnext', activity: CleanToken }
             ]
         }
     }
 })
-export class UnitBuilder {
+export class PfServerBootBuilder {
 }
 
 if (process.cwd() === __dirname) {
     Workflow.create()
         .use(PackModule)
-        .bootstrap(UnitBuilder);
-
+        .bootstrap(PfServerBootBuilder);
 }
