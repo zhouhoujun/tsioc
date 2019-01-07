@@ -53,10 +53,18 @@ export class ChainActivity extends ControlActivity implements IChainActivity {
         let rctx = isFunction(ctx) ? ctx() : ctx;
         if (activity instanceof HandleActivity) {
             return await activity.run(rctx, next);
+        } if (activity instanceof Activity) {
+            return await activity.run(rctx);
         } else if (isToken(activity) || isBaseObject(activity)) {
             let act = await this.buildActivity(activity);
-            if (act && act instanceof HandleActivity) {
-                return act.run(rctx, next);
+            if (act && act instanceof Activity) {
+                if (activity instanceof HandleActivity) {
+                    return await activity.run(rctx, next);
+                } else {
+                    return await act.run(rctx);
+                }
+            } else {
+                console.log(act)
             }
         }
         return null;
