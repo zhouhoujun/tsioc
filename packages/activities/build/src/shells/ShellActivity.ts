@@ -82,6 +82,7 @@ export class ShellActivity extends CompilerActivity implements OnActivityInit {
     async onActivityInit(config: ShellActivityConfig) {
         await super.onActivityInit(config);
         this.shell = this.context.to(config.shell);
+        console.log(this.shell, config);
         let args = this.context.to(config.args);
         this.args = isArray(args) ? args : this.formatArgs(args);
         this.options = this.context.to(config.options);
@@ -92,7 +93,6 @@ export class ShellActivity extends CompilerActivity implements OnActivityInit {
     }
 
     protected async execute(): Promise<void> {
-        let ctx = this.context;
         return await Promise.resolve(this.shell)
             .then(cmds => {
                 let options = this.options;

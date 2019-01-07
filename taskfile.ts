@@ -88,7 +88,7 @@ let versionSetting = (ctx: INodeActivityContext) => {
                     });
                     console.log(cmds);
                     activities.push({
-                        shells: cmds,
+                        shell: cmds,
                         activity: 'shell'
                     });
                 }
@@ -183,7 +183,7 @@ let actVersionSetting = (ctx: INodeActivityContext) => {
                     });
                     console.log(cmds);
                     activities.push({
-                        shells: cmds,
+                        shell: cmds,
                         activity: 'shell'
                     });
                 }
