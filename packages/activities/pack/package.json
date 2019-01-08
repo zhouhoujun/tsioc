@@ -38,6 +38,10 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities/core#readme",
   "dependencies": {
+    "@ts-ioc/aop": "^4.0.0-beta1",
+    "@ts-ioc/bootstrap": "^4.0.0-beta1",
+    "@ts-ioc/core": "^4.0.0-beta1",
+    "@ts-ioc/logs": "^4.0.0-beta1",
     "@ts-ioc/annotations": "^4.0.0-beta1",
     "@taskfr/core": "^3.0.0-beta1",
     "@taskfr/build": "^3.0.0-beta1",

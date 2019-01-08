@@ -39,6 +39,18 @@ export namespace Assert {
         eq(actual, expected, message);
     }
 
+    /**
+     * check actual is not equal to expected.
+     *
+     * @export
+     * @template T
+     * @param {T} actual
+     * @param {T} expected
+     * @param {string} [message]
+     */
     export function notEqual<T>(actual: T, expected: T, message?: string) {
+        if (actual === expected) {
+            throw new AssertError(actual, expected, message, '!=');
+        }
     }
 }
