@@ -1,30 +1,32 @@
-# packaged @taskfr/build
+# packaged @taskfr/core
 `@taskfr` type task framework, base on AOP, Ioc container, via @ts-ioc. file stream pipes activities.
 
 This repo is for distribution on `npm`. The source for this module is in the
-[main repo](https://github.com/zhouhoujun/type-task).
+[main repo](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities/core#readme).
 Please file issues and pull requests against that repo.
 
-`@taskfr/build` nodejs activities.
-
+`@taskfr` is task manager via AOP, IOC.
 
 ## Install
 
 1. install modules:
 
 ```shell
-npm install @taskfr/build
+npm install @taskfr/core
 ```
 
-2. install cli:
+3. install cli | build pack:
 
+### cli in global
 ```shell
 npm install -g @taskfr/pack
 ```
+### build pack
+```
+npm install @taskfr/pack
+```
 
 use command: `tkf [task names] [--param param]`
-
-taskname: decorator class with `@Task('taskname')` or `@TaskModule({name:'taskname'})`.
 
 
 You can `import` modules:
@@ -58,7 +60,7 @@ class SimpleTask extends AbstractTask implements ITask {
 
 * control flow activities.
 
-see [control flow codes](https://github.com/zhouhoujun/type-task/tree/master/packages/core/src/activities)
+see [control flow codes](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities/core/src/activities)
 
 
 * Task module
@@ -94,81 +96,143 @@ TaskContainer.create(__dirname)
 ## Simples
 
 ```ts
-import { PipeModule, PackageTask, AssetActivity, IPackageConfigure, IAssetConfigure } from '@taskfr/build';
-import { TaskContainer } from '@taskfr/platform-server';
-const rename = require('gulp-rename');
-const rollup = require('gulp-rollup');
-const resolve = require('rollup-plugin-node-resolve');
-const rollupSourcemaps = require('rollup-plugin-sourcemaps');
-const commonjs = require('rollup-plugin-commonjs');
-const builtins = require('rollup-plugin-node-builtins');
+import { Workflow, IfActivityToken, SequenceActivityToken, ExecuteToken } from '@taskfr/core';
+import { INodeActivityContext, Asset, BuildModule, AssetToken, ShellModule, TransformModule, NodeActivityContext } from '@taskfr/build';
+import * as through from 'through2';
+import * as path from 'path';
+import { isPackClass, PackModule } from '@taskfr/pack';
 
-//demo1
-@Package({
-    src: 'src',
-    clean: 'lib',
-    test: 'test/**/*.spec.ts',
-    assets: {
-        ts: { dest: 'lib', uglify: true, activity: 'ts' }
-    }
+@Asset({
+    pipes: [
+        {
+            ifBody: {
+                sequence: [
+                    {
+                        src: ['packages/**/package.json', '!packages/activities/**/package.json', '!node_modules/**/package.json'],
+                        pipes: [
+                            ctx => versionSetting(ctx)
+                        ],
+                        dest: 'packages',
+                        activity: AssetToken
+                    },
+                    {
+                        src: ['package.json'],
+                        pipes: [
+                            ctx => versionSetting(ctx)
+                        ],
+                        dest: '.',
+                        activity: AssetToken
+                    }
+                ],
+                activity: SequenceActivityToken
+            },
+            if: ctx => ctx.getEnvArgs().setvs,
+            activity: IfActivityToken
+        },
+        {
+            execute: (ctx: INodeActivityContext) => {
+                let envArgs = ctx.getEnvArgs();
+                let packages = ctx.getFolders('packages').filter(f => !/activities/.test(f)); // (f => !/(annotations|aop|bootstrap)/.test(f));
+
+                let activities = [];
+                packages.forEach(fd => {
+                    let objs = require(path.join(fd, 'taskfile.ts'));
+                    let builder = Object.values(objs).find(v => isPackClass(v));
+                    activities.push(builder);
+                });
+                if (envArgs.deploy) {
+                    let cmd = 'npm publish --access=public'; // envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
+                    let cmds = packages.map(fd => {
+                        return `cd ${fd} && ${cmd}`;
+                    });
+                    console.log(cmds);
+                    activities.push({
+                        shell: cmds,
+                        activity: 'shell'
+                    });
+                }
+                return {
+                    contextType: NodeActivityContext,
+                    sequence: activities,
+                    activity: SequenceActivityToken
+                }
+            },
+            activity: ExecuteToken
+        }
+    ]
 })
-export class Builder {
+export class BuilderIoc {
 }
 
-TaskContainer.create(__dirname)
-    .use(PipeModule)
-    .bootstrap(Builder);
-
-//demo2
-
-TaskContainer.create(__dirname)
-    .use(PipeModule)
-    .bootstrap(
-        <IPackageConfigure>{
-            test: 'test/**/*.spec.ts',
-            clean: 'lib',
-            src: 'src',
-            assets: {
-                ts: { src: 'src/**/*.ts', dest: 'lib', /*uglify: true*/ }
+@Asset({
+    pipes: [
+        {
+            if: ctx => ctx.getEnvArgs().setvs,
+            ifBody: {
+                src: ['packages/activities/**/package.json', '!node_modules/**/package.json'],
+                pipes: [
+                    (ctx) => actVersionSetting(ctx)
+                ],
+                dest: 'packages/activities',
+                activity: AssetToken
             },
-            activity: PackageTask
+            activity: IfActivityToken
         },
-        <IAssetConfigure>{
-            src: 'lib/**/*.js',
-            pipes: [
-                (ctx: TransformContext) => rollup({
-                    name: 'core.umd.js',
-                    format: 'umd',
-                    plugins: [
-                        resolve(),
-                        commonjs(),
-                        builtins(),
-                        rollupSourcemaps()
-                    ],
-                    external: [
-                        'reflect-metadata',
-                        'tslib',
-                        '@ts-ioc/core',
-                        '@ts-ioc/aop',
-                        '@ts-ioc/logs'
-                    ],
-                    globals: {
-                        'reflect-metadata': 'Reflect'
-                    },
-                    input: ctx.toRootPath('lib/index.js')
-                }),
-                () => rename('core.umd.js')
-            ],
-            dest: 'bundles',
-            activity: AssetActivity
-        });
+        {
+            execute: (ctx: INodeActivityContext) => {
+                let envArgs = ctx.getEnvArgs();
+                let packages = ctx.getFolders('packages/activities');
+
+                let activities = [];
+                packages.forEach(fd => {
+                    // console.log(path.join(fd, 'taskfile.ts'));
+                    let objs = require(path.join(fd, 'taskfile.ts'));
+                    let builder = Object.values(objs).find(v => isPackClass(v));
+                    activities.push(builder);
+                });
+                if (envArgs.deploy) {
+                    let cmd = 'npm publish --access=public';
+                    let cmds = packages.map(fd => {
+                        return `cd ${fd} && ${cmd}`;
+                    });
+                    console.log(cmds);
+                    activities.push({
+                        shell: cmds,
+                        activity: 'shell'
+                    });
+                }
+                return {
+                    sequence: activities,
+                    activity: SequenceActivityToken
+                }
+            },
+            activity: ExecuteToken
+        }
+    ]
+})
+export class BuilderActivities {
+}
+
+
+
+Workflow.create()
+    .use(PackModule)
+    .bootstrap({
+        contextType: NodeActivityContext,
+        if: ctx => ctx.getEnvArgs().act,
+        ifBody: BuilderActivities,
+        elseBody: BuilderIoc,
+        activity: IfActivityToken
+    });
+
+
 
 ```
 
-## Documentation [github](https://github.com/zhouhoujun/type-task.git)
+## Documentation [github]((https://github.com/zhouhoujun/tsioc/blob/master/packages/activities/core#readme)
 
 Documentation is available on the
-[type-task docs site](https://github.com/zhouhoujun/type-task).
+[type-task docs site]((https://github.com/zhouhoujun/tsioc/blob/master/packages/activities/core#readme).
 
 ## License
 
