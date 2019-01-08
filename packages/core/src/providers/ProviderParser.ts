@@ -1,7 +1,7 @@
 import { ParamProviders } from './types';
 import {
-    isClass, isArray, isFunction, isNumber,
-    isUndefined, isNull, isToken, isBaseObject, lang, isTypeObject
+    isClass, isArray, isFunction, isNumber, isString,
+    isUndefined, isNull, isToken, isBaseObject, lang
 } from '../utils';
 import { IProviderParser } from './IProviderParser';
 import { IContainer } from '../IContainer';
@@ -83,9 +83,7 @@ export class ProviderParser implements IProviderParser {
                             return pr.useFactory.apply(pr, args);
                         });
                     } else if (isToken(pr.useExisting)) {
-                        // if (this.container.has(pr.useExisting)) {
-                            map.add(pr.provide, (...providers) => this.container.resolve(pr.useExisting, ...providers));
-                        // }
+                        map.add(pr.provide, (...providers) => this.container.resolve(pr.useExisting, ...providers));
                     } else {
                         isobjMap = true;
                     }
@@ -95,13 +93,9 @@ export class ProviderParser implements IProviderParser {
 
                 if (isobjMap) {
                     lang.forIn<any>(p, (val, name) => {
-                        if (!isUndefined(val)) {
-                            // object map can not resolve token.
-                            if (isToken(val)) {
-                                map.add(name, () => val);
-                            } else {
-                                map.add(name, val);
-                            }
+                        if (name && isString(name)) {
+                            // object map can not resolve token. set all fileld as value factory.
+                            map.add(name, () => val);
                         }
                     });
                 }
@@ -116,5 +110,5 @@ export class ProviderParser implements IProviderParser {
 }
 
 export function isProvider(target: any): boolean {
-    return  isProviderMap(target) || isBaseObject(target) || target instanceof Provider;
+    return isProviderMap(target) || isBaseObject(target) || target instanceof Provider;
 }

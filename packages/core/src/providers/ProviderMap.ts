@@ -1,5 +1,5 @@
-import { isToken, isNumber, isFunction, isUndefined, isObject } from '../utils';
-import { Token, Factory, ToInstance, Express2, SymbolType } from '../types';
+import { isToken, isFunction, isUndefined, isObject, MapSet } from '../utils';
+import { Token, Factory, ToInstance, SymbolType } from '../types';
 import { IContainer } from '../IContainer';
 import { InjectToken } from '../InjectToken';
 import { IResolver } from '../IResolver';
@@ -17,30 +17,10 @@ export const ProviderMapToken = new InjectToken<ProviderMap>('DI_ProviderMap');
  * @export
  * @class Providers
  */
-export class ProviderMap implements IResolver {
-    private maps: Map<Token<any> | number, Factory<any>>;
+export class ProviderMap extends MapSet<Token<any> | number, Factory<any>> implements IResolver {
+
     constructor(private container: IContainer) {
-        this.maps = new Map();
-    }
-
-    /**
-     * provider map keys.
-     *
-     * @returns {Token<any>[]}
-     * @memberof ProviderMap
-     */
-    keys(): Token<any>[] {
-        return Array.from(this.maps.keys()) as Token<any>[];
-    }
-
-    /**
-     * provider map values.
-     *
-     * @returns {Factory<any>[]}
-     * @memberof ProviderMap
-     */
-    values(): Factory<any>[] {
-        return  Array.from(this.maps.values()) as Factory<any>[];
+        super();
     }
 
     /**
@@ -51,7 +31,11 @@ export class ProviderMap implements IResolver {
      * @memberof ProviderMap
      */
     hasRegister(provide: Token<any> | number): boolean {
-        return this.maps.has(this.getTokenKey(provide));
+        return this.map.has(this.getTokenKey(provide));
+    }
+
+    provides(): Token<any>[] {
+        return this.keys().filter(k => isToken(k)) as Token<any>[];
     }
 
     /**
@@ -77,7 +61,7 @@ export class ProviderMap implements IResolver {
      * @memberof ProviderMap
      */
     get<T>(provide: Token<T> | number): Token<T> | Factory<T> {
-        return this.maps.get(this.getTokenKey(provide));
+        return this.map.get(this.getTokenKey(provide));
     }
 
     /**
@@ -110,7 +94,7 @@ export class ProviderMap implements IResolver {
                 };
             }
         }
-        this.maps.set(key, factory);
+        this.map.set(key, factory);
         return this;
     }
 
@@ -124,8 +108,8 @@ export class ProviderMap implements IResolver {
      */
     remove<T>(provide: Token<T> | number): this {
         let key = this.getTokenKey(provide);
-        if (this.maps.has(key)) {
-            this.maps.delete(key);
+        if (this.map.has(key)) {
+            this.map.delete(key);
         }
         return this;
     }
@@ -141,22 +125,12 @@ export class ProviderMap implements IResolver {
      */
     resolve<T>(provide: Token<T> | number, ...providers: ProviderTypes[]): T {
         let key = this.getTokenKey(provide);
-        if (this.maps.has(key)) {
-            let provider = this.maps.get(key);
+        if (this.map.has(key)) {
+            let provider = this.map.get(key);
             return isToken(provider) ? this.container.resolve(provider, ...providers) : provider(...providers);
         } else {
-            return (!isNumber(key) && this.container.has(key)) ? this.container.resolve(key, ...providers) : null;
+            return (isToken(key) && this.container.has(key)) ? this.container.resolve(key, ...providers) : null;
         }
-    }
-
-    /**
-     * iterator each provide and instance of provide.
-     *
-     * @param {(Express2<Factory<any>, Token<any> | number, void | boolean>)} express
-     * @memberof ProviderMap
-     */
-    forEach(express: Express2<Factory<any>, Token<any> | number, void | boolean>) {
-        this.maps.forEach(express);
     }
 
     /**
@@ -171,7 +145,7 @@ export class ProviderMap implements IResolver {
             return this;
         }
         map.forEach((val, token) => {
-            this.maps.set(token, val);
+            this.map.set(token, val);
         });
         return this;
     }

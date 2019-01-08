@@ -221,9 +221,12 @@ export class NodeActivityContext<T> extends ActivityContext<T> implements INodeA
      * @memberof NodeActivityContext
      */
     relativeRoot(pathstr: string): string {
+        if (/^(.{1,2}\/?\\?)?$/.test(pathstr)) {
+            return pathstr;
+        }
         let fullpath = this.toRootPath(pathstr);
         let root = this.getContainer().get(ProcessRunRootToken) || process.cwd();
-        return relative(root, fullpath);
+        return relative(root, fullpath) || '.';
     }
 
     getRootPath(): string {

@@ -2,6 +2,56 @@ import { ObjectMap, Type, Token } from '../types';
 import { isNullOrUndefined, isArray, isObject, isFunction, isClass } from './typeCheck';
 // use core-js in browser.
 
+
+
+/**
+ * map set  for tsioc old version.
+ *
+ * @export
+ * @class MapSet
+ * @template K
+ * @template V
+ */
+export class MapSet<K, V> {
+    protected map: Map<K, V>;
+
+    get size(): number {
+        return this.map.size;
+    }
+
+    constructor() {
+        this.map = new Map();
+    }
+
+    clear(): void {
+        this.map.clear();
+    }
+    delete(key: K): boolean {
+        return this.map.delete(key);
+    }
+    forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void {
+        this.map.forEach(callbackfn, thisArg);
+    }
+    get(key: K): V | undefined {
+        return this.map.get(key);
+    }
+    has(key: K): boolean {
+        return this.map.has(key);
+    }
+    set(key: K, value: V): this {
+        this.map.set(key, value);
+        return this;
+    }
+
+    keys(): K[] {
+        return Array.from(this.map.keys());
+    }
+
+    values(): V[] {
+        return Array.from(this.map.values());
+    }
+}
+
 export namespace lang {
 
     /**

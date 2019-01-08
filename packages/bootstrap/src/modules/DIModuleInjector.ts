@@ -135,7 +135,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
     protected bindProvider(container: IContainer, providers: ParamProviders[]): Token<any>[] {
         let parser = container.get(ProviderParserToken);
         let pdrmap = parser.parse(...providers);
-        let tokens = pdrmap.keys();
+        let tokens = pdrmap.provides();
         tokens.forEach(key => {
             container.bindProvider(key, (...providers: ParamProviders[]) => pdrmap.resolve(key, ...providers));
         });

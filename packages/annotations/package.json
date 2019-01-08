@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/annotations",
-  "version": "4.0.0-beta1",
+  "version": "4.0.0-beta2",
   "description": "typescript class annotations is a solution for typescript class compile to es5 uglify.  for project used tsioc to es5 uglify",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",

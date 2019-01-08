@@ -181,7 +181,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             let parser = parent.get(ProviderParserToken);
             let pdrmap = parser.parse(...config.providers);
             pdrmap.keys().forEach(key => {
-                parent.bindProvider(key, (...providers: ParamProviders[]) => pdrmap.resolve(key, ...providers));
+                isToken(key) && parent.bindProvider(key, (...providers: ParamProviders[]) => pdrmap.resolve(key, ...providers));
             });
         }
         if (injmd) {
