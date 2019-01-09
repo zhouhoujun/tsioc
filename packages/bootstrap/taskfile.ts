@@ -30,7 +30,6 @@ const rename = require('gulp-rename');
                 'reflect-metadata',
                 'events',
                 'tslib',
-                'log4js',
                 '@ts-ioc/core',
                 '@ts-ioc/aop'
             ],

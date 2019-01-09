@@ -34,8 +34,6 @@ const builtins = require('rollup-plugin-node-builtins');
             external: [
                 'reflect-metadata',
                 'tslib',
-                'object-assign',
-                'log4js',
                 'globby', 'path', 'fs', 'events', 'stream', 'child_process',
                 '@ts-ioc/core',
                 '@ts-ioc/aop',
@@ -53,7 +51,6 @@ const builtins = require('rollup-plugin-node-builtins');
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
-                'log4js': 'log4js',
                 'tslib': 'tslib',
                 'path': 'path',
                 '@ts-ioc/core': '@ts-ioc/core',
