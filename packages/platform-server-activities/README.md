@@ -1,18 +1,17 @@
-# packaged @ts-ioc/activities
-`@taskfr` type task framework, base on AOP, Ioc container, via @ts-ioc. file stream pipes activities.
+# packaged platform-server-activities
+`platform-server-activities` is activities framework for nodejs, base on AOP, Ioc container, via @ts-ioc. file stream pipes activities.
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme).
 Please file issues and pull requests against that repo.
 
-`@taskfr` is task manager via AOP, IOC.
 
 ## Install
 
 1. install modules:
 
 ```shell
-npm install @ts-ioc/activities
+npm install platform-server-activities
 ```
 
 3. install cli | build pack:
@@ -74,7 +73,7 @@ see [control flow codes](https://github.com/zhouhoujun/tsioc/tree/master/package
 
 ```ts
 1.
-let container = new Worflow(__dirname, moudles)
+let wf = new Worflow(moudles)
 2.
 Workflow.create( moudles)
     .bootstrap(<IConfigure>{
@@ -86,7 +85,13 @@ Workflow.create( moudles)
     .bootstrap(TestTask);
 4.
 Workflow.create()
-    .bootstrap([TestTask, TsCompile, <IConfigure>{
+    .sequence(TestTask, TsCompile, <IConfigure>{
+        ...
+        activity: ...
+    });
+5.
+Workflow.create()
+    .run(...[TestTask, TsCompile, <IConfigure>{
         ...
         activity: ...
     }]);

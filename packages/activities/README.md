@@ -73,7 +73,7 @@ see [control flow codes](https://github.com/zhouhoujun/tsioc/tree/master/package
 
 ```ts
 1.
-let container = new Worflow(__dirname, moudles)
+let wf = new Worflow(moudles)
 2.
 Workflow.create( moudles)
     .bootstrap(<IConfigure>{
@@ -85,7 +85,13 @@ Workflow.create( moudles)
     .bootstrap(TestTask);
 4.
 Workflow.create()
-    .bootstrap([TestTask, TsCompile, <IConfigure>{
+    .sequence(TestTask, TsCompile, <IConfigure>{
+        ...
+        activity: ...
+    });
+5.
+Workflow.create()
+    .run(...[TestTask, TsCompile, <IConfigure>{
         ...
         activity: ...
     }]);
