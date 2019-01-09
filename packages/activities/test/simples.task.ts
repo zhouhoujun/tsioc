@@ -62,12 +62,12 @@ export class TaskModuleTest extends SequenceActivity {
 //         .bootstrap('test');
 
 //     console.log('\n-----------SimpleCTask-------------------');
-//     await Worflow.create( SimpleCTask)
+//     await Workflow.create( SimpleCTask)
 //         .bootstrap('comptest');
 
 
 //     console.log('\n-----------Custome Component-------------------');
-//     await Worflow.create()
+//     await Workflow.create()
 //         .bootstrap({
 //             providers: {
 //                 name: 'test1'
@@ -86,7 +86,7 @@ export class TaskModuleTest extends SequenceActivity {
 //         });
 
 //     console.log('\n-------------Component Module-----------------');
-//     await Worflow.create()
+//     await Workflow.create()
 //         .bootstrap(TaskModuleTest);
 // }
 
