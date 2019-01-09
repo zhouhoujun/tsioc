@@ -76,11 +76,13 @@ let versionSetting = (ctx: INodeActivityContext) => {
                 let packages = ctx.getFolders('packages'); // (f => !/(annotations|aop|bootstrap)/.test(f));
 
                 let activities = [];
-                packages.forEach(fd => {
-                    let objs = require(path.join(fd, 'taskfile.ts'));
-                    let builder = Object.values(objs).find(v => isPackClass(v));
-                    activities.push(builder);
-                });
+                if (envArgs.b !== false) {
+                    packages.forEach(fd => {
+                        let objs = require(path.join(fd, 'taskfile.ts'));
+                        let builder = Object.values(objs).find(v => isPackClass(v));
+                        activities.push(builder);
+                    });
+                }
                 if (envArgs.deploy) {
                     let cmd = 'npm publish --access=public'; // envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
                     let cmds = packages.map(fd => {
