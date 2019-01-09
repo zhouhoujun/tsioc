@@ -3,6 +3,8 @@ import { AppConfigure } from './AppConfigure';
 import { IApplicationBuilder, ApplicationBuilderToken } from './IApplicationBuilder';
 import { IEvents } from '../utils';
 import { RunnableBuilder, RunnableEvents } from './RunnableBuilder';
+import { IConfigureManager } from './IConfigureManager';
+import { ModuleConfigure } from '../modules';
 
 /**
  * application events
@@ -50,7 +52,7 @@ export class ApplicationBuilder<T> extends RunnableBuilder<T> implements IApplic
         return this;
     }
 
-    protected createConfigureMgr() {
+    protected createConfigureMgr(): IConfigureManager<ModuleConfigure> {
         let cfgMgr = super.createConfigureMgr();
         if (this.configs && this.configs.length) {
             this.configs.forEach(cfg => cfgMgr.useConfiguration(cfg));
