@@ -211,9 +211,9 @@ ApplicationBuilder.create(__dirname)
 
 ## [Activites](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities/core)
 
-* [core](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities/core)
-* [build](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities/build)
-* [pack](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities/pack)
+* [activities](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities)
+* [build](https://github.com/zhouhoujun/tsioc/tree/master/packages/build)
+* [pack](https://github.com/zhouhoujun/tsioc/tree/master/packages/pack)
 
 ### create Container
 
