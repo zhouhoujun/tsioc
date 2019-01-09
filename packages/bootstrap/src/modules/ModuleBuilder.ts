@@ -3,7 +3,7 @@ import {
     IContainer, Token, ParamProviders, lang,
     isClass, isToken, Inject, Registration, Container,
     MetaAccessorToken, IMetaAccessor, isUndefined, Singleton,
-    InjectMetaAccessorToken, isArray, ProviderParserToken
+    InjectMetaAccessorToken, isArray, ProviderParserToken, Type
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv, BootOptions } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
@@ -50,6 +50,10 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     getPools(): ContainerPool {
         return this.pools;
+    }
+
+    getInjectedModule<T>(type: Type<T>): InjectedModule<T> {
+        return this.getPools().getDefault().get(new InjectedModuleToken(type));
     }
 
     /**

@@ -1,8 +1,21 @@
 import { Reporter, ISuiteDescribe, Report, ICaseDescribe } from '@ts-ioc/unit';
 import { Token } from '@ts-ioc/core';
 import chalk from 'chalk';
+import { DIModule } from '@ts-ioc/bootstrap';
+import { ServerBootstrapModule } from '@ts-ioc/platform-server-bootstrap';
+import { ServerModule } from '@ts-ioc/platform-server';
 
 @Report
+@DIModule({
+    imports: [
+        ServerModule,
+        ServerBootstrapModule
+    ],
+    exports: [
+        ServerModule,
+        ServerBootstrapModule
+    ]
+})
 export class ConsoleReporter extends Reporter {
 
     async render(suites: Map<Token<any>, ISuiteDescribe>): Promise<void> {

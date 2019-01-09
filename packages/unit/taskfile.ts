@@ -30,8 +30,6 @@ const rename = require('gulp-rename');
                 'reflect-metadata',
                 'events',
                 'tslib',
-                'globby', 'path',
-                'process',
                 'log4js',
                 '@ts-ioc/core',
                 '@ts-ioc/aop',
@@ -42,9 +40,6 @@ const rename = require('gulp-rename');
             globals: {
                 'reflect-metadata': 'Reflect',
                 'tslib': 'tslib',
-                'path': 'path',
-                'globby': 'globby',
-                'process': 'process',
                 '@ts-ioc/core': '@ts-ioc/core',
                 '@ts-ioc/aop': '@ts-ioc/aop',
                 '@ts-ioc/logs': '@ts-ioc/logs',

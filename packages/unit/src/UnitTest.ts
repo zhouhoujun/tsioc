@@ -1,10 +1,9 @@
-import { ApplicationBuilder, ModuleConfigure, ModuleConfig, BootOptions, Runnable } from '@ts-ioc/bootstrap';
+import { ApplicationBuilder, ModuleConfigure, ModuleConfig, BootOptions, Runnable, RunnableEvents, isDIModuleClass } from '@ts-ioc/bootstrap';
 import { UnitModule } from './UnitModule';
 import { Src } from '@ts-ioc/activities';
-import { isClass, hasClassMetadata, Type, isString, isArray, Token, LoadType } from '@ts-ioc/core';
+import { isClass, hasClassMetadata, Type, isString, isArray, Token, IContainer } from '@ts-ioc/core';
 import { Suite, Report } from './core';
-import * as globby from 'globby';
-import { TestReport, ReportsToken, Reporter } from './reports';
+import { TestReport, ReportsToken, isReporterClass } from './reports';
 import { SuiteRunner } from './runner';
 
 export interface UnitTestOptions extends BootOptions<any> {
@@ -21,73 +20,68 @@ export interface UnitTestOptions extends BootOptions<any> {
 export class UnitTest extends ApplicationBuilder<any> {
    constructor() {
       super();
+      this.initUnit();
+   }
+
+   initUnit() {
       this.use(UnitModule);
+      this.on(RunnableEvents.registeredExt, (types: Type<any>[], container: IContainer) => {
+         types.forEach(type => {
+            if (isReporterClass(type)) {
+               this.useReporter(container, type);
+            } else if (isDIModuleClass(type)) {
+               let injMd = this.getInjectedModule(type);
+               let pdmap = injMd.getProviderMap();
+               if (pdmap) {
+                  pdmap.provides().forEach(p => {
+                     if (isReporterClass(p)) {
+                        this.useReporter(container, p);
+                     }
+                  });
+               }
+            }
+         });
+      });
    }
 
 
-   useReporter(...reporters: Type<any>[]): this {
-      let reps = this.getProvider(ReportsToken) as Type<any>[];
+   protected useReporter(contaienr: IContainer, ...reporters: Type<any>[]): this {
+      let reps = contaienr.get(ReportsToken) as Type<any>[];
       if (reps) {
          reps = reps.concat(...reporters);
       } else {
          reps = reporters;
       }
-      this.use(...reporters);
-      this.provider(ReportsToken, reps.filter(r => isClass(r) && hasClassMetadata(Report, r)), true);
+      contaienr.bindProvider(ReportsToken, reps.filter(r => isClass(r) && hasClassMetadata(Report, r)));
       return this;
    }
 
 
    async test(src: string | Type<any> | (Type<any> | string)[]) {
-      let suites: any[];
+      let suites: any[] = [];
+      let dbuiler = this.getPools().getDefault().getBuilder();
       if (isString(src)) {
-         suites = await globby(src);
+         let alltypes = await dbuiler.loader.loadTypes([{ files: [src] }]);
+         alltypes.forEach(tys => {
+            suites = suites.concat(tys);
+         })
       } else if (isClass(src)) {
          suites = [src];
       } else if (isArray(src)) {
          if (src.some(t => isClass(t))) {
             suites = src;
          } else {
-            suites = await globby(src);
+            let alltypes = await dbuiler.loader.loadTypes([{ files: src }]);
+            alltypes.forEach(tys => {
+               suites = suites.concat(tys);
+            })
          }
       }
-      let runners = await Promise.all(suites.map(s => this.runSuite(s)));
-      let runner: SuiteRunner;
-      runners.some(rs => {
-         if (rs && rs.length) {
-            runner = rs.find(r => r instanceof SuiteRunner) as SuiteRunner;
-         }
-         return !!runner;
-      });
-
+      let runners = await Promise.all(suites.filter(v => isClass(v) && hasClassMetadata(Suite, v)).map(s => this.bootstrap(s, { report: false })));
+      let runner: SuiteRunner = runners.find(rs => rs instanceof SuiteRunner) as SuiteRunner;
       await runner.container.get(TestReport).report();
    }
 
-   protected runSuite(suite: string | Type<any> | (Type<any> | string)[]) {
-      let suites: any[];
-      if (isString(suite)) {
-         let md = require(suite);
-         suites = Object.values(md);
-      } else if (isClass(suite)) {
-         suites = [suite];
-      } else if (isArray(suite)) {
-         suite.forEach(s => {
-            if (isString(s)) {
-               let md = require(s);
-               suites.push(...Object.values(md));
-            } else {
-               suites.push(s);
-            }
-         })
-      } else {
-         suites = [];
-      }
-
-      return Promise.all(suites.filter(v => isClass(v) && hasClassMetadata(Suite, v))
-         .map(v => {
-            return this.bootstrap(v, { report: false });
-         }));
-   }
 
    async bootstrap(token: Token<any> | ModuleConfigure, config?: ModuleConfig<any> | UnitTestOptions, options?: UnitTestOptions): Promise<Runnable<any>> {
       let params = this.vaildParams(token, config, options);

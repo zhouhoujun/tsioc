@@ -1,5 +1,4 @@
 import { Suite, BeforeEach, UnitTest, Test } from '../src';
-import { ServerBootstrapModule } from '@ts-ioc/platform-server-bootstrap';
 import { Defer } from '@ts-ioc/core';
 import { ConsoleReporter } from '@ts-ioc/unit-console';
 
@@ -40,6 +39,5 @@ export class SuiteTest {
 
 
 new UnitTest()
-    .use(ServerBootstrapModule)
-    .useReporter(ConsoleReporter)
+    .use(ConsoleReporter)
     .test(SuiteTest);

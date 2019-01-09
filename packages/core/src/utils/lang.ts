@@ -1,5 +1,5 @@
-import { ObjectMap, Type, Token } from '../types';
-import { isNullOrUndefined, isArray, isObject, isFunction, isClass } from './typeCheck';
+import { ObjectMap, Type, Token, AbstractType } from '../types';
+import { isNullOrUndefined, isArray, isObject, isFunction, isClass, isAbstractClass } from './typeCheck';
 // use core-js in browser.
 
 
@@ -297,11 +297,11 @@ export namespace lang {
      * @param {(Type<any> | ((type: Type<any>) => boolean))} baseClass
      * @returns {boolean}
      */
-    export function isExtendsClass(target: Token<any>, baseClass: Type<any> | ((type: Type<any>) => boolean)): boolean {
+    export function isExtendsClass(target: Token<any>, baseClass: Type<any> | AbstractType<any> | ((type: Type<any>) => boolean)): boolean {
         let isExtnds = false;
         if (isClass(target)) {
             forInClassChain(target, t => {
-                if (isClass(baseClass)) {
+                if (isClass(baseClass) || isAbstractClass(baseClass)) {
                     isExtnds = t === baseClass;
                 } else {
                     isExtnds = baseClass(t);

@@ -22,9 +22,12 @@ export interface PathModules {
      */
     basePath?: string;
     /**
+     * in nodejs:
      * script files match express.
      * see: https://github.com/isaacs/node-glob
      *
+     * in browser:
+     * script file url.
      * @type {(string | string[])}
      * @memberof BuilderOptions
      */
@@ -38,6 +41,7 @@ export interface PathModules {
      */
     modules?: (Modules | string)[];
 }
+
 
 /**
  * load module type.

@@ -38,15 +38,18 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
+    "@ts-ioc/aop": "^4.0.0-beta3",
+    "@ts-ioc/bootstrap": "^4.0.0-beta3",
+    "@ts-ioc/core": "^4.0.0-beta3",
+    "@ts-ioc/logs": "^4.0.0-beta3",
+    "@ts-ioc/platform-server": "^4.0.0-beta3",
+    "@ts-ioc/platform-server-bootstrap": "^4.0.0-beta3",
+    "@ts-ioc/unit": "^4.0.0-beta3",
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.2",
     "globby": "^7.1.1"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "^4.0.0-beta3",
-    "@ts-ioc/bootstrap": "^4.0.0-beta3",
-    "@ts-ioc/platform-server": "^4.0.0-beta3",
-    "@ts-ioc/unit": "^4.0.0-beta3"
   },
   "directories": {
     "lib": "lib",

@@ -32,7 +32,11 @@ export enum RunnableEvents {
     /**
      * on module created.
      */
-    onModuleCreated = 'onModuleCreated'
+    onModuleCreated = 'onModuleCreated',
+    /**
+     * on registered runner use module.
+     */
+    registeredExt = 'registeredExt'
 }
 
 
@@ -252,7 +256,8 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
     protected async registerExts(container: IContainer): Promise<void> {
         if (this.globalModules.length) {
             let usedModules = this.globalModules;
-            await container.loadModule(...usedModules);
+            let types = await container.loadModule(...usedModules);
+            this.emit(RunnableEvents.registeredExt, types, container);
         }
     }
 

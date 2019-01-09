@@ -1,4 +1,4 @@
-import { IContainer, Token, RefRegistration } from '@ts-ioc/core';
+import { IContainer, Token, RefRegistration, Type } from '@ts-ioc/core';
 import { ModuleConfig } from './ModuleConfigure';
 import { ContainerPool } from '../utils';
 import { Runnable } from '../runnable';
@@ -54,6 +54,15 @@ export interface IModuleBuilder<T> {
      */
     getPools(): ContainerPool;
 
+    /**
+     * get registered inject module.
+     *
+     * @template T
+     * @param {Type<T>} type
+     * @returns {InjectedModule<T>}
+     * @memberof IModuleBuilder
+     */
+    getInjectedModule<T>(type: Type<T>): InjectedModule<T>;
     /**
      * load module.
      *

@@ -59,6 +59,24 @@ export function isAbstractClass(target: any): target is AbstractType<any> {
         return true;
     }
 
+    let type = target as Type<any>;
+    if (/^[a-z]$/.test(type.name)) {
+        if (type.classAnnations && type.classAnnations.name) {
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        if (type.classAnnations && isString(type.classAnnations.name)) {
+            return true
+        }
+
+        if (!/^[A-Z@]/.test(target.name)) {
+            return false;
+        }
+
+    }
+
     return false;
 }
 

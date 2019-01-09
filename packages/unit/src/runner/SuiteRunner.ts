@@ -8,7 +8,6 @@ import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMeta
 import { ISuiteDescribe, ICaseDescribe, TestReport } from '../reports';
 
 
-declare let process: any;
 export const SuiteRunnerToken = new InjectRunnableToken('@Suite');
 
 /**
