@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/unit-console",
-  "version": "4.0.0-beta2",
+  "version": "4.0.0-beta3",
   "description": "unit testing console reporter",
   "esnext": "../es2017/unit-reporter-console.js",
   "es2015": "../es2015/unit-reporter-console.js",
@@ -43,10 +43,10 @@
     "globby": "^7.1.1"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "^4.0.0-beta2",
-    "@ts-ioc/bootstrap": "^4.0.0-beta2",
-    "@ts-ioc/platform-server": "^4.0.0-beta2",
-    "@ts-ioc/unit": "^4.0.0-beta2"
+    "@ts-ioc/core": "^4.0.0-beta3",
+    "@ts-ioc/bootstrap": "^4.0.0-beta3",
+    "@ts-ioc/platform-server": "^4.0.0-beta3",
+    "@ts-ioc/unit": "^4.0.0-beta3"
   },
   "directories": {
     "lib": "lib",
