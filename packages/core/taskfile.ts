@@ -1,7 +1,6 @@
 import { PackModule, Pack, PackActivity } from '@ts-ioc/pack';
 import { Workflow } from '@ts-ioc/activities';
 import { Asset, AssetActivity, TsCompile, CleanToken, TransformContext } from '@ts-ioc/build';
-const localResolve = require('rollup-plugin-local-resolve');
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
@@ -22,7 +21,6 @@ const rename = require('gulp-rename');
             format: 'umd',
             sourceMap: true,
             plugins: [
-                localResolve(),
                 resolve(),
                 commonjs(),
                 rollupSourcemaps()
