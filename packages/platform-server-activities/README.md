@@ -76,16 +76,16 @@ see [control flow codes](https://github.com/zhouhoujun/tsioc/tree/master/package
 1.
 let container = new Worflow(__dirname, moudles)
 2.
-Worflow.create(__dirname, moudles)
+Worflow.create( moudles)
     .bootstrap(<IConfigure>{
         ...
         activity:...
     });
 3.
-Worflow.create(__dirname, moudles)
+Worflow.create( moudles)
     .bootstrap(TestTask);
 4.
-Worflow.create(__dirname)
+Worflow.create()
     .bootstrap([TestTask, TsCompile, <IConfigure>{
         ...
         activity: ...
