@@ -5,7 +5,7 @@
   "esnext": "./es2017/platform-browser-bootstrap.js",
   "es2015": "./es2015/platform-browser-bootstrap.js",
   "module": "./lib/index.js",
-  "main": "../bundles/platform-browser-bootstrap.umd.js",
+  "main": "./bundles/platform-browser-bootstrap.umd.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",
