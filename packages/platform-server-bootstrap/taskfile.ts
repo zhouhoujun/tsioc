@@ -45,6 +45,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 'tslib': 'tslib',
                 'path': 'path',
                 'globby': 'globby',
+                'fs': 'fs',
                 '@ts-ioc/core': '@ts-ioc/core',
                 '@ts-ioc/aop': '@ts-ioc/aop',
                 '@ts-ioc/bootstrap': '@ts-ioc/bootstrap',

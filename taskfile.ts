@@ -76,7 +76,7 @@ let versionSetting = (ctx: INodeActivityContext) => {
                 let packages = ctx.getFolders('packages'); // (f => !/(annotations|aop|bootstrap)/.test(f));
 
                 let activities = [];
-                if (envArgs.b !== false) {
+                if (!(envArgs.b === false || envArgs.b === 'false')) {
                     packages.forEach(fd => {
                         let objs = require(path.join(fd, 'taskfile.ts'));
                         let builder = Object.values(objs).find(v => isPackClass(v));

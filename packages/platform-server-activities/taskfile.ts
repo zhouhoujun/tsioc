@@ -89,11 +89,11 @@ export class RollupTs extends AssetActivity {
         }
     }
 })
-export class PfServerBuilder extends PackActivity {
+export class ActPfServerBuilder extends PackActivity {
 }
 
 if (process.cwd() === __dirname) {
     Workflow.create()
         .use(PackModule)
-        .bootstrap(PfServerBuilder);
+        .bootstrap(ActPfServerBuilder);
 }

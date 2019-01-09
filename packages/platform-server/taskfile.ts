@@ -1,7 +1,6 @@
 
 import { Workflow } from '@ts-ioc/activities';
-import { IActivity } from '@ts-ioc/activities';
-import { Asset, AssetActivity, CleanToken, TsCompile, IBuildHandleActivity, TransformContext } from '@ts-ioc/build';
+import { Asset, CleanToken, TsCompile, TransformContext } from '@ts-ioc/build';
 import { Pack, PackModule } from '@ts-ioc/pack';
 
 const resolve = require('rollup-plugin-node-resolve');
