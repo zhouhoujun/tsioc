@@ -1,5 +1,5 @@
 import { IContainer, CoreActions, Inject, ContainerToken, IocExt } from '@ts-ioc/core';
-import { Asset } from './decorators';
+import { Asset } from './decorators/Asset';
 
 /**
  * build module setup.

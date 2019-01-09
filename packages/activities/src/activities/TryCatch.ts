@@ -1,5 +1,5 @@
-import { Task } from '../decorators';
-import { IActivity, InjectAcitityToken, Condition, TryCatchConfigure, IHandleActivity } from '../core';
+import { Task } from '../decorators/Task';
+import { InjectAcitityToken, TryCatchConfigure } from '../core';
 import { ChainActivity } from './ChainActivity';
 
 /**

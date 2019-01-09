@@ -1,5 +1,5 @@
 import { Type, hasOwnClassMetadata, isClass } from '@ts-ioc/core';
-import { NonePointcut } from './decorators';
+import { NonePointcut } from './decorators/NonePointcut';
 
 /**
  * is target can aspect or not.

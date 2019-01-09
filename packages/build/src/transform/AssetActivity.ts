@@ -2,9 +2,9 @@ import { Providers } from '@ts-ioc/core';
 import {
     UglifyCompilerToken, AnnotationCompilerToken, AssetToken,
     SourceCompilerToken, SourcemapsCompilerToken, TestCompilerToken,
-    BuildHandleContext, BuidActivityContext, DestCompilerToken, AssetBuildHanlde, CompilerToken
+    DestCompilerToken, AssetBuildHanlde, CompilerToken
 } from '../core';
-import { Asset } from '../decorators';
+import { Asset } from '../decorators/Asset';
 import {
     StreamUglifyActivity, AnnotationActivity, SourceActivity, TransformContextToken,
     SourceMapsActivity, MochaTestActivity, TransformContext, DestActivity, TransformActivityToken

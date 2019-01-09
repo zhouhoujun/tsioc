@@ -1,4 +1,4 @@
-import { Task } from '../decorators';
+import { Task } from '../decorators/Task';
 import { InjectAcitityToken, ThrowConfigure } from '../core';
 import { ControlActivity } from './ControlActivity';
 /**

@@ -1,14 +1,16 @@
-import { IRunner, Runner, ModuleConfigure, InjectRunnableToken } from '@ts-ioc/bootstrap';
+import { IRunner, Runner, ModuleConfigure } from '@ts-ioc/bootstrap';
 import {
     Token, getMethodMetadata, isNumber, lang, ContainerToken,
     IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Defer, Injectable
 } from '@ts-ioc/core';
-import { Before, BeforeEach, Test, Suite } from '../core/decorators';
-import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../core';
-import { ISuiteDescribe, ICaseDescribe, TestReport } from '../reports';
+import { Before } from '../decorators/Before';
+import { BeforeEach } from '../decorators/BeforeEach';
+import { Test } from '../decorators/Test';
+import { Suite } from '../decorators/Suite';
+import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
+import { ISuiteDescribe, ICaseDescribe } from '../reports';
+import { SuiteRunnerToken, ISuiteRunner } from './ISuiteRunner';
 
-
-export const SuiteRunnerToken = new InjectRunnableToken('@Suite');
 
 /**
  * Suite runner.
@@ -18,7 +20,7 @@ export const SuiteRunnerToken = new InjectRunnableToken('@Suite');
  * @implements {IRunner<any>}
  */
 @Injectable(SuiteRunnerToken)
-export class SuiteRunner extends Runner<any> implements IRunner<any> {
+export class SuiteRunner extends Runner<any> implements ISuiteRunner {
 
     @Inject(ContainerToken)
     container: IContainer;

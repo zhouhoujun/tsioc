@@ -1,5 +1,5 @@
 import { ITestDecorator, createTestDecorator } from './Test';
-import { TestMetadata } from '../metadata';
+import { TestMetadata } from '../metadata/TestMetadata';
 
 /**
  * @Before decorator. define the method of class as unit test before action.

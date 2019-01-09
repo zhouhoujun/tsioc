@@ -9,7 +9,7 @@ import {
     AssetConfigure, CompilerToken, InjectAssetToken,
     DestCompilerToken, CompilerActivity, DestConfigure, IDestCompiler
 } from '../../core';
-import { Asset } from '../../decorators';
+import { Asset } from '../../decorators/Asset';
 import { AssetActivity } from '../AssetActivity';
 
 

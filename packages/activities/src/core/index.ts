@@ -1,5 +1,5 @@
 export * from './IActivity';
-
+export * from './ActivityMetaAccessor';
 export * from './IActivityBuilder';
 export * from './ActivityBuilder';
 export * from './Translator';

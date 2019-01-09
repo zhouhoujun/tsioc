@@ -5,7 +5,8 @@ import {
 import { ActivityMetadata } from '../metadatas/ActivityMetadata';
 import { IActivityBuilder, ActivityBuilderToken } from '../core/IActivityBuilder';
 import { IActivityContext } from '../core/IActivityContext';
-import { IActivity, ActivityToken, WorkflowInstanceToken } from '../core';
+import { IActivity, ActivityToken } from '../core/IActivity';
+import { WorkflowInstanceToken } from '../core/IWorkflowInstance';
 
 
 /**

@@ -3,7 +3,8 @@ import {
     Type, ObjectMap, lang, ParamProviders
 } from '@ts-ioc/core';
 import { Advices } from './advices';
-import { Advice, NonePointcut } from './decorators';
+import { Advice } from './decorators/Advice';
+import { NonePointcut } from './decorators/NonePointcut';
 import { AdviceMetadata } from './metadatas';
 import { IAdvisor, AdvisorToken } from './IAdvisor';
 

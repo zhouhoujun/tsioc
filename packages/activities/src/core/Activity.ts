@@ -3,9 +3,9 @@ import {
     Providers, MetaAccessorToken, isFunction, isToken, isBaseObject, isClass,
     Type, hasClassMetadata, getOwnTypeMetadata, isBoolean, isNullOrUndefined
 } from '@ts-ioc/core';
-import { Task } from '../decorators';
+import { Task } from '../decorators/Task';
 import { OnActivityInit } from './OnActivityInit';
-import { ActivityMetaAccessorToken } from '../injectors';
+import { ActivityMetaAccessorToken } from './ActivityMetaAccessor';
 import { IActivity, ActivityToken, WorkflowId } from './IActivity';
 import { ActivityConfigure, ExpressionType, Expression, ActivityType, Active, ExpressionToken } from './ActivityConfigure';
 import { IActivityContext, InputDataToken, InjectActivityContextToken, ActivityContextToken } from './IActivityContext';

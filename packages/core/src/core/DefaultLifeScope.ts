@@ -1,7 +1,7 @@
 import { LifeScope, DecorSummary } from '../LifeScope';
 import { Type, ObjectMap, Token, IocState, Express } from '../types';
 import { isClass, isAbstractClass, isArray, lang } from '../utils';
-import { Singleton } from './decorators';
+import { Singleton } from './decorators/Singleton';
 import { MethodMetadata } from './metadatas';
 import { IContainer } from '../IContainer';
 import { CoreActions, ActionComponent, LifeState } from './actions';

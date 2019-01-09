@@ -1,6 +1,6 @@
 import { Defer } from '@ts-ioc/core';
-import { Task } from '../decorators';
-import { InjectAcitityToken, Expression, DelayConfigure, OnActivityInit, IActivity } from '../core';
+import { Task } from '../decorators/Task';
+import { InjectAcitityToken, DelayConfigure, OnActivityInit } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 /**

@@ -1,5 +1,5 @@
-import { Task } from '../decorators';
-import { IActivity, InjectAcitityToken, Condition, IfConfigure } from '../core';
+import { Task } from '../decorators/Task';
+import { InjectAcitityToken, IfConfigure } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 

@@ -9,7 +9,7 @@ import { InputDataToken, IActivityContextResult, CtxType, ActivityContextToken, 
 import { ActivityBuilderToken } from './IActivityBuilder';
 import { ActivityBuilder } from './ActivityBuilder';
 import { Expression, ActivityConfigure, isWorkflowInstance } from './ActivityConfigure';
-import { Task } from '../decorators';
+import { Task } from '../decorators/Task';
 import { isAcitvity } from './Activity';
 
 

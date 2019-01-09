@@ -2,8 +2,8 @@ import {
     MetadataAdapter, MetadataExtends, createClassDecorator,
     isString, ITypeDecorator, isNumber
 } from '@ts-ioc/core';
-import { SuiteMetadata } from '../metadata';
-import { SuiteRunnerToken } from '../../runner';
+import { SuiteMetadata } from '../metadata/SuiteMetadata';
+import { SuiteRunnerToken } from '../runner/ISuiteRunner';
 
 
 /**

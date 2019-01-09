@@ -1,5 +1,5 @@
 // import { InjectModuleValidateToken, Singleton } from '@ts-ioc/core';
-// import { Workflow } from '../decorators';
+// import { Workflow } from '../decorators/Workflow';
 // import { DIModuelValidate } from '@ts-ioc/bootstrap';
 
 // /**

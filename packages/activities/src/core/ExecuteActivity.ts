@@ -1,4 +1,4 @@
-import { Task } from '../decorators';
+import { Task } from '../decorators/Task';
 import { Activity } from './Activity';
 import { IActivityResult, InjectAcitityToken } from './IActivity';
 import { OnActivityInit } from './OnActivityInit';

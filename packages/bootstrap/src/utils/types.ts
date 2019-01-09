@@ -1,5 +1,5 @@
 import { isClass, hasOwnClassMetadata } from '@ts-ioc/core';
-import { DIModule } from '../decorators';
+import { DIModule } from '../decorators/DIModule';
 
 /**
  * is target di module class or not.

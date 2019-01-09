@@ -1,5 +1,5 @@
 import { IContainer, IocState, LifeState, Inject, ContainerToken, LifeScopeToken, IocExt } from '@ts-ioc/core';
-import { Aspect } from './decorators';
+import { Aspect } from './decorators/Aspect';
 import { Advisor } from './Advisor';
 import { AopActions } from './actions';
 import { AdviceMatcher } from './AdviceMatcher';

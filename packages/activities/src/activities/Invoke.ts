@@ -1,8 +1,7 @@
-import { Task } from '../decorators';
-import { InjectAcitityToken, ActivityContext, InvokeConfigure, Expression } from '../core';
-import { Token, ObjectMap, lang, ParamProviders } from '@ts-ioc/core';
+import { Task } from '../decorators/Task';
+import { InjectAcitityToken, InvokeConfigure } from '../core';
+import { ParamProviders } from '@ts-ioc/core';
 import { ControlActivity } from './ControlActivity';
-import { config } from 'shelljs';
 
 /**
  * while activity token.

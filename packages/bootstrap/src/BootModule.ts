@@ -1,5 +1,7 @@
 import { IContainer, Inject, ContainerToken, LifeScopeToken, IocExt, CoreActions } from '@ts-ioc/core';
-import { DIModule, Bootstrap, Annotation } from './decorators';
+import { DIModule } from './decorators/DIModule';
+import { Bootstrap } from './decorators/Bootstrap';
+import { Annotation } from './decorators/Annotation';
 import * as modules from './modules';
 import * as boot from './boot';
 import * as annotations from './annotations';

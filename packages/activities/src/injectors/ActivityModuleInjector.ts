@@ -1,5 +1,5 @@
 import { InjectModuleInjectorToken, Inject, IModuleValidate, IContainer, Type, Singleton } from '@ts-ioc/core';
-import { Task } from '../decorators';
+import { Task } from '../decorators/Task';
 import { DIModuleInjector, InjectedModule, InjectedModuleToken } from '@ts-ioc/bootstrap';
 import { ActivityValidateToken } from './ActivityValidate';
 

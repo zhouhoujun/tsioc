@@ -1,5 +1,5 @@
-import { Task } from '../decorators';
-import { InjectAcitityToken, Expression, SwitchConfigure } from '../core';
+import { Task } from '../decorators/Task';
+import { InjectAcitityToken, SwitchConfigure } from '../core';
 import { isUndefined } from '@ts-ioc/core';
 import { ControlActivity } from './ControlActivity';
 

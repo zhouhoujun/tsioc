@@ -2,7 +2,8 @@ import { ApplicationBuilder, ModuleConfigure, ModuleConfig, BootOptions, Runnabl
 import { UnitModule } from './UnitModule';
 import { Src } from '@ts-ioc/activities';
 import { isClass, hasClassMetadata, Type, isString, isArray, Token, IContainer } from '@ts-ioc/core';
-import { Suite, Report } from './core';
+import { Suite } from './decorators/Suite';
+import { Report } from './decorators/Report';
 import { TestReport, ReportsToken, isReporterClass } from './reports';
 import { SuiteRunner } from './runner';
 

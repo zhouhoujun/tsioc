@@ -1,9 +1,10 @@
 import {
     MetaAccessor, IContainer, Token, InjectMetaAccessorToken,
-    Refs, MetaAccessorToken, Singleton, isToken
+    Refs, MetaAccessorToken, Singleton
 } from '@ts-ioc/core';
-import { IActivity, ActivityConfigure } from '../core';
 import { ApplicationBuilderToken } from '@ts-ioc/bootstrap';
+import { ActivityConfigure } from './ActivityConfigure';
+import { IActivity } from './IActivity';
 
 export const ActivityMetaAccessorToken = new InjectMetaAccessorToken('@Task');
 

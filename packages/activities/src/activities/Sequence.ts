@@ -1,5 +1,5 @@
-import { Task } from '../decorators';
-import { IActivity, InjectAcitityToken, SequenceConfigure, Active } from '../core';
+import { Task } from '../decorators/Task';
+import { InjectAcitityToken, SequenceConfigure } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 /**

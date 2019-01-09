@@ -1,11 +1,11 @@
-import { Task } from '../decorators';
+import { Task } from '../decorators/Task';
 import {
     IActivityContext, ChainConfigure, InjectAcitityToken,
     IChainActivity, Activity, Active, HandleType
 } from '../core';
 import { HandleActivity } from './HandleActivity';
 import { ControlActivity } from './ControlActivity';
-import { lang, isFunction, isToken, isBaseObject, isNullOrUndefined } from '@ts-ioc/core';
+import { lang, isFunction, isNullOrUndefined } from '@ts-ioc/core';
 
 
 /**

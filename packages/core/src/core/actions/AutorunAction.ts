@@ -5,8 +5,8 @@ import { IContainer } from '../../IContainer';
 import { isFunction } from '../../utils';
 import { CoreActions } from './CoreActions';
 import { hasClassMetadata, getTypeMetadata } from '../factories';
-import { Autorun, IocExt } from '../decorators';
-
+import { Autorun } from '../decorators/AutoRun';
+import { IocExt } from '../decorators/IocExt';
 
 /**
  * auto run action data.

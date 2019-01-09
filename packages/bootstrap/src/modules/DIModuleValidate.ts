@@ -1,5 +1,5 @@
 import { Singleton, InjectModuleValidateToken, ModuelValidate, IModuleValidate } from '@ts-ioc/core';
-import { DIModule } from '../decorators';
+import { DIModule } from '../decorators/DIModule';
 
 
 

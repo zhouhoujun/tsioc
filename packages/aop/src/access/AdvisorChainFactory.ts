@@ -3,7 +3,7 @@ import { Joinpoint, JoinpointState } from '../joinpoints';
 import { Advicer, Advices } from '../advices';
 import { IAdvisorChainFactory, AdvisorChainFactoryToken } from './IAdvisorChainFactory';
 import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
-import { NonePointcut } from '../decorators';
+import { NonePointcut } from '../decorators/NonePointcut';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
 
 /**

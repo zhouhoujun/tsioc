@@ -1,4 +1,5 @@
-export * from './core';
+export * from './metadata';
+export * from './decorators';
 export * from './runner';
 export * from './reports';
 export * from './UnitModule';

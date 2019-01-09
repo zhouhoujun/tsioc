@@ -34,7 +34,7 @@ export class BindMethodPointcutAction extends ActionComposite {
         if (!data.target || !isValideAspectTarget(data.targetType)) {
             return;
         }
-        if (!container.hasRegister(ProxyMethodToken.toString())) {
+        if (!container.hasRegister(ProxyMethodToken)) {
             return;
         }
 

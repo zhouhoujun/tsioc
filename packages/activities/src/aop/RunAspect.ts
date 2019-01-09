@@ -1,7 +1,7 @@
 import { Inject, IContainer, ContainerToken } from '@ts-ioc/core';
 import { Aspect, Joinpoint, Before, AfterReturning } from '@ts-ioc/aop';
 import { IWorkflowInstance, RunState, Activity } from '../core';
-import { Task } from '../decorators';
+import { Task } from '../decorators/Task';
 
 /**
  * Task Log

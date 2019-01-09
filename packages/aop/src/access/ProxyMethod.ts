@@ -5,7 +5,7 @@ import { Joinpoint } from '../joinpoints';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
 import { IProxyMethod, ProxyMethodToken } from './IProxyMethod';
 import { AdvisorChainFactoryToken } from './IAdvisorChainFactory';
-import { NonePointcut } from '../decorators';
+import { NonePointcut } from '../decorators/NonePointcut';
 
 /**
  * Proxy method.

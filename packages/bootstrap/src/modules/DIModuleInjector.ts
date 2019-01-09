@@ -4,7 +4,7 @@ import {
     InjectClassProvidesToken, IMetaAccessor, MetaAccessorToken, Singleton
 } from '@ts-ioc/core';
 import { DIModuleValidateToken } from './DIModuleValidate';
-import { DIModule } from '../decorators';
+import { DIModule } from '../decorators/DIModule';
 import { ContainerPoolToken } from '../utils';
 import { ModuleConfigure } from './ModuleConfigure';
 import { InjectedModuleToken, InjectedModule } from './InjectedModule';

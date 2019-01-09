@@ -1,5 +1,5 @@
-import { Task } from '../decorators';
-import { InjectAcitityToken, Expression, ConfirmConfigure } from '../core';
+import { Task } from '../decorators/Task';
+import { InjectAcitityToken, ConfirmConfigure } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 

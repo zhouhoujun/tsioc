@@ -2,7 +2,7 @@ import { IJoinpoint, JoinpointToken } from './IJoinpoint';
 import { Type, Injectable, MethodMetadata, IParameter } from '@ts-ioc/core';
 import { JoinpointState } from './JoinpointState';
 import { Advicer } from '../advices';
-import { NonePointcut } from '../decorators';
+import { NonePointcut } from '../decorators/NonePointcut';
 
 /**
  * Join point data.

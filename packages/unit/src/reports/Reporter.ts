@@ -1,6 +1,6 @@
 import { Token, lang, isClass, hasOwnClassMetadata, Type } from '@ts-ioc/core';
 import { ISuiteDescribe } from './ITestReport';
-import { Report } from '../core';
+import { Report } from '../decorators/Report';
 
 
 /**

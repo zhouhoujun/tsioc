@@ -12,7 +12,7 @@ import {
     Src, SequenceActivity, ParallelActivity, SequenceConfigure,
     SequenceActivityToken, ParallelConfigure, ParallelActivityToken
 } from '@ts-ioc/activities';
-import { Pack } from '../decorators';
+import { Pack } from '../decorators/Pack';
 
 
 @Pack(PackToken)

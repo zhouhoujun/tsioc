@@ -1,4 +1,4 @@
-import { Pack } from '../../decorators';
+import { Pack } from '../../decorators/Pack';
 import { PackActivity } from '../../core';
 
 

@@ -3,7 +3,7 @@ import { isString, Token, Express, isToken, Providers, MetaAccessorToken, Single
 import { AnnotationBuilder, BuildOptions, IAnnoBuildStrategy, AnnoBuildStrategyToken } from '@ts-ioc/bootstrap';
 import { IActivity, ActivityInstance, ActivityBuildStrategyToken } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
-import { ActivityMetaAccessorToken } from '../injectors';
+import { ActivityMetaAccessorToken } from './ActivityMetaAccessor';
 import { IWorkflowInstance } from './IWorkflowInstance';
 import { isAcitvity } from './Activity';
 

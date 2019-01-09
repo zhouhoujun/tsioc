@@ -2,7 +2,7 @@ import { IContainer, Injectable, Inject, IRecognizer, Express, ContainerToken, R
 import { Joinpoint } from '../joinpoints';
 import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
 import { AdvisorProceedingToken } from './IAdvisorProceeding';
-import { NonePointcut } from '../decorators';
+import { NonePointcut } from '../decorators/NonePointcut';
 
 /**
  * advisor chain.
