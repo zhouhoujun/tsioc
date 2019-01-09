@@ -70,10 +70,10 @@ export class RollupTs {
                 RollupTs,
                 {
                     name: 'zip',
-                    src: 'bundles/core.umd.js',
+                    src: 'bundles/activities.umd.js',
                     uglify: true,
                     pipes: [
-                        () => rename('core.umd.min.js'),
+                        () => rename('activities.umd.min.js'),
                     ],
                     dest: 'bundles',
                     task: AssetActivity

@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/platform-server-activities",
-  "version": "4.0.0-beta4",
+  "version": "4.0.0-beta5",
   "description": "type task framework, base on AOP, Ioc container, via @ts-ioc",
   "esnext": "./es2017/platform-server-activities.js",
   "es2015": "./es2015/platform-server-activities.js",
@@ -34,7 +34,7 @@
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme",
   "dependencies": {
     "@types/chalk": "^2.2.0",
-    "@ts-ioc/platform-server": "^4.0.0-beta4",
+    "@ts-ioc/platform-server": "^4.0.0-beta5",
     "bluebird": "^3.4.1",
     "chalk": "^2.3.1",
     "globby": "^7.1.1",
@@ -50,7 +50,7 @@
     "zone.js": "^0.8.12"
   },
   "peerDependencies": {
-    "@ts-ioc/activities": "^4.0.0-beta4"
+    "@ts-ioc/activities": "^4.0.0-beta5"
   },
   "directories": {
     "lib": "lib",

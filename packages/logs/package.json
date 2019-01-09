@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/logs",
-  "version": "4.0.0-beta4",
+  "version": "4.0.0-beta5",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "esnext": "./es2017/logs.js",
   "es2015": "./es2015/logs.js",
@@ -42,8 +42,8 @@
     "tslib": "^1.9.2"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "^4.0.0-beta4",
-    "@ts-ioc/aop": "^4.0.0-beta4"
+    "@ts-ioc/core": "^4.0.0-beta5",
+    "@ts-ioc/aop": "^4.0.0-beta5"
   },
   "directories": {
     "lib": "lib"
