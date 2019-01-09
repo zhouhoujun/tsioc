@@ -36,7 +36,7 @@
     "type": "git",
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
-  "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "homepage": "https://github.com/zhouhoujun/tsioc/tree/master/packages/unit#readme",
   "dependencies": {
     "@ts-ioc/aop": "^4.0.0-beta4",
     "@ts-ioc/bootstrap": "^4.0.0-beta4",

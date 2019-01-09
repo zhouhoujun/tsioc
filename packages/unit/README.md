@@ -73,7 +73,7 @@ new UnitTest()
 
 ```
 
-test result:
+* test result:
 ![image](https://github.com/zhouhoujun/tsioc/blob/master/packages/unit-console/assets/ConsoleReport.png?raw=true)
 
 ## Container Interface
