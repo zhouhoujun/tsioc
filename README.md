@@ -209,7 +209,7 @@ ApplicationBuilder.create(__dirname)
     .bootstrap(ModuleB)
 ```
 
-## [Activites](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities/core)
+## [Activites](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities)
 
 * [activities](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities)
 * [build](https://github.com/zhouhoujun/tsioc/tree/master/packages/build)
