@@ -1,18 +1,17 @@
-# packaged @ts-ioc/activities
-`@taskfr` type task framework, base on AOP, Ioc container, via @ts-ioc. file stream pipes activities.
+# packaged @ts-ioc/build
+`@ts-ioc/build` type build task framework, base on AOP, Ioc container, via @ts-ioc. file stream pipes activities.
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme).
 Please file issues and pull requests against that repo.
 
-`@taskfr` is task manager via AOP, IOC.
 
 ## Install
 
 1. install modules:
 
 ```shell
-npm install @ts-ioc/activities
+npm install @ts-ioc/build
 ```
 
 3. install cli | build pack:
