@@ -229,10 +229,10 @@ Workflow.create()
 
 ```
 
-## Documentation [github]((https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme)
+## Documentation [github](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme)
 
 Documentation is available on the
-[type-task docs site]((https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme).
+[type-task docs site](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme).
 
 ## License
 
