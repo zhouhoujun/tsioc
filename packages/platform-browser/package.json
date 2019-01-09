@@ -4,8 +4,8 @@
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "esnext": "./es2017/platform-browser.js",
   "es2015": "./es2015/platform-browser.js",
-  "module": "./lib/index.js",
-  "main": "./bundles/platform-browser.umd.js",
+  "module": "./bundles/platform-browser.umd.js",
+  "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",

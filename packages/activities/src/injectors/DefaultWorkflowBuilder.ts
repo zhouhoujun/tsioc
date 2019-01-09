@@ -1,5 +1,5 @@
 import { Singleton, Providers, MetaAccessorToken } from '@ts-ioc/core';
-import { ActivityType, IActivity, ActivityToken, ActivityBuilderToken, CoreActivityConfigs, Active } from '../core';
+import { IActivity, ActivityToken, ActivityBuilderToken, CoreActivityConfigs, Active } from '../core';
 import { ModuleBuilder, Runnable, InjectModuleBuilderToken, AnnotationBuilderToken, BootOptions } from '@ts-ioc/bootstrap';
 import { ActivityMetaAccessorToken } from './ActivityMetaAccessor';
 

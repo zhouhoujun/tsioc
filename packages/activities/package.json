@@ -2,10 +2,10 @@
   "name": "@ts-ioc/activities",
   "version": "4.0.0-beta4",
   "description": "type task framework, base on AOP, Ioc container, via @ts-ioc",
-  "esnext": "./es2017/core.js",
-  "es2015": "./es2015/core.js",
+  "esnext": "./es2017/activities.js",
+  "es2015": "./es2015/activities.js",
   "module": "./lib/index.js",
-  "main": "./bundles/core.umd.js",
+  "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",

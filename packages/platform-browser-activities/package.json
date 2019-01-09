@@ -4,8 +4,8 @@
   "description": "type task framework, base on AOP, Ioc container, via @ts-ioc",
   "esnext": "./es2017/platform-browser.js",
   "es2015": "./es2015/platform-browser.js",
-  "module": "./lib/index.js",
-  "main": "./bundles/platform-browser.umd.js",
+  "module": "./bundles/platform-browser.umd.js",
+  "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",

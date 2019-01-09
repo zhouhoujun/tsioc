@@ -13,7 +13,7 @@ const commonjs = require('rollup-plugin-commonjs');
     src: 'lib/**/*.js',
     sourcemaps: true,
     data: {
-        name: 'core.umd.js',
+        name: 'activities.umd.js',
         input: 'lib/index.js'
     },
     pipes: [
@@ -86,7 +86,7 @@ export class RollupTs {
                 {
                     src: 'esnext/**/*.js', dest: 'es2015',
                     data: {
-                        name: 'core.js',
+                        name: 'activities.js',
                         input: 'esnext/index.js'
                     },
                     activity: RollupTs
@@ -100,7 +100,7 @@ export class RollupTs {
                     src: 'esnext/**/*.js',
                     dest: 'es2017',
                     data: {
-                        name: 'core.js',
+                        name: 'activities.js',
                         input: 'esnext/index.js'
                     },
                     activity: RollupTs

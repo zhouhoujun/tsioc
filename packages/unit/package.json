@@ -4,8 +4,8 @@
   "description": "unit testing framework, base on AOP, Ioc container",
   "esnext": "./es2017/unit.js",
   "es2015": "./es2015/unit.js",
-  "module": "./lib/index.js",
-  "main": "./bundles/unit.umd.js",
+  "module": "./bundles/unit.umd.js",
+  "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",

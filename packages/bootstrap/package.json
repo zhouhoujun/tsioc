@@ -5,7 +5,7 @@
   "esnext": "./es2017/bootstrap.js",
   "es2015": "./es2015/bootstrap.js",
   "module": "./lib/index.js",
-  "main": "./bundles/bootstrap.umd.js",
+  "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",

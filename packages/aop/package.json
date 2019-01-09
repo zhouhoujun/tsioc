@@ -5,7 +5,7 @@
   "esnext": "./es2017/aop.js",
   "es2015": "./es2015/aop.js",
   "module": "/es2015/aop.js",
-  "main": "./bundles/aop.umd.js",
+  "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",
