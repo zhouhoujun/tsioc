@@ -1,8 +1,7 @@
 
-import { Workflow } from '@taskfr/core';
-import { Asset, CleanToken, TsCompile, AssetToken, TransformContext } from '@taskfr/build';
-import { Pack, PackModule } from '@taskfr/pack';
-import { ConsoleReporterBuilder } from './console/taskfile';
+import { Workflow } from '@ts-ioc/activities';
+import { Asset, CleanToken, TsCompile, AssetToken, TransformContext } from '@ts-ioc/build';
+import { Pack, PackModule } from '@ts-ioc/pack';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
@@ -98,8 +97,7 @@ export class BootRollup {
                 { clean: 'esnext', activity: CleanToken }
             ]
         }
-    },
-    after: ConsoleReporterBuilder
+    }
 })
 export class UnitBuilder {
 }

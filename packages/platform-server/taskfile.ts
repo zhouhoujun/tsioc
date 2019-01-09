@@ -1,9 +1,8 @@
 
-import { Workflow } from '@taskfr/core';
-import { IActivity } from '@taskfr/core';
-import { Asset, AssetActivity, CleanToken, TsCompile, IBuildHandleActivity, TransformContext } from '@taskfr/build';
-import { Pack, PackModule } from '@taskfr/pack';
-import { PfServerBootBuilder } from './bootstrap/taskfile';
+import { Workflow } from '@ts-ioc/activities';
+import { IActivity } from '@ts-ioc/activities';
+import { Asset, AssetActivity, CleanToken, TsCompile, IBuildHandleActivity, TransformContext } from '@ts-ioc/build';
+import { Pack, PackModule } from '@ts-ioc/pack';
 
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -81,8 +80,7 @@ export class PfServerRollup {
                 { clean: 'esnext', activity: CleanToken }
             ]
         }
-    },
-    after: PfServerBootBuilder
+    }
 })
 export class PfServerBuilder {
 }

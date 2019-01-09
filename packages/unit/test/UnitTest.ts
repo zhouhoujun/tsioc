@@ -1,7 +1,7 @@
 import { Suite, BeforeEach, UnitTest, Test } from '../src';
-import { ServerBootstrapModule } from '@ts-ioc/platform-server/bootstrap';
+import { ServerBootstrapModule } from '@ts-ioc/platform-server-bootstrap';
 import { Defer } from '@ts-ioc/core';
-import { ConsoleReporter } from '@ts-ioc/unit/console';
+import { ConsoleReporter } from '@ts-ioc/unit-console';
 
 
 @Suite('Unit Test')

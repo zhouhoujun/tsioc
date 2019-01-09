@@ -1,6 +1,6 @@
 import { ApplicationBuilder, ModuleConfigure, ModuleConfig, BootOptions, Runnable } from '@ts-ioc/bootstrap';
 import { UnitModule } from './UnitModule';
-import { Src } from '@taskfr/core';
+import { Src } from '@ts-ioc/activities';
 import { isClass, hasClassMetadata, Type, isString, isArray, Token, LoadType } from '@ts-ioc/core';
 import { Suite, Report } from './core';
 import * as globby from 'globby';

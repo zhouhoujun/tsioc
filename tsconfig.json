@@ -21,35 +21,35 @@
       "@ts-ioc/platform-browser":[
         "packages/platform-browser/src"
       ],
-      "@ts-ioc/platform-browser/bootstrap":[
-        "packages/platform-browser/bootstrap/src"
+      "@ts-ioc/platform-browser-bootstrap":[
+        "packages/platform-browser-bootstrap/src"
       ],
       "@ts-ioc/platform-server":[
         "packages/platform-server/src"
       ],
-      "@ts-ioc/platform-server/bootstrap":[
-        "packages/platform-server/bootstrap/src"
+      "@ts-ioc/platform-server-bootstrap":[
+        "packages/platform-server-bootstrap/src"
       ],
       "@ts-ioc/unit": [
         "packages/unit/src"
       ],
-      "@ts-ioc/unit/console": [
-        "packages/unit/console/src"
+      "@ts-ioc/unit-console": [
+        "packages/unit-console/src"
       ],
-      "@taskfr/core": [
-        "packages/activities/core/src"
+      "@ts-ioc/activities": [
+        "packages/activities/src"
       ],
-      "@taskfr/build": [
-        "packages/activities/build/src"
+      "@ts-ioc/build": [
+        "packages/build/src"
       ],
-      "@taskfr/pack": [
-        "packages/activities/pack/src"
+      "@ts-ioc/pack": [
+        "packages/pack/src"
       ],
-      "@taskfr/platform-server": [
-        "packages/activities/platform-server/src"
+      "@ts-ioc/platform-server-activities": [
+        "packages/platform-server-activities/src"
       ],
-      "@taskfr/platform-browser": [
-        "packages/activities/platform-browser/src"
+      "@ts-ioc/platform-browser-activities": [
+        "packages/platform-browser-activities/src"
       ]
     },
     "module": "commonjs",

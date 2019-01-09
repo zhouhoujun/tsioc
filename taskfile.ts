@@ -1,8 +1,8 @@
-import { Workflow, IfActivityToken, SequenceActivityToken, ExecuteToken } from '@taskfr/core';
-import { INodeActivityContext, Asset, BuildModule, AssetToken, ShellModule, TransformModule, NodeActivityContext } from '@taskfr/build';
+import { Workflow, IfActivityToken, SequenceActivityToken, ExecuteToken } from '@ts-ioc/activities';
+import { INodeActivityContext, Asset, BuildModule, AssetToken, ShellModule, TransformModule, NodeActivityContext } from '@ts-ioc/build';
 import * as through from 'through2';
 import * as path from 'path';
-import { isPackClass, PackModule } from '@taskfr/pack';
+import { isPackClass, PackModule } from '@ts-ioc/pack';
 const inplace = require('json-in-place');
 
 
@@ -23,18 +23,18 @@ let versionSetting = (ctx: INodeActivityContext) => {
             let json = JSON.parse(contents);
             let replaced = inplace(contents)
                 .set('version', version);
-            if (json.peerDependencies) {
-                Object.keys(json.peerDependencies).forEach(key => {
-                    if (/^@ts-ioc/.test(key)) {
-                        replaced.set('peerDependencies.' + key, '^' + version);
-                    }
-                });
-                Object.keys(json.dependencies).forEach(key => {
-                    if (/^@ts-ioc/.test(key)) {
-                        replaced.set('dependencies.' + key, '^' + version);
-                    }
-                });
-            }
+
+            Object.keys(json.peerDependencies || {}).forEach(key => {
+                if (/^@ts-ioc/.test(key)) {
+                    replaced.set('peerDependencies.' + key, '^' + version);
+                }
+            });
+            Object.keys(json.dependencies || {}).forEach(key => {
+                if (/^@ts-ioc/.test(key)) {
+                    replaced.set('dependencies.' + key, '^' + version);
+                }
+            });
+
             contents = replaced.toString();
         }
         file.contents = new Buffer(contents);
@@ -49,7 +49,7 @@ let versionSetting = (ctx: INodeActivityContext) => {
             ifBody: {
                 sequence: [
                     {
-                        src: ['packages/**/package.json', '!packages/activities/**/package.json', '!node_modules/**/package.json'],
+                        src: ['packages/**/package.json', '!node_modules/**/package.json'],
                         pipes: [
                             ctx => versionSetting(ctx)
                         ],
@@ -73,7 +73,7 @@ let versionSetting = (ctx: INodeActivityContext) => {
         {
             execute: (ctx: INodeActivityContext) => {
                 let envArgs = ctx.getEnvArgs();
-                let packages = ctx.getFolders('packages').filter(f => !/activities/.test(f)); // (f => !/(annotations|aop|bootstrap)/.test(f));
+                let packages = ctx.getFolders('packages'); // (f => !/(annotations|aop|bootstrap)/.test(f));
 
                 let activities = [];
                 packages.forEach(fd => {
@@ -106,107 +106,6 @@ export class BuilderIoc {
 }
 
 
-
-let actVersionSetting = (ctx: INodeActivityContext) => {
-    let envArgs = ctx.getEnvArgs();
-    return through.obj(function (file, encoding, callback) {
-        if (file.isNull()) {
-            return callback(null, file);
-        }
-
-        if (file.isStream()) {
-            return callback('doesn\'t support Streams');
-        }
-
-        let contents: string = file.contents.toString('utf8');
-        let json = JSON.parse(contents);
-        let replaced = inplace(contents);
-        let version = envArgs['setvs'] || '';
-        if (version) {
-            replaced.set('version', version);
-            if (json.peerDependencies) {
-                Object.keys(json.peerDependencies).forEach(key => {
-                    if (/^@taskfr/.test(key)) {
-                        replaced.set('peerDependencies.' + key, '^' + version);
-                    }
-                });
-                Object.keys(json.dependencies).forEach(key => {
-                    if (/^@taskfr/.test(key)) {
-                        replaced.set('dependencies.' + key, '^' + version);
-                    }
-                });
-            }
-        }
-        if (json.dependencies) {
-            let iocVersion = '^' + ctx.getPackage().version;
-            Object.keys(json.dependencies).forEach(key => {
-                if (/^@ts-ioc/.test(key)) {
-                    replaced.set('dependencies.' + key, iocVersion)
-                }
-            })
-        }
-        file.contents = new Buffer(replaced.toString());
-        this.push(file);
-        callback();
-    })
-}
-@Asset({
-    pipes: [
-        {
-            if: ctx => ctx.getEnvArgs().setvs,
-            ifBody: {
-                src: ['packages/activities/**/package.json', '!node_modules/**/package.json'],
-                pipes: [
-                    (ctx) => actVersionSetting(ctx)
-                ],
-                dest: 'packages/activities',
-                activity: AssetToken
-            },
-            activity: IfActivityToken
-        },
-        {
-            execute: (ctx: INodeActivityContext) => {
-                let envArgs = ctx.getEnvArgs();
-                let packages = ctx.getFolders('packages/activities');
-
-                let activities = [];
-                packages.forEach(fd => {
-                    // console.log(path.join(fd, 'taskfile.ts'));
-                    let objs = require(path.join(fd, 'taskfile.ts'));
-                    let builder = Object.values(objs).find(v => isPackClass(v));
-                    activities.push(builder);
-                });
-                if (envArgs.deploy) {
-                    let cmd = 'npm publish --access=public';
-                    let cmds = packages.map(fd => {
-                        return `cd ${fd} && ${cmd}`;
-                    });
-                    console.log(cmds);
-                    activities.push({
-                        shell: cmds,
-                        activity: 'shell'
-                    });
-                }
-                return {
-                    sequence: activities,
-                    activity: SequenceActivityToken
-                }
-            },
-            activity: ExecuteToken
-        }
-    ]
-})
-export class BuilderActivities {
-}
-
-
-
 Workflow.create()
     .use(PackModule)
-    .bootstrap({
-        contextType: NodeActivityContext,
-        if: ctx => ctx.getEnvArgs().act,
-        ifBody: BuilderActivities,
-        elseBody: BuilderIoc,
-        activity: IfActivityToken
-    });
+    .bootstrap(BuilderIoc);

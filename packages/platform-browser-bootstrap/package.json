@@ -1,0 +1,52 @@
+{
+  "name": "@ts-ioc/platform-browser-bootstrap",
+  "version": "4.0.0-beta2",
+  "description": "tsioc is AOP, Ioc container, via typescript decorator",
+  "esnext": "../es2017/platform-browser-bootstrap.js",
+  "es2015": "../es2015/platform-browser-bootstrap.js",
+  "module": "./lib/index.js",
+  "main": "../bundles/platform-browser-bootstrap.umd.js",
+  "typings": "./lib/index.d.ts",
+  "scripts": {
+    "postinstall": "npm prune",
+    "reinstall": "npm cache clean && npm install",
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts"
+  },
+  "keywords": [
+    "IoC",
+    "AOP",
+    "dependency",
+    "injection",
+    "ts-ioc",
+    "@ts-ioc",
+    "tsioc",
+    "container",
+    "decorator",
+    "autofac",
+    "Inject",
+    "type",
+    "typescript"
+  ],
+  "author": "houjun",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhouhoujun/tsioc/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhouhoujun/tsioc.git"
+  },
+  "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "dependencies": {
+    "reflect-metadata": "^0.1.12",
+    "tslib": "^1.9.2"
+  },
+  "peerDependencies": {
+    "@ts-ioc/core": "^4.0.0-beta2",
+    "@ts-ioc/bootstrap": "^4.0.0-beta2",
+    "@ts-ioc/platform-browser": "^4.0.0-beta2"
+  },
+  "directories": {
+    "lib": "lib"
+  }
+}

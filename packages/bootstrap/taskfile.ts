@@ -1,7 +1,7 @@
-import { Pack, PackActivity, PackModule } from '@taskfr/pack';
-import { Workflow } from '@taskfr/core';
-import { Asset, AssetActivity, TsCompile, CleanToken, TransformContext } from '@taskfr/build';
-import { IActivity } from '@taskfr/core';
+import { Pack, PackActivity, PackModule } from '@ts-ioc/pack';
+import { Workflow } from '@ts-ioc/activities';
+import { Asset, AssetActivity, TsCompile, CleanToken, TransformContext } from '@ts-ioc/build';
+import { IActivity } from '@ts-ioc/activities';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');

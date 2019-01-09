@@ -5,8 +5,7 @@
   "scripts": {
     "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",
-    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
-    "build-act": "ts-node -r tsconfig-paths/register taskfile.ts \"--act=true\""
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
     "IoC",

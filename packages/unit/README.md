@@ -27,8 +27,8 @@ npm install @ts-ioc/platform-server
 ```ts
 
 import { Suite, BeforeEach, UnitTest, Test } from '@ts-ioc/unit';
-import { ConsoleReporter } from '@ts-ioc/unit/console';
-import { ServerBootstrapModule } from '@ts-ioc/platform-server/bootstrap';
+import { ConsoleReporter } from '@ts-ioc/unit-console';
+import { ServerBootstrapModule } from '@ts-ioc/platform-server-bootstrap';
 import { Defer } from '@ts-ioc/core';
 
 
@@ -76,7 +76,7 @@ new UnitTest()
 ```
 
 test result:
-![image](https://github.com/zhouhoujun/tsioc/blob/master/packages/unit/console/assets/ConsoleReport.png?raw=true)
+![image](https://github.com/zhouhoujun/tsioc/blob/master/packages/unit-console/assets/ConsoleReport.png?raw=true)
 
 ## Container Interface
 

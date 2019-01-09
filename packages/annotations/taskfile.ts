@@ -1,5 +1,5 @@
-import { PackModule, Pack, PackActivity } from '@taskfr/pack';
-import { Workflow } from '@taskfr/core';
+import { PackModule, Pack, PackActivity } from '@ts-ioc/pack';
+import { Workflow } from '@ts-ioc/activities';
 
 @Pack({
     baseURL: __dirname,

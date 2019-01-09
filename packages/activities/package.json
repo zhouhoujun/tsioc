@@ -1,0 +1,50 @@
+{
+  "name": "@ts-ioc/activities",
+  "version": "4.0.0-beta2",
+  "description": "type task framework, base on AOP, Ioc container, via @ts-ioc",
+  "esnext": "./es2017/core.js",
+  "es2015": "./es2015/core.js",
+  "module": "./lib/index.js",
+  "main": "./bundles/core.umd.js",
+  "typings": "./lib/index.d.ts",
+  "scripts": {
+    "postinstall": "npm prune",
+    "reinstall": "npm cache clean && npm install",
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts"
+  },
+  "keywords": [
+    "activity",
+    "workflow",
+    "task",
+    "framework",
+    "IoC",
+    "AOP",
+    "dependency",
+    "injection"
+  ],
+  "author": "houjun",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhouhoujun/tsioc/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhouhoujun/tsioc.git"
+  },
+  "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme",
+  "dependencies": {
+    "@ts-ioc/aop": "^4.0.0-beta2",
+    "@ts-ioc/bootstrap": "^4.0.0-beta2",
+    "@ts-ioc/core": "^4.0.0-beta2",
+    "@ts-ioc/logs": "^4.0.0-beta2",
+    "reflect-metadata": "^0.1.12",
+    "gulp-sourcemaps": "^2.1.1",
+    "gulp-typescript": "^5.0.0",
+    "rxjs": "^6.3.3",
+    "shelljs": "^0.8.3",
+    "tslib": "^1.9.3"
+  },
+  "directories": {
+    "lib": "lib"
+  }
+}

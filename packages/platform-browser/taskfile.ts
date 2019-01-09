@@ -1,7 +1,6 @@
-import { AssetActivity, CleanToken, TsCompile, Asset, INodeActivityContext, TransformContext } from '@taskfr/build';
-import { Workflow } from '@taskfr/core';
-import { Pack, PackActivity, PackModule } from '@taskfr/pack';
-import { PfBrowserBootBuilder } from './bootstrap/taskfile';
+import { AssetActivity, CleanToken, TsCompile, Asset, INodeActivityContext, TransformContext } from '@ts-ioc/build';
+import { Workflow } from '@ts-ioc/activities';
+import { Pack, PackActivity, PackModule } from '@ts-ioc/pack';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
@@ -89,9 +88,7 @@ export class PfBrowserRollup extends AssetActivity {
                 { clean: 'esnext', activity: CleanToken }
             ]
         }
-    },
-    after: PfBrowserBootBuilder
-
+    }
 })
 export class PfBrowserBuilder extends PackActivity {
 }
