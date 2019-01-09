@@ -101,7 +101,7 @@ export class RollupTs extends AssetActivity {
 @Pack({
     // src: 'src',
     baseURL: __dirname,
-    clean: 'lib',
+    clean: ['lib', 'bundles', 'es2015', 'es2017'],
     assets: {
         ts2015: {
             sequence: [

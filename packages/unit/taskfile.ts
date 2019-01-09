@@ -54,7 +54,7 @@ export class BootRollup {
 @Pack({
     baseURL: __dirname,
     src: 'src',
-    clean: 'lib',
+    clean: ['lib', 'bundles', 'es2015', 'es2017'],
     test: ctx => ctx.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
     assets: {
         ts: {

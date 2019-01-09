@@ -73,7 +73,7 @@ export class ConsoleRollup extends AssetActivity {
 @Pack({
     baseURL: __dirname,
     src: 'src',
-    clean: 'lib',
+    clean: ['lib', 'bundles', 'es2015', 'es2017'],
     test: 'test/**/*.spec.ts',
     assets: {
         ts: { dest: 'lib', annotation: true, uglify: false },

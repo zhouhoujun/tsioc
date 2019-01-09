@@ -70,7 +70,7 @@ export class RollupTs extends AssetActivity {
 @Pack({
     baseURL: __dirname,
     src: 'src',
-    clean: 'lib',
+    clean: ['lib', 'bundles', 'es2015', 'es2017'],
     test: 'test/**/*.spec.ts',
     assets: {
         ts2015: {

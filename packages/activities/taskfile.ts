@@ -61,7 +61,7 @@ export class RollupTs {
 
 @Pack({
     baseURL: __dirname,
-    clean: 'lib',
+    clean: ['lib', 'bundles', 'es2015', 'es2017'],
     test: 'test/**/*.spec.ts',
     assets: {
         ts: {
