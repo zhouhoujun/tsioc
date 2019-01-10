@@ -1,8 +1,8 @@
 import { IContainer } from '../IContainer';
 import { IMethodAccessor } from '../IMethodAccessor';
 import { BindParameterProviderActionData, CoreActions, LifeState } from './actions';
-import { isToken, isFunction, assert, assertExp, lang, isUndefined, isNullOrUndefined } from '../utils';
-import { Token, Type } from '../types';
+import { isToken, isFunction, lang, isNullOrUndefined } from '../utils';
+import { Type } from '../types';
 import { IParameter } from '../IParameter';
 import { IProviderParser, ProviderParserToken, ParamProviders, isProvider } from '../providers';
 
@@ -37,13 +37,13 @@ export class MethodAccessor implements IMethodAccessor {
             } else {
                 targetClass = lang.getClass(instance) || this.container.getTokenImpl(target);
             }
-            assert(targetClass, target.toString() + ' is not implements by any class.');
+            lang.assert(targetClass, target.toString() + ' is not implements by any class.');
         } else {
             targetClass = lang.getClass(target);
             instance = target;
         }
 
-        assertExp(instance && isFunction(instance[propertyKey]), `type: ${targetClass} has no method ${propertyKey.toString()}.`);
+        lang.assertExp(instance && isFunction(instance[propertyKey]), `type: ${targetClass} has no method ${propertyKey.toString()}.`);
         let actionData = {
             target: instance,
             targetType: targetClass,
@@ -69,7 +69,7 @@ export class MethodAccessor implements IMethodAccessor {
         }
         if (isToken(target)) {
             targetClass = this.container.getTokenImpl(target);
-            assert(targetClass, target.toString() + ' is not implements by any class.');
+            lang.assert(targetClass, target.toString() + ' is not implements by any class.');
             if (isNullOrUndefined(instance)) {
                 instance = this.container.resolve(target, ...providers);
             }
@@ -77,7 +77,7 @@ export class MethodAccessor implements IMethodAccessor {
             targetClass = lang.getClass(target);
             instance = target;
         }
-        assertExp(instance && isFunction(instance[propertyKey]), `type: ${targetClass} has no method ${propertyKey.toString()}.`);
+        lang.assertExp(instance && isFunction(instance[propertyKey]), `type: ${targetClass} has no method ${propertyKey.toString()}.`);
 
         let actionData = {
             target: instance,

@@ -19,7 +19,7 @@ import { registerCores } from './registerCores';
 import { ResolverChain, ResolverChainToken } from './resolves';
 import { InjectReference, InjectClassProvidesToken, isInjectReference } from './InjectReference';
 import { LifeScope, LifeScopeToken } from './LifeScope';
-import { ParamProviders, ProviderMap, ProviderParserToken } from './providers';
+import { ParamProviders, ProviderMap, ProviderParserToken, isProviderMap } from './providers';
 
 /**
  * singleton reg token.
@@ -151,7 +151,18 @@ export class Container implements IContainer {
      */
     resolve<T>(token: Token<T>, ...providers: ParamProviders[]): T {
         let key = this.getTokenKey<T>(token);
-        return this.getResolvers().resolve(key, ...providers);
+        let providerMap: ProviderMap;
+        if (providers.length) {
+            if (providers.length === 1 && isProviderMap(providers[0])) {
+                providerMap = providers[0] as ProviderMap;
+            } else {
+                providerMap = this.resolveValue(ProviderParserToken).parse(...providers);
+            }
+        }
+        if (providerMap && providerMap.has(key)) {
+            return providerMap.resolve(key, providerMap);
+        }
+        return this.getResolvers().resolve(key, providerMap);
     }
 
     /**
@@ -182,7 +193,7 @@ export class Container implements IContainer {
      * @memberof IContainer
      */
     resolveValue<T>(token: Token<T>, ...providers: ParamProviders[]): T {
-        let key = this.getTokenKey(token);
+        let key = this.getTokenKey<T>(token);
         if (!this.hasRegister(key)) {
             return null;
         }

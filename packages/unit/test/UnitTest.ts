@@ -1,4 +1,4 @@
-import { Suite, BeforeEach, UnitTest, Test } from '../src';
+import { Suite, BeforeEach, UnitTest, Test, Assert } from '../src';
 import { Defer } from '@ts-ioc/core';
 import { ConsoleReporter } from '@ts-ioc/unit-console';
 
@@ -24,12 +24,13 @@ export class SuiteTest {
     }
 
     @Test('assert test in time', 200)
-    testInTime() {
+    testInTime(assert: Assert) {
         console.log('--------assert test in time------');
         let def = new Defer();
         setTimeout(() => {
             def.resolve('in time do...')
         }, 100)
+        assert.gt(6, 7);
         return def.promise;
     }
 

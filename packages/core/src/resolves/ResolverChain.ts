@@ -1,10 +1,10 @@
-import { SymbolType, Type } from '../types';
+import { SymbolType, Type, Token } from '../types';
 import { IContainer } from '../IContainer';
 import { ResolverType } from './ResolverType';
 import { Container } from '../Container';
 import { InjectToken } from '../InjectToken';
 import { IResolver } from '../IResolver';
-import { ParamProviders } from '../providers';
+import { ParamProviders, ProviderMap, ProviderParserToken, isProviderMap } from '../providers';
 
 /**
  *  resolver chain token.
@@ -89,7 +89,7 @@ export class ResolverChain implements IResolver {
      * @returns {boolean}
      * @memberof ResolverChain
      */
-    hasToken<T>(resolver: ResolverType, token: SymbolType<T>): boolean {
+    hasToken<T>(resolver: ResolverType, token: Token<T>): boolean {
         if (!token) {
             return false;
         }
@@ -112,7 +112,7 @@ export class ResolverChain implements IResolver {
      * @returns {T}
      * @memberof ResolverChain
      */
-    resolve<T>(token: SymbolType<T>, ...providers: ParamProviders[]): T {
+    resolve<T>(token: Token<T>, ...providers: ParamProviders[]): T {
         let resolver = this.toArray().find(r => this.hasToken(r, token));
         if (!resolver && !this.container.parent) {
             return null;

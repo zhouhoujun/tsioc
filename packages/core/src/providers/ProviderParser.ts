@@ -69,12 +69,12 @@ export class ProviderParser implements IProviderParser {
                         }
                         map.add(pr.provide, pr.useClass);
                     } else if (isFunction(pr.useFactory)) {
-                        map.add(pr.provide, () => {
+                        map.add(pr.provide, (...providers) => {
                             let args = [];
                             if (isArray(pr.deps) && pr.deps.length) {
                                 args = pr.deps.map(d => {
-                                    if (isClass(d)) {
-                                        return this.container.get(d);
+                                    if (isToken(d)) {
+                                        return this.container.resolve(d, ...providers);
                                     } else {
                                         return d;
                                     }

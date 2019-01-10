@@ -1,5 +1,5 @@
 import { Src, ContextActivity, Task, ActivityContext, InputDataToken, InjectActivityContextToken, ActivityMetaAccessorToken, ActivityConfigure } from '@ts-ioc/activities';
-import { Inject, Injectable, ObjectMap, Express2, isArray, isString, assertExp, Providers, MetaAccessorToken } from '@ts-ioc/core';
+import { Inject, Injectable, ObjectMap, Express2, isArray, isString, lang, Providers, MetaAccessorToken } from '@ts-ioc/core';
 import { toAbsolutePath } from '@ts-ioc/platform-server';
 import { existsSync, readdirSync, lstatSync } from 'fs';
 import { join, dirname, normalize, relative } from 'path';
@@ -149,7 +149,7 @@ export class NodeActivityContext<T> extends ActivityContext<T> implements INodeA
      * @memberof NodeContext
      */
     async getFiles(express: Src, filter?: (fileName: string) => boolean, mapping?: (filename: string) => string): Promise<string[]> {
-        assertExp(isString(express) || isArray(express), 'input express param type error!');
+        lang.assertExp(isString(express) || isArray(express), 'input express param type error!');
         let filePaths: string[] = await globby(express);
         if (filter) {
             filePaths = filePaths.filter(filter);

@@ -1,4 +1,4 @@
-import { isPromise, isToken, isMetadataObject, assertExp, isFunction } from '@ts-ioc/core';
+import { isPromise, isToken, isMetadataObject, lang, isFunction } from '@ts-ioc/core';
 import { ITransformActivity, TransformActivityToken } from './ITransformActivity';
 import { ITransform } from './ITransform';
 import { TransformType, TransformExpress, TransformConfig } from './transformTypes';
@@ -141,7 +141,7 @@ export class TransformActivity extends StreamActivity implements ITransformActiv
             return await cfg;
         }
 
-        assertExp(isMetadataObject(cfg), 'transform configure error');
+        lang.assertExp(isMetadataObject(cfg), 'transform configure error');
         return cfg as TransformType;
     }
 }

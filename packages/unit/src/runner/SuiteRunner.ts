@@ -1,4 +1,4 @@
-import { IRunner, Runner, ModuleConfigure } from '@ts-ioc/bootstrap';
+import { Runner, ModuleConfigure } from '@ts-ioc/bootstrap';
 import {
     Token, getMethodMetadata, isNumber, lang, ContainerToken,
     IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Defer, Injectable
@@ -10,6 +10,7 @@ import { Suite } from '../decorators/Suite';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { SuiteRunnerToken, ISuiteRunner } from './ISuiteRunner';
+import { RunCaseToken, RunSuiteToken, AssertionOptionsToken, IAssertionOptions, AssertionErrorToken } from '../assert';
 
 
 /**
@@ -65,20 +66,35 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
         await this.runTest(desc);
     }
 
-    runTimeout(action: () => Promise<any>, describe: string, timeout: number): Promise<any> {
+    runTimeout(key: string, describe: string, timeout: number): Promise<any> {
+        let instance = this.instance;
         let defer = new Defer();
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
-                defer.reject(new Error(`${describe}, timeout ${timeout}`));
+                let err = this.container.resolve(AssertionErrorToken, {
+                    provide: AssertionOptionsToken,
+                    useValue: <IAssertionOptions>{
+                        message: `${describe}, timeout ${timeout}`,
+                        stackStartFunction: SuiteRunner
+                    }
+                });
+                defer.reject(err);
             }
         }, timeout);
 
-        action().then(r => {
-            clearTimeout(timer);
-            timer = null;
-            defer.resolve(r);
-        })
+        this.container.invoke(instance, key,
+            { provide: RunCaseToken, useValue: this.instance[key] },
+            { provide: RunSuiteToken, useValue: this.instance })
+            .then(r => {
+                clearTimeout(timer);
+                timer = null;
+                defer.resolve(r);
+            })
+            .catch(err => {
+                clearTimeout(timer);
+                defer.reject(err);
+            })
 
         return defer.promise;
     }
@@ -90,7 +106,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
                 .map(key => {
                     let meta = methodMaps[key].find(m => isNumber(m.timeout));
                     return this.runTimeout(
-                        () => this.container.invoke(this.token, key, this.instance),
+                        key,
                         'sutie before ' + key,
                         meta ? meta.timeout : describe.timeout)
                 }));
@@ -103,7 +119,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
                 .map(key => {
                     let meta = methodMaps[key].find(m => isNumber(m.timeout));
                     return this.runTimeout(
-                        () => this.container.invoke(this.token, key, this.instance),
+                        key,
                         'before each ' + key,
                         meta ? meta.timeout : this.timeout);
                 }));
@@ -136,7 +152,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
         try {
             await this.runBeforeEach();
             await this.runTimeout(
-                () => this.container.invoke(this.instance || this.token, caseDesc.key, this.instance),
+                caseDesc.key,
                 caseDesc.title,
                 caseDesc.timeout);
 

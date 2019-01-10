@@ -3,6 +3,7 @@ import { AopModule } from '@ts-ioc/aop';
 import { LogModule } from '@ts-ioc/logs';
 import { UnitSetup } from './UnitSetup';
 import * as aops from './aop';
+import * as asserts  from './assert';
 import * as runners from './runner';
 import * as reports from './reports';
 
@@ -13,11 +14,13 @@ import * as reports from './reports';
         aops,
         UnitSetup,
         runners,
-        reports
+        reports,
+        asserts
     ],
     exports: [
         runners,
-        reports
+        reports,
+        asserts
     ]
 })
 export class UnitModule {

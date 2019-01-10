@@ -1,15 +1,26 @@
-import { Reporter, ISuiteDescribe, Report, ICaseDescribe } from '@ts-ioc/unit';
-import { Token } from '@ts-ioc/core';
+import { Reporter, ISuiteDescribe, Report, ICaseDescribe, AssertionErrorToken, IAssertionOptions, AssertionOptionsToken } from '@ts-ioc/unit';
+import { Token, ObjectMap, lang, ParamProviders } from '@ts-ioc/core';
 import chalk from 'chalk';
 import { DIModule } from '@ts-ioc/bootstrap';
 import { ServerBootstrapModule } from '@ts-ioc/platform-server-bootstrap';
 import { ServerModule } from '@ts-ioc/platform-server';
+import { AssertionError } from 'assert';
 
 @Report
 @DIModule({
     imports: [
         ServerModule,
         ServerBootstrapModule
+    ],
+    providers: [
+        {
+            provide: AssertionErrorToken,
+            useFactory: (options: IAssertionOptions) => {
+                console.log(options);
+                return new AssertionError(options);
+            },
+            deps: [AssertionOptionsToken]
+        }
     ],
     exports: [
         ServerModule,
@@ -22,7 +33,7 @@ export class ConsoleReporter extends Reporter {
         let reportStr = '';
         let first: ISuiteDescribe, last: ISuiteDescribe;
         let sus = Array.from(suites.values());
-        let fails: ICaseDescribe[] = [];
+        let fails: ObjectMap<string[]> = {};
         let successed = 0, failed = 0;
         sus.forEach((d, i) => {
             if (i === 0) {
@@ -35,7 +46,9 @@ export class ConsoleReporter extends Reporter {
             d.cases.forEach(c => {
                 if (c.error) {
                     failed++;
-                    fails.push(c);
+                    let derr = fails[d.describe] = fails[d.describe] || [];
+                    derr.push(`\n    ${c.title}\n`);
+                    derr.push(chalk.red(c.error.stack));
                 } else {
                     successed++;
                 }
@@ -52,12 +65,13 @@ export class ConsoleReporter extends Reporter {
             reportStr = reportStr + chalk.gray(` (${last.end - first.start}ms)`);
         }
 
-        if (fails.length) {
-            reportStr = reportStr + '\n\n  ';
-            fails.forEach(f => {
-                reportStr = reportStr + chalk.red(f.error.stack);
+        lang.forIn(fails, (errors: string[], describe: string) => {
+            reportStr = reportStr + '\n\n  ' + describe;
+            errors.forEach(stack => {
+                reportStr = reportStr + '\n' + stack;
             })
-        }
+        })
+
         console.log(reportStr);
         if (fails.length) {
             process.exit(1);
