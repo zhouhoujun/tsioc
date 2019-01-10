@@ -1,5 +1,4 @@
 import * as fs from 'fs';
-import * as path from 'path'
 import { Task } from '@ts-ioc/activities';
 import { mkdir } from 'shelljs';
 import { ShellActivity } from '../ShellActivity';

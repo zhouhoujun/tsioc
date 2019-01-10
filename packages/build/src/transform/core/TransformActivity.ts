@@ -4,7 +4,7 @@ import { ITransform } from './ITransform';
 import { TransformType, TransformExpress, TransformConfig } from './transformTypes';
 import { ITransformConfigure } from './ITransformConfigure';
 import { Task, isWorkflowInstance, isActivityType } from '@ts-ioc/activities';
-import { StreamActivity, TransformContextToken } from './StreamActivity';
+import { StreamActivity } from './StreamActivity';
 import { NodeActivityContextToken } from '../../core';
 
 

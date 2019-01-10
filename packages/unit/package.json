@@ -13,6 +13,7 @@
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
+    "unit",
     "IoC",
     "AOP",
     "dependency",
