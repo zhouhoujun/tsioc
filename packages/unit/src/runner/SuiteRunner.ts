@@ -10,7 +10,7 @@ import { Suite } from '../decorators/Suite';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { SuiteRunnerToken, ISuiteRunner } from './ISuiteRunner';
-import { RunCaseToken, RunSuiteToken, AssertionOptionsToken, IAssertionOptions, AssertionErrorToken } from '../assert';
+import { RunCaseToken, RunSuiteToken, AssertionOptionsToken, IAssertionOptions, AssertionErrorToken, AssertError } from '../assert';
 
 
 /**
@@ -54,6 +54,9 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
 
     async run(data?: any): Promise<any> {
         try {
+            if (!this.container.has(AssertionErrorToken)) {
+                this.container.bindProvider(AssertionErrorToken, AssertError);
+            }
             let desc = this.getSuiteDescribe();
             await this.runSuite(desc);
         } catch (err) {
@@ -76,7 +79,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
                     provide: AssertionOptionsToken,
                     useValue: <IAssertionOptions>{
                         message: `${describe}, timeout ${timeout}`,
-                        stackStartFunction: SuiteRunner
+                        stackStartFn: this.instance[key]
                     }
                 });
                 defer.reject(err);
@@ -93,6 +96,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
             })
             .catch(err => {
                 clearTimeout(timer);
+                timer = null;
                 defer.reject(err);
             })
 

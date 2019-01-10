@@ -12,16 +12,16 @@ import { AssertionError } from 'assert';
         ServerModule,
         ServerBootstrapModule
     ],
-    providers: [
-        {
-            provide: AssertionErrorToken,
-            useFactory: (options: IAssertionOptions) => {
-                console.log(options);
-                return new AssertionError(options);
-            },
-            deps: [AssertionOptionsToken]
-        }
-    ],
+    // providers: [
+    //     {
+    //         provide: AssertionErrorToken,
+    //         useFactory: (options: IAssertionOptions) => {
+    //             options.stackStartFunction = options.stackStartFn;
+    //             return new AssertionError(options);
+    //         },
+    //         deps: [AssertionOptionsToken]
+    //     }
+    // ],
     exports: [
         ServerModule,
         ServerBootstrapModule

@@ -1,5 +1,6 @@
 import { lang, Injectable, isNull, isUndefined, isString, isRegExp, InjectToken, Singleton, IContainer, Inject, ContainerToken } from '@ts-ioc/core';
 
+
 /**
  * assertion error options.
  *
@@ -11,6 +12,7 @@ export interface IAssertionOptions {
     actual?: any;
     expected?: any;
     operator?: string;
+    stackStartFn?: Function;
     stackStartFunction?: Function;
 }
 
@@ -28,8 +30,6 @@ export interface IAssertionError extends Error {
     expected: any;
     operator: string;
     generatedMessage: boolean;
-
-    new(options?: IAssertionOptions);
 }
 
 /**
@@ -42,52 +42,52 @@ export const AssertionOptionsToken = new InjectToken<IAssertionOptions>('Asserti
  */
 export const AssertionErrorToken = new InjectToken<IAssertionError>('AssertionError');
 
-// @Injectable(ErrorFormatorToken)
-// export class ErrorFormator {
-//     constructor(
-//         @Inject(AssertionOptionsToken) protected options: AssertionOptions) {
-//     }
+/**
+ * assert error.
+ *
+ * @export
+ * @class AssertError
+ * @extends {Error}
+ */
+export class AssertError implements IAssertionError {
+    actual: any;
+    expected: any;
+    operator: string;
+    generatedMessage: boolean;
 
-//     format(stack: string): string {
-//         let options = this.options || {};
-//         return `Expected ['${lang.getClassName(options.actual)}'] ${options.actual} ${options.operator || ''} ['${lang.getClassName(options.expected)}'] ${options.expected} ${options.message || ''}.\n` + stack;
-//     }
-// }
+    name = 'AssertError';
+    message: string;
+    stack: string;
+    constructor(@Inject(AssertionOptionsToken) protected options?: IAssertionOptions) {
+        let stackTarge: Function;
+        if (options) {
+            this.actual = options.actual;
+            this.expected = options.expected;
+            this.operator = options.operator;
+            if (this.operator) {
+                this.message = `Expected ['${lang.getClassName(options.actual)}'] ${options.actual} ${options.operator || ''} ['${lang.getClassName(options.expected)}'] ${options.expected} ${options.message || ''}.`
+            } else {
+                this.message = options.message;
+            }
+            stackTarge = options.stackStartFn;
+        }
 
-// /**
-//  * assert error.
-//  *
-//  * @export
-//  * @class AssertError
-//  * @extends {Error}
-//  */
-// export class AssertError implements Error {
+        stackTarge = stackTarge || AssertError;
+        if (Error.captureStackTrace) {
+            Error.captureStackTrace(this, stackTarge);
+        } else {
+            try {
+                throw new Error();
+            } catch (e) {
+                this.stack = e.stack;
+            }
+        }
+    }
 
-//     name = 'AssertError';
-//     message: string;
-//     stack: string;
-//     constructor(protected msg: ErrorFormator | string, stackTarge?: Function) {
-//         if (isString(msg)) {
-//             this.message = msg;
-//         } else {
-//             this.message = msg.format(this.stack);
-//         }
-//         stackTarge = stackTarge || AssertError;
-//         if (Error.captureStackTrace) {
-//             Error.captureStackTrace(this, stackTarge);
-//         } else {
-//             try {
-//                 throw new Error();
-//             } catch (e) {
-//                 this.stack = e.stack;
-//             }
-//         }
-//     }
-
-//     toString() {
-//         return `Error: ${this.message || ''}\n${this.stack}`;
-//     }
-// }
+    toString() {
+        return `Error: ${this.message || ''}\n${this.stack}`;
+    }
+}
 
 export const RunCaseToken = new InjectToken<Function>('runCase');
 export const RunSuiteToken = new InjectToken<any>('runSuite');
@@ -104,7 +104,6 @@ export class Assert {
     container: IContainer;
 
     constructor(@Inject(RunSuiteToken) public testSuite: any, @Inject(RunCaseToken) public testCase: Function) {
-
     }
 
     /**
@@ -115,13 +114,13 @@ export class Assert {
      * @param {string} [message]
      * @memberof Assert
      */
-    eq(actual: any, expected: any, message?: string) {
+    eq(actual: any, expected: any, message?: string | Error) {
         if (actual !== expected) {
             let err = this.container.resolve(
                 AssertionErrorToken,
                 {
                     provide: AssertionOptionsToken,
-                    useValue: { actual: actual, expected: expected, message: message, operator: '==', stackStartFunction: this.testCase }
+                    useValue: { actual: actual, expected: expected, message: message, operator: '==', stackStartFn: this.testCase  }
                 },
             );
             throw err;
@@ -137,7 +136,7 @@ export class Assert {
      * @param {any} expected
      * @param {string} [message]
      */
-    equal(actual: any, expected: any, message?: string) {
+    equal(actual: any, expected: any, message?: string | Error) {
         this.eq(actual, expected, message);
     }
 
@@ -150,13 +149,13 @@ export class Assert {
      * @param {any} expected
      * @param {string} [message]
      */
-    notEqual(actual: any, expected: any, message?: string) {
+    notEqual(actual: any, expected: any, message?: string | Error) {
         if (actual === expected) {
             let err = this.container.resolve(
                 AssertionErrorToken,
                 {
                     provide: AssertionOptionsToken,
-                    useValue: { actual: actual, expected: expected, message: message, operator: '!=', stackStartFunction: this.testCase }
+                    useValue: { actual: actual, expected: expected, message: message, operator: '!=', stackStartFn: this.testCase }
                 },
             );
             throw err;
@@ -172,7 +171,7 @@ export class Assert {
      * @param {string} [message]
      * @memberof Assert
      */
-    beCloseTo(actual: number, expected: number, precision?: number, message?: string) {
+    beCloseTo(actual: number, expected: number, precision?: number, message?: string | Error) {
         if (precision !== 0) {
             precision = precision || 2;
         }
@@ -189,7 +188,7 @@ export class Assert {
                 AssertionErrorToken,
                 {
                     provide: AssertionOptionsToken,
-                    useValue: { actual: actual, expected: expected, message: message, operator: '~=', stackStartFunction: this.testCase }
+                    useValue: { actual: actual, expected: expected, message: message, operator: '~=', stackStartFn: this.testCase }
                 },
             );
             throw err;
@@ -205,13 +204,13 @@ export class Assert {
      * @param {string} [message]
      * @memberof Assert
      */
-    lt(actual: any, expected: any, message?: string) {
+    lt(actual: any, expected: any, message?: string | Error) {
         if (actual >= expected) {
             let err = this.container.resolve(
                 AssertionErrorToken,
                 {
                     provide: AssertionOptionsToken,
-                    useValue: { actual: actual, expected: expected, message: message, operator: '<', stackStartFunction: this.testCase }
+                    useValue: { actual: actual, expected: expected, message: message, operator: '<', stackStartFn: this.testCase }
                 },
             );
             throw err;
@@ -227,13 +226,13 @@ export class Assert {
      * @param {string} [message]
      * @memberof Assert
      */
-    le(actual: any, expected: any, message?: string) {
+    le(actual: any, expected: any, message?: string | Error) {
         if (actual > expected) {
             let err = this.container.resolve(
                 AssertionErrorToken,
                 {
                     provide: AssertionOptionsToken,
-                    useValue: { actual: actual, expected: expected, message: message, operator: '<=', stackStartFunction: this.testCase }
+                    useValue: { actual: actual, expected: expected, message: message, operator: '<=', stackStartFn: this.testCase }
                 },
             );
             throw err;
@@ -249,13 +248,13 @@ export class Assert {
      * @param {string} [message]
      * @memberof Assert
      */
-    gt(actual: any, expected: any, message?: string) {
+    gt(actual: any, expected: any, message?: string | Error) {
         if (actual <= expected) {
             let err = this.container.resolve(
                 AssertionErrorToken,
                 {
                     provide: AssertionOptionsToken,
-                    useValue: { actual: actual, expected: expected, message: message, operator: '>', stackStartFunction: this.testCase }
+                    useValue: { actual: actual, expected: expected, message: message, operator: '>', stackStartFn: this.testCase }
                 },
             );
             throw err;
@@ -271,13 +270,13 @@ export class Assert {
      * @param {string} [message]
      * @memberof Assert
      */
-    ge(actual: any, expected: any, message?: string) {
+    ge(actual: any, expected: any, message?: string | Error) {
         if (actual < expected) {
             let err = this.container.resolve(
                 AssertionErrorToken,
                 {
                     provide: AssertionOptionsToken,
-                    useValue: { actual: actual, expected: expected, message: message, operator: '>=', stackStartFunction: this.testCase }
+                    useValue: { actual: actual, expected: expected, message: message, operator: '>=', stackStartFn: this.testCase }
                 },
             );
             throw err;
@@ -285,26 +284,26 @@ export class Assert {
     }
 
 
-    beNaN(actual: any, message?: string) {
+    beNaN(actual: any, message?: string | Error) {
         if (!isNaN(actual)) {
             let err = this.container.resolve(
                 AssertionErrorToken,
                 {
                     provide: AssertionOptionsToken,
-                    useValue: { actual: actual, expected: 'NaN', message: message, operator: 'to be', stackStartFunction: this.testCase }
+                    useValue: { actual: actual, expected: 'NaN', message: message, operator: 'to be', stackStartFn: this.testCase }
                 },
             );
             throw err;
         }
     }
 
-    beNull(actual: any, message?: string) {
+    beNull(actual: any, message?: string | Error) {
         if (!isNull(actual)) {
             let err = this.container.resolve(
                 AssertionErrorToken,
                 {
                     provide: AssertionOptionsToken,
-                    useValue: { actual: actual, expected: 'null', message: message, operator: 'to be', stackStartFunction: this.testCase }
+                    useValue: { actual: actual, expected: 'null', message: message, operator: 'to be', stackStartFn: this.testCase }
                 },
             );
             throw err;
@@ -312,26 +311,26 @@ export class Assert {
     }
 
 
-    beDefined(actual: any, message?: string) {
+    beDefined(actual: any, message?: string | Error) {
         if (isUndefined(actual)) {
             let err = this.container.resolve(
                 AssertionErrorToken,
                 {
                     provide: AssertionOptionsToken,
-                    useValue: { actual: actual, expected: 'undefined', message: message, operator: 'not to be', stackStartFunction: this.testCase }
+                    useValue: { actual: actual, expected: 'undefined', message: message, operator: 'not to be', stackStartFn: this.testCase }
                 },
             );
             throw err;
         }
     }
 
-    beUndefined(actual: any, message?: string) {
+    beUndefined(actual: any, message?: string | Error) {
         if (!isUndefined(actual)) {
             let err = this.container.resolve(
                 AssertionErrorToken,
                 {
                     provide: AssertionOptionsToken,
-                    useValue: { actual: actual, expected: 'undefined', message: message, operator: 'to be', stackStartFunction: this.testCase }
+                    useValue: { actual: actual, expected: 'undefined', message: message, operator: 'to be', stackStartFn: this.testCase }
                 },
             );
             throw err;
@@ -345,13 +344,13 @@ export class Assert {
      * @param {string} [message]
      * @memberof Assert
      */
-    beFalsy(actual: any, message?: string) {
+    beFalsy(actual: any, message?: string | Error) {
         if (!!!actual) {
             let err = this.container.resolve(
                 AssertionErrorToken,
                 {
                     provide: AssertionOptionsToken,
-                    useValue: { actual: actual, expected: 'falsy', message: message, operator: 'to be', stackStartFunction: this.testCase }
+                    useValue: { actual: actual, expected: 'falsy', message: message, operator: 'to be', stackStartFn: this.testCase }
                 },
             );
             throw err;
@@ -365,13 +364,13 @@ export class Assert {
      * @param {string} [message]
      * @memberof Assert
      */
-    beTruthy(actual: any, message?: string) {
+    beTruthy(actual: any, message?: string | Error) {
         if (!!actual) {
             let err = this.container.resolve(
                 AssertionErrorToken,
                 {
                     provide: AssertionOptionsToken,
-                    useValue: { actual: actual, expected: 'truthy', message: message, operator: 'to be', stackStartFunction: this.testCase }
+                    useValue: { actual: actual, expected: 'truthy', message: message, operator: 'to be', stackStartFn: this.testCase }
                 },
             );
             throw err;
@@ -385,13 +384,13 @@ export class Assert {
      * @param {string} [message]
      * @memberof Assert
      */
-    beNegativeInfinity(actual: number, message?: string) {
+    beNegativeInfinity(actual: number, message?: string | Error) {
         if (actual !== Number.NEGATIVE_INFINITY) {
             let err = this.container.resolve(
                 AssertionErrorToken,
                 {
                     provide: AssertionOptionsToken,
-                    useValue: { actual: actual, expected: '-Infinity', message: message, operator: 'to be', stackStartFunction: this.testCase }
+                    useValue: { actual: actual, expected: '-Infinity', message: message, operator: 'to be', stackStartFn: this.testCase }
                 },
             );
             throw err;
@@ -405,13 +404,13 @@ export class Assert {
      * @param {string} [message]
      * @memberof Assert
      */
-    bePositiveInfinity(actual: number, message?: string) {
+    bePositiveInfinity(actual: number, message?: string | Error) {
         if (actual !== Number.POSITIVE_INFINITY) {
             let err = this.container.resolve(
                 AssertionErrorToken,
                 {
                     provide: AssertionOptionsToken,
-                    useValue: { actual: actual, expected: 'Infinity', message: message, operator: 'to be', stackStartFunction: this.testCase }
+                    useValue: { actual: actual, expected: 'Infinity', message: message, operator: 'to be', stackStartFn: this.testCase }
                 },
             );
             throw err;
@@ -426,7 +425,7 @@ export class Assert {
      * @param {string} [message]
      * @memberof Assert
      */
-    match(actual: string, expected: string | RegExp, message?: string) {
+    match(actual: string, expected: string | RegExp, message?: string | Error) {
         if (!isString(expected) && !isRegExp(expected)) {
             throw new Error('Expected is not a String or a RegExp');
         }
@@ -435,14 +434,13 @@ export class Assert {
                 AssertionErrorToken,
                 {
                     provide: AssertionOptionsToken,
-                    useValue: { actual: actual, expected: expected, message: message, operator: 'match', stackStartFunction: this.testCase }
+                    useValue: { actual: actual, expected: expected, message: message, operator: 'match', stackStartFn: this.testCase }
                 },
             );
             throw err;
         }
     }
 }
-
 
 export interface IAssertMatch<T> {
     toBe(expected: any, expectationFailOutput?: string | Error): Promise<void>;
@@ -464,10 +462,10 @@ export interface IAssertMatch<T> {
     toBeGreaterThanOrEqual(expected: number | Promise<number>, expectationFailOutput?: any): Promise<void>;
     toBeCloseTo(expected: number | Promise<number>, precision?: any, expectationFailOutput?: any): Promise<void>;
     toThrow(expected?: any): Promise<void>;
-    toThrowError(message?: string | RegExp | Promise<string | RegExp>): Promise<void>;
-    toThrowError(expected?: new (...args: any[]) => Error | Promise<new (...args: any[]) => Error>, message?: string | RegExp | Promise<string | RegExp>): Promise<void>;
+    toThrowError(message?: string | Error | RegExp | Promise<string | RegExp>): Promise<void>;
+    toThrowError(expected?: new (...args: any[]) => Error | Promise<new (...args: any[]) => Error>, message?: string | Error | RegExp | Promise<string | RegExp>): Promise<void>;
 }
 
-// export function expect(target: any, message?: string): IAssertMatch<any> {
+// export function expect(target: any, message?: string | Error): IAssertMatch<any> {
 
 // }
