@@ -4,7 +4,7 @@ import { ResolverType } from './ResolverType';
 import { Container } from '../Container';
 import { InjectToken } from '../InjectToken';
 import { IResolver } from '../IResolver';
-import { ParamProviders, ProviderMap, ProviderParserToken, isProviderMap } from '../providers';
+import { ParamProviders } from '../providers';
 
 /**
  *  resolver chain token.
