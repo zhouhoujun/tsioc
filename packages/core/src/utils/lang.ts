@@ -304,7 +304,7 @@ export namespace lang {
      * @param {(token: Type<any>) => any} express
      */
     export function forInClassChain(target: Type<any>, express: (token: Type<any>) => any): void {
-        while (isClass(target) && target !== Object) {
+        while (isClass(target, false) && target !== Object) {
             if (express(target) === false) {
                 break;
             }
@@ -322,7 +322,7 @@ export namespace lang {
      */
     export function isExtendsClass(target: Token<any>, baseClass: Type<any> | AbstractType<any> | ((type: Type<any>) => boolean)): boolean {
         let isExtnds = false;
-        if (isClass(target)) {
+        if (isClass(target, false)) {
             forInClassChain(target, t => {
                 if (isClass(baseClass) || isAbstractClass(baseClass)) {
                     isExtnds = t === baseClass;

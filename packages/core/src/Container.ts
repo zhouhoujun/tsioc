@@ -19,7 +19,7 @@ import { registerCores } from './registerCores';
 import { ResolverChain, ResolverChainToken } from './resolves';
 import { InjectReference, InjectClassProvidesToken, isInjectReference } from './InjectReference';
 import { LifeScope, LifeScopeToken } from './LifeScope';
-import { ParamProviders, ProviderMap, ProviderParserToken, isProviderMap } from './providers';
+import { ParamProviders, ProviderMap, ProviderParserToken, isProviderMap, IProviderParser, ProviderTypes } from './providers';
 
 /**
  * singleton reg token.
@@ -75,6 +75,14 @@ export class Container implements IContainer {
             root = root.parent;
         }
         return root;
+    }
+
+    private parser: IProviderParser;
+    getProviderParser(): IProviderParser {
+        if (!this.parser) {
+            this.parser = this.resolveValue(ProviderParserToken)
+        }
+        return this.parser;
     }
 
     /**
@@ -156,7 +164,7 @@ export class Container implements IContainer {
             if (providers.length === 1 && isProviderMap(providers[0])) {
                 providerMap = providers[0] as ProviderMap;
             } else {
-                providerMap = this.resolveValue(ProviderParserToken).parse(...providers);
+                providerMap = this.getProviderParser().parse(...providers);
             }
         }
         if (providerMap && providerMap.has(key)) {
@@ -466,14 +474,39 @@ export class Container implements IContainer {
      * @returns {this}
      * @memberof Container
      */
-    bindProviders(target: Token<any>, providers: ParamProviders[], onceBinded?: (mapTokenKey: Token<any>) => void): this {
-        let refKey = new InjectReference(ProviderMap, isClass(target) ? target : this.getTokenImpl(target));
-        let maps = this.get(ProviderParserToken).parse(...providers);
-        if (this.hasRegister(refKey)) {
-            this.resolveValue(refKey).copy(maps);
+    bindProviders(target?: Token<any> | ProviderTypes, onceBinded?: ProviderTypes | ((mapTokenKey: Token<any>) => void), ...providers: ProviderTypes[]): this {
+        let tgt: Token<any>;
+        let complete: (mapTokenKey: Token<any>) => void;
+        let prods: ProviderTypes[] = providers;
+
+        if (isFunction(onceBinded)) {
+            complete = onceBinded as (mapTokenKey: Token<any>) => void;
+        } else if (onceBinded) {
+            prods.unshift(onceBinded);
+        }
+
+        if (isToken(target)) {
+            tgt = target;
+        } else if (target) {
+            tgt = null;
+            prods.unshift(target);
+        }
+
+        console.log(prods);
+        let maps = this.getProviderParser().parse(...prods);
+        if (tgt) {
+            let refKey = new InjectReference(ProviderMap, isClass(tgt) ? tgt : this.getTokenImpl(tgt));
+            if (this.hasRegister(refKey)) {
+                this.resolveValue(refKey).copy(maps);
+            } else {
+                this.bindProvider(refKey, maps);
+                complete && complete(refKey);
+            }
         } else {
-            this.bindProvider(refKey, maps);
-            onceBinded && onceBinded(refKey);
+            maps.keys().forEach(key => {
+                isToken(key) && this.factories.set(key, (...prds) => maps.resolve(key, ...prds));
+            })
+
         }
         return this;
     }
@@ -601,7 +634,7 @@ export class Container implements IContainer {
             return;
         }
 
-        if (isClass(token)) {
+        if (isClass(token, false)) {
             type = token;
             if (!this.has(type)) {
                 this.use(type);
@@ -609,7 +642,7 @@ export class Container implements IContainer {
         } else {
             type = this.getTokenImpl(token);
         }
-        if (!isClass(type) || (RefTagLevel.self === level)) {
+        if (!isClass(type, false) || (RefTagLevel.self === level)) {
             express(token);
             return;
         }
@@ -815,7 +848,7 @@ export class Container implements IContainer {
                 }
             }
 
-            let providerMap = this.get(ProviderParserToken).parse(...providers);
+            let providerMap = this.getProviderParser().parse(...providers);
 
             lifeScope.execute({
                 tokenKey: key,

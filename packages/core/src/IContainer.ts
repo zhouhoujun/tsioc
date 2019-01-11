@@ -8,7 +8,7 @@ import { InjectToken } from './InjectToken';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IResolver } from './IResolver';
 import { ResolverChain } from './resolves';
-import { ParamProviders } from './providers';
+import { ParamProviders, IProviderParser, ProviderTypes } from './providers';
 
 /**
  * IContainer token.
@@ -38,6 +38,14 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @memberof IContainer
      */
     getRoot(): IContainer;
+
+    /**
+     * get provider parser.
+     *
+     * @returns {IProviderParser}
+     * @memberof IContainer
+     */
+    getProviderParser(): IProviderParser;
 
     /**
      * resolve chain.
@@ -221,15 +229,34 @@ export interface IContainer extends IMethodAccessor, IResolver {
     bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this;
 
     /**
-     * bind providers for only target class.
+     * bind providers.
      *
-     * @param {Token<any>} target
-     * @param {ParamProviders[]} providers
-     * @param {(mapTokenKey: Token<any>) => void} [onceBinded]
+     * @param {...ProviderTypes[]} providers
      * @returns {this}
      * @memberof IContainer
      */
-    bindProviders(target: Token<any>, providers: ParamProviders[], onceBinded?: (mapTokenKey: Token<any>) => void): this;
+    bindProviders(...providers: ProviderTypes[]): this;
+
+    /**
+     * bind providers for only target class.
+     *
+     * @param {Token<any>} target
+     * @param {...ProviderTypes[]} providers
+     * @returns {this}
+     * @memberof IContainer
+     */
+    bindProviders<T>(target: Token<T>, ...providers: ProviderTypes[]): this;
+
+    /**
+     * bind providers for only target class.
+     *
+     * @param {Token<any>} target
+     * @param {(mapTokenKey: Token<any>) => void} onceBinded
+     * @param {...ProviderTypes[]} providers
+     * @returns {this}
+     * @memberof IContainer
+     */
+    bindProviders<T>(target: Token<T>, onceBinded: (mapTokenKey: Token<any>) => void, ...providers: ProviderTypes[]): this;
 
     /**
      * bind provider ref to target.

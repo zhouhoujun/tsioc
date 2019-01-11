@@ -29,6 +29,7 @@ const rename = require('gulp-rename');
             external: [
                 'reflect-metadata',
                 'tslib',
+                'assert',
                 '@ts-ioc/core',
                 '@ts-ioc/aop',
                 '@ts-ioc/logs',
@@ -37,6 +38,7 @@ const rename = require('gulp-rename');
             globals: {
                 'reflect-metadata': 'Reflect',
                 'tslib': 'tslib',
+                'assert': 'assert',
                 '@ts-ioc/core': '@ts-ioc/core',
                 '@ts-ioc/aop': '@ts-ioc/aop',
                 '@ts-ioc/logs': '@ts-ioc/logs',

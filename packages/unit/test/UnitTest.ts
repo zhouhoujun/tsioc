@@ -30,7 +30,7 @@ export class SuiteTest {
         setTimeout(() => {
             def.resolve('in time do...')
         }, 100)
-        assert.eq('0', 0);
+        assert.strictEqual('0', 0);
         return def.promise;
     }
 

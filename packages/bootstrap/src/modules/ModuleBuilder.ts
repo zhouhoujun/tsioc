@@ -3,7 +3,7 @@ import {
     IContainer, Token, ParamProviders, lang,
     isClass, isToken, Inject, Registration, Container,
     MetaAccessorToken, IMetaAccessor, isUndefined, Singleton,
-    InjectMetaAccessorToken, isArray, ProviderParserToken, Type
+    InjectMetaAccessorToken, isArray, Type
 } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv, BootOptions } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
@@ -182,7 +182,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             await parent.loadModule(...config.imports);
         }
         if (isArray(config.providers) && config.providers.length) {
-            let parser = parent.get(ProviderParserToken);
+            let parser = parent.getProviderParser();
             let pdrmap = parser.parse(...config.providers);
             pdrmap.keys().forEach(key => {
                 isToken(key) && parent.bindProvider(key, (...providers: ParamProviders[]) => pdrmap.resolve(key, ...providers));

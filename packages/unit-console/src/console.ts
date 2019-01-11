@@ -1,10 +1,10 @@
-import { Reporter, ISuiteDescribe, Report, ICaseDescribe, AssertionErrorToken, IAssertionOptions, AssertionOptionsToken } from '@ts-ioc/unit';
-import { Token, ObjectMap, lang, ParamProviders } from '@ts-ioc/core';
+import { Reporter, ISuiteDescribe, Report, Assert } from '@ts-ioc/unit';
+import { Token, ObjectMap, lang } from '@ts-ioc/core';
 import chalk from 'chalk';
 import { DIModule } from '@ts-ioc/bootstrap';
 import { ServerBootstrapModule } from '@ts-ioc/platform-server-bootstrap';
 import { ServerModule } from '@ts-ioc/platform-server';
-import { AssertionError } from 'assert';
+// import * as assert from 'assert';
 
 @Report
 @DIModule({
@@ -14,12 +14,8 @@ import { AssertionError } from 'assert';
     ],
     // providers: [
     //     {
-    //         provide: AssertionErrorToken,
-    //         useFactory: (options: IAssertionOptions) => {
-    //             options.stackStartFunction = options.stackStartFn;
-    //             return new AssertionError(options);
-    //         },
-    //         deps: [AssertionOptionsToken]
+    //         provide: Assert,
+    //         useValue: assert
     //     }
     // ],
     exports: [

@@ -1,7 +1,7 @@
 import { Runner, ModuleConfigure } from '@ts-ioc/bootstrap';
 import {
     Token, getMethodMetadata, isNumber, lang, ContainerToken,
-    IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Defer, Injectable
+    IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Defer, Injectable, isClass, isToken, isFunction
 } from '@ts-ioc/core';
 import { Before } from '../decorators/Before';
 import { BeforeEach } from '../decorators/BeforeEach';
@@ -10,7 +10,8 @@ import { Suite } from '../decorators/Suite';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { SuiteRunnerToken, ISuiteRunner } from './ISuiteRunner';
-import { RunCaseToken, RunSuiteToken, AssertionOptionsToken, IAssertionOptions, AssertionErrorToken, AssertError } from '../assert';
+import { RunCaseToken, RunSuiteToken, Assert } from '../assert';
+import * as assert from 'assert';
 
 
 /**
@@ -54,9 +55,10 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
 
     async run(data?: any): Promise<any> {
         try {
-            if (!this.container.has(AssertionErrorToken)) {
-                this.container.bindProvider(AssertionErrorToken, AssertError);
+            if (!this.container.has(Assert)) {
+                this.container.bindProviders({ provide: Assert, useValue: assert });
             }
+
             let desc = this.getSuiteDescribe();
             await this.runSuite(desc);
         } catch (err) {
@@ -75,12 +77,11 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
-                let err = this.container.resolve(AssertionErrorToken, {
-                    provide: AssertionOptionsToken,
-                    useValue: <IAssertionOptions>{
-                        message: `${describe}, timeout ${timeout}`,
-                        stackStartFn: this.instance[key]
-                    }
+                let assert = this.container.resolve(Assert);
+                let err = new assert.AssertionError({
+                    message: `${describe}, timeout ${timeout}`,
+                    stackStartFunction: this.instance[key],
+                    stackStartFn: this.instance[key]
                 });
                 defer.reject(err);
             }

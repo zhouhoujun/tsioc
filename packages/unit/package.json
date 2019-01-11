@@ -47,10 +47,10 @@
     "tslib": "^1.9.2"
   },
   "peerDependencies": {
+    "assert": "^1.4.1"
   },
   "directories": {
     "lib": "lib",
     "test": "test"
-  },
-  "devDependencies": {}
+  }
 }

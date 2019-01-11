@@ -73,8 +73,8 @@ export class BindProviderAction extends ActionComposite {
                     if (c.providers && c.providers.length) {
                         raiseContainer.bindProviders(
                             c.type,
-                            c.providers,
-                            refKey => classPds.provides.push(refKey));
+                            refKey => classPds.provides.push(refKey),
+                            ...c.providers);
                     }
                 });
             }

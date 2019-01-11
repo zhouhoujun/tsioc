@@ -1,6 +1,6 @@
 import {
     Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
-    Inject, Token, ParamProviders, isArray, IModuleInjector, Container, ProviderParserToken,
+    Inject, Token, ParamProviders, isArray, IModuleInjector, Container,
     InjectClassProvidesToken, IMetaAccessor, MetaAccessorToken, Singleton
 } from '@ts-ioc/core';
 import { DIModuleValidateToken } from './DIModuleValidate';
@@ -133,7 +133,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
     }
 
     protected bindProvider(container: IContainer, providers: ParamProviders[]): Token<any>[] {
-        let parser = container.get(ProviderParserToken);
+        let parser = container.getProviderParser();
         let pdrmap = parser.parse(...providers);
         let tokens = pdrmap.provides();
         tokens.forEach(key => {

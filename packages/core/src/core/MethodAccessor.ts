@@ -4,7 +4,7 @@ import { BindParameterProviderActionData, CoreActions, LifeState } from './actio
 import { isToken, isFunction, lang, isNullOrUndefined } from '../utils';
 import { Type } from '../types';
 import { IParameter } from '../IParameter';
-import { IProviderParser, ProviderParserToken, ParamProviders, isProvider } from '../providers';
+import { ParamProviders, isProvider } from '../providers';
 
 /**
  * method accessor
@@ -17,10 +17,6 @@ export class MethodAccessor implements IMethodAccessor {
 
     constructor(private container: IContainer) {
 
-    }
-
-    getMatcher(): IProviderParser {
-        return this.container.get(ProviderParserToken);
     }
 
     async invoke<T>(target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): Promise<T> {
@@ -95,7 +91,7 @@ export class MethodAccessor implements IMethodAccessor {
     }
 
     createSyncParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
-        let providerMap = this.getMatcher().parse(params, ...providers);
+        let providerMap = this.container.getProviderParser().parse(params, ...providers);
         return params.map((param, index) => {
             if (param.name && providerMap.hasRegister(param.name)) {
                 return providerMap.resolve(param.name);
@@ -111,7 +107,7 @@ export class MethodAccessor implements IMethodAccessor {
     }
 
     createParams(params: IParameter[], ...providers: ParamProviders[]): Promise<any[]> {
-        let providerMap = this.getMatcher().parse(params, ...providers);
+        let providerMap = this.container.getProviderParser().parse(params, ...providers);
         return Promise.all(params.map((param, index) => {
             if (param.name && providerMap.hasRegister(param.name)) {
                 return providerMap.resolve(param.name);

@@ -27,44 +27,24 @@ export function isFunction(target: any): target is Function {
  * @returns {target is AbstractType<any>}
  */
 export function isAbstractClass(target: any): target is AbstractType<any> {
-    if (!isFunction(target)) {
-        return false;
-    }
-
-    if (Reflect.hasOwnMetadata('@Abstract', target)) {
-        return true;
-    }
-
-    let type = target as Type<any>;
-    if (/^[a-z]$/.test(type.name)) {
-        if (type.classAnnations && type.classAnnations.name) {
-            return true;
-        } else {
-            return false;
-        }
-    } else {
-        if (type.classAnnations && isString(type.classAnnations.name)) {
-            return true
-        }
-
-        if (!/^[A-Z@]/.test(target.name)) {
-            return false;
-        }
-
-    }
-
-    return false;
+    return isClass(target, false) && Reflect.hasOwnMetadata('@Abstract', target);
 }
+
 
 /**
  * check target is class or not.
  *
  * @export
  * @param {*} target
- * @returns
+ * @param {boolean} [excludeAbstract=true]
+ * @returns {target is Type<any>}
  */
-export function isClass(target: any): target is Type<any> {
+export function isClass(target: any, excludeAbstract = true): target is Type<any> {
     if (!isFunction(target)) {
+        return false;
+    }
+
+    if (excludeAbstract && Reflect.hasOwnMetadata('@Abstract', target)) {
         return false;
     }
 
@@ -72,10 +52,6 @@ export function isClass(target: any): target is Type<any> {
         if (!target.name || target.name === 'Object') {
             return false;
         }
-
-        // if (Reflect.hasOwnMetadata('@Abstract', target)) {
-        //     return false;
-        // }
 
         let type = target as Type<any>;
 
@@ -133,7 +109,7 @@ export function isToken(target: any): target is Token<any> {
     if (!target) {
         return false;
     }
-    if (isString(target) || isSymbol(target) || isClass(target) || (target instanceof Registration)) {
+    if (isString(target) || isSymbol(target) ||  isClass(target, false) || (target instanceof Registration)) {
         return true
     }
     return false;
