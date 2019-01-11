@@ -36,7 +36,6 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme",
   "dependencies": {
-    "@types/chalk": "^2.2.0",
     "@ts-ioc/platform-server": "^4.0.0-beta5",
     "bluebird": "^3.4.1",
     "chalk": "^2.3.1",

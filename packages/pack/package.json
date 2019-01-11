@@ -51,7 +51,6 @@
     "@ts-ioc/platform-server":"^4.0.0-beta5",
     "@ts-ioc/platform-server-bootstrap":"^4.0.0-beta5",
     "@ts-ioc/platform-server-activities":"^4.0.0-beta5",
-    "@types/chai": "^3.4.34",
     "@types/execa": "^0.9.0",
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3",
@@ -62,14 +61,15 @@
     "chalk": "^2.3.1",
     "chokidar": "^2.0.4",
     "commander": "^2.18.0",
-    "findup": "^0.1.5",
     "rollup": "^0.64.1",
     "rollup-plugin-commonjs": "^8.4.1",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-resolve": "^3.3.0",
     "rollup-plugin-sourcemaps": "^0.4.2",
     "vinyl-fs": "^3.0.3",
-    "rxjs": "^5.5.11"
+    "rxjs": "^5.5.11",
+    "ts-node": "^6.0.3",
+    "tsconfig-paths": "^3.5.0"
   },
   "directories": {
     "lib": "lib",

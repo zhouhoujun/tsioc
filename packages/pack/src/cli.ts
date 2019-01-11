@@ -1,17 +1,16 @@
 #!/usr/bin/env node
-
+require('ts-node').register();
 import { rm, cp, mkdir, exec } from 'shelljs';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as colors from 'colors';
-import program from 'commander';
-import findup from 'findup';
+import * as program from 'commander';
 import { PackModule } from './PackModule';
 import { Workflow, isAcitvityClass } from '@ts-ioc/activities';
 import { PackConfigure, isPackClass } from './core';
 
-const cliRoot = findup.sync(__dirname, 'package.json');
-const packageConf = require(__dirname + '/package.json');
+const cliRoot = path.join(path.normalize(__dirname), '../');
+const packageConf = require(cliRoot + '/package.json');
 const processRoot = path.join(path.dirname(process.cwd()), path.basename(process.cwd()));
 
 if (process.argv.indexOf('scaffold') > -1) {
@@ -21,14 +20,14 @@ if (process.argv.indexOf('scaffold') > -1) {
 program
     .arguments('-r ts-node/register tsconfig-paths/register')
     .version(packageConf.version)
-    .usage('<keywords>')
-    .command('run [fileName]', 'run activity file.')
+    .command('run [fileName]')
+    .description('run activity file.')
     .option('--boot [bool]', 'with default container boot activity.')
     .action((fileName, options) => {
         fileName = fileName || 'taskfile.ts';
         fileName = path.join(processRoot, fileName);
         if (options.boot) {
-            exec('node -r ts-node/register tsconfig-paths/register ' + fileName);
+            exec('node -r ts-node/register tsconfig-paths/register ' + fileName, {cwd: processRoot});
         } else {
             let wf = Workflow.create().use(PackModule);
             let md = require(fileName);
@@ -41,8 +40,11 @@ program
                 wf.bootstrap(md);
             }
         }
-    })
-    .command('build [env]', 'build the application')
+    });
+
+program
+    .command('build [env]')
+    .description('build the application')
     .option('-e, --env [string]', 'use that particular environment.ts during the build, just like @angular/cli')
     .option('-c, --clean [bool]', 'destroy the build folder prior to compilation, default for prod')
     .option('-w, --watch [bool]', 'listen for changes in filesystem and rebuild')
@@ -57,8 +59,11 @@ program
         config.watch = options.watch === true;
 
         Worflow.bootstrap(config);
-    })
-    .command('serve [env]', 'spawn the local express server')
+    });
+
+program
+    .command('serve [env]')
+    .description('spawn the local express server')
     .option('-e, --env [string]', 'use that particular environment.ts during the build, just like @angular/cli')
     .option('-c, --clean [bool]', 'destroy the build folder prior to compilation, default for prod')
     .option('-w, --watch [bool]', 'listen for changes in filesystem and rebuild')
@@ -73,8 +78,11 @@ program
         config.watch = options.watch === true;
 
         Worflow.bootstrap(config);
-    })
-    .command('new [app]', 'new my-app')
+    });
+
+program
+    .command('new [app]')
+    .description('new my-app')
     .option('--src [string]', 'specify a path to an existing src folder')
     .option('--skip-install [bool]', 'prevents install during scaffold')
     .option('--yarn [bool]', 'use yarn instead of npm to install')
@@ -94,5 +102,7 @@ program
     .action((build, options) => {
         let Worflow = Workflow.create().use(PackModule);
         Worflow.run();
-    })
-    .parse(process.argv);
+    });
+
+
+program.parse(process.argv);
