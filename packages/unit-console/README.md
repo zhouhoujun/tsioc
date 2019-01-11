@@ -84,7 +84,8 @@ new UnitTest()
     .use(ConsoleReporter)
     .use(...) // your assert expect ...
     .test(SuiteTest);
-
+    // match test file. will auto load class with @Suite decorator.
+    //.test('test/**/*.ts');
 
 
 ```
