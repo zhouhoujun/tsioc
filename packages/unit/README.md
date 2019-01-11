@@ -26,7 +26,7 @@ npm install @ts-ioc/platform-server
 
 ```ts
 
-import { Suite, BeforeEach, UnitTest, Test } from '@ts-ioc/unit';
+import { Suite, BeforeEach, UnitTest, Test, Assert, Expect, ExpectToken } from '@ts-ioc/unit';
 import { ConsoleReporter } from '@ts-ioc/unit-console';
 import { Defer } from '@ts-ioc/core';
 
