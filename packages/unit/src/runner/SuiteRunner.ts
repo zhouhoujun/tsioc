@@ -10,8 +10,9 @@ import { Suite } from '../decorators/Suite';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { SuiteRunnerToken, ISuiteRunner } from './ISuiteRunner';
-import { RunCaseToken, RunSuiteToken, Assert } from '../assert';
-
+import { RunCaseToken, RunSuiteToken, Assert, ExpectToken } from '../assert';
+import * as assert from 'assert';
+const expect = require('expect');
 
 /**
  * Suite runner.
@@ -54,6 +55,12 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
 
     async run(data?: any): Promise<any> {
         try {
+            if (!this.container.has(Assert)) {
+                this.container.bindProvider(Assert, () => assert);
+            }
+            if (!this.container.has(ExpectToken)) {
+                this.container.bindProvider(ExpectToken, () => expect);
+            }
             let desc = this.getSuiteDescribe();
             await this.runSuite(desc);
         } catch (err) {
