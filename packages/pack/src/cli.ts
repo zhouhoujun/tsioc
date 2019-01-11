@@ -5,9 +5,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as colors from 'colors';
 import * as program from 'commander';
-import { PackModule } from './PackModule';
 import { Workflow, isAcitvityClass } from '@ts-ioc/activities';
-import { PackConfigure, isPackClass } from './core';
+import { PackConfigure, isPackClass, PackModule } from '@ts-ioc/pack';
 
 const cliRoot = path.join(path.normalize(__dirname), '../');
 const packageConf = require(cliRoot + '/package.json');
@@ -24,8 +23,14 @@ program
     .description('run activity file.')
     .option('--boot [bool]', 'with default container boot activity.')
     .action((fileName, options) => {
-        fileName = fileName || 'taskfile.ts';
-        fileName = path.join(processRoot, fileName);
+        if (fileName) {
+            fileName = path.join(processRoot, fileName);
+        } else {
+            fileName = path.join(processRoot, 'taskfile.ts');
+            if (!fs.existsSync(fileName)) {
+                fileName = path.join(processRoot, 'taskfile.js');
+            }
+        }
         if (options.boot) {
             require(fileName);
         } else {
