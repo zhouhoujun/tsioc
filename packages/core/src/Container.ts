@@ -492,7 +492,6 @@ export class Container implements IContainer {
             prods.unshift(target);
         }
 
-        console.log(prods);
         let maps = this.getProviderParser().parse(...prods);
         if (tgt) {
             let refKey = new InjectReference(ProviderMap, isClass(tgt) ? tgt : this.getTokenImpl(tgt));
