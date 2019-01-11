@@ -1,5 +1,5 @@
-#!/usr/bin/env node
-require('ts-node').register();
+#!/usr/bin/env node -r ts-node/register tsconfig-paths/register
+// require('ts-node').register();
 import { rm, cp, mkdir, exec } from 'shelljs';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -27,7 +27,7 @@ program
         fileName = fileName || 'taskfile.ts';
         fileName = path.join(processRoot, fileName);
         if (options.boot) {
-            exec('node -r ts-node/register tsconfig-paths/register ' + fileName, {cwd: processRoot});
+            require(fileName);
         } else {
             let wf = Workflow.create().use(PackModule);
             let md = require(fileName);
