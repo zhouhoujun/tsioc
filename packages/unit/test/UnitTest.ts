@@ -1,5 +1,5 @@
-import { Suite, BeforeEach, UnitTest, Test, Assert } from '../src';
-import { Defer } from '@ts-ioc/core';
+import { Suite, BeforeEach, UnitTest, Test, Assert, Expect, ExpectToken } from '../src';
+import { Defer, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
 import { ConsoleReporter } from '@ts-ioc/unit-console';
 
 
@@ -34,7 +34,10 @@ export class SuiteTest {
         return def.promise;
     }
 
-    testEqural() {
+    @Test('expect test')
+    async testEqural(@Inject(ExpectToken) expect: Expect, @Inject(ContainerToken) conatiner: IContainer) {
+        console.log(expect);
+        await expect('true').toBe(true);
     }
 }
 

@@ -1,3 +1,3 @@
 
 export * from './assert';
-export * from './expect';
+export * from './expects';

@@ -1,10 +1,13 @@
-import { Reporter, ISuiteDescribe, Report, Assert } from '@ts-ioc/unit';
-import { Token, ObjectMap, lang } from '@ts-ioc/core';
+import { Reporter, ISuiteDescribe, Report, Assert, ExpectToken } from '@ts-ioc/unit';
+import { Token, ObjectMap, lang, isFunction } from '@ts-ioc/core';
 import chalk from 'chalk';
 import { DIModule } from '@ts-ioc/bootstrap';
 import { ServerBootstrapModule } from '@ts-ioc/platform-server-bootstrap';
 import { ServerModule } from '@ts-ioc/platform-server';
-// import * as assert from 'assert';
+import * as assert from 'assert';
+const expect = require('expect');
+
+console.log('expect:', isFunction(expect));
 
 @Report
 @DIModule({
@@ -12,12 +15,16 @@ import { ServerModule } from '@ts-ioc/platform-server';
         ServerModule,
         ServerBootstrapModule
     ],
-    // providers: [
-    //     {
-    //         provide: Assert,
-    //         useValue: assert
-    //     }
-    // ],
+    providers: [
+        {
+            provide: Assert,
+            useValue: assert
+        },
+        {
+            provide: ExpectToken,
+            useValue: expect
+        }
+    ],
     exports: [
         ServerModule,
         ServerBootstrapModule

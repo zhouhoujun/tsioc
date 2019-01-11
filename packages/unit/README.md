@@ -61,13 +61,28 @@ export class SuiteTest {
         return def.promise;
     }
 
-    testEqural() {
+
+    @Test('assert test in time', 200)
+    testInTime(assert: Assert) {
+        console.log('--------assert test in time------');
+        let def = new Defer();
+        setTimeout(() => {
+            def.resolve('in time do...')
+        }, 100)
+        assert.strictEqual('0', 0);
+        return def.promise;
+    }
+
+    @Test('expect test')
+    async testEqural(@Inject(ExpectToken) expect: Expect) {
+        await expect('true').toBe(true);
     }
 }
 
 
 new UnitTest()
     .use(ConsoleReporter)
+    .use(...) // your assert expect ...
     .test(SuiteTest);
 
 

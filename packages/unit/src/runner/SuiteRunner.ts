@@ -11,7 +11,6 @@ import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMeta
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { SuiteRunnerToken, ISuiteRunner } from './ISuiteRunner';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert';
-import * as assert from 'assert';
 
 
 /**
@@ -55,10 +54,6 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
 
     async run(data?: any): Promise<any> {
         try {
-            if (!this.container.has(Assert)) {
-                this.container.bindProviders({ provide: Assert, useValue: assert });
-            }
-
             let desc = this.getSuiteDescribe();
             await this.runSuite(desc);
         } catch (err) {

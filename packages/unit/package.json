@@ -44,13 +44,15 @@
     "@ts-ioc/core": "^4.0.0-beta5",
     "@ts-ioc/logs": "^4.0.0-beta5",
     "reflect-metadata": "^0.1.12",
+    "@types/expect": "^1.20.3",
     "tslib": "^1.9.2"
   },
-  "peerDependencies": {
-    "assert": "^1.4.1"
-  },
+  "peerDependencies": {},
   "directories": {
     "lib": "lib",
     "test": "test"
+  },
+  "devDependencies": {
+    "assert": "^1.4.1"
   }
 }
