@@ -1,5 +1,6 @@
-#!/usr/bin/env node -r ts-node/register tsconfig-paths/register
-// require('ts-node').register();
+#!/usr/bin/env node
+require('ts-node').register();
+require('tsconfig-paths').register();
 import { rm, cp, mkdir, exec } from 'shelljs';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -16,8 +17,9 @@ if (process.argv.indexOf('scaffold') > -1) {
     process.argv.push('--verbose');
 }
 
+
 program
-    .arguments('-r ts-node/register tsconfig-paths/register')
+    // .arguments('-r ts-node/register tsconfig-paths/register')
     .version(packageConf.version)
     .command('run [fileName]')
     .description('run activity file.')
