@@ -12,7 +12,7 @@ import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { SuiteRunnerToken, ISuiteRunner } from './ISuiteRunner';
 import { RunCaseToken, RunSuiteToken, Assert, ExpectToken } from '../assert';
 import * as assert from 'assert';
-const expect = require('expect');
+import * as expect from 'expect';
 
 /**
  * Suite runner.
