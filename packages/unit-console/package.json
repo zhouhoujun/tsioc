@@ -46,6 +46,7 @@
     "@ts-ioc/platform-server-bootstrap": "^4.0.0-beta6",
     "@ts-ioc/unit": "^4.0.0-beta6",
     "reflect-metadata": "^0.1.12",
+    "chalk": "^2.3.1",
     "tslib": "^1.9.2",
     "globby": "^7.1.1"
   },

@@ -56,7 +56,6 @@
     "tslib": "^1.9.3",
     "minimist": "^1.2.0",
     "globby": "^7.1.1",
-    "colors": "colors",
     "del": "^2.2.1",
     "chai": "^3.5.0",
     "chalk": "^2.3.1",

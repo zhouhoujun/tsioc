@@ -4,7 +4,7 @@ require('tsconfig-paths').register();
 import { rm, cp, mkdir, exec } from 'shelljs';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as colors from 'colors';
+import chalk from 'chalk';
 import * as program from 'commander';
 import { Workflow, isAcitvityClass } from '@ts-ioc/activities';
 import { PackConfigure, isPackClass, PackModule } from '@ts-ioc/pack';
@@ -32,6 +32,10 @@ program
             if (!fs.existsSync(fileName)) {
                 fileName = path.join(processRoot, 'taskfile.js');
             }
+        }
+        if(!fs.existsSync(fileName)){
+            console.log(chalk.red(`'${fileName}' not exsists`));
+            process.exit(1);
         }
         if (options.boot) {
             require(fileName);
@@ -95,7 +99,7 @@ program
     .option('--yarn [bool]', 'use yarn instead of npm to install')
     .action((app, options) => {
         if (fs.existsSync(path.join(processRoot, app))) {
-            console.log(colors.red(app + ' already exists'));
+            console.log(chalk.red(app + ' already exists'));
             process.exit();
         }
         if (!fs.existsSync(path.join(processRoot, app))) {
