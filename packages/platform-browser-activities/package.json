@@ -37,7 +37,7 @@
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme",
   "dependencies": {
     "reflect-metadata": "^0.1.12",
-    "tslib": "^1.9.2",
+    "tslib": "^1.9.3",
     "@ts-ioc/platform-browser": "^4.0.0-beta6"
   },
   "peerDependencies": {

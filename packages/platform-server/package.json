@@ -39,8 +39,8 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
     "reflect-metadata": "^0.1.12",
-    "tslib": "^1.9.2",
-    "globby": "^7.1.1"
+    "tslib": "^1.9.3",
+    "globby": "^9.0.0"
   },
   "peerDependencies": {
     "@ts-ioc/core": "^4.0.0-beta6"
