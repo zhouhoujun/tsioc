@@ -1,4 +1,4 @@
-import { IContainer, Injectable } from '@ts-ioc/core';
+import { Injectable } from '@ts-ioc/core';
 import { AppConfigure } from './AppConfigure';
 import { IApplicationBuilder, ApplicationBuilderToken } from './IApplicationBuilder';
 import { IEvents } from '../utils';
@@ -58,18 +58,5 @@ export class ApplicationBuilder<T> extends RunnableBuilder<T> implements IApplic
             this.configs.forEach(cfg => cfgMgr.useConfiguration(cfg));
         }
         return cfgMgr;
-    }
-
-    /**
-     * register by configure.
-     *
-     * @protected
-     * @param {IContainer} container
-     * @param {AppConfigure} config
-     * @returns {Promise<void>}
-     * @memberof RunnableBuilder
-     */
-    protected async registerByConfigure(container: IContainer, config: AppConfigure): Promise<void> {
-        await super.registerByConfigure(container, config);
     }
 }

@@ -1,6 +1,5 @@
-import { Pack, PackActivity, PackModule } from '@ts-ioc/pack';
+import { Pack, PackModule } from '@ts-ioc/pack';
 import { Workflow } from '@ts-ioc/activities';
-import { IActivity } from '@ts-ioc/activities';
 import { Asset, AssetActivity, TsCompile, CleanToken, TransformContext } from '@ts-ioc/build';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
