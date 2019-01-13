@@ -61,7 +61,7 @@ export class Boot<T> implements IBoot<T> {
     }
 
     async onInit(options: BootOptions<T>) {
-
+    
     }
 
     getTarget?(): T {
