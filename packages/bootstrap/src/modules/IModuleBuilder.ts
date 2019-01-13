@@ -35,7 +35,7 @@ export type ModuleEnv = IContainer | InjectedModule<any>;
  * @template T
  */
 export interface BootOptions<T> extends BuildOptions<T> {
-    env?: ModuleEnv
+    env?: ModuleEnv;
 }
 
 /**

@@ -1,16 +1,16 @@
 import { InjectToken } from '@ts-ioc/core';
-import { ModuleConfigure } from '../modules';
 import { CustomRegister, IRunnableBuilder } from './IRunnableBuilder';
+import { RunnableConfigure } from './AppConfigure';
 
 /**
  * configure manager token.
  */
-export const ConfigureMgrToken = new InjectToken<IConfigureManager<ModuleConfigure>>('config-mgr');
+export const ConfigureMgrToken = new InjectToken<IConfigureManager<RunnableConfigure>>('config-mgr');
 
 /**
  * application default configuration token.
  */
-export const DefaultConfigureToken = new InjectToken<ModuleConfigure>('DI_Default_Configuration');
+export const DefaultConfigureToken = new InjectToken<RunnableConfigure>('DI_Default_Configuration');
 
 
 /**
@@ -19,7 +19,7 @@ export const DefaultConfigureToken = new InjectToken<ModuleConfigure>('DI_Defaul
  * @export
  * @interface IConfigureLoader
  */
-export interface IConfigureLoader<T extends ModuleConfigure> {
+export interface IConfigureLoader<T extends RunnableConfigure> {
     /**
      * load config.
      *
@@ -33,7 +33,7 @@ export interface IConfigureLoader<T extends ModuleConfigure> {
 /**
  * configure loader token.
  */
-export const ConfigureLoaderToken = new InjectToken<IConfigureLoader<ModuleConfigure>>('DI_Configure_Loader');
+export const ConfigureLoaderToken = new InjectToken<IConfigureLoader<RunnableConfigure>>('DI_Configure_Loader');
 
 /**
  * configure manager.
@@ -42,7 +42,7 @@ export const ConfigureLoaderToken = new InjectToken<IConfigureLoader<ModuleConfi
  * @interface IConfigureManager
  * @template T
  */
-export interface IConfigureManager<T extends ModuleConfigure> {
+export interface IConfigureManager<T extends RunnableConfigure> {
     /**
      * use configuration.
      *

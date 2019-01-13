@@ -157,6 +157,9 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         builder = builder || this;
 
         let runner = builder.resolveRunable(instance, cfg, tk, options);
+        if(isFunction(runner.onInit)){
+            await runner.onInit(options);
+        }
         let data = options ? options.data : undefined;
         if (isRunner(runner)) {
             await runner.run(data);

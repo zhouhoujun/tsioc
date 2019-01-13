@@ -3,16 +3,17 @@ import {
     ContainerBuilder, IContainerBuilder, isClass,
     isToken, PromiseUtil, Injectable, lang, isFunction
 } from '@ts-ioc/core';
-import { IRunnableBuilder, CustomRegister, RunnableBuilderToken, ProcessRunRootToken } from './IRunnableBuilder';
+import { IRunnableBuilder, CustomRegister, RunnableBuilderToken, ProcessRunRootToken, RunOptions } from './IRunnableBuilder';
 import {
     ModuleBuilder, DIModuleInjectorToken,
     InjectedModule, IModuleBuilder, InjectModuleBuilderToken,
-    ModuleBuilderToken, ModuleConfig, ModuleConfigure, BootOptions
+    ModuleBuilderToken, ModuleConfig
 } from '../modules';
 import { ContainerPool, ContainerPoolToken, Events, IEvents } from '../utils';
 import { BootModule } from '../BootModule';
 import { Runnable } from '../runnable';
 import { ConfigureMgrToken, IConfigureManager } from './IConfigureManager';
+import { RunnableConfigure } from './AppConfigure';
 
 /**
  * runnable events
@@ -151,31 +152,33 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         }
     }
 
-    async load(token: Token<T> | ModuleConfigure, config?: ModuleConfig<T> | BootOptions<T>, options?: BootOptions<T>): Promise<InjectedModule<T>> {
+    async load(token: Token<T> | RunnableConfigure, config?: RunnableConfigure | RunOptions<T>, options?: RunOptions<T>): Promise<InjectedModule<T>> {
         await this.initRootContainer();
         return await super.load(token, config, options);
     }
 
-    async bootstrap(token: Token<T> | ModuleConfigure, config?: ModuleConfig<T> | BootOptions<T>, options?: BootOptions<T>): Promise<Runnable<T>> {
+    async bootstrap(token: Token<T> | RunnableConfigure, config?: RunnableConfigure | RunOptions<T>, options?: RunOptions<T>): Promise<Runnable<T>> {
         let params = this.vaildParams(token, config, options);
         options = params.options || {};
         let injmdl = params.token ? await this.load(params.token, params.config, options) : await this.load(params.config, options);
         options.env = injmdl;
         let builder = this.getBuilder(injmdl);
+        options.runnableBuilder = this;
+        options.configManager = this.getConfigManager();
         return params.token ? await builder.bootstrap(params.token, params.config, options) : await builder.bootstrap(params.config, options);
     }
 
     /**
      * get module builder
      *
-     * @param {(Token<T> | ModuleConfig<T>)} token
+     * @param {(Token<T> |RunnableConfigure)} token
      * @param {ModuleEnv} [env]
      * @returns {IModuleBuilder<T>}
      * @memberof RunnableBuilder
      */
-    async getBuilderByConfig(token: Token<T> | ModuleConfig<T>, options?: BootOptions<T>): Promise<IModuleBuilder<T>> {
+    async getBuilderByConfig(token: Token<T> | RunnableConfigure, options?: RunOptions<T>): Promise<IModuleBuilder<T>> {
         let injmdl = await this.load(token, options);
-        return this.getBuilder(injmdl)
+        return this.getBuilder(injmdl);
     }
 
     getBuilder(injmdl: InjectedModule<T>): IModuleBuilder<T> {
@@ -270,8 +273,10 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
      * @returns {Promise<void>}
      * @memberof RunnableBuilder
      */
-    protected async registerByConfigure(container: IContainer, config: ModuleConfig<T>): Promise<void> {
-        config.baseURL = this.getRunRoot(container);
+    protected async registerByConfigure(container: IContainer, config: RunnableConfigure): Promise<void> {
+        if (!config.baseURL) {
+            config.baseURL = this.getRunRoot(container);
+        }
         await PromiseUtil.step(this.customRegs.map(async cs => {
             let tokens = await cs(container, config, this);
             return tokens;

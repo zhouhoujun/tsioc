@@ -1,4 +1,4 @@
-import { ApplicationBuilder, BootOptions } from '@ts-ioc/bootstrap';
+import { ApplicationBuilder, BootOptions, AppConfigure } from '@ts-ioc/bootstrap';
 import { IActivity, IWorkflowInstance, Active, SequenceConfigure, WorkflowId, UUIDToken, RandomUUIDFactory, CoreActivityConfigs } from './core';
 import { IWorkflow } from './IWorkflow';
 import { LoadType, lang, isToken } from '@ts-ioc/core';
@@ -32,15 +32,14 @@ export class Workflow extends ApplicationBuilder<IActivity> implements IWorkflow
      * create task container.
      *
      * @static
-     * @param {string} [root]
-     * @param {...ModuleType[]} modules
-     * @returns {ITaskContainer}
-     * @memberof Worflow
+     * @param {(string | AppConfigure)} [config]
+     * @returns {IWorkflow}
+     * @memberof Workflow
      */
-    static create(...modules: LoadType[]): IWorkflow {
+    static create(config?: string | AppConfigure): IWorkflow {
         let workflow = new Workflow();
-        if (modules) {
-            workflow.use(...modules);
+        if (config) {
+            workflow.useConfiguration(config);
         }
         return workflow;
     }
@@ -66,7 +65,6 @@ export class Workflow extends ApplicationBuilder<IActivity> implements IWorkflow
         let options = { env: env, data: workflowId };
         env.bindProvider(WorkflowId, workflowId);
         let runner = await this.bootstrap(boot, options) as IWorkflowInstance<any>;
-        env.bindProvider(workflowId, runner);
         return runner;
     }
 

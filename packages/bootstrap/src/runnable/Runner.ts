@@ -1,5 +1,6 @@
 import { Token, isFunction, lang } from '@ts-ioc/core';
 import { ModuleConfigure } from '../modules';
+import { IBoot, Boot } from './boot';
 
 /**
  * application runer.
@@ -8,22 +9,7 @@ import { ModuleConfigure } from '../modules';
  * @interface IRunner
  * @template T
  */
-export interface IRunner<T> {
-    /**
-     * target instance.
-     *
-     * @type {T}
-     * @memberof IRunner
-     */
-    getTarget?(): T;
-
-    /**
-     * get target token.
-     *
-     * @returns {Token<T>}
-     * @memberof IRunner
-     */
-    getTargetToken?(): Token<T>;
+export interface IRunner<T> extends IBoot<T> {
 
     /**
      * run application via boot instance.
@@ -45,18 +31,10 @@ export interface IRunner<T> {
  * @class Boot
  * @implements {IBoot}
  */
-export abstract class Runner<T> implements IRunner<T> {
+export abstract class Runner<T> extends Boot<T> implements IRunner<T> {
 
-    constructor(protected token?: Token<T>, protected instance?: T, protected config?: ModuleConfigure) {
-
-    }
-
-    getTarget?(): T {
-        return this.instance;
-    }
-
-    getTargetToken?(): Token<T> {
-        return this.token || lang.getClass(this.instance);
+    constructor(token?: Token<T>, instance?: T, config?: ModuleConfigure) {
+        super(token, instance, config);
     }
 
     /**
@@ -70,18 +48,6 @@ export abstract class Runner<T> implements IRunner<T> {
     abstract run(data?: any): Promise<any>;
 }
 
-/**
- * boot element
- *
- * @export
- * @class Boot
- * @extends {Runner<any>}
- */
-export abstract class Boot extends Runner<any> {
-    constructor(protected token?: Token<any>, protected instance?: any, protected config?: ModuleConfigure) {
-        super(token, instance, config);
-    }
-}
 
 
 /**

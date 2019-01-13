@@ -1,5 +1,6 @@
 import { Token, isFunction, lang } from '@ts-ioc/core';
 import { ModuleConfigure } from '../modules';
+import { IBoot, Boot } from './boot';
 
 /**
  * IService interface
@@ -7,21 +8,7 @@ import { ModuleConfigure } from '../modules';
  * @export
  * @interface IService
  */
-export interface IService<T> {
-    /**
-     * target instance.
-     *
-     * @type {T}
-     * @memberof IRunner
-     */
-    getTarget?(): T;
-    /**
-     * get target token.
-     *
-     * @returns {Token<T>}
-     * @memberof IService
-     */
-    getTargetToken?(): Token<T>;
+export interface IService<T> extends IBoot<T> {
     /**
      * start application service.
      *
@@ -47,24 +34,10 @@ export interface IService<T> {
  * @class Service
  * @implements {IService}
  */
-export abstract class Service<T> implements IService<T> {
+export abstract class Service<T> extends Boot<T> implements IService<T> {
 
-    constructor(protected token?: Token<T>, protected instance?: T, protected config?: ModuleConfigure) {
-
-    }
-
-    /**
-     * get target.
-     *
-     * @returns {T}
-     * @memberof Service
-     */
-    getTarget(): T {
-        return this.instance;
-    }
-
-    getTargetToken?(): Token<T> {
-        return this.token || lang.getClass(this.instance);
+    constructor(token?: Token<T>, instance?: T, config?: ModuleConfigure) {
+        super(token, instance, config);
     }
 
     /**

@@ -7,15 +7,14 @@ import { ModuleConfigure } from '../modules';
  */
 export const AppConfigureToken = new InjectToken<AppConfigure>('DI_APP_Configuration');
 
-
 /**
- * app configuration.
+ * runnable configure.
  *
  * @export
- * @interface AppConfigure
- * @extends {ObjectMap<any>}
+ * @interface RunnableConfigure
+ * @extends {ModuleConfigure}
  */
-export interface AppConfigure extends ModuleConfigure {
+export interface RunnableConfigure extends ModuleConfigure {
     /**
      * application name.
      *
@@ -47,6 +46,16 @@ export interface AppConfigure extends ModuleConfigure {
      * @memberOf AppConfigure
      */
     setting?: ObjectMap<any>;
+}
+
+/**
+ * app configuration.
+ *
+ * @export
+ * @interface AppConfigure
+ * @extends {ObjectMap<any>}
+ */
+export interface AppConfigure extends RunnableConfigure {
 
     /**
      * custom config connections.

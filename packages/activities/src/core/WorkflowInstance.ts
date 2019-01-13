@@ -1,4 +1,4 @@
-import { Inject, IContainer, ContainerToken, Token, Injectable } from '@ts-ioc/core';
+import { Token, Injectable } from '@ts-ioc/core';
 import { ActivityConfigure } from './ActivityConfigure';
 import { IActivity } from './IActivity';
 import { IWorkflowInstance, WorkflowInstanceToken, RunState } from './IWorkflowInstance';
@@ -44,9 +44,6 @@ export class WorkflowInstance<T extends IActivity> extends Service<T> implements
     state: RunState;
     stateChanged: BehaviorSubject<RunState>;
 
-    @Inject(ContainerToken)
-    container: IContainer;
-
     constructor(
         token: Token<T>,
         instance: T,
@@ -60,6 +57,7 @@ export class WorkflowInstance<T extends IActivity> extends Service<T> implements
     }
 
     async start(data?: any): Promise<IActivityContextResult<T>> {
+        this.instance.id && this.container.bindProvider(this.instance.id, this);
         let ctx = await this.instance.run(data)
         this._ctx = ctx;
         this.state = RunState.complete;
