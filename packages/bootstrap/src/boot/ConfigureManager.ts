@@ -2,7 +2,6 @@ import {
     Inject, Injectable, isUndefined,
     lang, ContainerToken, IContainer, isString
 } from '@ts-ioc/core';
-import { IRunnableBuilder } from './IRunnableBuilder';
 import { ConfigureMgrToken, ConfigureLoaderToken, IConfigureManager, DefaultConfigureToken } from './IConfigureManager';
 import { RunnableConfigure } from './AppConfigure';
 
@@ -51,19 +50,6 @@ export class ConfigureManager<T extends RunnableConfigure> implements IConfigure
         this.configs.push(config);
 
         return this;
-    }
-
-    /**
-     * bind runnable builder.
-     *
-     * @param {IRunnableBuilder<any>} builder
-     * @memberof ConfigureManager
-     */
-    async bindBuilder(builder: IRunnableBuilder<any>) {
-        let config = await this.getConfig();
-        if (config.debug) {
-
-        }
     }
 
     /**

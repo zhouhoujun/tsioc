@@ -12,7 +12,7 @@ import {
 import { ContainerPool, ContainerPoolToken, Events, IEvents } from '../utils';
 import { BootModule } from '../BootModule';
 import { Runnable } from '../runnable';
-import { ConfigureMgrToken, IConfigureManager } from './IConfigureManager';
+import { ConfigureMgrToken, IConfigureManager, ConfigureRegisterToken } from './IConfigureManager';
 import { RunnableConfigure } from './AppConfigure';
 
 /**
@@ -243,7 +243,6 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         let configManager = this.getConfigManager();
         let config = await configManager.getConfig();
         await this.registerByConfigure(container, config);
-        await configManager.bindBuilder(this);
         this.inited = true;
         this.events.emit(RunnableEvents.onRootContainerInited, container);
     }
@@ -281,5 +280,10 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
             let tokens = await cs(container, config, this);
             return tokens;
         }));
+
+        let reg = container.getService(ConfigureRegisterToken, lang.getClass(this));
+        if(reg){
+            reg.register(config, container);
+        }
     }
 }

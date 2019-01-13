@@ -1,5 +1,4 @@
-import { InjectToken } from '@ts-ioc/core';
-import { CustomRegister, IRunnableBuilder } from './IRunnableBuilder';
+import { InjectToken, IContainer } from '@ts-ioc/core';
 import { RunnableConfigure } from './AppConfigure';
 
 /**
@@ -8,7 +7,7 @@ import { RunnableConfigure } from './AppConfigure';
 export const ConfigureMgrToken = new InjectToken<IConfigureManager<RunnableConfigure>>('config-mgr');
 
 /**
- * application default configuration token.
+ * default configuration token.
  */
 export const DefaultConfigureToken = new InjectToken<RunnableConfigure>('DI_Default_Configuration');
 
@@ -35,6 +34,31 @@ export interface IConfigureLoader<T extends RunnableConfigure> {
  */
 export const ConfigureLoaderToken = new InjectToken<IConfigureLoader<RunnableConfigure>>('DI_Configure_Loader');
 
+
+/**
+ * configure register.
+ *
+ * @export
+ * @interface IConfigureRegister
+ * @template T
+ */
+export interface IConfigureRegister<T extends RunnableConfigure> {
+    /**
+     * register config setting.
+     *
+     * @param {T} config
+     * @param {IContainer} container
+     * @returns {Promise<void>}
+     * @memberof IConfigureRegister
+     */
+    register(config: T, container: IContainer): Promise<void>;
+}
+
+/**
+ * configure register token.
+ */
+export const ConfigureRegisterToken = new  InjectToken<IConfigureRegister<RunnableConfigure>>('DI_Configure_Register');
+
 /**
  * configure manager.
  *
@@ -53,19 +77,10 @@ export interface IConfigureManager<T extends RunnableConfigure> {
     useConfiguration(config?: string | T): this;
 
     /**
-     * bind runnable builder.
+     * get config.
      *
-     * @param {IRunnableBuilder<any>} builder
-     * @param {...CustomRegister<any>[]} regs
+     * @returns {Promise<T>}
      * @memberof IConfigureManager
      */
-     bindBuilder(builder: IRunnableBuilder<any>, ...regs: CustomRegister<any>[]): Promise<void>;
-
-     /**
-      * get config.
-      *
-      * @returns {Promise<T>}
-      * @memberof IConfigureManager
-      */
-     getConfig(): Promise<T>;
+    getConfig(): Promise<T>;
 }
