@@ -1,4 +1,4 @@
-import { Token, isFunction, lang } from '@ts-ioc/core';
+import { Token, isFunction } from '@ts-ioc/core';
 import { ModuleConfigure } from '../modules';
 import { IRunnable, RunnableBase } from './Runnable';
 

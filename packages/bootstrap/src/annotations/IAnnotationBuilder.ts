@@ -61,6 +61,7 @@ export interface IAnnotationBuilder<T> {
      * @memberof IAnnotationBuilder
      */
     getBuilder(token: Token<T>, config?: AnnotationConfigure<T>, options?: BuildOptions<T>): IAnnotationBuilder<T>;
+    
     /**
      * create token instance.
      *

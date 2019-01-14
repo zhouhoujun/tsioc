@@ -8,7 +8,7 @@ import chalk from 'chalk';
 import * as program from 'commander';
 // import { Workflow, isAcitvityClass } from '@ts-ioc/activities';
 // import { PackConfigure, isPackClass, PackModule } from '@ts-ioc/pack';
-
+const resolve = require('resolve');
 const cliRoot = path.join(path.normalize(__dirname), '../');
 const packageConf = require(cliRoot + '/package.json');
 const processRoot = path.join(path.dirname(process.cwd()), path.basename(process.cwd()));
@@ -41,9 +41,9 @@ program
         if (options.boot) {
             require(fileName);
         } else {
-            const wf = require('@ts-ioc/activities');
-            const pk = require('@ts-ioc/pack');
-            const bd = require('@ts-ioc/build');
+            const wf = require(resolve.sync('@ts-ioc/activities'));
+            const pk = require(resolve.sync('@ts-ioc/pack'));
+            const bd = require(resolve.sync('@ts-ioc/build'));
             let wfi = wf.Workflow.create().use(pk.PackModule);
             let md = require(fileName);
             let activites = Object.values(md);
@@ -71,9 +71,9 @@ program
     .option('--closure [bool]', 'bundle and optimize with closure compiler (default)')
     .option('-r, --rollup [bool]', 'bundle with rollup and optimize with closure compiler')
     .action((env, options) => {
-        const wf = require('@ts-ioc/activities');
-        const pk = require('@ts-ioc/pack');
-        const bd = require('@ts-ioc/build');
+        const wf = require(resolve.sync('@ts-ioc/activities', {basedir: processRoot}));
+        const pk = require(resolve.sync('@ts-ioc/pack', {basedir: processRoot}));
+        const bd = require(resolve.sync('@ts-ioc/build', {basedir: processRoot}));
         let wfi = wf.Workflow.create().use(pk.PackModule);
         let config = require(path.join(processRoot, env));
         config.watch = options.watch === true;
@@ -92,9 +92,8 @@ program
     .option('--closure [bool]', 'bundle and optimize with closure compiler (default)')
     .option('-r, --rollup [bool]', 'bundle with rollup and optimize with closure compiler')
     .action((serve, options) => {
-        const wf = require('@ts-ioc/activities');
-        const pk = require('@ts-ioc/pack');
-        const bd = require('@ts-ioc/build');
+        const wf = require(resolve.sync('@ts-ioc/activities', {basedir: processRoot}));
+        const pk = require(resolve.sync('@ts-ioc/pack', {basedir: processRoot}));
         let wfi = wf.Workflow.create().use(pk.PackModule);
         let config = require(path.join(processRoot, serve));
         config.watch = options.watch === true;
@@ -121,9 +120,8 @@ program
     .command('g, generate [string]', 'generate schematics packaged with cmd')
     .option('--ng [bool]', 'generate angular project')
     .action((build, options) => {
-        const wf = require('@ts-ioc/activities');
-        const pk = require('@ts-ioc/pack');
-        const bd = require('@ts-ioc/build');
+        const wf = require(resolve.sync('@ts-ioc/activities', {basedir: processRoot}));
+        const pk = require(resolve.sync('@ts-ioc/pack', {basedir: processRoot}));
         let wfi = wf.Workflow.create().use(pk.PackModule);
         let config = require(path.join(processRoot, build));
         config.watch = options.watch === true;
