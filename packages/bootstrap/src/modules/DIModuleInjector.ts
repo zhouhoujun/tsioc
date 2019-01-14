@@ -72,7 +72,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
 
     protected async importModule(container: IContainer, type: Type<any>): Promise<InjectedModule<any>> {
         let pools = container.get(ContainerPoolToken);
-        let newContainer = pools.create(container);
+        let newContainer = pools.create(type, container);
         newContainer.register(type);
         let builder = newContainer.getBuilder();
         let decorator = this.validate.getDecorator();

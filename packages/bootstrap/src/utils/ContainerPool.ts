@@ -3,6 +3,8 @@ import {
     IContainer, InjectToken, IContainerBuilder
 } from '@ts-ioc/core';
 
+
+const rootContainer = '__ioc_root_container';
 /**
  * container pool
  *
@@ -38,6 +40,7 @@ export class ContainerPool {
     getDefault(): IContainer {
         if (!this._default) {
             this._default = this.createContainer();
+            this.pools.set(rootContainer, this._default);
         }
         return this._default;
     }
@@ -62,10 +65,11 @@ export class ContainerPool {
         return this.pools.has(this.getTokenKey(token));
     }
 
-    create(parent?: IContainer): IContainer {
+    create(token: Token<any>, parent?: IContainer): IContainer {
         parent = parent || this.getDefault();
         let container = parent.getBuilder().create();
         this.setParent(container, parent);
+        this.set(token, container);
         return container;
     }
 
@@ -78,6 +82,18 @@ export class ContainerPool {
         } else {
             container.parent = this.getDefault();
         }
+    }
+
+    keys(): Token<any>[] {
+        return Array.from(this.pools.keys());
+    }
+
+    values(): IContainer[] {
+        return Array.from(this.pools.values());
+    }
+
+    forEach(callbackfn: (value: IContainer, key: Token<any>, map: Map< Token<any>, IContainer>) => void, thisArg?: any): void {
+        this.pools.forEach(callbackfn, thisArg);
     }
 }
 

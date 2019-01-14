@@ -68,7 +68,7 @@ export interface RunOptions<T> extends BootOptions<T> {
      * @type {IRunnableBuilder<T>}
      * @memberof RunOptions
      */
-    runnableBuilder?: IRunnableBuilder<T>;
+    bootBuilder?: IRunnableBuilder<T>;
 
     /**
      * config manager.

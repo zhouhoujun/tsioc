@@ -105,7 +105,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
     }
 
     getRunRoot(container: IContainer) {
-        return this._baseURL || container.get(ProcessRunRootToken);
+        return this._baseURL || container.get(ProcessRunRootToken) || '';
     }
 
     protected createContainerBuilder(): IContainerBuilder {
@@ -163,7 +163,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         let injmdl = params.token ? await this.load(params.token, params.config, options) : await this.load(params.config, options);
         options.env = injmdl;
         let builder = this.getBuilder(injmdl);
-        options.runnableBuilder = this;
+        options.bootBuilder = this;
         options.configManager = this.getConfigManager();
         return params.token ? await builder.bootstrap(params.token, params.config, options) : await builder.bootstrap(params.config, options);
     }
@@ -281,9 +281,13 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
             return tokens;
         }));
 
-        let reg = container.getService(ConfigureRegisterToken, lang.getClass(this));
-        if (reg) {
-            reg.register(config, container);
-        }
+        await Promise.all(this.getPools().values().map(c => {
+            let reg = c.getService(ConfigureRegisterToken, lang.getClass(this));
+            console.log('---------------------------\nregisterByConfigure:', config, reg, c);
+            if (reg) {
+                return reg.register(config, c);
+            }
+            return null;
+        }));
     }
 }

@@ -43,7 +43,7 @@ export abstract class Boot<T> extends Service<T> implements IBoot<T> {
      * @returns {Promise<void>}
      * @memberof Boot
      */
-    abstract onInit(options: RunOptions<T>): Promise<void>;
+    abstract async onInit(options: RunOptions<T>): Promise<void>;
     /**
      * run boot.
      *
