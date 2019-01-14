@@ -281,9 +281,9 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
             return tokens;
         }));
 
-        await Promise.all(this.getPools().values().map(c => {
+        // filter top level container.
+        await Promise.all(this.getPools().values().filter(c => c === container || c.parent === container).map(c => {
             let reg = c.getService(ConfigureRegisterToken, lang.getClass(this));
-            console.log('---------------------------\nregisterByConfigure:', config, reg, c);
             if (reg) {
                 return reg.register(config, c);
             }
