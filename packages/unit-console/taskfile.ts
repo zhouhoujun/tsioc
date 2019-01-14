@@ -11,11 +11,11 @@ const rename = require('gulp-rename');
 const builtins = require('rollup-plugin-node-builtins');
 
 @Asset({
-    src: 'esnext/**/*.js',
+    src: 'lib/**/*.js',
     dest: 'es2015',
     data: {
         name: 'unit-reporter-console.js',
-        input: 'esnext/index.js'
+        input: 'lib/index.js'
     },
     sourcemaps: true,
     pipes: [
@@ -76,19 +76,17 @@ export class ConsoleRollup extends AssetActivity {
     clean: ['lib', 'bundles', 'es2015', 'es2017'],
     test: 'test/**/*.spec.ts',
     assets: {
-        ts: { dest: 'lib', annotation: true, uglify: false },
-        ts2015: {
-            sequence: [
-                { src: 'src/**/*.ts', dest: 'esnext', annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
-                ConsoleRollup
-            ]
-        },
         es2017: {
             sequence: [
-                { clean: 'esnext', activity: CleanToken },
-                { src: 'src/**/*.ts', dest: 'esnext', annotation: true, uglify: false, tsconfig: './tsconfig.es2017.json', activity: TsCompile },
-                { src: 'esnext/**/*.js', dest: 'es2017', activity: ConsoleRollup },
-                { clean: 'esnext', activity: CleanToken }
+                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.es2017.json', activity: TsCompile },
+                { src: 'lib/**/*.js', dest: 'es2017', activity: ConsoleRollup }
+            ]
+        },
+        ts2015: {
+            sequence: [
+                { clean: 'lib', activity: CleanToken },
+                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
+                ConsoleRollup
             ]
         }
     }

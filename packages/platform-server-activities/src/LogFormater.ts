@@ -1,6 +1,6 @@
 import {
-    Singleton, isString, IParameter, isDate, isFunction,
-    isArray, isClass, lang, Refs, Container, isAbstractClass, isNull
+    Singleton, isString, IParameter, isDate, isArray, isClass,
+    lang, Refs, Container, isAbstractClass, isNull
 } from '@ts-ioc/core';
 import { Joinpoint, JoinpointState, NonePointcut } from '@ts-ioc/aop';
 import { LoggerAspect, LogFormaterToken, ILogFormater } from '@ts-ioc/logs';
@@ -21,22 +21,22 @@ export class ActivityLogFormater implements ILogFormater {
         switch (joinPoint.state) {
             case JoinpointState.Before:
             case JoinpointState.Pointcut:
-                pointMsg = `${joinPoint.state} invoke method "${joinPoint.fullName}"\n`
+                pointMsg = `${joinPoint.state} invoke method ${chalk.cyan(joinPoint.fullName)}\n`
                 pointMsg += chalk.gray(' with args: ')
                 pointMsg += this.stringifyArgs(joinPoint.params, joinPoint.args);
                 pointMsg += '\n';
                 break;
             case JoinpointState.After:
-                pointMsg = `${joinPoint.state}  invoke method "${joinPoint.fullName}".\n`;
+                pointMsg = `${joinPoint.state}  invoke method ${chalk.cyan(joinPoint.fullName)}.\n`;
                 break;
             case JoinpointState.AfterReturning:
-                pointMsg = `Invoke method "${joinPoint.fullName}"\n`
+                pointMsg = `Invoke method ${chalk.cyan(joinPoint.fullName)}\n`
                 pointMsg += chalk.gray(` returning value: `)
                 pointMsg += this.stringify(joinPoint.returningValue);
                 pointMsg += '\n';
                 break;
             case JoinpointState.AfterThrowing:
-                pointMsg = `Invoke method "${joinPoint.fullName}"\n`
+                pointMsg = `Invoke method ${chalk.cyan(joinPoint.fullName)}\n`
                 pointMsg += chalk.red(` throw error: `)
                 pointMsg += chalk.red(this.stringify(joinPoint.throwing));
                 pointMsg += '\n';

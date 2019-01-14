@@ -80,32 +80,33 @@ export class RollupTs {
                 }
             ]
         },
-        ts2015: {
+        ts2017: {
             sequence: [
-                { src: 'src/**/*.ts', dest: 'esnext', annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
+                { clean: 'lib', activity: CleanActivity },
+                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
                 {
-                    src: 'esnext/**/*.js', dest: 'es2015',
+                    src: 'lib/**/*.js',
+                    dest: 'es2017',
                     data: {
                         name: 'activities.js',
-                        input: 'esnext/index.js'
+                        input: 'lib/index.js'
                     },
                     activity: RollupTs
                 }
             ]
         },
-        ts2017: {
+        ts2015: {
             sequence: [
-                { src: 'src/**/*.ts', dest: 'esnext', annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
+                { clean: 'lib', activity: CleanActivity },
+                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
                 {
-                    src: 'esnext/**/*.js',
-                    dest: 'es2017',
+                    src: 'lib/**/*.js', dest: 'es2015',
                     data: {
                         name: 'activities.js',
-                        input: 'esnext/index.js'
+                        input: 'lib/index.js'
                     },
                     activity: RollupTs
-                },
-                { clean: 'esnext', activity: CleanActivity }
+                }
             ]
         }
     }

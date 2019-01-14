@@ -66,18 +66,18 @@ export class AopRollup extends AssetActivity {
                 }
             ]
         },
-        ts2015: {
-            sequence: [
-                { src: 'src/**/*.ts', dest: 'esnext', annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
-                { src: 'esnext/**/*.js', dest: 'es2015', data: { name: 'aop.js', input: './esnext/index.js' }, activity: AopRollup }
-            ]
-        },
         es2017: {
             sequence: [
-                { clean: 'esnext', activity: CleanToken },
-                { src: 'src/**/*.ts', dest: 'esnext', annotation: true, uglify: false, tsconfig: './tsconfig.es2017.json', activity: TsCompile },
-                { src: 'esnext/**/*.js', dest: 'es2017', data: { name: 'aop.js', input: './esnext/index.js' }, activity: AopRollup },
-                { clean: 'esnext', activity: CleanToken }
+                { clean: 'lib', activity: CleanToken },
+                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.es2017.json', activity: TsCompile },
+                { src: 'lib/**/*.js', dest: 'es2017', data: { name: 'aop.js', input: './lib/index.js' }, activity: AopRollup },
+            ]
+        },
+        ts2015: {
+            sequence: [
+                { clean: 'lib', activity: CleanToken },
+                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
+                { src: 'lib/**/*.js', dest: 'es2015', data: { name: 'aop.js', input: './lib/index.js' }, activity: AopRollup }
             ]
         }
     }

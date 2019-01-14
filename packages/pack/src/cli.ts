@@ -6,17 +6,18 @@ import * as fs from 'fs';
 import * as path from 'path';
 import chalk from 'chalk';
 import * as program from 'commander';
-import { Workflow, isAcitvityClass } from '@ts-ioc/activities';
-import { PackConfigure, isPackClass, PackModule } from '@ts-ioc/pack';
+// import { Workflow, isAcitvityClass } from '@ts-ioc/activities';
+// import { PackConfigure, isPackClass, PackModule } from '@ts-ioc/pack';
 
 const cliRoot = path.join(path.normalize(__dirname), '../');
 const packageConf = require(cliRoot + '/package.json');
 const processRoot = path.join(path.dirname(process.cwd()), path.basename(process.cwd()));
+process.env.INIT_CWD = processRoot;
+
 
 if (process.argv.indexOf('scaffold') > -1) {
     process.argv.push('--verbose');
 }
-
 
 program
     // .arguments('-r ts-node/register tsconfig-paths/register')
@@ -40,15 +41,20 @@ program
         if (options.boot) {
             require(fileName);
         } else {
-            let wf = Workflow.create().use(PackModule);
+            const wf = require('@ts-ioc/activities');
+            const pk = require('@ts-ioc/pack');
+            const bd = require('@ts-ioc/build');
+            let wfi = wf.Workflow.create().use(pk.PackModule);
             let md = require(fileName);
             let activites = Object.values(md);
-            if (activites.some(v => isPackClass(v))) {
-                wf.sequence(...activites.filter(v => isPackClass(v)));
-            } else if (activites.some(v => isAcitvityClass(v))) {
-                wf.sequence(...activites.filter(v => isAcitvityClass(v)));
+            if (activites.some(v => pk.isPackClass(v))) {
+                wfi.sequence(...activites.filter(v => pk.isPackClass(v)));
+            } else if (activites.some(v => bd.isAssetClass(v))) {
+                wfi.sequence(...activites.filter(v => bd.isAssetClass(v)(v)));
+            }  else if (activites.some(v => wf.isAcitvityClass(v))) {
+                wfi.sequence(...activites.filter(v => wf.isAcitvityClass(v)));
             } else {
-                wf.bootstrap(md);
+                wfi.bootstrap(md);
             }
         }
     });
@@ -65,11 +71,13 @@ program
     .option('--closure [bool]', 'bundle and optimize with closure compiler (default)')
     .option('-r, --rollup [bool]', 'bundle with rollup and optimize with closure compiler')
     .action((env, options) => {
-        let Worflow = Workflow.create().use(PackModule);
-        let config = require(path.join(processRoot, env)) as PackConfigure;
+        const wf = require('@ts-ioc/activities');
+        const pk = require('@ts-ioc/pack');
+        const bd = require('@ts-ioc/build');
+        let wfi = wf.Workflow.create().use(pk.PackModule);
+        let config = require(path.join(processRoot, env));
         config.watch = options.watch === true;
-
-        Worflow.bootstrap(config);
+        wfi.bootstrap(config);
     });
 
 program
@@ -84,11 +92,13 @@ program
     .option('--closure [bool]', 'bundle and optimize with closure compiler (default)')
     .option('-r, --rollup [bool]', 'bundle with rollup and optimize with closure compiler')
     .action((serve, options) => {
-        let Worflow = Workflow.create().use(PackModule);
-        let config = require(path.join(processRoot, serve)) as PackConfigure;
+        const wf = require('@ts-ioc/activities');
+        const pk = require('@ts-ioc/pack');
+        const bd = require('@ts-ioc/build');
+        let wfi = wf.Workflow.create().use(pk.PackModule);
+        let config = require(path.join(processRoot, serve));
         config.watch = options.watch === true;
-
-        Worflow.bootstrap(config);
+        wfi.bootstrap(config);
     });
 
 program
@@ -111,8 +121,13 @@ program
     .command('g, generate [string]', 'generate schematics packaged with cmd')
     .option('--ng [bool]', 'generate angular project')
     .action((build, options) => {
-        let Worflow = Workflow.create().use(PackModule);
-        Worflow.run();
+        const wf = require('@ts-ioc/activities');
+        const pk = require('@ts-ioc/pack');
+        const bd = require('@ts-ioc/build');
+        let wfi = wf.Workflow.create().use(pk.PackModule);
+        let config = require(path.join(processRoot, build));
+        config.watch = options.watch === true;
+        wfi.bootstrap(config);
     });
 
 

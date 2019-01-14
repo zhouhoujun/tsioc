@@ -103,18 +103,17 @@ export class RollupTs extends AssetActivity {
     baseURL: __dirname,
     clean: ['lib', 'bundles', 'es2015', 'es2017'],
     assets: {
-        ts2015: {
-            sequence: [
-                { src: 'src/**/*.ts', dest: 'lib', uglify: false, tsconfig: './tsconfig.es2015.json', annotation: true, activity: TsCompile },
-                { dest: 'es2015', activity: RollupTs }
-            ]
-        },
         ts2017: {
             sequence: [
-                { clean: 'esnext', activity: CleanToken },
-                { src: 'src/**/*.ts', dest: 'esnext', annotation: true, uglify: false, tsconfig: './tsconfig.es2017.json', activity: TsCompile },
-                { src: 'esnext/**/*.js', data: { name: 'build.js', input: 'esnext/index.js' }, dest: 'es2017', activity: RollupTs },
-                { clean: 'esnext', activity: CleanToken }
+                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.es2017.json', activity: TsCompile },
+                { src: 'lib/**/*.js', data: { name: 'build.js', input: 'lib/index.js' }, dest: 'es2017', activity: RollupTs }
+            ]
+        },
+        ts2015: {
+            sequence: [
+                { clean: 'lib', activity: CleanToken },
+                { src: 'src/**/*.ts', dest: 'lib', uglify: false, tsconfig: './tsconfig.es2015.json', annotation: true, activity: TsCompile },
+                { dest: 'es2015', activity: RollupTs }
             ]
         }
     }
