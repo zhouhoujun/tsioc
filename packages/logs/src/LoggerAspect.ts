@@ -1,6 +1,6 @@
 import { Level } from './Level';
 import { Joinpoint, JoinpointState } from '@ts-ioc/aop';
-import { IContainer, Abstract, isFunction, Type, isString, isClass, isObject, Registration } from '@ts-ioc/core';
+import { IContainer, Abstract, isFunction, Type, isToken, isString, isClass, isObject, Registration, lang } from '@ts-ioc/core';
 
 import { LoggerMetadata } from './decorators/Logger';
 import { LogConfigure } from './LogConfigure';
@@ -60,27 +60,6 @@ export class LoggerAspect {
         }
     }
 
-    protected formatMessage(joinPoint: Joinpoint, message?: string) {
-        let config = this.logManger.config;
-        if (isClass(config.format)) {
-            if (!this.container.has(config.format)) {
-                this.container.register(config.format);
-            }
-            return this.container.resolve<ILogFormater>(config.format).format(joinPoint, message);
-        } else if (isFunction(config.format)) {
-            return config.format(joinPoint, message);
-        } else if (isObject(config.format) && isFunction(config.format)) {
-            return config.format.format(joinPoint, message);
-        } else {
-            let token = isString(config.format) ? config.format : '';
-            let foramter = this.container.resolve<ILogFormater>(new Registration(LogFormaterToken, token || 'default'));
-            if (foramter) {
-                return foramter.format(joinPoint, message);
-            }
-        }
-
-        return '';
-    }
 
     protected joinMessage(...messgs: any[]) {
         return messgs.filter(a => a).map(a => isString(a) ? a : a.toString()).join('; ');
@@ -110,5 +89,24 @@ export class LoggerAspect {
             }
         }
 
+    }
+
+    protected formatMessage(joinPoint: Joinpoint, message?: string) {
+        let config = this.logManger.config;
+        let formater: ILogFormater;
+        config.format = config.format || LogFormaterToken;
+        if (isToken(config.format)) {
+            formater = this.container.getService(config.format, lang.getClass(this));
+        } else if (isFunction(config.format)) {
+            formater = { format: config.format };
+        } else if (isObject(config.format) && isFunction(config.format.format)) {
+            formater = config.format;
+        }
+
+        if (formater) {
+            return formater.format(joinPoint, message);
+        }
+
+        return '';
     }
 }

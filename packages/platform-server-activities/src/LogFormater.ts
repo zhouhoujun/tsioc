@@ -1,43 +1,16 @@
 import {
-    Singleton, isString, isNull, IParameter, isDate, isFunction,
-    isArray, isClass, InjectToken, lang, Token, Container
+    Singleton, isString, IParameter, isDate, isFunction,
+    isArray, isClass, lang, Refs, Container, isAbstractClass, isNull
 } from '@ts-ioc/core';
 import { Joinpoint, JoinpointState, NonePointcut } from '@ts-ioc/aop';
-
-
-/**
- * Log formater interface token.
- * it is a token id, you can register yourself formater for log.
- */
-export const LogFormaterToken = new InjectToken<ILogFormater>('DI_LogFormater');
-
-/**
- * log formater logs
- *
- * @export
- * @interface ILogFormater
- */
-export interface ILogFormater {
-    /**
-     * format message.
-     *
-     * @param {Joinpoint} [joinPoint]
-     * @param {string} [message]
-     * @returns {string}
-     * @memberof ILogFormater
-     */
-    format(joinPoint?: Joinpoint, message?: string): string;
-}
-
-/**
- * log formater
- */
-export type LOGFormater = ILogFormater | Token<ILogFormater> | ((joinPoint?: Joinpoint, message?: string) => string) | string;
+import { LoggerAspect, LogFormaterToken, ILogFormater } from '@ts-ioc/logs';
+import chalk from 'chalk';
 
 
 @NonePointcut()
-@Singleton(LogFormaterToken)
-export class LogFormater implements ILogFormater {
+@Singleton()
+@Refs(LoggerAspect, LogFormaterToken)
+export class ActivityLogFormater implements ILogFormater {
 
     constructor() {
 
@@ -48,16 +21,25 @@ export class LogFormater implements ILogFormater {
         switch (joinPoint.state) {
             case JoinpointState.Before:
             case JoinpointState.Pointcut:
-                pointMsg = `${joinPoint.state} invoke method "${joinPoint.fullName}"\n  with args: ${this.stringifyArgs(joinPoint.params, joinPoint.args)}.\n`;
+                pointMsg = `${joinPoint.state} invoke method "${joinPoint.fullName}"\n`
+                pointMsg += chalk.gray(' with args: ')
+                pointMsg += this.stringifyArgs(joinPoint.params, joinPoint.args);
+                pointMsg += '\n';
                 break;
             case JoinpointState.After:
                 pointMsg = `${joinPoint.state}  invoke method "${joinPoint.fullName}".\n`;
                 break;
             case JoinpointState.AfterReturning:
-                pointMsg = `Invoke method "${joinPoint.fullName}"\n  returning value: ${this.stringify(joinPoint.returningValue)}.\n`;
+                pointMsg = `Invoke method "${joinPoint.fullName}"\n`
+                pointMsg += chalk.gray(` returning value: `)
+                pointMsg += this.stringify(joinPoint.returningValue);
+                pointMsg += '\n';
                 break;
             case JoinpointState.AfterThrowing:
-                pointMsg = `Invoke method "${joinPoint.fullName}"\n  throw error: ${this.stringify(joinPoint.throwing)}.\n`;
+                pointMsg = `Invoke method "${joinPoint.fullName}"\n`
+                pointMsg += chalk.red(` throw error: `)
+                pointMsg += chalk.red(this.stringify(joinPoint.throwing));
+                pointMsg += '\n';
                 break;
             default:
                 pointMsg = '';
@@ -71,12 +53,12 @@ export class LogFormater implements ILogFormater {
     protected stringifyArgs(params: IParameter[], args: any[]) {
         let argsStr = params.map((p, idx) => {
             let arg = args.length >= idx ? args[idx] : null;
-            return `    <param name: "${p.name || ''}"> ${this.stringify(arg)}`;
+            return chalk.green(`    <param name: "${p.name || ''}"> `) + chalk.gray(`${this.stringify(arg)}`);
         }).join(',\n');
         if (argsStr) {
             return this.joinMessage(['  [\n', argsStr, '\n]'], '');
         } else {
-            return '[]';
+            return chalk.gray('[]');
         }
     }
 
@@ -96,37 +78,41 @@ export class LogFormater implements ILogFormater {
         let str = '';
         switch (type) {
             case 'string':
-                str = `"${target}"`;
+                str = chalk.gray(`"${target}"`);
                 break;
             case 'boolean':
-                str = target.toString();
+                str = chalk.cyan(target.toString());
                 break;
             case 'number':
-                str = target.toString();
+                str = chalk.cyanBright(target.toString());
                 break;
             case 'symbol':
-                str = target.toString();
+                str = chalk.gray(target.toString());
+                break;
+            case 'undefined':
+                str = chalk.gray('undefined');
                 break;
             case 'object':
                 if (isNull(target)) {
-                    str = 'null';
+                    str = chalk.gray('null');
                 } else if (isArray(target)) {
                     str = this.stringifyArray(target);
                 } else if (isDate(target)) {
-                    str = `[Date: ${target.toString()}]`;
+                    str = chalk.gray(`[${chalk.cyan('Date')}: ${target.toString()}]`);
                 } else if (target instanceof Container) {
-                    str = `[${lang.getClassName(target)}]`;
+                    str = chalk.gray(`[${chalk.cyan(lang.getClassName(target))}]`);
                 } else {
-                    str = `[${lang.getClassName(target)}: ${this.toJsonString(target)}]`;
+                    str = chalk.gray(`[${chalk.cyan(lang.getClassName(target))}: ${this.toJsonString(target)}]`);
                 }
                 break;
-            default:
-                if (isClass(target)) {
-                    str = `[class: ${lang.getClassName(target)}]`;
-                } else if (isFunction(target)) {
-                    str = `[function: ${lang.getClassName(target)}]`;
+            case 'function':
+                if (isClass(target) || isAbstractClass(target)) {
+                    str = chalk.gray(`[class: ${lang.getClassName(target)}]`);
+                } else {
+                    str = chalk.gray(`[function: ${lang.getClassName(target)}]`);
                 }
                 break;
+
         }
 
         return str;

@@ -1,5 +1,5 @@
 import { BindPropertyTypeActionData } from './BindPropertyTypeAction';
-import { IContainer } from '../../IContainer';
+import { IContainer, ContainerToken } from '../../IContainer';
 import { CoreActions } from './CoreActions';
 import { ActionComposite } from './ActionComposite';
 import { InjectReference } from '../../InjectReference';
@@ -43,6 +43,9 @@ export class InjectPropertyAction extends ActionComposite {
                 if (prop && !data.injecteds[prop.propertyKey]) {
                     let token = prop.provider ? container.getToken(prop.provider, prop.alias) : prop.type;
                     let pdrMap = container.get(new InjectReference(ProviderMap, data.targetType));
+                    if (token === ContainerToken) {
+                        Object.defineProperty(data.target, prop.propertyKey, { enumerable: false, writable: true });
+                    }
                     if (pdrMap && pdrMap.hasRegister(token)) {
                         data.target[prop.propertyKey] = pdrMap.resolve(token, providerMap);
                         data.injecteds[prop.propertyKey] = true;
