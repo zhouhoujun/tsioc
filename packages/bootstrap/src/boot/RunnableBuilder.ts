@@ -282,7 +282,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         }));
 
         let reg = container.getService(ConfigureRegisterToken, lang.getClass(this));
-        if(reg){
+        if (reg) {
             reg.register(config, container);
         }
     }

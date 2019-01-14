@@ -1,36 +1,86 @@
-import { IService } from './Service';
-import { IRunner } from './Runner';
-import { RefRegistration, Token } from '@ts-ioc/core';
+
+import { Token, lang, IContainer, Inject, ContainerToken } from '@ts-ioc/core';
+import { ModuleConfigure, BootOptions } from '../modules';
 
 /**
- * runn able.
- */
-export type Runnable<T> = IService<T> | IRunner<T>;
-
-
-/**
- * application runner token.
+ * boot.
  *
  * @export
- * @class InjectRunnerToken
- * @extends {Registration<IRunner<T>>}
+ * @interface IBoot
  * @template T
  */
-export class InjectRunnableToken<T> extends RefRegistration<Runnable<T>> {
-    constructor(type: Token<T>) {
-        super(type, 'Runnable');
-    }
+export interface IRunnable<T> {
+    /**
+     * container.
+     *
+     * @type {IContainer}
+     * @memberof IBoot
+     */
+    container: IContainer;
+    /**
+     * target instance.
+     *
+     * @type {T}
+     * @memberof IBoot
+     */
+    getTarget(): T;
+
+    /**
+     * get target token.
+     *
+     * @returns {Token<T>}
+     * @memberof IBoot
+     */
+    getTargetToken(): Token<T>;
+
+    /**
+     * on boot init.
+     *
+     * @param {BootOptions<T>} options
+     * @returns {Promise<void>}
+     * @memberof IBoot
+     */
+    onInit?(options: BootOptions<T>): Promise<void>;
+
 }
 
+/**
+ * boot.
+ *
+ * @export
+ * @class Boot
+ * @implements {IBoot<T>}
+ * @template T
+ */
+export class RunnableBase<T> implements IRunnable<T> {
 
+    @Inject(ContainerToken)
+    container: IContainer;
+
+    constructor(protected token?: Token<T>, protected instance?: T, protected config?: ModuleConfigure) {
+
+    }
+
+    getTarget(): T {
+        return this.instance;
+    }
+
+    getTargetToken(): Token<T> {
+        return this.token || lang.getClass(this.instance);
+    }
+
+}
 
 /**
- * default service token.
+ * target is Runnable or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is RunnableBase<any>}
  */
-export const ServiceToken = new InjectRunnableToken<IService<any>>('service');
-
-
-/**
- * default runner token.
- */
-export const RunnerToken = new InjectRunnableToken<IRunner<any>>('runner');
+export function isRunnable(target: any): target is RunnableBase<any> {
+    if (target instanceof RunnableBase) {
+        return true;
+    }
+    return false;
+}

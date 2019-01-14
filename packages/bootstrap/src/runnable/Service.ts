@@ -1,6 +1,6 @@
 import { Token, isFunction, lang } from '@ts-ioc/core';
 import { ModuleConfigure } from '../modules';
-import { IBoot, Boot } from './boot';
+import { IRunnable, RunnableBase } from './Runnable';
 
 /**
  * IService interface
@@ -8,7 +8,7 @@ import { IBoot, Boot } from './boot';
  * @export
  * @interface IService
  */
-export interface IService<T> extends IBoot<T> {
+export interface IService<T> extends IRunnable<T> {
     /**
      * start application service.
      *
@@ -34,7 +34,7 @@ export interface IService<T> extends IBoot<T> {
  * @class Service
  * @implements {IService}
  */
-export abstract class Service<T> extends Boot<T> implements IService<T> {
+export abstract class Service<T> extends RunnableBase<T> implements IService<T> {
 
     constructor(token?: Token<T>, instance?: T, config?: ModuleConfigure) {
         super(token, instance, config);

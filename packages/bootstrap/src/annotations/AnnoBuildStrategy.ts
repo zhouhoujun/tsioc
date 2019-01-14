@@ -24,6 +24,14 @@ export interface IAnnoBuildStrategy<T> {
 
 }
 
+/**
+ * annotation build strategy token inject.
+ *
+ * @export
+ * @class InjectAnnoBuildStrategyToken
+ * @extends {RefRegistration<IAnnoBuildStrategy<T>>}
+ * @template T
+ */
 export class InjectAnnoBuildStrategyToken<T> extends RefRegistration<IAnnoBuildStrategy<T>> {
     constructor(type: Token<T>) {
         super(type, 'AnnoBuildStrategy');

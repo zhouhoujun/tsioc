@@ -1,6 +1,6 @@
 import { Token, isFunction } from '@ts-ioc/core';
 import { ModuleConfigure } from '../modules';
-import { IBoot, Boot } from './boot';
+import { IRunnable, RunnableBase } from './Runnable';
 
 /**
  * application runer.
@@ -9,7 +9,7 @@ import { IBoot, Boot } from './boot';
  * @interface IRunner
  * @template T
  */
-export interface IRunner<T> extends IBoot<T> {
+export interface IRunner<T> extends IRunnable<T> {
 
     /**
      * run application via boot instance.
@@ -31,7 +31,7 @@ export interface IRunner<T> extends IBoot<T> {
  * @class Boot
  * @implements {IBoot}
  */
-export abstract class Runner<T> extends Boot<T> implements IRunner<T> {
+export abstract class Runner<T> extends RunnableBase<T> implements IRunner<T> {
 
     constructor(token?: Token<T>, instance?: T, config?: ModuleConfigure) {
         super(token, instance, config);
