@@ -33,7 +33,7 @@ program
                 fileName = path.join(processRoot, 'taskfile.js');
             }
         }
-        if(!fs.existsSync(fileName)){
+        if (!fs.existsSync(fileName)) {
             console.log(chalk.red(`'${fileName}' not exsists`));
             process.exit(1);
         }
