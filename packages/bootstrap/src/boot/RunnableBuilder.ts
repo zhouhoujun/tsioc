@@ -291,7 +291,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
                 config.baseURL = this.getRunRoot(c);
             }
             if (reg) {
-                return reg.register(config, c);
+                return reg.register(config, c, this);
             }
             return null;
         }));

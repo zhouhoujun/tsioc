@@ -1,15 +1,25 @@
-import { ApplicationBuilder, ModuleConfigure, ModuleConfig, BootOptions, Runnable, RunnableEvents, isDIModuleClass } from '@ts-ioc/bootstrap';
+import { ApplicationBuilder, ModuleConfigure, ModuleConfig, Runnable, RunnableEvents, isDIModuleClass, RunOptions, AppConfigure, IConfigureRegister, RunnableConfigure, ConfigureRegisterToken } from '@ts-ioc/bootstrap';
 import { UnitModule } from './UnitModule';
 import { Src } from '@ts-ioc/activities';
-import { isClass, hasClassMetadata, Type, isString, isArray, Token, IContainer } from '@ts-ioc/core';
+import { isClass, hasClassMetadata, Type, isString, isArray, Token, IContainer, Refs, LoadType, IContainerBuilder, lang, ContainerBuilder } from '@ts-ioc/core';
 import { Suite } from './decorators/Suite';
-import { Report } from './decorators/Report';
-import { TestReport, ReportsToken, isReporterClass } from './reports';
+import { TestReport, ReportsToken, isReporterClass, ITestReport } from './reports';
 import { SuiteRunner } from './runner';
-
-export interface UnitTestOptions extends BootOptions<any> {
+import { DebugLogAspect } from '@ts-ioc/logs';
+export interface UnitTestOptions extends RunOptions<any> {
    report?: boolean;
 }
+
+export interface UnitTestConfigure extends AppConfigure {
+   /**
+    * resports.
+    *
+    * @type {Token<ITestReport>[]}
+    * @memberof UnitTestConfigure
+    */
+   reporters: Token<ITestReport>[];
+}
+
 
 /**
  * unit test.
@@ -24,43 +34,71 @@ export class UnitTest extends ApplicationBuilder<any> {
       this.initUnit();
    }
 
+   /**
+    * create unit test.
+    *
+    * @static
+    * @param {(string | UnitTestConfigure)} [config]
+    * @returns
+    * @memberof UnitTest
+    */
+   static create(config?: string | UnitTestConfigure) {
+      let unit = new UnitTest();
+      if (config) {
+         unit.useConfiguration(config);
+      }
+      return unit;
+   }
+
    initUnit() {
       this.use(UnitModule);
+      this.use(UnitTestConfigureRegister);
       this.on(RunnableEvents.registeredExt, (types: Type<any>[], container: IContainer) => {
+         let repoters = [];
          types.forEach(type => {
             if (isReporterClass(type)) {
-               this.useReporter(container, type);
+               repoters.push(type);
             } else if (isDIModuleClass(type)) {
                let injMd = this.getInjectedModule(type);
                let pdmap = injMd.getProviderMap();
                if (pdmap) {
                   pdmap.provides().forEach(p => {
                      if (isReporterClass(p)) {
-                        this.useReporter(container, p);
+                        repoters.push(p);
                      }
                   });
                }
             }
          });
+         this.useReporter(container, ...repoters);
       });
    }
 
 
-   protected useReporter(contaienr: IContainer, ...reporters: Type<any>[]): this {
-      let reps = contaienr.get(ReportsToken) as Type<any>[];
+   protected useReporter(container: IContainer, ...reporters: Type<any>[]): this {
+      let reps = container.get(ReportsToken) as Type<any>[];
       if (reps) {
          reps = reps.concat(...reporters);
       } else {
          reps = reporters;
       }
-      contaienr.bindProvider(ReportsToken, reps.filter(r => isClass(r) && hasClassMetadata(Report, r)));
+      container.bindProvider(ReportsToken, reps);
       return this;
+   }
+
+   getTopBuilder(): IContainerBuilder {
+      let c = this.getPools().values().find(c => lang.getClass(c.getBuilder()) !== ContainerBuilder);
+      if (c) {
+         return c.getBuilder();
+      }
+      return this.getPools().getDefault().getBuilder();
    }
 
 
    async test(src: string | Type<any> | (Type<any> | string)[]) {
+      await await this.initRootContainer();
       let suites: any[] = [];
-      let dbuiler = this.getPools().getDefault().getBuilder();
+      let dbuiler = this.getTopBuilder();
       if (isString(src)) {
          let alltypes = await dbuiler.loader.loadTypes([{ files: [src] }]);
          alltypes.forEach(tys => {
@@ -96,14 +134,44 @@ export class UnitTest extends ApplicationBuilder<any> {
 }
 
 
+@Refs(UnitTest, ConfigureRegisterToken)
+export class UnitTestConfigureRegister implements IConfigureRegister<RunnableConfigure> {
+
+   async register(config: UnitTestConfigure, container: IContainer): Promise<void> {
+      if (config.debug) {
+         container.register(DebugLogAspect);
+      }
+      if (isArray(config.reporters) && config.reporters.length) {
+         let reps = container.get(ReportsToken) as Type<any>[];
+         config.reporters.forEach(type => {
+            if (isReporterClass(type)) {
+               if (!container.has(type)) {
+                  container.use(type);
+               }
+               reps.push(type);
+            }
+         });
+         container.bindProvider(ReportsToken, reps);
+      }
+   }
+}
+
 /**
  * unit test.
  *
  * @export
  * @param {Src} src
+ * @param {(string | AppConfigure)} [config]
+ * @param {...LoadType[]} used
  * @returns {Promise<any>}
  */
-export async function runTest(src: Src): Promise<any> {
+export async function runTest(src: Src, config?: string | AppConfigure, ...used: LoadType[]): Promise<any> {
    let unit = new UnitTest();
+   if (config) {
+      unit.useConfiguration(config);
+   }
+   if (used.length) {
+      unit.use(...used);
+   }
    await unit.test(src);
 }

@@ -1,4 +1,4 @@
-import { Suite, BeforeEach, UnitTest, Test, Assert, Expect, ExpectToken } from '../src';
+import { Suite, BeforeEach, UnitTest, Test, Assert, Expect, ExpectToken } from '@ts-ioc/unit';
 import { Defer, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
 import { ConsoleReporter } from '@ts-ioc/unit-console';
 
@@ -30,7 +30,7 @@ export class SuiteTest {
         setTimeout(() => {
             def.resolve('in time do...')
         }, 100)
-        assert.strictEqual('0', 0);
+        assert.equal('0', 0);
         return def.promise;
     }
 
@@ -41,6 +41,6 @@ export class SuiteTest {
 }
 
 
-new UnitTest()
-    .use(ConsoleReporter)
-    .test(SuiteTest);
+// new UnitTest()
+//     .use(ConsoleReporter)
+//     .test(SuiteTest);

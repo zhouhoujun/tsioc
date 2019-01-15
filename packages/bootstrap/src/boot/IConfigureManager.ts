@@ -1,5 +1,6 @@
 import { InjectToken, IContainer } from '@ts-ioc/core';
 import { RunnableConfigure } from './AppConfigure';
+import { IRunnableBuilder } from './IRunnableBuilder';
 
 /**
  * configure manager token.
@@ -48,10 +49,11 @@ export interface IConfigureRegister<T extends RunnableConfigure> {
      *
      * @param {T} config
      * @param {IContainer} container
+     * @param {IRunnableBuilder<any>} [runBuilder]
      * @returns {Promise<void>}
      * @memberof IConfigureRegister
      */
-    register(config: T, container: IContainer): Promise<void>;
+    register(config: T, container: IContainer, runBuilder?: IRunnableBuilder<any>): Promise<void>;
 }
 
 /**

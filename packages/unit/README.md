@@ -80,15 +80,32 @@ export class SuiteTest {
 }
 
 
+
+```
+
+### custom run test code
+```ts
+
 new UnitTest()
     .use(ConsoleReporter)
     .use(...) // your assert expect ...
     .test(SuiteTest);
     // match test file. will auto load class with @Suite decorator.
     //.test('test/**/*.ts');
+```
 
+### use command run test code
+`pk test [test/**/*.ts]`
+
+```shell
+
+pk test  //default load test/**/*.ts
+
+//or
+pk test test/**/*.ts
 
 ```
+
 
 * test result:
 ![image](https://github.com/zhouhoujun/tsioc/blob/master/packages/unit-console/assets/ConsoleReport1.png?raw=true)
