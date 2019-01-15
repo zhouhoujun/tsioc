@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 require('ts-node').register();
 require('tsconfig-paths').register();
-import { rm, cp, mkdir, exec } from 'shelljs';
+import { rm, cp, mkdir } from 'shelljs';
 import * as fs from 'fs';
 import * as path from 'path';
 import chalk from 'chalk';
 import * as program from 'commander';
+import { execSync } from 'child_process';
 // import { Workflow, isAcitvityClass } from '@ts-ioc/activities';
 // import { PackConfigure, isPackClass, PackModule } from '@ts-ioc/pack';
 const resolve = require('resolve');
@@ -14,6 +15,10 @@ const packageConf = require(cliRoot + '/package.json');
 const processRoot = path.join(path.dirname(process.cwd()), path.basename(process.cwd()));
 process.env.INIT_CWD = processRoot;
 
+let cwdPackageConf = path.join(processRoot, '/package.json');
+if (!fs.existsSync(cwdPackageConf)) {
+    cwdPackageConf = undefined;
+}
 
 if (process.argv.indexOf('scaffold') > -1) {
     process.argv.push('--verbose');
@@ -41,9 +46,9 @@ program
         if (options.boot) {
             require(fileName);
         } else {
-            const wf = require(resolve.sync('@ts-ioc/activities'));
-            const pk = require(resolve.sync('@ts-ioc/pack'));
-            const bd = require(resolve.sync('@ts-ioc/build'));
+            const wf = require(resolve.sync('@ts-ioc/activities', { basedir: processRoot, package: cwdPackageConf }));
+            const pk = require(resolve.sync('@ts-ioc/pack', { basedir: processRoot, package: cwdPackageConf }));
+            const bd = require(resolve.sync('@ts-ioc/build', { basedir: processRoot, package: cwdPackageConf }));
             let wfi = wf.Workflow.create().use(pk.PackModule);
             let md = require(fileName);
             let activites = Object.values(md);
@@ -51,11 +56,89 @@ program
                 wfi.sequence(...activites.filter(v => pk.isPackClass(v)));
             } else if (activites.some(v => bd.isAssetClass(v))) {
                 wfi.sequence(...activites.filter(v => bd.isAssetClass(v)(v)));
-            }  else if (activites.some(v => wf.isAcitvityClass(v))) {
+            } else if (activites.some(v => wf.isAcitvityClass(v))) {
                 wfi.sequence(...activites.filter(v => wf.isAcitvityClass(v)));
             } else {
                 wfi.bootstrap(md);
             }
+        }
+    });
+
+
+program.command('init [action]')
+    .description('init tsioc project.')
+    .option('-b, --browser [bool]', 'init browser project or not.')
+    .action((action, options) => {
+        if (!cwdPackageConf) {
+            execSync('npm init', { cwd: processRoot });
+        }
+        let cmds: string[];
+        switch (action) {
+            case 'activity':
+                cmds = [
+                    'npm install @ts-ioc/core',
+                    'npm install @ts-ioc/aop',
+                    'npm install @ts-ioc/logs',
+                    'npm install @ts-ioc/bootstrap',
+                    'npm install @ts-ioc/activities'
+                ];
+                if (options.browser) {
+                    cmds.push('@ts-ioc/platform-browser');
+                    cmds.push('@ts-ioc/platform-browser-bootstrap');
+                    cmds.push('@ts-ioc/platform-browser-activities');
+                } else {
+                    cmds.push('@ts-ioc/platform-server');
+                    cmds.push('@ts-ioc/platform-server-bootstrap');
+                    cmds.push('@ts-ioc/platform-server-activities');
+                }
+                execSync(cmds.join('\n') + '\n', { cwd: processRoot });
+                break;
+            case 'pack':
+                cmds = [
+                    'npm install @ts-ioc/core',
+                    'npm install @ts-ioc/aop',
+                    'npm install @ts-ioc/logs',
+                    'npm install @ts-ioc/bootstrap',
+                    '@ts-ioc/platform-server',
+                    '@ts-ioc/platform-server-bootstrap',
+                    'npm install @ts-ioc/activities',
+                    '@ts-ioc/platform-server-activities',
+                    'npm install @ts-ioc/build',
+                    'npm install @ts-ioc/pack',
+                    'npm install @ts-ioc/unit',
+                    'npm install @ts-ioc/unit-console'
+                ];
+                execSync(cmds.join('\n') + '\n', { cwd: processRoot });
+                break;
+            case 'boot':
+                cmds = [
+                    'npm install @ts-ioc/core',
+                    'npm install @ts-ioc/aop',
+                    'npm install @ts-ioc/logs',
+                    'npm install @ts-ioc/bootstrap'
+                ];
+                if (options.browser) {
+                    cmds.push('@ts-ioc/platform-browser');
+                    cmds.push('@ts-ioc/platform-browser-bootstrap');
+                } else {
+                    cmds.push('@ts-ioc/platform-server');
+                    cmds.push('@ts-ioc/platform-server-bootstrap');
+                }
+                execSync(cmds.join('\n') + '\n', { cwd: processRoot });
+                break;
+            default:
+                cmds = [
+                    'npm install @ts-ioc/core',
+                    'npm install @ts-ioc/aop',
+                    'npm install @ts-ioc/logs'
+                ];
+                if (options.browser) {
+                    cmds.push('@ts-ioc/platform-browser');
+                } else {
+                    cmds.push('@ts-ioc/platform-server');
+                }
+                execSync(cmds.join('\n') + '\n', { cwd: processRoot });
+                break;
         }
     });
 
@@ -71,9 +154,8 @@ program
     .option('--closure [bool]', 'bundle and optimize with closure compiler (default)')
     .option('-r, --rollup [bool]', 'bundle with rollup and optimize with closure compiler')
     .action((env, options) => {
-        const wf = require(resolve.sync('@ts-ioc/activities', {basedir: processRoot}));
-        const pk = require(resolve.sync('@ts-ioc/pack', {basedir: processRoot}));
-        const bd = require(resolve.sync('@ts-ioc/build', {basedir: processRoot}));
+        const wf = require(resolve.sync('@ts-ioc/activities', { basedir: processRoot, package: cwdPackageConf }));
+        const pk = require(resolve.sync('@ts-ioc/pack', { basedir: processRoot, package: cwdPackageConf }));
         let wfi = wf.Workflow.create().use(pk.PackModule);
         let config = require(path.join(processRoot, env));
         config.watch = options.watch === true;
@@ -92,8 +174,8 @@ program
     .option('--closure [bool]', 'bundle and optimize with closure compiler (default)')
     .option('-r, --rollup [bool]', 'bundle with rollup and optimize with closure compiler')
     .action((serve, options) => {
-        const wf = require(resolve.sync('@ts-ioc/activities', {basedir: processRoot}));
-        const pk = require(resolve.sync('@ts-ioc/pack', {basedir: processRoot}));
+        const wf = require(resolve.sync('@ts-ioc/activities', { basedir: processRoot, package: cwdPackageConf }));
+        const pk = require(resolve.sync('@ts-ioc/pack', { basedir: processRoot, package: cwdPackageConf }));
         let wfi = wf.Workflow.create().use(pk.PackModule);
         let config = require(path.join(processRoot, serve));
         config.watch = options.watch === true;
@@ -120,8 +202,8 @@ program
     .command('g, generate [string]', 'generate schematics packaged with cmd')
     .option('--ng [bool]', 'generate angular project')
     .action((build, options) => {
-        const wf = require(resolve.sync('@ts-ioc/activities', {basedir: processRoot}));
-        const pk = require(resolve.sync('@ts-ioc/pack', {basedir: processRoot}));
+        const wf = require(resolve.sync('@ts-ioc/activities', { basedir: processRoot, package: cwdPackageConf }));
+        const pk = require(resolve.sync('@ts-ioc/pack', { basedir: processRoot, package: cwdPackageConf }));
         let wfi = wf.Workflow.create().use(pk.PackModule);
         let config = require(path.join(processRoot, build));
         config.watch = options.watch === true;

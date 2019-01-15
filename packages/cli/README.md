@@ -1,20 +1,15 @@
-# packaged platform-server-activities
-`platform-server-activities` is activities framework for nodejs, base on AOP, Ioc container, via @ts-ioc. file stream pipes activities.
+# packaged @ts-ioc/cli
+`@ts-ioc/cli` is project build pack tools cli, base on AOP, Ioc container, via @ts-ioc. file stream pipes activities.
 
 This repo is for distribution on `npm`. The source for this module is in the
-[main repo](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme).
+[main repo](https://github.com/zhouhoujun/tsioc/blob/master/packages/cli#readme).
 Please file issues and pull requests against that repo.
 
 
 ## Install
 
-1. install modules:
 
-```shell
-npm install platform-server-activities
-```
-
-3. install cli | build pack:
+1. install cli | build pack:
 
 ### cli in global
 ```shell
@@ -22,10 +17,10 @@ npm install -g '@ts-ioc/cli'
 ```
 ### build pack
 ```
-npm install '@ts-ioc/pack'
+pk run [taskfile.ts]
+pk build [taskfile config]
 ```
 
-use command: `pk run [taskfile.ts], pk run [taskfile.js]`
 
 
 You can `import` modules:
@@ -95,6 +90,7 @@ Workflow.create()
         ...
         activity: ...
     }]);
+
 
 ```
 

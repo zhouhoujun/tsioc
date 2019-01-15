@@ -14,18 +14,18 @@ Please file issues and pull requests against that repo.
 npm install @ts-ioc/pack
 ```
 
-3. install cli | build pack:
+2. install cli | build pack:
 
 ### cli in global
 ```shell
-npm install -g '@ts-ioc/pack'
+npm install -g '@ts-ioc/cli'
 ```
 ### build pack
 ```
 npm install '@ts-ioc/pack'
 ```
 
-use command: `tkf [task names] [--param param]`
+use command: `pk run [taskfile.ts], pk run [taskfile.js]`
 
 
 You can `import` modules:
