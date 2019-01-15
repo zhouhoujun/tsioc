@@ -136,7 +136,6 @@ function requireCwd(id: string) {
 }
 
 function requireRegisters() {
-    // requireCwd('ts-node').register();
     requireCwd('tsconfig-paths').register();
 }
 

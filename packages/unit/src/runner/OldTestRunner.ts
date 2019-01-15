@@ -1,18 +1,31 @@
-import { Runner, ModuleConfigure } from '@ts-ioc/bootstrap';
-import {
-    Token, getMethodMetadata, isNumber, lang, ContainerToken,
-    IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Defer, Injectable
-} from '@ts-ioc/core';
-import { Before } from '../decorators/Before';
-import { BeforeEach } from '../decorators/BeforeEach';
-import { Test } from '../decorators/Test';
-import { Suite } from '../decorators/Suite';
-import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
-import { ISuiteDescribe, ICaseDescribe } from '../reports';
+import { isUndefined, Injectable, Inject, ContainerToken, IContainer, MapSet, lang, Defer, getMethodMetadata, isNumber, PromiseUtil } from "@ts-ioc/core";
 import { SuiteRunnerToken, ISuiteRunner } from './ISuiteRunner';
-import { RunCaseToken, RunSuiteToken, Assert, ExpectToken } from '../assert';
-import * as assert from 'assert';
-import * as expect from 'expect';
+import { Runner } from '@ts-ioc/bootstrap';
+import { ISuiteDescribe, ICaseDescribe } from '../reports';
+import { Assert } from '../assert';
+import { TestCaseMetadata, BeforeEachTestMetadata, BeforeTestMetadata } from '../metadata';
+import { BeforeEach, Before, Test } from '../decorators';
+
+declare let window: any;
+declare let global: any;
+let globals = isUndefined(window) ? global : window;
+//BDD style
+globals.describe = (name: string, fn: () => any) => {
+    const it = (title: string, test: () => any, timeout?: number) => {
+
+    }
+    fn && fn();
+};
+
+//TDD style
+globals.suite = (name: string, fn: () => any) => {
+
+    const test = (title: string, test: () => any, timeout?: number) => {
+
+    }
+    fn && fn();
+};
+
 
 /**
  * Suite runner.
@@ -21,8 +34,9 @@ import * as expect from 'expect';
  * @class SuiteRunner
  * @implements {IRunner<any>}
  */
-@Injectable(SuiteRunnerToken)
-export class SuiteRunner extends Runner<any> implements ISuiteRunner {
+@Injectable()
+export class OldTestRunner extends Runner<any> implements ISuiteRunner {
+    
 
     @Inject(ContainerToken)
     container: IContainer;
@@ -30,39 +44,28 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
     timeout: number;
     describe: string;
 
-    constructor(token?: Token<any>, instance?: any, config?: ModuleConfigure) {
-        super(token, instance, config);
+    suites: MapSet<string, ISuiteDescribe>;
+
+    getTarget(){
+        return this.suites;
     }
 
-    /**
-     * get suite describe.
-     *
-     * @returns {ISuiteDescribe}
-     * @memberof SuiteRunner
-     */
-    getSuiteDescribe(): ISuiteDescribe {
-        let type = lang.getClass(this.instance);
-        let metas = getOwnTypeMetadata<SuiteMetadata>(Suite, type);
-        let meta = metas.find(m => isNumber(m.timeout));
-        this.timeout = meta ? meta.timeout : (3 * 60 * 60 * 1000);
-        this.describe = metas.map(m => m.describe).filter(d => d).join('; ') || lang.getClassName(type);
-        return {
-            timeout: this.timeout,
-            describe: this.describe,
-            cases: []
-        }
+    constructor() {
+        super(MapSet, null);
+        this.suites = new MapSet();
     }
 
     async run(data?: any): Promise<any> {
         try {
-            if (!this.container.has(Assert)) {
-                this.container.bindProvider(Assert, () => assert);
-            }
-            if (!this.container.has(ExpectToken)) {
-                this.container.bindProvider(ExpectToken, () => expect);
-            }
-            let desc = this.getSuiteDescribe();
-            await this.runSuite(desc);
+            // if (!this.container.has(Assert)) {
+            //     this.container.bindProvider(Assert, () => assert);
+            // }
+            // if (!this.container.has(ExpectToken)) {
+            //     this.container.bindProvider(ExpectToken, () => expect);
+            // }
+            await Promise.all(this.suites.values().map(desc=>{
+                return this.runSuite(desc);
+            }));
         } catch (err) {
             // console.error(err);
         }
@@ -89,9 +92,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
             }
         }, timeout);
 
-        this.container.invoke(instance, key,
-            { provide: RunCaseToken, useValue: this.instance[key] },
-            { provide: RunSuiteToken, useValue: this.instance })
+        this.container.invoke(instance, key)
             .then(r => {
                 clearTimeout(timer);
                 timer = null;

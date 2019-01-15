@@ -15,13 +15,6 @@ export const SuiteRunnerToken = new InjectRunnableToken<ISuiteRunner>('@Suite');
  * @extends {IRunner<any>}
  */
 export interface ISuiteRunner extends IRunner<any> {
-    /**
-     * get suite describe.
-     *
-     * @returns {ISuiteDescribe}
-     * @memberof ISuiteRunner
-     */
-    getSuiteDescribe(): ISuiteDescribe;
 
     runSuite(desc: ISuiteDescribe): Promise<void>;
 
