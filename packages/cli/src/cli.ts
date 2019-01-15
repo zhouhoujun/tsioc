@@ -26,7 +26,7 @@ if (process.argv.indexOf('scaffold') > -1) {
 program
     .version(packageConf.version)
     .command('init [action]')
-    .description('init tsioc project.')
+    .description('init tsioc project. action is project init type: "activity","pack", "boot", default: tsioc')
     .option('-b, --browser [bool]', 'init browser project or not.')
     .option('-v, --version [string]', 'the version of tsioc to init.')
     .option('--dev [bool]', 'init tsioc with devDependencies.')
