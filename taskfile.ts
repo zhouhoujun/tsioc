@@ -3,7 +3,7 @@ import { INodeActivityContext, Asset, BuildModule, AssetToken, ShellModule, Tran
 import * as through from 'through2';
 import * as path from 'path';
 import { isPackClass, PackModule } from '@ts-ioc/pack';
-import { isString } from 'packages/core/lib';
+import { isString } from '@ts-ioc/core';
 const inplace = require('json-in-place');
 
 
