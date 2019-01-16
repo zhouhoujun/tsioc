@@ -1,31 +1,23 @@
-import { isUndefined, Injectable, Inject, ContainerToken, IContainer, MapSet, lang, Defer, getMethodMetadata, isNumber, PromiseUtil } from "@ts-ioc/core";
-import { SuiteRunnerToken, ISuiteRunner } from './ISuiteRunner';
+import { isUndefined, Inject, ContainerToken, IContainer, MapSet, Defer, PromiseUtil, Singleton, Token } from '@ts-ioc/core';
+import { ISuiteRunner } from './ISuiteRunner';
 import { Runner } from '@ts-ioc/bootstrap';
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { Assert } from '../assert';
-import { TestCaseMetadata, BeforeEachTestMetadata, BeforeTestMetadata } from '../metadata';
-import { BeforeEach, Before, Test } from '../decorators';
+import { async } from 'rxjs/internal/scheduler/async';
 
 declare let window: any;
 declare let global: any;
-let globals = isUndefined(window) ? global : window;
-//BDD style
-globals.describe = (name: string, fn: () => any) => {
-    const it = (title: string, test: () => any, timeout?: number) => {
 
-    }
-    fn && fn();
+let gls = {
+    describe: undefined,
+    suite: undefined,
+    it: undefined,
+    test: undefined,
+    before: undefined,
+    beforeEach: undefined,
+    after: undefined,
+    afterEach: undefined
 };
-
-//TDD style
-globals.suite = (name: string, fn: () => any) => {
-
-    const test = (title: string, test: () => any, timeout?: number) => {
-
-    }
-    fn && fn();
-};
-
 
 /**
  * Suite runner.
@@ -34,9 +26,8 @@ globals.suite = (name: string, fn: () => any) => {
  * @class SuiteRunner
  * @implements {IRunner<any>}
  */
-@Injectable()
-export class OldTestRunner extends Runner<any> implements ISuiteRunner {
-    
+@Singleton
+export class OldTestRunner implements ISuiteRunner {
 
     @Inject(ContainerToken)
     container: IContainer;
@@ -46,26 +37,128 @@ export class OldTestRunner extends Runner<any> implements ISuiteRunner {
 
     suites: MapSet<string, ISuiteDescribe>;
 
-    getTarget(){
+    getTargetToken(): Token<any> {
+        return null;
+    }
+
+
+    getTarget() {
         return this.suites;
     }
 
-    constructor() {
-        super(MapSet, null);
+    constructor(timeout?: number) {
         this.suites = new MapSet();
+        this.timeout = timeout || (3 * 60 * 60 * 1000);
+    }
+
+    registerGlobalScope() {
+        let globals = typeof window !== 'undefined' ? window : global; // isUndefined(window) ? global : window;
+        Object.keys(gls).forEach(k => {
+            gls[k] = globals[k];
+        });
+
+
+        // BDD style
+        globals.describe = (name: string, fn: () => any) => {
+            let suiteDesc = {
+                describe: name,
+                cases: []
+            } as ISuiteDescribe;
+
+            globals.it = (title: string, test: () => any, timeout?: number) => {
+                suiteDesc.cases.push({ title: title, key: '', fn: test, timeout: timeout })
+            }
+            globals.before = (test: () => any, timeout?: number) => {
+                suiteDesc.before = suiteDesc.before || [];
+                suiteDesc.before.push({
+                    fn: test,
+                    timeout: timeout
+                })
+            }
+            globals.beforeEach = (test: () => any, timeout?: number) => {
+                suiteDesc.beforeEach = suiteDesc.beforeEach || [];
+                suiteDesc.beforeEach.push({
+                    fn: test,
+                    timeout: timeout
+                });
+            }
+            globals.after = (test: () => any, timeout?: number) => {
+                suiteDesc.after = suiteDesc.after || [];
+                suiteDesc.after.push({
+                    fn: test,
+                    timeout: timeout
+                });
+            }
+            globals.afterEach = (test: () => any, timeout?: number) => {
+                suiteDesc.afterEach = suiteDesc.afterEach || [];
+                suiteDesc.afterEach.push({
+                    fn: test,
+                    timeout: timeout
+                });
+            }
+            fn && fn.call({ before: before });
+            this.suites.set(name, suiteDesc);
+        };
+
+        if (globals.suite) {
+            gls.suite = globals.suite;
+        }
+        // TDD style
+        globals.suite = (name: string, fn: () => any) => {
+            let suiteDesc = {
+                describe: name,
+                cases: []
+            } as ISuiteDescribe;
+            globals.test = (title: string, test: () => any, timeout?: number) => {
+                suiteDesc.cases.push({ title: title, key: '', fn: test, timeout: timeout })
+            }
+            globals.before = (test: () => any, timeout?: number) => {
+                suiteDesc.before = suiteDesc.before || [];
+                suiteDesc.before.push({
+                    fn: test,
+                    timeout: timeout
+                })
+            }
+            globals.beforeEach = (test: () => any, timeout?: number) => {
+                suiteDesc.beforeEach = suiteDesc.beforeEach || [];
+                suiteDesc.beforeEach.push({
+                    fn: test,
+                    timeout: timeout
+                });
+            }
+            globals.after = (test: () => any, timeout?: number) => {
+                suiteDesc.after = suiteDesc.after || [];
+                suiteDesc.after.push({
+                    fn: test,
+                    timeout: timeout
+                });
+            }
+            globals.afterEach = (test: () => any, timeout?: number) => {
+                suiteDesc.afterEach = suiteDesc.afterEach || [];
+                suiteDesc.afterEach.push({
+                    fn: test,
+                    timeout: timeout
+                });
+            }
+            fn && fn();
+            this.suites.set(name, suiteDesc);
+        };
+    }
+
+    unregisterGlobalScope() {
+        let globals = typeof window !== 'undefined' ? window : global;
+        delete globals.describe;
+        delete globals.suite;
+        // reset to default.
+        Object.keys(gls).forEach(k => {
+            globals[k] = gls[k];
+        })
+
     }
 
     async run(data?: any): Promise<any> {
         try {
-            // if (!this.container.has(Assert)) {
-            //     this.container.bindProvider(Assert, () => assert);
-            // }
-            // if (!this.container.has(ExpectToken)) {
-            //     this.container.bindProvider(ExpectToken, () => expect);
-            // }
-            await Promise.all(this.suites.values().map(desc=>{
-                return this.runSuite(desc);
-            }));
+            await PromiseUtil.step(this.suites.values().map(desc => () => this.runSuite(desc)));
         } catch (err) {
             // console.error(err);
         }
@@ -74,10 +167,10 @@ export class OldTestRunner extends Runner<any> implements ISuiteRunner {
     async runSuite(desc: ISuiteDescribe): Promise<void> {
         await this.runBefore(desc);
         await this.runTest(desc);
+        await this.runAfter(desc);
     }
 
-    runTimeout(key: string, describe: string, timeout: number): Promise<any> {
-        let instance = this.instance;
+    runTimeout(fn: Function, describe: string, timeout: number): Promise<any> {
         let defer = new Defer();
         let timer = setTimeout(() => {
             if (timer) {
@@ -85,14 +178,14 @@ export class OldTestRunner extends Runner<any> implements ISuiteRunner {
                 let assert = this.container.resolve(Assert);
                 let err = new assert.AssertionError({
                     message: `${describe}, timeout ${timeout}`,
-                    stackStartFunction: this.instance[key],
-                    stackStartFn: this.instance[key]
+                    stackStartFunction: fn,
+                    stackStartFn: fn
                 });
                 defer.reject(err);
             }
         }, timeout);
 
-        this.container.invoke(instance, key)
+        Promise.resolve(fn(() => defer.resolve()))
             .then(r => {
                 clearTimeout(timer);
                 timer = null;
@@ -107,62 +200,44 @@ export class OldTestRunner extends Runner<any> implements ISuiteRunner {
         return defer.promise;
     }
 
-    async runBefore(describe: ISuiteDescribe) {
-        let methodMaps = getMethodMetadata<BeforeTestMetadata>(Before, this.instance);
+    async runHook(describe: ISuiteDescribe, action: string, desc: string) {
         await PromiseUtil.step(
-            lang.keys(methodMaps)
-                .map(key => {
-                    let meta = methodMaps[key].find(m => isNumber(m.timeout));
-                    return this.runTimeout(
-                        key,
-                        'sutie before ' + key,
-                        meta ? meta.timeout : describe.timeout)
-                }));
+            (describe[action] || [])
+                .map(hk => () => this.runTimeout(
+                    hk.fn,
+                    desc,
+                    hk.timeout || describe.timeout)));
     }
 
-    async runBeforeEach() {
-        let methodMaps = getMethodMetadata<BeforeEachTestMetadata>(BeforeEach, this.instance);
-        await PromiseUtil.step(
-            lang.keys(methodMaps)
-                .map(key => {
-                    let meta = methodMaps[key].find(m => isNumber(m.timeout));
-                    return this.runTimeout(
-                        key,
-                        'before each ' + key,
-                        meta ? meta.timeout : this.timeout);
-                }));
+    async runBefore(describe: ISuiteDescribe) {
+        await this.runHook(describe, 'before', 'suite before');
+    }
+
+    async runBeforeEach(describe: ISuiteDescribe) {
+        await this.runHook(describe, 'beforeEach', 'before each');
+    }
+
+    async runAfterEach(describe: ISuiteDescribe) {
+        await this.runHook(describe, 'afterEach', 'after case each');
+    }
+
+    async runAfter(describe: ISuiteDescribe) {
+        await this.runHook(describe, 'after', 'suite after');
     }
 
     async runTest(desc: ISuiteDescribe) {
-        let methodMaps = getMethodMetadata<TestCaseMetadata>(Test, this.instance);
-        let keys = lang.keys(methodMaps);
-        await Promise.all(
-            keys.map(key => {
-                let meta = methodMaps[key].find(m => isNumber(m.setp));
-                let timeoutMeta = methodMaps[key].find(m => isNumber(m.timeout));
-                let title = methodMaps[key].map(m => m.title).filter(t => t).join('; ');
-                return {
-                    key: key,
-                    order: meta ? meta.setp : keys.length,
-                    timeout: timeoutMeta ? timeoutMeta.timeout : this.timeout,
-                    title: title
-                } as ICaseDescribe;
-            })
-                .sort((a, b) => {
-                    return b.order - a.order;
-                })
-                .map(caseDesc => {
-                    return this.runCase(caseDesc)
-                }));
+        await PromiseUtil.step(desc.cases.map(caseDesc => () => this.runCase(caseDesc, desc)));
     }
 
-    async runCase(caseDesc: ICaseDescribe): Promise<ICaseDescribe> {
+    async runCase(caseDesc: ICaseDescribe, suiteDesc?: ISuiteDescribe): Promise<ICaseDescribe> {
         try {
-            await this.runBeforeEach();
+            await this.runBeforeEach(suiteDesc);
             await this.runTimeout(
-                caseDesc.key,
+                caseDesc.fn,
                 caseDesc.title,
                 caseDesc.timeout);
+
+            await this.runAfterEach(suiteDesc);
 
         } catch (err) {
             caseDesc.error = err;

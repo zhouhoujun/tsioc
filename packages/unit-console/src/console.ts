@@ -1,4 +1,4 @@
-import { Reporter, ISuiteDescribe, Report, Assert, ExpectToken } from '@ts-ioc/unit';
+import { Reporter, ISuiteDescribe, Report, Assert, ExpectToken, RealtimeReporter, ICaseDescribe } from '@ts-ioc/unit';
 import { Token, ObjectMap, lang, isFunction } from '@ts-ioc/core';
 import chalk from 'chalk';
 import { DIModule } from '@ts-ioc/bootstrap';
@@ -27,7 +27,15 @@ import { ServerModule } from '@ts-ioc/platform-server';
         ServerBootstrapModule
     ]
 })
-export class ConsoleReporter extends Reporter {
+export class ConsoleReporter extends RealtimeReporter {
+
+    renderSuite(desc: ISuiteDescribe): void {
+        console.log('\n  ' + desc.describe + '\n');
+    }
+
+    renderCase(desc: ICaseDescribe): void {
+        console.log('    ' + (desc.error ? chalk.red('x') : chalk.green('√')) + ' ' + chalk.gray(desc.title))
+    }
 
     async render(suites: Map<Token<any>, ISuiteDescribe>): Promise<void> {
         let reportStr = '';
@@ -42,7 +50,7 @@ export class ConsoleReporter extends Reporter {
             if (i === (sus.length - 1)) {
                 last = d;
             }
-            reportStr = reportStr + '\n  ' + d.describe + '\n';
+            // reportStr = reportStr + '\n  ' + d.describe + '\n';
             d.cases.forEach(c => {
                 if (c.error) {
                     failed++;
@@ -52,7 +60,7 @@ export class ConsoleReporter extends Reporter {
                 } else {
                     successed++;
                 }
-                reportStr = reportStr + '    ' + (c.error ? chalk.red('x') : chalk.green('√')) + ' ' + chalk.gray(c.title) + '\n';
+                // reportStr = reportStr + '    ' + (c.error ? chalk.red('x') : chalk.green('√')) + ' ' + chalk.gray(c.title) + '\n';
             });
         });
 

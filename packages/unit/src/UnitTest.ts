@@ -1,15 +1,30 @@
 import { ApplicationBuilder, ModuleConfigure, ModuleConfig, Runnable, RunnableEvents, isDIModuleClass, RunOptions, AppConfigure, IConfigureRegister, RunnableConfigure, ConfigureRegisterToken } from '@ts-ioc/bootstrap';
 import { UnitModule } from './UnitModule';
 import { Src } from '@ts-ioc/activities';
-import { isClass, hasClassMetadata, Type, isString, isArray, Token, IContainer, Refs, LoadType, IContainerBuilder, lang, ContainerBuilder } from '@ts-ioc/core';
+import { isClass, hasClassMetadata, Type, isString, isArray, Token, IContainer, Refs, LoadType, IContainerBuilder, lang, ContainerBuilder, PromiseUtil } from '@ts-ioc/core';
 import { Suite } from './decorators/Suite';
 import { TestReport, ReportsToken, isReporterClass, ITestReport } from './reports';
-import { SuiteRunner } from './runner';
+import { SuiteRunner, OldTestRunner } from './runner';
 import { DebugLogAspect } from '@ts-ioc/logs';
+
+/**
+ * unit test options.
+ *
+ * @export
+ * @interface UnitTestOptions
+ * @extends {RunOptions<any>}
+ */
 export interface UnitTestOptions extends RunOptions<any> {
    report?: boolean;
 }
 
+/**
+ * unit test configure.
+ *
+ * @export
+ * @interface UnitTestConfigure
+ * @extends {AppConfigure}
+ */
 export interface UnitTestConfigure extends AppConfigure {
    /**
     * resports.
@@ -96,9 +111,13 @@ export class UnitTest extends ApplicationBuilder<any> {
 
 
    async test(src: string | Type<any> | (Type<any> | string)[]) {
-      await await this.initRootContainer();
+      await await this.initContainerPools();
       let suites: any[] = [];
       let dbuiler = this.getTopBuilder();
+
+      let oldRunner = this.resolve(OldTestRunner);
+
+      oldRunner.registerGlobalScope();
       if (isString(src)) {
          let alltypes = await dbuiler.loader.loadTypes([{ files: [src] }]);
          alltypes.forEach(tys => {
@@ -116,9 +135,10 @@ export class UnitTest extends ApplicationBuilder<any> {
             })
          }
       }
-      let runners = await Promise.all(suites.filter(v => isClass(v) && hasClassMetadata(Suite, v)).map(s => this.bootstrap(s, { report: false })));
-      let runner: SuiteRunner = runners.find(rs => rs instanceof SuiteRunner) as SuiteRunner;
-      await runner.container.get(TestReport).report();
+      oldRunner.unregisterGlobalScope();
+      await oldRunner.run();
+      await PromiseUtil.step(suites.filter(v => isClass(v) && hasClassMetadata(Suite, v)).map(s => () => this.bootstrap(s, { report: false })));
+      await this.resolve(TestReport).report();
    }
 
 

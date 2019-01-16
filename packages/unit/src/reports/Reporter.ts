@@ -1,5 +1,5 @@
 import { Token, lang, isClass, hasOwnClassMetadata, Type } from '@ts-ioc/core';
-import { ISuiteDescribe } from './ITestReport';
+import { ISuiteDescribe, ICaseDescribe } from './ITestReport';
 import { Report } from '../decorators/Report';
 
 
@@ -18,6 +18,34 @@ export abstract class Reporter {
     abstract render(suites: Map<Token<any>, ISuiteDescribe>): Promise<void>;
 }
 
+/**
+ * realtime reporter.
+ *
+ * @export
+ * @abstract
+ * @class RealtimeReporter
+ */
+export abstract class RealtimeReporter extends Reporter {
+    constructor() {
+        super();
+    }
+    /**
+     * render suite.
+     *
+     * @abstract
+     * @param {ISuiteDescribe} desc
+     * @memberof RealtimeReporter
+     */
+    abstract renderSuite(desc: ISuiteDescribe): void;
+    /**
+     * render case.
+     *
+     * @abstract
+     * @param {ICaseDescribe} desc
+     * @memberof RealtimeReporter
+     */
+    abstract renderCase(desc: ICaseDescribe): void;
+}
 
 /**
  * is target reporter.

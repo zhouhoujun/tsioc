@@ -2,7 +2,7 @@
 `@ts-ioc/build` type build task framework, base on AOP, Ioc container, via @ts-ioc. file stream pipes activities.
 
 This repo is for distribution on `npm`. The source for this module is in the
-[main repo](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme).
+[main repo](https://github.com/zhouhoujun/tsioc/blob/master/packages/build#readme).
 Please file issues and pull requests against that repo.
 
 
@@ -234,7 +234,7 @@ Workflow.create()
 
 ```
 
-## Documentation [github](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme)
+## Documentation [github](https://github.com/zhouhoujun/tsioc/blob/master/packages/build#readme)
 
 Documentation is available on the
 [type-task docs site](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme).

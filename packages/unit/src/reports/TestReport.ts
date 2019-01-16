@@ -1,6 +1,6 @@
 import { ITestReport, ISuiteDescribe, ICaseDescribe } from './ITestReport';
 import { Singleton, Inject, ContainerToken, IContainer, Token, InjectToken, Type } from '@ts-ioc/core';
-import { Reporter } from './Reporter';
+import { Reporter, RealtimeReporter } from './Reporter';
 
 export const ReportsToken = new InjectToken<Type<Reporter>[]>('unit-reports')
 
@@ -18,12 +18,22 @@ export class TestReport implements ITestReport {
 
     addSuite(suit: Token<any>, describe: ISuiteDescribe) {
         if (!this.suites.has(suit)) {
-            this.suites.set(suit, describe)
+            this.suites.set(suit, describe);
+            (this.container.get(ReportsToken) || []).forEach(r => {
+                let rep = this.container.get<Reporter>(r);
+                if (rep instanceof RealtimeReporter) {
+                    rep.renderSuite(describe);
+                }
+            });
         }
     }
 
     getSuite(suit: Token<any>): ISuiteDescribe {
         return this.suites.has(suit) ? this.suites.get(suit) : null;
+    }
+
+    setSuiteCompleted(describe: ISuiteDescribe) {
+
     }
 
     addCase(suit: Token<any>, testCase: ICaseDescribe) {
@@ -35,9 +45,22 @@ export class TestReport implements ITestReport {
     getCase(suit: Token<any>, test: string): ICaseDescribe {
         let suite = this.getSuite(suit);
         if (suite) {
-            return suite.cases.find(c => c.key === test);
+            let tCase = suite.cases.find(c => c.key === test);
+            if (!tCase) {
+                tCase = suite.cases.find(c => c.title === test);
+            }
+            return tCase;
         }
         return null;
+    }
+
+    setCaseCompleted(testCase: ICaseDescribe) {
+        (this.container.get(ReportsToken) || []).forEach(r => {
+            let rep = this.container.get<Reporter>(r);
+            if (rep instanceof RealtimeReporter) {
+                rep.renderCase(testCase);
+            }
+        });
     }
 
     async report(): Promise<void> {

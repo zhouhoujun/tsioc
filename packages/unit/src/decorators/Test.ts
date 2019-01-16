@@ -4,7 +4,7 @@ import { TestMetadata, TestCaseMetadata } from '../metadata/TestMetadata';
 
 
 /**
- * define the method of class as unit test action.
+ * define the method of class as unit test case.
  *
  * @export
  * @interface ITestDecorator

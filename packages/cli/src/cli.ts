@@ -8,6 +8,7 @@ import chalk from 'chalk';
 import * as program from 'commander';
 import { execSync } from 'child_process';
 import { isString } from 'util';
+import { isArray } from '@ts-ioc/core';
 const resolve = require('resolve');
 const cliRoot = path.join(path.normalize(__dirname), '../');
 const packageConf = require(cliRoot + '/package.json');
@@ -193,7 +194,19 @@ program
     .option('--config [string]', 'config file path.')
     .action((files, options) => {
         requireRegisters();
-        files = path.join(processRoot, files || 'test/**/*.ts');
+        if (isArray(files)) {
+            files = files.filter(f => f && isString(f)).map(f => {
+                if (/^!/.test(f)) {
+                    return '!' + path.join(processRoot, f.substring(1));
+                }
+                return path.join(processRoot, f)
+            })
+        } else {
+            if (!files || isString(files)) {
+                files = 'test/**/*.ts';
+            }
+            path.join(processRoot, files)
+        }
         let unit = requireCwd('@ts-ioc/unit');
         let ConsoleReporter = requireCwd('@ts-ioc/unit-console').ConsoleReporter;
         let config;

@@ -1,7 +1,7 @@
 import {
     IContainer, LoadType, Factory, Token,
     ContainerBuilder, IContainerBuilder, isClass,
-    isToken, PromiseUtil, Injectable, lang, isFunction
+    isToken, PromiseUtil, Injectable, lang, isFunction, ParamProviders, isNullOrUndefined
 } from '@ts-ioc/core';
 import { IRunnableBuilder, CustomRegister, RunnableBuilderToken, ProcessRunRootToken, RunOptions } from './IRunnableBuilder';
 import {
@@ -14,6 +14,7 @@ import { BootModule } from '../BootModule';
 import { Runnable } from '../runnable';
 import { ConfigureMgrToken, IConfigureManager, ConfigureRegisterToken } from './IConfigureManager';
 import { RunnableConfigure } from './AppConfigure';
+import { async } from 'rxjs/internal/scheduler/async';
 
 /**
  * runnable events
@@ -108,6 +109,37 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         return this._baseURL || container.get(ProcessRunRootToken) || '';
     }
 
+    /**
+     * has register in pools.
+     * use must after `initContainerPools`.
+     *
+     * @template T
+     * @param {Token<T>} key
+     * @returns {boolean}
+     * @memberof RunnableBuilder
+     */
+    hasRegister<T>(key: Token<T>): boolean {
+        return this.getPools().values().some(c => c.hasRegister(key))
+    }
+
+    /**
+     * resove token in pools.
+     * use must after `initContainerPools`.
+     * @template T
+     * @param {Token<T>} token
+     * @param {...ParamProviders[]} providers
+     * @returns {T}
+     * @memberof RunnableBuilder
+     */
+    resolve<T>(token: Token<T>, ...providers: ParamProviders[]): T {
+        let resolved: T;
+        this.getPools().values().some(c => {
+            resolved = c.resolve(token, ...providers);
+            return !isNullOrUndefined(resolved);
+        })
+        return resolved;
+    }
+
     protected createContainerBuilder(): IContainerBuilder {
         return new ContainerBuilder();
     }
@@ -152,8 +184,21 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         }
     }
 
+    async initContainerPools() {
+        if (this.inited) {
+            return;
+        }
+        let container = this.getPools().getDefault();
+        await this.registerExts(container);
+        let configManager = this.getConfigManager();
+        let config = await configManager.getConfig();
+        await this.registerByConfigure(container, config);
+        this.inited = true;
+        this.events.emit(RunnableEvents.onRootContainerInited, container);
+    }
+
     async load(token: Token<T> | RunnableConfigure, config?: RunnableConfigure | RunOptions<T>, options?: RunOptions<T>): Promise<InjectedModule<T>> {
-        await this.initRootContainer();
+        await this.initContainerPools();
         return await super.load(token, config, options);
     }
 
@@ -234,19 +279,6 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         return container;
     }
 
-    protected async initRootContainer() {
-        if (this.inited) {
-            return;
-        }
-        let container = this.getPools().getDefault();
-        await this.registerExts(container);
-        let configManager = this.getConfigManager();
-        let config = await configManager.getConfig();
-        await this.registerByConfigure(container, config);
-        this.inited = true;
-        this.events.emit(RunnableEvents.onRootContainerInited, container);
-    }
-
     /**
      * register ioc exts
      *
@@ -280,7 +312,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
             return !!config.baseURL;
         });
 
-        await PromiseUtil.step(this.customRegs.map(async cs => {
+        await PromiseUtil.step(this.customRegs.map(cs => async () => {
             let tokens = await cs(container, config, this);
             return tokens;
         }));

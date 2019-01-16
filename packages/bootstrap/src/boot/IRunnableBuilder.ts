@@ -1,4 +1,4 @@
-import { Token, InjectToken, IContainer, LoadType, Factory } from '@ts-ioc/core';
+import { Token, InjectToken, IContainer, LoadType, Factory, IResolver, ParamProviders } from '@ts-ioc/core';
 import { AppConfigure } from './AppConfigure';
 import { IModuleBuilder, ModuleConfig, InjectedModule, BootOptions } from '../modules';
 import { Events, IEvents } from '../utils';
@@ -87,7 +87,7 @@ export interface RunOptions<T> extends BootOptions<T> {
  * @extends {IModuleBuilder<T>}
  * @template T
  */
-export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends, IEvents {
+export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends, IResolver, IEvents {
     /**
      * events mgr.
      *
@@ -95,6 +95,37 @@ export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends
      * @memberof IRunnableBuilder
      */
     events?: Events;
+
+    /**
+     * init container pools.
+     *
+     * @returns {Promise<void>}
+     * @memberof IRunnableBuilder
+     */
+    initContainerPools(): Promise<void>;
+
+    /**
+     * has register in pools.
+     * use must after `initContainerPools`.
+     *
+     * @template T
+     * @param {Token<T>} key
+     * @returns {boolean}
+     * @memberof IRunnableBuilder
+     */
+    hasRegister<T>(key: Token<T>): boolean;
+
+    /**
+     * resove token in pools.
+     * use must after `initContainerPools`.
+     * @template T
+     * @param {Token<T>} token
+     * @param {...ParamProviders[]} providers
+     * @returns {T}
+     * @memberof IRunnableBuilder
+     */
+    resolve<T>(token: Token<T>, ...providers: ParamProviders[]): T
+
     /**
      * get builder by token, config and env.
      *

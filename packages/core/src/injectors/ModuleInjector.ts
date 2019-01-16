@@ -29,9 +29,7 @@ export class ModuleInjector implements IModuleInjector {
     async inject(container: IContainer, modules: Type<any>[]): Promise<InjectorResult> {
         let types = (modules || []).filter(ty => this.valid(container, ty));
         if (types.length) {
-            await PromiseUtil.step(types.map(ty => {
-                return this.setup(container, ty);
-            }));
+            await PromiseUtil.step(types.map(ty => () => this.setup(container, ty)));
         }
         let next = this.getNext(modules, types);
         return { injected: types, next: next };

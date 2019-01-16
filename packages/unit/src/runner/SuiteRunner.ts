@@ -7,13 +7,15 @@ import { Before } from '../decorators/Before';
 import { BeforeEach } from '../decorators/BeforeEach';
 import { Test } from '../decorators/Test';
 import { Suite } from '../decorators/Suite';
+import { AfterEach } from '../decorators/AfterEach';
+import { After } from '../decorators/After';
+
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { SuiteRunnerToken, ISuiteRunner } from './ISuiteRunner';
 import { RunCaseToken, RunSuiteToken, Assert, ExpectToken } from '../assert';
 import * as assert from 'assert';
 import * as expect from 'expect';
-
 /**
  * Suite runner.
  *
@@ -71,6 +73,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
     async runSuite(desc: ISuiteDescribe): Promise<void> {
         await this.runBefore(desc);
         await this.runTest(desc);
+        await this.runAfter(desc);
     }
 
     runTimeout(key: string, describe: string, timeout: number): Promise<any> {
@@ -89,9 +92,9 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
             }
         }, timeout);
 
-        this.container.invoke(instance, key,
+        Promise.resolve(this.container.syncInvoke(instance, key,
             { provide: RunCaseToken, useValue: this.instance[key] },
-            { provide: RunSuiteToken, useValue: this.instance })
+            { provide: RunSuiteToken, useValue: this.instance }))
             .then(r => {
                 clearTimeout(timer);
                 timer = null;
@@ -110,7 +113,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
         let methodMaps = getMethodMetadata<BeforeTestMetadata>(Before, this.instance);
         await PromiseUtil.step(
             lang.keys(methodMaps)
-                .map(key => {
+                .map(key => () => {
                     let meta = methodMaps[key].find(m => isNumber(m.timeout));
                     return this.runTimeout(
                         key,
@@ -123,7 +126,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
         let methodMaps = getMethodMetadata<BeforeEachTestMetadata>(BeforeEach, this.instance);
         await PromiseUtil.step(
             lang.keys(methodMaps)
-                .map(key => {
+                .map(key => () => {
                     let meta = methodMaps[key].find(m => isNumber(m.timeout));
                     return this.runTimeout(
                         key,
@@ -132,10 +135,36 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
                 }));
     }
 
+    async runAfterEach() {
+        let methodMaps = getMethodMetadata<BeforeEachTestMetadata>(AfterEach, this.instance);
+        await PromiseUtil.step(
+            lang.keys(methodMaps)
+                .map(key => () => {
+                    let meta = methodMaps[key].find(m => isNumber(m.timeout));
+                    return this.runTimeout(
+                        key,
+                        'after each ' + key,
+                        meta ? meta.timeout : this.timeout);
+                }));
+    }
+
+    async runAfter(describe: ISuiteDescribe) {
+        let methodMaps = getMethodMetadata<BeforeTestMetadata>(After, this.instance);
+        await PromiseUtil.step(
+            lang.keys(methodMaps)
+                .map(key => () => {
+                    let meta = methodMaps[key].find(m => isNumber(m.timeout));
+                    return this.runTimeout(
+                        key,
+                        'sutie after ' + key,
+                        meta ? meta.timeout : describe.timeout)
+                }));
+    }
+
     async runTest(desc: ISuiteDescribe) {
         let methodMaps = getMethodMetadata<TestCaseMetadata>(Test, this.instance);
         let keys = lang.keys(methodMaps);
-        await Promise.all(
+        await PromiseUtil.step(
             keys.map(key => {
                 let meta = methodMaps[key].find(m => isNumber(m.setp));
                 let timeoutMeta = methodMaps[key].find(m => isNumber(m.timeout));
@@ -151,7 +180,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
                     return b.order - a.order;
                 })
                 .map(caseDesc => {
-                    return this.runCase(caseDesc)
+                    return () => this.runCase(caseDesc)
                 }));
     }
 
@@ -162,6 +191,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
                 caseDesc.key,
                 caseDesc.title,
                 caseDesc.timeout);
+            await this.runAfterEach();
 
         } catch (err) {
             caseDesc.error = err;

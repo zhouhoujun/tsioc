@@ -2,7 +2,7 @@ import { ITestDecorator, createTestDecorator } from './Test';
 import { TestMetadata } from '../metadata/TestMetadata';
 
 /**
- * @Before decorator. define the method of class as unit test before action.
+ * @Before decorator. define the method of class as unit test action run before all test case.
  *
  * @export
  * @interface IBeforeTestDecorator
@@ -13,7 +13,7 @@ export interface IBeforeTestDecorator extends ITestDecorator<TestMetadata> {
 }
 
 /**
- * @Before decorator. define the method of class as unit test before action.
+ * @Before decorator. define the method of class as unit test action run before all test case.
  *
  * @export
  * @interface IBeforeTestDecorator
