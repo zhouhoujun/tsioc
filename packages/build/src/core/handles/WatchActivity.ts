@@ -5,7 +5,7 @@ import { fromEventPattern } from 'rxjs';
 import { bufferTime, flatMap, filter } from 'rxjs/operators';
 import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
 import { FileChanged, FileChangedTransToken, IFileChanged } from '../FileChanged';
-import { WatchAcitvityToken, WatchOptions, WatchConfigure, IWatchActivity } from './IWatchActivity';
+import { WatchAcitvityToken, WatchConfigure, IWatchActivity } from './IWatchActivity';
 const chokidar = require('chokidar');
 
 

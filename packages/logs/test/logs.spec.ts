@@ -1,11 +1,10 @@
-import 'mocha';
-import { expect } from 'chai';
 import {
     Method, Inject, Injectable, IContainer, ContainerBuilder,
 } from '@ts-ioc/core';
 import { LogModule, Logger } from '../src';
 import { DebugLogAspect } from './DebugLogAspect';
 import { AnntotationLogAspect } from './AnntotationLogAspect';
+import expect = require('expect');
 
 @Injectable
 class Person {
@@ -83,14 +82,14 @@ describe('logging test', () => {
     it('Aop log test', () => {
         container.register(DebugLogAspect);
         container.register(MethodTest3);
-        expect(container.syncInvoke('Test3', 'sayHello')).eq('Mama, I love you.');
+        expect(container.syncInvoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
 
     });
 
     it('Aop anntotation log test', () => {
         container.register(AnntotationLogAspect);
         container.register(MethodTest2);
-        expect(container.syncInvoke(MethodTest2, 'sayHello')).eq('Mama');
+        expect(container.syncInvoke(MethodTest2, 'sayHello')).toEqual('Mama');
 
     });
 

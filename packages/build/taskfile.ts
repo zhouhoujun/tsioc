@@ -47,11 +47,12 @@ const builtins = require('rollup-plugin-node-builtins');
                 '@ts-ioc/annotations',
                 '@ts-ioc/activities',
                 '@ts-ioc/platform-server-activities',
+                '@ts-ioc/unit',
+                '@ts-ioc/unit-console',
                 'minimatch',
                 'minimist',
                 'gulp-sourcemaps',
-                'vinyl-fs',
-                'gulp-mocha', 'del', 'chokidar',
+                'vinyl-fs', 'del', 'chokidar',
                 'gulp-uglify', 'execa',
                 'gulp-typescript',
                 'rxjs',
@@ -77,7 +78,6 @@ const builtins = require('rollup-plugin-node-builtins');
                 'typescript': 'typescript',
                 'gulp-typescript': 'gulp-typescript',
                 'gulp-sourcemaps': 'gulp-sourcemaps',
-                'gulp-mocha': 'gulp-mocha',
                 'gulp-uglify': 'gulp-uglify',
                 'rollup': 'rollup',
                 '@ts-ioc/core': '@ts-ioc/core',
@@ -87,7 +87,9 @@ const builtins = require('rollup-plugin-node-builtins');
                 '@ts-ioc/platform-server': '@ts-ioc/platform-server',
                 '@ts-ioc/platform-server-bootstrap': '@ts-ioc/platform-server-bootstrap',
                 '@ts-ioc/activities': '@ts-ioc/activities',
-                '@ts-ioc/platform-server-activities': '@ts-ioc/platform-server-activities'
+                '@ts-ioc/platform-server-activities': '@ts-ioc/platform-server-activities',
+                '@ts-ioc/unit': '@ts-ioc/unit',
+                '@ts-ioc/unit-console': '@ts-ioc/unit-console'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),

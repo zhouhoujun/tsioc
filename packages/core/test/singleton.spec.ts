@@ -1,7 +1,6 @@
-import 'mocha';
-import { expect } from 'chai';
 import { ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Person } from './debug';
+import expect = require('expect');
 
 describe('Singleton test', () => {
 
@@ -12,14 +11,14 @@ describe('Singleton test', () => {
         let container = builder.create();
         container.register(Person);
         let instance = container.get(Person);
-        expect(instance).not.undefined;
-        expect(instance.name).eq('testor');
+        expect(instance).toBeDefined();
+        expect(instance.name).toEqual('testor');
         instance.name = 'testor B';
-        expect(instance.name).eq('testor B');
+        expect(instance.name).toEqual('testor B');
 
         let instanceB = container.get(Person);
-        expect(instanceB.name).eq('testor B');
-        expect(instance).eq(instanceB);
+        expect(instanceB.name).toEqual('testor B');
+        expect(instance).toEqual(instanceB);
     });
 
     // it('should has one instance',  async () => {
@@ -29,14 +28,14 @@ describe('Singleton test', () => {
     //     });
 
     //     let instance = container.get(Person);
-    //     expect(instance).not.undefined;
-    //     expect(instance.name).eq('testor');
+    //     expect(instance).toBeDefined();
+    //     expect(instance.name).toEqual('testor');
     //     instance.name = 'testor B';
-    //     expect(instance.name).eq('testor B');
+    //     expect(instance.name).toEqual('testor B');
 
     //     let instanceB = container.get(Person);
-    //     expect(instanceB.name).eq('testor B');
-    //     expect(instance).eq(instanceB);
+    //     expect(instanceB.name).toEqual('testor B');
+    //     expect(instance).toEqual(instanceB);
     // });
 });
 

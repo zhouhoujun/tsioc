@@ -6,6 +6,9 @@ import { Suite } from './decorators/Suite';
 import { TestReport, ReportsToken, isReporterClass, ITestReport } from './reports';
 import { SuiteRunner, OldTestRunner } from './runner';
 import { DebugLogAspect } from '@ts-ioc/logs';
+import { Assert, ExpectToken } from './assert';
+import * as assert from 'assert';
+import * as expect from 'expect';
 
 /**
  * unit test options.
@@ -107,6 +110,16 @@ export class UnitTest extends ApplicationBuilder<any> {
          return c.getBuilder();
       }
       return this.getPools().getDefault().getBuilder();
+   }
+
+   async initContainerPools() {
+      await super.initContainerPools();
+      if (!this.hasRegister(Assert)) {
+         this.getPools().getDefault().bindProvider(Assert, () => assert);
+      }
+      if (!this.hasRegister(ExpectToken)) {
+         this.getPools().getDefault().bindProvider(ExpectToken, () => expect);
+      }
    }
 
 

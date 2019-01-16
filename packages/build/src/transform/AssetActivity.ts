@@ -2,12 +2,12 @@ import { Providers } from '@ts-ioc/core';
 import {
     UglifyCompilerToken, AnnotationCompilerToken, AssetToken,
     SourceCompilerToken, SourcemapsCompilerToken, TestCompilerToken,
-    DestCompilerToken, AssetBuildHanlde, CompilerToken
+    DestCompilerToken, AssetBuildHanlde, CompilerToken, UnitTestActivity
 } from '../core';
 import { Asset } from '../decorators/Asset';
 import {
     StreamUglifyActivity, AnnotationActivity, SourceActivity, TransformContextToken,
-    SourceMapsActivity, MochaTestActivity, TransformContext, DestActivity, TransformActivityToken
+    SourceMapsActivity, TransformContext, DestActivity, TransformActivityToken
 } from './core';
 import { ActivityContextToken } from '@ts-ioc/activities';
 
@@ -25,7 +25,7 @@ import { ActivityContextToken } from '@ts-ioc/activities';
     { provide: AnnotationCompilerToken, useClass: AnnotationActivity },
     { provide: SourceCompilerToken, useClass: SourceActivity },
     { provide: SourcemapsCompilerToken, useClass: SourceMapsActivity },
-    { provide: TestCompilerToken, useClass: MochaTestActivity },
+    { provide: TestCompilerToken, useClass: UnitTestActivity },
     { provide: ActivityContextToken, useExisting: TransformContextToken },
     { provide: DestCompilerToken, useClass: DestActivity },
     { provide: CompilerToken, useExisting: TransformActivityToken }

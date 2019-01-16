@@ -39,12 +39,13 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/tree/master/packages/unit#readme",
   "dependencies": {
+    "@types/expect": "^1.20.3",
+    "@types/mocha": "^5.2.5",
     "@ts-ioc/aop": "^4.0.0-beta8",
     "@ts-ioc/bootstrap": "^4.0.0-beta8",
     "@ts-ioc/core": "^4.0.0-beta8",
     "@ts-ioc/logs": "^4.0.0-beta8",
     "reflect-metadata": "^0.1.12",
-    "@types/expect": "^1.20.3",
     "tslib": "^1.9.2",
     "assert": "^1.4.1",
     "expect": "^23.6.0"

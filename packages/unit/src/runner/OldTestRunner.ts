@@ -1,9 +1,7 @@
-import { isUndefined, Inject, ContainerToken, IContainer, MapSet, Defer, PromiseUtil, Singleton, Token } from '@ts-ioc/core';
+import { Inject, ContainerToken, IContainer, MapSet, Defer, PromiseUtil, Singleton, Token } from '@ts-ioc/core';
 import { ISuiteRunner } from './ISuiteRunner';
-import { Runner } from '@ts-ioc/bootstrap';
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { Assert } from '../assert';
-import { async } from 'rxjs/internal/scheduler/async';
 
 declare let window: any;
 declare let global: any;
@@ -18,6 +16,8 @@ let gls = {
     after: undefined,
     afterEach: undefined
 };
+
+let globals = typeof window !== 'undefined' ? window : global;
 
 /**
  * Suite runner.
@@ -52,7 +52,7 @@ export class OldTestRunner implements ISuiteRunner {
     }
 
     registerGlobalScope() {
-        let globals = typeof window !== 'undefined' ? window : global; // isUndefined(window) ? global : window;
+        // isUndefined(window) ? global : window;
         Object.keys(gls).forEach(k => {
             gls[k] = globals[k];
         });
@@ -99,14 +99,13 @@ export class OldTestRunner implements ISuiteRunner {
                     timeout: timeout
                 });
             }
-            fn && fn.call({ before: before });
-            this.suites.set(name, suiteDesc);
+            fn && fn();
+            if (suiteDesc.cases.length) {
+                this.suites.set(name, suiteDesc);
+            }
             globals.describe = describe;
         };
 
-        if (globals.suite) {
-            gls.suite = globals.suite;
-        }
         // TDD style
         let suite = globals.suite = (name: string, fn: () => any) => {
             let suiteDesc = {
@@ -148,15 +147,14 @@ export class OldTestRunner implements ISuiteRunner {
                 });
             }
             fn && fn();
-            this.suites.set(name, suiteDesc);
+            if (suiteDesc.cases.length) {
+                this.suites.set(name, suiteDesc);
+            }
             globals.suite = suite;
         };
     }
 
     unregisterGlobalScope() {
-        let globals = typeof window !== 'undefined' ? window : global;
-        delete globals.describe;
-        delete globals.suite;
         // reset to default.
         Object.keys(gls).forEach(k => {
             globals[k] = gls[k];

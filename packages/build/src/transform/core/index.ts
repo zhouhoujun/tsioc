@@ -5,7 +5,7 @@ export * from './ITransformConfigure';
 export * from './SourceMapsActivity';
 export * from './TransformActivity';
 export * from './SourceActivity';
-export * from './MochaTestActivity';
+// export * from './MochaTestActivity';
 export * from './UglifyActivity';
 export * from './transformTypes';
 export * from './Annotation';

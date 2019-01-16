@@ -7,3 +7,4 @@ export * from './TestActivity';
 export * from './IAssetBuildHandle';
 export * from './AssetBuildHanlde';
 export * from './ServeActivity';
+export * from './UnitTestActivity';

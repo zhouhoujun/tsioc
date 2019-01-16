@@ -1,10 +1,8 @@
-import 'mocha';
-import { expect } from 'chai';
 import { Method, Inject, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, isFunction, getParamDecorators } from '../src';
 import { hasOwnMethodMetadata, hasPropertyMetadata } from '../src';
+import expect = require('expect');
 // import { AnnotationAspect } from './aop/AnnotationAspect';
 // import { CheckRightAspect } from './aop/CheckRightAspect';
-
 
 describe('method exec test', () => {
 
@@ -80,45 +78,45 @@ describe('method exec test', () => {
     });
 
     it('show has prop metadata', () => {
-        expect(hasPropertyMetadata(Inject, MethodTest2)).to.be.true;
-        expect(hasPropertyMetadata(Inject, MethodTest2, 'testAt')).to.be.true;
-        expect(hasPropertyMetadata(Inject, MethodTest2, 'tester')).to.be.false;
-        expect(hasOwnMethodMetadata(Inject, MethodTest3)).to.be.false;
+        expect(hasPropertyMetadata(Inject, MethodTest2)).toBeTruthy();
+        expect(hasPropertyMetadata(Inject, MethodTest2, 'testAt')).toBeTruthy();
+        expect(hasPropertyMetadata(Inject, MethodTest2, 'tester')).toBeFalsy();
+        expect(hasOwnMethodMetadata(Inject, MethodTest3)).toBeFalsy();
     });
 
     it('show has method metadata', () => {
-        expect(hasOwnMethodMetadata(Method, MethodTest3)).to.be.true;
-        expect(hasOwnMethodMetadata(Method, MethodTest3, 'sayHello')).to.be.true;
-        expect(hasOwnMethodMetadata(Method, MethodTest3, 'sayHello2')).to.be.false;
+        expect(hasOwnMethodMetadata(Method, MethodTest3)).toBeFalsy();
+        expect(hasOwnMethodMetadata(Method, MethodTest3, 'sayHello')).toBeFalsy();
+        expect(hasOwnMethodMetadata(Method, MethodTest3, 'sayHello2')).toBeFalsy();
     });
 
     it('show exec with type and instance', async () => {
         // container.register(Person);
         container.register(MethodTest);
         let mtt = container.get(MethodTest);
-        expect(isFunction(mtt.sayHello)).is.true;
-        expect(await container.invoke(MethodTest, 'sayHello', mtt)).eq('I love you.');
+        expect(isFunction(mtt.sayHello)).toBeTruthy();
+        expect(await container.invoke(MethodTest, 'sayHello', mtt)).toEqual('I love you.');
 
     });
 
     it('show exec with specail param', async () => {
         // container.register(Person);
         container.register(MethodTest2);
-        expect(await container.invoke(MethodTest2, 'sayHello')).eq('Mama');
+        expect(await container.invoke(MethodTest2, 'sayHello')).toEqual('Mama');
 
     });
 
     it('show exec with many params', async () => {
         // container.register(Person);
         container.register(MethodTest3);
-        expect(await container.invoke(MethodTest3, 'sayHello')).eq('Mama, I love you.');
+        expect(await container.invoke(MethodTest3, 'sayHello')).toEqual('Mama, I love you.');
 
     });
 
     it('show exec with many params and invoke with string', async () => {
         // container.register(Person);
         container.register(MethodTest3);
-        expect(await container.invoke('Test3', 'sayHello')).eq('Mama, I love you.');
+        expect(await container.invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
 
     });
 
@@ -127,7 +125,7 @@ describe('method exec test', () => {
     //     container.register(AnnotationAspect);
     //     container.register(CheckRightAspect);
     //     container.register(MethodTest3);
-    //     expect(container.syncInvoke('Test3', 'sayHello')).eq('Mama, I love you.');
+    //     expect(container.syncInvoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
 
     // });
 });

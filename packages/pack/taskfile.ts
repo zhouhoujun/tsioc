@@ -41,7 +41,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 '@ts-ioc/bootstrap',
                 '@ts-ioc/pipes',
                 '@ts-ioc/platform-server',
-                'minimist', 'gulp-sourcemaps', 'vinyl-fs', 'gulp-mocha', 'del', 'chokidar',
+                'minimist', 'gulp-sourcemaps', 'vinyl-fs', 'del', 'chokidar',
                 'gulp-uglify', 'execa', '@ts-ioc/annotations', 'gulp-typescript',
                 '@ts-ioc/activities',
                 '@ts-ioc/platform-server-activities',

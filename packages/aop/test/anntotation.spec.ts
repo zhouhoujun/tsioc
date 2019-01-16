@@ -1,13 +1,11 @@
-import 'mocha';
-import { expect } from 'chai';
 import {
-    Method, Inject, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer,
-    ParameterMetadata, Param, isFunction, hasOwnMethodMetadata, hasPropertyMetadata
+    Method, Inject, ContainerBuilder, Injectable, IContainer
 } from '@ts-ioc/core';
 import { AnnotationAspect } from './aop/AnnotationAspect';
 import { CheckRightAspect } from './aop/CheckRightAspect';
 import { IocLog } from './aop/IocLog';
 import { AopModule } from '../src';
+import expect = require('expect');
 
 
 describe('aop test', () => {
@@ -90,7 +88,7 @@ describe('aop test', () => {
         container.register(AnnotationAspect);
         container.register(CheckRightAspect);
         container.register(MethodTest3);
-        expect(container.syncInvoke('Test3', 'sayHello')).eq('Mama, I love you.');
+        expect(container.syncInvoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
 
     });
 });
