@@ -1,9 +1,8 @@
 import { UnitTest } from '@ts-ioc/unit';
 import { ConsoleReporter } from '@ts-ioc/unit-console';
-import { TestConfigure, TestToken, CompilerToken } from '../../core';
+import { TestConfigure } from '../../core';
 import { CompilerActivity } from '../CompilerActivity';
 import { Task } from '@ts-ioc/activities';
-import { Refs } from '@ts-ioc/core';
 
 /**
  * test activity.

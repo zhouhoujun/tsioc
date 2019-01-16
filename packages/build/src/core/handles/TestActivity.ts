@@ -1,7 +1,7 @@
 import { Expression, Task, Src } from '@ts-ioc/activities';
 import { isUndefined, Providers } from '@ts-ioc/core';
 import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
-import { TestToken, ITestActivity, TestConfigure, TestCompilerToken } from './ITestActivity';
+import { TestToken, ITestActivity, TestConfigure } from './ITestActivity';
 import { UnitTestActivity } from './UnitTestActivity';
 import { CompilerToken } from '../ICompiler';
 
