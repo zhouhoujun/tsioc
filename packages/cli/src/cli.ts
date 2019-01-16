@@ -200,10 +200,10 @@ program
                 return path.join(processRoot, f)
             })
         } else {
-            if (!files || isString(files)) {
+            if (!files || !isString(files)) {
                 files = 'test/**/*.ts';
             }
-            path.join(processRoot, files)
+            files = path.join(processRoot, files)
         }
         let unit = requireCwd('@ts-ioc/unit');
         let ConsoleReporter = requireCwd('@ts-ioc/unit-console').ConsoleReporter;
