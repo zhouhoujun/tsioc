@@ -9,16 +9,35 @@ Please file issues and pull requests against that repo.
 ## Install
 
 
-1. install cli | build pack:
+install cli
 
 ### cli in global
 ```shell
 npm install -g '@ts-ioc/cli'
 ```
+
+### init project
+```
+pk init [--browser] //init project with tsioc
+
+pk init boot [--browser]  //init project with bootstrap.
+
+pk init activity [--browser]  //init project with workflow
+
+pk init pack [--browser]  //init project with build pack.
+
+```
+
 ### build pack
 ```
-pk run [taskfile.ts]
+pk run [--activity] [taskfile.ts]
 pk build [taskfile config]
+```
+
+### Unit test
+
+```shell
+pk test [test/**/*.(ts|js)]
 ```
 
 
