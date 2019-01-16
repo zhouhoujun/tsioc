@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 require('ts-node').register();
-// require('tsconfig-paths').register();
+require('tsconfig-paths').register();
 import { rm, cp, mkdir } from 'shelljs';
 import * as fs from 'fs';
 import * as path from 'path';
