@@ -85,8 +85,8 @@ describe('method exec test', () => {
     });
 
     it('show has method metadata', () => {
-        expect(hasOwnMethodMetadata(Method, MethodTest3)).toBeFalsy();
-        expect(hasOwnMethodMetadata(Method, MethodTest3, 'sayHello')).toBeFalsy();
+        expect(hasOwnMethodMetadata(Method, MethodTest3)).toBeTruthy();
+        expect(hasOwnMethodMetadata(Method, MethodTest3, 'sayHello')).toBeTruthy();
         expect(hasOwnMethodMetadata(Method, MethodTest3, 'sayHello2')).toBeFalsy();
     });
 

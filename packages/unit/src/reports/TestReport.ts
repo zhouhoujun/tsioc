@@ -1,5 +1,5 @@
 import { ITestReport, ISuiteDescribe, ICaseDescribe } from './ITestReport';
-import { Singleton, Inject, ContainerToken, IContainer, Token, InjectToken, Type } from '@ts-ioc/core';
+import { Singleton, Inject, ContainerToken, IContainer, Token, InjectToken, Type, lang } from '@ts-ioc/core';
 import { Reporter, RealtimeReporter } from './Reporter';
 
 export const ReportsToken = new InjectToken<Type<Reporter>[]>('unit-reports')
@@ -18,6 +18,12 @@ export class TestReport implements ITestReport {
 
     addSuite(suit: Token<any>, describe: ISuiteDescribe) {
         if (!this.suites.has(suit)) {
+            // init suite must has no completed cases.
+            if (describe.cases.length) {
+                describe = lang.omit(describe, 'cases');
+            }
+            describe.cases = [];
+
             this.suites.set(suit, describe);
             (this.container.get(ReportsToken) || []).forEach(r => {
                 let rep = this.container.get<Reporter>(r);
@@ -38,6 +44,7 @@ export class TestReport implements ITestReport {
 
     addCase(suit: Token<any>, testCase: ICaseDescribe) {
         if (this.suites.has(suit)) {
+            let suite = this.suites.get(suit);
             this.suites.get(suit).cases.push(testCase);
         }
     }

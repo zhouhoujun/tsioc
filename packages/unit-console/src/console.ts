@@ -81,7 +81,7 @@ export class ConsoleReporter extends RealtimeReporter {
         })
 
         console.log(reportStr);
-        if (fails.length) {
+        if (Object.values(fails).length) {
             process.exit(1);
         }
     }
