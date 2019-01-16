@@ -1,6 +1,5 @@
 import { ApplicationBuilder, ModuleConfigure, ModuleConfig, Runnable, RunnableEvents, isDIModuleClass, RunOptions, AppConfigure, IConfigureRegister, RunnableConfigure, ConfigureRegisterToken } from '@ts-ioc/bootstrap';
 import { UnitModule } from './UnitModule';
-import { Src } from '@ts-ioc/activities';
 import { isClass, hasClassMetadata, Type, isString, isArray, Token, IContainer, Refs, LoadType, IContainerBuilder, lang, ContainerBuilder, PromiseUtil } from '@ts-ioc/core';
 import { Suite } from './decorators/Suite';
 import { TestReport, ReportsToken, isReporterClass, ITestReport } from './reports';
@@ -124,7 +123,7 @@ export class UnitTest extends ApplicationBuilder<any> {
 
 
    async test(src: string | Type<any> | (Type<any> | string)[]) {
-      await await this.initContainerPools();
+      await this.initContainerPools();
       let suites: any[] = [];
       let dbuiler = this.getTopBuilder();
 
@@ -193,12 +192,12 @@ export class UnitTestConfigureRegister implements IConfigureRegister<RunnableCon
  * unit test.
  *
  * @export
- * @param {Src} src
+ * @param {string | string[]} src
  * @param {(string | AppConfigure)} [config]
  * @param {...LoadType[]} used
  * @returns {Promise<any>}
  */
-export async function runTest(src: Src, config?: string | AppConfigure, ...used: LoadType[]): Promise<any> {
+export async function runTest(src: string | string[], config?: string | AppConfigure, ...used: LoadType[]): Promise<any> {
    let unit = new UnitTest();
    if (config) {
       unit.useConfiguration(config);
