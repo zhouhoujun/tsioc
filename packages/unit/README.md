@@ -83,6 +83,36 @@ export class SuiteTest {
 
 ```
 
+### support old TDD BDD style unit test.
+* TDD-style interface:
+```js
+suite('Array', function() {
+  suite('#indexOf()', function() {
+    suiteSetup(function() {
+    });
+    test('should return -1 when not present', function() {
+    });
+    test('should return the index when present', function() {
+    });
+    suiteTeardown(function() {
+    });
+  });
+});
+```
+* BDD-style interface:
+```js
+describe('Array', function(){
+    describe('Array#indexOf()', function() {
+        it('should return -1 when not present', function() {
+        // ...
+        });
+        it('should return the index when present', function() {
+        // ...
+        });
+    });
+});
+```
+
 ### custom run test code
 ```ts
 
@@ -91,7 +121,7 @@ new UnitTest()
     .use(...) // your assert expect ...
     .test(SuiteTest);
     // match test file. will auto load class with @Suite decorator.
-    //.test('test/**/*.ts');
+    //.test('test/');
 ```
 
 ### use command run test code
@@ -110,16 +140,9 @@ pk test test/**/*.ts
 * test result:
 ![image](https://github.com/zhouhoujun/tsioc/blob/master/packages/unit-console/assets/ConsoleReport1.png?raw=true)
 
-## Container Interface
-
-see more interface. all document is typescript .d.ts.
-
-* [IMethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IMethodAccessor.ts).
-* [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IContainer.ts)
-* [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/LifeScope.ts)
 
 Documentation is available on the
-[@ts-ioc/core docs site](https://github.com/zhouhoujun/tsioc).
+[@ts-ioc/unit docs site](https://github.com/zhouhoujun/tsioc/blob/master/packages/unit#readme).
 
 ## License
 

@@ -57,13 +57,16 @@ export class OldTestRunner implements ISuiteRunner {
             gls[k] = globals[k];
         });
 
-
         // BDD style
-        globals.describe = (name: string, fn: () => any) => {
+        let describe = globals.describe = (name: string, fn: () => any) => {
             let suiteDesc = {
                 describe: name,
                 cases: []
             } as ISuiteDescribe;
+
+            globals.describe = (subname: string, fn: () => any) => {
+                describe(name + ' ' + subname, fn);
+            }
 
             globals.it = (title: string, test: () => any, timeout?: number) => {
                 suiteDesc.cases.push({ title: title, key: '', fn: test, timeout: timeout })
@@ -98,17 +101,21 @@ export class OldTestRunner implements ISuiteRunner {
             }
             fn && fn.call({ before: before });
             this.suites.set(name, suiteDesc);
+            globals.describe = describe;
         };
 
         if (globals.suite) {
             gls.suite = globals.suite;
         }
         // TDD style
-        globals.suite = (name: string, fn: () => any) => {
+        let suite = globals.suite = (name: string, fn: () => any) => {
             let suiteDesc = {
                 describe: name,
                 cases: []
             } as ISuiteDescribe;
+            globals.suite = (subname: string, fn: () => any) => {
+                suite(name + ' ' + subname, fn);
+            }
             globals.test = (title: string, test: () => any, timeout?: number) => {
                 suiteDesc.cases.push({ title: title, key: '', fn: test, timeout: timeout })
             }
@@ -142,6 +149,7 @@ export class OldTestRunner implements ISuiteRunner {
             }
             fn && fn();
             this.suites.set(name, suiteDesc);
+            globals.suite = suite;
         };
     }
 
