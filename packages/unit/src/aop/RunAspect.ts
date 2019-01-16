@@ -49,8 +49,6 @@ export class RunAspect extends LoggerAspect {
             case JoinpointState.Before:
                 desc.start = new Date().getTime();
                 this.getReport().addCase(runner.getTargetToken() || suiteDesc.describe, desc);
-                console.log('\n------------------------\n', joinPoint.state, joinPoint.fullName, desc);
-                console.log('------------------------\n');
                 break;
             case JoinpointState.AfterReturning:
             case JoinpointState.AfterThrowing:
