@@ -1,5 +1,5 @@
-import { Reporter, ISuiteDescribe, Report, Assert, ExpectToken, RealtimeReporter, ICaseDescribe } from '@ts-ioc/unit';
-import { Token, ObjectMap, lang, isFunction } from '@ts-ioc/core';
+import { ISuiteDescribe, Report, RealtimeReporter, ICaseDescribe } from '@ts-ioc/unit';
+import { Token, ObjectMap, lang } from '@ts-ioc/core';
 import chalk from 'chalk';
 import { DIModule } from '@ts-ioc/bootstrap';
 import { ServerBootstrapModule } from '@ts-ioc/platform-server-bootstrap';
@@ -72,6 +72,8 @@ export class ConsoleReporter extends RealtimeReporter {
         if (sus.length) {
             reportStr = reportStr + chalk.gray(` (${last.end - first.start}ms)`);
         }
+
+        reportStr += '\n';
 
         lang.forIn(fails, (errors: string[], describe: string) => {
             reportStr = reportStr + '\n\n  ' + describe;
