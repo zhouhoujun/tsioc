@@ -166,7 +166,7 @@ export interface ITestReport {
     suites: Map<Token<any>, ISuiteDescribe>;
     addSuite(suit: Token<any>, describe: ISuiteDescribe);
     getSuite(suit: Token<any>): ISuiteDescribe;
-    setSuiteCompleted(describe: ISuiteDescribe);
+    setSuiteCompleted(suit: Token<any>);
     addCase(suit: Token<any>, testCase: ICaseDescribe);
     getCase(suit: Token<any>, test: string): ICaseDescribe;
     setCaseCompleted(testCase: ICaseDescribe);

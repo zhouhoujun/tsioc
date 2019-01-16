@@ -1,7 +1,7 @@
 import { Aspect, Around, Joinpoint, JoinpointState } from '@ts-ioc/aop';
 import { SuiteRunner, OldTestRunner, ISuiteRunner } from '../runner';
 import { LoggerAspect } from '@ts-ioc/logs';
-import { Inject, ContainerToken, IContainer, Singleton } from '@ts-ioc/core';
+import { Inject, ContainerToken, IContainer } from '@ts-ioc/core';
 import { TestReport } from '../reports/TestReport';
 import { ITestReport, ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 
@@ -29,13 +29,11 @@ export class RunAspect extends LoggerAspect {
         let desc = joinPoint.args[0] as ISuiteDescribe;
         switch (joinPoint.state) {
             case JoinpointState.Before:
-                desc.start = new Date().getTime();
                 this.getReport().addSuite(runner.getTargetToken() || desc.describe, desc);
                 break;
             case JoinpointState.AfterReturning:
             case JoinpointState.AfterThrowing:
-                desc.end = new Date().getTime();
-                this.getReport().setSuiteCompleted(desc);
+                this.getReport().setSuiteCompleted(runner.getTargetToken() || desc.describe);
                 break;
         }
     }
@@ -47,12 +45,10 @@ export class RunAspect extends LoggerAspect {
         let runner = joinPoint.target as SuiteRunner;
         switch (joinPoint.state) {
             case JoinpointState.Before:
-                desc.start = new Date().getTime();
                 this.getReport().addCase(runner.getTargetToken() || suiteDesc.describe, desc);
                 break;
             case JoinpointState.AfterReturning:
             case JoinpointState.AfterThrowing:
-                desc.end = new Date().getTime();
                 this.getReport().setCaseCompleted(desc);
                 break;
         }

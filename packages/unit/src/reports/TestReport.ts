@@ -18,6 +18,7 @@ export class TestReport implements ITestReport {
 
     addSuite(suit: Token<any>, describe: ISuiteDescribe) {
         if (!this.suites.has(suit)) {
+            describe.start = new Date().getTime();
             // init suite must has no completed cases.
             if (describe.cases.length) {
                 describe = lang.omit(describe, 'cases');
@@ -38,13 +39,17 @@ export class TestReport implements ITestReport {
         return this.suites.has(suit) ? this.suites.get(suit) : null;
     }
 
-    setSuiteCompleted(describe: ISuiteDescribe) {
-
+    setSuiteCompleted(suit: Token<any>) {
+        let suite = this.getSuite(suit);
+        if(suite){
+            suite.end = new Date().getTime();
+        }
     }
 
     addCase(suit: Token<any>, testCase: ICaseDescribe) {
         if (this.suites.has(suit)) {
-            let suite = this.suites.get(suit);
+            
+            testCase.start = new Date().getTime();
             this.suites.get(suit).cases.push(testCase);
         }
     }
@@ -62,6 +67,7 @@ export class TestReport implements ITestReport {
     }
 
     setCaseCompleted(testCase: ICaseDescribe) {
+        testCase.end = new Date().getTime();
         (this.container.get(ReportsToken) || []).forEach(r => {
             let rep = this.container.get<Reporter>(r);
             if (rep instanceof RealtimeReporter) {
