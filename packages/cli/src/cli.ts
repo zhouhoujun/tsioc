@@ -1,14 +1,12 @@
 #!/usr/bin/env node
 require('ts-node').register();
-require('tsconfig-paths').register();
 import { rm, cp, mkdir } from 'shelljs';
 import * as fs from 'fs';
 import * as path from 'path';
 import chalk from 'chalk';
 import * as program from 'commander';
 import { execSync } from 'child_process';
-import { isString } from 'util';
-import { isArray } from '@ts-ioc/core';
+import { isString, isArray } from 'util';
 const resolve = require('resolve');
 const cliRoot = path.join(path.normalize(__dirname), '../');
 const packageConf = require(cliRoot + '/package.json');
