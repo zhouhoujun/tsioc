@@ -1,9 +1,8 @@
 import { Expression, Task, Src } from '@ts-ioc/activities';
 import { isUndefined, Providers } from '@ts-ioc/core';
 import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
-import { TestToken, ITestActivity, TestConfigure } from './ITestActivity';
+import { TestToken, ITestActivity, TestConfigure, TestCompilerToken } from './ITestActivity';
 import { UnitTestActivity } from './UnitTestActivity';
-import { CompilerToken } from '../ICompiler';
 
 
 /**
@@ -15,7 +14,7 @@ import { CompilerToken } from '../ICompiler';
  */
 @Task(TestToken)
 @Providers([
-    { provide: CompilerToken, useClass: UnitTestActivity }
+    { provide: TestCompilerToken, useClass: UnitTestActivity }
 ])
 export class TestActivity extends BuildHandleActivity implements ITestActivity {
 
@@ -43,9 +42,9 @@ export class TestActivity extends BuildHandleActivity implements ITestActivity {
     enable: Expression<boolean>;
 
     async onActivityInit(config: TestConfigure) {
-        // if (!config.compiler) {
-        //     config.compiler = UnitTestActivity;
-        // }
+        if (!config.compiler) {
+            config.compiler = TestCompilerToken;
+        }
         await super.onActivityInit(config);
         this.options = this.context.to(config.options);
         if (!isUndefined(config.enable)) {

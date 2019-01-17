@@ -1,5 +1,5 @@
 import { BuildHandleContext } from './BuildHandleActivity';
-import { IActivity, Src, ActivityConfigure } from '@ts-ioc/activities';
+import { IActivity, ActivityConfigure } from '@ts-ioc/activities';
 import { Registration, Token } from '@ts-ioc/core';
 
 /**

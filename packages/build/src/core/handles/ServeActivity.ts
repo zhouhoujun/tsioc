@@ -2,6 +2,7 @@ import { CtxType, ExpressionType, Expression, Task, InjectAcitityToken, IActivit
 import { isUndefined } from '@ts-ioc/core';
 import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
 import { BuildHandleConfigure } from '../BuildHandle';
+import { InjectCompilerToken } from '../ICompiler';
 
 /**
  * Serve activity configure.
@@ -42,6 +43,12 @@ export interface ServeConfigure extends BuildHandleConfigure {
  */
 export const ServeToken = new InjectAcitityToken<IActivity>('Serve');
 
+
+/**
+ * test compiler
+ */
+export const ServeCompilerToken = new InjectCompilerToken(ServeToken);
+
 /**
  * Serve activity.
  *
@@ -50,7 +57,7 @@ export const ServeToken = new InjectAcitityToken<IActivity>('Serve');
  * @extends {SourceActivity}
  */
 @Task(ServeToken)
-export class ServeActivity extends BuildHandleActivity {
+export default class ServeActivity extends BuildHandleActivity {
 
     /**
      * Serve src files
@@ -75,6 +82,9 @@ export class ServeActivity extends BuildHandleActivity {
     port: Expression<number>;
 
     async onActivityInit(config: ServeConfigure) {
+        if (!config.compiler) {
+            config.compiler = ServeCompilerToken;
+        }
         await super.onActivityInit(config);
         this.options = this.context.to(config.options);
         if (!isUndefined(config.port)) {

@@ -172,20 +172,6 @@ function vaildifyFile(fileName): string {
     return path.join(processRoot, fileName);
 }
 
-program
-    .command('run [fileName]')
-    .description('run activity file.')
-    .option('--activity [bool]', 'target file is activity.')
-    .allowUnknownOption(true)
-    .action((fileName, options) => {
-        requireRegisters();
-        fileName = vaildifyFile(fileName);
-        if (options.activity) {
-            runActivity(fileName, options)
-        } else {
-            requireCwd(resolve.sync(fileName, { basedir: processRoot, package: cwdPackageConf }));
-        }
-    });
 
 program
     .command('test [files]')
@@ -216,6 +202,21 @@ program
         unit.runTest(files, config, ConsoleReporter);
     });
 
+
+program
+    .command('run [fileName]')
+    .description('run activity file.')
+    .option('--activity [bool]', 'target file is activity.')
+    .allowUnknownOption(true)
+    .action((fileName, options) => {
+        requireRegisters();
+        fileName = vaildifyFile(fileName);
+        if (options.activity) {
+            runActivity(fileName, options)
+        } else {
+            requireCwd(resolve.sync(fileName, { basedir: processRoot, package: cwdPackageConf }));
+        }
+    });
 
 program
     .command('build [taskfile]')

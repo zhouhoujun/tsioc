@@ -1,6 +1,6 @@
 import { UnitTest } from '@ts-ioc/unit';
 import { ConsoleReporter } from '@ts-ioc/unit-console';
-import { TestConfigure } from '../../core';
+import { TestConfigure } from './ITestActivity';
 import { CompilerActivity } from '../CompilerActivity';
 import { Task } from '@ts-ioc/activities';
 

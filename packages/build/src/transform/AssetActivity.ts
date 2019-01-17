@@ -25,7 +25,6 @@ import { ActivityContextToken } from '@ts-ioc/activities';
     { provide: AnnotationCompilerToken, useClass: AnnotationActivity },
     { provide: SourceCompilerToken, useClass: SourceActivity },
     { provide: SourcemapsCompilerToken, useClass: SourceMapsActivity },
-    { provide: TestCompilerToken, useClass: UnitTestActivity },
     { provide: ActivityContextToken, useExisting: TransformContextToken },
     { provide: DestCompilerToken, useClass: DestActivity },
     { provide: CompilerToken, useExisting: TransformActivityToken }
