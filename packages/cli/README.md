@@ -39,8 +39,8 @@ pk init pack [--browser] [--version tsioc_version] [--dev]
 
 ### build pack
 ```
-pk run [--activity] [taskfile.ts]
-pk build [taskfile config]
+pk run [--activity] [taskfile.ts] [--your_env_arg=val]...
+pk build [taskfile config]  [--your_env_arg=val]...
 ```
 
 ### Unit test

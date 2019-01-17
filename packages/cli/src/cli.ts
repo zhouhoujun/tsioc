@@ -176,6 +176,7 @@ program
     .command('run [fileName]')
     .description('run activity file.')
     .option('--activity [bool]', 'target file is activity.')
+    .allowUnknownOption(true)
     .action((fileName, options) => {
         requireRegisters();
         fileName = vaildifyFile(fileName);
@@ -228,6 +229,7 @@ program
     .option('--verbose [bool]', 'log all messages in list format')
     .option('--closure [bool]', 'bundle and optimize with closure compiler (default)')
     .option('-r, --rollup [bool]', 'bundle with rollup and optimize with closure compiler')
+    .allowUnknownOption(true)
     .action((taskfile, options) => {
         requireRegisters();
         taskfile = vaildifyFile(taskfile);
@@ -249,6 +251,7 @@ program
     .option('--verbose [bool]', 'log all messages in list format')
     .option('--closure [bool]', 'bundle and optimize with closure compiler (default)')
     .option('-r, --rollup [bool]', 'bundle with rollup and optimize with closure compiler')
+    .allowUnknownOption(true)
     .action((taskfile, options) => {
         requireRegisters();
         taskfile = vaildifyFile(taskfile);
