@@ -28,7 +28,7 @@ npm install @ts-ioc/platform-server
 
 import { Suite, BeforeEach, UnitTest, Test, Assert, Expect, ExpectToken } from '@ts-ioc/unit';
 import { ConsoleReporter } from '@ts-ioc/unit-console';
-import { Defer } from '@ts-ioc/core';
+import { PromiseUtil } from '@ts-ioc/core';
 
 
 @Suite('Unit Test')
@@ -44,7 +44,7 @@ export class SuiteTest {
     @Test('assert test timeout', 200)
     testTimeout() {
         console.log('--------assert test timeout------');
-        let def = new Defer();
+        let def = PromiseUtil.defer();
         setTimeout(() => {
             def.resolve('out time do...')
         }, 300)
@@ -54,7 +54,7 @@ export class SuiteTest {
     @Test('assert test in time', 200)
     testInTime() {
         console.log('--------assert test in time------');
-        let def = new Defer();
+        let def = PromiseUtil.defer();
         setTimeout(() => {
             def.resolve('in time do...')
         }, 100)
@@ -65,7 +65,7 @@ export class SuiteTest {
     @Test('assert test in time', 200)
     testInTime(assert: Assert) {
         console.log('--------assert test in time------');
-        let def = new Defer();
+        let def = PromiseUtil.defer();
         setTimeout(() => {
             def.resolve('in time do...')
         }, 100)

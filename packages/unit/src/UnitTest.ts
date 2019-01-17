@@ -1,6 +1,6 @@
-import { ApplicationBuilder, ModuleConfigure, ModuleConfig, Runnable, RunnableEvents, isDIModuleClass, RunOptions, AppConfigure, IConfigureRegister, RunnableConfigure, ConfigureRegisterToken } from '@ts-ioc/bootstrap';
+import { ApplicationBuilder, ModuleConfigure, ModuleConfig, Runnable, RunnableEvents, isDIModuleClass, RunOptions, AppConfigure, IConfigureRegister, RunnableConfigure, ConfigureRegisterToken, InjectedModuleToken } from '@ts-ioc/bootstrap';
 import { UnitModule } from './UnitModule';
-import { isClass, hasClassMetadata, Type, isString, isArray, Token, IContainer, Refs, LoadType, IContainerBuilder, lang, ContainerBuilder, PromiseUtil } from '@ts-ioc/core';
+import { isClass, hasClassMetadata, Type, isString, isArray, Token, IContainer, Refs, LoadType, IContainerBuilder, lang, ContainerBuilder, PromiseUtil, IInjectedProcess, ModuleInjectorChainToken, InjectedProcessToken, Singleton, Inject, ContainerToken } from '@ts-ioc/core';
 import { Suite } from './decorators/Suite';
 import { TestReport, ReportsToken, isReporterClass, ITestReport } from './reports';
 import { SuiteRunner, OldTestRunner } from './runner';
@@ -34,7 +34,7 @@ export interface UnitTestConfigure extends AppConfigure {
     * @type {Token<ITestReport>[]}
     * @memberof UnitTestConfigure
     */
-   reporters: Token<ITestReport>[];
+   reporters: Type<ITestReport>[];
 }
 
 
@@ -69,38 +69,7 @@ export class UnitTest extends ApplicationBuilder<any> {
 
    initUnit() {
       this.use(UnitModule);
-      this.use(UnitTestConfigureRegister);
-      this.on(RunnableEvents.registeredExt, (types: Type<any>[], container: IContainer) => {
-         let repoters = [];
-         types.forEach(type => {
-            if (isReporterClass(type)) {
-               repoters.push(type);
-            } else if (isDIModuleClass(type)) {
-               let injMd = this.getInjectedModule(type);
-               let pdmap = injMd.getProviderMap();
-               if (pdmap) {
-                  pdmap.provides().forEach(p => {
-                     if (isReporterClass(p)) {
-                        repoters.push(p);
-                     }
-                  });
-               }
-            }
-         });
-         this.useReporter(container, ...repoters);
-      });
-   }
-
-
-   protected useReporter(container: IContainer, ...reporters: Type<any>[]): this {
-      let reps = container.get(ReportsToken) as Type<any>[];
-      if (reps) {
-         reps = reps.concat(...reporters);
-      } else {
-         reps = reporters;
-      }
-      container.bindProvider(ReportsToken, reps);
-      return this;
+      this.use(UnitTestConfigureRegister, InjectedReporetProcess);
    }
 
    getTopBuilder(): IContainerBuilder {
@@ -165,25 +134,49 @@ export class UnitTest extends ApplicationBuilder<any> {
    }
 }
 
+@Singleton
+@Refs(ModuleInjectorChainToken, InjectedProcessToken)
+export class InjectedReporetProcess implements IInjectedProcess {
 
+   @Inject(ContainerToken)
+   container: IContainer;
+
+   constructor() {
+
+   }
+   pipe(types: Type<any>[]) {
+      let repoters = [];
+      types.forEach(type => {
+         if (isReporterClass(type)) {
+            repoters.push(type);
+         }
+      });
+      if (repoters.length) {
+         let reps = this.container.get(ReportsToken) as Type<any>[];
+         if (reps) {
+            reps = reps.concat(repoters);
+         } else {
+            reps = repoters;
+         }
+         this.container.bindProvider(ReportsToken, reps);
+      }
+   }
+}
+
+@Singleton
 @Refs(UnitTest, ConfigureRegisterToken)
 export class UnitTestConfigureRegister implements IConfigureRegister<RunnableConfigure> {
+
+   constructor() {
+   }
 
    async register(config: UnitTestConfigure, container: IContainer): Promise<void> {
       if (config.debug) {
          container.register(DebugLogAspect);
       }
+
       if (isArray(config.reporters) && config.reporters.length) {
-         let reps = container.get(ReportsToken) as Type<any>[];
-         config.reporters.forEach(type => {
-            if (isReporterClass(type)) {
-               if (!container.has(type)) {
-                  container.use(type);
-               }
-               reps.push(type);
-            }
-         });
-         container.bindProvider(ReportsToken, reps);
+         container.use(...config.reporters);
       }
    }
 }

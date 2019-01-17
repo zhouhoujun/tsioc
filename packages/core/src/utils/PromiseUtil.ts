@@ -53,6 +53,18 @@ export class Defer<T> {
 export namespace PromiseUtil {
 
     /**
+     * create defer.
+     *
+     * @export
+     * @template T
+     * @param {((val: T) => T | PromiseLike<T>)} [then]
+     * @returns {Defer<T>}
+     */
+    export function defer<T>(then?: (val: T) => T | PromiseLike<T>): Defer<T> {
+        return Defer.create(then);
+    }
+
+    /**
      * foreach opter for promises.
      *
      * @export
@@ -129,6 +141,44 @@ export namespace PromiseUtil {
                 defer.resolve(null)
             });
         return defer.promise;
+    }
+
+    /**
+     *  action handle.
+     */
+    export type ActionHandle<T> = (ctx: T, next?: () => Promise<void>) => Promise<void>;
+
+    /**
+     * run action in chain.
+     *
+     * @export
+     * @template T
+     * @param {ActionHandle<T>[]} handles
+     * @param {T} ctx
+     * @param {() => Promise<void>} [next]
+     * @returns {Promise<void>}
+     */
+    export function runInChain<T>(handles: ActionHandle<T>[], ctx: T, next?: () => Promise<void>): Promise<void> {
+        let index = -1;
+        return dispatch(0);
+        function dispatch(idx: number): Promise<any> {
+            if (idx <= index) {
+                return Promise.reject('next called mutiple times');
+            }
+            index = idx;
+            let handle = idx < handles.length ? handles[idx] : null;
+            if (idx === handles.length) {
+                handle = next;
+            }
+            if (!handle) {
+                return Promise.resolve();
+            }
+            try {
+                return Promise.resolve(handle(ctx, dispatch.bind(null, idx + 1)));
+            } catch (err) {
+                return Promise.reject(err);
+            }
+        }
     }
 
 }

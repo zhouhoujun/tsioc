@@ -1,4 +1,4 @@
-import { Inject, ContainerToken, IContainer, MapSet, Defer, PromiseUtil, Singleton, Token } from '@ts-ioc/core';
+import { Inject, ContainerToken, IContainer, MapSet, PromiseUtil, Singleton, Token } from '@ts-ioc/core';
 import { ISuiteRunner } from './ISuiteRunner';
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { Assert } from '../assert';
@@ -177,7 +177,7 @@ export class OldTestRunner implements ISuiteRunner {
     }
 
     runTimeout(fn: Function, describe: string, timeout: number): Promise<any> {
-        let defer = new Defer();
+        let defer = PromiseUtil.defer();
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);

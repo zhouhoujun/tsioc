@@ -1,9 +1,10 @@
-import { IModuleInjectorChain } from './IModuleInjectorChain';
+import { IModuleInjectorChain, ModuleInjectorChainToken } from './IModuleInjectorChain';
 import { IModuleInjector } from './IModuleInjector';
 import { ModuleInjector } from './ModuleInjector';
 import { Type } from '../types';
 import { IContainer } from '../IContainer';
-import { lang } from '../utils';
+import { PromiseUtil, lang } from '../utils';
+import { InjectedProcessToken } from './IInjectedProcess';
 
 /**
  * Module Injector chain, base injector chain.
@@ -43,7 +44,7 @@ export class ModuleInjectorChain implements IModuleInjectorChain {
 
     async inject(container: IContainer, modules: Type<any>[]): Promise<Type<any>[]> {
         let types: Type<any>[] = [];
-        await lang.runInChain(this.injectors.map(jtor => {
+        await PromiseUtil.runInChain(this.injectors.map(jtor => {
             return async (mds: Type<any>[], next?: () => Promise<void>) => {
                 let ijRt = await jtor.inject(container, mds);
                 if (ijRt.injected && ijRt.injected.length) {
@@ -54,6 +55,7 @@ export class ModuleInjectorChain implements IModuleInjectorChain {
                 }
             }
         }), modules);
+        this.injectedProcess(container, types);
         return types;
     }
 
@@ -68,7 +70,22 @@ export class ModuleInjectorChain implements IModuleInjectorChain {
             }
             return completed;
         });
+        this.injectedProcess(container, types);
         return types;
+    }
+
+    /**
+     * injected.
+     *
+     * @param {Type<any>[]} modules
+     * @returns {void}
+     * @memberof ModuleInjectorChain
+     */
+    protected injectedProcess(container: IContainer, modules: Type<any>[]): void {
+        let proc = container.getService(InjectedProcessToken, [lang.getClass(this), ModuleInjectorChainToken]);
+        if (proc) {
+            proc.pipe(modules);
+        }
     }
 }
 

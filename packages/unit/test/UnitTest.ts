@@ -1,5 +1,5 @@
 import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken } from '@ts-ioc/unit';
-import { Defer, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
+import { PromiseUtil, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
 
 
 
@@ -16,7 +16,7 @@ export class SuiteTest {
     @Test('assert test timeout', 200)
     testTimeout() {
         console.log('--------assert test timeout------');
-        let def = new Defer();
+        let def = PromiseUtil.defer();
         setTimeout(() => {
             console.log('out time do...');
             def.resolve('out time do...')
@@ -27,7 +27,7 @@ export class SuiteTest {
     @Test('assert test in time', 200)
     testInTime(assert: Assert) {
         console.log('--------assert test in time------');
-        let def = new Defer();
+        let def = PromiseUtil.defer();
         setTimeout(() => {
             console.log('in time do...');
             def.resolve('in time do...')

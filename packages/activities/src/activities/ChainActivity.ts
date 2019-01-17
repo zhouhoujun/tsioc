@@ -5,7 +5,7 @@ import {
 } from '../core';
 import { HandleActivity } from './HandleActivity';
 import { ControlActivity } from './ControlActivity';
-import { lang, isFunction, isNullOrUndefined } from '@ts-ioc/core';
+import { isFunction, isNullOrUndefined, PromiseUtil } from '@ts-ioc/core';
 
 
 /**
@@ -72,7 +72,7 @@ export class ChainActivity extends ControlActivity implements IChainActivity {
      * @memberof ChainActivity
      */
     protected handleRequest(ctx: IActivityContext, handles: HandleType[], next?: () => Promise<void>): Promise<void> {
-        return lang.runInChain(handles.map(act => {
+        return PromiseUtil.runInChain(handles.map(act => {
             return async (ctx: IActivityContext, next?: () => Promise<void>) => {
                 let called = false;
                 await this.execActivity(act, ctx, () => {

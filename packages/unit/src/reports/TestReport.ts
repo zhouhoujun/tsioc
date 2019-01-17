@@ -41,14 +41,13 @@ export class TestReport implements ITestReport {
 
     setSuiteCompleted(suit: Token<any>) {
         let suite = this.getSuite(suit);
-        if(suite){
+        if (suite) {
             suite.end = new Date().getTime();
         }
     }
 
     addCase(suit: Token<any>, testCase: ICaseDescribe) {
         if (this.suites.has(suit)) {
-            
             testCase.start = new Date().getTime();
             this.suites.get(suit).cases.push(testCase);
         }

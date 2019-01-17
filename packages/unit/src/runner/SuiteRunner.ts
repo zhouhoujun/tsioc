@@ -1,7 +1,7 @@
 import { Runner, ModuleConfigure } from '@ts-ioc/bootstrap';
 import {
     Token, getMethodMetadata, isNumber, lang, ContainerToken,
-    IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Defer, Injectable
+    IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Injectable
 } from '@ts-ioc/core';
 import { Before } from '../decorators/Before';
 import { BeforeEach } from '../decorators/BeforeEach';
@@ -71,7 +71,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
 
     runTimeout(key: string, describe: string, timeout: number): Promise<any> {
         let instance = this.instance;
-        let defer = new Defer();
+        let defer = PromiseUtil.defer();
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);

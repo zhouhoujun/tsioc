@@ -67,7 +67,7 @@ export class ContainerBuilder implements IContainerBuilder {
         let injTypes = [];
         if (regModules && regModules.length) {
             let injChain = this.getInjectorChain(container);
-            await PromiseUtil.step(regModules.map(async typs => {
+            await PromiseUtil.step(regModules.map(typs => async () => {
                 let ityps = await injChain.inject(container, typs);
                 injTypes = injTypes.concat(ityps);
             }));

@@ -9,7 +9,6 @@ import { ContainerPoolToken } from '../utils';
 import { ModuleConfigure } from './ModuleConfigure';
 import { InjectedModuleToken, InjectedModule } from './InjectedModule';
 
-// const exportsProvidersFiled = '__exportProviders';
 
 /**
  * DIModule injector interface.
@@ -56,7 +55,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
     }
 
     protected syncSetup(container: IContainer, type: Type<any>) {
-        this.importModule(container, type);
+        throw new Error('DIModule can not sync setup.');
     }
 
     protected valid(container: IContainer, type: Type<any>): boolean {
