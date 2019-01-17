@@ -14,7 +14,6 @@ import { BootModule } from '../BootModule';
 import { Runnable } from '../runnable';
 import { ConfigureMgrToken, IConfigureManager, ConfigureRegisterToken } from './IConfigureManager';
 import { RunnableConfigure } from './AppConfigure';
-import { async } from 'rxjs/internal/scheduler/async';
 
 /**
  * runnable events

@@ -6,4 +6,3 @@ export * from './RunnableBuilder';
 export * from './IApplicationBuilder';
 export * from './AppConfigure';
 export * from './ApplicationBuilder';
-export * from './IApplication';
