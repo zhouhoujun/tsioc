@@ -115,8 +115,8 @@ export class ActivitiesBuilder {
 }
 
 
-// if (process.cwd() === __dirname) {
-//     Workflow.create()
-//         .use(PackModule)
-//         .bootstrap(ActivitiesBuilder);
-// }
+if (process.cwd() === __dirname) {
+    Workflow.create()
+        .use(PackModule)
+        .bootstrap(ActivitiesBuilder);
+}
