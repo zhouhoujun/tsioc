@@ -1,10 +1,10 @@
 {
-  "name": "@ts-ioc/platform-browser-activities",
+  "name": "@ts-ioc/platform-server-logs",
   "version": "4.0.0-beta12",
   "description": "type task framework, base on AOP, Ioc container, via @ts-ioc",
-  "esnext": "./es2017/platform-browser.js",
-  "es2015": "./es2015/platform-browser.js",
-  "module": "./bundles/platform-browser.umd.js",
+  "esnext": "./es2017/platform-server-logs.js",
+  "es2015": "./es2015/platform-server-logs.js",
+  "module": "./lib/index.js",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
@@ -34,11 +34,22 @@
     "type": "git",
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
-  "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-browser-activities#readme",
+  "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-server-logs#readme",
   "dependencies": {
+    "@ts-ioc/platform-server": "^4.0.0-beta12",
+    "bluebird": "^3.5.3",
+    "chalk": "^2.4.2",
+    "globby": "^9.0.0",
+    "interpret": "^1.2.0",
+    "time-stamp": "^2.2.0",
+    "minimatch": "^3.0.4",
+    "minimist": "^1.2.0",
+    "pretty-hrtime": "^1.0.3",
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3",
-    "@ts-ioc/platform-browser": "^4.0.0-beta12"
+    "ts-node": "^7.0.1",
+    "tsconfig-paths": "^3.7.0",
+    "zone.js": "^0.8.27"
   },
   "peerDependencies": {
     "@ts-ioc/activities": "^4.0.0-beta12"

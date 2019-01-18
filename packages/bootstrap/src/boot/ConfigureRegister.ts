@@ -22,12 +22,30 @@ export interface IConfigureRegister<T extends RunnableConfigure> {
     register(config: T, container: IContainer, runBuilder?: IRunnableBuilder<any>): Promise<void>;
 }
 
-
+/**
+ * configure register.
+ *
+ * @export
+ * @abstract
+ * @class ConfigureRegister
+ * @implements {IConfigureRegister<T>}
+ * @template T
+ */
 @Abstract()
 export abstract class ConfigureRegister<T extends RunnableConfigure> implements IConfigureRegister<T> {
 
     constructor() {
     }
 
+    /**
+     * register config setting.
+     *
+     * @abstract
+     * @param {T} config
+     * @param {IContainer} container
+     * @param {IRunnableBuilder<any>} [runBuilder]
+     * @returns {Promise<void>}
+     * @memberof ConfigureRegister
+     */
     abstract register(config: T, container: IContainer, runBuilder?: IRunnableBuilder<any>): Promise<void>;
 }

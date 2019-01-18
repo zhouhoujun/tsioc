@@ -34,7 +34,7 @@
     "type": "git",
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
-  "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme",
+  "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-server-activities#readme",
   "dependencies": {
     "@ts-ioc/platform-server": "^4.0.0-beta12",
     "bluebird": "^3.5.3",

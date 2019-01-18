@@ -15,7 +15,6 @@ import { RunnableConfigure } from './AppConfigure';
  * @export
  * @class ConfigureManager
  */
-// @RefTo(RunnableBuilderToken)
 @Singleton(ConfigureMgrToken)
 export class ConfigureManager<T extends RunnableConfigure> implements IConfigureManager<T> {
     /**

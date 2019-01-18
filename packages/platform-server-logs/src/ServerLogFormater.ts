@@ -10,7 +10,7 @@ import chalk from 'chalk';
 @NonePointcut()
 @Singleton()
 @Refs(LoggerAspect, LogFormaterToken)
-export class ActivityLogFormater implements ILogFormater {
+export class ServerLogFormater implements ILogFormater {
 
     constructor() {
 

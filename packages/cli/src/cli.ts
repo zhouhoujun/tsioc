@@ -142,7 +142,15 @@ function runActivity(fileName, options) {
     const wf = requireCwd('@ts-ioc/activities');
     const pk = requireCwd('@ts-ioc/pack');
     const bd = requireCwd('@ts-ioc/build');
-    let wfi = wf.Workflow.create().use(pk.PackModule);
+    let config;
+    if(options.config && isString(options.config)){
+        config = requireCwd(options.config);
+    }
+    config = config || {};
+    if(isBoolean(options.debug)){
+        config.debug = options.debug;
+    }
+    let wfi = wf.Workflow.create(config).use(pk.PackModule);
     let md = requireCwd(fileName);
     let activites = Object.values(md);
     if (activites.some(v => pk.isPackClass(v))) {
@@ -211,6 +219,8 @@ program
     .command('run [fileName]')
     .description('run activity file.')
     .option('--activity [bool]', 'target file is activity.')
+    .option('--config [string]', 'path to configuration file for activities build')
+    .option('--debug [bool]', 'enable debug log or not')
     .allowUnknownOption(true)
     .action((fileName, options) => {
         requireRegisters();
@@ -229,7 +239,8 @@ program
     .option('-e, --env [string]', 'use that particular environment.ts during the build, just like @angular/cli')
     .option('-c, --clean [bool]', 'destroy the build folder prior to compilation, default for prod')
     .option('-w, --watch [bool]', 'listen for changes in filesystem and rebuild')
-    .option('-f, --config [string]', 'path to configuration file for library build')
+    .option('--config [string]', 'path to configuration file for activities build')
+    .option('--debug [bool]', 'enable debug log or not')
     .option('-d, --deploy [bool]', 'run deploy activity')
     .option('--verbose [bool]', 'log all messages in list format')
     .option('--closure [bool]', 'bundle and optimize with closure compiler (default)')
@@ -251,7 +262,7 @@ program
     .option('-e, --env [string]', 'use that particular environment.ts during the build, just like @angular/cli')
     .option('-c, --clean [bool]', 'destroy the build folder prior to compilation, default for prod')
     .option('-w, --watch [bool]', 'listen for changes in filesystem and rebuild')
-    .option('-f, --config [string]', 'path to configuration file for library build')
+    .option('--config [string]', 'path to configuration file for activities build')
     .option('-d, --deploy [bool]', 'run deploy activity')
     .option('--verbose [bool]', 'log all messages in list format')
     .option('--closure [bool]', 'bundle and optimize with closure compiler (default)')
