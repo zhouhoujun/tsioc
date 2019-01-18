@@ -54,7 +54,7 @@ export class InjectedModule<T> implements IExports {
                 isToken(tk) && callbackfn(tk, fac, pdr);
             });
         }
-        this.container.forEach((fac, tk) => {
+        this.container.forEach((tk, fac) => {
             callbackfn(tk, fac, this.container);
         });
     }

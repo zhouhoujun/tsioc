@@ -43,6 +43,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 '@ts-ioc/aop',
                 '@ts-ioc/bootstrap',
                 '@ts-ioc/platform-server',
+                '@ts-ioc/platform-server-logs',
                 '@ts-ioc/platform-server-bootstrap',
                 '@ts-ioc/unit'
             ],
@@ -59,6 +60,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 '@ts-ioc/aop': '@ts-ioc/aop',
                 '@ts-ioc/bootstrap': '@ts-ioc/bootstrap',
                 '@ts-ioc/platform-server': '@ts-ioc/platform-server',
+                '@ts-ioc/platform-server-logs': '@ts-ioc/platform-server-logs',
                 '@ts-ioc/platform-server-bootstrap': '@ts-ioc/platform-server-bootstrap',
                 '@ts-ioc/unit': '@ts-ioc/unit',
             },

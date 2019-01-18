@@ -97,9 +97,9 @@ export class BootRollup {
 export class UnitBuilder {
 }
 
-// if (process.cwd() === __dirname) {
-//     Workflow.create()
-//         .use(PackModule)
-//         .bootstrap(UnitBuilder);
+if (process.cwd() === __dirname) {
+    Workflow.create()
+        .use(PackModule)
+        .bootstrap(UnitBuilder);
 
-// }
+}

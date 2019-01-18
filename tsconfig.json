@@ -27,6 +27,9 @@
       "@ts-ioc/platform-server":[
         "packages/platform-server/src"
       ],
+      "@ts-ioc/platform-server-logs":[
+        "packages/platform-server-logs/src"
+      ],
       "@ts-ioc/platform-server-bootstrap":[
         "packages/platform-server-bootstrap/src"
       ],

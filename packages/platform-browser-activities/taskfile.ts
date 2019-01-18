@@ -36,8 +36,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 '@ts-ioc/bootstrap',
                 '@ts-ioc/platform-browser',
                 '@ts-ioc/platform-browser-bootstrap',
-                '@ts-ioc/activities',
-                '@ts-ioc/platform-browser-activities'
+                '@ts-ioc/activities'
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
@@ -49,8 +48,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 '@ts-ioc/bootstrap': '@ts-ioc/bootstrap',
                 '@ts-ioc/platform-browser': '@ts-ioc/platform-browser',
                 '@ts-ioc/platform-browser-bootstrap': '@ts-ioc/platform-browser-bootstrap',
-                '@ts-ioc/activities': '@ts-ioc/activities',
-                '@ts-ioc/platform-browser-activities': '@ts-ioc/platform-browser-activities'
+                '@ts-ioc/activities': '@ts-ioc/activities'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),

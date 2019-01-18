@@ -3,18 +3,22 @@ import { ServerModule } from '@ts-ioc/platform-server';
 import { ServerBootstrapModule } from '@ts-ioc/platform-server-bootstrap';
 import { TaskLogAspect, RunnerLogAspect } from './aop';
 import { WorkflowConfigureRegister } from './WorkflowConfigureRegister';
+import { ServerLogsModule } from '@ts-ioc/platform-server-logs';
 
 
 @DIModule({
     imports: [
         ServerModule,
         ServerBootstrapModule,
+        ServerLogsModule,
         TaskLogAspect,
         RunnerLogAspect,
         WorkflowConfigureRegister
     ],
     exports: [
+        ServerModule,
         ServerBootstrapModule,
+        ServerLogsModule,
         TaskLogAspect,
         RunnerLogAspect,
         WorkflowConfigureRegister

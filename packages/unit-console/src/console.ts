@@ -4,12 +4,14 @@ import chalk from 'chalk';
 import { DIModule } from '@ts-ioc/bootstrap';
 import { ServerBootstrapModule } from '@ts-ioc/platform-server-bootstrap';
 import { ServerModule } from '@ts-ioc/platform-server';
+import { ServerLogsModule } from '@ts-ioc/platform-server-logs';
 
 
 @DIModule({
     imports: [
         ServerModule,
-        ServerBootstrapModule
+        ServerBootstrapModule,
+        ServerLogsModule
     ],
     // providers: [
     //     {
@@ -23,7 +25,8 @@ import { ServerModule } from '@ts-ioc/platform-server';
     // ],
     exports: [
         ServerModule,
-        ServerBootstrapModule
+        ServerBootstrapModule,
+        ServerLogsModule
     ]
 })
 export class ConsoleReporter extends RealtimeReporter {

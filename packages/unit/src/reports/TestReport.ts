@@ -16,10 +16,7 @@ export class TestReport implements ITestReport {
     resports: Reporter[];
     getReports() {
         if (!this.resports || this.resports.length < 0) {
-            this.resports = [];
-            this.container.get(ContainerPoolToken).getChildren().forEach(c => {
-                this.resports = this.resports.concat(c.getServices(Reporter));
-            });
+            this.resports = this.container.getServices(Reporter);
         }
         return this.resports || [];
     }

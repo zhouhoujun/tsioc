@@ -36,7 +36,9 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-server-activities#readme",
   "dependencies": {
+    "@ts-ioc/activities": "^4.0.0-beta12",
     "@ts-ioc/platform-server": "^4.0.0-beta12",
+    "@ts-ioc/platform-server-logs": "^4.0.0-beta12",
     "bluebird": "^3.5.3",
     "chalk": "^2.4.2",
     "globby": "^9.0.0",
@@ -52,7 +54,6 @@
     "zone.js": "^0.8.27"
   },
   "peerDependencies": {
-    "@ts-ioc/activities": "^4.0.0-beta12"
   },
   "directories": {
     "lib": "lib",

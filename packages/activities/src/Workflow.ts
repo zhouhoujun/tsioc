@@ -1,14 +1,24 @@
 import { ApplicationBuilder, BootOptions, AppConfigure } from '@ts-ioc/bootstrap';
-import { IActivity, IWorkflowInstance, Active, SequenceConfigure, WorkflowId, UUIDToken, RandomUUIDFactory, CoreActivityConfigs } from './core';
+import {
+    IActivity, IWorkflowInstance, Active, SequenceConfigure, WorkflowId,
+    UUIDToken, RandomUUIDFactory, CoreActivityConfigs
+} from './core';
 import { IWorkflow } from './IWorkflow';
-import { LoadType, lang, isToken } from '@ts-ioc/core';
-// import { WorkflowModuleValidate, WorkflowModuleInjector, WorkflowModuleInjectorToken } from './injectors';
+import { lang, isToken } from '@ts-ioc/core';
 import { AopModule } from '@ts-ioc/aop';
 import { LogModule } from '@ts-ioc/logs';
 import { CoreModule } from './CoreModule';
 import { SequenceActivity } from './activities';
+// import { WorkflowModuleValidate, WorkflowModuleInjector, WorkflowModuleInjectorToken } from './injectors';
 
-
+/**
+ * workflow builder.
+ *
+ * @export
+ * @class Workflow
+ * @extends {ApplicationBuilder<IActivity>}
+ * @implements {IWorkflow}
+ */
 export class Workflow extends ApplicationBuilder<IActivity> implements IWorkflow {
     constructor() {
         super();

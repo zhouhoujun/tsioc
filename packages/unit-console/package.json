@@ -43,6 +43,7 @@
     "@ts-ioc/core": "^4.0.0-beta12",
     "@ts-ioc/logs": "^4.0.0-beta12",
     "@ts-ioc/platform-server": "^4.0.0-beta12",
+    "@ts-ioc/platform-server-logs": "^4.0.0-beta12",
     "@ts-ioc/platform-server-bootstrap": "^4.0.0-beta12",
     "@ts-ioc/unit": "^4.0.0-beta12",
     "reflect-metadata": "^0.1.12",
@@ -50,8 +51,7 @@
     "tslib": "^1.9.2",
     "globby": "^7.1.1"
   },
-  "peerDependencies": {
-  },
+  "peerDependencies": {},
   "directories": {
     "lib": "lib",
     "test": "test"

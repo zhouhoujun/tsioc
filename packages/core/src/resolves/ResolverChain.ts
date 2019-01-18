@@ -5,8 +5,6 @@ import { Container } from '../Container';
 import { InjectToken } from '../InjectToken';
 import { IResolver } from '../IResolver';
 import { ParamProviders } from '../providers';
-import { isFunction } from '../utils';
-
 /**
  *  resolver chain token.
  */
