@@ -41,7 +41,7 @@ export interface IExports extends IResolver {
     container?: IContainer;
 
     /**
-     * iterator
+     * iterator current resolver.
      *
      * @param {(tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void} callbackfn
      * @memberof IExports

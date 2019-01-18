@@ -1,15 +1,15 @@
 import { DIModule } from '@ts-ioc/bootstrap';
 import * as buildcore from './core';
-import { ServerTaskModule } from '@ts-ioc/platform-server-activities';
+import { ServerActivitiesModule } from '@ts-ioc/platform-server-activities';
 import { AssetSetup } from './AssetSetup';
 @DIModule({
     imports: [
         AssetSetup,
-        ServerTaskModule,
+        ServerActivitiesModule,
         buildcore
     ],
     exports: [
-        ServerTaskModule,
+        ServerActivitiesModule,
         buildcore
     ]
 })

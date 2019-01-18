@@ -1,16 +1,15 @@
 import {
    ApplicationBuilder, ModuleConfigure, ModuleConfig, Runnable, RunOptions,
-   AppConfigure, ConfigureRegister, RunnableConfigure,
+   AppConfigure
 } from '@ts-ioc/bootstrap';
 import { UnitModule } from './UnitModule';
 import {
-   isClass, hasClassMetadata, Type, isString, isArray, Token, IContainer,
-   Refs, LoadType, IContainerBuilder, lang, ContainerBuilder, PromiseUtil, Singleton
+   isClass, hasClassMetadata, Type, isString, isArray, Token,
+   LoadType, IContainerBuilder, lang, ContainerBuilder, PromiseUtil
 } from '@ts-ioc/core';
 import { Suite } from './decorators/Suite';
 import { TestReport, ITestReport } from './reports';
 import { SuiteRunner, OldTestRunner } from './runner';
-import { DebugLogAspect } from '@ts-ioc/logs';
 import { Assert, ExpectToken } from './assert';
 import * as assert from 'assert';
 import * as expect from 'expect';
@@ -74,8 +73,7 @@ export class UnitTest extends ApplicationBuilder<any> {
    }
 
    initUnit() {
-      this.use(UnitModule)
-         .use(UnitTestConfigureRegister);
+      this.use(UnitModule);
    }
 
    getTopBuilder(): IContainerBuilder {
@@ -137,24 +135,6 @@ export class UnitTest extends ApplicationBuilder<any> {
          await this.resolve(TestReport).report();
       }
       return runner;
-   }
-}
-
-@Singleton
-export class UnitTestConfigureRegister extends ConfigureRegister<RunnableConfigure> {
-
-   constructor() {
-      super();
-   }
-
-   async register(config: UnitTestConfigure, container: IContainer): Promise<void> {
-      if (config.debug) {
-         container.register(DebugLogAspect);
-      }
-
-      if (isArray(config.reporters) && config.reporters.length) {
-         container.use(...config.reporters);
-      }
    }
 }
 

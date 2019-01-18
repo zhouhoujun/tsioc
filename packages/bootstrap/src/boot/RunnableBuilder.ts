@@ -1,7 +1,7 @@
 import {
     IContainer, LoadType, Factory, Token,
     ContainerBuilder, IContainerBuilder, isClass,
-    isToken, PromiseUtil, Injectable, lang, isFunction, ParamProviders, isNullOrUndefined
+    isToken, PromiseUtil, Injectable, lang, ParamProviders, isNullOrUndefined
 } from '@ts-ioc/core';
 import { IRunnableBuilder, CustomRegister, RunnableBuilderToken, ProcessRunRootToken, RunOptions } from './IRunnableBuilder';
 import {
@@ -318,10 +318,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         }));
 
         await Promise.all(topcs.map(c => {
-            if (!config.baseURL) {
-                config.baseURL = this.getRunRoot(c);
-            }
-            let regs = c.getServices(ConfigureRegister, lang.getClass(this));
+            let regs = c.getServices(ConfigureRegister, lang.getClass(this), true);
             return Promise.all(regs.map(reg => {
                 return reg.register(config, c, this);
             }));

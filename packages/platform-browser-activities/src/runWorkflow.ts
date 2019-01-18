@@ -1,5 +1,5 @@
 import { IWorkflowInstance, ActivityType, IActivity, Workflow } from '@ts-ioc/activities';
-import { BrowserTaskModule } from './BrowserTaskModule';
+import { BrowserActivitiesModule } from './BrowserActivitiesModule';
 
 /**
  * run workflow.
@@ -12,7 +12,7 @@ import { BrowserTaskModule } from './BrowserTaskModule';
  */
 export function runWorkflow<T extends IActivity>(activity: ActivityType<T>): Promise<IWorkflowInstance<T>> {
     let Worflow = new Workflow();
-    Worflow.use(BrowserTaskModule);
+    Worflow.use(BrowserActivitiesModule);
     return Worflow.run(activity);
 }
 

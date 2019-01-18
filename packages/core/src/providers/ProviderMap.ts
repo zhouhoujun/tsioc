@@ -85,16 +85,16 @@ export class ProviderMap extends MapSet<Token<any> | number, InstanceFactory<any
             };
         } else {
             if (isFunction(provider)) {
-                factory = (...providers: ProviderTypes[]) => {
-                    return (<ToInstance<any>>provider)(this.container, ...providers);
-                };
+                factory = provider;
             } else {
                 factory = () => {
                     return provider;
                 };
             }
         }
-        this.map.set(key, factory);
+        if (factory) {
+            this.map.set(key, factory);
+        }
         return this;
     }
 

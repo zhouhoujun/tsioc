@@ -394,7 +394,14 @@ export interface IContainer extends IMethodAccessor, IResolver {
     loadModule(...modules: LoadType[]): Promise<Type<any>[]>;
 
     /**
-     * iterator.
+     * iterator all resovlers.
+     *
+     * @param {(tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void} callbackfn
+     * @memberof IContainer
+     */
+    iterator(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void): void;
+    /**
+     * iterator current container.
      *
      * @param {(tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void} callbackfn
      * @memberof IExports

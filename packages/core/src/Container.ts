@@ -362,13 +362,17 @@ export class Container implements IContainer {
             providers.unshift(target);
         }
         if (!withTag || (withTag && withBoth)) {
-            this.getResolvers().forEach((tk, fac) => {
+            this.iterator((tk, fac) => {
                 if (lang.isExtendsClass(tk, type)) {
                     services.push(fac(...providers))
                 }
             });
         }
         return services;
+    }
+
+    iterator(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void): void {
+        this.getResolvers().iterator(callbackfn);
     }
 
     /**

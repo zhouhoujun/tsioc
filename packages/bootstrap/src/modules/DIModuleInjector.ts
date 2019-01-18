@@ -1,7 +1,7 @@
 import {
     Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
     Inject, Token, ParamProviders, isArray, IModuleInjector, Container,
-    InjectClassProvidesToken, IMetaAccessor, MetaAccessorToken, Singleton
+    InjectClassProvidesToken, IMetaAccessor, MetaAccessorToken, Singleton, ProviderTypes
 } from '@ts-ioc/core';
 import { DIModuleValidateToken } from './DIModuleValidate';
 import { DIModule } from '../decorators/DIModule';
@@ -83,8 +83,9 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         let classProvides = [];
         exps.forEach(ty => {
             let classPd = newContainer.resolveValue(new InjectClassProvidesToken(ty));
+            classProvides.push(ty);
             if (classPd && isArray(classPd.provides) && classPd.provides.length) {
-                classProvides = classProvides.concat(classPd.provides);
+                classProvides = classProvides.concat(classPd.provides.slice(1));
             }
         });
 
@@ -131,12 +132,12 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         return container;
     }
 
-    protected bindProvider(container: IContainer, providers: ParamProviders[]): Token<any>[] {
+    protected bindProvider(container: IContainer, providers: ProviderTypes[]): Token<any>[] {
         let parser = container.getProviderParser();
         let pdrmap = parser.parse(...providers);
         let tokens = pdrmap.provides();
         tokens.forEach(key => {
-            container.bindProvider(key, (...providers: ParamProviders[]) => pdrmap.resolve(key, ...providers));
+            container.bindProvider(key, (...pds: ParamProviders[]) => pdrmap.resolve(key, ...pds));
         });
         return tokens;
     }

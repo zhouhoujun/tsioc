@@ -1,5 +1,5 @@
 import { IWorkflowInstance, ActivityType, IActivity, Workflow } from '@ts-ioc/activities';
-import { ServerTaskModule } from './ServerTaskModule';
+import { ServerActivitiesModule } from './ServerActivitiesModule';
 
 /**
  * run workflow.
@@ -12,7 +12,7 @@ import { ServerTaskModule } from './ServerTaskModule';
  */
 export function runWorkflow<T extends IActivity>(activity: ActivityType<T>): Promise<IWorkflowInstance<T>> {
     let Worflow = new Workflow();
-    Worflow.use(ServerTaskModule);
+    Worflow.use(ServerActivitiesModule);
     return Worflow.run(activity);
 }
 

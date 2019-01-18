@@ -6,7 +6,7 @@ import * as path from 'path';
 import chalk from 'chalk';
 import * as program from 'commander';
 import { execSync } from 'child_process';
-import { isString, isArray } from 'util';
+import { isString, isArray, isBoolean } from 'util';
 const resolve = require('resolve');
 const cliRoot = path.join(path.normalize(__dirname), '../');
 const packageConf = require(cliRoot + '/package.json');
@@ -177,6 +177,7 @@ program
     .command('test [files]')
     .description('run activity file.')
     .option('--config [string]', 'config file path.')
+    .option('--debug [bool]', 'enable debug log or not')
     .action((files, options) => {
         requireRegisters();
         if (isArray(files)) {
@@ -199,6 +200,9 @@ program
             config = requireCwd(options.config);
         }
         config = config || {};
+        if (isBoolean(options.debug)) {
+            config.debug = options.debug;
+        }
         unit.runTest(files, config, ConsoleReporter);
     });
 
