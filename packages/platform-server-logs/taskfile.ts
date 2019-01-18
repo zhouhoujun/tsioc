@@ -66,7 +66,7 @@ export class RollupTs extends AssetActivity {
         ts2017: {
             sequence: [
                 { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.es2017.json', activity: TsCompile },
-                { src: 'lib/**/*.js', dest: 'es2017', data: { name: 'platform-server-activities.js', input: 'lib/index.js' }, activity: RollupTs }
+                { src: 'lib/**/*.js', dest: 'es2017', data: { name: 'platform-server-logs.js', input: 'lib/index.js' }, activity: RollupTs }
             ]
         },
         ts2015: {
@@ -78,11 +78,11 @@ export class RollupTs extends AssetActivity {
         }
     }
 })
-export class ActPfServerBuilder extends PackActivity {
+export class PfServerLogsBuilder extends PackActivity {
 }
 
 if (process.cwd() === __dirname) {
     Workflow.create()
         .use(PackModule)
-        .bootstrap(ActPfServerBuilder);
+        .bootstrap(PfServerLogsBuilder);
 }
