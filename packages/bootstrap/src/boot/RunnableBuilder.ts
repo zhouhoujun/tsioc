@@ -12,8 +12,9 @@ import {
 import { ContainerPool, ContainerPoolToken, Events, IEvents } from '../utils';
 import { BootModule } from '../BootModule';
 import { Runnable } from '../runnable';
-import { ConfigureMgrToken, IConfigureManager, ConfigureRegisterToken } from './IConfigureManager';
+import { ConfigureMgrToken, IConfigureManager } from './IConfigureManager';
 import { RunnableConfigure } from './AppConfigure';
+import { ConfigureRegister } from './ConfigureRegister';
 
 /**
  * runnable events
@@ -305,7 +306,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
      */
     protected async registerByConfigure(container: IContainer, config: RunnableConfigure): Promise<void> {
         // filter top level container.
-        let topcs = this.getPools().values().filter(c => c === container || c.parent === container);
+        let topcs = this.getPools().getChildren(container);
         topcs.some(c => {
             config.baseURL = this.getRunRoot(c);
             return !!config.baseURL;
@@ -317,14 +318,13 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         }));
 
         await Promise.all(topcs.map(c => {
-            let reg = c.getService(ConfigureRegisterToken, lang.getClass(this));
             if (!config.baseURL) {
                 config.baseURL = this.getRunRoot(c);
             }
-            if (reg) {
+            let regs = c.getServices(ConfigureRegister, lang.getClass(this));
+            return Promise.all(regs.map(reg => {
                 return reg.register(config, c, this);
-            }
-            return null;
+            }));
         }));
     }
 }

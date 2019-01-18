@@ -1,8 +1,14 @@
-import { ApplicationBuilder, ModuleConfigure, ModuleConfig, Runnable, RunnableEvents, isDIModuleClass, RunOptions, AppConfigure, IConfigureRegister, RunnableConfigure, ConfigureRegisterToken, InjectedModuleToken } from '@ts-ioc/bootstrap';
+import {
+   ApplicationBuilder, ModuleConfigure, ModuleConfig, Runnable, RunOptions,
+   AppConfigure, ConfigureRegister, RunnableConfigure,
+} from '@ts-ioc/bootstrap';
 import { UnitModule } from './UnitModule';
-import { isClass, hasClassMetadata, Type, isString, isArray, Token, IContainer, Refs, LoadType, IContainerBuilder, lang, ContainerBuilder, PromiseUtil, IInjectedProcess, ModuleInjectorChainToken, InjectedProcessToken, Singleton, Inject, ContainerToken } from '@ts-ioc/core';
+import {
+   isClass, hasClassMetadata, Type, isString, isArray, Token, IContainer,
+   Refs, LoadType, IContainerBuilder, lang, ContainerBuilder, PromiseUtil, Singleton
+} from '@ts-ioc/core';
 import { Suite } from './decorators/Suite';
-import { TestReport, ReportsToken, isReporterClass, ITestReport } from './reports';
+import { TestReport, ITestReport } from './reports';
 import { SuiteRunner, OldTestRunner } from './runner';
 import { DebugLogAspect } from '@ts-ioc/logs';
 import { Assert, ExpectToken } from './assert';
@@ -68,8 +74,8 @@ export class UnitTest extends ApplicationBuilder<any> {
    }
 
    initUnit() {
-      this.use(UnitModule);
-      this.use(UnitTestConfigureRegister, InjectedReporetProcess);
+      this.use(UnitModule)
+         .use(UnitTestConfigureRegister);
    }
 
    getTopBuilder(): IContainerBuilder {
@@ -128,46 +134,17 @@ export class UnitTest extends ApplicationBuilder<any> {
       let opt = params.options as UnitTestOptions;
       let runner = await super.bootstrap(params.token, params.config, opt) as SuiteRunner;
       if (!(opt && opt.report === false)) {
-         await runner.container.get(TestReport).report();
+         await this.resolve(TestReport).report();
       }
       return runner;
    }
 }
 
 @Singleton
-@Refs(ModuleInjectorChainToken, InjectedProcessToken)
-export class InjectedReporetProcess implements IInjectedProcess {
-
-   @Inject(ContainerToken)
-   container: IContainer;
+export class UnitTestConfigureRegister extends ConfigureRegister<RunnableConfigure> {
 
    constructor() {
-
-   }
-   pipe(types: Type<any>[]) {
-      let repoters = [];
-      types.forEach(type => {
-         if (isReporterClass(type)) {
-            repoters.push(type);
-         }
-      });
-      if (repoters.length) {
-         let reps = this.container.get(ReportsToken) as Type<any>[];
-         if (reps) {
-            reps = reps.concat(repoters);
-         } else {
-            reps = repoters;
-         }
-         this.container.bindProvider(ReportsToken, reps);
-      }
-   }
-}
-
-@Singleton
-@Refs(UnitTest, ConfigureRegisterToken)
-export class UnitTestConfigureRegister implements IConfigureRegister<RunnableConfigure> {
-
-   constructor() {
+      super();
    }
 
    async register(config: UnitTestConfigure, container: IContainer): Promise<void> {

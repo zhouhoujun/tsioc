@@ -1,6 +1,6 @@
 import {
     Type, Token, Factory, SymbolType, Modules,
-    LoadType, ReferenceToken, RefTokenFac, RefTarget
+    LoadType, ReferenceToken, RefTokenFac, RefTarget, ClassType
 } from './types';
 import { IMethodAccessor } from './IMethodAccessor';
 import { LifeScope } from './LifeScope';
@@ -185,6 +185,31 @@ export interface IContainer extends IMethodAccessor, IResolver {
     getRefService<T>(refToken: ReferenceToken<T>, target: RefTarget | RefTarget[], defaultToken?: Token<T> | Token<any>[], ...providers: ParamProviders[]): T
 
     /**
+     * get all service extends type.
+     *
+     * @template T
+     * @param {ClassType<T>} token servive token.
+     * @param {...ParamProviders[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    getServices<T>(type: ClassType<T>, ...providers: ParamProviders[]): T[];
+
+     /**
+     * get all private services of target extends class `type`.
+     * set both `true`, will get all servies extends class `type` and all private services of target extends class `type`.
+     * @template T
+     * @param {Token<T>} type servive token.
+     * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
+     * @param {boolean} [both] if true, will get all server and target private service of class extends `type` .
+     * @param {...ParamProviders[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    getServices<T>(type: Token<T>, target: Token<any> | Token<any>[], both?: boolean, ...providers: ParamProviders[]): T[];
+
+
+    /**
      * register type.
      *
      * @template T
@@ -367,4 +392,12 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @memberof IContainer
      */
     loadModule(...modules: LoadType[]): Promise<Type<any>[]>;
+
+    /**
+     * iterator.
+     *
+     * @param {(tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void} callbackfn
+     * @memberof IExports
+     */
+    forEach(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void): void;
 }

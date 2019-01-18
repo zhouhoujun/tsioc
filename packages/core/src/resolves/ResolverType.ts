@@ -1,5 +1,5 @@
 import { IContainer } from '../IContainer';
-import { Token, Type } from '../types';
+import { Token, Type, Factory } from '../types';
 import { Container } from '../Container';
 import { IResolver } from '../IResolver';
 
@@ -39,7 +39,16 @@ export interface IExports extends IResolver {
      * @memberof IExports
      */
     container?: IContainer;
+
+    /**
+     * iterator
+     *
+     * @param {(tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void} callbackfn
+     * @memberof IExports
+     */
+    forEach(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void): void;
 }
+
 
 /**
  *  resolver type.

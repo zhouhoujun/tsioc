@@ -1,11 +1,10 @@
-import { IConfigureRegister, ConfigureRegisterToken, RunnableConfigure } from '@ts-ioc/bootstrap';
-import { Workflow } from '@ts-ioc/activities';
-import { IContainer, Refs } from '@ts-ioc/core';
+import { ConfigureRegister, RunnableConfigure } from '@ts-ioc/bootstrap';
+import { IContainer, Singleton } from '@ts-ioc/core';
 import { DebugLogAspect } from '@ts-ioc/logs';
 
 
-@Refs(Workflow, ConfigureRegisterToken)
-export class WorkflowConfigureRegister implements IConfigureRegister<RunnableConfigure> {
+@Singleton
+export class WorkflowConfigureRegister extends ConfigureRegister<RunnableConfigure> {
 
     async register(config: RunnableConfigure, container: IContainer): Promise<void> {
         if (config.debug) {

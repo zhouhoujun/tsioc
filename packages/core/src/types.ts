@@ -47,10 +47,15 @@ export interface PathModules {
  * load module type.
  */
 export type LoadType = Modules | string | PathModules;
+
+/**
+ * class type.
+ */
+export type ClassType<T> = Type<T> | AbstractType<T>;
 /**
  * symbol type
  */
-export type SymbolType<T> = Type<T> | AbstractType<T> | string | symbol;
+export type SymbolType<T> = ClassType<T> | string | symbol;
 
 /**
  * factory tocken.

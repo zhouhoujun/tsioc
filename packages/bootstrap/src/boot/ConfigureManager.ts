@@ -1,10 +1,12 @@
 import {
-    Inject, Injectable, isUndefined,
-    lang, ContainerToken, IContainer, isString
+    Inject, isUndefined, lang, ContainerToken,
+    IContainer, isString, Singleton
 } from '@ts-ioc/core';
-import { ConfigureMgrToken, ConfigureLoaderToken, IConfigureManager, DefaultConfigureToken } from './IConfigureManager';
+import {
+    ConfigureMgrToken, ConfigureLoaderToken,
+    IConfigureManager, DefaultConfigureToken
+} from './IConfigureManager';
 import { RunnableConfigure } from './AppConfigure';
-
 
 
 /**
@@ -14,7 +16,7 @@ import { RunnableConfigure } from './AppConfigure';
  * @class ConfigureManager
  */
 // @RefTo(RunnableBuilderToken)
-@Injectable(ConfigureMgrToken)
+@Singleton(ConfigureMgrToken)
 export class ConfigureManager<T extends RunnableConfigure> implements IConfigureManager<T> {
     /**
      * Creates an instance of ConfigureManager.

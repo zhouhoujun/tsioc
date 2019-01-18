@@ -1,10 +1,11 @@
-import { SymbolType, Type, Token } from '../types';
+import { SymbolType, Type, Token, Factory } from '../types';
 import { IContainer } from '../IContainer';
 import { ResolverType } from './ResolverType';
 import { Container } from '../Container';
 import { InjectToken } from '../InjectToken';
 import { IResolver } from '../IResolver';
 import { ParamProviders } from '../providers';
+import { isFunction } from '../utils';
 
 /**
  *  resolver chain token.
@@ -54,6 +55,13 @@ export class ResolverChain implements IResolver {
      */
     toArray(): ResolverType[] {
         return [<ResolverType>this.container].concat(this.resolvers);
+    }
+
+    forEach(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void): void {
+        this.toArray().forEach(r => r.forEach(callbackfn));
+        if (this.container.parent) {
+            this.container.parent.forEach(callbackfn);
+        }
     }
 
     /**

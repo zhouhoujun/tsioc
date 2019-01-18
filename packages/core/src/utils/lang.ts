@@ -1,5 +1,5 @@
-import { ObjectMap, Type, Token, AbstractType } from '../types';
-import { isNullOrUndefined, isArray, isObject, isFunction, isClass, isAbstractClass } from './typeCheck';
+import { ObjectMap, Type, Token, AbstractType, ClassType } from '../types';
+import { isNullOrUndefined, isArray, isObject, isFunction, isClass, isAbstractClass, isClassType } from './typeCheck';
 // use core-js in browser.
 
 
@@ -273,23 +273,23 @@ export namespace lang {
      * get target type parent class.
      *
      * @export
-     * @param {Type<any>} target
-     * @returns {Type<any>}
+     * @param {ClassType<any>} target
+     * @returns {ClassType<any>}
      */
-    export function getParentClass(target: Type<any>): Type<any> {
+    export function getParentClass(target: ClassType<any>): ClassType<any> {
         let p = Reflect.getPrototypeOf(target.prototype);
-        return isClass(p) ? p : p.constructor as Type<any>;
+        return isClass(p) ? p : p.constructor as ClassType<any>;
     }
 
     /**
      * get all parent class in chain.
      *
      * @export
-     * @param {Type<any>} target
-     * @returns {Type<any>[]}
+     * @param {ClassType<any>} target
+     * @returns {ClassType<any>[]}
      */
-    export function getClassChain(target: Type<any>): Type<any>[] {
-        let types: Type<any>[] = [];
+    export function getClassChain(target: ClassType<any>): ClassType<any>[] {
+        let types: ClassType<any>[] = [];
         forInClassChain(target, type => {
             types.push(type);
         });
@@ -303,8 +303,8 @@ export namespace lang {
      * @param {Type<any>} target
      * @param {(token: Type<any>) => any} express
      */
-    export function forInClassChain(target: Type<any>, express: (token: Type<any>) => any): void {
-        while (isClass(target, false) && target !== Object) {
+    export function forInClassChain(target: ClassType<any>, express: (token: ClassType<any>) => any): void {
+        while (isClassType(target) && target !== Object) {
             if (express(target) === false) {
                 break;
             }
@@ -317,14 +317,14 @@ export namespace lang {
      *
      * @export
      * @param {Token<any>} target
-     * @param {(Type<any> | ((type: Type<any>) => boolean))} baseClass
+     * @param {(ClassType<any> | ((type: ClassType<any>) => boolean))} baseClass
      * @returns {boolean}
      */
-    export function isExtendsClass(target: Token<any>, baseClass: Type<any> | AbstractType<any> | ((type: Type<any>) => boolean)): boolean {
+    export function isExtendsClass(target: Token<any>, baseClass: ClassType<any> | ((type: ClassType<any>) => boolean)): boolean {
         let isExtnds = false;
-        if (isClass(target, false)) {
+        if (isClassType(target)) {
             forInClassChain(target, t => {
-                if (isClass(baseClass) || isAbstractClass(baseClass)) {
+                if (isClassType(baseClass)) {
                     isExtnds = t === baseClass;
                 } else {
                     isExtnds = baseClass(t);

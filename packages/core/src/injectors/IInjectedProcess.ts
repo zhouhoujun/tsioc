@@ -18,6 +18,7 @@ export interface IInjectedProcess {
     pipe(types: Type<any>[]);
 }
 
+
 /**
  * injected type processing manager token.
  * used to define injected type specific work.

@@ -1,4 +1,4 @@
-import { ISuiteDescribe, Report, RealtimeReporter, ICaseDescribe } from '@ts-ioc/unit';
+import { ISuiteDescribe, RealtimeReporter, ICaseDescribe } from '@ts-ioc/unit';
 import { Token, ObjectMap, lang } from '@ts-ioc/core';
 import chalk from 'chalk';
 import { DIModule } from '@ts-ioc/bootstrap';
@@ -6,7 +6,6 @@ import { ServerBootstrapModule } from '@ts-ioc/platform-server-bootstrap';
 import { ServerModule } from '@ts-ioc/platform-server';
 
 
-@Report
 @DIModule({
     imports: [
         ServerModule,

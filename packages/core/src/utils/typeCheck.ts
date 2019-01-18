@@ -1,4 +1,4 @@
-import { Type, AbstractType, Token, IRefTarget } from '../types';
+import { Type, AbstractType, Token, IRefTarget, ClassType } from '../types';
 import { Registration } from '../Registration';
 import { lang } from './lang';
 import { IAnnotationMetadata } from '../core';
@@ -27,7 +27,7 @@ export function isFunction(target: any): target is Function {
  * @returns {target is AbstractType<any>}
  */
 export function isAbstractClass(target: any): target is AbstractType<any> {
-    return isClass(target, false) && Reflect.hasOwnMetadata('@Abstract', target);
+    return classCheck(target) && Reflect.hasOwnMetadata('@Abstract', target);
 }
 
 
@@ -36,15 +36,18 @@ export function isAbstractClass(target: any): target is AbstractType<any> {
  *
  * @export
  * @param {*} target
- * @param {boolean} [excludeAbstract=true]
  * @returns {target is Type<any>}
  */
-export function isClass(target: any, excludeAbstract = true): target is Type<any> {
-    if (!isFunction(target)) {
-        return false;
-    }
+export function isClass(target: any): target is Type<any> {
+    return classCheck(target) && (!Reflect.hasOwnMetadata('@Abstract', target))
+}
 
-    if (excludeAbstract && Reflect.hasOwnMetadata('@Abstract', target)) {
+export function isClassType(target: any): target is ClassType<any> {
+    return classCheck(target);
+}
+
+function classCheck(target: any): boolean {
+    if (!isFunction(target)) {
         return false;
     }
 
@@ -109,7 +112,7 @@ export function isToken(target: any): target is Token<any> {
     if (!target) {
         return false;
     }
-    if (isString(target) || isSymbol(target) ||  isClass(target, false) || (target instanceof Registration)) {
+    if (isString(target) || isSymbol(target) ||  classCheck(target) || (target instanceof Registration)) {
         return true
     }
     return false;

@@ -1,5 +1,5 @@
 import { isToken, isFunction, isUndefined, isObject, MapSet } from '../utils';
-import { Token, Factory, ToInstance, SymbolType } from '../types';
+import { Token, InstanceFactory, SymbolType, Factory, ToInstance } from '../types';
 import { IContainer } from '../IContainer';
 import { InjectToken } from '../InjectToken';
 import { IResolver } from '../IResolver';
@@ -17,7 +17,7 @@ export const ProviderMapToken = new InjectToken<ProviderMap>('DI_ProviderMap');
  * @export
  * @class Providers
  */
-export class ProviderMap extends MapSet<Token<any> | number, Factory<any>> implements IResolver {
+export class ProviderMap extends MapSet<Token<any> | number, InstanceFactory<any>> implements IResolver {
 
     constructor(private container: IContainer) {
         super();
@@ -57,10 +57,10 @@ export class ProviderMap extends MapSet<Token<any> | number, Factory<any>> imple
      *
      * @template T
      * @param {(Token<T> | number)} provide
-     * @returns {(Token<T> | Factory<T>)}
+     * @returns {InstanceFactory<T>}
      * @memberof ProviderMap
      */
-    get<T>(provide: Token<T> | number): Token<T> | Factory<T> {
+    get<T>(provide: Token<T> | number): InstanceFactory<T> {
         return this.map.get(this.getTokenKey(provide));
     }
 
@@ -127,10 +127,9 @@ export class ProviderMap extends MapSet<Token<any> | number, Factory<any>> imple
         let key = this.getTokenKey(provide);
         if (this.map.has(key)) {
             let provider = this.map.get(key);
-            return isToken(provider) ? this.container.resolve(provider, ...providers) : provider(...providers);
-        } else {
-            return (isToken(key) && this.container.has(key)) ? this.container.resolve(key, ...providers) : null;
+            return isFunction(provider) ? provider(...providers) : null;
         }
+        return null;
     }
 
     /**

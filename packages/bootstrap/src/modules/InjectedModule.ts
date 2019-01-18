@@ -1,4 +1,4 @@
-import { Token, IContainer, Registration, Type, IExports, ParamProviders, InjectReference, ProviderMap } from '@ts-ioc/core';
+import { Token, IContainer, Registration, Type, IExports, ParamProviders, InjectReference, ProviderMap, Factory, isToken, IResolver } from '@ts-ioc/core';
 import { ModuleConfig } from './ModuleConfigure';
 
 
@@ -39,12 +39,24 @@ export class InjectedModule<T> implements IExports {
     }
 
     hasRegister<T>(key: Token<T>): boolean {
-        if (this.container.hasRegister(key)) {
-            return true;
+        let pdr = this.getProviderMap();
+        if (pdr && pdr.hasRegister(key)) {
+            return true
         } else {
-            let pdr = this.getProviderMap();
-            return pdr && pdr.hasRegister(key);
+            return this.container.hasRegister(key);
         }
+    }
+
+    forEach(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void): void {
+        let pdr = this.getProviderMap();
+        if (pdr) {
+            pdr.forEach((fac, tk) => {
+                isToken(tk) && callbackfn(tk, fac, pdr);
+            });
+        }
+        this.container.forEach((fac, tk) => {
+            callbackfn(tk, fac, this.container);
+        });
     }
 }
 

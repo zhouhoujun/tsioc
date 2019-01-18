@@ -92,8 +92,22 @@ export class ContainerPool {
         return Array.from(this.pools.values());
     }
 
-    forEach(callbackfn: (value: IContainer, key: Token<any>, map: Map< Token<any>, IContainer>) => void, thisArg?: any): void {
+    forEach(callbackfn: (value: IContainer, key: Token<any>, map: Map<Token<any>, IContainer>) => void, thisArg?: any): void {
         this.pools.forEach(callbackfn, thisArg);
+    }
+
+    /**
+     * get container node and node children.
+     *
+     * @param {IContainer} [parent] default root container.
+     * @returns
+     * @memberof ContainerPool
+     */
+    getChildren(parent?: IContainer) {
+        if (!parent) {
+            parent = this.getDefault();
+        }
+        return this.values().filter(c => c === parent || c.parent === parent);
     }
 }
 

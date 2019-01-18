@@ -1,13 +1,13 @@
 import 'reflect-metadata';
 import { IContainer, ContainerToken } from './IContainer';
 import {
-    Type, Token, Factory, SymbolType, ToInstance, IocState,
+    Type, Token, Factory, SymbolType, IocState,
     ReferenceToken, RefTokenType, RefTokenFacType,
-    RefTokenFac, Modules, LoadType, RefTarget, RefTagLevel
+    RefTokenFac, Modules, LoadType, RefTarget, RefTagLevel, ClassType, ToInstance
 } from './types';
 import {
     isClass, isFunction, isSymbol, isToken, isString, isUndefined,
-    lang, isArray, isBoolean, isRefTarget, isTypeObject
+    lang, isArray, isBoolean, isRefTarget, isTypeObject, isAbstractClass, isClassType
 } from './utils';
 import { IParameter } from './IParameter';
 import { Registration, isRegistrationClass } from './Registration';
@@ -20,6 +20,7 @@ import { ResolverChain, ResolverChainToken } from './resolves';
 import { InjectReference, InjectClassProvidesToken, isInjectReference } from './InjectReference';
 import { LifeScope, LifeScopeToken } from './LifeScope';
 import { ParamProviders, ProviderMap, ProviderParserToken, isProviderMap, IProviderParser, ProviderTypes } from './providers';
+import { IResolver } from './IResolver';
 
 /**
  * singleton reg token.
@@ -310,6 +311,76 @@ export class Container implements IContainer {
             service = this.resolveFirst(isArray(defaultToken) ? defaultToken : [defaultToken], ...providers);
         }
         return service;
+    }
+
+    /**
+     * get all service extends type and reference target.
+     *
+     * @template T
+     * @param {Token<T>} type servive token.
+     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
+     * @param {...ParamProviders[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    getServices<T>(token: Token<T>, target?: Token<any> | Token<any>[] | ParamProviders, both?: boolean | ParamProviders, ...providers: ParamProviders[]): T[] {
+        let services: T[] = [];
+        let withTag: boolean;
+        let withBoth = false;
+        let type = isClassType(token) ? token : this.getTokenImpl(token);
+        if (isBoolean(both)) {
+            withBoth = both;
+        } else {
+            providers.unshift(both);
+        }
+        if (isToken(target) || isArray(target)) {
+            withTag = true;
+            let tags: ClassType<any>[] = (isArray(target) ? target : [target]).map(t => {
+                if (isClass(t)) {
+                    return t;
+                } else if (isAbstractClass(t)) {
+                    return t;
+                } else {
+                    return this.getTokenImpl(t);
+                }
+            });
+            this.getResolvers().toArray().forEach(resolver => {
+                tags.forEach(tg => {
+                    let priMapTk = new InjectReference(ProviderMap, tg);
+                    if (resolver.hasRegister(priMapTk)) {
+                        let priMap = resolver.resolve(priMapTk);
+                        priMap.forEach((pfac, ptk) => {
+                            if (isClassType(ptk) && lang.isExtendsClass(ptk, type)) {
+                                services.push(pfac(...providers))
+                            }
+                        });
+                    }
+                })
+            });
+        } else {
+            withTag = false;
+            providers.unshift(target);
+        }
+        if (!withTag || (withTag && withBoth)) {
+            this.getResolvers().forEach((tk, fac) => {
+                if (lang.isExtendsClass(tk, type)) {
+                    services.push(fac(...providers))
+                }
+            });
+        }
+        return services;
+    }
+
+    /**
+     * iterator.
+     *
+     * @param {(tk: Token<any>, fac: Factory<any>) => void} callbackfn
+     * @memberof IExports
+     */
+    forEach(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void): void {
+        this.factories.forEach((fac, tk) => {
+            callbackfn(tk, fac, this);
+        });
     }
 
     protected getRefToken<T>(ref: RefTokenFacType<T>, tk: Token<any>): RefTokenType<T> | RefTokenType<T>[] {
@@ -613,7 +684,7 @@ export class Container implements IContainer {
      * @memberof Container
      */
     forInRefTarget(target: RefTarget, express: (token: Token<any>) => boolean): void {
-        let type: Type<any>;
+        let type: ClassType<any>;
         let token: Token<any>;
         let level: RefTagLevel;
         if (isToken(target)) {
@@ -633,15 +704,15 @@ export class Container implements IContainer {
             return;
         }
 
-        if (isClass(token, false)) {
+        if (isClassType(token)) {
             type = token;
-            if (!this.has(type)) {
+            if (isClass(type) && !this.has(type)) {
                 this.use(type);
             }
         } else {
             type = this.getTokenImpl(token);
         }
-        if (!isClass(type, false) || (RefTagLevel.self === level)) {
+        if (!isClassType(token) || (RefTagLevel.self === level)) {
             express(token);
             return;
         }

@@ -1,10 +1,9 @@
-import { IModuleInjectorChain, ModuleInjectorChainToken } from './IModuleInjectorChain';
+import { IModuleInjectorChain } from './IModuleInjectorChain';
 import { IModuleInjector } from './IModuleInjector';
 import { ModuleInjector } from './ModuleInjector';
 import { Type } from '../types';
 import { IContainer } from '../IContainer';
-import { PromiseUtil, lang } from '../utils';
-import { InjectedProcessToken } from './IInjectedProcess';
+import { PromiseUtil } from '../utils';
 
 /**
  * Module Injector chain, base injector chain.
@@ -55,7 +54,6 @@ export class ModuleInjectorChain implements IModuleInjectorChain {
                 }
             }
         }), modules);
-        this.injectedProcess(container, types);
         return types;
     }
 
@@ -70,22 +68,7 @@ export class ModuleInjectorChain implements IModuleInjectorChain {
             }
             return completed;
         });
-        this.injectedProcess(container, types);
         return types;
-    }
-
-    /**
-     * injected.
-     *
-     * @param {Type<any>[]} modules
-     * @returns {void}
-     * @memberof ModuleInjectorChain
-     */
-    protected injectedProcess(container: IContainer, modules: Type<any>[]): void {
-        let proc = container.getService(InjectedProcessToken, [lang.getClass(this), ModuleInjectorChainToken]);
-        if (proc) {
-            proc.pipe(modules);
-        }
     }
 }
 

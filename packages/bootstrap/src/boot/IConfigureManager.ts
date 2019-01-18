@@ -35,32 +35,6 @@ export interface IConfigureLoader<T extends RunnableConfigure> {
  */
 export const ConfigureLoaderToken = new InjectToken<IConfigureLoader<RunnableConfigure>>('DI_Configure_Loader');
 
-
-/**
- * configure register.
- *
- * @export
- * @interface IConfigureRegister
- * @template T
- */
-export interface IConfigureRegister<T extends RunnableConfigure> {
-    /**
-     * register config setting.
-     *
-     * @param {T} config
-     * @param {IContainer} container
-     * @param {IRunnableBuilder<any>} [runBuilder]
-     * @returns {Promise<void>}
-     * @memberof IConfigureRegister
-     */
-    register(config: T, container: IContainer, runBuilder?: IRunnableBuilder<any>): Promise<void>;
-}
-
-/**
- * configure register token.
- */
-export const ConfigureRegisterToken = new  InjectToken<IConfigureRegister<RunnableConfigure>>('DI_Configure_Register');
-
 /**
  * configure manager.
  *

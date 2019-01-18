@@ -1,6 +1,7 @@
 import { ITestReport, ISuiteDescribe, ICaseDescribe } from './ITestReport';
 import { Singleton, Inject, ContainerToken, IContainer, Token, InjectToken, Type, lang } from '@ts-ioc/core';
 import { Reporter, RealtimeReporter } from './Reporter';
+import { ContainerPoolToken } from '@ts-ioc/bootstrap';
 
 export const ReportsToken = new InjectToken<Type<Reporter>[]>('unit-reports')
 
@@ -11,6 +12,17 @@ export class TestReport implements ITestReport {
     container: IContainer;
 
     suites: Map<Token<any>, ISuiteDescribe>;
+
+    resports: Reporter[];
+    getReports() {
+        if (!this.resports || this.resports.length < 0) {
+            this.resports = [];
+            this.container.get(ContainerPoolToken).getChildren().forEach(c => {
+                this.resports = this.resports.concat(c.getServices(Reporter));
+            });
+        }
+        return this.resports || [];
+    }
 
     constructor() {
         this.suites = new Map();
@@ -26,8 +38,7 @@ export class TestReport implements ITestReport {
             describe.cases = [];
 
             this.suites.set(suit, describe);
-            (this.container.get(ReportsToken) || []).forEach(r => {
-                let rep = this.container.get<Reporter>(r);
+            this.getReports().forEach(rep => {
                 if (rep instanceof RealtimeReporter) {
                     rep.renderSuite(describe);
                 }
@@ -67,8 +78,7 @@ export class TestReport implements ITestReport {
 
     setCaseCompleted(testCase: ICaseDescribe) {
         testCase.end = new Date().getTime();
-        (this.container.get(ReportsToken) || []).forEach(r => {
-            let rep = this.container.get<Reporter>(r);
+        this.getReports().forEach(rep => {
             if (rep instanceof RealtimeReporter) {
                 rep.renderCase(testCase);
             }
@@ -76,8 +86,7 @@ export class TestReport implements ITestReport {
     }
 
     async report(): Promise<void> {
-        await Promise.all((this.container.get(ReportsToken) || []).map(r => {
-            let rep = this.container.get<Reporter>(r);
+        await Promise.all(this.getReports().map(rep => {
             if (rep) {
                 return rep.render(this.suites);
             }

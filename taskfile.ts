@@ -68,11 +68,7 @@ let versionSetting = (ctx: INodeActivityContext) => {
                 ],
                 activity: SequenceActivityToken
             },
-            if: ctx => {
-                let args = ctx.getEnvArgs();
-                console.log('env args:', args, args.setvs);
-                return args.setvs
-            },
+            if: ctx => ctx.getEnvArgs().setvs,
             activity: IfActivityToken
         },
         {

@@ -1,6 +1,5 @@
-import { Token, lang, isClass, hasOwnClassMetadata, Type } from '@ts-ioc/core';
+import { Token, lang, isClass, hasOwnClassMetadata, Type, Abstract } from '@ts-ioc/core';
 import { ISuiteDescribe, ICaseDescribe } from './ITestReport';
-import { Report } from '../decorators/Report';
 
 
 /**
@@ -10,6 +9,7 @@ import { Report } from '../decorators/Report';
  * @abstract
  * @class Reporter
  */
+@Abstract()
 export abstract class Reporter {
     constructor() {
 
@@ -25,6 +25,7 @@ export abstract class Reporter {
  * @abstract
  * @class RealtimeReporter
  */
+@Abstract()
 export abstract class RealtimeReporter extends Reporter {
     constructor() {
         super();
@@ -55,5 +56,5 @@ export abstract class RealtimeReporter extends Reporter {
  * @returns
  */
 export function isReporterClass(target: any): target is Type<Reporter> {
-    return isClass(target) && hasOwnClassMetadata(Report, target) && lang.isExtendsClass(target, Reporter);
+    return isClass(target) && lang.isExtendsClass(target, Reporter);
 }
