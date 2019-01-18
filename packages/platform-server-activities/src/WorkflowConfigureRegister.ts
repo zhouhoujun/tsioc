@@ -7,7 +7,6 @@ import { DebugLogAspect } from '@ts-ioc/logs';
 export class WorkflowConfigureRegister extends ConfigureRegister<RunnableConfigure> {
 
     async register(config: RunnableConfigure, container: IContainer): Promise<void> {
-        console.log(config);
         if (config.debug) {
             container.register(DebugLogAspect);
         }
