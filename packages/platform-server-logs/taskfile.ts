@@ -37,7 +37,8 @@ const builtins = require('rollup-plugin-node-builtins');
                 'globby', 'path', 'fs', 'time-stamp', 'chalk', 'pretty-hrtime',
                 '@ts-ioc/core',
                 '@ts-ioc/aop',
-                '@ts-ioc/logs'
+                '@ts-ioc/logs',
+                '@ts-ioc/bootstrap'
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
@@ -47,7 +48,8 @@ const builtins = require('rollup-plugin-node-builtins');
                 'time-stamp': 'time-stamp',
                 '@ts-ioc/core': '@ts-ioc/core',
                 '@ts-ioc/aop': '@ts-ioc/aop',
-                '@ts-ioc/logs': '@ts-ioc/logs'
+                '@ts-ioc/logs': '@ts-ioc/logs',
+                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),
