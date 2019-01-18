@@ -1,5 +1,5 @@
-# packaged platform-server-activities
-`platform-server-activities` is activities framework for nodejs, base on AOP, Ioc container, via @ts-ioc. file stream pipes activities.
+# packaged @ts-ioc/platform-server-activities
+`@ts-ioc/platform-server-activities` is activities framework for nodejs, base on AOP, Ioc container, via @ts-ioc. file stream pipes activities.
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme).
@@ -11,7 +11,7 @@ Please file issues and pull requests against that repo.
 1. install modules:
 
 ```shell
-npm install platform-server-activities
+npm install @ts-ioc/platform-server-activities
 ```
 
 3. install cli | build pack:

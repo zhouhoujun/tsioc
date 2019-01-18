@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/aop",
-  "version": "4.0.0-beta12",
+  "version": "4.0.0-beta13",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "esnext": "./es2017/aop.js",
   "es2015": "./es2015/aop.js",
@@ -37,7 +37,7 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "@ts-ioc/core": "^4.0.0-beta12",
+    "@ts-ioc/core": "^4.0.0-beta13",
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.2"
   },

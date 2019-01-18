@@ -1,5 +1,5 @@
-# packaged platform-browser-activities
-`platform-browser-activities` is activities framework for browser, base on AOP, Ioc container, via @ts-ioc. file stream pipes activities.
+# packaged @ts-ioc/platform-browser-activities
+`@ts-ioc/platform-browser-activities` is activities framework for browser, base on AOP, Ioc container, via @ts-ioc. file stream pipes activities.
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme).
@@ -11,7 +11,7 @@ Please file issues and pull requests against that repo.
 1. install modules:
 
 ```shell
-npm install platform-browser-activities
+npm install @ts-ioc/platform-browser-activities
 ```
 
 2. install cli | build pack:
