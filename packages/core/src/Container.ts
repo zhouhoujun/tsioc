@@ -3,7 +3,7 @@ import { IContainer, ContainerToken } from './IContainer';
 import {
     Type, Token, Factory, SymbolType, IocState,
     ReferenceToken, RefTokenType, RefTokenFacType,
-    RefTokenFac, Modules, LoadType, RefTarget, RefTagLevel, ClassType, ToInstance
+    RefTokenFac, Modules, LoadType, RefTarget, RefTagLevel, ClassType, ToInstance, InstanceFactory
 } from './types';
 import {
     isClass, isFunction, isSymbol, isToken, isString, isUndefined,
@@ -12,7 +12,7 @@ import {
 import { IParameter } from './IParameter';
 import { Registration, isRegistrationClass } from './Registration';
 import { MethodAccessorToken } from './IMethodAccessor';
-import { CoreActions, CacheActionData, LifeState, ActionComponent } from './core';
+import { CoreActions, CacheActionData, LifeState, ActionComponent, enumerable } from './core';
 import { CacheManagerToken } from './ICacheManager';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { registerCores } from './registerCores';
@@ -50,18 +50,31 @@ export class Container implements IContainer {
      * @type {Map<Token<any>, Function>}
      * @memberof Container
      */
-    protected factories: Map<Token<any>, Function>;
-
-    /**
-     * parent container.
-     *
-     * @type {IContainer}
-     * @memberof Container
-     */
-    parent: IContainer
+    protected factories: Map<Token<any>, InstanceFactory<any>>;
 
     constructor() {
         this.init();
+    }
+
+    @enumerable(false)
+    children: IContainer[] = [];
+
+    @enumerable(false)
+    private _parent: IContainer;
+
+    @enumerable(false)
+    get parent(): IContainer {
+        return this._parent;
+    }
+
+    set parent(parent: IContainer) {
+        if (this._parent && this._parent !== parent) {
+            this.parent.children.splice(this._parent.children.indexOf(this), 1);
+        }
+        if (parent) {
+            parent.children.push(this);
+        }
+        this._parent = parent;
     }
 
     /**
@@ -318,22 +331,30 @@ export class Container implements IContainer {
      * @template T
      * @param {Token<T>} type servive token.
      * @param {(Token<any> | Token<any>[])} [target] service refrence target.
+     * @param {(boolean|ParamProviders)} [both]
+     * @param {(boolean|ParamProviders)} [both] get services bubble up to parent container.
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getServices<T>(token: Token<T>, target?: Token<any> | Token<any>[] | ParamProviders, both?: boolean | ParamProviders, ...providers: ParamProviders[]): T[] {
+    getServices<T>(token: Token<T>, target?: boolean | Token<any> | Token<any>[] | ParamProviders, both?: boolean | ParamProviders, bubble?: boolean | ParamProviders, ...providers: ParamProviders[]): T[] {
         let services: T[] = [];
         let withTag: boolean;
+        let withbubble = true;
         let withBoth = false;
         let type = isClassType(token) ? token : this.getTokenImpl(token);
-        if (isBoolean(both)) {
-            withBoth = both;
+        if (isBoolean(bubble)) {
+            withbubble = bubble;
         } else {
-            providers.unshift(both);
+            providers.unshift(bubble);
         }
         if (isToken(target) || isArray(target)) {
             withTag = true;
+            if (isBoolean(both)) {
+                withBoth = both;
+            } else {
+                providers.unshift(both);
+            }
             let tags: ClassType<any>[] = (isArray(target) ? target : [target]).map(t => {
                 if (isClass(t)) {
                     return t;
@@ -357,30 +378,41 @@ export class Container implements IContainer {
                 })
             });
         } else {
+            if (isBoolean(target)) {
+                withbubble = target;
+            } else {
+                providers.unshift(target);
+            }
             withTag = false;
-            providers.unshift(target);
         }
         if (!withTag || (withTag && withBoth)) {
             this.iterator((tk, fac) => {
                 if (lang.isExtendsClass(tk, type)) {
                     services.push(fac(...providers))
                 }
-            });
+            }, withbubble);
         }
         return services;
     }
 
-    iterator(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void): void {
-        this.getResolvers().iterator(callbackfn);
+    /**
+     * iterator all registered factory
+     *
+     * @param {(tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void} callbackfn
+     * @param {boolean} [bubble=true]
+     * @memberof Container
+     */
+    iterator(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void, bubble = true): void {
+        this.getResolvers().iterator(callbackfn, bubble);
     }
 
     /**
      * iterator.
      *
-     * @param {(tk: Token<any>, fac: Factory<any>) => void} callbackfn
+     * @param {(tk: Token<any>, fac: InstanceFactory<any>) => void} callbackfn
      * @memberof IExports
      */
-    forEach(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void): void {
+    forEach(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void): void {
         this.factories.forEach((fac, tk) => {
             callbackfn(tk, fac, this);
         });

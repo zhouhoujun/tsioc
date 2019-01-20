@@ -1,6 +1,6 @@
 import {
     Type, Token, Factory, SymbolType, Modules,
-    LoadType, ReferenceToken, RefTokenFac, RefTarget, ClassType
+    LoadType, ReferenceToken, RefTokenFac, RefTarget, ClassType, InstanceFactory
 } from './types';
 import { IMethodAccessor } from './IMethodAccessor';
 import { LifeScope } from './LifeScope';
@@ -23,6 +23,7 @@ export const ContainerToken = new InjectToken<IContainer>('DI_IContainer');
  * @interface IContainer
  */
 export interface IContainer extends IMethodAccessor, IResolver {
+
     /**
      * get or set parent container.
      *
@@ -30,6 +31,14 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @memberof IContainer
      */
     parent: IContainer;
+
+    /**
+     * children containers.
+     *
+     * @returns {IContainer[]}
+     * @memberof IContainer
+     */
+    children: IContainer[];
 
     /**
      * get root container.
@@ -189,24 +198,26 @@ export interface IContainer extends IMethodAccessor, IResolver {
      *
      * @template T
      * @param {ClassType<T>} token servive token.
+     * @param {boolean} [bubble=true] get services bubble up to parent container.
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getServices<T>(type: ClassType<T>, ...providers: ParamProviders[]): T[];
+    getServices<T>(type: ClassType<T>, bubble?:boolean, ...providers: ParamProviders[]): T[];
 
-     /**
-     * get all private services of target extends class `type`.
-     * set both `true`, will get all servies extends class `type` and all private services of target extends class `type`.
-     * @template T
-     * @param {Token<T>} type servive token.
-     * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
-     * @param {boolean} [both] if true, will get all server and target private service of class extends `type` .
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getServices<T>(type: Token<T>, target: Token<any> | Token<any>[], both?: boolean, ...providers: ParamProviders[]): T[];
+    /**
+    * get all private services of target extends class `type`.
+    * set both `true`, will get all servies extends class `type` and all private services of target extends class `type`.
+    * @template T
+    * @param {Token<T>} type servive token.
+    * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
+    * @param {boolean} [both] if true, will get all server and target private service of class extends `type` .
+    * @param {boolean} [bubble=true] get services bubble up to parent container.
+    * @param {...ParamProviders[]} providers
+    * @returns {T}
+    * @memberof IContainer
+    */
+    getServices<T>(type: Token<T>, target: Token<any> | Token<any>[], both?: boolean, bubble?:boolean, ...providers: ParamProviders[]): T[];
 
 
     /**
@@ -396,15 +407,16 @@ export interface IContainer extends IMethodAccessor, IResolver {
     /**
      * iterator all resovlers.
      *
-     * @param {(tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void} callbackfn
+     * @param {(tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void} callbackfn
+     * @param {boolean} [bubble=true]
      * @memberof IContainer
      */
-    iterator(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void): void;
+    iterator(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void, bubble?: boolean): void;
     /**
      * iterator current container.
      *
-     * @param {(tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void} callbackfn
+     * @param {(tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void} callbackfn
      * @memberof IExports
      */
-    forEach(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void): void;
+    forEach(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void): void;
 }

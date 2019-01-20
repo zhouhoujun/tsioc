@@ -305,23 +305,30 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
      * @memberof RunnableBuilder
      */
     protected async registerByConfigure(container: IContainer, config: RunnableConfigure): Promise<void> {
-        // filter top level container.
-        let topcs = this.getPools().getChildren(container);
-        topcs.some(c => {
-            config.baseURL = this.getRunRoot(c);
-            return !!config.baseURL;
-        });
 
         await PromiseUtil.step(this.customRegs.map(cs => async () => {
             let tokens = await cs(container, config, this);
             return tokens;
         }));
 
-        await Promise.all(topcs.map(c => {
-            let regs = c.getServices(ConfigureRegister, lang.getClass(this), true);
-            return Promise.all(regs.map(reg => {
-                return reg.register(config, c, this);
-            }));
+        let curClass = lang.getClass(this);
+        let regs: { container: IContainer, registers: ConfigureRegister<any>[] }[] = [];
+        this.getPools().iterator(c => {
+            if (!config.baseURL) {
+                config.baseURL = this.getRunRoot(c);
+            }
+            let registers = c.getServices(ConfigureRegister, curClass, true, false);
+            if (registers && registers.length) {
+                regs.push({
+                    container: c,
+                    registers: registers
+                });
+            }
+
+        });
+
+        await Promise.all(regs.map(reg => {
+            return Promise.all(reg.registers.map(r => r.register(config, reg.container, this)));
         }));
     }
 }

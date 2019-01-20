@@ -96,18 +96,19 @@ export class ContainerPool {
         this.pools.forEach(callbackfn, thisArg);
     }
 
-    /**
-     * get container node and node children.
-     *
-     * @param {IContainer} [parent] default root container.
-     * @returns
-     * @memberof ContainerPool
-     */
-    getChildren(parent?: IContainer) {
-        if (!parent) {
-            parent = this.getDefault();
+    iterator(express: (resolvor?: IContainer) => void, root?: IContainer): void {
+        root = root || this.getDefault();
+        express(root);
+        this.iteratorChildren(express, root.children);
+    }
+
+    protected iteratorChildren(express: (resolvor?: IContainer) => void, children: IContainer[]) {
+        if (children && children.length) {
+            children.forEach(c => {
+                express(c);
+                this.iteratorChildren(express, c.children);
+            });
         }
-        return this.values().filter(c => c === parent || c.parent === parent);
     }
 }
 
@@ -115,4 +116,3 @@ export class ContainerPool {
  *  container pool token.
  */
 export const ContainerPoolToken = new InjectToken<ContainerPool>('DI_ContainerPool');
-

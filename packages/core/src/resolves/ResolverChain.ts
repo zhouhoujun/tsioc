@@ -61,11 +61,11 @@ export class ResolverChain implements IResolver {
      * @param {(tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void} callbackfn
      * @memberof ResolverChain
      */
-    iterator(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void): void {
+    iterator(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void, routeUp = true): void {
         this.toArray().forEach(r => {
             r.forEach(callbackfn)
         });
-        if (this.container.parent) {
+        if (routeUp && this.container.parent) {
             this.container.parent.iterator(callbackfn);
         }
     }

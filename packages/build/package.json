@@ -45,7 +45,6 @@
     "@ts-ioc/annotations": "^4.0.0-beta13",
     "@ts-ioc/activities": "^4.0.0-beta13",
     "@ts-ioc/platform-server":"^4.0.0-beta13",
-    "@ts-ioc/platform-server-logs": "^4.0.0-beta13",
     "@ts-ioc/platform-server-bootstrap":"^4.0.0-beta13",
     "@ts-ioc/platform-server-activities":"^4.0.0-beta13",
     "@ts-ioc/unit":"^4.0.0-beta13",
