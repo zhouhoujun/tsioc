@@ -17,6 +17,31 @@ import { ParamProviders, IProviderParser, ProviderTypes } from './providers';
 export const ContainerToken = new InjectToken<IContainer>('DI_IContainer');
 
 /**
+ * resove way
+ *
+ * @export
+ * @enum {number}
+ */
+export enum ResoveWay {
+    /**
+     * current container.
+     */
+    current = 1,
+    /**
+     * traverse all curr node children.
+     */
+    traverse = 1 << 1,
+    /**
+     * bubble up all parent.
+     */
+    bubble = 1 << 2,
+    /**
+     *  traverse of curr node, children.
+     */
+    all = current | traverse | bubble
+}
+
+/**
  * container interface.
  *
  * @export
@@ -198,26 +223,38 @@ export interface IContainer extends IMethodAccessor, IResolver {
      *
      * @template T
      * @param {ClassType<T>} token servive token.
-     * @param {boolean} [bubble=true] get services bubble up to parent container.
+     * @param {ResoveWay} [resway=ResoveWay.all] resolve way. bubble, traverse.
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getServices<T>(type: ClassType<T>, bubble?:boolean, ...providers: ParamProviders[]): T[];
+    getServices<T>(type: ClassType<T>, resway?: ResoveWay, ...providers: ParamProviders[]): T[];
 
     /**
     * get all private services of target extends class `type`.
-    * set both `true`, will get all servies extends class `type` and all private services of target extends class `type`.
     * @template T
     * @param {Token<T>} type servive token.
     * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
-    * @param {boolean} [both] if true, will get all server and target private service of class extends `type` .
-    * @param {boolean} [bubble=true] get services bubble up to parent container.
+    * @param {ResoveWay} [resway=ResoveWay.all] resolve way. bubble, traverse.
     * @param {...ParamProviders[]} providers
     * @returns {T}
     * @memberof IContainer
     */
-    getServices<T>(type: Token<T>, target: Token<any> | Token<any>[], both?: boolean, bubble?:boolean, ...providers: ParamProviders[]): T[];
+   getServices<T>(type: Token<T>, target: Token<any> | Token<any>[], resway?: ResoveWay, ...providers: ParamProviders[]): T[];
+
+    /**
+    * get all servies extends class `type` and all private services of target extends class `type`.
+    *
+    * @template T
+    * @param {Token<T>} type servive token.
+    * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
+    * @param {boolean} both if true, will get all server and target private service of class extends `type` .
+    * @param {ResoveWay} [resway=ResoveWay.all] resolve way. bubble, traverse.
+    * @param {...ParamProviders[]} providers
+    * @returns {T}
+    * @memberof IContainer
+    */
+    getServices<T>(type: Token<T>, target: Token<any> | Token<any>[], both: boolean, resway?: ResoveWay, ...providers: ParamProviders[]): T[];
 
 
     /**
@@ -411,7 +448,7 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @param {boolean} [bubble=true]
      * @memberof IContainer
      */
-    iterator(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void, bubble?: boolean): void;
+    iterator(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void, resway?: ResoveWay): void;
     /**
      * iterator current container.
      *

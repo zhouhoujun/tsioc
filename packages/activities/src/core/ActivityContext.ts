@@ -1,6 +1,6 @@
 import {
     Injectable, isNullOrUndefined, Inject, IContainer, ContainerToken, isFunction,
-    isPromise, Type, hasOwnClassMetadata, ObjectMap, isClass, Express
+    isPromise, Type, hasOwnClassMetadata, ObjectMap, isClass, Express, enumerable
 } from '@ts-ioc/core';
 import { IActivity } from './IActivity';
 import { ITranslator } from './Translator';
@@ -24,11 +24,9 @@ import { isAcitvity } from './Activity';
 @Injectable(ActivityContextToken)
 export class ActivityContext<T> extends Events implements IActivityContextResult<T> {
 
+    @enumerable(false)
     @Inject(ContainerToken)
-    private _container: IContainer;
-
-    @Inject(ActivityBuilderToken)
-    private _actBuilder: ActivityBuilder;
+    container: IContainer;
 
     parent: IActivityContext;
 
@@ -69,19 +67,8 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
         this.setAsResult(input);
     }
 
-
-    /**
-     * get ioc container.
-     *
-     * @returns {IContainer}
-     * @memberof IContext
-     */
-    getContainer(): IContainer {
-        return this._container;
-    }
-
     getBuilder(): ActivityBuilder {
-        return this._actBuilder;
+        return this.container.resolve(ActivityBuilderToken) as ActivityBuilder;
     }
 
     /**
@@ -169,7 +156,7 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
         if (ctx) {
             return ctx.config.baseURL;
         }
-        return this.getContainer().get(ProcessRunRootToken) || '.';
+        return this.container.get(ProcessRunRootToken) || '.';
     }
 
 

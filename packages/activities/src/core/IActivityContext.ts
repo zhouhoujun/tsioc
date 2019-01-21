@@ -12,17 +12,15 @@ import { IEvents } from '@ts-ioc/bootstrap';
  * @interface IContext
  */
 export interface IContext {
-
     /**
-     * get ioc container.
+     * container.
      *
-     * @returns {IContainer}
+     * @type {IContainer}
      * @memberof IContext
      */
-    getContainer(): IContainer;
-
+    container: IContainer;
     /**
-     * default builder.
+     * activity builder.
      *
      * @type {ActivityBuilder}
      * @memberof IContext

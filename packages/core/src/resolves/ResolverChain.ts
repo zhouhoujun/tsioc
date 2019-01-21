@@ -1,5 +1,5 @@
-import { SymbolType, Type, Token, Factory } from '../types';
-import { IContainer } from '../IContainer';
+import { SymbolType, Type, Token, Factory, InstanceFactory } from '../types';
+import { IContainer, ResoveWay } from '../IContainer';
 import { ResolverType } from './ResolverType';
 import { Container } from '../Container';
 import { InjectToken } from '../InjectToken';
@@ -58,15 +58,20 @@ export class ResolverChain implements IResolver {
     /**
      * iterator all resolvers.
      *
-     * @param {(tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void} callbackfn
+     * @param {(tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void} callbackfn
      * @memberof ResolverChain
      */
-    iterator(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void, routeUp = true): void {
-        this.toArray().forEach(r => {
-            r.forEach(callbackfn)
-        });
-        if (routeUp && this.container.parent) {
-            this.container.parent.iterator(callbackfn);
+    iterator(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void, resway = ResoveWay.all): void {
+        if (resway & ResoveWay.current) {
+            this.container.forEach(callbackfn);
+        }
+        if (resway & ResoveWay.traverse) {
+            this.resolvers.forEach(r => {
+                r.forEach(callbackfn);
+            });
+        }
+        if (this.container.parent && (resway & ResoveWay.bubble)) {
+            this.container.parent.iterator(callbackfn, resway);
         }
     }
 

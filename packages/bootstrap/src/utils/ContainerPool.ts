@@ -77,10 +77,13 @@ export class ContainerPool {
         if (this.isDefault(container)) {
             return;
         }
+        parent = parent || this.getDefault()
         if (parent && parent !== container) {
+            if (container.parent) {
+                container.parent.children.splice(container.parent.children.indexOf(container), 1);
+            }
+            parent.children.push(container);
             container.parent = parent;
-        } else {
-            container.parent = this.getDefault();
         }
     }
 

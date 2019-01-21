@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { IContainer, ContainerToken } from './IContainer';
+import { IContainer, ContainerToken, ResoveWay } from './IContainer';
 import {
     Type, Token, Factory, SymbolType, IocState,
     ReferenceToken, RefTokenType, RefTokenFacType,
@@ -7,7 +7,7 @@ import {
 } from './types';
 import {
     isClass, isFunction, isSymbol, isToken, isString, isUndefined,
-    lang, isArray, isBoolean, isRefTarget, isTypeObject, isAbstractClass, isClassType
+    lang, isArray, isBoolean, isRefTarget, isTypeObject, isAbstractClass, isClassType, isNumber
 } from './utils';
 import { IParameter } from './IParameter';
 import { Registration, isRegistrationClass } from './Registration';
@@ -35,6 +35,13 @@ const SingletonRegToken = '___IOC__Singleton___';
  * @implements {IContainer}
  */
 export class Container implements IContainer {
+
+    @enumerable(false)
+    parent: IContainer;
+
+    @enumerable(false)
+    children: IContainer[] = [];
+
     /**
      * provide types.
      *
@@ -54,27 +61,6 @@ export class Container implements IContainer {
 
     constructor() {
         this.init();
-    }
-
-    @enumerable(false)
-    children: IContainer[] = [];
-
-    @enumerable(false)
-    private _parent: IContainer;
-
-    @enumerable(false)
-    get parent(): IContainer {
-        return this._parent;
-    }
-
-    set parent(parent: IContainer) {
-        if (this._parent && this._parent !== parent) {
-            this.parent.children.splice(this._parent.children.indexOf(this), 1);
-        }
-        if (parent) {
-            parent.children.push(this);
-        }
-        this._parent = parent;
     }
 
     /**
@@ -337,21 +323,23 @@ export class Container implements IContainer {
      * @returns {T}
      * @memberof IContainer
      */
-    getServices<T>(token: Token<T>, target?: boolean | Token<any> | Token<any>[] | ParamProviders, both?: boolean | ParamProviders, bubble?: boolean | ParamProviders, ...providers: ParamProviders[]): T[] {
+    getServices<T>(token: Token<T>, target?: ResoveWay | Token<any> | Token<any>[] | ParamProviders, both?: boolean | ResoveWay | ParamProviders, resway?: ResoveWay | ParamProviders, ...providers: ParamProviders[]): T[] {
         let services: T[] = [];
         let withTag: boolean;
-        let withbubble = true;
+        let rway = ResoveWay.all;
         let withBoth = false;
         let type = isClassType(token) ? token : this.getTokenImpl(token);
-        if (isBoolean(bubble)) {
-            withbubble = bubble;
+        if (isNumber(resway)) {
+            rway = resway;
         } else {
-            providers.unshift(bubble);
+            providers.unshift(resway);
         }
         if (isToken(target) || isArray(target)) {
             withTag = true;
             if (isBoolean(both)) {
                 withBoth = both;
+            } else if (isNumber(both)) {
+                rway = both;
             } else {
                 providers.unshift(both);
             }
@@ -378,8 +366,8 @@ export class Container implements IContainer {
                 })
             });
         } else {
-            if (isBoolean(target)) {
-                withbubble = target;
+            if (isNumber(target)) {
+                rway = target;
             } else {
                 providers.unshift(target);
             }
@@ -390,7 +378,7 @@ export class Container implements IContainer {
                 if (lang.isExtendsClass(tk, type)) {
                     services.push(fac(...providers))
                 }
-            }, withbubble);
+            }, rway);
         }
         return services;
     }
@@ -399,11 +387,11 @@ export class Container implements IContainer {
      * iterator all registered factory
      *
      * @param {(tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void} callbackfn
-     * @param {boolean} [bubble=true]
+     * @param {ResoveWay} [resway= ResoveWay.all]
      * @memberof Container
      */
-    iterator(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void, bubble = true): void {
-        this.getResolvers().iterator(callbackfn, bubble);
+    iterator(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void, resway = ResoveWay.all): void {
+        this.getResolvers().iterator(callbackfn, resway);
     }
 
     /**

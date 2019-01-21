@@ -1,7 +1,7 @@
 import {
     Inject, Express, ContainerToken, IContainer, Token, ProviderType, lang,
     Providers, MetaAccessorToken, isFunction, isToken, isBaseObject, isClass,
-    Type, hasClassMetadata, getOwnTypeMetadata, isBoolean, isNullOrUndefined
+    Type, hasClassMetadata, getOwnTypeMetadata, isBoolean, isNullOrUndefined, enumerable
 } from '@ts-ioc/core';
 import { Task } from '../decorators/Task';
 import { OnActivityInit } from './OnActivityInit';
@@ -33,6 +33,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @returns {IContainer}
      * @memberof ActivityBase
      */
+    @enumerable(false)
     @Inject(ContainerToken)
     container: IContainer;
 
@@ -42,6 +43,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @type {IActivityContext}
      * @memberof Activity
      */
+    @enumerable(false)
     context: IActivityContext;
 
     /**

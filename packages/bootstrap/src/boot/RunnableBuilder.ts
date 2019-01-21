@@ -1,7 +1,7 @@
 import {
     IContainer, LoadType, Factory, Token,
     ContainerBuilder, IContainerBuilder, isClass,
-    isToken, PromiseUtil, Injectable, lang, ParamProviders, isNullOrUndefined
+    isToken, PromiseUtil, Injectable, lang, ParamProviders, isNullOrUndefined, ResoveWay
 } from '@ts-ioc/core';
 import { IRunnableBuilder, CustomRegister, RunnableBuilderToken, ProcessRunRootToken, RunOptions } from './IRunnableBuilder';
 import {
@@ -317,7 +317,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
             if (!config.baseURL) {
                 config.baseURL = this.getRunRoot(c);
             }
-            let registers = c.getServices(ConfigureRegister, curClass, true, false);
+            let registers = c.getServices(ConfigureRegister, curClass, true, ResoveWay.current);
             if (registers && registers.length) {
                 regs.push({
                     container: c,

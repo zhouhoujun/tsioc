@@ -225,7 +225,7 @@ export class NodeActivityContext<T> extends ActivityContext<T> implements INodeA
             return pathstr;
         }
         let fullpath = this.toRootPath(pathstr);
-        let root = this.getContainer().get(ProcessRunRootToken) || process.cwd();
+        let root = this.container.get(ProcessRunRootToken) || process.cwd();
         return relative(root, fullpath) || '.';
     }
 
@@ -234,7 +234,7 @@ export class NodeActivityContext<T> extends ActivityContext<T> implements INodeA
         if (ctx) {
             return ctx.config.baseURL;
         }
-        return this.getContainer().get(ProcessRunRootToken) || process.cwd();
+        return this.container.get(ProcessRunRootToken) || process.cwd();
     }
 
     toRootSrc(src: Src): Src {

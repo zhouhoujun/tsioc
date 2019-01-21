@@ -1,10 +1,9 @@
 import { IModuleInjector, ModuleInjectorToken, InjectorResult } from './IModuleInjector';
 import { Type } from '../types';
 import { IContainer } from '../IContainer';
-import { PromiseUtil, lang } from '../utils';
+import { PromiseUtil } from '../utils';
 import { IModuleValidate } from './IModuleValidate';
 import { Injectable } from '../core';
-import { InjectedProcessToken } from './IInjectedProcess';
 
 
 /**
@@ -31,7 +30,6 @@ export class ModuleInjector implements IModuleInjector {
         let types = (modules || []).filter(ty => this.valid(container, ty));
         if (types.length) {
             await PromiseUtil.step(types.map(ty => () => this.setup(container, ty)));
-            this.injectedProcess(container, types);
         }
         let next = this.getNext(modules, types);
         return { injected: types, next: next };
@@ -43,24 +41,9 @@ export class ModuleInjector implements IModuleInjector {
             types.forEach(ty => {
                 this.syncSetup(container, ty);
             });
-            this.injectedProcess(container, types);
         }
         let next = this.getNext(modules, types);
         return { injected: types, next: next };
-    }
-
-    /**
-     * injected.
-     *
-     * @param {Type<any>[]} types
-     * @returns {void}
-     * @memberof ModuleInjectorChain
-     */
-    protected injectedProcess(container: IContainer, types: Type<any>[]): void {
-        let proc = container.getService(InjectedProcessToken, lang.getClass(this), true);
-        if (proc) {
-            proc.pipe(types);
-        }
     }
 
     protected valid(container: IContainer, type: Type<any>): boolean {
