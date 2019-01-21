@@ -189,7 +189,7 @@ export class OldTestRunner implements ISuiteRunner {
                 });
                 defer.reject(err);
             }
-        }, timeout);
+        }, timeout || this.timeout);
 
         Promise.resolve(fn(() => defer.resolve()))
             .then(r => {

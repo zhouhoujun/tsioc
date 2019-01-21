@@ -83,7 +83,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
                 });
                 defer.reject(err);
             }
-        }, timeout);
+        }, timeout || this.timeout);
 
         Promise.resolve(this.container.syncInvoke(instance, key,
             { provide: RunCaseToken, useValue: this.instance[key] },
