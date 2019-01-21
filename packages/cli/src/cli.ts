@@ -143,11 +143,11 @@ function runActivity(fileName, options) {
     const pk = requireCwd('@ts-ioc/pack');
     const bd = requireCwd('@ts-ioc/build');
     let config;
-    if(options.config && isString(options.config)){
+    if (options.config && isString(options.config)) {
         config = requireCwd(options.config);
     }
     config = config || {};
-    if(isBoolean(options.debug)){
+    if (isBoolean(options.debug)) {
         config.debug = options.debug;
     }
     let wfi = wf.Workflow.create(config).use(pk.PackModule);
