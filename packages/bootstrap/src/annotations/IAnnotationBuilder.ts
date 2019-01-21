@@ -38,7 +38,7 @@ export interface IAnnotationBuilder<T> {
      * @returns {Promise<T>}
      * @memberof IAnnotationBuilder
      */
-    build(config: AnnotationConfigure<T>,  options?: BuildOptions<T>): Promise<T>;
+    build(config: AnnotationConfigure<T>, options?: BuildOptions<T>): Promise<T>;
 
     /**
      * build annotation class.
@@ -61,7 +61,7 @@ export interface IAnnotationBuilder<T> {
      * @memberof IAnnotationBuilder
      */
     getBuilder(token: Token<T>, config?: AnnotationConfigure<T>, options?: BuildOptions<T>): IAnnotationBuilder<T>;
-    
+
     /**
      * create token instance.
      *
