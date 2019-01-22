@@ -10,7 +10,7 @@ declare let Buffer: any;
  * @param {string} [annotationField='classAnnations']
  * @returns
  */
-export function classAnnotations(annotationField = 'classAnnations') {
+export function classAnnotations() {
     return through.obj(function (file, encoding, callback) {
         if (file.isNull()) {
             return callback(null, file);
@@ -36,9 +36,11 @@ export function classAnnotations(annotationField = 'classAnnations') {
                 ts.forEachChild(node, (node) => eachChild(node, annations));
 
                 let classAnnations = `
-                        static ${annotationField}:any  = ${JSON.stringify(annations)};
+                        static getClassAnnations():any  {
+                            return ${JSON.stringify(annations)};
+                        }
                    `;
-            let end = oldclass.replace(/\s*$/, '').length - 1;
+                let end = oldclass.replace(/\s*$/, '').length - 1;
                 contents = contents.replace(oldclass, oldclass.substring(0, end) + classAnnations + oldclass.substring(end));
 
             } else if (ts.isConstructorDeclaration(node)) {

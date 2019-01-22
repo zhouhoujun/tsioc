@@ -1,5 +1,5 @@
-import { ObjectMap, Type, Token, AbstractType, ClassType } from '../types';
-import { isNullOrUndefined, isArray, isObject, isFunction, isClass, isAbstractClass, isClassType } from './typeCheck';
+import { ObjectMap, Type, Token, ClassType } from '../types';
+import { isNullOrUndefined, isArray, isObject, isFunction, isClass, isClassType, isString } from './typeCheck';
 // use core-js in browser.
 
 
@@ -235,6 +235,32 @@ export namespace lang {
     }
 
     /**
+     * get class annations.
+     *
+     * @export
+     * @param {ClassType<any>} target
+     * @returns
+     */
+    export function getClassAnnations(target: ClassType<any>) {
+        return isFunction(target.getClassAnnations) ? target.getClassAnnations() : target.classAnnations;
+    }
+
+    /**
+     * target has class annations or not.
+     *
+     * @export
+     * @param {ClassType<any>} target
+     * @returns {boolean}
+     */
+    export function hasClassAnnations(target: ClassType<any>): boolean {
+        if (isFunction(target.getClassAnnations)) {
+            return true;
+        }
+        return target.classAnnations && isString(target.classAnnations.name) && target.classAnnations.name.length > 0;
+    }
+
+
+    /**
      * get calss of object.
      *
      * @export
@@ -264,7 +290,8 @@ export namespace lang {
             return '';
         }
         if (/^[a-z]$/.test(classType.name)) {
-            return classType.classAnnations ? classType.classAnnations.name : classType.name;
+            let classAnnations = getClassAnnations(classType);
+            return classAnnations ? classAnnations.name : classType.name;
         }
         return classType.name;
     }

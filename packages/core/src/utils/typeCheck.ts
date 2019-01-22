@@ -60,20 +60,18 @@ function classCheck(target: any): boolean {
 
         // for uglify
         if (/^[a-z]$/.test(type.name)) {
-            if (type.classAnnations && type.classAnnations.name) {
+            if (lang.hasClassAnnations(type)) {
                 return true;
             } else {
                 return false;
             }
         } else {
-            if (type.classAnnations && isString(type.classAnnations.name)) {
-                return true
+            if (lang.hasClassAnnations(type)) {
+                return true;
             }
-
             if (!/^[A-Z@]/.test(target.name)) {
                 return false;
             }
-
         }
 
         // for IE 8, 9
@@ -112,7 +110,7 @@ export function isToken(target: any): target is Token<any> {
     if (!target) {
         return false;
     }
-    if (isString(target) || isSymbol(target) ||  classCheck(target) || (target instanceof Registration)) {
+    if (isString(target) || isSymbol(target) || classCheck(target) || (target instanceof Registration)) {
         return true
     }
     return false;

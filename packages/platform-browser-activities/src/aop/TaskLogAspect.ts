@@ -1,4 +1,4 @@
-import { ObjectMap, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
+import { ObjectMap, Inject, IContainer, ContainerToken, lang } from '@ts-ioc/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@ts-ioc/aop';
 import { LoggerAspect } from '@ts-ioc/logs';
 import { Task } from '@ts-ioc/activities';
@@ -28,7 +28,8 @@ export class TaskLogAspect extends LoggerAspect {
         let target = joinPoint.target;
         let name = target.name;
         if (!name) {
-            name = joinPoint.targetType.classAnnations ? joinPoint.targetType.classAnnations.name : joinPoint.targetType.name;
+            let classAnnations = lang.getClassAnnations(joinPoint.targetType);
+            name = classAnnations ? classAnnations.name : joinPoint.targetType.name;
         }
         let start: Date, end: Date;
         let taskname = '\'' + name + '\'';

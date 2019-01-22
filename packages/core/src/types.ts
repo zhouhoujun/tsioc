@@ -121,6 +121,7 @@ export interface ClassAnnations {
 export interface Type<T> extends Function {
     new(...args: any[]): T;
     classAnnations?: ClassAnnations;
+    getClassAnnations?(): ClassAnnations;
 }
 
 /**
@@ -134,6 +135,7 @@ export interface Type<T> extends Function {
 export interface AbstractType<T> extends Function {
     new?(...args: any[]): T;
     classAnnations?: ClassAnnations;
+    getClassAnnations?(): ClassAnnations;
 }
 
 /**

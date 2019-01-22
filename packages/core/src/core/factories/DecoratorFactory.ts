@@ -6,7 +6,7 @@ import {
     isClass, isAbstractClass, isMetadataObject, isUndefined, isFunction,
     isNumber, isArray, lang, isString
 } from '../../utils';
-import { Type, AbstractType, ObjectMap } from '../../types';
+import { Type, AbstractType, ObjectMap, ClassType } from '../../types';
 
 
 export const ParamerterName = 'paramerter_names';
@@ -272,7 +272,6 @@ export function hasOwnClassMetadata(decorator: string | Function, target: Type<a
 
 function setTypeMetadata<T extends ClassMetadata>(name: string, metaName: string, target: Type<T> | AbstractType<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
     let annotations = getOwnTypeMetadata(metaName, target).slice(0);
-    // let designParams = Reflect.getMetadata('design:paramtypes', target) || [];
     let typeMetadata = (metadata || {}) as T;
     if (!typeMetadata.type) {
         typeMetadata.type = target;
@@ -577,15 +576,16 @@ export function getOwnParamerterNames(target: Type<any> | AbstractType<any>): Ob
     return isArray(meta) ? {} : (meta || {});
 }
 
-
-export function setParamerterNames(target: Type<any> | AbstractType<any>) {
+export function setParamerterNames(target: ClassType<any>) {
     let meta = lang.assign({}, getParamerterNames(target));
     let descriptors = Object.getOwnPropertyDescriptors(target.prototype);
     let isUglify = /^[a-z]/.test(target.name);
     let anName = '';
-    if (target.classAnnations && target.classAnnations.params) {
-        anName = target.classAnnations.name;
-        meta = lang.assign(meta, target.classAnnations.params);
+    let classAnnations = lang.getClassAnnations(target);
+
+    if (classAnnations && classAnnations.params) {
+        anName = classAnnations.name;
+        meta = lang.assign(meta, classAnnations.params);
     }
     if (!isUglify && target.name !== anName) {
         lang.forIn(descriptors, (item, name) => {

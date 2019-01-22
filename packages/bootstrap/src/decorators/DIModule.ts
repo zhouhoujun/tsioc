@@ -1,4 +1,4 @@
-import { createClassDecorator, Token, MetadataAdapter, MetadataExtends, ITypeDecorator, isClass } from '@ts-ioc/core';
+import { createClassDecorator, Token, MetadataAdapter, MetadataExtends, ITypeDecorator, isClass, lang } from '@ts-ioc/core';
 import { IModuleBuilder, ModuleBuilderToken } from '../modules/IModuleBuilder';
 import { ModuleConfig } from '../modules/ModuleConfigure';
 import { IAnnotationBuilder, AnnotationBuilderToken } from '../annotations/IAnnotationBuilder';
@@ -73,8 +73,9 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
 
             if (!metadata.name && isClass(metadata.token)) {
                 let isuglify = /^[a-z]$/.test(metadata.token.name);
-                if (isuglify && metadata.token.classAnnations) {
-                    metadata.name = metadata.token.classAnnations.name;
+                let classAnnations = lang.getClassAnnations(metadata.token);
+                if (isuglify && classAnnations) {
+                    metadata.name = classAnnations.name;
                 } else {
                     metadata.name = metadata.token.name;
                 }
