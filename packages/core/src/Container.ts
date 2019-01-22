@@ -315,7 +315,7 @@ export class Container implements IContainer {
      * get all service extends type and reference target.
      *
      * @template T
-     * @param {Token<T>} type servive token.
+     * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
      * @param {(Token<any> | Token<any>[])} [target] service refrence target.
      * @param {(boolean|ParamProviders)} [both]
      * @param {(boolean|ParamProviders)} [both] get services bubble up to parent container.
@@ -323,12 +323,19 @@ export class Container implements IContainer {
      * @returns {T}
      * @memberof IContainer
      */
-    getServices<T>(token: Token<T>, target?: ResoveWay | Token<any> | Token<any>[] | ParamProviders, both?: boolean | ResoveWay | ParamProviders, resway?: ResoveWay | ParamProviders, ...providers: ParamProviders[]): T[] {
+    getServices<T>(token: Token<T> | ((token: ClassType<T>) => boolean), target?: ResoveWay | Token<any> | Token<any>[] | ParamProviders, both?: boolean | ResoveWay | ParamProviders, resway?: ResoveWay | ParamProviders, ...providers: ParamProviders[]): T[] {
         let services: T[] = [];
         let withTag: boolean;
         let rway = ResoveWay.all;
         let withBoth = false;
-        let type = isClassType(token) ? token : this.getTokenImpl(token);
+        let matchExp: (token: ClassType<T>) => boolean;
+        if (isToken(token)) {
+            let type = isClassType(token) ? token : this.getTokenImpl(token);
+            matchExp = (tk) => lang.isExtendsClass(tk, type);
+        } else if (isFunction(token)) {
+            matchExp = token;
+        }
+
         if (isNumber(resway)) {
             rway = resway;
         } else {
@@ -358,7 +365,7 @@ export class Container implements IContainer {
                     if (resolver.hasRegister(priMapTk)) {
                         let priMap = resolver.resolve(priMapTk);
                         priMap.forEach((pfac, ptk) => {
-                            if (isClassType(ptk) && lang.isExtendsClass(ptk, type)) {
+                            if (isClassType(ptk) && matchExp(ptk)) {
                                 services.push(pfac(...providers))
                             }
                         });
@@ -375,7 +382,7 @@ export class Container implements IContainer {
         }
         if (!withTag || (withTag && withBoth)) {
             this.iterator((tk, fac) => {
-                if (lang.isExtendsClass(tk, type)) {
+                if (isClassType(tk) && matchExp(tk)) {
                     services.push(fac(...providers))
                 }
             }, rway);

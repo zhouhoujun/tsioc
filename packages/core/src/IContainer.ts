@@ -222,31 +222,31 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * get all service extends type.
      *
      * @template T
-     * @param {ClassType<T>} token servive token.
+     * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
      * @param {ResoveWay} [resway=ResoveWay.all] resolve way. bubble, traverse.
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getServices<T>(type: ClassType<T>, resway?: ResoveWay, ...providers: ParamProviders[]): T[];
+    getServices<T>(type: ClassType<T> | ((token: ClassType<T>) => boolean), resway?: ResoveWay, ...providers: ParamProviders[]): T[];
 
     /**
     * get all private services of target extends class `type`.
     * @template T
-    * @param {Token<T>} type servive token.
+    * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
     * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
     * @param {ResoveWay} [resway=ResoveWay.all] resolve way. bubble, traverse.
     * @param {...ParamProviders[]} providers
     * @returns {T}
     * @memberof IContainer
     */
-   getServices<T>(type: Token<T>, target: Token<any> | Token<any>[], resway?: ResoveWay, ...providers: ParamProviders[]): T[];
+   getServices<T>(type: Token<T> | ((token: ClassType<T>) => boolean), target: Token<any> | Token<any>[], resway?: ResoveWay, ...providers: ParamProviders[]): T[];
 
     /**
     * get all servies extends class `type` and all private services of target extends class `type`.
     *
     * @template T
-    * @param {Token<T>} type servive token.
+    * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
     * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
     * @param {boolean} both if true, will get all server and target private service of class extends `type` .
     * @param {ResoveWay} [resway=ResoveWay.all] resolve way. bubble, traverse.
@@ -254,7 +254,7 @@ export interface IContainer extends IMethodAccessor, IResolver {
     * @returns {T}
     * @memberof IContainer
     */
-    getServices<T>(type: Token<T>, target: Token<any> | Token<any>[], both: boolean, resway?: ResoveWay, ...providers: ParamProviders[]): T[];
+    getServices<T>(type: Token<T> | ((token: ClassType<T>) => boolean), target: Token<any> | Token<any>[], both: boolean, resway?: ResoveWay, ...providers: ParamProviders[]): T[];
 
 
     /**
