@@ -29,33 +29,26 @@ gulp.src('src/**/*.ts')
 
 ```
 
-## Demo for development
+## Demo for pack build
 
 ```ts
-Development.create(gulp, __dirname, {
-    tasks:[
-        <INodeTaskOption>{
-            src: 'src',
-            dist: 'lib',
-            asserts:{
-                ts: {
-                    //src: '...',
-                    //dist:'...',
-                    loader: 'development-assert-ts',
-                    //also can add pipe works here.
-                    tsPipes: [
-                        ()=> classAnnotations()
-                    ]
-                    // or some state use annotation.
-                    tsPipes: (ctx) =>{
-                        return (ctx.oper &  Operation.deploy?
-                        [
-                            ()=> classAnnotations()
-                        ] : [];
-                    }
-                }
-                ....
+@Pack({
+    baseURL: __dirname,
+    src: 'src',
+    clean: 'lib',
+    test: 'test/**/*.spec.ts',
+    assets: {
+        ts: { dest: 'lib', annotation: true, uglify: false }
+    }
+})
+export class AnnoBuilder {
+}
 
+
+```
+
+```shell
+pk build [taskfile.ts]
 ```
 
 https://github.com/zhouhoujun/tsioc.git
