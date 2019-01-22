@@ -1,4 +1,4 @@
-import { ITypeDecorator, Token, MetadataAdapter, MetadataExtends, createClassDecorator } from '@ts-ioc/core';
+import { ITypeDecorator, Token, MetadataAdapter, MetadataExtends, createClassDecorator, isToken } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken } from '../annotations/IAnnotationBuilder';
 import { AnnotationConfigure } from '../annotations/AnnotationConfigure';
 
@@ -40,6 +40,7 @@ export interface IAnnotationDecorator<T extends AnnotationMetadata> extends ITyp
  * @param {string} name
  * @param {string} [decorType]
  * @param {(Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>)} [defaultBuilder]
+ * @param {defaultBoot?: Token<any> | ((metadata: T) => Token<any>)} [defaultBoot]
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IAnnotationDecorator<T>}
@@ -47,6 +48,7 @@ export interface IAnnotationDecorator<T extends AnnotationMetadata> extends ITyp
 export function createAnnotationDecorator<T extends AnnotationMetadata>(
     name: string,
     defaultBuilder?: Token<IAnnotationBuilder<any>>,
+    defaultBoot?: Token<any> | ((metadata: T) => Token<any>),
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IAnnotationDecorator<T> {
 
@@ -63,6 +65,12 @@ export function createAnnotationDecorator<T extends AnnotationMetadata>(
 
             if (defaultBuilder && !metadata.defaultAnnoBuilder) {
                 metadata.defaultAnnoBuilder = defaultBuilder;
+            }
+            if(!metadata.bootstrap && defaultBoot){
+                let defboot = isToken(defaultBoot) ? defaultBoot : defaultBoot(metadata as T);
+                if (defboot) {
+                    metadata.bootstrap = defboot;
+                }
             }
             return metadata;
         }) as IAnnotationDecorator<T>;

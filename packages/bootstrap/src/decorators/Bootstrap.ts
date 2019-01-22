@@ -79,6 +79,7 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
  * @param {string} name
  * @param {Token<IRunnableBuilder<any>>>} [builder] default builder
  * @param {Token<IAnnotationBuilder<any>>} [defaultAnnoBuilder] default type builder.
+ * @param {defaultBoot?: Token<any> | ((metadata: T) => Token<any>)} [defaultBoot]
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IBootstrapDecorator<T>}
@@ -87,10 +88,11 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
     name: string,
     defaultBuilder?: Token<IRunnableBuilder<any>>,
     defaultAnnoBuilder?: Token<IAnnotationBuilder<any>>,
+    defaultBoot?: Token<any> | ((metadata: T) => Token<any>),
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IBootstrapDecorator<T> {
 
-    return createDIModuleDecorator<BootstrapMetadata>(name, defaultBuilder, defaultAnnoBuilder, adapter, (metadata: T) => {
+    return createDIModuleDecorator<BootstrapMetadata>(name, defaultBuilder, defaultAnnoBuilder, defaultBoot, adapter, (metadata: T) => {
         if (metadataExtends) {
             metadataExtends(metadata);
         }
