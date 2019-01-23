@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/unit",
-  "version": "4.0.0-beta19",
+  "version": "4.0.0-beta20",
   "description": "unit testing framework, base on AOP, Ioc container",
   "esnext": "./es2017/unit.js",
   "es2015": "./es2015/unit.js",
@@ -41,10 +41,10 @@
   "dependencies": {
     "@types/expect": "^1.20.3",
     "@types/mocha": "^5.2.5",
-    "@ts-ioc/aop": "^4.0.0-beta19",
-    "@ts-ioc/bootstrap": "^4.0.0-beta19",
-    "@ts-ioc/core": "^4.0.0-beta19",
-    "@ts-ioc/logs": "^4.0.0-beta19",
+    "@ts-ioc/aop": "^4.0.0-beta20",
+    "@ts-ioc/bootstrap": "^4.0.0-beta20",
+    "@ts-ioc/core": "^4.0.0-beta20",
+    "@ts-ioc/logs": "^4.0.0-beta20",
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.2",
     "assert": "^1.4.1",

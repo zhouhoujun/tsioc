@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/bootstrap",
-  "version": "4.0.0-beta19",
+  "version": "4.0.0-beta20",
   "description": "DI Module manager, application bootstrap. base on AOP, Ioc container, via @ts-ioc/core .",
   "esnext": "./es2017/bootstrap.js",
   "es2015": "./es2015/bootstrap.js",
@@ -38,7 +38,7 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "@ts-ioc/core": "^4.0.0-beta19",
+    "@ts-ioc/core": "^4.0.0-beta20",
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3",
     "globby": "^9.0.0"
