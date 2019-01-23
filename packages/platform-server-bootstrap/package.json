@@ -7,7 +7,7 @@
   "esm5": "./lib/index.js",
   "fesm5": "./fesm5/platform-server-bootstrap.js",
   "module": "./fesm5/platform-server-bootstrap.js",
-  "main": "./fesm5/platform-server-bootstrap.js",
+  "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",

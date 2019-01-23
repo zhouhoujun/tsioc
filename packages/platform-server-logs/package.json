@@ -7,7 +7,7 @@
   "esm5": "./lib/index.js",
   "fesm5": "./fesm5/platform-server-logs.js",
   "module": "./fesm5/platform-server-logs.js",
-  "main": "./fesm5/platform-server-logs.js",
+  "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",
@@ -49,6 +49,7 @@
     "minimist": "^1.2.0",
     "pretty-hrtime": "^1.0.3",
     "reflect-metadata": "^0.1.12",
+    "log4js": "^3.0.6",
     "tslib": "^1.9.3",
     "ts-node": "^7.0.1",
     "tsconfig-paths": "^3.7.0",

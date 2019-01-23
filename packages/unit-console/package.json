@@ -7,7 +7,7 @@
   "esm5": "./lib/index.js",
   "fesm5": "./fesm5/unit-reporter-console.js",
   "module": "./fesm5/unit-reporter-console.js",
-  "main": "./fesm5/unit-reporter-console.js",
+  "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",

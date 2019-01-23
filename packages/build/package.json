@@ -7,7 +7,7 @@
   "esm5": "./lib/index.js",
   "fesm5": "./fesm5/build.js",
   "module": "./fesm5/build.js",
-  "main": "./fesm5/build.js",
+  "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",

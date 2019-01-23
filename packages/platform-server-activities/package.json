@@ -7,7 +7,7 @@
   "esm5": "./lib/index.js",
   "fesm5": "./fesm5/platform-server-activities.js",
   "module": "./fesm5/platform-server-activities.js",
-  "main": "./fesm5/platform-server-activities.js",
+  "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",
