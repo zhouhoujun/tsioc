@@ -149,6 +149,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
                 params.options = config as BuildOptions<T>;
             } else {
                 params.config = config as ModuleConfig<T>;
+                params.options = options;
             }
         } else {
             params.config = token;

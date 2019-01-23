@@ -209,7 +209,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         options.env = injmdl;
         let builder = this.getBuilder(injmdl);
         options.bootBuilder = this;
-        options.configManager = this.getConfigManager();
+        console.log(options.configManager);
         return params.token ? await builder.bootstrap(params.token, params.config, options) : await builder.bootstrap(params.config, options);
     }
 

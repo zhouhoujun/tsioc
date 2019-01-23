@@ -5,6 +5,7 @@ import { IContainer } from '../../IContainer';
 import { OnInit } from '../ComponentLifecycle';
 import { isFunction } from '../../utils';
 import { CoreActions } from './CoreActions';
+import { DecoratorType } from '../factories';
 
 
 
@@ -37,9 +38,11 @@ export class ComponentInitAction extends ActionComposite {
             return;
         }
         if (data.targetType && data.target) {
-            let component = data.target as OnInit;
-            if (isFunction(component.onInit)) {
-                container.syncInvoke(data.target || data.targetType, 'onInit', data.target);
+            if (container.getLifeScope().hasDecorator(data.targetType, DecoratorType.Class, surm => surm.actions.includes(CoreActions.componentInit))) {
+                let component = data.target as OnInit;
+                if (isFunction(component.onInit)) {
+                    container.syncInvoke(data.target || data.targetType, 'onInit', data.target);
+                }
             }
         }
     }
