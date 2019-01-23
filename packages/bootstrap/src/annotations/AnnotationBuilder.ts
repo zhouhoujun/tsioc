@@ -7,7 +7,7 @@ import {
 import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import {
     Runnable, Runner, Service, RunnerToken,
-    ServiceToken, isRunner, isService, InjectRunnableToken
+    ServiceToken, isRunner, isService, InjectRunnableToken, RunnableOptionsToken, RunnableOptions
 } from '../runnable';
 import { BootHooks, BuildOptions } from './AnnoType';
 import { AnnotationConfigure } from './AnnotationConfigure';
@@ -198,7 +198,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         if (instance instanceof Runner || instance instanceof Service) {
             return instance;
         } else {
-            let providers = [{ provide: tk, useValue: instance }, { token: tk, instance: instance, config: config }] as ParamProviders[];
+            let provider = { provide: RunnableOptionsToken, useValue: <RunnableOptions<T>>{ instance: instance, type: lang.getClass(instance), mdToken: tk, config: config } } as ParamProviders;
             return this.container.getService(
                 [RunnerToken, ServiceToken],
                 [
@@ -208,7 +208,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
                 ],
                 tk => new InjectRunnableToken(tk),
-                config.defaultRunnable || true, ...providers);
+                config.defaultRunnable || true, provider);
         }
     }
 

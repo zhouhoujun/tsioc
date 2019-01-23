@@ -1,6 +1,5 @@
-import { Token, isFunction } from '@ts-ioc/core';
-import { ModuleConfigure } from '../modules';
-import { IRunnable, RunnableBase } from './Runnable';
+import { isFunction, Inject } from '@ts-ioc/core';
+import { IRunnable, RunnableBase, RunnableOptionsToken, RunnableOptions } from './Runnable';
 
 /**
  * application runer.
@@ -33,8 +32,8 @@ export interface IRunner<T> extends IRunnable<T> {
  */
 export abstract class Runner<T> extends RunnableBase<T> implements IRunner<T> {
 
-    constructor(token?: Token<T>, instance?: T, config?: ModuleConfigure) {
-        super(token, instance, config);
+    constructor(@Inject(RunnableOptionsToken) options: RunnableOptions<T>) {
+        super(options);
     }
 
     /**

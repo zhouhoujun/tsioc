@@ -137,7 +137,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
         },
         metadata => {
             if (metadataExtends) {
-                metadata = metadataExtends(metadata as T);
+                metadataExtends(metadata as T);
             }
 
             if (!metadata.name && isClass(metadata.type)) {

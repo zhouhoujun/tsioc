@@ -1,4 +1,4 @@
-import { Token, Injectable } from '@ts-ioc/core';
+import { Token, Injectable, Inject } from '@ts-ioc/core';
 import { ActivityConfigure } from './ActivityConfigure';
 import { IActivity } from './IActivity';
 import { IWorkflowInstance, WorkflowInstanceToken, RunState } from './IWorkflowInstance';
@@ -6,7 +6,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { Joinpoint } from '@ts-ioc/aop';
 import { IActivityContextResult } from './IActivityContext';
-import { Service } from '@ts-ioc/bootstrap';
+import { Service, RunnableOptions, RunnableOptionsToken } from '@ts-ioc/bootstrap';
 
 /**
  * task runner.
@@ -19,10 +19,10 @@ import { Service } from '@ts-ioc/bootstrap';
 export class WorkflowInstance<T extends IActivity> extends Service<T> implements IWorkflowInstance<T> {
 
     get activity(): Token<T> {
-        return this.token;
+        return this.getTargetType();
     }
     get configure(): ActivityConfigure {
-        return this.config;
+        return this.options.config;
     }
 
     private _result = new BehaviorSubject<any>(null);
@@ -44,11 +44,8 @@ export class WorkflowInstance<T extends IActivity> extends Service<T> implements
     state: RunState;
     stateChanged: BehaviorSubject<RunState>;
 
-    constructor(
-        token: Token<T>,
-        instance: T,
-        config: ActivityConfigure) {
-        super(token, instance, config);
+    constructor(@Inject(RunnableOptionsToken) options: RunnableOptions<T>) {
+        super(options);
         this.stateChanged = new BehaviorSubject(RunState.init);
     }
 
@@ -57,8 +54,8 @@ export class WorkflowInstance<T extends IActivity> extends Service<T> implements
     }
 
     async start(data?: any): Promise<IActivityContextResult<T>> {
-        this.instance.id && this.container.bindProvider(this.instance.id, this);
-        let ctx = await this.instance.run(data)
+        this.getTarget().id && this.container.bindProvider(this.getTarget().id, this);
+        let ctx = await this.getTarget().run(data)
         this._ctx = ctx;
         this.state = RunState.complete;
         this.stateChanged.next(this.state);

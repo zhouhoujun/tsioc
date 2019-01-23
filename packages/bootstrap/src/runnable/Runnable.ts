@@ -1,6 +1,7 @@
 
-import { Token, lang, IContainer, Inject, ContainerToken } from '@ts-ioc/core';
+import { Token, lang, IContainer, Inject, ContainerToken, InjectToken, Type } from '@ts-ioc/core';
 import { ModuleConfigure, BootOptions } from '../modules';
+import { any } from 'expect';
 
 /**
  * boot.
@@ -31,7 +32,7 @@ export interface IRunnable<T> {
      * @returns {Token<T>}
      * @memberof IBoot
      */
-    getTargetToken(): Token<T>;
+    getTargetType(): Token<T>;
 
     /**
      * on boot init.
@@ -43,6 +44,18 @@ export interface IRunnable<T> {
     onInit?(options: BootOptions<T>): Promise<void>;
 
 }
+
+export interface RunnableOptions<T> {
+    mdToken?: Token<any>;
+    type: Type<T>;
+    instance: T;
+    config: ModuleConfigure;
+}
+
+/**
+ * runnable options token.
+ */
+export const RunnableOptionsToken = new InjectToken<RunnableOptions<any>>('boot_runnable_options');
 
 /**
  * boot.
@@ -57,16 +70,20 @@ export class RunnableBase<T> implements IRunnable<T> {
     @Inject(ContainerToken)
     container: IContainer;
 
-    constructor(protected token?: Token<T>, protected instance?: T, protected config?: ModuleConfigure) {
+    constructor(@Inject(RunnableOptionsToken) protected options: RunnableOptions<T>) {
 
     }
 
     getTarget(): T {
-        return this.instance;
+        return this.options.instance;
     }
 
-    getTargetToken(): Token<T> {
-        return this.token || lang.getClass(this.instance);
+    getModuleToken(): Token<any> {
+        return this.options.mdToken;
+    }
+
+    getTargetType(): Type<T> {
+        return this.options.type || lang.getClass(this.options.instance);
     }
 
 }

@@ -1,6 +1,6 @@
 {
   "name": "tsioc-srcs",
-  "version": "4.0.0-beta17",
+  "version": "4.0.0-beta18",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
     "postinstall": "npm prune",

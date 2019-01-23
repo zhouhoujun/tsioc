@@ -37,7 +37,7 @@ export class OldTestRunner implements ISuiteRunner {
 
     suites: MapSet<string, ISuiteDescribe>;
 
-    getTargetToken(): Token<any> {
+    getTargetType(): Token<any> {
         return null;
     }
 

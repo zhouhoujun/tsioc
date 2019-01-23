@@ -1,6 +1,6 @@
-import { Runner, ModuleConfigure } from '@ts-ioc/bootstrap';
+import { Runner, RunnableOptionsToken, RunnableOptions } from '@ts-ioc/bootstrap';
 import {
-    Token, getMethodMetadata, isNumber, lang, ContainerToken,
+    getMethodMetadata, isNumber, lang, ContainerToken,
     IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Injectable
 } from '@ts-ioc/core';
 import { Before } from '../decorators/Before';
@@ -31,8 +31,8 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
     timeout: number;
     describe: string;
 
-    constructor(token?: Token<any>, instance?: any, config?: ModuleConfigure) {
-        super(token, instance, config);
+    constructor(@Inject(RunnableOptionsToken) options: RunnableOptions<any>) {
+        super(options);
     }
 
     /**
@@ -42,7 +42,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
      * @memberof SuiteRunner
      */
     getSuiteDescribe(): ISuiteDescribe {
-        let type = lang.getClass(this.instance);
+        let type = this.getTargetType();
         let metas = getOwnTypeMetadata<SuiteMetadata>(Suite, type);
         let meta = metas.find(m => isNumber(m.timeout));
         this.timeout = meta ? meta.timeout : (3 * 60 * 60 * 1000);
@@ -70,7 +70,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
     }
 
     runTimeout(key: string, describe: string, timeout: number): Promise<any> {
-        let instance = this.instance;
+        let instance = this.getTarget();
         let defer = PromiseUtil.defer();
         let timer = setTimeout(() => {
             if (timer) {
@@ -78,16 +78,16 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
                 let assert = this.container.resolve(Assert);
                 let err = new assert.AssertionError({
                     message: `${describe}, timeout ${timeout}`,
-                    stackStartFunction: this.instance[key],
-                    stackStartFn: this.instance[key]
+                    stackStartFunction: instance[key],
+                    stackStartFn: instance[key]
                 });
                 defer.reject(err);
             }
         }, timeout || this.timeout);
 
         Promise.resolve(this.container.syncInvoke(instance, key,
-            { provide: RunCaseToken, useValue: this.instance[key] },
-            { provide: RunSuiteToken, useValue: this.instance }))
+            { provide: RunCaseToken, useValue: instance[key] },
+            { provide: RunSuiteToken, useValue: instance }))
             .then(r => {
                 clearTimeout(timer);
                 timer = null;
@@ -103,7 +103,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
     }
 
     async runBefore(describe: ISuiteDescribe) {
-        let methodMaps = getMethodMetadata<BeforeTestMetadata>(Before, this.instance);
+        let methodMaps = getMethodMetadata<BeforeTestMetadata>(Before, this.getTarget());
         await PromiseUtil.step(
             lang.keys(methodMaps)
                 .map(key => () => {
@@ -116,7 +116,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
     }
 
     async runBeforeEach() {
-        let methodMaps = getMethodMetadata<BeforeEachTestMetadata>(BeforeEach, this.instance);
+        let methodMaps = getMethodMetadata<BeforeEachTestMetadata>(BeforeEach, this.getTarget());
         await PromiseUtil.step(
             lang.keys(methodMaps)
                 .map(key => () => {
@@ -129,7 +129,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
     }
 
     async runAfterEach() {
-        let methodMaps = getMethodMetadata<BeforeEachTestMetadata>(AfterEach, this.instance);
+        let methodMaps = getMethodMetadata<BeforeEachTestMetadata>(AfterEach, this.getTarget());
         await PromiseUtil.step(
             lang.keys(methodMaps)
                 .map(key => () => {
@@ -142,7 +142,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
     }
 
     async runAfter(describe: ISuiteDescribe) {
-        let methodMaps = getMethodMetadata<BeforeTestMetadata>(After, this.instance);
+        let methodMaps = getMethodMetadata<BeforeTestMetadata>(After, this.getTarget());
         await PromiseUtil.step(
             lang.keys(methodMaps)
                 .map(key => () => {
@@ -155,7 +155,7 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
     }
 
     async runTest(desc: ISuiteDescribe) {
-        let methodMaps = getMethodMetadata<TestCaseMetadata>(Test, this.instance);
+        let methodMaps = getMethodMetadata<TestCaseMetadata>(Test, this.getTarget());
         let keys = lang.keys(methodMaps);
         await PromiseUtil.step(
             keys.map(key => {

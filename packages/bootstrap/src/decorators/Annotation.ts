@@ -60,13 +60,13 @@ export function createAnnotationDecorator<T extends AnnotationMetadata>(
         },
         metadata => {
             if (metadataExtends) {
-                metadata = metadataExtends(metadata as T);
+                metadataExtends(metadata as T);
             }
 
             if (defaultBuilder && !metadata.defaultAnnoBuilder) {
                 metadata.defaultAnnoBuilder = defaultBuilder;
             }
-            if(!metadata.bootstrap && defaultBoot){
+            if (!metadata.bootstrap && defaultBoot) {
                 let defboot = isToken(defaultBoot) ? defaultBoot : defaultBoot(metadata as T);
                 if (defboot) {
                     metadata.bootstrap = defboot;

@@ -23,7 +23,7 @@ export interface MetadataAdapter {
  * @template T
  */
 export interface MetadataExtends<T> {
-    (metadata: T): T;
+    (metadata: T): void;
 }
 
 export interface MetadataTarget<T> {
@@ -279,7 +279,7 @@ function setTypeMetadata<T extends ClassMetadata>(name: string, metaName: string
     typeMetadata.decorator = name;
 
     if (metadataExtends) {
-        typeMetadata = metadataExtends(typeMetadata);
+        metadataExtends(typeMetadata);
     }
     annotations.unshift(typeMetadata);
 
@@ -372,7 +372,7 @@ function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: str
     // methodMeadata.descriptor = descriptor;
 
     if (metadataExtends) {
-        methodMeadata = metadataExtends(methodMeadata);
+        metadataExtends(methodMeadata);
     }
     meta[propertyKey].unshift(methodMeadata);
     Reflect.defineMetadata(metaName + methodMetadataExt, meta, target.constructor);
@@ -451,7 +451,7 @@ function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName:
     }
 
     if (metadataExtends) {
-        propmetadata = metadataExtends(propmetadata);
+        metadataExtends(propmetadata);
     }
 
     if (!meta[propertyKey] || !isArray(meta[propertyKey])) {
@@ -552,7 +552,7 @@ function setParamMetadata<T extends ParameterMetadata>(name: string, metaName: s
     paramMeadata.decorator = name;
     paramMeadata.index = parameterIndex;
     if (metadataExtends) {
-        paramMeadata = metadataExtends(paramMeadata);
+        metadataExtends(paramMeadata);
     }
     parameters[parameterIndex].unshift(paramMeadata);
     Reflect.defineMetadata(metaName + paramsMetadataExt, parameters, target, propertyKey);

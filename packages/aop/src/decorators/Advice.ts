@@ -87,7 +87,7 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
         },
         metadata => {
             if (metadataExtends) {
-                metadata = metadataExtends(metadata as T);
+                metadataExtends(metadata as T);
             }
             metadata.adviceName = adviceName;
             return metadata;

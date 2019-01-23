@@ -70,7 +70,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
         },
         metadata => {
             if (metadataExtends) {
-                metadata = metadataExtends(metadata as T);
+                metadataExtends(metadata as T);
             }
 
             if (!metadata.name && isClass(metadata.token)) {
@@ -96,7 +96,6 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
                     metadata.bootstrap = defboot;
                 }
             }
-            return metadata;
         }) as IDIModuleDecorator<T>;
 }
 

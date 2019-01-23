@@ -60,7 +60,7 @@ export function createSuiteDecorator<T extends SuiteMetadata>(
         },
         (metadata: T) => {
             if (metaExtends) {
-                metadata = metaExtends(metadata);
+                metaExtends(metadata);
             }
             metadata.singleton = true;
             metadata.defaultRunnable = SuiteRunnerToken;
