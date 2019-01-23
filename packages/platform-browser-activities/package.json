@@ -1,11 +1,13 @@
 {
   "name": "@ts-ioc/platform-browser-activities",
-  "version": "4.0.0-beta20",
+  "version": "4.0.0-beta21",
   "description": "type task framework, base on AOP, Ioc container, via @ts-ioc",
-  "esnext": "./es2017/platform-browser.js",
-  "es2015": "./es2015/platform-browser.js",
-  "module": "./bundles/platform-browser.umd.js",
-  "main": "./lib/index.js",
+  "es2015": "./fesm2015/platform-browser-activities.js",
+  "esm2015": "./es2015/index.js",
+  "esm5": "./lib/index.js",
+  "fesm5": "./fesm5/platform-browser-activities.js",
+  "module": "./fesm5/platform-browser-activities.js",
+  "main": "./bundles/platform-browser-activities.umd.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",
@@ -38,10 +40,10 @@
   "dependencies": {
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3",
-    "@ts-ioc/platform-browser": "^4.0.0-beta20"
+    "@ts-ioc/platform-browser": "^4.0.0-beta21"
   },
   "peerDependencies": {
-    "@ts-ioc/activities": "^4.0.0-beta20"
+    "@ts-ioc/activities": "^4.0.0-beta21"
   },
   "directories": {
     "lib": "lib",

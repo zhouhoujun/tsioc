@@ -61,6 +61,7 @@ export class TsCompiler extends TransformActivity {
         await super.beforePipe();
         this.context.result = await this.executePipe(this.context.result, this.getTsCompilePipe(this.context.config));
     }
+
     /**
      * get ts configue compile.
      *

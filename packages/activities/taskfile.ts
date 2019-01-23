@@ -14,12 +14,13 @@ const commonjs = require('rollup-plugin-commonjs');
     sourcemaps: true,
     data: {
         name: 'activities.umd.js',
-        input: 'lib/index.js'
+        input: 'lib/index.js',
+        format: 'umd'
     },
     pipes: [
         (ctx: TransformContext) => rollup({
             name: ctx.config.data.name,
-            format: 'umd',
+            format: ctx.config.data.format || 'umd',
             sourceMap: true,
             plugins: [
                 resolve(),
@@ -61,7 +62,7 @@ export class RollupTs {
 
 @Pack({
     baseURL: __dirname,
-    clean: ['lib', 'bundles', 'es2015', 'es2017'],
+    clean: ['lib', 'bundles', 'fesm5', 'es2015', 'fesm2015'],
     test: 'test/**/*.spec.ts',
     assets: {
         ts: {
@@ -77,19 +78,13 @@ export class RollupTs {
                     ],
                     dest: 'bundles',
                     task: AssetActivity
-                }
-            ]
-        },
-        ts2017: {
-            sequence: [
-                { clean: 'lib', activity: CleanActivity },
-                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
+                },
                 {
-                    src: 'lib/**/*.js',
-                    dest: 'es2017',
+                    src: 'lib/**/*.js', dest: 'fesm5',
                     data: {
                         name: 'activities.js',
-                        input: 'lib/index.js'
+                        input: 'lib/index.js',
+                        format: 'cjs'
                     },
                     activity: RollupTs
                 }
@@ -97,13 +92,14 @@ export class RollupTs {
         },
         ts2015: {
             sequence: [
-                { clean: 'lib', activity: CleanActivity },
-                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
+                { src: 'src/**/*.ts', dest: 'es2015', tds: false, annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
                 {
-                    src: 'lib/**/*.js', dest: 'es2015',
+                    src: 'es2015/**/*.js',
+                    dest: 'fesm2015',
                     data: {
                         name: 'activities.js',
-                        input: 'lib/index.js'
+                        input: 'es2015/index.js',
+                        format: 'cjs'
                     },
                     activity: RollupTs
                 }

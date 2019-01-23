@@ -1,11 +1,13 @@
 {
   "name": "@ts-ioc/platform-browser",
-  "version": "4.0.0-beta20",
+  "version": "4.0.0-beta21",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
-  "esnext": "./es2017/platform-browser.js",
-  "es2015": "./es2015/platform-browser.js",
-  "module": "./bundles/platform-browser.umd.js",
-  "main": "./lib/index.js",
+  "es2015": "./fesm2015/platform-browser.js",
+  "esm2015": "./es2015/index.js",
+  "esm5": "./lib/index.js",
+  "fesm5": "./fesm5/platform-browser.js",
+  "module": "./fesm5/platform-browser.js",
+  "main": "./bundles/platform-browser.umd.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",
@@ -43,7 +45,7 @@
     "tslib": "^1.9.3"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "^4.0.0-beta20"
+    "@ts-ioc/core": "^4.0.0-beta21"
   },
   "directories": {
     "lib": "lib"

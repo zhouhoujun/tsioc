@@ -16,12 +16,13 @@ const builtins = require('rollup-plugin-node-builtins');
     dest: 'es2015',
     data: {
         name: 'build.js',
-        input: 'lib/index.js'
+        input: 'lib/index.js',
+        format: 'cjs'
     },
     pipes: [
         (ctx: TransformContext) => rollup({
             name: ctx.config.data.name,
-            format: 'umd',
+            format: ctx.config.data.format || 'cjs',
             sourceMap: true,
             plugins: [
                 resolve(),
@@ -103,19 +104,26 @@ export class RollupTs extends AssetActivity {
 @Pack({
     // src: 'src',
     baseURL: __dirname,
-    clean: ['lib', 'bundles', 'es2015', 'es2017'],
+    clean: ['lib', 'bundles', 'fesm5', 'es2015', 'fesm2015'],
     assets: {
-        ts2017: {
+        ts: {
             sequence: [
-                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.es2017.json', activity: TsCompile },
-                { src: 'lib/**/*.js', data: { name: 'build.js', input: 'lib/index.js' }, dest: 'es2017', activity: RollupTs }
+                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.json', activity: TsCompile },
+                { src: 'lib/**/*.js', data: { name: 'build.js', input: 'lib/index.js', format: 'cjs' }, dest: 'fesm5', activity: RollupTs }
             ]
         },
         ts2015: {
             sequence: [
-                { clean: 'lib', activity: CleanToken },
-                { src: 'src/**/*.ts', dest: 'lib', uglify: false, tsconfig: './tsconfig.es2015.json', annotation: true, activity: TsCompile },
-                { dest: 'es2015', activity: RollupTs }
+                { src: 'src/**/*.ts', dest: 'es2015', tds: false, uglify: false, tsconfig: './tsconfig.es2015.json', annotation: true, activity: TsCompile },
+                {
+                    src: 'es2015/**/*.js',
+                    dest: 'fesm2015',
+                    data: {
+                        name: 'build.js',
+                        input: 'es2015/index.js',
+                        format: 'cjs'
+                    }, activity: RollupTs
+                }
             ]
         }
     }

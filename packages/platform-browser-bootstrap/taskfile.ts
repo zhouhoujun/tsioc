@@ -57,8 +57,8 @@ export class BootRollup extends AssetActivity {
 @Pack({
     baseURL: __dirname,
     src: 'src',
-    clean: ['lib', 'bundles', 'es2015', 'es2017'],
     test: 'test/**/*.spec.ts',
+    clean: ['lib', 'bundles', 'fesm5', 'es2015', 'fesm2015'],
     assets: {
         ts: {
             sequence: [
@@ -74,21 +74,30 @@ export class BootRollup extends AssetActivity {
                         () => rename('platform-browser-bootstrap.umd.min.js')
                     ],
                     task: AssetActivity
+                },
+                {
+                    src: 'lib/**/*.js', dest: 'fesm5',
+                    data: {
+                        name: 'platform-browser-bootstrap.js',
+                        input: 'lib/index.js',
+                        format: 'cjs'
+                    },
+                    activity: BootRollup
                 }
-            ]
-        },
-        es2017: {
-            sequence: [
-                { clean: 'lib', activity: CleanToken },
-                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.es2017.json', activity: TsCompile },
-                { src: 'lib/**/*.js', dest: 'es2017', data: { name: 'platform-browser-bootstrap.js', input: './lib/index.js' }, activity: BootRollup }
             ]
         },
         ts2015: {
             sequence: [
-                { clean: 'lib', activity: CleanToken },
-                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
-                { src: 'lib/**/*.js', dest: 'es2015', data: { name: 'platform-browser-bootstrap.js', input: './lib/index.js' }, activity: BootRollup }
+                { src: 'src/**/*.ts', dest: 'es2015', tds: false, annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
+                {
+                    src: 'es2015/**/*.js',
+                    dest: 'fesm2015',
+                    data: {
+                        name: 'platform-browser-activities.js',
+                        input: './es2015/index.js',
+                        format: 'cjs'
+                    }, activity: BootRollup
+                }
             ]
         }
     }

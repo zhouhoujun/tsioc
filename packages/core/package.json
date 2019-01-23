@@ -1,11 +1,13 @@
 {
   "name": "@ts-ioc/core",
-  "version": "4.0.0-beta20",
+  "version": "4.0.0-beta21",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
-  "esnext": "./es2017/core.js",
-  "es2015": "./es2015/core.js",
-  "module": "./bundles/core.umd.js",
-  "main": "./lib/index.js",
+  "es2015": "./fesm2015/core.js",
+  "esm2015": "./es2015/index.js",
+  "esm5": "./lib/index.js",
+  "fesm5": "./fesm5/core.js",
+  "module": "./fesm5/core.js",
+  "main": "./bundles/core.umd.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",

@@ -1,6 +1,5 @@
-import { InjectToken, IContainer } from '@ts-ioc/core';
+import { InjectToken } from '@ts-ioc/core';
 import { RunnableConfigure } from './AppConfigure';
-import { IRunnableBuilder } from './IRunnableBuilder';
 
 /**
  * configure manager token.
