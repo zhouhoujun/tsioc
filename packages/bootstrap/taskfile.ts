@@ -101,7 +101,7 @@ export class BootBuilder {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.create({ debug: true })
+    Workflow.create({ debug: false })
         .use(PackModule)
         .bootstrap(BootBuilder);
 }

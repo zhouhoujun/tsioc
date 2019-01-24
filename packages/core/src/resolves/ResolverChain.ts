@@ -115,9 +115,9 @@ export class ResolverChain implements IResolver {
         if (resolver instanceof Container) {
             return resolver.hasRegister(token);
         } else {
-            if (resolver.type === token || this.container.getTokenKey(resolver.token) === token) {
-                return true;
-            }
+            // if (resolver.type === token || this.container.getTokenKey(resolver.token) === token) {
+            //     return true;
+            // }
             return resolver.hasRegister(token);
         }
     }
