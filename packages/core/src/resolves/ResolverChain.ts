@@ -4,7 +4,8 @@ import { ResolverType } from './ResolverType';
 import { Container } from '../Container';
 import { InjectToken } from '../InjectToken';
 import { IResolver } from '../IResolver';
-import { ParamProviders } from '../providers';
+import { ParamProviders, ProviderMap, isProviderMap } from '../providers';
+import { isString, isNumber, isNull } from '../utils';
 /**
  *  resolver chain token.
  */
@@ -100,29 +101,6 @@ export class ResolverChain implements IResolver {
     }
 
     /**
-     * has token or not.
-     *
-     * @template T
-     * @param {ResolverType} resolver
-     * @param {SymbolType<T>} token
-     * @returns {boolean}
-     * @memberof ResolverChain
-     */
-    hasToken<T>(resolver: ResolverType, token: Token<T>): boolean {
-        if (!token) {
-            return false;
-        }
-        if (resolver instanceof Container) {
-            return resolver.hasRegister(token);
-        } else {
-            // if (resolver.type === token || this.container.getTokenKey(resolver.token) === token) {
-            //     return true;
-            // }
-            return resolver.hasRegister(token);
-        }
-    }
-
-    /**
      * resove token via registered resolver chain.
      *
      * @template T
@@ -131,20 +109,43 @@ export class ResolverChain implements IResolver {
      * @returns {T}
      * @memberof ResolverChain
      */
-    resolve<T>(token: Token<T>, ...providers: ParamProviders[]): T {
-        let resolver = this.toArray().find(r => this.hasToken(r, token));
-        if (!resolver && !this.container.parent) {
-            return null;
-        }
-        if (resolver) {
-            if (resolver instanceof Container) {
-                return resolver.resolveValue(token, ...providers);
-            } else {
-                return resolver.resolve(token, ...providers);
-            }
+    resolve<T>(token: Token<T>, resway?: ResoveWay | ParamProviders, ...providers: ParamProviders[]): T {
+        let key = this.container.getTokenKey(token, isString(resway) ? resway : null);
+        let way: ResoveWay;
+        if (isNumber(resway)) {
+            way = resway;
         } else {
-            return this.container.parent.resolve(token, ...providers);
+            if (resway) {
+                providers.unshift(resway);
+            }
+            way = ResoveWay.all;
         }
+        let providerMap: ProviderMap;
+        if (providers.length) {
+            if (providers.length === 1 && isProviderMap(providers[0])) {
+                providerMap = providers[0] as ProviderMap;
+            } else {
+                providerMap = this.container.getProviderParser().parse(...providers);
+            }
+        }
+        if (providerMap && providerMap.has(key)) {
+            return providerMap.resolve(key, providerMap);
+        }
+        let val: T;
+        if ((way & ResoveWay.current)) {
+            val = this.container.resolveValue(key, providerMap);
+        }
+        if (isNull(val) && (way & ResoveWay.traverse)) {
+            this.resolvers.some(r => {
+                val = r.resolve(key, ResoveWay.traverse, providerMap);
+                return !isNull(val);
+            });
+        }
+        if ((way & ResoveWay.bubble) && this.container.parent) {
+            val = this.container.parent.resolve(key, ResoveWay.bubble | ResoveWay.current, providerMap);
+        }
+
+        return val;
     }
 
     /**
@@ -194,24 +195,6 @@ export class ResolverChain implements IResolver {
     }
 
     /**
-     * has register in the registered resolver chain.
-     *
-     * @template T
-     * @param {SymbolType<T>} token
-     * @returns {boolean}
-     * @memberof ResolverChain
-     */
-    hasRegister<T>(token: SymbolType<T>): boolean {
-        if (this.container.hasRegister(token)) {
-            return true;
-        }
-        if (this.resolvers.length) {
-            return this.resolvers.some(r => this.hasToken(r, token));
-        }
-        return false;
-    }
-
-    /**
      * has token or not in the registered resolver chain.
      *
      * @template T
@@ -219,11 +202,16 @@ export class ResolverChain implements IResolver {
      * @returns {boolean}
      * @memberof ResolverChain
      */
-    has<T>(token: SymbolType<T>): boolean {
-        if (this.hasRegister(token)) {
+    has<T>(token: Token<T>, aliasOrway?: string | ResoveWay): boolean {
+        let key = this.container.getTokenKey(token, isString(aliasOrway) ? aliasOrway : null);
+        let resway = isNumber(aliasOrway) ? aliasOrway : ResoveWay.all;
+        if ((resway & ResoveWay.current) && this.container.hasRegister(key)) {
             return true;
         }
-        if (this.container.parent) {
+        if ((resway & ResoveWay.traverse) && this.resolvers.some(r => r.has(key, resway))) {
+            return true;
+        }
+        if ((resway & ResoveWay.bubble) && this.container.parent) {
             return this.container.parent.has(token);
         }
         return false;

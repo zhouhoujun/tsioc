@@ -98,15 +98,14 @@ export interface IContainer extends IMethodAccessor, IResolver {
     getBuilder(): IContainerBuilder;
 
     /**
-     * has register the token or not.
+     * current container has register.
      *
      * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
+     * @param {Token<T>} key
      * @returns {boolean}
      * @memberof IContainer
      */
-    has<T>(token: Token<T>, alias?: string): boolean;
+    hasRegister<T>(key: Token<T>): boolean;
 
     /**
      * Retrieves an instance from the container based on the provided token.

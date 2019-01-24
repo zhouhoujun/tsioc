@@ -113,13 +113,12 @@ export class Container implements IContainer {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {string} [alias]
+     * @param {string} [aliasOrway]
      * @returns {boolean}
      * @memberof Container
      */
-    has<T>(token: Token<T>, alias?: string): boolean {
-        let key = this.getTokenKey(token, alias);
-        return this.getResolvers().has(key);
+    has<T>(token: Token<T>, aliasOrway?: string | ResoveWay): boolean {
+        return this.getResolvers().has(token, aliasOrway);
     }
 
     /**
@@ -130,7 +129,7 @@ export class Container implements IContainer {
      * @returns
      * @memberof Container
      */
-    hasRegister<T>(key: Token<T>) {
+    hasRegister<T>(key: Token<T>): boolean {
         return this.factories.has(this.getTokenKey(key));
     }
 
@@ -157,20 +156,8 @@ export class Container implements IContainer {
      * @param {...ParamProviders[]} providers
      * @memberof Container
      */
-    resolve<T>(token: Token<T>, ...providers: ParamProviders[]): T {
-        let key = this.getTokenKey<T>(token);
-        let providerMap: ProviderMap;
-        if (providers.length) {
-            if (providers.length === 1 && isProviderMap(providers[0])) {
-                providerMap = providers[0] as ProviderMap;
-            } else {
-                providerMap = this.getProviderParser().parse(...providers);
-            }
-        }
-        if (providerMap && providerMap.has(key)) {
-            return providerMap.resolve(key, providerMap);
-        }
-        return this.getResolvers().resolve(key, providerMap);
+    resolve<T>(token: Token<T>, resway?: ResoveWay | ParamProviders, ...providers: ParamProviders[]): T {
+        return this.getResolvers().resolve(token, resway, ...providers);
     }
 
     /**
@@ -362,8 +349,8 @@ export class Container implements IContainer {
             this.getResolvers().toArray().forEach(resolver => {
                 tags.forEach(tg => {
                     let priMapTk = new InjectReference(ProviderMap, tg);
-                    if (resolver.hasRegister(priMapTk)) {
-                        let priMap = resolver.resolve(priMapTk);
+                    if (resolver.has(priMapTk, ResoveWay.current)) {
+                        let priMap = resolver.resolve(priMapTk, ResoveWay.current);
                         priMap.forEach((pfac, ptk) => {
                             if (isClassType(ptk) && matchExp(ptk)) {
                                 services.push(pfac(...providers))
