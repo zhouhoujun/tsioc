@@ -116,17 +116,15 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         if (injMd) {
             let chain = container.getResolvers();
             chain.next(injMd);
+
             if (injMd.exports && injMd.exports.length) {
-                providerContainer.getResolvers().toArray().filter(r => {
-                    if (r instanceof Container) {
-                        return false;
-                    } else {
-                        return injMd.exports.indexOf(r.type) >= 0
+                providerContainer.getResolvers().toArray().forEach(r => {
+                    if (!(r instanceof Container) && r.type && injMd.exports.indexOf(r.type) >= 0) {
+                        chain.next(r);
                     }
-                }).forEach(r => {
-                    chain.next(r);
                 });
             }
+
         }
 
         return container;
