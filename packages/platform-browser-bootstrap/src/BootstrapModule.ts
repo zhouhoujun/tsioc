@@ -24,6 +24,7 @@ export function browserApp<T>(baseURL?: string): IApplicationBuilder<T> {
         { provide: ProcessRunRootToken, useValue: processRoot }
     ],
     exports: [
+        BrowserModule
     ]
 })
 export class BrowserBootstrapModule {

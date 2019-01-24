@@ -71,6 +71,7 @@ let processRoot = path.join(path.dirname(cwd), path.basename(cwd));
         { provide: ProcessRunRootToken, useValue: processRoot }
     ],
     exports: [
+        ServerModule,
         ConfigureFileLoader
     ]
 })

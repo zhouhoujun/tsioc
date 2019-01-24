@@ -11,6 +11,7 @@ import { WorkflowConfigureRegister } from './WorkflowConfigureRegister';
         WorkflowConfigureRegister
     ],
     exports: [
+        BrowserModule,
         TaskLogAspect,
         RunnerLogAspect,
         WorkflowConfigureRegister
