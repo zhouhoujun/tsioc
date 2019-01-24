@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-require('ts-node').register();
 import { rm, cp, mkdir } from 'shelljs';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -17,6 +16,17 @@ let cwdPackageConf = path.join(processRoot, '/package.json');
 if (!fs.existsSync(cwdPackageConf)) {
     cwdPackageConf = undefined;
 }
+
+function requireCwd(id: string) {
+    try {
+        return require(resolve.sync(id, { basedir: processRoot, package: cwdPackageConf }));
+    } catch (err) {
+        // require ts-config/paths or globals
+        return require(id);
+    }
+}
+
+requireCwd('ts-node').register();
 
 if (process.argv.indexOf('scaffold') > -1) {
     process.argv.push('--verbose');
@@ -123,16 +133,6 @@ program
         }
     });
 
-
-
-function requireCwd(id: string) {
-    try {
-        return require(resolve.sync(id, { basedir: processRoot, package: cwdPackageConf }));
-    } catch (err) {
-        // require ts-config/paths or globals
-        return require(id);
-    }
-}
 
 function requireRegisters() {
     requireCwd('tsconfig-paths').register();
