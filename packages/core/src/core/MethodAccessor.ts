@@ -91,12 +91,12 @@ export class MethodAccessor implements IMethodAccessor {
     }
 
     createSyncParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
-        let providerMap = this.container.getProviderParser().parse(params, ...providers);
+        let providerMap = this.container.getProviderParser().parse(...providers);
         return params.map((param, index) => {
-            if (param.name && providerMap.hasRegister(param.name)) {
+            if (param.name && providerMap.has(param.name)) {
                 return providerMap.resolve(param.name);
             } else if (isToken(param.type)) {
-                if (providerMap.hasRegister(param.type)) {
+                if (providerMap.has(param.type)) {
                     return providerMap.resolve(param.type);
                 }
                 return this.container.resolve(param.type, providerMap);
@@ -107,12 +107,12 @@ export class MethodAccessor implements IMethodAccessor {
     }
 
     createParams(params: IParameter[], ...providers: ParamProviders[]): Promise<any[]> {
-        let providerMap = this.container.getProviderParser().parse(params, ...providers);
+        let providerMap = this.container.getProviderParser().parse(...providers);
         return Promise.all(params.map((param, index) => {
-            if (param.name && providerMap.hasRegister(param.name)) {
+            if (param.name && providerMap.has(param.name)) {
                 return providerMap.resolve(param.name);
             } else if (isToken(param.type)) {
-                if (providerMap.hasRegister(param.type)) {
+                if (providerMap.has(param.type)) {
                     return providerMap.resolve(param.type);
                 }
                 return this.container.resolve(param.type, providerMap);

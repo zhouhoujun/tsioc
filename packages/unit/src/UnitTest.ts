@@ -86,10 +86,10 @@ export class UnitTest extends ApplicationBuilder<any> {
 
    async initContainerPools() {
       await super.initContainerPools();
-      if (!this.hasRegister(Assert)) {
+      if (!this.has(Assert)) {
          this.getPools().getDefault().bindProvider(Assert, () => assert);
       }
-      if (!this.hasRegister(ExpectToken)) {
+      if (!this.has(ExpectToken)) {
          this.getPools().getDefault().bindProvider(ExpectToken, () => expect);
       }
    }

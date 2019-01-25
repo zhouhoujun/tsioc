@@ -1,4 +1,8 @@
-import { Token, IContainer, Registration, Type, IExports, ParamProviders, InjectReference, ProviderMap, Factory, isToken, IResolver } from '@ts-ioc/core';
+import {
+    Token, IContainer, Registration, Type, IExports,
+    ParamProviders, Factory, isToken,
+    IResolver, ResoveWay, isString, isNumber, isNullOrUndefined, IResolverContainer, InjectReference, ProviderMap
+} from '@ts-ioc/core';
 import { ModuleConfig } from './ModuleConfigure';
 
 
@@ -16,35 +20,72 @@ export class InjectedModule<T> implements IExports {
         public config: ModuleConfig<T>,
         public container: IContainer,
         public type?: Type<any>,
-        public exports?: Token<any>[]
+        public exports?: IResolverContainer
     ) {
 
     }
 
-    private _map;
-    getProviderMap(): ProviderMap {
-        if (!this._map) {
-            this._map = this.container.resolveValue(new InjectReference(ProviderMap, this.type || this.token));
+    getProviderMap(): IResolverContainer {
+        if (!this.exports) {
+            this.exports = this.container; // this.container.resolve(new InjectReference(ProviderMap, this.type || this.token));
         }
-        return this._map;
+        return this.exports;
     }
 
-    resolve<T>(token: Token<T>, ...providers: ParamProviders[]): T {
-        let pdr = this.getProviderMap();
-        if (pdr && pdr.hasRegister(token)) {
-            return pdr.resolve(token, ...providers);
+    get size(): number {
+        return this.getProviderMap().size;
+    }
+
+    resolve<T>(token: Token<T>, resway?: ResoveWay | ParamProviders, ...providers: ParamProviders[]): T {
+        let way: ResoveWay;
+        if (isNumber(resway)) {
+            way = resway;
         } else {
-            return this.container.resolveValue(token, ...providers);
+            way = ResoveWay.all;
+            if (resway) {
+                providers.unshift(resway);
+            }
         }
+        let pdr = this.getProviderMap();
+        let val: T;
+        if (pdr && (way & ResoveWay.current) && pdr.has(token)) {
+            val = pdr.resolve(token, ...providers);
+        }
+
+        if (pdr !== this.container && isNullOrUndefined(val) && (way & ResoveWay.traverse)) {
+            val = this.container.resolve(token, ResoveWay.nodes, ...providers);
+        }
+        return val;
     }
 
-    hasRegister<T>(key: Token<T>): boolean {
+    has<T>(token: Token<T>, aliasOrway?: string | ResoveWay): boolean {
+        let key = this.container.getTokenKey(token, isString(aliasOrway) ? aliasOrway : null);
         let pdr = this.getProviderMap();
-        if (pdr && pdr.hasRegister(key)) {
+        let resway = isNumber(aliasOrway) ? aliasOrway : ResoveWay.all;
+        if (pdr && (resway & ResoveWay.current) && pdr.has(key)) {
             return true
-        } else {
-            return this.container.hasRegister(key);
         }
+        if (pdr !== this.container && (resway & ResoveWay.traverse)) {
+            return this.container.has(key, ResoveWay.nodes);
+        }
+        return false;
+    }
+
+    getTokenImpl<T>(token: Token<T>, resway?: ResoveWay): Type<T> {
+        return this.container.getTokenImpl(token, resway || ResoveWay.nodes);
+    }
+
+    unregister<T>(token: Token<T>, resway?: ResoveWay): this {
+        let key = this.container.getTokenKey(token);
+        let pdr = this.getProviderMap();
+        resway = isNumber(resway) ? resway : ResoveWay.nodes;
+        if (pdr && (resway & ResoveWay.current)) {
+            pdr.unregister(key, ResoveWay.current);
+        }
+        if (resway & ResoveWay.traverse) {
+            this.container.unregister(key, ResoveWay.nodes);
+        }
+        return this;
     }
 
     forEach(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void): void {

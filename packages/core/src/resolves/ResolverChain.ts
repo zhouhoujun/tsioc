@@ -1,11 +1,10 @@
-import { SymbolType, Type, Token, Factory, InstanceFactory } from '../types';
+import { Type, Token, InstanceFactory } from '../types';
 import { IContainer, ResoveWay } from '../IContainer';
-import { ResolverType } from './ResolverType';
-import { Container } from '../Container';
 import { InjectToken } from '../InjectToken';
-import { IResolver } from '../IResolver';
+import { IResolver, IResolverContainer } from '../IResolver';
 import { ParamProviders, ProviderMap, isProviderMap } from '../providers';
-import { isString, isNumber, isNull } from '../utils';
+import { isString, isNumber, isNull, isFunction, isNullOrUndefined } from '../utils';
+
 /**
  *  resolver chain token.
  */
@@ -20,27 +19,32 @@ export const ResolverChainToken = new InjectToken<ResolverChain>('di_ResolverCha
  * @class ResolverChain
  * @implements {IResolver}
  */
-export class ResolverChain implements IResolver {
+export class ResolverChain implements IResolverContainer {
+
     /**
      * resolvers
      *
      * @protected
-     * @type {ResolverType[]}
+     * @type {IResolver[]}
      * @memberof ResolverChain
      */
-    protected resolvers: ResolverType[];
+    protected resolvers: IResolver[];
 
     constructor(protected container: IContainer) {
         this.resolvers = [];
     }
 
+    get size(): number {
+        return this.resolvers.length + 1;
+    }
+
     /**
      * reigister next resolver.
      *
-     * @param {ResolverType} resolver
+     * @param {IResolver} resolver
      * @memberof ResolverChain
      */
-    next(resolver: ResolverType) {
+    next(resolver: IResolver) {
         if (!this.hasResolver(resolver)) {
             this.resolvers.push(resolver);
         }
@@ -49,11 +53,18 @@ export class ResolverChain implements IResolver {
     /**
      * resolver chain to array.
      *
-     * @returns {ResolverType[]}
+     * @returns {IResolver[]}
      * @memberof ResolverChain
      */
-    toArray(): ResolverType[] {
-        return [<ResolverType>this.container].concat(this.resolvers);
+    toArray(resway = ResoveWay.all): IResolver[] {
+        if (resway & ResoveWay.nodes) {
+            return [<IResolver>this.container].concat(this.resolvers);
+        } else if (resway & ResoveWay.current) {
+            return [this.container];
+        } else if (resway & ResoveWay.traverse) {
+            return this.resolvers;
+        }
+        return [];
     }
 
     /**
@@ -67,8 +78,10 @@ export class ResolverChain implements IResolver {
             this.container.forEach(callbackfn);
         }
         if (resway & ResoveWay.traverse) {
-            this.resolvers.forEach(r => {
-                r.forEach(callbackfn);
+            this.resolvers.forEach((r: IResolverContainer) => {
+                if (isFunction(r.forEach)) {
+                    r.forEach(callbackfn);
+                }
             });
         }
         if (this.container.parent && (resway & ResoveWay.bubble)) {
@@ -79,25 +92,15 @@ export class ResolverChain implements IResolver {
     /**
      * has resolver or not.
      *
-     * @param {ResolverType} resolver
+     * @param {IResolver} resolver
      * @returns
      * @memberof ResolverChain
      */
-    hasResolver(resolver: ResolverType) {
-        if (resolver instanceof Container) {
-            return this.resolvers.indexOf(resolver) >= 0;
-        } else {
-            return this.resolvers.some(a => {
-                if (a instanceof Container) {
-                    return false;
-                } else {
-                    if (!a.type || !resolver.type) {
-                        return false;
-                    }
-                    return a.type === resolver.type;
-                }
-            });
+    hasResolver(resolver: IResolver) {
+        if (resolver === this.container) {
+            return true;
         }
+        return this.resolvers.indexOf(resolver) >= 0;
     }
 
     /**
@@ -128,21 +131,21 @@ export class ResolverChain implements IResolver {
                 providerMap = this.container.getProviderParser().parse(...providers);
             }
         }
-        if (providerMap && providerMap.has(key)) {
-            return providerMap.resolve(key, providerMap);
+        if (providerMap && providerMap.has(token)) {
+            return providerMap.resolve(token, providerMap);
         }
         let val: T;
         if ((way & ResoveWay.current)) {
             val = this.container.resolveValue(key, providerMap);
         }
-        if (isNull(val) && (way & ResoveWay.traverse)) {
+        if (isNullOrUndefined(val) && (way & ResoveWay.traverse)) {
             this.resolvers.some(r => {
-                val = r.resolve(key, ResoveWay.traverse, providerMap);
-                return !isNull(val);
+                val = r.resolve(key, ResoveWay.nodes, providerMap);
+                return !isNullOrUndefined(val);
             });
         }
-        if ((way & ResoveWay.bubble) && this.container.parent) {
-            val = this.container.parent.resolve(key, ResoveWay.bubble | ResoveWay.current, providerMap);
+        if (isNullOrUndefined(val) && this.container.parent && (way & ResoveWay.bubble)) {
+            val = this.container.parent.resolve(key, ResoveWay.routeup, providerMap);
         }
 
         return val;
@@ -155,43 +158,54 @@ export class ResolverChain implements IResolver {
      * @param {SymbolType<T>} token
      * @memberof ResolverChain
      */
-    unregister<T>(token: SymbolType<T>) {
-        let resolver = this.toArray().find(r => this.hasToken(r, token));
-        if (resolver) {
-            if (resolver instanceof Container) {
-                resolver.unregister(token, false);
-            } else {
-                let idx = this.resolvers.indexOf(resolver);
-                if (idx >= 0 && idx < this.resolvers.length) {
-                    this.resolvers.splice(idx, 1);
-                }
-            }
-        } else if (this.container.parent) {
-            this.container.parent.unregister(token);
+    unregister<T>(token: Token<T>, resway?: ResoveWay) {
+        resway = resway || ResoveWay.all;
+        let tokenKey = this.container.getTokenKey(token);
+        if (resway & ResoveWay.current) {
+            this.container.unregisterValue(tokenKey);
         }
+        if (resway & ResoveWay.traverse) {
+            this.resolvers.forEach((r: IResolverContainer) => {
+                if (isFunction(r.unregister)) {
+                    r.unregister(tokenKey, ResoveWay.nodes);
+                }
+            });
+        }
+        if ((resway & ResoveWay.bubble) && this.container.parent) {
+            this.container.parent.unregister(token, ResoveWay.routeup);
+        }
+        return this;
     }
 
     /**
      * get token implements class in the registered resolver chain.
      *
      * @template T
-     * @param {SymbolType<T>} token
+     * @param {Token<T>} token
      * @returns {Type<T>}
      * @memberof ResolverChain
      */
-    getTokenImpl<T>(token: SymbolType<T>): Type<T> {
-        let resolver = this.toArray().find(r => this.hasToken(r, token));
-        if (resolver) {
-            if (resolver instanceof Container) {
-                return resolver.getTokenImpl(token, false);
-            } else {
-                return resolver.container.getTokenImpl(token, false);
-            }
-        } else if (this.container.parent) {
-            return this.container.parent.getTokenImpl(token);
-        } else {
-            return null;
+    getTokenImpl<T>(token: Token<T>, resway?: ResoveWay): Type<T> {
+        resway = resway || ResoveWay.nodes;
+        let tokenKey = this.container.getTokenKey(token);
+        let provider: Type<T>;
+        if (resway & ResoveWay.current) {
+            provider = this.container.getTokenProvider(tokenKey);
         }
+        if (!provider && (resway & ResoveWay.traverse)) {
+            this.resolvers.some((r: IResolverContainer) => {
+                if (!isFunction(r.getTokenImpl)) {
+                    return false;
+                }
+                provider = r.getTokenImpl(tokenKey, ResoveWay.nodes);
+                return !!provider;
+            });
+        }
+        if (!provider && (resway & ResoveWay.bubble) && this.container.parent) {
+            provider = this.container.parent.getTokenImpl(token, ResoveWay.routeup);
+        }
+
+        return provider || null;
     }
 
     /**
@@ -208,12 +222,21 @@ export class ResolverChain implements IResolver {
         if ((resway & ResoveWay.current) && this.container.hasRegister(key)) {
             return true;
         }
-        if ((resway & ResoveWay.traverse) && this.resolvers.some(r => r.has(key, resway))) {
+        if ((resway & ResoveWay.traverse) && this.resolvers.some(r => r.has(key, ResoveWay.nodes))) {
             return true;
         }
         if ((resway & ResoveWay.bubble) && this.container.parent) {
-            return this.container.parent.has(token);
+            return this.container.parent.has(token, ResoveWay.routeup);
         }
         return false;
+    }
+
+    forEach(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void): void {
+        this.container.forEach(callbackfn);
+        this.resolvers.forEach((r: IResolverContainer) => {
+            if (isFunction(r.forEach)) {
+                r.forEach(callbackfn);
+            }
+        });
     }
 }

@@ -1,7 +1,7 @@
 import {
     IContainer, LoadType, Factory, Token,
     ContainerBuilder, IContainerBuilder, isClass,
-    isToken, PromiseUtil, Injectable, lang, ParamProviders, isNullOrUndefined, ResoveWay
+    isToken, PromiseUtil, Injectable, lang, ParamProviders, isNullOrUndefined, ResoveWay, isNumber
 } from '@ts-ioc/core';
 import { IRunnableBuilder, CustomRegister, RunnableBuilderToken, ProcessRunRootToken, RunOptions } from './IRunnableBuilder';
 import {
@@ -118,8 +118,8 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
      * @returns {boolean}
      * @memberof RunnableBuilder
      */
-    hasRegister<T>(key: Token<T>): boolean {
-        return this.getPools().values().some(c => c.hasRegister(key))
+    has<T>(key: Token<T>, aliasOrway?: string | ResoveWay): boolean {
+        return this.getPools().values().some(c => c.has(key, aliasOrway))
     }
 
     /**
@@ -131,10 +131,10 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
      * @returns {T}
      * @memberof RunnableBuilder
      */
-    resolve<T>(token: Token<T>, ...providers: ParamProviders[]): T {
+    resolve<T>(token: Token<T>, resway?: ResoveWay | ParamProviders, ...providers: ParamProviders[]): T {
         let resolved: T;
         this.getPools().values().some(c => {
-            resolved = c.resolve(token, ...providers);
+            resolved = c.resolve(token, resway, ...providers);
             return !isNullOrUndefined(resolved);
         })
         return resolved;

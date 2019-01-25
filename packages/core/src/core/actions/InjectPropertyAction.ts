@@ -46,10 +46,10 @@ export class InjectPropertyAction extends ActionComposite {
                     if (token === ContainerToken) {
                         Object.defineProperty(data.target, prop.propertyKey, { enumerable: false, writable: true });
                     }
-                    if (pdrMap && pdrMap.hasRegister(token)) {
+                    if (pdrMap && pdrMap.has(token)) {
                         data.target[prop.propertyKey] = pdrMap.resolve(token, providerMap);
                         data.injecteds[prop.propertyKey] = true;
-                    } else if (providerMap && providerMap.hasRegister(token)) {
+                    } else if (providerMap && providerMap.has(token)) {
                         data.target[prop.propertyKey] = providerMap.resolve(token, providerMap);
                         data.injecteds[prop.propertyKey] = true;
                     } else if (container.has(token)) {

@@ -19,7 +19,7 @@ import { registerCores } from './registerCores';
 import { ResolverChain, ResolverChainToken } from './resolves';
 import { InjectReference, InjectClassProvidesToken, isInjectReference } from './InjectReference';
 import { LifeScope, LifeScopeToken } from './LifeScope';
-import { ParamProviders, ProviderMap, ProviderParserToken, isProviderMap, IProviderParser, ProviderTypes } from './providers';
+import { ParamProviders, ProviderMap, ProviderParserToken, IProviderParser, ProviderTypes, isProviderMap } from './providers';
 import { IResolver } from './IResolver';
 
 /**
@@ -63,6 +63,9 @@ export class Container implements IContainer {
         this.init();
     }
 
+    get size(): number {
+        return this.factories.size;
+    }
     /**
      * get root container.
      *
@@ -349,9 +352,9 @@ export class Container implements IContainer {
             this.getResolvers().toArray().forEach(resolver => {
                 tags.forEach(tg => {
                     let priMapTk = new InjectReference(ProviderMap, tg);
-                    if (resolver.has(priMapTk, ResoveWay.current)) {
-                        let priMap = resolver.resolve(priMapTk, ResoveWay.current);
-                        priMap.forEach((pfac, ptk) => {
+                    if (resolver.has(priMapTk, ResoveWay.nodes)) {
+                        let priMap = resolver.resolve(priMapTk, ResoveWay.nodes);
+                        priMap.forEach((ptk, pfac) => {
                             if (isClassType(ptk) && matchExp(ptk)) {
                                 services.push(pfac(...providers))
                             }
@@ -429,7 +432,7 @@ export class Container implements IContainer {
         // resolve private first.
         if (isClass(target) && !isInjectReference(tk)) {
             let pdrmap = this.resolve(new InjectReference(ProviderMap, target));
-            if (pdrmap && pdrmap.hasRegister(tk)) {
+            if (pdrmap && pdrmap.has(tk)) {
                 return pdrmap.resolve(tk, ...providers);
             }
         }
@@ -617,29 +620,31 @@ export class Container implements IContainer {
         return this;
     }
 
+    unregisterValue<T>(token: Token<T>): this {
+        let key = this.getTokenKey(token);
+        if (this.hasRegister(key)) {
+            this.factories.delete(key);
+            if (this.provideTypes.has(key)) {
+                this.provideTypes.delete(key);
+            }
+            if (isClass(key)) {
+                this.clearCache(key);
+            }
+        }
+        return this;
+    }
+
     /**
      * unregister the token
      *
      * @template T
      * @param {Token<T>} token
+     * @param {ResoveWay} [resway]
      * @returns {this}
      * @memberof Container
      */
-    unregister<T>(token: Token<T>, inchain?: boolean): this {
-        let key = this.getTokenKey(token);
-        if (inchain === false) {
-            if (this.hasRegister(key)) {
-                this.factories.delete(key);
-                if (this.provideTypes.has(key)) {
-                    this.provideTypes.delete(key);
-                }
-                if (isClass(key)) {
-                    this.clearCache(key);
-                }
-            }
-        } else {
-            this.getResolvers().unregister(key);
-        }
+    unregister<T>(token: Token<T>, resway?: ResoveWay): this {
+        this.getResolvers().unregister(token, resway);
         return this;
     }
 
@@ -669,6 +674,17 @@ export class Container implements IContainer {
         return token;
     }
 
+    getTokenProvider<T>(token: Token<T>): Type<T> {
+        if (isClass(token)) {
+            return token;
+        }
+        let tokenKey = this.getTokenKey(token);
+        if (this.provideTypes.has(tokenKey)) {
+            return this.provideTypes.get(tokenKey);
+        }
+        return null;
+    }
+
     /**
      * get token implements class type.
      *
@@ -678,19 +694,8 @@ export class Container implements IContainer {
      * @returns {Type<T>}
      * @memberof Container
      */
-    getTokenImpl<T>(token: Token<T>, inchain?: boolean): Type<T> {
-        let tokenKey = this.getTokenKey(token);
-        if (inchain === false) {
-            if (isClass(token)) {
-                return token;
-            }
-            if (this.provideTypes.has(tokenKey)) {
-                return this.provideTypes.get(tokenKey);
-            }
-            return null;
-        } else {
-            return this.getResolvers().getTokenImpl(tokenKey);
-        }
+    getTokenImpl<T>(token: Token<T>, resway?: ResoveWay): Type<T> {
+        return this.getResolvers().getTokenImpl(token, resway);
     }
 
     /**

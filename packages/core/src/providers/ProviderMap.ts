@@ -1,9 +1,9 @@
-import { isToken, isFunction, isUndefined, isObject, MapSet } from '../utils';
-import { Token, InstanceFactory, SymbolType, Factory, ToInstance } from '../types';
-import { IContainer } from '../IContainer';
+import { isToken, isFunction, isUndefined, isObject, isNumber, MapBase } from '../utils';
+import { Token, InstanceFactory, SymbolType, Factory, Type } from '../types';
+import { IContainer, ResoveWay } from '../IContainer';
 import { InjectToken } from '../InjectToken';
-import { IResolver } from '../IResolver';
-import { ProviderTypes } from './types';
+import { IResolver, IResolverContainer } from '../IResolver';
+import { ProviderTypes, ParamProviders } from './types';
 
 // use core-js in browser.
 
@@ -17,7 +17,7 @@ export const ProviderMapToken = new InjectToken<ProviderMap>('DI_ProviderMap');
  * @export
  * @class Providers
  */
-export class ProviderMap extends MapSet<Token<any> | number, InstanceFactory<any>> implements IResolver {
+export class ProviderMap extends MapBase<Token<any> | number, InstanceFactory<any>> implements IResolverContainer {
 
     constructor(private container: IContainer) {
         super();
@@ -30,7 +30,7 @@ export class ProviderMap extends MapSet<Token<any> | number, InstanceFactory<any
      * @returns {boolean}
      * @memberof ProviderMap
      */
-    hasRegister(provide: Token<any> | number): boolean {
+    has(provide: Token<any> | number): boolean {
         return this.map.has(this.getTokenKey(provide));
     }
 
@@ -62,6 +62,18 @@ export class ProviderMap extends MapSet<Token<any> | number, InstanceFactory<any
      */
     get<T>(provide: Token<T> | number): InstanceFactory<T> {
         return this.map.get(this.getTokenKey(provide));
+    }
+
+    getTokenImpl<T>(token: Token<T>, resway?: ResoveWay): Type<T> {
+        return this.container.getTokenImpl(token, resway);
+    }
+
+    unregister<T>(token: Token<T>, resway?: ResoveWay): this {
+        let key = this.getTokenKey(token);
+        if (this.map.has(key)) {
+            this.map.delete(key);
+        }
+        return this;
     }
 
     /**
@@ -99,37 +111,36 @@ export class ProviderMap extends MapSet<Token<any> | number, InstanceFactory<any
     }
 
     /**
-     * remove provide token.
-     *
-     * @template T
-     * @param {(Token<T> | number)} provide
-     * @returns {this}
-     * @memberof ProviderMap
-     */
-    remove<T>(provide: Token<T> | number): this {
-        let key = this.getTokenKey(provide);
-        if (this.map.has(key)) {
-            this.map.delete(key);
-        }
-        return this;
-    }
-
-    /**
      * resolve instance via provide token.
      *
      * @template T
-     * @param {(Token<T> | number)} provide
+     * @param {Token<T>} provide
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof ProviderMap
      */
-    resolve<T>(provide: Token<T> | number, ...providers: ProviderTypes[]): T {
+    resolve<T>(provide: Token<T> | number, resway?: ResoveWay | ParamProviders, ...providers: ParamProviders[]): T {
         let key = this.getTokenKey(provide);
-        if (this.map.has(key)) {
+        let way: ResoveWay;
+        if (isNumber(resway)) {
+            way = resway;
+        } else {
+            if (resway) {
+                providers.unshift(resway);
+            }
+            way = ResoveWay.current;
+        }
+        if ((way & ResoveWay.current) && this.map.has(key)) {
             let provider = this.map.get(key);
             return isFunction(provider) ? provider(...providers) : null;
         }
         return null;
+    }
+
+    forEach(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void): void {
+        this.map.forEach((fac, key) => {
+            !isNumber(key) && callbackfn(key, fac, this);
+        });
     }
 
     /**
@@ -143,8 +154,8 @@ export class ProviderMap extends MapSet<Token<any> | number, InstanceFactory<any
         if (!map) {
             return this;
         }
-        map.forEach((val, token) => {
-            this.map.set(token, val);
+        this.map.forEach((fac, key) => {
+            this.map.set(key, fac);
         });
         return this;
     }

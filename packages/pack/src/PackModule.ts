@@ -8,10 +8,10 @@ import * as generate from './generate';
 
 @DIModule({
     imports: [
+        PackSetup,
         BuildModule,
         ShellModule,
         TransformModule,
-        PackSetup,
         cores,
         builds,
         generate,

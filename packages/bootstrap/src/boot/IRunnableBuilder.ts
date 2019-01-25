@@ -105,28 +105,6 @@ export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends
     initContainerPools(): Promise<void>;
 
     /**
-     * has register in pools.
-     * use must after `initContainerPools`.
-     *
-     * @template T
-     * @param {Token<T>} key
-     * @returns {boolean}
-     * @memberof IRunnableBuilder
-     */
-    hasRegister<T>(key: Token<T>): boolean;
-
-    /**
-     * resove token in pools.
-     * use must after `initContainerPools`.
-     * @template T
-     * @param {Token<T>} token
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IRunnableBuilder
-     */
-    resolve<T>(token: Token<T>, ...providers: ParamProviders[]): T
-
-    /**
      * get builder by token, config and env.
      *
      * @param {(Token<T> | ModuleConfig<T>)} token

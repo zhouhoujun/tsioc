@@ -1,15 +1,14 @@
-import { Token } from './types';
+import { Token, Type, InstanceFactory } from './types';
 import { ParamProviders } from './providers';
 import { ResoveWay } from './IContainer';
 
 /**
- * resolver interface.
+ * resolver.
  *
  * @export
  * @interface IResolver
  */
 export interface IResolver {
-
     /**
      * has register.
      *
@@ -19,26 +18,17 @@ export interface IResolver {
      * @memberof IResolver
      */
     has<T>(key: Token<T>): boolean;
+
     /**
      *  has register.
      *
      * @template T
      * @param {Token<T>} key
-     * @param {ResoveWay} [resway]
+     * @param {(string|ResoveWay)} aliasOrway
      * @returns {boolean}
      * @memberof IResolver
      */
-    has<T>(key: Token<T>, resway: ResoveWay): boolean;
-    /**
-     * has register.
-     *
-     * @template T
-     * @param {Token<T>} key
-     * @param {string} alias
-     * @returns {boolean}
-     * @memberof IResolver
-     */
-    has<T>(key: Token<T>, alias: string): boolean;
+    has<T>(key: Token<T>, aliasOrway: string | ResoveWay): boolean;
 
     /**
      * resolve type instance with token and param provider.
@@ -56,10 +46,50 @@ export interface IResolver {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {ResoveWay} resway
+     * @param {(ResoveWay|ParamProviders)} resway
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof IResolver
      */
-    resolve<T>(token: Token<T>, resway?: ResoveWay, ...providers: ParamProviders[]): T;
+    resolve<T>(token: Token<T>, resway: ResoveWay | ParamProviders, ...providers: ParamProviders[]): T;
+}
+
+/**
+ * resolver chain interface.
+ *
+ * @export
+ * @interface IResolver
+ */
+export interface IResolverContainer extends IResolver {
+
+    readonly size: number;
+    /**
+     * get token implement class type.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {ResoveWay} [resway]
+     * @returns {Type<T>}
+     * @memberof IResolver
+     */
+    getTokenImpl<T>(token: Token<T>, resway?: ResoveWay): Type<T>;
+
+    /**
+     * unregister the token
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {this}
+     * @memberof IResolver
+     */
+    unregister<T>(token: Token<T>, resway?: ResoveWay): this;
+
+    /**
+     * iterator current resolver.
+     *
+     * @param {(tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void} callbackfn
+     * @memberof IExports
+     */
+    forEach(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void): void;
+
 }

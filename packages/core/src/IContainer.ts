@@ -6,7 +6,7 @@ import { IMethodAccessor } from './IMethodAccessor';
 import { LifeScope } from './LifeScope';
 import { InjectToken } from './InjectToken';
 import { IContainerBuilder } from './IContainerBuilder';
-import { IResolver } from './IResolver';
+import { IResolver, IResolverContainer } from './IResolver';
 import { ResolverChain } from './resolves';
 import { ParamProviders, IProviderParser, ProviderTypes } from './providers';
 
@@ -36,6 +36,14 @@ export enum ResoveWay {
      */
     bubble = 1 << 2,
     /**
+     * current and children.
+     */
+    nodes = current | traverse,
+    /**
+     * current and bubble.
+     */
+    routeup = current | bubble,
+    /**
      *  traverse of curr node, children.
      */
     all = current | traverse | bubble
@@ -47,7 +55,7 @@ export enum ResoveWay {
  * @export
  * @interface IContainer
  */
-export interface IContainer extends IMethodAccessor, IResolver {
+export interface IContainer extends IMethodAccessor, IResolverContainer {
 
     /**
      * get or set parent container.
@@ -239,7 +247,7 @@ export interface IContainer extends IMethodAccessor, IResolver {
     * @returns {T}
     * @memberof IContainer
     */
-   getServices<T>(type: Token<T> | ((token: ClassType<T>) => boolean), target: Token<any> | Token<any>[], resway?: ResoveWay, ...providers: ParamProviders[]): T[];
+    getServices<T>(type: Token<T> | ((token: ClassType<T>) => boolean), target: Token<any> | Token<any>[], resway?: ResoveWay, ...providers: ParamProviders[]): T[];
 
     /**
     * get all servies extends class `type` and all private services of target extends class `type`.
@@ -288,6 +296,16 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @memberof IContainer
      */
     registerValue<T>(token: Token<T>, value: T): this;
+
+    /**
+     * unregister value.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {this}
+     * @memberof IContainer
+     */
+    unregisterValue<T>(token: Token<T>): this;
 
     /**
      * bind provider
@@ -345,16 +363,6 @@ export interface IContainer extends IMethodAccessor, IResolver {
     bindRefProvider<T>(target: Token<any>, provide: Token<T>, provider: Token<T> | Factory<T>, alias?: string, onceBinded?: (refToken: Token<T>) => void): this;
 
     /**
-     * unregister the token
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {this}
-     * @memberof IContainer
-     */
-    unregister<T>(token: Token<T>, inchain?: boolean): this;
-
-    /**
      * clear cache.
      *
      * @param {Type<any>} targetType
@@ -385,15 +393,14 @@ export interface IContainer extends IMethodAccessor, IResolver {
     getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T>;
 
     /**
-     * get token implement class type.
+     * get token provider.
      *
      * @template T
      * @param {Token<T>} token
-     * @param {boolean} inchain
      * @returns {Type<T>}
      * @memberof IContainer
      */
-    getTokenImpl<T>(token: Token<T>, inchain?: boolean): Type<T>;
+    getTokenProvider<T>(token: Token<T>): Type<T>;
 
     /**
      * iterate token  in  token class chain.  return false will break iterate.
@@ -448,11 +455,5 @@ export interface IContainer extends IMethodAccessor, IResolver {
      * @memberof IContainer
      */
     iterator(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void, resway?: ResoveWay): void;
-    /**
-     * iterator current container.
-     *
-     * @param {(tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void} callbackfn
-     * @memberof IExports
-     */
-    forEach(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void): void;
+
 }

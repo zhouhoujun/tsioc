@@ -17,7 +17,7 @@ describe('di module', () => {
         let md = await builder.load(ModuleA);
         expect(md).not.toBeNull();
         expect(md.config.bootstrap).toBeUndefined();
-        expect(md.container).not.toBeUndefined()
+        expect(md.container).not.toBeUndefined();
         expect(md.container.has('mark')).toBeTruthy();
         expect(md.container.get('mark')).toEqual('marked');
     });

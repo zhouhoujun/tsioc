@@ -2,8 +2,9 @@ import { IModuleInjector, ModuleInjectorToken, InjectorResult } from './IModuleI
 import { Type } from '../types';
 import { IContainer } from '../IContainer';
 import { PromiseUtil } from '../utils';
-import { IModuleValidate } from './IModuleValidate';
-import { Injectable } from '../core';
+import { IModuleValidate, ModuleValidateToken } from './IModuleValidate';
+import { Injectable, Inject } from '../core';
+import { IocExtModuleValidate } from './ModuleValidate';
 
 
 /**
@@ -23,12 +24,15 @@ export class ModuleInjector implements IModuleInjector {
      * @param {boolean} [skipNext] skip next when has match module to injector.
      * @memberof BaseModuleInjector
      */
-    constructor(protected validate?: IModuleValidate, protected skipNext?: boolean) {
+    constructor(@Inject(ModuleValidateToken) protected validate?: IModuleValidate, protected skipNext?: boolean) {
     }
 
     async inject(container: IContainer, modules: Type<any>[]): Promise<InjectorResult> {
         let types = (modules || []).filter(ty => this.valid(container, ty));
         if (types.length) {
+            if (this.validate instanceof IocExtModuleValidate) {
+                container = container.getRoot();
+            }
             await PromiseUtil.step(types.map(ty => () => this.setup(container, ty)));
         }
         let next = this.getNext(modules, types);
@@ -38,6 +42,9 @@ export class ModuleInjector implements IModuleInjector {
     syncInject(container: IContainer, modules: Type<any>[]): InjectorResult {
         let types = (modules || []).filter(ty => this.valid(container, ty));
         if (types.length) {
+            if (this.validate instanceof IocExtModuleValidate) {
+                container = container.getRoot();
+            }
             types.forEach(ty => {
                 this.syncSetup(container, ty);
             });

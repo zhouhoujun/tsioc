@@ -1,7 +1,7 @@
 import { IContainer } from '../IContainer';
-import { Token, Type, Factory, InstanceFactory } from '../types';
-import { Container } from '../Container';
-import { IResolver } from '../IResolver';
+import { Token, Type } from '../types';
+import { IResolverContainer } from '../IResolver';
+import { ProviderMap } from '../providers';
 
 /**
  * exports interface.
@@ -9,7 +9,7 @@ import { IResolver } from '../IResolver';
  * @export
  * @interface IExports
  */
-export interface IExports extends IResolver {
+export interface IExports extends IResolverContainer {
     /**
      * export token of type.
      *
@@ -27,10 +27,10 @@ export interface IExports extends IResolver {
     /**
      * exports modules
      *
-     * @type {Token<any>[]}
+     * @type {IResolverContainer}
      * @memberof IExports
      */
-    exports?: Token<any>[];
+    exports?: IResolverContainer;
 
     /**
      * ioc container, the module defined in.
@@ -39,18 +39,5 @@ export interface IExports extends IResolver {
      * @memberof IExports
      */
     container?: IContainer;
-
-    /**
-     * iterator current resolver.
-     *
-     * @param {(tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void} callbackfn
-     * @memberof IExports
-     */
-    forEach(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void): void;
 }
 
-
-/**
- *  resolver type.
- */
-export type ResolverType = Container | IExports;

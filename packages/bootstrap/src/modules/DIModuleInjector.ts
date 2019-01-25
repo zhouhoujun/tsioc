@@ -1,7 +1,7 @@
 import {
     Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
     Inject, Token, ParamProviders, isArray, IModuleInjector, Container,
-    InjectClassProvidesToken, IMetaAccessor, MetaAccessorToken, Singleton, ProviderTypes, hasOwnClassMetadata, IocExt, isClass
+    InjectClassProvidesToken, IMetaAccessor, MetaAccessorToken, Singleton, isClass, IExports, ProviderMap, InjectReference, hasOwnClassMetadata, IocExt, ResoveWay
 } from '@ts-ioc/core';
 import { DIModuleValidateToken } from './DIModuleValidate';
 import { DIModule } from '../decorators/DIModule';
@@ -73,23 +73,17 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         let pools = container.get(ContainerPoolToken);
         let newContainer = pools.create(type, container);
         newContainer.register(type);
-        let builder = newContainer.getBuilder();
+
         let decorator = this.validate.getDecorator();
         let accor = this.getMetaAccessor(newContainer, decorator);
         let metaConfig = accor.getMetadata(type, newContainer, undefined, decorator ? dec => dec === decorator : undefined) as ModuleConfigure;
-        metaConfig = await this.registerConfgureDepds(newContainer, metaConfig, type);
 
-        let exps: Type<any>[] = [].concat(...builder.loader.getTypes(metaConfig.exports || []));
-        let classProvides = [];
-        exps.forEach(ty => {
-            let classPd = newContainer.resolveValue(new InjectClassProvidesToken(ty));
-            classProvides.push(ty);
-            if (classPd && isArray(classPd.provides) && classPd.provides.length) {
-                classProvides = classProvides.concat(classPd.provides.slice(1));
-            }
-        });
+        await this.registerConfgureDepds(newContainer, metaConfig, type);
+        let exps = await this.getConfigExports(newContainer, metaConfig);
 
         let injMd = new InjectedModule(metaConfig.token || type, metaConfig, newContainer, type, exps);
+
+        container.bindProvider(new InjectReference(ProviderMap, type), exps);
         container.bindProvider(new InjectedModuleToken(type), injMd);
 
         await this.importConfigExports(container, newContainer, injMd);
@@ -98,15 +92,33 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
     }
 
 
-    protected async registerConfgureDepds(container: IContainer, config: ModuleConfigure, type?: Type<any>): Promise<ModuleConfigure> {
+    protected async registerConfgureDepds(container: IContainer, config: ModuleConfigure, type?: Type<any>): Promise<void> {
         if (isArray(config.imports) && config.imports.length) {
             await container.loadModule(...config.imports);
         }
+    }
 
-        if (!type && isArray(config.providers) && config.providers.length) {
-            await this.bindProvider(container, config.providers);
-        }
-        return config;
+    protected async getConfigExports(container: IContainer, config: ModuleConfigure): Promise<ProviderMap> {
+        let builder = container.getBuilder();
+        let parser = container.getProviderParser();
+        let map = parser.parse(...config.providers || []);
+        // bind module providers
+        container.bindProviders(map);
+
+        let exptypes: Type<any>[] = [].concat(...builder.loader.getTypes(config.exports || []));
+        exptypes.forEach(ty => {
+            let classPd = container.resolveValue(new InjectClassProvidesToken(ty));
+            map.add(ty, (...pds) => container.resolve(ty, ResoveWay.nodes, ...pds));
+            if (classPd && isArray(classPd.provides) && classPd.provides.length) {
+                classPd.provides.forEach(p => {
+                    if (!map.has(p)) {
+                        map.add(p, (...pds) => container.resolve(p, ResoveWay.nodes, ...pds));
+                    }
+                });
+            }
+        });
+
+        return map;
     }
 
     protected async importConfigExports(container: IContainer, providerContainer: IContainer, injMd: InjectedModule<any>) {
@@ -116,32 +128,29 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         if (injMd) {
             let chain = container.getResolvers();
             chain.next(injMd);
+            // if (injMd.exports && injMd.exports.size) {
+            //     injMd.exports.forEach(exp => {
+            //         if (isClass(exp) && hasOwnClassMetadata(IocExt, exp)) {
+            //             root.register(exp);
+            //         }
+            //     });
 
-            if (injMd.exports && injMd.exports.length) {
-                // injMd.exports.forEach(exp => {
-                //     if (isClass(exp) && hasOwnClassMetadata(IocExt, exp)) {
-                //         container.register(exp);
-                //     }
-                // });
-                providerContainer.getResolvers().toArray().forEach(r => {
-                    if (!(r instanceof Container) && r.type && injMd.exports.indexOf(r.type) >= 0) {
-                        chain.next(r);
-                    }
-                });
-            }
+            //     // providerContainer.getResolvers().toArray(ResoveWay.traverse).forEach((r: IExports) => {
+            //     //     if (r.type && injMd.exports.has(r.type)) {
+            //     //         console.log(injMd.type, r.type);
+            //     //         chain.next(r);
+            //     //         r.exports.forEach(exp => {
+            //     //             if (isClass(exp) && hasOwnClassMetadata(IocExt, exp)) {
+            //     //                 container.register(exp);
+            //     //             }
+            //     //         });
+            //     //     }
+            //     // });
+            // }
 
         }
 
         return container;
     }
 
-    protected bindProvider(container: IContainer, providers: ProviderTypes[]): Token<any>[] {
-        let parser = container.getProviderParser();
-        let pdrmap = parser.parse(...providers);
-        let tokens = pdrmap.provides();
-        tokens.forEach(key => {
-            container.bindProvider(key, (...pds: ParamProviders[]) => pdrmap.resolve(key, ...pds));
-        });
-        return tokens;
-    }
 }

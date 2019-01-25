@@ -3,16 +3,15 @@ import { isNullOrUndefined, isArray, isObject, isFunction, isClass, isClassType,
 // use core-js in browser.
 
 
-
 /**
- * map set  for tsioc old version.
+ * map base.
  *
  * @export
- * @class MapSet
+ * @class MapBase
  * @template K
  * @template V
  */
-export class MapSet<K, V> {
+export class MapBase <K, V> {
     protected map: Map<K, V>;
 
     get size(): number {
@@ -28,9 +27,6 @@ export class MapSet<K, V> {
     }
     delete(key: K): boolean {
         return this.map.delete(key);
-    }
-    forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void {
-        this.map.forEach(callbackfn, thisArg);
     }
     get(key: K): V | undefined {
         return this.map.get(key);
@@ -49,6 +45,24 @@ export class MapSet<K, V> {
 
     values(): V[] {
         return Array.from(this.map.values());
+    }
+}
+
+/**
+ * map set  for tsioc old version.
+ *
+ * @export
+ * @class MapSet
+ * @template K
+ * @template V
+ */
+export class MapSet<K, V> extends MapBase<K, V> {
+    constructor() {
+        super()
+    }
+
+    forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void {
+        this.map.forEach(callbackfn, thisArg);
     }
 }
 
