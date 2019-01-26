@@ -1,7 +1,6 @@
 import { IContainer } from '../IContainer';
 import { Token, Type } from '../types';
 import { IResolverContainer } from '../IResolver';
-import { ProviderMap } from '../providers';
 
 /**
  * exports interface.

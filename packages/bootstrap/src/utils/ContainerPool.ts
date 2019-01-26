@@ -1,6 +1,6 @@
 import {
     Token, SymbolType, Registration,
-    IContainer, InjectToken, IContainerBuilder
+    IContainer, InjectToken, IContainerBuilder, isArray
 } from '@ts-ioc/core';
 
 
@@ -12,7 +12,7 @@ const rootContainer = '__ioc_root_container';
  * @class ContainerPool
  */
 export class ContainerPool {
-    protected pools: Map<Token<any>, IContainer>;
+    protected pools: Map<Token<any>, IContainer[]>;
 
     constructor(protected containerBuilder: IContainerBuilder) {
         this.pools = new Map();
@@ -40,7 +40,7 @@ export class ContainerPool {
     getDefault(): IContainer {
         if (!this._default) {
             this._default = this.createContainer();
-            this.pools.set(rootContainer, this._default);
+            this.pools.set(rootContainer, [this._default]);
         }
         return this._default;
     }
@@ -48,12 +48,13 @@ export class ContainerPool {
     set(token: Token<any>, container: IContainer) {
         let key = this.getTokenKey(token);
         if (this.pools.has(key)) {
-            console.log(`${token.toString()} module has loaded`);
+            this.pools.get(key).push(container);
+        } else {
+            this.pools.set(key, [container]);
         }
-        this.pools.set(key, container);
     }
 
-    get(token: Token<any>): IContainer {
+    get(token: Token<any>): IContainer[] {
         let key = this.getTokenKey(token);
         if (!this.has(key)) {
             return null;
@@ -92,11 +93,7 @@ export class ContainerPool {
     }
 
     values(): IContainer[] {
-        return Array.from(this.pools.values());
-    }
-
-    forEach(callbackfn: (value: IContainer, key: Token<any>, map: Map<Token<any>, IContainer>) => void, thisArg?: any): void {
-        this.pools.forEach(callbackfn, thisArg);
+        return Array.from(this.pools.values()).reduce((p, c) => p.concat(c), []);
     }
 
     iterator(express: (resolvor?: IContainer) => void, root?: IContainer): void {

@@ -47,15 +47,14 @@ export class InjectedModule<T> implements IExports {
             }
         }
         let pdr = this.getProviderMap();
-        let val: T;
         if (pdr && (way & ResoveWay.current) && pdr.has(token)) {
-            val = pdr.resolve(token, ...providers);
+            return pdr.resolve(token, ResoveWay.current, ...providers);
         }
 
-        if (pdr !== this.container && isNullOrUndefined(val) && (way & ResoveWay.traverse)) {
-            val = this.container.resolve(token, ResoveWay.nodes, ...providers);
+        if (pdr !== this.container && (way & ResoveWay.traverse)) {
+            return this.container.resolve(token, ResoveWay.traverse, ...providers);
         }
-        return val;
+        return null;
     }
 
     has<T>(token: Token<T>, aliasOrway?: string | ResoveWay): boolean {
@@ -66,7 +65,7 @@ export class InjectedModule<T> implements IExports {
             return true
         }
         if (pdr !== this.container && (resway & ResoveWay.traverse)) {
-            return this.container.has(key, ResoveWay.nodes);
+            return this.container.has(key, ResoveWay.traverse);
         }
         return false;
     }

@@ -1,5 +1,5 @@
 import { DIModule } from '@ts-ioc/bootstrap';
-import { BuildModule, TransformModule, ShellModule } from '@ts-ioc/build';
+import { BuildModule } from '@ts-ioc/build';
 import { PackSetup } from './PackSetup';
 import * as cores from './core';
 import * as builds from './build';
@@ -10,8 +10,6 @@ import * as generate from './generate';
     imports: [
         PackSetup,
         BuildModule,
-        ShellModule,
-        TransformModule,
         cores,
         builds,
         generate,
@@ -19,8 +17,6 @@ import * as generate from './generate';
     ],
     exports: [
         BuildModule,
-        ShellModule,
-        TransformModule,
         cores,
         builds,
         generate,

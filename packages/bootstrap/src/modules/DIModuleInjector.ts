@@ -1,7 +1,7 @@
 import {
     Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
-    Inject, Token, ParamProviders, isArray, IModuleInjector, Container,
-    InjectClassProvidesToken, IMetaAccessor, MetaAccessorToken, Singleton, isClass, IExports, ProviderMap, InjectReference, hasOwnClassMetadata, IocExt, ResoveWay
+    Inject, Token, isArray, IModuleInjector, InjectClassProvidesToken, IMetaAccessor,
+    MetaAccessorToken, Singleton, ProviderMap, InjectReference, ResoveWay
 } from '@ts-ioc/core';
 import { DIModuleValidateToken } from './DIModuleValidate';
 import { DIModule } from '../decorators/DIModule';
@@ -99,12 +99,12 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
     }
 
     protected async getConfigExports(container: IContainer, config: ModuleConfigure): Promise<ProviderMap> {
-        let builder = container.getBuilder();
         let parser = container.getProviderParser();
         let map = parser.parse(...config.providers || []);
         // bind module providers
         container.bindProviders(map);
 
+        let builder = container.getBuilder();
         let exptypes: Type<any>[] = [].concat(...builder.loader.getTypes(config.exports || []));
         exptypes.forEach(ty => {
             let classPd = container.resolveValue(new InjectClassProvidesToken(ty));
@@ -128,26 +128,25 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         if (injMd) {
             let chain = container.getResolvers();
             chain.next(injMd);
-            // if (injMd.exports && injMd.exports.size) {
-            //     injMd.exports.forEach(exp => {
-            //         if (isClass(exp) && hasOwnClassMetadata(IocExt, exp)) {
-            //             root.register(exp);
-            //         }
-            //     });
+        //     if (injMd.exports && injMd.exports.size) {
+        //         // injMd.exports.forEach(exp => {
+        //         //     if (isClass(exp) && hasOwnClassMetadata(IocExt, exp)) {
+        //         //         root.register(exp);
+        //         //     }
+        //         // });
 
-            //     // providerContainer.getResolvers().toArray(ResoveWay.traverse).forEach((r: IExports) => {
-            //     //     if (r.type && injMd.exports.has(r.type)) {
-            //     //         console.log(injMd.type, r.type);
-            //     //         chain.next(r);
-            //     //         r.exports.forEach(exp => {
-            //     //             if (isClass(exp) && hasOwnClassMetadata(IocExt, exp)) {
-            //     //                 container.register(exp);
-            //     //             }
-            //     //         });
-            //     //     }
-            //     // });
-            // }
-
+        //         providerContainer.getResolvers().toArray(ResoveWay.traverse).forEach((r: IExports) => {
+        //             if (r.type && injMd.exports.has(r.type)) {
+        //                 console.log(injMd.type, r.type);
+        //                 chain.next(r);
+        //                 r.exports.forEach(exp => {
+        //                     if (isClass(exp) && hasOwnClassMetadata(IocExt, exp)) {
+        //                         container.register(exp);
+        //                     }
+        //                 });
+        //             }
+        //         });
+        //     }
         }
 
         return container;

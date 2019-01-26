@@ -3,7 +3,7 @@ import { IContainer, ResoveWay } from '../IContainer';
 import { InjectToken } from '../InjectToken';
 import { IResolver, IResolverContainer } from '../IResolver';
 import { ParamProviders, ProviderMap, isProviderMap } from '../providers';
-import { isString, isNumber, isNull, isFunction, isNullOrUndefined } from '../utils';
+import { isString, isNumber, isFunction, isNullOrUndefined } from '../utils';
 
 /**
  *  resolver chain token.
@@ -134,21 +134,21 @@ export class ResolverChain implements IResolverContainer {
         if (providerMap && providerMap.has(token)) {
             return providerMap.resolve(token, providerMap);
         }
-        let val: T;
-        if ((way & ResoveWay.current)) {
-            val = this.container.resolveValue(key, providerMap);
+
+        if ((way & ResoveWay.current) && this.container.hasRegister(key)) {
+            return this.container.resolveValue(key, providerMap);
         }
-        if (isNullOrUndefined(val) && (way & ResoveWay.traverse)) {
-            this.resolvers.some(r => {
-                val = r.resolve(key, ResoveWay.nodes, providerMap);
-                return !isNullOrUndefined(val);
-            });
+        if ((way & ResoveWay.traverse)) {
+            let resolver = this.resolvers.find(r => r.has(key, ResoveWay.nodes));
+            if (resolver) {
+                return resolver.resolve(key, ResoveWay.nodes, providerMap);
+            }
         }
-        if (isNullOrUndefined(val) && this.container.parent && (way & ResoveWay.bubble)) {
-            val = this.container.parent.resolve(key, ResoveWay.routeup, providerMap);
+        if (this.container.parent && (way & ResoveWay.bubble)) {
+            return this.container.parent.resolve(key, ResoveWay.routeup, providerMap);
         }
 
-        return val;
+        return null;
     }
 
     /**
