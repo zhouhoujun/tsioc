@@ -49,6 +49,12 @@ export enum ResoveWay {
     all = current | traverse | bubble
 }
 
+export interface IServiceProvider<T> {
+    class: ClassType<T>;
+    fac: InstanceFactory<T>;
+    resolver?: IResolver;
+}
+
 /**
  * container interface.
  *

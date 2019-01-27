@@ -30,9 +30,6 @@ export class ModuleInjector implements IModuleInjector {
     async inject(container: IContainer, modules: Type<any>[]): Promise<InjectorResult> {
         let types = (modules || []).filter(ty => this.valid(container, ty));
         if (types.length) {
-            if (this.validate instanceof IocExtModuleValidate) {
-                container = container.getRoot();
-            }
             await PromiseUtil.step(types.map(ty => () => this.setup(container, ty)));
         }
         let next = this.getNext(modules, types);
@@ -42,9 +39,6 @@ export class ModuleInjector implements IModuleInjector {
     syncInject(container: IContainer, modules: Type<any>[]): InjectorResult {
         let types = (modules || []).filter(ty => this.valid(container, ty));
         if (types.length) {
-            if (this.validate instanceof IocExtModuleValidate) {
-                container = container.getRoot();
-            }
             types.forEach(ty => {
                 this.syncSetup(container, ty);
             });

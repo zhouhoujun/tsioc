@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { IContainer, ContainerToken, ResoveWay } from './IContainer';
+import { IContainer, ContainerToken, ResoveWay, IServiceProvider } from './IContainer';
 import {
     Type, Token, Factory, SymbolType, IocState,
     ReferenceToken, RefTokenType, RefTokenFacType,
@@ -349,6 +349,7 @@ export class Container implements IContainer {
                     return this.getTokenImpl(t);
                 }
             });
+            // target private service.
             this.getResolvers().toArray().forEach(resolver => {
                 tags.forEach(tg => {
                     let priMapTk = new InjectReference(ProviderMap, tg);
@@ -360,7 +361,7 @@ export class Container implements IContainer {
                             }
                         });
                     }
-                })
+                });
             });
         } else {
             if (isNumber(target)) {
@@ -378,6 +379,89 @@ export class Container implements IContainer {
             }, rway);
         }
         return services;
+    }
+
+    /**
+     * get all service extends type and reference target.
+     *
+     * @template T
+     * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
+     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
+     * @param {(boolean|ParamProviders)} [both]
+     * @param {(boolean|ParamProviders)} [both] get services bubble up to parent container.
+     * @param {...ParamProviders[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    getRegisteredServices<T>(
+        express: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void,
+        token: Token<T> | ((token: ClassType<T>) => boolean),
+        target?: ResoveWay | Token<any> | Token<any>[] | ParamProviders,
+        both?: boolean | ResoveWay | ParamProviders, resway?: ResoveWay | ParamProviders,
+        ...providers: ParamProviders[]): void {
+        let withTag: boolean;
+        let rway = ResoveWay.all;
+        let withBoth = false;
+        let matchExp: (token: ClassType<T>) => boolean;
+        if (isToken(token)) {
+            let type = isClassType(token) ? token : this.getTokenImpl(token);
+            matchExp = (tk) => lang.isExtendsClass(tk, type);
+        } else if (isFunction(token)) {
+            matchExp = token;
+        }
+
+        if (isNumber(resway)) {
+            rway = resway;
+        } else {
+            providers.unshift(resway);
+        }
+        if (isToken(target) || isArray(target)) {
+            withTag = true;
+            if (isBoolean(both)) {
+                withBoth = both;
+            } else if (isNumber(both)) {
+                rway = both;
+            } else {
+                providers.unshift(both);
+            }
+            let tags: ClassType<any>[] = (isArray(target) ? target : [target]).map(t => {
+                if (isClass(t)) {
+                    return t;
+                } else if (isAbstractClass(t)) {
+                    return t;
+                } else {
+                    return this.getTokenImpl(t);
+                }
+            });
+            // target private service.
+            this.getResolvers().toArray().forEach(resolver => {
+                tags.forEach(tg => {
+                    let priMapTk = new InjectReference(ProviderMap, tg);
+                    if (resolver.has(priMapTk, ResoveWay.nodes)) {
+                        let priMap = resolver.resolve(priMapTk, ResoveWay.nodes);
+                        priMap.forEach((ptk, pfac) => {
+                            if (isClassType(ptk) && matchExp(ptk)) {
+                                express(ptk, pfac, priMap);
+                            }
+                        });
+                    }
+                });
+            });
+        } else {
+            if (isNumber(target)) {
+                rway = target;
+            } else {
+                providers.unshift(target);
+            }
+            withTag = false;
+        }
+        if (!withTag || (withTag && withBoth)) {
+            this.iterator((tk, fac, resolver) => {
+                if (isClassType(tk) && matchExp(tk)) {
+                    express(tk, fac, resolver);
+                }
+            }, rway);
+        }
     }
 
     /**

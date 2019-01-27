@@ -1,7 +1,7 @@
 import {
     IContainer, LoadType, Factory, Token,
     ContainerBuilder, IContainerBuilder, isClass,
-    isToken, PromiseUtil, Injectable, lang, ParamProviders, isNullOrUndefined, ResoveWay, isNumber
+    isToken, PromiseUtil, Injectable, lang, ParamProviders, isNullOrUndefined, ResoveWay
 } from '@ts-ioc/core';
 import { IRunnableBuilder, CustomRegister, RunnableBuilderToken, ProcessRunRootToken, RunOptions } from './IRunnableBuilder';
 import {
@@ -190,9 +190,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         }
         let container = this.getPools().getDefault();
         await this.registerExts(container);
-        let configManager = this.getConfigManager();
-        let config = await configManager.getConfig();
-        await this.registerByConfigure(container, config);
+        await this.registerByConfigure(container);
         this.inited = true;
         this.events.emit(RunnableEvents.onRootContainerInited, container);
     }
@@ -304,7 +302,10 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
      * @returns {Promise<void>}
      * @memberof RunnableBuilder
      */
-    protected async registerByConfigure(container: IContainer, config: RunnableConfigure): Promise<void> {
+    protected async registerByConfigure(container: IContainer): Promise<void> {
+
+        let configManager = this.getConfigManager();
+        let config = await configManager.getConfig();
 
         await PromiseUtil.step(this.customRegs.map(cs => async () => {
             let tokens = await cs(container, config, this);
@@ -324,7 +325,6 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
                     registers: registers
                 });
             }
-
         });
 
         await Promise.all(regs.map(reg => {

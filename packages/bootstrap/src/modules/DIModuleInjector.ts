@@ -8,6 +8,7 @@ import { DIModule } from '../decorators/DIModule';
 import { ContainerPoolToken } from '../utils';
 import { ModuleConfigure } from './ModuleConfigure';
 import { InjectedModuleToken, InjectedModule } from './InjectedModule';
+import { ConfigureRegister } from '../boot';
 
 
 /**
@@ -86,7 +87,9 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         container.bindProvider(new InjectReference(ProviderMap, type), exps);
         container.bindProvider(new InjectedModuleToken(type), injMd);
 
-        await this.importConfigExports(container, newContainer, injMd);
+        await this.registerConfigExports(container, newContainer, injMd);
+
+        await this.initDIModule(newContainer, metaConfig);
 
         return injMd;
     }
@@ -121,35 +124,28 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         return map;
     }
 
-    protected async importConfigExports(container: IContainer, providerContainer: IContainer, injMd: InjectedModule<any>) {
-        if (container === providerContainer) {
+    protected async registerConfigExports(container: IContainer, newContainer: IContainer, injMd: InjectedModule<any>) {
+        if (container === newContainer) {
             return container;
         }
         if (injMd) {
             let chain = container.getResolvers();
             chain.next(injMd);
-        //     if (injMd.exports && injMd.exports.size) {
-        //         // injMd.exports.forEach(exp => {
-        //         //     if (isClass(exp) && hasOwnClassMetadata(IocExt, exp)) {
-        //         //         root.register(exp);
-        //         //     }
-        //         // });
-
-        //         providerContainer.getResolvers().toArray(ResoveWay.traverse).forEach((r: IExports) => {
-        //             if (r.type && injMd.exports.has(r.type)) {
-        //                 console.log(injMd.type, r.type);
-        //                 chain.next(r);
-        //                 r.exports.forEach(exp => {
-        //                     if (isClass(exp) && hasOwnClassMetadata(IocExt, exp)) {
-        //                         container.register(exp);
-        //                     }
-        //                 });
-        //             }
-        //         });
-        //     }
         }
 
         return container;
+    }
+
+    protected async initDIModule(newContainer: IContainer, config: ModuleConfigure) {
+
+        let registers = newContainer.getServices(ConfigureRegister, curClass, true, ResoveWay.current);
+        if (registers && registers.length) {
+            regs.push({
+                container: c,
+                registers: registers
+            });
+        }
+        newContainer.
     }
 
 }
