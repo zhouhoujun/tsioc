@@ -1,7 +1,7 @@
 import {
     Token, IContainer, Registration, Type, IExports,
     ParamProviders, Factory, isToken,
-    IResolver, ResoveWay, isString, isNumber, isNullOrUndefined, IResolverContainer, InjectReference, ProviderMap
+    IResolver, ResoveWay, isString, isNumber, IResolverContainer
 } from '@ts-ioc/core';
 import { ModuleConfig } from './ModuleConfigure';
 
@@ -87,15 +87,19 @@ export class InjectedModule<T> implements IExports {
         return this;
     }
 
-    forEach(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void): void {
+    forEach(callbackfn: (tk: Token<any>, fac: Factory<any>, resolvor?: IResolver) => void | boolean): void | boolean {
         let pdr = this.getProviderMap();
         if (pdr) {
-            pdr.forEach((fac, tk) => {
-                isToken(tk) && callbackfn(tk, fac, pdr);
-            });
+            if (pdr.forEach((fac, tk) => {
+                if (isToken(tk)) {
+                    return callbackfn(tk, fac, pdr);
+                }
+            }) === false) {
+                return false;
+            }
         }
-        this.container.forEach((tk, fac) => {
-            callbackfn(tk, fac, this.container);
+        return this.container.forEach((tk, fac) => {
+            return callbackfn(tk, fac, this.container);
         });
     }
 }

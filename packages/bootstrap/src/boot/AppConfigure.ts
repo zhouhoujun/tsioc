@@ -66,21 +66,3 @@ export interface AppConfigure extends RunnableConfigure {
     connections?: ObjectMap<any>;
 
 }
-
-/**
- * configure merger
- *
- * @export
- * @interface IConfigureMerger
- */
-export interface IConfigureMerger {
-    /**
-     * merge configuration.
-     *
-     * @param {AppConfigure} config
-     * @param {ModuleConfigure} moduleMetadata
-     * @returns {AppConfigure}
-     * @memberof IConfigureMerger
-     */
-    merge(config: AppConfigure, moduleMetadata: ModuleConfigure): AppConfigure;
-}

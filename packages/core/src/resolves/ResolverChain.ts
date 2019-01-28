@@ -51,45 +51,6 @@ export class ResolverChain implements IResolverContainer {
     }
 
     /**
-     * resolver chain to array.
-     *
-     * @returns {IResolver[]}
-     * @memberof ResolverChain
-     */
-    toArray(resway = ResoveWay.all): IResolver[] {
-        if (resway & ResoveWay.nodes) {
-            return [<IResolver>this.container].concat(this.resolvers);
-        } else if (resway & ResoveWay.current) {
-            return [this.container];
-        } else if (resway & ResoveWay.traverse) {
-            return this.resolvers;
-        }
-        return [];
-    }
-
-    /**
-     * iterator all resolvers.
-     *
-     * @param {(tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void} callbackfn
-     * @memberof ResolverChain
-     */
-    iterator(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void, resway = ResoveWay.all): void {
-        if (resway & ResoveWay.current) {
-            this.container.forEach(callbackfn);
-        }
-        if (resway & ResoveWay.traverse) {
-            this.resolvers.forEach((r: IResolverContainer) => {
-                if (isFunction(r.forEach)) {
-                    r.forEach(callbackfn);
-                }
-            });
-        }
-        if (this.container.parent && (resway & ResoveWay.bubble)) {
-            this.container.parent.iterator(callbackfn, resway);
-        }
-    }
-
-    /**
      * has resolver or not.
      *
      * @param {IResolver} resolver
@@ -231,12 +192,59 @@ export class ResolverChain implements IResolverContainer {
         return false;
     }
 
-    forEach(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void): void {
-        this.container.forEach(callbackfn);
-        this.resolvers.forEach((r: IResolverContainer) => {
+    /**
+     * resolver chain to array.
+     *
+     * @returns {IResolver[]}
+     * @memberof ResolverChain
+     */
+    toArray(resway = ResoveWay.all): IResolver[] {
+        if (resway & ResoveWay.nodes) {
+            return [<IResolver>this.container].concat(this.resolvers);
+        } else if (resway & ResoveWay.current) {
+            return [this.container];
+        } else if (resway & ResoveWay.traverse) {
+            return this.resolvers;
+        }
+        return [];
+    }
+
+    forEach(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void | boolean): void | boolean {
+        if (this.container.forEach(callbackfn) === false) {
+            return false;
+        }
+        return !this.resolvers.some((r: IResolverContainer) => {
             if (isFunction(r.forEach)) {
-                r.forEach(callbackfn);
+                return r.forEach(callbackfn) === false;
             }
+            return false;
         });
+    }
+
+    /**
+     * iterator all resolvers.
+     *
+     * @param {(tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void} callbackfn
+     * @memberof ResolverChain
+     */
+    iterator(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void, resway = ResoveWay.all): void | boolean {
+        if (resway & ResoveWay.current) {
+            if (this.container.forEach(callbackfn) === false) {
+                return false;
+            }
+        }
+        if (resway & ResoveWay.traverse) {
+            if (this.resolvers.some((r: IResolverContainer) => {
+                if (isFunction(r.forEach)) {
+                    return r.forEach(callbackfn) === false;
+                }
+                return false;
+            })) {
+                return false;
+            }
+        }
+        if (this.container.parent && (resway & ResoveWay.bubble)) {
+            return this.container.parent.iterator(callbackfn, resway);
+        }
     }
 }

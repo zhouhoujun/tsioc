@@ -1,7 +1,7 @@
 import {
     IContainer, LoadType, Factory, Token,
     ContainerBuilder, IContainerBuilder, isClass,
-    isToken, PromiseUtil, Injectable, lang, ParamProviders, isNullOrUndefined, ResoveWay
+    isToken, PromiseUtil, Injectable, lang, ParamProviders, isNullOrUndefined, ResoveWay, IResolver, ClassType
 } from '@ts-ioc/core';
 import { IRunnableBuilder, CustomRegister, RunnableBuilderToken, ProcessRunRootToken, RunOptions } from './IRunnableBuilder';
 import {
@@ -313,22 +313,21 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         }));
 
         let curClass = lang.getClass(this);
-        let regs: { container: IContainer, registers: ConfigureRegister<any>[] }[] = [];
-        this.getPools().iterator(c => {
-            if (!config.baseURL) {
-                config.baseURL = this.getRunRoot(c);
-            }
-            let registers = c.getServices(ConfigureRegister, curClass, true, ResoveWay.current);
-            if (registers && registers.length) {
-                regs.push({
-                    container: c,
-                    registers: registers
-                });
-            }
-        });
+        let registers: {
+            resolver: IResolver,
+            serType: ClassType<ConfigureRegister<any>>
+        }[] = [];
 
-        await Promise.all(regs.map(reg => {
-            return Promise.all(reg.registers.map(r => r.register(config, reg.container, this)));
-        }));
+        container.iteratorServices(
+            (serType, fac, resolver) => {
+                registers.push({
+                    resolver: resolver,
+                    serType: serType
+                });
+            },
+            ConfigureRegister,
+            curClass, true, ResoveWay.all);
+
+        await Promise.all(registers.map(ser => ser.resolver.resolve(ser.serType).register(config, ser.resolver, this)));
     }
 }

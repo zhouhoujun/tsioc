@@ -271,6 +271,63 @@ export interface IContainer extends IMethodAccessor, IResolverContainer {
 
 
     /**
+     * iterator all service extends type.
+     *
+     * @template T
+     * @param {(tk: ClassType<T>, fac: InstanceFactory<T>, resolvor?: IResolver, ...providers: ParamProviders[]) => void | boolean} express
+     * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
+     * @param {ResoveWay} [resway=ResoveWay.all] resolve way. bubble, traverse.
+     * @param {...ParamProviders[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    iteratorServices<T>(
+        express: (tk: ClassType<T>, fac: InstanceFactory<T>, resolvor?: IResolver, ...providers: ParamProviders[]) => void | boolean,
+        type: ClassType<T> | ((token: ClassType<T>) => boolean),
+        resway?: ResoveWay,
+        ...providers: ParamProviders[]): void;
+
+    /**
+    * iterator all private services of target extends class `type`.
+    * @template T
+    * @param {(tk: ClassType<T>, fac: InstanceFactory<T>, resolvor?: IResolver, ...providers: ParamProviders[]) => void | boolean} express
+    * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
+    * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
+    * @param {ResoveWay} [resway=ResoveWay.all] resolve way. bubble, traverse.
+    * @param {...ParamProviders[]} providers
+    * @returns {T}
+    * @memberof IContainer
+    */
+    iteratorServices<T>(
+        express: (tk: ClassType<T>, fac: InstanceFactory<T>, resolvor?: IResolver, ...providers: ParamProviders[]) => void | boolean,
+        type: Token<T> | ((token: ClassType<T>) => boolean),
+        target: Token<any> | Token<any>[],
+        resway?: ResoveWay,
+        ...providers: ParamProviders[]): void;
+
+    /**
+    * iterator all servies extends class `type` and all private services of target extends class `type`.
+    *
+    * @template T
+    * @param {(tk: ClassType<T>, fac: InstanceFactory<T>, resolvor?: IResolver, ...providers: ParamProviders[]) => void | boolean} express
+    * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
+    * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
+    * @param {boolean} both if true, will get all server and target private service of class extends `type` .
+    * @param {ResoveWay} [resway=ResoveWay.all] resolve way. bubble, traverse.
+    * @param {...ParamProviders[]} providers
+    * @returns {T}
+    * @memberof IContainer
+    */
+    iteratorServices<T>(
+        express: (tk: ClassType<T>, fac: InstanceFactory<T>, resolvor?: IResolver, ...providers: ParamProviders[]) => void | boolean,
+        type: Token<T> | ((token: ClassType<T>) => boolean),
+        target: Token<any> | Token<any>[],
+        both: boolean,
+        resway?: ResoveWay,
+        ...providers: ParamProviders[]): void;
+
+
+    /**
      * register type.
      *
      * @template T
@@ -456,10 +513,10 @@ export interface IContainer extends IMethodAccessor, IResolverContainer {
     /**
      * iterator all resovlers.
      *
-     * @param {(tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void} callbackfn
+     * @param {(tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void | boolean} callbackfn if callbackfn return false will break iterator.
      * @param {boolean} [bubble=true]
      * @memberof IContainer
      */
-    iterator(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void, resway?: ResoveWay): void;
+    iterator(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void | boolean, resway?: ResoveWay): void | boolean;
 
 }

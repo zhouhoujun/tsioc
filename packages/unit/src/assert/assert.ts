@@ -1,5 +1,4 @@
 import { InjectToken, Abstract, Type } from '@ts-ioc/core';
-// lang, Injectable, isNull, isUndefined, isString, isRegExp, Singleton, IContainer, Inject, ContainerToken,
 
 /**
  * assertion error options.

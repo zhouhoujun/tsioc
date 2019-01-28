@@ -1,14 +1,15 @@
 import {
     Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
     Inject, Token, isArray, IModuleInjector, InjectClassProvidesToken, IMetaAccessor,
-    MetaAccessorToken, Singleton, ProviderMap, InjectReference, ResoveWay
+    MetaAccessorToken, Singleton, ProviderMap, InjectReference, ResoveWay, IResolver, ClassType
 } from '@ts-ioc/core';
 import { DIModuleValidateToken } from './DIModuleValidate';
 import { DIModule } from '../decorators/DIModule';
 import { ContainerPoolToken } from '../utils';
 import { ModuleConfigure } from './ModuleConfigure';
 import { InjectedModuleToken, InjectedModule } from './InjectedModule';
-import { ConfigureRegister } from '../boot';
+import { ConfigureRegister, ConfigureMgrToken } from '../boot';
+import { ConfigureLoggerManagerToken } from '@ts-ioc/logs';
 
 
 /**
@@ -89,7 +90,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
 
         await this.registerConfigExports(container, newContainer, injMd);
 
-        await this.initDIModule(newContainer, metaConfig);
+        await this.initDIModule(newContainer, injMd);
 
         return injMd;
     }
@@ -136,16 +137,26 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         return container;
     }
 
-    protected async initDIModule(newContainer: IContainer, config: ModuleConfigure) {
+    protected async initDIModule(newContainer: IContainer, injMd: InjectedModule<any>) {
 
-        let registers = newContainer.getServices(ConfigureRegister, curClass, true, ResoveWay.current);
-        if (registers && registers.length) {
-            regs.push({
-                container: c,
-                registers: registers
-            });
-        }
-        newContainer.
+        let registers: {
+            resolver: IResolver,
+            serType: ClassType<ConfigureRegister<any>>
+        }[] = [];
+
+        newContainer.iteratorServices(
+            (serType, fac, resolver) => {
+                registers.push({
+                    resolver: resolver,
+                    serType: serType
+                });
+            },
+            ConfigureRegister,
+            injMd.type, true, ResoveWay.nodes);
+
+        let mgr = newContainer.get(ConfigureMgrToken);
+        let appConfig = await mgr.getConfig();
+        await Promise.all(registers.map(ser => ser.resolver.resolve(ser.serType).register(appConfig, ser.resolver)));
     }
 
 }

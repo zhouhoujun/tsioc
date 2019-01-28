@@ -87,9 +87,9 @@ export interface IResolverContainer extends IResolver {
     /**
      * iterator current resolver.
      *
-     * @param {(tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void} callbackfn
+     * @param {(tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void | boolean} callbackfn if callbackfn return false will break iterator.
      * @memberof IExports
      */
-    forEach(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void): void;
+    forEach(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void | boolean): void | boolean;
 
 }
