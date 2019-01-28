@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/cli",
-  "version": "4.0.0-beta23",
+  "version": "4.0.0-beta24",
   "description": "tsioc cli.",
   "typings": "./lib/cli.d.ts",
   "main": "./lib/cli.js",
