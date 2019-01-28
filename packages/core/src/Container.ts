@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { IContainer, ContainerToken, ResoveWay, IServiceProvider } from './IContainer';
+import { IContainer, ContainerToken, ResoveWay } from './IContainer';
 import {
     Type, Token, Factory, SymbolType, IocState,
     ReferenceToken, RefTokenType, RefTokenFacType,
