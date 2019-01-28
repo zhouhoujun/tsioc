@@ -1,5 +1,5 @@
 import { RunnableConfigure } from './AppConfigure';
-import { IContainer, Abstract, IResolver } from '@ts-ioc/core';
+import { IContainer, Abstract, Inject, ContainerToken } from '@ts-ioc/core';
 import { IRunnableBuilder } from './IRunnableBuilder';
 
 /**
@@ -14,12 +14,11 @@ export interface IConfigureRegister<T extends RunnableConfigure> {
      * register config setting.
      *
      * @param {T} config
-     * @param {IResolver} resolver
      * @param {IRunnableBuilder<any>} [runBuilder]
      * @returns {Promise<void>}
      * @memberof IConfigureRegister
      */
-    register(config: T, resolver: IResolver, runBuilder?: IRunnableBuilder<any>): Promise<void>;
+    register(config: T, runBuilder?: IRunnableBuilder<any>): Promise<void>;
 }
 
 /**
@@ -37,15 +36,17 @@ export abstract class ConfigureRegister<T extends RunnableConfigure> implements 
     constructor() {
     }
 
+    @Inject(ContainerToken)
+    protected container: IContainer;
+
     /**
      * register config setting.
      *
      * @abstract
      * @param {T} config
-     * @param {IResolver} resolver
      * @param {IRunnableBuilder<any>} [runBuilder]
      * @returns {Promise<void>}
      * @memberof ConfigureRegister
      */
-    abstract register(config: T, resolver: IResolver, runBuilder?: IRunnableBuilder<any>): Promise<void>;
+    abstract register(config: T, runBuilder?: IRunnableBuilder<any>): Promise<void>;
 }

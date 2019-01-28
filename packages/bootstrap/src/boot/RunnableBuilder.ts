@@ -3,7 +3,7 @@ import {
     ContainerBuilder, IContainerBuilder, isClass,
     isToken, PromiseUtil, Injectable, lang, ParamProviders, isNullOrUndefined, ResoveWay, IResolver, ClassType
 } from '@ts-ioc/core';
-import { IRunnableBuilder, CustomRegister, RunnableBuilderToken, ProcessRunRootToken, RunOptions } from './IRunnableBuilder';
+import { IRunnableBuilder, CustomRegister, RunnableBuilderToken, ProcessRunRootToken, RunOptions, CurrentRunnableBuilderToken } from './IRunnableBuilder';
 import {
     ModuleBuilder, DIModuleInjectorToken,
     InjectedModule, IModuleBuilder, InjectModuleBuilderToken,
@@ -268,7 +268,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         let chain = container.getBuilder().getInjectorChain(container);
         chain.first(container.resolve(DIModuleInjectorToken));
         container.bindProvider(ContainerPoolToken, () => this.getPools());
-
+        container.bindProvider(CurrentRunnableBuilderToken, () => this);
         this.beforeInitPds.forEach((val, key) => {
             container.bindProvider(key, val);
         });
@@ -328,6 +328,6 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
             ConfigureRegister,
             curClass, true, ResoveWay.all);
 
-        await Promise.all(registers.map(ser => ser.resolver.resolve(ser.serType).register(config, ser.resolver, this)));
+        await Promise.all(registers.map(ser => ser.resolver.resolve(ser.serType).register(config, this)));
     }
 }
