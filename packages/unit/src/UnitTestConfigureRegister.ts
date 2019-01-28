@@ -8,12 +8,12 @@ export class UnitTestConfigureRegister extends ConfigureRegister<RunnableConfigu
     constructor() {
         super();
     }
-    async register(config: UnitTestConfigure, container: IContainer): Promise<void> {
+    async register(config: UnitTestConfigure): Promise<void> {
         if (config.debug) {
-            container.register(DebugLogAspect);
+            this.container.register(DebugLogAspect);
         }
         if (isArray(config.reporters) && config.reporters.length) {
-            container.use(...config.reporters);
+            this.container.use(...config.reporters);
         }
     }
 }
