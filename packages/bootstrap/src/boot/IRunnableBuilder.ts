@@ -97,6 +97,15 @@ export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends
     events?: Events;
 
     /**
+     * get run root.
+     *
+     * @param {IResolver} [resolver]
+     * @returns {string}
+     * @memberof IRunnableBuilder
+     */
+    getRunRoot(resolver?: IResolver): string;
+
+    /**
      * init container pools.
      *
      * @returns {Promise<void>}

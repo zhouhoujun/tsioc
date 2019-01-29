@@ -153,7 +153,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
                 });
             },
             ConfigureRegister,
-            injMd.type, true, ResoveWay.nodes);
+            injMd.type, true, ResoveWay.current);
 
         let mgr = newContainer.get(ConfigureMgrToken);
         let appConfig = await mgr.getConfig();

@@ -105,8 +105,8 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         return this.pools;
     }
 
-    getRunRoot(container: IContainer) {
-        return this._baseURL || container.get(ProcessRunRootToken) || '';
+    getRunRoot(resolver?: IResolver): string {
+        return this._baseURL || (resolver || this.getPools().getDefault()).resolve(ProcessRunRootToken) || '';
     }
 
     /**
@@ -306,6 +306,9 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
 
         let configManager = this.getConfigManager();
         let config = await configManager.getConfig();
+        if (!config.baseURL) {
+            config.baseURL = this.getRunRoot(container);
+        }
 
         await PromiseUtil.step(this.customRegs.map(cs => async () => {
             let tokens = await cs(container, config, this);
@@ -318,15 +321,19 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
             serType: ClassType<ConfigureRegister<any>>
         }[] = [];
 
+        // only run root register.
         container.iteratorServices(
             (serType, fac, resolver) => {
+                if (!config.baseURL) {
+                    config.baseURL = this.getRunRoot(resolver);
+                }
                 registers.push({
                     resolver: resolver,
                     serType: serType
                 });
             },
             ConfigureRegister,
-            curClass, true, ResoveWay.all);
+            curClass, true, ResoveWay.current);
 
         await Promise.all(registers.map(ser => ser.resolver.resolve(ser.serType).register(config, this)));
     }
