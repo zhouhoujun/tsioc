@@ -1,7 +1,6 @@
 
 import { Token, lang, IContainer, Inject, ContainerToken, InjectToken, Type } from '@ts-ioc/core';
 import { ModuleConfigure, BootOptions } from '../modules';
-import { any } from 'expect';
 
 /**
  * boot.
@@ -74,6 +73,7 @@ export interface RunnableOptions<T> {
      * @memberof RunnableOptions
      */
     config: ModuleConfigure;
+
     /**
      *  custom boot data of `BuildOptions`
      *
