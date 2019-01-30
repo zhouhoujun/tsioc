@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/platform-server-activities",
-  "version": "4.0.0-beta26",
+  "version": "4.0.0-beta27",
   "description": "type task framework, base on AOP, Ioc container, via @ts-ioc",
   "es2015": "./fesm2015/platform-server-activities.js",
   "esm2015": "./es2015/index.js",
@@ -38,9 +38,9 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-server-activities#readme",
   "dependencies": {
-    "@ts-ioc/activities": "^4.0.0-beta26",
-    "@ts-ioc/platform-server": "^4.0.0-beta26",
-    "@ts-ioc/platform-server-logs": "^4.0.0-beta26",
+    "@ts-ioc/activities": "^4.0.0-beta27",
+    "@ts-ioc/platform-server": "^4.0.0-beta27",
+    "@ts-ioc/platform-server-logs": "^4.0.0-beta27",
     "bluebird": "^3.5.3",
     "chalk": "^2.4.2",
     "globby": "^9.0.0",
