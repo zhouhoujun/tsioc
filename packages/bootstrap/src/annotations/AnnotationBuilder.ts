@@ -198,7 +198,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         if (instance instanceof Runner || instance instanceof Service) {
             return instance;
         } else {
-            let provider = { provide: RunnableOptionsToken, useValue: <RunnableOptions<T>>{ instance: instance, type: lang.getClass(instance), mdToken: tk, config: config } } as ParamProviders;
+            let provider = { provide: RunnableOptionsToken, useValue: <RunnableOptions<T>>{ instance: instance, type: lang.getClass(instance), mdToken: tk, config: config, data: options.data } } as ParamProviders;
             return this.container.getService(
                 [RunnerToken, ServiceToken],
                 [

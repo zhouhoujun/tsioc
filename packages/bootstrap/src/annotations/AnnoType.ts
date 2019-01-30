@@ -47,7 +47,7 @@ export interface BuildOptions<T> {
     target?: any;
 
     /**
-     * runner default data.
+     * boot data for runner.
      *
      * @type {*}
      * @memberof BuildOptions

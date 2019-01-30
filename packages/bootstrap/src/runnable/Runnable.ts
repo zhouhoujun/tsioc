@@ -46,10 +46,41 @@ export interface IRunnable<T> {
 }
 
 export interface RunnableOptions<T> {
+    /**
+     * module token
+     *
+     * @type {Token<any>}
+     * @memberof RunnableOptions
+     */
     mdToken?: Token<any>;
+    /**
+     * bootstrap type.
+     *
+     * @type {Type<T>}
+     * @memberof RunnableOptions
+     */
     type: Type<T>;
+    /**
+     * bootstrap instance.
+     *
+     * @type {T}
+     * @memberof RunnableOptions
+     */
     instance: T;
+    /**
+     * bootstrap configure.
+     *
+     * @type {ModuleConfigure}
+     * @memberof RunnableOptions
+     */
     config: ModuleConfigure;
+    /**
+     *  custom boot data of `BuildOptions`
+     *
+     * @type {*}
+     * @memberof RunnableOptions
+     */
+    data?: any;
 }
 
 /**
