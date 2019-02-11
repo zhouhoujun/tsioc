@@ -23,7 +23,7 @@ export type CustomRegister<T> = (container: IContainer, config?: AppConfigure, b
  */
 export interface IRunnableExtends {
     /**
-     * use module
+     * use module as the runner global depdences module.
      *
      * @param {...LoadType[]} modules
      * @returns {this}
