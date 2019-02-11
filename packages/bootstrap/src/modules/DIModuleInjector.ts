@@ -91,7 +91,10 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
 
         await this.registerConfigExports(container, newContainer, injMd);
 
-        await this.initDIModule(newContainer, injMd);
+        // init global configure.
+        if (!pools.isDefault(container)) {
+            await this.registerConfigrue(newContainer, injMd);
+        }
 
         return injMd;
     }
@@ -138,7 +141,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         return container;
     }
 
-    protected async initDIModule(newContainer: IContainer, injMd: InjectedModule<any>) {
+    protected async registerConfigrue(newContainer: IContainer, injMd: InjectedModule<any>) {
 
         let registers: {
             resolver: IResolver,

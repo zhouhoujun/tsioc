@@ -333,7 +333,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
                 });
             },
             ConfigureRegister,
-            curClass, true, ResoveWay.current);
+            curClass, true, ResoveWay.nodes);
 
         await Promise.all(registers.map(ser => ser.resolver.resolve(ser.serType).register(config, this)));
     }

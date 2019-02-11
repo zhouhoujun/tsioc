@@ -1,4 +1,4 @@
-import { Token, MetadataAdapter, MetadataExtends, ITypeDecorator, LoadType } from '@ts-ioc/core';
+import { Token, MetadataAdapter, MetadataExtends, ITypeDecorator, LoadType, isFunction } from '@ts-ioc/core';
 import { AppConfigure } from '../boot/AppConfigure';
 import { IRunnableBuilder } from '../boot/IRunnableBuilder';
 import { IAnnotationBuilder, AnnotationBuilderToken } from '../annotations/IAnnotationBuilder';
@@ -96,7 +96,11 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
         if (metadataExtends) {
             metadataExtends(metadata);
         }
-        if (metadata.builder) {
+        if (metadata.type && isFunction(metadata.type['main'])) {
+            setTimeout(() => {
+                metadata.type['main']();
+            });
+        } else if (metadata.builder) {
             setTimeout(() => {
                 new ApplicationBuilder()
                     .use(...(metadata.globals || []))
