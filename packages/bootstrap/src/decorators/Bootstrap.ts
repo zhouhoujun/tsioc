@@ -1,9 +1,7 @@
-import { Token, MetadataAdapter, MetadataExtends, ITypeDecorator, LoadType, isFunction } from '@ts-ioc/core';
-import { AppConfigure } from '../boot/AppConfigure';
-import { IRunnableBuilder } from '../boot/IRunnableBuilder';
+import { Token, MetadataAdapter, MetadataExtends, ITypeDecorator, LoadType, isFunction, Type, isClass, lang } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken } from '../annotations/IAnnotationBuilder';
 import { createDIModuleDecorator } from './DIModule';
-import { ApplicationBuilderToken, ApplicationBuilder } from '../boot';
+import { ApplicationBuilderToken, ApplicationBuilder, RunnableBuilder, IRunnableBuilder, AppConfigure } from '../boot';
 
 /**
  * bootstrap metadata.
@@ -19,28 +17,8 @@ export interface BootstrapMetadata extends AppConfigure {
      * @type {Token<T>}
      * @memberof AnnotationConfigure
      */
-    bootstrap: Token<any>;
-    /**
-     * builder
-     *
-     * @type {(Token<IRunnableBuilder<any>> | IRunnableBuilder<any>)}
-     * @memberof BootstrapMetadata
-     */
-    builder?: Token<IRunnableBuilder<any>> | IRunnableBuilder<any>;
-    /**
-     * default builder
-     *
-     * @type {Token<IRunnableBuilder<any>>}
-     * @memberof BootstrapMetadata
-     */
-    defaultBuilder?: Token<IRunnableBuilder<any>>;
-    /**
-     * default annoation builder.
-     *
-     * @type {Token<IAnnotationBuilder<any>>}
-     * @memberof BootstrapMetadata
-     */
-    defaultAnnoBuilder?: Token<IAnnotationBuilder<any>>;
+    bootstrap?: Token<any>;
+
     /**
      * globals import
      *
@@ -96,16 +74,28 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
         if (metadataExtends) {
             metadataExtends(metadata);
         }
-        if (metadata.type && isFunction(metadata.type['main'])) {
+
+        // static main.
+        if (isClass(metadata.type) && isFunction(metadata.type['main'])) {
             setTimeout(() => {
                 metadata.type['main']();
-            });
-        } else if (metadata.builder) {
+            }, 100);
+        } else if (metadata.bootstrap) {
             setTimeout(() => {
-                new ApplicationBuilder()
+                let builder: RunnableBuilder<any>;
+                if (isClass(metadata.builder) && lang.isExtendsClass(metadata.builder, RunnableBuilder)) {
+                    builder = new metadata.builder() as RunnableBuilder<any>;
+                }
+                if (!builder) {
+                    builder = new ApplicationBuilder();
+                }
+
+                builder
                     .use(...(metadata.globals || []))
-                    .bootstrap(metadata);
-            }, 300);
+                    .bootstrap(metadata.type);
+            }, 100);
+        } else {
+            throw new Error(`boot config error. has not found static main and bootstrap in [class: ${metadata.type.name}]`);
         }
         return metadata;
     }) as IBootstrapDecorator<T>;

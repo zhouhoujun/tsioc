@@ -3,7 +3,7 @@ import { IContainer, ResoveWay } from '../IContainer';
 import { InjectToken } from '../InjectToken';
 import { IResolver, IResolverContainer } from '../IResolver';
 import { ParamProviders, ProviderMap, isProviderMap } from '../providers';
-import { isString, isNumber, isFunction, isNullOrUndefined } from '../utils';
+import { isString, isNumber, isFunction, isNullOrUndefined, isClass } from '../utils';
 
 /**
  *  resolver chain token.
@@ -147,6 +147,9 @@ export class ResolverChain implements IResolverContainer {
      * @memberof ResolverChain
      */
     getTokenImpl<T>(token: Token<T>, resway?: ResoveWay): Type<T> {
+        if (isClass(token)) {
+            return token;
+        }
         resway = resway || ResoveWay.nodes;
         let tokenKey = this.container.getTokenKey(token);
         let provider: Type<T>;

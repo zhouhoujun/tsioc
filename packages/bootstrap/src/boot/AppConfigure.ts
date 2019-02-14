@@ -46,6 +46,7 @@ export interface RunnableConfigure extends ModuleConfigure {
      * @memberOf AppConfigure
      */
     setting?: ObjectMap<any>;
+
 }
 
 /**

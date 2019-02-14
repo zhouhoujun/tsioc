@@ -19,7 +19,7 @@ import { registerCores } from './registerCores';
 import { ResolverChain, ResolverChainToken } from './resolves';
 import { InjectReference, InjectClassProvidesToken, isInjectReference } from './InjectReference';
 import { LifeScope, LifeScopeToken } from './LifeScope';
-import { ParamProviders, ProviderMap, ProviderParserToken, IProviderParser, ProviderTypes, isProviderMap } from './providers';
+import { ParamProviders, ProviderMap, ProviderParserToken, IProviderParser, ProviderTypes } from './providers';
 import { IResolver } from './IResolver';
 
 /**

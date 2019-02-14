@@ -205,10 +205,27 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         options = params.options || {};
         let injmdl = params.token ? await this.load(params.token, params.config, options) : await this.load(params.config, options);
         options.env = injmdl;
-        let builder = this.getBuilder(injmdl);
         options.bootBuilder = this;
         options.configManager = this.getConfigManager();
-        return params.token ? await builder.bootstrap(params.token, params.config, options) : await builder.bootstrap(params.config, options);
+        let builder = this.getBuilder(injmdl);
+        if (!this.isSame(builder, this)) {
+            return params.token ? await builder.bootstrap(params.token, params.config, options) : await builder.bootstrap(params.config, options);
+        } else {
+            return params.token ? await super.bootstrap(params.token, params.config, options) : await super.bootstrap(params.config, options);
+        }
+    }
+
+    protected isSame(mdb1: IModuleBuilder<any>, mdb2: IModuleBuilder<any>): boolean {
+        if (!mdb1 || !mdb2) {
+            return false;
+        }
+        if (mdb1 === mdb2) {
+            return true;
+        }
+        if (lang.getClass(mdb1) === lang.getClass(mdb2)) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -229,13 +246,18 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         let container = injmdl.container;
         let builder: IModuleBuilder<T>;
         if (cfg) {
-            if (isClass(cfg.builder)) {
-                if (!container.has(cfg.builder)) {
-                    container.register(cfg.builder);
-                }
-            }
             if (isToken(cfg.builder)) {
-                builder = container.resolve(cfg.builder);
+                if (isClass(cfg.builder)) {
+                    if (!container.has(cfg.builder)) {
+                        container.register(cfg.builder);
+                    }
+                    if (cfg.builder === lang.getClass(this)) {
+                        builder = this;
+                    }
+                }
+                if (!builder) {
+                    builder = container.resolve(cfg.builder);
+                }
             } else if (cfg.builder instanceof ModuleBuilder) {
                 builder = cfg.builder;
             }

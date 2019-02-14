@@ -42,8 +42,7 @@
   "dependencies": {
     "@ts-ioc/core": "^4.0.0-beta28",
     "reflect-metadata": "^0.1.12",
-    "tslib": "^1.9.3",
-    "globby": "^9.0.0"
+    "tslib": "^1.9.3"
   },
   "peerDependencies": {
   },
