@@ -1,10 +1,9 @@
 import {
     Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
     Inject, Token, isArray, IModuleInjector, InjectClassProvidesToken, IMetaAccessor,
-    MetaAccessorToken, Singleton, ProviderMap, InjectReference, ResoveWay, IResolver, ClassType
+    MetaAccessorToken, Singleton, ProviderMap, InjectReference, ResoveWay, ClassType, IResolver
 } from '@ts-ioc/core';
 import { DIModuleValidateToken } from './DIModuleValidate';
-import { DIModule } from '../decorators/DIModule';
 import { ContainerPoolToken } from '../utils';
 import { ModuleConfigure } from './ModuleConfigure';
 import { InjectedModuleToken, InjectedModule } from './InjectedModule';
@@ -37,7 +36,7 @@ export interface IDIModuleInjector extends IModuleInjector {
 /**
  * DIModule injector token.
  */
-export const DIModuleInjectorToken = new InjectModuleInjectorToken<IDIModuleInjector>(DIModule.toString());
+export const DIModuleInjectorToken = new InjectModuleInjectorToken<IDIModuleInjector>('@DIModule');
 
 /**
  * DIModule injector.

@@ -27,7 +27,7 @@ export class InjectedModule<T> implements IExports {
 
     getProviderMap(): IResolverContainer {
         if (!this.exports) {
-            this.exports = this.container; // this.container.resolve(new InjectReference(ProviderMap, this.type || this.token));
+            this.exports = this.container;
         }
         return this.exports;
     }

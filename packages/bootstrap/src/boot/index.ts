@@ -1,4 +1,5 @@
 export * from './boots';
+export * from './BootModuleInjector';
 export * from './IConfigureManager';
 export * from './ConfigureManager';
 export * from './ConfigureRegister';

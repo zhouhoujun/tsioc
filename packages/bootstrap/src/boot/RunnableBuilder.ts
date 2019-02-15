@@ -15,6 +15,7 @@ import { Runnable } from '../runnable';
 import { ConfigureMgrToken, IConfigureManager } from './IConfigureManager';
 import { RunnableConfigure } from './AppConfigure';
 import { ConfigureRegister } from './ConfigureRegister';
+import { BootstrapInjectorToken } from './BootModuleInjector';
 
 /**
  * runnable events
@@ -289,6 +290,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
 
         let chain = container.getBuilder().getInjectorChain(container);
         chain.first(container.resolve(DIModuleInjectorToken));
+        chain.first(container.resolve(BootstrapInjectorToken));
         container.bindProvider(ContainerPoolToken, () => this.getPools());
         container.bindProvider(CurrentRunnableBuilderToken, () => this);
         this.beforeInitPds.forEach((val, key) => {
