@@ -1,4 +1,4 @@
-import { Type, hasOwnClassMetadata, isClass } from '@ts-ioc/core';
+import { Type, hasOwnClassMetadata, isClass, isBaseType } from '@ts-ioc/core';
 import { NonePointcut } from './decorators/NonePointcut';
 
 /**
@@ -10,12 +10,7 @@ import { NonePointcut } from './decorators/NonePointcut';
  */
 export function isValideAspectTarget(targetType: Type<any>): boolean {
 
-    if (!isClass(targetType)
-        || targetType === Object
-        || targetType === String
-        || targetType === Date
-        || targetType === Boolean
-        || targetType === Number) {
+    if (!isClass(targetType) || isBaseType(targetType)) {
         return false;
     }
 

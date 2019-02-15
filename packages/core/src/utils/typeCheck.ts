@@ -421,11 +421,9 @@ export function isRegExp(target: any): target is RegExp {
  * @returns {boolean}
  */
 export function isBaseType(target: any): boolean {
-    if (!isObject(target)) {
-        return false;
-    }
     let tagType = lang.getClass(target);
-    return tagType === Boolean
+    return  tagType === Object
+        || tagType === Boolean
         || tagType === String
         || tagType === Number
         || tagType === Date
