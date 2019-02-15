@@ -10,13 +10,13 @@ import { WorkflowConfigureRegister } from './WorkflowConfigureRegister';
         TaskLogAspect,
         RunnerLogAspect,
         WorkflowConfigureRegister
-    ],
-    exports: [
-        BrowserModule,
-        TaskLogAspect,
-        RunnerLogAspect,
-        WorkflowConfigureRegister
     ]
+    // exports: [
+    //     BrowserModule,
+    //     TaskLogAspect,
+    //     RunnerLogAspect,
+    //     WorkflowConfigureRegister
+    // ]
 })
 export class BrowserActivitiesModule {
 

@@ -23,10 +23,10 @@ export function browserApp<T>(baseURL?: string): IApplicationBuilder<T> {
     ],
     providers: [
         { provide: ProcessRunRootToken, useValue: processRoot }
-    ],
-    exports: [
-        BrowserModule
     ]
+    // exports: [
+    //     BrowserModule
+    // ]
 })
 export class BrowserBootstrapModule {
 
