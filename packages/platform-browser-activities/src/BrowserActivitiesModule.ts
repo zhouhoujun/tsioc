@@ -4,6 +4,7 @@ import { TaskLogAspect, RunnerLogAspect } from './aop';
 import { WorkflowConfigureRegister } from './WorkflowConfigureRegister';
 
 @DIModule({
+    asRoot: true,
     imports: [
         BrowserModule,
         TaskLogAspect,

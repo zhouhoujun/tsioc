@@ -74,12 +74,15 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
 
     protected async importModule(container: IContainer, type: Type<any>): Promise<InjectedModule<any>> {
         let pools = container.get(ContainerPoolToken);
-        let newContainer = pools.create(type, container);
-        newContainer.register(type);
+
 
         let decorator = this.validate.getDecorator();
-        let accor = this.getMetaAccessor(newContainer, decorator);
-        let metaConfig = accor.getMetadata(type, newContainer, undefined, decorator ? dec => dec === decorator : undefined) as ModuleConfigure;
+        let accor = this.getMetaAccessor(container, decorator);
+        let metaConfig = accor.getMetadata(type, container, undefined, decorator ? dec => dec === decorator : undefined) as ModuleConfigure;
+
+        let newContainer = metaConfig.asRoot === true ? pools.getDefault() : pools.create(type, container);
+        newContainer.register(type);
+
 
         await this.registerConfgureDepds(newContainer, metaConfig, type);
         let exps = await this.getConfigExports(newContainer, metaConfig);
@@ -88,6 +91,10 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
 
         container.bindProvider(new InjectReference(ProviderMap, type), exps);
         container.bindProvider(new InjectedModuleToken(type), injMd);
+
+        if (metaConfig.asRoot) {
+            return injMd;
+        }
 
         await this.registerConfigExports(container, newContainer, injMd);
 

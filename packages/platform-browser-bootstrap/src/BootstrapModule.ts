@@ -17,6 +17,7 @@ export function browserApp<T>(baseURL?: string): IApplicationBuilder<T> {
 }
 
 @DIModule({
+    asRoot: true,
     imports: [
         BrowserModule
     ],

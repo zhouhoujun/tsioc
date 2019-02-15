@@ -21,6 +21,14 @@ export interface ModuleConfig<T> extends AnnotationConfigure<T> {
     baseURL?: string;
 
     /**
+     * register the module in root.
+     *
+     * @type {boolean}
+     * @memberof ModuleConfig
+     */
+    asRoot?: boolean;
+
+    /**
      * module name.
      *
      * @type {string}

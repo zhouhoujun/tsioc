@@ -63,17 +63,18 @@ let processRoot = path.join(path.dirname(cwd), path.basename(cwd));
  * @class ServerBootstrapModule
  */
 @DIModule({
+    asRoot: true,
     imports: [
         ServerModule,
         ConfigureFileLoader
     ],
     providers: [
         { provide: ProcessRunRootToken, useValue: processRoot }
-    ],
-    exports: [
-        ServerModule,
-        ConfigureFileLoader
     ]
+    // exports: [
+    //     ServerModule,
+    //     ConfigureFileLoader
+    // ]
 })
 export class ServerBootstrapModule {
 

@@ -10,6 +10,7 @@ import * as reports from './reports';
 
 
 @DIModule({
+    asRoot: true,
     imports: [
         AopModule,
         LogModule,
@@ -19,13 +20,13 @@ import * as reports from './reports';
         runners,
         reports,
         asserts
-    ],
-    exports: [
-        UnitTestConfigureRegister,
-        runners,
-        reports,
-        asserts
     ]
+    // exports: [
+    //     UnitTestConfigureRegister,
+    //     runners,
+    //     reports,
+    //     asserts
+    // ]
 })
 export class UnitModule {
 

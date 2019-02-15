@@ -78,7 +78,7 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
         // static main.
         if (isClass(metadata.type) && isFunction(metadata.type['main'])) {
             setTimeout(() => {
-                metadata.type['main']();
+                metadata.type['main'](metadata);
             }, 100);
         } else if (metadata.bootstrap) {
             setTimeout(() => {
@@ -88,6 +88,10 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
                 }
                 if (!builder) {
                     builder = new ApplicationBuilder();
+                }
+
+                if (builder instanceof ApplicationBuilder) {
+                    builder.useConfiguration(lang.omit(metadata, 'imports', 'exports', 'providers'));
                 }
 
                 builder
