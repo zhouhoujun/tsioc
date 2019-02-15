@@ -373,8 +373,8 @@ export function isTypeObject(target: any): boolean {
     if (typeof target !== 'object') {
         return false;
     }
-    let type = lang.getClassName(target);
-    if (type === 'Date' || type === 'Object') {
+    let type = lang.getClass(target);
+    if (isBaseType(type)) {
         return false;
     }
     return true;
@@ -421,11 +421,12 @@ export function isRegExp(target: any): target is RegExp {
  * @returns {boolean}
  */
 export function isBaseType(target: any): boolean {
-    let tagType = lang.getClass(target);
-    return  tagType === Object
-        || tagType === Boolean
-        || tagType === String
-        || tagType === Number
-        || tagType === Date
-        || isSymbol(target);
+    if (!isFunction(target)) {
+        return false;
+    }
+    return target === Object
+        || target === Boolean
+        || target === String
+        || target === Number
+        || target === Date;
 }
