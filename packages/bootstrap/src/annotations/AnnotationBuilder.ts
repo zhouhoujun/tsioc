@@ -156,12 +156,13 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         }
         builder = builder || this;
 
-        let runOptions: RunnableOptions<T> =  { instance: instance, type: lang.getClass(instance), mdToken: tk, config: cfg, data: options.data };
+        let data = options ? options.data : undefined;
+        let runOptions: RunnableOptions<T> =  { instance: instance, type: lang.getClass(instance), mdToken: tk, config: cfg, data: data };
         let runner = builder.resolveRunable(instance, runOptions, options);
         if (runner && isFunction(runner.onInit)) {
             await runner.onInit(runOptions, options);
         }
-        let data = options ? options.data : undefined;
+
         if (isRunner(runner)) {
             await runner.run(data);
         } else if (isService(runner)) {
