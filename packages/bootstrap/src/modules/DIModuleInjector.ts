@@ -98,7 +98,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
         await this.registerConfigExports(container, newContainer, injMd);
 
         // init global configure.
-        if (!pools.isDefault(container)) {
+        if (!pools.isDefault(newContainer)) {
             await this.registerConfigrue(newContainer, injMd);
         }
 
