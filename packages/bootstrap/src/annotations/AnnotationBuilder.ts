@@ -185,16 +185,15 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         }
 
         let tk: Token<T> = runableOptions.mdToken || runableOptions.type;
-        let config = runableOptions.config;
 
-        if (!config) {
-            config = this.getMetaAccessor(tk).getMetadata(tk, this.container);
+        if (!runableOptions.config) {
+            runableOptions.config = this.getMetaAccessor(tk).getMetadata(tk, this.container);
         }
 
         if (instance instanceof Runner || instance instanceof Service) {
             return instance;
         } else {
-            let provider = { provide: RunnableOptionsToken, useValue: <RunnableOptions<T>>{ instance: instance, type: lang.getClass(instance), mdToken: tk, config: config, data: options.data } } as ParamProviders;
+            let provider = { provide: RunnableOptionsToken, useValue: runableOptions.config } as ParamProviders;
             return this.container.getService(
                 [RunnerToken, ServiceToken],
                 [
@@ -204,7 +203,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
                 ],
                 tk => new InjectRunnableToken(tk),
-                config.defaultRunnable || true, provider);
+                runableOptions.config.defaultRunnable || true, provider);
         }
     }
 
