@@ -102,7 +102,7 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
                     if (metadata.bootConfiguration) {
                         builder.useConfiguration(metadata.bootConfiguration);
                     }
-                    builder.useConfiguration(lang.omit(metadata, 'imports', 'exports', 'providers', 'configuration'));
+                    builder.useConfiguration(lang.omit(metadata, 'imports', 'exports', 'providers', 'bootDeps', 'bootConfiguration'));
                 }
 
                 builder
