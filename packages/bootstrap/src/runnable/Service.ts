@@ -1,5 +1,5 @@
-import { isFunction, Inject } from '@ts-ioc/core';
-import { IRunnable, RunnableBase, RunnableOptionsToken, RunnableOptions } from './Runnable';
+import { isFunction } from '@ts-ioc/core';
+import { IRunnable, RunnableBase, RunnableOptions } from './Runnable';
 
 /**
  * IService interface
@@ -35,7 +35,7 @@ export interface IService<T> extends IRunnable<T> {
  */
 export abstract class Service<T> extends RunnableBase<T> implements IService<T> {
 
-    constructor(@Inject(RunnableOptionsToken) options: RunnableOptions<T>) {
+    constructor(options?: RunnableOptions<T>) {
         super(options);
     }
 

@@ -1,5 +1,5 @@
 import { IContainer, Token, RefRegistration, IMetaAccessor } from '@ts-ioc/core';
-import { Runnable } from '../runnable';
+import { Runnable, RunnableOptions } from '../runnable';
 import { BuildOptions } from './AnnoType';
 import { AnnotationConfigure } from './AnnotationConfigure';
 
@@ -105,27 +105,15 @@ export interface IAnnotationBuilder<T> {
     boot(runable: Token<T>, config: AnnotationConfigure<T>, options: BuildOptions<T>): Promise<Runnable<T>>;
 
     /**
-     * resove runnable.
+     * resolve runnable.
      *
      * @param {T} instance
-     * @param {AnnotationConfigure<T>} [config]
+     * @param {RunnableOptions<T>} runableOptions
      * @param {BuildOptions<T>} [options]
      * @returns {Runnable<T>}
      * @memberof IAnnotationBuilder
      */
-    resolveRunable(instance: T, config?: AnnotationConfigure<T>, options?: BuildOptions<T>): Runnable<T>;
-
-    /**
-     * reolve runable
-     *
-     * @param {T} instance
-     * @param {AnnotationConfigure<T>} [config]
-     * @param {Token<T>} [token]
-     * @param {BuildOptions<T>} [options]
-     * @returns {Runnable<T>}
-     * @memberof IAnnotationBuilder
-     */
-    resolveRunable(instance: T, config?: AnnotationConfigure<T>, token?: Token<T>, options?: BuildOptions<T>): Runnable<T>;
+    resolveRunable(instance: T, runableOptions: RunnableOptions<T>, options?: BuildOptions<T>): Runnable<T>;
 
 
     /**

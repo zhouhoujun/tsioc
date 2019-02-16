@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/activities",
-  "version": "4.0.0-rs2",
+  "version": "4.0.0",
   "description": "type task framework, base on AOP, Ioc container, via @ts-ioc",
   "es2015": "./fesm2015/activities.js",
   "esm2015": "./es2015/index.js",
@@ -38,10 +38,10 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme",
   "dependencies": {
-    "@ts-ioc/aop": "^4.0.0-rs2",
-    "@ts-ioc/bootstrap": "^4.0.0-rs2",
-    "@ts-ioc/core": "^4.0.0-rs2",
-    "@ts-ioc/logs": "^4.0.0-rs2",
+    "@ts-ioc/aop": "^4.0.0",
+    "@ts-ioc/bootstrap": "^4.0.0",
+    "@ts-ioc/core": "^4.0.0",
+    "@ts-ioc/logs": "^4.0.0",
     "reflect-metadata": "^0.1.12",
     "gulp-sourcemaps": "^2.1.1",
     "gulp-typescript": "^5.0.0",

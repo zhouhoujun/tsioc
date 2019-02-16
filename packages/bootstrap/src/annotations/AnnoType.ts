@@ -1,6 +1,6 @@
 import { Runnable } from '../runnable';
 import { IAnnotationBuilder } from './IAnnotationBuilder';
-import { Token } from '@ts-ioc/core';
+import { Token, ProviderTypes } from '@ts-ioc/core';
 import { BeforeAnnotationInit, AfterAnnotationInit } from './IAnnotation';
 import { AnnotationConfigure } from './AnnotationConfigure';
 
@@ -53,6 +53,14 @@ export interface BuildOptions<T> {
      * @memberof BuildOptions
      */
     data?: any;
+
+    /**
+     * providers.
+     *
+     * @type {ProviderTypes[]}
+     * @memberof BuildOptions
+     */
+    providers?: ProviderTypes[];
 }
 
 /**

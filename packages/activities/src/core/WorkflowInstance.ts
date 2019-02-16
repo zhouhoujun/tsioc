@@ -1,4 +1,4 @@
-import { Token, Injectable, Inject } from '@ts-ioc/core';
+import { Token, Injectable } from '@ts-ioc/core';
 import { ActivityConfigure } from './ActivityConfigure';
 import { IActivity } from './IActivity';
 import { IWorkflowInstance, WorkflowInstanceToken, RunState } from './IWorkflowInstance';
@@ -6,7 +6,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { Joinpoint } from '@ts-ioc/aop';
 import { IActivityContextResult } from './IActivityContext';
-import { Service, RunnableOptions, RunnableOptionsToken } from '@ts-ioc/bootstrap';
+import { Service } from '@ts-ioc/bootstrap';
 
 /**
  * task runner.
@@ -44,8 +44,8 @@ export class WorkflowInstance<T extends IActivity> extends Service<T> implements
     state: RunState;
     stateChanged: BehaviorSubject<RunState>;
 
-    constructor(@Inject(RunnableOptionsToken) options: RunnableOptions<T>) {
-        super(options);
+    constructor() {
+        super();
         this.stateChanged = new BehaviorSubject(RunState.init);
     }
 

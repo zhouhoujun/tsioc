@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/platform-browser-bootstrap",
-  "version": "4.0.0-rs2",
+  "version": "4.0.0",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "es2015": "./fesm2015/platform-browser-bootstrap.js",
   "esm2015": "./es2015/index.js",
@@ -44,9 +44,9 @@
     "tslib": "^1.9.3"
   },
   "peerDependencies": {
-    "@ts-ioc/core": "^4.0.0-rs2",
-    "@ts-ioc/bootstrap": "^4.0.0-rs2",
-    "@ts-ioc/platform-browser": "^4.0.0-rs2"
+    "@ts-ioc/core": "^4.0.0",
+    "@ts-ioc/bootstrap": "^4.0.0",
+    "@ts-ioc/platform-browser": "^4.0.0"
   },
   "directories": {
     "lib": "lib"

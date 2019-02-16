@@ -1,4 +1,4 @@
-import { Runner, RunnableOptionsToken, RunnableOptions } from '@ts-ioc/bootstrap';
+import { Runner } from '@ts-ioc/bootstrap';
 import {
     getMethodMetadata, isNumber, lang, ContainerToken,
     IContainer, Inject, PromiseUtil, getOwnTypeMetadata, Injectable
@@ -31,8 +31,8 @@ export class SuiteRunner extends Runner<any> implements ISuiteRunner {
     timeout: number;
     describe: string;
 
-    constructor(@Inject(RunnableOptionsToken) options: RunnableOptions<any>) {
-        super(options);
+    constructor() {
+        super();
     }
 
     /**

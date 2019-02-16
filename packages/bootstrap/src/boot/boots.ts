@@ -1,4 +1,4 @@
-import { IService, IRunner, Service } from '../runnable';
+import { IService, IRunner, Service, RunnableOptions } from '../runnable';
 import { RunOptions } from './IRunnableBuilder';
 
 /**
@@ -15,11 +15,12 @@ export interface IBoot<T> extends IService<T>, IRunner<T> {
     /**
      * on boot init.
      *
-     * @param {BootOptions<T>} options
+     * @param {RunnableOptions<T>} options
+     * @param {RunOptions<T>} bootOptions
      * @returns {Promise<void>}
      * @memberof IBoot
      */
-    onInit(options: RunOptions<T>): Promise<void>;
+    onInit(options: RunnableOptions<T>, bootOptions: RunOptions<T>): Promise<void>;
 }
 
 
@@ -38,12 +39,15 @@ export abstract class Boot<T> extends Service<T> implements IBoot<T> {
     /**
      * on boot init.
      *
-     * @abstract
-     * @param {RunOptions<T>} options
+     * @param {RunnableOptions<T>} options
+     * @param {RunOptions<T>} bootOptions
      * @returns {Promise<void>}
-     * @memberof Boot
+     * @memberof IBoot
      */
-    abstract async onInit(options: RunOptions<T>): Promise<void>;
+    async onInit(options: RunnableOptions<T>, bootOptions: RunOptions<T>): Promise<void> {
+        await super.onInit(options, bootOptions);
+    }
+
     /**
      * run boot.
      *

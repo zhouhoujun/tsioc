@@ -2,6 +2,7 @@ import { Inject, ContainerToken, IContainer, MapSet, PromiseUtil, Singleton, Tok
 import { ISuiteRunner } from './ISuiteRunner';
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { Assert } from '../assert';
+import { RunnableOptions, BootOptions } from '@ts-ioc/bootstrap';
 
 declare let window: any;
 declare let global: any;
@@ -50,6 +51,11 @@ export class OldTestRunner implements ISuiteRunner {
         this.suites = new MapSet();
         this.timeout = timeout || (3 * 60 * 60 * 1000);
     }
+
+    async onInit(options: RunnableOptions<any>, bootOptions?: BootOptions<any>): Promise<void> {
+
+    }
+
 
     registerGlobalScope() {
         // isUndefined(window) ? global : window;

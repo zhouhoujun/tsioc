@@ -4,7 +4,6 @@ import { AnnotationBuilder, BuildOptions, IAnnoBuildStrategy, AnnoBuildStrategyT
 import { IActivity, ActivityInstance, ActivityBuildStrategyToken } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
 import { ActivityMetaAccessorToken } from './ActivityMetaAccessor';
-import { IWorkflowInstance } from './IWorkflowInstance';
 import { isAcitvity } from './Activity';
 
 
@@ -66,19 +65,6 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
 
     async buildActivity<T extends IActivity>(config: ActivityType<T>, target: IActivity): Promise<T> {
         return await this.build(config, { target: target }) as T;
-    }
-
-    /**
-     * run annotation instance.
-     *
-     * @param {IActivity} instance
-     * @param {AnnotationConfigure<T>} [config]
-     * @param {Token<T>} [token]
-     * @returns {Promise<Runnable<T>>}
-     * @memberof AnnotationBuilder
-     */
-    resolveRunable(instance: IActivity, config?: ActivityConfigure, token?: Token<any> | BuildOptions<IActivity>, options?: BuildOptions<IActivity>): IWorkflowInstance<any> {
-        return super.resolveRunable(instance, config, token, options) as IWorkflowInstance<any>;
     }
 
     /**

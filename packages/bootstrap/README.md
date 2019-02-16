@@ -107,6 +107,58 @@ ApplicationBuilder.create(baseURL)
 
 ```
 
+* use @Bootstrap config to boot application
+```ts
+
+@Bootstrap({
+    baseURL: __dirname,
+    imports: [
+        KoaModule
+    ],
+    //use your builder
+    builder: MvcHostBuilder,
+    bootstrap: MvcServerToken,
+    //bootDeps:[s
+        //module
+    //],
+    //bootConfiguration: config
+    //debug: true
+})
+class MvcApi {
+    constructor() {
+        console.log('boot application');
+    }
+}
+
+```
+
+* use @Bootstrap main to boot application
+
+```ts
+
+@Bootstrap({
+    imports: [
+        KoaModule
+    ],
+    bootstrap: MvcServerToken
+})
+class MvcApi {
+    constructor() {
+        console.log('boot application');
+    }
+
+    static main() {
+        console.log('run mvc api...');
+        // use your builder
+        MvcHostBuilder.create(__dirname)
+            .useConfiguration({ debug: true })
+            .bootstrap(MvcApi);
+    }
+}
+
+
+```
+
 
 ## Container Interface
 

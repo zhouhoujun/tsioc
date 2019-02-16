@@ -156,9 +156,10 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         }
         builder = builder || this;
 
-        let runner = builder.resolveRunable(instance, cfg, tk, options);
+        let runOptions: RunnableOptions<T> =  { instance: instance, type: lang.getClass(instance), mdToken: tk, config: cfg, data: options.data };
+        let runner = builder.resolveRunable(instance, runOptions, options);
         if (runner && isFunction(runner.onInit)) {
-            await runner.onInit(options);
+            await runner.onInit(runOptions, options);
         }
         let data = options ? options.data : undefined;
         if (isRunner(runner)) {
@@ -178,19 +179,14 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
      * @returns {Promise<Runnable<T>>}
      * @memberof AnnotationBuilder
      */
-    resolveRunable(instance: T, config?: AnnotationConfigure<T>, token?: Token<T> | BuildOptions<T>, options?: BuildOptions<T>): Runnable<T> {
+    resolveRunable(instance: T, runableOptions: RunnableOptions<T>, options?: BuildOptions<T>): Runnable<T> {
         if (!instance) {
             return null;
         }
 
-        let tk: Token<T>;
-        if (isToken(token)) {
-            tk = token;
-        } else {
-            options = token;
-        }
+        let tk: Token<T> = runableOptions.mdToken || runableOptions.type;
+        let config = runableOptions.config;
 
-        tk = tk || lang.getClass(instance);
         if (!config) {
             config = this.getMetaAccessor(tk).getMetadata(tk, this.container);
         }
@@ -218,7 +214,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             return null;
         }
 
-        let instance = this.resolveToken(token, options ? options.target : undefined);
+        let instance = this.resolveToken(token, options ? options.target : undefined, ...(options.providers || []));
         if (isNullOrUndefined(instance)) {
             console.log(`can not find token ${token ? token.toString() : null} in container.`);
             return null;
