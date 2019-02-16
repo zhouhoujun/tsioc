@@ -2,7 +2,7 @@ import {
     Token, isToken, IContainer, isClass, Inject, ContainerToken,
     lang, isFunction, IMetaAccessor, ParamProviders,
     InjectMetaAccessorToken, MetaAccessorToken, isNullOrUndefined,
-    RefTagLevel, isUndefined, Singleton
+    RefTagLevel, isUndefined, Singleton, ProviderTypes
 } from '@ts-ioc/core';
 import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import {
@@ -284,10 +284,10 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         return false;
     }
 
-    protected resolveToken(token: Token<T>, target?: any) {
+    protected resolveToken(token: Token<T>, target?: any, ...providers: ProviderTypes[]) {
         if (target) {
-            return this.container.getService(token, target);
+            return this.container.getService(token, target, ...providers);
         }
-        return this.container.resolve(token);
+        return this.container.resolve(token, ...providers);
     }
 }

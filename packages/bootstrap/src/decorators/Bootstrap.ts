@@ -20,12 +20,20 @@ export interface BootstrapMetadata extends AppConfigure {
     bootstrap?: Token<any>;
 
     /**
-     * globals import
+     * boot dependencies
      *
      * @type {LoadType[]}
      * @memberof BootstrapMetadata
      */
-    globals?: LoadType[];
+    bootDeps?: LoadType[];
+
+    /**
+     * configuration.
+     *
+     * @type {AppConfigure}
+     * @memberof BootstrapMetadata
+     */
+    bootConfiguration?: AppConfigure
 }
 
 
@@ -91,11 +99,14 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
                 }
 
                 if (builder instanceof ApplicationBuilder) {
-                    builder.useConfiguration(lang.omit(metadata, 'imports', 'exports', 'providers'));
+                    if (metadata.bootConfiguration) {
+                        builder.useConfiguration(metadata.bootConfiguration);
+                    }
+                    builder.useConfiguration(lang.omit(metadata, 'imports', 'exports', 'providers', 'configuration'));
                 }
 
                 builder
-                    .use(...(metadata.globals || []))
+                    .use(...(metadata.bootDeps || []))
                     .bootstrap(metadata.type);
             }, 100);
         } else {
