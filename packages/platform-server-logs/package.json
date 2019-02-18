@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/platform-server-logs",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "description": "type task framework, base on AOP, Ioc container, via @ts-ioc",
   "es2015": "./fesm2015/platform-server-logs.js",
   "esm2015": "./es2015/index.js",
@@ -38,8 +38,8 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-server-logs#readme",
   "dependencies": {
-    "@ts-ioc/bootstrap": "^4.0.2",
-    "@ts-ioc/platform-server": "^4.0.2",
+    "@ts-ioc/bootstrap": "^4.0.3",
+    "@ts-ioc/platform-server": "^4.0.3",
     "bluebird": "^3.5.3",
     "chalk": "^2.4.2",
     "globby": "^9.0.0",
