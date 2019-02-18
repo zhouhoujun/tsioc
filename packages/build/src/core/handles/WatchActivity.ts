@@ -2,7 +2,7 @@
 import { IActivity, Task, InjectTranslatorToken } from '@ts-ioc/activities';
 import { PromiseUtil, isArray, Token, lang } from '@ts-ioc/core';
 import { fromEventPattern } from 'rxjs';
-import { bufferTime, flatMap, filter } from 'rxjs/operators';
+import { bufferTime, flatMap, filter, distinct, distinctUntilChanged } from 'rxjs/operators';
 import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
 import { FileChanged, FileChangedTransToken, IFileChanged } from '../FileChanged';
 import { WatchAcitvityToken, WatchConfigure, IWatchActivity } from './IWatchActivity';
@@ -66,6 +66,27 @@ export class WatchActivity extends BuildHandleActivity implements IWatchActivity
                 watcher.close();
             })
             .pipe(
+                distinctUntilChanged((a, b) => {
+                    if (a.added && b.added) {
+                        if (a.added.length !== b.added.length) {
+                            return false;
+                        }
+                        return a.added.join(',') === b.added.join(',');
+                    }
+                    if (a.updated && b.updated) {
+                        if (a.updated.length !== b.updated.length) {
+                            return false;
+                        }
+                        return a.updated.join(',') === b.updated.join(',');
+                    }
+                    if (a.removed && b.removed) {
+                        if (a.removed.length !== b.removed.length) {
+                            return false;
+                        }
+                        return a.removed.join(',') === b.removed.join(',');
+                    }
+                    return false;
+                }),
                 bufferTime(300),
                 filter(c => c.length > 0),
                 flatMap(chgs => {
@@ -89,6 +110,7 @@ export class WatchActivity extends BuildHandleActivity implements IWatchActivity
                 })
             )
             .subscribe(chg => {
+                console.log('\nwatch file change:', chg);
                 ctx.setAsResult(chg);
                 this.execActivity(watchBody, ctx);
             });
