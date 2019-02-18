@@ -66,7 +66,7 @@ export class BuildHandleActivity extends HandleActivity {
     async onActivityInit(config: BuildHandleConfigure) {
         await super.onActivityInit(config);
         await this.buildCompiler(config);
-        this.test = await this.toExpression(config.test);
+        this.test = await this.toExpression(this.context.to(config.test));
         this.subDist = this.context.to(config.subDist) || '';
     }
 

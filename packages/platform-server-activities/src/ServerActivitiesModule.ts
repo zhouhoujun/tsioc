@@ -16,14 +16,6 @@ import { ServerLogsModule } from '@ts-ioc/platform-server-logs';
         RunnerLogAspect,
         WorkflowConfigureRegister
     ]
-    // exports: [
-    //     ServerModule,
-    //     ServerBootstrapModule,
-    //     ServerLogsModule,
-    //     TaskLogAspect,
-    //     RunnerLogAspect,
-    //     WorkflowConfigureRegister
-    // ]
 })
 export class ServerActivitiesModule {
 

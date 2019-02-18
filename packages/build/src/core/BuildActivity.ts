@@ -43,10 +43,10 @@ export interface BuildConfigure extends ChainConfigure {
     /**
      * watch
      *
-     * @type {(ExpressionToken<Src | boolean> | ConfigureType<WatchActivity, WatchConfigure>)}
+     * @type {CtxType<Src | boolean | ConfigureType<WatchActivity, WatchConfigure>>}
      * @memberof BuildConfigure
      */
-    watch?: ExpressionToken<Src | boolean> | ConfigureType<WatchActivity, WatchConfigure>;
+    watch?: CtxType<Src | boolean | ConfigureType<WatchActivity, WatchConfigure>>;
 
     /**
      * before build activity.
@@ -152,9 +152,10 @@ export class BuildActivity extends ChainActivity implements IBuildActivity {
     async onActivityInit(config: BuildConfigure) {
         await super.onActivityInit(config);
         this.src = this.context.to(config.src);
-        if (config.watch) {
+        let watch = this.context.to(config.watch);
+        if (watch) {
             this.watch = await this.toActivity<Src | boolean, WatchActivity, WatchConfigure>(
-                config.watch,
+                watch,
                 act => act instanceof WatchActivity,
                 watch => {
                     if (isBoolean(watch)) {

@@ -3,7 +3,7 @@ import { Token, isToken, isMetadataObject, isString } from '@ts-ioc/core';
 import { ModuleConfig } from '@ts-ioc/bootstrap';
 import { IWorkflowInstance } from './IWorkflowInstance';
 import { WorkflowInstance } from './WorkflowInstance';
-import { IActivityContext } from './IActivityContext';
+import { IActivityContext, CtxType } from './IActivityContext';
 import { IHandleActivity } from './IHandleActivity';
 import { ExpressionActivity } from './ExpressionActivity';
 

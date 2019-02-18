@@ -1,7 +1,7 @@
 import { BuildHandleContext, HandleContextToken } from './BuildHandleActivity';
-import { Task, ActivityContextToken, IActivityContext } from '@ts-ioc/activities';
+import { Task, ActivityContextToken } from '@ts-ioc/activities';
 import { NodeActivity } from './NodeActivity';
-import { Providers, lang } from '@ts-ioc/core';
+import { Providers } from '@ts-ioc/core';
 
 
 /**

@@ -9,7 +9,6 @@ import { IWorkflowInstance, WorkflowInstance } from '@ts-ioc/activities';
  * @class TaskLogAspect
  */
 @Aspect({
-    // annotation: Workflow,
     within: WorkflowInstance,
     singleton: true
 })

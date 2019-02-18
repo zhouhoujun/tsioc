@@ -43,10 +43,10 @@ export interface BuildHandleConfigure extends HandleConfigure {
     /**
      * file filter
      *
-     * @type {ExpressionType<string | RegExp| Express<string, boolean>>}
+     * @type {CtxType<ExpressionType<string | RegExp | Express<string, boolean>>>}
      * @memberof BuildHandleConfigure
      */
-    test?: ExpressionType<string | RegExp | Express<string, boolean>>;
+    test?: CtxType<ExpressionType<string | RegExp | Express<string, boolean>>>;
 
     /**
      * compiler
