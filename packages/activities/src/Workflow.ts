@@ -71,8 +71,8 @@ export class Workflow extends ApplicationBuilder<IActivity> implements IWorkflow
         } else {
             boot = activity || {};
         }
-        let env = this.getPools().create(workflowId);
-        let options = { env: env, data: workflowId };
+        let env = this.getPools().getDefault();
+        let options = { data: workflowId };
         env.bindProvider(WorkflowId, workflowId);
         let runner = await this.bootstrap(boot, options) as IWorkflowInstance<any>;
         return runner;
