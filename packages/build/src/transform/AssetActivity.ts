@@ -1,8 +1,8 @@
 import { Providers } from '@ts-ioc/core';
 import {
     UglifyCompilerToken, AnnotationCompilerToken, AssetToken,
-    SourceCompilerToken, SourcemapsCompilerToken, TestCompilerToken,
-    DestCompilerToken, AssetBuildHanlde, CompilerToken, UnitTestActivity
+    SourceCompilerToken, SourcemapsCompilerToken,
+    DestCompilerToken, AssetBuildHandle, CompilerToken
 } from '../core';
 import { Asset } from '../decorators/Asset';
 import {
@@ -29,6 +29,6 @@ import { ActivityContextToken } from '@ts-ioc/activities';
     { provide: DestCompilerToken, useClass: DestActivity },
     { provide: CompilerToken, useExisting: TransformActivityToken }
 ])
-export class AssetActivity extends AssetBuildHanlde<TransformContext> {
+export class AssetActivity extends AssetBuildHandle<TransformContext> {
 
 }

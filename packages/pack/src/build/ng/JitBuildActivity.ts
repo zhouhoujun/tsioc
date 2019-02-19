@@ -13,6 +13,10 @@ import { PackActivity } from '../../core';
             compiler: 'scss'
         },
         {
+            test: '*.less',
+            compiler: 'less'
+        },
+        {
             test: '*.ts',
             compiler: 'ngc'
         }

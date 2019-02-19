@@ -1,7 +1,7 @@
 import { PropertyMetadata } from '../metadatas';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isToken, isPropertyMetadata } from '../../utils';
+import { isToken, isProvideMetadata } from '../../utils';
 import { ArgsIterator } from './ArgsIterator';
 import { Token } from '../../types';
 
@@ -46,7 +46,7 @@ export function createPropDecorator<T extends PropertyMetadata>(name: string, ad
             adapter(args);
         }
         args.next<T>({
-            isMetadata: (arg) => isPropertyMetadata(arg),
+            isMetadata: (arg) => isProvideMetadata(arg),
             match: (arg) => isToken(arg),
             setMetadata: (metadata, arg) => {
                 metadata.provider = arg;

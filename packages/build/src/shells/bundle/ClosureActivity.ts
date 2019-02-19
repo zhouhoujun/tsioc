@@ -15,6 +15,14 @@ export interface ClosureCmdArgs {
     manifest: string;
 }
 
+
+/**
+ * closure activity config.
+ *
+ * @export
+ * @interface ClosureActivityConfig
+ * @extends {ShellActivityConfig}
+ */
 export interface ClosureActivityConfig extends ShellActivityConfig {
     jarPath: CtxType<string>;
     args: CtxType<ClosureCmdArgs>;

@@ -1,7 +1,7 @@
 import {
     ChainActivity, Task, ChainConfigure, CtxType, Src,
-    ExpressionToken, ConfigureType, Active, IActivity,
-    InjectAcitityToken, ActivityMetaAccessorToken, HandleType
+    ConfigureType, Active, IActivity, InjectAcitityToken,
+    ActivityMetaAccessorToken, HandleType
 } from '@ts-ioc/activities';
 import { isBoolean, Token, Providers, MetaAccessorToken } from '@ts-ioc/core';
 import { WatchActivity, WatchConfigure, WatchAcitvityToken } from './handles';
@@ -35,10 +35,10 @@ export interface BuildConfigure extends ChainConfigure {
     /**
      * handle activities.
      *
-     * @type {(HandleType | BuildHandleConfigure | Token<BuildHandleActivity>)[];}
+     * @type {CtxType<(HandleType | BuildHandleConfigure | Token<IBuildHandleActivity>)[]>}
      * @memberof ChainConfigure
      */
-    handles?: (HandleType | BuildHandleConfigure | Token<IBuildHandleActivity>)[];
+    handles?: CtxType<(HandleType | BuildHandleConfigure | Token<IBuildHandleActivity>)[]>;
 
     /**
      * watch

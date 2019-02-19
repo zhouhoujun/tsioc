@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { ParamPropMetadata } from '../metadatas';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isToken, isParamPropMetadata } from '../../utils';
+import { isToken, isProvideMetadata } from '../../utils';
 import { ArgsIterator } from './ArgsIterator';
 import { Token } from '../../types';
 
@@ -55,7 +55,7 @@ export function createParamPropDecorator<T extends ParamPropMetadata>(
             adapter(args);
         }
         args.next<T>({
-            isMetadata: (arg) => isParamPropMetadata(arg),
+            isMetadata: (arg) => isProvideMetadata(arg, 'index'),
             match: (arg) => isToken(arg),
             setMetadata: (metadata, arg) => {
                 metadata.provider = arg;

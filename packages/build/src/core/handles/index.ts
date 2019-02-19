@@ -5,6 +5,6 @@ export * from './WatchActivity';
 export * from './ITestActivity';
 export * from './TestActivity';
 export * from './IAssetBuildHandle';
-export * from './AssetBuildHanlde';
+export * from './AssetBuildHandle';
 export * from './ServeActivity';
 export * from './UnitTestActivity';

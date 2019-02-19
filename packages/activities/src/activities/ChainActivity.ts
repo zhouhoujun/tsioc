@@ -35,7 +35,21 @@ export class ChainActivity extends ControlActivity implements IChainActivity {
      */
     protected async execute(): Promise<void> {
         let config = this.context.config as ChainConfigure;
-        await this.handleRequest(this.context, (config.handles || []).concat(this.handles || []));
+        let handles = await this.getHandles(config);
+        await this.handleRequest(this.context, handles);
+    }
+
+    /**
+     * get handles.
+     *
+     * @protected
+     * @param {ChainConfigure} config
+     * @returns {Promise<HandleType[]>}
+     * @memberof ChainActivity
+     */
+    protected async getHandles(config: ChainConfigure): Promise<HandleType[]> {
+        let handles = this.context.to(config.handles);
+        return handles.concat(this.handles || []);
     }
 
     /**

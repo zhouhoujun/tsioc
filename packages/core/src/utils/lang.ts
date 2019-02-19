@@ -66,6 +66,9 @@ export class MapSet<K, V> extends MapBase<K, V> {
     }
 }
 
+/**
+ * lang utils
+ */
 export namespace lang {
     /**
      * assert param is right or not.

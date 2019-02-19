@@ -8,7 +8,19 @@ import { Src, IActivityContext } from '@ts-ioc/activities';
  * @interface CmdOptions
  */
 export interface CmdOptions {
+    /**
+     * force execute command.
+     *
+     * @type {boolean}
+     * @memberof CmdOptions
+     */
     force?: boolean;
+    /**
+     * silent run command.
+     *
+     * @type {boolean}
+     * @memberof CmdOptions
+     */
     silent?: boolean;
 }
 

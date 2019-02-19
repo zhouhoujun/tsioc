@@ -1,4 +1,4 @@
-import { UglifyCompilerToken, AnnotationCompilerToken, SourceCompilerToken, SourcemapsCompilerToken, TestCompilerToken, AssetBuildHanlde, BuildHandleContext } from '../core';
+import { UglifyCompilerToken, AnnotationCompilerToken, SourceCompilerToken, SourcemapsCompilerToken, TestCompilerToken, AssetBuildHandle, BuildHandleContext } from '../core';
 import { Asset } from '../decorators/Asset';
 import { Providers } from '@ts-ioc/core';
 import { ShellUglifyActivity } from './compile';
@@ -13,6 +13,6 @@ import { ShellAssetToken } from './IShellAssetActivity';
     // { provide: SourcemapsCompilerToken, useClass: SourceMapsActivity },
     // { provide: TestCompilerToken, useClass: MochaTestActivity }
 ])
-export class ShellAssetActivity extends AssetBuildHanlde<BuildHandleContext<Src>> {
+export class ShellAssetActivity extends AssetBuildHandle<BuildHandleContext<Src>> {
 
 }

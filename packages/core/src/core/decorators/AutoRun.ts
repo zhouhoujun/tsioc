@@ -43,7 +43,7 @@ export interface IAutorunDecorator extends IClassMethodDecorator<AutorunMetadata
  */
 export const Autorun: IAutorunDecorator = createClassMethodDecorator<AutorunMetadata>('Autorun', args => {
     args.next<AutorunMetadata>({
-        isMetadata: (arg) => isClassMetadata(arg, ['autorun']),
+        isMetadata: (arg) => isClassMetadata(arg, 'autorun'),
         match: (arg) => isString(arg) || isNumber(arg),
         setMetadata: (metadata, arg) => {
             if (isString(arg)) {

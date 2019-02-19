@@ -73,7 +73,7 @@ export interface ILoggerDecorator<T extends LoggerMetadata> extends IClassMethod
 export const Logger: ILoggerDecorator<LoggerMetadata> = createClassMethodDecorator<TypeMetadata>('Logger',
     adapter => {
         adapter.next<LoggerMetadata>({
-            isMetadata: (arg) => isClassMetadata(arg, ['logname']),
+            isMetadata: (arg) => isClassMetadata(arg, 'logname'),
             match: (arg) => isString(arg),
             setMetadata: (metadata, arg) => {
                 metadata.logname = arg;

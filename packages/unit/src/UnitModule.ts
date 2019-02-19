@@ -21,12 +21,6 @@ import * as reports from './reports';
         reports,
         asserts
     ]
-    // exports: [
-    //     UnitTestConfigureRegister,
-    //     runners,
-    //     reports,
-    //     asserts
-    // ]
 })
 export class UnitModule {
 

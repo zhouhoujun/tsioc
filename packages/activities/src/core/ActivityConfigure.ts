@@ -302,10 +302,10 @@ export interface ChainConfigure extends ActivityConfigure {
     /**
      * handle activities.
      *
-     * @type {HandleType[]}
+     * @type {CtxType<HandleType[]>}
      * @memberof ChainConfigure
      */
-    handles?: HandleType[];
+    handles?: CtxType<HandleType[]>;
 }
 
 /**

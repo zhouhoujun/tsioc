@@ -16,7 +16,21 @@ export const SuiteRunnerToken = new InjectRunnableToken<ISuiteRunner>('@Suite');
  */
 export interface ISuiteRunner extends IRunner<any> {
 
+    /**
+     * run suite.
+     *
+     * @param {ISuiteDescribe} desc
+     * @returns {Promise<void>}
+     * @memberof ISuiteRunner
+     */
     runSuite(desc: ISuiteDescribe): Promise<void>;
 
+    /**
+     * run case.
+     *
+     * @param {ICaseDescribe} caseDesc
+     * @returns {Promise<ICaseDescribe>}
+     * @memberof ISuiteRunner
+     */
     runCase(caseDesc: ICaseDescribe): Promise<ICaseDescribe>;
 }

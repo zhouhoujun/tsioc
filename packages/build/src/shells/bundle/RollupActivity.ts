@@ -4,9 +4,33 @@ import { lang, ObjectMap } from '@ts-ioc/core';
 import { RollupDirOptions, RollupFileOptions, rollup } from 'rollup';
 import { ShellActivity, ShellActivityConfig } from '../ShellActivity';
 
+/**
+ * rollup command options.
+ *
+ * @export
+ * @interface RollupCmdOptions
+ */
 export interface RollupCmdOptions {
+    /**
+     * rollup format type.
+     *
+     * @type {string}
+     * @memberof RollupCmdOptions
+     */
     format: string,
+    /**
+     * file to rollup.
+     *
+     * @type {string}
+     * @memberof RollupCmdOptions
+     */
     file: string,
+    /**
+     * output dir.
+     *
+     * @type {string}
+     * @memberof RollupCmdOptions
+     */
     dir: string
 }
 

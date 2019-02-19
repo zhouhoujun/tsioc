@@ -1,7 +1,6 @@
 import { Type, AbstractType, Token, IRefTarget, ClassType } from '../types';
 import { Registration } from '../Registration';
 import { lang } from './lang';
-import { IAnnotationMetadata } from '../core';
 
 declare let process: any;
 
@@ -173,22 +172,16 @@ export function isBaseObject(target: any): target is object {
  * is metadata object or not.
  *
  * @export
- * @param {any} target
- * @param {string[]} [props]
- * @param {string[]} [extendsProps]
+ * @param {*} target
+ * @param {...(string|string[])[]} props
  * @returns {boolean}
  */
-export function isMetadataObject(target: any, props?: string[], extendsProps?: string[]): boolean {
+export function isMetadataObject(target: any, ...props: (string | string[])[]): boolean {
     if (!isBaseObject(target)) {
         return false;
     }
-    props = props || [];
-    if (extendsProps) {
-        props = extendsProps.concat(props);
-    }
-
     if (props.length) {
-        return lang.keys(target).some(n => props.indexOf(n) > 0)
+        return lang.keys(target).some(n => props.some(ps => isString(ps) ? ps === n : ps.indexOf(n) > 0));
     }
 
     return true;
@@ -208,63 +201,29 @@ export function isRefTarget(target: any): target is IRefTarget {
     return isToken(target.target);
 }
 
-/**
- * target is annotation metadata.
- *
- * @export
- * @param {*} target
- * @returns {target is IAnnotationMetadata<any>}
- */
-export function isAnnotationMetadata(target: any): target is IAnnotationMetadata<any> {
-    return isMetadataObject(target, ['type', 'token', 'bootstrap']);
-}
 
 /**
  * check object is class metadata or not.
  *
  * @export
- * @param {any} target
- * @param {string[]} [extendsProps]
+ * @param {*} target
+ * @param {...(string | string[])[]} extendsProps
  * @returns {boolean}
  */
-export function isClassMetadata(target, extendsProps?: string[]): boolean {
-    return isMetadataObject(target, ['singleton', 'provide', 'alias', 'type'], extendsProps);
-}
-
-/**
- * check object is param metadata or not.
- *
- * @export
- * @param {any} target
- * @param {string[]} [extendsProps]
- * @returns {boolean}
- */
-export function isParamMetadata(target, extendsProps?: string[]): boolean {
-    return isMetadataObject(target, ['type', 'provider', 'index'], extendsProps);
-}
-
-/**
- * check object is param prop metadata or not.
- *
- * @export
- * @param {any} target
- * @param {string[]} [extendsProps]
- * @returns {boolean}
- */
-export function isParamPropMetadata(target, extendsProps?: string[]): boolean {
-    return isMetadataObject(target, ['type', 'provider', 'index'], extendsProps);
+export function isClassMetadata(target, ...extendsProps: (string | string[])[]): boolean {
+    return isMetadataObject(target, ...extendsProps.concat(['singleton', 'provide', 'alias', 'type']));
 }
 
 /**
  * check object is property metadata or not.
  *
  * @export
- * @param {any} target
- * @param {string[]} [extendsProps]
+ * @param {*} target
+ * @param {...(string | string[])[]} extendsProps
  * @returns {boolean}
  */
-export function isPropertyMetadata(target, extendsProps?: string[]): boolean {
-    return isMetadataObject(target, ['type', 'provider'], extendsProps);
+export function isProvideMetadata(target, ...extendsProps: (string | string[])[]): boolean {
+    return isMetadataObject(target, ...extendsProps.concat(['type', 'provider']));
 }
 
 /**

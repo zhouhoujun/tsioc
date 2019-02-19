@@ -8,8 +8,18 @@ import {
 import { isBoolean, isToken } from '@ts-ioc/core';
 import { CompilerActivity } from '../CompilerActivity';
 
+
+/**
+ * Asset build hanlde
+ *
+ * @export
+ * @class AssetBuildHanlde
+ * @extends {BuildHandleActivity}
+ * @implements {IAssetBuildHandle}
+ * @template T
+ */
 @Task
-export class AssetBuildHanlde<T extends BuildHandleContext<any>> extends BuildHandleActivity implements IAssetBuildHandle {
+export class AssetBuildHandle<T extends BuildHandleContext<any>> extends BuildHandleActivity implements IAssetBuildHandle {
     /**
      * source compiler
      *

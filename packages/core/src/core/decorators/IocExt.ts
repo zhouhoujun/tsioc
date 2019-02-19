@@ -35,7 +35,7 @@ export interface IocExtDecorator extends ITypeDecorator<AutorunMetadata> {
 export const IocExt: IocExtDecorator = createClassDecorator<AutorunMetadata>('IocExt',
     args => {
         args.next<AutorunMetadata>({
-            isMetadata: (arg) => isClassMetadata(arg, ['autorun']),
+            isMetadata: (arg) => isClassMetadata(arg, 'autorun'),
             match: (arg) => isString(arg),
             setMetadata: (metadata, arg) => {
                 metadata.autorun = arg;
