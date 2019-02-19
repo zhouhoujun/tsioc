@@ -11,6 +11,7 @@ version 2+ of [`tsioc`](https://www.npmjs.com/zhouhoujun/package/tsioc)
 ```shell
 
 npm install @ts-ioc/unit
+npm install @ts-ioc/unit-console
 
 // in browser
 npm install @ts-ioc/platform-browser
@@ -26,7 +27,7 @@ npm install @ts-ioc/platform-server
 
 ```ts
 
-import { Suite, BeforeEach, UnitTest, Test, Assert, Expect, ExpectToken } from '@ts-ioc/unit';
+import { Suite, BeforeEach, UnitTest, Test, After, AfterEach Assert, Expect, ExpectToken } from '@ts-ioc/unit';
 import { ConsoleReporter } from '@ts-ioc/unit-console';
 import { PromiseUtil } from '@ts-ioc/core';
 
@@ -76,6 +77,16 @@ export class SuiteTest {
     @Test('expect test')
     async testEqural(@Inject(ExpectToken) expect: Expect) {
         await expect('true').toBe(true);
+    }
+
+    @AfterEach()
+    clean(){
+        //clean each data.
+    }
+
+    @After()
+    destory(){
+
     }
 }
 
