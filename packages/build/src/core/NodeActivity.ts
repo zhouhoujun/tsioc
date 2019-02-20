@@ -1,5 +1,5 @@
 import {
-    Src, ContextActivity, Task, ActivityContext, InputDataToken,
+    Src, Task, ActivityContext, InputDataToken, Activity,
     InjectActivityContextToken, ActivityMetaAccessorToken, ActivityConfigure
 } from '@ts-ioc/activities';
 import { Inject, Injectable, ObjectMap, Express2, isArray, isString, lang, Providers, MetaAccessorToken } from '@ts-ioc/core';
@@ -30,7 +30,7 @@ const del = require('del');
 @Providers([
     { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken }
 ])
-export abstract class NodeActivity extends ContextActivity {
+export abstract class NodeActivity extends Activity {
 
     /**
      * node activity context.

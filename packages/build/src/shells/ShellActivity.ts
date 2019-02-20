@@ -92,7 +92,8 @@ export class ShellActivity extends CompilerActivity implements OnActivityInit {
     }
 
     protected async execute(): Promise<void> {
-        return await Promise.resolve(this.shell)
+        await this.executeBefore();
+        await Promise.resolve(this.shell)
             .then(cmds => {
                 let options = this.options;
                 if (isString(cmds)) {
@@ -107,6 +108,15 @@ export class ShellActivity extends CompilerActivity implements OnActivityInit {
                     return Promise.reject('shell task config error');
                 }
             });
+        await this.executeAfter();
+    }
+
+    protected async executeBefore(): Promise<void> {
+
+    }
+
+    protected async executeAfter(): Promise<void> {
+
     }
 
     protected formatShell(shell: string): string {

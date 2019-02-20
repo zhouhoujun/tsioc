@@ -108,7 +108,19 @@ export class RollupActivity extends ShellActivity {
      * @memberof RollupActivity
      */
     rollupConfig: string;
+    /**
+     * rollup dir options.
+     *
+     * @type {RollupDirOptions}
+     * @memberof RollupActivity
+     */
     rollupDirOptions: RollupDirOptions;
+    /**
+     * rollup file options.
+     *
+     * @type {RollupFileOptions}
+     * @memberof RollupActivity
+     */
     rollupFileOptions: RollupFileOptions;
 
     async onActivityInit(config: RollupActivityConfig) {
@@ -121,13 +133,13 @@ export class RollupActivity extends ShellActivity {
         this.shell = this.shell || path.normalize(path.join(this.context.getRootPath(), 'node_modules', '.bin', 'rollup'));
     }
 
-    protected async executeBefore(): Promise<void> {
-        await super.executeBefore();
+    protected async execute(): Promise<void> {
         if (this.rollupDirOptions) {
             await rollup(this.rollupDirOptions);
-        }
-        if (this.rollupFileOptions) {
+        } else if (this.rollupFileOptions) {
             await rollup(this.rollupFileOptions);
+        } else {
+            await super.execute();
         }
     }
 

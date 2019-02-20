@@ -48,7 +48,7 @@ export class ChainActivity extends ControlActivity implements IChainActivity {
      * @memberof ChainActivity
      */
     protected async getHandles(config: ChainConfigure): Promise<HandleType[]> {
-        let handles = this.context.to(config.handles);
+        let handles = this.context.to(config.handles) || [];
         return handles.concat(this.handles || []);
     }
 

@@ -6,8 +6,8 @@ import {
     isTransform, ITransformConfigure, TransformActivity, TransformType
 } from '../core';
 import {
-    AssetConfigure, CompilerToken, InjectAssetToken,
-    DestCompilerToken, CompilerActivity, DestConfigure, IDestCompiler
+    AssetConfigure, CompilerToken, InjectAssetToken, CompilerActivity,
+    DestCompilerToken, DestConfigure, IDestCompiler
 } from '../../core';
 import { Asset } from '../../decorators/Asset';
 import { AssetActivity } from '../AssetActivity';
@@ -38,6 +38,13 @@ export interface TsConfigure extends AssetConfigure, ITransformConfigure {
     tsconfig?: CtxType<string | ObjectMap<any>>;
 }
 
+/**
+ * ts compiler.
+ *
+ * @export
+ * @class TsCompiler
+ * @extends {TransformActivity}
+ */
 @Task
 export class TsCompiler extends TransformActivity {
     /**
