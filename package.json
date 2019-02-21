@@ -1,7 +1,7 @@
 {
   "name": "tsioc-srcs",
   "version": "4.0.4",
-  "description": "tsioc is AOP, Ioc container, via typescript decorator",
+  "description": "AOP,  Ioc container, Boot framework, unit testing framework , activities workflow framework.",
   "scripts": {
     "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",

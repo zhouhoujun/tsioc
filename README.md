@@ -3,7 +3,7 @@
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
- Ioc container, AOP, Boot framework, unit testing framework via typescript decorator.
+AOP,  Ioc container, Boot framework, unit testing framework , activities workflow framework.
 
 version 2+ of [`tsioc`](https://www.npmjs.com/zhouhoujun/package/tsioc)
 
