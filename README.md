@@ -1,9 +1,9 @@
-# packaged @ts-ioc/core
+# ts-ioc framework src
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@ts-ioc/core` is AOP, Ioc container, via typescript decorator.
+ Ioc container, AOP, Boot framework, unit testing framework via typescript decorator.
 
 version 2+ of [`tsioc`](https://www.npmjs.com/zhouhoujun/package/tsioc)
 
@@ -215,6 +215,11 @@ ApplicationBuilder.create(__dirname)
 * [build](https://github.com/zhouhoujun/tsioc/tree/master/packages/build)
 * [pack](https://github.com/zhouhoujun/tsioc/tree/master/packages/pack)
 
+
+
+## [Unit Test framwork](https://github.com/zhouhoujun/tsioc/tree/master/packages/unit#readme)
+
+## usage
 ### create Container
 
 * in browser can not:
@@ -513,7 +518,6 @@ container.invoke(MethodTest3, 'sayHello')
 
 
 ```
-
 
 ## Use Demo
 

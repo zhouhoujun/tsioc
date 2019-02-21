@@ -13,6 +13,8 @@
     "dependency",
     "injection",
     "framework",
+    "unit",
+    "test",
     "container",
     "decorator",
     "autofac",
