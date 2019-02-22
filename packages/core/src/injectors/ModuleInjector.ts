@@ -4,7 +4,6 @@ import { IContainer } from '../IContainer';
 import { PromiseUtil } from '../utils';
 import { IModuleValidate, ModuleValidateToken } from './IModuleValidate';
 import { Injectable, Inject } from '../core';
-import { IocExtModuleValidate } from './ModuleValidate';
 
 
 /**

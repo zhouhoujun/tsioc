@@ -3,7 +3,7 @@ import { IContainer, ResoveWay } from '../IContainer';
 import { InjectToken } from '../InjectToken';
 import { IResolver, IResolverContainer } from '../IResolver';
 import { ParamProviders, ProviderMap, isProviderMap } from '../providers';
-import { isString, isNumber, isFunction, isNullOrUndefined, isClass } from '../utils';
+import { isString, isNumber, isFunction, isClass } from '../utils';
 
 /**
  *  resolver chain token.
