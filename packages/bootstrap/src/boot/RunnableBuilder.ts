@@ -54,7 +54,7 @@ export enum RunnableEvents {
 @Injectable(RunnableBuilderToken)
 export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBuilder<T>, IEvents {
 
-    protected globalModules: LoadType[];
+    protected depModules: LoadType[];
     protected customRegs: CustomRegister<T>[];
     protected beforeInitPds: Map<Token<any>, any>;
     protected afterInitPds: Map<Token<any>, any>;
@@ -69,7 +69,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         super();
         this._baseURL = baseURL;
         this.customRegs = [];
-        this.globalModules = [];
+        this.depModules = [];
         this.beforeInitPds = new Map();
         this.afterInitPds = new Map();
         this.events = new Events();
@@ -153,7 +153,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
      * @memberof RunnableBuilder
      */
     use(...modules: LoadType[]): this {
-        this.globalModules = this.globalModules.concat(modules);
+        this.depModules = this.depModules.concat(modules);
         this.inited = false;
         return this;
     }
@@ -310,8 +310,8 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
      * @memberof RunnableBuilder
      */
     protected async registerExts(container: IContainer): Promise<void> {
-        if (this.globalModules.length) {
-            let usedModules = this.globalModules;
+        if (this.depModules.length) {
+            let usedModules = this.depModules;
             let types = await container.loadModule(...usedModules);
             this.emit(RunnableEvents.registeredExt, types, container);
         }

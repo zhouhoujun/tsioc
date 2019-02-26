@@ -106,7 +106,7 @@ export class ResolverChain implements IResolverContainer {
             }
         }
         if (this.container.parent && (way & ResoveWay.bubble)) {
-            return this.container.parent.resolve(key, ResoveWay.routeup, providerMap);
+            return this.container.parent.resolve(key, resway, providerMap);
         }
 
         return null;
@@ -133,7 +133,7 @@ export class ResolverChain implements IResolverContainer {
             });
         }
         if ((resway & ResoveWay.bubble) && this.container.parent) {
-            this.container.parent.unregister(token, ResoveWay.routeup);
+            this.container.parent.unregister(token, resway);
         }
         return this;
     }
@@ -166,7 +166,7 @@ export class ResolverChain implements IResolverContainer {
             });
         }
         if (!provider && (resway & ResoveWay.bubble) && this.container.parent) {
-            provider = this.container.parent.getTokenImpl(token, ResoveWay.routeup);
+            provider = this.container.parent.getTokenImpl(token, resway);
         }
 
         return provider || null;
@@ -190,7 +190,7 @@ export class ResolverChain implements IResolverContainer {
             return true;
         }
         if ((resway & ResoveWay.bubble) && this.container.parent) {
-            return this.container.parent.has(token, ResoveWay.routeup);
+            return this.container.parent.has(token, resway);
         }
         return false;
     }

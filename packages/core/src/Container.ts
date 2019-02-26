@@ -36,10 +36,10 @@ const SingletonRegToken = '___IOC__Singleton___';
  */
 export class Container implements IContainer {
 
-    @enumerable(false)
+    // @enumerable(false)
     parent: IContainer;
 
-    @enumerable(false)
+    // @enumerable(false)
     children: IContainer[] = [];
 
     /**
