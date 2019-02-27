@@ -311,8 +311,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
      */
     protected async registerExts(container: IContainer): Promise<void> {
         if (this.depModules.length) {
-            let usedModules = this.depModules;
-            let types = await container.loadModule(...usedModules);
+            let types = await container.loadModule(...this.depModules);
             this.emit(RunnableEvents.registeredExt, types, container);
         }
     }

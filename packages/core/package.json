@@ -1,6 +1,6 @@
 {
   "name": "@ts-ioc/core",
-  "version": "4.0.4",
+  "version": "4.0.5",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "es2015": "./fesm2015/core.js",
   "esm2015": "./es2015/index.js",

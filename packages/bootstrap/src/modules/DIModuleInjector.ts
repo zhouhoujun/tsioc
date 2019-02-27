@@ -164,8 +164,10 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
             ConfigureRegister,
             injMd.type, true, ResoveWay.current);
 
-        let mgr = newContainer.get(ConfigureMgrToken);
-        let appConfig = await mgr.getConfig();
-        await Promise.all(registers.map(ser => ser.resolver.resolve(ser.serType).register(appConfig, ser.resolver.resolve(CurrentRunnableBuilderToken))));
+        if (registers.length) {
+            let mgr = newContainer.get(ConfigureMgrToken);
+            let appConfig = await mgr.getConfig();
+            await Promise.all(registers.map(ser => ser.resolver.resolve(ser.serType).register(appConfig, ser.resolver.resolve(CurrentRunnableBuilderToken))));
+        }
     }
 }
