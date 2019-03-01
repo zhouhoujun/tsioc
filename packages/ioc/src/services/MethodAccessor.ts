@@ -2,8 +2,8 @@ import { Token, Type } from '../types';
 import { IParameter } from '../IParameter';
 import { ParamProviders, isProvider, ProviderParser } from '../providers';
 import { isToken, isNullOrUndefined, lang, isFunction } from '../utils';
-import { IContainer } from '../IContainer';
-import { IocService } from './IocService';
+import { IIocContainer } from '../IIocContainer';
+import { IocCoreService } from './IocCoreService';
 
 /**
  * execution, invoke some type method.
@@ -17,14 +17,14 @@ export interface IMethodAccessor {
      * try to async invoke the method of intance, if no instance will create by type.
      *
      * @template T
-     * @param {IContainer} container
+     * @param {IIocContainer} container
      * @param {*} target
      * @param {string} propertyKey
      * @param {...ParamProviders[]} providers
      * @returns {Promise<T>}
      * @memberof IMethodAccessor
      */
-    invoke<T>(container: IContainer, target: any, propertyKey: string, ...providers: ParamProviders[]): Promise<T>;
+    invoke<T>(container: IIocContainer, target: any, propertyKey: string, ...providers: ParamProviders[]): Promise<T>;
 
     /**
      * try to async invoke the method of intance, if no instance will create by type.
@@ -36,13 +36,13 @@ export interface IMethodAccessor {
      * @returns {Promise<T>}
      * @memberof IMethodAccessor
      */
-    invoke<T>(container: IContainer, target: Token<any>, propertyKey: string, ...providers: ParamProviders[]): Promise<T>;
+    invoke<T>(container: IIocContainer, target: Token<any>, propertyKey: string, ...providers: ParamProviders[]): Promise<T>;
 
     /**
      * try to async invoke the method of intance, if no instance will create by type.
      *
      * @template T
-     * @param {IContainer} container
+     * @param {IIocContainer} container
      * @param {Token<any>} target
      * @param {string} propertyKey
      * @param {*} instance
@@ -50,7 +50,7 @@ export interface IMethodAccessor {
      * @returns {Promise<T>}
      * @memberof IMethodAccessor
      */
-    invoke<T>(container: IContainer, target: Token<any>, propertyKey: string, instance: any, ...providers: ParamProviders[]): Promise<T>;
+    invoke<T>(container: IIocContainer, target: Token<any>, propertyKey: string, instance: any, ...providers: ParamProviders[]): Promise<T>;
 
     /**
      * try to invoke the method of intance, if is token will create instance to invoke.
@@ -62,7 +62,7 @@ export interface IMethodAccessor {
      * @returns {T}
      * @memberof IMethodAccessor
      */
-    syncInvoke<T>(container: IContainer, target: any, propertyKey: string, ...providers: ParamProviders[]): T;
+    syncInvoke<T>(container: IIocContainer, target: any, propertyKey: string, ...providers: ParamProviders[]): T;
     /**
      * try create instance to invoke property method.
      *
@@ -73,7 +73,7 @@ export interface IMethodAccessor {
      * @returns {T}
      * @memberof IMethodAccessor
      */
-    syncInvoke<T>(container: IContainer, target: any, propertyKey: string, ...providers: ParamProviders[]): T;
+    syncInvoke<T>(container: IIocContainer, target: any, propertyKey: string, ...providers: ParamProviders[]): T;
 
     /**
      * try to invoke the method of intance, if is token will create instance to invoke.
@@ -85,7 +85,7 @@ export interface IMethodAccessor {
      * @param {...ParamProviders[]} providers
      * @memberof IMethodAccessor
      */
-    syncInvoke<T>(container: IContainer, target: any, propertyKey: string, instance: any, ...providers: ParamProviders[])
+    syncInvoke<T>(container: IIocContainer, target: any, propertyKey: string, instance: any, ...providers: ParamProviders[])
 
     /**
      * create params instances with IParameter and provider.
@@ -95,7 +95,7 @@ export interface IMethodAccessor {
      * @returns {any[]}
      * @memberof IMethodAccessor
      */
-    createSyncParams(container: IContainer, params: IParameter[], ...providers: ParamProviders[]): any[];
+    createSyncParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): any[];
 
     /**
      * create params instances with IParameter and provider
@@ -105,7 +105,7 @@ export interface IMethodAccessor {
      * @returns {Promise<any[]>}
      * @memberof IMethodAccessor
      */
-    createParams(container: IContainer,params: IParameter[], ...providers: ParamProviders[]): Promise<any[]>;
+    createParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): Promise<any[]>;
 }
 
 
@@ -117,7 +117,7 @@ export interface IMethodAccessor {
  * @class MethodAccessor
  * @implements {IMethodAccessor}
  */
-export class MethodAccessor extends IocService implements IMethodAccessor {
+export class MethodAccessor extends IocCoreService implements IMethodAccessor {
 
     constructor() {
         super();
@@ -127,14 +127,14 @@ export class MethodAccessor extends IocService implements IMethodAccessor {
      * try to async invoke the method of intance, if no instance will create by type.
      *
      * @template T
-     * @param {IContainer} container
+     * @param {IIocContainer} container
      * @param {*} target
      * @param {string} propertyKey
      * @param {...ParamProviders[]} providers
      * @returns {Promise<T>}
      * @memberof IMethodAccessor
      */
-    async invoke<T>(container: IContainer, target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): Promise<T> {
+    async invoke<T>(container: IIocContainer, target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): Promise<T> {
 
         let targetClass: Type<any>;
         if (isProvider(instance)) {
@@ -143,10 +143,10 @@ export class MethodAccessor extends IocService implements IMethodAccessor {
         }
         if (isToken(target)) {
             if (isNullOrUndefined(instance)) {
-                targetClass = container.getTokenImpl(target);
+                targetClass = container.getTokenProvider(target);
                 instance = container.resolve(target, ...providers);
             } else {
-                targetClass = lang.getClass(instance) || container.getTokenImpl(target);
+                targetClass = lang.getClass(instance) || container.getTokenProvider(target);
             }
             lang.assert(targetClass, target.toString() + ' is not implements by any class.');
         } else {
@@ -166,20 +166,20 @@ export class MethodAccessor extends IocService implements IMethodAccessor {
 
         let parameters = lifeScope.getMethodParameters(targetClass, instance, propertyKey);
 
-        let paramInstances = await this.createParams(parameters, ...providers);
+        let paramInstances = await this.createParams(container, parameters, ...providers);
 
         return instance[propertyKey](...paramInstances) as T;
 
     }
 
-    syncInvoke<T>(container: IContainer, target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
+    syncInvoke<T>(container: IIocContainer, target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
         let targetClass: Type<any>;
         if (isProvider(instance)) {
             providers.unshift(instance);
             instance = undefined;
         }
         if (isToken(target)) {
-            targetClass = container.getTokenImpl(target);
+            targetClass = container.getTokenProvider(target);
             lang.assert(targetClass, target.toString() + ' is not implements by any class.');
             if (isNullOrUndefined(instance)) {
                 instance = container.resolve(target, ...providers);
@@ -200,12 +200,12 @@ export class MethodAccessor extends IocService implements IMethodAccessor {
 
         providers = providers.concat(actionData.execResult);
         let parameters = lifeScope.getMethodParameters(targetClass, instance, propertyKey);
-        let paramInstances = this.createSyncParams(parameters, ...providers);
+        let paramInstances = this.createSyncParams(container, parameters, ...providers);
 
         return instance[propertyKey](...paramInstances) as T;
     }
 
-    createSyncParams(container: IContainer, params: IParameter[], ...providers: ParamProviders[]): any[] {
+    createSyncParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): any[] {
         let providerMap = container.get(ProviderParser).parse(...providers);
         return params.map((param, index) => {
             if (param.name && providerMap.has(param.name)) {
@@ -221,7 +221,7 @@ export class MethodAccessor extends IocService implements IMethodAccessor {
         });
     }
 
-    createParams(container: IContainer, params: IParameter[], ...providers: ParamProviders[]): Promise<any[]> {
+    createParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): Promise<any[]> {
         let providerMap = container.get(ProviderParser).parse(...providers);
         return Promise.all(params.map((param, index) => {
             if (param.name && providerMap.has(param.name)) {

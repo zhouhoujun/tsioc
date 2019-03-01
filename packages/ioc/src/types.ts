@@ -1,5 +1,5 @@
 import { Registration } from './Registration';
-import { IContainer } from './IContainer';
+import { IIocContainer } from './IIocContainer';
 import { ProviderTypes } from './providers';
 
 /**
@@ -71,7 +71,7 @@ export type InstanceFactory<T> = (...providers: ProviderTypes[]) => T
 /**
  * to instance via container.
  */
-export type ToInstance<T> = (container?: IContainer, ...providers: ProviderTypes[]) => T;
+export type ToInstance<T> = (container?: IIocContainer, ...providers: ProviderTypes[]) => T;
 
 /**
  * Factory of Token

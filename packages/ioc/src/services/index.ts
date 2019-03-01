@@ -1,11 +1,6 @@
+export * from './IocCoreService';
 export * from './ComponentLifecycle';
 export * from './CacheManager';
-export * from './MetaAccessor';
 export * from './MethodAccessor';
-export * from './ModuleInjector';
-export * from './ModuleInjectorChain';
-export * from './ModuleLoader';
-export * from './ModuleValidate';
-export * from './Recognizer';
-export * from './ResolverIterator';
-export * from './ServiceResolver';
+export * from './LifeScope';
+

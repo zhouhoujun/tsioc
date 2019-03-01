@@ -1,4 +1,4 @@
-import { IContainer } from './IContainer';
+import { IIocContainer } from './IIocContainer';
 import { LifeScopeToken } from './LifeScope';
 import {
      Injectable, Component, AutoWired, Inject, Singleton, Param,
@@ -12,9 +12,9 @@ import { ProviderMap, ProviderMapToken, ProviderParser } from './providers';
  * register core for container.
  *
  * @export
- * @param {IContainer} container
+ * @param {IIocContainer} container
  */
-export function registerCores(container: IContainer) {
+export function registerCores(container: IIocContainer) {
     container.registerSingleton(LifeScopeToken, () => new DefaultLifeScope(container));
     container.registerSingleton(CacheManagerToken, () => new CacheManager(container));
     container.registerSingleton(ResolverChainToken, () => new ResolverChain(container));

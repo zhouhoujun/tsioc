@@ -1,7 +1,7 @@
 import { Token, RefTarget, RefTokenFac, ReferenceToken, ClassType, InstanceFactory } from '../types';
 import { ParamProviders } from '../providers';
 import { IResolver } from '../IResolver';
-import { IocService } from './IocService';
+import { IocService } from '@ts-ioc/ioc';
 
 /**
  * service resover interface.

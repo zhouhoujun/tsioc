@@ -1,21 +1,15 @@
 import 'reflect-metadata';
-import { IContainer, ContainerToken } from './IContainer';
-import {
-    Type, Token, Factory, SymbolType, IocState, RefTokenType, RefTokenFacType,
-    Modules, LoadType, RefTarget, RefTagLevel, ClassType, ToInstance, InstanceFactory
-} from './types';
-import {
-    isClass, isFunction, isSymbol, isToken, isString, isUndefined,
-    lang, isRefTarget, isTypeObject, isClassType
-} from './utils';
-import { IParameter } from './IParameter';
-import { Registration, isRegistrationClass } from './Registration';
+import { IIocContainer, IocContainerToken } from './IIocContainer';
+import { Type, Token, Factory, SymbolType, IocState, ToInstance, InstanceFactory } from './types';
+import { isClass, isFunction, isSymbol, isToken, isString, isUndefined } from './utils';
+import { Registration } from './Registration';
 
 import { registerCores } from './registerCores';
-import { InjectReference, InjectClassProvidesToken } from './InjectReference';
+import { InjectReference } from './InjectReference';
 import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderParser } from './providers';
 import { IResolver } from './IResolver';
-import { CacheManager } from './services';
+import { CacheManager, MethodAccessor } from './services';
+import { IParameter } from './IParameter';
 
 /**
  * singleton reg token.
@@ -26,10 +20,10 @@ const SingletonRegToken = '___IOC__Singleton___';
  * Container
  *
  * @export
- * @class Container
- * @implements {IContainer}
+ * @class IocContainer
+ * @implements {IIocContainer}
  */
-export class Container implements IContainer {
+export class IocContainer implements IIocContainer {
     /**
      * provide types.
      *
@@ -125,7 +119,7 @@ export class Container implements IContainer {
      * @param {(tk: Token<any>, fac: InstanceFactory<any>) => void | boolean} callbackfn
      * @memberof IExports
      */
-    forEach(callbackfn: (fac: InstanceFactory<any>, tk: Token<any>, resolvor?: IResolver) => void | boolean): void | boolean {
+    iterator(callbackfn: (fac: InstanceFactory<any>, tk: Token<any>, resolvor?: IResolver) => void | boolean): void | boolean {
         return !Array.from(this.factories.keys()).some(tk => {
             return callbackfn(this.factories.get(tk), tk, this) === false;
         });
@@ -273,7 +267,7 @@ export class Container implements IContainer {
 
         let maps = this.getProviderParser().parse(...prods);
         if (tgt) {
-            let refKey = new InjectReference(ProviderMap, isClass(tgt) ? tgt : this.getTokenImpl(tgt));
+            let refKey = new InjectReference(ProviderMap, isClass(tgt) ? tgt : this.getTokenProvider(tgt));
             if (this.hasRegister(refKey)) {
                 this.resolve(refKey).copy(maps);
             } else {
@@ -379,7 +373,7 @@ export class Container implements IContainer {
     protected init() {
         this.factories = new Map();
         this.provideTypes = new Map();
-        this.bindProvider(ContainerToken, () => this);
+        this.bindProvider(IocContainerToken, () => this);
         registerCores(this);
     }
 
@@ -545,5 +539,43 @@ export class Container implements IContainer {
             raiseContainer: this
         }, IocState.design);
 
+    }
+
+    /**
+     * invoke method async.
+     *
+     * @template T
+     * @param {any} target
+     * @param {string} propertyKey
+     * @param {*} [instance]
+     * @param {...ParamProviders[]} providers
+     * @returns {Promise<T>}
+     * @memberof Container
+     */
+    invoke<T>(target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): Promise<T> {
+        return this.resolve(MethodAccessor).invoke(this, target, propertyKey, instance, ...providers);
+    }
+
+    /**
+     * invoke method.
+     *
+     * @template T
+     * @param {any} target
+     * @param {string} propertyKey
+     * @param {*} [instance]
+     * @param {...ParamProviders[]} providers
+     * @returns {T}
+     * @memberof Container
+     */
+    syncInvoke<T>(target: Token<any>, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
+        return this.resolve(MethodAccessor).syncInvoke(this, target, propertyKey, instance, ...providers);
+    }
+
+    createSyncParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
+        return this.resolve(MethodAccessor).createSyncParams(this, params, ...providers);
+    }
+
+    createParams(params: IParameter[], ...providers: ParamProviders[]): Promise<any[]> {
+        return this.resolve(MethodAccessor).createParams(this, params, ...providers);
     }
 }

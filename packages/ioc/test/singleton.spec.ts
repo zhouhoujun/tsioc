@@ -1,4 +1,4 @@
-import { ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param } from '../src';
+import { ContainerBuilder, AutoWired, Injectable, Singleton, IIocContainer, ParameterMetadata, Param } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Person } from './debug';
 import expect = require('expect');
 

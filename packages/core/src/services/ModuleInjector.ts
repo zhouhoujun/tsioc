@@ -1,5 +1,5 @@
 import { Type } from '../types';
-import { IContainer } from '../IContainer';
+import { IIocContainer } from '../IIocContainer';
 import { PromiseUtil } from '../utils';
 import { ModuelValidate } from './ModuleValidate';
 import { IocService } from './IocService';
@@ -25,22 +25,22 @@ export interface IModuleInjector {
     /**
      * inject module to container.
      *
-     * @param {IContainer} container
+     * @param {IIocContainer} container
      * @param {Type<any>[]} modules
      * @returns {Type<any>[]}
      * @memberof IModuleInjector
      */
-    inject(container: IContainer, modules: Type<any>[]): Promise<InjectorResult>;
+    inject(container: IIocContainer, modules: Type<any>[]): Promise<InjectorResult>;
 
     /**
      * sync inject module.
      *
-     * @param {IContainer} container
+     * @param {IIocContainer} container
      * @param {Type<any>[]} modules
      * @returns {InjectorResult}
      * @memberof IModuleInjector
      */
-    syncInject(container: IContainer, modules: Type<any>[]): InjectorResult;
+    syncInject(container: IIocContainer, modules: Type<any>[]): InjectorResult;
 }
 
 
@@ -64,7 +64,7 @@ export class ModuleInjector extends IocService implements IModuleInjector {
         super();
     }
 
-    async inject(container: IContainer, modules: Type<any>[]): Promise<InjectorResult> {
+    async inject(container: IIocContainer, modules: Type<any>[]): Promise<InjectorResult> {
         let types = (modules || []).filter(ty => this.valid(container, ty));
         if (types.length) {
             await PromiseUtil.step(types.map(ty => () => this.setup(container, ty)));
@@ -73,7 +73,7 @@ export class ModuleInjector extends IocService implements IModuleInjector {
         return { injected: types, next: next };
     }
 
-    syncInject(container: IContainer, modules: Type<any>[]): InjectorResult {
+    syncInject(container: IIocContainer, modules: Type<any>[]): InjectorResult {
         let types = (modules || []).filter(ty => this.valid(container, ty));
         if (types.length) {
             types.forEach(ty => {
@@ -84,7 +84,7 @@ export class ModuleInjector extends IocService implements IModuleInjector {
         return { injected: types, next: next };
     }
 
-    protected valid(container: IContainer, type: Type<any>): boolean {
+    protected valid(container: IIocContainer, type: Type<any>): boolean {
         if (!this.validate) {
             return true;
         }
@@ -104,10 +104,10 @@ export class ModuleInjector extends IocService implements IModuleInjector {
         return all.filter(it => filtered.indexOf(it) < 0);
     }
 
-    protected async setup(container: IContainer, type: Type<any>) {
+    protected async setup(container: IIocContainer, type: Type<any>) {
         container.register(type);
     }
-    protected syncSetup(container: IContainer, type: Type<any>) {
+    protected syncSetup(container: IIocContainer, type: Type<any>) {
         container.register(type);
     }
 }

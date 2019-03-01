@@ -1,8 +1,8 @@
 import { isToken, isFunction, isUndefined, isObject } from '../utils';
 import { Token, InstanceFactory, SymbolType, Factory, Type } from '../types';
-import { IContainer } from '../IContainer';
+import { IIocContainer } from '../IIocContainer';
 import { InjectToken } from '../InjectToken';
-import { IResolverContainer } from '../IResolver';
+import { IResolverContainer, IResolver } from '../IResolver';
 import { ProviderTypes, ParamProviders } from './types';
 
 // use core-js in browser.
@@ -19,7 +19,7 @@ export const ProviderMapToken = new InjectToken<ProviderMap>('DI_ProviderMap');
  */
 export class ProviderMap extends Map<Token<any> | number, InstanceFactory<any>> implements IResolverContainer {
 
-    constructor(private container: IContainer) {
+    constructor(private container: IIocContainer) {
         super();
     }
 
@@ -64,8 +64,8 @@ export class ProviderMap extends Map<Token<any> | number, InstanceFactory<any>> 
         return this.get(this.getTokenKey(provide));
     }
 
-    getTokenImpl<T>(token: Token<T>): Type<T> {
-        return this.container.getTokenImpl(token);
+    getTokenProvider<T>(token: Token<T>): Type<T> {
+        return this.container.getTokenProvider(token);
     }
 
     unregister<T>(token: Token<T>): this {
@@ -126,6 +126,15 @@ export class ProviderMap extends Map<Token<any> | number, InstanceFactory<any>> 
             return isFunction(provider) ? provider(...providers) : null;
         }
         return null;
+    }
+
+    iterator(callbackfn: (fac: InstanceFactory<any>, tk: Token<any>, resolvor?: IResolver) => void | boolean): void | boolean {
+        return !Array.from(this.keys()).some(tk => {
+            if (isToken(tk)) {
+                return callbackfn(this.get(tk), tk, this) === false;
+            }
+            return false;
+        });
     }
 
     /**

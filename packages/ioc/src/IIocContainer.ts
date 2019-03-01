@@ -4,20 +4,21 @@ import {
 import { InjectToken } from './InjectToken';
 import { IResolverContainer } from './IResolver';
 import { ParamProviders, ProviderTypes } from './providers';
+import { IParameter } from './IParameter';
 
 /**
  * IContainer token.
  * it is a symbol id, you can use  @Inject, @Autowried or @Param to get container instance in yourself class.
  */
-export const ContainerToken = new InjectToken<IContainer>('DI_IContainer');
+export const IocContainerToken = new InjectToken<IIocContainer>('DI_IocContainer');
 
 /**
  * container interface.
  *
  * @export
- * @interface IContainer
+ * @interface IIocContainer
  */
-export interface IContainer extends IResolverContainer {
+export interface IIocContainer extends IResolverContainer {
 
     /**
      * current container has register.
@@ -160,13 +161,95 @@ export interface IContainer extends IResolverContainer {
     getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T>;
 
     /**
-     * get token provider.
+     * try to async invoke the method of intance, if no instance will create by type.
      *
      * @template T
-     * @param {Token<T>} token
-     * @returns {Type<T>}
-     * @memberof IContainer
+     * @param {*} target
+     * @param {string} propertyKey
+     * @param {...ParamProviders[]} providers
+     * @returns {Promise<T>}
+     * @memberof IMethodAccessor
      */
-    getTokenProvider<T>(token: Token<T>): Type<T>;
+    invoke<T>(target: any, propertyKey: string, ...providers: ParamProviders[]): Promise<T>;
+
+    /**
+     * try to async invoke the method of intance, if no instance will create by type.
+     *
+     * @template T
+     * @param {Token<any>} target
+     * @param {string} propertyKey
+     * @param {...ParamProviders[]} providers
+     * @returns {Promise<T>}
+     * @memberof IMethodAccessor
+     */
+    invoke<T>(target: Token<any>, propertyKey: string, ...providers: ParamProviders[]): Promise<T>;
+
+    /**
+     * try to async invoke the method of intance, if no instance will create by type.
+     *
+     * @template T
+     * @param {Token<any>} target
+     * @param {string} propertyKey
+     * @param {*} instance
+     * @param {...ParamProviders[]} providers
+     * @returns {Promise<T>}
+     * @memberof IMethodAccessor
+     */
+    invoke<T>(target: Token<any>, propertyKey: string, instance: any, ...providers: ParamProviders[]): Promise<T>;
+
+    /**
+     * try to invoke the method of intance, if is token will create instance to invoke.
+     *
+     * @template T
+     * @param {*} target
+     * @param {string} propertyKey
+     * @param {...ParamProviders[]} providers
+     * @returns {T}
+     * @memberof IMethodAccessor
+     */
+    syncInvoke<T>(target: any, propertyKey: string, ...providers: ParamProviders[]): T;
+    /**
+     * try create instance to invoke property method.
+     *
+     * @template T
+     * @param {*} target
+     * @param {string} propertyKey
+     * @param {...ParamProviders[]} providers
+     * @returns {T}
+     * @memberof IMethodAccessor
+     */
+    syncInvoke<T>(target: any, propertyKey: string, ...providers: ParamProviders[]): T;
+
+    /**
+     * try to invoke the method of intance, if is token will create instance to invoke.
+     *
+     * @template T
+     * @param {*} target
+     * @param {string} propertyKey
+     * @param {*} instance
+     * @param {...ParamProviders[]} providers
+     * @memberof IMethodAccessor
+     */
+    syncInvoke<T>(target: any, propertyKey: string, instance: any, ...providers: ParamProviders[])
+
+    /**
+     * create params instances with IParameter and provider.
+     *
+     * @param {IParameter[]} params
+     * @param {...ParamProvider[]} providers
+     * @returns {any[]}
+     * @memberof IMethodAccessor
+     */
+    createSyncParams(params: IParameter[], ...providers: ParamProviders[]): any[];
+
+    /**
+     * create params instances with IParameter and provider
+     *
+     * @param {IParameter[]} params
+     * @param {...AsyncParamProvider[]} providers
+     * @returns {Promise<any[]>}
+     * @memberof IMethodAccessor
+     */
+    createParams(params: IParameter[], ...providers: ParamProviders[]): Promise<any[]>;
 
 }

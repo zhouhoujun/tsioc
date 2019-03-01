@@ -1,10 +1,10 @@
-import { AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration, Inject, Singleton, ContainerBuilder } from '../src';
+import { AutoWired, Injectable, IIocContainer, ParameterMetadata, Param, Registration, Inject, Singleton, ContainerBuilder } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student, InjMClassRoom, InjCollegeClassRoom, InjCollegeAliasClassRoom, StingMClassRoom, StringIdTest, SymbolIdest, SymbolCollegeClassRoom } from './debug';
 import expect = require('expect');
 
 describe('custom register test', () => {
 
-    let container: IContainer;
+    let container: IIocContainer;
     beforeEach(async () => {
         let builder = new ContainerBuilder();
         container = await builder.build();

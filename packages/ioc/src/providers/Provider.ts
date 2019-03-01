@@ -1,5 +1,5 @@
 import { Token, Express2, Type } from '../types';
-import { IContainer } from '../IContainer';
+import { IIocContainer } from '../IIocContainer';
 import { isFunction, isObject, isUndefined } from '../utils';
 import { ProviderTypes } from './types';
 
@@ -168,12 +168,12 @@ export class Provider {
      * resolve provider value.
      *
      * @template T
-     * @param {IContainer} container
+     * @param {IIocContainer} container
      * @param {ProviderTypes[]} providers
      * @returns {T}
      * @memberof Provider
      */
-    resolve<T>(container: IContainer, ...providers: ProviderTypes[]): T {
+    resolve<T>(container: IIocContainer, ...providers: ProviderTypes[]): T {
         if (isUndefined(this.value)) {
             return container.has(this.type) ? container.resolve(this.type, ...providers) : null;
         } else {
@@ -260,7 +260,7 @@ export class InvokeProvider extends Provider {
         this.method = method;
     }
 
-    resolve<T>(container: IContainer, ...providers: ProviderTypes[]): T {
+    resolve<T>(container: IIocContainer, ...providers: ProviderTypes[]): T {
         if (this.method) {
             return container.syncInvoke<T>(this.type, this.method, ...providers);
         }
@@ -293,12 +293,12 @@ export class ParamProvider extends InvokeProvider {
      * resolve param
      *
      * @template T
-     * @param {IContainer} container
+     * @param {IIocContainer} container
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof ParamProvider
      */
-    resolve<T>(container: IContainer, ...providers: ProviderTypes[]): T {
+    resolve<T>(container: IIocContainer, ...providers: ProviderTypes[]): T {
         return super.resolve(container, ...providers);
     }
 }
@@ -317,7 +317,7 @@ export class ExtendsProvider extends Provider {
         super(token, value);
     }
 
-    resolve<T>(container: IContainer, ...providers: ProviderTypes[]): T {
+    resolve<T>(container: IIocContainer, ...providers: ProviderTypes[]): T {
         return super.resolve(container, ...providers);
     }
 

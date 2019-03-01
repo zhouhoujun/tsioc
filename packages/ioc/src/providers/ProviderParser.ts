@@ -4,7 +4,7 @@ import {
     isUndefined, isNull, isToken, isBaseObject, lang
 } from '../utils';
 import { IProviderParser } from './IProviderParser';
-import { IContainer } from '../IContainer';
+import { IIocContainer } from '../IIocContainer';
 import { ProviderMap, isProviderMap, ProviderMapToken } from './ProviderMap';
 import { Provider, ParamProvider } from './Provider';
 
@@ -19,7 +19,7 @@ import { Provider, ParamProvider } from './Provider';
  */
 export class ProviderParser implements IProviderParser {
 
-    constructor(private container: IContainer) {
+    constructor(private container: IIocContainer) {
 
     }
 

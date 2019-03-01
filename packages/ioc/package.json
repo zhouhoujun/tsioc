@@ -1,5 +1,5 @@
 {
-  "name": "@ts-ioc/core",
+  "name": "@ts-ioc/ioc",
   "version": "4.0.5",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "es2015": "./fesm2015/core.js",

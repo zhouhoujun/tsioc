@@ -1,8 +1,8 @@
 import { Type } from '../types';
 import { isFunction, isNumber } from '../utils';
 import { OnDestroy } from './ComponentLifecycle';
-import { IContainer } from '../IContainer';
-import { IocService } from './IocService';
+import { IIocContainer } from '../IIocContainer';
+import { IocCoreService } from './IocCoreService';
 
 /**
  * cache manager inteface.
@@ -36,7 +36,7 @@ export interface ICacheManager {
      * @returns {*}
      * @memberof ICacheManager
      */
-    get(container: IContainer, targetType: Type<any>, expires?: number): any;
+    get(container: IIocContainer, targetType: Type<any>, expires?: number): any;
     /**
      * is check expires or not.
      *
@@ -57,7 +57,7 @@ export interface ICacheManager {
      * @param {*} [target]
      * @memberof ICacheManager
      */
-    destroy(container: IContainer, targetType: Type<any>, target?: any);
+    destroy(container: IIocContainer, targetType: Type<any>, target?: any);
 }
 
 
@@ -79,7 +79,7 @@ export interface CacheTarget {
  * @class CacheManager
  * @implements {ICacheManager}
  */
-export class CacheManager extends IocService implements ICacheManager {
+export class CacheManager extends IocCoreService implements ICacheManager {
 
     cacheTokens: Map<Type<any>, CacheTarget>;
     constructor() {
@@ -112,7 +112,7 @@ export class CacheManager extends IocService implements ICacheManager {
         }
     }
 
-    get(container: IContainer, targetType: Type<any>, expires?: number) {
+    get(container: IIocContainer, targetType: Type<any>, expires?: number) {
         let result = null;
         if (!this.cacheTokens.has(targetType)) {
             return null;
@@ -157,7 +157,7 @@ export class CacheManager extends IocService implements ICacheManager {
         }
     }
 
-    destroy(container: IContainer, targetType: Type<any>, target?: any) {
+    destroy(container: IIocContainer, targetType: Type<any>, target?: any) {
 
         if (!this.hasCache(targetType)) {
             return;

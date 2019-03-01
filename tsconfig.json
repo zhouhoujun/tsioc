@@ -6,6 +6,9 @@
       "@ts-ioc/annotations":[
         "packages/annotations/src"
       ],
+      "@ts-ioc/ioc": [
+        "packages/ioc/src"
+      ],
       "@ts-ioc/core": [
         "packages/core/src"
       ],

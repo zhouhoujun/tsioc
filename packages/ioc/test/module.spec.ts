@@ -1,11 +1,11 @@
-import { ContainerBuilder, AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration } from '../src';
+import { ContainerBuilder, AutoWired, Injectable, IIocContainer, ParameterMetadata, Param, Registration } from '../src';
 import * as debuModules from './debug';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom, StringIdTest, SymbolIdest } from './debug';
 import expect = require('expect');
 
 describe('auto register with build', () => {
 
-    let container: IContainer;
+    let container: IIocContainer;
     before(async () => {
         let builder = new ContainerBuilder();
         container = await builder.build(debuModules);

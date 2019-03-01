@@ -1,4 +1,4 @@
-import { Method, Inject, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, isFunction, getParamDecorators } from '../src';
+import { Method, Inject, ContainerBuilder, AutoWired, Injectable, Singleton, IIocContainer, ParameterMetadata, Param, isFunction, getParamDecorators } from '../src';
 import { hasOwnMethodMetadata, hasPropertyMetadata } from '../src';
 import expect = require('expect');
 // import { AnnotationAspect } from './aop/AnnotationAspect';
@@ -71,7 +71,7 @@ describe('method exec test', () => {
         }
     }
 
-    let container: IContainer;
+    let container: IIocContainer;
     beforeEach(() => {
         let builder = new ContainerBuilder();
         container = builder.create();

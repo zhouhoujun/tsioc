@@ -69,7 +69,7 @@ export interface IResolver {
  * @interface IResolverContainer
  * @extends {IResolver}
  */
-export interface IResolverContainer  extends  IResolver {
+export interface IResolverContainer extends IResolver {
     /**
      * container size.
      *
@@ -77,7 +77,7 @@ export interface IResolverContainer  extends  IResolver {
      * @memberof IResolverContainer
      */
     readonly size?: number;
-    
+
     /**
      * get token implement class type.
      *
@@ -92,10 +92,10 @@ export interface IResolverContainer  extends  IResolver {
     /**
      * iterator current resolver.
      *
-     * @param {((fac: InstanceFactory<any>, tk: Token<any>, resolvor?: IResolver) => void | boolean)} callbackfn
-     * @returns {(void | boolean)}
+     * @param {((fac: InstanceFactory<any>, tk: Token<any>, resolvor?: IResolver) => void|boolean)} callbackfn
+     * @returns {(void|boolean)}
      * @memberof IResolverContainer
      */
-    forEach(callbackfn: (fac: InstanceFactory<any>, tk: Token<any>, resolvor?: IResolver) => void | boolean): void | boolean;
+    iterator(callbackfn: (fac: InstanceFactory<any>, tk: Token<any>, resolvor?: IResolver) => void | boolean): void | boolean;
 
 }

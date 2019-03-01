@@ -1,4 +1,4 @@
-import { IContainer } from '../IContainer';
+import { IIocContainer } from '../IIocContainer';
 import { Type } from '../types';
 import { IModuleInjector, ModuleInjector } from './ModuleInjector';
 import { PromiseUtil } from '../utils';
@@ -38,22 +38,22 @@ export interface IModuleInjectorChain {
     /**
      * inject module via injector chain.
      *
-     * @param {IContainer} container
+     * @param {IIocContainer} container
      * @param {Type<any>[]} modules
      * @returns {Promise(Type<any>[]>}
      * @memberof IModuleInjectorChain
      */
-    inject(container: IContainer, modules: Type<any>[]): Promise<Type<any>[]>;
+    inject(container: IIocContainer, modules: Type<any>[]): Promise<Type<any>[]>;
 
     /**
      * sync inject module.
      *
-     * @param {IContainer} container
+     * @param {IIocContainer} container
      * @param {Type<any>[]} modules
      * @returns {Type<any>[]}
      * @memberof IModuleInjectorChain
      */
-    syncInject(container: IContainer, modules: Type<any>[]): Type<any>[];
+    syncInject(container: IIocContainer, modules: Type<any>[]): Type<any>[];
 }
 
 
@@ -95,7 +95,7 @@ export class ModuleInjectorChain extends IocService implements IModuleInjectorCh
         return injector instanceof ModuleInjector;
     }
 
-    async inject(container: IContainer, modules: Type<any>[]): Promise<Type<any>[]> {
+    async inject(container: IIocContainer, modules: Type<any>[]): Promise<Type<any>[]> {
         let types: Type<any>[] = [];
         await PromiseUtil.runInChain(this.injectors.map(jtor => {
             return async (mds: Type<any>[], next?: () => Promise<void>) => {
@@ -111,7 +111,7 @@ export class ModuleInjectorChain extends IocService implements IModuleInjectorCh
         return types;
     }
 
-    syncInject(container: IContainer, modules: Type<any>[]): Type<any>[] {
+    syncInject(container: IIocContainer, modules: Type<any>[]): Type<any>[] {
         let types: Type<any>[] = [];
         let completed = false;
         this.injectors.some(jtor => {
