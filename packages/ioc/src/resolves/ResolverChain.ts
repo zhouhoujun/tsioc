@@ -1,5 +1,5 @@
 import { Type, Token, InstanceFactory } from '../types';
-import { IContainer, ResoveWay } from '../IContainer';
+import { IContainer } from '../IContainer';
 import { InjectToken } from '../InjectToken';
 import { IResolver, IResolverContainer } from '../IResolver';
 import { ParamProviders, ProviderMap, isProviderMap } from '../providers';

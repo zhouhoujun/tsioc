@@ -1,8 +1,8 @@
-import { isToken, isFunction, isUndefined, isObject, isNumber } from '../utils';
+import { isToken, isFunction, isUndefined, isObject } from '../utils';
 import { Token, InstanceFactory, SymbolType, Factory, Type } from '../types';
 import { IContainer } from '../IContainer';
 import { InjectToken } from '../InjectToken';
-import { IResolver, IResolverContainer } from '../IResolver';
+import { IResolverContainer } from '../IResolver';
 import { ProviderTypes, ParamProviders } from './types';
 
 // use core-js in browser.

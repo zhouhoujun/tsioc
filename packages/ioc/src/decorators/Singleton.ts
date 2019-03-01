@@ -1,6 +1,6 @@
 import { createClassDecorator, ITypeDecorator } from '../factories';
 import { ClassMetadata } from '../metadatas';
-import { Registration } from '../../Registration';
+import { Registration } from '../Registration';
 
 /**
  * Singleton decorator, for class. use to define the class is singleton.

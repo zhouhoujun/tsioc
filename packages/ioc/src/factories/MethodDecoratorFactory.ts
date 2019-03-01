@@ -1,10 +1,10 @@
 import 'reflect-metadata';
 import { MethodMetadata } from '../metadatas';
-import { ParamProviders } from '../../providers';
+import { ParamProviders } from '../providers';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
 import { ArgsIterator } from './ArgsIterator';
-import { isArray } from '../../utils';
+import { isArray } from '../utils';
 
 
 /**

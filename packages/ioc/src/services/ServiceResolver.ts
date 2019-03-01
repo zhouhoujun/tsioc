@@ -1,10 +1,57 @@
 import { Token, RefTarget, RefTokenFac, ReferenceToken, ClassType, InstanceFactory } from '../types';
 import { ParamProviders } from '../providers';
-import { IResolver } from '@ts-ioc/core';
+import { IResolver } from '../IResolver';
+import { IocService } from './IocService';
 
+/**
+ * service resover interface.
+ *
+ * @export
+ * @interface IServiceResover
+ */
+export interface IServiceResover {
+    /**
+     * get service or target reference service.
+     *
+     * @template T
+     * @param {(Token<T> | Token<any>[])} token servive token.
+     * @param {...ParamProviders[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    getService<T>(token: Token<T> | Token<any>[], ...providers: ParamProviders[]): T;
+}
 
-export interface ICoreService {
-    
+/**
+ * service resolver
+ *
+ * @export
+ * @class ServiceResolver
+ */
+export abstract class ServiceResolver extends IocService {
+    constructor() {
+        super();
+    }
+
+    /**
+     * get service or target reference service.
+     *
+     * @template T
+     * @param {(Token<T> | Token<any>[])} token servive token.
+     * @param {...ParamProviders[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    abstract getService<T>(token: Token<T> | Token<any>[], ...providers: ParamProviders[]): T;
+}
+
+/**
+ * service resover interface.
+ *
+ * @export
+ * @interface IServiceResover
+ */
+export interface IServiceResover {
     /**
      * resolve first token when not null.
      *
@@ -184,7 +231,7 @@ export interface ICoreService {
         both: boolean,
         ...providers: ParamProviders[]): void;
 
-    
+
     /**
      * iterate token  in  token class chain.  return false will break iterate.
      *

@@ -1,4 +1,4 @@
-import { Token } from '../../types';
+import { Token } from '../types';
 import { TypeMetadata } from './TypeMetadata';
 import { RefMetadata } from './RefMetadata';
 

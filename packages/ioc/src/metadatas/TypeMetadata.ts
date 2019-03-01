@@ -1,5 +1,5 @@
 import { Metadate } from './Metadate';
-import { SymbolType } from '../../types';
+import { SymbolType } from '../types';
 
 /**
  * type metadata

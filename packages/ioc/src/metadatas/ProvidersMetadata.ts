@@ -1,4 +1,4 @@
-import { ProviderTypes } from '../../providers';
+import { ProviderTypes } from '../providers';
 import { TypeMetadata } from './TypeMetadata';
 
 /**

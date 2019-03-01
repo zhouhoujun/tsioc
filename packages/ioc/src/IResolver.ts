@@ -1,4 +1,4 @@
-import { Token, Type } from './types';
+import { Token, Type, InstanceFactory } from './types';
 import { ParamProviders } from './providers';
 
 /**
@@ -87,6 +87,15 @@ export interface IResolverContainer  extends  IResolver {
      * @returns {Type<T>}
      * @memberof IResolver
      */
-    getTokenImpl<T>(token: Token<T>): Type<T>;
+    getTokenProvider<T>(token: Token<T>): Type<T>
+
+    /**
+     * iterator current resolver.
+     *
+     * @param {((fac: InstanceFactory<any>, tk: Token<any>, resolvor?: IResolver) => void | boolean)} callbackfn
+     * @returns {(void | boolean)}
+     * @memberof IResolverContainer
+     */
+    forEach(callbackfn: (fac: InstanceFactory<any>, tk: Token<any>, resolvor?: IResolver) => void | boolean): void | boolean;
 
 }

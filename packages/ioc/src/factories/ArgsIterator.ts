@@ -1,5 +1,5 @@
 import { Metadate } from '../metadatas';
-import { lang, isMetadataObject } from '../../utils';
+import { lang, isMetadataObject } from '../utils';
 
 
 /**
@@ -66,13 +66,13 @@ export class ArgsIterator {
 
         let arg = this.args[this.idx];
         if (express.isMetadata && express.isMetadata(arg)) {
-            this.metadata = lang.assign(this.metadata || {}, arg);
+            this.metadata = Object.assign(this.metadata || {}, arg);
             this.end();
         } else if (express.match(arg)) {
             this.metadata = this.metadata || {};
             express.setMetadata(this.metadata as T, arg);
         } else if (isMetadataObject(arg)) { // when match failed then check is base metadata.
-            this.metadata = lang.assign(this.metadata || {}, arg);
+            this.metadata = Object.assign(this.metadata || {}, arg);
             this.end();
         } else {
             this.end();

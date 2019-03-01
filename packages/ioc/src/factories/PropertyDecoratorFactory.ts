@@ -1,9 +1,9 @@
 import { PropertyMetadata } from '../metadatas';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isToken, isProvideMetadata } from '../../utils';
+import { isToken, isProvideMetadata } from '../utils';
 import { ArgsIterator } from './ArgsIterator';
-import { Token } from '../../types';
+import { Token } from '../types';
 
 /**
  * property decorator.

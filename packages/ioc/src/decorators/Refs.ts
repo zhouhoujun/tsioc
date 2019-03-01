@@ -1,7 +1,7 @@
 import { createDecorator, ArgsIterator } from '../factories';
 import { RefMetadata } from '../metadatas';
-import { isToken, isString } from '../../utils';
-import { Token } from '../../types';
+import { isToken, isString } from '../utils';
+import { Token } from '../types';
 
 /**
  * Refs decorator, for class. use to define the class as service of target.

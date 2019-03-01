@@ -5,8 +5,8 @@ import { ArgsIterator } from './ArgsIterator';
 import {
     isClass, isAbstractClass, isMetadataObject, isUndefined, isFunction,
     isNumber, isArray, lang, isString
-} from '../../utils';
-import { Type, AbstractType, ObjectMap, ClassType } from '../../types';
+} from '../utils';
+import { Type, AbstractType, ObjectMap, ClassType } from '../types';
 
 
 export const ParamerterName = 'paramerter_names';
@@ -363,7 +363,7 @@ export function hasMethodMetadata(decorator: string | Function, target: Type<any
 }
 
 function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string, descriptor: TypedPropertyDescriptor<T>, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let meta = lang.assign({}, getOwnMethodMetadata(metaName, target));
+    let meta = Object.assign({}, getOwnMethodMetadata(metaName, target));
     meta[propertyKey] = meta[propertyKey] || [];
 
     let methodMeadata = (metadata || {}) as T;
@@ -436,7 +436,7 @@ export function hasPropertyMetadata(decorator: string | Function, target: Type<a
 }
 
 function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string, metadata?: T, metadataExtends?: MetadataExtends<any>) {
-    let meta = lang.assign({}, getOwnPropertyMetadata(metaName, target));
+    let meta = Object.assign({}, getOwnPropertyMetadata(metaName, target));
     let propmetadata = (metadata || {}) as T;
 
     propmetadata.propertyKey = propertyKey;
@@ -577,7 +577,7 @@ export function getOwnParamerterNames(target: Type<any> | AbstractType<any>): Ob
 }
 
 export function setParamerterNames(target: ClassType<any>) {
-    let meta = lang.assign({}, getParamerterNames(target));
+    let meta = Object.assign({}, getParamerterNames(target));
     let descriptors = Object.getOwnPropertyDescriptors(target.prototype);
     let isUglify = /^[a-z]/.test(target.name);
     let anName = '';
@@ -585,7 +585,7 @@ export function setParamerterNames(target: ClassType<any>) {
 
     if (classAnnations && classAnnations.params) {
         anName = classAnnations.name;
-        meta = lang.assign(meta, classAnnations.params);
+        meta = Object.assign(meta, classAnnations.params);
     }
     if (!isUglify && target.name !== anName) {
         lang.forIn(descriptors, (item, name) => {

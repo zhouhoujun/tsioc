@@ -7,5 +7,5 @@ export * from './ModuleInjectorChain';
 export * from './ModuleLoader';
 export * from './ModuleValidate';
 export * from './Recognizer';
-export * from './IResolverIterator';
-export * from './IServiceResover';
+export * from './ResolverIterator';
+export * from './ServiceResolver';
