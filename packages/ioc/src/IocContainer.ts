@@ -8,7 +8,7 @@ import { registerCores } from './registerCores';
 import { InjectReference } from './InjectReference';
 import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderParser } from './providers';
 import { IResolver } from './IResolver';
-import { CacheManager, MethodAccessor } from './services';
+import { IocCacheManager, MethodAccessor } from './services';
 import { IParameter } from './IParameter';
 
 /**
@@ -332,7 +332,7 @@ export class IocContainer implements IIocContainer {
      * @memberof IContainer
      */
     clearCache(targetType: Type<any>) {
-        this.resolve(CacheManager).destroy(this, targetType);
+        this.resolve(IocCacheManager).destroy(this, targetType);
     }
 
     /**

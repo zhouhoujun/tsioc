@@ -4,7 +4,6 @@ import { ParamProviders } from '../providers';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
 import { ArgsIterator } from './ArgsIterator';
-import { isArray } from '../utils';
 
 
 /**
@@ -54,13 +53,6 @@ export function createMethodDecorator<T extends MethodMetadata>(
         if (adapter) {
             adapter(args);
         }
-
-        args.next<T>({
-            match: (arg) => isArray(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.providers = arg;
-            }
-        });
     }
 
     let decorator = createDecorator<T>(name, methodAdapter, metadataExtends);

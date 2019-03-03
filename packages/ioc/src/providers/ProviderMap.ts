@@ -1,13 +1,10 @@
 import { isToken, isFunction, isUndefined, isObject } from '../utils';
 import { Token, InstanceFactory, SymbolType, Factory, Type } from '../types';
 import { IIocContainer } from '../IIocContainer';
-import { InjectToken } from '../InjectToken';
 import { IResolverContainer, IResolver } from '../IResolver';
 import { ProviderTypes, ParamProviders } from './types';
 
 // use core-js in browser.
-
-export const ProviderMapToken = new InjectToken<ProviderMap>('DI_ProviderMap');
 
 /**
  * Provider Map.

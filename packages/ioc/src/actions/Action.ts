@@ -2,7 +2,7 @@ import { IIocContainer } from '../IIocContainer';
 import { ProviderMap, ParamProviders } from '../providers';
 import { IParameter } from '../IParameter';
 import { Type, Token } from '../types';
-import { IocCoreService } from '../services';
+import { IocCoreService, ITypeReflect, TypeReflects } from '../services';
 
 
 /**
@@ -68,14 +68,6 @@ export interface IocActionContext {
     params?: IParameter[];
 
     /**
-     * param providers.
-     *
-     * @type {ParamProviders[]}
-     * @memberof ActionContext
-     */
-    paramProviders?: ParamProviders[];
-
-    /**
      * target instance.
      *
      * @type {*}
@@ -90,6 +82,14 @@ export interface IocActionContext {
      * @memberof ActionData
      */
     targetType?: Type<any>;
+
+    /**
+     * target type reflect.
+     *
+     * @type {ITypeReflect}
+     * @memberof IocActionContext
+     */
+    targetReflect?: ITypeReflect;
 
     /**
      * resolve token.
@@ -161,5 +161,11 @@ export abstract class IocAction extends IocCoreService {
         super();
     }
 
-    abstract execute(container: IIocContainer, ctx: IocActionContext): void
+    execute(container: IIocContainer, ctx: IocActionContext): void {
+        if(!ctx.targetReflect && ctx.targetType){
+            ctx.targetReflect  = container.resolve(TypeReflects).get(ctx.targetType, true);
+        }
+    }
 }
+
+export type IocActionType = Type<IocAction> | IocAction | IAction<any>;

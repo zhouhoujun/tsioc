@@ -1,22 +1,7 @@
-import { ActionComposite } from './ActionComposite';
-import { ActionData } from '../ActionData';
-import { CoreActions } from './CoreActions';
-import { getOwnTypeMetadata } from '../factories';
-import { IContainer } from '../../IContainer';
-import { Token } from '../../types';
-import { ClassMetadata } from '../metadatas';
-import { InjectClassProvidesToken } from '../../InjectReference';
-
-/**
- * bind provider action data.
- *
- * @export
- * @interface BindProviderActionData
- * @extends {ActionData<Token<any>[]>}
- */
-export interface BindProviderActionData extends ActionData<Token<any>[]> {
-
-}
+import { IocAction, IocActionContext } from './Action';
+import { IIocContainer } from '../IIocContainer';
+import { DecoratorRegisterer } from '../services';
+import { lang } from '../utils';
 
 /**
  * bind provider action. for binding a factory to an token.
@@ -25,26 +10,28 @@ export interface BindProviderActionData extends ActionData<Token<any>[]> {
  * @class BindProviderAction
  * @extends {ActionComposite}
  */
-export class BindProviderAction extends ActionComposite {
+export class BindProviderAction extends IocAction {
 
     constructor() {
-        super(CoreActions.bindProvider)
+        super()
     }
 
-    protected working(container: IContainer, data: BindProviderActionData) {
-        let type = data.targetType;
-        let raiseContainer = data.raiseContainer;
-        let lifeScope = container.getLifeScope();
-        let matchs = lifeScope.getClassDecorators(type, surm => surm.actions.includes(CoreActions.bindProvider));
-        let clpds = new InjectClassProvidesToken(type);
+    execute(container: IIocContainer, ctx: IocActionContext) {
+        super.execute(container, ctx);
+        let type = ctx.targetType;
+        let raiseContainer = ctx.raiseContainer;
+        
+        let matchs = container.resolve(DecoratorRegisterer).getClassDecorators(type, lang.getClass(this));
+    
         // has binding.
-        let classPds = raiseContainer.resolveValue(clpds) || { provides: [clpds.toString()], decors: [] };
-        if (classPds.decors.length) {
-            matchs = matchs.filter(d => classPds.decors.indexOf(d.name) < 0);
+        if (!ctx.targetReflect.decors) {
+            return;
         }
 
+        matchs = matchs.filter(d => ctx.targetReflect.decors.indexOf(d) < 0);
+
         if (matchs.length < 1) {
-            data.execResult = classPds.provides;
+            ctx.execResult = classPds.provides;
             return;
         }
 
@@ -80,6 +67,7 @@ export class BindProviderAction extends ActionComposite {
             }
         });
         raiseContainer.bindProvider(clpds, classPds);
-        data.execResult = classPds.provides;
+        ctx.execResult = classPds.provides;
     }
 }
+

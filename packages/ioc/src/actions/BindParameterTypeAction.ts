@@ -1,8 +1,10 @@
 import { IocAction, IocActionContext } from './Action';
 import { IIocContainer } from '../IIocContainer';
 import { Token } from '../types';
-import { isClass } from '../utils';
-import { getParamDecorators } from '../factories';
+import { isClass, isArray, lang } from '../utils';
+import { getParamMetadata, getOwnParamMetadata } from '../factories';
+import { DecoratorRegisterer, RuntimeLifeScope } from '../services';
+import { ParameterMetadata } from '../metadatas';
 
 /**
  * bind parameter type action.
@@ -21,9 +23,15 @@ export class BindParameterTypeAction extends IocAction {
         if (ctx.raiseContainer && ctx.raiseContainer !== container) {
             return;
         }
+        super.execute(container, ctx);
+        
+        let propertyKey = ctx.propertyKey || 'constructor';
+        if(ctx.targetReflect.methodParams && ctx.targetReflect.methodParams[propertyKey]) {
+            return;
+        }
+        ctx.targetReflect.methodParams = ctx.targetReflect.methodParams || {};
         let target = ctx.target
         let type = ctx.targetType;
-        let propertyKey = ctx.propertyKey;
         let designParams: Token<any>[];
 
         if (target && propertyKey) {
@@ -39,27 +47,23 @@ export class BindParameterTypeAction extends IocAction {
             }
         });
 
+        let decors = container.resolve(DecoratorRegisterer).getParameterDecorators(target || type, propertyKey, lang.getClass(this));
 
-        let decors =  getParamDecorators(target || type, propertyKey);
-
-        let matchs = lifeScope.getParameterDecorators(target || type, propertyKey, surm => surm.actions.includes(CoreActions.bindParameterType));
-
-        decors.forEach(surm => {
-            let parameters = (target || propertyKey !== 'constructor') ? getParamMetadata<ParameterMetadata>(surm.name, target, propertyKey) : getOwnParamMetadata<ParameterMetadata>(surm.name, type);
+        decors.forEach(d => {
+            let parameters = (target || propertyKey !== 'constructor') ? getParamMetadata<ParameterMetadata>(d, target, propertyKey) : getOwnParamMetadata<ParameterMetadata>(d, type);
             if (isArray(parameters) && parameters.length) {
                 parameters.forEach(params => {
                     let parm = (isArray(params) && params.length > 0) ? params[0] : null;
                     if (parm && parm.index >= 0) {
-                        if (lifeScope.isVaildDependence(parm.provider)) {
-                            if (!container.has(parm.provider, parm.alias)) {
-                                container.register(container.getToken(parm.provider, parm.alias));
-                            }
-                        }
-                        if (lifeScope.isVaildDependence(parm.type)) {
+                        if (isClass(parm.type)) {
                             if (!container.has(parm.type)) {
                                 container.register(parm.type);
                             }
+                            if (parm.provider && !container.has(parm.provider, parm.alias)) {
+                                container.register(container.getToken(parm.provider, parm.alias), parm.type);
+                            }
                         }
+
                         let token = parm.provider ? container.getTokenKey(parm.provider, parm.alias) : parm.type;
                         if (token) {
                             designParams[parm.index] = token;
@@ -69,7 +73,12 @@ export class BindParameterTypeAction extends IocAction {
             }
         });
 
-
-        ctx.execResult = designParams;
+        let names = container.resolve(RuntimeLifeScope).getParamerterNames(type, propertyKey);
+        ctx.targetReflect.methodParams[propertyKey] = designParams.map((typ, idx) => {
+            return {
+                type: typ,
+                name: names[idx]
+            }
+        });
     }
 }

@@ -1,9 +1,10 @@
 import { IocActionContext, IocAction } from './Action';
 import { IIocContainer } from '../IIocContainer';
 import { ParamProviders } from '../providers';
-import { getOwnMethodMetadata, getMethodDecorators } from '../factories';
-import { MethodMetadata } from '../metadatas';
-import { isArray } from '../utils';
+import { getParamMetadata } from '../factories';
+import { ParameterMetadata } from '../metadatas';
+import { isArray, lang } from '../utils';
+import { DecoratorRegisterer } from '../services';
 
 
 /**
@@ -20,20 +21,23 @@ export class BindParameterProviderAction extends IocAction {
     }
 
     execute(container: IIocContainer, ctx: IocActionContext) {
-        if (ctx.paramProviders && ctx.paramProviders.length) {
-            return;
-        }
         if (ctx.raiseContainer && ctx.raiseContainer !== container) {
             return;
         }
+        super.execute(container, ctx);
         let type = ctx.targetType;
         let propertyKey = ctx.propertyKey;
 
-        let decors = getMethodDecorators(type);
+        if(ctx.targetReflect.methodProviders && ctx.targetReflect.methodProviders[propertyKey]){
+            return;
+        }
+        ctx.targetReflect.methodProviders = ctx.targetReflect.methodProviders || {};
+
+        let decors = container.get(DecoratorRegisterer).getMethodDecorators(type, lang.getClass(this));
 
         let providers: ParamProviders[] = [];
         decors.forEach(d => {
-            let methodmtas = getOwnMethodMetadata<MethodMetadata>(d, type);
+            let methodmtas = getParamMetadata<ParameterMetadata>(d, type);
             let metadatas = methodmtas[propertyKey];
             if (metadatas && isArray(metadatas) && metadatas.length > 0) {
                 metadatas.forEach(meta => {
@@ -43,6 +47,7 @@ export class BindParameterProviderAction extends IocAction {
                 });
             }
         });
-        ctx.paramProviders = providers;
+        
+        ctx.targetReflect.methodProviders[propertyKey] = providers;
     }
 }

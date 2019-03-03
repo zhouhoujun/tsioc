@@ -10,7 +10,7 @@ import { IocCoreService } from './IocCoreService';
  * @export
  * @interface ICacheManager
  */
-export interface ICacheManager {
+export interface IIocCacheManager {
     /**
      * has cache
      *
@@ -79,7 +79,7 @@ export interface CacheTarget {
  * @class CacheManager
  * @implements {ICacheManager}
  */
-export class CacheManager extends IocCoreService implements ICacheManager {
+export class IocCacheManager extends IocCoreService implements IIocCacheManager {
 
     cacheTokens: Map<Type<any>, CacheTarget>;
     constructor() {

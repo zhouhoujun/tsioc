@@ -4,6 +4,7 @@ import { ParamProviders, isProvider, ProviderParser } from '../providers';
 import { isToken, isNullOrUndefined, lang, isFunction } from '../utils';
 import { IIocContainer } from '../IIocContainer';
 import { IocCoreService } from './IocCoreService';
+import { RuntimeLifeScope } from './RuntimeLifeScope';
 
 /**
  * execution, invoke some type method.
@@ -155,16 +156,10 @@ export class MethodAccessor extends IocCoreService implements IMethodAccessor {
         }
 
         lang.assertExp(instance && isFunction(instance[propertyKey]), `type: ${targetClass} has no method ${propertyKey.toString()}.`);
-        let actionData = {
-            target: instance,
-            targetType: targetClass,
-            propertyKey: propertyKey,
-        } as BindParameterProviderActionData;
-        let lifeScope = container.getLifeScope();
-        lifeScope.execute(actionData, LifeState.onInit, CoreActions.bindParameterProviders);
-        providers = providers.concat(actionData.execResult);
-
-        let parameters = lifeScope.getMethodParameters(targetClass, instance, propertyKey);
+        let lifeScope = container.resolve(RuntimeLifeScope);
+        let pds = lifeScope.getParamProviders(container, targetClass, propertyKey, instance);
+        providers = providers.concat(pds);
+        let parameters = lifeScope.getMethodParameters(container, targetClass, instance, propertyKey);
 
         let paramInstances = await this.createParams(container, parameters, ...providers);
 
@@ -190,18 +185,11 @@ export class MethodAccessor extends IocCoreService implements IMethodAccessor {
         }
         lang.assertExp(instance && isFunction(instance[propertyKey]), `type: ${targetClass} has no method ${propertyKey.toString()}.`);
 
-        let actionData = {
-            target: instance,
-            targetType: targetClass,
-            propertyKey: propertyKey,
-        } as BindParameterProviderActionData;
-        let lifeScope = this.container.getLifeScope();
-        lifeScope.execute(actionData, LifeState.onInit, CoreActions.bindParameterProviders);
-
-        providers = providers.concat(actionData.execResult);
-        let parameters = lifeScope.getMethodParameters(targetClass, instance, propertyKey);
+        let lifeScope = container.resolve(RuntimeLifeScope);
+        let pds = lifeScope.getParamProviders(container, targetClass, propertyKey, instance);
+        providers = providers.concat(pds);
+        let parameters = lifeScope.getMethodParameters(container, targetClass, instance, propertyKey);
         let paramInstances = this.createSyncParams(container, parameters, ...providers);
-
         return instance[propertyKey](...paramInstances) as T;
     }
 

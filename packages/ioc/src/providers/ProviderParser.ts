@@ -5,7 +5,7 @@ import {
 } from '../utils';
 import { IProviderParser } from './IProviderParser';
 import { IIocContainer } from '../IIocContainer';
-import { ProviderMap, isProviderMap, ProviderMapToken } from './ProviderMap';
+import { ProviderMap, isProviderMap } from './ProviderMap';
 import { Provider, ParamProvider } from './Provider';
 
 /**
@@ -27,7 +27,7 @@ export class ProviderParser implements IProviderParser {
         if (providers.length === 1 && isProviderMap(providers[0])) {
             return providers[0] as ProviderMap;
         }
-        let map = this.container.resolve(ProviderMapToken);
+        let map = this.container.resolve(ProviderMap);
         providers.forEach((p, index) => {
             if (isUndefined(p) || isNull(p)) {
                 return;

@@ -1,12 +1,9 @@
 import { IIocContainer } from './IIocContainer';
-import { LifeScopeToken } from './LifeScope';
 import {
-     Injectable, Component, AutoWired, Inject, Singleton, Param,
-    Method, Abstract, Autorun, IocExt, Refs, Providers,
+     Injectable, Component, Singleton, Abstract, Autorun, IocExt, Refs, Providers
 } from './decorators'
-import {  MethodAccessor, MetaAccessor, CacheManager } from './services';
-import { ResolverChain, ResolverChainToken } from './resolves';
-import { ProviderMap, ProviderMapToken, ProviderParser } from './providers';
+import {  MethodAccessor, DesignLifeScope, RuntimeLifeScope, DecoratorRegisterer } from './services';
+import { ProviderMap, ProviderParser } from './providers';
 
 /**
  * register core for container.
@@ -15,14 +12,15 @@ import { ProviderMap, ProviderMapToken, ProviderParser } from './providers';
  * @param {IIocContainer} container
  */
 export function registerCores(container: IIocContainer) {
-    container.registerSingleton(LifeScopeToken, () => new DefaultLifeScope(container));
-    container.registerSingleton(CacheManagerToken, () => new CacheManager(container));
-    container.registerSingleton(ResolverChainToken, () => new ResolverChain(container));
+    //bing action.
+    container.registerSingleton(DecoratorRegisterer, ()=> new DecoratorRegisterer());
+    container.registerSingleton(DesignLifeScope, () => new DesignLifeScope());
+    container.registerSingleton(RuntimeLifeScope, () => new RuntimeLifeScope());
     container.register(ProviderMapToken, () => new ProviderMap(container));
     container.bindProvider(ProviderMap, ProviderMapToken);
-    container.registerSingleton(ProviderParserToken, () => new ProviderParser(container));
-    container.registerSingleton(MethodAccessorToken, () => new MethodAccessor(container));
-    container.registerSingleton(MetaAccessorToken, MetaAccessor);
+
+    container.registerSingleton(ProviderParser, () => new ProviderParser(container));
+    container.registerSingleton(MethodAccessor, () => new MethodAccessor());
 
     let lifeScope = container.get(LifeScopeToken);
 
@@ -32,10 +30,7 @@ export function registerCores(container: IIocContainer) {
     lifeScope.registerDecorator(Refs, CoreActions.bindProvider);
     lifeScope.registerDecorator(Providers, CoreActions.bindProvider);
     lifeScope.registerDecorator(Abstract, CoreActions.bindProvider, CoreActions.cache);
-    lifeScope.registerDecorator(AutoWired, CoreActions.bindParameterType, CoreActions.bindPropertyType);
-    lifeScope.registerDecorator(Inject, CoreActions.bindParameterType, CoreActions.bindPropertyType);
-    lifeScope.registerDecorator(Param, CoreActions.bindParameterType, CoreActions.bindPropertyType);
-    lifeScope.registerDecorator(Method, CoreActions.bindParameterProviders);
+
 
     lifeScope.registerDecorator(Autorun, CoreActions.autorun, CoreActions.methodAutorun);
     lifeScope.registerDecorator(IocExt, CoreActions.autorun, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
