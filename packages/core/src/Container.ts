@@ -1,31 +1,14 @@
 import 'reflect-metadata';
 import { IContainer, ContainerToken, ResoveWay } from './IContainer';
-import {
-    Type, Token, Factory, SymbolType, IocState,
-    ReferenceToken, RefTokenType, RefTokenFacType,
-    RefTokenFac, Modules, LoadType, RefTarget, RefTagLevel, ClassType, ToInstance, InstanceFactory
-} from './types';
-import {
-    isClass, isFunction, isSymbol, isToken, isString, isUndefined,
-    lang, isArray, isBoolean, isRefTarget, isTypeObject, isAbstractClass, isClassType, isNumber
-} from './utils';
-import { IParameter } from './IParameter';
-import { Registration, isRegistrationClass } from './Registration';
-import { MethodAccessorToken } from './IMethodAccessor';
-import { CoreActions, CacheActionData, LifeState, ActionComponent, enumerable } from './core';
-import { CacheManagerToken } from './ICacheManager';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { registerCores } from './registerCores';
-import { ResolverChain, ResolverChainToken } from './resolves';
-import { InjectReference, InjectClassProvidesToken, isInjectReference } from './InjectReference';
-import { LifeScope, LifeScopeToken } from './LifeScope';
-import { ParamProviders, ProviderMap, ProviderParserToken, IProviderParser, ProviderTypes } from './providers';
-import { IResolver } from './IResolver';
+import {
+    ParamProviders, IocContainer, Type, Token, Factory, SymbolType, IocState,
+    ReferenceToken, RefTokenType, RefTokenFacType,
+    RefTokenFac, Modules, LoadType, RefTarget, RefTagLevel,
+    ClassType, ToInstance, InstanceFactory,
+    isArray, isToken, isRefTarget, isTypeObject, isClass, isBoolean, isFunction, InjectReference, isInjectReference, IResolver, isClassType, isNumber, isAbstractClass
+} from '@ts-ioc/ioc';
 
-/**
- * singleton reg token.
- */
-const SingletonRegToken = '___IOC__Singleton___';
 
 /**
  * Container
@@ -34,58 +17,14 @@ const SingletonRegToken = '___IOC__Singleton___';
  * @class Container
  * @implements {IContainer}
  */
-export class Container implements IContainer {
-
-    // @enumerable(false)
-    parent: IContainer;
-
-    // @enumerable(false)
-    children: IContainer[] = [];
-
-    /**
-     * provide types.
-     *
-     * @protected
-     * @type {Map<Token<any>, Type<any>>}
-     * @memberof Container
-     */
-    protected provideTypes: Map<Token<any>, Type<any>>;
-    /**
-     * factories.
-     *
-     * @protected
-     * @type {Map<Token<any>, Function>}
-     * @memberof Container
-     */
-    protected factories: Map<Token<any>, InstanceFactory<any>>;
+export class Container extends IocContainer implements IContainer {
 
     constructor() {
-        this.init();
+        super();
     }
 
     get size(): number {
         return this.factories.size;
-    }
-    /**
-     * get root container.
-     *
-     * @returns {IContainer}
-     * @memberof Container
-     */
-    getRoot(): IContainer {
-        let root: IContainer = this;
-        while (root.parent) {
-            root = root.parent;
-        }
-        return root;
-    }
-
-    private parser: IProviderParser;
-    getProviderParser(): IProviderParser {
-        if (!this.parser) {
-            this.parser = this.resolveValue(ProviderParserToken)
-        }
-        return this.parser;
     }
 
     /**
@@ -96,71 +35,6 @@ export class Container implements IContainer {
      */
     getBuilder(): IContainerBuilder {
         return this.resolveValue(ContainerBuilderToken);
-    }
-
-    /**
-    * resolve token value in this container only.
-    *
-    * @template T
-    * @param {Token<T>} token
-    * @param {...ParamProviders[]} providers
-    * @returns {T}
-    * @memberof Container
-    */
-    getResolvers(): ResolverChain {
-        return this.resolveValue(ResolverChainToken);
-    }
-
-    /**
-     * has register the token or not.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [aliasOrway]
-     * @returns {boolean}
-     * @memberof Container
-     */
-    has<T>(token: Token<T>, aliasOrway?: string | ResoveWay): boolean {
-        return this.getResolvers().has(token, aliasOrway);
-    }
-
-    /**
-     * has register type.
-     *
-     * @template T
-     * @param {Token<T>} key
-     * @returns
-     * @memberof Container
-     */
-    hasRegister<T>(key: Token<T>): boolean {
-        return this.factories.has(this.getTokenKey(key));
-    }
-
-    /**
-     * Retrieves an instance from the container based on the provided token.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof Container
-     */
-    get<T>(token: Token<T>, alias?: string, ...providers: ParamProviders[]): T {
-        return this.resolve(alias ? this.getTokenKey<T>(token, alias) : token, ...providers);
-    }
-
-    /**
-     * resolve type instance with token and param provider.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} [notFoundValue]
-     * @param {...ParamProviders[]} providers
-     * @memberof Container
-     */
-    resolve<T>(token: Token<T>, resway?: ResoveWay | ParamProviders, ...providers: ParamProviders[]): T {
-        return this.getResolvers().resolve(token, resway, ...providers);
     }
 
     /**

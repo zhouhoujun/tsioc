@@ -2,13 +2,10 @@ import {
     Type, Token, Factory, SymbolType, Modules,
     LoadType, ReferenceToken, RefTokenFac, RefTarget, ClassType, InstanceFactory
 } from './types';
-import { IMethodAccessor } from './IMethodAccessor';
-import { LifeScope } from './LifeScope';
-import { InjectToken } from './InjectToken';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IResolver, IResolverContainer } from './IResolver';
 import { ResolverChain } from './resolves';
-import { ParamProviders, IProviderParser, ProviderTypes } from './providers';
+import { InjectToken, IIocContainer, ParamProviders } from '@ts-ioc/ioc';
 
 /**
  * IContainer token.
@@ -55,47 +52,7 @@ export enum ResoveWay {
  * @export
  * @interface IContainer
  */
-export interface IContainer extends IMethodAccessor, IResolverContainer {
-
-    /**
-     * get or set parent container.
-     *
-     * @type {IContainer}
-     * @memberof IContainer
-     */
-    parent: IContainer;
-
-    /**
-     * children containers.
-     *
-     * @returns {IContainer[]}
-     * @memberof IContainer
-     */
-    children: IContainer[];
-
-    /**
-     * get root container.
-     *
-     * @returns {IContainer}
-     * @memberof IContainer
-     */
-    getRoot(): IContainer;
-
-    /**
-     * get provider parser.
-     *
-     * @returns {IProviderParser}
-     * @memberof IContainer
-     */
-    getProviderParser(): IProviderParser;
-
-    /**
-     * resolve chain.
-     *
-     * @type {ResolverChain}
-     * @memberof IContainer
-     */
-    getResolvers(): ResolverChain;
+export interface IContainer extends IIocContainer {
 
     /**
      * get container builder of this container.
@@ -105,49 +62,8 @@ export interface IContainer extends IMethodAccessor, IResolverContainer {
      */
     getBuilder(): IContainerBuilder;
 
-    /**
-     * current container has register.
-     *
-     * @template T
-     * @param {Token<T>} key
-     * @returns {boolean}
-     * @memberof IContainer
-     */
-    hasRegister<T>(key: Token<T>): boolean;
 
-    /**
-     * Retrieves an instance from the container based on the provided token.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    get<T>(token: Token<T>, alias?: string, ...providers: ParamProviders[]): T;
 
-    /**
-     * resolve token value in this container only.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    resolveValue<T>(token: Token<T>, ...providers: ParamProviders[]): T;
-
-    /**
-     * resolve first token when not null.
-     *
-     * @template T
-     * @param {Token<any>[]} tokens
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    resolveFirst<T>(tokens: Token<any>[], ...providers: ParamProviders[]): T;
 
     /**
      * get service or target reference service.
@@ -230,24 +146,22 @@ export interface IContainer extends IMethodAccessor, IResolverContainer {
      *
      * @template T
      * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
-     * @param {ResoveWay} [resway=ResoveWay.all] resolve way. bubble, traverse.
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getServices<T>(type: ClassType<T> | ((token: ClassType<T>) => boolean), resway?: ResoveWay, ...providers: ParamProviders[]): T[];
+    getServices<T>(type: ClassType<T> | ((token: ClassType<T>) => boolean), ...providers: ParamProviders[]): T[];
 
     /**
     * get all private services of target extends class `type`.
     * @template T
     * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
     * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
-    * @param {ResoveWay} [resway=ResoveWay.all] resolve way. bubble, traverse.
     * @param {...ParamProviders[]} providers
     * @returns {T}
     * @memberof IContainer
     */
-    getServices<T>(type: Token<T> | ((token: ClassType<T>) => boolean), target: Token<any> | Token<any>[], resway?: ResoveWay, ...providers: ParamProviders[]): T[];
+    getServices<T>(type: Token<T> | ((token: ClassType<T>) => boolean), target: Token<any> | Token<any>[], ...providers: ParamProviders[]): T[];
 
     /**
     * get all servies extends class `type` and all private services of target extends class `type`.
@@ -256,235 +170,11 @@ export interface IContainer extends IMethodAccessor, IResolverContainer {
     * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
     * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
     * @param {boolean} both if true, will get all server and target private service of class extends `type` .
-    * @param {ResoveWay} [resway=ResoveWay.all] resolve way. bubble, traverse.
     * @param {...ParamProviders[]} providers
     * @returns {T}
     * @memberof IContainer
     */
-    getServices<T>(type: Token<T> | ((token: ClassType<T>) => boolean), target: Token<any> | Token<any>[], both: boolean, resway?: ResoveWay, ...providers: ParamProviders[]): T[];
-
-
-    /**
-     * iterator all service extends type.
-     *
-     * @template T
-     * @param {(tk: ClassType<T>, fac: InstanceFactory<T>, resolvor?: IResolver, ...providers: ParamProviders[]) => void | boolean} express
-     * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
-     * @param {ResoveWay} [resway=ResoveWay.all] resolve way. bubble, traverse.
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    iteratorServices<T>(
-        express: (tk: ClassType<T>, fac: InstanceFactory<T>, resolvor?: IResolver, ...providers: ParamProviders[]) => void | boolean,
-        type: ClassType<T> | ((token: ClassType<T>) => boolean),
-        resway?: ResoveWay,
-        ...providers: ParamProviders[]): void;
-
-    /**
-    * iterator all private services of target extends class `type`.
-    * @template T
-    * @param {(tk: ClassType<T>, fac: InstanceFactory<T>, resolvor?: IResolver, ...providers: ParamProviders[]) => void | boolean} express
-    * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
-    * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
-    * @param {ResoveWay} [resway=ResoveWay.all] resolve way. bubble, traverse.
-    * @param {...ParamProviders[]} providers
-    * @returns {T}
-    * @memberof IContainer
-    */
-    iteratorServices<T>(
-        express: (tk: ClassType<T>, fac: InstanceFactory<T>, resolvor?: IResolver, ...providers: ParamProviders[]) => void | boolean,
-        type: Token<T> | ((token: ClassType<T>) => boolean),
-        target: Token<any> | Token<any>[],
-        resway?: ResoveWay,
-        ...providers: ParamProviders[]): void;
-
-    /**
-    * iterator all servies extends class `type` and all private services of target extends class `type`.
-    *
-    * @template T
-    * @param {(tk: ClassType<T>, fac: InstanceFactory<T>, resolvor?: IResolver, ...providers: ParamProviders[]) => void | boolean} express
-    * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
-    * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
-    * @param {boolean} both if true, will get all server and target private service of class extends `type` .
-    * @param {ResoveWay} [resway=ResoveWay.all] resolve way. bubble, traverse.
-    * @param {...ParamProviders[]} providers
-    * @returns {T}
-    * @memberof IContainer
-    */
-    iteratorServices<T>(
-        express: (tk: ClassType<T>, fac: InstanceFactory<T>, resolvor?: IResolver, ...providers: ParamProviders[]) => void | boolean,
-        type: Token<T> | ((token: ClassType<T>) => boolean),
-        target: Token<any> | Token<any>[],
-        both: boolean,
-        resway?: ResoveWay,
-        ...providers: ParamProviders[]): void;
-
-
-    /**
-     * register type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {Factory<T>} [value]
-     * @returns {this}
-     * @memberof IContainer
-     */
-    register<T>(token: Token<T>, value?: Factory<T>): this;
-
-    /**
-     * register stingleton type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {Factory<T>} value
-     * @returns {this}
-     * @memberOf IContainer
-     */
-    registerSingleton<T>(token: Token<T>, value?: Factory<T>): this;
-
-    /**
-     * register value.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} value
-     * @returns {this}
-     * @memberof IContainer
-     */
-    registerValue<T>(token: Token<T>, value: T): this;
-
-    /**
-     * unregister value.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {this}
-     * @memberof IContainer
-     */
-    unregisterValue<T>(token: Token<T>): this;
-
-    /**
-     * bind provider
-     *
-     * @template T
-     * @param {Token<T>} provide
-     * @param {Token<T> | Factory<T>} provider
-     * @returns {this}
-     * @memberof IContainer
-     */
-    bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this;
-
-    /**
-     * bind providers.
-     *
-     * @param {...ProviderTypes[]} providers
-     * @returns {this}
-     * @memberof IContainer
-     */
-    bindProviders(...providers: ProviderTypes[]): this;
-
-    /**
-     * bind providers for only target class.
-     *
-     * @param {Token<any>} target
-     * @param {...ProviderTypes[]} providers
-     * @returns {this}
-     * @memberof IContainer
-     */
-    bindProviders<T>(target: Token<T>, ...providers: ProviderTypes[]): this;
-
-    /**
-     * bind providers for only target class.
-     *
-     * @param {Token<any>} target
-     * @param {(mapTokenKey: Token<any>) => void} onceBinded
-     * @param {...ProviderTypes[]} providers
-     * @returns {this}
-     * @memberof IContainer
-     */
-    bindProviders<T>(target: Token<T>, onceBinded: (mapTokenKey: Token<any>) => void, ...providers: ProviderTypes[]): this;
-
-    /**
-     * bind provider ref to target.
-     *
-     * @template T
-     * @param {Token<any>} target
-     * @param {Token<T>} provide
-     * @param {(Token<T> | Factory<T>)} provider
-     * @param {string} [alias]
-     * @param {(refToken: Token<T>) => void} [onceBinded]
-     * @returns {this}
-     * @memberof IContainer
-     */
-    bindRefProvider<T>(target: Token<any>, provide: Token<T>, provider: Token<T> | Factory<T>, alias?: string, onceBinded?: (refToken: Token<T>) => void): this;
-
-    /**
-     * clear cache.
-     *
-     * @param {Type<any>} targetType
-     * @memberof IContainer
-     */
-    clearCache(targetType: Type<any>);
-
-    /**
-     * get token.
-     *
-     * @template T
-     * @param {Token<T>} target
-     * @param {string} [alias]
-     * @returns {Token<T>}
-     * @memberof IContainer
-     */
-    getToken<T>(target: Token<T>, alias?: string): Token<T>;
-
-    /**
-     * get tocken key.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {SymbolType<T>}
-     * @memberof IContainer
-     */
-    getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T>;
-
-    /**
-     * get token provider.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {Type<T>}
-     * @memberof IContainer
-     */
-    getTokenProvider<T>(token: Token<T>): Type<T>;
-
-    /**
-     * iterate token  in  token class chain.  return false will break iterate.
-     *
-     * @param {RefTarget} target
-     * @param {(token: Token<any>, classProviders?: Token<any>[]) => boolean} express
-     * @memberof IContainer
-     */
-    forInRefTarget(target: RefTarget, express: (token: Token<any>, classProviders?: Token<any>[]) => boolean): void;
-
-    /**
-     * get token implement class and base classes.
-     *
-     * @param {Token<any>} token
-     * @param {boolean} [chain] get all base classes or only impletment class. default true.
-     * @returns {Token<any>[]}
-     * @memberof IContainer
-     */
-    getTokenClassChain(token: Token<any>, chain?: boolean): Token<any>[];
-
-    /**
-     * get life scope of container.
-     *
-     * @returns {LifeScope}
-     * @memberof IContainer
-     */
-    getLifeScope(): LifeScope;
+    getServices<T>(type: Token<T> | ((token: ClassType<T>) => boolean), target: Token<any> | Token<any>[], both: boolean, ...providers: ParamProviders[]): T[];
 
     /**
      * use modules.
@@ -503,14 +193,5 @@ export interface IContainer extends IMethodAccessor, IResolverContainer {
      * @memberof IContainer
      */
     loadModule(...modules: LoadType[]): Promise<Type<any>[]>;
-
-    /**
-     * iterator all resovlers.
-     *
-     * @param {(tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void | boolean} callbackfn if callbackfn return false will break iterator.
-     * @param {boolean} [bubble=true]
-     * @memberof IContainer
-     */
-    iterator(callbackfn: (tk: Token<any>, fac: InstanceFactory<any>, resolvor?: IResolver) => void | boolean, resway?: ResoveWay): void | boolean;
 
 }
