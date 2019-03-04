@@ -1,4 +1,4 @@
-import { ContainerBuilder, AutoWired, Injectable, Singleton, IIocContainer, ParameterMetadata, Param } from '../src';
+import { AutoWired, Injectable, Singleton, IIocContainer, ParameterMetadata, Param, IocContainer } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Person } from './debug';
 import expect = require('expect');
 
@@ -7,8 +7,7 @@ describe('Singleton test', () => {
 
 
     it('should has one instance',  () => {
-        let builder = new ContainerBuilder();
-        let container = builder.create();
+        let container = new IocContainer();
         container.register(Person);
         let instance = container.get(Person);
         expect(instance).toBeDefined();

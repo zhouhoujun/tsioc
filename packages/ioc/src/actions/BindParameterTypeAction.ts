@@ -15,18 +15,9 @@ import { ParameterMetadata } from '../metadatas';
  */
 export class BindParameterTypeAction extends IocAction {
 
-    constructor() {
-        super()
-    }
-
-    execute(container: IIocContainer, ctx: IocActionContext) {
-        if (ctx.raiseContainer && ctx.raiseContainer !== container) {
-            return;
-        }
-        super.execute(container, ctx);
-        
+    execute(ctx: IocActionContext, next: () => void) {
         let propertyKey = ctx.propertyKey || 'constructor';
-        if(ctx.targetReflect.methodParams && ctx.targetReflect.methodParams[propertyKey]) {
+        if (ctx.targetReflect.methodParams && ctx.targetReflect.methodParams[propertyKey]) {
             return;
         }
         ctx.targetReflect.methodParams = ctx.targetReflect.methodParams || {};
@@ -42,12 +33,12 @@ export class BindParameterTypeAction extends IocAction {
 
         designParams = designParams.slice(0);
         designParams.forEach(dtype => {
-            if (isClass(dtype) && !container.has(dtype)) {
-                container.register(dtype);
+            if (isClass(dtype) && !this.container.has(dtype)) {
+                this.container.register(dtype);
             }
         });
 
-        let decors = container.resolve(DecoratorRegisterer).getParameterDecorators(target || type, propertyKey, lang.getClass(this));
+        let decors = this.container.resolve(DecoratorRegisterer).getParameterDecorators(target || type, propertyKey, lang.getClass(this));
 
         decors.forEach(d => {
             let parameters = (target || propertyKey !== 'constructor') ? getParamMetadata<ParameterMetadata>(d, target, propertyKey) : getOwnParamMetadata<ParameterMetadata>(d, type);
@@ -56,15 +47,15 @@ export class BindParameterTypeAction extends IocAction {
                     let parm = (isArray(params) && params.length > 0) ? params[0] : null;
                     if (parm && parm.index >= 0) {
                         if (isClass(parm.type)) {
-                            if (!container.has(parm.type)) {
-                                container.register(parm.type);
+                            if (!this.container.has(parm.type)) {
+                                this.container.register(parm.type);
                             }
-                            if (parm.provider && !container.has(parm.provider, parm.alias)) {
-                                container.register(container.getToken(parm.provider, parm.alias), parm.type);
+                            if (parm.provider && !this.container.has(parm.provider, parm.alias)) {
+                                this.container.register(this.container.getToken(parm.provider, parm.alias), parm.type);
                             }
                         }
 
-                        let token = parm.provider ? container.getTokenKey(parm.provider, parm.alias) : parm.type;
+                        let token = parm.provider ? this.container.getTokenKey(parm.provider, parm.alias) : parm.type;
                         if (token) {
                             designParams[parm.index] = token;
                         }
@@ -73,12 +64,14 @@ export class BindParameterTypeAction extends IocAction {
             }
         });
 
-        let names = container.resolve(RuntimeLifeScope).getParamerterNames(type, propertyKey);
+        let names = this.container.resolve(RuntimeLifeScope).getParamerterNames(type, propertyKey);
         ctx.targetReflect.methodParams[propertyKey] = designParams.map((typ, idx) => {
             return {
                 type: typ,
                 name: names[idx]
             }
         });
+
+        next();
     }
 }

@@ -1,12 +1,18 @@
 import { LifeScope } from './LifeScope';
 import { ParamProviders } from '../providers';
 import { Type } from '../types';
-import { IocActionContext, BindParameterProviderAction, BindParameterTypeAction, BindPropertyTypeAction } from '../actions';
+import {
+    InitReflectAction, IocGetCacheAction, IocActionContext,
+    BindParameterProviderAction, BindParameterTypeAction,
+    BindPropertyTypeAction, ComponentBeforeInitAction, ComponentInitAction,
+    ComponentAfterInitAction, RegisterSingletionAction, InjectPropertyAction,
+    GetSingletionAction, ContainerCheckerAction, IocSetCacheAction,
+    CreateInstanceAction, ConstructorArgsAction
+} from '../actions';
 import { IIocContainer } from '../IIocContainer';
 import { IParameter } from '../IParameter';
 import { DecoratorRegisterer } from './DecoratorRegisterer';
 import { Inject, AutoWired, Method, Param } from '../decorators';
-
 
 /**
  * runtime life scope.
@@ -26,7 +32,7 @@ export class RuntimeLifeScope extends LifeScope {
             targetType: type,
             propertyKey: propertyKey,
         };
-        this.execActions(container, ctx, [BindParameterProviderAction]);
+        this.execActions(container, ctx, [InitReflectAction, BindParameterProviderAction]);
         return ctx.targetReflect.methodProviders[propertyKey] || [];
     }
 
@@ -57,20 +63,49 @@ export class RuntimeLifeScope extends LifeScope {
     }
 
     registerDefault(container: IIocContainer) {
-        container.registerSingleton(BindParameterProviderAction, () => new BindParameterProviderAction());
-        container.registerSingleton(BindParameterTypeAction, ()=> new BindParameterTypeAction());
+        if (!container.hasRegister(InitReflectAction)) {
+            container.registerSingleton(InitReflectAction, () => new InitReflectAction(container));
+        }
+        container.registerSingleton(GetSingletionAction, () => new GetSingletionAction(container));
+        container.registerSingleton(IocGetCacheAction, () => new IocGetCacheAction(container));
+        container.registerSingleton(ContainerCheckerAction, () => new ContainerCheckerAction(container));
+        container.registerSingleton(ConstructorArgsAction, () => new ConstructorArgsAction(container));
+        container.registerSingleton(CreateInstanceAction, () => new CreateInstanceAction(container));
+
+        container.registerSingleton(ComponentBeforeInitAction, () => new ComponentBeforeInitAction(container));
+        container.registerSingleton(BindPropertyTypeAction, () => new BindPropertyTypeAction(container));
+        container.registerSingleton(InjectPropertyAction, () => new InjectPropertyAction(container));
+        container.registerSingleton(ComponentInitAction, () => new ComponentInitAction(container));
+        container.registerSingleton(BindParameterProviderAction, () => new BindParameterProviderAction(container));
+        container.registerSingleton(BindParameterTypeAction, () => new BindParameterTypeAction(container));
+        container.registerSingleton(ComponentAfterInitAction, () => new ComponentAfterInitAction(container));
+        container.registerSingleton(RegisterSingletionAction, () => new RegisterSingletionAction(container));
+        container.registerSingleton(IocSetCacheAction, () => new IocSetCacheAction(container));
 
         let decRgr = container.resolve(DecoratorRegisterer);
         decRgr.register(Inject, BindParameterTypeAction, BindPropertyTypeAction);
         decRgr.register(AutoWired, BindParameterTypeAction, BindPropertyTypeAction);
         decRgr.register(Param, BindParameterTypeAction);
         decRgr.register(Method, BindParameterProviderAction);
-            
-        this.use(BindParameterProviderAction)
-            .use(BindParameterTypeAction);
-        
+
+        this.use(InitReflectAction)
+            .use(GetSingletionAction)
+            .use(IocGetCacheAction)
+            .use(ContainerCheckerAction)
+            .use(ConstructorArgsAction)
+            .use(CreateInstanceAction)
+            .use(ComponentBeforeInitAction)
+            .use(BindPropertyTypeAction)
+            .use(InjectPropertyAction)
+            .use(BindParameterProviderAction)
+            .use(BindParameterTypeAction)
+            .use(ComponentInitAction)
+            .use(RegisterSingletionAction)
+            .use(IocSetCacheAction)
+            .use(ComponentAfterInitAction)
+
     }
-    
+
     protected getParameters<T>(container: IIocContainer, type: Type<T>, instance?: T, propertyKey?: string): IParameter[] {
         propertyKey = propertyKey || 'constructor';
         let ctx: IocActionContext = {
@@ -78,7 +113,7 @@ export class RuntimeLifeScope extends LifeScope {
             targetType: type,
             propertyKey: propertyKey
         };
-        this.execActions(container, ctx, [BindParameterTypeAction]);
+        this.execActions(container, ctx, [InitReflectAction, BindParameterTypeAction]);
 
         let params = ctx.targetReflect.methodParams[propertyKey]
 

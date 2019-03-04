@@ -1,11 +1,12 @@
 import { IocCoreService } from './IocCoreService';
 import { IocActionType } from '../actions';
-import { ClassType } from '../types';
+import { ClassType, Express } from '../types';
 import {
     getMethodDecorators, getPropDecorators,
-    getParamDecorators, getClassDecorators
+    getParamDecorators, getClassDecorators, getTypeMetadata
 } from '../factories';
 import { isString } from '../utils';
+import { ClassMetadata } from '../metadatas';
 
 /**
  * decorator register.
@@ -63,6 +64,27 @@ export class DecoratorRegisterer extends IocCoreService {
     getParameterDecorators(target: any, propertyKey?: string, ...actions: IocActionType[]): string[] {
         return getParamDecorators(target, propertyKey)
             .filter(d => actions.length ? this.hasAnyAction(d, ...actions) : this.has(d));
+    }
+
+    findClassMetadata(target: ClassType<any>, filter: Express<ClassMetadata, boolean>, decorFilter?: Express<string, boolean>): ClassMetadata {
+        let metadata: ClassMetadata;
+        let decors = this.getClassDecorators(target);
+        if (decorFilter) {
+            decors = decors.filter(decorFilter);
+        }
+        decors.some(decor => {
+            let metas = getTypeMetadata<ClassMetadata>(decor, target);
+            if (metas && metas.length) {
+                return metas.some(meta => {
+                    if (meta && filter(meta)) {
+                        metadata = meta;
+                    }
+                    return !!metadata;
+                });
+            }
+            return false;
+        });
+        return metadata;
     }
 
     has(decorator: string | Function): boolean {

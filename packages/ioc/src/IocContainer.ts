@@ -8,8 +8,9 @@ import { registerCores } from './registerCores';
 import { InjectReference } from './InjectReference';
 import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderParser } from './providers';
 import { IResolver } from './IResolver';
-import { IocCacheManager, MethodAccessor } from './services';
+import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope } from './services';
 import { IParameter } from './IParameter';
+import { IocActionContext } from './actions';
 
 /**
  * singleton reg token.
@@ -275,7 +276,7 @@ export class IocContainer implements IIocContainer {
                 complete && complete(refKey);
             }
         } else {
-            maps.forEach((fac, key) => {
+            maps.iterator((fac, key) => {
                 isToken(key) && this.factories.set(key, (...prds) => maps.resolve(key, ...prds));
             })
 
@@ -433,112 +434,27 @@ export class IocContainer implements IIocContainer {
             return;
         }
 
-        let lifeScope = this.getLifeScope();
-        let parameters = lifeScope.getConstructorParameters(ClassT);
-        if (!singleton) {
-            singleton = lifeScope.isSingletonType<T>(ClassT);
-        }
-
         let factory = (...providers: ParamProviders[]) => {
-            if (singleton && this.getSingleton().has(key)) {
-                return this.getSingleton().get(key);
-            }
-
-            if (providers.length < 1) {
-                let lifecycleData: CacheActionData = {
-                    tokenKey: key,
-                    targetType: ClassT,
-                    // raiseContainer: this,
-                    singleton: singleton
-                };
-                lifeScope.execute(lifecycleData, CoreActions.cache);
-                if (lifecycleData.execResult && lifecycleData.execResult instanceof ClassT) {
-                    return lifecycleData.execResult;
-                }
-            }
-
             let providerMap = this.getProviderParser().parse(...providers);
-
-            lifeScope.execute({
+            let ctx: IocActionContext = {
                 tokenKey: key,
                 targetType: ClassT,
-                raiseContainer: this,
-                params: parameters,
+                singleton: singleton,
                 providers: providers,
                 providerMap: providerMap,
-                singleton: singleton
-            }, IocState.runtime, LifeState.beforeCreateArgs);
-
-            let args = this.createSyncParams(parameters, providerMap);
-
-            lifeScope.routeExecute({
-                tokenKey: key,
-                targetType: ClassT,
-                raiseContainer: this,
-                args: args,
-                params: parameters,
-                providers: providers,
-                providerMap: providerMap,
-                singleton: singleton
-            }, IocState.runtime, LifeState.beforeConstructor);
-
-            let instance = new ClassT(...args);
-
-            lifeScope.routeExecute({
-                tokenKey: key,
-                target: instance,
-                targetType: ClassT,
-                raiseContainer: this,
-                args: args,
-                params: parameters,
-                providers: providers,
-                providerMap: providerMap,
-                singleton: singleton
-            }, IocState.runtime, LifeState.afterConstructor);
-
-            lifeScope.execute({
-                tokenKey: key,
-                target: instance,
-                targetType: ClassT,
-                raiseContainer: this,
-                args: args,
-                params: parameters,
-                providers: providers,
-                providerMap: providerMap,
-                singleton: singleton
-            }, IocState.runtime, LifeState.onInit);
-
-
-            lifeScope.routeExecute({
-                tokenKey: key,
-                target: instance,
-                targetType: ClassT,
-                raiseContainer: this,
-                args: args,
-                params: parameters,
-                providers: providers,
-                providerMap: providerMap,
-                singleton: singleton
-            }, IocState.runtime, LifeState.AfterInit);
-
-            lifeScope.execute({
-                tokenKey: key,
-                target: instance,
-                targetType: ClassT,
                 raiseContainer: this
-            }, CoreActions.cache);
-
-            return instance;
+            };
+            this.resolve(RuntimeLifeScope).execute(this, ctx);
+            return ctx.target;
         };
 
         this.factories.set(key, factory);
 
-        lifeScope.routeExecute({
+        this.resolve(DesignLifeScope).execute(this, {
             tokenKey: key,
             targetType: ClassT,
             raiseContainer: this
-        }, IocState.design);
-
+        });
     }
 
     /**

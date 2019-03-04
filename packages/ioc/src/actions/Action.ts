@@ -1,8 +1,8 @@
 import { IIocContainer } from '../IIocContainer';
 import { ProviderMap, ParamProviders } from '../providers';
 import { IParameter } from '../IParameter';
-import { Type, Token } from '../types';
-import { IocCoreService, ITypeReflect, TypeReflects } from '../services';
+import { Type, Token, ObjectMap } from '../types';
+import { IocCoreService, ITypeReflect } from '../services';
 
 
 /**
@@ -92,20 +92,20 @@ export interface IocActionContext {
     targetReflect?: ITypeReflect;
 
     /**
+     * custom set singleton or not.
+     *
+     * @type {boolean}
+     * @memberof IocActionContext
+     */
+    singleton?: boolean;
+
+    /**
      * resolve token.
      *
      * @type {Token<any>}
      * @memberof ActionData
      */
     tokenKey?: Token<any>;
-
-    /**
-     * is target singleton or not.
-     *
-     * @type {boolean}
-     * @memberof ActionData
-     */
-    singleton?: boolean;
 
     /**
      * property or method name of type.
@@ -146,6 +146,14 @@ export interface IocActionContext {
      * @memberof ActionData
      */
     context?: any;
+
+    /**
+     * has injected.
+     *
+     * @type {ObjectMap<boolean>}
+     * @memberof IocActionContext
+     */
+    injecteds?: ObjectMap<boolean>;
 }
 
 /**
@@ -157,15 +165,11 @@ export interface IocActionContext {
  * @extends {IocCoreService}
  */
 export abstract class IocAction extends IocCoreService {
-    constructor() {
+    constructor(protected container: IIocContainer) {
         super();
     }
 
-    execute(container: IIocContainer, ctx: IocActionContext): void {
-        if(!ctx.targetReflect && ctx.targetType){
-            ctx.targetReflect  = container.resolve(TypeReflects).get(ctx.targetType, true);
-        }
-    }
+    abstract execute(ctx: IocActionContext, next: () => void): void;
 }
 
 export type IocActionType = Type<IocAction> | IocAction | IAction<any>;

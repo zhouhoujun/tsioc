@@ -49,12 +49,16 @@ export interface ITypeReflect extends ClassMetadata {
     provides?: Token<any>[];
 
     /**
-     * decorators of class
+     * bund decorators of class
      *
      * @type {string[]}
      * @memberof IClassProvides
      */
     decors: string[];
+
+    compBeforeInit?: boolean;
+    compInit?: boolean;
+    compAfterInit?: boolean;
 }
 
 export class TypeReflects extends IocCoreService {

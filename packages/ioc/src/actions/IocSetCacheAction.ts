@@ -13,43 +13,21 @@ import { getOwnTypeMetadata } from '../factories';
  * @class CacheAction
  * @extends {ActionComposite}
  */
-export class IocCacheAction extends IocAction {
+export class IocSetCacheAction extends IocAction {
 
-    constructor() {
-        super()
-    }
-
-    execute(container: IIocContainer, ctx: IocActionContext) {
-        if (ctx.raiseContainer && ctx.raiseContainer !== container) {
-            return;
-        }
-        super.execute(container, ctx);
-
+    execute(ctx: IocActionContext, next: () => void) {
         if (ctx.singleton || !ctx.targetType || !isClass(ctx.targetType)) {
-            return;
+            return next();
         }
-        let cacheMetadata = this.getCacheMetadata(container, ctx);
-        if(!cacheMetadata || !cacheMetadata.expires){
-            return;
+        let cacheMetadata = this.getCacheMetadata(this.container, ctx);
+        if (!cacheMetadata || !cacheMetadata.expires) {
+            return next();
         }
-        let cacheManager = container.get(IocCacheManager);
-        if (ctx.target) {
-            if (!cacheManager.hasCache(ctx.targetType)) {
-                let cacheMetadata = this.getCacheMetadata(container, ctx);
-                if (cacheMetadata) {
-                    cacheManager.cache(ctx.targetType, ctx.target, cacheMetadata.expires);
-                }
-            }
-        } else {
-            let target = cacheManager.get(container, ctx.targetType);
-            if (target) {
-                let cacheMetadata = this.getCacheMetadata(container, ctx);
-                if (cacheMetadata) {
-                    cacheManager.cache(ctx.targetType, target, cacheMetadata.expires);
-                    ctx.target = target;
-                }
-            }
+        let cacheManager = this.container.get(IocCacheManager);
+        if (!cacheManager.hasCache(ctx.targetType)) {
+            cacheManager.cache(ctx.targetType, ctx.target, cacheMetadata.expires);
         }
+        next();
     }
 
     getCacheMetadata(container: IIocContainer, ctx: IocActionContext): ClassMetadata {

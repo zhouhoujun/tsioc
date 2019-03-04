@@ -7,9 +7,11 @@ export * from './Registration';
 export * from './InjectReference';
 export * from './InjectToken';
 export * from './IParameter';
-export * from './services/MethodAccessor';
-export * from './services/IocCacheManager';
-
+export * from './services';
+export * from './actions';
+export * from './decorators';
+export * from './factories';
+export * from './metadatas'
 export * from './utils';
 export * from './providers';
 

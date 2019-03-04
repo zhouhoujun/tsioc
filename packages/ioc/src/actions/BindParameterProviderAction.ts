@@ -16,24 +16,16 @@ import { DecoratorRegisterer } from '../services';
  */
 export class BindParameterProviderAction extends IocAction {
 
-    constructor() {
-        super();
-    }
-
-    execute(container: IIocContainer, ctx: IocActionContext) {
-        if (ctx.raiseContainer && ctx.raiseContainer !== container) {
-            return;
-        }
-        super.execute(container, ctx);
+    execute(ctx: IocActionContext, next: () => void) {
         let type = ctx.targetType;
         let propertyKey = ctx.propertyKey;
 
-        if(ctx.targetReflect.methodProviders && ctx.targetReflect.methodProviders[propertyKey]){
+        if (ctx.targetReflect.methodProviders && ctx.targetReflect.methodProviders[propertyKey]) {
             return;
         }
         ctx.targetReflect.methodProviders = ctx.targetReflect.methodProviders || {};
 
-        let decors = container.get(DecoratorRegisterer).getMethodDecorators(type, lang.getClass(this));
+        let decors = this.container.get(DecoratorRegisterer).getMethodDecorators(type, lang.getClass(this));
 
         let providers: ParamProviders[] = [];
         decors.forEach(d => {
@@ -47,7 +39,9 @@ export class BindParameterProviderAction extends IocAction {
                 });
             }
         });
-        
+
         ctx.targetReflect.methodProviders[propertyKey] = providers;
+
+        next();
     }
 }

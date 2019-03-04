@@ -1,7 +1,9 @@
+import { lang } from '../utils';
+import { ClassMetadata } from '../metadatas';
 import { IocAction, IocActionContext } from './Action';
 import { IIocContainer } from '../IIocContainer';
 import { DecoratorRegisterer } from '../services';
-import { lang } from '../utils';
+import { getOwnTypeMetadata } from '../factories';
 
 /**
  * bind provider action. for binding a factory to an token.
@@ -12,32 +14,21 @@ import { lang } from '../utils';
  */
 export class BindProviderAction extends IocAction {
 
-    constructor() {
-        super()
-    }
-
-    execute(container: IIocContainer, ctx: IocActionContext) {
-        super.execute(container, ctx);
+    execute(ctx: IocActionContext, next: () => void) {
         let type = ctx.targetType;
+        let tgReflect = ctx.targetReflect;
         let raiseContainer = ctx.raiseContainer;
-        
-        let matchs = container.resolve(DecoratorRegisterer).getClassDecorators(type, lang.getClass(this));
-    
-        // has binding.
-        if (!ctx.targetReflect.decors) {
+
+        let decors = this.container.resolve(DecoratorRegisterer).getClassDecorators(type, lang.getClass(this));
+        decors = decors.filter(d => tgReflect.decors.indexOf(d) < 0);
+
+        if (decors.length < 1) {
             return;
         }
 
-        matchs = matchs.filter(d => ctx.targetReflect.decors.indexOf(d) < 0);
-
-        if (matchs.length < 1) {
-            ctx.execResult = classPds.provides;
-            return;
-        }
-
-        matchs.forEach(surm => {
-            let metadata = getOwnTypeMetadata<ClassMetadata>(surm.name, type);
-            classPds.decors.push(surm.name);
+        decors.forEach(d => {
+            let metadata = getOwnTypeMetadata<ClassMetadata>(d, type);
+           tgReflect.decors.push(d);
             if (Array.isArray(metadata) && metadata.length > 0) {
                 // bind all provider.
                 metadata.forEach(c => {
@@ -46,7 +37,7 @@ export class BindProviderAction extends IocAction {
                     }
                     if (c.provide) {
                         let provide = raiseContainer.getToken(c.provide, c.alias);
-                        classPds.provides.push(provide);
+                        tgReflect.provides.push(provide);
                         raiseContainer.bindProvider(provide, c.type);
                     }
                     if (c.refs && c.refs.target) {
@@ -54,20 +45,19 @@ export class BindProviderAction extends IocAction {
                             c.refs.provide ? c.refs.provide : c.type,
                             c.type,
                             c.refs.provide ? c.refs.alias : '',
-                            tk => classPds.provides.push(tk));
+                            tk => tgReflect.provides.push(tk));
                     }
                     // class private provider.
                     if (c.providers && c.providers.length) {
                         raiseContainer.bindProviders(
                             c.type,
-                            refKey => classPds.provides.push(refKey),
+                            refKey => tgReflect.provides.push(refKey),
                             ...c.providers);
                     }
                 });
             }
         });
-        raiseContainer.bindProvider(clpds, classPds);
-        ctx.execResult = classPds.provides;
+        next();
     }
 }
 

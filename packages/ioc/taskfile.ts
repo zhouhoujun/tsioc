@@ -11,7 +11,7 @@ const rename = require('gulp-rename');
     src: 'lib/**/*.js',
     dest: 'bundles',
     data: {
-        name: 'core.umd.js',
+        name: 'ioc.umd.js',
         input: 'lib/index.js',
         format: 'umd'
     },
@@ -29,19 +29,19 @@ const rename = require('gulp-rename');
             external: [
                 'reflect-metadata',
                 'tslib',
-                '@ts-ioc/core'
+                '@ts-ioc/ioc'
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
                 'tslib': 'tslib',
-                '@ts-ioc/core': '@ts-ioc/core'
+                '@ts-ioc/ioc': '@ts-ioc/ioc'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),
         (ctx) => rename(ctx.config.data.name)
     ]
 })
-export class CoreRollup {
+export class IocRollup {
 }
 
 @Pack({
@@ -52,26 +52,26 @@ export class CoreRollup {
         ts: {
             sequence: [
                 { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, activity: TsCompile },
-                CoreRollup,
+                IocRollup,
                 {
                     name: 'zip',
-                    src: 'bundles/core.umd.js',
+                    src: 'bundles/ioc.umd.js',
                     dest: 'bundles',
                     sourcemaps: true,
                     uglify: true,
                     pipes: [
-                        () => rename('core.umd.min.js')
+                        () => rename('ioc.umd.min.js')
                     ],
                     task: AssetActivity
                 },
                 {
                     src: 'lib/**/*.js', dest: 'fesm5',
                     data: {
-                        name: 'core.js',
+                        name: 'ioc.js',
                         input: 'lib/index.js',
                         format: 'cjs'
                     },
-                    activity: CoreRollup
+                    activity: IocRollup
                 }
             ]
         },
@@ -84,17 +84,17 @@ export class CoreRollup {
                         name: 'core.js',
                         input: './es2015/index.js',
                         format: 'cjs'
-                    }, activity: CoreRollup
+                    }, activity: IocRollup
                 }
             ]
         }
     }
 })
-export class CoreBuilder {
+export class IocBuilder {
 }
 
 if (process.cwd() === __dirname) {
     Workflow.create()
         .use(PackModule)
-        .bootstrap(CoreBuilder);
+        .bootstrap(IocBuilder);
 }

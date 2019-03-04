@@ -25,18 +25,28 @@ export abstract class LifeScope extends IocCoreService {
         return this;
     }
 
+    useBefore<T>(action: IocAction | Type<IocAction> | IAction<T>, before: IocAction | Type<IocAction> | IAction<T>): this {
+        this.actions.splice(this.actions.indexOf(before) - 1, 0, action);
+        return this;
+    }
+
+    useAfter<T>(action: IocAction | Type<IocAction> | IAction<T>, after: IocAction | Type<IocAction> | IAction<T>): this {
+        this.actions.splice(this.actions.indexOf(after), 0, action);
+        return this;
+    }
+
     abstract registerDefault(container: IIocContainer);
 
     execute(container: IIocContainer, ctx: IocActionContext, next?: () => void) {
-       this.execActions(container, ctx, this.actions, next);
+        this.execActions(container, ctx, this.actions, next);
     }
 
-    protected execActions(container: IIocContainer, ctx: IocActionContext, actions: (IocAction | Type<IocAction> | IAction<any>)[], next?: () => void){
+    protected execActions(container: IIocContainer, ctx: IocActionContext, actions: (IocAction | Type<IocAction> | IAction<any>)[], next?: () => void) {
         execAction(actions.map(ac => {
             if (isClass(ac)) {
-                return (ctx: IocActionContext) => container.resolve(ac).execute(container, ctx);
+                return (ctx: IocActionContext, next?: () => void) => container.resolve(ac).execute(ctx, next);
             } else if (ac instanceof IocAction) {
-                return (ctx: IocActionContext) => ac.execute(container, ctx);
+                return (ctx: IocActionContext, next?: () => void) => ac.execute(ctx, next);
             }
             return ac
         }), ctx, next);

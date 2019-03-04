@@ -14,22 +14,14 @@ import { getPropertyMetadata } from '../factories';
  */
 export class BindPropertyTypeAction extends IocAction {
 
-    constructor() {
-        super()
-    }
-
-    execute(container: IIocContainer, ctx: IocActionContext) {
-        if (ctx.raiseContainer && ctx.raiseContainer !== container) {
-            return;
-        }
-        super.execute(container, ctx);
+    execute(ctx: IocActionContext, next: () => void) {
         let type = ctx.targetType;
 
-        if(ctx.targetReflect.props){
+        if (ctx.targetReflect.props) {
             return;
         }
 
-        let matchs = container.resolve(DecoratorRegisterer).getPropertyDecorators(type, lang.getClass(this));
+        let matchs = this.container.resolve(DecoratorRegisterer).getPropertyDecorators(type, lang.getClass(this));
         let list: PropertyMetadata[] = [];
         matchs.forEach(d => {
             let propMetadata = getPropertyMetadata<PropertyMetadata>(d, type);
@@ -40,16 +32,17 @@ export class BindPropertyTypeAction extends IocAction {
             list = list.filter(n => !!n);
             list.forEach(prop => {
                 if (isClass(prop.type)) {
-                    if (!container.has(prop.type)) {
-                        container.register(prop.type);
+                    if (!this.container.has(prop.type)) {
+                        this.container.register(prop.type);
                     }
-                    if (prop.provider && !container.has(prop.provider, prop.alias)) {
-                        container.register(container.getToken(prop.provider, prop.alias), prop.type);
+                    if (prop.provider && !this.container.has(prop.provider, prop.alias)) {
+                        this.container.register(this.container.getToken(prop.provider, prop.alias), prop.type);
                     }
                 }
             });
         });
 
         ctx.targetReflect.props = list;
+        next();
     }
 }
