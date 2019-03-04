@@ -1,5 +1,4 @@
 import { IocAction, IocActionContext } from './Action';
-import { IIocContainer } from '../IIocContainer';
 import { Token } from '../types';
 import { isClass, isArray, lang } from '../utils';
 import { getParamMetadata, getOwnParamMetadata } from '../factories';
@@ -18,7 +17,7 @@ export class BindParameterTypeAction extends IocAction {
     execute(ctx: IocActionContext, next: () => void) {
         let propertyKey = ctx.propertyKey || 'constructor';
         if (ctx.targetReflect.methodParams && ctx.targetReflect.methodParams[propertyKey]) {
-            return;
+            return next();
         }
         ctx.targetReflect.methodParams = ctx.targetReflect.methodParams || {};
         let target = ctx.target
@@ -46,12 +45,17 @@ export class BindParameterTypeAction extends IocAction {
                 parameters.forEach(params => {
                     let parm = (isArray(params) && params.length > 0) ? params[0] : null;
                     if (parm && parm.index >= 0) {
+                        if (isClass(parm.provider)) {
+                            if (!this.container.has(parm.provider)) {
+                                this.container.register(parm.provider);
+                            }
+                        }
                         if (isClass(parm.type)) {
                             if (!this.container.has(parm.type)) {
                                 this.container.register(parm.type);
                             }
-                            if (parm.provider && !this.container.has(parm.provider, parm.alias)) {
-                                this.container.register(this.container.getToken(parm.provider, parm.alias), parm.type);
+                            if (parm.alias && !this.container.has(parm.provider, parm.alias)) {
+                                this.container.bindProvider(this.container.getToken(parm.provider, parm.alias), parm.type);
                             }
                         }
 

@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { IIocContainer, IocContainerToken } from './IIocContainer';
-import { Type, Token, Factory, SymbolType, IocState, ToInstance, InstanceFactory } from './types';
+import { Type, Token, Factory, SymbolType, ToInstance, InstanceFactory } from './types';
 import { isClass, isFunction, isSymbol, isToken, isString, isUndefined } from './utils';
 import { Registration } from './Registration';
 
@@ -8,14 +8,9 @@ import { registerCores } from './registerCores';
 import { InjectReference } from './InjectReference';
 import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderParser } from './providers';
 import { IResolver } from './IResolver';
-import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope } from './services';
+import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager } from './services';
 import { IParameter } from './IParameter';
 import { IocActionContext } from './actions';
-
-/**
- * singleton reg token.
- */
-const SingletonRegToken = '___IOC__Singleton___';
 
 /**
  * Container
@@ -50,12 +45,9 @@ export class IocContainer implements IIocContainer {
         return this.factories.size;
     }
 
-    private parser: IProviderParser;
+
     getProviderParser(): IProviderParser {
-        if (!this.parser) {
-            this.parser = this.resolve(ProviderParser)
-        }
-        return this.parser;
+        return this.resolve(ProviderParser);
     }
 
     /**
@@ -63,11 +55,13 @@ export class IocContainer implements IIocContainer {
      *
      * @template T
      * @param {Token<T>} token
+     * @param {string} [alias]
      * @returns {boolean}
      * @memberof Container
      */
-    has<T>(token: Token<T>, aliasOrway?: string): boolean {
-        return this.has(token, aliasOrway);
+    has<T>(token: Token<T>, alias?: string): boolean {
+        let key = this.getTokenKey(token, alias);
+        return this.hasRegister(key);
     }
 
     /**
@@ -183,10 +177,10 @@ export class IocContainer implements IIocContainer {
      */
     registerValue<T>(token: Token<T>, value: T): this {
         let key = this.getTokenKey(token);
-        this.getSingleton().set(key, value);
+        this.getSingletonManager().set(key, value);
         if (!this.factories.has(key)) {
             this.factories.set(key, () => {
-                return this.getSingleton().get(key);
+                return this.getSingletonManager().get(key);
             });
         }
         return this;
@@ -333,7 +327,7 @@ export class IocContainer implements IIocContainer {
      * @memberof IContainer
      */
     clearCache(targetType: Type<any>) {
-        this.resolve(IocCacheManager).destroy(this, targetType);
+        this.resolve(IocCacheManager).destroy(targetType);
     }
 
     /**
@@ -378,11 +372,11 @@ export class IocContainer implements IIocContainer {
         registerCores(this);
     }
 
-    protected getSingleton(): Map<Token<any>, any> {
-        if (!this.hasRegister(SingletonRegToken)) {
-            this.bindProvider(SingletonRegToken, new Map<Token<any>, any>());
+    getSingletonManager(): IocSingletonManager {
+        if (!this.has(IocSingletonManager)) {
+            this.bindProvider(IocSingletonManager, new IocSingletonManager(this));
         }
-        return this.resolve(SingletonRegToken);
+        return this.resolve(IocSingletonManager);
     }
 
     protected registerFactory<T>(token: Token<T>, value?: Factory<T>, singleton?: boolean) {
@@ -419,11 +413,11 @@ export class IocContainer implements IIocContainer {
     protected createCustomFactory<T>(key: SymbolType<T>, factory?: ToInstance<T>, singleton?: boolean) {
         return singleton ?
             (...providers: ParamProviders[]) => {
-                if (this.getSingleton().has(key)) {
-                    return this.getSingleton().get(key);
+                if (this.getSingletonManager().has(key)) {
+                    return this.getSingletonManager().get(key);
                 }
                 let instance = factory(this, ...providers);
-                this.getSingleton().set(key, instance);
+                this.getSingletonManager().set(key, instance);
                 return instance;
             }
             : (...providers: ParamProviders[]) => factory(this, ...providers);
@@ -448,7 +442,10 @@ export class IocContainer implements IIocContainer {
             return ctx.target;
         };
 
-        this.factories.set(key, factory);
+        this.factories.set(ClassT, factory);
+        if (key !== ClassT) {
+            this.bindProvider(key, ClassT);
+        }
 
         this.resolve(DesignLifeScope).execute(this, {
             tokenKey: key,

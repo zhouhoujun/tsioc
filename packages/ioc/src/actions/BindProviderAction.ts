@@ -1,7 +1,6 @@
 import { lang } from '../utils';
 import { ClassMetadata } from '../metadatas';
 import { IocAction, IocActionContext } from './Action';
-import { IIocContainer } from '../IIocContainer';
 import { DecoratorRegisterer } from '../services';
 import { getOwnTypeMetadata } from '../factories';
 
@@ -23,7 +22,7 @@ export class BindProviderAction extends IocAction {
         decors = decors.filter(d => tgReflect.decors.indexOf(d) < 0);
 
         if (decors.length < 1) {
-            return;
+            return next();
         }
 
         decors.forEach(d => {

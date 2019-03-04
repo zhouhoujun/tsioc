@@ -23,11 +23,11 @@ export interface IResolver {
      *
      * @template T
      * @param {Token<T>} key
-     * @param {string} aliasOrway
+     * @param {string} alias
      * @returns {boolean}
      * @memberof IResolver
      */
-    has<T>(key: Token<T>, aliasOrway: string): boolean;
+    has<T>(key: Token<T>, alias: string): boolean;
 
     /**
      * resolve type instance with token and param provider.

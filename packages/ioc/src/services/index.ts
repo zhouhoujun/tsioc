@@ -7,3 +7,4 @@ export * from './LifeScope';
 export * from './DesignLifeScope';
 export * from './RuntimeLifeScope';
 export * from './DecoratorRegisterer';
+export * from './IocSingletonManager';

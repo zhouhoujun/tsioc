@@ -1,5 +1,4 @@
 import { IocAction, IocActionContext } from './Action';
-import { IIocContainer } from '../IIocContainer';
 import { DecoratorRegisterer } from '../services';
 import { lang, isClass } from '../utils';
 import { PropertyMetadata } from '../metadatas';
@@ -18,7 +17,7 @@ export class BindPropertyTypeAction extends IocAction {
         let type = ctx.targetType;
 
         if (ctx.targetReflect.props) {
-            return;
+            return next();
         }
 
         let matchs = this.container.resolve(DecoratorRegisterer).getPropertyDecorators(type, lang.getClass(this));
@@ -31,13 +30,19 @@ export class BindPropertyTypeAction extends IocAction {
             }
             list = list.filter(n => !!n);
             list.forEach(prop => {
+                if (isClass(prop.provider)) {
+                    if (!this.container.has(prop.provider)) {
+                        this.container.register(prop.provider);
+                    }
+                }
                 if (isClass(prop.type)) {
                     if (!this.container.has(prop.type)) {
                         this.container.register(prop.type);
                     }
-                    if (prop.provider && !this.container.has(prop.provider, prop.alias)) {
-                        this.container.register(this.container.getToken(prop.provider, prop.alias), prop.type);
-                    }
+                }
+
+                if (prop.provider && prop.type && prop.alias && !this.container.has(prop.type, prop.alias)) {
+                    this.container.register(this.container.getToken(prop.type, prop.alias),  prop.provider);
                 }
             });
         });

@@ -50,6 +50,7 @@ describe('method exec test', () => {
 
         @Method()
         sayHello( @Inject(Child) person: Person) {
+            console.log(person.toString());
             return person.say();
         }
 
@@ -63,6 +64,7 @@ describe('method exec test', () => {
 
         @Method
         sayHello( @Inject(Child) personA: Person, personB: Person) {
+            console.log(personA, personB);
             return personA.say() + ', ' + personB.say();
         }
 

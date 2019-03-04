@@ -1,8 +1,5 @@
 import { IocAction, IocActionContext } from './Action';
-import { isUndefined } from '../utils';
-import { hasOwnClassMetadata } from '../factories';
-import { Singleton } from '../decorators';
-import { DecoratorRegisterer } from '../services';
+import { IocSingletonManager } from '../services';
 
 /**
  * singleton action, to set the factory of Token as singleton.
@@ -14,15 +11,10 @@ import { DecoratorRegisterer } from '../services';
 export class GetSingletionAction extends IocAction {
 
     execute(ctx: IocActionContext, next: () => void): void {
-        if (isUndefined(ctx.targetReflect.singleton)) {
-            let singleton = hasOwnClassMetadata(Singleton, ctx.targetType);
-            let metadata = this.container.get(DecoratorRegisterer).findClassMetadata(ctx.targetType, m => m.singleton === true);
-            singleton = !!metadata;
-            ctx.targetReflect.singleton = singleton;
-        }
-        if (ctx.tokenKey && ctx.target && (ctx.singleton || ctx.targetReflect.singleton)) {
-            if (this.container.has(ctx.tokenKey)) {
-                ctx.target = this.container.resolve(ctx.tokenKey);
+        if (ctx.targetType && (ctx.singleton || ctx.targetReflect.singleton)) {
+            let mgr = this.container.resolve(IocSingletonManager);
+            if (mgr.has(ctx.targetType)) {
+                ctx.target = mgr.get(ctx.targetType);
                 return;
             }
         }

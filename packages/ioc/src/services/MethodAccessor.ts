@@ -154,13 +154,11 @@ export class MethodAccessor extends IocCoreService implements IMethodAccessor {
             targetClass = lang.getClass(target);
             instance = target;
         }
-
         lang.assertExp(instance && isFunction(instance[propertyKey]), `type: ${targetClass} has no method ${propertyKey.toString()}.`);
         let lifeScope = container.resolve(RuntimeLifeScope);
         let pds = lifeScope.getParamProviders(container, targetClass, propertyKey, instance);
         providers = providers.concat(pds);
         let parameters = lifeScope.getMethodParameters(container, targetClass, instance, propertyKey);
-
         let paramInstances = await this.createParams(container, parameters, ...providers);
 
         return instance[propertyKey](...paramInstances) as T;

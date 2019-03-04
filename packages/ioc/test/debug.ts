@@ -163,7 +163,7 @@ export class SymbolIdest {
 
     @Inject(IocContainerToken)
     public container: IIocContainer
-    constructor( @Inject('StringClassRoom')
+    constructor( @Param('StringClassRoom')
     public room2: IClassRoom) {
 
     }

@@ -1,8 +1,6 @@
 import { IocAction, IocActionContext } from './Action';
-import { IIocContainer } from '../IIocContainer';
 import { DecoratorRegisterer, AfterInit } from '../services';
-import { lang } from '@ts-ioc/core';
-import { isFunction, isUndefined } from '../utils';
+import { isFunction, isUndefined, lang } from '../utils';
 
 /**
  * component after init action, to run @Component decorator class after init hooks.

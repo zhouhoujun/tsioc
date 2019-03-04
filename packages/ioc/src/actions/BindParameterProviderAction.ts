@@ -1,5 +1,4 @@
 import { IocActionContext, IocAction } from './Action';
-import { IIocContainer } from '../IIocContainer';
 import { ParamProviders } from '../providers';
 import { getParamMetadata } from '../factories';
 import { ParameterMetadata } from '../metadatas';
@@ -21,7 +20,7 @@ export class BindParameterProviderAction extends IocAction {
         let propertyKey = ctx.propertyKey;
 
         if (ctx.targetReflect.methodProviders && ctx.targetReflect.methodProviders[propertyKey]) {
-            return;
+            return next();
         }
         ctx.targetReflect.methodProviders = ctx.targetReflect.methodProviders || {};
 

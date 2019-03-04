@@ -1,9 +1,7 @@
-import { IocAction, IocActionContext } from './Action';
-import { IIocContainer } from '../IIocContainer';
-import { isClass, lang, isNumber } from '../utils';
-import { IocCacheManager, DecoratorRegisterer } from '../services';
-import { ClassMetadata } from '../metadatas';
-import { getOwnTypeMetadata } from '../factories';
+import { IocActionContext } from './Action';
+import { isClass } from '../utils';
+import { IocCacheManager } from '../services';
+import { IocCacheAction } from './IocCacheAction';
 
 
 /**
@@ -13,13 +11,13 @@ import { getOwnTypeMetadata } from '../factories';
  * @class CacheAction
  * @extends {ActionComposite}
  */
-export class IocSetCacheAction extends IocAction {
+export class IocSetCacheAction extends IocCacheAction {
 
     execute(ctx: IocActionContext, next: () => void) {
         if (ctx.singleton || !ctx.targetType || !isClass(ctx.targetType)) {
             return next();
         }
-        let cacheMetadata = this.getCacheMetadata(this.container, ctx);
+        let cacheMetadata = this.getCacheMetadata(ctx);
         if (!cacheMetadata || !cacheMetadata.expires) {
             return next();
         }
@@ -30,22 +28,5 @@ export class IocSetCacheAction extends IocAction {
         next();
     }
 
-    getCacheMetadata(container: IIocContainer, ctx: IocActionContext): ClassMetadata {
-        if (ctx.targetReflect.expires) {
-            return ctx.targetReflect;
-        } else {
-            let matchs = container.resolve(DecoratorRegisterer).getClassDecorators(ctx.targetType, lang.getClass(this));
-            let cacheMetadata: ClassMetadata;
-            matchs.some(d => {
-                let metadata = getOwnTypeMetadata<ClassMetadata>(d, ctx.targetType);
-                if (Array.isArray(metadata) && metadata.length > 0) {
-                    cacheMetadata = metadata.find(c => c && isNumber(c.expires) && c.expires > 0);
-                    return !!cacheMetadata;
-                }
-                return false;
-            });
-            return cacheMetadata;
-        }
-    }
 }
 

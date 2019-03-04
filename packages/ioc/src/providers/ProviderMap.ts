@@ -1,4 +1,4 @@
-import { isToken, isFunction, isUndefined, isObject } from '../utils';
+import { isToken, isFunction, isUndefined, isObject, isNumber } from '../utils';
 import { Token, InstanceFactory, SymbolType, Factory, Type } from '../types';
 import { IIocContainer } from '../IIocContainer';
 import { IResolverContainer, IResolver } from '../IResolver';
@@ -29,7 +29,7 @@ export class ProviderMap implements IResolverContainer {
      * @memberof ProviderMap
      */
     has(provide: Token<any> | number): boolean {
-        return this.has(this.getTokenKey(provide));
+        return this.map.has(this.getTokenKey(provide));
     }
 
     provides(): Token<any>[] {
@@ -44,7 +44,7 @@ export class ProviderMap implements IResolverContainer {
      * @memberof ProviderMap
      */
     getTokenKey(token: Token<any> | number): SymbolType<any> | number {
-        if (isToken(token)) {
+        if (!isNumber(token)) {
             return this.container.getTokenKey(token);
         }
         return token;

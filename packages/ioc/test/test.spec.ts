@@ -35,11 +35,12 @@ describe('custom register test', () => {
         expect(instance.service.current instanceof Date).toBeTruthy();
     });
 
-    it('should auto create prop with spec @Param class.', () => {
+    it('should auto create prop with spec @AutoWired class.', () => {
         container.register(MClassRoom);
         let instance = container.get(MClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
+        console.log(container.resolve(MiddleSchoolStudent))
         expect(instance.leader.sayHi()).toEqual('I am a middle school student');
     });
 

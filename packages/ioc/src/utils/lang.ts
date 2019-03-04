@@ -253,7 +253,7 @@ export namespace lang {
             forInClassChain(target, t => {
                 if (isClassType(baseClass)) {
                     isExtnds = t === baseClass;
-                } else {
+                } else if (isFunction(baseClass)) {
                     isExtnds = baseClass(t);
                 }
                 return !isExtnds;

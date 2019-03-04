@@ -36,7 +36,7 @@ export interface IIocCacheManager {
      * @returns {*}
      * @memberof ICacheManager
      */
-    get(container: IIocContainer, targetType: Type<any>, expires?: number): any;
+    get(targetType: Type<any>, expires?: number): any;
     /**
      * is check expires or not.
      *
@@ -57,7 +57,7 @@ export interface IIocCacheManager {
      * @param {*} [target]
      * @memberof ICacheManager
      */
-    destroy(container: IIocContainer, targetType: Type<any>, target?: any);
+    destroy(targetType: Type<any>, target?: any);
 }
 
 
@@ -82,7 +82,7 @@ export interface CacheTarget {
 export class IocCacheManager extends IocCoreService implements IIocCacheManager {
 
     cacheTokens: Map<Type<any>, CacheTarget>;
-    constructor() {
+    constructor(protected container: IIocContainer) {
         super()
         this.cacheTokens = new Map();
     }
@@ -112,7 +112,7 @@ export class IocCacheManager extends IocCoreService implements IIocCacheManager 
         }
     }
 
-    get(container: IIocContainer, targetType: Type<any>, expires?: number) {
+    get(targetType: Type<any>, expires?: number) {
         let result = null;
         if (!this.cacheTokens.has(targetType)) {
             return null;
@@ -125,7 +125,7 @@ export class IocCacheManager extends IocCoreService implements IIocCacheManager 
                 this.cacheTokens.set(targetType, cache);
             }
         } else {
-            this.destroy(container, targetType, cache.target);
+            this.destroy(targetType, cache.target);
         }
 
         return result;
@@ -157,7 +157,7 @@ export class IocCacheManager extends IocCoreService implements IIocCacheManager 
         }
     }
 
-    destroy(container: IIocContainer, targetType: Type<any>, target?: any) {
+    destroy(targetType: Type<any>, target?: any) {
 
         if (!this.hasCache(targetType)) {
             return;
@@ -169,7 +169,7 @@ export class IocCacheManager extends IocCoreService implements IIocCacheManager 
         try {
             let component = target as OnDestroy;
             if (isFunction(component.onDestroy)) {
-                container.syncInvoke(target || targetType, 'onDestroy', target);
+                this.container.syncInvoke(target || targetType, 'onDestroy', target);
             }
             this.cacheTokens.delete(targetType);
         } catch (err) {
