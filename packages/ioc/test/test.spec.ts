@@ -40,7 +40,6 @@ describe('custom register test', () => {
         let instance = container.get(MClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
-        console.log(container.resolve(MiddleSchoolStudent))
         expect(instance.leader.sayHi()).toEqual('I am a middle school student');
     });
 
