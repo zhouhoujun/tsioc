@@ -1,4 +1,4 @@
-import { Type, AbstractType, Token, IRefTarget, ClassType } from '../types';
+import { Type, AbstractType, Token, ClassType } from '../types';
 import { Registration } from '../Registration';
 import { lang } from './lang';
 
@@ -185,20 +185,6 @@ export function isMetadataObject(target: any, ...props: (string | string[])[]): 
     }
 
     return true;
-}
-
-/**
- * is reftarget options or not.
- *
- * @export
- * @param {*} target
- * @returns {target is IRefTarget}
- */
-export function isRefTarget(target: any): target is IRefTarget {
-    if (isBaseObject(target) !== true) {
-        return false
-    }
-    return isToken(target.target);
 }
 
 

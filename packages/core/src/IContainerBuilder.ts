@@ -1,7 +1,6 @@
 import { IContainer } from './IContainer';
-import { Type, Modules, LoadType } from './types';
-import { InjectToken } from './InjectToken';
-import { IModuleLoader, IModuleInjectorChain } from './injectors';
+import { InjectToken, LoadType, Modules, Type } from '@ts-ioc/ioc';
+import { IModuleLoader, IModuleInjectorManager } from './services';
 
 /**
  * ContainerBuilder interface token.
@@ -16,14 +15,6 @@ export const ContainerBuilderToken = new InjectToken<IContainerBuilder>('DI_ICon
  * @interface IContainerBuilder
  */
 export interface IContainerBuilder {
-
-    /**
-     * loader
-     *
-     * @type {IModuleLoader}
-     * @memberof IContainerBuilder
-     */
-    readonly loader: IModuleLoader;
 
     /**
      * create a new container.
@@ -70,14 +61,5 @@ export interface IContainerBuilder {
      * @memberof IContainerBuilder
      */
     syncLoadModule(container: IContainer, ...modules: Modules[]);
-
-    /**
-     * get moduleInjector chain.
-     *
-     * @param {IContainer} container
-     * @returns {IModuleInjectorChain}
-     * @memberof IContainerBuilder
-     */
-    getInjectorChain(container: IContainer): IModuleInjectorChain;
 
 }

@@ -61,39 +61,3 @@ export function isInjectReference<T>(target: any): target is InjectReference<T> 
     }
     return target instanceof InjectReference || (isString(target) && /^Ref\s+[\w\{\}]+\sfor/.test(target));
 }
-
-/**
- * class provides.
- *
- * @export
- * @interface IClassProvides
- */
-export interface IClassProvides {
-    /**
-     * decorators of class
-     *
-     * @type {string[]}
-     * @memberof IClassProvides
-     */
-    decors: string[];
-    /**
-     * provides of class
-     *
-     * @type {Token<any>[]}
-     * @memberof IClassProvides
-     */
-    provides: Token<any>[];
-}
-
-/**
- * inject class provides token.
- *
- * @export
- * @class InjectClassProvidesToken
- * @extends {RefRegistration<IClassProvides>}
- */
-export class InjectClassProvidesToken extends RefRegistration<IClassProvides> {
-    constructor(provideType: Token<any>) {
-        super(provideType, 'class_provides')
-    }
-}

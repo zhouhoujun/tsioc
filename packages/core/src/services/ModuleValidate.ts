@@ -1,8 +1,4 @@
-import { Type } from '../types';
-import { IocExt } from '../decorators';
-import { isClass, isString, isArray } from '../utils';
-import { hasOwnClassMetadata } from '../factories';
-import { IocService } from './IocService';
+import { Type, IocCoreService, isClass, isString, hasOwnClassMetadata, isArray, IocExt } from '@ts-ioc/ioc';
 
 /**
  * module validate.
@@ -39,7 +35,7 @@ export interface IModuleValidate {
  * @class BaseModuelValidate
  * @implements {IModuleValidate}
  */
-export class ModuelValidate extends IocService implements IModuleValidate {
+export class ModuelValidate extends IocCoreService implements IModuleValidate {
     constructor() {
         super();
     }

@@ -1,13 +1,8 @@
 import { IContainer } from './IContainer';
 import { Container } from './Container';
-import { Type, Modules, LoadType, Express } from './types';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import {
-    IModuleLoader, ModuleLoaderToken, DefaultModuleLoader, IModuleInjectorChain,
-    ModuleInjectorChainToken, IocExtModuleValidateToken, ModuleInjector, IocExtModuleValidate,
-    ModuleInjectorChain, ModuelValidate, ModuleValidateToken, ModuleInjectorToken
-} from './injectors';
-import { PromiseUtil } from './utils';
+import { PromiseUtil, Type, Modules, LoadType, Express } from '@ts-ioc/ioc';
+import { IModuleLoader, ModuleLoader, ModuleInjectorManager, SyncModuleInjectorManager } from './services';
 
 /**
  * default container builder.
@@ -18,24 +13,22 @@ import { PromiseUtil } from './utils';
  */
 export class ContainerBuilder implements IContainerBuilder {
 
-    private _loader: IModuleLoader;
     filter: Express<Type<any>, boolean>;
+    private _loader?: IModuleLoader
     constructor(loader?: IModuleLoader) {
         this._loader = loader;
     }
 
-    get loader(): IModuleLoader {
-        if (!this._loader) {
-            this._loader = new DefaultModuleLoader();
-        }
-
-        return this._loader;
+    getLoader(container: IContainer): IModuleLoader {
+        return container.resolve(ModuleLoader) || this._loader;
     }
 
     create(): IContainer {
         let container = new Container();
         container.bindProvider(ContainerBuilderToken, () => this);
-        container.bindProvider(ModuleLoaderToken, () => this.loader);
+        if (this._loader) {
+            container.bindProvider(ModuleLoader, () => this._loader);
+        }
         return container;
     }
 
@@ -63,12 +56,12 @@ export class ContainerBuilder implements IContainerBuilder {
      * @memberof DefaultContainerBuilder
      */
     async loadModule(container: IContainer, ...modules: LoadType[]): Promise<Type<any>[]> {
-        let regModules = await this.loader.loadTypes(modules);
+        let regModules = await this.getLoader(container).loadTypes(modules);
         let injTypes = [];
         if (regModules && regModules.length) {
-            let injChain = this.getInjectorChain(container);
+            let injMgr = container.resolve(ModuleInjectorManager);
             await PromiseUtil.step(regModules.map(typs => async () => {
-                let ityps = await injChain.inject(container, typs);
+                let ityps = await injMgr.inject(container, typs);
                 injTypes = injTypes.concat(ityps);
             }));
         }
@@ -85,29 +78,29 @@ export class ContainerBuilder implements IContainerBuilder {
     }
 
     syncLoadModule(container: IContainer, ...modules: Modules[]): Type<any>[] {
-        let regModules = this.loader.getTypes(modules);
+        let regModules = this.getLoader(container).getTypes(modules);
         let injTypes: Type<any>[] = [];
         if (regModules && regModules.length) {
-            let injChain = this.getInjectorChain(container);
+            let injMgr = container.resolve(SyncModuleInjectorManager);
             regModules.forEach(typs => {
-                let ityps = injChain.syncInject(container, typs);
+                let ityps = injMgr.inject(container, typs);
                 injTypes = injTypes.concat(ityps);
             });
         }
         return injTypes;
     }
 
-    getInjectorChain(container: IContainer): IModuleInjectorChain {
-        if (!container.has(ModuleInjectorChainToken)) {
-            container.register(ModuleInjector)
-                .bindProvider(ModuleValidateToken, new ModuelValidate())
-                .bindProvider(IocExtModuleValidateToken, new IocExtModuleValidate())
-                .bindProvider(ModuleInjectorChainToken,
-                    new ModuleInjectorChain()
-                        .next(container.resolve(ModuleInjectorToken, { provide: ModuleValidateToken, useValue: container.get(IocExtModuleValidateToken) }, { skipNext: true }))
-                        .next(container.resolve(ModuleInjectorToken))
-                );
-        }
-        return container.get(ModuleInjectorChainToken);
-    }
+    // getInjectorChain(container: IContainer): IModuleInjectorManager {
+    //     if (!container.has(ModuleInjectorManager)) {
+    //         container.register(ModuleInjector)
+    //             .bindProvider(ModuelValidate, new ModuelValidate())
+    //             .bindProvider(IocExtModuleValidate, new IocExtModuleValidate())
+    //             .bindProvider(ModuleInjectorManager,
+    //                 new ModuleInjectorManager()
+    //                     .next(container.resolve(ModuleInjectorToken, { provide: ModuleValidateToken, useValue: container.get(IocExtModuleValidateToken) }, { skipNext: true }))
+    //                     .next(container.resolve(ModuleInjectorToken))
+    //             );
+    //     }
+    //     return container.get(ModuleInjectorManager);
+    // }
 }

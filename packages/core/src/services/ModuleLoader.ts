@@ -1,6 +1,5 @@
-import { Type, Modules, LoadType, PathModules } from '../types';
-import { isString, isObject, isArray, isClass } from '../utils';
-import { IocService } from './IocService';
+import { LoadType, Modules, Type, IocCoreService, isString, isObject, PathModules, isArray, isClass } from '@ts-ioc/ioc';
+
 
 /**
  * module loader interface for ioc.
@@ -48,7 +47,7 @@ declare let require: any;
  * @class DefaultModuleLoader
  * @implements {IModuleLoader}
  */
-export class ModuleLoader extends IocService implements IModuleLoader {
+export class ModuleLoader extends IocCoreService implements IModuleLoader {
 
     constructor() {
         super();

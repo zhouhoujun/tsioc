@@ -1,9 +1,8 @@
-import { Token, Type, Express } from '../types';
-import { IIocContainer } from '../IIocContainer';
-import { ComponentMetadata } from '../metadatas';
-import { isClass, isToken } from '../utils';
-import { getTypeMetadata, getClassDecorators } from '../factories';
-import { IocCoreService } from './IocCoreService';
+import {
+    ComponentMetadata, Token, Type, Express, IocCoreService,
+    getClassDecorators, isClass, getTypeMetadata, isToken
+} from '@ts-ioc/ioc';
+import { IContainer } from '../IContainer';
 
 /**
  * annotation metadata.
@@ -58,57 +57,57 @@ export interface IMetaAccessor<T> {
      * get metadata config of target type. via decorators in order.
      *
      * @param {Token<T>} type
-     * @param {IIocContainer} container
+     * @param {IContainer} container
      * @param {IAnnotationMetadata<T>} [extConfig] ext config to merge with metadata.
      * @param {Express<string, boolean>} [decorFilter]
      * @returns {IAnnotationMetadata<T>}
      * @memberof IMetaAccessor
      */
-    getMetadata(type: Token<T>, container: IIocContainer, extConfig?: IAnnotationMetadata<T>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<T>;
+    getMetadata(type: Token<T>, container: IContainer, extConfig?: IAnnotationMetadata<T>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<T>;
 
     /**
      * find metadata.
      *
      * @param {Token<T>} type
-     * @param {IIocContainer} container
+     * @param {IContainer} container
      * @param {Express<IAnnotationMetadata<T>, boolean>} filter
      * @param {Express<string, boolean>} [decorFilter]
      * @returns {IAnnotationMetadata<T>}
      * @memberof IMetaAccessor
      */
-    find(type: Token<T>, container: IIocContainer, filter: Express<IAnnotationMetadata<T>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<T>;
+    find(type: Token<T>, container: IContainer, filter: Express<IAnnotationMetadata<T>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<T>;
 
     /**
      * filter metadata.
      *
      * @param {Token<T>} type
-     * @param {IIocContainer} container
+     * @param {IContainer} container
      * @param {Express<IAnnotationMetadata<T>, boolean>} filter
      * @param {Express<string, boolean>} [decorFilter]
      * @returns {IAnnotationMetadata<T>[]}
      * @memberof IMetaAccessor
      */
-    filter(type: Token<T>, container: IIocContainer, filter: Express<IAnnotationMetadata<T>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<T>[];
+    filter(type: Token<T>, container: IContainer, filter: Express<IAnnotationMetadata<T>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<T>[];
 
     /**
      * get token of metadata.
      *
      * @param {AnnotationConfigure<any>} config
      * @returns {Token<any>}
-     * @param {IIocContainer} [container]  vaild container.
+     * @param {IContainer} [container]  vaild container.
      * @memberof IMetadataManager
      */
-    getToken(config: IAnnotationMetadata<any>, container?: IIocContainer): Token<any>;
+    getToken(config: IAnnotationMetadata<any>, container?: IContainer): Token<any>;
 
     /**
      * get boot token of module config.
      *
      * @param {IAnnotationMetadata<any>} cfg
-     * @param {IIocContainer} [container]  vaild container.
+     * @param {IContainer} [container]  vaild container.
      * @returns {Token<any>}
      * @memberof IModuleValidate
      */
-    getBootToken(cfg: IAnnotationMetadata<any>, container?: IIocContainer): Token<any>
+    getBootToken(cfg: IAnnotationMetadata<any>, container?: IContainer): Token<any>
 }
 
 
@@ -133,13 +132,13 @@ export class MetaAccessor extends IocCoreService implements IMetaAccessor<any> {
      * get metadata config of target type. via decorators in order.
      *
      * @param {Token<any>} token
-     * @param {IIocContainer} container
+     * @param {IContainer} container
      * @param {IAnnotationMetadata<any>} [extConfig]
      * @param {Express<string, boolean>} [decorFilter]
      * @returns {IAnnotationMetadata<any>}
      * @memberof MetaAccessor
      */
-    getMetadata(token: Token<any>, container: IIocContainer, extConfig?: IAnnotationMetadata<any>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
+    getMetadata(token: Token<any>, container: IContainer, extConfig?: IAnnotationMetadata<any>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
         let type = isClass(token) ? token : container.getTokenProvider(token);
         let cfg;
         if (isClass(type)) {
@@ -171,13 +170,13 @@ export class MetaAccessor extends IocCoreService implements IMetaAccessor<any> {
      * find metadata accessor.
      *
      * @param {Token<any>} token
-     * @param {IIocContainer} container
+     * @param {IContainer} container
      * @param {Express<IAnnotationMetadata<any>, boolean>} filter
      * @param {Express<string, boolean>} [decorFilter]
      * @returns {IAnnotationMetadata<any>}
      * @memberof MetaAccessor
      */
-    find(token: Token<any>, container: IIocContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
+    find(token: Token<any>, container: IContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any> {
         let type = isClass(token) ? token : container.getTokenProvider(token);
         let metadata = null;
         if (isClass(type)) {
@@ -205,13 +204,13 @@ export class MetaAccessor extends IocCoreService implements IMetaAccessor<any> {
      * filter metadata accessor.
      *
      * @param {Token<any>} token
-     * @param {IIocContainer} container
+     * @param {IContainer} container
      * @param {Express<IAnnotationMetadata<any>, boolean>} filter
      * @param {Express<string, boolean>} [decorFilter]
      * @returns {IAnnotationMetadata<any>[]}
      * @memberof MetaAccessor
      */
-    filter(token: Token<any>, container: IIocContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any>[] {
+    filter(token: Token<any>, container: IContainer, filter: Express<IAnnotationMetadata<any>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<any>[] {
         let type = isClass(token) ? token : container.getTokenProvider(token);
         let metadatas = [];
         if (isClass(type)) {
@@ -235,11 +234,11 @@ export class MetaAccessor extends IocCoreService implements IMetaAccessor<any> {
      * get token of metadata config.
      *
      * @param {IAnnotationMetadata<any>} config
-     * @param {IIocContainer} [container] vaild token in container or not.
+     * @param {IContainer} [container] vaild token in container or not.
      * @returns {Token<any>}
      * @memberof MetadataManager
      */
-    getToken(config: IAnnotationMetadata<any>, container?: IIocContainer): Token<any> {
+    getToken(config: IAnnotationMetadata<any>, container?: IContainer): Token<any> {
         let token = this.getTokenInConfig(config);
         if (this.validateToken(token, container)) {
             return token;
@@ -252,11 +251,11 @@ export class MetaAccessor extends IocCoreService implements IMetaAccessor<any> {
      * get module boot token from module configure.
      *
      * @param {IAnnotationMetadata<any>} config
-     * @param {IIocContainer} [container]  vaild container.
+     * @param {IContainer} [container]  vaild container.
      * @returns {Token<any>}
      * @memberof ModuelValidate
      */
-    getBootToken(config: IAnnotationMetadata<any>, container?: IIocContainer): Token<any> {
+    getBootToken(config: IAnnotationMetadata<any>, container?: IContainer): Token<any> {
         let token = this.getBootTokenInConfig(config);
         if (this.validateToken(token, container)) {
             return token
@@ -265,7 +264,7 @@ export class MetaAccessor extends IocCoreService implements IMetaAccessor<any> {
         }
     }
 
-    protected validateToken(token: Token<any>, container?: IIocContainer): boolean {
+    protected validateToken(token: Token<any>, container?: IContainer): boolean {
         return isToken(token);
     }
 

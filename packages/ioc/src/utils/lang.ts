@@ -261,4 +261,44 @@ export namespace lang {
         }
         return isExtnds;
     }
+
+
+
+    /**
+    *  action handle.
+    */
+    export type IAction<T> = (ctx: T, next?: () => void) => any;
+
+    /**
+     * execute action in chain.
+     *
+     * @export
+     * @template T
+     * @param {ActionHandle<T>[]} handles
+     * @param {T} ctx
+     * @param {() => void} [next]
+     */
+    export function execAction<T>(handles: IAction<T>[], ctx: T, next?: () => void): void {
+        let index = -1;
+        function dispatch(idx: number): any {
+            if (idx <= index) {
+                return Promise.reject('next called mutiple times');
+            }
+            index = idx;
+            let handle = idx < handles.length ? handles[idx] : null;
+            if (idx === handles.length) {
+                handle = next;
+            }
+            if (!handle) {
+                return;
+            }
+            try {
+                return handle(ctx, dispatch.bind(null, idx + 1));
+            } catch (err) {
+                throw err;
+            }
+        }
+        dispatch(0);
+    }
+
 }

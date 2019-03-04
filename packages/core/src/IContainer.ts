@@ -1,11 +1,11 @@
 import {
-    Type, Token, Factory, SymbolType, Modules,
-    LoadType, ReferenceToken, RefTokenFac, RefTarget, ClassType, InstanceFactory
-} from './types';
+    Type, Token, Modules, LoadType,
+    InjectToken, IIocContainer
+} from '@ts-ioc/ioc';
 import { IContainerBuilder } from './IContainerBuilder';
-import { IResolver, IResolverContainer } from './IResolver';
-import { ResolverChain } from './resolves';
-import { InjectToken, IIocContainer, ParamProviders } from '@ts-ioc/ioc';
+import { IServiceResolver } from './IServiceResolver';
+import { IRefServiceResolver } from './IRefServiceResolver';
+import { IServicesResolver } from './IServicesResolver';
 
 /**
  * IContainer token.
@@ -14,45 +14,12 @@ import { InjectToken, IIocContainer, ParamProviders } from '@ts-ioc/ioc';
 export const ContainerToken = new InjectToken<IContainer>('DI_IContainer');
 
 /**
- * resove way
- *
- * @export
- * @enum {number}
- */
-export enum ResoveWay {
-    /**
-     * current container.
-     */
-    current = 1,
-    /**
-     * traverse all curr node children.
-     */
-    traverse = 1 << 1,
-    /**
-     * bubble up all parent.
-     */
-    bubble = 1 << 2,
-    /**
-     * current and children.
-     */
-    nodes = current | traverse,
-    /**
-     * current and bubble.
-     */
-    routeup = current | bubble,
-    /**
-     *  traverse of curr node, children.
-     */
-    all = current | traverse | bubble
-}
-
-/**
  * container interface.
  *
  * @export
  * @interface IContainer
  */
-export interface IContainer extends IIocContainer {
+export interface IContainer extends IIocContainer, IServiceResolver, IRefServiceResolver, IServicesResolver {
 
     /**
      * get container builder of this container.
@@ -63,118 +30,15 @@ export interface IContainer extends IIocContainer {
     getBuilder(): IContainerBuilder;
 
 
-
-
     /**
-     * get service or target reference service.
+     * get token implements.
      *
      * @template T
-     * @param {(Token<T> | Token<any>[])} token servive token.
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
+     * @param {Token<T>} token
+     * @returns {Type<T>}
      * @memberof IContainer
      */
-    getService<T>(token: Token<T> | Token<any>[], ...providers: ParamProviders[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {(Token<T> | Token<any>[])} token servive token.
-     * @param {(RefTarget | RefTarget[])} [target] service refrence target.
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T> | Token<any>[], target: RefTarget | RefTarget[], ...providers: ParamProviders[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {(Token<T> | Token<any>[])} token servive token.
-     * @param {(RefTarget | RefTarget[])} [target] service refrence target.
-     * @param {RefTokenFac<T>} toRefToken
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T> | Token<any>[], target: RefTarget | RefTarget[], toRefToken: RefTokenFac<T>, ...providers: ParamProviders[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {(Token<T> | Token<any>[])} token servive token.
-     * @param {(RefTarget | RefTarget[])} [target] service refrence target.
-     * @param {(boolean | Token<T>)} defaultToken
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T> | Token<any>[], target: RefTarget | RefTarget[], defaultToken: boolean | Token<T>, ...providers: ParamProviders[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {(Token<T> | Token<any>[])} token servive token.
-     * @param {(RefTarget | RefTarget[])} [target] service refrence target.
-     * @param {RefTokenFac<T>} toRefToken
-     * @param {(boolean | Token<T>)} defaultToken
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T> | Token<any>[], target: RefTarget | RefTarget[], toRefToken: RefTokenFac<T>, defaultToken: boolean | Token<T>, ...providers: ParamProviders[]): T;
-
-    /**
-     * get target reference service.
-     *
-     * @template T
-     * @param {ReferenceToken<T>} [refToken] reference service Registration Injector
-     * @param {(RefTarget | RefTarget[])} target  the service reference to.
-     * @param {Token<T>} [defaultToken] default service token.
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getRefService<T>(refToken: ReferenceToken<T>, target: RefTarget | RefTarget[], defaultToken?: Token<T> | Token<any>[], ...providers: ParamProviders[]): T
-
-    /**
-     * get all service extends type.
-     *
-     * @template T
-     * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getServices<T>(type: ClassType<T> | ((token: ClassType<T>) => boolean), ...providers: ParamProviders[]): T[];
-
-    /**
-    * get all private services of target extends class `type`.
-    * @template T
-    * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
-    * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
-    * @param {...ParamProviders[]} providers
-    * @returns {T}
-    * @memberof IContainer
-    */
-    getServices<T>(type: Token<T> | ((token: ClassType<T>) => boolean), target: Token<any> | Token<any>[], ...providers: ParamProviders[]): T[];
-
-    /**
-    * get all servies extends class `type` and all private services of target extends class `type`.
-    *
-    * @template T
-    * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
-    * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
-    * @param {boolean} both if true, will get all server and target private service of class extends `type` .
-    * @param {...ParamProviders[]} providers
-    * @returns {T}
-    * @memberof IContainer
-    */
-    getServices<T>(type: Token<T> | ((token: ClassType<T>) => boolean), target: Token<any> | Token<any>[], both: boolean, ...providers: ParamProviders[]): T[];
+    getTokenImpl<T>(token: Token<T>): Type<T>;
 
     /**
      * use modules.

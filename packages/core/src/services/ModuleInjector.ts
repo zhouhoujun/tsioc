@@ -1,19 +1,9 @@
-import { Type } from '../types';
-import { IIocContainer } from '../IIocContainer';
-import { PromiseUtil } from '../utils';
-import { ModuelValidate } from './ModuleValidate';
-import { IocService } from './IocService';
 
-/**
- *  InjectorResult
- *
- * @export
- * @interface InjectorResult
- */
-export interface InjectorResult {
-    injected: Type<any>[];
-    next?: Type<any>[];
-}
+import { ModuelValidate } from './ModuleValidate';
+import { Type, IocCoreService, PromiseUtil } from '@ts-ioc/ioc';
+import { IContainer } from '../IContainer';
+import { InjectorContext } from './InjectorContext';
+
 
 /**
  * module injector.
@@ -25,23 +15,15 @@ export interface IModuleInjector {
     /**
      * inject module to container.
      *
-     * @param {IIocContainer} container
-     * @param {Type<any>[]} modules
-     * @returns {Type<any>[]}
+     * @param {InjectorContext} ctx
+     * @param {() => Promise<void>} next
+     * @returns {Promise<void>}
      * @memberof IModuleInjector
      */
-    inject(container: IIocContainer, modules: Type<any>[]): Promise<InjectorResult>;
-
-    /**
-     * sync inject module.
-     *
-     * @param {IIocContainer} container
-     * @param {Type<any>[]} modules
-     * @returns {InjectorResult}
-     * @memberof IModuleInjector
-     */
-    syncInject(container: IIocContainer, modules: Type<any>[]): InjectorResult;
+    inject(ctx: InjectorContext, next: () => Promise<void>): Promise<void>;
 }
+
+
 
 
 /**
@@ -52,62 +34,46 @@ export interface IModuleInjector {
  * @class BaseModuleInjector
  * @implements {IModuleInjector}
  */
-export class ModuleInjector extends IocService implements IModuleInjector {
+export class ModuleInjector extends IocCoreService implements IModuleInjector {
 
     /**
      *Creates an instance of BaseModuleInjector.
      * @param {IModuleValidate} [validate]
-     * @param {boolean} [skipNext] skip next when has match module to injector.
      * @memberof BaseModuleInjector
      */
-    constructor(protected validate?: ModuelValidate, protected skipNext?: boolean) {
+    constructor(protected validate?: ModuelValidate) {
         super();
     }
 
-    async inject(container: IIocContainer, modules: Type<any>[]): Promise<InjectorResult> {
-        let types = (modules || []).filter(ty => this.valid(container, ty));
+    async inject(ctx: InjectorContext, next: () => Promise<void>): Promise<void> {
+        ctx.modules = ctx.modules || [];
+        let types = ctx.modules.filter(ty => this.valid(ctx, ty));
         if (types.length) {
-            await PromiseUtil.step(types.map(ty => () => this.setup(container, ty)));
+            await PromiseUtil.step(types.map(ty => () => this.setup(ctx.container, ty)));
         }
-        let next = this.getNext(modules, types);
-        return { injected: types, next: next };
+        this.setContext(ctx, types);
+        if(ctx.modules.length){
+           await next()
+        }
     }
 
-    syncInject(container: IIocContainer, modules: Type<any>[]): InjectorResult {
-        let types = (modules || []).filter(ty => this.valid(container, ty));
-        if (types.length) {
-            types.forEach(ty => {
-                this.syncSetup(container, ty);
-            });
-        }
-        let next = this.getNext(modules, types);
-        return { injected: types, next: next };
-    }
-
-    protected valid(container: IIocContainer, type: Type<any>): boolean {
+    protected valid(ctx: InjectorContext, type: Type<any>): boolean {
         if (!this.validate) {
             return true;
         }
         return this.validate.valid(type);
     }
 
-    protected getNext(all: Type<any>[], filtered: Type<any>[]): Type<any>[] {
-        if (filtered.length === 0) {
-            return all;
+    protected setContext(ctx: InjectorContext, injected: Type<any>[]): void {
+        if(injected && injected.length){
+            ctx.injected = ctx.injected || [];
+            ctx.injected = ctx.injected.concat(injected);
+            ctx.modules = ctx.modules.filter(it => injected.indexOf(it) < 0);
         }
-        if (this.skipNext) {
-            return null;
-        }
-        if (filtered.length === all.length) {
-            return null;
-        }
-        return all.filter(it => filtered.indexOf(it) < 0);
     }
 
-    protected async setup(container: IIocContainer, type: Type<any>) {
+    protected async setup(container: IContainer, type: Type<any>) {
         container.register(type);
     }
-    protected syncSetup(container: IIocContainer, type: Type<any>) {
-        container.register(type);
-    }
+    
 }
