@@ -1,4 +1,4 @@
-import { ObjectMap, isArray } from '@ts-ioc/core';
+import { ObjectMap, isArray } from '@ts-ioc/ioc';
 
 /**
  * events

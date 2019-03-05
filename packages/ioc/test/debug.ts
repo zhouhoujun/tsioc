@@ -8,12 +8,12 @@ export class SimppleAutoWried {
     dateProperty: Date;
 }
 
-@Singleton
+@Singleton()
 export class Person {
     name = 'testor';
 }
 
-@Singleton
+@Singleton()
 // @Injectable
 export class RoomService {
     constructor() {
@@ -61,7 +61,7 @@ export class MClassRoom {
 }
 
 
-@Injectable({ provide: Student, alias: 'college' })
+@Injectable(Student, 'college')
 export class CollegeStudent extends Student {
     constructor() {
         super();
@@ -71,7 +71,7 @@ export class CollegeStudent extends Student {
     }
 }
 
-@Injectable
+@Injectable()
 export class CollegeClassRoom {
     constructor(
         @Param(CollegeStudent)
@@ -82,7 +82,7 @@ export class CollegeClassRoom {
 }
 
 
-@Injectable
+@Injectable()
 export class InjMClassRoom {
     // @Inject(MiddleSchoolStudent)
     @Inject

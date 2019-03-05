@@ -2,10 +2,10 @@ import { IAdviceMatcher, AdviceMatcherToken } from './IAdviceMatcher';
 import { AdviceMetadata, AspectMetadata } from './metadatas';
 import {
     Inject, getParamerterNames, getOwnMethodMetadata, hasOwnMethodMetadata,
-    hasOwnClassMetadata, Singleton, IContainer, isString, isRegExp, isUndefined,
-    Type, ObjectMap, lang, ContainerToken, getOwnTypeMetadata,
-    isArray, isFunction
-} from '@ts-ioc/core';
+    hasOwnClassMetadata, Singleton, isString, isRegExp, isUndefined,
+    Type, ObjectMap, lang, getOwnTypeMetadata,
+    isArray, isFunction, IocContainerToken, IIocContainer
+} from '@ts-ioc/ioc';
 import { IPointcut, MatchPointcut } from './joinpoints';
 import { Advice } from './decorators/Advice';
 import { Aspect } from './decorators/Aspect';
@@ -27,7 +27,7 @@ export type MatchExpress = (method: string, fullName: string, targetType?: Type<
 @Singleton(AdviceMatcherToken)
 export class AdviceMatcher implements IAdviceMatcher {
 
-    constructor(@Inject(ContainerToken) private container: IContainer) {
+    constructor(@Inject(IocContainerToken) private container: IIocContainer) {
 
     }
 
@@ -55,7 +55,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         let matched: MatchPointcut[] = [];
 
         if (targetType === aspectType) {
-            let adviceNames = lang.keys(adviceMetas);
+            let adviceNames = Object.keys(adviceMetas);
             if (adviceNames.length > 1) {
                 let advices: AdviceMetadata[] = [];
                 adviceNames.forEach(n => {
@@ -140,7 +140,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
         matchedPointcut = matchedPointcut || [];
         return matchedPointcut.map(p => {
-            return lang.assign({}, p, { advice: metadata });
+            return Object.assign({}, p, { advice: metadata });
         });
     }
 
@@ -231,7 +231,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             return (name: string, fullName: string, targetType?: Type<any>) => classnames.indexOf(lang.getClassName(targetType)) >= 0;
         } else if (/^@target\(\s*\w+/.test(strExp)) {
             let torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
-            return (name: string, fullName: string, targetType?: Type<any>) => this.container.getTokenImpl(torken) === targetType;
+            return (name: string, fullName: string, targetType?: Type<any>) => this.container.getTokenProvider(torken) === targetType;
         } else {
             return () => false;
         }

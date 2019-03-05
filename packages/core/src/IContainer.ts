@@ -6,6 +6,7 @@ import { IContainerBuilder } from './IContainerBuilder';
 import { IServiceResolver } from './IServiceResolver';
 import { IRefServiceResolver } from './IRefServiceResolver';
 import { IServicesResolver } from './IServicesResolver';
+import { IModuleLoader } from './services';
 
 /**
  * IContainer token.
@@ -28,6 +29,14 @@ export interface IContainer extends IIocContainer, IServiceResolver, IRefService
      * @memberof IContainer
      */
     getBuilder(): IContainerBuilder;
+
+    /**
+     * get module loader.
+     *
+     * @returns {IModuleLoader}
+     * @memberof IContainer
+     */
+    getLoader(): IModuleLoader;
 
 
     /**

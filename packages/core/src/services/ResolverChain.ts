@@ -1,4 +1,4 @@
-import { IocCoreService, IResolver, Token, ParamProviders, lang, isClass, Type } from '@ts-ioc/ioc';
+import { IocCoreService, IResolver, Token, ParamProviders, lang } from '@ts-ioc/ioc';
 import { IContainer } from '../IContainer';
 
 export class ResolverChain extends IocCoreService implements IResolver {
@@ -119,6 +119,4 @@ export class ResolverChain extends IocCoreService implements IResolver {
 
         return has;
     }
-
-
 }

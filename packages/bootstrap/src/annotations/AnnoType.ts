@@ -1,6 +1,6 @@
 import { Runnable } from '../runnable';
 import { IAnnotationBuilder } from './IAnnotationBuilder';
-import { Token, ProviderTypes } from '@ts-ioc/core';
+import { Token, ProviderTypes } from '@ts-ioc/ioc';
 import { BeforeAnnotationInit, AfterAnnotationInit } from './IAnnotation';
 import { AnnotationConfigure } from './AnnotationConfigure';
 

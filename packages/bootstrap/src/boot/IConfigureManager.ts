@@ -1,4 +1,4 @@
-import { InjectToken } from '@ts-ioc/core';
+import { InjectToken } from '@ts-ioc/ioc';
 import { RunnableConfigure } from './AppConfigure';
 
 /**

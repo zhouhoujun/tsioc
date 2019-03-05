@@ -1,9 +1,10 @@
-import { IContainer, Token, RefRegistration, Type } from '@ts-ioc/core';
+import { IContainer } from '@ts-ioc/core';
 import { ModuleConfig } from './ModuleConfigure';
 import { ContainerPool } from '../utils';
 import { Runnable } from '../runnable';
 import { InjectedModule } from './InjectedModule';
 import { BuildOptions } from '../annotations';
+import { RefRegistration, Token, Type } from '@ts-ioc/ioc';
 
 const moduleBuilderDesc = 'DI_ModuleBuilder';
 

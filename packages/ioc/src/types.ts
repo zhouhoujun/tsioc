@@ -62,6 +62,11 @@ export type SymbolType<T> = ClassType<T> | string | symbol;
  */
 export type Token<T> = Registration<T> | SymbolType<T>;
 
+/**
+ * provide token
+ */
+export type ProvideToken<T> =  Registration<T> | string | symbol;
+
 
 /**
  * instance factory.

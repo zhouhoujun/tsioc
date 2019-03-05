@@ -1,8 +1,9 @@
-import { Token, InjectToken, IContainer, LoadType, Factory, IResolver, ParamProviders } from '@ts-ioc/core';
+import { Token, InjectToken, LoadType, Factory, IResolver, ParamProviders } from '@ts-ioc/ioc';
 import { AppConfigure } from './AppConfigure';
 import { IModuleBuilder, ModuleConfig, InjectedModule, BootOptions } from '../modules';
 import { Events, IEvents } from '../utils';
 import { IConfigureManager } from './IConfigureManager';
+import { IContainer } from '@ts-ioc/core';
 
 /**
  *  process run root.

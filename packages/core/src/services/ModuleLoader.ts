@@ -1,4 +1,7 @@
-import { LoadType, Modules, Type, IocCoreService, isString, isObject, PathModules, isArray, isClass } from '@ts-ioc/ioc';
+import {
+    LoadType, Modules, Type, IocCoreService, isString,
+    isObject, PathModules, isArray, isClass
+} from '@ts-ioc/ioc';
 
 
 /**

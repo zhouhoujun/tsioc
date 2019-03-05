@@ -1,6 +1,7 @@
 
-import { Token, lang, IContainer, Inject, ContainerToken, InjectToken, Type } from '@ts-ioc/core';
+import { Token, lang, Inject, InjectToken, Type } from '@ts-ioc/ioc';
 import { ModuleConfigure, BootOptions } from '../modules';
+import { IContainer, ContainerToken } from '@ts-ioc/core';
 
 /**
  * runable options.

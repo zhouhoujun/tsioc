@@ -1,6 +1,6 @@
 import { createClassDecorator, ITypeDecorator } from '../factories';
 import { ClassMetadata } from '../metadatas';
-import { Registration } from '../Registration';
+import { ProvideToken, Token } from '../types';
 
 /**
  * Singleton decorator, for class. use to define the class is singleton.
@@ -17,10 +17,19 @@ export interface ISingletonDecorator extends ITypeDecorator<ClassMetadata> {
      *
      * @Singleton
      *
-     * @param {(Registration<any> | symbol | string)} provide define this class provider for provide.
-     * @param {string} [alias] define this class provider with alias for provide.
+     * @param {ProvideToken<any>} provide define this class provider for provide.
      */
-    (provide: Registration<any> | symbol | string, alias?: string): ClassDecorator;
+    (provide: ProvideToken<any>): ClassDecorator;
+
+    /**
+     * Singleton decorator, for class. use to define the class is singleton.
+     *
+     * @Singleton
+     *
+     * @param {Token<any>} provide define this class provider for provide.
+     * @param {string} alias define this class provider with alias for provide.
+     */
+    (provide: Token<any>, alias: string): ClassDecorator;
 
     /**
      * Singleton decorator, for class. use to define the class is singleton.

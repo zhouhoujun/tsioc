@@ -1,4 +1,4 @@
-import { Express, Singleton } from '@ts-ioc/core';
+import { Express, Singleton } from '@ts-ioc/ioc';
 import { IAdvisorProceeding, AdvisorProceedingToken } from './IAdvisorProceeding';
 import { Joinpoint } from '../joinpoints';
 import { ReturningType } from './ReturningType';

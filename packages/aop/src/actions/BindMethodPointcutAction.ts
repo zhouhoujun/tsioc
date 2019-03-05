@@ -1,47 +1,39 @@
 
-import { IContainer, ActionData, ActionComposite, getParamerterNames, isUndefined, lang } from '@ts-ioc/core';
-import { AopActions } from './AopActions';
-import { IPointcut, Joinpoint } from '../joinpoints';
+import { IPointcut } from '../joinpoints';
 import { isValideAspectTarget } from '../isValideAspectTarget';
 import { ProxyMethodToken } from '../access';
-
-
-/**
- * bind pointcut action data.
- *
- * @export
- * @interface BindPointcutActionData
- * @extends {ActionData<Joinpoint>}
- */
-export interface BindPointcutActionData extends ActionData<Joinpoint> {
-}
+import { IocAction, IocActionContext, lang, getParamerterNames, isUndefined } from '@ts-ioc/ioc';
 
 /**
  * bind method pointcut action.
  *
  * @export
  * @class BindMethodPointcutAction
- * @extends {ActionComposite}
+ * @extends {IocAction}
  */
-export class BindMethodPointcutAction extends ActionComposite {
+export class BindMethodPointcutAction extends IocAction {
 
-    constructor() {
-        super(AopActions.bindMethodPointcut);
-    }
-
-    protected working(container: IContainer, data: BindPointcutActionData) {
+    /**
+     * execute bind method pointcut action.
+     *
+     * @param {IocActionContext} ctx
+     * @param {() => void} next
+     * @returns {void}
+     * @memberof BindMethodPointcutAction
+     */
+    execute(ctx: IocActionContext, next: () => void): void {
         // aspect class do nothing.
-        if (!data.target || !isValideAspectTarget(data.targetType)) {
-            return;
+        if (!ctx.target || !isValideAspectTarget(ctx.targetType)) {
+            return next();
         }
-        if (!container.hasRegister(ProxyMethodToken)) {
-            return;
+        if (!this.container.hasRegister(ProxyMethodToken)) {
+            return next();
         }
 
-        let proxy = container.get(ProxyMethodToken);
+        let proxy = this.container.get(ProxyMethodToken);
 
-        let target = data.target;
-        let targetType = data.targetType;
+        let target = ctx.target;
+        let targetType = ctx.targetType;
 
         let className = lang.getClassName(targetType);
         let methods: IPointcut[] = [];
@@ -75,5 +67,7 @@ export class BindMethodPointcutAction extends ActionComposite {
         methods.forEach(pointcut => {
             proxy.proceed(target, targetType, pointcut, target['_cache_JoinPoint']);
         });
+
+        next();
     }
 }

@@ -1,6 +1,6 @@
 import { Abstract, Inject, IocContainerToken, Injectable, IIocContainer} from '../src';
 
-@Injectable
+@Injectable()
 export class Home {
     getAddress() {
         return 'home';
@@ -21,7 +21,7 @@ export abstract class Animal {
     }
 }
 
-@Injectable
+@Injectable()
 export class Person extends Animal {
 
 }

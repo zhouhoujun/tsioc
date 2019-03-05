@@ -1,5 +1,5 @@
 import { IJoinpoint, JoinpointToken } from './IJoinpoint';
-import { Type, Injectable, MethodMetadata, IParameter } from '@ts-ioc/core';
+import { Type, Injectable, MethodMetadata, IParameter } from '@ts-ioc/ioc';
 import { JoinpointState } from './JoinpointState';
 import { Advicer } from '../advices';
 import { NonePointcut } from '../decorators/NonePointcut';

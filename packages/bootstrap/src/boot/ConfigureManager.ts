@@ -1,12 +1,12 @@
 import {
-    Inject, isUndefined, lang, ContainerToken,
-    IContainer, isString, Singleton
-} from '@ts-ioc/core';
+    Inject, isUndefined, lang, Singleton, isString
+} from '@ts-ioc/ioc';
 import {
     ConfigureMgrToken, ConfigureLoaderToken,
     IConfigureManager, DefaultConfigureToken
 } from './IConfigureManager';
 import { RunnableConfigure } from './AppConfigure';
+import { ContainerToken, IContainer } from '@ts-ioc/core';
 
 
 /**
@@ -87,7 +87,7 @@ export class ConfigureManager<T extends RunnableConfigure> implements IConfigure
         }));
         exts.forEach(exCfg => {
             if (exCfg) {
-                lang.assign(config, exCfg);
+                Object.assign(config, exCfg);
             }
         });
         return config;
@@ -106,8 +106,7 @@ export class ConfigureManager<T extends RunnableConfigure> implements IConfigure
             let loader = this.container.resolve(ConfigureLoaderToken, { baseURL: this.baseURL, container: this.container });
             return await loader.load(src) as T;
         } else if (src) {
-            let builder = this.container.getBuilder();
-            let cfg = await builder.loader.load([src])
+            let cfg = await this.container.getLoader().load([src])
             return cfg.length ? cfg[0] as T : null;
         } else {
             return null;

@@ -19,10 +19,6 @@ export class ContainerBuilder implements IContainerBuilder {
         this._loader = loader;
     }
 
-    getLoader(container: IContainer): IModuleLoader {
-        return container.resolve(ModuleLoader) || this._loader;
-    }
-
     create(): IContainer {
         let container = new Container();
         container.bindProvider(ContainerBuilderToken, () => this);
@@ -90,17 +86,8 @@ export class ContainerBuilder implements IContainerBuilder {
         return injTypes;
     }
 
-    // getInjectorChain(container: IContainer): IModuleInjectorManager {
-    //     if (!container.has(ModuleInjectorManager)) {
-    //         container.register(ModuleInjector)
-    //             .bindProvider(ModuelValidate, new ModuelValidate())
-    //             .bindProvider(IocExtModuleValidate, new IocExtModuleValidate())
-    //             .bindProvider(ModuleInjectorManager,
-    //                 new ModuleInjectorManager()
-    //                     .next(container.resolve(ModuleInjectorToken, { provide: ModuleValidateToken, useValue: container.get(IocExtModuleValidateToken) }, { skipNext: true }))
-    //                     .next(container.resolve(ModuleInjectorToken))
-    //             );
-    //     }
-    //     return container.get(ModuleInjectorManager);
-    // }
+    protected getLoader(container: IContainer): IModuleLoader {
+        return container.resolve(ModuleLoader) || this._loader;
+    }
+
 }

@@ -3,7 +3,7 @@ import {
     isInjectReference, isClassType, isToken, isClass,
     lang, Token, ClassType, isTypeObject, ParamProviders,
     InjectReference, ProviderMap, isRegistrationClass,
-    isFunction
+    isFunction, TypeReflects
 } from '@ts-ioc/ioc';
 import { IRefServiceResolver } from '../IRefServiceResolver';
 import {
@@ -98,18 +98,19 @@ export class RefServiceResolver extends IocCoreService implements IRefServiceRes
 
         let inChain = (level & RefTagLevel.chain) > 0;
         let inProviders = (level & RefTagLevel.providers) > 0;
+        let refl = this.container.resolve(TypeReflects);
         lang.forInClassChain(type, ty => {
             let tokens: Token<any>[];
             if (inProviders) {
-                let prdKey = new InjectClassProvidesToken(ty);
-                let prds = this.get(prdKey);
-                if (prds && prds.provides && prds.provides.length) {
-                    let ppdkey = prdKey.toString();
-                    let pmapKey = new InjectReference(ProviderMap, ty).toString();
-                    tokens = prds.provides.slice(1).filter(p => {
-                        let key = this.container.getTokenKey(p);
-                        return key !== ppdkey && key !== pmapKey
-                    });
+                if (refl.has(ty)) {
+                    let tyRefl = refl.get(ty);
+                    if (tyRefl.provides && tyRefl.provides.length) {
+                        let pmapKey = new InjectReference(ProviderMap, ty).toString();
+                        tokens = tyRefl.provides.filter(p => {
+                            let key = this.container.getTokenKey(p);
+                            return key !== pmapKey
+                        });
+                    }
                 }
             }
             tokens = tokens || [];
@@ -118,14 +119,14 @@ export class RefServiceResolver extends IocCoreService implements IRefServiceRes
     }
 
     /**
- * resolve first token when not null.
- *
- * @template T
- * @param {Token<T>[]} tokens
- * @param {...ParamProviders[]} providers
- * @returns {T}
- * @memberof IContainer
- */
+     * resolve first token when not null.
+     *
+     * @template T
+     * @param {Token<T>[]} tokens
+     * @param {...ParamProviders[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
     resolveFirst<T>(tokens: Token<T>[], ...providers: ParamProviders[]): T {
         let inst: T;
         tokens.some(tk => {
@@ -190,5 +191,4 @@ export class RefServiceResolver extends IocCoreService implements IRefServiceRes
         }
         return this.container.resolve(tk, ...providers);
     }
-
 }

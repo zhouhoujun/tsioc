@@ -1,10 +1,9 @@
 import 'reflect-metadata';
 import {
-    IContainer, Token, ParamProviders, lang,
-    isClass, isToken, Inject, Registration, Container,
-    MetaAccessorToken, IMetaAccessor, isUndefined, Singleton,
-    InjectMetaAccessorToken, isArray, Type
-} from '@ts-ioc/core';
+    Token, ParamProviders, lang,
+    isClass, isToken, Inject, Registration,
+    isUndefined, Singleton, isArray, Type
+} from '@ts-ioc/ioc';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv, BootOptions } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { ContainerPool, ContainerPoolToken } from '../utils';
@@ -14,6 +13,7 @@ import {
     AnnotationBuilderToken, AnnotationBuilder, BuildOptions
 } from '../annotations';
 import { InjectedModule, InjectedModuleToken } from './InjectedModule';
+import { IContainer, MetaAccessor, Container } from '@ts-ioc/core';
 
 /**
  * inject module load token.
@@ -65,16 +65,16 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      * @returns {IMetaAccessor<any>}
      * @memberof ModuleBuilder
      */
-    getMetaAccessor(container: IContainer, token: Token<any> | ModuleConfigure, config?: ModuleConfigure): IMetaAccessor<any> {
+    getMetaAccessor(container: IContainer, token: Token<any> | ModuleConfigure, config?: ModuleConfigure): MetaAccessor {
         let mtk: Token<any>;
         if (isToken(token)) {
             mtk = token;
         } else {
             config = token;
         }
-        return container.getService(MetaAccessorToken,
+        return container.getService(MetaAccessor,
             mtk ? [mtk, lang.getClass(this)] : lang.getClass(this),
-            tk => new InjectMetaAccessorToken(tk), config ? (config.defaultMetaAccessor || MetaAccessorToken) : MetaAccessorToken);
+            config ? (config.defaultMetaAccessor || MetaAccessor) : MetaAccessor);
     }
 
     /**
@@ -190,7 +190,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             });
         }
         if (injmd) {
-            injmd.config = lang.assign({}, injmd.config, config);
+            injmd.config = Object.assign({}, injmd.config, config);
         } else {
             injmd = new InjectedModule(token, config, parent);
         }

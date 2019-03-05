@@ -1,5 +1,5 @@
 import { Joinpoint } from '../joinpoints';
-import { Express, InjectToken } from '@ts-ioc/core';
+import { Express, InjectToken } from '@ts-ioc/ioc';
 
 
 /**

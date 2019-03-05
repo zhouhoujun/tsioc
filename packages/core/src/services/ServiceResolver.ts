@@ -20,11 +20,6 @@ export class ServiceResolver extends IocCoreService implements IServiceResolver 
         super();
     }
 
-
-    getRefService() {
-        return this.container.resolve(RefServiceResolver);
-    }
-
     /**
      * get service or target reference service.
      *
@@ -76,7 +71,7 @@ export class ServiceResolver extends IocCoreService implements IServiceResolver 
 
             defToken = defToken === null ? null : (defToken || token);
             prds = prds.concat(providers);
-            return this.getRefService().getRefService(
+            return this.container.resolve(RefServiceResolver).getRefService(
                 [
                     ...tokens.map(tk => { return { service: tk, isPrivate: true } }),
                     ...fac ? [tk => fac(tk)] : [],
@@ -86,7 +81,7 @@ export class ServiceResolver extends IocCoreService implements IServiceResolver 
                 defToken,
                 ...prds);
         } else {
-            return this.getRefService().resolveFirst(isArray(token) ? token : [token], ...[target, toRefToken as ParamProviders, defaultToken as ParamProviders, ...providers].filter(a => a));
+            return this.container.resolve(RefServiceResolver).resolveFirst(isArray(token) ? token : [token], ...[target, toRefToken as ParamProviders, defaultToken as ParamProviders, ...providers].filter(a => a));
         }
     }
 

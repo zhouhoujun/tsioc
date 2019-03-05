@@ -1,4 +1,4 @@
-import { isFunction } from '@ts-ioc/core';
+import { isFunction } from '@ts-ioc/ioc';
 import { IRunnable, RunnableBase, RunnableOptions } from './Runnable';
 
 /**

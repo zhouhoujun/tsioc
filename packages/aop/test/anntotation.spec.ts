@@ -1,6 +1,6 @@
 import {
-    Method, Inject, ContainerBuilder, Injectable, IContainer
-} from '@ts-ioc/core';
+    Method, Inject, Injectable, IocContainer, IIocContainer
+} from '@ts-ioc/ioc';
 import { AnnotationAspect } from './aop/AnnotationAspect';
 import { CheckRightAspect } from './aop/CheckRightAspect';
 import { IocLog } from './aop/IocLog';
@@ -75,11 +75,10 @@ describe('aop test', () => {
         }
     }
 
-    let container: IContainer;
+    let container: IIocContainer;
     beforeEach(async () => {
-        let builder = new ContainerBuilder();
-        container = await builder.create();
-        container.use(AopModule);
+        let builder = new IocContainer();
+        container.register(AopModule);
         container.register(IocLog);
     });
 

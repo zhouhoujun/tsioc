@@ -1,4 +1,5 @@
-import { IocCoreService } from '@ts-ioc/ioc'
+import { IocCoreService } from './IocCoreService';
+
 
 /**
  * recognize the vaule is special alias for registor to container.
@@ -6,7 +7,7 @@ import { IocCoreService } from '@ts-ioc/ioc'
  * @export
  * @interface IRecognizer
  */
-export abstract class Recognizer extends IocCoreService {
+export abstract class IocRecognizer extends IocCoreService {
     constructor() {
         super();
     }

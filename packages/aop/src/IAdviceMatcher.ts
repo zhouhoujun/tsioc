@@ -1,6 +1,6 @@
 import { AdviceMetadata } from './metadatas';
 import { MatchPointcut } from './joinpoints';
-import { Type, ObjectMap, InjectToken } from '@ts-ioc/core';
+import { Type, ObjectMap, InjectToken } from '@ts-ioc/ioc';
 
 /**
  * Aop advice matcher interface token.

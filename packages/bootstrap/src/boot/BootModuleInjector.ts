@@ -1,5 +1,6 @@
-import { InjectModuleInjectorToken, Inject, InjectModuleValidateToken, IModuleValidate, Singleton, ModuelValidate } from '@ts-ioc/core';
+import { IModuleValidate, ModuelValidate } from '@ts-ioc/core';
 import { IDIModuleInjector, DIModuleInjector } from '../modules';
+import { Singleton, Inject } from '@ts-ioc/ioc';
 
 /**
  * Bootstrap module Validate Token

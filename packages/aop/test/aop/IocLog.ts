@@ -1,5 +1,5 @@
 import { Joinpoint, Around, Aspect, Before } from '../../src';
-import { Singleton } from '@ts-ioc/core';
+import { Singleton } from '@ts-ioc/ioc';
 
 @Singleton
 @Aspect

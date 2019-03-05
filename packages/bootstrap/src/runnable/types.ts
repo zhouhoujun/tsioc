@@ -1,6 +1,6 @@
 import { IService } from './Service';
 import { IRunner } from './Runner';
-import { RefRegistration, Token } from '@ts-ioc/core';
+import { RefRegistration, Token } from '@ts-ioc/ioc';
 import { IRunnable } from './Runnable';
 
 /**

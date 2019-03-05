@@ -1,10 +1,11 @@
-import { IContainer, Inject, ContainerToken, LifeScopeToken, IocExt, CoreActions } from '@ts-ioc/core';
+import { IContainer, ContainerToken } from '@ts-ioc/core';
 import { DIModule } from './decorators/DIModule';
 import { Bootstrap } from './decorators/Bootstrap';
 import { Annotation } from './decorators/Annotation';
 import * as modules from './modules';
 import * as boot from './boot';
 import * as annotations from './annotations';
+import { Inject, IocExt, DecoratorRegisterer, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction } from '@ts-ioc/ioc';
 
 
 /**
@@ -28,11 +29,10 @@ export class BootModule {
     setup() {
         let container = this.container;
 
-        let lifeScope = container.get(LifeScopeToken);
-        lifeScope.registerDecorator(Annotation, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
-        lifeScope.registerDecorator(DIModule, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
-        lifeScope.registerDecorator(Bootstrap, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
-
+        let decReg = container.get(DecoratorRegisterer);
+        decReg.register(Annotation, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
+        decReg.register(DIModule, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
+        decReg.register(Bootstrap, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
         container.use(annotations, modules, boot);
     }
 }

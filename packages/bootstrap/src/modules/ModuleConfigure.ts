@@ -1,4 +1,4 @@
-import { Token, LoadType, Modules } from '@ts-ioc/core';
+import { Token, LoadType, Modules } from '@ts-ioc/ioc';
 import { IModuleBuilder } from './IModuleBuilder';
 import { AnnotationConfigure } from '../annotations';
 

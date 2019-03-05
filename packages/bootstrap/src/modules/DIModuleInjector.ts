@@ -1,8 +1,6 @@
 import {
-    Type, IContainer, ModuleInjector, InjectModuleInjectorToken, IModuleValidate,
-    Inject, Token, isArray, IModuleInjector, InjectClassProvidesToken, IMetaAccessor,
-    MetaAccessorToken, Singleton, ProviderMap, InjectReference, ResoveWay, ClassType, IResolver
-} from '@ts-ioc/core';
+    Type, Inject, Token, isArray, Singleton, ProviderMap, InjectReference, ClassType, IResolver
+} from '@ts-ioc/ioc';
 import { DIModuleValidateToken } from './DIModuleValidate';
 import { ContainerPoolToken } from '../utils';
 import { ModuleConfigure } from './ModuleConfigure';
@@ -10,6 +8,7 @@ import { InjectedModuleToken, InjectedModule } from './InjectedModule';
 import { ConfigureRegister } from '../boot/ConfigureRegister';
 import { ConfigureMgrToken } from '../boot/IConfigureManager';
 import { CurrentRunnableBuilderToken } from '../boot/IRunnableBuilder';
+import { IModuleInjector, IContainer, MetaAccessor } from '@ts-ioc/core';
 
 
 /**
@@ -30,7 +29,7 @@ export interface IDIModuleInjector extends IModuleInjector {
      * @returns {IMetaAccessor<T>}
      * @memberof IDIModuleInjector
      */
-    getMetaAccessor<T>(container: IContainer, token: Token<T> | Token<T>[]): IMetaAccessor<T>;
+    getMetaAccessor<T>(container: IContainer, token: Token<T> | Token<T>[]): MetaAccessor;
 }
 
 /**

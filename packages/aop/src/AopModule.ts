@@ -1,11 +1,11 @@
-import { IContainer, IocState, LifeState, Inject, ContainerToken, LifeScopeToken, IocExt } from '@ts-ioc/core';
+import { IIocContainer, Inject, IocExt, IocContainerToken, CreateInstanceAction, DesignLifeScope } from '@ts-ioc/ioc';
 import { Aspect } from './decorators/Aspect';
 import { Advisor } from './Advisor';
-import { AopActions } from './actions';
+import { BindMethodPointcutAction, RegistAspectAction, ExetndsInstanceAction, InvokeBeforeConstructorAction, InvokeAfterConstructorAction, MatchPointcutAction } from './actions';
 import { AdviceMatcher } from './AdviceMatcher';
-import { AopActionFactory } from './actions/AopActionFactory';
 import { Joinpoint } from './joinpoints';
 import { ProxyMethod, AdvisorChainFactory, AdvisorChain, SyncProceeding, AsyncObservableProceeding, AsyncPromiseProceeding, ReturningRecognizer } from './access';
+import { RuntimeLifeScope, DecoratorRegisterer } from '@ts-ioc/ioc';
 
 
 /**
@@ -17,7 +17,7 @@ import { ProxyMethod, AdvisorChainFactory, AdvisorChain, SyncProceeding, AsyncOb
 @IocExt('setup')
 export class AopModule {
 
-    constructor(@Inject(ContainerToken) private container: IContainer) {
+    constructor(@Inject(IocContainerToken) private container: IIocContainer) {
 
     }
 
@@ -39,20 +39,24 @@ export class AopModule {
         container.register(Advisor);
         container.register(AdviceMatcher);
 
+        container.registerSingleton(BindMethodPointcutAction, () => new BindMethodPointcutAction(container));
+        container.registerSingleton(ExetndsInstanceAction, () => new ExetndsInstanceAction(container));
+        container.registerSingleton(InvokeBeforeConstructorAction, () => new InvokeBeforeConstructorAction(container));
+        container.registerSingleton(InvokeAfterConstructorAction, () => new InvokeAfterConstructorAction(container));
+        container.registerSingleton(MatchPointcutAction, () => new MatchPointcutAction(container));
+        container.registerSingleton(RegistAspectAction, () => new RegistAspectAction(container));
 
-        let lifeScope = container.get(LifeScopeToken);
+        let decorReg = container.resolve(DecoratorRegisterer);
+        let runTimeScope = container.resolve(RuntimeLifeScope);
+        runTimeScope.use(BindMethodPointcutAction)
+            .useBefore(InvokeBeforeConstructorAction, CreateInstanceAction)
+            .useAfter(InvokeAfterConstructorAction, CreateInstanceAction)
+            .useBefore(MatchPointcutAction, InvokeBeforeConstructorAction)
+            .useAfter(ExetndsInstanceAction, InvokeAfterConstructorAction);
 
-        let factory = new AopActionFactory();
-        lifeScope.addAction(factory.create(AopActions.registAspect), IocState.design);
-        lifeScope.addAction(factory.create(AopActions.matchPointcut), IocState.runtime, LifeState.beforeConstructor);
-        lifeScope.addAction(factory.create(AopActions.bindMethodPointcut), IocState.runtime, LifeState.AfterInit);
-
-        lifeScope.addAction(factory.create(AopActions.invokeBeforeConstructorAdvices), IocState.runtime, LifeState.beforeConstructor);
-        lifeScope.addAction(factory.create(AopActions.exetndsInstance), IocState.runtime, LifeState.onInit, LifeState.afterConstructor);
-        lifeScope.addAction(factory.create(AopActions.invokeAfterConstructorAdvices), IocState.runtime, LifeState.afterConstructor);
-
-
-        lifeScope.registerDecorator(Aspect, AopActions.registAspect, AopActions.exetndsInstance);
+        let designScope = container.resolve(DesignLifeScope);
+        designScope.use(RegistAspectAction);
+        decorReg.register(Aspect, RegistAspectAction, ExetndsInstanceAction);
 
     }
 }

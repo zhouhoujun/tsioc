@@ -1,6 +1,6 @@
 import { AnnotationConfigure } from './AnnotationConfigure';
 import { BuildOptions, BootHooks } from './AnnoType';
-import { isFunction, RefRegistration, Token, Singleton } from '@ts-ioc/core';
+import { isFunction, RefRegistration, Token, Singleton } from '@ts-ioc/ioc';
 
 /**
  * annotation instance build strategy.

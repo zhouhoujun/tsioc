@@ -36,80 +36,6 @@ export interface IAnnotationMetadata<T> extends ComponentMetadata {
     bootstrap?: Token<T>;
 }
 
-/**
- * module metadata accessor
- *
- * @export
- * @interface IMetaAccessor
- * @template T
- */
-export interface IMetaAccessor<T> {
-    /**
-     * get then first decorator metadata contain via decorators in order.
-     *
-     * @param {Type<T>} type
-     * @returns {string[]}
-     * @memberof IMetaAccessor
-     */
-    getDecorators(type: Type<T>): string[];
-
-    /**
-     * get metadata config of target type. via decorators in order.
-     *
-     * @param {Token<T>} type
-     * @param {IContainer} container
-     * @param {IAnnotationMetadata<T>} [extConfig] ext config to merge with metadata.
-     * @param {Express<string, boolean>} [decorFilter]
-     * @returns {IAnnotationMetadata<T>}
-     * @memberof IMetaAccessor
-     */
-    getMetadata(type: Token<T>, container: IContainer, extConfig?: IAnnotationMetadata<T>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<T>;
-
-    /**
-     * find metadata.
-     *
-     * @param {Token<T>} type
-     * @param {IContainer} container
-     * @param {Express<IAnnotationMetadata<T>, boolean>} filter
-     * @param {Express<string, boolean>} [decorFilter]
-     * @returns {IAnnotationMetadata<T>}
-     * @memberof IMetaAccessor
-     */
-    find(type: Token<T>, container: IContainer, filter: Express<IAnnotationMetadata<T>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<T>;
-
-    /**
-     * filter metadata.
-     *
-     * @param {Token<T>} type
-     * @param {IContainer} container
-     * @param {Express<IAnnotationMetadata<T>, boolean>} filter
-     * @param {Express<string, boolean>} [decorFilter]
-     * @returns {IAnnotationMetadata<T>[]}
-     * @memberof IMetaAccessor
-     */
-    filter(type: Token<T>, container: IContainer, filter: Express<IAnnotationMetadata<T>, boolean>, decorFilter?: Express<string, boolean>): IAnnotationMetadata<T>[];
-
-    /**
-     * get token of metadata.
-     *
-     * @param {AnnotationConfigure<any>} config
-     * @returns {Token<any>}
-     * @param {IContainer} [container]  vaild container.
-     * @memberof IMetadataManager
-     */
-    getToken(config: IAnnotationMetadata<any>, container?: IContainer): Token<any>;
-
-    /**
-     * get boot token of module config.
-     *
-     * @param {IAnnotationMetadata<any>} cfg
-     * @param {IContainer} [container]  vaild container.
-     * @returns {Token<any>}
-     * @memberof IModuleValidate
-     */
-    getBootToken(cfg: IAnnotationMetadata<any>, container?: IContainer): Token<any>
-}
-
 
 /**
  * class metadata accessor.
@@ -118,7 +44,7 @@ export interface IMetaAccessor<T> {
  * @class MetaAccessor
  * @implements {IMetaAccessor<any>}
  */
-export class MetaAccessor extends IocCoreService implements IMetaAccessor<any> {
+export class MetaAccessor extends IocCoreService {
 
     constructor() {
         super();

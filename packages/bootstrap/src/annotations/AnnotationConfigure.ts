@@ -1,6 +1,7 @@
-import { Token, IAnnotationMetadata, IMetaAccessor } from '@ts-ioc/core';
+import { IAnnotationMetadata, MetaAccessor } from '@ts-ioc/core';
 import { IAnnotationBuilder } from './IAnnotationBuilder';
 import { Runnable } from '../runnable';
+import { Token } from '@ts-ioc/ioc';
 
 /**
  * type build config.
@@ -37,8 +38,8 @@ export interface AnnotationConfigure<T> extends IAnnotationMetadata<T> {
     /**
      * default metadata accessor.
      *
-     * @type {Token<IMetaAccessor<T>>}
+     * @type {Token<MetaAccessor>}
      * @memberof AnnotationConfigure
      */
-    defaultMetaAccessor?: Token<IMetaAccessor<T>>;
+    defaultMetaAccessor?: Token<MetaAccessor>;
 }

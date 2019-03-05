@@ -1,4 +1,4 @@
-import { IContainer, Provider, Singleton, Inject, Type, LifeScope, isFunction, ContainerToken } from '@ts-ioc/core';
+import { IIocContainer, Provider, Singleton, Inject, Type, LifeScope, isFunction, IocContainerToken, DecoratorRegisterer, RuntimeLifeScope } from '@ts-ioc/ioc';
 import { Advices } from '../advices';
 import { JoinpointState, IPointcut } from '../joinpoints';
 import { Joinpoint } from '../joinpoints';
@@ -18,11 +18,11 @@ import { NonePointcut } from '../decorators/NonePointcut';
 @Singleton(ProxyMethodToken)
 export class ProxyMethod implements IProxyMethod {
 
-    constructor(@Inject(ContainerToken) private container: IContainer) {
+    constructor(@Inject(IocContainerToken) private container: IIocContainer) {
 
     }
 
-    _advisor: IAdvisor;
+    private _advisor: IAdvisor;
     get advisor(): IAdvisor {
         if (!this._advisor) {
             this._advisor = this.container.get(AdvisorToken);
@@ -30,12 +30,20 @@ export class ProxyMethod implements IProxyMethod {
         return this._advisor;
     }
 
-    _liefScope: LifeScope;
-    get liefScope(): LifeScope {
-        if (!this._liefScope) {
-            this._liefScope = this.container.getLifeScope();
+    private _lifeScope: RuntimeLifeScope;
+    get lifeScope(): RuntimeLifeScope {
+        if (!this._lifeScope) {
+            this._lifeScope = this.container.get(RuntimeLifeScope);
         }
-        return this._liefScope;
+        return this._lifeScope;
+    }
+
+    private _decorReg: DecoratorRegisterer;
+    get decorRegisterer(): DecoratorRegisterer {
+        if (!this._decorReg) {
+            this._decorReg = this.container.get(DecoratorRegisterer);
+        }
+        return this._decorReg;
     }
 
     /**
@@ -75,16 +83,15 @@ export class ProxyMethod implements IProxyMethod {
     proxy(propertyMethod: Function, advices: Advices, target: any, targetType: Type<any>, pointcut: IPointcut, provJoinpoint?: Joinpoint) {
         let fullName = pointcut.fullName;
         let methodName = pointcut.name;
-        let liefScope = this.liefScope;
         let container = this.container;
-
+        let lifeScope = this.lifeScope;
         return (...args: any[]) => {
             let joinPoint = this.container.resolve(Joinpoint, Provider.create('options', {
                 name: methodName,
                 fullName: fullName,
                 provJoinpoint: provJoinpoint,
-                annotations: provJoinpoint ? null : liefScope.getMethodMetadatas(targetType, methodName),
-                params: liefScope.getMethodParameters(targetType, target, methodName),
+                annotations: provJoinpoint ? null : this.decorRegisterer.filterMethodMetadata(targetType, methodName),
+                params: lifeScope.getMethodParameters(this.container, targetType, target, methodName),
                 args: args,
                 target: target,
                 targetType: targetType

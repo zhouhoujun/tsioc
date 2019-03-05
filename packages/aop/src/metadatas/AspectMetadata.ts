@@ -1,4 +1,4 @@
-import { Type, ClassMetadata } from '@ts-ioc/core';
+import { Type, ClassMetadata } from '@ts-ioc/ioc';
 
 /**
  * aspect metadata.

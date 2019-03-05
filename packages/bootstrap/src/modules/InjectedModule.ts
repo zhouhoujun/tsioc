@@ -1,9 +1,10 @@
 import {
-    Token, IContainer, Registration, Type, IExports,
+    Token, Registration, Type,
     ParamProviders, Factory, isToken,
-    IResolver, ResoveWay, isString, isNumber, IResolverContainer
-} from '@ts-ioc/core';
+    IResolver, isString, isNumber, IResolverContainer
+} from '@ts-ioc/ioc';
 import { ModuleConfig } from './ModuleConfigure';
+import { IContainer } from '@ts-ioc/core';
 
 
 /**
@@ -36,7 +37,7 @@ export class InjectedModule<T> implements IExports {
         return this.getProviderMap().size;
     }
 
-    resolve<T>(token: Token<T>, resway?: ResoveWay | ParamProviders, ...providers: ParamProviders[]): T {
+    resolve<T>(token: Token<T>, ...providers: ParamProviders[]): T {
         let way: ResoveWay;
         if (isNumber(resway)) {
             way = resway;

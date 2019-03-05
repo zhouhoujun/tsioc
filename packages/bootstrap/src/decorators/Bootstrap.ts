@@ -1,4 +1,4 @@
-import { Token, MetadataAdapter, MetadataExtends, ITypeDecorator, LoadType, isFunction, Type, isClass, lang } from '@ts-ioc/core';
+import { Token, MetadataAdapter, MetadataExtends, ITypeDecorator, LoadType, isFunction, isClass, lang } from '@ts-ioc/ioc';
 import { IAnnotationBuilder, AnnotationBuilderToken } from '../annotations/IAnnotationBuilder';
 import { createDIModuleDecorator } from './DIModule';
 import { ApplicationBuilderToken, ApplicationBuilder, RunnableBuilder, IRunnableBuilder, AppConfigure } from '../boot';

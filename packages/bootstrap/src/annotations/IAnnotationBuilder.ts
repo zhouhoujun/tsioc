@@ -1,7 +1,8 @@
-import { IContainer, Token, RefRegistration, IMetaAccessor } from '@ts-ioc/core';
+import { Token, RefRegistration } from '@ts-ioc/ioc';
 import { Runnable, RunnableOptions } from '../runnable';
 import { BuildOptions } from './AnnoType';
 import { AnnotationConfigure } from './AnnotationConfigure';
+import { IContainer, MetaAccessor } from '@ts-ioc/core';
 
 const annoBuilderDesc = 'DI_AnnotationBuilder';
 
@@ -120,27 +121,27 @@ export interface IAnnotationBuilder<T> {
      * get meta accessor.
      *
      * @param {Token<any>} token
-     * @returns {IMetaAccessor<any>}
+     * @returns {MetaAccessor}
      * @memberof IAnnotationBuilder
      */
-    getMetaAccessor(token: Token<any>): IMetaAccessor<any>;
+    getMetaAccessor(token: Token<any>): MetaAccessor;
     /**
      * get meta accessor.
      *
      * @param {AnnotationConfigure<T>} config
-     * @returns {IMetaAccessor<any>}
+     * @returns {MetaAccessor}
      * @memberof IAnnotationBuilder
      */
-    getMetaAccessor(config: AnnotationConfigure<T>): IMetaAccessor<any>;
+    getMetaAccessor(config: AnnotationConfigure<T>): MetaAccessor;
     /**
      * get meta accessor.
      *
      * @param {Token<any>} token
      * @param {AnnotationConfigure<T>} config
-     * @returns {IMetaAccessor<any>}
+     * @returns {MetaAccessor}
      * @memberof IAnnotationBuilder
      */
-    getMetaAccessor(token: Token<any>, config: AnnotationConfigure<T>): IMetaAccessor<any>;
+    getMetaAccessor(token: Token<any>, config: AnnotationConfigure<T>): MetaAccessor;
 }
 
 /**

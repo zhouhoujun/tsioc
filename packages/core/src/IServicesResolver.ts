@@ -1,7 +1,7 @@
-import { ClassType, Token, ParamProviders } from '@ts-ioc/ioc';
+import { ClassType, Token, ParamProviders, InstanceFactory, IResolver } from '@ts-ioc/ioc';
 
 export interface IServicesResolver {
-    
+
     /**
      * get all service extends type.
      *

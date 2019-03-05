@@ -1,5 +1,5 @@
 import { Joinpoint } from '../joinpoints';
-import { Express, IRecognizer, InjectToken } from '@ts-ioc/core';
+import { Express, IocRecognizer, InjectToken } from '@ts-ioc/ioc';
 
 /**
  * Aop IAdvisorChain interface token.
@@ -24,10 +24,10 @@ export interface IAdvisorChain {
     /**
      * get Recognizer of the chain, to recognize the vaule is special alias for registor to container.
      *
-     * @returns {IRecognizer}
+     * @returns {IocRecognizer}
      * @memberof IAdvisorChain
      */
-    getRecognizer(): IRecognizer;
+    getRecognizer(): IocRecognizer;
     /**
      * run chain process.
      *

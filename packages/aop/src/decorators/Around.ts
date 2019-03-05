@@ -1,6 +1,6 @@
 import { AroundMetadata } from '../metadatas';
 import { IAdviceDecorator, createAdviceDecorator } from './Advice';
-import { isString } from '@ts-ioc/core';
+import { isString } from '@ts-ioc/ioc';
 
 /**
  * aop around decorator.

@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { ParamProviders, IocContainer, Type, Token, Modules, LoadType, ClassType } from '@ts-ioc/ioc';
-import { ServiceResolver, ServicesResolver, RefServiceResolver } from './services';
+import { ServiceResolver, ServicesResolver, RefServiceResolver, ModuleLoader, IModuleLoader } from './services';
 import { RefTarget, ReferenceToken, RefTokenFac } from './types';
 import { registerCores } from './registerCores';
 
@@ -34,6 +34,15 @@ export class Container extends IocContainer implements IContainer {
         return this.resolve(ContainerBuilderToken);
     }
 
+    /**
+     * get module loader.
+     *
+     * @returns {IModuleLoader}
+     * @memberof IContainer
+     */
+    getLoader(): IModuleLoader {
+        return this.resolve(ModuleLoader);
+    }
 
     /**
      * get token implements class type.

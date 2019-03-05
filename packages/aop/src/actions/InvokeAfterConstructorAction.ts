@@ -1,19 +1,8 @@
-import { IContainer, ActionData, ActionComposite, Provider, ParamProviders, lang } from '@ts-ioc/core';
+import { Provider, ParamProviders, lang, IocAction, IocActionContext } from '@ts-ioc/ioc';
 import { AdvisorToken } from '../IAdvisor';
-import { AopActions } from './AopActions';
-import { AdviceMetadata } from '../metadatas'
 import { Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints';
 import { isValideAspectTarget } from '../isValideAspectTarget';
 
-/**
- * invoke after constructor action data.
- *
- * @export
- * @interface InvokeAfterConstructorActionData
- * @extends {ActionData<AdviceMetadata>}
- */
-export interface InvokeAfterConstructorActionData extends ActionData<AdviceMetadata> {
-}
 
 /**
  * invoke after constructor action.
@@ -22,47 +11,44 @@ export interface InvokeAfterConstructorActionData extends ActionData<AdviceMetad
  * @class InvokeAfterConstructorAction
  * @extends {ActionComposite}
  */
-export class InvokeAfterConstructorAction extends ActionComposite {
+export class InvokeAfterConstructorAction extends IocAction {
 
-    constructor() {
-        super(AopActions.invokeAfterConstructorAdvices);
-    }
-
-    protected working(container: IContainer, data: InvokeAfterConstructorActionData) {
+    execute(ctx: IocActionContext, next: () => void): void {
         // aspect class do nothing.
-        if (!data.target || !isValideAspectTarget(data.targetType)) {
-            return;
+        if (!ctx.target || !isValideAspectTarget(ctx.targetType)) {
+            return next();
         }
 
-        let advisor = container.get(AdvisorToken);
-        let className = lang.getClassName(data.targetType);
+        let advisor = this.container.get(AdvisorToken);
+        let className = lang.getClassName(ctx.targetType);
         let advices = advisor.getAdvices(className + '.constructor');
         if (!advices) {
-            return;
+            return next();
         }
-        let targetType = data.targetType;
-        let target = data.target;
+        let targetType = ctx.targetType;
+        let target = ctx.target;
 
-        let joinPoint = container.resolve(Joinpoint, Provider.create('options', <IJoinpoint>{
+        let joinPoint = this.container.resolve(Joinpoint, Provider.create('options', <IJoinpoint>{
             name: 'constructor',
             state: JoinpointState.After,
             fullName: className + '.constructor',
             target: target,
-            args: data.args,
-            params: data.params,
+            args: ctx.args,
+            params: ctx.params,
             targetType: targetType
         }));
         let providers: ParamProviders[] = [Provider.create(Joinpoint, joinPoint)];
-        if (data.providerMap) {
-            providers.push(data.providerMap);
+        if (ctx.providerMap) {
+            providers.push(ctx.providerMap);
         }
 
         advices.After.forEach(advicer => {
-            advisor.getContainer(advicer.aspectType, container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
+            advisor.getContainer(advicer.aspectType, this.container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
         });
 
         advices.Around.forEach(advicer => {
-            advisor.getContainer(advicer.aspectType, container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
+            advisor.getContainer(advicer.aspectType, this.container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
         });
+        next();
     }
 }

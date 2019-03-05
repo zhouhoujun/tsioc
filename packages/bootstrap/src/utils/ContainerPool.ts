@@ -1,7 +1,5 @@
-import {
-    Token, SymbolType, Registration,
-    IContainer, InjectToken, IContainerBuilder, isArray
-} from '@ts-ioc/core';
+import { Token, SymbolType, Registration, InjectToken } from '@ts-ioc/ioc';
+import { IContainer, IContainerBuilder } from '@ts-ioc/core';
 
 
 const rootContainer = '__ioc_root_container';

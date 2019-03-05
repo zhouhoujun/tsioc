@@ -1,41 +1,25 @@
-import { IContainer, ActionData, ActionComposite, ExtendsProvider } from '@ts-ioc/core';
-import { AopActions } from './AopActions';
-import { AdviceMetadata } from '../metadatas';
+import { ExtendsProvider, IocAction, IocActionContext } from '@ts-ioc/ioc';
 
-/**
- * extends instance action data.
- *
- * @export
- * @interface ExetndsInstanceActionData
- * @extends {ActionData<AdviceMetadata>}
- */
-export interface ExetndsInstanceActionData extends ActionData<AdviceMetadata> {
 
-}
 
 /**
  * extends instance action.
  *
  * @export
  * @class ExetndsInstanceAction
- * @extends {ActionComposite}
+ * @extends {IocAction}
  */
-export class ExetndsInstanceAction extends ActionComposite {
+export class ExetndsInstanceAction extends IocAction {
 
-    constructor() {
-        super(AopActions.registAspect);
-    }
-
-    protected working(container: IContainer, data: ExetndsInstanceActionData) {
+    execute(ctx: IocActionContext, next: () => void): void {
         // aspect class do nothing.
-        if (!data.target || !data.providers || data.providers.length < 1) {
-            return;
+        if (ctx.providers && ctx.providers.length) {
+            ctx.providers.forEach(p => {
+                if (p && p instanceof ExtendsProvider) {
+                    p.extends(ctx.target);
+                }
+            });
         }
-
-        data.providers.forEach(p => {
-            if (p && p instanceof ExtendsProvider) {
-                p.extends(data.target);
-            }
-        });
+        next();
     }
 }

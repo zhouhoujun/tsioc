@@ -1,6 +1,7 @@
 import { RunnableConfigure } from './AppConfigure';
-import { IContainer, Abstract, Inject, ContainerToken } from '@ts-ioc/core';
+import { IContainer, ContainerToken } from '@ts-ioc/core';
 import { IRunnableBuilder } from './IRunnableBuilder';
+import { Abstract, Inject } from '@ts-ioc/ioc';
 
 /**
  * configure register.

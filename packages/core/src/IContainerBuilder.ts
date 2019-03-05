@@ -1,6 +1,5 @@
 import { IContainer } from './IContainer';
 import { InjectToken, LoadType, Modules, Type } from '@ts-ioc/ioc';
-import { IModuleLoader, IModuleInjectorManager } from './services';
 
 /**
  * ContainerBuilder interface token.

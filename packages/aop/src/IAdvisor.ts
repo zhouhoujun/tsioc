@@ -1,5 +1,5 @@
 import { AdviceMetadata } from './metadatas';
-import { Type, ObjectMap, InjectToken, IContainer, ParamProviders } from '@ts-ioc/core';
+import { Type, ObjectMap, InjectToken, IIocContainer, ParamProviders } from '@ts-ioc/ioc';
 import { Advices } from './advices';
 
 /**
@@ -59,20 +59,20 @@ export interface IAdvisor {
      * add aspect.
      *
      * @param {Type<any>} aspect
-     * @param {IContainer} raiseContainer
+     * @param {IIocContainer} raiseContainer
      * @memberof IAdvisor
      */
-    add(aspect: Type<any>, raiseContainer: IContainer);
+    add(aspect: Type<any>, raiseContainer: IIocContainer);
 
     /**
      * get aspect registered container.
      *
      * @param {Type<any>} aspect
-     * @param {IContainer} [defaultContainer]
-     * @returns {IContainer}
+     * @param {IIocContainer} [defaultContainer]
+     * @returns {IIocContainer}
      * @memberof IAdvisor
      */
-    getContainer(aspect: Type<any>, defaultContainer?: IContainer): IContainer;
+    getContainer(aspect: Type<any>, defaultContainer?: IIocContainer): IIocContainer;
 
     /**
      * resolve aspect.

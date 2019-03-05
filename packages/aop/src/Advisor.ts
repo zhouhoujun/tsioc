@@ -1,7 +1,7 @@
 import {
-    IContainer, Singleton, getOwnMethodMetadata,
+    IIocContainer, Singleton, getOwnMethodMetadata,
     Type, ObjectMap, lang, ParamProviders
-} from '@ts-ioc/core';
+} from '@ts-ioc/ioc';
 import { Advices } from './advices';
 import { Advice } from './decorators/Advice';
 import { NonePointcut } from './decorators/NonePointcut';
@@ -29,10 +29,10 @@ export class Advisor implements IAdvisor {
      * aspect ioc containers.
      *
      * @protected
-     * @type {Map<Type<any>, IContainer>}
+     * @type {Map<Type<any>, IIocContainer>}
      * @memberof Advisor
      */
-    protected aspectIocs: Map<Type<any>, IContainer>;
+    protected aspectIocs: Map<Type<any>, IIocContainer>;
     /**
      * method advices.
      *
@@ -83,7 +83,7 @@ export class Advisor implements IAdvisor {
      * @memberof Advisor
      */
     hasRegisterAdvices(targetType: Type<any>): boolean {
-        let methods = lang.keys(Object.getOwnPropertyDescriptors(targetType.prototype));
+        let methods = Object.keys(Object.getOwnPropertyDescriptors(targetType.prototype));
         let className = lang.getClassName(targetType);
         return methods.some(m => this.advices.has(`${className}.${m}`));
     }
@@ -92,10 +92,10 @@ export class Advisor implements IAdvisor {
      * add aspect.
      *
      * @param {Type<any>} aspect
-     * @param {IContainer} raiseContainer
+     * @param {IIocContainer} raiseContainer
      * @memberof Advisor
      */
-    add(aspect: Type<any>, raiseContainer: IContainer) {
+    add(aspect: Type<any>, raiseContainer: IIocContainer) {
         if (!this.aspects.has(aspect)) {
             let metas = getOwnMethodMetadata<AdviceMetadata>(Advice, aspect);
             this.aspects.set(aspect, metas);
@@ -103,7 +103,7 @@ export class Advisor implements IAdvisor {
         }
     }
 
-    getContainer(aspect: Type<any>, defaultContainer?: IContainer): IContainer {
+    getContainer(aspect: Type<any>, defaultContainer?: IIocContainer): IIocContainer {
         if (this.aspectIocs.has(aspect)) {
             return this.aspectIocs.get(aspect) || defaultContainer;
         }

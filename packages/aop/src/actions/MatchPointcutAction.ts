@@ -1,25 +1,11 @@
 
-import {
-    IContainer, ActionData, ActionComposite, lang
-} from '@ts-ioc/core';
 import { AdvisorToken } from '../IAdvisor';
-import { AopActions } from './AopActions';
 import { AdviceMetadata } from '../metadatas'
 import { AdviceMatcherToken } from '../IAdviceMatcher';
-import { Joinpoint } from '../joinpoints';
 import { Advices, Advicer } from '../advices';
 import { isValideAspectTarget } from '../isValideAspectTarget';
+import { IocAction, IocActionContext } from '@ts-ioc/ioc';
 
-
-/**
- * match pointcut action data.
- *
- * @export
- * @interface MatchPointcutActionData
- * @extends {ActionData<Joinpoint>}
- */
-export interface MatchPointcutActionData extends ActionData<Joinpoint> {
-}
 
 /**
  *  match pointcut action.
@@ -28,22 +14,18 @@ export interface MatchPointcutActionData extends ActionData<Joinpoint> {
  * @class MatchPointcutAction
  * @extends {ActionComposite}
  */
-export class MatchPointcutAction extends ActionComposite {
+export class MatchPointcutAction extends IocAction {
 
-    constructor() {
-        super(AopActions.matchPointcut);
-    }
-
-    protected working(container: IContainer, data: MatchPointcutActionData) {
+    execute(ctx: IocActionContext, next: () => void): void {
         // aspect class do nothing.
-        if (!isValideAspectTarget(data.targetType)) {
-            return;
+        if (!isValideAspectTarget(ctx.targetType)) {
+            return next();
         }
 
-        let advisor = container.get(AdvisorToken);
-        let matcher = container.get(AdviceMatcherToken);
+        let advisor = this.container.get(AdvisorToken);
+        let matcher = this.container.get(AdviceMatcherToken);
         advisor.aspects.forEach((adviceMetas, type) => {
-            let matchpoints = matcher.match(type, data.targetType, adviceMetas, data.target);
+            let matchpoints = matcher.match(type, ctx.targetType, adviceMetas, ctx.target);
             matchpoints.forEach(mpt => {
                 let fullName = mpt.fullName;
                 let advice = mpt.advice;
@@ -60,7 +42,7 @@ export class MatchPointcutAction extends ActionComposite {
                     } as Advices;
                     advisor.setAdvices(fullName, advices);
                 }
-                let advicer = lang.assign(mpt, {
+                let advicer = Object.assign(mpt, {
                     aspectType: type
                 }) as Advicer;
 
@@ -91,6 +73,7 @@ export class MatchPointcutAction extends ActionComposite {
                 }
             });
         });
+        next();
     }
 
     isAdviceEquals(advice1: AdviceMetadata, advice2: AdviceMetadata) {

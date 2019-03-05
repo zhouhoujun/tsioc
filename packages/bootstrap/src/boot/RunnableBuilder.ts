@@ -1,9 +1,12 @@
 import {
-    IContainer, LoadType, Factory, Token,
-    ContainerBuilder, IContainerBuilder, isClass,
-    isToken, PromiseUtil, Injectable, lang, ParamProviders, isNullOrUndefined, ResoveWay, IResolver, ClassType
-} from '@ts-ioc/core';
-import { IRunnableBuilder, CustomRegister, RunnableBuilderToken, ProcessRunRootToken, RunOptions, CurrentRunnableBuilderToken } from './IRunnableBuilder';
+    LoadType, Factory, Token, isClass,
+    isToken, PromiseUtil, Injectable, lang,
+    ParamProviders, isNullOrUndefined, IResolver, ClassType
+} from '@ts-ioc/ioc';
+import {
+    IRunnableBuilder, CustomRegister, RunnableBuilderToken,
+    ProcessRunRootToken, RunOptions, CurrentRunnableBuilderToken
+} from './IRunnableBuilder';
 import {
     ModuleBuilder, DIModuleInjectorToken,
     InjectedModule, IModuleBuilder, InjectModuleBuilderToken,
@@ -16,6 +19,7 @@ import { ConfigureMgrToken, IConfigureManager } from './IConfigureManager';
 import { RunnableConfigure } from './AppConfigure';
 import { ConfigureRegister } from './ConfigureRegister';
 import { BootstrapInjectorToken } from './BootModuleInjector';
+import { ContainerBuilder, IContainerBuilder } from '@ts-ioc/core';
 
 /**
  * runnable events

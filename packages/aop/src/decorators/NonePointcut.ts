@@ -1,4 +1,4 @@
-import { createClassDecorator, ClassMetadata, ITypeDecorator, Type } from '@ts-ioc/core';
+import { createClassDecorator, ClassMetadata, ITypeDecorator, Type } from '@ts-ioc/ioc';
 
 export interface INonePointcutDecorator extends ITypeDecorator<ClassMetadata> {
     /**

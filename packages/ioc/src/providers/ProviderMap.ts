@@ -21,6 +21,14 @@ export class ProviderMap implements IResolverContainer {
         this.map = new Map();
     }
 
+    keys(): (Token<any> | number)[] {
+        return Array.from(this.map.keys());
+    }
+
+    values(): InstanceFactory<any>[] {
+        return Array.from(this.map.values());
+    }
+
     /**
      * has provide or not.
      *

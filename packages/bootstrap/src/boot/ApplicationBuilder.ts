@@ -1,4 +1,4 @@
-import { Injectable } from '@ts-ioc/core';
+import { Injectable } from '@ts-ioc/ioc';
 import { AppConfigure } from './AppConfigure';
 import { IApplicationBuilder, ApplicationBuilderToken } from './IApplicationBuilder';
 import { IEvents } from '../utils';

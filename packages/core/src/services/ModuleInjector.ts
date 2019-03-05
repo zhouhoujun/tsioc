@@ -52,8 +52,8 @@ export class ModuleInjector extends IocCoreService implements IModuleInjector {
             await PromiseUtil.step(types.map(ty => () => this.setup(ctx.container, ty)));
         }
         this.setContext(ctx, types);
-        if(ctx.modules.length){
-           await next()
+        if (ctx.modules.length) {
+            await next()
         }
     }
 
@@ -65,7 +65,7 @@ export class ModuleInjector extends IocCoreService implements IModuleInjector {
     }
 
     protected setContext(ctx: InjectorContext, injected: Type<any>[]): void {
-        if(injected && injected.length){
+        if (injected && injected.length) {
             ctx.injected = ctx.injected || [];
             ctx.injected = ctx.injected.concat(injected);
             ctx.modules = ctx.modules.filter(it => injected.indexOf(it) < 0);
@@ -75,5 +75,5 @@ export class ModuleInjector extends IocCoreService implements IModuleInjector {
     protected async setup(container: IContainer, type: Type<any>) {
         container.register(type);
     }
-    
+
 }
