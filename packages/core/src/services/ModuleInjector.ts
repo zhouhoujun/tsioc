@@ -6,35 +6,14 @@ import { InjectorContext } from './InjectorContext';
 
 
 /**
- * module injector.
- *
- * @export
- * @interface IModuleInjector
- */
-export interface IModuleInjector {
-    /**
-     * inject module to container.
-     *
-     * @param {InjectorContext} ctx
-     * @param {() => Promise<void>} next
-     * @returns {Promise<void>}
-     * @memberof IModuleInjector
-     */
-    inject(ctx: InjectorContext, next: () => Promise<void>): Promise<void>;
-}
-
-
-
-
-/**
  * base module injector. abstract class.
  *
  * @export
  * @abstract
- * @class BaseModuleInjector
+ * @class ModuleInjector
  * @implements {IModuleInjector}
  */
-export class ModuleInjector extends IocCoreService implements IModuleInjector {
+export class ModuleInjector extends IocCoreService {
 
     /**
      *Creates an instance of BaseModuleInjector.
@@ -44,7 +23,15 @@ export class ModuleInjector extends IocCoreService implements IModuleInjector {
     constructor(protected validate?: ModuelValidate) {
         super();
     }
-
+ 
+    /**
+     * inject module to container.
+     *
+     * @param {InjectorContext} ctx
+     * @param {() => Promise<void>} next
+     * @returns {Promise<void>}
+     * @memberof ModuleInjector
+     */
     async inject(ctx: InjectorContext, next: () => Promise<void>): Promise<void> {
         ctx.modules = ctx.modules || [];
         let types = ctx.modules.filter(ty => this.valid(ctx, ty));
@@ -77,3 +64,5 @@ export class ModuleInjector extends IocCoreService implements IModuleInjector {
     }
 
 }
+
+export type ModuleInjectorType = ModuleInjector | Type<ModuleInjector>;

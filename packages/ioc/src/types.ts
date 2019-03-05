@@ -42,7 +42,6 @@ export interface PathModules {
     modules?: (Modules | string)[];
 }
 
-
 /**
  * load module type.
  */

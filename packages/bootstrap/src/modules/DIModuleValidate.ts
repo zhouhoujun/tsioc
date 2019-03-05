@@ -1,11 +1,6 @@
-import { Singleton, InjectModuleValidateToken, ModuelValidate, IModuleValidate } from '@ts-ioc/core';
+import { Singleton } from '@ts-ioc/ioc';
+import { ModuelValidate } from '@ts-ioc/core';
 
-
-
-/**
- * DIModule Validate Token
- */
-export const DIModuleValidateToken = new InjectModuleValidateToken<IModuleValidate>('@DIModule');
 
 /**
  * DIModuel Validate
@@ -14,7 +9,7 @@ export const DIModuleValidateToken = new InjectModuleValidateToken<IModuleValida
  * @class DIModuelValidate
  * @extends {ModuelValidate}
  */
-@Singleton(DIModuleValidateToken)
+@Singleton
 export class DIModuelValidate extends ModuelValidate {
     getDecorator(): string {
         return '@DIModule';

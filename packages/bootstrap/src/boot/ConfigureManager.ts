@@ -1,5 +1,5 @@
 import {
-    Inject, isUndefined, lang, Singleton, isString
+    Inject, isUndefined, Singleton, isString
 } from '@ts-ioc/ioc';
 import {
     ConfigureMgrToken, ConfigureLoaderToken,

@@ -1,7 +1,6 @@
 import { ExtendsProvider, IocAction, IocActionContext } from '@ts-ioc/ioc';
 
 
-
 /**
  * extends instance action.
  *

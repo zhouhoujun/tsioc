@@ -1,14 +1,14 @@
 import {
-    Type, Inject, Token, isArray, Singleton, ProviderMap, InjectReference, ClassType, IResolver
+    Type, Token, isArray, ProviderMap, InjectReference, ClassType, IResolver, ProviderParser, TypeReflects
 } from '@ts-ioc/ioc';
-import { DIModuleValidateToken } from './DIModuleValidate';
+import { DIModuelValidate } from './DIModuleValidate';
 import { ContainerPoolToken } from '../utils';
 import { ModuleConfigure } from './ModuleConfigure';
 import { InjectedModuleToken, InjectedModule } from './InjectedModule';
 import { ConfigureRegister } from '../boot/ConfigureRegister';
 import { ConfigureMgrToken } from '../boot/IConfigureManager';
 import { CurrentRunnableBuilderToken } from '../boot/IRunnableBuilder';
-import { IModuleInjector, IContainer, MetaAccessor } from '@ts-ioc/core';
+import { IModuleInjector, IContainer, MetaAccessor, ModuleInjector, ResolverChain, IteratorService } from '@ts-ioc/core';
 
 
 /**
@@ -33,41 +33,20 @@ export interface IDIModuleInjector extends IModuleInjector {
 }
 
 /**
- * DIModule injector token.
- */
-export const DIModuleInjectorToken = new InjectModuleInjectorToken<IDIModuleInjector>('@DIModule');
-
-/**
  * DIModule injector.
  *
  * @export
  * @class DIModuleInjector
  * @extends {ModuleInjector}
  */
-@Singleton(DIModuleInjectorToken)
 export class DIModuleInjector extends ModuleInjector implements IDIModuleInjector {
 
-    constructor(@Inject(DIModuleValidateToken) validate: IModuleValidate) {
+    constructor(validate: DIModuelValidate) {
         super(validate)
     }
 
-    protected async setup(container: IContainer, type: Type<any>) {
-        await this.importModule(container, type);
-    }
-
-    protected syncSetup(container: IContainer, type: Type<any>) {
-        throw new Error('DIModule can not sync setup.');
-    }
-
-    protected valid(container: IContainer, type: Type<any>): boolean {
-        if (!this.validate) {
-            return true;
-        }
-        return this.validate.valid(type);
-    }
-
-    getMetaAccessor<T>(container: IContainer, token: Token<T> | Token<T>[]): IMetaAccessor<T> {
-        return container.getService(MetaAccessorToken, token);
+    getMetaAccessor(container: IContainer, token: Token<any> | Token<any>[]): MetaAccessor {
+        return container.getService(MetaAccessor, token);
     }
 
     protected async importModule(container: IContainer, type: Type<any>): Promise<InjectedModule<any>> {
@@ -112,20 +91,20 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
     }
 
     protected async getConfigExports(container: IContainer, config: ModuleConfigure): Promise<ProviderMap> {
-        let parser = container.getProviderParser();
+        let parser = container.resolve(ProviderParser);
+        let tRef = container.resolve(TypeReflects);
         let map = parser.parse(...config.providers || []);
         // bind module providers
         container.bindProviders(map);
 
-        let builder = container.getBuilder();
-        let exptypes: Type<any>[] = [].concat(...builder.loader.getTypes(config.exports || []));
+        let exptypes: Type<any>[] = [].concat(...container.getLoader().getTypes(config.exports || []));
         exptypes.forEach(ty => {
-            let classPd = container.resolveValue(new InjectClassProvidesToken(ty));
-            map.add(ty, (...pds) => container.resolve(ty, ResoveWay.nodes, ...pds));
+            let classPd = tRef.get(ty);
+            map.add(ty, (...pds) => container.resolve(ty, ...pds));
             if (classPd && isArray(classPd.provides) && classPd.provides.length) {
                 classPd.provides.forEach(p => {
                     if (!map.has(p)) {
-                        map.add(p, (...pds) => container.resolve(p, ResoveWay.nodes, ...pds));
+                        map.add(p, (...pds) => container.resolve(p, ...pds));
                     }
                 });
             }
@@ -139,7 +118,7 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
             return container;
         }
         if (injMd) {
-            let chain = container.getResolvers();
+            let chain = container.resolve(ResolverChain);
             chain.next(injMd);
         }
 
@@ -153,7 +132,8 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
             serType: ClassType<ConfigureRegister<any>>
         }[] = [];
 
-        newContainer.iteratorServices(
+
+        newContainer.resolve(IteratorService).each(
             (serType, fac, resolver) => {
                 registers.push({
                     resolver: resolver,
@@ -161,12 +141,16 @@ export class DIModuleInjector extends ModuleInjector implements IDIModuleInjecto
                 });
             },
             ConfigureRegister,
-            injMd.type, true, ResoveWay.current);
+            injMd.type, true);
 
         if (registers.length) {
             let mgr = newContainer.get(ConfigureMgrToken);
             let appConfig = await mgr.getConfig();
             await Promise.all(registers.map(ser => ser.resolver.resolve(ser.serType).register(appConfig, ser.resolver.resolve(CurrentRunnableBuilderToken))));
         }
+    }
+    
+    protected async setup(container: IContainer, type: Type<any>) {
+        await this.importModule(container, type);
     }
 }

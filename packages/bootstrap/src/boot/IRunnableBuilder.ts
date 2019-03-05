@@ -88,7 +88,7 @@ export interface RunOptions<T> extends BootOptions<T> {
  * @extends {IModuleBuilder<T>}
  * @template T
  */
-export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends, IResolver, IEvents {
+export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends, IEvents {
     /**
      * events mgr.
      *

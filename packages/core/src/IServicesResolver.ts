@@ -1,5 +1,11 @@
-import { ClassType, Token, ParamProviders, InstanceFactory, IResolver } from '@ts-ioc/ioc';
+import { ClassType, Token, ParamProviders } from '@ts-ioc/ioc';
 
+/**
+ * services resolver.
+ *
+ * @export
+ * @interface IServicesResolver
+ */
 export interface IServicesResolver {
 
     /**

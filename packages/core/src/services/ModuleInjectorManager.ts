@@ -1,50 +1,7 @@
-import { IModuleInjector, ModuleInjector } from './ModuleInjector';
+import { ModuleInjector, ModuleInjectorType } from './ModuleInjector';
 import { IContainer } from '../IContainer';
-import { Type, IocCoreService, PromiseUtil } from '@ts-ioc/ioc';
+import { Type, IocCoreService, PromiseUtil, isClass } from '@ts-ioc/ioc';
 import { InjectorContext } from './InjectorContext';
-
-
-/**
- * module Injector chian interface.
- *
- * @export
- * @interface IModuleInjectorManager
- */
-export interface IModuleInjectorManager {
-    /**
-     * injector chain.
-     *
-     * @type {IModuleInjector[]}
-     * @memberof IModuleInjectorManager
-     */
-    readonly injectors: IModuleInjector[];
-
-    /**
-     * set first step.
-     *
-     * @param {IModuleInjector} injector
-     * @memberof IModuleInjectorManager
-     */
-    first(injector: IModuleInjector): this;
-
-    /**
-     * set next step.
-     *
-     * @param {IModuleInjector} injector
-     * @memberof IModuleInjectorManager
-     */
-    next(injector: IModuleInjector): this;
-
-    /**
-     * inject module via injector chain.
-     *
-     * @param {IContainer} container
-     * @param {Type<any>[]} modules
-     * @returns {Promise(Type<any>[]>}
-     * @memberof IModuleInjectorManager
-     */
-    inject(container: IContainer, modules: Type<any>[]): Promise<Type<any>[]>;
-}
 
 
 
@@ -53,44 +10,59 @@ export interface IModuleInjectorManager {
  *
  * @export
  * @class ModuleInjectorChain
- * @implements {IModuleInjectorManager}
+ * @implements {ModuleInjectorManager}
  */
-export class ModuleInjectorManager extends IocCoreService implements IModuleInjectorManager {
+export class ModuleInjectorManager extends IocCoreService {
 
-    protected _injectors: IModuleInjector[];
-    get injectors(): IModuleInjector[] {
-        return this._injectors;
-    }
+    protected injectors: ModuleInjectorType[];
 
     constructor() {
         super();
-        this._injectors = [];
+        this.injectors = [];
     }
 
-    first(injector: IModuleInjector) {
-        if (this.isInjector(injector)) {
-            this._injectors.unshift(injector);
-        }
+    use(injector: ModuleInjectorType): this {
+        this.injectors.push(injector);
         return this;
     }
 
-    next(injector: IModuleInjector) {
-        if (this.isInjector(injector)) {
-            this._injectors.push(injector);
-        }
+    useBefore(injector: ModuleInjectorType, before: ModuleInjectorType): this {
+        this.injectors.splice(this.injectors.indexOf(before) - 1, 0, injector);
         return this;
     }
 
-    protected isInjector(injector: IModuleInjector) {
-        return injector instanceof ModuleInjector;
+    useAfter(injector: ModuleInjectorType, after: ModuleInjectorType): this {
+        this.injectors.splice(this.injectors.indexOf(after), 0, injector);
+        return this;
     }
 
+    first(injector: ModuleInjector) {
+        this.injectors.unshift(injector);
+        return this;
+    }
+
+    /**
+     * inject module via injector chain.
+     *
+     * @param {IContainer} container
+     * @param {Type<any>[]} modules
+     * @returns {Promise<Type<any>[]>}
+     * @memberof ModuleInjectorManager
+     */
     async inject(container: IContainer, modules: Type<any>[]): Promise<Type<any>[]> {
         let ctx: InjectorContext = {
             container: container,
             modules: modules
         };
-        await PromiseUtil.runInChain(this.injectors.map(jtor => async (ctx: InjectorContext, next?: () => Promise<void>) => jtor.inject(ctx, next)), ctx);
+        await PromiseUtil.runInChain(this.injectors.map(jtor => (ctx: InjectorContext, next?: () => Promise<void>) => {
+            if (isClass(jtor)) {
+                return container.resolve(jtor).inject(ctx, next);
+            }  else if (jtor instanceof ModuleInjector) {
+                return jtor.inject(ctx, next);
+            } else {
+                return next();
+            }
+        }), ctx);
         return ctx.injected || [];
     }
 }

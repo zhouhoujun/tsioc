@@ -1,4 +1,4 @@
-import { Provider, Injectable, Inject, isUndefined, isArray, lang, IocContainerToken, IIocContainer } from '@ts-ioc/ioc';
+import { Provider, Injectable, Inject, isUndefined, isArray, IocContainerToken, IIocContainer } from '@ts-ioc/ioc';
 import { Joinpoint, JoinpointState } from '../joinpoints';
 import { Advicer, Advices } from '../advices';
 import { IAdvisorChainFactory, AdvisorChainFactoryToken } from './IAdvisorChainFactory';
@@ -96,7 +96,6 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
             .forEach(advicer => {
                 this.invokeAdvice(cloneJp, advicer);
             });
-
     }
 
     afterThrowing(joinPoint: Joinpoint) {
@@ -137,7 +136,6 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
         });
 
         advChain.process();
-
     }
 
     invokeAdvice(joinPoint: Joinpoint, advicer: Advicer) {

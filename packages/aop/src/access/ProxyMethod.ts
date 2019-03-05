@@ -1,4 +1,7 @@
-import { IIocContainer, Provider, Singleton, Inject, Type, LifeScope, isFunction, IocContainerToken, DecoratorRegisterer, RuntimeLifeScope } from '@ts-ioc/ioc';
+import {
+    IIocContainer, Provider, Singleton, Inject, Type,
+    isFunction, IocContainerToken, DecoratorRegisterer, RuntimeLifeScope
+} from '@ts-ioc/ioc';
 import { Advices } from '../advices';
 import { JoinpointState, IPointcut } from '../joinpoints';
 import { Joinpoint } from '../joinpoints';

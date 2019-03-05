@@ -1,4 +1,7 @@
-import { Type, IocCoreService, isClass, isString, hasOwnClassMetadata, isArray, IocExt } from '@ts-ioc/ioc';
+import {
+    Type, IocCoreService, isClass, isString,
+    hasOwnClassMetadata, isArray, IocExt
+} from '@ts-ioc/ioc';
 
 /**
  * module validate.
@@ -36,9 +39,6 @@ export interface IModuleValidate {
  * @implements {IModuleValidate}
  */
 export class ModuelValidate extends IocCoreService implements IModuleValidate {
-    constructor() {
-        super();
-    }
 
     valid(type: Type<any>): boolean {
         if (!isClass(type)) {

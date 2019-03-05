@@ -19,7 +19,7 @@ import { ConfigureMgrToken, IConfigureManager } from './IConfigureManager';
 import { RunnableConfigure } from './AppConfigure';
 import { ConfigureRegister } from './ConfigureRegister';
 import { BootstrapInjectorToken } from './BootModuleInjector';
-import { ContainerBuilder, IContainerBuilder } from '@ts-ioc/core';
+import { ContainerBuilder, IContainerBuilder, IContainer } from '@ts-ioc/core';
 
 /**
  * runnable events
@@ -112,37 +112,6 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
 
     getRunRoot(resolver?: IResolver): string {
         return this._baseURL || (resolver || this.getPools().getDefault()).resolve(ProcessRunRootToken) || '';
-    }
-
-    /**
-     * has register in pools.
-     * use must after `initContainerPools`.
-     *
-     * @template T
-     * @param {Token<T>} key
-     * @returns {boolean}
-     * @memberof RunnableBuilder
-     */
-    has<T>(key: Token<T>, aliasOrway?: string | ResoveWay): boolean {
-        return this.getPools().values().some(c => c.has(key, aliasOrway))
-    }
-
-    /**
-     * resove token in pools.
-     * use must after `initContainerPools`.
-     * @template T
-     * @param {Token<T>} token
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof RunnableBuilder
-     */
-    resolve<T>(token: Token<T>, resway?: ResoveWay | ParamProviders, ...providers: ParamProviders[]): T {
-        let resolved: T;
-        this.getPools().values().some(c => {
-            resolved = c.resolve(token, resway, ...providers);
-            return !isNullOrUndefined(resolved);
-        })
-        return resolved;
     }
 
     protected createContainerBuilder(): IContainerBuilder {
@@ -360,7 +329,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
                 });
             },
             ConfigureRegister,
-            curClass, true, ResoveWay.nodes);
+            curClass, true);
 
         await Promise.all(registers.map(ser => ser.resolver.resolve(ser.serType).register(config, this)));
     }

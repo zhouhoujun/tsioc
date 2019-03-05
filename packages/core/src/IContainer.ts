@@ -38,7 +38,6 @@ export interface IContainer extends IIocContainer, IServiceResolver, IRefService
      */
     getLoader(): IModuleLoader;
 
-
     /**
      * get token implements.
      *

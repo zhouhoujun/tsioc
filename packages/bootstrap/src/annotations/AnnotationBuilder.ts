@@ -6,7 +6,8 @@ import {
 import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import {
     Runnable, Runner, Service, RunnerToken,
-    ServiceToken, isRunner, isService, InjectRunnableToken, RunnableOptionsToken, RunnableOptions
+    ServiceToken, isRunner, isService, InjectRunnableToken,
+    RunnableOptionsToken, RunnableOptions
 } from '../runnable';
 import { BootHooks, BuildOptions } from './AnnoType';
 import { AnnotationConfigure } from './AnnotationConfigure';
@@ -53,7 +54,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         }
         return this.container.getService(MetaAccessor,
             mtk ? [mtk, lang.getClass(this)] : lang.getClass(this),
-             config ? (config.defaultMetaAccessor || MetaAccessor) : MetaAccessor);
+            config ? (config.defaultMetaAccessor || MetaAccessor) : MetaAccessor);
     }
 
     /**
@@ -157,7 +158,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         builder = builder || this;
 
         let data = options ? options.data : undefined;
-        let runOptions: RunnableOptions<T> =  { instance: instance, type: lang.getClass(instance), mdToken: tk, config: cfg, data: data };
+        let runOptions: RunnableOptions<T> = { instance: instance, type: lang.getClass(instance), mdToken: tk, config: cfg, data: data };
         let runner = builder.resolveRunable(instance, runOptions, options);
         if (runner && isFunction(runner.onInit)) {
             await runner.onInit(runOptions, options);
