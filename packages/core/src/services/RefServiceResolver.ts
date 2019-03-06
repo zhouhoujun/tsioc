@@ -2,8 +2,7 @@ import {
     IIocContainer, IocCoreService, isArray,
     isInjectReference, isClassType, isToken, isClass,
     lang, Token, ClassType, isTypeObject, ParamProviders,
-    InjectReference, ProviderMap, isRegistrationClass,
-    isFunction, TypeReflects
+    InjectReference, ProviderMap, isRegistrationClass, isFunction, Singleton
 } from '@ts-ioc/ioc';
 import { IRefServiceResolver } from '../IRefServiceResolver';
 import {
@@ -11,6 +10,7 @@ import {
     isRefTarget, RefTokenFacType, RefTokenType
 } from '../types';
 
+@Singleton
 export class RefServiceResolver extends IocCoreService implements IRefServiceResolver {
 
     constructor(private container: IIocContainer) {
@@ -98,7 +98,7 @@ export class RefServiceResolver extends IocCoreService implements IRefServiceRes
 
         let inChain = (level & RefTagLevel.chain) > 0;
         let inProviders = (level & RefTagLevel.providers) > 0;
-        let refl = this.container.resolve(TypeReflects);
+        let refl = this.container.getTypeReflects();
         lang.forInClassChain(type, ty => {
             let tokens: Token<any>[];
             if (inProviders) {

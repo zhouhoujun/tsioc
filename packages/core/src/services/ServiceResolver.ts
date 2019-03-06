@@ -1,10 +1,10 @@
 import {
     ParamProviders, Token, isArray, isToken, isTypeObject,
-    isClass, isBoolean, isFunction, InjectReference, IocCoreService
+    isClass, isBoolean, isFunction, InjectReference, IocCoreService, Inject
 } from '@ts-ioc/ioc';
 import { IServiceResolver } from '../IServiceResolver';
 import { RefTarget, isRefTarget, RefTokenFac } from '../types';
-import { IContainer } from '../IContainer';
+import { IContainer, ContainerToken } from '../IContainer';
 import { RefServiceResolver } from './RefServiceResolver';
 
 
@@ -16,9 +16,8 @@ import { RefServiceResolver } from './RefServiceResolver';
  */
 export class ServiceResolver extends IocCoreService implements IServiceResolver {
 
-    constructor(private container: IContainer) {
-        super();
-    }
+    @Inject(ContainerToken)
+    container: IContainer
 
     /**
      * get service or target reference service.

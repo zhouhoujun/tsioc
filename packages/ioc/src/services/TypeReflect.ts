@@ -79,12 +79,12 @@ export class TypeReflects extends IocCoreService {
         return this;
     }
 
-    get(type: ClassType<any>, force?: boolean) {
+    get<T extends ITypeReflect>(type: ClassType<any>, force?: boolean): T {
         if (this.map.has(type)) {
-            return this.map.get(type);
+            return this.map.get(type) as T;
         } else if (force) {
             this.map.set(type, {} as ITypeReflect);
-            return this.map.get(type);
+            return this.map.get(type) as T;
         }
         return null;
     }

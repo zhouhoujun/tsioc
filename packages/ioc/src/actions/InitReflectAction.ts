@@ -1,6 +1,6 @@
 import { IocAction, IocActionContext } from './Action';
 import { lang, isUndefined } from '../utils';
-import { TypeReflects, DecoratorRegisterer } from '../services';
+import { DecoratorRegisterer } from '../services';
 import { hasOwnClassMetadata } from '../factories';
 import { Singleton } from '../decorators';
 
@@ -15,7 +15,7 @@ export class InitReflectAction extends IocAction {
             return;
         }
         if (!ctx.targetReflect && ctx.targetType) {
-            ctx.targetReflect = this.container.resolve(TypeReflects).get(ctx.targetType, true);
+            ctx.targetReflect = this.container.getTypeReflects().get(ctx.targetType, true);
             ctx.targetReflect.type =  ctx.targetReflect.type || ctx.targetType;
             ctx.targetReflect.decors = ctx.targetReflect.decors || [];
             ctx.targetReflect.provides = ctx.targetReflect.provides || [];

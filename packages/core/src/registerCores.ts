@@ -3,18 +3,23 @@ import {
     RefServiceResolver, ServiceResolver, ServicesResolver,
     MetaAccessor, ModuleInjectorManager, IteratorService, ModuleLoader
 } from './services';
+import { IocExt } from './decorators';
+import { DecoratorRegisterer, MethodAutorunAction } from '@ts-ioc/ioc';
 
 export function registerCores(container: IContainer) {
 
     container.bindProvider(ContainerToken, () => container);
-    container.registerSingleton(IteratorService, () => new IteratorService(container));
-    container.registerSingleton(MetaAccessor, () => new MetaAccessor());
+    container.register(IteratorService);
+    container.register(MetaAccessor);
+    // container.register(ResolverChain);
+    container.register(ModuleLoader);
+    container.register(RefServiceResolver);
+    container.register(ServiceResolver);
+    container.register(ServicesResolver);
+    container.register(ModuleInjectorManager);
 
-    container.registerSingleton(ModuleLoader, () => new ModuleLoader());
-    container.registerSingleton(RefServiceResolver, () => new RefServiceResolver(container));
-    container.registerSingleton(ServiceResolver, () => new ServiceResolver(container));
-    container.registerSingleton(ServicesResolver, () => new ServicesResolver(container));
-
-    container.registerSingleton(ModuleInjectorManager, () => new ModuleInjectorManager());
+    let decRgr = container.resolve(DecoratorRegisterer);
+    decRgr.register(IocExt, MethodAutorunAction);
+    
     container.resolve(ModuleInjectorManager).registerDefault(container);
 }

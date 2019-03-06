@@ -220,7 +220,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             if (env instanceof Container) {
                 parent = env;
             } else if (env instanceof ModuleResovler) {
-                parent = env.container.parent;
+                parent = env.container;
             }
         }
         if (!parent) {

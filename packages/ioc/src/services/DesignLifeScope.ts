@@ -7,7 +7,7 @@ import {
 } from '../actions';
 import { DecoratorRegisterer } from './DecoratorRegisterer';
 import {
-    Autorun, IocExt, Singleton, Injectable,
+    Autorun, Singleton, Injectable,
     Component, Providers, Refs, Abstract
 } from '../decorators';
 
@@ -39,7 +39,6 @@ export class DesignLifeScope extends LifeScope {
         decRgr.register(Refs, BindProviderAction);
         decRgr.register(Abstract, BindProviderAction);
         decRgr.register(Autorun, MethodAutorunAction);
-        decRgr.register(IocExt, MethodAutorunAction);
 
         this.use(InitReflectAction)
             .use(BindProviderAction)

@@ -1,6 +1,6 @@
 import {
     ComponentMetadata, Token, Type, Express, IocCoreService,
-    getClassDecorators, isClass, getTypeMetadata, isToken
+    getClassDecorators, isClass, getTypeMetadata, isToken, Singleton
 } from '@ts-ioc/ioc';
 import { IContainer } from '../IContainer';
 
@@ -44,11 +44,8 @@ export interface IAnnotationMetadata<T> extends ComponentMetadata {
  * @class MetaAccessor
  * @implements {IMetaAccessor<any>}
  */
+@Singleton
 export class MetaAccessor extends IocCoreService {
-
-    constructor() {
-        super();
-    }
 
     getDecorators(type: Type<any>): string[] {
         return getClassDecorators(type);

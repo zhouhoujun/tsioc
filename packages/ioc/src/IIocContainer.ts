@@ -5,6 +5,7 @@ import { InjectToken } from './InjectToken';
 import { IResolverContainer } from './IResolver';
 import { ParamProviders, ProviderTypes, IProviderParser } from './providers';
 import { IParameter } from './IParameter';
+import { TypeReflects } from './services';
 
 /**
  * IContainer token.
@@ -27,6 +28,14 @@ export interface IIocContainer extends IResolverContainer {
      * @memberof IIocContainer
      */
     getProviderParser(): IProviderParser;
+
+    /**
+     * get type reflects.
+     *
+     * @returns {TypeReflects}
+     * @memberof IIocContainer
+     */
+    getTypeReflects(): TypeReflects;
 
     /**
      * current container has register.

@@ -1,14 +1,31 @@
 import {
-    Type, Token, isArray, ProviderMap, InjectReference,
-    ClassType, IResolver, ProviderParser, TypeReflects, Singleton
+    Type, Token, isArray, ProviderMap, ClassType, IResolver,
+    ProviderParser, Singleton, ITypeReflect
 } from '@ts-ioc/ioc';
 import { ContainerPoolToken, ResolverChain } from '../services';
 import { ModuleConfigure } from './ModuleConfigure';
-import { InjectedModuleToken, ModuleResovler } from './ModuleResovler';
+import { ModuleResovler } from './ModuleResovler';
 import { ConfigureRegister } from '../boot/ConfigureRegister';
 import { ConfigureMgrToken } from '../boot/IConfigureManager';
 import { CurrentRunnableBuilderToken } from '../boot/IRunnableBuilder';
 import { IContainer, MetaAccessor, ModuleInjector, IteratorService, InjectorContext } from '@ts-ioc/core';
+
+/**
+ * di module reflect info.
+ *
+ * @export
+ * @interface IDIModuleReflect
+ * @extends {ITypeReflect}
+ */
+export interface IDIModuleReflect extends ITypeReflect {
+    /**
+     * module resolver of DIModule
+     *
+     * @type {ModuleResovler<any>}
+     * @memberof IDIModuleReflect
+     */
+    moduleResolver?: ModuleResovler<any>;
+}
 
 /**
  * DIModule injector.
@@ -40,37 +57,34 @@ export class DIModuleInjector extends ModuleInjector {
     protected async importModule(container: IContainer, type: Type<any>): Promise<ModuleResovler<any>> {
         let pools = container.get(ContainerPoolToken);
 
-
         let decorator = this.getDecorator();
         let accor = this.getMetaAccessor(container, decorator);
         let metaConfig = accor.getMetadata(type, container, undefined, decorator ? dec => dec === decorator : undefined) as ModuleConfigure;
 
-        let newContainer = metaConfig.asRoot === true ? pools.getDefault() : pools.create(type, container);
+        let newContainer = metaConfig.asRoot === true ? pools.getDefault() : pools.create(container);
         newContainer.register(type);
-
 
         await this.registerConfgureDepds(newContainer, metaConfig, type);
         let exps = await this.getConfigExports(newContainer, metaConfig);
 
-        let injMd = new ModuleResovler(metaConfig.token || type, metaConfig, newContainer, type, exps);
+        let mdResolver = new ModuleResovler(metaConfig.token || type, metaConfig, newContainer, type, exps);
 
-        container.bindProvider(new InjectReference(ProviderMap, type), exps);
-        container.bindProvider(new InjectedModuleToken(type), injMd);
+        let mRef = container.getTypeReflects().get<IDIModuleReflect>(type);
+        mRef.moduleResolver = mdResolver;
 
         if (metaConfig.asRoot) {
-            return injMd;
+            return mdResolver;
         }
 
-        await this.registerConfigExports(container, newContainer, injMd);
+        await this.registerConfigExports(container, newContainer, mdResolver);
 
         // init global configure.
         if (!pools.isDefault(newContainer)) {
-            await this.registerConfigrue(newContainer, injMd);
+            await this.registerConfigrue(newContainer, mdResolver);
         }
 
-        return injMd;
+        return mdResolver;
     }
-
 
     protected async registerConfgureDepds(container: IContainer, config: ModuleConfigure, type?: Type<any>): Promise<void> {
         if (isArray(config.imports) && config.imports.length) {
@@ -80,7 +94,7 @@ export class DIModuleInjector extends ModuleInjector {
 
     protected async getConfigExports(container: IContainer, config: ModuleConfigure): Promise<ProviderMap> {
         let parser = container.resolve(ProviderParser);
-        let tRef = container.resolve(TypeReflects);
+        let tRef = container.getTypeReflects();
         let map = parser.parse(...config.providers || []);
         // bind module providers
         container.bindProviders(map);
@@ -101,13 +115,13 @@ export class DIModuleInjector extends ModuleInjector {
         return map;
     }
 
-    protected async registerConfigExports(container: IContainer, newContainer: IContainer, injMd: ModuleResovler<any>) {
+    protected async registerConfigExports(container: IContainer, newContainer: IContainer, mdResolver: ModuleResovler<any>) {
         if (container === newContainer) {
             return container;
         }
-        if (injMd) {
+        if (mdResolver) {
             let chain = container.resolve(ResolverChain);
-            chain.use(injMd);
+            chain.use(mdResolver);
         }
 
         return container;

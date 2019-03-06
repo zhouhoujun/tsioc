@@ -1,6 +1,6 @@
 import {
     Type, IocCoreService, PromiseUtil, isClass,
-    isString, hasOwnClassMetadata, isArray
+    isString, hasOwnClassMetadata, isArray, Singleton
 } from '@ts-ioc/ioc';
 import { IContainer } from '../IContainer';
 
@@ -43,6 +43,7 @@ export interface InjectorContext {
  * @class ModuleInjector
  * @implements {IModuleInjector}
  */
+@Singleton
 export class ModuleInjector extends IocCoreService {
 
     /**

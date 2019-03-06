@@ -1,9 +1,9 @@
 import {
-    Inject, IocExt, DecoratorRegisterer, BindProviderAction,
+    Inject, DecoratorRegisterer, BindProviderAction,
     IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction,
     ComponentInitAction, ComponentAfterInitAction
 } from '@ts-ioc/ioc';
-import { IContainer, ContainerToken } from '@ts-ioc/core';
+import { IContainer, ContainerToken, IocExt } from '@ts-ioc/core';
 import { DIModule } from './decorators/DIModule';
 import { Bootstrap } from './decorators/Bootstrap';
 import { Annotation } from './decorators/Annotation';

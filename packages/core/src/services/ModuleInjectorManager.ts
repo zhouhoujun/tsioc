@@ -1,6 +1,7 @@
 import { ModuleInjector, ModuleInjectorType, InjectorContext } from './ModuleInjector';
 import { IContainer } from '../IContainer';
-import { Type, IocCoreService, PromiseUtil, isClass, lang } from '@ts-ioc/ioc';
+import { Type, IocCoreService, PromiseUtil, isClass, lang, Singleton } from '@ts-ioc/ioc';
+import { IocExtInjector } from './IocExtInjector';
 
 
 
@@ -11,6 +12,7 @@ import { Type, IocCoreService, PromiseUtil, isClass, lang } from '@ts-ioc/ioc';
  * @class ModuleInjectorChain
  * @implements {ModuleInjectorManager}
  */
+@Singleton
 export class ModuleInjectorManager extends IocCoreService {
 
     protected injectors: ModuleInjectorType[];
@@ -22,7 +24,8 @@ export class ModuleInjectorManager extends IocCoreService {
 
     registerDefault(container: IContainer) {
         container.registerSingleton(ModuleInjector, () => new ModuleInjector());
-        this.use(ModuleInjector);
+        this.use(ModuleInjector)
+            .use(IocExtInjector);
     }
 
     use(injector: ModuleInjectorType): this {

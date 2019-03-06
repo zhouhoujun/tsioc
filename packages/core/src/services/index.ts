@@ -6,5 +6,6 @@ export * from './ModuleLoader';
 export * from './RefServiceResolver';
 export * from './ServiceResolver';
 export * from './ServicesResolver';
-export * from './ResolverChain';
+// export * from './ResolverChain';
+export * from './IocExtInjector';
 

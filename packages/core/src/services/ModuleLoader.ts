@@ -1,6 +1,6 @@
 import {
     LoadType, Modules, Type, IocCoreService, isString,
-    isObject, PathModules, isArray, isClass
+    isObject, PathModules, isArray, isClass, Singleton
 } from '@ts-ioc/ioc';
 
 
@@ -50,11 +50,8 @@ declare let require: any;
  * @class DefaultModuleLoader
  * @implements {IModuleLoader}
  */
+@Singleton
 export class ModuleLoader extends IocCoreService implements IModuleLoader {
-
-    constructor() {
-        super();
-    }
 
     private _loader: (modulepath: string) => Promise<Modules[]>;
     getLoader() {

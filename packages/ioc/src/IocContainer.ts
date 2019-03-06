@@ -8,7 +8,7 @@ import { registerCores } from './registerCores';
 import { InjectReference } from './InjectReference';
 import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderParser } from './providers';
 import { IResolver } from './IResolver';
-import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager } from './services';
+import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, TypeReflects } from './services';
 import { IParameter } from './IParameter';
 import { IocActionContext } from './actions';
 
@@ -48,6 +48,10 @@ export class IocContainer implements IIocContainer {
 
     getProviderParser(): IProviderParser {
         return this.resolve(ProviderParser);
+    }
+
+    getTypeReflects(): TypeReflects {
+        return this.resolve(TypeReflects);
     }
 
     /**
