@@ -1,8 +1,9 @@
 import { ActivityConfigure } from './ActivityConfigure';
 import { OnActivityInit } from './OnActivityInit';
 import { IActivityContext, IActivityContextResult } from './IActivityContext';
-import { Registration, IContainer, Token, InjectToken } from '@ts-ioc/core';
+import { Registration, Token, InjectToken } from '@ts-ioc/ioc';
 import { InjectAnnoBuildStrategyToken } from '@ts-ioc/bootstrap';
+import { IContainer } from '@ts-ioc/core';
 
 /**
  * Inject AcitityToken

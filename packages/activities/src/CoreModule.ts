@@ -1,11 +1,11 @@
-import { IContainer, ContainerToken } from '@ts-ioc/core';
+import { IContainer, ContainerToken, IocExt } from '@ts-ioc/core';
 import { Task } from './decorators/Task';
 import { RunAspect } from './aop';
 import { InputDataToken } from './core';
 import * as core from './core';
 import * as injectors from './injectors';
 import * as activites from './activities';
-import { IocExt, Inject, DecoratorRegisterer, BindProviderAction } from '@ts-ioc/ioc';
+import { Inject, DecoratorRegisterer, BindProviderAction } from '@ts-ioc/ioc';
 
 /**
  * register task decorators.

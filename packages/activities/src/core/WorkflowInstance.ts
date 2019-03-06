@@ -1,4 +1,4 @@
-import { Token, Injectable } from '@ts-ioc/core';
+import { Token, Injectable } from '@ts-ioc/ioc';
 import { ActivityConfigure } from './ActivityConfigure';
 import { IActivity } from './IActivity';
 import { IWorkflowInstance, WorkflowInstanceToken, RunState } from './IWorkflowInstance';

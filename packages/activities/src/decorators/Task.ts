@@ -1,7 +1,7 @@
 import {
     isString, isObject, createClassDecorator, MetadataExtends, MetadataAdapter,
     isClass, ITypeDecorator, Token, Registration, isToken, isUndefined, lang
-} from '@ts-ioc/core';
+} from '@ts-ioc/ioc';
 import { ActivityMetadata } from '../metadatas/ActivityMetadata';
 import { IActivityBuilder, ActivityBuilderToken } from '../core/IActivityBuilder';
 import { IActivityContext } from '../core/IActivityContext';
