@@ -11,7 +11,7 @@ import {
     ModuleBuilder, ModuleResovler, IModuleBuilder,
     InjectModuleBuilderToken, ModuleBuilderToken, ModuleConfig, DIModuleInjector
 } from '../modules';
-import { ContainerPool, ContainerPoolToken, Events, IEvents } from '../utils';
+import { Events, IEvents } from '../utils';
 import { BootModule } from '../BootModule';
 import { Runnable } from '../runnable';
 import { ConfigureMgrToken, IConfigureManager } from './IConfigureManager';
@@ -19,6 +19,7 @@ import { RunnableConfigure } from './AppConfigure';
 import { ConfigureRegister } from './ConfigureRegister';
 import { ContainerBuilder, IContainerBuilder, IContainer, ModuleInjectorManager, IteratorService } from '@ts-ioc/core';
 import { BootstrapInjector } from './BootModuleInjector';
+import { ContainerPool, ContainerPoolToken } from '../services';
 
 /**
  * runnable events

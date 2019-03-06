@@ -3,7 +3,7 @@ import { IContainer, IContainerBuilder } from '@ts-ioc/core';
 
 
 const RootContainerToken = new InjectToken<IContainer>('__ioc_root_container');
-const ParentContainerToken  = new InjectToken<IContainer>('__ioc_parent_container');
+const ParentContainerToken = new InjectToken<IContainer>('__ioc_parent_container');
 const ChildrenContainerToken = new InjectToken<IContainer[]>('__ioc_children_container');
 
 /**
@@ -13,14 +13,16 @@ const ChildrenContainerToken = new InjectToken<IContainer[]>('__ioc_children_con
  * @class ContainerPool
  */
 export class ContainerPool {
-    protected pools: Map<Token<any>, IContainer[]>;
+    protected pools: IContainer[];
 
     constructor(protected containerBuilder: IContainerBuilder) {
-        this.pools = new Map();
+        this.pools = [];
     }
 
-    protected createContainer(): IContainer {
-        return this.containerBuilder.create();
+    protected createContainer(parent?: IContainer): IContainer {
+        let container = parent ? parent.getBuilder().create() : this.containerBuilder.create();
+        this.pools.push(container);
+        return container;
     }
 
     getTokenKey(token: Token<any>): SymbolType<any> {
@@ -41,37 +43,17 @@ export class ContainerPool {
     getDefault(): IContainer {
         if (!this._default) {
             this._default = this.createContainer();
-            this.pools.set(rootContainer, [this._default]);
         }
         return this._default;
     }
 
-    set(token: Token<any>, container: IContainer) {
-        let key = this.getTokenKey(token);
-        if (this.pools.has(key)) {
-            this.pools.get(key).push(container);
-        } else {
-            this.pools.set(key, [container]);
-        }
+    has(container: IContainer): boolean {
+        return this.pools.indexOf(container) >= 0;
     }
 
-    get(token: Token<any>): IContainer[] {
-        let key = this.getTokenKey(token);
-        if (!this.has(key)) {
-            return null;
-        }
-        return this.pools.get(token);
-    }
-
-    has(token: Token<any>): boolean {
-        return this.pools.has(this.getTokenKey(token));
-    }
-
-    create(token: Token<any>, parent?: IContainer): IContainer {
-        parent = parent || this.getDefault();
-        let container = parent.getBuilder().create();
+    create(parent?: IContainer): IContainer {
+        let container = this.createContainer(parent);
         this.setParent(container, parent);
-        this.set(token, container);
         return container;
     }
 
@@ -79,37 +61,24 @@ export class ContainerPool {
         if (this.isDefault(container)) {
             return;
         }
-        parent = parent || this.getDefault()
+        
+        container.bindProvider(RootContainerToken, this._default);
         if (parent && parent !== container) {
-            if (container.parent) {
-                container.parent.children.splice(container.parent.children.indexOf(container), 1);
+            container.bindProvider(ParentContainerToken, parent);
+
+            let children = parent.get(ChildrenContainerToken) || [];
+            children.push(container);
+            parent.bindProvider(ChildrenContainerToken, children);
+        }
+    }
+
+    iterator(express: (resolvor?: IContainer) => void | boolean): void | boolean {
+        return !this.pools.some(r => {
+            if (express(r) === false) {
+                return true;
             }
-            parent.children.push(container);
-            container.parent = parent;
-        }
-    }
-
-    keys(): Token<any>[] {
-        return Array.from(this.pools.keys());
-    }
-
-    values(): IContainer[] {
-        return Array.from(this.pools.values()).reduce((p, c) => p.concat(c), []);
-    }
-
-    iterator(express: (resolvor?: IContainer) => void, root?: IContainer): void {
-        root = root || this.getDefault();
-        express(root);
-        this.iteratorChildren(express, root.children);
-    }
-
-    protected iteratorChildren(express: (resolvor?: IContainer) => void, children: IContainer[]) {
-        if (children && children.length) {
-            children.forEach(c => {
-                express(c);
-                this.iteratorChildren(express, c.children);
-            });
-        }
+            return false;
+        })
     }
 }
 
