@@ -2,7 +2,10 @@ import { Token, SymbolType, Registration, InjectToken } from '@ts-ioc/ioc';
 import { IContainer, IContainerBuilder } from '@ts-ioc/core';
 
 
-const rootContainer = '__ioc_root_container';
+const RootContainerToken = new InjectToken<IContainer>('__ioc_root_container');
+const ParentContainerToken  = new InjectToken<IContainer>('__ioc_parent_container');
+const ChildrenContainerToken = new InjectToken<IContainer[]>('__ioc_children_container');
+
 /**
  * container pool
  *

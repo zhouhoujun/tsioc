@@ -2,7 +2,7 @@ import { IContainer } from './IContainer';
 import { Container } from './Container';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { PromiseUtil, Type, Modules, LoadType, Express } from '@ts-ioc/ioc';
-import { IModuleLoader, ModuleLoader, ModuleInjectorManager, SyncModuleInjectorManager } from './services';
+import { IModuleLoader, ModuleLoader, ModuleInjectorManager } from './services';
 
 /**
  * default container builder.
@@ -77,9 +77,9 @@ export class ContainerBuilder implements IContainerBuilder {
         let regModules = this.getLoader(container).getTypes(modules);
         let injTypes: Type<any>[] = [];
         if (regModules && regModules.length) {
-            let injMgr = container.resolve(SyncModuleInjectorManager);
+            let injMgr = container.resolve(ModuleInjectorManager);
             regModules.forEach(typs => {
-                let ityps = injMgr.inject(container, typs);
+                let ityps = injMgr.syncInject(container, typs);
                 injTypes = injTypes.concat(ityps);
             });
         }

@@ -5,6 +5,13 @@ import {
     isClass, isAbstractClass, InjectReference, ProviderMap, IIocContainer
 } from '@ts-ioc/ioc';
 
+/**
+ * iterator service.
+ *
+ * @export
+ * @class IteratorService
+ * @extends {IocCoreService}
+ */
 export class IteratorService extends IocCoreService {
     constructor(private container: IIocContainer) {
         super();

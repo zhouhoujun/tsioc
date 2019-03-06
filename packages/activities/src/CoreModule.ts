@@ -1,10 +1,11 @@
-import { IContainer, CoreActions, Inject, ContainerToken, IocExt } from '@ts-ioc/core';
+import { IContainer, ContainerToken } from '@ts-ioc/core';
 import { Task } from './decorators/Task';
 import { RunAspect } from './aop';
 import { InputDataToken } from './core';
 import * as core from './core';
 import * as injectors from './injectors';
 import * as activites from './activities';
+import { IocExt, Inject, DecoratorRegisterer, BindProviderAction } from '@ts-ioc/ioc';
 
 /**
  * register task decorators.
@@ -19,9 +20,8 @@ export class CoreModule {
 
     setup() {
         let container = this.container;
-        let lifeScope = container.getLifeScope();
-        // lifeScope.registerDecorator(Workflow, CoreActions.bindProvider);
-        lifeScope.registerDecorator(Task, CoreActions.bindProvider);
+        let decReg = container.resolve(DecoratorRegisterer);
+        decReg.register(Task, BindProviderAction);
 
         container.bindProvider(InputDataToken, null);
         container.use(core)

@@ -3,7 +3,7 @@ import {
 } from './types';
 import { InjectToken } from './InjectToken';
 import { IResolverContainer } from './IResolver';
-import { ParamProviders, ProviderTypes } from './providers';
+import { ParamProviders, ProviderTypes, IProviderParser } from './providers';
 import { IParameter } from './IParameter';
 
 /**
@@ -19,6 +19,14 @@ export const IocContainerToken = new InjectToken<IIocContainer>('DI_IocContainer
  * @interface IIocContainer
  */
 export interface IIocContainer extends IResolverContainer {
+
+    /**
+     * get provider parser.
+     *
+     * @returns {IProviderParser}
+     * @memberof IIocContainer
+     */
+    getProviderParser(): IProviderParser;
 
     /**
      * current container has register.

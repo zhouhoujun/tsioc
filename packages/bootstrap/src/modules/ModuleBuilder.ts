@@ -6,13 +6,13 @@ import {
 } from '@ts-ioc/ioc';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv, BootOptions } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
-import { ContainerPool, ContainerPoolToken } from '../utils';
+import { ContainerPool, ContainerPoolToken } from '../services';
 import { Runnable } from '../runnable';
 import {
     IAnnotationBuilder, InjectAnnotationBuilder,
     AnnotationBuilderToken, AnnotationBuilder, BuildOptions
 } from '../annotations';
-import { InjectedModule, InjectedModuleToken } from './InjectedModule';
+import { ModuleResovler, InjectedModuleToken } from './ModuleResovler';
 import { IContainer, MetaAccessor, Container } from '@ts-ioc/core';
 
 /**
@@ -52,7 +52,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return this.pools;
     }
 
-    getInjectedModule<T>(type: Type<T>): InjectedModule<T> {
+    getModuleResovler<T>(type: Type<T>): ModuleResovler<T> {
         return this.getPools().getDefault().get(new InjectedModuleToken(type));
     }
 
@@ -83,13 +83,13 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      * @param {(Token<T> | ModuleConfigure)} token
      * @param {(ModuleConfig<T> | BootOptions<T>)} [config]
      * @param {BootOptions<T>} [options]
-     * @returns {Promise<InjectedModule<T>>}
+     * @returns {Promise<ModuleResovler<T>>}
      * @memberof ModuleBuilder
      */
-    async load(token: Token<T> | ModuleConfigure, config?: ModuleConfig<T> | BootOptions<T>, options?: BootOptions<T>): Promise<InjectedModule<T>> {
+    async load(token: Token<T> | ModuleConfigure, config?: ModuleConfig<T> | BootOptions<T>, options?: BootOptions<T>): Promise<ModuleResovler<T>> {
         let params = this.vaildParams(token, config, options);
         let env = params.options ? params.options.env : null;
-        if (env instanceof InjectedModule) {
+        if (env instanceof ModuleResovler) {
             return env;
         }
         let parent = await this.getParentContainer(env);
@@ -116,7 +116,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     async bootstrap(token: Token<T> | ModuleConfig<T>, config?: ModuleConfig<T> | BootOptions<T>, options?: BootOptions<T>): Promise<Runnable<T>> {
         let params = this.vaildParams(token, config, options);
         options = params.options || {};
-        let injmdl: InjectedModule<T>;
+        let injmdl: ModuleResovler<T>;
         if (params.token) {
             injmdl = await this.load(params.token, params.config, options);
         } else {
@@ -158,23 +158,23 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return params;
     }
 
-    protected async loadViaToken(token: Token<T>, parent: IContainer): Promise<InjectedModule<T>> {
+    protected async loadViaToken(token: Token<T>, parent: IContainer): Promise<ModuleResovler<T>> {
         let injmdl = await this.import(token, parent);
         if (!injmdl) {
             let cfg = this.getMetaAccessor(parent, token).getMetadata(token, parent);
-            injmdl = new InjectedModule(token, cfg, parent);
+            injmdl = new ModuleResovler(token, cfg, parent);
         }
         return injmdl;
     }
 
-    protected async loadViaConfig(config: ModuleConfigure, parent: IContainer): Promise<InjectedModule<T>> {
-        let injmd: InjectedModule<T> = null;
+    protected async loadViaConfig(config: ModuleConfigure, parent: IContainer): Promise<ModuleResovler<T>> {
+        let injmd: ModuleResovler<T> = null;
         let token = this.getMetaAccessor(parent, config).getToken(config, parent);
         if (token) {
             injmd = await this.import(token, parent);
             if (!injmd) {
                 let cfg = this.getMetaAccessor(parent, token).getMetadata(token, parent, config);
-                injmd = new InjectedModule(token, cfg, parent);
+                injmd = new ModuleResovler(token, cfg, parent);
             }
         } else {
             token = null;
@@ -192,13 +192,13 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         if (injmd) {
             injmd.config = Object.assign({}, injmd.config, config);
         } else {
-            injmd = new InjectedModule(token, config, parent);
+            injmd = new ModuleResovler(token, config, parent);
         }
 
         return injmd;
     }
 
-    protected async import(token: Token<T>, parent: IContainer): Promise<InjectedModule<T>> {
+    protected async import(token: Token<T>, parent: IContainer): Promise<ModuleResovler<T>> {
         let type = isClass(token) ? token : parent.getTokenImpl(token);
         if (isClass(type)) {
             let key = new InjectedModuleToken(type);
@@ -219,7 +219,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         if (env) {
             if (env instanceof Container) {
                 parent = env;
-            } else if (env instanceof InjectedModule) {
+            } else if (env instanceof ModuleResovler) {
                 parent = env.container.parent;
             }
         }

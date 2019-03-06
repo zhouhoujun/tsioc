@@ -1,7 +1,6 @@
-import { ModuleInjector, ModuleInjectorType } from './ModuleInjector';
+import { ModuleInjector, ModuleInjectorType, InjectorContext } from './ModuleInjector';
 import { IContainer } from '../IContainer';
-import { Type, IocCoreService, PromiseUtil, isClass } from '@ts-ioc/ioc';
-import { InjectorContext } from './InjectorContext';
+import { Type, IocCoreService, PromiseUtil, isClass, lang } from '@ts-ioc/ioc';
 
 
 
@@ -21,6 +20,11 @@ export class ModuleInjectorManager extends IocCoreService {
         this.injectors = [];
     }
 
+    registerDefault(container: IContainer) {
+        container.registerSingleton(ModuleInjector, () => new ModuleInjector());
+        this.use(ModuleInjector);
+    }
+
     use(injector: ModuleInjectorType): this {
         this.injectors.push(injector);
         return this;
@@ -36,7 +40,7 @@ export class ModuleInjectorManager extends IocCoreService {
         return this;
     }
 
-    first(injector: ModuleInjector) {
+    first(injector: ModuleInjectorType) {
         this.injectors.unshift(injector);
         return this;
     }
@@ -52,13 +56,40 @@ export class ModuleInjectorManager extends IocCoreService {
     async inject(container: IContainer, modules: Type<any>[]): Promise<Type<any>[]> {
         let ctx: InjectorContext = {
             container: container,
-            modules: modules
+            modules: modules,
+            injected: []
         };
         await PromiseUtil.runInChain(this.injectors.map(jtor => (ctx: InjectorContext, next?: () => Promise<void>) => {
             if (isClass(jtor)) {
                 return container.resolve(jtor).inject(ctx, next);
-            }  else if (jtor instanceof ModuleInjector) {
+            } else if (jtor instanceof ModuleInjector) {
                 return jtor.inject(ctx, next);
+            } else {
+                return next();
+            }
+        }), ctx);
+        return ctx.injected || [];
+    }
+
+    /**
+     * sync inject module via injector chain.
+     *
+     * @param {IContainer} container
+     * @param {Type<any>[]} modules
+     * @returns {Type<any>[]}
+     * @memberof ModuleInjectorManager
+     */
+    syncInject(container: IContainer, modules: Type<any>[]): Type<any>[] {
+        let ctx: InjectorContext = {
+            container: container,
+            modules: modules,
+            injected: []
+        };
+        lang.execAction(this.injectors.map(jtor => (ctx: InjectorContext, next?: () => void) => {
+            if (isClass(jtor)) {
+                return container.resolve(jtor).syncInject(ctx, next);
+            } else if (jtor instanceof ModuleInjector) {
+                return jtor.syncInject(ctx, next);
             } else {
                 return next();
             }

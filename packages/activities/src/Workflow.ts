@@ -4,12 +4,11 @@ import {
     UUIDToken, RandomUUIDFactory, CoreActivityConfigs
 } from './core';
 import { IWorkflow } from './IWorkflow';
-import { lang, isToken } from '@ts-ioc/core';
+import { lang, isToken } from '@ts-ioc/ioc';
 import { AopModule } from '@ts-ioc/aop';
 import { LogModule } from '@ts-ioc/logs';
 import { CoreModule } from './CoreModule';
 import { SequenceActivity } from './activities';
-// import { WorkflowModuleValidate, WorkflowModuleInjector, WorkflowModuleInjectorToken } from './injectors';
 
 /**
  * workflow builder.
@@ -26,12 +25,6 @@ export class Workflow extends ApplicationBuilder<IActivity> implements IWorkflow
     }
 
     protected onInit() {
-        // this.on(ApplicationEvents.onRootContainerCreated, (container: IContainer) => {
-        //     container.register(WorkflowModuleValidate)
-        //         .register(WorkflowModuleInjector);
-        //     let chain = container.getBuilder().getInjectorChain(container);
-        //     chain.first(container.resolve(WorkflowModuleInjectorToken));
-        // })
         this.use(AopModule)
             .use(LogModule)
             .use(CoreModule);

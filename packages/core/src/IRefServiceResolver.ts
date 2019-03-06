@@ -1,6 +1,12 @@
 import { ReferenceToken, RefTarget } from './types';
 import { Token, ParamProviders } from '@ts-ioc/ioc';
 
+/**
+ * reference service resolver.
+ *
+ * @export
+ * @interface IRefServiceResolver
+ */
 export interface IRefServiceResolver {
     /**
      * get target reference service.

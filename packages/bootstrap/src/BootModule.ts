@@ -1,3 +1,8 @@
+import {
+    Inject, IocExt, DecoratorRegisterer, BindProviderAction,
+    IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction,
+    ComponentInitAction, ComponentAfterInitAction
+} from '@ts-ioc/ioc';
 import { IContainer, ContainerToken } from '@ts-ioc/core';
 import { DIModule } from './decorators/DIModule';
 import { Bootstrap } from './decorators/Bootstrap';
@@ -5,8 +10,6 @@ import { Annotation } from './decorators/Annotation';
 import * as modules from './modules';
 import * as boot from './boot';
 import * as annotations from './annotations';
-import { Inject, IocExt, DecoratorRegisterer, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction } from '@ts-ioc/ioc';
-
 
 /**
  * Bootstrap ext for ioc. auto run setup after registered.

@@ -1,10 +1,10 @@
 import { IContainer } from '@ts-ioc/core';
 import { ModuleConfig } from './ModuleConfigure';
-import { ContainerPool } from '../utils';
+import { ContainerPool } from '../services';
 import { Runnable } from '../runnable';
-import { InjectedModule } from './InjectedModule';
 import { BuildOptions } from '../annotations';
 import { RefRegistration, Token, Type } from '@ts-ioc/ioc';
+import { ModuleResovler } from './ModuleResovler';
 
 const moduleBuilderDesc = 'DI_ModuleBuilder';
 
@@ -25,7 +25,7 @@ export class InjectModuleBuilderToken<T> extends RefRegistration<IModuleBuilder<
 /**
  * load default container or, loaded module.
  */
-export type ModuleEnv = IContainer | InjectedModule<any>;
+export type ModuleEnv = IContainer | ModuleResovler<any>;
 
 /**
  * boot options.
@@ -56,42 +56,42 @@ export interface IModuleBuilder<T> {
     getPools(): ContainerPool;
 
     /**
-     * get registered inject module.
+     * get module resolver.
      *
      * @template T
      * @param {Type<T>} type
-     * @returns {InjectedModule<T>}
+     * @returns {ModuleResovler<T>}
      * @memberof IModuleBuilder
      */
-    getInjectedModule<T>(type: Type<T>): InjectedModule<T>;
+    getModuleResovler<T>(type: Type<T>): ModuleResovler<T>;
     /**
      * load module.
      *
      * @param {Token<T>} token
      * @param {BootOptions<T>} [options]
-     * @returns {Promise<InjectedModule<T>>}
+     * @returns {Promise<ModuleResovler<T>>}
      * @memberof IModuleBuilder
      */
-    load(token: Token<T>, options?: BootOptions<T>): Promise<InjectedModule<T>>;
+    load(token: Token<T>, options?: BootOptions<T>): Promise<ModuleResovler<T>>;
     /**
      * load by config.
      *
      * @param { ModuleConfig<T>} token
      * @param {BootOptions<T>} [options]
-     * @returns {Promise<InjectedModule<T>>}
+     * @returns {Promise<ModuleResovler<T>>}
      * @memberof IModuleBuilder
      */
-    load(config: ModuleConfig<T>, options?: BootOptions<T>): Promise<InjectedModule<T>>;
+    load(config: ModuleConfig<T>, options?: BootOptions<T>): Promise<ModuleResovler<T>>;
     /**
      * load by module and config.
      *
      * @param {Token<T>} token
      * @param {ModuleConfig<T>} config
      * @param {BootOptions<T>} [options]
-     * @returns {Promise<InjectedModule<T>>}
+     * @returns {Promise<ModuleResovler<T>>}
      * @memberof IModuleBuilder
      */
-    load(token: Token<T>, config: ModuleConfig<T>, options?: BootOptions<T>): Promise<InjectedModule<T>>;
+    load(token: Token<T>, config: ModuleConfig<T>, options?: BootOptions<T>): Promise<ModuleResovler<T>>;
     /**
      * bootstrap module.
      *

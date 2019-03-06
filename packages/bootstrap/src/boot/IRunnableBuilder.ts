@@ -1,6 +1,6 @@
 import { Token, InjectToken, LoadType, Factory, IResolver, ParamProviders } from '@ts-ioc/ioc';
 import { AppConfigure } from './AppConfigure';
-import { IModuleBuilder, ModuleConfig, InjectedModule, BootOptions } from '../modules';
+import { IModuleBuilder, ModuleConfig, ModuleResovler, BootOptions } from '../modules';
 import { Events, IEvents } from '../utils';
 import { IConfigureManager } from './IConfigureManager';
 import { IContainer } from '@ts-ioc/core';
@@ -126,11 +126,11 @@ export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends
     /**
      * get module builder
      *
-     * @param {InjectedModule<T>} injmdl
+     * @param {ModuleResovler<T>} injmdl
      * @returns {IModuleBuilder<T>}
      * @memberof IModuleBuilder
      */
-    getBuilder(injmdl: InjectedModule<T>): IModuleBuilder<T>;
+    getBuilder(injmdl: ModuleResovler<T>): IModuleBuilder<T>;
     /**
      * get config manager.
      *

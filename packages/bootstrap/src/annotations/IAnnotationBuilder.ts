@@ -162,8 +162,3 @@ export class InjectAnnotationBuilder<T> extends RefRegistration<IAnnotationBuild
  * Annotation class builder token.
  */
 export const AnnotationBuilderToken = new InjectAnnotationBuilder<any>('');
-
-/**
- * Default Annotation class builder token.
- */
-export const DefaultAnnotationBuilderToken = new InjectAnnotationBuilder<any>('default');

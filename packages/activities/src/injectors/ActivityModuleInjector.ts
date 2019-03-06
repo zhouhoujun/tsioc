@@ -1,12 +1,8 @@
-import { InjectModuleInjectorToken, Inject, IModuleValidate, IContainer, Type, Singleton } from '@ts-ioc/core';
+import { IContainer } from '@ts-ioc/core';
 import { Task } from '../decorators/Task';
-import { DIModuleInjector, InjectedModule, InjectedModuleToken } from '@ts-ioc/bootstrap';
-import { ActivityValidateToken } from './ActivityValidate';
+import { DIModuleInjector, ModuleResovler, InjectedModuleToken } from '@ts-ioc/bootstrap';
+import { Singleton, Type } from '@ts-ioc/ioc';
 
-/**
- * Activity module injector token.
- */
-export const ActivityModuleInjectorToken = new InjectModuleInjectorToken(Task.toString());
 
 /**
  * activity module injector.
@@ -15,20 +11,20 @@ export const ActivityModuleInjectorToken = new InjectModuleInjectorToken(Task.to
  * @class ActivityModuleInjector
  * @extends {DIModuleInjector}
  */
-@Singleton(ActivityModuleInjectorToken)
+@Singleton
 export class ActivityModuleInjector  extends DIModuleInjector {
 
-    constructor(@Inject(ActivityValidateToken) validate: IModuleValidate) {
-        super(validate)
+    getDecorator(): string {
+        return Task.toString();
     }
 
-    protected async importModule(container: IContainer, type: Type<any>): Promise<InjectedModule<any>> {
+    protected async importModule(container: IContainer, type: Type<any>): Promise<ModuleResovler<any>> {
         container.register(type);
-        let accor = this.getMetaAccessor(container, this.validate.getDecorator());
+        let accor = this.getMetaAccessor(container, this.getDecorator());
         let metaConfig = accor.getMetadata(type, container);
         await this.registerConfgureDepds(container, metaConfig);
 
-        let injMd = new InjectedModule(type, metaConfig, container);
+        let injMd = new ModuleResovler(type, metaConfig, container);
         container.bindProvider(new InjectedModuleToken(type), injMd);
 
         return injMd;

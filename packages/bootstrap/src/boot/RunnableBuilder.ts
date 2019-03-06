@@ -1,16 +1,15 @@
 import {
     LoadType, Factory, Token, isClass,
     isToken, PromiseUtil, Injectable, lang,
-    ParamProviders, isNullOrUndefined, IResolver, ClassType
+    IResolver, ClassType
 } from '@ts-ioc/ioc';
 import {
     IRunnableBuilder, CustomRegister, RunnableBuilderToken,
     ProcessRunRootToken, RunOptions, CurrentRunnableBuilderToken
 } from './IRunnableBuilder';
 import {
-    ModuleBuilder, DIModuleInjectorToken,
-    InjectedModule, IModuleBuilder, InjectModuleBuilderToken,
-    ModuleBuilderToken, ModuleConfig
+    ModuleBuilder, ModuleResovler, IModuleBuilder,
+    InjectModuleBuilderToken, ModuleBuilderToken, ModuleConfig, DIModuleInjector
 } from '../modules';
 import { ContainerPool, ContainerPoolToken, Events, IEvents } from '../utils';
 import { BootModule } from '../BootModule';
@@ -18,8 +17,8 @@ import { Runnable } from '../runnable';
 import { ConfigureMgrToken, IConfigureManager } from './IConfigureManager';
 import { RunnableConfigure } from './AppConfigure';
 import { ConfigureRegister } from './ConfigureRegister';
-import { BootstrapInjectorToken } from './BootModuleInjector';
-import { ContainerBuilder, IContainerBuilder, IContainer } from '@ts-ioc/core';
+import { ContainerBuilder, IContainerBuilder, IContainer, ModuleInjectorManager, IteratorService } from '@ts-ioc/core';
+import { BootstrapInjector } from './BootModuleInjector';
 
 /**
  * runnable events
@@ -169,7 +168,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         this.events.emit(RunnableEvents.onRootContainerInited, container);
     }
 
-    async load(token: Token<T> | RunnableConfigure, config?: RunnableConfigure | RunOptions<T>, options?: RunOptions<T>): Promise<InjectedModule<T>> {
+    async load(token: Token<T> | RunnableConfigure, config?: RunnableConfigure | RunOptions<T>, options?: RunOptions<T>): Promise<ModuleResovler<T>> {
         await this.initContainerPools();
         return await super.load(token, config, options);
     }
@@ -215,7 +214,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         return this.getBuilder(injmdl);
     }
 
-    getBuilder(injmdl: InjectedModule<T>): IModuleBuilder<T> {
+    getBuilder(injmdl: ModuleResovler<T>): IModuleBuilder<T> {
         let cfg = injmdl.config;
         let container = injmdl.container;
         let builder: IModuleBuilder<T>;
@@ -261,9 +260,9 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         let container = this.pools.getDefault();
         container.register(BootModule);
 
-        let chain = container.getBuilder().getInjectorChain(container);
-        chain.first(container.resolve(DIModuleInjectorToken));
-        chain.first(container.resolve(BootstrapInjectorToken));
+        let chain = container.resolve(ModuleInjectorManager);
+        chain.first(DIModuleInjector);
+        chain.first(BootstrapInjector);
         container.bindProvider(ContainerPoolToken, () => this.getPools());
         container.bindProvider(CurrentRunnableBuilderToken, () => this);
         this.beforeInitPds.forEach((val, key) => {
@@ -318,7 +317,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         }[] = [];
 
         // only run root register.
-        container.iteratorServices(
+        container.resolve(IteratorService).each(
             (serType, fac, resolver) => {
                 if (!config.baseURL) {
                     config.baseURL = this.getRunRoot(resolver);

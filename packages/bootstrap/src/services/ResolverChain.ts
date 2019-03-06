@@ -1,6 +1,7 @@
-import { IocCoreService, IResolver, Token, ParamProviders, lang } from '@ts-ioc/ioc';
-import { IContainer } from '../IContainer';
+import { IocCoreService, IResolver, Token, ParamProviders, lang, Singleton, Inject } from '@ts-ioc/ioc';
+import { IContainer, ContainerToken } from '@ts-ioc/core';
 
+@Singleton
 export class ResolverChain extends IocCoreService implements IResolver {
 
     /**
@@ -12,9 +13,9 @@ export class ResolverChain extends IocCoreService implements IResolver {
     */
     protected resolvers: IResolver[];
 
-    constructor(protected container: IContainer) {
+    constructor(@Inject(ContainerToken) protected container: IContainer) {
         super();
-        this.resolvers = [];
+        this.resolvers = [container];
     }
 
     /**
@@ -23,7 +24,7 @@ export class ResolverChain extends IocCoreService implements IResolver {
      * @param {IResolver} resolver
      * @memberof ResolverChain
      */
-    next(resolver: IResolver) {
+    use(resolver: IResolver) {
         if (!this.hasResolver(resolver)) {
             this.resolvers.push(resolver);
         }
@@ -43,10 +44,6 @@ export class ResolverChain extends IocCoreService implements IResolver {
         return this.resolvers.indexOf(resolver) >= 0;
     }
 
-    getResolvers() {
-        return [<IResolver>this.container].concat(this.resolvers)
-    }
-
     /**
      * resove token via registered resolver chain.
      *
@@ -61,8 +58,7 @@ export class ResolverChain extends IocCoreService implements IResolver {
             instance: T;
         };
         lang.execAction(
-            this.getResolvers()
-                .map(r => (ctx, next) => {
+            this.resolvers.map(r => (ctx, next) => {
                     if (r.has(token)) {
                         ctx.instance = r.resolve(token, ...providers);
                     }
@@ -83,8 +79,7 @@ export class ResolverChain extends IocCoreService implements IResolver {
      */
     unregister<T>(token: Token<T>) {
         lang.execAction(
-            this.getResolvers()
-                .map(r => (ctx, next) => {
+            this.resolvers.map(r => (ctx, next) => {
                     if (r.has(token)) {
                         r.unregister(token);
                     }
@@ -108,8 +103,7 @@ export class ResolverChain extends IocCoreService implements IResolver {
         let key = this.container.getTokenKey(token, alias);
 
         lang.execAction(
-            this.getResolvers()
-                .map(r => (ctx, next) => {
+            this.resolvers.map(r => (ctx, next) => {
                     has = r.has(key);
                     if (!has) {
                         next();
