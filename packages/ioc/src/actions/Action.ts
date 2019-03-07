@@ -1,7 +1,7 @@
 import { IIocContainer } from '../IIocContainer';
 import { ProviderMap, ParamProviders, ProviderTypes } from '../providers';
 import { IParameter } from '../IParameter';
-import { Type, Token, ObjectMap, SymbolType } from '../types';
+import { Type, Token, ObjectMap, SymbolType, InstanceFactory } from '../types';
 import { IocCoreService, ITypeReflect } from '../services';
 import { lang } from '../utils';
 
@@ -166,7 +166,7 @@ export interface IResovleContext {
      *
      * @memberof IResovleContext
      */
-    factory: (key, ...prods: any[]) => any;
+    factory: (key) => InstanceFactory<any>;
     /**
      * container, the action raise from.
      *
