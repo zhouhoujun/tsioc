@@ -18,3 +18,5 @@ export * from './InitReflectAction';
 export * from './ConstructorArgsAction';
 export * from './CreateInstanceAction';
 
+export * from './IocDefaultResolveAction';
+

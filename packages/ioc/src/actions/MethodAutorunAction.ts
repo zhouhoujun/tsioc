@@ -1,4 +1,4 @@
-import { IocAction, IocActionContext } from './Action';
+import { IocRegisterAction, IocActionContext } from './Action';
 import { hasMethodMetadata, getMethodMetadata } from '../factories';
 import { Autorun } from '../decorators';
 import { AutorunMetadata } from '../metadatas';
@@ -8,9 +8,9 @@ import { lang, isNumber } from '../utils';
  *
  * @export
  * @class SetPropAction
- * @extends {IocAction}
+ * @extends {IocRegisterAction}
  */
-export class MethodAutorunAction extends IocAction {
+export class MethodAutorunAction extends IocRegisterAction {
 
     execute(ctx: IocActionContext, next: () => void) {
         if (hasMethodMetadata(Autorun, ctx.targetType)) {

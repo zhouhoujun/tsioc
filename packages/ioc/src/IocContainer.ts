@@ -8,9 +8,9 @@ import { registerCores } from './registerCores';
 import { InjectReference } from './InjectReference';
 import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderParser } from './providers';
 import { IResolver } from './IResolver';
-import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, TypeReflects } from './services';
+import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, TypeReflects, ResolveLifeScope } from './services';
 import { IParameter } from './IParameter';
-import { IocActionContext } from './actions';
+import { IocActionContext, IResovleContext } from './actions';
 
 /**
  * Container
@@ -54,6 +54,16 @@ export class IocContainer implements IIocContainer {
         return this.resolve(TypeReflects);
     }
 
+    private resolveLifeScope: ResolveLifeScope;
+
+    getResolveLifeScope() {
+        if (!this.resolveLifeScope) {
+            this.resolveLifeScope = new ResolveLifeScope();
+            this.resolveLifeScope.registerDefault(this);
+        }
+        return this.resolveLifeScope;
+    }
+
     /**
      * has register the token or not.
      *
@@ -65,7 +75,7 @@ export class IocContainer implements IIocContainer {
      */
     has<T>(token: Token<T>, alias?: string): boolean {
         let key = this.getTokenKey(token, alias);
-        return this.hasRegister(key);
+        return this.factories.has(this.getTokenKey(key));
     }
 
     /**
@@ -77,7 +87,7 @@ export class IocContainer implements IIocContainer {
      * @memberof Container
      */
     hasRegister<T>(key: Token<T>): boolean {
-        return this.factories.has(this.getTokenKey(key));
+        return this.has(key);
     }
 
     /**
@@ -105,6 +115,16 @@ export class IocContainer implements IIocContainer {
      */
     resolve<T>(token: Token<T>, ...providers: ParamProviders[]): T {
         let key = this.getTokenKey<T>(token);
+        if (this.has(ResolveLifeScope)) {
+            let ctx: IResovleContext = {
+                key: key,
+                raiseContainer: this,
+                factory: (key) => this.factories.get(key)
+            }
+            this.resolveLifeScope.execute(this, ctx);
+            return ctx.instance || null;
+        }
+
         if (!this.hasRegister(key)) {
             return null;
         }

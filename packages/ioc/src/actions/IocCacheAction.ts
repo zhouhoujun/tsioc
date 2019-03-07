@@ -1,10 +1,10 @@
-import { IocAction, IocActionContext } from './Action';
+import { IocRegisterAction, IocActionContext } from './Action';
 import { DecoratorRegisterer } from '../services';
 import { getOwnTypeMetadata } from '../factories';
 import { ClassMetadata } from '../metadatas';
 import { isNumber, lang } from '../utils';
 
-export abstract class IocCacheAction extends IocAction {
+export abstract class IocCacheAction extends IocRegisterAction {
 
     getCacheMetadata(ctx: IocActionContext): ClassMetadata {
         if (ctx.targetReflect.expires) {

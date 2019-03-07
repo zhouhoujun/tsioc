@@ -1,4 +1,4 @@
-import { IocActionContext, IocAction } from './Action';
+import { IocActionContext, IocRegisterAction } from './Action';
 import { ParamProviders } from '../providers';
 import { getParamMetadata } from '../factories';
 import { ParameterMetadata } from '../metadatas';
@@ -13,7 +13,7 @@ import { DecoratorRegisterer } from '../services';
  * @class BindParameterProviderAction
  * @extends {ActionComposite}
  */
-export class BindParameterProviderAction extends IocAction {
+export class BindParameterProviderAction extends IocRegisterAction {
 
     execute(ctx: IocActionContext, next: () => void) {
         let type = ctx.targetType;

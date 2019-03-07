@@ -1,6 +1,6 @@
 import { lang } from '../utils';
 import { ClassMetadata } from '../metadatas';
-import { IocAction, IocActionContext } from './Action';
+import { IocRegisterAction, IocActionContext } from './Action';
 import { DecoratorRegisterer } from '../services';
 import { getOwnTypeMetadata } from '../factories';
 
@@ -11,7 +11,7 @@ import { getOwnTypeMetadata } from '../factories';
  * @class BindProviderAction
  * @extends {ActionComposite}
  */
-export class BindProviderAction extends IocAction {
+export class BindProviderAction extends IocRegisterAction {
 
     execute(ctx: IocActionContext, next: () => void) {
         let type = ctx.targetType;

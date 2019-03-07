@@ -21,7 +21,7 @@ import { Inject, AutoWired, Method, Param } from '../decorators';
  * @class RuntimeLifeScope
  * @extends {LifeScope}
  */
-export class RuntimeLifeScope extends LifeScope {
+export class RuntimeLifeScope extends LifeScope<IocActionContext> {
     constructor() {
         super();
     }

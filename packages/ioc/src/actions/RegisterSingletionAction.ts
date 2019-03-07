@@ -1,4 +1,4 @@
-import { IocAction, IocActionContext } from './Action';
+import { IocRegisterAction, IocActionContext } from './Action';
 import { IocSingletonManager } from '../services';
 
 /**
@@ -6,9 +6,9 @@ import { IocSingletonManager } from '../services';
  *
  * @export
  * @class SingletionAction
- * @extends {IocAction}
+ * @extends {IocRegisterAction}
  */
-export class RegisterSingletionAction extends IocAction {
+export class RegisterSingletionAction extends IocRegisterAction {
 
     execute(ctx: IocActionContext, next: () => void): void {
         if (ctx.targetType && ctx.target && (ctx.singleton || ctx.targetReflect.singleton)) {

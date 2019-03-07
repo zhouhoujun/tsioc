@@ -1,4 +1,4 @@
-import { IocAction, IocActionContext } from './Action';
+import { IocRegisterAction, IocActionContext } from './Action';
 import { Token } from '../types';
 import { isClass, isArray, lang } from '../utils';
 import { getParamMetadata, getOwnParamMetadata } from '../factories';
@@ -12,7 +12,7 @@ import { ParameterMetadata } from '../metadatas';
  * @class BindParameterTypeAction
  * @extends {ActionComposite}
  */
-export class BindParameterTypeAction extends IocAction {
+export class BindParameterTypeAction extends IocRegisterAction {
 
     execute(ctx: IocActionContext, next: () => void) {
         let propertyKey = ctx.propertyKey || 'constructor';

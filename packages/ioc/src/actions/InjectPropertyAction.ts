@@ -1,4 +1,4 @@
-import { IocAction, IocActionContext } from './Action';
+import { IocRegisterAction, IocActionContext } from './Action';
 import { IIocContainer } from '../IIocContainer';
 import { InjectReference } from '../InjectReference';
 import { ProviderMap } from '../providers';
@@ -12,7 +12,7 @@ import { lang } from '../utils';
  * @class SetPropAction
  * @extends {ActionComposite}
  */
-export class InjectPropertyAction extends IocAction {
+export class InjectPropertyAction extends IocRegisterAction {
 
     constructor(container: IIocContainer) {
         super(container)

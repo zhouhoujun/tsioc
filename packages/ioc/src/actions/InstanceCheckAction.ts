@@ -1,6 +1,6 @@
-import { IocAction, IocActionContext } from './Action';
+import { IocRegisterAction, IocActionContext } from './Action';
 
-export class InstanceCheckAction  extends IocAction {
+export class InstanceCheckAction  extends IocRegisterAction {
     execute(ctx: IocActionContext, next: () => void): void {
         if (!ctx.target) {
             return;

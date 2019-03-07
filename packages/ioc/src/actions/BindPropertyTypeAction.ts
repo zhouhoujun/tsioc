@@ -1,4 +1,4 @@
-import { IocAction, IocActionContext } from './Action';
+import { IocRegisterAction, IocActionContext } from './Action';
 import { DecoratorRegisterer } from '../services';
 import { lang, isClass } from '../utils';
 import { PropertyMetadata } from '../metadatas';
@@ -11,7 +11,7 @@ import { getPropertyMetadata } from '../factories';
  * @class SetPropAction
  * @extends {ActionComposite}
  */
-export class BindPropertyTypeAction extends IocAction {
+export class BindPropertyTypeAction extends IocRegisterAction {
 
     execute(ctx: IocActionContext, next: () => void) {
         let type = ctx.targetType;

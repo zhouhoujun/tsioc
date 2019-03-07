@@ -1,5 +1,5 @@
 import { IIocContainer, IocContainerToken } from './IIocContainer';
-import { MethodAccessor, DesignLifeScope, RuntimeLifeScope, DecoratorRegisterer, TypeReflects, IocCacheManager, IocSingletonManager } from './services';
+import { MethodAccessor, DesignLifeScope, RuntimeLifeScope, DecoratorRegisterer, TypeReflects, IocCacheManager, IocSingletonManager, ResolveLifeScope } from './services';
 import { ProviderMap, ProviderParser } from './providers';
 
 /**
@@ -11,6 +11,7 @@ import { ProviderMap, ProviderParser } from './providers';
 export function registerCores(container: IIocContainer) {
     container.bindProvider(IocContainerToken, container);
     container.bindProvider(IocSingletonManager, new IocSingletonManager(container));
+
     container.registerSingleton(TypeReflects, () => new TypeReflects());
     container.registerSingleton(IocCacheManager, () => new IocCacheManager(container));
     // bing action.

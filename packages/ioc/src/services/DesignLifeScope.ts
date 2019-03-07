@@ -3,7 +3,7 @@ import { IIocContainer } from '../IIocContainer';
 import {
     BindProviderAction, MethodAutorunAction, IocSetCacheAction,
     ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
-    InitReflectAction
+    InitReflectAction, IocActionContext
 } from '../actions';
 import { DecoratorRegisterer } from './DecoratorRegisterer';
 import {
@@ -18,7 +18,7 @@ import {
  * @class DesignLifeScope
  * @extends {LifeScope}
  */
-export class DesignLifeScope extends LifeScope {
+export class DesignLifeScope extends LifeScope<IocActionContext> {
     constructor() {
         super();
     }

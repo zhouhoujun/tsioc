@@ -1,7 +1,7 @@
 import { IIocContainer } from '../IIocContainer';
-import { ProviderMap, ParamProviders } from '../providers';
+import { ProviderMap, ParamProviders, ProviderTypes } from '../providers';
 import { IParameter } from '../IParameter';
-import { Type, Token, ObjectMap } from '../types';
+import { Type, Token, ObjectMap, SymbolType } from '../types';
 import { IocCoreService, ITypeReflect } from '../services';
 import { lang } from '../utils';
 
@@ -126,12 +126,77 @@ export interface IocActionContext {
  * @class Action
  * @extends {IocCoreService}
  */
-export abstract class IocAction extends IocCoreService {
+export abstract class IocAction<T> extends IocCoreService {
     constructor(protected container: IIocContainer) {
         super();
     }
 
-    abstract execute(ctx: IocActionContext, next: () => void): void;
+    abstract execute(ctx: T, next: () => void): void;
 }
 
-export type IocActionType = Type<IocAction> | IocAction | lang.IAction<any>;
+export type IocActionType = Type<IocRegisterAction> | IocAction<any> | lang.IAction<any>;
+
+/**
+ * ioc register action.
+ *
+ * @export
+ * @abstract
+ * @class IocRegisterAction
+ * @extends {IocAction<IocActionContext>}
+ */
+export abstract class IocRegisterAction extends IocAction<IocActionContext> {
+}
+
+/**
+ * reslv
+ *
+ * @export
+ * @interface IResovlerContext
+ */
+export interface IResovleContext {
+    /**
+     * resovle key.
+     *
+     * @type {SymbolType<any>}
+     * @memberof IResovleContext
+     */
+    key: SymbolType<any>;
+    /**
+     * factory.
+     *
+     * @memberof IResovleContext
+     */
+    factory: (key, ...prods: any[]) => any;
+    /**
+     * container, the action raise from.
+     *
+     * @type {IContainer}
+     * @memberof ActionData
+     */
+    raiseContainer: IIocContainer;
+    /**
+     * resolver providers.
+     *
+     * @type {ParamProviders[]}
+     * @memberof IResovleContext
+     */
+    providers?: ProviderTypes[];
+    /**
+     * reslove result instance.
+     *
+     * @type {*}
+     * @memberof IResovleContext
+     */
+    instance?: any;
+}
+
+/**
+ * ioc resolve action.
+ *
+ * @export
+ * @abstract
+ * @class IocResolveAction
+ * @extends {IocAction<IResovleContext>}
+ */
+export abstract class IocResolveAction extends IocAction<IResovleContext> {
+}

@@ -7,5 +7,6 @@ export * from './MethodAccessor';
 export * from './LifeScope';
 export * from './DesignLifeScope';
 export * from './RuntimeLifeScope';
+export * from './ResolveLifeScope';
 export * from './DecoratorRegisterer';
 export * from './IocSingletonManager';

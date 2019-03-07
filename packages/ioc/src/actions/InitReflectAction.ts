@@ -1,11 +1,11 @@
-import { IocAction, IocActionContext } from './Action';
+import { IocRegisterAction, IocActionContext } from './Action';
 import { lang, isUndefined } from '../utils';
 import { DecoratorRegisterer } from '../services';
 import { hasOwnClassMetadata } from '../factories';
 import { Singleton } from '../decorators';
 
 
-export class InitReflectAction extends IocAction {
+export class InitReflectAction extends IocRegisterAction {
 
     execute(ctx: IocActionContext, next: () => void): void {
         if (!ctx.targetType && ctx.target) {

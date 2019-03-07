@@ -1,5 +1,5 @@
 import { IocCoreService } from './IocCoreService';
-import { IocAction, IocActionContext, IocActionType } from '../actions';
+import { IocAction, IocActionType } from '../actions';
 import { Type } from '../types';
 import { isClass, isArray, lang } from '../utils';
 import { IIocContainer } from '../IIocContainer';
@@ -12,7 +12,7 @@ import { getOwnParamerterNames } from '../factories';
  * @class LifeScope
  * @extends {IocCoreService}
  */
-export abstract class LifeScope extends IocCoreService {
+export abstract class LifeScope<TCtx> extends IocCoreService {
 
     actions: IocActionType[];
     constructor() {
@@ -20,33 +20,33 @@ export abstract class LifeScope extends IocCoreService {
         this.actions = [];
     }
 
-    use<T>(action: IocActionType): this {
+    use(action: IocActionType): this {
         this.actions.push(action);
         return this;
     }
 
-    useBefore<T>(action: IocActionType, before: IocActionType): this {
+    useBefore(action: IocActionType, before: IocActionType): this {
         this.actions.splice(this.actions.indexOf(before) - 1, 0, action);
         return this;
     }
 
-    useAfter<T>(action: IocActionType, after: IocActionType): this {
+    useAfter(action: IocActionType, after: IocActionType): this {
         this.actions.splice(this.actions.indexOf(after), 0, action);
         return this;
     }
 
     abstract registerDefault(container: IIocContainer);
 
-    execute(container: IIocContainer, ctx: IocActionContext, next?: () => void) {
+    execute(container: IIocContainer, ctx: TCtx, next?: () => void) {
         this.execActions(container, ctx, this.actions, next);
     }
 
-    protected execActions(container: IIocContainer, ctx: IocActionContext, actions: IocActionType[], next?: () => void) {
+    protected execActions(container: IIocContainer, ctx: TCtx, actions: IocActionType[], next?: () => void) {
         lang.execAction(actions.map(ac => {
             if (isClass(ac)) {
-                return (ctx: IocActionContext, next?: () => void) => container.resolve(ac).execute(ctx, next);
+                return (ctx: TCtx, next?: () => void) => container.resolve(ac).execute(ctx, next);
             } else if (ac instanceof IocAction) {
-                return (ctx: IocActionContext, next?: () => void) => ac.execute(ctx, next);
+                return (ctx: TCtx, next?: () => void) => ac.execute(ctx, next);
             }
             return ac
         }), ctx, next);

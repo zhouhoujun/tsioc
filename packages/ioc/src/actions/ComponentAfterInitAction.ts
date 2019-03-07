@@ -1,4 +1,4 @@
-import { IocAction, IocActionContext } from './Action';
+import { IocRegisterAction, IocActionContext } from './Action';
 import { DecoratorRegisterer, AfterInit } from '../services';
 import { isFunction, isUndefined, lang } from '../utils';
 
@@ -9,7 +9,7 @@ import { isFunction, isUndefined, lang } from '../utils';
  * @class ComponentAfterInitAction
  * @extends {ActionComposite}
  */
-export class ComponentAfterInitAction extends IocAction {
+export class ComponentAfterInitAction extends IocRegisterAction {
 
     execute(ctx: IocActionContext, next: () => void) {
         if (isUndefined(ctx.targetReflect.compAfterInit)) {

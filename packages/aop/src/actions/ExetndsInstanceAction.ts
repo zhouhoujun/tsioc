@@ -1,4 +1,4 @@
-import { ExtendsProvider, IocAction, IocActionContext } from '@ts-ioc/ioc';
+import { ExtendsProvider, IocRegisterAction, IocActionContext } from '@ts-ioc/ioc';
 
 
 /**
@@ -6,9 +6,9 @@ import { ExtendsProvider, IocAction, IocActionContext } from '@ts-ioc/ioc';
  *
  * @export
  * @class ExetndsInstanceAction
- * @extends {IocAction}
+ * @extends {IocRegisterAction}
  */
-export class ExetndsInstanceAction extends IocAction {
+export class ExetndsInstanceAction extends IocRegisterAction {
 
     execute(ctx: IocActionContext, next: () => void): void {
         // aspect class do nothing.

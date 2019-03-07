@@ -1,4 +1,4 @@
-import { IocAction, IocActionContext } from './Action';
+import { IocRegisterAction, IocActionContext } from './Action';
 import { IIocContainer } from '../IIocContainer';
 import { isUndefined, lang, isFunction } from '../utils';
 import { DecoratorRegisterer, BeforeInit } from '../services';
@@ -10,7 +10,7 @@ import { DecoratorRegisterer, BeforeInit } from '../services';
  * @class ComponentBeforeInitAction
  * @extends {ActionComposite}
  */
-export class ComponentBeforeInitAction extends IocAction {
+export class ComponentBeforeInitAction extends IocRegisterAction {
 
     constructor(container: IIocContainer) {
         super(container)
