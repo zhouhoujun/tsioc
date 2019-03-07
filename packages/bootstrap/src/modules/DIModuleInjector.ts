@@ -2,13 +2,13 @@ import {
     Type, Token, isArray, ProviderMap, ClassType, IResolver,
     ProviderParser, Singleton, ITypeReflect
 } from '@ts-ioc/ioc';
-import { ContainerPoolToken, ResolverChain } from '../services';
+import { ContainerPoolToken, ResolverChain, MetaAccessor } from '../services';
 import { ModuleConfigure } from './ModuleConfigure';
 import { ModuleResovler } from './ModuleResovler';
 import { ConfigureRegister } from '../boot/ConfigureRegister';
 import { ConfigureMgrToken } from '../boot/IConfigureManager';
 import { CurrentRunnableBuilderToken } from '../boot/IRunnableBuilder';
-import { IContainer, MetaAccessor, ModuleInjector, IteratorService, InjectorContext } from '@ts-ioc/core';
+import { IContainer, ModuleInjector, IteratorService, InjectorContext } from '@ts-ioc/core';
 
 /**
  * di module reflect info.

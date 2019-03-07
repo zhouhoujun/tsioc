@@ -40,10 +40,10 @@
   "dependencies": {
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3",
+    "@ts-ioc/ioc": "^5.0.0",
+    "@ts-ioc/core": "^5.0.0",
+    "@ts-ioc/activities": "^4.0.5",
     "@ts-ioc/platform-browser": "^4.0.5"
-  },
-  "peerDependencies": {
-    "@ts-ioc/activities": "^4.0.5"
   },
   "directories": {
     "lib": "lib",

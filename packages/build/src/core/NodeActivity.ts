@@ -12,8 +12,8 @@ import {
 } from 'shelljs';
 import * as globby from 'globby';
 import { CmdOptions, INodeActivityContext } from './INodeContext';
-import { ProcessRunRootToken } from '@ts-ioc/bootstrap';
-import { MetaAccessor } from '@ts-ioc/core';
+import { ProcessRunRootToken, MetaAccessor } from '@ts-ioc/bootstrap';
+
 
 const minimist = require('minimist');
 const del = require('del');

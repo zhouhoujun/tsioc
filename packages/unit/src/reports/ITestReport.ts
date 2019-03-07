@@ -1,4 +1,4 @@
-import { Type, Token } from '@ts-ioc/ioc';
+import { Token } from '@ts-ioc/ioc';
 
 
 /**
@@ -163,12 +163,65 @@ export interface ISuiteDescribe {
  * @interface ITestReport
  */
 export interface ITestReport {
+    /**
+     * suites.
+     *
+     * @type {Map<Token<any>, ISuiteDescribe>}
+     * @memberof ITestReport
+     */
     suites: Map<Token<any>, ISuiteDescribe>;
+    /**
+     * add suite.
+     *
+     * @param {Token<any>} suit
+     * @param {ISuiteDescribe} describe
+     * @memberof ITestReport
+     */
     addSuite(suit: Token<any>, describe: ISuiteDescribe);
+    /**
+     * get suite.
+     *
+     * @param {Token<any>} suit
+     * @returns {ISuiteDescribe}
+     * @memberof ITestReport
+     */
     getSuite(suit: Token<any>): ISuiteDescribe;
+    /**
+     * set suite completed.
+     *
+     * @param {Token<any>} suit
+     * @memberof ITestReport
+     */
     setSuiteCompleted(suit: Token<any>);
+    /**
+     * add case.
+     *
+     * @param {Token<any>} suit
+     * @param {ICaseDescribe} testCase
+     * @memberof ITestReport
+     */
     addCase(suit: Token<any>, testCase: ICaseDescribe);
+    /**
+     * get case.
+     *
+     * @param {Token<any>} suit
+     * @param {string} test
+     * @returns {ICaseDescribe}
+     * @memberof ITestReport
+     */
     getCase(suit: Token<any>, test: string): ICaseDescribe;
+    /**
+     * set case completed.
+     *
+     * @param {ICaseDescribe} testCase
+     * @memberof ITestReport
+     */
     setCaseCompleted(testCase: ICaseDescribe);
+    /**
+     * report.
+     *
+     * @returns {Promise<void>}
+     * @memberof ITestReport
+     */
     report(): Promise<void>;
 }

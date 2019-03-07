@@ -1,5 +1,4 @@
 export * from './IteratorService';
-export * from './MetaAccessor';
 export * from './ModuleInjector';
 export * from './ModuleInjectorManager';
 export * from './ModuleLoader';

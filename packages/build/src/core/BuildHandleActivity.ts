@@ -13,7 +13,7 @@ import { InputDataToken, InjectActivityContextToken } from '@ts-ioc/activities';
 import { NodeActivityContext } from './NodeActivity';
 import { BuildHandleToken, BuildHandleConfigure } from './BuildHandle';
 import { EmptyCompiler } from './CompilerActivity';
-import { MetaAccessor } from '@ts-ioc/core';
+import { MetaAccessor } from '@ts-ioc/bootstrap';
 
 
 /**

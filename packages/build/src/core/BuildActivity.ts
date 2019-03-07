@@ -7,7 +7,7 @@ import { isBoolean, Token, Providers } from '@ts-ioc/ioc';
 import { WatchActivity, WatchConfigure, WatchAcitvityToken } from './handles';
 import { BuidActivityContext } from './BuidActivityContext';
 import { BuildHandleConfigure, IBuildHandleActivity } from './BuildHandle';
-import { MetaAccessor } from '@ts-ioc/core';
+import { MetaAccessor } from '@ts-ioc/bootstrap';
 
 /**
  * builder configure.

@@ -40,6 +40,7 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/build#readme",
   "dependencies": {
+    "@ts-ioc/ioc": "^5.0.0",
     "@ts-ioc/aop": "^4.0.5",
     "@ts-ioc/bootstrap": "^4.0.5",
     "@ts-ioc/core": "^4.0.5",

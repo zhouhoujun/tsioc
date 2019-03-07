@@ -18,7 +18,7 @@ export interface ISuiteDecorator<T extends SuiteMetadata> extends ITypeDecorator
      * suite decorator.
      * @param {string} suite describe.
      */
-    (describe: string): ClassDecorator;
+    (describe?: string): ClassDecorator;
     /**
      * suite decorator.
      * @param {string} suite describe.

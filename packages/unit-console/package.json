@@ -40,9 +40,10 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
+    "@ts-ioc/ioc": "^5.0.0",
+    "@ts-ioc/core": "^5.0.0",
     "@ts-ioc/aop": "^4.0.5",
     "@ts-ioc/bootstrap": "^4.0.5",
-    "@ts-ioc/core": "^4.0.5",
     "@ts-ioc/logs": "^4.0.5",
     "@ts-ioc/platform-server": "^4.0.5",
     "@ts-ioc/platform-server-logs": "^4.0.5",

@@ -1,4 +1,4 @@
-import { IAnnotationMetadata, MetaAccessor } from '@ts-ioc/core';
+import { IAnnotationMetadata, MetaAccessor } from '../services';
 import { IAnnotationBuilder } from './IAnnotationBuilder';
 import { Runnable } from '../runnable';
 import { Token } from '@ts-ioc/ioc';

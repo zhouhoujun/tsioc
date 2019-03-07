@@ -10,6 +10,7 @@ import { Annotation } from './decorators/Annotation';
 import * as modules from './modules';
 import * as boot from './boot';
 import * as annotations from './annotations';
+import * as services from './services';
 
 /**
  * Bootstrap ext for ioc. auto run setup after registered.
@@ -31,11 +32,10 @@ export class BootModule {
      */
     setup() {
         let container = this.container;
-
         let decReg = container.get(DecoratorRegisterer);
         decReg.register(Annotation, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
         decReg.register(DIModule, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
         decReg.register(Bootstrap, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
-        container.use(annotations, modules, boot);
+        container.use(services, annotations, modules, boot);
     }
 }

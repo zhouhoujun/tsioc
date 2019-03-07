@@ -5,6 +5,13 @@ import { ContainerToken, IContainer } from '@ts-ioc/core';
 
 export const ReportsToken = new InjectToken<Type<Reporter>[]>('unit-reports')
 
+/**
+ * test report.
+ *
+ * @export
+ * @class TestReport
+ * @implements {ITestReport}
+ */
 @Singleton
 export class TestReport implements ITestReport {
 

@@ -1,5 +1,6 @@
 import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken } from '@ts-ioc/unit';
-import { PromiseUtil, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
+import { IContainer, ContainerToken } from '@ts-ioc/core';
+import { PromiseUtil, Inject } from '@ts-ioc/ioc';
 
 
 

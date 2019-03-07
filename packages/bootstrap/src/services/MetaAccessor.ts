@@ -2,7 +2,7 @@ import {
     ComponentMetadata, Token, Type, Express, IocCoreService,
     getClassDecorators, isClass, getTypeMetadata, isToken, Singleton
 } from '@ts-ioc/ioc';
-import { IContainer } from '../IContainer';
+import { IContainer } from '@ts-ioc/core';
 
 /**
  * annotation metadata.

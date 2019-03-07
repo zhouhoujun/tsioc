@@ -12,7 +12,8 @@ import {
 import { BootHooks, BuildOptions } from './AnnoType';
 import { AnnotationConfigure } from './AnnotationConfigure';
 import { AnnoBuildStrategyToken, InjectAnnoBuildStrategyToken } from './AnnoBuildStrategy';
-import { ContainerToken, IContainer, MetaAccessor, RefTagLevel } from '@ts-ioc/core';
+import { ContainerToken, IContainer, RefTagLevel } from '@ts-ioc/core';
+import { MetaAccessor } from '../services';
 
 /**
  * Annotation class builder. build class with metadata and config.

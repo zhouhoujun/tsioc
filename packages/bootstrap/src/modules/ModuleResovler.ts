@@ -67,7 +67,6 @@ export class ModuleResovler<T> implements IResolverContainer {
         }) === false) {
             return false;
         }
-
     }
 
     unregister<T>(token: Token<T>): this {

@@ -22,7 +22,7 @@ export class ModuleInjectorManager extends IocCoreService {
         this.injectors = [];
     }
 
-    registerDefault(container: IContainer) {
+    setup(container: IContainer) {
         container.registerSingleton(ModuleInjector, () => new ModuleInjector());
         this.use(ModuleInjector)
             .use(IocExtInjector);

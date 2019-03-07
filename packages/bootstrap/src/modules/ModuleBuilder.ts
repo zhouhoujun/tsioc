@@ -6,14 +6,14 @@ import {
 } from '@ts-ioc/ioc';
 import { IModuleBuilder, ModuleBuilderToken, ModuleEnv, BootOptions } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
-import { ContainerPool, ContainerPoolToken } from '../services';
+import { ContainerPool, ContainerPoolToken, MetaAccessor } from '../services';
 import { Runnable } from '../runnable';
 import {
     IAnnotationBuilder, InjectAnnotationBuilder,
     AnnotationBuilderToken, AnnotationBuilder, BuildOptions
 } from '../annotations';
 import { ModuleResovler, InjectedModuleToken } from './ModuleResovler';
-import { IContainer, MetaAccessor, Container } from '@ts-ioc/core';
+import { IContainer, Container } from '@ts-ioc/core';
 
 /**
  * inject module load token.

@@ -5,7 +5,7 @@ import { IActivity, ActivityInstance, ActivityBuildStrategyToken } from './IActi
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
 import { ActivityMetaAccessorToken } from './ActivityMetaAccessor';
 import { isAcitvity } from './Activity';
-import { MetaAccessor } from '@ts-ioc/core';
+import { MetaAccessor } from '@ts-ioc/bootstrap';
 
 
 /**

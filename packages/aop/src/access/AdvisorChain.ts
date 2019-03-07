@@ -52,7 +52,8 @@ export class AdvisorChain implements IAdvisorChain {
      */
     process(): void {
         let alias = this.getRecognizer().recognize(this.joinPoint.returning);
-        this.container.get(AdvisorProceedingToken, alias)
+        this.container
+            .get(AdvisorProceedingToken, alias)
             .proceeding(this.joinPoint, ...this.actions);
     }
 

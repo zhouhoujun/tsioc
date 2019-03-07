@@ -42,12 +42,13 @@
   "dependencies": {
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.2",
-    "globby": "^7.1.1"
-  },
-  "peerDependencies": {
+    "globby": "^7.1.1",
+    "@ts-ioc/ioc": "^5.0.0",
     "@ts-ioc/core": "^4.0.5",
     "@ts-ioc/bootstrap": "^4.0.5",
     "@ts-ioc/platform-server": "^4.0.5"
+  },
+  "peerDependencies": {
   },
   "directories": {
     "lib": "lib",

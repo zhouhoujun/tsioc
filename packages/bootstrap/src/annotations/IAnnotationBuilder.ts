@@ -2,7 +2,8 @@ import { Token, RefRegistration } from '@ts-ioc/ioc';
 import { Runnable, RunnableOptions } from '../runnable';
 import { BuildOptions } from './AnnoType';
 import { AnnotationConfigure } from './AnnotationConfigure';
-import { IContainer, MetaAccessor } from '@ts-ioc/core';
+import { IContainer } from '@ts-ioc/core';
+import { MetaAccessor } from '../services';
 
 const annoBuilderDesc = 'DI_AnnotationBuilder';
 

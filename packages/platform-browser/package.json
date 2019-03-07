@@ -40,6 +40,8 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
+    "@ts-ioc/ioc": "^5.0.0",
+    "@ts-ioc/core": "^5.0.0",
     "reflect-metadata": "^0.1.12",
     "core-js": "^2.6.2",
     "tslib": "^1.9.3"

@@ -12,7 +12,7 @@ import { Singleton, Type } from '@ts-ioc/ioc';
  * @extends {DIModuleInjector}
  */
 @Singleton
-export class ActivityModuleInjector  extends DIModuleInjector {
+export class ActivityModuleInjector extends DIModuleInjector {
 
     getDecorator(): string {
         return Task.toString();

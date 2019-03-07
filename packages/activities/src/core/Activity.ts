@@ -10,7 +10,8 @@ import { IActivity, ActivityToken, WorkflowId } from './IActivity';
 import { ActivityConfigure, ExpressionType, Expression, ActivityType, Active, ExpressionToken } from './ActivityConfigure';
 import { IActivityContext, InputDataToken, InjectActivityContextToken, ActivityContextToken } from './IActivityContext';
 import { IActivityMetadata } from '../metadatas';
-import { ContainerToken, IContainer, MetaAccessor } from '@ts-ioc/core';
+import { ContainerToken, IContainer } from '@ts-ioc/core';
+import { MetaAccessor } from '@ts-ioc/bootstrap';
 
 
 /**

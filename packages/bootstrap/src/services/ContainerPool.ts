@@ -61,7 +61,6 @@ export class ContainerPool {
         if (this.isDefault(container)) {
             return;
         }
-        
         container.bindProvider(RootContainerToken, this._default);
         if (parent && parent !== container) {
             container.bindProvider(ParentContainerToken, parent);

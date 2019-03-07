@@ -1,6 +1,10 @@
 import { IContainer, ContainerToken, IocExt } from '@ts-ioc/core';
 import { Suite } from './decorators/Suite';
-import { Inject, DecoratorRegisterer, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentAfterInitAction, ComponentInitAction } from '@ts-ioc/ioc';
+import {
+    Inject, DecoratorRegisterer, BindProviderAction, IocGetCacheAction,
+    IocSetCacheAction, ComponentBeforeInitAction, ComponentAfterInitAction,
+    ComponentInitAction
+} from '@ts-ioc/ioc';
 
 
 /**

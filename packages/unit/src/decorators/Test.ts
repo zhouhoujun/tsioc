@@ -1,4 +1,3 @@
-
 import { MetadataExtends, MetadataAdapter, isString, isNumber, createMethodDecorator } from '@ts-ioc/ioc';
 import { TestMetadata, TestCaseMetadata } from '../metadata/TestMetadata';
 
@@ -50,6 +49,13 @@ export function createTestDecorator<T extends TestMetadata>(
         }, metaExtends) as ITestDecorator<T>;
 }
 
+/**
+ * test case decorator
+ *
+ * @export
+ * @interface ITestCaseDecorator
+ * @extends {ITestDecorator<TestCaseMetadata>}
+ */
 export interface ITestCaseDecorator extends ITestDecorator<TestCaseMetadata> {
     /**
      * @Test decorator. define the method of class as unit test case.  Describe a specification or test-case with the given `title` and callback `fn` acting
@@ -59,7 +65,7 @@ export interface ITestCaseDecorator extends ITestDecorator<TestCaseMetadata> {
      * @param {number} [timeout] test case timeout.
      * @param {number} [setp] test case setp order in this test suite.
      */
-    (title: string, timeout?: number, setp?: number): MethodDecorator;
+    (title?: string, timeout?: number, setp?: number): MethodDecorator;
 }
 
 /**
