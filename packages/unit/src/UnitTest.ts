@@ -5,14 +5,15 @@ import {
 import { UnitModule } from './UnitModule';
 import {
    isClass, hasClassMetadata, Type, isString, isArray, Token,
-   LoadType, IContainerBuilder, lang, ContainerBuilder, PromiseUtil
-} from '@ts-ioc/core';
+   LoadType, lang, PromiseUtil
+} from '@ts-ioc/ioc';
 import { Suite } from './decorators/Suite';
 import { TestReport, ITestReport } from './reports';
 import { SuiteRunner, OldTestRunner } from './runner';
 import { Assert, ExpectToken } from './assert';
 import * as assert from 'assert';
 import * as expect from 'expect';
+import { IContainerBuilder, ContainerBuilder } from '@ts-ioc/core';
 
 /**
  * unit test options.

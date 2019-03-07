@@ -7,7 +7,7 @@ import {
 import { IPackActivity, PackToken } from './IPackActivity';
 import { ServeActivity } from '../serves';
 import { PackConfigure } from './PackConfigure';
-import { lang, hasClassMetadata, isString, isArray } from '@ts-ioc/core';
+import { lang, hasClassMetadata, isString, isArray } from '@ts-ioc/ioc';
 import {
     Src, SequenceActivity, ParallelActivity, SequenceConfigure,
     SequenceActivityToken, ParallelConfigure, ParallelActivityToken
@@ -65,7 +65,7 @@ export class PackActivity extends BuildActivity implements IPackActivity {
     async onActivityInit(config: PackConfigure) {
         await super.onActivityInit(config);
         let srcRoot = this.src = this.context.to(config.src);
-        let assets = await Promise.all(lang.keys(config.assets).map(name => {
+        let assets = await Promise.all(Object.keys(config.assets).map(name => {
             return this.toActivity<Src, IAssetBuildHandle, AssetConfigure>(config.assets[name],
                 (act: any) => {
                     let flag = act instanceof BuildHandleActivity

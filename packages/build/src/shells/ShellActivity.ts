@@ -1,5 +1,5 @@
 import { ExecOptions, exec } from 'child_process';
-import { isString, isBoolean, isArray, lang, ObjectMap, isNullOrUndefined } from '@ts-ioc/core';
+import { isString, isBoolean, isArray, lang, ObjectMap, isNullOrUndefined } from '@ts-ioc/ioc';
 import { Src, CtxType, OnActivityInit, Task } from '@ts-ioc/activities';
 import { CompilerActivity, CompilerConfigure } from '../core';
 

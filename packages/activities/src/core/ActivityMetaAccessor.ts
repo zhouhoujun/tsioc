@@ -36,13 +36,6 @@ export class ActivityMetaAccessor extends MetaAccessor {
         if (this.validateToken(token, container)) {
             return token
         }
-
-        // if (isToken(config.selector)) {
-        //     let sel = container.resolve(config.selector);
-        //     if (sel) {
-        //         return sel.getToken(config);
-        //     }
-        // }
         return null;
     }
 }

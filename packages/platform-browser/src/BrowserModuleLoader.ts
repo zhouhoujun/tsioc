@@ -1,8 +1,9 @@
-import { IModuleLoader, DefaultModuleLoader, lang } from '@ts-ioc/core';
+import { lang } from '@ts-ioc/ioc';
+import { ModuleLoader, IModuleLoader } from '@ts-ioc/core';
 
 declare let System: any;
 declare let require: any;
-export class BrowserModuleLoader extends DefaultModuleLoader implements IModuleLoader {
+export class BrowserModuleLoader extends ModuleLoader implements IModuleLoader {
 
     constructor() {
         super()

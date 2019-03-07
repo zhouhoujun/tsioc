@@ -1,9 +1,11 @@
-import { Injectable, IContainer, Inject, isString, Token, Registration, Type, isClass, ContainerToken } from '@ts-ioc/core';
+import { IContainer,  ContainerToken } from '@ts-ioc/core';
+import { Injectable, Inject, isString, Token, Registration, Type, isClass } from '@ts-ioc/ioc'
 import { ILoggerManager, LoggerManagerToken } from './ILoggerManager';
 import { LogConfigure, LogConfigureToken } from './LogConfigure';
-import { ILogger } from './ILogger';
 import { IConfigureLoggerManager, ConfigureLoggerManagerToken } from './IConfigureLoggerManager';
+import { ILogger } from './ILogger';
 import { NonePointcut } from '@ts-ioc/aop';
+
 
 /**
  * Configure logger manger. use to get configed logger manger.

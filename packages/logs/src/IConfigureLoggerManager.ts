@@ -1,6 +1,6 @@
 import { ILoggerManager } from './ILoggerManager';
 import { LogConfigure } from './LogConfigure';
-import { Type, InjectToken } from '@ts-ioc/core';
+import { Type, InjectToken } from '@ts-ioc/ioc';
 
 /**
  * IConfigureLoggerManager interface token.

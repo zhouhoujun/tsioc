@@ -1,11 +1,18 @@
-import { IIocContainer, Inject, IocExt, IocContainerToken, CreateInstanceAction, DesignLifeScope } from '@ts-ioc/ioc';
+import { Inject, CreateInstanceAction, DesignLifeScope } from '@ts-ioc/ioc';
 import { Aspect } from './decorators/Aspect';
 import { Advisor } from './Advisor';
-import { BindMethodPointcutAction, RegistAspectAction, ExetndsInstanceAction, InvokeBeforeConstructorAction, InvokeAfterConstructorAction, MatchPointcutAction } from './actions';
+import {
+    BindMethodPointcutAction, RegistAspectAction, ExetndsInstanceAction,
+    InvokeBeforeConstructorAction, InvokeAfterConstructorAction, MatchPointcutAction
+} from './actions';
 import { AdviceMatcher } from './AdviceMatcher';
 import { Joinpoint } from './joinpoints';
-import { ProxyMethod, AdvisorChainFactory, AdvisorChain, SyncProceeding, AsyncObservableProceeding, AsyncPromiseProceeding, ReturningRecognizer } from './access';
+import {
+    ProxyMethod, AdvisorChainFactory, AdvisorChain, SyncProceeding,
+    AsyncObservableProceeding, AsyncPromiseProceeding, ReturningRecognizer
+} from './access';
 import { RuntimeLifeScope, DecoratorRegisterer } from '@ts-ioc/ioc';
+import { IocExt, ContainerToken, IContainer } from '@ts-ioc/core';
 
 
 /**
@@ -17,7 +24,7 @@ import { RuntimeLifeScope, DecoratorRegisterer } from '@ts-ioc/ioc';
 @IocExt('setup')
 export class AopModule {
 
-    constructor(@Inject(IocContainerToken) private container: IIocContainer) {
+    constructor(@Inject(ContainerToken) private container: IContainer) {
 
     }
 

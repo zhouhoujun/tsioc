@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { Task, CtxType, Src } from '@ts-ioc/activities';
 import { CompilerOptions, ModuleResolutionKind, ModuleKind, ScriptTarget } from 'typescript';
-import { ObjectMap, lang, isArray, isBoolean } from '@ts-ioc/core';
+import { ObjectMap, lang, isArray, isBoolean } from '@ts-ioc/ioc';
 import { ShellActivity, ShellActivityConfig } from '../ShellActivity';
 
 
@@ -95,7 +95,7 @@ export class TscCompileActivity extends ShellActivity {
     }
 
     protected formatArgs(env: ObjectMap<any>): string[] {
-        let args = lang.assign(<CompilerOptions>{
+        let args = Object.assign(<CompilerOptions>{
             module: ModuleKind.CommonJS,
             target: ScriptTarget.ES5,
             sourceMap: true,

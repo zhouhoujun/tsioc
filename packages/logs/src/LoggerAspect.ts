@@ -1,7 +1,7 @@
 import { Level } from './Level';
 import { Joinpoint, JoinpointState } from '@ts-ioc/aop';
-import { IContainer, Abstract, isFunction, Type, isToken, isString, isClass, isObject, Registration, lang } from '@ts-ioc/core';
-
+import { IContainer } from '@ts-ioc/core';
+import {  Abstract, isFunction, Type, isToken, isString, isClass, isObject, Registration, lang } from '@ts-ioc/ioc'
 import { LoggerMetadata } from './decorators/Logger';
 import { LogConfigure } from './LogConfigure';
 import { ILogger } from './ILogger';

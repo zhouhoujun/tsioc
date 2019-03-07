@@ -3,10 +3,11 @@ import {
     ConfigureType, Active, IActivity, InjectAcitityToken,
     ActivityMetaAccessorToken, HandleType
 } from '@ts-ioc/activities';
-import { isBoolean, Token, Providers, MetaAccessorToken } from '@ts-ioc/core';
+import { isBoolean, Token, Providers } from '@ts-ioc/ioc';
 import { WatchActivity, WatchConfigure, WatchAcitvityToken } from './handles';
 import { BuidActivityContext } from './BuidActivityContext';
 import { BuildHandleConfigure, IBuildHandleActivity } from './BuildHandle';
+import { MetaAccessor } from '@ts-ioc/core';
 
 /**
  * builder configure.
@@ -117,7 +118,7 @@ export interface IBuildActivity extends IActivity {
  */
 @Task(BuildToken)
 @Providers([
-    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken }
+    { provide: MetaAccessor, useExisting: ActivityMetaAccessorToken }
 ])
 export class BuildActivity extends ChainActivity implements IBuildActivity {
     /**

@@ -114,10 +114,6 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         return this._baseURL || (resolver || this.getPools().getDefault()).resolve(ProcessRunRootToken) || '';
     }
 
-    protected createContainerBuilder(): IContainerBuilder {
-        return new ContainerBuilder();
-    }
-
     /**
      * use module as global Depdences module.
      *
@@ -189,19 +185,6 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         }
     }
 
-    protected isSame(mdb1: IModuleBuilder<any>, mdb2: IModuleBuilder<any>): boolean {
-        if (!mdb1 || !mdb2) {
-            return false;
-        }
-        if (mdb1 === mdb2) {
-            return true;
-        }
-        if (lang.getClass(mdb1) === lang.getClass(mdb2)) {
-            return true;
-        }
-        return false;
-    }
-
     /**
      * get module builder
      *
@@ -250,6 +233,23 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
             this.configMgr = this.createConfigureMgr();
         }
         return this.configMgr;
+    }
+
+    protected isSame(mdb1: IModuleBuilder<any>, mdb2: IModuleBuilder<any>): boolean {
+        if (!mdb1 || !mdb2) {
+            return false;
+        }
+        if (mdb1 === mdb2) {
+            return true;
+        }
+        if (lang.getClass(mdb1) === lang.getClass(mdb2)) {
+            return true;
+        }
+        return false;
+    }
+
+    protected createContainerBuilder(): IContainerBuilder {
+        return new ContainerBuilder();
     }
 
     protected createConfigureMgr() {

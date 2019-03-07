@@ -1,10 +1,11 @@
 import {
     Singleton, isString, IParameter, isDate, isArray, isClass,
-    lang, Refs, Container, isAbstractClass, isNull
-} from '@ts-ioc/core';
+    lang, Refs, isAbstractClass, isNull
+} from '@ts-ioc/ioc';
 import { Joinpoint, JoinpointState, NonePointcut } from '@ts-ioc/aop';
 import { LoggerAspect, LogFormaterToken, ILogFormater } from '@ts-ioc/logs';
 import chalk from 'chalk';
+import { Container } from '@ts-ioc/core';
 
 
 @NonePointcut()

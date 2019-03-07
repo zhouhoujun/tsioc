@@ -1,6 +1,7 @@
-import { IocExt, Inject, ContainerToken, IContainer, ModuleLoaderToken, ContainerBuilderToken } from '@ts-ioc/core';
+import { IocExt, ContainerToken, IContainer, ModuleLoader, ContainerBuilderToken } from '@ts-ioc/core';
 import { NodeModuleLoader } from './NodeModuleLoader';
 import { ServerContainerBuilder } from './ContainerBuilder';
+import { Inject } from '@ts-ioc/ioc';
 
 
 declare let process: any;
@@ -25,7 +26,7 @@ export class ServerModule {
      */
     setup() {
         let container = this.container;
-        container.bindProvider(ModuleLoaderToken, new NodeModuleLoader());
+        container.bindProvider(ModuleLoader, new NodeModuleLoader());
         container.bindProvider(ContainerBuilderToken, new ServerContainerBuilder());
     }
 }

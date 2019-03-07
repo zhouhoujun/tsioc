@@ -1,4 +1,4 @@
-import { ObjectMap } from '@ts-ioc/core';
+import { ObjectMap } from '@ts-ioc/ioc';
 
 /**
  * transform interface.

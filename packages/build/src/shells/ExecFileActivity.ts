@@ -1,4 +1,4 @@
-import { isString, isArray, isBoolean } from '@ts-ioc/core';
+import { isString, isArray, isBoolean } from '@ts-ioc/ioc';
 import { existsSync } from 'fs';
 import { Src, Task, CtxType } from '@ts-ioc/activities';
 import * as execa from 'execa';

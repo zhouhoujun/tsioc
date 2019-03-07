@@ -1,8 +1,9 @@
 import {
     Singleton, isString, isNull, IParameter, isDate, isFunction,
-    isArray, isClass, InjectToken, lang, Token, Container
-} from '@ts-ioc/core';
+    isArray, isClass, InjectToken, lang, Token
+} from '@ts-ioc/ioc';
 import { Joinpoint, JoinpointState, NonePointcut } from '@ts-ioc/aop';
+import { Container } from '@ts-ioc/core';
 
 
 /**

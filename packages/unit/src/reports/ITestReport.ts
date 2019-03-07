@@ -1,4 +1,4 @@
-import { Type, Token } from '@ts-ioc/core';
+import { Type, Token } from '@ts-ioc/ioc';
 
 
 /**

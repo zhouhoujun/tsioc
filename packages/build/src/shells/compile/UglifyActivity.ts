@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { Task, Src, CtxType } from '@ts-ioc/activities';
-import { lang, ObjectMap } from '@ts-ioc/core';
+import { lang, ObjectMap } from '@ts-ioc/ioc';
 import { ShellActivity, ShellActivityConfig } from '../ShellActivity';
 
 /**
@@ -87,7 +87,7 @@ export class ShellUglifyActivity extends ShellActivity {
 
     async onActivityInit(config: ShellUglifyConfigure) {
         await super.onActivityInit(config);
-        this.options = lang.assign({ silent: true }, this.options || {});
+        this.options = Object.assign({ silent: true }, this.options || {});
         this.src = await this.context.getFiles(this.context.to(config.src));
         this.dist = this.context.to(config.dist);
         this.uglifyOptions = this.context.to(config.uglifyOptions);
@@ -102,7 +102,7 @@ export class ShellUglifyActivity extends ShellActivity {
     }
 
     protected formatArgs(env: ObjectMap<any>): string[] {
-        let args = lang.assign({
+        let args = Object.assign({
             compress: true,
             mangle: true,
             toplevel: true,

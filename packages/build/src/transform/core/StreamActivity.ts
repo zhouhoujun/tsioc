@@ -1,9 +1,8 @@
 import { Task, ActivityConfigure } from '@ts-ioc/activities';
 import { ITransform } from './ITransform';
-import { isUndefined } from '@ts-ioc/core';
 import { TransformType, isTransform } from './transformTypes';
 import { InputDataToken, InjectActivityContextToken } from '@ts-ioc/activities';
-import { Injectable, Inject, isArray, isString } from '@ts-ioc/core';
+import { Injectable, Inject, isArray, isString, isUndefined } from '@ts-ioc/ioc';
 import { src } from 'vinyl-fs';
 import { Stream } from 'stream';
 import { CompilerActivity, BuildHandleContext } from '../../core';

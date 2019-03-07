@@ -1,5 +1,5 @@
 import { CleanActivity, TestActivity, IBuildActivity } from '@ts-ioc/build';
-import { Registration, Type } from '@ts-ioc/core';
+import { Registration, Type } from '@ts-ioc/ioc';
 import { ServeActivity } from '../serves';
 import { isAcitvityClass } from '@ts-ioc/activities';
 

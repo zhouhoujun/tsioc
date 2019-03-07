@@ -1,6 +1,6 @@
 import {
-    IIocContainer, Provider, Singleton, Inject, Type,
-    isFunction, IocContainerToken, DecoratorRegisterer, RuntimeLifeScope
+    Provider, Singleton, Inject, Type,
+    isFunction, DecoratorRegisterer, RuntimeLifeScope
 } from '@ts-ioc/ioc';
 import { Advices } from '../advices';
 import { JoinpointState, IPointcut } from '../joinpoints';
@@ -9,6 +9,7 @@ import { IAdvisor, AdvisorToken } from '../IAdvisor';
 import { IProxyMethod, ProxyMethodToken } from './IProxyMethod';
 import { AdvisorChainFactoryToken } from './IAdvisorChainFactory';
 import { NonePointcut } from '../decorators/NonePointcut';
+import { ContainerToken, IContainer } from '@ts-ioc/core';
 
 /**
  * Proxy method.
@@ -21,7 +22,7 @@ import { NonePointcut } from '../decorators/NonePointcut';
 @Singleton(ProxyMethodToken)
 export class ProxyMethod implements IProxyMethod {
 
-    constructor(@Inject(IocContainerToken) private container: IIocContainer) {
+    constructor(@Inject(ContainerToken) private container: IContainer) {
 
     }
 

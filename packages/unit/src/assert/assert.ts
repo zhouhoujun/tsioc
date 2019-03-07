@@ -1,4 +1,4 @@
-import { InjectToken, Abstract, Type } from '@ts-ioc/core';
+import { InjectToken, Abstract, Type } from '@ts-ioc/ioc';
 
 /**
  * assertion error options.

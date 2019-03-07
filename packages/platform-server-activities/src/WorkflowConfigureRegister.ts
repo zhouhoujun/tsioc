@@ -1,5 +1,5 @@
 import { ConfigureRegister, RunnableConfigure } from '@ts-ioc/bootstrap';
-import { Singleton } from '@ts-ioc/core';
+import { Singleton } from '@ts-ioc/ioc';
 import { DebugLogAspect } from '@ts-ioc/logs';
 
 

@@ -1,6 +1,7 @@
-import { Singleton, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
+import { IContainer, ContainerToken } from '@ts-ioc/core';
 import { Aspect, Around, Joinpoint } from '@ts-ioc/aop';
 import { LoggerAspect } from '../src';
+import { Singleton, Inject } from '@ts-ioc/ioc';
 
 @Singleton
 @Aspect

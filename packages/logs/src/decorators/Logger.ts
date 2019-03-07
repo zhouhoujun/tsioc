@@ -2,7 +2,7 @@ import { Level } from '../Level';
 import {
     Express, TypeMetadata, IClassMethodDecorator, createClassMethodDecorator,
     ClassMethodDecorator, isClassMetadata, isString, isFunction
-} from '@ts-ioc/core';
+} from '@ts-ioc/ioc';
 
 
 /**

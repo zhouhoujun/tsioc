@@ -1,6 +1,6 @@
-import { UglifyCompilerToken, AnnotationCompilerToken, SourceCompilerToken, SourcemapsCompilerToken, TestCompilerToken, AssetBuildHandle, BuildHandleContext } from '../core';
+import { UglifyCompilerToken, AssetBuildHandle, BuildHandleContext } from '../core';
 import { Asset } from '../decorators/Asset';
-import { Providers } from '@ts-ioc/core';
+import { Providers } from '@ts-ioc/ioc';
 import { ShellUglifyActivity } from './compile';
 import { Src } from '@ts-ioc/activities';
 import { ShellAssetToken } from './IShellAssetActivity';

@@ -1,4 +1,4 @@
-import { Providers } from '@ts-ioc/core';
+import { Providers } from '@ts-ioc/ioc';
 import {
     UglifyCompilerToken, AnnotationCompilerToken, AssetToken,
     SourceCompilerToken, SourcemapsCompilerToken,

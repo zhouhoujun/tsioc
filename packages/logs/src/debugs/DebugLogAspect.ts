@@ -1,7 +1,8 @@
-import { Singleton, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
+import { Singleton, Inject } from '@ts-ioc/ioc';
 import { Aspect, Around, Joinpoint, JoinpointState } from '@ts-ioc/aop';
 import { LoggerAspect } from '../LoggerAspect';
 import { Level } from '../Level';
+import { IContainer, ContainerToken } from '@ts-ioc/core';
 
 /**
  * debug log aspect.

@@ -1,5 +1,5 @@
 import { ISuiteDescribe, RealtimeReporter, ICaseDescribe } from '@ts-ioc/unit';
-import { Token, ObjectMap, lang } from '@ts-ioc/core';
+import { Token, ObjectMap, lang } from '@ts-ioc/ioc';
 import chalk from 'chalk';
 import { DIModule } from '@ts-ioc/bootstrap';
 import { ServerBootstrapModule } from '@ts-ioc/platform-server-bootstrap';

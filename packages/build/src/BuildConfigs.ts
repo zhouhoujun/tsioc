@@ -8,7 +8,7 @@ import {
     StreamSourceConfigure, StreamUglifyConfigure,
 } from './transform';
 import { ShellActivityConfig, ExecFileActivityConfig } from './shells';
-import { Type } from '@ts-ioc/core';
+import { Type } from '@ts-ioc/ioc';
 
 /**
  *  build configure.

@@ -1,6 +1,6 @@
 
 import { IActivity, Task, InjectTranslatorToken } from '@ts-ioc/activities';
-import { PromiseUtil, isArray, Token, lang } from '@ts-ioc/core';
+import { PromiseUtil, isArray, Token, lang } from '@ts-ioc/ioc';
 import { fromEventPattern } from 'rxjs';
 import { bufferTime, flatMap, filter, distinct, distinctUntilChanged } from 'rxjs/operators';
 import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
@@ -51,7 +51,7 @@ export class WatchActivity extends BuildHandleActivity implements IWatchActivity
         let watchSrc = await this.resolveExpression(config.src, ctx);
         watchSrc = ctx.toRootSrc(watchSrc);
         let options = await this.resolveExpression(config.options, ctx);
-        let watcher = chokidar.watch(watchSrc, lang.assign({ ignored: /[\/\\]\./, ignoreInitial: true }, options));
+        let watcher = chokidar.watch(watchSrc, Object.assign({ ignored: /[\/\\]\./, ignoreInitial: true }, options));
         let watchBody = this.body || ctx.target;
 
         let defer = PromiseUtil.defer();

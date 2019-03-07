@@ -1,4 +1,4 @@
-import { Inject, Injectable, isArray } from '@ts-ioc/core';
+import { Inject, Injectable, isArray } from '@ts-ioc/ioc';
 import { InputDataToken, InjectActivityContextToken } from '@ts-ioc/activities';
 import { BuildActivity } from './BuildActivity';
 import { NodeActivityContext } from './NodeActivity';

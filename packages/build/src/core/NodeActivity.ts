@@ -2,7 +2,7 @@ import {
     Src, Task, ActivityContext, InputDataToken, Activity,
     InjectActivityContextToken, ActivityMetaAccessorToken, ActivityConfigure
 } from '@ts-ioc/activities';
-import { Inject, Injectable, ObjectMap, Express2, isArray, isString, lang, Providers, MetaAccessorToken } from '@ts-ioc/core';
+import { Inject, Injectable, ObjectMap, Express2, isArray, isString, lang, Providers } from '@ts-ioc/ioc';
 import { toAbsolutePath } from '@ts-ioc/platform-server';
 import { existsSync, readdirSync, lstatSync } from 'fs';
 import { join, dirname, normalize, relative } from 'path';
@@ -13,6 +13,7 @@ import {
 import * as globby from 'globby';
 import { CmdOptions, INodeActivityContext } from './INodeContext';
 import { ProcessRunRootToken } from '@ts-ioc/bootstrap';
+import { MetaAccessor } from '@ts-ioc/core';
 
 const minimist = require('minimist');
 const del = require('del');
@@ -28,7 +29,7 @@ const del = require('del');
  */
 @Task
 @Providers([
-    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken }
+    { provide: MetaAccessor, useExisting: ActivityMetaAccessorToken }
 ])
 export abstract class NodeActivity extends Activity {
 

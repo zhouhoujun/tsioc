@@ -1,8 +1,8 @@
 import {
-    Inject, Express, ContainerToken, IContainer, Token, ProviderType, lang,
-    Providers, MetaAccessorToken, isFunction, isToken, isBaseObject, isClass,
+    Inject, Express, Token, ProviderType, lang,
+    Providers, isFunction, isToken, isBaseObject, isClass,
     Type, hasClassMetadata, getOwnTypeMetadata, isBoolean, isNullOrUndefined, enumerable
-} from '@ts-ioc/core';
+} from '@ts-ioc/ioc';
 import { Task } from '../decorators/Task';
 import { OnActivityInit } from './OnActivityInit';
 import { ActivityMetaAccessorToken } from './ActivityMetaAccessor';
@@ -10,6 +10,7 @@ import { IActivity, ActivityToken, WorkflowId } from './IActivity';
 import { ActivityConfigure, ExpressionType, Expression, ActivityType, Active, ExpressionToken } from './ActivityConfigure';
 import { IActivityContext, InputDataToken, InjectActivityContextToken, ActivityContextToken } from './IActivityContext';
 import { IActivityMetadata } from '../metadatas';
+import { ContainerToken, IContainer, MetaAccessor } from '@ts-ioc/core';
 
 
 /**
@@ -23,7 +24,7 @@ import { IActivityMetadata } from '../metadatas';
  */
 @Task(ActivityToken)
 @Providers([
-    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken }
+    { provide: MetaAccessor, useExisting: ActivityMetaAccessorToken }
 ])
 export abstract class Activity implements IActivity, OnActivityInit {
 

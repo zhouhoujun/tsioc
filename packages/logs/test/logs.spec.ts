@@ -1,10 +1,11 @@
 import {
-    Method, Inject, Injectable, IContainer, ContainerBuilder,
+    IContainer, ContainerBuilder,
 } from '@ts-ioc/core';
 import { LogModule, Logger } from '../src';
 import { DebugLogAspect } from './DebugLogAspect';
 import { AnntotationLogAspect } from './AnntotationLogAspect';
 import expect = require('expect');
+import { Injectable, Method, Inject } from '@ts-ioc/ioc';
 
 @Injectable
 class Person {

@@ -1,4 +1,4 @@
-import { Express2, ObjectMap } from '@ts-ioc/core';
+import { Express2, ObjectMap } from '@ts-ioc/ioc';
 import { Src, IActivityContext } from '@ts-ioc/activities';
 
 /**

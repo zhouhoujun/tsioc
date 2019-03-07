@@ -1,5 +1,5 @@
 import { Task, CtxType } from '@ts-ioc/activities';
-import { ObjectMap } from '@ts-ioc/core';
+import { ObjectMap } from '@ts-ioc/ioc';
 import { ShellActivity, ShellActivityConfig } from '../ShellActivity';
 
 /**

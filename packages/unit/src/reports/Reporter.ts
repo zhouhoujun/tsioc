@@ -1,4 +1,4 @@
-import { Token, lang, isClass, hasOwnClassMetadata, Type, Abstract } from '@ts-ioc/core';
+import { Token, lang, isClass, hasOwnClassMetadata, Type, Abstract } from '@ts-ioc/ioc';
 import { ISuiteDescribe, ICaseDescribe } from './ITestReport';
 
 

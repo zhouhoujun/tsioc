@@ -1,8 +1,9 @@
-import { ObjectMap, Inject, IContainer, ContainerToken, lang } from '@ts-ioc/core';
+import { IContainer, ContainerToken } from '@ts-ioc/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@ts-ioc/aop';
 import { LoggerAspect } from '@ts-ioc/logs';
 import chalk from 'chalk';
 import { Task } from '@ts-ioc/activities';
+import { ObjectMap, Inject, lang } from '@ts-ioc/ioc';
 const timestamp = require('time-stamp');
 const prettyTime = require('pretty-hrtime');
 

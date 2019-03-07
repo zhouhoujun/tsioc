@@ -5,7 +5,7 @@ import {
     AssetConfigure, SourceConfigure, SourceCompilerToken, DestConfigure, DestCompilerToken,
     UglifyConfigure, UglifyCompilerToken, SourceMapsConfigure, SourcemapsCompilerToken, AnnotationCompilerToken, IAssetBuildHandle
 } from './IAssetBuildHandle';
-import { isBoolean, isToken } from '@ts-ioc/core';
+import { isBoolean, isToken } from '@ts-ioc/ioc';
 import { CompilerActivity } from '../CompilerActivity';
 
 

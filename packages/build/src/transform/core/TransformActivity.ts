@@ -1,4 +1,4 @@
-import { isPromise, isToken, isMetadataObject, lang, isFunction } from '@ts-ioc/core';
+import { isPromise, isToken, isMetadataObject, lang, isFunction } from '@ts-ioc/ioc';
 import { ITransformActivity, TransformActivityToken } from './ITransformActivity';
 import { ITransform } from './ITransform';
 import { TransformType, TransformExpress, TransformConfig } from './transformTypes';

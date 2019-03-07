@@ -1,7 +1,8 @@
-import { ObjectMap, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
+import { IContainer, ContainerToken } from '@ts-ioc/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@ts-ioc/aop';
 import { LoggerAspect } from '@ts-ioc/logs';
 import { IWorkflowInstance, WorkflowInstance } from '@ts-ioc/activities';
+import { ObjectMap, Inject } from '@ts-ioc/ioc';
 /**
  * Task Log
  *

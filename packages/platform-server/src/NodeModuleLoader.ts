@@ -1,5 +1,6 @@
-import { IModuleLoader, Modules, DefaultModuleLoader } from '@ts-ioc/core';
+import { IModuleLoader, ModuleLoader } from '@ts-ioc/core';
 import { toAbsoluteSrc } from './toAbsolute';
+import { Modules } from '@ts-ioc/ioc';
 
 declare let require: any;
 
@@ -12,7 +13,7 @@ declare let require: any;
  * @class NodeModuleLoader
  * @implements {IModuleLoader}
  */
-export class NodeModuleLoader extends DefaultModuleLoader implements IModuleLoader {
+export class NodeModuleLoader extends ModuleLoader implements IModuleLoader {
 
     constructor() {
         super();

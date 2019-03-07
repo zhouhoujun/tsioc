@@ -1,4 +1,4 @@
-import { ObjectMap, InjectToken } from '@ts-ioc/core';
+import { ObjectMap, InjectToken } from '@ts-ioc/ioc';
 import { ILogger } from './ILogger';
 
 /**

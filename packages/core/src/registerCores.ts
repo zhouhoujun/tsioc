@@ -20,6 +20,6 @@ export function registerCores(container: IContainer) {
 
     let decRgr = container.resolve(DecoratorRegisterer);
     decRgr.register(IocExt, MethodAutorunAction);
-    
+
     container.resolve(ModuleInjectorManager).registerDefault(container);
 }

@@ -755,7 +755,9 @@ builder.build({
 
 ## Extend decorator
 
-see interface [LifeScope](https://github.com/zhouhoujun/@ts-ioc/core/blob/master/src/LifeScope.ts)
+see [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/ioc/src/services/LifeScope.ts)
+[RuntimeLifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/ioc/src/services/RuntimeLifeScope.ts)
+[DesignLifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/ioc/src/services/DesignLifeScope.ts)
 You can extend yourself decorator via:
 
 1. `createClassDecorator`

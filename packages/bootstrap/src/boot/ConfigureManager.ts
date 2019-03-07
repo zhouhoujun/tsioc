@@ -1,6 +1,4 @@
-import {
-    Inject, isUndefined, Singleton, isString
-} from '@ts-ioc/ioc';
+import { Inject, isUndefined, Singleton, isString } from '@ts-ioc/ioc';
 import {
     ConfigureMgrToken, ConfigureLoaderToken,
     IConfigureManager, DefaultConfigureToken

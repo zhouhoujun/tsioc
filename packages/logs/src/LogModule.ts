@@ -1,4 +1,5 @@
-import { Inject, IContainer, LifeState, CoreActions, ContainerToken, LifeScopeToken, IocExt } from '@ts-ioc/core';
+import { Inject, DecoratorRegisterer, BindParameterProviderAction } from '@ts-ioc/ioc';
+import { IContainer, ContainerToken, IocExt } from '@ts-ioc/core';
 import { AopModule } from '@ts-ioc/aop';
 import { Logger } from './decorators/Logger';
 import { AnnotationLogerAspect } from './AnnotationLogerAspect';
@@ -29,8 +30,8 @@ export class LogModule {
         if (!container.has(AopModule)) {
             container.register(AopModule);
         }
-        let lifeScope = container.get(LifeScopeToken);
-        lifeScope.registerDecorator(Logger, LifeState.onInit, CoreActions.bindParameterProviders);
+        let decReg = container.get(DecoratorRegisterer);
+        decReg.register(Logger, BindParameterProviderAction);
         container.register(ConfigureLoggerManger);
         container.register(AnnotationLogerAspect);
         container.register(LogFormater);

@@ -1,7 +1,8 @@
-import { IContainer, Injectable } from '@ts-ioc/core';
+import { IContainer } from '@ts-ioc/core';
 import { AppConfigure, ApplicationBuilder, IApplicationBuilder, IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken } from '@ts-ioc/bootstrap';
 import * as path from 'path';
 import { ServerModule } from '@ts-ioc/platform-server';
+import { Injectable } from '@ts-ioc/ioc';
 
 declare let require: any;
 

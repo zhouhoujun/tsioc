@@ -1,5 +1,5 @@
 
-import { MetadataExtends, MetadataAdapter, isString, isNumber, createMethodDecorator } from '@ts-ioc/core';
+import { MetadataExtends, MetadataAdapter, isString, isNumber, createMethodDecorator } from '@ts-ioc/ioc';
 import { TestMetadata, TestCaseMetadata } from '../metadata/TestMetadata';
 
 

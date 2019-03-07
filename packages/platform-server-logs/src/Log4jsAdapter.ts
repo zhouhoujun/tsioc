@@ -1,7 +1,7 @@
 
 import { ILoggerManager, ILogger, LoggerManagerToken } from '@ts-ioc/logs';
 import { NonePointcut } from '@ts-ioc/aop';
-import { Singleton, Injectable } from '@ts-ioc/core';
+import { Singleton, Injectable } from '@ts-ioc/ioc';
 
 /**
  * log4js logger manager adapter.

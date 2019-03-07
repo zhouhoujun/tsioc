@@ -1,10 +1,11 @@
 import { ActivityBuilderToken, IActivityBuilder } from './IActivityBuilder';
-import { isString, Token, Express, isToken, Providers, MetaAccessorToken, Singleton } from '@ts-ioc/core';
+import { isString, Token, Express, isToken, Providers, Singleton } from '@ts-ioc/ioc';
 import { AnnotationBuilder, BuildOptions, IAnnoBuildStrategy, AnnoBuildStrategyToken } from '@ts-ioc/bootstrap';
 import { IActivity, ActivityInstance, ActivityBuildStrategyToken } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
 import { ActivityMetaAccessorToken } from './ActivityMetaAccessor';
 import { isAcitvity } from './Activity';
+import { MetaAccessor } from '@ts-ioc/core';
 
 
 /**
@@ -17,7 +18,7 @@ import { isAcitvity } from './Activity';
  */
 @Singleton(ActivityBuilderToken)
 @Providers([
-    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken },
+    { provide: MetaAccessor, useExisting: ActivityMetaAccessorToken },
     { provide: AnnoBuildStrategyToken, useExisting: ActivityBuildStrategyToken }
 ])
 export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IActivityBuilder {

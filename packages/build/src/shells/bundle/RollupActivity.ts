@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { Task, Src, CtxType } from '@ts-ioc/activities';
-import { lang, ObjectMap } from '@ts-ioc/core';
+import { lang, ObjectMap } from '@ts-ioc/ioc';
 import { RollupDirOptions, RollupFileOptions, rollup } from 'rollup';
 import { ShellActivity, ShellActivityConfig } from '../ShellActivity';
 
@@ -126,7 +126,7 @@ export class RollupActivity extends ShellActivity {
     async onActivityInit(config: RollupActivityConfig) {
         await super.onActivityInit(config);
         this.src = await this.context.getFiles(this.context.to(config.src));
-        this.options = lang.assign({ silent: true }, this.options || {});
+        this.options = Object.assign({ silent: true }, this.options || {});
         this.rollupFileOptions = this.context.to(config.rollupFileOptions);
         this.rollupDirOptions = this.context.to(config.rollupDirOptions);
         this.rollupConfig = this.context.to(config.rollupConfig);
@@ -153,7 +153,7 @@ export class RollupActivity extends ShellActivity {
     }
 
     protected formatArgs(env: ObjectMap<any>): string[] {
-        let args = lang.assign({
+        let args = Object.assign({
             format: 'umd',
             file: 'bundle.js',
             dir: 'dist'

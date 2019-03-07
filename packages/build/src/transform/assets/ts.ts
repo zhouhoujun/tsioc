@@ -1,4 +1,4 @@
-import { isBoolean, ObjectMap, isString, Providers } from '@ts-ioc/core';
+import { isBoolean, ObjectMap, isString, Providers } from '@ts-ioc/ioc';
 import * as ts from 'gulp-typescript';
 import { CtxType, OnActivityInit, Task } from '@ts-ioc/activities';
 import {

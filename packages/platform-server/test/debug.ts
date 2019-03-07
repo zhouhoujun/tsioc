@@ -1,4 +1,5 @@
-import { AutoWired, Injectable, Param, Singleton, Registration, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
+import { AutoWired, Injectable, Param, Singleton, Registration, Inject } from '@ts-ioc/ioc';
+import { IContainer, ContainerToken } from '@ts-ioc/core';
 
 export class SimppleAutoWried {
     constructor() {

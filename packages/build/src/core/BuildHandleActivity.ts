@@ -4,16 +4,16 @@ import {
 } from '@ts-ioc/activities';
 import {
     isRegExp, isString, isArray, Express, isFunction,
-    Providers, MetaAccessorToken, lang
-} from '@ts-ioc/core';
+    Providers, lang, Inject, Injectable
+} from '@ts-ioc/ioc';
 import { BuidActivityContext } from './BuidActivityContext';
 import minimatch = require('minimatch');
 import { CompilerToken } from './ICompiler';
-import { Inject, Injectable } from '@ts-ioc/core';
 import { InputDataToken, InjectActivityContextToken } from '@ts-ioc/activities';
 import { NodeActivityContext } from './NodeActivity';
 import { BuildHandleToken, BuildHandleConfigure } from './BuildHandle';
 import { EmptyCompiler } from './CompilerActivity';
+import { MetaAccessor } from '@ts-ioc/core';
 
 
 /**
@@ -26,7 +26,7 @@ import { EmptyCompiler } from './CompilerActivity';
  */
 @Task(BuildHandleToken)
 @Providers([
-    { provide: MetaAccessorToken, useExisting: ActivityMetaAccessorToken },
+    { provide: MetaAccessor, useExisting: ActivityMetaAccessorToken },
     { provide: CompilerToken, useClass: EmptyCompiler }
 ])
 export class BuildHandleActivity extends HandleActivity {
@@ -147,7 +147,7 @@ export class BuildHandleContext<T> extends NodeActivityContext<T> {
     }
 
     protected setConfig(config: BuildHandleConfigure, ctx?: IActivityContext) {
-        this.config =  lang.assign({}, (ctx ? ctx.config : {}), config);
+        this.config =  Object.assign({}, (ctx ? ctx.config : {}), config);
         this.config.title = '';
     }
 

@@ -1,5 +1,5 @@
 import { Src, InjectTranslatorToken, Translator } from '@ts-ioc/activities';
-import { Injectable } from '@ts-ioc/core';
+import { Injectable } from '@ts-ioc/ioc';
 import * as globby from 'globby';
 
 /**

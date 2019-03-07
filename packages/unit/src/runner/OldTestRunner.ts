@@ -1,8 +1,9 @@
-import { Inject, ContainerToken, IContainer, MapSet, PromiseUtil, Singleton, Token } from '@ts-ioc/core';
+import { Inject, PromiseUtil, Singleton, Token } from '@ts-ioc/ioc';
 import { ISuiteRunner } from './ISuiteRunner';
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { Assert } from '../assert';
 import { RunnableOptions, BootOptions } from '@ts-ioc/bootstrap';
+import { ContainerToken, IContainer } from '@ts-ioc/core';
 
 declare let window: any;
 declare let global: any;
@@ -36,7 +37,7 @@ export class OldTestRunner implements ISuiteRunner {
     timeout: number;
     describe: string;
 
-    suites: MapSet<string, ISuiteDescribe>;
+    suites: Map<string, ISuiteDescribe>;
 
     getTargetType(): Token<any> {
         return null;
@@ -48,7 +49,7 @@ export class OldTestRunner implements ISuiteRunner {
     }
 
     constructor(timeout?: number) {
-        this.suites = new MapSet();
+        this.suites = new Map();
         this.timeout = timeout || (3 * 60 * 60 * 1000);
     }
 
@@ -170,7 +171,7 @@ export class OldTestRunner implements ISuiteRunner {
 
     async run(data?: any): Promise<any> {
         try {
-            await PromiseUtil.step(this.suites.values().map(desc => () => this.runSuite(desc)));
+            await PromiseUtil.step(Array.from(this.suites.values()).map(desc => () => this.runSuite(desc)));
         } catch (err) {
             // console.error(err);
         }

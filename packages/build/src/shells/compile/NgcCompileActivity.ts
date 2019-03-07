@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { Task, CtxType } from '@ts-ioc/activities';
-import { lang } from '@ts-ioc/core';
+import { lang } from '@ts-ioc/ioc';
 import { ShellActivity, ShellActivityConfig } from '../ShellActivity';
 
 export interface AngularConfig {
@@ -52,7 +52,7 @@ export class NgcCompileActivity extends ShellActivity {
 
     async onActivityInit(config: NgcCompileActivityConfig) {
         await super.onActivityInit(config);
-        this.options = lang.assign({silent: true}, this.options || {});
+        this.options = Object.assign({silent: true}, this.options || {});
         this.tsconfig = this.context.to(config.tsconfig);
         this.shell = this.shell || path.join(this.context.getRootPath(), 'node_modules', '.bin', 'ngc');
     }

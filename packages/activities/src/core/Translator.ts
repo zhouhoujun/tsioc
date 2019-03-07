@@ -30,6 +30,7 @@ export class InjectTranslatorToken<T, TR> extends Registration<Translator<T, TR>
         super(type, 'Translator');
     }
 }
+
 /**
  * base translator.
  *

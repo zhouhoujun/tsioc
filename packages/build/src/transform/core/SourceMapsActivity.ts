@@ -3,7 +3,7 @@ import { ITransform } from './ITransform';
 import { TransformContext } from './StreamActivity';
 import { StreamActivity } from './StreamActivity';
 import { SourceMapsConfigure } from '../../core';
-import { isBoolean } from '@ts-ioc/core';
+import { isBoolean } from '@ts-ioc/ioc';
 
 
 /**

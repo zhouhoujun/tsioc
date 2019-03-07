@@ -1,6 +1,6 @@
 import { IBuildHandleActivity, BuildHandleConfigure } from '../BuildHandle';
 import {  ISourceCompiler, ICompiler, ISourcemapsCompiler, CompilerConfigure, InjectCompilerToken } from '../ICompiler';
-import { Registration, ObjectMap } from '@ts-ioc/core';
+import { Registration, ObjectMap } from '@ts-ioc/ioc';
 import { IWatchActivity, WatchConfigure } from './IWatchActivity';
 import { ExpressionToken, ConfigureType, CtxType, ExpressionType, Src } from '@ts-ioc/activities';
 

@@ -1,7 +1,7 @@
 import {
-    Injectable, isNullOrUndefined, Inject, IContainer, ContainerToken, isFunction,
+    Injectable, isNullOrUndefined, Inject, isFunction,
     isPromise, Type, hasOwnClassMetadata, ObjectMap, isClass, Express, enumerable
-} from '@ts-ioc/core';
+} from '@ts-ioc/ioc';
 import { IActivity } from './IActivity';
 import { ITranslator } from './Translator';
 import { Events, ProcessRunRootToken } from '@ts-ioc/bootstrap';
@@ -11,6 +11,7 @@ import { ActivityBuilder } from './ActivityBuilder';
 import { Expression, ActivityConfigure, isWorkflowInstance } from './ActivityConfigure';
 import { Task } from '../decorators/Task';
 import { isAcitvity } from './Activity';
+import { ContainerToken, IContainer } from '@ts-ioc/core';
 
 
 

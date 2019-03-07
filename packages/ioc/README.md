@@ -1,4 +1,4 @@
-# packaged @ts-ioc/core
+# packaged @ts-ioc/ioc
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
@@ -26,13 +26,8 @@ npm run build -- --setvs=4.0.0-beta
 
 ```shell
 
-npm install @ts-ioc/core
+npm install @ts-ioc/ioc
 
-// in browser
-npm install @ts-ioc/platform-browser
-
-// in server
-npm install @ts-ioc/platform-server
 ```
 
 ## add extends modules
@@ -145,69 +140,7 @@ see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/maste
 
 [mvc boot simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
 
-```ts
 
-import { DIModule, ApplicationBuilder } from '@ts-ioc/bootstrap';
-
-
-export class TestService {
-    testFiled = 'test';
-    test() {
-        console.log('test');
-    }
-}
-
-@DIModule({
-    providers: [
-        { provide: 'mark', useFactory: () => 'marked' },
-        TestService
-    ],
-    exports: [
-
-    ]
-})
-export class ModuleA {
-
-}
-
-@Injectable
-export class ClassSevice {
-    @Inject('mark')
-    mark: string;
-    state: string;
-    start() {
-        console.log(this.mark);
-    }
-}
-
-@Aspect
-export class Logger {
-
-    @Around('execution(*.start)')
-    log() {
-        console.log('start........');
-    }
-}
-
-
-@DIModule({
-    imports: [
-        AopModule,
-        Logger,
-        ModuleA
-    ],
-    exports: [
-        ClassSevice
-    ],
-    bootstrap: ClassSevice
-})
-export class ModuleB {
-
-}
-
-ApplicationBuilder.create(__dirname)
-    .bootstrap(ModuleB)
-```
 ## [Activites](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities)
 
 * [activities](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities)
@@ -216,29 +149,9 @@ ApplicationBuilder.create(__dirname)
 
 ### create Container
 
-* in browser can not:
-    1. use syncBuild
-    2. syncLoadModule
-    3. can not use minimatch to match file.
-    4. support es5 uglify, [@ts-ioc/annotations](https://www.npmjs.com/package/@ts-ioc/annotations)  [] or [typescript-class-annotations](https://www.npmjs.com/package/typescript-class-annotations) to get class annotations before typescript compile.
-
 ```ts
-let builder = new ContainerBuilder();
 
-// 1. via create.
-let container = builder.create();
-
-// 2. via build.
-//with BuildOptions to auto register module.
-let container = await builder.build({
-  files: [__dirname +'/controller/**/*.ts', __dirname + '/*.model.js'],
-  moudles:['node-modules-name', ClassType]
-});
-
-// 3. via syncBuild
-let container = builder.syncBuild({
-  moudles:['node-modules-name', ClassType]
-});
+let container = new IocContainer();
 
 ```
 
@@ -247,163 +160,38 @@ let container = builder.syncBuild({
 see interface [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IContainer.ts)
 
 ```ts
-// 1.  you can load modules by self
-await builder.loadModule(container, {
-  files: [__dirname +'/controller/**/*.ts', __dirname + '/*.model.js'],
-  moudles:['node-modules-name', ClassType]
-});
-// 2. load sync
-builder.syncLoadModule(container, {
-  moudles:['node-modules-name', ClassType]
-});
 
-// 3. use modules
-container.use(...modules);
 
-// 4. register a class
+
+// 1. register a class
 container.register(Person);
 
-// 5. register a factory;
+// 2. register a factory;
 container.register(Person, (container)=> {
     ...
     return new Person(...);
 });
 
-// 6. register with keyword
+// 3. register with keyword
 container.register('keyword', Perosn);
 
-// 8. register with alais
+// 4. register with alais
 container.register(new Registration(Person, aliasname));
 
-```
+// register singleton
+container.registerSingleton(Person)
 
-### get instance of type
-
-```ts
-// 8. get instance use get method of container.
-    /**
-     * resolve type instance with token and param provider.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IResolver
-     */
-    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
-    /**
-     * Retrieves an instance from the container based on the provided token.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    get<T>(token: Token<T>, alias?: string, ...providers: ProviderTypes[]): T;
-
-    /**
-     * resolve token value in this container only.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    resolveValue<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {Token<T>} token servive token.
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {Token<T>} token servive token.
-     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], ...providers: ProviderTypes[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {Token<T>} token servive token.
-     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
-     * @param {RefTokenFac<T>} toRefToken
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], toRefToken: RefTokenFac<T>, ...providers: ProviderTypes[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {Token<T>} token servive token.
-     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
-     * @param {(boolean | Token<T>)} defaultToken
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], defaultToken: boolean | Token<T>, ...providers: ProviderTypes[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {Token<T>} token servive token.
-     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
-     * @param {RefTokenFac<T>} toRefToken
-     * @param {(boolean | Token<T>)} defaultToken
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], toRefToken: RefTokenFac<T>, defaultToken: boolean | Token<T>, ...providers: ProviderTypes[]): T;
-
-    /**
-     * get target reference service.
-     *
-     * @template T
-     * @param {ReferenceToken<T>} [refToken] reference service Registration Injector
-     * @param {(Token<any> | Token<any>[])} target  the service reference to.
-     * @param {Token<T>} [defaultToken] default service token.
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any> | Token<any>[], defaultToken?: Token<T>, ...providers: ProviderTypes[]): T
-
-
-//get simple person
-let person = container.get(Person);
-//get colloge person
-let person = container.get(Person, 'Colloge');
-
-// resolve with providers
-container.resolve(Person, ...providers);
+// bind provider
+container.bindProvider
+// bind providers.
+container.bindProviders
 
 ```
+more see inteface [IIocContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/ioc/src/IIocContainer.ts)
 
 ### Invoke method
 
-you can use yourself `MethodAccessor` by implement IMethodAccessor, register `MethodAccessorToken` with your `MethodAccessor` in container,   see interface [IMethodAccessor](https://github.com/zhouhoujun/@ts-ioc/core/blob/master/packages/core/src/IMethodAccessor.ts).
+you can use yourself `MethodAccessor` by implement IMethodAccessor, register `MethodAccessorToken` with your `MethodAccessor` in container,   see interface [MethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/packages/ioc/src/services/MethodAccessor.ts).
 
 ```ts
 

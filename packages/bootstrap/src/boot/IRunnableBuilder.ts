@@ -1,4 +1,4 @@
-import { Token, InjectToken, LoadType, Factory, IResolver, ParamProviders } from '@ts-ioc/ioc';
+import { Token, InjectToken, LoadType, Factory, IResolver } from '@ts-ioc/ioc';
 import { AppConfigure } from './AppConfigure';
 import { IModuleBuilder, ModuleConfig, ModuleResovler, BootOptions } from '../modules';
 import { Events, IEvents } from '../utils';
@@ -145,5 +145,7 @@ export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends
  * runable builder token.
  */
 export const RunnableBuilderToken = new InjectToken<IRunnableBuilder<any>>('DI_RunnableBuilder');
-
+/**
+ * current runable builder token.
+ */
 export const CurrentRunnableBuilderToken = new InjectToken<IRunnableBuilder<any>>('Current_DI_RunnableBuilder');

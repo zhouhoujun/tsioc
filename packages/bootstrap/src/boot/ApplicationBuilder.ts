@@ -1,10 +1,10 @@
 import { Injectable } from '@ts-ioc/ioc';
 import { AppConfigure } from './AppConfigure';
 import { IApplicationBuilder, ApplicationBuilderToken } from './IApplicationBuilder';
-import { IEvents } from '../utils';
 import { RunnableBuilder, RunnableEvents } from './RunnableBuilder';
 import { IConfigureManager } from './IConfigureManager';
 import { ModuleConfigure } from '../modules';
+import { IEvents } from '../utils';
 
 /**
  * application events

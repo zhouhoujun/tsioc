@@ -1,5 +1,6 @@
-import { IContainer, Inject, ContainerToken, LifeScopeToken, IocExt, CoreActions } from '@ts-ioc/core';
+import { IContainer, ContainerToken, IocExt } from '@ts-ioc/core';
 import { Suite } from './decorators/Suite';
+import { Inject, DecoratorRegisterer, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentAfterInitAction, ComponentInitAction } from '@ts-ioc/ioc';
 
 
 /**
@@ -21,7 +22,8 @@ export class UnitSetup {
      * @memberof AopModule
      */
     setup() {
-        let lifeScope = this.container.get(LifeScopeToken);
-        lifeScope.registerDecorator(Suite, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
+        let decReg = this.container.get(DecoratorRegisterer);
+        decReg.register(Suite, BindProviderAction, IocGetCacheAction, IocSetCacheAction,
+            ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
     }
 }
