@@ -1,15 +1,16 @@
 import {
     IocCoreService, IIocContainer, Token,
-    ClassType, ParamProviders,
+    ClassType, ParamProviders, Singleton, Inject,
 } from '@ts-ioc/ioc';
 import { IServicesResolver } from '../IServicesResolver';
 import { IteratorService } from './IteratorService';
+import { ContainerToken } from '../IContainer';
 
+@Singleton
 export class ServicesResolver extends IocCoreService implements IServicesResolver {
 
-    constructor(private container: IIocContainer) {
-        super();
-    }
+    @Inject(ContainerToken)
+    private container: IIocContainer
 
     /**
      * get all service extends type and reference target.

@@ -2,20 +2,21 @@ import {
     IIocContainer, IocCoreService, isArray,
     isInjectReference, isClassType, isToken, isClass,
     lang, Token, ClassType, isTypeObject, ParamProviders,
-    InjectReference, ProviderMap, isRegistrationClass, isFunction, Singleton
+    InjectReference, ProviderMap, isRegistrationClass, isFunction, Singleton, Inject
 } from '@ts-ioc/ioc';
 import { IRefServiceResolver } from '../IRefServiceResolver';
 import {
     ReferenceToken, RefTarget, RefTagLevel,
     isRefTarget, RefTokenFacType, RefTokenType
 } from '../types';
+import { ContainerToken } from '../IContainer';
 
 @Singleton
 export class RefServiceResolver extends IocCoreService implements IRefServiceResolver {
 
-    constructor(private container: IIocContainer) {
-        super();
-    }
+    @Inject(ContainerToken)
+    private container: IIocContainer;
+
 
     /**
     * get target reference service.

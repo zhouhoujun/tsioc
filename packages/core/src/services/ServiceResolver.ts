@@ -1,6 +1,6 @@
 import {
     ParamProviders, Token, isArray, isToken, isTypeObject,
-    isClass, isBoolean, isFunction, InjectReference, IocCoreService, Inject
+    isClass, isBoolean, isFunction, InjectReference, IocCoreService, Inject, IIocContainer
 } from '@ts-ioc/ioc';
 import { IServiceResolver } from '../IServiceResolver';
 import { RefTarget, isRefTarget, RefTokenFac } from '../types';
@@ -17,7 +17,7 @@ import { RefServiceResolver } from './RefServiceResolver';
 export class ServiceResolver extends IocCoreService implements IServiceResolver {
 
     @Inject(ContainerToken)
-    container: IContainer
+    container: IIocContainer
 
     /**
      * get service or target reference service.
@@ -35,7 +35,7 @@ export class ServiceResolver extends IocCoreService implements IServiceResolver 
             (isArray(token) ? token : [token]).forEach(tk => {
                 tokens.push(tk);
                 if (!isClass(tk)) {
-                    tokens.push(this.container.getTokenImpl(tk));
+                    tokens.push(this.container.getTokenProvider(tk));
                 }
             });
 
