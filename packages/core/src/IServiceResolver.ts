@@ -1,5 +1,5 @@
-import { Token, ParamProviders } from '@ts-ioc/ioc';
-import { RefTarget, RefTokenFac } from './types';
+import { Token, ProviderTypes } from '@ts-ioc/ioc';
+import { ServiceResolveContext } from './ServiceResolveContext';
 
 /**
  * service resolver.
@@ -12,63 +12,48 @@ export interface IServiceResolver {
      * get service or target reference service.
      *
      * @template T
-     * @param {(Token<T> | Token<any>[])} token servive token.
-     * @param {...ParamProviders[]} providers
+     * @param {Token<T>} token servive token.
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getService<T>(token: Token<T> | Token<any>[], ...providers: ParamProviders[]): T;
+    getService<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
 
     /**
      * get service or target reference service.
      *
      * @template T
-     * @param {(Token<T> | Token<any>[])} token servive token.
-     * @param {(RefTarget | RefTarget[])} [target] service refrence target.
-     * @param {...ParamProviders[]} providers
+     * @param {Token<T>} token servive token.
+     * @param {*} [target] service refrence target.
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getService<T>(token: Token<T> | Token<any>[], target: RefTarget | RefTarget[], ...providers: ParamProviders[]): T;
+    getService<T>(token: Token<T>, target: any, ...providers: ProviderTypes[]): T;
 
     /**
      * get service or target reference service.
      *
      * @template T
-     * @param {(Token<T> | Token<any>[])} token servive token.
-     * @param {(RefTarget | RefTarget[])} [target] service refrence target.
-     * @param {RefTokenFac<T>} toRefToken
-     * @param {...ParamProviders[]} providers
+     * @param {Token<T>} token
+     * @param {ServiceResolveContext} ctx
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
-     * @memberof IContainer
+     * @memberof IServiceResolver
      */
-    getService<T>(token: Token<T> | Token<any>[], target: RefTarget | RefTarget[], toRefToken: RefTokenFac<T>, ...providers: ParamProviders[]): T;
+    getService<T>(token: Token<T>, ctx: ServiceResolveContext, ...providers: ProviderTypes[]): T;
 
     /**
      * get service or target reference service.
      *
      * @template T
-     * @param {(Token<T> | Token<any>[])} token servive token.
-     * @param {(RefTarget | RefTarget[])} [target] service refrence target.
-     * @param {(boolean | Token<T>)} defaultToken
-     * @param {...ParamProviders[]} providers
+     * @param {Token<T>} token
+     * @param {*} target
+     * @param {ServiceResolveContext} ctx
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
-     * @memberof IContainer
+     * @memberof IServiceResolver
      */
-    getService<T>(token: Token<T> | Token<any>[], target: RefTarget | RefTarget[], defaultToken: boolean | Token<T>, ...providers: ParamProviders[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {(Token<T> | Token<any>[])} token servive token.
-     * @param {(RefTarget | RefTarget[])} [target] service refrence target.
-     * @param {RefTokenFac<T>} toRefToken
-     * @param {(boolean | Token<T>)} defaultToken
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T> | Token<any>[], target: RefTarget | RefTarget[], toRefToken: RefTokenFac<T>, defaultToken: boolean | Token<T>, ...providers: ParamProviders[]): T;
+    getService<T>(token: Token<T>, target: any, ctx: ServiceResolveContext, ...providers: ProviderTypes[]): T;
 
 }

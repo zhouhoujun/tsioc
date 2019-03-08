@@ -1,10 +1,11 @@
-import { IocResolveAction, IResovleContext } from './Action';
+import { IocResolveAction } from './Action';
 import { isNullOrUndefined } from '../utils';
+import { ResovleContext } from '../ResovleContext';
 
 export class IocDefaultResolveAction extends IocResolveAction {
-    execute(ctx: IResovleContext, next: () => void): void {
-        if (ctx.raiseContainer.has(ctx.key)) {
-            ctx.instance = ctx.factory(ctx.key)(...ctx.providers);
+    execute(ctx: ResovleContext, next: () => void): void {
+        if (ctx.has(ctx.tokenKey)) {
+            ctx.instance = ctx.get(ctx.tokenKey, ...ctx.providers);
         }
         if (isNullOrUndefined(ctx.instance)) {
             next();

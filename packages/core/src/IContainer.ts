@@ -4,7 +4,6 @@ import {
 } from '@ts-ioc/ioc';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IServiceResolver } from './IServiceResolver';
-import { IRefServiceResolver } from './IRefServiceResolver';
 import { IServicesResolver } from './IServicesResolver';
 import { IModuleLoader } from './services';
 
@@ -20,7 +19,7 @@ export const ContainerToken = new InjectToken<IContainer>('DI_IContainer');
  * @export
  * @interface IContainer
  */
-export interface IContainer extends IIocContainer, IServiceResolver, IRefServiceResolver, IServicesResolver {
+export interface IContainer extends IIocContainer, IServiceResolver, IServicesResolver {
 
     /**
      * get container builder of this container.

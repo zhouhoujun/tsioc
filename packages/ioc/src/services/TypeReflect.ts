@@ -47,7 +47,6 @@ export interface ITypeReflect extends ClassMetadata {
      * @memberof ITypeReflect
      */
     provides?: Token<any>[];
-
     /**
      * bund decorators of class
      *
@@ -61,6 +60,13 @@ export interface ITypeReflect extends ClassMetadata {
     compAfterInit?: boolean;
 }
 
+/**
+ * type reflects.
+ *
+ * @export
+ * @class TypeReflects
+ * @extends {IocCoreService}
+ */
 export class TypeReflects extends IocCoreService {
     map: Map<ClassType<any>, ITypeReflect>;
     constructor() {

@@ -1,9 +1,10 @@
 import { IIocContainer } from '../IIocContainer';
-import { ProviderMap, ParamProviders, ProviderTypes } from '../providers';
+import { ProviderMap, ParamProviders } from '../providers';
 import { IParameter } from '../IParameter';
-import { Type, Token, ObjectMap, SymbolType, InstanceFactory } from '../types';
+import { Type, Token, ObjectMap } from '../types';
 import { IocCoreService, ITypeReflect } from '../services';
 import { lang } from '../utils';
+import { ResovleContext } from '../ResovleContext';
 
 
 /**
@@ -134,7 +135,7 @@ export abstract class IocAction<T> extends IocCoreService {
     abstract execute(ctx: T, next: () => void): void;
 }
 
-export type IocActionType = Type<IocRegisterAction> | IocAction<any> | lang.IAction<any>;
+export type IocActionType = Type<IocAction<any>> | IocAction<any> | lang.IAction<any>;
 
 /**
  * ioc register action.
@@ -145,49 +146,7 @@ export type IocActionType = Type<IocRegisterAction> | IocAction<any> | lang.IAct
  * @extends {IocAction<IocActionContext>}
  */
 export abstract class IocRegisterAction extends IocAction<IocActionContext> {
-}
-
-/**
- * reslv
- *
- * @export
- * @interface IResovlerContext
- */
-export interface IResovleContext {
-    /**
-     * resovle key.
-     *
-     * @type {SymbolType<any>}
-     * @memberof IResovleContext
-     */
-    key: SymbolType<any>;
-    /**
-     * factory.
-     *
-     * @memberof IResovleContext
-     */
-    factory: (key) => InstanceFactory<any>;
-    /**
-     * container, the action raise from.
-     *
-     * @type {IContainer}
-     * @memberof ActionData
-     */
-    raiseContainer: IIocContainer;
-    /**
-     * resolver providers.
-     *
-     * @type {ParamProviders[]}
-     * @memberof IResovleContext
-     */
-    providers?: ProviderTypes[];
-    /**
-     * reslove result instance.
-     *
-     * @type {*}
-     * @memberof IResovleContext
-     */
-    instance?: any;
+    isRegister = true;
 }
 
 /**
@@ -198,5 +157,6 @@ export interface IResovleContext {
  * @class IocResolveAction
  * @extends {IocAction<IResovleContext>}
  */
-export abstract class IocResolveAction extends IocAction<IResovleContext> {
+export abstract class IocResolveAction extends IocAction<ResovleContext> {
+    isResolve = true;
 }

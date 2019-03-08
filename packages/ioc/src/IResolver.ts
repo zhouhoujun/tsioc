@@ -1,5 +1,6 @@
 import { Token, Type, InstanceFactory } from './types';
-import { ParamProviders } from './providers';
+import { ProviderTypes } from './providers';
+import { ResovleContext } from './ResovleContext';
 
 /**
  * resolver.
@@ -34,22 +35,22 @@ export interface IResolver {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {...ParamProviders[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IResolver
      */
-    resolve<T>(token: Token<T>, ...providers: ParamProviders[]): T;
+    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
 
     /**
      * resolve type instance with token and param provider.
      *
      * @template T
      * @param {Token<T>} token
-     * @param {...ParamProviders[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IResolver
      */
-    resolve<T>(token: Token<T>, ...providers: ParamProviders[]): T;
+    resolve<T>(token: Token<T>, context?: ResovleContext, ...providers: ProviderTypes[]): T;
 
     /**
      * unregister the token
@@ -87,7 +88,7 @@ export interface IResolverContainer extends IResolver {
      * @returns {Type<T>}
      * @memberof IResolver
      */
-    getTokenProvider<T>(token: Token<T>): Type<T>
+    getTokenProvider<T>(token: Token<T>): Type<T>;
 
     /**
      * iterator current resolver.

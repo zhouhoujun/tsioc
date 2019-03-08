@@ -1,4 +1,5 @@
-import { ClassType, Token, ParamProviders } from '@ts-ioc/ioc';
+import { ClassType, Token, ProviderTypes } from '@ts-ioc/ioc';
+import { ServiceResolveContext } from './ServiceResolveContext';
 
 /**
  * services resolver.
@@ -12,35 +13,45 @@ export interface IServicesResolver {
      * get all service extends type.
      *
      * @template T
-     * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
+     * @param {token: Token<T>} type servive token or express match token.
+     * @param {...ProviderTypes[]} providers
+     * @returns {T[]} all service instance type of token type.
      * @memberof IContainer
      */
-    getServices<T>(type: ClassType<T> | ((token: ClassType<T>) => boolean), ...providers: ParamProviders[]): T[];
+    getServices<T>(token: Token<T>, ...providers: ProviderTypes[]): T[];
 
     /**
-    * get all private services of target extends class `type`.
+     * get services
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {ServiceResolveContext} ctx
+     * @returns {T[]}
+     * @memberof IServicesResolver
+     */
+    getServices<T>(token: Token<T>, ctx: ServiceResolveContext): T[];
+    /**
+    * get all private services of target extends class `token`.
     * @template T
-    * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
-    * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
-    * @param {...ParamProviders[]} providers
-    * @returns {T}
+    * @param {type: Token<T>} token servive token.
+    * @param {*} [target] service private of target.
+    * @param {...ProviderTypes[]} providers
+    * @returns {T[]} all service instance type of token type.
     * @memberof IContainer
     */
-    getServices<T>(type: Token<T> | ((token: ClassType<T>) => boolean), target: Token<any> | Token<any>[], ...providers: ParamProviders[]): T[];
+    getServices<T>(token: Token<T>, target: any, ...providers: ProviderTypes[]): T[];
 
     /**
     * get all servies extends class `type` and all private services of target extends class `type`.
     *
     * @template T
-    * @param {(Token<T> | ((token: ClassType<T>) => boolean))} type servive token or express match token.
-    * @param {(ClassType<any> | ClassType<any>[])} [target] service private of target.
-    * @param {boolean} both if true, will get all server and target private service of class extends `type` .
-    * @param {...ParamProviders[]} providers
+    * @param {type: Token<T>} token servive token.
+    * @param {*} [target] service private of target.
+    * @param {ServiceResolveContext} service resolve context.
+    * @param {...ProviderTypes[]} providers
     * @returns {T}
     * @memberof IContainer
     */
-    getServices<T>(type: Token<T> | ((token: ClassType<T>) => boolean), target: Token<any> | Token<any>[], both: boolean, ...providers: ParamProviders[]): T[];
+    getServices<T>(token: Token<T>, target: any, ctx: ServiceResolveContext, ...providers: ProviderTypes[]): T[];
 
 }

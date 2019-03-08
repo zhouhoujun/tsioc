@@ -8,5 +8,5 @@ import { IocCoreService } from '@ts-ioc/ioc';
  * @extends {IocCoreService}
  */
 export class RefServiceChain extends IocCoreService {
-    
+
 }

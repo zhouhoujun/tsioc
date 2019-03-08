@@ -53,11 +53,11 @@ export interface IIocContainer extends IResolverContainer {
      * @template T
      * @param {Token<T>} token
      * @param {string} [alias]
-     * @param {...ParamProviders[]} providers
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    get<T>(token: Token<T>, alias?: string, ...providers: ParamProviders[]): T;
+    get<T>(token: Token<T>, alias?: string, ...providers: ProviderTypes[]): T;
 
     /**
      * register type.

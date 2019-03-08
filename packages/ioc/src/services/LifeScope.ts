@@ -14,42 +14,73 @@ import { getOwnParamerterNames } from '../factories';
  */
 export abstract class LifeScope<TCtx> extends IocCoreService {
 
-    actions: IocActionType[];
+    protected actions: IocActionType[];
     constructor() {
         super();
         this.actions = [];
     }
 
-    use(action: IocActionType): this {
-        this.actions.push(action);
+    /**
+     * use action.
+     *
+     * @param {IocActionType} action
+     * @param {boolean} [first]  use action at first or last.
+     * @returns {this}
+     * @memberof LifeScope
+     */
+    use(action: IocActionType, first?: boolean): this {
+        if (first) {
+            this.actions.unshift(action);
+        } else {
+            this.actions.push(action);
+        }
         return this;
     }
 
+    /**
+     * use action before
+     *
+     * @param {IocActionType} action
+     * @param {IocActionType} before
+     * @returns {this}
+     * @memberof LifeScope
+     */
     useBefore(action: IocActionType, before: IocActionType): this {
         this.actions.splice(this.actions.indexOf(before) - 1, 0, action);
         return this;
     }
-
+    /**
+     * use action after.
+     *
+     * @param {IocActionType} action
+     * @param {IocActionType} after
+     * @returns {this}
+     * @memberof LifeScope
+     */
     useAfter(action: IocActionType, after: IocActionType): this {
         this.actions.splice(this.actions.indexOf(after), 0, action);
         return this;
     }
 
+    /**
+     * resgister default action.
+     *
+     * @abstract
+     * @param {IIocContainer} container
+     * @memberof LifeScope
+     */
     abstract registerDefault(container: IIocContainer);
 
+    /**
+     * execut actions.
+     *
+     * @param {IIocContainer} container
+     * @param {TCtx} ctx
+     * @param {() => void} [next] execute after all.
+     * @memberof LifeScope
+     */
     execute(container: IIocContainer, ctx: TCtx, next?: () => void) {
         this.execActions(container, ctx, this.actions, next);
-    }
-
-    protected execActions(container: IIocContainer, ctx: TCtx, actions: IocActionType[], next?: () => void) {
-        lang.execAction(actions.map(ac => {
-            if (isClass(ac)) {
-                return (ctx: TCtx, next?: () => void) => container.resolve(ac).execute(ctx, next);
-            } else if (ac instanceof IocAction) {
-                return (ctx: TCtx, next?: () => void) => ac.execute(ctx, next);
-            }
-            return ac
-        }), ctx, next);
     }
 
     /**
@@ -72,4 +103,29 @@ export abstract class LifeScope<TCtx> extends IocCoreService {
         }
         return paramNames;
     }
+
+    protected execActions(container: IIocContainer, ctx: TCtx, actions: IocActionType[], next?: () => void) {
+        lang.execAction(actions.map(ac => this.toActionFunc(ac, container)), ctx, next);
+    }
+
+    protected toActionFunc(ac: IocActionType, container: IIocContainer) {
+        if (isClass(ac)) {
+            return (ctx: TCtx, next?: () => void) => {
+                let action = this.resolveAction(container, ctx, ac);
+                if (action instanceof IocAction) {
+                    action.execute(ctx, next);
+                } else {
+                    next();
+                }
+            }
+        } else if (ac instanceof IocAction) {
+            return (ctx: TCtx, next?: () => void) => ac.execute(ctx, next);
+        }
+        return ac
+    }
+
+    protected resolveAction(container: IIocContainer, ctx: TCtx, ac: Type<IocAction<any>>) {
+        return container.resolve(ac);
+    }
+
 }

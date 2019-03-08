@@ -28,23 +28,46 @@ export class ModuleInjectorManager extends IocCoreService {
             .use(IocExtInjector);
     }
 
-    use(injector: ModuleInjectorType): this {
-        this.injectors.push(injector);
+    /**
+     * use injector
+     *
+     * @param {ModuleInjectorType} injector
+     * @param {boolean} [first] use at first or last.
+     * @returns {this}
+     * @memberof ModuleInjectorManager
+     */
+    use(injector: ModuleInjectorType, first?: boolean): this {
+        if (first) {
+            this.injectors.unshift(injector);
+        } else {
+            this.injectors.push(injector);
+        }
         return this;
     }
 
+    /**
+     * use injector before.
+     *
+     * @param {ModuleInjectorType} injector
+     * @param {ModuleInjectorType} before
+     * @returns {this}
+     * @memberof ModuleInjectorManager
+     */
     useBefore(injector: ModuleInjectorType, before: ModuleInjectorType): this {
         this.injectors.splice(this.injectors.indexOf(before) - 1, 0, injector);
         return this;
     }
 
+    /**
+     * use injector after.
+     *
+     * @param {ModuleInjectorType} injector
+     * @param {ModuleInjectorType} after
+     * @returns {this}
+     * @memberof ModuleInjectorManager
+     */
     useAfter(injector: ModuleInjectorType, after: ModuleInjectorType): this {
         this.injectors.splice(this.injectors.indexOf(after), 0, injector);
-        return this;
-    }
-
-    first(injector: ModuleInjectorType) {
-        this.injectors.unshift(injector);
         return this;
     }
 

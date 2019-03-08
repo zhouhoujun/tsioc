@@ -10,7 +10,8 @@ import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderPa
 import { IResolver } from './IResolver';
 import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, TypeReflects, ResolveLifeScope } from './services';
 import { IParameter } from './IParameter';
-import { IocActionContext, IResovleContext } from './actions';
+import { IocActionContext } from './actions';
+import { ResovleContext } from './ResovleContext';
 
 /**
  * Container
@@ -110,26 +111,30 @@ export class IocContainer implements IIocContainer {
      * @template T
      * @param {Token<T>} token
      * @param {T} [notFoundValue]
-     * @param {...ParamProviders[]} providers
+     * @param {...ProviderTypes[]} providers
      * @memberof Container
      */
-    resolve<T>(token: Token<T>, ...providers: ParamProviders[]): T {
-        let key = this.getTokenKey<T>(token);
-        if (this.has(ResolveLifeScope)) {
-            let ctx: IResovleContext = {
-                key: key,
-                raiseContainer: this,
-                factory: (key) => this.factories.get(key)
-            }
-            this.resolveLifeScope.execute(this, ctx);
-            return ctx.instance || null;
+    resolve<T>(token: Token<T>, ctx?: ResovleContext | ProviderTypes, ...providers: ProviderTypes[]): T {
+        let context: ResovleContext;
+        if (ctx instanceof ResovleContext) {
+            context = ctx;
+            context.raiseContainer = this;
+            context.factories = this.factories;
+        } else {
+            providers.unshift(ctx);
+            context = this.createResolveContext(token, providers);
         }
+        this.execResolve(context);
+        return context.instance || null;
+    }
 
-        if (!this.hasRegister(key)) {
-            return null;
-        }
-        let factory = this.factories.get(key);
-        return factory(...providers) as T;
+    protected createResolveContext<T>(token: Token<T>, providers: ProviderTypes[]): ResovleContext {
+        let ctx = new ResovleContext(token, this, providers, this.factories);
+        return ctx;
+    }
+
+    protected execResolve(ctx: ResovleContext) {
+        this.resolveLifeScope.execute(this, ctx);
     }
 
     /**
