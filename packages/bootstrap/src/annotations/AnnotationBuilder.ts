@@ -1,7 +1,7 @@
 import {
     Token, isToken, isClass, Inject,
     lang, isFunction, ParamProviders, isNullOrUndefined,
-    isUndefined, Singleton, ProviderTypes
+    isUndefined, Singleton, ProviderTypes, InjectReference
 } from '@ts-ioc/ioc';
 import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
 import {
@@ -14,6 +14,7 @@ import { AnnotationConfigure } from './AnnotationConfigure';
 import { AnnoBuildStrategyToken, InjectAnnoBuildStrategyToken } from './AnnoBuildStrategy';
 import { ContainerToken, IContainer } from '@ts-ioc/core';
 import { MetaAccessor } from '../services';
+import { ServiceResolveContext } from 'packages/core/src/actions';
 
 /**
  * Annotation class builder. build class with metadata and config.
@@ -55,7 +56,10 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         }
         return this.container.getService(MetaAccessor,
             mtk || lang.getClass(this),
-            config ? (config.defaultMetaAccessor || MetaAccessor) : MetaAccessor);
+            ServiceResolveContext.create({
+                refFactory: tk =>  new InjectReference(MetaAccessor, tk),
+                defaultToken: config.defaultMetaAccessor
+            }));
     }
 
     /**
