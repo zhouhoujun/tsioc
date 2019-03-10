@@ -1,5 +1,5 @@
 import { IocAction } from './Action';
-import { ResovleContext } from './ResovleContext';
+import { ResovleActionContext } from './ResovleActionContext';
 
 /**
  * ioc resolve action.
@@ -9,6 +9,6 @@ import { ResovleContext } from './ResovleContext';
  * @class IocResolveAction
  * @extends {IocAction<IResovleContext>}
  */
-export abstract class IocResolveAction extends IocAction<ResovleContext> {
+export abstract class IocResolveAction extends IocAction<ResovleActionContext> {
     isResolve = true;
 }

@@ -5,6 +5,23 @@ import { IocCoreService } from '../services';
 import { lang } from '../utils';
 
 /**
+ * action context option.
+ *
+ * @export
+ * @interface ActionContextOption
+ */
+export interface ActionContextOption {
+    
+    /**
+     * token.
+     *
+     * @type {Token<any>}
+     * @memberof ActionContextOption
+     */
+    token?: Token<any>;
+}
+
+/**
  * ioc action context.
  *
  * @export
@@ -49,6 +66,20 @@ export class IocActionContext {
     setContext(containerGetter: () => IIocContainer, factoriesGetter: () => Map<Token<any>, InstanceFactory<any>>) {
         this.getRaiseContainer = containerGetter;
         this.getFactories = factoriesGetter;
+    }
+
+    /**
+     * set options.
+     *
+     * @param {ActionContextOption} options
+     * @memberof IocActionContext
+     */
+    setOptions(options: ActionContextOption) {
+        if (options) {
+            Object.assign(this,
+                lang.omit(options, 'setOptions', 'getRaiseContainer', 'getFactories',
+                    'getTokenProvider', 'has', 'resolve', 'unregister'));
+        }
     }
 
     /**

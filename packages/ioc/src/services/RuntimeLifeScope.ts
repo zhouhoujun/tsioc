@@ -27,9 +27,12 @@ export class RuntimeLifeScope extends LifeScope<RegisterActionContext> {
     }
 
     getParamProviders(container: IIocContainer, type: Type<any>, propertyKey: string, target?: any): ParamProviders[] {
-        let ctx = container.getRegisterContext(type);
-        ctx.target = target;
-        ctx.propertyKey = propertyKey;
+        let ctx = container.bindActionContext(
+            RegisterActionContext.create({
+                targetType: type,
+                target: target,
+                propertyKey: propertyKey
+            }));
         this.execActions(ctx, [InitReflectAction, BindParameterProviderAction]);
         return ctx.targetReflect.methodProviders[propertyKey] || [];
     }
@@ -106,9 +109,12 @@ export class RuntimeLifeScope extends LifeScope<RegisterActionContext> {
 
     protected getParameters<T>(container: IIocContainer, type: Type<T>, instance?: T, propertyKey?: string): IParameter[] {
         propertyKey = propertyKey || 'constructor';
-        let ctx = container.getRegisterContext(type);
-        ctx.target = instance;
-        ctx.propertyKey = propertyKey;
+        let ctx = container.bindActionContext(
+            RegisterActionContext.create({
+                targetType: type,
+                target: instance,
+                propertyKey: propertyKey
+            }));
         this.execActions(ctx, [InitReflectAction, BindParameterTypeAction]);
 
         let params = ctx.targetReflect.methodParams[propertyKey]

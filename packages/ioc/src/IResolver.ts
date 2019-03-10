@@ -1,6 +1,6 @@
 import { Token, Type, InstanceFactory } from './types';
 import { ProviderTypes } from './providers';
-import { ResovleContext } from './actions';
+import { ResovleActionContext } from './actions';
 
 /**
  * resolver.
@@ -50,7 +50,7 @@ export interface IResolver {
      * @returns {T}
      * @memberof IResolver
      */
-    resolve<T>(token: Token<T>, context?: ResovleContext, ...providers: ProviderTypes[]): T;
+    resolve<T>(token: Token<T>, context?: ResovleActionContext, ...providers: ProviderTypes[]): T;
 
     /**
      * unregister the token

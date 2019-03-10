@@ -131,14 +131,16 @@ export class Container extends IocContainer implements IContainer {
             target = null;
         }
         if (!context) {
-            context = this.getResolveContext(ServiceResolveContext);
-        } else {
-            context.setContext(() => this, () => this.factories);
+            context = ServiceResolveContext.create();
         }
         if (target) {
             context.target = target;
         }
-        context.setResolveTarget(token, providers);
+        this.bindActionContext(context);
+        context.setOptions({
+            token: token,
+            providers: providers
+        });
         return context;
     }
 

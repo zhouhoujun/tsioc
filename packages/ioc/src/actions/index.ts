@@ -2,7 +2,7 @@ export * from './Action';
 export * from './IocCompositeAction';
 export * from './RegisterActionContext';
 export * from './IocRegisterAction';
-export * from './ResovleContext';
+export * from './ResovleActionContext';
 export * from './IocResolveAction';
 
 

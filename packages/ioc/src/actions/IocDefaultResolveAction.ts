@@ -1,9 +1,9 @@
 import { isNullOrUndefined } from '../utils';
-import { ResovleContext } from './ResovleContext';
+import { ResovleActionContext } from './ResovleActionContext';
 import { IocResolveAction } from './IocResolveAction';
 
 export class IocDefaultResolveAction extends IocResolveAction {
-    execute(ctx: ResovleContext, next: () => void): void {
+    execute(ctx: ResovleActionContext, next: () => void): void {
         if (ctx.has(ctx.token)) {
             ctx.instance = ctx.resolve(ctx.token, ...ctx.providers);
         }

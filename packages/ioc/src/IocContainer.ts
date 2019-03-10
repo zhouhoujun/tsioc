@@ -10,7 +10,7 @@ import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderPa
 import { IResolver } from './IResolver';
 import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, TypeReflects, ResolveLifeScope } from './services';
 import { IParameter } from './IParameter';
-import { RegisterActionContext, ResovleContext } from './actions';
+import { RegisterActionContext, ResovleActionContext, RegisterActionOption, ResovleActionOption, IocActionContext } from './actions';
 
 /**
  * Container
@@ -113,36 +113,29 @@ export class IocContainer implements IIocContainer {
      * @param {...ProviderTypes[]} providers
      * @memberof Container
      */
-    resolve<T>(token: Token<T>, ctx?: ResovleContext | ProviderTypes, ...providers: ProviderTypes[]): T {
-        let context: ResovleContext;
-        if (ctx instanceof ResovleContext) {
+    resolve<T>(token: Token<T>, ctx?: ResovleActionContext | ProviderTypes, ...providers: ProviderTypes[]): T {
+        let context: ResovleActionContext;
+        if (ctx instanceof ResovleActionContext) {
             context = ctx;
-            context.setContext(() => this, () => this.factories);
         } else {
             providers.unshift(ctx);
-            context = this.getResolveContext();
+            context = ResovleActionContext.create();
         }
-        context.setResolveTarget(token, providers);
+        this.bindActionContext(context);
+        context.setOptions({
+            token: token, 
+            providers: providers
+        });
         this.execResolve(context);
         return context.instance || null;
     }
 
-    getResolveContext<T extends ResovleContext>(ctxType?: Type<T>): T {
-        let resType = ctxType || ResovleContext;
-        let ctx = new resType();
+    bindActionContext<T extends IocActionContext>(ctx: T): T {
         ctx.setContext(() => this, () => this.factories);
-        return ctx as T;
+        return ctx;
     }
 
-    
-    getRegisterContext<T extends RegisterActionContext> (targetType: Type<any>, tokenKey?: Token<any>, regCtx?: Type<T>): T {
-        let ctxType = regCtx || RegisterActionContext;
-        let ctx = new ctxType(targetType, tokenKey);
-        ctx.setContext(() => this, () => this.factories);
-        return ctx as T;
-    }
-
-    protected execResolve(ctx: ResovleContext) {
+    protected execResolve(ctx: ResovleActionContext) {
         this.resolveLifeScope.execute(ctx);
     }
 
@@ -468,11 +461,14 @@ export class IocContainer implements IIocContainer {
 
         let factory = (...providers: ParamProviders[]) => {
             let providerMap = this.getProviderParser().parse(...providers);
-            let ctx = this.getRegisterContext(ClassT, key);
-            ctx.singleton = singleton;
-            ctx.providers = providers;
-            ctx.providerMap = providerMap;
-
+            let ctx = RegisterActionContext.create({
+                tokenKey: key,
+                targetType: ClassT,
+                singleton: singleton,
+                providers: providers,
+                providerMap: providerMap
+            });
+            this.bindActionContext(ctx);
             this.resolve(RuntimeLifeScope).execute(ctx);
             return ctx.target;
         };
@@ -482,7 +478,11 @@ export class IocContainer implements IIocContainer {
             this.bindProvider(key, ClassT);
         }
 
-        this.resolve(DesignLifeScope).execute(this.getRegisterContext(ClassT, key));
+        this.resolve(DesignLifeScope).execute(
+            this.bindActionContext(RegisterActionContext.create({
+                tokenKey: key,
+                targetType: ClassT
+            })));
     }
 
 

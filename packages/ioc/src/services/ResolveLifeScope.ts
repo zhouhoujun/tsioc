@@ -1,6 +1,6 @@
 import { LifeScope } from './LifeScope';
 import { IIocContainer } from '../IIocContainer';
-import { ResovleContext, IocAction, IocDefaultResolveAction } from '../actions';
+import { ResovleActionContext, IocAction, IocDefaultResolveAction } from '../actions';
 import { Type } from '../types';
 
 /**
@@ -10,7 +10,7 @@ import { Type } from '../types';
  * @class ResolveLifeScope
  * @extends {LifeScope<IResovleContext>}
  */
-export class ResolveLifeScope extends LifeScope<ResovleContext> {
+export class ResolveLifeScope extends LifeScope<ResovleActionContext> {
 
     registerDefault(container: IIocContainer) {
         if (!container.has(ResolveLifeScope)) {
@@ -20,7 +20,7 @@ export class ResolveLifeScope extends LifeScope<ResovleContext> {
         this.use(IocDefaultResolveAction);
     }
 
-    protected resolveAction(ctx: ResovleContext, ac: Type<IocAction<any>>) {
+    protected resolveAction(ctx: ResovleActionContext, ac: Type<IocAction<any>>) {
         return ctx.resolve(ac, ...ctx.providers);
     }
 }
