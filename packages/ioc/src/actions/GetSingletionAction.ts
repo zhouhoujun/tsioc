@@ -1,4 +1,5 @@
-import { IocRegisterAction, IocActionContext } from './Action';
+import { IocRegisterAction } from './IocRegisterAction';
+import { RegisterActionContext } from './RegisterActionContext';
 import { IocSingletonManager } from '../services';
 
 /**
@@ -10,7 +11,7 @@ import { IocSingletonManager } from '../services';
  */
 export class GetSingletionAction extends IocRegisterAction {
 
-    execute(ctx: IocActionContext, next: () => void): void {
+    execute(ctx: RegisterActionContext, next: () => void): void {
         if (ctx.targetType && (ctx.singleton || ctx.targetReflect.singleton)) {
             let mgr = this.container.resolve(IocSingletonManager);
             if (mgr.has(ctx.targetType)) {

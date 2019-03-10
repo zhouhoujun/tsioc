@@ -6,7 +6,7 @@ export class RefServiceResolveAction extends IocResolveAction {
     execute(ctx: ServiceResolveContext, next: () => void): void {
         if (ctx instanceof ServiceResolveContext && ctx.target) {
             if (ctx.targetType) {
-                let tokens = [ctx.tokenKey, ctx.tokenType];
+                let tokens = [ctx.token, ctx.tokenType];
                 lang.forInClassChain(ctx.targetType, ty => {
                     let prdMap = ctx.resolve(new InjectReference(ProviderMap, ty));
                     return !tokens.some(tk => {

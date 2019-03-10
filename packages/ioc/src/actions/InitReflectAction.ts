@@ -1,4 +1,5 @@
-import { IocRegisterAction, IocActionContext } from './Action';
+import { IocRegisterAction } from './IocRegisterAction';
+import { RegisterActionContext } from './RegisterActionContext';
 import { lang, isUndefined } from '../utils';
 import { DecoratorRegisterer } from '../services';
 import { hasOwnClassMetadata } from '../factories';
@@ -7,7 +8,7 @@ import { Singleton } from '../decorators';
 
 export class InitReflectAction extends IocRegisterAction {
 
-    execute(ctx: IocActionContext, next: () => void): void {
+    execute(ctx: RegisterActionContext, next: () => void): void {
         if (!ctx.targetType && ctx.target) {
             ctx.targetType = lang.getClass(ctx.target);
         }

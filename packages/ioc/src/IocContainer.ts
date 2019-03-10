@@ -10,8 +10,7 @@ import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderPa
 import { IResolver } from './IResolver';
 import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, TypeReflects, ResolveLifeScope } from './services';
 import { IParameter } from './IParameter';
-import { IocActionContext } from './actions';
-import { ResovleContext } from './ResovleContext';
+import { RegisterActionContext, ResovleContext } from './actions';
 
 /**
  * Container
@@ -118,23 +117,33 @@ export class IocContainer implements IIocContainer {
         let context: ResovleContext;
         if (ctx instanceof ResovleContext) {
             context = ctx;
-            context.raiseContainer = this;
-            context.factories = this.factories;
+            context.setContext(() => this, () => this.factories);
         } else {
             providers.unshift(ctx);
-            context = this.createResolveContext(token, providers);
+            context = this.getResolveContext();
         }
+        context.setResolveTarget(token, providers);
         this.execResolve(context);
         return context.instance || null;
     }
 
-    protected createResolveContext<T>(token: Token<T>, providers: ProviderTypes[]): ResovleContext {
-        let ctx = new ResovleContext(token, this, providers, this.factories);
-        return ctx;
+    getResolveContext<T extends ResovleContext>(ctxType?: Type<T>): T {
+        let resType = ctxType || ResovleContext;
+        let ctx = new resType();
+        ctx.setContext(() => this, () => this.factories);
+        return ctx as T;
+    }
+
+    
+    getRegisterContext<T extends RegisterActionContext> (targetType: Type<any>, tokenKey?: Token<any>, regCtx?: Type<T>): T {
+        let ctxType = regCtx || RegisterActionContext;
+        let ctx = new ctxType(targetType, tokenKey);
+        ctx.setContext(() => this, () => this.factories);
+        return ctx as T;
     }
 
     protected execResolve(ctx: ResovleContext) {
-        this.resolveLifeScope.execute(this, ctx);
+        this.resolveLifeScope.execute(ctx);
     }
 
     /**
@@ -292,7 +301,7 @@ export class IocContainer implements IIocContainer {
         let maps = this.getProviderParser().parse(...prods);
         if (tgt) {
             let refKey = new InjectReference(ProviderMap, isClass(tgt) ? tgt : this.getTokenProvider(tgt));
-            if (this.hasRegister(refKey)) {
+            if (this.has(refKey)) {
                 this.resolve(refKey).copy(maps);
             } else {
                 this.bindProvider(refKey, maps);
@@ -337,7 +346,7 @@ export class IocContainer implements IIocContainer {
      */
     unregister<T>(token: Token<T>): this {
         let key = this.getTokenKey(token);
-        if (this.hasRegister(key)) {
+        if (this.has(key)) {
             this.factories.delete(key);
             if (this.provideTypes.has(key)) {
                 this.provideTypes.delete(key);
@@ -459,15 +468,12 @@ export class IocContainer implements IIocContainer {
 
         let factory = (...providers: ParamProviders[]) => {
             let providerMap = this.getProviderParser().parse(...providers);
-            let ctx: IocActionContext = {
-                tokenKey: key,
-                targetType: ClassT,
-                singleton: singleton,
-                providers: providers,
-                providerMap: providerMap,
-                raiseContainer: this
-            };
-            this.resolve(RuntimeLifeScope).execute(this, ctx);
+            let ctx = this.getRegisterContext(ClassT, key);
+            ctx.singleton = singleton;
+            ctx.providers = providers;
+            ctx.providerMap = providerMap;
+
+            this.resolve(RuntimeLifeScope).execute(ctx);
             return ctx.target;
         };
 
@@ -476,12 +482,9 @@ export class IocContainer implements IIocContainer {
             this.bindProvider(key, ClassT);
         }
 
-        this.resolve(DesignLifeScope).execute(this, {
-            tokenKey: key,
-            targetType: ClassT,
-            raiseContainer: this
-        });
+        this.resolve(DesignLifeScope).execute(this.getRegisterContext(ClassT, key));
     }
+
 
     /**
      * invoke method async.

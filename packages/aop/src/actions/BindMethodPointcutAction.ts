@@ -1,7 +1,7 @@
 import { IPointcut } from '../joinpoints';
 import { isValideAspectTarget } from '../isValideAspectTarget';
 import { ProxyMethodToken } from '../access';
-import { IocRegisterAction, IocActionContext, lang, getParamerterNames, isUndefined } from '@ts-ioc/ioc';
+import { IocRegisterAction, RegisterActionContext, lang, getParamerterNames, isUndefined } from '@ts-ioc/ioc';
 
 /**
  * bind method pointcut action.
@@ -15,12 +15,12 @@ export class BindMethodPointcutAction extends IocRegisterAction {
     /**
      * execute bind method pointcut action.
      *
-     * @param {IocActionContext} ctx
+     * @param {RegisterActionContext} ctx
      * @param {() => void} next
      * @returns {void}
      * @memberof BindMethodPointcutAction
      */
-    execute(ctx: IocActionContext, next: () => void): void {
+    execute(ctx: RegisterActionContext, next: () => void): void {
         // aspect class do nothing.
         if (!ctx.target || !isValideAspectTarget(ctx.targetType)) {
             return next();

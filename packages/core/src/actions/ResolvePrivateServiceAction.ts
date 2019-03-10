@@ -1,9 +1,8 @@
-import { IocResolveAction, InjectReference, ProviderMap } from '@ts-ioc/ioc';
+import { IocResolveAction, ResovleContext, InjectReference, ProviderMap } from '@ts-ioc/ioc';
 import { ServiceResolveContext } from '../ServiceResolveContext';
 
-
-export class ServiceResolveAction extends IocResolveAction {
-    execute(ctx: ServiceResolveContext, next: () => void): void {
+export class ResolvePrivateServiceAction extends IocResolveAction {
+    execute(ctx: ResovleContext, next: () => void): void {
         if (ctx instanceof ServiceResolveContext) {
             // resolve private service.
             if (ctx.targetType) {
@@ -13,11 +12,11 @@ export class ServiceResolveAction extends IocResolveAction {
                     ctx.instance = map.resolve(ctx.token, ...ctx.providers);
                 }
             }
-            if (!ctx.instance && ctx.has(ctx.token)) {
-                ctx.instance = ctx.resolve(ctx.token, ...ctx.providers);
-            }
-        } else {
+        }
+
+        if(!ctx.instance){
             next();
         }
+
     }
 }

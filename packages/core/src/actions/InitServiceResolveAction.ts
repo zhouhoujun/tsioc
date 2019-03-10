@@ -8,7 +8,7 @@ export class InitServiceResolveAction extends IocResolveAction {
                 ctx.targetType = lang.getClass(ctx.target);
             }
             if (!ctx.tokenType) {
-                ctx.tokenType = isClass(ctx.tokenKey) ? ctx.tokenKey : ctx.raiseContainer.getTokenProvider(ctx.tokenKey);
+                ctx.tokenType = isClass(ctx.token) ? ctx.token : ctx.getTokenProvider(ctx.token);
             }
         }
         next();

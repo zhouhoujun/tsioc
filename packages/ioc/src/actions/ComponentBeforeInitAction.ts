@@ -1,7 +1,8 @@
-import { IocRegisterAction, IocActionContext } from './Action';
 import { IIocContainer } from '../IIocContainer';
 import { isUndefined, lang, isFunction } from '../utils';
 import { DecoratorRegisterer, BeforeInit } from '../services';
+import { IocRegisterAction } from './IocRegisterAction';
+import { RegisterActionContext } from './RegisterActionContext';
 
 /**
  * component before init action, to run @Component decorator class before init hooks.
@@ -16,7 +17,7 @@ export class ComponentBeforeInitAction extends IocRegisterAction {
         super(container)
     }
 
-    execute(ctx: IocActionContext, next: () => void) {
+    execute(ctx: RegisterActionContext, next: () => void) {
         if (isUndefined(ctx.targetReflect.compBeforeInit)) {
             let decors = this.container.resolve(DecoratorRegisterer).getClassDecorators(ctx.targetType, lang.getClass(this));
             ctx.targetReflect.compBeforeInit = decors.length > 0

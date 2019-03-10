@@ -1,8 +1,9 @@
-import { IocRegisterAction, IocActionContext } from './Action';
+import { IocRegisterAction } from './IocRegisterAction';
+import { RegisterActionContext } from './RegisterActionContext';
 
 
 export class CreateInstanceAction extends IocRegisterAction {
-    execute(ctx: IocActionContext, next: () => void): void {
+    execute(ctx: RegisterActionContext, next: () => void): void {
 
         if (!ctx.target) {
             ctx.target = new ctx.targetType(...ctx.args);

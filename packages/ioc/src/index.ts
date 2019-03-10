@@ -1,7 +1,6 @@
 export * from './IResolver';
 export * from './IIocContainer';
 export * from './IocContainer';
-export * from './ResovleContext';
 
 export * from './types';
 export * from './Registration';

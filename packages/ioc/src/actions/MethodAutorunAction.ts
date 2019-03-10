@@ -1,4 +1,5 @@
-import { IocRegisterAction, IocActionContext } from './Action';
+import { IocRegisterAction } from './IocRegisterAction';
+import { RegisterActionContext } from './RegisterActionContext';
 import { hasMethodMetadata, getMethodMetadata } from '../factories';
 import { Autorun } from '../decorators';
 import { AutorunMetadata } from '../metadatas';
@@ -12,7 +13,7 @@ import { lang, isNumber } from '../utils';
  */
 export class MethodAutorunAction extends IocRegisterAction {
 
-    execute(ctx: IocActionContext, next: () => void) {
+    execute(ctx: RegisterActionContext, next: () => void) {
         if (hasMethodMetadata(Autorun, ctx.targetType)) {
             let metas = getMethodMetadata<AutorunMetadata>(Autorun, ctx.targetType);
             let lastmetas: AutorunMetadata[] = [];

@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, ClassType, isProvider } from '@ts-ioc/ioc';
-import { ModuleLoader, IModuleLoader, IteratorService } from './services';
+import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isProvider } from '@ts-ioc/ioc';
+import { ModuleLoader, IModuleLoader } from './services';
 import { registerCores } from './registerCores';
 import { ServiceResolveContext } from './ServiceResolveContext';
 
@@ -131,17 +131,15 @@ export class Container extends IocContainer implements IContainer {
             target = null;
         }
         if (!context) {
-            this.createServiceContext(token, providers);
+            context = this.getResolveContext(ServiceResolveContext);
+        } else {
+            context.setContext(() => this, () => this.factories);
         }
         if (target) {
             context.target = target;
         }
+        context.setResolveTarget(token, providers);
         return context;
-    }
-
-    protected createServiceContext<T>(token: Token<T>, providers: ProviderTypes[]): ServiceResolveContext {
-        let ctx = new ServiceResolveContext(token, this, providers, this.factories);
-        return ctx;
     }
 
     protected init() {

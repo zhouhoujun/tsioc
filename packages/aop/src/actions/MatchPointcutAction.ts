@@ -3,7 +3,7 @@ import { AdviceMetadata } from '../metadatas'
 import { AdviceMatcherToken } from '../IAdviceMatcher';
 import { Advices, Advicer } from '../advices';
 import { isValideAspectTarget } from '../isValideAspectTarget';
-import { IocRegisterAction, IocActionContext } from '@ts-ioc/ioc';
+import { IocRegisterAction, RegisterActionContext } from '@ts-ioc/ioc';
 
 
 /**
@@ -15,7 +15,7 @@ import { IocRegisterAction, IocActionContext } from '@ts-ioc/ioc';
  */
 export class MatchPointcutAction extends IocRegisterAction {
 
-    execute(ctx: IocActionContext, next: () => void): void {
+    execute(ctx: RegisterActionContext, next: () => void): void {
         // aspect class do nothing.
         if (!isValideAspectTarget(ctx.targetType)) {
             return next();

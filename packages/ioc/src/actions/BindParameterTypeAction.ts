@@ -1,9 +1,10 @@
-import { IocRegisterAction, IocActionContext } from './Action';
 import { Token } from '../types';
 import { isClass, isArray, lang } from '../utils';
 import { getParamMetadata, getOwnParamMetadata } from '../factories';
 import { DecoratorRegisterer, RuntimeLifeScope } from '../services';
 import { ParameterMetadata } from '../metadatas';
+import { IocRegisterAction } from './IocRegisterAction';
+import { RegisterActionContext } from './RegisterActionContext';
 
 /**
  * bind parameter type action.
@@ -14,7 +15,7 @@ import { ParameterMetadata } from '../metadatas';
  */
 export class BindParameterTypeAction extends IocRegisterAction {
 
-    execute(ctx: IocActionContext, next: () => void) {
+    execute(ctx: RegisterActionContext, next: () => void) {
         let propertyKey = ctx.propertyKey || 'constructor';
         if (ctx.targetReflect.methodParams && ctx.targetReflect.methodParams[propertyKey]) {
             return next();

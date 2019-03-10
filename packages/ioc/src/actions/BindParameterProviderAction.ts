@@ -1,9 +1,10 @@
-import { IocActionContext, IocRegisterAction } from './Action';
 import { ParamProviders } from '../providers';
 import { getParamMetadata } from '../factories';
 import { ParameterMetadata } from '../metadatas';
 import { isArray, lang } from '../utils';
 import { DecoratorRegisterer } from '../services';
+import { IocRegisterAction } from './IocRegisterAction';
+import { RegisterActionContext } from './RegisterActionContext';
 
 
 /**
@@ -15,7 +16,7 @@ import { DecoratorRegisterer } from '../services';
  */
 export class BindParameterProviderAction extends IocRegisterAction {
 
-    execute(ctx: IocActionContext, next: () => void) {
+    execute(ctx: RegisterActionContext, next: () => void) {
         let type = ctx.targetType;
         let propertyKey = ctx.propertyKey;
 

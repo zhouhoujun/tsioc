@@ -1,8 +1,9 @@
 import { lang } from '../utils';
 import { ClassMetadata } from '../metadatas';
-import { IocRegisterAction, IocActionContext } from './Action';
 import { DecoratorRegisterer } from '../services';
 import { getOwnTypeMetadata } from '../factories';
+import { IocRegisterAction } from './IocRegisterAction';
+import { RegisterActionContext } from './RegisterActionContext';
 
 /**
  * bind provider action. for binding a factory to an token.
@@ -13,10 +14,10 @@ import { getOwnTypeMetadata } from '../factories';
  */
 export class BindProviderAction extends IocRegisterAction {
 
-    execute(ctx: IocActionContext, next: () => void) {
+    execute(ctx: RegisterActionContext, next: () => void) {
         let type = ctx.targetType;
         let tgReflect = ctx.targetReflect;
-        let raiseContainer = ctx.raiseContainer;
+        let raiseContainer = ctx.getRaiseContainer();
 
         let decors = this.container.resolve(DecoratorRegisterer).getClassDecorators(type, lang.getClass(this));
         decors = decors.filter(d => tgReflect.decors.indexOf(d) < 0);

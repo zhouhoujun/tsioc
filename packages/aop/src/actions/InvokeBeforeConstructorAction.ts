@@ -1,7 +1,7 @@
 import { AdvisorToken } from '../IAdvisor';
 import { Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints';
 import { isValideAspectTarget } from '../isValideAspectTarget';
-import { IocRegisterAction, Provider, ParamProviders, lang, IocActionContext } from '@ts-ioc/ioc';
+import { IocRegisterAction, Provider, ParamProviders, lang, RegisterActionContext } from '@ts-ioc/ioc';
 
 /**
  * actions invoke before constructor.
@@ -12,7 +12,7 @@ import { IocRegisterAction, Provider, ParamProviders, lang, IocActionContext } f
  */
 export class InvokeBeforeConstructorAction extends IocRegisterAction {
 
-    execute(ctx: IocActionContext, next: () => void): void {
+    execute(ctx: RegisterActionContext, next: () => void): void {
         // aspect class do nothing.
         if (!isValideAspectTarget(ctx.targetType)) {
             return next();

@@ -1,123 +1,117 @@
 import { IIocContainer } from '../IIocContainer';
-import { ProviderMap, ParamProviders } from '../providers';
-import { IParameter } from '../IParameter';
-import { Type, Token, ObjectMap } from '../types';
-import { IocCoreService, ITypeReflect } from '../services';
+import { ProviderTypes } from '../providers';
+import { Type, Token, InstanceFactory } from '../types';
+import { IocCoreService } from '../services';
 import { lang } from '../utils';
-import { ResovleContext } from '../ResovleContext';
-
+import { ResovleContext } from './ResovleContext';
 
 /**
- * ioc action context data.
+ * ioc action context.
  *
  * @export
- * @interface ActionData
+ * @class IocActionContext
  */
-export interface IocActionContext {
+export class IocActionContext {
     /**
-     * the args.
+     * factories.
      *
-     * @type {any[]}
-     * @memberof ActionData
+     * @type {Map<Token<any>, InstanceFactory<any>>}
+     * @memberof ResovleContext
      */
-    args?: any[];
+    private getFactories: () => Map<Token<any>, InstanceFactory<any>>;
 
     /**
-     * args params types.
+     * raise container accessor.
      *
-     * @type {IParameter[]}
-     * @memberof ActionData
+     * @memberof ResovleContext
      */
-    params?: IParameter[];
+    getRaiseContainer: () => IIocContainer;
 
     /**
-     * target instance.
-     *
-     * @type {*}
-     * @memberof ActionData
-     */
-    target?: any;
-
-    /**
-     * target type.
-     *
-     * @type {Type<any>}
-     * @memberof ActionData
-     */
-    targetType?: Type<any>;
-
-    /**
-     * target type reflect.
-     *
-     * @type {ITypeReflect}
-     * @memberof IocActionContext
-     */
-    targetReflect?: ITypeReflect;
-
-    /**
-     * custom set singleton or not.
-     *
-     * @type {boolean}
-     * @memberof IocActionContext
-     */
-    singleton?: boolean;
-
-    /**
-     * resolve token.
+     * token.
      *
      * @type {Token<any>}
-     * @memberof ActionData
+     * @memberof ResovleContext
      */
-    tokenKey?: Token<any>;
+    token: Token<any>;
+
+
+    constructor() {
+
+    }
 
     /**
-     * property or method name of type.
+     * set resolve context.
      *
-     * @type {string}
-     * @memberof ActionData
+     * @param {Token<any>} token
+     * @param {ProviderTypes[]} [providers]
+     * @memberof ResovleContext
      */
-    propertyKey?: string;
+    setContext(containerGetter: () => IIocContainer, factoriesGetter: () => Map<Token<any>, InstanceFactory<any>>) {
+        this.getRaiseContainer = containerGetter;
+        this.getFactories = factoriesGetter;
+    }
 
     /**
-     * exter providers for resolve. origin providers
+     * get token provider.
      *
-     * @type {ParamProviders[]}
-     * @memberof ActionData
+     * @template T
+     * @param {Token<T>} token
+     * @returns {Type<T>}
+     * @memberof ResovleContext
      */
-    providers?: ParamProviders[];
+    getTokenProvider<T>(token: Token<T>): Type<T> {
+        return this.getRaiseContainer().getTokenProvider(token);
+    }
 
     /**
-     * exter providers convert to map.
+     * has register token.
      *
-     * @type {ProviderMap}
-     * @memberof ActionData
+     * @template T
+     * @memberof IResovleContext
      */
-    providerMap?: ProviderMap;
+    has<T>(token: Token<T>): boolean {
+        let key = this.getRaiseContainer().getTokenKey(token);
+        let factories = this.getFactories();
+        if (factories) {
+            return factories.has(key);
+        }
+        return false;
+    }
 
     /**
-     * container, the action raise from.
+     * resolve token in factories.
      *
-     * @type {IContainer}
-     * @memberof ActionData
+     * @template T
+     * @param {Token<T>} token
+     * @param {...ProviderTypes[]} providers
+     * @returns {T}
+     * @memberof ResovleContext
      */
-    raiseContainer?: IIocContainer;
+    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
+        let key = this.getRaiseContainer().getTokenKey(token);
+        let factories = this.getFactories();
+        if (factories) {
+            let factory = factories.get(key);
+            return factory(...providers);
+        }
+        return null;
+    }
 
     /**
-     * execute context.
+     * unregister token in rasie container.
      *
-     * @type {*}
-     * @memberof ActionData
+     * @template T
+     * @param {Token<T>} token
+     * @returns {this}
+     * @memberof ResovleContext
      */
-    context?: any;
-
-    /**
-     * has injected.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof IocActionContext
-     */
-    injecteds?: ObjectMap<boolean>;
+    unregister<T>(token: Token<T>): this {
+        this.getRaiseContainer().unregister(token);
+        return this;
+    }
 }
+
 
 /**
  * action.
@@ -127,8 +121,8 @@ export interface IocActionContext {
  * @class Action
  * @extends {IocCoreService}
  */
-export abstract class IocAction<T> extends IocCoreService {
-    constructor(protected container: IIocContainer) {
+export abstract class IocAction<T extends IocActionContext> extends IocCoreService {
+    constructor() {
         super();
     }
 
@@ -137,26 +131,3 @@ export abstract class IocAction<T> extends IocCoreService {
 
 export type IocActionType = Type<IocAction<any>> | IocAction<any> | lang.IAction<any>;
 
-/**
- * ioc register action.
- *
- * @export
- * @abstract
- * @class IocRegisterAction
- * @extends {IocAction<IocActionContext>}
- */
-export abstract class IocRegisterAction extends IocAction<IocActionContext> {
-    isRegister = true;
-}
-
-/**
- * ioc resolve action.
- *
- * @export
- * @abstract
- * @class IocResolveAction
- * @extends {IocAction<IResovleContext>}
- */
-export abstract class IocResolveAction extends IocAction<ResovleContext> {
-    isResolve = true;
-}

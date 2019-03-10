@@ -1,9 +1,9 @@
-import { IocActionContext } from './Action';
+import { RegisterActionContext } from './RegisterActionContext';
 import { IocCacheAction } from './IocCacheAction';
 import { IocCacheManager } from '../services';
 
 export class IocGetCacheAction extends IocCacheAction {
-    execute(ctx: IocActionContext, next: () => void): void {
+    execute(ctx: RegisterActionContext, next: () => void): void {
         if (!ctx.target) {
             let cacheMetadata = this.getCacheMetadata(ctx);
             if (cacheMetadata && cacheMetadata.expires) {

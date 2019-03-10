@@ -1,4 +1,5 @@
-import { IocRegisterAction, IocActionContext } from './Action';
+import { IocRegisterAction } from './IocRegisterAction';
+import { RegisterActionContext } from './RegisterActionContext';
 import { IIocContainer } from '../IIocContainer';
 import { InjectReference } from '../InjectReference';
 import { ProviderMap } from '../providers';
@@ -18,7 +19,7 @@ export class InjectPropertyAction extends IocRegisterAction {
         super(container)
     }
 
-    execute(ctx: IocActionContext, next: () => void) {
+    execute(ctx: RegisterActionContext, next: () => void) {
         let providerMap = ctx.providerMap;
         ctx.injecteds = ctx.injecteds || {};
         ctx.targetReflect.props.forEach((prop, idx) => {

@@ -7,12 +7,12 @@ export class ServicesResolveAction extends IocResolveAction {
     execute(ctx: ServiceResolveContext, next: () => void): void {
         if (ctx instanceof ServiceResolveContext && ctx.all) {
             let services: any[] = [];
-            ctx.get(IteratorService)
+            ctx.resolve(IteratorService)
                 .each(
                     (tk, fac, resolver, ...pds) => {
                         services.push(fac(...pds));
                     },
-                    ctx.tokenKey,
+                    ctx.token,
                     ctx.target,
                     ctx.both,
                     ...ctx.providers);

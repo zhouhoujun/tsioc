@@ -6,6 +6,7 @@ import { IResolverContainer } from './IResolver';
 import { ParamProviders, ProviderTypes, IProviderParser } from './providers';
 import { IParameter } from './IParameter';
 import { TypeReflects } from './services';
+import { RegisterActionContext, ResovleContext } from './actions';
 
 /**
  * IContainer token.
@@ -37,6 +38,27 @@ export interface IIocContainer extends IResolverContainer {
      */
     getTypeReflects(): TypeReflects;
 
+    /**
+     * get register context.
+     *
+     * @template T
+     * @param {Type<any>} targetType
+     * @param {Token<any>} [tokenKey]
+     * @param {Type<T>} [regCtx]
+     * @returns {T}
+     * @memberof IIocContainer
+     */
+    getRegisterContext<T extends RegisterActionContext>(targetType: Type<any>, tokenKey?: Token<any>, regCtx?: Type<T>): T;
+
+    /**
+     * get resolve context.
+     *
+     * @template T
+     * @param {Type<T>} [ctxType]
+     * @returns {T}
+     * @memberof IIocContainer
+     */
+    getResolveContext<T extends ResovleContext>(ctxType?: Type<T>): T 
     /**
      * current container has register.
      *

@@ -1,4 +1,11 @@
 export * from './Action';
+export * from './RegisterActionContext';
+export * from './IocRegisterAction';
+export * from './ResovleContext';
+export * from './IocResolveAction';
+export * from './CompositeAction';
+
+
 export * from './BindParameterProviderAction';
 export * from './BindParameterTypeAction';
 export * from './BindPropertyTypeAction';

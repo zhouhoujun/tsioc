@@ -1,6 +1,6 @@
 import {
     ClassMetadata, getOwnTypeMetadata,
-    isClass, IocRegisterAction, IocActionContext, DecoratorRegisterer, lang
+    isClass, IocRegisterAction, RegisterActionContext, DecoratorRegisterer, lang
 } from '@ts-ioc/ioc';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
 
@@ -14,12 +14,12 @@ import { IAdvisor, AdvisorToken } from '../IAdvisor';
  */
 export class RegistAspectAction extends IocRegisterAction {
 
-    execute(ctx: IocActionContext, next: () => void): void {
+    execute(ctx: RegisterActionContext, next: () => void): void {
         let type = ctx.targetType;
         let decorReg = this.container.resolve(DecoratorRegisterer);
         let matchs = decorReg.getClassDecorators(type, lang.getClass(this))
         let aspectMgr = this.container.get<IAdvisor>(AdvisorToken);
-        let raiseContainer = ctx.raiseContainer || this.container;
+        let raiseContainer = ctx.getRaiseContainer() || this.container;
         matchs.forEach(d => {
             let metadata = getOwnTypeMetadata<ClassMetadata>(d, type);
             if (Array.isArray(metadata) && metadata.length > 0) {

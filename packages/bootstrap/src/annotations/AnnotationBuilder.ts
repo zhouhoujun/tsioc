@@ -12,7 +12,7 @@ import {
 import { BootHooks, BuildOptions } from './AnnoType';
 import { AnnotationConfigure } from './AnnotationConfigure';
 import { AnnoBuildStrategyToken, InjectAnnoBuildStrategyToken } from './AnnoBuildStrategy';
-import { ContainerToken, IContainer, RefTagLevel } from '@ts-ioc/core';
+import { ContainerToken, IContainer } from '@ts-ioc/core';
 import { MetaAccessor } from '../services';
 
 /**
