@@ -1,5 +1,5 @@
-import { ClassType, Token, ProviderTypes } from '@ts-ioc/ioc';
-import { ServiceResolveContext } from './ServiceResolveContext';
+import { Token, ProviderTypes } from '@ts-ioc/ioc';
+import { ServiceResolveContext } from './actions';
 
 /**
  * services resolver.

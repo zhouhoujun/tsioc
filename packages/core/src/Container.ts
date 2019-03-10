@@ -4,7 +4,7 @@ import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isProvider } from '@ts-ioc/ioc';
 import { ModuleLoader, IModuleLoader } from './services';
 import { registerCores } from './registerCores';
-import { ServiceResolveContext } from './ServiceResolveContext';
+import { ServiceResolveContext } from './actions';
 
 
 /**

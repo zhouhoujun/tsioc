@@ -1,4 +1,4 @@
-import { ResovleContext, Type } from '@ts-ioc/ioc';
+import { ResovleContext, Type, ClassType, Token } from '@ts-ioc/ioc';
 
 
 /**
@@ -31,7 +31,15 @@ export class ServiceResolveContext extends ResovleContext {
      * @type {Type<any>}
      * @memberof ServiceResolveContext
      */
-    targetType?: Type<any>;
+    targetType?: ClassType<any>;
+
+    /**
+     * reolve this defualt service, if not found any service.
+     *
+     * @type {Token<any>}
+     * @memberof ServiceResolveContext
+     */
+    defaultToken?: Token<any>;
 
     /**
      * get all service type of token.
@@ -44,6 +52,15 @@ export class ServiceResolveContext extends ResovleContext {
     both?: boolean;
 
 
-    private?: boolean;
+    refFactory?: (token: Token<any>) => Token<any> | Token<any>[]
+    /**
+     * set ref token factory.
+     *
+     * @param {((token: Token<any>) => Token<any> | Token<any>[])} refFactory
+     * @memberof ServiceResolveContext
+     */
+    setRefTokenFactory(refFactory: (token: Token<any>) => Token<any> | Token<any>[]) {
+        this.refFactory = refFactory;
+    }
 
 }

@@ -40,8 +40,7 @@ export interface IResolver {
      * @memberof IResolver
      */
     resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
-    
-       
+
     /**
      * resolve type instance with token and param provider.
      *
@@ -52,7 +51,6 @@ export interface IResolver {
      * @memberof IResolver
      */
     resolve<T>(token: Token<T>, context?: ResovleContext, ...providers: ProviderTypes[]): T;
-
 
     /**
      * unregister the token

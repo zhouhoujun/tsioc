@@ -2,7 +2,15 @@ import { IocAction, IocActionType, IocActionContext } from './Action';
 import { lang, isClass } from '../utils';
 import { Type } from '../types';
 
-export class CompositeAction<T extends IocActionContext> extends IocAction<T> {
+/**
+ * composite action.
+ *
+ * @export
+ * @class IocCompositeAction
+ * @extends {IocAction<T>}
+ * @template T
+ */
+export class IocCompositeAction<T extends IocActionContext> extends IocAction<T> {
 
     protected actions: IocActionType[];
     constructor() {
@@ -51,7 +59,7 @@ export class CompositeAction<T extends IocActionContext> extends IocAction<T> {
         this.actions.splice(this.actions.indexOf(after), 0, action);
         return this;
     }
-    
+
     execute(ctx: T, next?: () => void): void {
         this.execActions(ctx, this.actions, next);
     }
@@ -79,5 +87,4 @@ export class CompositeAction<T extends IocActionContext> extends IocAction<T> {
     protected resolveAction(ctx: T, ac: Type<IocAction<any>>) {
         return ctx.resolve(ac);
     }
-
 }

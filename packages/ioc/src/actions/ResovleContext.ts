@@ -36,7 +36,7 @@ export class ResovleContext extends IocActionContext implements IResolver {
 
 
     /**
-     * 
+     * set resolve target.
      *
      * @param {Token<any>} token
      * @param {ProviderTypes[]} [providers]

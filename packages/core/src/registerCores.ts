@@ -1,31 +1,50 @@
 import { IContainer, ContainerToken } from './IContainer';
 import { ModuleInjectorManager, IteratorService, ModuleLoader } from './services';
 import { IocExt } from './decorators';
-import { DecoratorRegisterer, MethodAutorunAction, ResolveLifeScope } from '@ts-ioc/ioc';
-import { InitServiceResolveAction, RefServiceResolveAction, ServiceResolveAction, ServicesResolveAction } from './actions';
+import { DecoratorRegisterer, MethodAutorunAction, ResolveLifeScope, IocDefaultResolveAction } from '@ts-ioc/ioc';
+import {
+    InitServiceResolveAction, ResolveRefServiceAction, ResolveServiceAction,
+    ResolveServicesAction, ResolvePrivateServiceAction, ResolveServiceInClassChain, ResolveDefaultServiceAction
+} from './actions';
+
 
 export function registerCores(container: IContainer) {
 
     container.bindProvider(ContainerToken, () => container);
     container.register(IteratorService);
-    // container.register(ResolverChain);
     container.register(ModuleLoader);
-    // container.register(RefServiceResolver);
-    // container.register(ServiceResolver);
-    // container.register(ServicesResolver);
+
     container.register(ModuleInjectorManager);
 
-    container.registerSingleton(InitServiceResolveAction, () => new InitServiceResolveAction(container));
-    container.registerSingleton(RefServiceResolveAction, () => new RefServiceResolveAction(container));
-    container.registerSingleton(ServiceResolveAction, () => new ServiceResolveAction(container));
-    container.registerSingleton(ServicesResolveAction, () => new ServicesResolveAction(container));
+    container.register(ResolveServiceAction);
+    container.register(InitServiceResolveAction);
+    container.register(ResolveRefServiceAction);
+    container.register(ResolveServicesAction);
+    container.register(ResolvePrivateServiceAction);
+    container.register(ResolveServiceInClassChain);
+    container.register(ResolveDefaultServiceAction);
 
     let resolveLifeScope = container.resolve(ResolveLifeScope);
     resolveLifeScope
-        .use(ServiceResolveAction, true)
-        .use(RefServiceResolveAction, true)
-        .use(ServicesResolveAction, true)
-        .use(InitServiceResolveAction, true);
+        .use(ResolveServiceAction, true);
+
+    container.resolve(ResolveRefServiceAction)
+        .use(ResolvePrivateServiceAction)
+        .use(IocDefaultResolveAction);
+
+    container.resolve(ResolveServiceInClassChain)
+        .use(ResolveRefServiceAction)
+        .use(ResolvePrivateServiceAction)
+        .use(IocDefaultResolveAction);
+
+    container.resolve(ResolveServiceAction)
+        .use(InitServiceResolveAction)
+        .use(ResolveServicesAction)
+        .use(ResolveRefServiceAction)
+        .use(ResolvePrivateServiceAction)
+        .use(IocDefaultResolveAction)
+        .use(ResolveServiceInClassChain)
+        .use(ResolveDefaultServiceAction);
 
 
 

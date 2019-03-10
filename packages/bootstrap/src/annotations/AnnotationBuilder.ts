@@ -54,7 +54,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             config = token;
         }
         return this.container.getService(MetaAccessor,
-            mtk ? [mtk, lang.getClass(this)] : lang.getClass(this),
+            mtk || lang.getClass(this),
             config ? (config.defaultMetaAccessor || MetaAccessor) : MetaAccessor);
     }
 

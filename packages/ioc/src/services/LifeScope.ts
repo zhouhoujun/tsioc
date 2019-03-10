@@ -1,7 +1,6 @@
-import { IocCoreService } from './IocCoreService';
-import { IocAction, IocActionType, CompositeAction, IocActionContext } from '../actions';
+import { IocCompositeAction, IocActionContext } from '../actions';
 import { Type } from '../types';
-import { isClass, isArray, lang } from '../utils';
+import { isArray } from '../utils';
 import { IIocContainer } from '../IIocContainer';
 import { getOwnParamerterNames } from '../factories';
 
@@ -12,7 +11,7 @@ import { getOwnParamerterNames } from '../factories';
  * @class LifeScope
  * @extends {IocCoreService}
  */
-export abstract class LifeScope<TCtx extends IocActionContext> extends CompositeAction<TCtx> {
+export abstract class LifeScope<TCtx extends IocActionContext> extends IocCompositeAction<TCtx> {
 
     constructor() {
         super();

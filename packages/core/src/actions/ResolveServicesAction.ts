@@ -1,11 +1,14 @@
-import { IocResolveAction } from '@ts-ioc/ioc';
-import { ServiceResolveContext } from '../ServiceResolveContext';
+import { Singleton } from '@ts-ioc/ioc';
+import { ServiceResolveContext } from './ServiceResolveContext';
 import { IteratorService } from '../services';
+import { IocResolveServiceAction } from './IocResolveServiceAction';
 
-export class ServicesResolveAction extends IocResolveAction {
+
+@Singleton
+export class ResolveServicesAction extends IocResolveServiceAction {
 
     execute(ctx: ServiceResolveContext, next: () => void): void {
-        if (ctx instanceof ServiceResolveContext && ctx.all) {
+        if (ctx.all) {
             let services: any[] = [];
             ctx.resolve(IteratorService)
                 .each(

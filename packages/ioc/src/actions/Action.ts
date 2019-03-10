@@ -3,7 +3,6 @@ import { ProviderTypes } from '../providers';
 import { Type, Token, InstanceFactory } from '../types';
 import { IocCoreService } from '../services';
 import { lang } from '../utils';
-import { ResovleContext } from './ResovleContext';
 
 /**
  * ioc action context.

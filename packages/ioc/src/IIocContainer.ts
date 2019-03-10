@@ -58,7 +58,7 @@ export interface IIocContainer extends IResolverContainer {
      * @returns {T}
      * @memberof IIocContainer
      */
-    getResolveContext<T extends ResovleContext>(ctxType?: Type<T>): T 
+    getResolveContext<T extends ResovleContext>(ctxType?: Type<T>): T;
     /**
      * current container has register.
      *
