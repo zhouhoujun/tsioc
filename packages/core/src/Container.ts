@@ -90,7 +90,7 @@ export class Container extends IocContainer implements IContainer {
      * @returns {T}
      * @memberof Container
      */
-    getService<T>(token: Token<T>, target?: any, ctx?: ServiceResolveContext, ...providers: ProviderTypes[]): T {
+    getService<T>(token: Token<T>, target?: any, ctx?: ServiceResolveContext | ProviderTypes, ...providers: ProviderTypes[]): T {
         let context = this.vailfyServiceContext(token, target, ctx, ...providers);
         this.execResolve(context);
         return context.instance || null;
@@ -107,25 +107,24 @@ export class Container extends IocContainer implements IContainer {
      * @returns {T[]}
      * @memberof Container
      */
-    getServices<T>(token: Token<T>, target?: any, ctx?: ServiceResolveContext, ...providers: ProviderTypes[]): T[] {
+    getServices<T>(token: Token<T>, target?: any, ctx?: ServiceResolveContext|ProviderTypes, ...providers: ProviderTypes[]): T[] {
         let context = this.vailfyServiceContext(token, target, ctx, ...providers)
         context.all = true;
         this.execResolve(context);
         return context.instance || [];
     }
 
-    protected vailfyServiceContext<T>(token: Token<T>, target?: any, ctx?: ServiceResolveContext, ...providers: ProviderTypes[]): ServiceResolveContext {
+    protected vailfyServiceContext<T>(token: Token<T>, target?: any, ctx?: ServiceResolveContext|ProviderTypes, ...providers: ProviderTypes[]): ServiceResolveContext {
         let context: ServiceResolveContext;
         if (isProvider(ctx)) {
             providers.unshift(ctx);
             ctx = null;
+        } else if (ctx instanceof ServiceResolveContext) {
+            context = ctx;
         }
         if (isProvider(target)) {
             providers.unshift(target);
             target = null;
-        }
-        if (ctx instanceof ServiceResolveContext) {
-            context = ctx;
         } else if (target instanceof ServiceResolveContext) {
             context = target;
             target = null;
@@ -136,7 +135,6 @@ export class Container extends IocContainer implements IContainer {
         if (target) {
             context.target = target;
         }
-        this.bindActionContext(context);
         context.setOptions({
             token: token,
             providers: providers

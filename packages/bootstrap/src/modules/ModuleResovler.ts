@@ -1,9 +1,11 @@
 import {
     Token, Registration, Type, ParamProviders, isToken,
-    IResolver, IResolverContainer, InstanceFactory
+    IResolver, IResolverContainer, InstanceFactory, IocActionContext,
+    ResovleActionContext, SymbolType
 } from '@ts-ioc/ioc';
 import { ModuleConfig } from './ModuleConfigure';
 import { IContainer } from '@ts-ioc/core';
+import { DIModuleExports } from '../services';
 
 
 /**
@@ -36,10 +38,31 @@ export class ModuleResovler<T> implements IResolverContainer {
         return this.getProviderMap().size;
     }
 
+    bindActionContext<T extends IocActionContext>(ctx: T): T {
+        this.getProviderMap().bindActionContext(ctx);
+        return ctx;
+    }
+
+    execResolve<T extends ResovleActionContext>(ctx: T): T {
+        this.bindActionContext(ctx);
+        let container = this.getProviderMap();
+        container.execResolve(ctx);
+        if (!ctx.instance) {
+            container.resolve(DIModuleExports).execResolve(ctx);
+        }
+        return ctx;
+    }
+
+    getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
+        return this.container.getTokenKey(token, alias);
+    }
+
     resolve<T>(token: Token<T>, ...providers: ParamProviders[]): T {
         let pdr = this.getProviderMap();
         if (pdr && pdr.has(token)) {
             return pdr.resolve(token, ...providers);
+        } else {
+            pdr.resolve(DIModuleExports).resolve(token, ...providers);
         }
         return null;
     }

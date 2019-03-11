@@ -1,4 +1,4 @@
-import { ContainerBuilder, AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration } from '../src';
+import { ContainerBuilder, IContainer } from '../src';
 import * as debuModules from './debug';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom, StringIdTest, SymbolIdest } from './debug';
 import expect = require('expect');

@@ -2,9 +2,13 @@ import { Token, SymbolType, Registration, InjectToken } from '@ts-ioc/ioc';
 import { IContainer, IContainerBuilder } from '@ts-ioc/core';
 
 
-const RootContainerToken = new InjectToken<IContainer>('__ioc_root_container');
-const ParentContainerToken = new InjectToken<IContainer>('__ioc_parent_container');
-const ChildrenContainerToken = new InjectToken<IContainer[]>('__ioc_children_container');
+export const RootContainerToken = new InjectToken<IContainer>('__ioc_root_container');
+export const ParentContainerToken = new InjectToken<IContainer>('__ioc_parent_container');
+export const ChildrenContainerToken = new InjectToken<IContainer[]>('__ioc_children_container');
+/**
+ *  container pool token.
+ */
+export const ContainerPoolToken = new InjectToken<ContainerPool>('DI_ContainerPool');
 
 /**
  * container pool
@@ -71,6 +75,10 @@ export class ContainerPool {
         }
     }
 
+    getParent(container: IContainer): IContainer {
+        return container.resolve(ParentContainerToken);
+    }
+
     iterator(express: (resolvor?: IContainer) => void | boolean): void | boolean {
         return !this.pools.some(r => {
             if (express(r) === false) {
@@ -81,7 +89,3 @@ export class ContainerPool {
     }
 }
 
-/**
- *  container pool token.
- */
-export const ContainerPoolToken = new InjectToken<ContainerPool>('DI_ContainerPool');

@@ -1,4 +1,5 @@
 export * from './decorators';
+export * from './actions';
 export * from './services';
 export * from './boot';
 export * from './annotations';

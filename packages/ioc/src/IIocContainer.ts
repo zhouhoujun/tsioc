@@ -5,8 +5,8 @@ import { InjectToken } from './InjectToken';
 import { IResolverContainer } from './IResolver';
 import { ParamProviders, ProviderTypes, IProviderParser } from './providers';
 import { IParameter } from './IParameter';
-import { TypeReflects } from './services';
-import { RegisterActionContext, ResovleActionContext, RegisterActionOption, ResovleActionOption, IocActionContext } from './actions';
+import { TypeReflects, ResolveLifeScope } from './services';
+import { IocActionContext, ResovleActionContext } from './actions';
 
 /**
  * IContainer token.
@@ -39,14 +39,12 @@ export interface IIocContainer extends IResolverContainer {
     getTypeReflects(): TypeReflects;
 
     /**
-     * bind action context.
+     * get resolve life scope.
      *
-     * @template T
-     * @param {T} ctx
-     * @returns {T}
+     * @returns {ResolveLifeScope}
      * @memberof IIocContainer
      */
-    bindActionContext<T extends IocActionContext>(ctx: T): T 
+    getResolveLifeScope(): ResolveLifeScope;
 
     /**
      * current container has register.
@@ -177,16 +175,6 @@ export interface IIocContainer extends IResolverContainer {
      */
     getToken<T>(target: Token<T>, alias?: string): Token<T>;
 
-    /**
-     * get tocken key.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {SymbolType<T>}
-     * @memberof IContainer
-     */
-    getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T>;
 
     /**
      * try to async invoke the method of intance, if no instance will create by type.

@@ -10,7 +10,7 @@ import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderPa
 import { IResolver } from './IResolver';
 import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, TypeReflects, ResolveLifeScope } from './services';
 import { IParameter } from './IParameter';
-import { RegisterActionContext, ResovleActionContext, RegisterActionOption, ResovleActionOption, IocActionContext } from './actions';
+import { RegisterActionContext, ResovleActionContext, IocActionContext } from './actions';
 
 /**
  * Container
@@ -56,7 +56,7 @@ export class IocContainer implements IIocContainer {
 
     private resolveLifeScope: ResolveLifeScope;
 
-    getResolveLifeScope() {
+    getResolveLifeScope(): ResolveLifeScope {
         if (!this.resolveLifeScope) {
             this.resolveLifeScope = new ResolveLifeScope();
             this.resolveLifeScope.registerDefault(this);
@@ -113,30 +113,24 @@ export class IocContainer implements IIocContainer {
      * @param {...ProviderTypes[]} providers
      * @memberof Container
      */
-    resolve<T>(token: Token<T>, ctx?: ResovleActionContext | ProviderTypes, ...providers: ProviderTypes[]): T {
-        let context: ResovleActionContext;
-        if (ctx instanceof ResovleActionContext) {
-            context = ctx;
-        } else {
-            providers.unshift(ctx);
-            context = ResovleActionContext.create();
-        }
-        this.bindActionContext(context);
-        context.setOptions({
-            token: token, 
+    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
+        let context = ResovleActionContext.create({
+            token: token,
             providers: providers
         });
         this.execResolve(context);
         return context.instance || null;
     }
 
+    execResolve<T extends ResovleActionContext>(ctx: T): T {
+        this.bindActionContext(ctx);
+        this.resolveLifeScope.execute(ctx);
+        return ctx as T;
+    }
+
     bindActionContext<T extends IocActionContext>(ctx: T): T {
         ctx.setContext(() => this, () => this.factories);
         return ctx;
-    }
-
-    protected execResolve(ctx: ResovleActionContext) {
-        this.resolveLifeScope.execute(ctx);
     }
 
     /**

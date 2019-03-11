@@ -2,8 +2,8 @@ import { IocCoreService } from './IocCoreService';
 import { IocActionType } from '../actions';
 import { ClassType, Express, Type } from '../types';
 import {
-    getMethodDecorators, getPropDecorators,
-    getParamDecorators, getClassDecorators, getTypeMetadata, getOwnMethodMetadata
+    getMethodDecorators, getPropDecorators, getParamDecorators,
+    getClassDecorators, getTypeMetadata, getOwnMethodMetadata
 } from '../factories';
 import { isString } from '../utils';
 import { ClassMetadata, MethodMetadata } from '../metadatas';

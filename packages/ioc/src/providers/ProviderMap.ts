@@ -1,8 +1,9 @@
 import { isToken, isFunction, isUndefined, isObject, isNumber } from '../utils';
 import { Token, InstanceFactory, SymbolType, Factory, Type } from '../types';
 import { IIocContainer } from '../IIocContainer';
-import { IResolverContainer, IResolver } from '../IResolver';
-import { ProviderTypes, ParamProviders } from './types';
+import { IResolver, IResolverContainer } from '../IResolver';
+import { ProviderTypes } from './types';
+import { IocActionContext, ResovleActionContext } from '../actions';
 
 // use core-js in browser.
 
@@ -16,7 +17,11 @@ import { ProviderTypes, ParamProviders } from './types';
  */
 export class ProviderMap implements IResolverContainer {
 
-    map: Map<Token<any> | number, InstanceFactory<any>>;
+    get size(): number {
+        return this.map.size;
+    }
+
+    map: Map<Token<any>, InstanceFactory<any>>;
     constructor(private container: IIocContainer) {
         this.map = new Map();
     }
@@ -27,6 +32,17 @@ export class ProviderMap implements IResolverContainer {
 
     values(): InstanceFactory<any>[] {
         return Array.from(this.map.values());
+    }
+
+    bindActionContext<T extends IocActionContext>(ctx: T): T {
+        ctx.setContext(() => this.container, () => this.map);
+        return ctx;
+    }
+
+    execResolve<T extends ResovleActionContext>(ctx: T): T {
+        this.bindActionContext(ctx);
+        this.container.getResolveLifeScope().execute(ctx);
+        return ctx;
     }
 
     /**
@@ -41,7 +57,7 @@ export class ProviderMap implements IResolverContainer {
     }
 
     provides(): Token<any>[] {
-        return Array.from(this.map.keys()).filter(k => isToken(k)) as Token<any>[];
+        return this.keys().filter(k => isToken(k)) as Token<any>[];
     }
 
     /**
@@ -51,11 +67,11 @@ export class ProviderMap implements IResolverContainer {
      * @returns {(SymbolType<any> | number)}
      * @memberof ProviderMap
      */
-    getTokenKey(token: Token<any> | number): SymbolType<any> | number {
+    getTokenKey(token: Token<any> | number): SymbolType<any> {
         if (!isNumber(token)) {
             return this.container.getTokenKey(token);
         }
-        return token;
+        return token as any;
     }
 
     /**
@@ -70,10 +86,26 @@ export class ProviderMap implements IResolverContainer {
         return this.get(this.getTokenKey(provide));
     }
 
+    /**
+     * get token provider.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {Type<T>}
+     * @memberof ProviderMap
+     */
     getTokenProvider<T>(token: Token<T>): Type<T> {
         return this.container.getTokenProvider(token);
     }
 
+    /**
+     * unregister.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {this}
+     * @memberof ProviderMap
+     */
     unregister<T>(token: Token<T>): this {
         let key = this.getTokenKey(token);
         if (this.map.has(key)) {
@@ -125,7 +157,7 @@ export class ProviderMap implements IResolverContainer {
      * @returns {T}
      * @memberof ProviderMap
      */
-    resolve<T>(provide: Token<T> | number, ...providers: ParamProviders[]): T {
+    resolve<T>(provide: Token<T> | number, ...providers: ProviderTypes[]): T {
         let key = this.getTokenKey(provide);
         if (this.has(key)) {
             let provider = this.get(key);
@@ -135,7 +167,7 @@ export class ProviderMap implements IResolverContainer {
     }
 
     iterator(callbackfn: (fac: InstanceFactory<any>, tk: Token<any>, resolvor?: IResolver) => void | boolean): void | boolean {
-        return !Array.from(this.map.keys()).some(tk => {
+        return !this.keys().some(tk => {
             if (isToken(tk)) {
                 return callbackfn(this.get(tk), tk, this) === false;
             }

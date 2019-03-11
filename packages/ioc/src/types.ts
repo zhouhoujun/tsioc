@@ -64,7 +64,7 @@ export type Token<T> = Registration<T> | SymbolType<T>;
 /**
  * provide token
  */
-export type ProvideToken<T> =  Registration<T> | string | symbol;
+export type ProvideToken<T> = Registration<T> | string | symbol;
 
 
 /**
@@ -90,7 +90,7 @@ export type Factory<T> = T | Type<T> | ToInstance<T>;
  * @template T
  */
 export interface ObjectMap<T> {
-    [index: string]: T
+    [index: string]: T;
 }
 
 /**

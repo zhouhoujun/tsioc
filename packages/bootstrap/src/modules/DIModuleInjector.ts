@@ -1,8 +1,8 @@
 import {
     Type, Token, isArray, ProviderMap, ClassType, IResolver,
-    ProviderParser, Singleton, ITypeReflect
+    ProviderParser, Singleton, ITypeReflect, ProviderTypes
 } from '@ts-ioc/ioc';
-import { ContainerPoolToken, ResolverChain, MetaAccessor } from '../services';
+import { ContainerPoolToken, DIModuleExports, MetaAccessor } from '../services';
 import { ModuleConfigure } from './ModuleConfigure';
 import { ModuleResovler } from './ModuleResovler';
 import { ConfigureRegister } from '../boot/ConfigureRegister';
@@ -102,11 +102,11 @@ export class DIModuleInjector extends ModuleInjector {
         let exptypes: Type<any>[] = [].concat(...container.getLoader().getTypes(config.exports || []));
         exptypes.forEach(ty => {
             let classPd = tRef.get(ty);
-            map.add(ty, (...pds) => container.resolve(ty, ...pds));
+            map.add(ty, (...pds: ProviderTypes[]) => container.resolve(ty, ...pds));
             if (classPd && isArray(classPd.provides) && classPd.provides.length) {
                 classPd.provides.forEach(p => {
                     if (!map.has(p)) {
-                        map.add(p, (...pds) => container.resolve(p, ...pds));
+                        map.add(p, (...pds: ProviderTypes[]) => container.resolve(p, ...pds));
                     }
                 });
             }
@@ -120,8 +120,8 @@ export class DIModuleInjector extends ModuleInjector {
             return container;
         }
         if (mdResolver) {
-            let chain = container.resolve(ResolverChain);
-            chain.use(mdResolver);
+            let diexports = container.resolve(DIModuleExports);
+            diexports.use(mdResolver);
         }
 
         return container;

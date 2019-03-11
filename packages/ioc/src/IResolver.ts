@@ -1,6 +1,6 @@
-import { Token, Type, InstanceFactory } from './types';
 import { ProviderTypes } from './providers';
-import { ResovleActionContext } from './actions';
+import { Token, Type, InstanceFactory, SymbolType } from './types';
+import { ResovleActionContext, IocActionContext } from './actions';
 
 /**
  * resolver.
@@ -42,17 +42,6 @@ export interface IResolver {
     resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
 
     /**
-     * resolve type instance with token and param provider.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IResolver
-     */
-    resolve<T>(token: Token<T>, context?: ResovleActionContext, ...providers: ProviderTypes[]): T;
-
-    /**
      * unregister the token
      *
      * @template T
@@ -64,13 +53,51 @@ export interface IResolver {
 }
 
 /**
+ * resolver execute.
+ *
+ * @export
+ * @interface IResolverExecute
+ */
+export interface IResolverExecute {
+
+    /**
+     * execute resolve.
+     *
+     * @template T
+     * @param {T} ctx
+     * @returns {T}
+     * @memberof IResolverExecute
+     */
+    execResolve<T extends ResovleActionContext>(ctx: T): T;
+}
+
+/**
+ * bind action context.
+ *
+ * @export
+ * @interface IBindActionContext
+ */
+export interface IBindActionContext {
+
+    /**
+     * bind action context.
+     *
+     * @template T
+     * @param {T} ctx
+     * @returns {T}
+     * @memberof IBindResolveContext
+     */
+    bindActionContext<T extends IocActionContext>(ctx: T): T;
+}
+
+/**
  * resolver container.
  *
  * @export
  * @interface IResolverContainer
  * @extends {IResolver}
  */
-export interface IResolverContainer extends IResolver {
+export interface IResolverContainer extends IResolver, IResolverExecute, IBindActionContext {
     /**
      * container size.
      *
@@ -78,7 +105,6 @@ export interface IResolverContainer extends IResolver {
      * @memberof IResolverContainer
      */
     readonly size?: number;
-
 
     /**
      * get token implement class type.
@@ -90,6 +116,17 @@ export interface IResolverContainer extends IResolver {
      * @memberof IResolver
      */
     getTokenProvider<T>(token: Token<T>): Type<T>;
+
+    /**
+     * get tocken key.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {string} [alias]
+     * @returns {SymbolType<T>}
+     * @memberof IContainer
+     */
+    getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T>;
 
     /**
      * iterator current resolver.

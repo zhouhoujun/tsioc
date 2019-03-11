@@ -1,7 +1,7 @@
 import {
     Inject, DecoratorRegisterer, BindProviderAction,
     IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction,
-    ComponentInitAction, ComponentAfterInitAction
+    ComponentInitAction, ComponentAfterInitAction, ResolveLifeScope
 } from '@ts-ioc/ioc';
 import { IContainer, ContainerToken, IocExt } from '@ts-ioc/core';
 import { DIModule } from './decorators/DIModule';
@@ -11,6 +11,8 @@ import * as modules from './modules';
 import * as boot from './boot';
 import * as annotations from './annotations';
 import * as services from './services';
+import * as actions from './actions';
+import { RouteResolveAction, ResolveModuleExportAction, ResolveParentAction } from './actions';
 
 /**
  * Bootstrap ext for ioc. auto run setup after registered.
@@ -36,6 +38,13 @@ export class BootModule {
         decReg.register(Annotation, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
         decReg.register(DIModule, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
         decReg.register(Bootstrap, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
-        container.use(services, annotations, modules, boot);
+        container.use(services, actions, annotations, modules, boot);
+
+        container.resolve(RouteResolveAction)
+            .use(ResolveModuleExportAction)
+            .use(ResolveParentAction);
+
+        container.resolve(ResolveLifeScope)
+            .use(RouteResolveAction)
     }
 }

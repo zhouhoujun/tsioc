@@ -67,7 +67,6 @@ export interface ServiceActionOption extends ResovleActionOption {
  */
 export class ServiceResolveContext extends ResovleActionContext {
 
-
     /**
      * create service resolve context.
      *

@@ -12,9 +12,8 @@ import {
 import { BootHooks, BuildOptions } from './AnnoType';
 import { AnnotationConfigure } from './AnnotationConfigure';
 import { AnnoBuildStrategyToken, InjectAnnoBuildStrategyToken } from './AnnoBuildStrategy';
-import { ContainerToken, IContainer } from '@ts-ioc/core';
+import { ContainerToken, IContainer, ServiceResolveContext } from '@ts-ioc/core';
 import { MetaAccessor } from '../services';
-import { ServiceResolveContext } from 'packages/core/src/actions';
 
 /**
  * Annotation class builder. build class with metadata and config.
@@ -57,7 +56,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         return this.container.getService(MetaAccessor,
             mtk || lang.getClass(this),
             ServiceResolveContext.create({
-                refFactory: tk =>  new InjectReference(MetaAccessor, tk),
+                refFactory: tk => new InjectReference(MetaAccessor, tk),
                 defaultToken: config.defaultMetaAccessor
             }));
     }
@@ -109,13 +108,17 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             if (!instance) {
                 return null;
             }
-            let strategy = this.container.getService(AnnoBuildStrategyToken,
+            let strategy = this.container.getService(
+                AnnoBuildStrategyToken,
                 [
                     tk || lang.getClass(instance),
-                    ...((options && options.target) ? [{ target: lang.getClass(options.target), level: RefTagLevel.self }] : []),
-                    { target: lang.getClass(this), level: RefTagLevel.self }
+                    ...((options && options.target) ? [{ target: lang.getClass(options.target) }] : []),
+                    { target: lang.getClass(this) }
 
-                ], tk => new InjectAnnoBuildStrategyToken(tk));
+                ],
+                ServiceResolveContext.create({
+                    refFactory: tk => new InjectAnnoBuildStrategyToken(tk)
+                }));
             if (strategy) {
                 await strategy.build(instance, cfg, options);
             }
@@ -252,8 +255,10 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
                     token,
                     ...(options && options.target) ? [{ target: lang.getClass(options.target), level: RefTagLevel.self }] : []
                 ],
-                (tk) => new InjectAnnotationBuilder(tk),
-                config.defaultAnnoBuilder || AnnotationBuilderToken) as IAnnotationBuilder<T>;
+                ServiceResolveContext.create({
+                    refFactory: (tk) => new InjectAnnotationBuilder(tk),
+                    defaultToken: config.defaultAnnoBuilder
+                }));
         }
 
         if (builder && !builder.container) {

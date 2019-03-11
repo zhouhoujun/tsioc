@@ -1,4 +1,4 @@
-import { Inject, isUndefined, Singleton, isString } from '@ts-ioc/ioc';
+import { Inject, isUndefined, Singleton, isString, ObjectMapProvider } from '@ts-ioc/ioc';
 import {
     ConfigureMgrToken, ConfigureLoaderToken,
     IConfigureManager, DefaultConfigureToken
@@ -101,7 +101,7 @@ export class ConfigureManager<T extends RunnableConfigure> implements IConfigure
      */
     protected async loadConfig(src: string): Promise<T> {
         if (this.container.has(ConfigureLoaderToken)) {
-            let loader = this.container.resolve(ConfigureLoaderToken, { baseURL: this.baseURL, container: this.container });
+            let loader = this.container.resolve(ConfigureLoaderToken, ObjectMapProvider.parse({ baseURL: this.baseURL, container: this.container }));
             return await loader.load(src) as T;
         } else if (src) {
             let cfg = await this.container.getLoader().load([src])

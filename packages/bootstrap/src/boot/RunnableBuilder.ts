@@ -1,7 +1,7 @@
 import {
     LoadType, Factory, Token, isClass,
     isToken, PromiseUtil, Injectable, lang,
-    IResolver, ClassType
+    IResolver, ClassType, ObjectMapProvider
 } from '@ts-ioc/ioc';
 import {
     IRunnableBuilder, CustomRegister, RunnableBuilderToken,
@@ -17,7 +17,10 @@ import { Runnable } from '../runnable';
 import { ConfigureMgrToken, IConfigureManager } from './IConfigureManager';
 import { RunnableConfigure } from './AppConfigure';
 import { ConfigureRegister } from './ConfigureRegister';
-import { ContainerBuilder, IContainerBuilder, IContainer, ModuleInjectorManager, IteratorService } from '@ts-ioc/core';
+import {
+    ContainerBuilder, IContainerBuilder, IContainer, ModuleInjectorManager,
+    IteratorService, ServiceResolveContext
+} from '@ts-ioc/core';
 import { BootstrapInjector } from './BootModuleInjector';
 import { ContainerPool, ContainerPoolToken } from '../services';
 
@@ -222,7 +225,11 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
 
         let tko = injmdl.token;
         if (!builder && tko) {
-            builder = container.getService(ModuleBuilderToken, tko, (tk) => new InjectModuleBuilderToken(tk), cfg.defaultBuilder || ModuleBuilderToken);
+            builder = container.getService(ModuleBuilderToken, tko,
+                ServiceResolveContext.create({
+                    refFactory: (tk) => new InjectModuleBuilderToken(tk),
+                    defaultToken: cfg.defaultBuilder
+                }));
         }
 
         return builder || this;
@@ -254,7 +261,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
 
     protected createConfigureMgr() {
         let container = this.getPools().getDefault();
-        return container.getService(ConfigureMgrToken, lang.getClass(this), { baseURL: this.getRunRoot(container) });
+        return container.getService(ConfigureMgrToken, lang.getClass(this), ObjectMapProvider.parse({ baseURL: this.getRunRoot(container) }));
     }
 
     protected createDefaultContainer() {
@@ -262,8 +269,8 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         container.register(BootModule);
 
         let chain = container.resolve(ModuleInjectorManager);
-        chain.first(DIModuleInjector);
-        chain.first(BootstrapInjector);
+        chain.use(DIModuleInjector, true);
+        chain.use(BootstrapInjector, true);
         container.bindProvider(ContainerPoolToken, () => this.getPools());
         container.bindProvider(CurrentRunnableBuilderToken, () => this);
         this.beforeInitPds.forEach((val, key) => {

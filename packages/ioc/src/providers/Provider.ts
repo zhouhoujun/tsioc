@@ -1,4 +1,4 @@
-import { Token, Express2, Type } from '../types';
+import { Token, Express2, Type, ObjectMap } from '../types';
 import { IIocContainer } from '../IIocContainer';
 import { isFunction, isObject, isUndefined } from '../utils';
 import { ProviderTypes } from './types';
@@ -134,9 +134,46 @@ export interface ExistingProvider extends IProvider {
 /**
  * provider type.
  */
-export type ProviderType =
-    TypeProvider | ValueProvider | ClassProvider | ExistingProvider | FactoryProvider | Provider;
+export type ProviderType = ObjectMapProvider | Provider |
+    TypeProvider | ValueProvider | ClassProvider | ExistingProvider | FactoryProvider;
 
+
+/**
+ * object map provider.
+ * use to replace ObjectMap. for typed check.
+ *
+ * @export
+ * @class ObjectMapProvider
+ */
+export class ObjectMapProvider {
+    protected maps: ObjectMap<any>;
+    constructor() {
+        this.maps = {};
+    }
+
+    get(): ObjectMap<any> {
+        return this.maps;
+    }
+
+    set(options: ObjectMap<any>) {
+        if (options) {
+            this.maps = Object.assign(this.maps, options);
+        }
+    }
+    /**
+     * parse Object map to provider.
+     *
+     * @static
+     * @param {ObjectMap<any>} options
+     * @returns
+     * @memberof ObjectMapProvider
+     */
+    static parse(options: ObjectMap<any>) {
+        let pdr = new ObjectMapProvider();
+        pdr.set(options);
+        return pdr;
+    }
+}
 
 /**
  *  provider, to dynamic resovle instance of params in run time.

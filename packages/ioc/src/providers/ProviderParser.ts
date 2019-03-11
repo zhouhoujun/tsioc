@@ -1,12 +1,12 @@
-import { ParamProviders } from './types';
+import { ParamProviders, ProviderTypes } from './types';
 import {
     isClass, isArray, isFunction, isNumber, isString,
-    isUndefined, isNull, isToken, isBaseObject, lang
+    isUndefined, isNull, isToken, isBaseObject, lang, isMetadataObject
 } from '../utils';
 import { IProviderParser } from './IProviderParser';
 import { IIocContainer } from '../IIocContainer';
 import { ProviderMap, isProviderMap } from './ProviderMap';
-import { Provider, ParamProvider } from './Provider';
+import { Provider, ParamProvider, ObjectMapProvider } from './Provider';
 
 /**
  * provider matcher. use to find custome providers in resolve.
@@ -50,9 +50,17 @@ export class ProviderParser implements IProviderParser {
                     this.container.register(p);
                 }
                 map.add(p, p);
+            } else if (p instanceof ObjectMapProvider) {
+                let pr = p.get();
+                lang.forIn<any>(pr, (val, name) => {
+                    if (name && isString(name)) {
+                        // object map can not resolve token. set all fileld as value factory.
+                        map.add(name, () => val);
+                    }
+                });
+
             } else if (isBaseObject(p)) {
                 let pr: any = p;
-                let isobjMap = false;
                 if (isToken(pr.provide)) {
                     if (isArray(pr.deps) && pr.deps.length) {
                         pr.deps.forEach(d => {
@@ -69,7 +77,7 @@ export class ProviderParser implements IProviderParser {
                         }
                         map.add(pr.provide, pr.useClass);
                     } else if (isFunction(pr.useFactory)) {
-                        map.add(pr.provide, (...providers) => {
+                        map.add(pr.provide, (...providers: ProviderTypes[]) => {
                             let args = [];
                             if (isArray(pr.deps) && pr.deps.length) {
                                 args = pr.deps.map(d => {
@@ -83,32 +91,30 @@ export class ProviderParser implements IProviderParser {
                             return pr.useFactory.apply(pr, args);
                         });
                     } else if (isToken(pr.useExisting)) {
-                        map.add(pr.provide, (...providers) => this.container.resolve(pr.useExisting, ...providers));
-                    } else {
-                        isobjMap = true;
+                        map.add(pr.provide, (...providers: ProviderTypes[]) => this.container.resolve(pr.useExisting, ...providers));
                     }
-                } else {
-                    isobjMap = true;
                 }
-
-                if (isobjMap) {
-                    lang.forIn<any>(p, (val, name) => {
-                        if (name && isString(name)) {
-                            // object map can not resolve token. set all fileld as value factory.
-                            map.add(name, () => val);
-                        }
-                    });
-                }
-
-            } else if (isFunction(p)) {
-                map.add(name, () => p);
             }
+            // else if (isFunction(p)) {
+            //     map.add(name, () => p);
+            // }
         });
 
         return map;
     }
 }
 
-export function isProvider(target: any): boolean {
-    return isProviderMap(target) || isBaseObject(target) || target instanceof Provider;
+/**
+ * is provider or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is ProviderTypes}
+ */
+export function isProvider(target: any): target is ProviderTypes {
+    return isProviderMap(target)
+        || isClass(target)
+        || target instanceof ObjectMapProvider
+        || target instanceof Provider
+        || (isMetadataObject(target, 'provide') && isToken(target.provide));
 }

@@ -187,7 +187,6 @@ export function isMetadataObject(target: any, ...props: (string | string[])[]): 
     return true;
 }
 
-
 /**
  * check object is class metadata or not.
  *

@@ -13,7 +13,7 @@ import {
     AnnotationBuilderToken, AnnotationBuilder, BuildOptions
 } from '../annotations';
 import { ModuleResovler, InjectedModuleToken } from './ModuleResovler';
-import { IContainer, Container } from '@ts-ioc/core';
+import { IContainer, Container, ServiceResolveContext } from '@ts-ioc/core';
 
 /**
  * inject module load token.
@@ -74,7 +74,9 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         }
         return container.getService(MetaAccessor,
             mtk ? [mtk, lang.getClass(this)] : lang.getClass(this),
-            config ? (config.defaultMetaAccessor || MetaAccessor) : MetaAccessor);
+            ServiceResolveContext.create({
+                defaultToken: config.defaultMetaAccessor
+            }));
     }
 
     /**
@@ -244,8 +246,11 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         }
 
         if (!builder && token) {
-            builder = container.getService(AnnotationBuilderToken, token, tk => new InjectAnnotationBuilder(tk),
-                config.defaultAnnoBuilder || AnnotationBuilderToken);
+            builder = container.getService(AnnotationBuilderToken, token,
+                ServiceResolveContext.create({
+                    refFactory: tk => new InjectAnnotationBuilder(tk),
+                    defaultToken: config.defaultAnnoBuilder
+                }));
         }
 
         if (builder) {

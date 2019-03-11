@@ -11,7 +11,6 @@ import { lang } from '../utils';
  * @interface ActionContextOption
  */
 export interface ActionContextOption {
-    
     /**
      * token.
      *
