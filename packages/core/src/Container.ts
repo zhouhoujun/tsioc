@@ -92,7 +92,7 @@ export class Container extends IocContainer implements IContainer {
      */
     getService<T>(token: Token<T>, target?: any, ctx?: ServiceResolveContext | ProviderTypes, ...providers: ProviderTypes[]): T {
         let context = this.vailfyServiceContext(token, target, ctx, ...providers);
-        this.execResolve(context);
+        this.contextResolve(context);
         return context.instance || null;
     }
 
@@ -110,7 +110,7 @@ export class Container extends IocContainer implements IContainer {
     getServices<T>(token: Token<T>, target?: any, ctx?: ServiceResolveContext|ProviderTypes, ...providers: ProviderTypes[]): T[] {
         let context = this.vailfyServiceContext(token, target, ctx, ...providers)
         context.all = true;
-        this.execResolve(context);
+        this.contextResolve(context);
         return context.instance || [];
     }
 

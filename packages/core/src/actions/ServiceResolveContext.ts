@@ -1,4 +1,4 @@
-import { ResovleActionContext, Type, ClassType, Token, ResovleActionOption } from '@ts-ioc/ioc';
+import { ResovleActionContext, Type, ClassType, Token, ResovleActionOption, lang } from '@ts-ioc/ioc';
 
 /**
  * service action option.
@@ -12,15 +12,15 @@ export interface ServiceActionOption extends ResovleActionOption {
      * token provider service type.
      *
      * @type {Type<any>}
-     * @memberof ServiceResolveContext
+     * @memberof ServiceActionOption
      */
-    tokenType?: Type<any>;
+    tokens?: Token<any>[];
 
     /**
      * service reference target.
      *
      * @type {*}
-     * @memberof ServiceResolveContext
+     * @memberof ServiceActionOption
      */
     target?: any;
 
@@ -28,7 +28,7 @@ export interface ServiceActionOption extends ResovleActionOption {
      * target type.
      *
      * @type {Type<any>}
-     * @memberof ServiceResolveContext
+     * @memberof ServiceActionOption
      */
     targetType?: ClassType<any>;
 
@@ -36,7 +36,7 @@ export interface ServiceActionOption extends ResovleActionOption {
      * reolve this defualt service, if not found any service.
      *
      * @type {Token<any>}
-     * @memberof ServiceResolveContext
+     * @memberof ServiceActionOption
      */
     defaultToken?: Token<any>;
 
@@ -44,7 +44,7 @@ export interface ServiceActionOption extends ResovleActionOption {
      * get all service type of token.
      *
      * @type {boolean}
-     * @memberof ServiceResolveContext
+     * @memberof ServiceActionOption
      */
     all?: boolean;
 
@@ -55,7 +55,43 @@ export interface ServiceActionOption extends ResovleActionOption {
      *
      * @memberof ServiceActionOption
      */
-    refFactory?: (token: Token<any>) => Token<any> | Token<any>[];
+    refTargetFactory?: (token: Token<any>) => Token<any> | Token<any>[];
+
+    /**
+     * service token factory.
+     *
+     * @memberof ServiceActionOption
+     */
+    serviceTokenFactory?: (token: Token<any>) => Token<any>[];
+}
+
+/**
+ * service of target.
+ *
+ * @export
+ * @class ServiceTarget
+ */
+export class TargetToken {
+    constructor(protected target: any) {
+
+    }
+
+    getTokens(): Token<any>[] {
+        return [lang.getClass(this.target)];
+    }
+}
+
+/**
+ * private target token.
+ *
+ * @export
+ * @class PrivateTargetToken
+ * @extends {TargetToken}
+ */
+export class PrivateTargetToken extends TargetToken {
+    getTokens(): Token<any>[] {
+        return [lang.getClass(this.target)];
+    }
 }
 
 /**
@@ -94,12 +130,12 @@ export class ServiceResolveContext extends ResovleActionContext {
     }
 
     /**
-     * token provider service type.
+     * service tokens.
      *
      * @type {Type<any>}
      * @memberof ServiceResolveContext
      */
-    tokenType: Type<any>;
+    tokens: Token<any>[];
 
     /**
      * service reference target.
@@ -110,12 +146,26 @@ export class ServiceResolveContext extends ResovleActionContext {
     target?: any;
 
     /**
-     * target type.
+     * current target type.
      *
      * @type {Type<any>}
      * @memberof ServiceResolveContext
      */
     targetType?: ClassType<any>;
+
+    /**
+     * ref target factory.
+     *
+     * @memberof ServiceResolveContext
+     */
+    refTargetFactory?: (token: Token<any>, targetToken: Token<any>) => Token<any> | Token<any>[];
+
+    /**
+     * service token factory.
+     *
+     * @memberof ServiceResolveContext
+     */
+    serviceTokenFactory?: (token: Token<any>) => Token<any>[];
 
     /**
      * reolve this defualt service, if not found any service.
@@ -134,7 +184,5 @@ export class ServiceResolveContext extends ResovleActionContext {
     all?: boolean;
 
     both?: boolean;
-
-    refFactory?: (token: Token<any>) => Token<any> | Token<any>[];
 
 }

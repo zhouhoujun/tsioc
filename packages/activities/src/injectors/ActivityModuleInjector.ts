@@ -1,6 +1,6 @@
 import { IContainer } from '@ts-ioc/core';
 import { Task } from '../decorators/Task';
-import { DIModuleInjector, ModuleResovler, InjectedModuleToken } from '@ts-ioc/bootstrap';
+import { DIModuleInjector, ModuleResovler, InjectModuleResovlerToken } from '@ts-ioc/bootstrap';
 import { Singleton, Type } from '@ts-ioc/ioc';
 
 
@@ -25,7 +25,7 @@ export class ActivityModuleInjector extends DIModuleInjector {
         await this.registerConfgureDepds(container, metaConfig);
 
         let injMd = new ModuleResovler(type, metaConfig, container);
-        container.bindProvider(new InjectedModuleToken(type), injMd);
+        container.bindProvider(new InjectModuleResovlerToken(type), injMd);
 
         return injMd;
     }

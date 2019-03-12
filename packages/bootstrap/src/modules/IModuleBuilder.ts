@@ -3,24 +3,8 @@ import { ModuleConfig } from './ModuleConfigure';
 import { ContainerPool } from '../services';
 import { Runnable } from '../runnable';
 import { BuildOptions } from '../annotations';
-import { RefRegistration, Token, Type } from '@ts-ioc/ioc';
+import { Token, Type } from '@ts-ioc/ioc';
 import { ModuleResovler } from './ModuleResovler';
-
-const moduleBuilderDesc = 'DI_ModuleBuilder';
-
-/**
- * inject module builder token.
- *
- * @export
- * @class InjectModuleBuilder
- * @extends {Registration<T>}
- * @template T
- */
-export class InjectModuleBuilderToken<T> extends RefRegistration<IModuleBuilder<T>> {
-    constructor(type: Token<T>) {
-        super(type, moduleBuilderDesc);
-    }
-}
 
 /**
  * load default container or, loaded module.
@@ -123,7 +107,3 @@ export interface IModuleBuilder<T> {
 
 }
 
-/**
- * default module builder token.
- */
-export const ModuleBuilderToken = new InjectModuleBuilderToken<any>(Object);

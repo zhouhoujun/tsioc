@@ -1,10 +1,10 @@
 import {
     IocCoreService, IResolverContainer, Singleton, ResovleActionContext,
-    Token, IResolver, ProviderTypes, IResolverExecute
+    Token, IResolver, ProviderTypes, IContextResolver
 } from '@ts-ioc/ioc';
 
 @Singleton
-export class DIModuleExports extends IocCoreService implements IResolver, IResolverExecute {
+export class DIModuleExports extends IocCoreService implements IResolver, IContextResolver {
 
     /**
     * resolvers
@@ -24,9 +24,9 @@ export class DIModuleExports extends IocCoreService implements IResolver, IResol
         return this.resolvers.some(r => r.has(key, alias));
     }
 
-    execResolve<T extends ResovleActionContext>(ctx: T): T {
+    contextResolve<T extends ResovleActionContext>(ctx: T): T {
         this.resolvers.some(r => {
-            r.execResolve(ctx);
+            r.contextResolve(ctx);
             return !!ctx.instance;
         });
         return ctx;
@@ -36,9 +36,6 @@ export class DIModuleExports extends IocCoreService implements IResolver, IResol
         let inst: T;
         this.resolvers.some(r => {
             inst = r.resolve(token, ...providers);
-            if (!inst) {
-                inst = r.resolve(DIModuleExports).resolve(token, ...providers);
-            }
             return !!inst;
         });
         return inst || null;

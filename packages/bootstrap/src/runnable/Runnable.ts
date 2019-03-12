@@ -122,7 +122,7 @@ export interface IRunnable<T> {
  * @implements {IBoot<T>}
  * @template T
  */
-export class RunnableBase<T> implements IRunnable<T> {
+export class Runnable<T> implements IRunnable<T> {
 
     @Inject(ContainerToken)
     container: IContainer;
@@ -167,10 +167,10 @@ export class RunnableBase<T> implements IRunnable<T> {
  *
  * @export
  * @param {*} target
- * @returns {target is RunnableBase<any>}
+ * @returns {target is Runnable<any>}
  */
-export function isRunnable(target: any): target is RunnableBase<any> {
-    if (target instanceof RunnableBase) {
+export function isRunnable(target: any): target is Runnable<any> {
+    if (target instanceof Runnable) {
         return true;
     }
     return false;

@@ -1,14 +1,13 @@
-import { Singleton, isArray, IocCompositeAction } from '@ts-ioc/ioc';
+import { Singleton, isArray, IocCompositeAction, InjectReference } from '@ts-ioc/ioc';
 import { ServiceResolveContext } from './ServiceResolveContext';
 
 @Singleton
 export class ResolveRefServiceAction extends IocCompositeAction<ServiceResolveContext> {
     execute(ctx: ServiceResolveContext, next?: () => void): void {
-        if (ctx.refFactory) {
+        if (ctx.targetType) {
             let currTk = ctx.token;
-            let tokens = [ctx.token, ctx.tokenType];
-            if (!tokens.some(tk => {
-                let refTk = ctx.refFactory(tk);
+            if (!ctx.tokens.some(tk => {
+                let refTk = ctx.refTargetFactory ? ctx.refTargetFactory(tk, ctx.targetType) : new InjectReference(tk, ctx.targetType);
                 let refTks = isArray(refTk) ? refTk : [refTk];
                 return refTks.some(reftk => {
                     ctx.token = reftk;

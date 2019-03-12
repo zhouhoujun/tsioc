@@ -9,7 +9,7 @@ import {
 } from './IRunnableBuilder';
 import {
     ModuleBuilder, ModuleResovler, IModuleBuilder,
-    InjectModuleBuilderToken, ModuleBuilderToken, ModuleConfig, DIModuleInjector
+    InjectModuleBuilderToken, ModuleConfig, DIModuleInjector
 } from '../modules';
 import { Events, IEvents } from '../utils';
 import { BootModule } from '../BootModule';
@@ -225,9 +225,9 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
 
         let tko = injmdl.token;
         if (!builder && tko) {
-            builder = container.getService(ModuleBuilderToken, tko,
+            builder = container.getService<ModuleBuilder<T>>(ModuleBuilder, tko,
                 ServiceResolveContext.create({
-                    refFactory: (tk) => new InjectModuleBuilderToken(tk),
+                    refTargetFactory: (tk) => new InjectModuleBuilderToken(tk),
                     defaultToken: cfg.defaultBuilder
                 }));
         }

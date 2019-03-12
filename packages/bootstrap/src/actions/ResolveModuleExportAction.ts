@@ -7,7 +7,7 @@ export class ResolveModuleExportAction extends IocResolveAction {
         let curr = ctx.getRaiseContainer();
         ctx.resolve(DIModuleExports).getResolvers()
             .some(r => {
-                r.execResolve(ctx);
+                r.contextResolve(ctx);
                 return !!ctx.instance;
             });
 

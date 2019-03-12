@@ -5,7 +5,13 @@ import { DecoratorRegisterer } from '../services';
 import { hasOwnClassMetadata } from '../factories';
 import { Singleton } from '../decorators';
 
-
+/**
+ * init class reflect action.
+ *
+ * @export
+ * @class InitReflectAction
+ * @extends {IocRegisterAction}
+ */
 export class InitReflectAction extends IocRegisterAction {
 
     execute(ctx: RegisterActionContext, next: () => void): void {

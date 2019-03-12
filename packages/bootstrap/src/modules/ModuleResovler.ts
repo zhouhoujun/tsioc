@@ -1,7 +1,7 @@
 import {
-    Token, Registration, Type, ParamProviders, isToken,
+    Token, Type, ParamProviders, isToken,
     IResolver, IResolverContainer, InstanceFactory, IocActionContext,
-    ResovleActionContext, SymbolType
+    ResovleActionContext, SymbolType, InjectReference
 } from '@ts-ioc/ioc';
 import { ModuleConfig } from './ModuleConfigure';
 import { IContainer } from '@ts-ioc/core';
@@ -43,12 +43,12 @@ export class ModuleResovler<T> implements IResolverContainer {
         return ctx;
     }
 
-    execResolve<T extends ResovleActionContext>(ctx: T): T {
+    contextResolve<T extends ResovleActionContext>(ctx: T): T {
         this.bindActionContext(ctx);
         let container = this.getProviderMap();
-        container.execResolve(ctx);
+        container.contextResolve(ctx);
         if (!ctx.instance) {
-            container.resolve(DIModuleExports).execResolve(ctx);
+            container.resolve(DIModuleExports).contextResolve(ctx);
         }
         return ctx;
     }
@@ -108,8 +108,8 @@ export class ModuleResovler<T> implements IResolverContainer {
  * @extends {Registration<Type<T>>}
  * @template T
  */
-export class InjectedModuleToken<T> extends Registration<ModuleResovler<T>> {
+export class InjectModuleResovlerToken<T> extends InjectReference<ModuleResovler<T>> {
     constructor(type: Type<T>) {
-        super(type, 'InjectedModule')
+        super(ModuleResovler, type)
     }
 }

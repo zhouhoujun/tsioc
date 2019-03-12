@@ -1,5 +1,6 @@
 import { IService, IRunner, Service, RunnableOptions } from '../runnable';
 import { RunOptions } from './IRunnableBuilder';
+import { Abstract } from '@ts-ioc/ioc';
 
 /**
  * boot interface.
@@ -34,6 +35,7 @@ export interface IBoot<T> extends IService<T>, IRunner<T> {
  * @implements {IBoot<T>}
  * @template T
  */
+@Abstract()
 export abstract class Boot<T> extends Service<T> implements IBoot<T> {
 
     /**

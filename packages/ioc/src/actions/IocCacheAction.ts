@@ -5,6 +5,14 @@ import { getOwnTypeMetadata } from '../factories';
 import { ClassMetadata } from '../metadatas';
 import { isNumber, lang } from '../utils';
 
+/**
+ * cache action.
+ *
+ * @export
+ * @abstract
+ * @class IocCacheAction
+ * @extends {IocRegisterAction}
+ */
 export abstract class IocCacheAction extends IocRegisterAction {
 
     getCacheMetadata(ctx: RegisterActionContext): ClassMetadata {

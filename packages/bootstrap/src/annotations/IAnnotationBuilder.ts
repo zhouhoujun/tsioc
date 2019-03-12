@@ -1,11 +1,9 @@
-import { Token, RefRegistration } from '@ts-ioc/ioc';
+import { Token } from '@ts-ioc/ioc';
 import { Runnable, RunnableOptions } from '../runnable';
 import { BuildOptions } from './AnnoType';
 import { AnnotationConfigure } from './AnnotationConfigure';
 import { IContainer } from '@ts-ioc/core';
 import { MetaAccessor } from '../services';
-
-const annoBuilderDesc = 'DI_AnnotationBuilder';
 
 /**
  * Annotation class builder.
@@ -144,22 +142,3 @@ export interface IAnnotationBuilder<T> {
      */
     getMetaAccessor(token: Token<any>, config: AnnotationConfigure<T>): MetaAccessor;
 }
-
-/**
- * inject Annotation class builder.
- *
- * @export
- * @class InjectBootstrapBuilder
- * @extends {Registration<T>}
- * @template T
- */
-export class InjectAnnotationBuilder<T> extends RefRegistration<IAnnotationBuilder<T>> {
-    constructor(type: Token<T>) {
-        super(type, annoBuilderDesc);
-    }
-}
-
-/**
- * Annotation class builder token.
- */
-export const AnnotationBuilderToken = new InjectAnnotationBuilder<any>('');

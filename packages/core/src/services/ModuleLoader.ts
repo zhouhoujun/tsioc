@@ -1,6 +1,6 @@
 import {
     LoadType, Modules, Type, IocCoreService, isString,
-    isObject, PathModules, isArray, isClass, Singleton
+    isObject, PathModules, isArray, isClass, Singleton, InjectReference, Token
 } from '@ts-ioc/ioc';
 
 
@@ -205,5 +205,20 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
         }
 
         return regModules;
+    }
+}
+
+
+/**
+ * inject module load token.
+ *
+ * @export
+ * @class InjectModuleLoadToken
+ * @extends {Registration<T>}
+ * @template T
+ */
+export class InjectModuleLoadToken<T> extends InjectReference<ModuleLoader> {
+    constructor(token: Token<T>) {
+        super(ModuleLoader, token)
     }
 }

@@ -58,17 +58,17 @@ export interface IResolver {
  * @export
  * @interface IResolverExecute
  */
-export interface IResolverExecute {
+export interface IContextResolver {
 
     /**
-     * execute resolve.
+     * resolve in context.
      *
      * @template T
      * @param {T} ctx
      * @returns {T}
      * @memberof IResolverExecute
      */
-    execResolve<T extends ResovleActionContext>(ctx: T): T;
+    contextResolve<T extends ResovleActionContext>(ctx: T): T;
 }
 
 /**
@@ -97,7 +97,7 @@ export interface IBindActionContext {
  * @interface IResolverContainer
  * @extends {IResolver}
  */
-export interface IResolverContainer extends IResolver, IResolverExecute, IBindActionContext {
+export interface IResolverContainer extends IResolver, IContextResolver, IBindActionContext {
     /**
      * container size.
      *

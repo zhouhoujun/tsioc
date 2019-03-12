@@ -3,27 +3,12 @@ import { isClass, isFunction, lang } from './utils';
 
 
 /**
- * is registration class or not.
- *
- * @export
- * @param {*} target
- * @returns
- */
-export function isRegistrationClass(target: any): target is Type<Registration<any>> {
-    if (isClass(target)) {
-        return (<any>target).isIocRegClass === true;
-    }
-    return false;
-}
-
-/**
  * inject token.
  * @export
  * @class Registration
  * @template T
  */
 export class Registration<T> {
-    static readonly isIocRegClass = true;
     protected type = '';
     protected classType: SymbolType<any>;
     protected desc: string;

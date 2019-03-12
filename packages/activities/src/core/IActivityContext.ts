@@ -1,9 +1,10 @@
 import { IActivity, ActivityToken } from './IActivity';
 import { ActivityBuilder } from './ActivityBuilder';
 import { ActivityConfigure, Expression } from './ActivityConfigure';
-import { InjectToken, Token, ObjectMap, Type, RefRegistration } from '@ts-ioc/ioc';
+import { InjectToken, Token, ObjectMap, Type, InjectReference } from '@ts-ioc/ioc';
 import { IEvents } from '@ts-ioc/bootstrap';
 import { IContainer } from '@ts-ioc/core';
+import { ActivityContext } from './ActivityContext';
 
 
 /**
@@ -178,9 +179,9 @@ export interface IActivityContextResult<T> extends IActivityContext {
  * @class InjectActivityContextToken
  * @extends {Registration<IActivityContext<any>>}
  */
-export class InjectActivityContextToken extends RefRegistration<IActivityContext> {
+export class InjectActivityContextToken extends InjectReference<IActivityContext> {
     constructor(type: Token<IActivity>) {
-        super(type, 'ActivityContext');
+        super(ActivityContext, type);
     }
 }
 

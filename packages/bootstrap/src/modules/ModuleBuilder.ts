@@ -2,32 +2,18 @@ import 'reflect-metadata';
 import {
     Token, ParamProviders, lang,
     isClass, isToken, Inject, Registration,
-    isUndefined, Singleton, isArray, Type
+    isUndefined, Singleton, isArray, Type, InjectReference
 } from '@ts-ioc/ioc';
-import { IModuleBuilder, ModuleBuilderToken, ModuleEnv, BootOptions } from './IModuleBuilder';
+import { IModuleBuilder, ModuleEnv, BootOptions } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { ContainerPool, ContainerPoolToken, MetaAccessor } from '../services';
 import { Runnable } from '../runnable';
 import {
     IAnnotationBuilder, InjectAnnotationBuilder,
-    AnnotationBuilderToken, AnnotationBuilder, BuildOptions
+    AnnotationBuilder, BuildOptions
 } from '../annotations';
-import { ModuleResovler, InjectedModuleToken } from './ModuleResovler';
+import { ModuleResovler, InjectModuleResovlerToken } from './ModuleResovler';
 import { IContainer, Container, ServiceResolveContext } from '@ts-ioc/core';
-
-/**
- * inject module load token.
- *
- * @export
- * @class InjectModuleLoadToken
- * @extends {Registration<T>}
- * @template T
- */
-export class InjectModuleLoadToken<T> extends Registration<T> {
-    constructor(token: Token<T>) {
-        super(token, 'module_loader')
-    }
-}
 
 
 /**
@@ -38,7 +24,7 @@ export class InjectModuleLoadToken<T> extends Registration<T> {
  * @implements {IModuleBuilder}
  * @template T
  */
-@Singleton(ModuleBuilderToken)
+@Singleton
 export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     @Inject(ContainerPoolToken)
@@ -53,7 +39,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     }
 
     getModuleResovler<T>(type: Type<T>): ModuleResovler<T> {
-        return this.getPools().getDefault().get(new InjectedModuleToken(type));
+        return this.getPools().getDefault().get(new InjectModuleResovlerToken(type));
     }
 
     /**
@@ -203,7 +189,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     protected async import(token: Token<T>, parent: IContainer): Promise<ModuleResovler<T>> {
         let type = isClass(token) ? token : parent.getTokenImpl(token);
         if (isClass(type)) {
-            let key = new InjectedModuleToken(type);
+            let key = new InjectModuleResovlerToken(type);
             if (parent.has(key)) {
                 return parent.get(key)
             } else {
@@ -246,9 +232,9 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         }
 
         if (!builder && token) {
-            builder = container.getService(AnnotationBuilderToken, token,
+            builder = container.getService(AnnotationBuilder, token,
                 ServiceResolveContext.create({
-                    refFactory: tk => new InjectAnnotationBuilder(tk),
+                    refTargetFactory: tk => new InjectAnnotationBuilder(tk),
                     defaultToken: config.defaultAnnoBuilder
                 }));
         }
@@ -259,3 +245,18 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return builder;
     }
 }
+
+/**
+ * inject module builder token.
+ *
+ * @export
+ * @class InjectModuleBuilder
+ * @extends {Registration<T>}
+ * @template T
+ */
+export class InjectModuleBuilderToken<T> extends InjectReference<ModuleBuilder<T>> {
+    constructor(type: Token<T>) {
+        super(ModuleBuilder, type);
+    }
+}
+

@@ -118,11 +118,11 @@ export class IocContainer implements IIocContainer {
             token: token,
             providers: providers
         });
-        this.execResolve(context);
+        this.contextResolve(context);
         return context.instance || null;
     }
 
-    execResolve<T extends ResovleActionContext>(ctx: T): T {
+    contextResolve<T extends ResovleActionContext>(ctx: T): T {
         this.bindActionContext(ctx);
         this.resolveLifeScope.execute(ctx);
         return ctx as T;

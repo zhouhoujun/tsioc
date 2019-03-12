@@ -2,20 +2,6 @@ import { Registration } from './Registration';
 import { Token } from './types';
 import { isString } from './utils';
 
-/**
- * Reference registration.
- *
- * @export
- * @class RefRegistration
- * @extends {Registration<T>}
- * @template T
- */
-export class RefRegistration<T> extends Registration<T> {
-    constructor(provideType: Token<T> | Token<any>, desc: string) {
-        super(provideType, desc);
-        this.type = 'Ref';
-    }
-}
 
 /**
  * inject reference.

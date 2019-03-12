@@ -16,7 +16,7 @@ export class ResolveParentAction extends IocResolveAction {
         let parent = ctx.resolve(ParentContainerToken);
 
         while (parent && !ctx.instance) {
-            parent.execResolve(ctx);
+            parent.contextResolve(ctx);
             parent = ctx.resolve(ParentContainerToken);
         }
 

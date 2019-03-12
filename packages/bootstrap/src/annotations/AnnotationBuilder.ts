@@ -3,10 +3,9 @@ import {
     lang, isFunction, ParamProviders, isNullOrUndefined,
     isUndefined, Singleton, ProviderTypes, InjectReference
 } from '@ts-ioc/ioc';
-import { IAnnotationBuilder, AnnotationBuilderToken, InjectAnnotationBuilder } from './IAnnotationBuilder';
+import { IAnnotationBuilder } from './IAnnotationBuilder';
 import {
-    Runnable, Runner, Service, RunnerToken,
-    ServiceToken, isRunner, isService, InjectRunnableToken,
+    Runnable, Runner, Service, isRunner, isService, InjectRunnableToken,
     RunnableOptionsToken, RunnableOptions
 } from '../runnable';
 import { BootHooks, BuildOptions } from './AnnoType';
@@ -14,6 +13,8 @@ import { AnnotationConfigure } from './AnnotationConfigure';
 import { AnnoBuildStrategyToken, InjectAnnoBuildStrategyToken } from './AnnoBuildStrategy';
 import { ContainerToken, IContainer, ServiceResolveContext } from '@ts-ioc/core';
 import { MetaAccessor } from '../services';
+
+
 
 /**
  * Annotation class builder. build class with metadata and config.
@@ -23,7 +24,7 @@ import { MetaAccessor } from '../services';
  * @implements {implements IAnnotationBuilder<T>}
  * @template T
  */
-@Singleton(AnnotationBuilderToken)
+@Singleton
 export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
     /**
      * ioc container.
@@ -56,7 +57,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         return this.container.getService(MetaAccessor,
             mtk || lang.getClass(this),
             ServiceResolveContext.create({
-                refFactory: tk => new InjectReference(MetaAccessor, tk),
+                refTargetFactory: tk => new InjectReference(MetaAccessor, tk),
                 defaultToken: config.defaultMetaAccessor
             }));
     }
@@ -117,7 +118,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 
                 ],
                 ServiceResolveContext.create({
-                    refFactory: tk => new InjectAnnoBuildStrategyToken(tk)
+                    refTargetFactory: tk => new InjectAnnoBuildStrategyToken(tk)
                 }));
             if (strategy) {
                 await strategy.build(instance, cfg, options);
@@ -203,17 +204,19 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         if (instance instanceof Runner || instance instanceof Service) {
             return instance;
         } else {
-            let provider = { provide: RunnableOptionsToken, useValue: runableOptions.config } as ParamProviders;
-            return this.container.getService(
-                [RunnerToken, ServiceToken],
+            let provider: ProviderTypes = { provide: RunnableOptionsToken, useValue: runableOptions.config };
+            return this.container.getService<Runnable<T>>(Runnable,
                 [
                     tk,
                     ...((options && options.target) ? [{ target: lang.getClass(options.target), level: RefTagLevel.self }] : []),
                     { target: lang.getClass(this), level: RefTagLevel.self }
 
                 ],
-                tk => new InjectRunnableToken(tk),
-                runableOptions.config.defaultRunnable || true, provider);
+                ServiceResolveContext.create({
+                    refTargetFactory: tk => new InjectRunnableToken(tk),
+                    defaultToken: runableOptions.config.defaultRunnable
+                }),
+                provider);
         }
     }
 
@@ -250,13 +253,13 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             builder = options.builder;
         }
         if (!builder && token) {
-            builder = this.container.getService(AnnotationBuilderToken,
+            builder = this.container.getService<AnnotationBuilder<T>>(AnnotationBuilder,
                 [
                     token,
                     ...(options && options.target) ? [{ target: lang.getClass(options.target), level: RefTagLevel.self }] : []
                 ],
                 ServiceResolveContext.create({
-                    refFactory: (tk) => new InjectAnnotationBuilder(tk),
+                    refTargetFactory: (tk) => new InjectAnnotationBuilder(tk),
                     defaultToken: config.defaultAnnoBuilder
                 }));
         }
@@ -296,5 +299,20 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             return this.container.getService(token, target, ...providers);
         }
         return this.container.resolve(token, ...providers);
+    }
+}
+
+
+/**
+ * inject Annotation class builder.
+ *
+ * @export
+ * @class InjectBootstrapBuilder
+ * @extends {Registration<T>}
+ * @template T
+ */
+export class InjectAnnotationBuilder<T> extends InjectReference<AnnotationBuilder<T>> {
+    constructor(type: Token<T>) {
+        super(AnnotationBuilder, type);
     }
 }

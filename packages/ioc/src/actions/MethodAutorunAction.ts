@@ -5,7 +5,7 @@ import { Autorun } from '../decorators';
 import { AutorunMetadata } from '../metadatas';
 import { lang, isNumber } from '../utils';
 /**
- * Inject DrawType action.
+ * method auto run action.
  *
  * @export
  * @class SetPropAction

@@ -2,6 +2,13 @@ import { RegisterActionContext } from './RegisterActionContext';
 import { IocCacheAction } from './IocCacheAction';
 import { IocCacheManager } from '../services';
 
+/**
+ * get class cache action.
+ *
+ * @export
+ * @class IocGetCacheAction
+ * @extends {IocCacheAction}
+ */
 export class IocGetCacheAction extends IocCacheAction {
     execute(ctx: RegisterActionContext, next: () => void): void {
         if (!ctx.target) {
