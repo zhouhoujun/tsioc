@@ -1,12 +1,22 @@
-import { lang, isClass, Singleton, isFunction, isToken } from '@ts-ioc/ioc';
-import { ServiceResolveContext } from './ServiceResolveContext';
+import { isClass, Singleton, isFunction, isToken, isArray, lang } from '@ts-ioc/ioc';
+import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
+import { TargetService } from '../TargetService';
 
 @Singleton
 export class InitServiceResolveAction extends IocResolveServiceAction {
-    execute(ctx: ServiceResolveContext, next: () => void): void {
-        if (!ctx.targetType && ctx.target) {
-            ctx.targetType = lang.getClass(ctx.target);
+    execute(ctx: ResolveServiceContext, next: () => void): void {
+        if (ctx.target) {
+            ctx.targetRefs = (isArray(ctx.target) ? ctx.target : [ctx.target])
+                .map(t => {
+                    if (t instanceof TargetService) {
+                        return t;
+                    } else if (t) {
+                        return lang.getClass(t);
+                    }
+                    return null;
+                })
+                .filter(t => t);
         }
         ctx.tokens = ctx.tokens || [];
         if (isFunction(ctx.serviceTokenFactory)) {

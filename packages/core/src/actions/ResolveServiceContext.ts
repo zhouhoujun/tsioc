@@ -1,4 +1,5 @@
-import { ResovleActionContext, Type, ClassType, Token, ResovleActionOption, lang } from '@ts-ioc/ioc';
+import { ResovleActionContext, Token, ResovleActionOption } from '@ts-ioc/ioc';
+import { TargetRef } from '../TargetService';
 
 /**
  * service action option.
@@ -17,6 +18,14 @@ export interface ServiceActionOption extends ResovleActionOption {
     tokens?: Token<any>[];
 
     /**
+     * curr token.
+     *
+     * @type {Token<any>}
+     * @memberof ServiceActionOption
+     */
+    currToken?: Token<any>;
+
+    /**
      * service reference target.
      *
      * @type {*}
@@ -24,13 +33,16 @@ export interface ServiceActionOption extends ResovleActionOption {
      */
     target?: any;
 
+
+    targetRefs?: TargetRef[];
+
     /**
-     * target type.
+     * current target ref.
      *
-     * @type {Type<any>}
+     * @type {TargetRef}
      * @memberof ServiceActionOption
      */
-    targetType?: ClassType<any>;
+    currTargetRef?: TargetRef;
 
     /**
      * reolve this defualt service, if not found any service.
@@ -50,69 +62,40 @@ export interface ServiceActionOption extends ResovleActionOption {
 
     both?: boolean;
 
-    /**
-     * ref service token factory.
+     /**
+     * ref target factory.
      *
-     * @memberof ServiceActionOption
+     * @memberof ResolveServiceContext
      */
-    refTargetFactory?: (token: Token<any>) => Token<any> | Token<any>[];
+    refTargetFactory?: (token: Token<any>, targetToken: Token<any>) => Token<any> | Token<any>[];
 
     /**
      * service token factory.
      *
-     * @memberof ServiceActionOption
+     * @memberof ResolveServiceContext
      */
     serviceTokenFactory?: (token: Token<any>) => Token<any>[];
-}
-
-/**
- * service of target.
- *
- * @export
- * @class ServiceTarget
- */
-export class TargetToken {
-    constructor(protected target: any) {
-
-    }
-
-    getTokens(): Token<any>[] {
-        return [lang.getClass(this.target)];
-    }
-}
-
-/**
- * private target token.
- *
- * @export
- * @class PrivateTargetToken
- * @extends {TargetToken}
- */
-export class PrivateTargetToken extends TargetToken {
-    getTokens(): Token<any>[] {
-        return [lang.getClass(this.target)];
-    }
 }
 
 /**
  * service resolve context.
  *
  * @export
- * @class ServiceResolveContext
+ * @class ResolveServiceContext
  * @extends {ResovleActionContext}
  */
-export class ServiceResolveContext extends ResovleActionContext {
+export class ResolveServiceContext extends ResovleActionContext implements ServiceActionOption {
 
     /**
      * create service resolve context.
      *
      * @static
      * @param {ServiceActionOption} [options]
-     * @returns {ServiceResolveContext}
-     * @memberof ServiceResolveContext
+     * @returns {ResolveServiceContext}
+     * @memberof ResolveServiceContext
      */
-    static create(options?: ServiceActionOption): ServiceResolveContext {
-        let ctx = new ServiceResolveContext();
+    static create(options?: ServiceActionOption): ResolveServiceContext {
+        let ctx = new ResolveServiceContext();
         if (options) {
             Object.assign(ctx, options);
         }
@@ -123,17 +106,25 @@ export class ServiceResolveContext extends ResovleActionContext {
      * set options.
      *
      * @param {ServiceActionOption} options
-     * @memberof ServiceResolveContext
+     * @memberof ResolveServiceContext
      */
     setOptions(options: ServiceActionOption) {
         super.setOptions(options);
     }
 
     /**
+     * curr token.
+     *
+     * @type {Token<any>}
+     * @memberof ServiceActionOption
+     */
+    currToken?: Token<any>;
+
+    /**
      * service tokens.
      *
      * @type {Type<any>}
-     * @memberof ServiceResolveContext
+     * @memberof ResolveServiceContext
      */
     tokens: Token<any>[];
 
@@ -141,29 +132,37 @@ export class ServiceResolveContext extends ResovleActionContext {
      * service reference target.
      *
      * @type {*}
-     * @memberof ServiceResolveContext
+     * @memberof ResolveServiceContext
      */
     target?: any;
 
     /**
-     * current target type.
+     * target reference services.
      *
-     * @type {Type<any>}
-     * @memberof ServiceResolveContext
+     * @type {TargetRef[]}
+     * @memberof ResolveServiceContext
      */
-    targetType?: ClassType<any>;
+    targetRefs?: TargetRef[];
+
+    /**
+     * current target ref.
+     *
+     * @type {TargetRef}
+     * @memberof ServiceActionOption
+     */
+    currTargetRef?: TargetRef;
 
     /**
      * ref target factory.
      *
-     * @memberof ServiceResolveContext
+     * @memberof ResolveServiceContext
      */
     refTargetFactory?: (token: Token<any>, targetToken: Token<any>) => Token<any> | Token<any>[];
 
     /**
      * service token factory.
      *
-     * @memberof ServiceResolveContext
+     * @memberof ResolveServiceContext
      */
     serviceTokenFactory?: (token: Token<any>) => Token<any>[];
 
@@ -171,7 +170,7 @@ export class ServiceResolveContext extends ResovleActionContext {
      * reolve this defualt service, if not found any service.
      *
      * @type {Token<any>}
-     * @memberof ServiceResolveContext
+     * @memberof ResolveServiceContext
      */
     defaultToken?: Token<any>;
 
@@ -179,7 +178,7 @@ export class ServiceResolveContext extends ResovleActionContext {
      * get all service type of token.
      *
      * @type {boolean}
-     * @memberof ServiceResolveContext
+     * @memberof ResolveServiceContext
      */
     all?: boolean;
 

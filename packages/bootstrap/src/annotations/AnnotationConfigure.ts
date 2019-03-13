@@ -1,7 +1,7 @@
+import { Token } from '@ts-ioc/ioc';
+import { Runnable } from '../runnable';
 import { IAnnotationMetadata, MetaAccessor } from '../services';
 import { IAnnotationBuilder } from './IAnnotationBuilder';
-import { Runnable } from '../runnable';
-import { Token } from '@ts-ioc/ioc';
 
 /**
  * type build config.

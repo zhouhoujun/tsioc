@@ -1,17 +1,17 @@
 import {
     Token, isToken, isClass, Inject,
-    lang, isFunction, ParamProviders, isNullOrUndefined,
+    lang, isFunction, isNullOrUndefined,
     isUndefined, Singleton, ProviderTypes, InjectReference
 } from '@ts-ioc/ioc';
 import { IAnnotationBuilder } from './IAnnotationBuilder';
 import {
-    Runnable, Runner, Service, isRunner, isService, InjectRunnableToken,
-    RunnableOptionsToken, RunnableOptions
+    Runnable, InjectRunnableToken,
+    RunnableOptionsToken, RunnableOptions, isRunnable
 } from '../runnable';
 import { BootHooks, BuildOptions } from './AnnoType';
 import { AnnotationConfigure } from './AnnotationConfigure';
 import { AnnoBuildStrategyToken, InjectAnnoBuildStrategyToken } from './AnnoBuildStrategy';
-import { ContainerToken, IContainer, ServiceResolveContext } from '@ts-ioc/core';
+import { ContainerToken, IContainer, ResolveServiceContext, TargetPrivateService } from '@ts-ioc/core';
 import { MetaAccessor } from '../services';
 
 
@@ -56,7 +56,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
         }
         return this.container.getService(MetaAccessor,
             mtk || lang.getClass(this),
-            ServiceResolveContext.create({
+            ResolveServiceContext.create({
                 refTargetFactory: tk => new InjectReference(MetaAccessor, tk),
                 defaultToken: config.defaultMetaAccessor
             }));
@@ -113,11 +113,11 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
                 AnnoBuildStrategyToken,
                 [
                     tk || lang.getClass(instance),
-                    ...((options && options.target) ? [{ target: lang.getClass(options.target) }] : []),
-                    { target: lang.getClass(this) }
+                    ...((options && options.target) ? [TargetPrivateService.create(options.target)] : []),
+                    TargetPrivateService.create(lang.getClass(this))
 
                 ],
-                ServiceResolveContext.create({
+                ResolveServiceContext.create({
                     refTargetFactory: tk => new InjectAnnoBuildStrategyToken(tk)
                 }));
             if (strategy) {
@@ -173,10 +173,8 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             await runner.onInit(runOptions, options);
         }
 
-        if (isRunner(runner)) {
+        if (isRunnable(runner)) {
             await runner.run(data);
-        } else if (isService(runner)) {
-            await runner.start(data);
         }
         return runner;
     }
@@ -201,18 +199,18 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             runableOptions.config = this.getMetaAccessor(tk).getMetadata(tk, this.container);
         }
 
-        if (instance instanceof Runner || instance instanceof Service) {
+        if (isRunnable<T>(instance)) {
             return instance;
         } else {
             let provider: ProviderTypes = { provide: RunnableOptionsToken, useValue: runableOptions.config };
             return this.container.getService<Runnable<T>>(Runnable,
                 [
                     tk,
-                    ...((options && options.target) ? [{ target: lang.getClass(options.target), level: RefTagLevel.self }] : []),
-                    { target: lang.getClass(this), level: RefTagLevel.self }
+                    ...((options && options.target) ? [TargetPrivateService.create(options.target)] : []),
+                    TargetPrivateService.create(lang.getClass(this))
 
                 ],
-                ServiceResolveContext.create({
+                ResolveServiceContext.create({
                     refTargetFactory: tk => new InjectRunnableToken(tk),
                     defaultToken: runableOptions.config.defaultRunnable
                 }),
@@ -256,9 +254,9 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
             builder = this.container.getService<AnnotationBuilder<T>>(AnnotationBuilder,
                 [
                     token,
-                    ...(options && options.target) ? [{ target: lang.getClass(options.target), level: RefTagLevel.self }] : []
+                    ...(options && options.target) ? [TargetPrivateService.create(options.target)] : []
                 ],
-                ServiceResolveContext.create({
+                ResolveServiceContext.create({
                     refTargetFactory: (tk) => new InjectAnnotationBuilder(tk),
                     defaultToken: config.defaultAnnoBuilder
                 }));

@@ -1,7 +1,7 @@
 import { IContainer } from '@ts-ioc/core';
 import { ModuleConfig } from './ModuleConfigure';
 import { ContainerPool } from '../services';
-import { Runnable } from '../runnable';
+import { Runnable, IRunnable } from '../runnable';
 import { BuildOptions } from '../annotations';
 import { Token, Type } from '@ts-ioc/ioc';
 import { ModuleResovler } from './ModuleResovler';
@@ -81,29 +81,29 @@ export interface IModuleBuilder<T> {
      *
      * @param {Token<T>} token
      * @param {BootOptions<T>} [options]
-     * @returns {Promise<Runnable<T>>}
+     * @returns {Promise<IRunnable<T>>}
      * @memberof IModuleBuilder
      */
-    bootstrap(token: Token<T>,  options?: BootOptions<T>): Promise<Runnable<T>>;
+    bootstrap(token: Token<T>,  options?: BootOptions<T>): Promise<IRunnable<T>>;
     /**
      * bootstrap module config.
      *
      * @param {ModuleConfig<T>} config
      * @param {BootOptions<T>} [options]
-     * @returns {Promise<Runnable<T>>}
+     * @returns {Promise<IRunnable<T>>}
      * @memberof IModuleBuilder
      */
-    bootstrap(config: ModuleConfig<T>,  options?: BootOptions<T>): Promise<Runnable<T>>;
+    bootstrap(config: ModuleConfig<T>,  options?: BootOptions<T>): Promise<IRunnable<T>>;
     /**
      * bootstrap with module and config.
      *
      * @param {Token<T>} token
      * @param {ModuleConfig<T>} config
      * @param {BootOptions<T>} options
-     * @returns {Promise<Runnable<T>>}
+     * @returns {Promise<IRunnable<T>>}
      * @memberof IModuleBuilder
      */
-    bootstrap(token: Token<T>,  config: ModuleConfig<T>,  options: BootOptions<T>): Promise<Runnable<T>>;
+    bootstrap(token: Token<T>,  config: ModuleConfig<T>,  options: BootOptions<T>): Promise<IRunnable<T>>;
 
 }
 

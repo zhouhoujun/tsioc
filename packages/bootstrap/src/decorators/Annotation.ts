@@ -1,6 +1,7 @@
 import { ITypeDecorator, Token, MetadataAdapter, MetadataExtends, createClassDecorator, isToken } from '@ts-ioc/ioc';
-import { IAnnotationBuilder, AnnotationBuilderToken } from '../annotations/IAnnotationBuilder';
+import { IAnnotationBuilder } from '../annotations/IAnnotationBuilder';
 import { AnnotationConfigure } from '../annotations/AnnotationConfigure';
+import { AnnotationBuilder } from '../annotations/AnnotationBuilder';
 
 /**
  * annotation metadata.
@@ -82,4 +83,4 @@ export function createAnnotationDecorator<T extends AnnotationMetadata>(
  *
  * @Annotation
  */
-export const Annotation: IAnnotationDecorator<AnnotationMetadata> = createAnnotationDecorator<AnnotationMetadata>('Annotation', AnnotationBuilderToken);
+export const Annotation: IAnnotationDecorator<AnnotationMetadata> = createAnnotationDecorator<AnnotationMetadata>('Annotation', AnnotationBuilder);

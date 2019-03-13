@@ -1,20 +1,22 @@
-import { InjectReference, ProviderMap, Singleton, Token } from '@ts-ioc/ioc';
-import { ServiceResolveContext } from './ServiceResolveContext';
+import { InjectReference, ProviderMap, Singleton, Token, isToken } from '@ts-ioc/ioc';
+import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
+import { TargetPrivateService } from '../TargetService';
 
 @Singleton
 export class ResolvePrivateServiceAction extends IocResolveServiceAction {
-    execute(ctx: ServiceResolveContext, next: () => void): void {
+    execute(ctx: ResolveServiceContext, next: () => void): void {
         // resolve private service.
-        this.resolvePrivate(ctx, ctx.token);
+        this.resolvePrivate(ctx, ctx.currToken || ctx.token);
         if (!ctx.instance) {
             next();
         }
     }
 
-    protected resolvePrivate(ctx: ServiceResolveContext, token: Token<any>) {
-        if (ctx.targetType) {
-            let tk = new InjectReference(ProviderMap, ctx.targetType);
+    protected resolvePrivate(ctx: ResolveServiceContext, token: Token<any>) {
+        if (ctx.currTargetRef && (isToken(ctx.currTargetRef) || ctx.currTargetRef instanceof TargetPrivateService)) {
+            let targetType = isToken(ctx.currTargetRef) ? ctx.currTargetRef : ctx.currTargetRef.getType();
+            let tk = new InjectReference(ProviderMap, targetType);
             if (tk !== token) {
                 let map = ctx.has(tk) ? ctx.resolve(tk) : null;
                 if (map && map.has(token)) {

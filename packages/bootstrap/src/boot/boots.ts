@@ -1,4 +1,4 @@
-import { IService, IRunner, Service, RunnableOptions } from '../runnable';
+import { IService, Service, RunnableOptions } from '../runnable';
 import { RunOptions } from './IRunnableBuilder';
 import { Abstract } from '@ts-ioc/ioc';
 
@@ -11,7 +11,7 @@ import { Abstract } from '@ts-ioc/ioc';
  * @extends {IRunner<T>}
  * @template T
  */
-export interface IBoot<T> extends IService<T>, IRunner<T> {
+export interface IBoot<T> extends IService<T> {
 
     /**
      * on boot init.
@@ -48,17 +48,5 @@ export abstract class Boot<T> extends Service<T> implements IBoot<T> {
      */
     async onInit(options: RunnableOptions<T>, bootOptions: RunOptions<T>): Promise<void> {
         await super.onInit(options, bootOptions);
-    }
-
-    /**
-     * run boot.
-     *
-     * @abstract
-     * @param {*} [data]
-     * @returns {Promise<any>}
-     * @memberof Boot
-     */
-    run(data?: any): Promise<any> {
-        return this.start(data);
     }
 }

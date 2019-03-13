@@ -10,7 +10,7 @@ import { IActivity, ActivityToken, WorkflowId } from './IActivity';
 import { ActivityConfigure, ExpressionType, Expression, ActivityType, Active, ExpressionToken } from './ActivityConfigure';
 import { IActivityContext, InputDataToken, InjectActivityContextToken, ActivityContextToken } from './IActivityContext';
 import { IActivityMetadata } from '../metadatas';
-import { ContainerToken, IContainer } from '@ts-ioc/core';
+import { ContainerToken, IContainer, ResolveServiceContext } from '@ts-ioc/core';
 import { MetaAccessor } from '@ts-ioc/bootstrap';
 
 
@@ -101,9 +101,13 @@ export abstract class Activity implements IActivity, OnActivityInit {
             return this.container.resolve(this._config.contextType, provider);
         }
         let cfgdefCtx = this._config ? this._config.baseContextType : null;
-        let ctx = this.container.getService<IActivityContext>(ActivityContextToken, type,
-            tk => new InjectActivityContextToken(tk),
-            (defCtx || cfgdefCtx || ActivityContextToken), provider);
+        let ctx = this.container.getService<IActivityContext>(ActivityContextToken,
+            type as Token<any>,
+            ResolveServiceContext.create({
+                refTargetFactory: tk => new InjectActivityContextToken(tk),
+                defaultToken: (defCtx || cfgdefCtx || ActivityContextToken) as Token<any>
+            }),
+            provider);
         if (cfgdefCtx) {
             let defType = this.container.getTokenImpl(cfgdefCtx);
             if (!(ctx instanceof defType)) {

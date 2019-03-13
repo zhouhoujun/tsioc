@@ -1,5 +1,6 @@
 import { Token, ProviderTypes } from '@ts-ioc/ioc';
-import { ServiceResolveContext } from './actions';
+import { ResolveServiceContext } from './actions';
+import { TargetRefs } from './TargetService';
 
 /**
  * service resolver.
@@ -24,36 +25,36 @@ export interface IServiceResolver {
      *
      * @template T
      * @param {Token<T>} token servive token.
-     * @param {*} [target] service refrence target.
+     * @param {TargetRefs} [target] service refrence target.
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getService<T>(token: Token<T>, target: any, ...providers: ProviderTypes[]): T;
+    getService<T>(token: Token<T>, target: TargetRefs, ...providers: ProviderTypes[]): T;
 
     /**
      * get service or target reference service.
      *
      * @template T
      * @param {Token<T>} token
-     * @param {ServiceResolveContext} ctx
+     * @param {ResolveServiceContext} ctx
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IServiceResolver
      */
-    getService<T>(token: Token<T>, ctx: ServiceResolveContext, ...providers: ProviderTypes[]): T;
+    getService<T>(token: Token<T>, ctx: ResolveServiceContext, ...providers: ProviderTypes[]): T;
 
     /**
      * get service or target reference service.
      *
      * @template T
      * @param {Token<T>} token
-     * @param {*} target
-     * @param {ServiceResolveContext} ctx
+     * @param {TargetRefs} target
+     * @param {ResolveServiceContext} ctx
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IServiceResolver
      */
-    getService<T>(token: Token<T>, target: any, ctx: ServiceResolveContext, ...providers: ProviderTypes[]): T;
+    getService<T>(token: Token<T>, target: TargetRefs, ctx: ResolveServiceContext, ...providers: ProviderTypes[]): T;
 
 }

@@ -1,5 +1,5 @@
-import { isFunction } from '@ts-ioc/ioc';
 import { IRunnable, Runnable, RunnableOptions } from './Runnable';
+import { Abstract } from '@ts-ioc/ioc';
 
 /**
  * IService interface
@@ -33,10 +33,23 @@ export interface IService<T> extends IRunnable<T> {
  * @class Service
  * @implements {IService}
  */
+@Abstract()
 export abstract class Service<T> extends Runnable<T> implements IService<T> {
 
     constructor(options?: RunnableOptions<T>) {
         super(options);
+    }
+
+    /**
+     * run service.
+     * call start service.
+     *
+     * @param {*} [data]
+     * @returns {Promise<any>}
+     * @memberof Service
+     */
+    run(data?: any): Promise<any> {
+        return this.start(data);
     }
 
     /**
@@ -58,19 +71,3 @@ export abstract class Service<T> extends Runnable<T> implements IService<T> {
     abstract stop(): Promise<any>;
 }
 
-/**
- * target is service or not.
- *
- * @export
- * @param {*} target
- * @returns {target is IService<any>}
- */
-export function isService(target: any): target is IService<any> {
-    if (target instanceof Service) {
-        return true;
-    }
-    if (target && isFunction(target.start)) {
-        return true;
-    }
-    return false;
-}

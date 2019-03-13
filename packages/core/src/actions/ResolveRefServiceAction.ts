@@ -1,21 +1,27 @@
-import { Singleton, isArray, IocCompositeAction, InjectReference } from '@ts-ioc/ioc';
-import { ServiceResolveContext } from './ServiceResolveContext';
+import { Singleton, isArray, InjectReference, isToken } from '@ts-ioc/ioc';
+import { ResolveServiceContext } from './ResolveServiceContext';
+import { TargetRefService } from '../TargetService';
+import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
 
 @Singleton
-export class ResolveRefServiceAction extends IocCompositeAction<ServiceResolveContext> {
-    execute(ctx: ServiceResolveContext, next?: () => void): void {
-        if (ctx.targetType) {
-            let currTk = ctx.token;
-            if (!ctx.tokens.some(tk => {
-                let refTk = ctx.refTargetFactory ? ctx.refTargetFactory(tk, ctx.targetType) : new InjectReference(tk, ctx.targetType);
-                let refTks = isArray(refTk) ? refTk : [refTk];
-                return refTks.some(reftk => {
-                    ctx.token = reftk;
-                    super.execute(ctx, next);
-                    return !!ctx.instance;
-                })
+export class ResolveRefServiceAction extends ResolvePrivateServiceAction {
+    execute(ctx: ResolveServiceContext, next?: () => void): void {
+        if (ctx.currTargetRef
+            && (isToken(ctx.currTargetRef) || ctx.currTargetRef instanceof TargetRefService)
+            && ctx.currToken) {
+
+            let tk = ctx.currToken;
+            let targetType = isToken(ctx.currTargetRef) ? ctx.currTargetRef : ctx.currTargetRef.getType();
+            let refTk = ctx.refTargetFactory ? ctx.refTargetFactory(tk, targetType) : new InjectReference(tk, targetType);
+            let refTks = isArray(refTk) ? refTk : [refTk];
+            if (!refTks.some(tk => {
+                this.resolvePrivate(ctx, tk);
+                if (!ctx.instance) {
+                    this.resolve(ctx, tk);
+                }
+                return !!ctx.instance;
             })) {
-                ctx.token = currTk;
+                ctx.currToken = tk;
                 next();
             }
 

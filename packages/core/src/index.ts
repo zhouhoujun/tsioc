@@ -1,5 +1,6 @@
 export * from './IContainer';
 export * from './Container';
+export * from './TargetService';
 
 export * from './IContainerBuilder';
 export * from './ContainerBuilder';

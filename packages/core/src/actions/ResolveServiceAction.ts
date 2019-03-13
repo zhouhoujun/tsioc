@@ -1,5 +1,5 @@
 import { IocCompositeAction, Singleton } from '@ts-ioc/ioc';
-import { ServiceResolveContext } from './ServiceResolveContext';
+import { ResolveServiceContext } from './ResolveServiceContext';
 
 
 /**
@@ -7,12 +7,12 @@ import { ServiceResolveContext } from './ServiceResolveContext';
  *
  * @export
  * @class ResolveServiceAction
- * @extends {IocCompositeAction<ServiceResolveContext>}
+ * @extends {IocCompositeAction<ResolveServiceContext>}
  */
 @Singleton
-export class ResolveServiceAction extends IocCompositeAction<ServiceResolveContext> {
-    execute(ctx: ServiceResolveContext, next?: () => void): void {
-        if (ctx instanceof ServiceResolveContext) {
+export class ResolveServiceAction extends IocCompositeAction<ResolveServiceContext> {
+    execute(ctx: ResolveServiceContext, next?: () => void): void {
+        if (ctx instanceof ResolveServiceContext) {
             super.execute(ctx, next);
         } else {
             next();

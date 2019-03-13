@@ -13,13 +13,13 @@ import {
 } from '../modules';
 import { Events, IEvents } from '../utils';
 import { BootModule } from '../BootModule';
-import { Runnable } from '../runnable';
+import { IRunnable } from '../runnable';
 import { ConfigureMgrToken, IConfigureManager } from './IConfigureManager';
 import { RunnableConfigure } from './AppConfigure';
 import { ConfigureRegister } from './ConfigureRegister';
 import {
     ContainerBuilder, IContainerBuilder, IContainer, ModuleInjectorManager,
-    IteratorService, ServiceResolveContext
+    IteratorService, ResolveServiceContext
 } from '@ts-ioc/core';
 import { BootstrapInjector } from './BootModuleInjector';
 import { ContainerPool, ContainerPoolToken } from '../services';
@@ -173,7 +173,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         return await super.load(token, config, options);
     }
 
-    async bootstrap(token: Token<T> | RunnableConfigure, config?: RunnableConfigure | RunOptions<T>, options?: RunOptions<T>): Promise<Runnable<T>> {
+    async bootstrap(token: Token<T> | RunnableConfigure, config?: RunnableConfigure | RunOptions<T>, options?: RunOptions<T>): Promise<IRunnable<T>> {
         let params = this.vaildParams(token, config, options);
         options = params.options || {};
         let injmdl = params.token ? await this.load(params.token, params.config, options) : await this.load(params.config, options);
@@ -226,7 +226,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         let tko = injmdl.token;
         if (!builder && tko) {
             builder = container.getService<ModuleBuilder<T>>(ModuleBuilder, tko,
-                ServiceResolveContext.create({
+                ResolveServiceContext.create({
                     refTargetFactory: (tk) => new InjectModuleBuilderToken(tk),
                     defaultToken: cfg.defaultBuilder
                 }));

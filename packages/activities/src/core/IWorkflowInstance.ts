@@ -1,7 +1,7 @@
 import { IActivityResult, IActivity, ActivityToken } from './IActivity';
 import { Observable } from 'rxjs';
 import { Joinpoint } from '@ts-ioc/aop';
-import { IService, IRunner, InjectRunnableToken } from '@ts-ioc/bootstrap';
+import { IService, InjectRunnableToken } from '@ts-ioc/bootstrap';
 import { IActivityContextResult } from './IActivityContext';
 
 
@@ -46,7 +46,7 @@ export enum RunState {
  * @export
  * @interface ITaskRunner
  */
-export interface IWorkflowInstance<T> extends IService<IActivityResult<T>>, IRunner<IActivityResult<T>> {
+export interface IWorkflowInstance<T> extends IService<IActivityResult<T>> {
 
     /**
      * current run task data.

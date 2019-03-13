@@ -1,4 +1,5 @@
-export * from './ServiceResolveContext';
+export * from './ResolveServiceContext';
+export * from './ResolveTargetServiceAction';
 export * from './IocResolveServiceAction';
 export * from './InitServiceResolveAction';
 export * from './ResolvePrivateServiceAction';

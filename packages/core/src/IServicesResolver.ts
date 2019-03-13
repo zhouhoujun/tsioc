@@ -1,5 +1,6 @@
 import { Token, ProviderTypes } from '@ts-ioc/ioc';
-import { ServiceResolveContext } from './actions';
+import { ResolveServiceContext } from './actions';
+import { TargetRefs } from './TargetService';
 
 /**
  * services resolver.
@@ -25,33 +26,35 @@ export interface IServicesResolver {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {ServiceResolveContext} ctx
+     * @param {ResolveServiceContext} ctx
+     * @param {...ProviderTypes[]} providers
      * @returns {T[]}
      * @memberof IServicesResolver
      */
-    getServices<T>(token: Token<T>, ctx: ServiceResolveContext): T[];
+    getServices<T>(token: Token<T>, ctx: ResolveServiceContext, ...providers: ProviderTypes[]): T[];
+
     /**
     * get all private services of target extends class `token`.
     * @template T
     * @param {type: Token<T>} token servive token.
-    * @param {*} [target] service private of target.
+    * @param {TargetRefs} [target] service private of target.
     * @param {...ProviderTypes[]} providers
     * @returns {T[]} all service instance type of token type.
     * @memberof IContainer
     */
-    getServices<T>(token: Token<T>, target: any, ...providers: ProviderTypes[]): T[];
+    getServices<T>(token: Token<T>, target: TargetRefs, ...providers: ProviderTypes[]): T[];
 
     /**
     * get all servies extends class `type` and all private services of target extends class `type`.
     *
     * @template T
     * @param {type: Token<T>} token servive token.
-    * @param {*} [target] service private of target.
-    * @param {ServiceResolveContext} service resolve context.
+    * @param {TargetRefs} [target] service private of target.
+    * @param {ResolveServiceContext} service resolve context.
     * @param {...ProviderTypes[]} providers
     * @returns {T}
     * @memberof IContainer
     */
-    getServices<T>(token: Token<T>, target: any, ctx: ServiceResolveContext, ...providers: ProviderTypes[]): T[];
+    getServices<T>(token: Token<T>, target: TargetRefs, ctx: ResolveServiceContext, ...providers: ProviderTypes[]): T[];
 
 }

@@ -1,19 +1,19 @@
 import 'reflect-metadata';
 import {
     Token, ParamProviders, lang,
-    isClass, isToken, Inject, Registration,
+    isClass, isToken, Inject,
     isUndefined, Singleton, isArray, Type, InjectReference
 } from '@ts-ioc/ioc';
 import { IModuleBuilder, ModuleEnv, BootOptions } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { ContainerPool, ContainerPoolToken, MetaAccessor } from '../services';
-import { Runnable } from '../runnable';
+import { IRunnable } from '../runnable';
 import {
     IAnnotationBuilder, InjectAnnotationBuilder,
     AnnotationBuilder, BuildOptions
 } from '../annotations';
 import { ModuleResovler, InjectModuleResovlerToken } from './ModuleResovler';
-import { IContainer, Container, ServiceResolveContext } from '@ts-ioc/core';
+import { IContainer, Container, ResolveServiceContext } from '@ts-ioc/core';
 
 
 /**
@@ -60,7 +60,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         }
         return container.getService(MetaAccessor,
             mtk ? [mtk, lang.getClass(this)] : lang.getClass(this),
-            ServiceResolveContext.create({
+            ResolveServiceContext.create({
                 defaultToken: config.defaultMetaAccessor
             }));
     }
@@ -101,7 +101,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
      * @returns {Promise<Runnable<T>>}
      * @memberof ModuleBuilder
      */
-    async bootstrap(token: Token<T> | ModuleConfig<T>, config?: ModuleConfig<T> | BootOptions<T>, options?: BootOptions<T>): Promise<Runnable<T>> {
+    async bootstrap(token: Token<T> | ModuleConfig<T>, config?: ModuleConfig<T> | BootOptions<T>, options?: BootOptions<T>): Promise<IRunnable<T>> {
         let params = this.vaildParams(token, config, options);
         options = params.options || {};
         let injmdl: ModuleResovler<T>;
@@ -233,7 +233,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
         if (!builder && token) {
             builder = container.getService(AnnotationBuilder, token,
-                ServiceResolveContext.create({
+                ResolveServiceContext.create({
                     refTargetFactory: tk => new InjectAnnotationBuilder(tk),
                     defaultToken: config.defaultAnnoBuilder
                 }));

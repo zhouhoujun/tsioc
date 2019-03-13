@@ -1,5 +1,5 @@
 
-import { Token, lang, Inject, InjectToken, Type } from '@ts-ioc/ioc';
+import { Token, lang, Inject, InjectToken, Type, Abstract } from '@ts-ioc/ioc';
 import { ModuleConfigure, BootOptions } from '../modules';
 import { IContainer, ContainerToken } from '@ts-ioc/core';
 
@@ -112,6 +112,16 @@ export interface IRunnable<T> {
      */
     onInit(options: RunnableOptions<T>, bootOptions?: BootOptions<T>): Promise<void>;
 
+
+    /**
+     * run application via boot instance.
+     *
+     * @param {*} [data]
+     * @returns {Promise<any>}
+     * @memberof IRunner
+     */
+    run(data?: any): Promise<any>;
+
 }
 
 /**
@@ -122,7 +132,8 @@ export interface IRunnable<T> {
  * @implements {IBoot<T>}
  * @template T
  */
-export class Runnable<T> implements IRunnable<T> {
+@Abstract()
+export abstract class Runnable<T> implements IRunnable<any> {
 
     @Inject(ContainerToken)
     container: IContainer;
@@ -160,6 +171,15 @@ export class Runnable<T> implements IRunnable<T> {
         return this.options.type || lang.getClass(this.options.instance);
     }
 
+    /**
+     * run application via boot instance.
+     *
+     * @param {*} [data]
+     * @returns {Promise<any>}
+     * @memberof IRunner
+     */
+    abstract run(data?: any): Promise<any>;
+
 }
 
 /**
@@ -169,7 +189,7 @@ export class Runnable<T> implements IRunnable<T> {
  * @param {*} target
  * @returns {target is Runnable<any>}
  */
-export function isRunnable(target: any): target is Runnable<any> {
+export function isRunnable<T>(target: any): target is Runnable<T> {
     if (target instanceof Runnable) {
         return true;
     }

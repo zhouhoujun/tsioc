@@ -1,10 +1,11 @@
 import { IContainer, ContainerToken } from './IContainer';
 import { ModuleInjectorManager, IteratorService, ModuleLoader } from './services';
 import { IocExt } from './decorators';
-import { DecoratorRegisterer, MethodAutorunAction, ResolveLifeScope, IocDefaultResolveAction } from '@ts-ioc/ioc';
+import { DecoratorRegisterer, MethodAutorunAction, ResolveLifeScope } from '@ts-ioc/ioc';
 import {
     InitServiceResolveAction, ResolveRefServiceAction, ResolveServiceAction,
-    ResolveServicesAction, ResolvePrivateServiceAction, ResolveServiceInClassChain, ResolveDefaultServiceAction
+    ResolveServicesAction, ResolvePrivateServiceAction, ResolveServiceInClassChain,
+    ResolveDefaultServiceAction, ResolveServiceTokenAction, ResolveTargetServiceAction
 } from './actions';
 
 
@@ -16,6 +17,8 @@ export function registerCores(container: IContainer) {
 
     container.register(ModuleInjectorManager);
 
+    container.register(ResolveServiceTokenAction);
+    container.register(ResolveTargetServiceAction);
     container.register(ResolveServiceAction);
     container.register(InitServiceResolveAction);
     container.register(ResolveRefServiceAction);
@@ -24,26 +27,26 @@ export function registerCores(container: IContainer) {
     container.register(ResolveServiceInClassChain);
     container.register(ResolveDefaultServiceAction);
 
+
     let resolveLifeScope = container.resolve(ResolveLifeScope);
     resolveLifeScope
         .use(ResolveServiceAction, true);
 
-    container.resolve(ResolveRefServiceAction)
+    container.resolve(ResolveTargetServiceAction)
         .use(ResolvePrivateServiceAction)
-        .use(IocDefaultResolveAction);
+        .use(ResolveServiceTokenAction)
+        .use(ResolveServiceInClassChain);
 
     container.resolve(ResolveServiceInClassChain)
         .use(ResolveRefServiceAction)
         .use(ResolvePrivateServiceAction)
-        .use(IocDefaultResolveAction);
+        .use(ResolveServiceTokenAction);
 
     container.resolve(ResolveServiceAction)
         .use(InitServiceResolveAction)
         .use(ResolveServicesAction)
-        .use(ResolveRefServiceAction)
-        .use(ResolvePrivateServiceAction)
-        .use(IocDefaultResolveAction)
-        .use(ResolveServiceInClassChain)
+        .use(ResolveTargetServiceAction)
+        .use(ResolveServiceTokenAction)
         .use(ResolveDefaultServiceAction);
 
 

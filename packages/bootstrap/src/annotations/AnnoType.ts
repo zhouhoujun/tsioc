@@ -1,4 +1,4 @@
-import { Runnable } from '../runnable';
+import { IRunnable } from '../runnable';
 import { IAnnotationBuilder } from './IAnnotationBuilder';
 import { Token, ProviderTypes } from '@ts-ioc/ioc';
 import { BeforeAnnotationInit, AfterAnnotationInit } from './IAnnotation';
@@ -105,5 +105,5 @@ export interface AfterStart<T> {
      * @param {T} [runnable]
      * @memberof OnStart
      */
-    bootStarted(runnable?: Runnable<T>): void | Promise<void>;
+    bootStarted(runnable?: IRunnable<T>): void | Promise<void>;
 }
