@@ -1,10 +1,10 @@
 import {
     LoadType, Factory, Token, isClass,
     isToken, PromiseUtil, Injectable, lang,
-    IResolver, ClassType, ObjectMapProvider
+    IResolver, ClassType, ObjectMapProvider, InjectReference
 } from '@ts-ioc/ioc';
 import {
-    IRunnableBuilder, CustomRegister, RunnableBuilderToken,
+    IRunnableBuilder, CustomRegister,
     ProcessRunRootToken, RunOptions, CurrentRunnableBuilderToken
 } from './IRunnableBuilder';
 import {
@@ -58,7 +58,7 @@ export enum RunnableEvents {
  * @extends {ModuleBuilder}
  * @template T
  */
-@Injectable(RunnableBuilderToken)
+@Injectable
 export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBuilder<T>, IEvents {
 
     protected depModules: LoadType[];
@@ -339,5 +339,20 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
             curClass, true);
 
         await Promise.all(registers.map(ser => ser.resolver.resolve(ser.serType).register(config, this)));
+    }
+}
+
+
+/**
+ * runable builder token inject.
+ *
+ * @export
+ * @class InjectAnnoBuildStrategyToken
+ * @extends {RefRegistration<IAnnoBuildStrategy<T>>}
+ * @template T
+ */
+export class InjectRunnableBuilderToken<T> extends InjectReference<RunnableBuilder<T>> {
+    constructor(type: Token<T>) {
+        super(RunnableBuilder, type);
     }
 }

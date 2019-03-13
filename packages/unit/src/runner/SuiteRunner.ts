@@ -1,4 +1,4 @@
-import { Runner } from '@ts-ioc/bootstrap';
+import { Runnable } from '@ts-ioc/bootstrap';
 import {
     getMethodMetadata, isNumber, lang, Inject, PromiseUtil,
     getOwnTypeMetadata, Injectable
@@ -24,7 +24,7 @@ import { ContainerToken, IContainer } from '@ts-ioc/core';
  * @implements {IRunner<any>}
  */
 @Injectable(SuiteRunnerToken)
-export class SuiteRunner extends Runner<any> implements ISuiteRunner {
+export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
 
     @Inject(ContainerToken)
     container: IContainer;

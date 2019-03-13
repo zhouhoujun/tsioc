@@ -142,10 +142,6 @@ export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends
 
 
 /**
- * runable builder token.
- */
-export const RunnableBuilderToken = new InjectToken<IRunnableBuilder<any>>('DI_RunnableBuilder');
-/**
  * current runable builder token.
  */
 export const CurrentRunnableBuilderToken = new InjectToken<IRunnableBuilder<any>>('Current_DI_RunnableBuilder');

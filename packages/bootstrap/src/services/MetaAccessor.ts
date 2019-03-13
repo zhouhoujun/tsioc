@@ -1,6 +1,6 @@
 import {
     ComponentMetadata, Token, Type, Express, IocCoreService,
-    getClassDecorators, isClass, getTypeMetadata, isToken, Singleton
+    getClassDecorators, isClass, getTypeMetadata, isToken, Singleton, InjectReference
 } from '@ts-ioc/ioc';
 import { IContainer } from '@ts-ioc/core';
 
@@ -199,4 +199,19 @@ export class MetaAccessor extends IocCoreService {
         return config.bootstrap;
     }
 
+}
+
+
+/**
+ * inject module meta accessor token.
+ *
+ * @export
+ * @class InjectModuleBuilder
+ * @extends {Registration<T>}
+ * @template T
+ */
+export class InjectMetaAccessorToken<T> extends InjectReference<MetaAccessor> {
+    constructor(type: Token<T>) {
+        super(MetaAccessor, type);
+    }
 }

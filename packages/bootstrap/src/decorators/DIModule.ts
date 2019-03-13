@@ -1,7 +1,9 @@
 import { createClassDecorator, Token, MetadataAdapter, MetadataExtends, ITypeDecorator, isClass, lang, isToken } from '@ts-ioc/ioc';
-import { IModuleBuilder, ModuleBuilderToken } from '../modules/IModuleBuilder';
+import { IModuleBuilder } from '../modules/IModuleBuilder';
 import { ModuleConfig } from '../modules/ModuleConfigure';
-import { IAnnotationBuilder, AnnotationBuilderToken } from '../annotations/IAnnotationBuilder';
+import { IAnnotationBuilder } from '../annotations/IAnnotationBuilder';
+import { ModuleBuilder } from '../modules/ModuleBuilder';
+import { AnnotationBuilder } from '../annotations/AnnotationBuilder';
 
 /**
  * DI module metadata.
@@ -104,4 +106,4 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
  *
  * @DIModule
  */
-export const DIModule: IDIModuleDecorator<DIModuleMetadata> = createDIModuleDecorator<DIModuleMetadata>('DIModule', ModuleBuilderToken, AnnotationBuilderToken);
+export const DIModule: IDIModuleDecorator<DIModuleMetadata> = createDIModuleDecorator<DIModuleMetadata>('DIModule', ModuleBuilder, AnnotationBuilder);

@@ -2,7 +2,7 @@ import {
     IContainer
 } from '@ts-ioc/core';
 import { Token, Refs, Singleton } from '@ts-ioc/ioc'
-import { ApplicationBuilderToken, MetaAccessor } from '@ts-ioc/bootstrap';
+import { ApplicationBuilderToken, MetaAccessor, InjectMetaAccessorToken } from '@ts-ioc/bootstrap';
 import { ActivityConfigure } from './ActivityConfigure';
 import { IActivity } from './IActivity';
 

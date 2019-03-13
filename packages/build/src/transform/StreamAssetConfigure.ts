@@ -1,4 +1,3 @@
-
 import { ITransformConfigure } from './core/ITransformConfigure';
 import { AssetConfigure } from '../core/handles/IAssetBuildHandle';
 
