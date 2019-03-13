@@ -114,7 +114,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
 
     afterReturning(joinPoint: Joinpoint) {
         let cloneJp = Object.assign({}, joinPoint);
-        let advChain = this.container.resolve<IAdvisorChain>(AdvisorChainToken, { joinPoint: cloneJp });
+        let advChain = this.container.resolve<IAdvisorChain>(AdvisorChainToken,  { provide: Joinpoint, useValue: cloneJp });
         this.getAdvicers('Around')
             .forEach(advicer => {
                 advChain.next((jp) => {
