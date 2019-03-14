@@ -10,10 +10,9 @@ import {
 } from '../runnable';
 import { BootHooks, BuildOptions } from './AnnoType';
 import { AnnotationConfigure } from './AnnotationConfigure';
-import { AnnoBuildStrategyToken, InjectAnnoBuildStrategyToken } from './AnnoBuildStrategy';
+import { AnnoBuildStrategy } from './AnnoBuildStrategy';
 import { ContainerToken, IContainer, ResolveServiceContext, TargetPrivateService } from '@ts-ioc/core';
 import { MetaAccessor } from '../services';
-
 
 
 /**
@@ -110,16 +109,13 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
                 return null;
             }
             let strategy = this.container.getService(
-                AnnoBuildStrategyToken,
+                AnnoBuildStrategy,
                 [
                     tk || lang.getClass(instance),
                     ...((options && options.target) ? [TargetPrivateService.create(options.target)] : []),
                     TargetPrivateService.create(lang.getClass(this))
 
-                ],
-                ResolveServiceContext.create({
-                    refTargetFactory: tk => new InjectAnnoBuildStrategyToken(tk)
-                }));
+                ]);
             if (strategy) {
                 await strategy.build(instance, cfg, options);
             }
@@ -257,7 +253,7 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
                     ...(options && options.target) ? [TargetPrivateService.create(options.target)] : []
                 ],
                 ResolveServiceContext.create({
-                    refTargetFactory: (tk) => new InjectAnnotationBuilder(tk),
+                    // refTargetFactory: (tk) => new InjectAnnotationBuilderToken(tk),
                     defaultToken: config.defaultAnnoBuilder
                 }));
         }
@@ -301,16 +297,3 @@ export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
 }
 
 
-/**
- * inject Annotation class builder.
- *
- * @export
- * @class InjectBootstrapBuilder
- * @extends {Registration<T>}
- * @template T
- */
-export class InjectAnnotationBuilder<T> extends InjectReference<AnnotationBuilder<T>> {
-    constructor(type: Token<T>) {
-        super(AnnotationBuilder, type);
-    }
-}

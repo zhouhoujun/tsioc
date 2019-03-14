@@ -2,16 +2,13 @@ import 'reflect-metadata';
 import {
     Token, ParamProviders, lang,
     isClass, isToken, Inject,
-    isUndefined, Singleton, isArray, Type, InjectReference
+    isUndefined, Singleton, isArray
 } from '@ts-ioc/ioc';
 import { IModuleBuilder, ModuleEnv, BootOptions } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
 import { ContainerPool, ContainerPoolToken, MetaAccessor } from '../services';
 import { IRunnable } from '../runnable';
-import {
-    IAnnotationBuilder, InjectAnnotationBuilder,
-    AnnotationBuilder, BuildOptions
-} from '../annotations';
+import { IAnnotationBuilder, AnnotationBuilder, BuildOptions } from '../annotations';
 import { ModuleResovler } from './ModuleResovler';
 import { IContainer, Container, ResolveServiceContext } from '@ts-ioc/core';
 import { IDIModuleReflect } from './DIModuleInjector';
@@ -229,7 +226,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         if (!builder && token) {
             builder = container.getService(AnnotationBuilder, token,
                 ResolveServiceContext.create({
-                    refTargetFactory: tk => new InjectAnnotationBuilder(tk),
+                    // refTargetFactory: tk => new InjectAnnotationBuilderToken(tk),
                     defaultToken: config.defaultAnnoBuilder
                 }));
         }
@@ -240,18 +237,3 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return builder;
     }
 }
-
-/**
- * inject module builder token.
- *
- * @export
- * @class InjectModuleBuilder
- * @extends {Registration<T>}
- * @template T
- */
-export class InjectModuleBuilderToken<T> extends InjectReference<ModuleBuilder<T>> {
-    constructor(type: Token<T>) {
-        super(ModuleBuilder, type);
-    }
-}
-

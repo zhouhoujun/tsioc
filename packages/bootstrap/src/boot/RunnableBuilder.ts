@@ -8,8 +8,7 @@ import {
     ProcessRunRootToken, RunOptions, CurrentRunnableBuilderToken
 } from './IRunnableBuilder';
 import {
-    ModuleBuilder, ModuleResovler, IModuleBuilder,
-    InjectModuleBuilderToken, ModuleConfig
+    ModuleBuilder, ModuleResovler, IModuleBuilder, ModuleConfig
 } from '../modules';
 import { Events, IEvents } from '../utils';
 import { IRunnable } from '../runnable';
@@ -225,7 +224,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         if (!builder && tko) {
             builder = container.getService<ModuleBuilder<T>>(ModuleBuilder, tko,
                 ResolveServiceContext.create({
-                    refTargetFactory: (tk) => new InjectModuleBuilderToken(tk),
+                    // refTargetFactory: (tk) => new InjectModuleBuilderToken(tk),
                     defaultToken: cfg.defaultBuilder
                 }));
         }
@@ -332,20 +331,5 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
             curClass, true);
 
         await Promise.all(registers.map(ser => ser.resolver.resolve(ser.serType).register(config, this)));
-    }
-}
-
-
-/**
- * runable builder token inject.
- *
- * @export
- * @class InjectAnnoBuildStrategyToken
- * @extends {RefRegistration<IAnnoBuildStrategy<T>>}
- * @template T
- */
-export class InjectRunnableBuilderToken<T> extends InjectReference<RunnableBuilder<T>> {
-    constructor(type: Token<T>) {
-        super(RunnableBuilder, type);
     }
 }

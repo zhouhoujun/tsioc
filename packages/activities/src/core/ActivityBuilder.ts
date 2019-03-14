@@ -1,11 +1,34 @@
-import { ActivityBuilderToken, IActivityBuilder } from './IActivityBuilder';
-import { isString, Token, Express, isToken, Providers, Singleton } from '@ts-ioc/ioc';
-import { AnnotationBuilder, BuildOptions, IAnnoBuildStrategy, AnnoBuildStrategyToken } from '@ts-ioc/bootstrap';
-import { IActivity, ActivityInstance, ActivityBuildStrategyToken } from './IActivity';
+import { IActivityBuilder } from './IActivityBuilder';
+import { isString, Token, Express, isToken, Providers, Singleton, Refs } from '@ts-ioc/ioc';
+import { AnnotationBuilder, BuildOptions, IAnnoBuildStrategy, AnnoBuildStrategy } from '@ts-ioc/bootstrap';
+import { IActivity, ActivityInstance } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
-import { ActivityMetaAccessorToken } from './ActivityMetaAccessor';
-import { isAcitvity } from './Activity';
+import { ActivityMetaAccessor } from './ActivityMetaAccessor';
+import { isAcitvity, Activity } from './Activity';
 import { MetaAccessor } from '@ts-ioc/bootstrap';
+
+
+/**
+ * activity build strategy.
+ *
+ * @export
+ * @class ActivityBuildStrategy
+ * @implements {IAnnoBuildStrategy<IActivity>}
+ */
+@Singleton
+@Refs(Activity, AnnoBuildStrategy)
+export class ActivityBuildStrategy implements IAnnoBuildStrategy<IActivity> {
+    async build(instance: IActivity, config: ActivityConfigure, options: BuildOptions<IActivity>): Promise<void> {
+        if (!instance) {
+            return;
+        }
+        if (config.name) {
+            instance.name = config.name;
+        }
+        await instance.onActivityInit(config);
+    }
+}
+
 
 
 /**
@@ -16,10 +39,11 @@ import { MetaAccessor } from '@ts-ioc/bootstrap';
  * @extends {AnnotationBuilder<IActivity>}
  * @implements {IActivityBuilder}
  */
-@Singleton(ActivityBuilderToken)
+@Singleton
+@Refs(Activity, AnnotationBuilder)
 @Providers([
-    { provide: MetaAccessor, useExisting: ActivityMetaAccessorToken },
-    { provide: AnnoBuildStrategyToken, useExisting: ActivityBuildStrategyToken }
+    { provide: MetaAccessor, useClass: ActivityMetaAccessor },
+    { provide: AnnoBuildStrategy, useClass: ActivityBuildStrategy }
 ])
 export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IActivityBuilder {
 
@@ -118,27 +142,6 @@ export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IAc
             }
         }
         return result;
-    }
-}
-
-
-/**
- * activity build strategy.
- *
- * @export
- * @class ActivityBuildStrategy
- * @implements {IAnnoBuildStrategy<IActivity>}
- */
-@Singleton(ActivityBuildStrategyToken)
-export class ActivityBuildStrategy implements IAnnoBuildStrategy<IActivity> {
-    async build(instance: IActivity, config: ActivityConfigure, options: BuildOptions<IActivity>): Promise<void> {
-        if (!instance) {
-            return;
-        }
-        if (config.name) {
-            instance.name = config.name;
-        }
-        await instance.onActivityInit(config);
     }
 }
 

@@ -98,18 +98,3 @@ export class ModuleResovler<T> implements IResolverContainer {
         return this;
     }
 }
-
-
-// /**
-//  * Injected Module Token.
-//  *
-//  * @export
-//  * @class InjectModuleMetaConfigToken
-//  * @extends {Registration<Type<T>>}
-//  * @template T
-//  */
-// export class InjectModuleResovlerToken<T> extends InjectReference<ModuleResovler<T>> {
-//     constructor(type: Type<T>) {
-//         super(ModuleResovler, type)
-//     }
-// }

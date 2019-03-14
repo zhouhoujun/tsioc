@@ -1,12 +1,13 @@
 import {
-    isString, isObject, createClassDecorator, MetadataExtends, MetadataAdapter,
-    isClass, ITypeDecorator, Token, Registration, isToken, isUndefined, lang
+    isString, createClassDecorator, MetadataExtends, MetadataAdapter,
+    isClass, ITypeDecorator, Token, isToken, isUndefined, lang, ProvideToken, isProvideToken, ClassType
 } from '@ts-ioc/ioc';
 import { ActivityMetadata } from '../metadatas/ActivityMetadata';
-import { IActivityBuilder, ActivityBuilderToken } from '../core/IActivityBuilder';
+import { IActivityBuilder } from '../core/IActivityBuilder';
 import { IActivityContext } from '../core/IActivityContext';
 import { IActivity, ActivityToken } from '../core/IActivity';
 import { WorkflowInstanceToken } from '../core/IWorkflowInstance';
+import { ActivityBuilder } from '../core/ActivityBuilder';
 
 
 /**
@@ -26,42 +27,50 @@ export interface ITaskDecorator<T extends ActivityMetadata> extends ITypeDecorat
      * @param {T} [metadata] Activity metadate configure.
      */
     (metadata?: T): ClassDecorator;
+
     /**
      * Activity decorator, use to define class as Activity element.
      *
      * @Task
-     * @param {string} provide Activity name or provide.
+     * @param {ProvideToken<any>} provide Activity name or provide.
+     */
+    (provide: ProvideToken<any>): ClassDecorator
+    /**
+     * Activity decorator, use to define class as Activity element.
+     *
+     * @Task
+     * @param {Token<any>} provide Activity name or provide.
      * @param {string} selector metadata selector.
      * @param {string} [alias] Activity alias name.
      */
-    (provide: Registration<any> | symbol | string, selector?: string, alias?: string): ClassDecorator;
+    (provide: Token<any>, selector: string, alias?: string): ClassDecorator;
     /**
      * Activity decorator, use to define class as Activity element.
      *
      * @Task
      * @param {string} provide Activity name or provide.
-     * @param {string} ctxType Activity context token.
+     * @param {Token<IActivityContext>} ctxType Activity context token.
      * @param {string} selector metadata selector.
      * @param {string} [alias]  Activity alias name
      */
-    (provide: Registration<any> | symbol | string, ctxType: Token<IActivityContext>, selector?: string, alias?: string): ClassDecorator;
+    (provide: Token<any>, ctxType: Token<IActivityContext>, selector?: string, alias?: string): ClassDecorator;
     /**
      * Activity decorator, use to define class as Activity element.
      *
      * @Task
-     * @param {string} provide Activity name or provide.
-     * @param {string} ctxType Activity context token.
-     * @param {string} builder Activity builder token.
+     * @param {Token<any>} provide Activity name or provide.
+     * @param {Token<IActivityContext>} ctxType Activity context token.
+     * @param {Token<IActivityBuilder>} builder Activity builder token.
      * @param {string} selector metadata selector.
      * @param {string} [alias]  Activity alias name
      */
-    (provide: Registration<any> | symbol | string, ctxType: Token<IActivityContext>, builder: Token<IActivityBuilder>, selector?: string, alias?: string): ClassDecorator;
+    (provide: Token<any>, ctxType: Token<IActivityContext>, builder: Token<IActivityBuilder>, selector?: string, alias?: string): ClassDecorator;
     /**
      * task decorator, use to define class as task element.
      *
      * @Task
      */
-    (target: Function): void;
+    (target: ClassType<any>): void;
 }
 
 /**
@@ -90,7 +99,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
                 adapter(args);
             }
             args.next<ActivityMetadata>({
-                match: (arg) => isString(arg) || (isObject(arg) && arg instanceof Registration),
+                match: (arg, args) => args.length > 1 ? isToken(arg) : isProvideToken(arg),
                 setMetadata: (metadata, arg) => {
                     if (isString(arg)) {
                         metadata.name = arg;
@@ -174,5 +183,5 @@ export function createTaskDecorator<T extends ActivityMetadata>(
  *
  * @Task
  */
-export const Task: ITaskDecorator<ActivityMetadata> = createTaskDecorator('Task', ActivityBuilderToken, ActivityToken);
+export const Task: ITaskDecorator<ActivityMetadata> = createTaskDecorator('Task', ActivityBuilder, ActivityToken);
 

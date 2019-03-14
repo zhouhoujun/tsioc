@@ -1,6 +1,6 @@
 import { AnnotationConfigure } from './AnnotationConfigure';
 import { BuildOptions, BootHooks } from './AnnoType';
-import { isFunction, Token, Singleton, InjectReference } from '@ts-ioc/ioc';
+import { isFunction, Singleton } from '@ts-ioc/ioc';
 
 /**
  * annotation instance build strategy.
@@ -24,24 +24,6 @@ export interface IAnnoBuildStrategy<T> {
 
 }
 
-/**
- * annotation build strategy token inject.
- *
- * @export
- * @class InjectAnnoBuildStrategyToken
- * @extends {RefRegistration<IAnnoBuildStrategy<T>>}
- * @template T
- */
-export class InjectAnnoBuildStrategyToken<T> extends InjectReference<AnnoBuildStrategy<T>> {
-    constructor(type: Token<T>) {
-        super(AnnoBuildStrategy, type);
-    }
-}
-
-/**
- *  base AnnoBuildStrategy Token
- */
-export const AnnoBuildStrategyToken = new InjectAnnoBuildStrategyToken(Object);
 
 /**
  * annotation instance build strategy.
@@ -51,7 +33,7 @@ export const AnnoBuildStrategyToken = new InjectAnnoBuildStrategyToken(Object);
  * @implements {IAnnoBuildStrategy<T>}
  * @template T
  */
-@Singleton(AnnoBuildStrategyToken)
+@Singleton
 export class AnnoBuildStrategy<T> implements IAnnoBuildStrategy<T> {
 
     async build(instance: T, config: AnnotationConfigure<T>, options: BuildOptions<T>): Promise<void> {
