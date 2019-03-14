@@ -23,7 +23,7 @@ import { MetaAccessor } from '../services';
  * @implements {implements IAnnotationBuilder<T>}
  * @template T
  */
-@Singleton
+@Singleton()
 export class AnnotationBuilder<T> implements IAnnotationBuilder<T> {
     /**
      * ioc container.

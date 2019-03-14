@@ -11,7 +11,7 @@ import { IActivityContext, InputDataToken, InjectActivityContextToken, ActivityC
 import { IActivityMetadata } from '../metadatas';
 import { ContainerToken, IContainer, ResolveServiceContext } from '@ts-ioc/core';
 import { MetaAccessor } from '@ts-ioc/bootstrap';
-import { ActivityMetaAccessorToken } from './ActivityMetaAccessor';
+import { ActivityMetaAccessor } from './ActivityMetaAccessor';
 
 
 /**
@@ -25,7 +25,7 @@ import { ActivityMetaAccessorToken } from './ActivityMetaAccessor';
  */
 @Task(ActivityToken)
 @Providers([
-    { provide: MetaAccessor, useExisting: ActivityMetaAccessorToken }
+    { provide: MetaAccessor, useClass: ActivityMetaAccessor }
 ])
 export abstract class Activity implements IActivity, OnActivityInit {
 

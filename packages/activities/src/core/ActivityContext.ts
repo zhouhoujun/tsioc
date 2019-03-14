@@ -6,7 +6,6 @@ import { IActivity } from './IActivity';
 import { ITranslator } from './Translator';
 import { Events, ProcessRunRootToken } from '@ts-ioc/bootstrap';
 import { InputDataToken, IActivityContextResult, CtxType, ActivityContextToken, IActivityContext } from './IActivityContext';
-import { ActivityBuilderToken } from './IActivityBuilder';
 import { ActivityBuilder } from './ActivityBuilder';
 import { Expression, ActivityConfigure, isWorkflowInstance } from './ActivityConfigure';
 import { Task } from '../decorators/Task';
@@ -69,7 +68,7 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
     }
 
     getBuilder(): ActivityBuilder {
-        return this.container.resolve(ActivityBuilderToken) as ActivityBuilder;
+        return this.container.resolve(ActivityBuilder);
     }
 
     /**
