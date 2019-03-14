@@ -12,7 +12,6 @@ import {
     InjectModuleBuilderToken, ModuleConfig
 } from '../modules';
 import { Events, IEvents } from '../utils';
-import { BootModule } from '../BootModule';
 import { IRunnable } from '../runnable';
 import { ConfigureMgrToken, IConfigureManager } from './IConfigureManager';
 import { RunnableConfigure } from './AppConfigure';
@@ -267,7 +266,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         let container = this.pools.getDefault();
         container.bindProvider(ContainerPoolToken, () => this.getPools());
         container.bindProvider(CurrentRunnableBuilderToken, () => this);
-        container.use(BootModule);
+        // container.use(BootModule);
         this.beforeInitPds.forEach((val, key) => {
             container.bindProvider(key, val);
         });

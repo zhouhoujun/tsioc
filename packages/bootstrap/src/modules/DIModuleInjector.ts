@@ -69,7 +69,7 @@ export class DIModuleInjector extends ModuleInjector {
 
         let mdResolver = new ModuleResovler(metaConfig.token || type, metaConfig, newContainer, type, exps);
 
-        let mRef = container.getTypeReflects().get<IDIModuleReflect>(type);
+        let mRef = container.getTypeReflects().get<IDIModuleReflect>(type, true);
         mRef.moduleResolver = mdResolver;
 
         if (metaConfig.asRoot) {
