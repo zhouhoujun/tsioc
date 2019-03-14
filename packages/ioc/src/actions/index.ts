@@ -5,11 +5,10 @@ export * from './IocRegisterAction';
 export * from './ResovleActionContext';
 export * from './IocResolveAction';
 
-
+// runtime action
 export * from './BindParameterProviderAction';
 export * from './BindParameterTypeAction';
 export * from './BindPropertyTypeAction';
-export * from './BindProviderAction';
 export * from './ComponentBeforeInitAction';
 export * from './ComponentInitAction';
 export * from './ComponentAfterInitAction';
@@ -27,3 +26,6 @@ export * from './CreateInstanceAction';
 
 export * from './IocDefaultResolveAction';
 
+// design time action.
+export * from './BindProviderAction';
+export * from './IocAutorunAction';

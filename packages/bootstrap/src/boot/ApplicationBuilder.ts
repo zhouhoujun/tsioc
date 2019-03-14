@@ -1,6 +1,6 @@
 import { Injectable } from '@ts-ioc/ioc';
 import { AppConfigure } from './AppConfigure';
-import { IApplicationBuilder, ApplicationBuilderToken } from './IApplicationBuilder';
+import { IApplicationBuilder } from './IApplicationBuilder';
 import { RunnableBuilder, RunnableEvents } from './RunnableBuilder';
 import { IConfigureManager } from './IConfigureManager';
 import { ModuleConfigure } from '../modules';
@@ -27,7 +27,7 @@ export const ApplicationEvents = RunnableEvents;
  * @extends {ModuleBuilder}
  * @template T
  */
-@Injectable(ApplicationBuilderToken)
+@Injectable
 export class ApplicationBuilder<T> extends RunnableBuilder<T> implements IApplicationBuilder<T>, IEvents {
 
     protected configs: (string | AppConfigure)[];

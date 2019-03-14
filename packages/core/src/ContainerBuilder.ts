@@ -55,7 +55,7 @@ export class ContainerBuilder implements IContainerBuilder {
         let regModules = await this.getLoader(container).loadTypes(modules);
         let injTypes = [];
         if (regModules && regModules.length) {
-            let injMgr = container.resolve(ModuleInjectorManager);
+            let injMgr = container.resolveToken(ModuleInjectorManager);
             await PromiseUtil.step(regModules.map(typs => async () => {
                 let ityps = await injMgr.inject(container, typs);
                 injTypes = injTypes.concat(ityps);
@@ -77,7 +77,7 @@ export class ContainerBuilder implements IContainerBuilder {
         let regModules = this.getLoader(container).getTypes(modules);
         let injTypes: Type<any>[] = [];
         if (regModules && regModules.length) {
-            let injMgr = container.resolve(ModuleInjectorManager);
+            let injMgr = container.resolveToken(ModuleInjectorManager);
             regModules.forEach(typs => {
                 let ityps = injMgr.syncInject(container, typs);
                 injTypes = injTypes.concat(ityps);
@@ -87,7 +87,7 @@ export class ContainerBuilder implements IContainerBuilder {
     }
 
     protected getLoader(container: IContainer): IModuleLoader {
-        return container.resolve(ModuleLoader) || this._loader;
+        return container.resolveToken(ModuleLoader) || this._loader;
     }
 
 }

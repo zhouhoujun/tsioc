@@ -1,11 +1,11 @@
 import { IContainer, ContainerToken } from './IContainer';
 import { ModuleInjectorManager, IteratorService, ModuleLoader } from './services';
 import { IocExt } from './decorators';
-import { DecoratorRegisterer, MethodAutorunAction, ResolveLifeScope } from '@ts-ioc/ioc';
+import { DecoratorRegisterer, MethodAutorunAction, ResolveLifeScope, BindProviderAction, DesignLifeScope } from '@ts-ioc/ioc';
 import {
     InitServiceResolveAction, ResolveRefServiceAction, ResolveServiceAction,
     ResolveServicesAction, ResolvePrivateServiceAction, ResolveServiceInClassChain,
-    ResolveDefaultServiceAction, DefaultResolveServiceAction, ResolveTargetServiceAction
+    ResolveDefaultServiceAction, DefaultResolveServiceAction, ResolveTargetServiceAction, IocExtRegisterAction
 } from './actions';
 
 
@@ -28,32 +28,36 @@ export function registerCores(container: IContainer) {
     container.register(ResolveServicesAction);
     container.register(ResolveTargetServiceAction);
 
+    container.register(IocExtRegisterAction);
 
-    let resolveLifeScope = container.resolve(ResolveLifeScope);
+
+    let resolveLifeScope = container.resolveToken(ResolveLifeScope);
     resolveLifeScope
         .use(ResolveServiceAction, true);
 
-    container.resolve(ResolveTargetServiceAction)
-        .use(ResolvePrivateServiceAction)
-        .use(DefaultResolveServiceAction)
-        .use(ResolveServiceInClassChain);
-
-    container.resolve(ResolveServiceInClassChain)
+    container.resolveToken(ResolveTargetServiceAction)
         .use(ResolveRefServiceAction)
         .use(ResolvePrivateServiceAction)
-        .use(DefaultResolveServiceAction);
+        // .use(DefaultResolveServiceAction)
+        .use(ResolveServiceInClassChain);
 
-    container.resolve(ResolveServiceAction)
+    container.resolveToken(ResolveServiceInClassChain)
+        .use(ResolveRefServiceAction)
+        .use(ResolvePrivateServiceAction);
+        // .use(DefaultResolveServiceAction);
+
+    container.resolveToken(ResolveServiceAction)
         .use(InitServiceResolveAction)
         .use(ResolveServicesAction)
         .use(ResolveTargetServiceAction)
         .use(DefaultResolveServiceAction)
         .use(ResolveDefaultServiceAction);
 
+    container.resolveToken(DesignLifeScope)
+        .use(IocExtRegisterAction);
 
+    let decRgr = container.resolveToken(DecoratorRegisterer);
+    decRgr.register(IocExt, BindProviderAction, IocExtRegisterAction);
 
-    let decRgr = container.resolve(DecoratorRegisterer);
-    decRgr.register(IocExt, MethodAutorunAction);
-
-    container.resolve(ModuleInjectorManager).setup(container);
+    container.resolveToken(ModuleInjectorManager).setup(container);
 }

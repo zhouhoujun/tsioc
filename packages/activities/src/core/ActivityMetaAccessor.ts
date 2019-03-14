@@ -2,7 +2,7 @@ import {
     IContainer
 } from '@ts-ioc/core';
 import { Token, Refs, Singleton } from '@ts-ioc/ioc'
-import { ApplicationBuilderToken, MetaAccessor, InjectMetaAccessorToken } from '@ts-ioc/bootstrap';
+import { ApplicationBuilder, MetaAccessor, InjectMetaAccessorToken } from '@ts-ioc/bootstrap';
 import { ActivityConfigure } from './ActivityConfigure';
 import { IActivity } from './IActivity';
 
@@ -16,7 +16,7 @@ export const ActivityMetaAccessorToken = new InjectMetaAccessorToken('@Task');
  * @extends {MetaAccessor}
  */
 @Singleton(ActivityMetaAccessorToken)
-@Refs(ApplicationBuilderToken, MetaAccessor)
+@Refs(ApplicationBuilder, MetaAccessor)
 export class ActivityMetaAccessor extends MetaAccessor {
 
     getToken(config: ActivityConfigure, container: IContainer): Token<IActivity> {

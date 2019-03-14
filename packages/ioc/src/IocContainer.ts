@@ -140,7 +140,6 @@ export class IocContainer implements IIocContainer {
             token: token,
             providers: providers
         });
-        console.log(token);
         this.contextResolve(context);
         return context.instance || null;
     }

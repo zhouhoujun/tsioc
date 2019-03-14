@@ -7,12 +7,12 @@ import {
     BindPropertyTypeAction, ComponentBeforeInitAction, ComponentInitAction,
     ComponentAfterInitAction, RegisterSingletionAction, InjectPropertyAction,
     GetSingletionAction, ContainerCheckerAction, IocSetCacheAction,
-    CreateInstanceAction, ConstructorArgsAction
+    CreateInstanceAction, ConstructorArgsAction, MethodAutorunAction
 } from '../actions';
 import { IIocContainer } from '../IIocContainer';
 import { IParameter } from '../IParameter';
 import { DecoratorRegisterer } from './DecoratorRegisterer';
-import { Inject, AutoWired, Method, Param } from '../decorators';
+import { Inject, AutoWired, Method, Param, Autorun } from '../decorators';
 
 /**
  * runtime life scope.
@@ -83,11 +83,14 @@ export class RuntimeLifeScope extends LifeScope<RegisterActionContext> {
         container.registerSingleton(RegisterSingletionAction, () => new RegisterSingletionAction(container));
         container.registerSingleton(IocSetCacheAction, () => new IocSetCacheAction(container));
 
+        container.registerSingleton(MethodAutorunAction, () => new MethodAutorunAction(container));
+
         let decRgr = container.resolveToken(DecoratorRegisterer);
         decRgr.register(Inject, BindParameterTypeAction, BindPropertyTypeAction);
         decRgr.register(AutoWired, BindParameterTypeAction, BindPropertyTypeAction);
         decRgr.register(Param, BindParameterTypeAction);
         decRgr.register(Method, BindParameterProviderAction);
+        decRgr.register(Autorun, MethodAutorunAction);
 
         this.use(InitReflectAction)
             .use(GetSingletionAction)
@@ -104,6 +107,7 @@ export class RuntimeLifeScope extends LifeScope<RegisterActionContext> {
             .use(RegisterSingletionAction)
             .use(IocSetCacheAction)
             .use(ComponentAfterInitAction)
+            .use(MethodAutorunAction)
 
     }
 

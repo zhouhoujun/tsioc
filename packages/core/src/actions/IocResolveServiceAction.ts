@@ -1,4 +1,4 @@
-import { IocResolveAction, isNullOrUndefined, Singleton, Token } from '@ts-ioc/ioc';
+import { IocResolveAction, Singleton, Token } from '@ts-ioc/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 
 /**
@@ -32,7 +32,7 @@ export abstract class IocResolveServiceAction extends IocResolveAction {
 export class DefaultResolveServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext, next: () => void): void {
         this.resolve(ctx, ctx.currToken || ctx.token);
-        if (isNullOrUndefined(ctx.instance)) {
+        if (!ctx.instance) {
             next();
         }
     }

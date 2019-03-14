@@ -1,7 +1,7 @@
 import {
     Token, Type, ParamProviders, isToken,
     IResolver, IResolverContainer, InstanceFactory, IocActionContext,
-    ResovleActionContext, SymbolType, InjectReference
+    ResovleActionContext, SymbolType
 } from '@ts-ioc/ioc';
 import { ModuleConfig } from './ModuleConfigure';
 import { IContainer } from '@ts-ioc/core';
@@ -100,16 +100,16 @@ export class ModuleResovler<T> implements IResolverContainer {
 }
 
 
-/**
- * Injected Module Token.
- *
- * @export
- * @class InjectModuleMetaConfigToken
- * @extends {Registration<Type<T>>}
- * @template T
- */
-export class InjectModuleResovlerToken<T> extends InjectReference<ModuleResovler<T>> {
-    constructor(type: Type<T>) {
-        super(ModuleResovler, type)
-    }
-}
+// /**
+//  * Injected Module Token.
+//  *
+//  * @export
+//  * @class InjectModuleMetaConfigToken
+//  * @extends {Registration<Type<T>>}
+//  * @template T
+//  */
+// export class InjectModuleResovlerToken<T> extends InjectReference<ModuleResovler<T>> {
+//     constructor(type: Type<T>) {
+//         super(ModuleResovler, type)
+//     }
+// }

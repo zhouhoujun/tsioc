@@ -3,7 +3,7 @@ import { IIocContainer } from '../IIocContainer';
 import {
     BindProviderAction, MethodAutorunAction, IocSetCacheAction,
     ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
-    InitReflectAction, RegisterActionContext
+    InitReflectAction, RegisterActionContext, IocAutorunAction
 } from '../actions';
 import { DecoratorRegisterer } from './DecoratorRegisterer';
 import {
@@ -28,7 +28,7 @@ export class DesignLifeScope extends LifeScope<RegisterActionContext> {
             container.registerSingleton(InitReflectAction, () => new InitReflectAction(container));
         }
         container.registerSingleton(BindProviderAction, () => new BindProviderAction(container));
-        container.registerSingleton(MethodAutorunAction, () => new MethodAutorunAction(container));
+        container.registerSingleton(IocAutorunAction, () => new IocAutorunAction(container));
 
         let decRgr = container.resolveToken(DecoratorRegisterer);
 
@@ -38,10 +38,10 @@ export class DesignLifeScope extends LifeScope<RegisterActionContext> {
         decRgr.register(Providers, BindProviderAction);
         decRgr.register(Refs, BindProviderAction);
         decRgr.register(Abstract, BindProviderAction);
-        decRgr.register(Autorun, MethodAutorunAction);
+        decRgr.register(Autorun, BindProviderAction, IocAutorunAction);
 
         this.use(InitReflectAction)
             .use(BindProviderAction)
-            .use(MethodAutorunAction);
+            .use(IocAutorunAction);
     }
 }

@@ -40,15 +40,6 @@ export interface IModuleBuilder<T> {
     getPools(): ContainerPool;
 
     /**
-     * get module resolver.
-     *
-     * @template T
-     * @param {Type<T>} type
-     * @returns {ModuleResovler<T>}
-     * @memberof IModuleBuilder
-     */
-    getModuleResovler<T>(type: Type<T>): ModuleResovler<T>;
-    /**
      * load module.
      *
      * @param {Token<T>} token

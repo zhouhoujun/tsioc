@@ -59,7 +59,6 @@ export class DIModuleInjector extends ModuleInjector {
 
         let decorator = this.getDecorator();
         let accor = this.getMetaAccessor(container, decorator);
-        console.log(accor);
         let metaConfig = accor.getMetadata(type, container, undefined, decorator ? dec => dec === decorator : undefined) as ModuleConfigure;
 
         let newContainer = metaConfig.asRoot === true ? pools.getDefault() : pools.create(container);

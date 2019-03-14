@@ -113,7 +113,7 @@ export class ProviderParser implements IProviderParser {
  */
 export function isProvider(target: any): target is ProviderTypes {
     return isProviderMap(target)
-        || isClass(target)
+        // || isClass(target)
         || target instanceof ObjectMapProvider
         || target instanceof Provider
         || (isMetadataObject(target, 'provide') && isToken(target.provide));

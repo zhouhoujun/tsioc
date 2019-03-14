@@ -1,4 +1,4 @@
-import { isClass, Singleton, isFunction, isToken, isArray, lang } from '@ts-ioc/ioc';
+import { Singleton, isFunction, isToken, isArray, lang, isClassType } from '@ts-ioc/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { TargetService } from '../TargetService';
@@ -12,7 +12,7 @@ export class InitServiceResolveAction extends IocResolveServiceAction {
                     if (t instanceof TargetService) {
                         return t;
                     } else if (t) {
-                        return lang.getClass(t);
+                        return isToken(t) ? t : lang.getClass(t);
                     }
                     return null;
                 })
@@ -22,7 +22,13 @@ export class InitServiceResolveAction extends IocResolveServiceAction {
         if (isFunction(ctx.serviceTokenFactory)) {
             ctx.tokens = ctx.tokens.concat(ctx.serviceTokenFactory(ctx.token) || []);
         }
-        ctx.tokens = ctx.tokens.concat(...[ctx.token, isClass(ctx.token) ? ctx.token : ctx.getTokenProvider(ctx.token)]);
+        ctx.tokens.push(ctx.token);
+        if (!isClassType(ctx.token)) {
+            let pdType = ctx.getTokenProvider(ctx.token);
+            if (pdType) {
+                ctx.tokens.push(pdType);
+            }
+        }
         ctx.tokens = ctx.tokens.filter(t => isToken(t));
         next();
     }

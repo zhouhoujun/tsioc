@@ -14,8 +14,13 @@ import { lang, isNumber } from '../utils';
 export class MethodAutorunAction extends IocRegisterAction {
 
     execute(ctx: RegisterActionContext, next: () => void) {
-        if (hasMethodMetadata(Autorun, ctx.targetType)) {
-            let metas = getMethodMetadata<AutorunMetadata>(Autorun, ctx.targetType);
+        this.runAuto(ctx, Autorun);
+        next();
+    }
+
+    protected runAuto(ctx: RegisterActionContext, decor: string | Function) {
+        if (hasMethodMetadata(decor, ctx.targetType)) {
+            let metas = getMethodMetadata<AutorunMetadata>(decor, ctx.targetType);
             let lastmetas: AutorunMetadata[] = [];
             let idx = Object.keys(metas).length;
             lang.forIn(metas, (mm, key: string) => {
@@ -36,7 +41,6 @@ export class MethodAutorunAction extends IocRegisterAction {
                 this.container.syncInvoke(ctx.target || ctx.targetType, aut.autorun, ctx.target);
             });
         }
-        next();
     }
 }
 

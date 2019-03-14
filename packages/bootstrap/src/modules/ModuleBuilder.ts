@@ -12,8 +12,9 @@ import {
     IAnnotationBuilder, InjectAnnotationBuilder,
     AnnotationBuilder, BuildOptions
 } from '../annotations';
-import { ModuleResovler, InjectModuleResovlerToken } from './ModuleResovler';
+import { ModuleResovler } from './ModuleResovler';
 import { IContainer, Container, ResolveServiceContext } from '@ts-ioc/core';
+import { IDIModuleReflect } from './DIModuleInjector';
 
 
 /**
@@ -36,10 +37,6 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
 
     getPools(): ContainerPool {
         return this.pools;
-    }
-
-    getModuleResovler<T>(type: Type<T>): ModuleResovler<T> {
-        return this.getPools().getDefault().get(new InjectModuleResovlerToken(type));
     }
 
     /**
@@ -189,14 +186,12 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     protected async import(token: Token<T>, parent: IContainer): Promise<ModuleResovler<T>> {
         let type = isClass(token) ? token : parent.getTokenImpl(token);
         if (isClass(type)) {
-            let key = new InjectModuleResovlerToken(type);
-            if (parent.has(key)) {
-                return parent.get(key)
+            let typeRef =  parent.getTypeReflects().get<IDIModuleReflect>(type);
+            if (typeRef.moduleResolver) {
+                return typeRef.moduleResolver
             } else {
                 await parent.loadModule(type);
-                if (parent.has(key)) {
-                    return parent.get(key);
-                }
+                return parent.getTypeReflects().get<IDIModuleReflect>(type).moduleResolver;
             }
         }
         return null;

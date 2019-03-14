@@ -1,4 +1,4 @@
-import { ClassType, lang, Token } from '@ts-ioc/ioc';
+import { lang, Token, isToken } from '@ts-ioc/ioc';
 
 
 /**
@@ -8,7 +8,7 @@ import { ClassType, lang, Token } from '@ts-ioc/ioc';
  * @class TargetRef
  */
 export class TargetService {
-    private targetType: ClassType<any>;
+    private targetType: Token<any>;
     constructor(protected target: any) {
 
     }
@@ -19,9 +19,9 @@ export class TargetService {
      * @returns {ClassType<any>}
      * @memberof TargetRef
      */
-    getType(): ClassType<any> {
+    getToken(): Token<any> {
         if (!this.targetType) {
-            this.targetType = lang.getClass(this.target);
+            this.targetType = isToken(this.target) ? this.target : lang.getClass(this.target);
         }
         return this.targetType;
     }

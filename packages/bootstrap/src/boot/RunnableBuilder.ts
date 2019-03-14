@@ -9,7 +9,7 @@ import {
 } from './IRunnableBuilder';
 import {
     ModuleBuilder, ModuleResovler, IModuleBuilder,
-    InjectModuleBuilderToken, ModuleConfig, DIModuleInjector
+    InjectModuleBuilderToken, ModuleConfig
 } from '../modules';
 import { Events, IEvents } from '../utils';
 import { BootModule } from '../BootModule';
@@ -18,10 +18,9 @@ import { ConfigureMgrToken, IConfigureManager } from './IConfigureManager';
 import { RunnableConfigure } from './AppConfigure';
 import { ConfigureRegister } from './ConfigureRegister';
 import {
-    ContainerBuilder, IContainerBuilder, IContainer, ModuleInjectorManager,
+    ContainerBuilder, IContainerBuilder, IContainer,
     IteratorService, ResolveServiceContext
 } from '@ts-ioc/core';
-import { BootstrapInjector } from './BootModuleInjector';
 import { ContainerPool, ContainerPoolToken } from '../services';
 
 /**
@@ -266,13 +265,9 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
 
     protected createDefaultContainer() {
         let container = this.pools.getDefault();
-        container.register(BootModule);
-
-        let chain = container.resolve(ModuleInjectorManager);
-        chain.use(DIModuleInjector, true);
-        chain.use(BootstrapInjector, true);
         container.bindProvider(ContainerPoolToken, () => this.getPools());
         container.bindProvider(CurrentRunnableBuilderToken, () => this);
+        container.use(BootModule);
         this.beforeInitPds.forEach((val, key) => {
             container.bindProvider(key, val);
         });
@@ -306,7 +301,6 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
      * @memberof RunnableBuilder
      */
     protected async registerByConfigure(container: IContainer): Promise<void> {
-
         let configManager = this.getConfigManager();
         let config = await configManager.getConfig();
         if (!config.baseURL) {
@@ -325,7 +319,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         }[] = [];
 
         // only run root register.
-        container.resolve(IteratorService).each(
+        container.resolveToken(IteratorService).each(
             (serType, fac, resolver) => {
                 if (!config.baseURL) {
                     config.baseURL = this.getRunRoot(resolver);

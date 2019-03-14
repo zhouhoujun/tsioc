@@ -67,7 +67,7 @@ export interface ServiceActionOption extends ResovleActionOption {
      *
      * @memberof ResolveServiceContext
      */
-    refTargetFactory?: (token: Token<any>, targetToken: Token<any>) => Token<any> | Token<any>[];
+    refTargetFactory?: (targetToken: Token<any>, token?: Token<any>) => Token<any> | Token<any>[];
 
     /**
      * service token factory.
@@ -157,7 +157,7 @@ export class ResolveServiceContext extends ResovleActionContext implements Servi
      *
      * @memberof ResolveServiceContext
      */
-    refTargetFactory?: (token: Token<any>, targetToken: Token<any>) => Token<any> | Token<any>[];
+    refTargetFactory?: (targetToken: Token<any>, token?: Token<any>) => Token<any> | Token<any>[];
 
     /**
      * service token factory.
