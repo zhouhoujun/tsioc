@@ -2,7 +2,6 @@ import { ActivityConfigure } from './ActivityConfigure';
 import { OnActivityInit } from './OnActivityInit';
 import { IActivityContext, IActivityContextResult } from './IActivityContext';
 import { Registration, Token, InjectToken } from '@ts-ioc/ioc';
-import { InjectAnnoBuildStrategyToken, InjectAnnotationBuilderToken } from '@ts-ioc/bootstrap';
 import { IContainer } from '@ts-ioc/core';
 
 /**
