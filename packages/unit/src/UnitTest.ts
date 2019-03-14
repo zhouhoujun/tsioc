@@ -77,20 +77,13 @@ export class UnitTest extends ApplicationBuilder<any> {
       this.use(UnitModule);
    }
 
-   getTopBuilder(): IContainerBuilder {
-      let c = this.getPools().values().find(c => lang.getClass(c.getBuilder()) !== ContainerBuilder);
-      if (c) {
-         return c.getBuilder();
-      }
-      return this.getPools().getDefault().getBuilder();
-   }
-
    async initContainerPools() {
       await super.initContainerPools();
-      if (!this.has(Assert)) {
+      let container = this.getPools().getDefault();
+      if (!container.has(Assert)) {
          this.getPools().getDefault().bindProvider(Assert, () => assert);
       }
-      if (!this.has(ExpectToken)) {
+      if (!container.has(ExpectToken)) {
          this.getPools().getDefault().bindProvider(ExpectToken, () => expect);
       }
    }
@@ -99,13 +92,14 @@ export class UnitTest extends ApplicationBuilder<any> {
    async test(src: string | Type<any> | (Type<any> | string)[]) {
       await this.initContainerPools();
       let suites: any[] = [];
-      let dbuiler = this.getTopBuilder();
+      let container = this.getPools().getDefault();
 
-      let oldRunner = this.resolve(OldTestRunner);
+      let oldRunner = container.resolve(OldTestRunner);
+      let loader = container.getLoader();
 
       oldRunner.registerGlobalScope();
       if (isString(src)) {
-         let alltypes = await dbuiler.loader.loadTypes([{ files: [src] }]);
+         let alltypes = await loader.loadTypes([{ files: [src] }]);
          alltypes.forEach(tys => {
             suites = suites.concat(tys);
          })
@@ -115,7 +109,7 @@ export class UnitTest extends ApplicationBuilder<any> {
          if (src.some(t => isClass(t))) {
             suites = src;
          } else {
-            let alltypes = await dbuiler.loader.loadTypes([{ files: src }]);
+            let alltypes = await loader.loadTypes([{ files: src }]);
             alltypes.forEach(tys => {
                suites = suites.concat(tys);
             })
@@ -124,7 +118,7 @@ export class UnitTest extends ApplicationBuilder<any> {
       oldRunner.unregisterGlobalScope();
       await oldRunner.run();
       await PromiseUtil.step(suites.filter(v => isClass(v) && hasClassMetadata(Suite, v)).map(s => () => this.bootstrap(s, { report: false })));
-      await this.resolve(TestReport).report();
+      await container.resolve(TestReport).report();
    }
 
 
@@ -133,7 +127,8 @@ export class UnitTest extends ApplicationBuilder<any> {
       let opt = params.options as UnitTestOptions;
       let runner = await super.bootstrap(params.token, params.config, opt) as SuiteRunner;
       if (!(opt && opt.report === false)) {
-         await this.resolve(TestReport).report();
+         let container = this.getPools().getDefault();
+         await container.resolve(TestReport).report();
       }
       return runner;
    }

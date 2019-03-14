@@ -1,5 +1,5 @@
 import { Workflow, IfActivityToken, SequenceActivityToken, ExecuteToken } from '@ts-ioc/activities';
-import { INodeActivityContext, Asset, BuildModule, AssetToken, ShellModule, TransformModule, NodeActivityContext } from '@ts-ioc/build';
+import { INodeActivityContext, Asset, AssetToken, NodeActivityContext } from '@ts-ioc/build';
 import * as through from 'through2';
 import * as path from 'path';
 import { isPackClass, PackModule } from '@ts-ioc/pack';

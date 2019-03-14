@@ -1,5 +1,4 @@
 export * from './IocCoreService';
-export * from './IocRecognizer';
 export * from './TypeReflect';
 export * from './ComponentLifecycle';
 export * from './IocCacheManager';

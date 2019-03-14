@@ -103,7 +103,7 @@ export function createClassDecorator<T extends ClassMetadata>(name: string, adap
             adapter(args);
         }
         args.next<T>({
-            match: (arg) => arg && (isSymbol(arg) || isString(arg) || (isObject(arg) && arg instanceof Registration)),
+            match: (arg) => isToken(arg),
             setMetadata: (metadata, arg) => {
                 metadata.provide = arg;
             }

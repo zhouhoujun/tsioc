@@ -1,10 +1,10 @@
 
-import { IActivity, Task, InjectTranslatorToken } from '@ts-ioc/activities';
+import { IActivity, Task } from '@ts-ioc/activities';
 import { PromiseUtil, isArray, Token, lang } from '@ts-ioc/ioc';
 import { fromEventPattern } from 'rxjs';
-import { bufferTime, flatMap, filter, distinct, distinctUntilChanged } from 'rxjs/operators';
+import { bufferTime, flatMap, filter, distinctUntilChanged } from 'rxjs/operators';
 import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
-import { FileChanged, FileChangedTransToken, IFileChanged } from '../FileChanged';
+import { FileChanged, IFileChanged, FileChangedTranslator } from '../FileChanged';
 import { WatchAcitvityToken, WatchConfigure, IWatchActivity } from './IWatchActivity';
 const chokidar = require('chokidar');
 
@@ -102,10 +102,7 @@ export class WatchActivity extends BuildHandleActivity implements IWatchActivity
                             chg.removed = chg.removed.concat(fc.removed);
                         }
                     });
-                    return this.container.getService(
-                        FileChangedTransToken,
-                        lang.getClass(this),
-                        tk => new InjectTranslatorToken<FileChanged, Promise<string[]>>(tk))
+                    return this.container.getService(FileChangedTranslator, lang.getClass(this))
                         .translate(chg);
                 })
             )

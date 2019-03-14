@@ -17,19 +17,6 @@ export interface ITranslator {
     translate(target: any): any;
 }
 
-/**
- * create translator token.
- *
- * @export
- * @class InjectTranslatorToken
- * @extends {Registration<T>}
- * @template T
- */
-export class InjectTranslatorToken<T, TR> extends Registration<Translator<T, TR>> {
-    constructor(type: Token<T>) {
-        super(type, 'Translator');
-    }
-}
 
 /**
  * base translator.

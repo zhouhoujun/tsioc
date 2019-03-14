@@ -1,12 +1,13 @@
 import { Level } from './Level';
 import { Joinpoint, JoinpointState } from '@ts-ioc/aop';
 import { IContainer } from '@ts-ioc/core';
-import {  Abstract, isFunction, Type, isToken, isString, isClass, isObject, Registration, lang } from '@ts-ioc/ioc'
+import { Abstract, isFunction, Type, isToken, isString, isObject, lang, ObjectMapProvider } from '@ts-ioc/ioc'
 import { LoggerMetadata } from './decorators/Logger';
 import { LogConfigure } from './LogConfigure';
 import { ILogger } from './ILogger';
-import { IConfigureLoggerManager, ConfigureLoggerManagerToken } from './IConfigureLoggerManager';
+import { IConfigureLoggerManager } from './IConfigureLoggerManager';
 import { ILogFormater, LogFormaterToken } from './LogFormater';
+import { ConfigureLoggerManger } from './ConfigureLoggerManger';
 
 /**
  * base looger aspect. for extends your logger aspect.
@@ -15,7 +16,7 @@ import { ILogFormater, LogFormaterToken } from './LogFormater';
  * @class LoggerAspect
  */
 @Abstract()
-export class LoggerAspect {
+export abstract class LoggerAspect {
 
     private _logger: ILogger;
     private _logManger: IConfigureLoggerManager;
@@ -33,7 +34,7 @@ export class LoggerAspect {
 
     get logManger(): IConfigureLoggerManager {
         if (!this._logManger) {
-            this._logManger = this.container.resolve(ConfigureLoggerManagerToken, { config: this.config });
+            this._logManger = this.container.resolve(ConfigureLoggerManger, ObjectMapProvider.parse({ config: this.config }));
         }
         return this._logManger;
     }

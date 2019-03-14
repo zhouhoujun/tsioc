@@ -1,4 +1,4 @@
-import { Src, InjectTranslatorToken, Translator } from '@ts-ioc/activities';
+import { Src, Translator } from '@ts-ioc/activities';
 import { Injectable } from '@ts-ioc/ioc';
 import * as globby from 'globby';
 
@@ -32,13 +32,9 @@ export class FileChanged implements IFileChanged {
     }
 }
 
-/**
- *  file changed translator token.
- */
-export const FileChangedTransToken = new InjectTranslatorToken<FileChanged, Promise<string[]>>(FileChanged);
 
 
-@Injectable(FileChangedTransToken)
+@Injectable
 export class FileChangedTranslator extends Translator<FileChanged, Promise<string[]>> {
 
     async translate(target: FileChanged): Promise<string[]> {

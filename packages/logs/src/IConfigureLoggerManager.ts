@@ -1,12 +1,7 @@
 import { ILoggerManager } from './ILoggerManager';
 import { LogConfigure } from './LogConfigure';
-import { Type, InjectToken } from '@ts-ioc/ioc';
+import { Type } from '@ts-ioc/ioc';
 
-/**
- * IConfigureLoggerManager interface token.
- * it is a token id, you can register yourself IConfigureLoggerManager for this.
- */
-export const ConfigureLoggerManagerToken = new InjectToken<IConfigureLoggerManager>('DI_IConfigureLoggerManager');
 
 /**
  * Configure logger manger. use to get configed logger manger.

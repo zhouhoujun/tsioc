@@ -1,5 +1,9 @@
-import { IContainer, CoreActions, Inject, ContainerToken, IocExt } from '@ts-ioc/core';
+import { IContainer, ContainerToken, IocExt } from '@ts-ioc/core';
 import { Pack } from './decorators';
+import {
+    DecoratorRegisterer, BindProviderAction, IocGetCacheAction,
+    IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction, Inject
+} from '@ts-ioc/ioc';
 
 /**
  * pack setup.
@@ -15,7 +19,8 @@ export class PackSetup {
     }
 
     setup() {
-        let lifeScope = this.container.getLifeScope();
-        lifeScope.registerDecorator(Pack, CoreActions.bindProvider, CoreActions.cache, CoreActions.componentBeforeInit, CoreActions.componentInit, CoreActions.componentAfterInit);
+        let reg = this.container.resolve(DecoratorRegisterer);
+        reg.register(Pack, BindProviderAction, IocGetCacheAction, IocSetCacheAction,
+            ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
     }
 }

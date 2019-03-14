@@ -51,6 +51,10 @@ export class ContainerPool {
         return this._default;
     }
 
+    getContainers(): IContainer[] {
+        return this.pools;
+    }
+
     has(container: IContainer): boolean {
         return this.pools.indexOf(container) >= 0;
     }
