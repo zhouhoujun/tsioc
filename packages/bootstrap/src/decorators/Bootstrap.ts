@@ -1,7 +1,7 @@
 import { Token, MetadataAdapter, MetadataExtends, ITypeDecorator, LoadType, isFunction, isClass, lang } from '@ts-ioc/ioc';
 import { IAnnotationBuilder } from '../annotations/IAnnotationBuilder';
 import { createDIModuleDecorator } from './DIModule';
-import { ApplicationBuilderToken, ApplicationBuilder, RunnableBuilder, IRunnableBuilder, AppConfigure } from '../boot';
+import { ApplicationBuilder, RunnableBuilder, IRunnableBuilder, AppConfigure } from '../boot';
 import { AnnotationBuilder } from '../annotations/AnnotationBuilder';
 
 /**
@@ -122,4 +122,4 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
  *
  * @Bootstrap
  */
-export const Bootstrap: IBootstrapDecorator<BootstrapMetadata> = createBootstrapDecorator<BootstrapMetadata>('Bootstrap', ApplicationBuilderToken, AnnotationBuilder);
+export const Bootstrap: IBootstrapDecorator<BootstrapMetadata> = createBootstrapDecorator<BootstrapMetadata>('Bootstrap', ApplicationBuilder, AnnotationBuilder);
