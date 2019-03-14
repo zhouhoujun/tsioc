@@ -14,10 +14,11 @@ export interface CheckExpress<T extends Metadate> {
      * arg matched or not.
      *
      * @param {*} arg
+     * @param {any[]} [args]
      * @returns {boolean}
      * @memberof CheckExpress
      */
-    match(arg: any): boolean;
+    match(arg: any, args?: any[]): boolean;
     /**
      * arg is meatdata or not.
      *
@@ -68,7 +69,7 @@ export class ArgsIterator {
         if (express.isMetadata && express.isMetadata(arg)) {
             this.metadata = Object.assign(this.metadata || {}, arg);
             this.end();
-        } else if (express.match(arg)) {
+        } else if (express.match(arg, this.args)) {
             this.metadata = this.metadata || {};
             express.setMetadata(this.metadata as T, arg);
         } else if (isMetadataObject(arg)) { // when match failed then check is base metadata.

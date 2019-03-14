@@ -1,4 +1,4 @@
-import { Type, AbstractType, Token, ClassType } from '../types';
+import { Type, AbstractType, Token, ClassType, ProvideToken } from '../types';
 import { Registration } from '../Registration';
 import { lang } from './lang';
 
@@ -109,10 +109,27 @@ export function isToken(target: any): target is Token<any> {
     if (!target) {
         return false;
     }
-    if (isString(target) || isSymbol(target) || classCheck(target) || (target instanceof Registration)) {
+    if (classCheck(target)) {
+        return true;
+    }
+    return isProvideToken(target);
+}
+
+/**
+ * check target is provide token or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is ProvideToken<any>}
+ */
+export function isProvideToken(target: any): target is ProvideToken<any> {
+    if (!target) {
+        return false;
+    }
+    if (isString(target) || isSymbol(target) || (target instanceof Registration)) {
         return true
     }
-    return false;
+    return false
 }
 
 /**

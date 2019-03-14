@@ -87,6 +87,9 @@ export class ModuleInjectorManager extends IocCoreService {
         };
         await PromiseUtil.runInChain(this.injectors.map(jtor => (ctx: InjectorContext, next?: () => Promise<void>) => {
             if (isClass(jtor)) {
+                if (!container.has(jtor)) {
+                    container.register(jtor);
+                }
                 return container.resolve(jtor).inject(ctx, next);
             } else if (jtor instanceof ModuleInjector) {
                 return jtor.inject(ctx, next);

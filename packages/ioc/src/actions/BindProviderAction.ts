@@ -19,7 +19,7 @@ export class BindProviderAction extends IocRegisterAction {
         let tgReflect = ctx.targetReflect;
         let raiseContainer = ctx.getRaiseContainer();
 
-        let decors = this.container.resolve(DecoratorRegisterer).getClassDecorators(type, lang.getClass(this));
+        let decors = ctx.resolve(DecoratorRegisterer).getClassDecorators(type, lang.getClass(this));
         decors = decors.filter(d => tgReflect.decors.indexOf(d) < 0);
 
         if (decors.length < 1) {

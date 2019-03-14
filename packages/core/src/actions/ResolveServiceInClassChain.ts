@@ -19,7 +19,7 @@ export class ResolveServiceInClassChain extends IocCompositeAction<ResolveServic
                 } else {
                     ctx.currTargetRef = ty;
                 }
-                super.execute(ctx, next);
+                super.execute(ctx);
                 if (ctx.instance) {
                     return false;
                 }

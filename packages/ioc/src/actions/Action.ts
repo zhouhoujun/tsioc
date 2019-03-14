@@ -3,6 +3,7 @@ import { ProviderTypes } from '../providers';
 import { Type, Token, InstanceFactory } from '../types';
 import { IocCoreService } from '../services';
 import { lang } from '../utils';
+import { IResolverContainer } from '../IResolver';
 
 /**
  * action context option.
@@ -28,19 +29,18 @@ export interface ActionContextOption {
  */
 export class IocActionContext {
     /**
-     * factories.
-     *
-     * @type {Map<Token<any>, InstanceFactory<any>>}
-     * @memberof ResovleContext
-     */
-    private getFactories: () => Map<Token<any>, InstanceFactory<any>>;
-
-    /**
      * raise container accessor.
      *
      * @memberof ResovleContext
      */
     getRaiseContainer: () => IIocContainer;
+
+    /**
+     * resolve conatiner.
+     *
+     * @memberof IocActionContext
+     */
+    getContainer?: () => IResolverContainer;
 
     /**
      * token.
@@ -58,13 +58,13 @@ export class IocActionContext {
     /**
      * set resolve context.
      *
-     * @param {Token<any>} token
-     * @param {ProviderTypes[]} [providers]
-     * @memberof ResovleContext
+     * @param {() => IResolverContainer} containerGetter
+     * @param {() => IIocContainer} raiseContainerGetter
+     * @memberof IocActionContext
      */
-    setContext(containerGetter: () => IIocContainer, factoriesGetter: () => Map<Token<any>, InstanceFactory<any>>) {
-        this.getRaiseContainer = containerGetter;
-        this.getFactories = factoriesGetter;
+    setContext(raiseContainerGetter: () => IIocContainer, containerGetter?: () => IResolverContainer) {
+        this.getContainer = containerGetter;
+        this.getRaiseContainer = raiseContainerGetter;
     }
 
     /**
@@ -100,12 +100,11 @@ export class IocActionContext {
      * @memberof IResovleContext
      */
     has<T>(token: Token<T>): boolean {
-        let key = this.getRaiseContainer().getTokenKey(token);
-        let factories = this.getFactories();
-        if (factories) {
-            return factories.has(key);
+        if (this.getContainer) {
+            return this.getContainer().has(token);
+        } else {
+            return this.getRaiseContainer().has(token);
         }
-        return false;
     }
 
     /**
@@ -118,13 +117,11 @@ export class IocActionContext {
      * @memberof ResovleContext
      */
     resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
-        let key = this.getRaiseContainer().getTokenKey(token);
-        let factories = this.getFactories();
-        if (factories) {
-            let factory = factories.get(key);
-            return factory(...providers);
+        if (this.getContainer) {
+            return this.getContainer().resolve(token, ...providers);
+        } else {
+            return this.getRaiseContainer().resolveToken(token, ...providers);
         }
-        return null;
     }
 
     /**

@@ -29,7 +29,7 @@ export abstract class IocResolveServiceAction extends IocResolveAction {
  * @extends {IocResolveServiceAction}
  */
 @Singleton
-export class ResolveServiceTokenAction extends IocResolveServiceAction {
+export class DefaultResolveServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext, next: () => void): void {
         this.resolve(ctx, ctx.currToken || ctx.token);
         if (isNullOrUndefined(ctx.instance)) {

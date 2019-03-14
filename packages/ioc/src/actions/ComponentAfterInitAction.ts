@@ -14,7 +14,7 @@ export class ComponentAfterInitAction extends IocRegisterAction {
 
     execute(ctx: RegisterActionContext, next: () => void) {
         if (isUndefined(ctx.targetReflect.compAfterInit)) {
-            let decors = this.container.resolve(DecoratorRegisterer).getClassDecorators(ctx.targetType, lang.getClass(this));
+            let decors = ctx.resolve(DecoratorRegisterer).getClassDecorators(ctx.targetType, lang.getClass(this));
             ctx.targetReflect.compAfterInit = decors.length > 0
         }
 

@@ -28,7 +28,7 @@ export class InitReflectAction extends IocRegisterAction {
             ctx.targetReflect.provides = ctx.targetReflect.provides || [];
             if (isUndefined(ctx.targetReflect.singleton)) {
                 let singleton = hasOwnClassMetadata(Singleton, ctx.targetType);
-                let metadata = this.container.get(DecoratorRegisterer).findClassMetadata(ctx.targetType, m => m.singleton === true);
+                let metadata = ctx.resolve(DecoratorRegisterer).findClassMetadata(ctx.targetType, m => m.singleton === true);
                 singleton = !!metadata;
                 ctx.targetReflect.singleton = singleton;
             }

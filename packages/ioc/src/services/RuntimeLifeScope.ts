@@ -83,7 +83,7 @@ export class RuntimeLifeScope extends LifeScope<RegisterActionContext> {
         container.registerSingleton(RegisterSingletionAction, () => new RegisterSingletionAction(container));
         container.registerSingleton(IocSetCacheAction, () => new IocSetCacheAction(container));
 
-        let decRgr = container.resolve(DecoratorRegisterer);
+        let decRgr = container.resolveToken(DecoratorRegisterer);
         decRgr.register(Inject, BindParameterTypeAction, BindPropertyTypeAction);
         decRgr.register(AutoWired, BindParameterTypeAction, BindPropertyTypeAction);
         decRgr.register(Param, BindParameterTypeAction);

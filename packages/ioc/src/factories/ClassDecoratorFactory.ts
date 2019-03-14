@@ -4,7 +4,7 @@ import { Type, Token, ProvideToken, ClassType } from '../types';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
 import { Registration } from '../Registration';
-import { isString, isSymbol, isObject, isNumber, isBoolean, isToken } from '../utils';
+import { isString, isSymbol, isObject, isNumber, isBoolean, isToken, isProvideToken } from '../utils';
 import { ArgsIterator } from './ArgsIterator';
 
 /**
@@ -103,7 +103,7 @@ export function createClassDecorator<T extends ClassMetadata>(name: string, adap
             adapter(args);
         }
         args.next<T>({
-            match: (arg) => isToken(arg),
+            match: (arg, args) => (args.length > 1) ? isToken(arg) : isProvideToken(arg),
             setMetadata: (metadata, arg) => {
                 metadata.provide = arg;
             }
@@ -124,7 +124,7 @@ export function createClassDecorator<T extends ClassMetadata>(name: string, adap
                 } else if (isNumber(arg)) {
                     metadata.expires = arg;
                 } else if (isToken(arg)) {
-                    metadata.refs = { target: arg, provide: metadata.provide || metadata.type, alias: metadata.alias  };
+                    metadata.refs = { target: arg, provide: metadata.provide || metadata.type, alias: metadata.alias };
                 }
             }
         });

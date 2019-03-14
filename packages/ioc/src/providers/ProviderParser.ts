@@ -27,7 +27,7 @@ export class ProviderParser implements IProviderParser {
         if (providers.length === 1 && isProviderMap(providers[0])) {
             return providers[0] as ProviderMap;
         }
-        let map = this.container.resolve(ProviderMap);
+        let map = this.container.resolveToken(ProviderMap);
         providers.forEach((p, index) => {
             if (isUndefined(p) || isNull(p)) {
                 return;

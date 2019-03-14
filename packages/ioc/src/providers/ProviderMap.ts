@@ -35,7 +35,7 @@ export class ProviderMap implements IResolverContainer {
     }
 
     bindActionContext<T extends IocActionContext>(ctx: T): T {
-        ctx.setContext(() => this.container, () => this.map);
+        ctx.setContext(() => this.container, () => this);
         return ctx;
     }
 

@@ -21,7 +21,7 @@ export class BindPropertyTypeAction extends IocRegisterAction {
             return next();
         }
 
-        let matchs = this.container.resolve(DecoratorRegisterer).getPropertyDecorators(type, lang.getClass(this));
+        let matchs = ctx.resolve(DecoratorRegisterer).getPropertyDecorators(type, lang.getClass(this));
         let list: PropertyMetadata[] = [];
         matchs.forEach(d => {
             let propMetadata = getPropertyMetadata<PropertyMetadata>(d, type);

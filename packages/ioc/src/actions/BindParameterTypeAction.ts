@@ -38,7 +38,7 @@ export class BindParameterTypeAction extends IocRegisterAction {
             }
         });
 
-        let decors = this.container.resolve(DecoratorRegisterer).getParameterDecorators(target || type, propertyKey, lang.getClass(this));
+        let decors = ctx.resolve(DecoratorRegisterer).getParameterDecorators(target || type, propertyKey, lang.getClass(this));
 
         decors.forEach(d => {
             let parameters = (target || propertyKey !== 'constructor') ? getParamMetadata<ParameterMetadata>(d, target, propertyKey) : getOwnParamMetadata<ParameterMetadata>(d, type);
@@ -69,7 +69,7 @@ export class BindParameterTypeAction extends IocRegisterAction {
             }
         });
 
-        let names = this.container.resolve(RuntimeLifeScope).getParamerterNames(type, propertyKey);
+        let names = ctx.resolve(RuntimeLifeScope).getParamerterNames(type, propertyKey);
         ctx.targetReflect.methodParams[propertyKey] = designParams.map((typ, idx) => {
             return {
                 type: typ,

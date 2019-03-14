@@ -30,7 +30,7 @@ export class DesignLifeScope extends LifeScope<RegisterActionContext> {
         container.registerSingleton(BindProviderAction, () => new BindProviderAction(container));
         container.registerSingleton(MethodAutorunAction, () => new MethodAutorunAction(container));
 
-        let decRgr = container.resolve(DecoratorRegisterer);
+        let decRgr = container.resolveToken(DecoratorRegisterer);
 
         decRgr.register(Injectable, BindProviderAction, IocSetCacheAction);
         decRgr.register(Component, BindProviderAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);

@@ -9,7 +9,7 @@ export class ResolveTargetServiceAction extends IocCompositeAction<ResolveServic
             if (!ctx.targetRefs.some(t => ctx.tokens.some(tk => {
                 ctx.currTargetRef = t;
                 ctx.currToken = tk;
-                super.execute(ctx, next);
+                super.execute(ctx);
                 return !!ctx.instance;
             }))) {
                 ctx.currToken = currTk;

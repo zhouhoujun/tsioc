@@ -5,7 +5,7 @@ import { DecoratorRegisterer, MethodAutorunAction, ResolveLifeScope } from '@ts-
 import {
     InitServiceResolveAction, ResolveRefServiceAction, ResolveServiceAction,
     ResolveServicesAction, ResolvePrivateServiceAction, ResolveServiceInClassChain,
-    ResolveDefaultServiceAction, ResolveServiceTokenAction, ResolveTargetServiceAction
+    ResolveDefaultServiceAction, DefaultResolveServiceAction, ResolveTargetServiceAction
 } from './actions';
 
 
@@ -17,15 +17,16 @@ export function registerCores(container: IContainer) {
 
     container.register(ModuleInjectorManager);
 
-    container.register(ResolveServiceTokenAction);
-    container.register(ResolveTargetServiceAction);
-    container.register(ResolveServiceAction);
     container.register(InitServiceResolveAction);
+    container.register(DefaultResolveServiceAction);
     container.register(ResolveRefServiceAction);
-    container.register(ResolveServicesAction);
     container.register(ResolvePrivateServiceAction);
-    container.register(ResolveServiceInClassChain);
     container.register(ResolveDefaultServiceAction);
+
+    container.register(ResolveServiceAction);
+    container.register(ResolveServiceInClassChain);
+    container.register(ResolveServicesAction);
+    container.register(ResolveTargetServiceAction);
 
 
     let resolveLifeScope = container.resolve(ResolveLifeScope);
@@ -34,19 +35,19 @@ export function registerCores(container: IContainer) {
 
     container.resolve(ResolveTargetServiceAction)
         .use(ResolvePrivateServiceAction)
-        .use(ResolveServiceTokenAction)
+        .use(DefaultResolveServiceAction)
         .use(ResolveServiceInClassChain);
 
     container.resolve(ResolveServiceInClassChain)
         .use(ResolveRefServiceAction)
         .use(ResolvePrivateServiceAction)
-        .use(ResolveServiceTokenAction);
+        .use(DefaultResolveServiceAction);
 
     container.resolve(ResolveServiceAction)
         .use(InitServiceResolveAction)
         .use(ResolveServicesAction)
         .use(ResolveTargetServiceAction)
-        .use(ResolveServiceTokenAction)
+        .use(DefaultResolveServiceAction)
         .use(ResolveDefaultServiceAction);
 
 
