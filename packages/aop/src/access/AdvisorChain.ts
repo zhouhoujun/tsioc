@@ -1,9 +1,9 @@
-import { Injectable, Inject, Express, IocRecognizer } from '@ts-ioc/ioc';
+import { Injectable, Inject, Express } from '@ts-ioc/ioc';
 import { Joinpoint } from '../joinpoints';
 import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
 import { AdvisorProceedingToken } from './IAdvisorProceeding';
 import { NonePointcut } from '../decorators/NonePointcut';
-import { ContainerToken, IContainer } from '@ts-ioc/core';
+import { ContainerToken, IContainer, IocRecognizer } from '@ts-ioc/core';
 
 /**
  * advisor chain.

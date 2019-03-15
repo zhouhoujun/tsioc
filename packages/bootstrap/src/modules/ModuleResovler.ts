@@ -45,10 +45,10 @@ export class ModuleResovler<T> implements IResolverContainer {
 
     contextResolve<T extends ResovleActionContext>(ctx: T): T {
         this.bindActionContext(ctx);
-        let container = this.getProviderMap();
-        container.contextResolve(ctx);
+        let resolver = this.getProviderMap();
+        resolver.contextResolve(ctx);
         if (!ctx.instance) {
-            container.resolve(DIModuleExports).contextResolve(ctx);
+            this.container.resolveToken(DIModuleExports).contextResolve(ctx);
         }
         return ctx;
     }
@@ -62,7 +62,7 @@ export class ModuleResovler<T> implements IResolverContainer {
         if (pdr && pdr.has(token)) {
             return pdr.resolve(token, ...providers);
         } else {
-            pdr.resolve(DIModuleExports).resolve(token, ...providers);
+            this.container.resolveToken(DIModuleExports).resolve(token, ...providers);
         }
         return null;
     }

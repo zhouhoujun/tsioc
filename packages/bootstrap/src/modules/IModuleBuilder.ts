@@ -1,6 +1,6 @@
 import { IContainer } from '@ts-ioc/core';
 import { ModuleConfig } from './ModuleConfigure';
-import { ContainerPool } from '../services';
+import { ContainerPool } from '../ContainerPool';
 import { Runnable, IRunnable } from '../runnable';
 import { BuildOptions } from '../annotations';
 import { Token, Type } from '@ts-ioc/ioc';

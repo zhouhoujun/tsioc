@@ -6,12 +6,13 @@ import {
 } from '@ts-ioc/ioc';
 import { IModuleBuilder, ModuleEnv, BootOptions } from './IModuleBuilder';
 import { ModuleConfigure, ModuleConfig } from './ModuleConfigure';
-import { ContainerPool, ContainerPoolToken, MetaAccessor } from '../services';
+import { MetaAccessor } from '../services';
 import { IRunnable } from '../runnable';
 import { IAnnotationBuilder, AnnotationBuilder, BuildOptions } from '../annotations';
 import { ModuleResovler } from './ModuleResovler';
 import { IContainer, Container, ResolveServiceContext } from '@ts-ioc/core';
 import { IDIModuleReflect } from './DIModuleInjector';
+import { ContainerPoolToken, ContainerPool } from '../ContainerPool';
 
 
 /**

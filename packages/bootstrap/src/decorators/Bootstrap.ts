@@ -2,7 +2,6 @@ import { Token, MetadataAdapter, MetadataExtends, ITypeDecorator, LoadType, isFu
 import { IAnnotationBuilder } from '../annotations/IAnnotationBuilder';
 import { createDIModuleDecorator } from './DIModule';
 import { ApplicationBuilder, RunnableBuilder, IRunnableBuilder, AppConfigure } from '../boot';
-import { AnnotationBuilder } from '../annotations/AnnotationBuilder';
 
 /**
  * bootstrap metadata.
@@ -122,4 +121,4 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
  *
  * @Bootstrap
  */
-export const Bootstrap: IBootstrapDecorator<BootstrapMetadata> = createBootstrapDecorator<BootstrapMetadata>('Bootstrap', ApplicationBuilder, AnnotationBuilder);
+export const Bootstrap: IBootstrapDecorator<BootstrapMetadata> = createBootstrapDecorator<BootstrapMetadata>('Bootstrap');

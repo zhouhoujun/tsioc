@@ -19,7 +19,8 @@ import {
     ContainerBuilder, IContainerBuilder, IContainer,
     IteratorService, ResolveServiceContext
 } from '@ts-ioc/core';
-import { ContainerPool, ContainerPoolToken } from '../services';
+import { ContainerPool } from '../ContainerPool';
+// import { BootModule } from '../BootModule';
 
 /**
  * runnable events
@@ -105,7 +106,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
     getPools(): ContainerPool {
         if (!this.pools) {
             this.pools = new ContainerPool(this.createContainerBuilder());
-            this.createDefaultContainer();
+            this.createDefaultContainer(this.pools);
         }
         return this.pools;
     }
@@ -261,11 +262,9 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         return container.getService(ConfigureMgrToken, lang.getClass(this), ObjectMapProvider.parse({ baseURL: this.getRunRoot(container) }));
     }
 
-    protected createDefaultContainer() {
-        let container = this.pools.getDefault();
-        container.bindProvider(ContainerPoolToken, () => this.getPools());
+    protected createDefaultContainer(pool: ContainerPool) {
+        let container = pool.getDefault();
         container.bindProvider(CurrentRunnableBuilderToken, () => this);
-        // container.use(BootModule);
         this.beforeInitPds.forEach((val, key) => {
             container.bindProvider(key, val);
         });
@@ -300,6 +299,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
      */
     protected async registerByConfigure(container: IContainer): Promise<void> {
         let configManager = this.getConfigManager();
+        console.log(container);
         let config = await configManager.getConfig();
         if (!config.baseURL) {
             config.baseURL = this.getRunRoot(container);

@@ -5,7 +5,7 @@ import {
 } from '@ts-ioc/ioc';
 import { Task } from '../decorators/Task';
 import { OnActivityInit } from './OnActivityInit';
-import { IActivity, ActivityToken, WorkflowId } from './IActivity';
+import { IActivity,  WorkflowId } from './IActivity';
 import { ActivityConfigure, ExpressionType, Expression, ActivityType, Active, ExpressionToken } from './ActivityConfigure';
 import { IActivityContext, InputDataToken, InjectActivityContextToken, ActivityContextToken } from './IActivityContext';
 import { IActivityMetadata } from '../metadatas';
@@ -23,7 +23,7 @@ import { ActivityMetaAccessor } from './ActivityMetaAccessor';
  * @implements {IActivity}
  * @implements {OnActivityInit}
  */
-@Task(ActivityToken)
+@Task
 @Providers([
     { provide: MetaAccessor, useClass: ActivityMetaAccessor }
 ])

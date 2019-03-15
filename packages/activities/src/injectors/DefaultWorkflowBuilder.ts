@@ -1,23 +1,19 @@
 import { Singleton, Providers } from '@ts-ioc/ioc';
-import { IActivity, ActivityToken, ActivityBuilderToken, CoreActivityConfigs, Active, ActivityMetaAccessorToken } from '../core';
-import { ModuleBuilder, InjectModuleBuilderToken, AnnotationBuilder, BootOptions, IRunnable } from '@ts-ioc/bootstrap';
+import { IActivity, CoreActivityConfigs, Active, ActivityMetaAccessor, ActivityBuilder } from '../core';
+import { ModuleBuilder, AnnotationBuilder, BootOptions, IRunnable } from '@ts-ioc/bootstrap';
 import { MetaAccessor } from '@ts-ioc/bootstrap';
 
 
-/**
- * workflow builder token.
- */
-export const WorkflowBuilderToken = new InjectModuleBuilderToken<IActivity>(ActivityToken);
 /**
  * default Workflow Builder.
  *
  * @export
  * @class DefaultTaskContainer
  */
-@Singleton(WorkflowBuilderToken)
+@Singleton()
 @Providers([
-    { provide: MetaAccessor, useExisting: ActivityMetaAccessorToken },
-    { provide: AnnotationBuilder, useExisting: ActivityBuilderToken }
+    { provide: MetaAccessor, useClass: ActivityMetaAccessor },
+    { provide: AnnotationBuilder, useClass: ActivityBuilder }
 ])
 export class DefaultWorkflowBuilder extends ModuleBuilder<IActivity> {
     /**

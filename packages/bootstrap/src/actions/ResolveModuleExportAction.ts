@@ -5,7 +5,7 @@ import { DIModuleExports } from '../services';
 export class ResolveModuleExportAction extends IocResolveAction {
     execute(ctx: ResovleActionContext, next: () => void): void {
         let curr = ctx.getRaiseContainer();
-        ctx.resolve(DIModuleExports).getResolvers()
+        curr.resolve(DIModuleExports).getResolvers()
             .some(r => {
                 r.contextResolve(ctx);
                 return !!ctx.instance;

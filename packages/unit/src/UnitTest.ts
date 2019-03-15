@@ -13,7 +13,6 @@ import { SuiteRunner, OldTestRunner } from './runner';
 import { Assert, ExpectToken } from './assert';
 import * as assert from 'assert';
 import * as expect from 'expect';
-import { IContainerBuilder, ContainerBuilder } from '@ts-ioc/core';
 
 /**
  * unit test options.

@@ -1,6 +1,6 @@
 import { Token, SymbolType, Registration, InjectToken } from '@ts-ioc/ioc';
 import { IContainer, IContainerBuilder } from '@ts-ioc/core';
-import { BootModule } from '../BootModule';
+import { BootModule } from './BootModule';
 
 
 export const RootContainerToken = new InjectToken<IContainer>('__ioc_root_container');
@@ -27,6 +27,9 @@ export class ContainerPool {
     protected createContainer(parent?: IContainer): IContainer {
         let container = parent ? parent.getBuilder().create() : this.containerBuilder.create();
         this.pools.push(container);
+        container.bindProvider(ContainerPool, () => this);
+        container.bindProvider(ContainerPoolToken, () => this);
+        container.register(BootModule);
         return container;
     }
 
@@ -63,7 +66,6 @@ export class ContainerPool {
     create(parent?: IContainer): IContainer {
         let container = this.createContainer(parent);
         this.setParent(container, parent);
-        container.register(BootModule);
         return container;
     }
 

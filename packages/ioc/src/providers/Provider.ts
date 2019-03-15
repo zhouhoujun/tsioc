@@ -3,17 +3,6 @@ import { IIocContainer } from '../IIocContainer';
 import { isFunction, isObject, isUndefined } from '../utils';
 import { ProviderTypes } from './types';
 
-// /**
-//  * type provider.
-//  *
-//  * @export
-//  * @interface TypeProvider
-//  * @extends {Type<any>}
-//  */
-// export interface TypeProvider extends Type<any> {
-
-// }
-
 /**
  * Provider interface.
  *

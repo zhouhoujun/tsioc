@@ -15,9 +15,9 @@ import { MetaAccessor } from '@ts-ioc/bootstrap';
  * @class ActivityBuildStrategy
  * @implements {IAnnoBuildStrategy<IActivity>}
  */
-@Singleton
+@Singleton()
 @Refs(Activity, AnnoBuildStrategy)
-export class ActivityBuildStrategy implements IAnnoBuildStrategy<IActivity> {
+export class ActivityBuildStrategy extends AnnoBuildStrategy<IActivity> implements IAnnoBuildStrategy<IActivity> {
     async build(instance: IActivity, config: ActivityConfigure, options: BuildOptions<IActivity>): Promise<void> {
         if (!instance) {
             return;

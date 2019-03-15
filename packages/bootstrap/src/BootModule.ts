@@ -8,13 +8,14 @@ import { DIModule } from './decorators/DIModule';
 import { Bootstrap } from './decorators/Bootstrap';
 import { Annotation } from './decorators/Annotation';
 import * as modules from './modules';
-import * as boots from './boot';
 import * as annotations from './annotations';
 import * as actions from './actions';
+
 import { RouteResolveAction, ResolveModuleExportAction, ResolveParentAction } from './actions';
-import { DIModuleExports, MetaAccessor } from './services';
+import * as services from './services';
 import { DIModuleInjector } from './modules';
-import { BootstrapInjector } from './boot';
+import { BootstrapInjector, RunnableBuilder, ConfigureManager } from './boot';
+import { ContainerPoolToken } from './ContainerPool';
 
 /**
  * Bootstrap ext for ioc. auto run setup after registered.
@@ -41,17 +42,26 @@ export class BootModule {
         decReg.register(DIModule, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
         decReg.register(Bootstrap, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
 
-        container.register(DIModuleExports)
-            .register(MetaAccessor);
 
-        container.use(actions, annotations, modules, boots);
+        container.use(services, actions, annotations, modules);
+
+        let pool = container.resolveToken(ContainerPoolToken);
+        if (pool.isDefault(container)) {
+            container.register(ConfigureManager);
+        }
+
+        container
+            .register(BootstrapInjector)
+            .register(RunnableBuilder);
+
+        console.log(container.has(ConfigureManager));
 
         container.resolveToken(RouteResolveAction)
             .use(ResolveModuleExportAction)
             .use(ResolveParentAction);
 
         container.resolveToken(ResolveLifeScope)
-            .use(RouteResolveAction)
+            .use(RouteResolveAction);
 
 
         let chain = container.resolveToken(ModuleInjectorManager);

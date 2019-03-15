@@ -83,7 +83,7 @@ export class ProviderMap implements IResolverContainer {
      * @memberof ProviderMap
      */
     get<T>(provide: Token<T> | number): InstanceFactory<T> {
-        return this.get(this.getTokenKey(provide));
+        return this.map.get(this.getTokenKey(provide));
     }
 
     /**

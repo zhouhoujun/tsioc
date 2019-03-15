@@ -2,8 +2,6 @@ import { createClassDecorator, Token, MetadataAdapter, MetadataExtends, ITypeDec
 import { IModuleBuilder } from '../modules/IModuleBuilder';
 import { ModuleConfig } from '../modules/ModuleConfigure';
 import { IAnnotationBuilder } from '../annotations/IAnnotationBuilder';
-import { ModuleBuilder } from '../modules/ModuleBuilder';
-import { AnnotationBuilder } from '../annotations/AnnotationBuilder';
 
 /**
  * DI module metadata.
@@ -106,4 +104,4 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
  *
  * @DIModule
  */
-export const DIModule: IDIModuleDecorator<DIModuleMetadata> = createDIModuleDecorator<DIModuleMetadata>('DIModule', ModuleBuilder, AnnotationBuilder);
+export const DIModule: IDIModuleDecorator<DIModuleMetadata> = createDIModuleDecorator<DIModuleMetadata>('DIModule');
