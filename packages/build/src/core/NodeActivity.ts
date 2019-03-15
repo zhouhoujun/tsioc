@@ -1,6 +1,6 @@
 import {
     Src, Task, ActivityContext, InputDataToken, Activity,
-    InjectActivityContextToken, ActivityMetaAccessorToken, ActivityConfigure
+    InjectActivityContextToken, ActivityConfigure, ActivityMetaAccessor
 } from '@ts-ioc/activities';
 import { Inject, Injectable, ObjectMap, Express2, isArray, isString, lang, Providers } from '@ts-ioc/ioc';
 import { toAbsolutePath } from '@ts-ioc/platform-server';
@@ -29,7 +29,7 @@ const del = require('del');
  */
 @Task
 @Providers([
-    { provide: MetaAccessor, useExisting: ActivityMetaAccessorToken }
+    { provide: MetaAccessor, useClass: ActivityMetaAccessor }
 ])
 export abstract class NodeActivity extends Activity {
 

@@ -56,7 +56,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
         return container.getService(MetaAccessor,
             mtk ? [mtk, lang.getClass(this)] : lang.getClass(this),
             ResolveServiceContext.create({
-                defaultToken: config.defaultMetaAccessor
+                defaultToken: config ? config.defaultMetaAccessor : undefined
             }));
     }
 
@@ -184,7 +184,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
     protected async import(token: Token<T>, parent: IContainer): Promise<ModuleResovler<T>> {
         let type = isClass(token) ? token : parent.getTokenImpl(token);
         if (isClass(type)) {
-            let typeRef =  parent.getTypeReflects().get<IDIModuleReflect>(type);
+            let typeRef = parent.getTypeReflects().get<IDIModuleReflect>(type, true);
             if (typeRef.moduleResolver) {
                 return typeRef.moduleResolver
             } else {
@@ -205,7 +205,7 @@ export class ModuleBuilder<T> implements IModuleBuilder<T> {
             }
         }
         if (!parent) {
-            parent = this.getPools().getDefault();
+            parent = this.getPools().getRoot();
         }
         return parent;
     }

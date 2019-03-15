@@ -1,4 +1,4 @@
-import { ITaskDecorator, createTaskDecorator, ActivityBuilderToken } from '@ts-ioc/activities';
+import { ITaskDecorator, createTaskDecorator, ActivityBuilder } from '@ts-ioc/activities';
 import { AssetToken, AssetConfigure } from '../core/handles/IAssetBuildHandle';
 import { StreamAssetConfigure } from '../transform/StreamAssetConfigure';
 import { ShellAssetConfigure } from '../shells/IShellAssetActivity';
@@ -20,4 +20,4 @@ export interface AssetMetadata extends AssetConfigure, StreamAssetConfigure, She
  *
  * @AssetTask
  */
-export const Asset: ITaskDecorator<AssetMetadata> = createTaskDecorator<AssetMetadata>('Asset', ActivityBuilderToken, AssetToken, 'AssetBuildHanlde');
+export const Asset: ITaskDecorator<AssetMetadata> = createTaskDecorator<AssetMetadata>('Asset', ActivityBuilder, AssetToken, 'AssetBuildHanlde');

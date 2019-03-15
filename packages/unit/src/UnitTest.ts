@@ -78,12 +78,12 @@ export class UnitTest extends ApplicationBuilder<any> {
 
    async initContainerPools() {
       await super.initContainerPools();
-      let container = this.getPools().getDefault();
+      let container = this.getPools().getRoot();
       if (!container.has(Assert)) {
-         this.getPools().getDefault().bindProvider(Assert, () => assert);
+         this.getPools().getRoot().bindProvider(Assert, () => assert);
       }
       if (!container.has(ExpectToken)) {
-         this.getPools().getDefault().bindProvider(ExpectToken, () => expect);
+         this.getPools().getRoot().bindProvider(ExpectToken, () => expect);
       }
    }
 
@@ -91,7 +91,7 @@ export class UnitTest extends ApplicationBuilder<any> {
    async test(src: string | Type<any> | (Type<any> | string)[]) {
       await this.initContainerPools();
       let suites: any[] = [];
-      let container = this.getPools().getDefault();
+      let container = this.getPools().getRoot();
 
       let oldRunner = container.resolve(OldTestRunner);
       let loader = container.getLoader();
@@ -126,7 +126,7 @@ export class UnitTest extends ApplicationBuilder<any> {
       let opt = params.options as UnitTestOptions;
       let runner = await super.bootstrap(params.token, params.config, opt) as SuiteRunner;
       if (!(opt && opt.report === false)) {
-         let container = this.getPools().getDefault();
+         let container = this.getPools().getRoot();
          await container.resolve(TestReport).report();
       }
       return runner;

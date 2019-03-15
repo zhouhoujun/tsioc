@@ -1,6 +1,6 @@
 import { IContainer } from '@ts-ioc/core';
 import { Task } from '../decorators/Task';
-import { DIModuleInjector, ModuleResovler, InjectModuleResovlerToken } from '@ts-ioc/bootstrap';
+import { DIModuleInjector, ModuleResovler, IDIModuleReflect } from '@ts-ioc/bootstrap';
 import { Singleton, Type } from '@ts-ioc/ioc';
 
 
@@ -24,9 +24,9 @@ export class ActivityModuleInjector extends DIModuleInjector {
         let metaConfig = accor.getMetadata(type, container);
         await this.registerConfgureDepds(container, metaConfig);
 
-        let injMd = new ModuleResovler(type, metaConfig, container);
-        container.bindProvider(new InjectModuleResovlerToken(type), injMd);
-
-        return injMd;
+        let resolver = new ModuleResovler(type, metaConfig, container);
+        let ref = container.getTypeReflects().get<IDIModuleReflect>(type, true);
+        ref.moduleResolver = resolver;
+        return resolver;
     }
 }

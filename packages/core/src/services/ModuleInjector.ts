@@ -77,7 +77,7 @@ export class ModuleInjector extends IocCoreService {
         ctx.modules = ctx.modules || [];
         let types = ctx.modules.filter(ty => this.valid(ctx, ty));
         if (types.length) {
-            types.forEach(ty => this.setup(ctx.container, ty));
+            types.forEach(ty => this.syncSetup(ctx.container, ty));
         }
         this.setContext(ctx, types);
         if (ctx.modules.length) {

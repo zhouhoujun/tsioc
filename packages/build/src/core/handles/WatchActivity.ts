@@ -1,4 +1,3 @@
-
 import { IActivity, Task } from '@ts-ioc/activities';
 import { PromiseUtil, isArray, Token, lang } from '@ts-ioc/ioc';
 import { fromEventPattern } from 'rxjs';

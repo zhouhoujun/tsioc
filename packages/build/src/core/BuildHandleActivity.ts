@@ -1,6 +1,6 @@
 import {
     HandleActivity, Task, IActivity,
-    Expression, ActivityMetaAccessorToken, IActivityContext, Src
+    Expression, ActivityMetaAccessor, IActivityContext, Src
 } from '@ts-ioc/activities';
 import {
     isRegExp, isString, isArray, Express, isFunction,
@@ -26,7 +26,7 @@ import { MetaAccessor } from '@ts-ioc/bootstrap';
  */
 @Task(BuildHandleToken)
 @Providers([
-    { provide: MetaAccessor, useExisting: ActivityMetaAccessorToken },
+    { provide: MetaAccessor, useClass: ActivityMetaAccessor },
     { provide: CompilerToken, useClass: EmptyCompiler }
 ])
 export class BuildHandleActivity extends HandleActivity {

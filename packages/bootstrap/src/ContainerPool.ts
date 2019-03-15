@@ -19,15 +19,18 @@ export const ContainerPoolToken = new InjectToken<ContainerPool>('DI_ContainerPo
  */
 export class ContainerPool {
     protected pools: IContainer[];
-
+    protected root: IContainer;
     constructor(protected containerBuilder: IContainerBuilder) {
         this.pools = [];
+        this.createContainer();
     }
 
     protected createContainer(parent?: IContainer): IContainer {
         let container = parent ? parent.getBuilder().create() : this.containerBuilder.create();
         this.pools.push(container);
-        container.bindProvider(ContainerPool, () => this);
+        if (!this.root) {
+            this.root = container;
+        }
         container.bindProvider(ContainerPoolToken, () => this);
         container.register(BootModule);
         return container;
@@ -40,19 +43,13 @@ export class ContainerPool {
         return token;
     }
 
-    isDefault(container: IContainer): boolean {
-        return container === this._default;
+    isRoot(container: IContainer): boolean {
+        return container === this.root;
     }
-    hasDefault(): boolean {
-        return !!this._default;
-    }
-    _default: IContainer;
 
-    getDefault(): IContainer {
-        if (!this._default) {
-            this._default = this.createContainer();
-        }
-        return this._default;
+
+    getRoot(): IContainer {
+        return this.root;
     }
 
     getContainers(): IContainer[] {
@@ -70,10 +67,10 @@ export class ContainerPool {
     }
 
     setParent(container: IContainer, parent?: IContainer) {
-        if (this.isDefault(container)) {
+        if (this.isRoot(container)) {
             return;
         }
-        container.bindProvider(RootContainerToken, this._default);
+        container.bindProvider(RootContainerToken, this.root);
         if (parent && parent !== container) {
             container.bindProvider(ParentContainerToken, parent);
 

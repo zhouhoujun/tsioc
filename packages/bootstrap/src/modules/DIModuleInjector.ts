@@ -62,7 +62,7 @@ export class DIModuleInjector extends ModuleInjector {
         let accor = this.getMetaAccessor(container, decorator);
         let metaConfig = accor.getMetadata(type, container, undefined, decorator ? dec => dec === decorator : undefined) as ModuleConfigure;
 
-        let newContainer = metaConfig.asRoot === true ? pools.getDefault() : pools.create(container);
+        let newContainer = metaConfig.asRoot === true ? pools.getRoot() : pools.create(container);
         newContainer.register(type);
 
         await this.registerConfgureDepds(newContainer, metaConfig, type);
@@ -80,7 +80,7 @@ export class DIModuleInjector extends ModuleInjector {
         await this.registerConfigExports(container, newContainer, mdResolver);
 
         // init global configure.
-        if (!pools.isDefault(newContainer)) {
+        if (!pools.isRoot(newContainer)) {
             await this.registerConfigrue(newContainer, mdResolver);
         }
 

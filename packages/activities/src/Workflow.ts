@@ -48,7 +48,7 @@ export class Workflow extends ApplicationBuilder<IActivity> implements IWorkflow
     }
 
     getWorkflow<T>(workflowId: string): IWorkflowInstance<T> {
-        return this.getPools().getDefault().resolve(workflowId);
+        return this.getPools().getRoot().resolve(workflowId);
     }
 
     async bootstrap(token: Active, config?: CoreActivityConfigs | BootOptions<IActivity>, options?: BootOptions<IActivity>): Promise<IWorkflowInstance<any>> {
@@ -64,7 +64,7 @@ export class Workflow extends ApplicationBuilder<IActivity> implements IWorkflow
         } else {
             boot = activity || {};
         }
-        let env = this.getPools().getDefault();
+        let env = this.getPools().getRoot();
         let options = { };
         env.bindProvider(WorkflowId, workflowId);
         let runner = await this.bootstrap(boot, options) as IWorkflowInstance<any>;
@@ -82,7 +82,7 @@ export class Workflow extends ApplicationBuilder<IActivity> implements IWorkflow
     }
 
     protected createUUID() {
-        let container = this.getPools().getDefault();
+        let container = this.getPools().getRoot();
         if (!container.has(UUIDToken)) {
             container.register(RandomUUIDFactory);
         }

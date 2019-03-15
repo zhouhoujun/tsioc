@@ -46,15 +46,17 @@ export class BootModule {
         container.use(services, actions, annotations, modules);
 
         let pool = container.resolveToken(ContainerPoolToken);
-        if (pool.isDefault(container)) {
+        if (pool.isRoot(container)) {
             container.register(ConfigureManager);
+        } else {
+            container.register(ConfigureManager, () => pool.getRoot().resolveToken(ConfigureManager));
         }
 
         container
             .register(BootstrapInjector)
             .register(RunnableBuilder);
 
-        console.log(container.has(ConfigureManager));
+        // console.log('ConfigureManager:', container.has(ConfigureManager), pool.has(container), pool.getContainers().length);
 
         container.resolveToken(RouteResolveAction)
             .use(ResolveModuleExportAction)

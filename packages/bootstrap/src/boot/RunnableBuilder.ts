@@ -112,7 +112,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
     }
 
     getRunRoot(resolver?: IResolver): string {
-        return this._baseURL || (resolver || this.getPools().getDefault()).resolve(ProcessRunRootToken) || '';
+        return this._baseURL || (resolver || this.getPools().getRoot()).resolve(ProcessRunRootToken) || '';
     }
 
     /**
@@ -159,7 +159,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         if (this.inited) {
             return;
         }
-        let container = this.getPools().getDefault();
+        let container = this.getPools().getRoot();
         await this.registerExts(container);
         await this.registerByConfigure(container);
         this.inited = true;
@@ -258,12 +258,12 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
     }
 
     protected createConfigureMgr() {
-        let container = this.getPools().getDefault();
+        let container = this.getPools().getRoot();
         return container.getService(ConfigureMgrToken, lang.getClass(this), ObjectMapProvider.parse({ baseURL: this.getRunRoot(container) }));
     }
 
     protected createDefaultContainer(pool: ContainerPool) {
-        let container = pool.getDefault();
+        let container = pool.getRoot();
         container.bindProvider(CurrentRunnableBuilderToken, () => this);
         this.beforeInitPds.forEach((val, key) => {
             container.bindProvider(key, val);
@@ -299,7 +299,6 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
      */
     protected async registerByConfigure(container: IContainer): Promise<void> {
         let configManager = this.getConfigManager();
-        console.log(container);
         let config = await configManager.getConfig();
         if (!config.baseURL) {
             config.baseURL = this.getRunRoot(container);
