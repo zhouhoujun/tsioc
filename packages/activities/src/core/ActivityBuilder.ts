@@ -39,13 +39,12 @@ export class ActivityBuildStrategy extends AnnoBuildStrategy<IActivity> implemen
  * @extends {AnnotationBuilder<IActivity>}
  * @implements {IActivityBuilder}
  */
-
+@Singleton()
 @Refs(Activity, AnnotationBuilder)
 @Providers([
     { provide: MetaAccessor, useClass: ActivityMetaAccessor },
     { provide: AnnoBuildStrategy, useClass: ActivityBuildStrategy }
 ])
-@Singleton()
 export class ActivityBuilder extends AnnotationBuilder<IActivity> implements IActivityBuilder {
 
     /**

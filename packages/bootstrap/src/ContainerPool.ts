@@ -30,6 +30,8 @@ export class ContainerPool {
         this.pools.push(container);
         if (!this.root) {
             this.root = container;
+        } else {
+            this.setParent(container, parent || this.root);
         }
         container.bindProvider(ContainerPoolToken, () => this);
         container.register(BootModule);
@@ -62,7 +64,6 @@ export class ContainerPool {
 
     create(parent?: IContainer): IContainer {
         let container = this.createContainer(parent);
-        this.setParent(container, parent);
         return container;
     }
 

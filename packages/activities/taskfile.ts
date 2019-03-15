@@ -1,6 +1,5 @@
-import { Pack, PackActivity, PackModule } from '@ts-ioc/pack';
-import { Workflow } from '@ts-ioc/activities';
-import { CleanActivity, Asset, AssetActivity, TsCompile, TransformContext } from '@ts-ioc/build';
+import { Pack } from '@ts-ioc/pack';
+import { Asset, AssetActivity, TsCompile, TransformContext } from '@ts-ioc/build';
 const rename = require('gulp-rename');
 const rollup = require('gulp-rollup');
 const resolve = require('rollup-plugin-node-resolve');

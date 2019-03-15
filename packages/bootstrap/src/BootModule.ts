@@ -42,21 +42,16 @@ export class BootModule {
         decReg.register(DIModule, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
         decReg.register(Bootstrap, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
 
-
         container.use(services, actions, annotations, modules);
 
         let pool = container.resolveToken(ContainerPoolToken);
         if (pool.isRoot(container)) {
             container.register(ConfigureManager);
-        } else {
-            container.register(ConfigureManager, () => pool.getRoot().resolveToken(ConfigureManager));
         }
 
         container
             .register(BootstrapInjector)
             .register(RunnableBuilder);
-
-        // console.log('ConfigureManager:', container.has(ConfigureManager), pool.has(container), pool.getContainers().length);
 
         container.resolveToken(RouteResolveAction)
             .use(ResolveModuleExportAction)
@@ -69,5 +64,6 @@ export class BootModule {
         let chain = container.resolveToken(ModuleInjectorManager);
         chain.use(DIModuleInjector, true)
             .use(BootstrapInjector, true);
+
     }
 }

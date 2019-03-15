@@ -20,7 +20,6 @@ import {
     IteratorService, ResolveServiceContext
 } from '@ts-ioc/core';
 import { ContainerPool } from '../ContainerPool';
-// import { BootModule } from '../BootModule';
 
 /**
  * runnable events
