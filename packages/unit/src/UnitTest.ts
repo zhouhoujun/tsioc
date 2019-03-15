@@ -1,12 +1,9 @@
 import {
-   ApplicationBuilder, ModuleConfigure, ModuleConfig, Runnable, RunOptions,
-   AppConfigure
+   ApplicationBuilder, ModuleConfigure, ModuleConfig,
+   Runnable, RunOptions, AppConfigure
 } from '@ts-ioc/bootstrap';
 import { UnitModule } from './UnitModule';
-import {
-   isClass, hasClassMetadata, Type, isString, isArray, Token,
-   LoadType, lang, PromiseUtil
-} from '@ts-ioc/ioc';
+import { isClass, hasClassMetadata, Type, isString, isArray, Token, LoadType, PromiseUtil } from '@ts-ioc/ioc';
 import { Suite } from './decorators/Suite';
 import { TestReport, ITestReport } from './reports';
 import { SuiteRunner, OldTestRunner } from './runner';
@@ -95,7 +92,6 @@ export class UnitTest extends ApplicationBuilder<any> {
 
       let oldRunner = container.resolve(OldTestRunner);
       let loader = container.getLoader();
-
       oldRunner.registerGlobalScope();
       if (isString(src)) {
          let alltypes = await loader.loadTypes([{ files: [src] }]);
@@ -125,6 +121,7 @@ export class UnitTest extends ApplicationBuilder<any> {
       let params = this.vaildParams(token, config, options);
       let opt = params.options as UnitTestOptions;
       let runner = await super.bootstrap(params.token, params.config, opt) as SuiteRunner;
+      console.log(runner);
       if (!(opt && opt.report === false)) {
          let container = this.getPools().getRoot();
          await container.resolve(TestReport).report();

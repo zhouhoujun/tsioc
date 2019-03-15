@@ -1,6 +1,6 @@
 import { IIocContainer } from '../IIocContainer';
 import { ProviderTypes } from '../providers';
-import { Type, Token, InstanceFactory } from '../types';
+import { Type, Token } from '../types';
 import { IocCoreService } from '../services';
 import { lang } from '../utils';
 import { IResolverContainer } from '../IResolver';

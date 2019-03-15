@@ -15,6 +15,9 @@
       "@ts-ioc/aop":[
         "packages/aop/src"
       ],
+      "@ts-ioc/boot":[
+        "packages/boot/src"
+      ],
       "@ts-ioc/bootstrap":[
         "packages/bootstrap/src"
       ],
