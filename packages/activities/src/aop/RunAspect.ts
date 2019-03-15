@@ -65,7 +65,7 @@ export class RunAspect {
     getRunner(task: any) {
         if (task instanceof Activity) {
             if (task.id && this.container.has(task.id)) {
-                return this.container.resolve<IWorkflowInstance<any>>(task.id);
+                return this.container.get<IWorkflowInstance<any>>(task.id);
             }
         }
         return null;

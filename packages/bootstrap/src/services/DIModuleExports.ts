@@ -24,9 +24,9 @@ export class DIModuleExports extends IocCoreService implements IResolver, IConte
         return this.resolvers.some(r => r.has(key, alias));
     }
 
-    contextResolve<T extends ResovleActionContext>(ctx: T): T {
+    resolveContext<T extends ResovleActionContext>(ctx: T): T {
         this.resolvers.some(r => {
-            r.contextResolve(ctx);
+            r.resolveContext(ctx);
             return !!ctx.instance;
         });
         return ctx;

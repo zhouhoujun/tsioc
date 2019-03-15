@@ -315,7 +315,7 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         }[] = [];
 
         // only run root register.
-        container.resolveToken(IteratorService).each(
+        container.get(IteratorService).each(
             (serType, fac, resolver) => {
                 if (!config.baseURL) {
                     config.baseURL = this.getRunRoot(resolver);

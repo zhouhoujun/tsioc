@@ -57,19 +57,7 @@ export interface IIocContainer extends IResolverContainer {
     hasRegister<T>(key: Token<T>): boolean;
 
     /**
-     * Retrieves an instance from the container based on the provided token.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    get<T>(token: Token<T>, alias?: string, ...providers: ProviderTypes[]): T;
-
-    /**
-     * resolve token in container.
+     * get token factory resolve instace in current container.
      *
      * @template T
      * @param {Token<T>} token
@@ -77,7 +65,20 @@ export interface IIocContainer extends IResolverContainer {
      * @returns {T}
      * @memberof IIocContainer
      */
-    resolveToken<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
+    get<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
+
+    /**
+     * get token factory resolve instace in current container.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {string} alias
+     * @param {...ProviderTypes[]} providers
+     * @returns {T}
+     * @memberof IContainer
+     */
+    get<T>(token: Token<T>, alias: string, ...providers: ProviderTypes[]): T;
+
 
     /**
      * register type.

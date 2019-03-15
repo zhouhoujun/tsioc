@@ -120,7 +120,7 @@ export class IocActionContext {
         if (this.getContainer) {
             return this.getContainer().resolve(token, ...providers);
         } else {
-            return this.getRaiseContainer().resolveToken(token, ...providers);
+            return this.getRaiseContainer().get(token, ...providers);
         }
     }
 

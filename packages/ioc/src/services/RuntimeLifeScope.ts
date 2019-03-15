@@ -85,7 +85,7 @@ export class RuntimeLifeScope extends LifeScope<RegisterActionContext> {
 
         container.registerSingleton(MethodAutorunAction, () => new MethodAutorunAction(container));
 
-        let decRgr = container.resolveToken(DecoratorRegisterer);
+        let decRgr = container.get(DecoratorRegisterer);
         decRgr.register(Inject, BindParameterTypeAction, BindPropertyTypeAction);
         decRgr.register(AutoWired, BindParameterTypeAction, BindPropertyTypeAction);
         decRgr.register(Param, BindParameterTypeAction);

@@ -48,7 +48,7 @@ export class Workflow extends ApplicationBuilder<IActivity> implements IWorkflow
     }
 
     getWorkflow<T>(workflowId: string): IWorkflowInstance<T> {
-        return this.getPools().getRoot().resolve(workflowId);
+        return this.getPools().getRoot().get(workflowId);
     }
 
     async bootstrap(token: Active, config?: CoreActivityConfigs | BootOptions<IActivity>, options?: BootOptions<IActivity>): Promise<IWorkflowInstance<any>> {

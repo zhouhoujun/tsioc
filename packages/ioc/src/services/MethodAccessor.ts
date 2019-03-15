@@ -183,7 +183,7 @@ export class MethodAccessor extends IocCoreService implements IMethodAccessor {
         }
         lang.assertExp(instance && isFunction(instance[propertyKey]), `type: ${targetClass} has no method ${propertyKey.toString()}.`);
 
-        let lifeScope = container.resolveToken(RuntimeLifeScope);
+        let lifeScope = container.get(RuntimeLifeScope);
         let pds = lifeScope.getParamProviders(container, targetClass, propertyKey, instance);
         providers = providers.concat(pds);
         let parameters = lifeScope.getMethodParameters(container, targetClass, instance, propertyKey);
@@ -192,7 +192,7 @@ export class MethodAccessor extends IocCoreService implements IMethodAccessor {
     }
 
     createSyncParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): any[] {
-        let providerMap = container.resolveToken(ProviderParser).parse(...providers);
+        let providerMap = container.get(ProviderParser).parse(...providers);
         return params.map((param, index) => {
             if (param.name && providerMap.has(param.name)) {
                 return providerMap.resolve(param.name);
@@ -208,7 +208,7 @@ export class MethodAccessor extends IocCoreService implements IMethodAccessor {
     }
 
     createParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): Promise<any[]> {
-        let providerMap = container.resolveToken(ProviderParser).parse(...providers);
+        let providerMap = container.get(ProviderParser).parse(...providers);
         return Promise.all(params.map((param, index) => {
             if (param.name && providerMap.has(param.name)) {
                 return providerMap.resolve(param.name);

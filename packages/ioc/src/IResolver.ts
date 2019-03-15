@@ -68,7 +68,7 @@ export interface IContextResolver {
      * @returns {T}
      * @memberof IResolverExecute
      */
-    contextResolve<T extends ResovleActionContext>(ctx: T): T;
+    resolveContext<T extends ResovleActionContext>(ctx: T): T;
 }
 
 /**

@@ -39,7 +39,7 @@ export class ProviderMap implements IResolverContainer {
         return ctx;
     }
 
-    contextResolve<T extends ResovleActionContext>(ctx: T): T {
+    resolveContext<T extends ResovleActionContext>(ctx: T): T {
         this.bindActionContext(ctx);
         this.container.getResolveLifeScope().execute(ctx);
         return ctx;

@@ -37,14 +37,14 @@ export class BootModule {
      */
     setup() {
         let container = this.container;
-        let decReg = container.resolveToken(DecoratorRegisterer);
+        let decReg = container.get(DecoratorRegisterer);
         decReg.register(Annotation, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
         decReg.register(DIModule, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
         decReg.register(Bootstrap, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
 
         container.use(services, actions, annotations, modules);
 
-        let pool = container.resolveToken(ContainerPoolToken);
+        let pool = container.get(ContainerPoolToken);
         if (pool.isRoot(container)) {
             container.register(ConfigureManager);
         }
@@ -53,17 +53,19 @@ export class BootModule {
             .register(BootstrapInjector)
             .register(RunnableBuilder);
 
-        container.resolveToken(RouteResolveAction)
+        container.get(RouteResolveAction)
             .use(ResolveModuleExportAction)
             .use(ResolveParentAction);
 
-        container.resolveToken(ResolveLifeScope)
+        container.get(ResolveLifeScope)
             .use(RouteResolveAction);
 
 
-        let chain = container.resolveToken(ModuleInjectorManager);
+        let chain = container.get(ModuleInjectorManager);
         chain.use(DIModuleInjector, true)
             .use(BootstrapInjector, true);
+
+        // console.log(!!container.get(ConfigureManager), !!container.resolve(ConfigureManager));
 
     }
 }

@@ -1,12 +1,12 @@
 import 'reflect-metadata';
 import { IIocContainer, IocContainerToken } from './IIocContainer';
 import { Type, Token, Factory, SymbolType, ToInstance, InstanceFactory } from './types';
-import { isClass, isFunction, isSymbol, isToken, isString, isUndefined } from './utils';
+import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, isProvideToken } from './utils';
 import { Registration } from './Registration';
 
 import { registerCores } from './registerCores';
 import { InjectReference } from './InjectReference';
-import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderParser } from './providers';
+import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderParser, isProvider } from './providers';
 import { IResolver } from './IResolver';
 import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, TypeReflects, ResolveLifeScope } from './services';
 import { IParameter } from './IParameter';
@@ -47,11 +47,11 @@ export class IocContainer implements IIocContainer {
 
 
     getProviderParser(): IProviderParser {
-        return this.resolveToken(ProviderParser);
+        return this.get(ProviderParser);
     }
 
     getTypeReflects(): TypeReflects {
-        return this.resolveToken(TypeReflects);
+        return this.get(TypeReflects);
     }
 
 
@@ -61,14 +61,14 @@ export class IocContainer implements IIocContainer {
             rlifeScope.registerDefault(this);
             this.registerSingleton(ResolveLifeScope, rlifeScope);
         }
-        return this.resolveToken(ResolveLifeScope);
+        return this.get(ResolveLifeScope);
     }
 
     getSingletonManager(): IocSingletonManager {
         if (!this.has(IocSingletonManager)) {
             this.bindProvider(IocSingletonManager, new IocSingletonManager(this));
         }
-        return this.resolveToken(IocSingletonManager);
+        return this.get(IocSingletonManager);
     }
 
     /**
@@ -97,33 +97,30 @@ export class IocContainer implements IIocContainer {
         return this.has(key);
     }
 
-    /**
-     * resolve token in container.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IIocContainer
-     */
-    resolveToken<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
-        let key = this.getTokenKey(token);
-        let factory = this.factories.get(key);
-        return factory ? factory(...providers) : null;
-    }
 
     /**
-     * Retrieves an instance from the container based on the provided token.
+     * get token factory resolve instace in current container.
      *
      * @template T
      * @param {Token<T>} token
-     * @param {string} [alias]
-     * @param {...ParamProviders[]} providers
+     * @param {(string | ProviderTypes)} [alias]
+     * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof Container
      */
-    get<T>(token: Token<T>, alias?: string, ...providers: ParamProviders[]): T {
-        return this.resolve(alias ? this.getTokenKey<T>(token, alias) : token, ...providers);
+    get<T>(token: Token<T>, alias?: string | ProviderTypes, ...providers: ProviderTypes[]): T {
+        let key;
+        if (isString(alias)) {
+            key = this.getTokenKey(token, alias);
+        } else {
+            key = this.getTokenKey(token);
+            if (isProvider(alias)) {
+                providers.unshift(alias);
+            }
+        }
+
+        let factory = this.factories.get(key);
+        return factory ? factory(...providers) : null;
     }
 
     /**
@@ -140,7 +137,7 @@ export class IocContainer implements IIocContainer {
             token: token,
             providers: providers
         });
-        this.contextResolve(context);
+        this.resolveContext(context);
         return context.instance || null;
     }
 
@@ -152,7 +149,7 @@ export class IocContainer implements IIocContainer {
      * @returns {T}
      * @memberof IocContainer
      */
-    contextResolve<T extends ResovleActionContext>(ctx: T): T {
+    resolveContext<T extends ResovleActionContext>(ctx: T): T {
         this.bindActionContext(ctx);
         this.getResolveLifeScope().execute(ctx);
         return ctx as T;
@@ -382,7 +379,7 @@ export class IocContainer implements IIocContainer {
      * @memberof IContainer
      */
     clearCache(targetType: Type<any>) {
-        this.resolveToken(IocCacheManager).destroy(targetType);
+        this.get(IocCacheManager).destroy(targetType);
     }
 
     /**
@@ -487,7 +484,7 @@ export class IocContainer implements IIocContainer {
                 providerMap: providerMap
             });
             this.bindActionContext(ctx);
-            this.resolveToken(RuntimeLifeScope).execute(ctx);
+            this.get(RuntimeLifeScope).execute(ctx);
             return ctx.target;
         };
 
@@ -496,7 +493,7 @@ export class IocContainer implements IIocContainer {
             this.bindProvider(key, ClassT);
         }
 
-        this.resolveToken(DesignLifeScope).execute(
+        this.get(DesignLifeScope).execute(
             this.bindActionContext(RegisterActionContext.create({
                 tokenKey: key,
                 targetType: ClassT
@@ -516,7 +513,7 @@ export class IocContainer implements IIocContainer {
      * @memberof Container
      */
     invoke<T>(target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): Promise<T> {
-        return this.resolveToken(MethodAccessor).invoke(this, target, propertyKey, instance, ...providers);
+        return this.get(MethodAccessor).invoke(this, target, propertyKey, instance, ...providers);
     }
 
     /**
@@ -531,14 +528,14 @@ export class IocContainer implements IIocContainer {
      * @memberof Container
      */
     syncInvoke<T>(target: Token<any>, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
-        return this.resolveToken(MethodAccessor).syncInvoke(this, target, propertyKey, instance, ...providers);
+        return this.get(MethodAccessor).syncInvoke(this, target, propertyKey, instance, ...providers);
     }
 
     createSyncParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
-        return this.resolveToken(MethodAccessor).createSyncParams(this, params, ...providers);
+        return this.get(MethodAccessor).createSyncParams(this, params, ...providers);
     }
 
     createParams(params: IParameter[], ...providers: ParamProviders[]): Promise<any[]> {
-        return this.resolveToken(MethodAccessor).createParams(this, params, ...providers);
+        return this.get(MethodAccessor).createParams(this, params, ...providers);
     }
 }

@@ -31,33 +31,33 @@ export function registerCores(container: IContainer) {
     container.register(IocExtRegisterAction);
 
 
-    let resolveLifeScope = container.resolveToken(ResolveLifeScope);
+    let resolveLifeScope = container.get(ResolveLifeScope);
     resolveLifeScope
         .use(ResolveServiceAction, true);
 
-    container.resolveToken(ResolveTargetServiceAction)
+    container.get(ResolveTargetServiceAction)
         .use(ResolveRefServiceAction)
         .use(ResolvePrivateServiceAction)
         // .use(DefaultResolveServiceAction)
         .use(ResolveServiceInClassChain);
 
-    container.resolveToken(ResolveServiceInClassChain)
+    container.get(ResolveServiceInClassChain)
         .use(ResolveRefServiceAction)
         .use(ResolvePrivateServiceAction);
         // .use(DefaultResolveServiceAction);
 
-    container.resolveToken(ResolveServiceAction)
+    container.get(ResolveServiceAction)
         .use(InitServiceResolveAction)
         .use(ResolveServicesAction)
         .use(ResolveTargetServiceAction)
         .use(DefaultResolveServiceAction)
         .use(ResolveDefaultServiceAction);
 
-    container.resolveToken(DesignLifeScope)
+    container.get(DesignLifeScope)
         .use(IocExtRegisterAction);
 
-    let decRgr = container.resolveToken(DecoratorRegisterer);
+    let decRgr = container.get(DecoratorRegisterer);
     decRgr.register(IocExt, BindProviderAction, IocExtRegisterAction);
 
-    container.resolveToken(ModuleInjectorManager).setup(container);
+    container.get(ModuleInjectorManager).setup(container);
 }
