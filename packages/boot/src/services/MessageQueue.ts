@@ -1,5 +1,6 @@
 import { CompositeHandle, MessageContext, Next } from '../handles';
 import { Singleton } from '@ts-ioc/ioc';
+import { RootModule } from '../decorators';
 
 
 /**
@@ -10,6 +11,7 @@ import { Singleton } from '@ts-ioc/ioc';
  * @extends {CompositeHandle<T>}
  * @template T
  */
+@RootModule
 @Singleton
 export class MessageQueue<T extends MessageContext> extends CompositeHandle<T> {
 

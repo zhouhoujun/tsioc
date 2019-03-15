@@ -1,5 +1,5 @@
 import { Singleton } from '@ts-ioc/ioc';
-import { DIModuleInjector } from '../modules';
+import { DIModuleInjector } from './DIModuleInjector';
 
 
 @Singleton

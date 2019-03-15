@@ -1,6 +1,6 @@
 import {
     Type, Token, isArray, ProviderMap, ClassType, IResolver,
-    ProviderParser, Singleton, ITypeReflect, ProviderTypes
+    ProviderParser, Singleton, ITypeReflect, ProviderTypes, hasOwnClassMetadata
 } from '@ts-ioc/ioc';
 import { DIModuleExports, MetaAccessor } from '../services';
 import { ModuleConfigure } from './ModuleConfigure';
@@ -10,6 +10,7 @@ import { ConfigureMgrToken } from '../boot/IConfigureManager';
 import { CurrentRunnableBuilderToken } from '../boot/IRunnableBuilder';
 import { IContainer, ModuleInjector, IteratorService, InjectorContext } from '@ts-ioc/core';
 import { ContainerPoolToken } from '../ContainerPool';
+import { RootModule } from '../decorators';
 
 /**
  * di module reflect info.
@@ -62,7 +63,9 @@ export class DIModuleInjector extends ModuleInjector {
         let accor = this.getMetaAccessor(container, decorator);
         let metaConfig = accor.getMetadata(type, container, undefined, decorator ? dec => dec === decorator : undefined) as ModuleConfigure;
 
-        let newContainer = metaConfig.asRoot === true ? pools.getRoot() : pools.create(container);
+        let isRootModule = hasOwnClassMetadata(RootModule, type) || metaConfig.asRoot;
+
+        let newContainer = isRootModule === true ? pools.getRoot() : pools.create(container);
         newContainer.register(type);
 
         await this.registerConfgureDepds(newContainer, metaConfig, type);
@@ -73,7 +76,7 @@ export class DIModuleInjector extends ModuleInjector {
         let mRef = container.getTypeReflects().get<IDIModuleReflect>(type, true);
         mRef.moduleResolver = mdResolver;
 
-        if (metaConfig.asRoot) {
+        if (isRootModule) {
             return mdResolver;
         }
 

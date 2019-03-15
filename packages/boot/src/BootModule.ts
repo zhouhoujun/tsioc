@@ -10,12 +10,11 @@ import { Annotation } from './decorators/Annotation';
 import * as modules from './modules';
 import * as annotations from './annotations';
 import * as actions from './actions';
+import * as boots from './boot';
 
 import { RouteResolveAction, ResolveModuleExportAction, ResolveParentAction } from './actions';
 import * as services from './services';
-import { DIModuleInjector } from './modules';
-import { BootstrapInjector, RunnableBuilder, ConfigureManager } from './boot';
-import { ContainerPoolToken } from './ContainerPool';
+import { DIModuleInjector, RootModuleInjector, BootstrapInjector } from './modules';
 
 /**
  * Bootstrap ext for ioc. auto run setup after registered.
@@ -42,16 +41,20 @@ export class BootModule {
         decReg.register(DIModule, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
         decReg.register(Bootstrap, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
 
-        container.use(services, actions, annotations, modules);
+        container.use(modules);
 
-        let pool = container.get(ContainerPoolToken);
-        if (pool.isRoot(container)) {
-            container.register(ConfigureManager);
-        }
+        let chain = container.get(ModuleInjectorManager);
+        chain
+            .use(RootModuleInjector, true)
+            .use(DIModuleInjector, true)
+            .use(BootstrapInjector, true);
 
-        container
-            .register(BootstrapInjector)
-            .register(RunnableBuilder);
+        container.use(services, actions, annotations, boots);
+
+        // let pool = container.get(ContainerPoolToken);
+        // if (pool.isRoot(container)) {
+        //     container.register(ConfigureManager);
+        // }
 
         container.get(RouteResolveAction)
             .use(ResolveModuleExportAction)
@@ -60,10 +63,6 @@ export class BootModule {
         container.get(ResolveLifeScope)
             .use(RouteResolveAction);
 
-
-        let chain = container.get(ModuleInjectorManager);
-        chain.use(DIModuleInjector, true)
-            .use(BootstrapInjector, true);
 
     }
 }
