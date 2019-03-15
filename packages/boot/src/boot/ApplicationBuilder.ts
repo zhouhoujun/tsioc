@@ -4,7 +4,6 @@ import { IApplicationBuilder } from './IApplicationBuilder';
 import { RunnableBuilder, RunnableEvents } from './RunnableBuilder';
 import { IConfigureManager } from './IConfigureManager';
 import { ModuleConfigure } from '../modules';
-import { IEvents } from '../utils';
 
 /**
  * application events
@@ -28,7 +27,7 @@ export const ApplicationEvents = RunnableEvents;
  * @template T
  */
 @Injectable
-export class ApplicationBuilder<T> extends RunnableBuilder<T> implements IApplicationBuilder<T>, IEvents {
+export class ApplicationBuilder<T> extends RunnableBuilder<T> implements IApplicationBuilder<T> {
 
     protected configs: (string | AppConfigure)[];
 

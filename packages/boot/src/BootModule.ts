@@ -65,7 +65,5 @@ export class BootModule {
         chain.use(DIModuleInjector, true)
             .use(BootstrapInjector, true);
 
-        // console.log(!!container.get(ConfigureManager), !!container.resolve(ConfigureManager));
-
     }
 }

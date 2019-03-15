@@ -10,7 +10,6 @@ import {
 import {
     ModuleBuilder, ModuleResovler, IModuleBuilder, ModuleConfig
 } from '../modules';
-import { Events, IEvents } from '../utils';
 import { IRunnable } from '../runnable';
 import { ConfigureMgrToken, IConfigureManager } from './IConfigureManager';
 import { RunnableConfigure } from './AppConfigure';
@@ -56,7 +55,7 @@ export enum RunnableEvents {
  * @template T
  */
 @Injectable
-export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBuilder<T>, IEvents {
+export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBuilder<T> {
 
     protected depModules: LoadType[];
     protected customRegs: CustomRegister<T>[];
@@ -64,8 +63,6 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
     protected afterInitPds: Map<Token<any>, any>;
     protected configMgr: IConfigureManager<ModuleConfig<T>>;
     inited = false;
-
-    events: Events;
 
     private _baseURL: string;
 
@@ -76,30 +73,10 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         this.depModules = [];
         this.beforeInitPds = new Map();
         this.afterInitPds = new Map();
-        this.events = new Events();
         this.initEvents();
     }
 
     protected initEvents() {
-        this.on(RunnableEvents.onRootContainerInited, (container) => {
-            this.afterInitPds.forEach((val, key) => {
-                container.bindProvider(key, val);
-            });
-        })
-    }
-
-    on(name: string, event: (...args: any[]) => void): this {
-        this.events.on(name, event);
-        return this;
-    }
-
-    off(name: string, event?: (...args: any[]) => void): this {
-        this.events.off(name, event);
-        return this;
-    }
-
-    emit(name: string, ...args: any[]): void {
-        this.events.emit(name, ...args);
     }
 
     getPools(): ContainerPool {
@@ -162,7 +139,6 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         await this.registerExts(container);
         await this.registerByConfigure(container);
         this.inited = true;
-        this.events.emit(RunnableEvents.onRootContainerInited, container);
     }
 
     async load(token: Token<T> | RunnableConfigure, config?: RunnableConfigure | RunOptions<T>, options?: RunOptions<T>): Promise<ModuleResovler<T>> {
@@ -268,7 +244,6 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
             container.bindProvider(key, val);
         });
 
-        this.events.emit(RunnableEvents.onRootContainerCreated, container);
         return container;
     }
 
@@ -283,7 +258,6 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
     protected async registerExts(container: IContainer): Promise<void> {
         if (this.depModules.length) {
             let types = await container.loadModule(...this.depModules);
-            this.emit(RunnableEvents.registeredExt, types, container);
         }
     }
 

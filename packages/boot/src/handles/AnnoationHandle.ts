@@ -1,6 +1,6 @@
-import { Middleware, Next } from '../middlewares';
+import { Handle, Next } from './Handle';
 import { BootContext } from '../BootContext';
-import { AnnotationConfigure } from '@ts-ioc/bootstrap';
+import { AnnotationConfigure } from '../annotations';
 import { Abstract } from '@ts-ioc/ioc';
 
 
@@ -15,7 +15,7 @@ export class AnnoationContext extends BootContext {
 }
 
 /**
- * annoation middlewate.
+ * annoation handle.
  *
  * @export
  * @abstract
@@ -23,7 +23,7 @@ export class AnnoationContext extends BootContext {
  * @extends {Middleware<AnnoationContext>}
  */
 @Abstract()
-export abstract class AnnoationMiddleware extends Middleware<AnnoationContext> {
+export abstract class AnnoationHandle extends Handle<AnnoationContext> {
     /**
      * execute middleware.
      *

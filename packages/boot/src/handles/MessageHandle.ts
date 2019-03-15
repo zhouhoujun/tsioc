@@ -1,0 +1,42 @@
+import { Handle, Next } from './Handle';
+import { BootContext } from '../BootContext';
+import { Abstract } from '@ts-ioc/ioc';
+
+/**
+ * message context.
+ *
+ * @export
+ * @class MessageContext
+ * @extends {BootContext}
+ */
+export class MessageContext extends BootContext {
+    /**
+     * message data.
+     *
+     * @type {*}
+     * @memberof MessageContext
+     */
+    data?: any;
+}
+
+/**
+ * message handle.
+ *
+ * @export
+ * @abstract
+ * @class AnnoationMiddleware
+ * @extends {Middleware<MessageContext>}
+ */
+@Abstract()
+export abstract class MessageHandle extends Handle<MessageContext> {
+    /**
+     * execute middleware.
+     *
+     * @abstract
+     * @param {MessageContext} ctx
+     * @param {Next} next
+     * @returns {Promise<void>}
+     * @memberof AnnoationMiddleware
+     */
+    abstract execute(ctx: MessageContext, next: Next): Promise<void>;
+}

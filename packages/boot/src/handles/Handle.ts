@@ -6,7 +6,16 @@ import { BootContext } from '../BootContext';
  */
 export type Next = () => Promise<void>;
 
-export abstract class Middleware<T extends BootContext> extends IocCoreService {
+/**
+ * middleware
+ *
+ * @export
+ * @abstract
+ * @class Middleware
+ * @extends {IocCoreService}
+ * @template T
+ */
+export abstract class Handle<T extends BootContext> extends IocCoreService {
     constructor() {
         super();
     }
@@ -17,4 +26,4 @@ export abstract class Middleware<T extends BootContext> extends IocCoreService {
 /**
  *  middleware type.
  */
-export type MiddlewareType<T extends BootContext> = Type<Middleware<T>> | Middleware<T> | PromiseUtil.ActionHandle<T>;
+export type HandleType<T extends BootContext> = Type<Handle<T>> | Handle<T> | PromiseUtil.ActionHandle<T>;

@@ -1,8 +1,7 @@
-import { CompositeMiddleware } from '../middlewares';
-import { AnnoationContext } from '../annotations/AnnoationMiddleware';
 import { Singleton } from '@ts-ioc/ioc';
+import { CompositeHandle, AnnoationContext } from '../handles';
 
 @Singleton
-export class RunnableBuildLifeScope extends CompositeMiddleware<AnnoationContext> {
+export class RunnableBuildLifeScope extends CompositeHandle<AnnoationContext> {
 
 }

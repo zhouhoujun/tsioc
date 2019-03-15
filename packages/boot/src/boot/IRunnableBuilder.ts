@@ -1,7 +1,6 @@
 import { Token, InjectToken, LoadType, Factory, IResolver } from '@ts-ioc/ioc';
 import { AppConfigure } from './AppConfigure';
 import { IModuleBuilder, ModuleConfig, ModuleResovler, BootOptions } from '../modules';
-import { Events, IEvents } from '../utils';
 import { IConfigureManager } from './IConfigureManager';
 import { IContainer } from '@ts-ioc/core';
 
@@ -88,14 +87,7 @@ export interface RunOptions<T> extends BootOptions<T> {
  * @extends {IModuleBuilder<T>}
  * @template T
  */
-export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends, IEvents {
-    /**
-     * events mgr.
-     *
-     * @type {Events}
-     * @memberof IRunnableBuilder
-     */
-    events?: Events;
+export interface IRunnableBuilder<T> extends IModuleBuilder<T>, IRunnableExtends {
 
     /**
      * get run root.

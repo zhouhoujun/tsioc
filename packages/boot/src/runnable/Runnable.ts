@@ -1,4 +1,3 @@
-
 import { Token, lang, Inject, InjectToken, Type, Abstract } from '@ts-ioc/ioc';
 import { ModuleConfigure, BootOptions } from '../modules';
 import { IContainer, ContainerToken } from '@ts-ioc/core';
