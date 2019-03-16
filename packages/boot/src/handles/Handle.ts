@@ -1,5 +1,5 @@
 import { IocCoreService, Type, PromiseUtil } from '@ts-ioc/ioc';
-import { BootContext } from '../BootContext';
+import { BootContext } from './BootContext';
 
 /**
  *  next

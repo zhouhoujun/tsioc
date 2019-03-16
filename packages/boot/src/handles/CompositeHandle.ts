@@ -1,5 +1,5 @@
 import { Handle, HandleType, Next } from './Handle';
-import { BootContext } from '../BootContext';
+import { BootContext } from './BootContext';
 import { isClass, PromiseUtil, Type } from '@ts-ioc/ioc';
 
 

@@ -51,11 +51,6 @@ export class BootModule {
 
         container.use(services, actions, annotations, boots);
 
-        // let pool = container.get(ContainerPoolToken);
-        // if (pool.isRoot(container)) {
-        //     container.register(ConfigureManager);
-        // }
-
         container.get(RouteResolveAction)
             .use(ResolveModuleExportAction)
             .use(ResolveParentAction);

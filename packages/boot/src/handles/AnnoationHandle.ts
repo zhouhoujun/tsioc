@@ -1,5 +1,5 @@
 import { Handle, Next } from './Handle';
-import { BootContext } from '../BootContext';
+import { BootContext } from './BootContext';
 import { AnnotationConfigure } from '../annotations';
 import { Abstract } from '@ts-ioc/ioc';
 

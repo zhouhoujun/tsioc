@@ -1,7 +1,7 @@
 export * from './DIModuleExports';
 export * from './MetaAccessor';
 export * from './MessageQueue';
-export * from './AnnoationBuildLifeScope';
+export * from './AnnoationLifeScope';
 export * from './ModuleBuildLifeScope';
 export * from './RunnableBuildLifeScope';
 
