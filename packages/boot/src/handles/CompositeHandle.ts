@@ -1,5 +1,5 @@
 import { Handle, HandleType, Next } from './Handle';
-import { BootContext } from './BootContext';
+import { HandleContext } from './HandleContext';
 import { isClass, PromiseUtil, Type } from '@ts-ioc/ioc';
 
 
@@ -11,7 +11,7 @@ import { isClass, PromiseUtil, Type } from '@ts-ioc/ioc';
  * @extends {Handle<T>}
  * @template T
  */
-export class CompositeHandle<T extends BootContext> extends Handle<T> {
+export class CompositeHandle<T extends HandleContext> extends Handle<T> {
 
     protected handles: HandleType<T>[];
     constructor() {

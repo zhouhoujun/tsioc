@@ -3,6 +3,7 @@ import { DIModuleExports } from '../services';
 
 @Singleton
 export class ResolveModuleExportAction extends IocResolveAction {
+
     execute(ctx: ResovleActionContext, next: () => void): void {
         let curr = ctx.getRaiseContainer();
         curr.resolve(DIModuleExports).getResolvers()

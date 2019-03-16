@@ -1,5 +1,5 @@
 import { Handle, Next } from './Handle';
-import { BootContext } from './BootContext';
+import { HandleContext } from './HandleContext';
 import { Abstract } from '@ts-ioc/ioc';
 
 /**
@@ -7,9 +7,9 @@ import { Abstract } from '@ts-ioc/ioc';
  *
  * @export
  * @class MessageContext
- * @extends {BootContext}
+ * @extends {HandleContext}
  */
-export class MessageContext extends BootContext {
+export class MessageContext extends HandleContext {
     /**
      * message data.
      *

@@ -13,7 +13,7 @@ import { ResolveServiceContext } from './ResolveServiceContext';
 export class ResolveServiceAction extends IocCompositeAction<ResolveServiceContext> {
     execute(ctx: ResolveServiceContext, next?: () => void): void {
         if (ctx instanceof ResolveServiceContext) {
-            super.execute(ctx);
+            super.execute(ctx, next);
         } else {
             next();
         }

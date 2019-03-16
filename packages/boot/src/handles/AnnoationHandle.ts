@@ -1,10 +1,10 @@
 import { Handle, Next } from './Handle';
-import { BootContext } from './BootContext';
+import { HandleContext } from './HandleContext';
 import { AnnotationConfigure } from '../annotations';
 import { Abstract } from '@ts-ioc/ioc';
 
 
-export class AnnoationContext extends BootContext {
+export class AnnoationContext extends HandleContext {
     /**
      * annoation config.
      *

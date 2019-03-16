@@ -2,12 +2,12 @@ import { IContainer } from '@ts-ioc/core';
 import { Token, IResolver, ProviderTypes } from '@ts-ioc/ioc';
 
 /**
- * boot context.
+ * handle context.
  *
  * @export
- * @class BootContext
+ * @class HandleContext
  */
-export class BootContext implements IResolver {
+export class HandleContext implements IResolver {
 
     /**
      * raise container accessor.
