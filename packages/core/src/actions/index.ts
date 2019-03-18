@@ -10,3 +10,7 @@ export * from './ResolveServiceAction';
 export * from './ResolvePrivateServiceAction';
 export * from './ResolveServiceInClassChain';
 export * from './ResolveDefaultServiceAction';
+
+export * from './IocResolveServicesAction';
+export * from './ResovleServicesInTargetAction';
+export * from './ResovleServicesInRaiseAction';

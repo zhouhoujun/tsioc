@@ -1,11 +1,12 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isProvider } from '@ts-ioc/ioc';
+import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isProvider, ProviderMap } from '@ts-ioc/ioc';
 import { ModuleLoader, IModuleLoader } from './services';
 import { registerCores } from './registerCores';
-import { ResolveServiceContext } from './actions';
+import { ResolveServiceContext, ResolveServicesContext } from './actions';
 import { TargetRefs } from './TargetService';
+import { map } from 'rxjs/operators';
 
 
 /**
@@ -93,30 +94,6 @@ export class Container extends IocContainer implements IContainer {
      * @memberof Container
      */
     getService<T>(token: Token<T>, target?: TargetRefs | ResolveServiceContext | ProviderTypes, ctx?: ResolveServiceContext | ProviderTypes, ...providers: ProviderTypes[]): T {
-        let context = this.vailfyServiceContext(token, target, ctx, ...providers);
-        this.resolveContext(context);
-        return context.instance || null;
-    }
-
-    /**
-     * get all service extends type and reference target.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {(TargetRefs | ResolveServiceContext | ProviderTypes)} [target]
-     * @param {(ResolveServiceContext | ProviderTypes)} [ctx]
-     * @param {...ProviderTypes[]} providers
-     * @returns {T[]}
-     * @memberof Container
-     */
-    getServices<T>(token: Token<T>, target?: TargetRefs | ResolveServiceContext | ProviderTypes, ctx?: ResolveServiceContext | ProviderTypes, ...providers: ProviderTypes[]): T[] {
-        let context = this.vailfyServiceContext(token, target, ctx, ...providers)
-        context.all = true;
-        this.resolveContext(context);
-        return context.instance || [];
-    }
-
-    protected vailfyServiceContext<T>(token: Token<T>, target?: TargetRefs | ResolveServiceContext | ProviderTypes, ctx?: ResolveServiceContext | ProviderTypes, ...providers: ProviderTypes[]): ResolveServiceContext {
         let context: ResolveServiceContext;
         if (isProvider(ctx)) {
             providers.unshift(ctx);
@@ -141,7 +118,76 @@ export class Container extends IocContainer implements IContainer {
             token: token,
             providers: providers
         });
-        return context;
+        this.resolveContext(context);
+        return context.instance || null;
+    }
+
+    /**
+     * get all service extends type and reference target.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {(TargetRefs | ResolveServicesContext | ProviderTypes)} [target]
+     * @param {(ResolveServicesContext | ProviderTypes)} [ctx]
+     * @param {...ProviderTypes[]} providers
+     * @returns {T[]}
+     * @memberof Container
+     */
+    getServices<T>(token: Token<T>, target?: TargetRefs | ResolveServicesContext | ProviderTypes, ctx?: ResolveServicesContext | ProviderTypes, ...providers: ProviderTypes[]): T[] {
+        let context: ResolveServicesContext;
+        if (isProvider(ctx)) {
+            providers.unshift(ctx);
+            ctx = null;
+        } else if (ctx instanceof ResolveServicesContext) {
+            context = ctx;
+        }
+        if (isProvider(target)) {
+            providers.unshift(target);
+            target = null;
+        } else if (target instanceof ResolveServicesContext) {
+            context = target;
+            target = null;
+        }
+
+        let maps = this.getServiceProviders(token, target as any, context);
+
+        let services = [];
+        maps.iterator((fac)=>{
+            services.push(fac(...providers));
+        });
+        return services;
+    }
+
+    /**
+     * get service providers.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {(TargetRefs | ResolveServicesContext)} [target]
+     * @param {ResolveServicesContext} [ctx]
+     * @returns {ProviderMap}
+     * @memberof Container
+     */
+    getServiceProviders<T>(token: Token<T>, target?: TargetRefs | ResolveServicesContext, ctx?: ResolveServicesContext): ProviderMap {
+        let context: ResolveServicesContext;
+        if (ctx instanceof ResolveServicesContext) {
+            context = ctx;
+        }
+        if (target instanceof ResolveServicesContext) {
+            context = target;
+            target = null;
+        }
+        if (!context) {
+            context = ResolveServicesContext.create();
+        }
+        if (target) {
+            context.target = target;
+        }
+        context.setOptions({
+            token: token
+        });
+        this.resolveContext(context);
+        return context.services;
     }
 
     protected init() {

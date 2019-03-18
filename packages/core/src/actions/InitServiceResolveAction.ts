@@ -2,6 +2,7 @@ import { Singleton, isFunction, isToken, isArray, lang, isClassType } from '@ts-
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { TargetService } from '../TargetService';
+import { ResolveServicesContext } from './IocResolveServicesAction';
 
 @Singleton
 export class InitServiceResolveAction extends IocResolveServiceAction {
@@ -23,13 +24,25 @@ export class InitServiceResolveAction extends IocResolveServiceAction {
             ctx.tokens = ctx.tokens.concat(ctx.serviceTokenFactory(ctx.token) || []);
         }
         ctx.tokens.push(ctx.token);
-        if (!isClassType(ctx.token)) {
-            let pdType = ctx.getTokenProvider(ctx.token);
-            if (pdType) {
-                ctx.tokens.push(pdType);
+        if (ctx instanceof ResolveServicesContext) {
+            ctx.tokens = ctx.tokens.filter(t => isToken(t));
+            ctx.types = ctx.types || [];
+            ctx.types = ctx.tokens.map(t => {
+                if (isClassType(t)) {
+                    return t;
+                } else {
+                    return ctx.getTokenProvider(t);
+                }
+            }).concat(ctx.types).filter(ty => isClassType(ty));
+        } else {
+            if (!isClassType(ctx.token)) {
+                let pdType = ctx.getTokenProvider(ctx.token);
+                if (pdType) {
+                    ctx.tokens.push(pdType);
+                }
             }
+            ctx.tokens = ctx.tokens.filter(t => isToken(t));
         }
-        ctx.tokens = ctx.tokens.filter(t => isToken(t));
         next();
     }
 }

@@ -1,5 +1,6 @@
-import { ResovleActionContext, Token, ResovleActionOption } from '@ts-ioc/ioc';
+import { ResovleActionContext, Token, ResovleActionOption, IResolverContainer, Type, ClassType, ProviderMap } from '@ts-ioc/ioc';
 import { TargetRef } from '../TargetService';
+import { IContainer } from '../IContainer';
 
 /**
  * service action option.
@@ -52,16 +53,6 @@ export interface ServiceActionOption extends ResovleActionOption {
      */
     defaultToken?: Token<any>;
 
-    /**
-     * get all service type of token.
-     *
-     * @type {boolean}
-     * @memberof ServiceActionOption
-     */
-    all?: boolean;
-
-    both?: boolean;
-
      /**
      * ref target factory.
      *
@@ -94,10 +85,13 @@ export class ResolveServiceContext extends ResovleActionContext implements Servi
      * @returns {ResolveServiceContext}
      * @memberof ResolveServiceContext
      */
-    static create(options?: ServiceActionOption): ResolveServiceContext {
+    static create(options?: ServiceActionOption, raiseContainerGetter?: () => IContainer, containerGetter?: () => IResolverContainer): ResolveServiceContext {
         let ctx = new ResolveServiceContext();
         if (options) {
             Object.assign(ctx, options);
+        }
+        if (raiseContainerGetter || containerGetter) {
+            ctx.setContext(raiseContainerGetter, containerGetter);
         }
         return ctx;
     }
@@ -173,15 +167,5 @@ export class ResolveServiceContext extends ResovleActionContext implements Servi
      * @memberof ResolveServiceContext
      */
     defaultToken?: Token<any>;
-
-    /**
-     * get all service type of token.
-     *
-     * @type {boolean}
-     * @memberof ResolveServiceContext
-     */
-    all?: boolean;
-
-    both?: boolean;
 
 }
