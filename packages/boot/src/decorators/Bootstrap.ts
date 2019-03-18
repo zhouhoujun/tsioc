@@ -1,5 +1,10 @@
-import { Token, MetadataAdapter, MetadataExtends, ITypeDecorator, LoadType, isFunction, isClass, lang, createClassDecorator } from '@ts-ioc/ioc';
+import {
+    Token, MetadataAdapter, MetadataExtends, ITypeDecorator,
+    isFunction, isClass, createClassDecorator
+} from '@ts-ioc/ioc';
 import { RunnableConfigure } from '../annotations';
+import { BootApplication } from '../BootApplication';
+import { BootContext } from '../BootContext';
 
 /**
  * bootstrap metadata.
@@ -16,14 +21,6 @@ export interface BootstrapMetadata extends RunnableConfigure {
      * @memberof AnnotationConfigure
      */
     bootstrap?: Token<any>;
-
-    /**
-     * boot dependencies
-     *
-     * @type {LoadType[]}
-     * @memberof BootstrapMetadata
-     */
-    bootDeps?: LoadType[];
 
     /**
      * configuration.
@@ -70,9 +67,6 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
  */
 export function createBootstrapDecorator<T extends BootstrapMetadata>(
     name: string,
-    defaultBuilder?: Token<IRunnableBuilder<any>>,
-    defaultAnnoBuilder?: Token<IAnnotationBuilder<any>>,
-    defaultBoot?: Token<any> | ((metadata: T) => Token<any>),
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IBootstrapDecorator<T> {
 
@@ -88,24 +82,7 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
             }, 100);
         } else if (metadata.bootstrap) {
             setTimeout(() => {
-                let builder: RunnableBuilder<any>;
-                if (isClass(metadata.builder) && lang.isExtendsClass(metadata.builder, RunnableBuilder)) {
-                    builder = new metadata.builder() as RunnableBuilder<any>;
-                }
-                if (!builder) {
-                    builder = new ApplicationBuilder();
-                }
-
-                if (builder instanceof ApplicationBuilder) {
-                    if (metadata.bootConfiguration) {
-                        builder.useConfiguration(metadata.bootConfiguration);
-                    }
-                    builder.useConfiguration(lang.omit(metadata, 'imports', 'exports', 'providers', 'bootDeps', 'bootConfiguration'));
-                }
-
-                builder
-                    .use(...(metadata.bootDeps || []))
-                    .bootstrap(metadata.type);
+                BootApplication.run(metadata.type, BootContext.create(metadata.type, { annoation: metadata }));
             }, 100);
         } else {
             throw new Error(`boot config error. has not found static main and bootstrap in [class: ${metadata.type.name}]`);

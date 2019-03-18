@@ -70,6 +70,7 @@ export class BootApplication {
             bctx = this.createContext();
         }
         bctx.setContext(() => root);
+        bctx.args = args;
         await root.resolve(RunnableBuildLifeScope).execute(bctx);
         return bctx;
     }

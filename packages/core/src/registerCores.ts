@@ -42,13 +42,11 @@ export function registerCores(container: IContainer) {
     container.get(ResolveTargetServiceAction)
         .use(ResolveRefServiceAction)
         .use(ResolvePrivateServiceAction)
-        // .use(DefaultResolveServiceAction)
         .use(ResolveServiceInClassChain);
 
     container.get(ResolveServiceInClassChain)
         .use(ResolveRefServiceAction)
         .use(ResolvePrivateServiceAction);
-    // .use(DefaultResolveServiceAction);
 
     container.get(ResolveServiceAction)
         .use(InitServiceResolveAction)

@@ -3,6 +3,8 @@ import { IocActionContext, ActionContextOption } from './Action';
 import { IParameter } from '../IParameter';
 import { ITypeReflect } from '../services';
 import { ParamProviders, ProviderMap } from '../providers';
+import { IIocContainer } from '../IIocContainer';
+import { IResolverContainer } from '../IResolver';
 
 /**
  * register action option.
@@ -128,12 +130,17 @@ export class RegisterActionContext extends IocActionContext {
      *
      * @static
      * @param {RegisterActionOption} options
+     * @param {() => IIocContainer} raiseContainerGetter
+     * @param {() => IResolverContainer} [containerGetter]
      * @returns {RegisterActionContext}
      * @memberof RegisterActionContext
      */
-    static create(options: RegisterActionOption): RegisterActionContext {
+    static create(options: RegisterActionOption, raiseContainerGetter?: () => IIocContainer, containerGetter?: () => IResolverContainer): RegisterActionContext {
         let ctx = new RegisterActionContext(options.targetType);
         ctx.setOptions(options);
+        if (raiseContainerGetter || containerGetter) {
+            ctx.setContext(raiseContainerGetter, containerGetter);
+        }
         return ctx;
     }
 

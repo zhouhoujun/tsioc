@@ -482,8 +482,7 @@ export class IocContainer implements IIocContainer {
                 singleton: singleton,
                 providers: providers,
                 providerMap: providerMap
-            });
-            this.bindActionContext(ctx);
+            }, () => this);
             this.get(RuntimeLifeScope).execute(ctx);
             return ctx.target;
         };
@@ -494,10 +493,10 @@ export class IocContainer implements IIocContainer {
         }
 
         this.get(DesignLifeScope).execute(
-            this.bindActionContext(RegisterActionContext.create({
+            RegisterActionContext.create({
                 tokenKey: key,
                 targetType: ClassT
-            })));
+            }, () => this));
     }
 
 

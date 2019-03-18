@@ -1,6 +1,7 @@
 import { ProviderTypes } from '../providers';
-import { IResolver } from '../IResolver';
+import { IResolver, IResolverContainer } from '../IResolver';
 import { IocActionContext, ActionContextOption } from './Action';
+import { IIocContainer } from '../IIocContainer';
 
 
 /**
@@ -69,10 +70,13 @@ export class ResovleActionContext extends IocActionContext implements IResolver 
      * @returns {ResovleActionContext}
      * @memberof ResovleActionContext
      */
-    static create(options?: ResovleActionOption): ResovleActionContext {
+    static create(options?: ResovleActionOption, raiseContainerGetter?: () => IIocContainer, containerGetter?: () => IResolverContainer): ResovleActionContext {
         let ctx = new ResovleActionContext();
         if (options) {
             ctx.setOptions(options);
+        }
+        if (raiseContainerGetter || containerGetter) {
+            ctx.setContext(raiseContainerGetter, containerGetter);
         }
         return ctx;
     }
