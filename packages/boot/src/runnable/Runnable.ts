@@ -92,12 +92,12 @@ export abstract class Runnable<T> implements IRunnable<any> {
     abstract onInit(): Promise<void>;
 
     getTarget(): T {
-        return this.ctx.instance;
+        return this.ctx.bootstrap;
     }
 
 
     getTargetType(): Type<T> {
-        return this.ctx.type || lang.getClass(this.ctx.instance);
+        return this.ctx.type || lang.getClass(this.ctx.bootstrap);
     }
 
     /**

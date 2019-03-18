@@ -39,7 +39,13 @@ export class DIModuleInjector extends ModuleInjector {
         await container.get(ModuleInjectLifeScope).execute(new AnnoationContext(type));
     }
 
-    protected async syncSetup(container: IContainer, type: Type<any>) {
+    protected syncSetup(container: IContainer, type: Type<any>) {
+        container.get(ModuleInjectLifeScope).execute(new AnnoationContext(type));
+    }
+
+    protected async execInjects(container: IContainer, type: Type<any>): Promise<void> {
+        let ctx = new AnnoationContext(type);
+        ctx.setContext(() => container);
         container.get(ModuleInjectLifeScope).execute(new AnnoationContext(type));
     }
 }

@@ -18,7 +18,12 @@ export class ModuleContainerHandle extends AnnoationHandle {
         let pools = ctx.resolve(ContainerPoolToken);
         let isRootModule = hasOwnClassMetadata(RootModule, ctx.type) || ctx.annoation.asRoot;
         ctx.isRoot = isRootModule;
-        ctx.moduleContainer = isRootModule === true ? pools.getRoot() : pools.create(ctx.getRaiseContainer());
+        if (isRootModule) {
+            ctx.moduleContainer = pools.getRoot();
+        } else if (!ctx.moduleContainer) {
+            ctx.moduleContainer = pools.create(ctx.getRaiseContainer());
+        }
+
         if (ctx.moduleContainer) {
             await next();
         }

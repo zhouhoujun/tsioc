@@ -1,5 +1,8 @@
 import { AnnoationContext } from './core';
-import { RunnableConfigure, BootOptions } from './annotations';
+import { RunnableConfigure } from './annotations';
+import { IModuleLoader } from '@ts-ioc/core';
+import { ProviderTypes, LoadType } from '@ts-ioc/ioc';
+import { Runnable } from './runnable';
 
 /**
  * application boot context.
@@ -10,12 +13,21 @@ import { RunnableConfigure, BootOptions } from './annotations';
  */
 export class BootContext extends AnnoationContext {
     /**
-     * boot options.
+     * boot base url.
      *
-     * @type {BootOptions}
+     * @type {string}
      * @memberof BootContext
      */
-    options?: BootOptions;
+    baseURL?: string;
+
+    /**
+     * module loader
+     *
+     * @type {IModuleLoader}
+     * @memberof BootContext
+     */
+    loader?: IModuleLoader;
+
     /**
      * annoation config.
      *
@@ -25,12 +37,20 @@ export class BootContext extends AnnoationContext {
     annoation?: RunnableConfigure;
 
     /**
+     * target module instace.
+     *
+     * @type {*}
+     * @memberof BootContext
+     */
+    target?: any;
+
+    /**
      * bootstrap instance.
      *
      * @type {T}
      * @memberof RunnableOptions
      */
-    instance: any;
+    bootstrap?: any;
 
     /**
      *  custom boot data of `BuildOptions`
@@ -39,4 +59,28 @@ export class BootContext extends AnnoationContext {
      * @memberof RunnableOptions
      */
     data?: any;
+
+    /**
+     * bootstrap reference runable service.
+     *
+     * @type {Runnable<any>}
+     * @memberof BootContext
+     */
+    runnable?: Runnable<any>;
+
+    /**
+     * boot dependencies.
+     *
+     * @type {LoadType[]}
+     * @memberof BootContext
+     */
+    deps: LoadType[];
+
+     /**
+     * providers.
+     *
+     * @type {ProviderTypes[]}
+     * @memberof BootOptions
+     */
+    providers?: ProviderTypes[];
 }

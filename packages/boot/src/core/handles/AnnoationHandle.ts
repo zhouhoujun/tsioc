@@ -65,19 +65,19 @@ export class AnnoationContext extends HandleContext {
  *
  * @export
  * @abstract
- * @class AnnoationMiddleware
- * @extends {Middleware<AnnoationContext>}
+ * @class AnnoationHandle
+ * @extends {Handle<AnnoationContext>}
  */
 @Abstract()
 export abstract class AnnoationHandle extends Handle<AnnoationContext> {
     /**
-     * execute middleware.
+     * execute Handles.
      *
      * @abstract
      * @param {AnnoationContext} ctx
      * @param {Next} next
      * @returns {Promise<void>}
-     * @memberof AnnoationMiddleware
+     * @memberof AnnoationHandle
      */
     abstract execute(ctx: AnnoationContext, next: Next): Promise<void>;
 }

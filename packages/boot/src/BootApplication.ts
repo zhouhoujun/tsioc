@@ -1,5 +1,8 @@
 import { BootContext } from './BootContext';
-import { Type, LoadType, DecoratorRegisterer, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction } from '@ts-ioc/ioc';
+import {
+    Type, LoadType, DecoratorRegisterer, BindProviderAction, IocGetCacheAction,
+    IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction
+} from '@ts-ioc/ioc';
 import { ContainerPool } from 'packages/bootstrap/src/ContainerPool';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, ModuleInjectorManager } from '@ts-ioc/core';
 import { RunnableBuildLifeScope } from './services';
@@ -45,10 +48,18 @@ export class BootApplication {
      * @returns {Promise<BootContext>}
      * @memberof BootApplication
      */
-    static async run<T>(target: Type<T>, ...args: string[]): Promise<BootContext> {
-        return new BootApplication(target).run(...args);
+    static async run<T>(target: Type<T>, ctx?: BootContext | string, ...args: string[]): Promise<BootContext> {
+        return new BootApplication(target).run(ctx, ...args);
     }
 
+    /**
+     * run application of module.
+     *
+     * @param {(BootContext | string)} [ctx]
+     * @param {...string[]} args
+     * @returns {Promise<BootContext>}
+     * @memberof BootApplication
+     */
     async run(ctx?: BootContext | string, ...args: string[]): Promise<BootContext> {
         let root = this.getPools().getRoot();
         let bctx: BootContext;
