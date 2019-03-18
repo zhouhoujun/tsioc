@@ -1,6 +1,5 @@
-import { CompositeHandle, MessageContext, Next } from '../handles';
+import { RootModule, CompositeHandle, MessageContext, Next } from '../core';
 import { Singleton } from '@ts-ioc/ioc';
-import { RootModule } from '../decorators';
 
 
 /**

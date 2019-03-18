@@ -1,4 +1,4 @@
-import { IRunnable, Runnable, RunnableOptions } from './Runnable';
+import { IRunnable, Runnable } from './Runnable';
 import { Abstract } from '@ts-ioc/ioc';
 
 /**
@@ -35,10 +35,6 @@ export interface IService<T> extends IRunnable<T> {
  */
 @Abstract()
 export abstract class Service<T> extends Runnable<T> implements IService<T> {
-
-    constructor(options?: RunnableOptions<T>) {
-        super(options);
-    }
 
     /**
      * run service.

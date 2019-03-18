@@ -1,8 +1,14 @@
 import { BootContext } from './BootContext';
-import { Type, LoadType, Token } from '@ts-ioc/ioc';
+import { Type, LoadType, DecoratorRegisterer, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction } from '@ts-ioc/ioc';
 import { ContainerPool } from 'packages/bootstrap/src/ContainerPool';
-import { IContainerBuilder, ContainerBuilder, IModuleLoader } from '@ts-ioc/core';
+import { IContainerBuilder, ContainerBuilder, IModuleLoader, ModuleInjectorManager } from '@ts-ioc/core';
 import { RunnableBuildLifeScope } from './services';
+import { Bootstrap } from '@ts-ioc/bootstrap';
+import { BootstrapInjector } from './injectors';
+import * as annotations from './annotations';
+import * as injectors from './injectors';
+import * as runnable from './runnable';
+import * as services from './services';
 
 /**
  * boot application.
@@ -14,12 +20,33 @@ export class BootApplication {
     protected pools: ContainerPool;
     protected depModules: LoadType[];
     protected runableScope: RunnableBuildLifeScope;
-    constructor(protected token: Token<any>, protected baseURL?: string, protected loader?: IModuleLoader) {
+    constructor(protected target: Type<any>, protected baseURL?: string, protected loader?: IModuleLoader) {
         this.depModules = [];
+        this.init();
     }
 
-    static async run<T>(module: Type<T>, ...args: string[]): Promise<BootContext> {
-        return new BootApplication(module).run(...args);;
+    protected init() {
+        let container = this.getPools().getRoot();
+        container.use(annotations, injectors, runnable, services);
+        let decReg = container.get(DecoratorRegisterer);
+        decReg.register(Bootstrap, BindProviderAction, IocGetCacheAction,
+            IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
+
+        container.get(ModuleInjectorManager).use(BootstrapInjector, true);
+    }
+
+    /**
+     * run module.
+     *
+     * @static
+     * @template T
+     * @param {Type<T>} target
+     * @param {...string[]} args
+     * @returns {Promise<BootContext>}
+     * @memberof BootApplication
+     */
+    static async run<T>(target: Type<T>, ...args: string[]): Promise<BootContext> {
+        return new BootApplication(target).run(...args);
     }
 
     async run(ctx?: BootContext | string, ...args: string[]): Promise<BootContext> {
@@ -31,7 +58,7 @@ export class BootApplication {
             ctx && args.unshift(ctx);
             bctx = this.createContext();
         }
-        bctx.setContext(()=> root);
+        bctx.setContext(() => root);
         await root.resolve(RunnableBuildLifeScope).execute(bctx);
         return bctx;
     }
@@ -57,7 +84,7 @@ export class BootApplication {
     }
 
     protected createContext(): BootContext {
-        return new BootContext();
+        return new BootContext(this.target);
     }
 
     protected createContainerBuilder(): IContainerBuilder {

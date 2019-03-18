@@ -1,57 +1,7 @@
-import { Token, lang, Inject, InjectToken, Type, Abstract } from '@ts-ioc/ioc';
-import { ModuleConfigure, BootOptions } from '../modules';
+import { Token, lang, Inject, Type, Abstract } from '@ts-ioc/ioc';
 import { IContainer, ContainerToken } from '@ts-ioc/core';
+import { BootContext } from '../BootContext';
 
-/**
- * runable options.
- *
- * @export
- * @interface RunnableOptions
- * @template T
- */
-export interface RunnableOptions<T> {
-    /**
-     * module token
-     *
-     * @type {Token<any>}
-     * @memberof RunnableOptions
-     */
-    mdToken?: Token<any>;
-    /**
-     * bootstrap type.
-     *
-     * @type {Type<T>}
-     * @memberof RunnableOptions
-     */
-    type: Type<T>;
-    /**
-     * bootstrap instance.
-     *
-     * @type {T}
-     * @memberof RunnableOptions
-     */
-    instance: T;
-    /**
-     * bootstrap configure.
-     *
-     * @type {ModuleConfigure}
-     * @memberof RunnableOptions
-     */
-    config: ModuleConfigure;
-
-    /**
-     *  custom boot data of `BuildOptions`
-     *
-     * @type {*}
-     * @memberof RunnableOptions
-     */
-    data?: any;
-}
-
-/**
- * runnable options token.
- */
-export const RunnableOptionsToken = new InjectToken<RunnableOptions<any>>('boot_runnable_options');
 
 
 
@@ -72,20 +22,13 @@ export interface IRunnable<T> {
     container: IContainer;
 
     /**
-     * runable options.
+     * runable context.
      *
-     * @type {RunnableOptions<T>}
+     * @type {BootContext}
      * @memberof IRunnable
      */
-    readonly options?: RunnableOptions<T>;
+    readonly ctx?: BootContext;
 
-    /**
-     * boot build options.
-     *
-     * @type {BootOptions<T>}
-     * @memberof IRunnable
-     */
-    readonly bootOptions?: BootOptions<T>;
     /**
      * target instance.
      *
@@ -105,11 +48,11 @@ export interface IRunnable<T> {
     /**
      * on boot init.
      *
-     * @param {BootOptions<T>} options
+     * @param {BootContext} ctx
      * @returns {Promise<void>}
-     * @memberof IBoot
+     * @memberof IRunnable
      */
-    onInit(options: RunnableOptions<T>, bootOptions?: BootOptions<T>): Promise<void>;
+    onInit(ctx: BootContext): Promise<void>;
 
 
     /**
@@ -137,37 +80,24 @@ export abstract class Runnable<T> implements IRunnable<any> {
     @Inject(ContainerToken)
     container: IContainer;
 
-    private _options: RunnableOptions<T>;
-    get options(): RunnableOptions<T> {
-        return this._options;
+    private _ctx: BootContext;
+    get ctx(): BootContext {
+        return this._ctx;
     }
 
-    private _bootOptions: BootOptions<T>;
-    get bootOptions(): BootOptions<T> {
-        return this._bootOptions;
+    constructor(ctx: BootContext) {
+        this._ctx = ctx;
     }
 
-    constructor(options?: RunnableOptions<T>) {
-        this._options = options;
-    }
-
-    async onInit(options: RunnableOptions<T>, bootOptions?: BootOptions<T>): Promise<void> {
-        if (options) {
-            this._options = options;
-        }
-        this._bootOptions = bootOptions;
-    }
+    abstract onInit(): Promise<void>;
 
     getTarget(): T {
-        return this.options.instance;
+        return this.ctx.instance;
     }
 
-    getModuleToken(): Token<any> {
-        return this.options.mdToken;
-    }
 
     getTargetType(): Type<T> {
-        return this.options.type || lang.getClass(this.options.instance);
+        return this.ctx.type || lang.getClass(this.ctx.instance);
     }
 
     /**

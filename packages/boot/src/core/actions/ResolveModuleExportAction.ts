@@ -1,0 +1,27 @@
+import { IocResolveAction, ResovleActionContext, Singleton } from '@ts-ioc/ioc';
+import { DIModuleExports } from '../services';
+
+/**
+ * reolve module export.
+ *
+ * @export
+ * @class ResolveModuleExportAction
+ * @extends {IocResolveAction}
+ */
+@Singleton
+export class ResolveModuleExportAction extends IocResolveAction {
+
+    execute(ctx: ResovleActionContext, next: () => void): void {
+        let curr = ctx.getRaiseContainer();
+        curr.resolve(DIModuleExports).getResolvers()
+            .some(r => {
+                r.resolveContext(ctx);
+                return !!ctx.instance;
+            });
+
+        if (!ctx.instance) {
+            curr.bindActionContext(ctx);
+            next();
+        }
+    }
+}

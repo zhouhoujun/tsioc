@@ -17,6 +17,10 @@ export function registerCores(container: IContainer) {
 
     container.register(ModuleInjectorManager);
 
+    if (!container.has(MethodAutorunAction)) {
+        container.register(MethodAutorunAction);
+    }
+
     container.register(InitServiceResolveAction);
     container.register(DefaultResolveServiceAction);
     container.register(ResolveRefServiceAction);
@@ -44,7 +48,7 @@ export function registerCores(container: IContainer) {
     container.get(ResolveServiceInClassChain)
         .use(ResolveRefServiceAction)
         .use(ResolvePrivateServiceAction);
-        // .use(DefaultResolveServiceAction);
+    // .use(DefaultResolveServiceAction);
 
     container.get(ResolveServiceAction)
         .use(InitServiceResolveAction)
@@ -59,5 +63,4 @@ export function registerCores(container: IContainer) {
     let decRgr = container.get(DecoratorRegisterer);
     decRgr.register(IocExt, BindProviderAction, IocExtRegisterAction);
 
-    container.get(ModuleInjectorManager).setup(container);
 }

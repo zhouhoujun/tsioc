@@ -1,7 +1,5 @@
-import { Token, MetadataAdapter, MetadataExtends, ITypeDecorator, LoadType, isFunction, isClass, lang } from '@ts-ioc/ioc';
-import { IAnnotationBuilder } from '../annotations/IAnnotationBuilder';
-import { createDIModuleDecorator } from './DIModule';
-import { ApplicationBuilder, RunnableBuilder, IRunnableBuilder, AppConfigure } from '../boot';
+import { Token, MetadataAdapter, MetadataExtends, ITypeDecorator, LoadType, isFunction, isClass, lang, createClassDecorator } from '@ts-ioc/ioc';
+import { RunnableConfigure } from '../annotations';
 
 /**
  * bootstrap metadata.
@@ -10,7 +8,7 @@ import { ApplicationBuilder, RunnableBuilder, IRunnableBuilder, AppConfigure } f
  * @interface BootstrapMetadata
  * @extends {AppConfigure}
  */
-export interface BootstrapMetadata extends AppConfigure {
+export interface BootstrapMetadata extends RunnableConfigure {
     /**
      * module bootstrap token.
      *
@@ -30,10 +28,10 @@ export interface BootstrapMetadata extends AppConfigure {
     /**
      * configuration.
      *
-     * @type {AppConfigure}
+     * @type {RunnableConfigure}
      * @memberof BootstrapMetadata
      */
-    bootConfiguration?: AppConfigure
+    bootConfiguration?: RunnableConfigure
 }
 
 
@@ -78,7 +76,7 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): IBootstrapDecorator<T> {
 
-    return createDIModuleDecorator<BootstrapMetadata>(name, defaultBuilder, defaultAnnoBuilder, defaultBoot, adapter, (metadata: T) => {
+    return createClassDecorator<BootstrapMetadata>(name, adapter, (metadata: T) => {
         if (metadataExtends) {
             metadataExtends(metadata);
         }
