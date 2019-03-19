@@ -1,5 +1,5 @@
 {
-  "name": "@ts-ioc/bootstrap",
+  "name": "@ts-ioc/boot",
   "version": "4.0.5",
   "description": "DI Module manager, application bootstrap. base on AOP, Ioc container, via @ts-ioc/core .",
   "es2015": "./fesm2015/bootstrap.js",

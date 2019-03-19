@@ -147,7 +147,7 @@ see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/maste
 
 ```ts
 
-import { DIModule, ApplicationBuilder } from '@ts-ioc/bootstrap';
+import { DIModule, ApplicationBuilder } from '@ts-ioc/boot';
 
 
 export class TestService {

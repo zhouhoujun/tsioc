@@ -1,4 +1,4 @@
-import { IApplicationBuilder, BootOptions } from '@ts-ioc/bootstrap';
+import { IApplicationBuilder, BootOptions } from '@ts-ioc/boot';
 import { IActivity, IWorkflowInstance, Active, CoreActivityConfigs } from './core';
 import { Token } from '@ts-ioc/ioc';
 

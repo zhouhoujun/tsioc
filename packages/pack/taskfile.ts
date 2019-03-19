@@ -38,7 +38,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 '@ts-ioc/core',
                 '@ts-ioc/aop',
                 '@ts-ioc/logs',
-                '@ts-ioc/bootstrap',
+                '@ts-ioc/boot',
                 '@ts-ioc/pipes',
                 '@ts-ioc/platform-server',
                 'minimist', 'gulp-sourcemaps', 'vinyl-fs', 'del', 'chokidar',
@@ -55,7 +55,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 'path': 'path',
                 '@ts-ioc/core': '@ts-ioc/core',
                 '@ts-ioc/aop': '@ts-ioc/aop',
-                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap',
+                '@ts-ioc/boot': '@ts-ioc/boot',
                 '@ts-ioc/activities': '@ts-ioc/activities',
                 '@ts-ioc/build': '@ts-ioc/build'
             },

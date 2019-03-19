@@ -18,17 +18,14 @@
       "@ts-ioc/boot":[
         "packages/boot/src"
       ],
-      "@ts-ioc/bootstrap":[
-        "packages/bootstrap/src"
-      ],
       "@ts-ioc/logs": [
         "packages/logs/src"
       ],
       "@ts-ioc/platform-browser":[
         "packages/platform-browser/src"
       ],
-      "@ts-ioc/platform-browser-bootstrap":[
-        "packages/platform-browser-bootstrap/src"
+      "@ts-ioc/platform-browser-boot":[
+        "packages/platform-browser-boot/src"
       ],
       "@ts-ioc/platform-server":[
         "packages/platform-server/src"
@@ -36,8 +33,8 @@
       "@ts-ioc/platform-server-logs":[
         "packages/platform-server-logs/src"
       ],
-      "@ts-ioc/platform-server-bootstrap":[
-        "packages/platform-server-bootstrap/src"
+      "@ts-ioc/platform-server-boot":[
+        "packages/platform-server-boot/src"
       ],
       "@ts-ioc/unit": [
         "packages/unit/src"

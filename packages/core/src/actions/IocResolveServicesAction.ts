@@ -1,5 +1,6 @@
-import { Abstract, IocResolveAction, ClassType, ProviderMap } from '@ts-ioc/ioc';
+import { Abstract, IocResolveAction, ClassType, ProviderMap, IResolverContainer } from '@ts-ioc/ioc';
 import { ServiceActionOption, ResolveServiceContext } from './ResolveServiceContext';
+import { IContainer } from '../IContainer';
 
 
 /**
@@ -33,7 +34,26 @@ export interface ServicesActionOption extends ServiceActionOption {
  * @class ResolveServicesContext
  * @extends {ResolveServiceContext}
  */
-export class ResolveServicesContext  extends ResolveServiceContext {
+export class ResolveServicesContext extends ResolveServiceContext {
+
+    /**
+     * create service resolve context.
+     *
+     * @static
+     * @param {ServicesActionOption} [options]
+     * @returns {ResolveServicesContext}
+     * @memberof ResolveServicesContext
+     */
+    static create(options?: ServicesActionOption, raiseContainerGetter?: () => IContainer, containerGetter?: () => IResolverContainer): ResolveServicesContext {
+        let ctx = new ResolveServicesContext();
+        if (options) {
+            Object.assign(ctx, options);
+        }
+        if (raiseContainerGetter || containerGetter) {
+            ctx.setContext(raiseContainerGetter, containerGetter);
+        }
+        return ctx;
+    }
 
     /**
      * get services both in container and target private refrence service.

@@ -1,4 +1,4 @@
-import { RegisterActionContext, IocAutorunAction, Singleton } from '@ts-ioc/ioc';
+import { RegisterActionContext, IocAutorunAction, Singleton, hasOwnClassMetadata } from '@ts-ioc/ioc';
 import { IocExt } from '../decorators';
 
 @Singleton

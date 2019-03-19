@@ -8,7 +8,7 @@ import { ModuleResovler } from './ModuleResovler';
 import { ConfigureRegister } from '../boot/ConfigureRegister';
 import { ConfigureMgrToken } from '../boot/IConfigureManager';
 import { CurrentRunnableBuilderToken } from '../boot/IRunnableBuilder';
-import { IContainer, ModuleInjector, IteratorService, InjectorContext } from '@ts-ioc/core';
+import { IContainer, ModuleInjector, InjectorContext, ResolveServicesContext } from '@ts-ioc/core';
 import { ContainerPoolToken } from '../ContainerPool';
 
 /**
@@ -130,26 +130,13 @@ export class DIModuleInjector extends ModuleInjector {
 
     protected async registerConfigrue(newContainer: IContainer, injMd: ModuleResovler<any>) {
 
-        let registers: {
-            resolver: IResolver,
-            serType: ClassType<ConfigureRegister<any>>
-        }[] = [];
+        let services = newContainer.getServiceProviders(ConfigureRegister, injMd.type, ResolveServicesContext.create({ both: true }));
 
-
-        newContainer.resolve(IteratorService).each(
-            (serType, fac, resolver) => {
-                registers.push({
-                    resolver: resolver,
-                    serType: serType
-                });
-            },
-            ConfigureRegister,
-            injMd.type, true);
-
-        if (registers.length) {
+        if (services.size) {
             let mgr = newContainer.get(ConfigureMgrToken);
+            let builder = newContainer.resolve(CurrentRunnableBuilderToken);
             let appConfig = await mgr.getConfig();
-            await Promise.all(registers.map(ser => ser.resolver.resolve(ser.serType).register(appConfig, ser.resolver.resolve(CurrentRunnableBuilderToken))));
+            await Promise.all(services.keys().map(key => services.resolve<ConfigureRegister<any>>(key).register(appConfig, builder)));
         }
     }
 

@@ -39,7 +39,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 '@ts-ioc/core',
                 '@ts-ioc/aop',
                 '@ts-ioc/logs',
-                '@ts-ioc/bootstrap'
+                '@ts-ioc/boot'
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
@@ -51,7 +51,7 @@ const builtins = require('rollup-plugin-node-builtins');
                 '@ts-ioc/core': '@ts-ioc/core',
                 '@ts-ioc/aop': '@ts-ioc/aop',
                 '@ts-ioc/logs': '@ts-ioc/logs',
-                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap'
+                '@ts-ioc/boot': '@ts-ioc/boot'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),

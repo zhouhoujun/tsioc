@@ -17,7 +17,8 @@ import { RunnableConfigure } from './AppConfigure';
 import { ConfigureRegister } from './ConfigureRegister';
 import {
     ContainerBuilder, IContainerBuilder, IContainer,
-    IteratorService, ResolveServiceContext
+    ResolveServiceContext,
+    ResolveServicesContext
 } from '@ts-ioc/core';
 import { ContainerPool } from '../ContainerPool';
 
@@ -309,25 +310,9 @@ export class RunnableBuilder<T> extends ModuleBuilder<T> implements IRunnableBui
         }));
 
         let curClass = lang.getClass(this);
-        let registers: {
-            resolver: IResolver,
-            serType: ClassType<ConfigureRegister<any>>
-        }[] = [];
 
         // only run root register.
-        container.get(IteratorService).each(
-            (serType, fac, resolver) => {
-                if (!config.baseURL) {
-                    config.baseURL = this.getRunRoot(resolver);
-                }
-                registers.push({
-                    resolver: resolver,
-                    serType: serType
-                });
-            },
-            ConfigureRegister,
-            curClass, true);
-
-        await Promise.all(registers.map(ser => ser.resolver.resolve(ser.serType).register(config, this)));
+        let services =  container.getServiceProviders(ConfigureRegister, curClass, ResolveServicesContext.create({both: true}))
+        await Promise.all(services.keys().map(key => services.resolve<ConfigureRegister<any>>(key).register(config, this)));
     }
 }

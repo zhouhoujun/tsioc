@@ -34,6 +34,7 @@ export class ContainerPool {
             this.setParent(container, parent || this.root);
         }
         container.bindProvider(ContainerPoolToken, () => this);
+        container.bindProvider(ContainerPool, () => this);
         container.register(BootModule);
         return container;
     }
@@ -62,6 +63,11 @@ export class ContainerPool {
         return this.pools.indexOf(container) >= 0;
     }
 
+    hasParent(container: IContainer): boolean {
+        return container && container.has(ParentContainerToken);
+    }
+
+
     create(parent?: IContainer): IContainer {
         let container = this.createContainer(parent);
         return container;
@@ -72,12 +78,16 @@ export class ContainerPool {
             return;
         }
         container.bindProvider(RootContainerToken, this.root);
-        if (parent && parent !== container) {
+        if (!container.has(ContainerPoolToken)) {
+            container.bindProvider(ContainerPoolToken, () => this);
+            container.bindProvider(ContainerPool, () => this);
+        }
+        parent = parent || this.root;
+        if (parent !== container) {
             container.bindProvider(ParentContainerToken, parent);
-
-            let children = parent.get(ChildrenContainerToken) || [];
-            children.push(container);
-            parent.bindProvider(ChildrenContainerToken, children);
+            // let children = parent.get(ChildrenContainerToken) || [];
+            // children.push(container);
+            // parent.bindProvider(ChildrenContainerToken, children);
         }
     }
 

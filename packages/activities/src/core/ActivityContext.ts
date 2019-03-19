@@ -4,7 +4,7 @@ import {
 } from '@ts-ioc/ioc';
 import { IActivity } from './IActivity';
 import { ITranslator } from './Translator';
-import { Events, ProcessRunRootToken } from '@ts-ioc/bootstrap';
+import { Events, ProcessRunRootToken } from '@ts-ioc/boot';
 import { InputDataToken, IActivityContextResult, CtxType, ActivityContextToken, IActivityContext } from './IActivityContext';
 import { ActivityBuilder } from './ActivityBuilder';
 import { Expression, ActivityConfigure, isWorkflowInstance } from './ActivityConfigure';

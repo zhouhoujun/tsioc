@@ -1,13 +1,13 @@
-import { DIModule } from '@ts-ioc/bootstrap';
+import { DIModule, ModuleScope } from '@ts-ioc/boot';
 import { ServerModule } from '@ts-ioc/platform-server';
-import { ServerBootstrapModule } from '@ts-ioc/platform-server-bootstrap';
+import { ServerBootstrapModule } from '@ts-ioc/platform-server-boot';
 import { TaskLogAspect, RunnerLogAspect } from './aop';
 import { WorkflowConfigureRegister } from './WorkflowConfigureRegister';
 import { ServerLogsModule } from '@ts-ioc/platform-server-logs';
 
 
 @DIModule({
-    asRoot: true,
+    regScope: ModuleScope.all,
     imports: [
         ServerModule,
         ServerBootstrapModule,

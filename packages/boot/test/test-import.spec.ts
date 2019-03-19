@@ -1,5 +1,5 @@
 import { ModuleA, ModuleB, ClassSevice } from './demo';
-import { ApplicationBuilder, IApplicationBuilder } from '../src';
+import { BootApplication } from '../src';
 import expect = require('expect');
 // import { AopModule } from '@ts-ioc/aop';
 // import { LogModule } from '@ts-ioc/logs';
@@ -7,9 +7,9 @@ import expect = require('expect');
 
 describe('di module', () => {
 
-    let builder: IApplicationBuilder<any>;
+    let builder: BootApplication;
     beforeEach(async () => {
-        builder = new ApplicationBuilder();
+        builder = new BootApplication();
         // builder.use(AopModule).use(LogModule);
     });
 

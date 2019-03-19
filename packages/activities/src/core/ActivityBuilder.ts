@@ -1,11 +1,11 @@
 import { IActivityBuilder } from './IActivityBuilder';
 import { isString, Token, Express, isToken, Providers, Singleton, Refs } from '@ts-ioc/ioc';
-import { AnnotationBuilder, BuildOptions, IAnnoBuildStrategy, AnnoBuildStrategy } from '@ts-ioc/bootstrap';
+import { AnnotationBuilder, BuildOptions, IAnnoBuildStrategy, AnnoBuildStrategy } from '@ts-ioc/boot';
 import { IActivity, ActivityInstance } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
 import { ActivityMetaAccessor } from './ActivityMetaAccessor';
 import { isAcitvity, Activity } from './Activity';
-import { MetaAccessor } from '@ts-ioc/bootstrap';
+import { MetaAccessor } from '@ts-ioc/boot';
 
 
 /**

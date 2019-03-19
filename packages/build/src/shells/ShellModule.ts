@@ -1,4 +1,4 @@
-import { DIModule } from '@ts-ioc/bootstrap';
+import { DIModule } from '@ts-ioc/boot';
 import * as bundle from './bundle';
 import * as compiles from './compile';
 import * as styles from './styles';

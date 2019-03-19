@@ -1,6 +1,6 @@
 import { IActivity, IActivityResult } from './IActivity';
 import { Token, isToken, isMetadataObject, isString } from '@ts-ioc/ioc';
-import { ModuleConfig } from '@ts-ioc/bootstrap';
+import { ModuleConfig } from '@ts-ioc/boot';
 import { IWorkflowInstance } from './IWorkflowInstance';
 import { WorkflowInstance } from './WorkflowInstance';
 import { IActivityContext, CtxType } from './IActivityContext';

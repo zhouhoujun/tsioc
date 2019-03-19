@@ -1,16 +1,16 @@
-# packaged @ts-ioc/bootstrap
+# packaged @ts-ioc/boot
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@ts-ioc/bootstrap`： DI Module manager, application bootstrap. base on AOP, Ioc container, via `@ts-ioc/core`.
+`@ts-ioc/boot`： DI Module manager, application bootstrap. base on AOP, Ioc container, via `@ts-ioc/core`.
 
 version 2+ of [`tsioc`](https://www.npmjs.com/zhouhoujun/package/tsioc)
 # Install
 
 ```shell
 
-npm install @ts-ioc/bootstrap
+npm install @ts-ioc/boot
 
 // in browser
 npm install @ts-ioc/platform-browser
@@ -25,7 +25,7 @@ npm install @ts-ioc/platform-server
 
 
 ```ts
-import { DIModule, ApplicationBuilder } from '@ts-ioc/bootstrap';
+import { DIModule, ApplicationBuilder } from '@ts-ioc/boot';
 
 
 export class TestService {

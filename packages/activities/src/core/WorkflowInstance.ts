@@ -6,7 +6,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { Joinpoint } from '@ts-ioc/aop';
 import { IActivityContextResult } from './IActivityContext';
-import { Service } from '@ts-ioc/bootstrap';
+import { Service } from '@ts-ioc/boot';
 
 /**
  * task runner.

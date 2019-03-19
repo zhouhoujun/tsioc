@@ -8,47 +8,52 @@ const commonjs = require('rollup-plugin-commonjs');
 // import { rollup } from 'rollup';
 const rollup = require('gulp-rollup');
 const rename = require('gulp-rename');
+const builtins = require('rollup-plugin-node-builtins');
 
 @Asset({
     src: 'lib/**/*.js',
-    dest: 'bundles',
+    dest: 'fesm5',
     data: {
-        name: 'platform-browser-bootstrap.umd.js',
+        name: 'platform-server-boot.js',
         input: 'lib/index.js'
     },
     sourcemaps: true,
     pipes: [
         (ctx: TransformContext) => rollup({
             name: ctx.config.data.name,
-            format: 'umd',
+            format: 'cjs',
             sourceMap: true,
             plugins: [
                 resolve(),
                 commonjs(),
+                // builtins(),
                 rollupSourcemaps()
             ],
             external: [
                 'reflect-metadata',
                 'tslib',
-                'core-js',
+                'globby',
+                'path',
+                'fs',
                 '@ts-ioc/core',
                 '@ts-ioc/aop',
-                '@ts-ioc/bootstrap',
-                '@ts-ioc/platform-browser'
-
+                '@ts-ioc/boot',
+                '@ts-ioc/platform-server'
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
                 'tslib': 'tslib',
-                'core-js': 'core-js',
+                'path': 'path',
+                'globby': 'globby',
+                'fs': 'fs',
                 '@ts-ioc/core': '@ts-ioc/core',
                 '@ts-ioc/aop': '@ts-ioc/aop',
-                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap',
-                '@ts-ioc/platform-browser': '@ts-ioc/platform-browser'
+                '@ts-ioc/boot': '@ts-ioc/boot',
+                '@ts-ioc/platform-server': '@ts-ioc/platform-server'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),
-        (act) => rename(act.config.data.name)
+        (ctx) => rename(ctx.config.data.name)
     ]
 })
 export class BootRollup extends AssetActivity {
@@ -62,28 +67,8 @@ export class BootRollup extends AssetActivity {
     assets: {
         ts: {
             sequence: [
-                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, activity: TsCompile },
-                BootRollup,
-                {
-                    name: 'zip',
-                    src: 'bundles/platform-browser-bootstrap.umd.js',
-                    dest: 'bundles',
-                    sourcemaps: true,
-                    uglify: true,
-                    pipes: [
-                        () => rename('platform-browser-bootstrap.umd.min.js')
-                    ],
-                    task: AssetActivity
-                },
-                {
-                    src: 'lib/**/*.js', dest: 'fesm5',
-                    data: {
-                        name: 'platform-browser-bootstrap.js',
-                        input: 'lib/index.js',
-                        format: 'cjs'
-                    },
-                    activity: BootRollup
-                }
+                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.json', activity: TsCompile },
+                BootRollup
             ]
         },
         ts2015: {
@@ -93,20 +78,20 @@ export class BootRollup extends AssetActivity {
                     src: 'es2015/**/*.js',
                     dest: 'fesm2015',
                     data: {
-                        name: 'platform-browser-activities.js',
-                        input: './es2015/index.js',
-                        format: 'cjs'
-                    }, activity: BootRollup
+                        name: 'platform-server-activities.js',
+                        input: './es2015/index.js'
+                    },
+                    activity: BootRollup
                 }
             ]
         }
     }
 })
-export class PfBrowserBootBuilder extends PackActivity {
+export class PfServerBootBuilder {
 }
 
 if (process.cwd() === __dirname) {
     Workflow.create()
         .use(PackModule)
-        .bootstrap(PfBrowserBootBuilder);
+        .bootstrap(PfServerBootBuilder);
 }

@@ -1,4 +1,4 @@
-import { ApplicationBuilder, BootOptions, AppConfigure } from '@ts-ioc/bootstrap';
+import { ApplicationBuilder, BootOptions, AppConfigure } from '@ts-ioc/boot';
 import {
     IActivity, IWorkflowInstance, Active, SequenceConfigure, WorkflowId,
     UUIDToken, RandomUUIDFactory, CoreActivityConfigs

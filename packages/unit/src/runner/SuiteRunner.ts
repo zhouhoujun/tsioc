@@ -1,6 +1,6 @@
-import { Runnable } from '@ts-ioc/bootstrap';
+import { Runnable } from '@ts-ioc/boot';
 import {
-    getMethodMetadata, isNumber, lang, Inject, PromiseUtil,
+    getMethodMetadata, isNumber, lang, PromiseUtil,
     getOwnTypeMetadata, Injectable
 } from '@ts-ioc/ioc';
 import { Before } from '../decorators/Before';
@@ -14,7 +14,6 @@ import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMeta
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { SuiteRunnerToken, ISuiteRunner } from './ISuiteRunner';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert';
-import { ContainerToken, IContainer } from '@ts-ioc/core';
 
 /**
  * Suite runner.
@@ -26,15 +25,8 @@ import { ContainerToken, IContainer } from '@ts-ioc/core';
 @Injectable(SuiteRunnerToken)
 export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
 
-    @Inject(ContainerToken)
-    container: IContainer;
-
     timeout: number;
     describe: string;
-
-    constructor() {
-        super();
-    }
 
     /**
      * get suite describe.

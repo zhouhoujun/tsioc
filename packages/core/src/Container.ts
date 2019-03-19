@@ -6,7 +6,6 @@ import { ModuleLoader, IModuleLoader } from './services';
 import { registerCores } from './registerCores';
 import { ResolveServiceContext, ResolveServicesContext } from './actions';
 import { TargetRefs } from './TargetService';
-import { map } from 'rxjs/operators';
 
 
 /**
@@ -152,7 +151,7 @@ export class Container extends IocContainer implements IContainer {
         let maps = this.getServiceProviders(token, target as any, context);
 
         let services = [];
-        maps.iterator((fac)=>{
+        maps.iterator((fac) => {
             services.push(fac(...providers));
         });
         return services;

@@ -1,6 +1,6 @@
 import { IContainer } from '@ts-ioc/core';
 import { Task } from '../decorators/Task';
-import { DIModuleInjector, ModuleResovler, IDIModuleReflect } from '@ts-ioc/bootstrap';
+import { DIModuleInjector, ModuleResovler, IDIModuleReflect } from '@ts-ioc/boot';
 import { Singleton, Type } from '@ts-ioc/ioc';
 
 

@@ -38,10 +38,10 @@ const builtins = require('rollup-plugin-node-builtins');
                 '@ts-ioc/core',
                 '@ts-ioc/aop',
                 '@ts-ioc/logs',
-                '@ts-ioc/bootstrap',
+                '@ts-ioc/boot',
                 '@ts-ioc/platform-server',
                 '@ts-ioc/platform-server-logs',
-                '@ts-ioc/platform-server-bootstrap',
+                '@ts-ioc/platform-server-boot',
                 '@ts-ioc/activities'
             ],
             globals: {
@@ -54,10 +54,10 @@ const builtins = require('rollup-plugin-node-builtins');
                 '@ts-ioc/aop': '@ts-ioc/aop',
                 '@ts-ioc/logs': '@ts-ioc/logs',
                 '@ts-ioc/annotations': '@ts-ioc/annotations',
-                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap',
+                '@ts-ioc/boot': '@ts-ioc/boot',
                 '@ts-ioc/platform-server': '@ts-ioc/platform-server',
                 '@ts-ioc/platform-server-logs': '@ts-ioc/platform-server-logs',
-                '@ts-ioc/platform-server-bootstrap': '@ts-ioc/platform-server-bootstrap',
+                '@ts-ioc/platform-server-boot': '@ts-ioc/platform-server-boot',
                 '@ts-ioc/activities': '@ts-ioc/activities'
             },
             input: ctx.relativeRoot(ctx.config.data.input)

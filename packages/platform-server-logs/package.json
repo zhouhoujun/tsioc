@@ -41,7 +41,7 @@
     "@ts-ioc/ioc": "^5.0.0",
     "@ts-ioc/core": "^5.0.0",
     "@ts-ioc/aop": "^5.0.0",
-    "@ts-ioc/bootstrap": "^4.0.5",
+    "@ts-ioc/boot": "^4.0.5",
     "@ts-ioc/platform-server": "^4.0.5",
     "bluebird": "^3.5.3",
     "chalk": "^2.4.2",

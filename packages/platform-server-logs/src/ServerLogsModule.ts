@@ -1,17 +1,13 @@
-import { DIModule } from '@ts-ioc/bootstrap';
+import { DIModule, ModuleScope } from '@ts-ioc/boot';
 import { ServerLogFormater } from './ServerLogFormater';
 import { Log4jsAdapter } from './Log4jsAdapter';
 
 @DIModule({
-    asRoot: true,
+    regScope: ModuleScope.all,
     imports: [
         ServerLogFormater,
         Log4jsAdapter
     ]
-    // exports: [
-    //     ServerLogFormater,
-    //     Log4jsAdapter
-    // ]
 })
 export class ServerLogsModule {
 

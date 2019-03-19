@@ -1,7 +1,6 @@
 import 'core-js';
 import { IocExt, ContainerToken, IContainer, ContainerBuilderToken, ModuleLoader } from '@ts-ioc/core';
 import { BrowserModuleLoader } from './BrowserModuleLoader';
-import { BrowserContainerBuilder } from './ContainerBuilder';
 import { Inject } from '@ts-ioc/ioc';
 
 
@@ -26,6 +25,5 @@ export class BrowserModule {
     setup() {
         let container = this.container;
         container.bindProvider(ModuleLoader,  new BrowserModuleLoader());
-        container.bindProvider(ContainerBuilderToken, new BrowserContainerBuilder());
     }
 }

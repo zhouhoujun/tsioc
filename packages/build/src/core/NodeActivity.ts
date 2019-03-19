@@ -12,7 +12,7 @@ import {
 } from 'shelljs';
 import * as globby from 'globby';
 import { CmdOptions, INodeActivityContext } from './INodeContext';
-import { ProcessRunRootToken, MetaAccessor } from '@ts-ioc/bootstrap';
+import { ProcessRunRootToken, MetaAccessor } from '@ts-ioc/boot';
 
 
 const minimist = require('minimist');

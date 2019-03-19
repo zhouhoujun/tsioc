@@ -1,4 +1,4 @@
-import { ConfigureRegister, RunnableConfigure } from '@ts-ioc/bootstrap';
+import { ConfigureRegister, RunnableConfigure } from '@ts-ioc/boot';
 import { Singleton } from '@ts-ioc/ioc';
 import { DebugLogAspect } from '@ts-ioc/logs';
 

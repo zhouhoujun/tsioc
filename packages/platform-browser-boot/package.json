@@ -1,13 +1,13 @@
 {
-  "name": "@ts-ioc/platform-browser-bootstrap",
+  "name": "@ts-ioc/platform-browser-boot",
   "version": "4.0.5",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
-  "es2015": "./fesm2015/platform-browser-bootstrap.js",
+  "es2015": "./fesm2015/platform-browser-boot.js",
   "esm2015": "./es2015/index.js",
   "esm5": "./lib/index.js",
-  "fesm5": "./fesm5/platform-browser-bootstrap.js",
-  "module": "./fesm5/platform-browser-bootstrap.js",
-  "main": "./bundles/platform-browser-bootstrap.umd.js",
+  "fesm5": "./fesm5/platform-browser-boot.js",
+  "module": "./fesm5/platform-browser-boot.js",
+  "main": "./bundles/platform-browser-boot.umd.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",
@@ -44,7 +44,7 @@
     "tslib": "^1.9.3",
     "@ts-ioc/ioc": "^5.0.0",
     "@ts-ioc/core": "^4.0.5",
-    "@ts-ioc/bootstrap": "^4.0.5",
+    "@ts-ioc/boot": "^4.0.5",
     "@ts-ioc/platform-browser": "^4.0.5"
   },
   "directories": {

@@ -1,4 +1,4 @@
-import { AnnotationConfigure } from '@ts-ioc/bootstrap';
+import { RunnableConfigure } from '@ts-ioc/boot';
 
 /**
  * Suite metadata.
@@ -7,7 +7,7 @@ import { AnnotationConfigure } from '@ts-ioc/bootstrap';
  * @interface SuiteMetadata
  * @extends {ClassMetadata}
  */
-export interface SuiteMetadata extends AnnotationConfigure<any> {
+export interface SuiteMetadata extends RunnableConfigure {
     /**
      * test suite describe message.
      *

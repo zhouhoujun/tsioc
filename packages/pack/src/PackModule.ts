@@ -1,4 +1,4 @@
-import { DIModule } from '@ts-ioc/bootstrap';
+import { DIModule } from '@ts-ioc/boot';
 import { BuildModule } from '@ts-ioc/build';
 import { PackSetup } from './PackSetup';
 import * as cores from './core';

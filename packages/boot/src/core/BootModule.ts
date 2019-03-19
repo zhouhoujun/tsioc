@@ -38,14 +38,13 @@ export class BootModule {
         decReg.register(Annotation, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
         decReg.register(DIModule, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
 
-        container.use(modules, handles, actions);
+        container.use(modules, handles, actions, services);
 
         let chain = container.get(ModuleInjectorManager);
         chain
             .use(RootModuleInjector, true)
             .use(DIModuleInjector, true);
 
-        container.use(services);
 
         container.get(RouteResolveAction)
             .use(ResolveModuleExportAction)
@@ -71,7 +70,6 @@ export class BootModule {
 
         container.get(ResolveLifeScope)
             .use(RouteResolveAction);
-
 
     }
 }

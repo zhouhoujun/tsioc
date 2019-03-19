@@ -62,17 +62,17 @@ export class CompositeHandle<T extends HandleContext> extends Handle<T> {
     }
 
     async execute(ctx: T, next?: Next): Promise<void> {
-        this.execMiddlewares(ctx, this.handles, next);
+        this.execHandles(ctx, this.handles, next);
     }
 
-    protected execMiddlewares(ctx: T, handles: HandleType<T>[], next?: Next) {
+    protected execHandles(ctx: T, handles: HandleType<T>[], next?: Next) {
         PromiseUtil.runInChain(handles.map(ac => this.toHanldeFunc(ac)), ctx, next);
     }
 
     protected toHanldeFunc(ac: HandleType<T>): PromiseUtil.ActionHandle<T> {
         if (isClass(ac)) {
             return (ctx: T, next?: Next) => {
-                let action = this.resolveMiddleware(ctx, ac);
+                let action = this.resolveHandle(ctx, ac);
                 if (action instanceof Handle) {
                     return action.execute(ctx, next);
                 } else {
@@ -85,7 +85,7 @@ export class CompositeHandle<T extends HandleContext> extends Handle<T> {
         return ac;
     }
 
-    protected resolveMiddleware(ctx: T, ac: Type<Handle<T>>) {
+    protected resolveHandle(ctx: T, ac: Type<Handle<T>>) {
         return ctx.resolve(ac);
     }
 }

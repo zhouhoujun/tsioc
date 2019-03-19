@@ -10,7 +10,7 @@ import { ActivityConfigure, ExpressionType, Expression, ActivityType, Active, Ex
 import { IActivityContext, InputDataToken, InjectActivityContextToken, ActivityContextToken } from './IActivityContext';
 import { IActivityMetadata } from '../metadatas';
 import { ContainerToken, IContainer, ResolveServiceContext } from '@ts-ioc/core';
-import { MetaAccessor } from '@ts-ioc/bootstrap';
+import { MetaAccessor } from '@ts-ioc/boot';
 import { ActivityMetaAccessor } from './ActivityMetaAccessor';
 
 

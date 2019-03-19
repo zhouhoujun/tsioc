@@ -1,4 +1,4 @@
-import { DIModule } from '@ts-ioc/bootstrap';
+import { DIModule } from '@ts-ioc/boot';
 import * as buildcore from './core';
 import { ServerActivitiesModule } from '@ts-ioc/platform-server-activities';
 import { AssetSetup } from './AssetSetup';

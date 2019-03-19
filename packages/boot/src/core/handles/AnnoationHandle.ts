@@ -1,7 +1,7 @@
 import { Handle, Next } from './Handle';
 import { HandleContext } from './HandleContext';
-import { Abstract, ProviderMap, Type, Token } from '@ts-ioc/ioc';
-import { ModuleConfigure, ModuleResovler } from '../modules';
+import { Abstract, ProviderMap, Type } from '@ts-ioc/ioc';
+import { ModuleConfigure, ModuleResovler, ModuleScope } from '../modules';
 import { IContainer } from '@ts-ioc/core';
 
 /**
@@ -13,10 +13,9 @@ import { IContainer } from '@ts-ioc/core';
  */
 export class AnnoationContext extends HandleContext {
 
-    constructor(type: Type<any>, token?: Token<any>) {
+    constructor(type: Type<any>) {
         super();
         this.type = type;
-        this.token = token;
     }
 
     /**
@@ -52,12 +51,12 @@ export class AnnoationContext extends HandleContext {
     moduleResolver?: ModuleResovler<any>;
 
     /**
-     * is root module or not.
+     * the way to register the module. default as child module.
      *
      * @type {boolean}
-     * @memberof AnnoationContext
+     * @memberof ModuleConfig
      */
-    isRoot?: boolean;
+    moduleScope?: ModuleScope;
 }
 
 /**

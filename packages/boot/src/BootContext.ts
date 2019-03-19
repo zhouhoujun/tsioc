@@ -1,8 +1,14 @@
 import { AnnoationContext } from './core';
-import { RunnableConfigure } from './annotations';
+import { RunnableConfigure, ConfigureManager } from './annotations';
 import { IModuleLoader, IContainer } from '@ts-ioc/core';
-import { ProviderTypes, LoadType, isBaseObject, Type } from '@ts-ioc/ioc';
+import { ProviderTypes, LoadType, isBaseObject, Type, InjectToken } from '@ts-ioc/ioc';
 import { Runnable } from './runnable';
+
+
+/**
+ *  process run root.
+ */
+export const ProcessRunRootToken = new InjectToken<string>('__boot_process_root');
 
 /**
  * boot options
@@ -28,12 +34,20 @@ export interface BootOptions {
     loader?: IModuleLoader;
 
     /**
-     * annoation config.
+     * annoation metadata config.
      *
      * @type {AnnotationConfigure<any>}
      * @memberof AnnoationContext
      */
     annoation?: RunnableConfigure;
+
+    /**
+     * custom configures
+     *
+     * @type {((string | RunnableConfigure)[])}
+     * @memberof BootOptions
+     */
+    configures?: (string | RunnableConfigure)[];
 
     /**
      * the annoation module
@@ -125,12 +139,21 @@ export class BootContext extends AnnoationContext {
     loader?: IModuleLoader;
 
     /**
-     * annoation config.
+     * annoation metadata config.
      *
      * @type {AnnotationConfigure<any>}
      * @memberof AnnoationContext
      */
     annoation?: RunnableConfigure;
+
+
+    /**
+     * custom configures
+     *
+     * @type {((string | RunnableConfigure)[])}
+     * @memberof BootContext
+     */
+    configures?: (string | RunnableConfigure)[];
 
     /**
      * target module instace.
@@ -198,6 +221,17 @@ export class BootContext extends AnnoationContext {
         if (isBaseObject(options)) {
             Object.assign(this, options);
         }
+    }
+
+    /**
+     * get configure manager.
+     *
+     * @template T
+     * @returns {ConfigureManager<T>}
+     * @memberof BootContext
+     */
+    getConfigureManager<T>(): ConfigureManager<T> {
+        return this.resolve(ConfigureManager) as ConfigureManager<T>;
     }
 
     static create(type: Type<any>, options?: BootOptions): BootContext {

@@ -2,7 +2,6 @@ import { Inject, PromiseUtil, Singleton, Token } from '@ts-ioc/ioc';
 import { ISuiteRunner } from './ISuiteRunner';
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { Assert } from '../assert';
-import { RunnableOptions, BootOptions } from '@ts-ioc/bootstrap';
 import { ContainerToken, IContainer } from '@ts-ioc/core';
 
 declare let window: any;
@@ -53,7 +52,7 @@ export class OldTestRunner implements ISuiteRunner {
         this.timeout = timeout || (3 * 60 * 60 * 1000);
     }
 
-    async onInit(options: RunnableOptions<any>, bootOptions?: BootOptions<any>): Promise<void> {
+    async onInit(): Promise<void> {
 
     }
 

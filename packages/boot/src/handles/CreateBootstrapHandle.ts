@@ -7,7 +7,7 @@ import { Singleton } from '@ts-ioc/ioc';
 export class CreateBootstrapHandle extends BootHandle {
     async execute(ctx: BootContext, next: Next): Promise<void> {
         if (ctx.annoation.bootstrap && !ctx.bootstrap) {
-            ctx.bootstrap = ctx.resolve(ctx.annoation.bootstrap);
+            ctx.bootstrap = ctx.resolve(ctx.annoation.bootstrap, { provide: BootContext, useValue: ctx });
         }
         await next();
     }

@@ -5,7 +5,7 @@ import { BootModule } from './BootModule';
 
 export const RootContainerToken = new InjectToken<IContainer>('__ioc_root_container');
 export const ParentContainerToken = new InjectToken<IContainer>('__ioc_parent_container');
-export const ChildrenContainerToken = new InjectToken<IContainer[]>('__ioc_children_container');
+// export const ChildrenContainerToken = new InjectToken<IContainer[]>('__ioc_children_container');
 /**
  *  container pool token.
  */
@@ -72,13 +72,20 @@ export class ContainerPool {
             return;
         }
         container.bindProvider(RootContainerToken, this.root);
-        if (parent && parent !== container) {
-            container.bindProvider(ParentContainerToken, parent);
-
-            let children = parent.get(ChildrenContainerToken) || [];
-            children.push(container);
-            parent.bindProvider(ChildrenContainerToken, children);
+        if (!container.has(ContainerPoolToken)) {
+            container.bindProvider(ContainerPoolToken, () => this);
         }
+        parent = parent || this.root
+        if (parent !== container) {
+            container.bindProvider(ParentContainerToken, parent);
+            // let children = parent.get(ChildrenContainerToken) || [];
+            // children.push(container);
+            // parent.bindProvider(ChildrenContainerToken, children);
+        }
+    }
+
+    hasParent(container: IContainer): boolean {
+        return container && container.has(ParentContainerToken);
     }
 
     getParent(container: IContainer): IContainer {

@@ -1,5 +1,5 @@
 import { IContainer, ContainerToken } from './IContainer';
-import { ModuleInjectorManager, IteratorService, ModuleLoader } from './services';
+import { ModuleInjectorManager, ModuleLoader } from './services';
 import { IocExt } from './decorators';
 import { DecoratorRegisterer, MethodAutorunAction, ResolveLifeScope, BindProviderAction, DesignLifeScope } from '@ts-ioc/ioc';
 import {
@@ -12,7 +12,6 @@ import {
 export function registerCores(container: IContainer) {
 
     container.bindProvider(ContainerToken, () => container);
-    container.register(IteratorService);
     container.register(ModuleLoader);
 
     container.register(ModuleInjectorManager);
@@ -33,7 +32,6 @@ export function registerCores(container: IContainer) {
 
     container.register(IocExtRegisterAction);
 
-    
     container.register(ResolveServicesAction);
     container.register(ResovleServicesInTargetAction);
     container.register(ResovleServicesInRaiseAction);

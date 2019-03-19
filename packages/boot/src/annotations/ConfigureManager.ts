@@ -5,7 +5,6 @@ import {
 } from './IConfigureManager';
 import { RunnableConfigure } from './RunnableConfigure';
 import { ContainerToken, IContainer } from '@ts-ioc/core';
-import { RootModule } from '../core';
 
 
 /**
@@ -14,7 +13,6 @@ import { RootModule } from '../core';
  * @export
  * @class ConfigureManager
  */
-@RootModule
 @Singleton(ConfigureMgrToken)
 export class ConfigureManager<T extends RunnableConfigure> implements IConfigureManager<T> {
     /**

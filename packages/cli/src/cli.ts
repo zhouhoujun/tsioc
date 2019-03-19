@@ -56,16 +56,16 @@ program
                     '@ts-ioc/annotations',
                     '@ts-ioc/aop',
                     '@ts-ioc/logs',
-                    '@ts-ioc/bootstrap',
+                    '@ts-ioc/boot',
                     '@ts-ioc/activities'
                 ];
                 if (options.browser) {
                     cmds.push('@ts-ioc/platform-browser');
-                    cmds.push('@ts-ioc/platform-browser-bootstrap');
+                    cmds.push('@ts-ioc/platform-browser-boot');
                     cmds.push('@ts-ioc/platform-browser-activities');
                 } else {
                     cmds.push('@ts-ioc/platform-server');
-                    cmds.push('@ts-ioc/platform-server-bootstrap');
+                    cmds.push('@ts-ioc/platform-server-boot');
                     cmds.push('@ts-ioc/platform-server-activities');
                 }
                 initcmds = `npm install ${initcmds} ${cmds.join(version) + version} --save${options.dev ? '-dev' : ''}`;
@@ -79,9 +79,9 @@ program
                     '@ts-ioc/annotations',
                     '@ts-ioc/aop',
                     '@ts-ioc/logs',
-                    '@ts-ioc/bootstrap',
+                    '@ts-ioc/boot',
                     '@ts-ioc/platform-server',
-                    '@ts-ioc/platform-server-bootstrap',
+                    '@ts-ioc/platform-server-boot',
                     '@ts-ioc/activities',
                     '@ts-ioc/platform-server-activities',
                     '@ts-ioc/build',
@@ -100,14 +100,14 @@ program
                     '@ts-ioc/annotations',
                     '@ts-ioc/aop',
                     '@ts-ioc/logs',
-                    '@ts-ioc/bootstrap'
+                    '@ts-ioc/boot'
                 ];
                 if (options.browser) {
                     cmds.push('@ts-ioc/platform-browser');
-                    cmds.push('@ts-ioc/platform-browser-bootstrap');
+                    cmds.push('@ts-ioc/platform-browser-boot');
                 } else {
                     cmds.push('@ts-ioc/platform-server');
-                    cmds.push('@ts-ioc/platform-server-bootstrap');
+                    cmds.push('@ts-ioc/platform-server-boot');
                 }
                 initcmds = `npm install ${initcmds} ${cmds.join(version) + version} --save${options.dev ? '-dev' : ''}`;
                 console.log(initcmds);

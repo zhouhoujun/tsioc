@@ -1,29 +1,30 @@
 import { IContainer } from '@ts-ioc/core';
-import { AppConfigure, ApplicationBuilder, IApplicationBuilder, IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken } from '@ts-ioc/bootstrap';
+import { IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken, ModuleScope } from '@ts-ioc/boot';
 import * as path from 'path';
 import { ServerModule } from '@ts-ioc/platform-server';
 import { Injectable } from '@ts-ioc/ioc';
+import { RunnableConfigure } from '@ts-ioc/boot';
 
 declare let require: any;
 
 @Injectable(ConfigureLoaderToken)
-export class ConfigureFileLoader implements IConfigureLoader<AppConfigure> {
+export class ConfigureFileLoader implements IConfigureLoader<RunnableConfigure> {
     constructor(private baseURL: string, private container: IContainer) {
 
     }
-    async load(uri?: string): Promise<AppConfigure> {
+    async load(uri?: string): Promise<RunnableConfigure> {
         const fs = require('fs');
         if (uri) {
             if (fs.existsSync(uri)) {
-                return require(uri) as AppConfigure;
+                return require(uri) as RunnableConfigure;
             } else if (fs.existsSync(path.join(this.baseURL, uri))) {
-                return require(path.join(this.baseURL, uri)) as AppConfigure;
+                return require(path.join(this.baseURL, uri)) as RunnableConfigure;
             } else {
                 console.log(`config file: ${uri} not exists.`)
                 return null;
             }
         } else {
-            let cfgmodeles: AppConfigure;
+            let cfgmodeles: RunnableConfigure;
             let cfgpath = path.join(this.baseURL, './config');
             ['.js', '.ts', '.json'].forEach(ext => {
                 if (cfgmodeles) {
@@ -42,17 +43,6 @@ export class ConfigureFileLoader implements IConfigureLoader<AppConfigure> {
 }
 
 
-/**
- * server app.
- *
- * @export
- * @template T
- * @param {string} [baseURL]
- * @returns {IApplicationBuilderServer<T>}
- */
-export function serverApp<T>(baseURL?: string): IApplicationBuilder<T> {
-    return new ApplicationBuilder<T>(baseURL).use(ServerBootstrapModule);
-}
 
 let cwd = process.cwd();
 let processRoot = path.join(path.dirname(cwd), path.basename(cwd));
@@ -64,7 +54,7 @@ let processRoot = path.join(path.dirname(cwd), path.basename(cwd));
  * @class ServerBootstrapModule
  */
 @DIModule({
-    asRoot: true,
+    regScope: ModuleScope.all,
     imports: [
         ServerModule,
         ConfigureFileLoader
@@ -72,10 +62,6 @@ let processRoot = path.join(path.dirname(cwd), path.basename(cwd));
     providers: [
         { provide: ProcessRunRootToken, useValue: processRoot }
     ]
-    // exports: [
-    //     ServerModule,
-    //     ConfigureFileLoader
-    // ]
 })
 export class ServerBootstrapModule {
 

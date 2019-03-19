@@ -1,5 +1,5 @@
-import { DIModule, AfterStart, ApplicationBuilder, Runner } from '../src';
-import { Injectable, Inject, IContainer, ContainerToken } from '@ts-ioc/core';
+import { DIModule, Runnable } from '../src';
+import { Injectable, Inject } from '@ts-ioc/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@ts-ioc/aop';
 import { LogModule } from '@ts-ioc/logs';
 
@@ -39,7 +39,9 @@ export class ModuleA {
 }
 
 @Injectable
-export class ClassSevice extends  Runner<any> {
+export class ClassSevice extends Runnable<any> {
+    async onInit(): Promise<void> {
+    }
     @Inject('mark')
     mark: string;
     state: string;

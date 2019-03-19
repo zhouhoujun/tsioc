@@ -17,13 +17,15 @@ export class ResolveSerivesInExportAction extends IocResolveServicesAction {
     }
 
     depIterator(ctx: ResolveServicesContext, resolver: IResolverContainer) {
-        ctx.targetRefs.forEach(t => {
-            resolver.iterator((fac, tk) => {
-                if (isClassType(tk) && ctx.types.some(ty => lang.isExtendsClass(tk, ty))) {
-                    ctx.services.add(tk, (...providers: ProviderTypes[]) => fac(...providers));
-                }
-            })
-        });
+        if (ctx.targetRefs && ctx.targetRefs.length) {
+            ctx.targetRefs.forEach(t => {
+                resolver.iterator((fac, tk) => {
+                    if (isClassType(tk) && ctx.types.some(ty => lang.isExtendsClass(tk, ty))) {
+                        ctx.services.add(tk, (...providers: ProviderTypes[]) => fac(...providers));
+                    }
+                })
+            });
+        }
         if (resolver.has(DIModuleExports)) {
             resolver.resolve(DIModuleExports).getResolvers()
                 .forEach(r => {
@@ -31,5 +33,4 @@ export class ResolveSerivesInExportAction extends IocResolveServicesAction {
                 })
         }
     }
-
 }

@@ -1,10 +1,9 @@
 import {
     CompositeHandle, AnnoationContext, RegisterModuleHandle, RegisterImportsHandle,
     RegisterModuleExportsHandle, RegisterModuleResolverHandle,
-    RegisterExportsHandle, RegisterModuleRegisterHandle
+    RegisterExportsHandle, RegisterModuleRegisterHandle, CheckAnnoHandle, ModuleContainerHandle
 } from '../handles';
 import { Singleton, Autorun } from '@ts-ioc/ioc';
-import { CheckAnnoHandle, ModuleContainerHandle } from '../handles';
 import { AnnoationLifeScope } from './AnnoationLifeScope';
 
 @Singleton

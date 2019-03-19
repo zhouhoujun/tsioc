@@ -1,5 +1,6 @@
 import { Token, LoadType, Modules, ComponentMetadata, Type } from '@ts-ioc/ioc';
 import { IMetaAccessor } from './IMetaAccessor';
+import { IRunnable } from '../../runnable';
 
 
 /**
@@ -29,6 +30,31 @@ export interface IAnnotationMetadata<T> extends ComponentMetadata {
 }
 
 /**
+ * register module scope.
+ *
+ * @export
+ * @enum {number}
+ */
+export enum ModuleScope {
+    /**
+     * register as child module.
+     */
+    child  = 1,
+    /**
+     * regiser as root module
+     */
+    root,
+    /**
+     * current boot module
+     */
+    booModule,
+    /**
+     * register all container in pools.
+     */
+    all
+}
+
+/**
  * module metadata.
  *
  * @export
@@ -46,12 +72,12 @@ export interface IModuleMetadata<T> extends IAnnotationMetadata<T> {
     baseURL?: string;
 
     /**
-     * register the module in root.
+     * the way to register the module. default as child module.
      *
      * @type {boolean}
      * @memberof ModuleConfig
      */
-    asRoot?: boolean;
+    regScope?: ModuleScope;
 
     /**
      * module name.
@@ -91,6 +117,14 @@ export interface IModuleMetadata<T> extends IAnnotationMetadata<T> {
      * @memberof AnnotationConfigure
      */
     metaAccessor?: Token<IMetaAccessor>;
+
+    /**
+     * default runnerable.
+     *
+     * @type {Token<IRunnable<T>>}
+     * @memberof IModuleMetadata
+     */
+    defaultRunnable?: Token<IRunnable<T>>
 
 }
 

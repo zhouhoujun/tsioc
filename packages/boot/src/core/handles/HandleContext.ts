@@ -52,6 +52,7 @@ export class HandleContext implements IResolver {
     has<T>(key: Token<T>, alias?: string): boolean {
         return this.getRaiseContainer().has(key, alias);
     }
+
     resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
         return this.getRaiseContainer().resolve(token, ...providers);
     }

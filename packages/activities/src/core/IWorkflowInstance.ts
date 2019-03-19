@@ -1,7 +1,7 @@
 import { IActivityResult, IActivity, ActivityToken } from './IActivity';
 import { Observable } from 'rxjs';
 import { Joinpoint } from '@ts-ioc/aop';
-import { IService, InjectRunnableToken } from '@ts-ioc/bootstrap';
+import { IService, InjectRunnableToken } from '@ts-ioc/boot';
 import { IActivityContextResult } from './IActivityContext';
 
 

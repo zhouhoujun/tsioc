@@ -8,52 +8,47 @@ const commonjs = require('rollup-plugin-commonjs');
 // import { rollup } from 'rollup';
 const rollup = require('gulp-rollup');
 const rename = require('gulp-rename');
-const builtins = require('rollup-plugin-node-builtins');
 
 @Asset({
     src: 'lib/**/*.js',
-    dest: 'fesm5',
+    dest: 'bundles',
     data: {
-        name: 'platform-server-bootstrap.js',
+        name: 'platform-browser-boot.umd.js',
         input: 'lib/index.js'
     },
     sourcemaps: true,
     pipes: [
         (ctx: TransformContext) => rollup({
             name: ctx.config.data.name,
-            format: 'cjs',
+            format: 'umd',
             sourceMap: true,
             plugins: [
                 resolve(),
                 commonjs(),
-                // builtins(),
                 rollupSourcemaps()
             ],
             external: [
                 'reflect-metadata',
                 'tslib',
-                'globby',
-                'path',
-                'fs',
+                'core-js',
                 '@ts-ioc/core',
                 '@ts-ioc/aop',
-                '@ts-ioc/bootstrap',
-                '@ts-ioc/platform-server'
+                '@ts-ioc/boot',
+                '@ts-ioc/platform-browser'
+
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
                 'tslib': 'tslib',
-                'path': 'path',
-                'globby': 'globby',
-                'fs': 'fs',
+                'core-js': 'core-js',
                 '@ts-ioc/core': '@ts-ioc/core',
                 '@ts-ioc/aop': '@ts-ioc/aop',
-                '@ts-ioc/bootstrap': '@ts-ioc/bootstrap',
-                '@ts-ioc/platform-server': '@ts-ioc/platform-server'
+                '@ts-ioc/boot': '@ts-ioc/boot',
+                '@ts-ioc/platform-browser': '@ts-ioc/platform-browser'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),
-        (ctx) => rename(ctx.config.data.name)
+        (act) => rename(act.config.data.name)
     ]
 })
 export class BootRollup extends AssetActivity {
@@ -67,8 +62,28 @@ export class BootRollup extends AssetActivity {
     assets: {
         ts: {
             sequence: [
-                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.json', activity: TsCompile },
-                BootRollup
+                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, activity: TsCompile },
+                BootRollup,
+                {
+                    name: 'zip',
+                    src: 'bundles/platform-browser-boot.umd.js',
+                    dest: 'bundles',
+                    sourcemaps: true,
+                    uglify: true,
+                    pipes: [
+                        () => rename('platform-browser-boot.umd.min.js')
+                    ],
+                    task: AssetActivity
+                },
+                {
+                    src: 'lib/**/*.js', dest: 'fesm5',
+                    data: {
+                        name: 'platform-browser-boot.js',
+                        input: 'lib/index.js',
+                        format: 'cjs'
+                    },
+                    activity: BootRollup
+                }
             ]
         },
         ts2015: {
@@ -78,20 +93,20 @@ export class BootRollup extends AssetActivity {
                     src: 'es2015/**/*.js',
                     dest: 'fesm2015',
                     data: {
-                        name: 'platform-server-activities.js',
-                        input: './es2015/index.js'
-                    },
-                    activity: BootRollup
+                        name: 'platform-browser-activities.js',
+                        input: './es2015/index.js',
+                        format: 'cjs'
+                    }, activity: BootRollup
                 }
             ]
         }
     }
 })
-export class PfServerBootBuilder {
+export class PfBrowserBootBuilder extends PackActivity {
 }
 
 if (process.cwd() === __dirname) {
     Workflow.create()
         .use(PackModule)
-        .bootstrap(PfServerBootBuilder);
+        .bootstrap(PfBrowserBootBuilder);
 }

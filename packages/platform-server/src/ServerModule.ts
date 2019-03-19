@@ -1,6 +1,5 @@
 import { IocExt, ContainerToken, IContainer, ModuleLoader, ContainerBuilderToken } from '@ts-ioc/core';
 import { NodeModuleLoader } from './NodeModuleLoader';
-import { ServerContainerBuilder } from './ContainerBuilder';
 import { Inject } from '@ts-ioc/ioc';
 
 
@@ -27,6 +26,5 @@ export class ServerModule {
     setup() {
         let container = this.container;
         container.bindProvider(ModuleLoader, new NodeModuleLoader());
-        container.bindProvider(ContainerBuilderToken, new ServerContainerBuilder());
     }
 }

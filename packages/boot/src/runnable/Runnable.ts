@@ -89,7 +89,9 @@ export abstract class Runnable<T> implements IRunnable<any> {
         this._ctx = ctx;
     }
 
-    abstract onInit(): Promise<void>;
+    async onInit(): Promise<void> {
+
+    }
 
     getTarget(): T {
         return this.ctx.bootstrap;

@@ -40,7 +40,7 @@
   "dependencies": {
     "@ts-ioc/ioc": "^5.0.0",
     "@ts-ioc/aop": "^4.0.5",
-    "@ts-ioc/bootstrap": "^4.0.5",
+    "@ts-ioc/boot": "^4.0.5",
     "@ts-ioc/core": "^4.0.5",
     "@ts-ioc/logs": "^4.0.5",
     "reflect-metadata": "^0.1.12",
