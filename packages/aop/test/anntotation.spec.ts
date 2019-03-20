@@ -6,6 +6,7 @@ import { CheckRightAspect } from './aop/CheckRightAspect';
 import { IocLog } from './aop/IocLog';
 import { AopModule } from '../src';
 import expect = require('expect');
+import { IContainer, ContainerBuilder } from '@ts-ioc/core';
 
 
 describe('aop test', () => {
@@ -75,11 +76,11 @@ describe('aop test', () => {
         }
     }
 
-    let container: IIocContainer;
+    let container: IContainer;
     beforeEach(async () => {
-        let builder = new IocContainer();
-        container.register(AopModule);
-        container.register(IocLog);
+        let build  = new ContainerBuilder();
+        container =  build.create();
+        container.loadModule(AopModule, IocLog);
     });
 
     it('Aop anntotation test', () => {

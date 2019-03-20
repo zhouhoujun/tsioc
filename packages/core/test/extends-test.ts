@@ -1,4 +1,5 @@
-import { Abstract, Inject, ContainerToken, Injectable, IContainer} from '../src';
+import { Abstract, Inject, Injectable } from '@ts-ioc/ioc';
+import { ContainerToken, IContainer } from '../src';
 
 @Injectable
 export class Home {

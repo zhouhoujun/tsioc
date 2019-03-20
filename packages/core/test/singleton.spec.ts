@@ -1,6 +1,7 @@
-import { ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param } from '../src';
+import { AutoWired, Injectable, Singleton, ParameterMetadata, Param } from '@ts-ioc/ioc';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Person } from './debug';
 import expect = require('expect');
+import { ContainerBuilder } from '../src';
 
 describe('Singleton test', () => {
 
