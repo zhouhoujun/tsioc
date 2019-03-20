@@ -133,7 +133,7 @@ export class IocContainer implements IIocContainer {
      * @memberof Container
      */
     resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
-        let context = ResovleActionContext.create({
+        let context = ResovleActionContext.parse({
             token: token,
             providers: providers
         });
@@ -476,7 +476,7 @@ export class IocContainer implements IIocContainer {
 
         let factory = (...providers: ParamProviders[]) => {
             let providerMap = this.getProviderParser().parse(...providers);
-            let ctx = RegisterActionContext.create({
+            let ctx = RegisterActionContext.parse({
                 tokenKey: key,
                 targetType: ClassT,
                 singleton: singleton,
@@ -493,7 +493,7 @@ export class IocContainer implements IIocContainer {
         }
 
         this.get(DesignLifeScope).execute(
-            RegisterActionContext.create({
+            RegisterActionContext.parse({
                 tokenKey: key,
                 targetType: ClassT
             }, () => this));

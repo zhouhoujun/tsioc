@@ -1,7 +1,7 @@
 import { Handle, Next } from './Handle';
 import { HandleContext } from './HandleContext';
 import { Abstract, ProviderMap, Type } from '@ts-ioc/ioc';
-import { ModuleConfigure, ModuleResovler, ModuleScope } from '../modules';
+import { ModuleConfigure, ModuleResovler, RegScope } from '../modules';
 import { IContainer } from '@ts-ioc/core';
 
 /**
@@ -56,7 +56,7 @@ export class AnnoationContext extends HandleContext {
      * @type {boolean}
      * @memberof ModuleConfig
      */
-    moduleScope?: ModuleScope;
+    regScope?: RegScope;
 }
 
 /**

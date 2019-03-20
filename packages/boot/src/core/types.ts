@@ -1,6 +1,7 @@
 import { isClass, hasOwnClassMetadata } from '@ts-ioc/ioc';
 import { DIModule } from './decorators/DIModule';
 
+
 /**
  * is target di module class or not.
  *

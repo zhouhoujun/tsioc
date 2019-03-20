@@ -4,8 +4,9 @@ export * from './BootConfigureRegisterHandle';
 export * from './BootContextCheckHandle';
 export * from './BootProvidersHandle';
 export * from './BootDepsHandle';
-export * from './CreateModuleHandle';
-export * from './CreateBootstrapHandle';
-export * from './CreateRunnableHandle';
+export * from './ResolveModuleHandle';
+export * from './ResolveBootstrapHandle';
+export * from './ResolveRunnableHandle';
+export * from './RefRunnableHandle';
 export * from './RunBootHandle';
 

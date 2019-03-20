@@ -1,12 +1,13 @@
-import { BootHandle } from './BootHandle';
+
 import { BootContext } from '../BootContext';
-import { Next } from '../core';
-import { Singleton } from '@ts-ioc/ioc';
+import { Next, CompositeHandle } from '../core';
+import { Singleton, Autorun } from '@ts-ioc/ioc';
 import { Runnable } from '../runnable';
-import { ResolveServiceContext } from '@ts-ioc/core';
+import { RefRunnableHandle } from './RefRunnableHandle';
 
 @Singleton
-export class CreateRunnableHandle extends BootHandle {
+@Autorun('setup')
+export class ResolveRunnableHandle extends CompositeHandle<BootContext> {
     async execute(ctx: BootContext, next: Next): Promise<void> {
 
         if (ctx.bootstrap instanceof Runnable) {
@@ -14,11 +15,15 @@ export class CreateRunnableHandle extends BootHandle {
         } else if (ctx.target instanceof Runnable) {
             ctx.runnable = ctx.target;
         } else {
-            ctx.runnable = ctx.moduleContainer.getService(Runnable, ctx.bootstrap || ctx.target, ResolveServiceContext.create({ defaultToken: ctx.annoation.defaultRunnable }), { provide: BootContext, useValue: ctx });
+            super.execute(ctx);
         }
 
         if (ctx.runnable) {
             await next();
         }
+    }
+
+    setup() {
+        this.use(RefRunnableHandle)
     }
 }

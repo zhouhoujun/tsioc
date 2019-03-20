@@ -1,5 +1,5 @@
 import { IContainer } from '@ts-ioc/core';
-import { IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken, ModuleScope } from '@ts-ioc/boot';
+import { IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken, RegScope } from '@ts-ioc/boot';
 import * as path from 'path';
 import { ServerModule } from '@ts-ioc/platform-server';
 import { Injectable } from '@ts-ioc/ioc';
@@ -54,7 +54,7 @@ let processRoot = path.join(path.dirname(cwd), path.basename(cwd));
  * @class ServerBootstrapModule
  */
 @DIModule({
-    regScope: ModuleScope.all,
+    regScope: RegScope.all,
     imports: [
         ServerModule,
         ConfigureFileLoader

@@ -1,6 +1,7 @@
 import { Token, LoadType, Modules, ComponentMetadata, Type } from '@ts-ioc/ioc';
 import { IMetaAccessor } from './IMetaAccessor';
 import { IRunnable } from '../../runnable';
+import { RegScope } from './RegScope';
 
 
 /**
@@ -30,31 +31,6 @@ export interface IAnnotationMetadata<T> extends ComponentMetadata {
 }
 
 /**
- * register module scope.
- *
- * @export
- * @enum {number}
- */
-export enum ModuleScope {
-    /**
-     * register as child module.
-     */
-    child  = 1,
-    /**
-     * regiser as root module
-     */
-    root,
-    /**
-     * current boot module
-     */
-    booModule,
-    /**
-     * register all container in pools.
-     */
-    all
-}
-
-/**
  * module metadata.
  *
  * @export
@@ -77,7 +53,7 @@ export interface IModuleMetadata<T> extends IAnnotationMetadata<T> {
      * @type {boolean}
      * @memberof ModuleConfig
      */
-    regScope?: ModuleScope;
+    regScope?: RegScope;
 
     /**
      * module name.

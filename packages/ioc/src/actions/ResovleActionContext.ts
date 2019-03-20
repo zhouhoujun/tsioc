@@ -70,7 +70,7 @@ export class ResovleActionContext extends IocActionContext implements IResolver 
      * @returns {ResovleActionContext}
      * @memberof ResovleActionContext
      */
-    static create(options?: ResovleActionOption, raiseContainerGetter?: () => IIocContainer, containerGetter?: () => IResolverContainer): ResovleActionContext {
+    static parse(options?: ResovleActionOption, raiseContainerGetter?: () => IIocContainer, containerGetter?: () => IResolverContainer): ResovleActionContext {
         let ctx = new ResovleActionContext();
         if (options) {
             ctx.setOptions(options);

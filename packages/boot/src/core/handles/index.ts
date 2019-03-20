@@ -6,10 +6,10 @@ export * from './AnnoationHandle';
 export * from './MetaAccessorHandle';
 
 export * from './CheckAnnoHandle';
-export * from './ModuleContainerHandle';
+export * from './RegisterScopeHandle';
 export * from './RegisterModuleHandle';
 export * from './RegisterImportsHandle';
-export * from './RegisterModuleExportsHandle';
+export * from './RegisterModuleProvidersHandle';
 export * from './RegisterModuleResolverHandle';
 export * from './RegisterExportsHandle';
 export * from './RegisterModuleRegisterHandle';

@@ -2,7 +2,7 @@ import { Singleton, Autorun } from '@ts-ioc/ioc';
 import { CompositeHandle, AnnoationContext, ModuleInjectLifeScope } from '../core';
 import {
     BootContextCheckHandle, BootDepsHandle, BootProvidersHandle,
-    CreateModuleHandle, CreateRunnableHandle, CreateBootstrapHandle,
+    ResolveModuleHandle, ResolveRunnableHandle, ResolveBootstrapHandle,
     RunBootHandle, BootConfigureLoadHandle, BootConfigureRegisterHandle
 } from '../handles';
 
@@ -17,9 +17,9 @@ export class RunnableBuildLifeScope extends CompositeHandle<AnnoationContext> {
             .use(BootConfigureLoadHandle)
             .use(ModuleInjectLifeScope)
             .use(BootConfigureRegisterHandle)
-            .use(CreateModuleHandle)
-            .use(CreateBootstrapHandle)
-            .use(CreateRunnableHandle)
+            .use(ResolveModuleHandle)
+            .use(ResolveBootstrapHandle)
+            .use(ResolveRunnableHandle)
             .use(RunBootHandle);
     }
 }

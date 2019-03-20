@@ -2,7 +2,7 @@ import { Singleton, isFunction, isToken, isArray, lang, isClassType } from '@ts-
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { TargetService } from '../TargetService';
-import { ResolveServicesContext } from './IocResolveServicesAction';
+import { ResolveServicesContext } from './ResolveServicesContext';
 
 @Singleton
 export class InitServiceResolveAction extends IocResolveServiceAction {

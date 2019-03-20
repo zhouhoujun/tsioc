@@ -1,7 +1,6 @@
 import {
-    CompositeHandle, AnnoationContext, RegisterModuleHandle, RegisterImportsHandle,
-    RegisterModuleExportsHandle, RegisterModuleResolverHandle,
-    RegisterExportsHandle, RegisterModuleRegisterHandle, CheckAnnoHandle, ModuleContainerHandle
+    CompositeHandle, AnnoationContext, RegisterExportsHandle,
+    RegisterModuleRegisterHandle, CheckAnnoHandle, RegisterScopeHandle
 } from '../handles';
 import { Singleton, Autorun } from '@ts-ioc/ioc';
 import { AnnoationLifeScope } from './AnnoationLifeScope';
@@ -12,11 +11,7 @@ export class ModuleInjectLifeScope extends CompositeHandle<AnnoationContext> {
     setup() {
         this.use(AnnoationLifeScope)
             .use(CheckAnnoHandle)
-            .use(ModuleContainerHandle)
-            .use(RegisterModuleHandle)
-            .use(RegisterImportsHandle)
-            .use(RegisterModuleExportsHandle)
-            .use(RegisterModuleResolverHandle)
+            .use(RegisterScopeHandle)
             .use(RegisterExportsHandle)
             .use(RegisterModuleRegisterHandle);
     }

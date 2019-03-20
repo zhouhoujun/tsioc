@@ -1,8 +1,11 @@
-import { IocCompositeAction, lang, Singleton, isToken, isClass } from '@ts-ioc/ioc';
+import { IocCompositeAction, lang, Singleton, isToken, isClass, Autorun } from '@ts-ioc/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { TargetService } from '../TargetService';
+import { ResolveRefServiceAction } from './ResolveRefServiceAction';
+import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
 
 @Singleton
+@Autorun('setup')
 export class ResolveServiceInClassChain extends IocCompositeAction<ResolveServiceContext> {
     execute(ctx: ResolveServiceContext, next: () => void): void {
         if (ctx.currTargetRef) {
@@ -32,5 +35,10 @@ export class ResolveServiceInClassChain extends IocCompositeAction<ResolveServic
         } else {
             next();
         }
+    }
+
+    setup() {
+        this.use(ResolveRefServiceAction)
+            .use(ResolvePrivateServiceAction);
     }
 }

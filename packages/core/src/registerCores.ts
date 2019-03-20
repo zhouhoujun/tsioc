@@ -5,7 +5,8 @@ import { DecoratorRegisterer, MethodAutorunAction, ResolveLifeScope, BindProvide
 import {
     InitServiceResolveAction, ResolveRefServiceAction, ResolveServiceAction,
     ResolveServicesAction, ResolvePrivateServiceAction, ResolveServiceInClassChain,
-    ResolveDefaultServiceAction, DefaultResolveServiceAction, ResolveTargetServiceAction, IocExtRegisterAction, ResovleServicesInTargetAction, ResovleServicesInRaiseAction
+    ResolveDefaultServiceAction, DefaultResolveServiceAction, ResolveTargetServiceAction,
+    IocExtRegisterAction, ResovleServicesInTargetAction, ResovleServicesInRaiseAction
 } from './actions';
 
 
@@ -42,25 +43,6 @@ export function registerCores(container: IContainer) {
         .use(ResolveServiceAction, true)
         .use(ResolveServicesAction, true);
 
-    container.get(ResolveTargetServiceAction)
-        .use(ResolveRefServiceAction)
-        .use(ResolvePrivateServiceAction)
-        .use(ResolveServiceInClassChain);
-
-    container.get(ResolveServiceInClassChain)
-        .use(ResolveRefServiceAction)
-        .use(ResolvePrivateServiceAction);
-
-    container.get(ResolveServiceAction)
-        .use(InitServiceResolveAction)
-        .use(ResolveTargetServiceAction)
-        .use(DefaultResolveServiceAction)
-        .use(ResolveDefaultServiceAction);
-
-    container.get(ResolveServicesAction)
-        .use(InitServiceResolveAction)
-        .use(ResovleServicesInTargetAction)
-        .use(ResovleServicesInRaiseAction);
 
     container.get(DesignLifeScope)
         .use(IocExtRegisterAction);

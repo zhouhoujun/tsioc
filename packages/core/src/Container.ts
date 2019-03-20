@@ -108,7 +108,7 @@ export class Container extends IocContainer implements IContainer {
             target = null;
         }
         if (!context) {
-            context = ResolveServiceContext.create();
+            context = ResolveServiceContext.parse();
         }
         if (target) {
             context.target = target;
@@ -177,7 +177,7 @@ export class Container extends IocContainer implements IContainer {
             target = null;
         }
         if (!context) {
-            context = ResolveServicesContext.create();
+            context = ResolveServicesContext.parse();
         }
         if (target) {
             context.target = target;

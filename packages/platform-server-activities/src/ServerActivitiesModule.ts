@@ -1,4 +1,4 @@
-import { DIModule, ModuleScope } from '@ts-ioc/boot';
+import { DIModule, RegScope } from '@ts-ioc/boot';
 import { ServerModule } from '@ts-ioc/platform-server';
 import { ServerBootstrapModule } from '@ts-ioc/platform-server-boot';
 import { TaskLogAspect, RunnerLogAspect } from './aop';
@@ -7,7 +7,7 @@ import { ServerLogsModule } from '@ts-ioc/platform-server-logs';
 
 
 @DIModule({
-    regScope: ModuleScope.all,
+    regScope: RegScope.all,
     imports: [
         ServerModule,
         ServerBootstrapModule,

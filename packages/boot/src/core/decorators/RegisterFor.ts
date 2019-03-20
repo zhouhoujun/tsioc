@@ -1,7 +1,14 @@
 import { ITypeDecorator, ClassMetadata, createClassDecorator,  TypeMetadata, isNumber, ArgsIterator } from '@ts-ioc/ioc';
-import { ModuleScope } from '../modules/ModuleConfigure';
+import { RegScope } from '../modules/RegScope';
 
 
+/**
+ * register for metadata.
+ *
+ * @export
+ * @interface RegisterForMetadata
+ * @extends {TypeMetadata}
+ */
 export interface RegisterForMetadata extends TypeMetadata {
     /**
      * the way to register the module. default as child module.
@@ -9,7 +16,7 @@ export interface RegisterForMetadata extends TypeMetadata {
      * @type {boolean}
      * @memberof ModuleConfig
      */
-    regScope?: ModuleScope;
+    regScope?: RegScope;
 }
 
 /**
@@ -27,9 +34,9 @@ export interface IRegisterForDecorator extends ITypeDecorator<RegisterForMetadat
      *
      * @RegisterFor
      *
-     * @param {ModuleScope} moduleScope register module scope.
+     * @param {RegScope} moduleScope register module scope.
      */
-    (moduleScope: ModuleScope): ClassDecorator;
+    (moduleScope: RegScope): ClassDecorator;
 
     /**
      * RegisterFor decorator, for class. use to define the the way to register the module. default as child module.

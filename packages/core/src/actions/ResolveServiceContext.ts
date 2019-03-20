@@ -85,7 +85,7 @@ export class ResolveServiceContext extends ResovleActionContext implements Servi
      * @returns {ResolveServiceContext}
      * @memberof ResolveServiceContext
      */
-    static create(options?: ServiceActionOption, raiseContainerGetter?: () => IContainer, containerGetter?: () => IResolverContainer): ResolveServiceContext {
+    static parse(options?: ServiceActionOption, raiseContainerGetter?: () => IContainer, containerGetter?: () => IResolverContainer): ResolveServiceContext {
         let ctx = new ResolveServiceContext();
         if (options) {
             Object.assign(ctx, options);

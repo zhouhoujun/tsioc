@@ -4,7 +4,7 @@ import { Next } from '../core';
 import { Singleton } from '@ts-ioc/ioc';
 
 @Singleton
-export class CreateModuleHandle extends BootHandle {
+export class ResolveModuleHandle extends BootHandle {
     async execute(ctx: BootContext, next: Next): Promise<void> {
         if (!ctx.target) {
             ctx.target = ctx.resolve(ctx.type);

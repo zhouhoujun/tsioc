@@ -3,7 +3,7 @@ import { AnnoationHandle, AnnoationContext } from './AnnoationHandle';
 import { ProviderParser, Type, ProviderTypes, isArray, Singleton } from '@ts-ioc/ioc';
 
 @Singleton
-export class RegisterModuleExportsHandle extends AnnoationHandle {
+export class RegisterModuleProvidersHandle extends AnnoationHandle {
 
     async execute(ctx: AnnoationContext, next: Next): Promise<void> {
         let parser = ctx.resolve(ProviderParser);

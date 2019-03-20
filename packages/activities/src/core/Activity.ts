@@ -103,7 +103,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
         let cfgdefCtx = this._config ? this._config.baseContextType : null;
         let ctx = this.container.getService<IActivityContext>(ActivityContextToken,
             type as Token<any>,
-            ResolveServiceContext.create({
+            ResolveServiceContext.parse({
                 refTargetFactory: tk => new InjectActivityContextToken(tk),
                 defaultToken: (defCtx || cfgdefCtx || ActivityContextToken) as Token<any>
             }),

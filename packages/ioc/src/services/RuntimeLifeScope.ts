@@ -27,7 +27,7 @@ export class RuntimeLifeScope extends LifeScope<RegisterActionContext> {
     }
 
     getParamProviders(container: IIocContainer, type: Type<any>, propertyKey: string, target?: any): ParamProviders[] {
-        let ctx = RegisterActionContext.create({
+        let ctx = RegisterActionContext.parse({
             targetType: type,
             target: target,
             propertyKey: propertyKey
@@ -112,7 +112,7 @@ export class RuntimeLifeScope extends LifeScope<RegisterActionContext> {
 
     protected getParameters<T>(container: IIocContainer, type: Type<T>, instance?: T, propertyKey?: string): IParameter[] {
         propertyKey = propertyKey || 'constructor';
-        let ctx = RegisterActionContext.create({
+        let ctx = RegisterActionContext.parse({
             targetType: type,
             target: instance,
             propertyKey: propertyKey

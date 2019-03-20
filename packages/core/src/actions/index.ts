@@ -5,6 +5,7 @@ export * from './IocResolveServiceAction';
 export * from './InitServiceResolveAction';
 export * from './ResolvePrivateServiceAction';
 export * from './ResolveRefServiceAction';
+export * from './ResolveServicesContext';
 export * from './ResolveServicesAction';
 export * from './ResolveServiceAction';
 export * from './ResolvePrivateServiceAction';

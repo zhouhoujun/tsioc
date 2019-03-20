@@ -3,7 +3,11 @@ import {
     IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction,
     ComponentInitAction, ComponentAfterInitAction, ResolveLifeScope
 } from '@ts-ioc/ioc';
-import { IContainer, ContainerToken, IocExt, ModuleInjectorManager, ResolveServiceAction, DefaultResolveServiceAction, ResolveTargetServiceAction, ResolvePrivateServiceAction, ResolveServicesAction, ResolveServiceInClassChain } from '@ts-ioc/core';
+import {
+    IContainer, ContainerToken, IocExt, ModuleInjectorManager, ResolveServiceAction,
+    DefaultResolveServiceAction, ResolveTargetServiceAction, ResolvePrivateServiceAction,
+    ResolveServicesAction, ResolveServiceInClassChain
+} from '@ts-ioc/core';
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
 import * as modules from './modules';
@@ -11,7 +15,10 @@ import * as actions from './actions';
 import * as handles from './handles';
 import * as services from './services';
 
-import { RouteResolveAction, ResolveModuleExportAction, ResolveParentAction, ResolveSerivesInExportAction, ResolveRouteServiceAction } from './actions';
+import {
+    RouteResolveAction, ResolveModuleExportAction, ResolveParentAction,
+    ResolveSerivesInExportAction, ResolveRouteServiceAction
+} from './actions';
 import { DIModuleInjector, RootModuleInjector } from './modules';
 
 /**
@@ -35,8 +42,10 @@ export class BootModule {
     setup() {
         let container = this.container;
         let decReg = container.get(DecoratorRegisterer);
-        decReg.register(Annotation, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
-        decReg.register(DIModule, BindProviderAction, IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
+        decReg.register(Annotation, BindProviderAction, IocGetCacheAction, IocSetCacheAction,
+            ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
+        decReg.register(DIModule, BindProviderAction, IocGetCacheAction, IocSetCacheAction,
+            ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
 
         container.use(modules, handles, actions, services);
 

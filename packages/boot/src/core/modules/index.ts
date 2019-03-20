@@ -1,3 +1,4 @@
+export * from './RegScope';
 export * from './IMetaAccessor';
 export * from './DIModuleInjector';
 export * from './ModuleResovler';

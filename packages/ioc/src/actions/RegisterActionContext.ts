@@ -135,7 +135,7 @@ export class RegisterActionContext extends IocActionContext {
      * @returns {RegisterActionContext}
      * @memberof RegisterActionContext
      */
-    static create(options: RegisterActionOption, raiseContainerGetter?: () => IIocContainer, containerGetter?: () => IResolverContainer): RegisterActionContext {
+    static parse(options: RegisterActionOption, raiseContainerGetter?: () => IIocContainer, containerGetter?: () => IResolverContainer): RegisterActionContext {
         let ctx = new RegisterActionContext(options.targetType);
         ctx.setOptions(options);
         if (raiseContainerGetter || containerGetter) {
