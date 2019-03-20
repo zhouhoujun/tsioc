@@ -61,7 +61,7 @@ export class ChainActivity extends ControlActivity implements IChainActivity {
      * @memberof Activity
      */
     protected async execActivity(activity: Activity | Active, ctx: IActivityContext | (() => IActivityContext), next?: () => Promise<void>): Promise<IActivityContext> {
-        return super.execActivity(activity, ctx, next);
+       return await super.execActivity(activity, ctx, next);
     }
 
     protected runActivity(activity: Activity, ctx: IActivityContext, data?: any) {

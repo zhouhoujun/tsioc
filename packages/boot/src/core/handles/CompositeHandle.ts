@@ -65,7 +65,7 @@ export class CompositeHandle<T extends HandleContext> extends Handle<T> {
         await this.execHandles(ctx, this.handles, next);
     }
 
-    protected execHandles(ctx: T, handles: HandleType<T>[], next?: Next) {
+    protected execHandles(ctx: T, handles: HandleType<T>[], next?: Next): Promise<void> {
        return PromiseUtil.runInChain(handles.map(ac => this.toHanldeFunc(ac)), ctx, next);
     }
 
