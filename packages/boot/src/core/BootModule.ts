@@ -15,10 +15,7 @@ import * as actions from './actions';
 import * as handles from './handles';
 import * as services from './services';
 
-import {
-    RouteResolveAction, ResolveModuleExportAction, ResolveParentAction,
-    ResolveSerivesInExportAction, ResolveRouteServiceAction
-} from './actions';
+import { RouteResolveAction, ResolveSerivesInExportAction, ResolveRouteServiceAction } from './actions';
 import { DIModuleInjector, RootModuleInjector } from './modules';
 
 /**
@@ -54,14 +51,6 @@ export class BootModule {
             .use(RootModuleInjector, true)
             .use(DIModuleInjector, true);
 
-
-        container.get(RouteResolveAction)
-            .use(ResolveModuleExportAction)
-            .use(ResolveParentAction);
-
-        container.get(ResolveRouteServiceAction)
-            .use(ResolveModuleExportAction)
-            .use(ResolveParentAction);
 
         // route service
         container.get(ResolveServiceAction)

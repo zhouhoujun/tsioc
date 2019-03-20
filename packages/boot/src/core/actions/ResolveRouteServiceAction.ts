@@ -1,6 +1,11 @@
 import { ResolveServiceContext } from '@ts-ioc/core';
-import { IocCompositeAction } from '@ts-ioc/ioc';
+import { IocCompositeAction, Singleton, Autorun } from '@ts-ioc/ioc';
+import { ResolveModuleExportAction } from './ResolveModuleExportAction';
+import { ResolveParentAction } from './ResolveParentAction';
 
+
+@Singleton
+@Autorun('setup')
 export class ResolveRouteServiceAction extends IocCompositeAction<ResolveServiceContext>  {
     execute(ctx: ResolveServiceContext, next?: () => void): void {
         let token = ctx.token;
@@ -10,5 +15,10 @@ export class ResolveRouteServiceAction extends IocCompositeAction<ResolveService
             next && next();
         }
         super.execute(ctx, donext);
+    }
+
+    setup() {
+        this.use(ResolveModuleExportAction)
+            .use(ResolveParentAction);
     }
 }

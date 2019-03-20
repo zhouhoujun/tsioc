@@ -28,28 +28,12 @@ export class DIModuleExports extends IocCoreService implements IResolver {
     resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
         let inst: T;
         this.resolvers.some(r => {
-            let resover = this.getRegResolver(r, token);
-            if (resover) {
-                inst = resover.resolve(token, ...providers);
-            }
+                inst = r.resolve(token, ...providers);
             return !!inst;
         });
         return inst || null;
     }
 
-    getRegResolver<T>(resolver: IModuleResolver, token: Token<T>) {
-        let r;
-        if (resolver.has(token)) {
-            r = resolver;
-        } else {
-            resolver.getContainer().resolve(DIModuleExports)
-                .getResolvers().some(sr => {
-                    r = this.getRegResolver(sr, token)
-                    return !!r;
-                })
-        }
-        return r;
-    }
 
     unregister<T>(token: Token<T>): this {
         this.resolvers.forEach(r => {

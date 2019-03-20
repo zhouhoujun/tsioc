@@ -1,7 +1,10 @@
-import { IocCompositeAction, ResovleActionContext, Singleton } from '@ts-ioc/ioc';
+import { IocCompositeAction, ResovleActionContext, Singleton, Autorun } from '@ts-ioc/ioc';
 import { ContainerPoolToken } from '../ContainerPool';
+import { ResolveModuleExportAction } from './ResolveModuleExportAction';
+import { ResolveParentAction } from './ResolveParentAction';
 
 @Singleton
+@Autorun('setup')
 export class RouteResolveAction extends IocCompositeAction<ResovleActionContext> {
 
     execute(ctx: ResovleActionContext, next?: () => void): void {
@@ -10,5 +13,10 @@ export class RouteResolveAction extends IocCompositeAction<ResovleActionContext>
         } else {
             next();
         }
+    }
+
+    setup() {
+        this.use(ResolveModuleExportAction)
+            .use(ResolveParentAction);
     }
 }

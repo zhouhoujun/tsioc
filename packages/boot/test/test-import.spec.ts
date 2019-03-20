@@ -38,6 +38,7 @@ describe('di module', () => {
         // expect(md.bootstrap).to.eq(ClassSevice);
         // expect(md.container).to.not.undefined;
         // expect(md.container.has('mark')).to.true;
+        console.log(ctx.bootstrap.mark);
         expect(ctx.bootstrap.mark).toEqual('marked');
         // expect(md.state).eq('started');
     });

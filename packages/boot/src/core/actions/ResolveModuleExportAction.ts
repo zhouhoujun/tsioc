@@ -1,5 +1,6 @@
 import { IocResolveAction, ResovleActionContext, Singleton } from '@ts-ioc/ioc';
 import { DIModuleExports } from '../services';
+import { IModuleResolver } from '../modules';
 
 /**
  * reolve module export.
@@ -16,17 +17,19 @@ export class ResolveModuleExportAction extends IocResolveAction {
         ctx.instance = curr.resolve(DIModuleExports).resolve(ctx.token, ...ctx.providers);
         // curr.resolve(DIModuleExports).getResolvers()
         //     .some(r => {
-        //         ctx.instance = r.resolve()
+        //         this.depIterator(ctx, r);
         //         return !!ctx.instance;
         //     });
 
         if (!ctx.instance) {
+            // curr.bindActionContext(ctx);
             next();
         }
     }
 
-    // depIterator(ctx: ResolveServicesContext, resolver: IResolverContainer) {
-    //     resolver.bindActionContext(ctx);
+    // depIterator(ctx: ResovleActionContext, resolver: IModuleResolver) {
+    //     ctx.setRaiseContainer(resolver.getContainer())
+    //     ctx.setProviderContainer(resolver.getProviders());
     //     super.execute(ctx);
     //     if (resolver.has(DIModuleExports)) {
     //         resolver.resolve(DIModuleExports).getResolvers()

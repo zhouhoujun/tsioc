@@ -39,6 +39,7 @@ export class RegisterScopeHandle extends CompositeHandle<AnnoationContext> {
             }
 
             if (moduleContainers.length === 1) {
+                ctx.setRaiseContainer(moduleContainers[0]);
                 await super.execute(ctx, next);
             } else if (moduleContainers.length > 1) {
                 await PromiseUtil.step(moduleContainers.map(c => () => {

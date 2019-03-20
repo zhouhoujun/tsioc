@@ -46,6 +46,6 @@ export class DIModuleInjector extends ModuleInjector {
     protected async execInjects(container: IContainer, type: Type<any>): Promise<void> {
         let ctx = AnnoationContext.parse(type);
         ctx.setRaiseContainer(container);
-        container.get(ModuleInjectLifeScope).execute(ctx);
+        await container.get(ModuleInjectLifeScope).execute(ctx);
     }
 }
