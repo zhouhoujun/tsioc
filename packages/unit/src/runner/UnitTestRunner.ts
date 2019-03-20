@@ -27,7 +27,6 @@ export class UnitTestRunner extends Runnable<any> {
 
         let oldRunner = container.resolve(OldTestRunner);
         let loader = container.getLoader();
-        console.log(container.get(ContainerPoolToken).isRoot(container));
         oldRunner.registerGlobalScope();
         if (isString(src)) {
             let alltypes = await loader.loadTypes([{ files: [src] }]);
@@ -49,6 +48,7 @@ export class UnitTestRunner extends Runnable<any> {
         oldRunner.unregisterGlobalScope();
         await oldRunner.run();
         let runner = container.resolve(RunnerService);
+        console.log(suites);
         await PromiseUtil.step(suites.filter(v => isClass(v) && hasClassMetadata(Suite, v)).map(s => () => runner.run(UnitTestContext.create(s, { report: false }))));
         await container.resolve(TestReport).report();
     }

@@ -194,3 +194,14 @@ export class Container extends IocContainer implements IContainer {
         registerCores(this);
     }
 }
+
+/**
+ * is container or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is Container}
+ */
+export function isContainer(target: any): target is Container {
+    return target && target instanceof Container;
+}

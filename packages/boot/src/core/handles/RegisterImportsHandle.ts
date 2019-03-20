@@ -6,7 +6,7 @@ import { Next } from './Handle';
 export class RegisterImportsHandle extends AnnoationHandle {
     async execute(ctx: AnnoationContext, next: Next): Promise<void> {
         if (ctx.annoation.imports) {
-            await ctx.moduleContainer.loadModule(...ctx.annoation.imports);
+            await ctx.getModuleContainer().loadModule(...ctx.annoation.imports);
         }
         await next();
     }

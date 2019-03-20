@@ -1,4 +1,4 @@
-import { BootOptions, RunnableConfigure } from '@ts-ioc/boot';
+import { BootOption, RunnableConfigure } from '@ts-ioc/boot';
 import { Type } from '@ts-ioc/ioc';
 import { ITestReport } from './reports';
 
@@ -9,7 +9,7 @@ import { ITestReport } from './reports';
  * @interface UnitTestOptions
  * @extends {RunOptions<any>}
  */
-export interface UnitTestOptions extends BootOptions {
+export interface UnitTestOptions extends BootOption {
     report?: boolean;
     configures?: (string | UnitTestConfigure)[];
 }

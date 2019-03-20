@@ -21,7 +21,7 @@ export class RegisterScopeHandle extends CompositeHandle<AnnoationContext> {
         ctx.regScope = ctx.annoation.regScope || RegScope.child;
 
         let moduleContainers: IContainer[] = [];
-        if (!ctx.moduleContainer) {
+        if (!ctx.hasModuleContainer()) {
             switch (ctx.regScope) {
                 case RegScope.root:
                     moduleContainers.push(pools.getRoot());
@@ -37,8 +37,8 @@ export class RegisterScopeHandle extends CompositeHandle<AnnoationContext> {
                     break;
             }
             await PromiseUtil.step(moduleContainers.map(c => () => {
-                ctx.moduleContainer = c;
-                ctx.setContext(() => c);
+                ctx.setModuleContainer(c);
+                ctx.setRaiseContainer(c);
                 return super.execute(ctx);
             }));
             await next();

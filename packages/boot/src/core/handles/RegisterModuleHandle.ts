@@ -12,7 +12,7 @@ import { Singleton } from '@ts-ioc/ioc';
 @Singleton
 export class RegisterModuleHandle extends AnnoationHandle {
     async execute(ctx: AnnoationContext, next: Next): Promise<void> {
-        ctx.moduleContainer.register(ctx.type);
+        ctx.getModuleContainer().register(ctx.type);
         await next();
     }
 }

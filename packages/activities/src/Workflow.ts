@@ -1,4 +1,4 @@
-import { ApplicationBuilder, BootOptions, AppConfigure } from '@ts-ioc/boot';
+import { ApplicationBuilder, BootOption, AppConfigure } from '@ts-ioc/boot';
 import {
     IActivity, IWorkflowInstance, Active, SequenceConfigure, WorkflowId,
     UUIDToken, RandomUUIDFactory, CoreActivityConfigs
@@ -51,7 +51,7 @@ export class Workflow extends ApplicationBuilder<IActivity> implements IWorkflow
         return this.getPools().getRoot().get(workflowId);
     }
 
-    async bootstrap(token: Active, config?: CoreActivityConfigs | BootOptions<IActivity>, options?: BootOptions<IActivity>): Promise<IWorkflowInstance<any>> {
+    async bootstrap(token: Active, config?: CoreActivityConfigs | BootOption<IActivity>, options?: BootOption<IActivity>): Promise<IWorkflowInstance<any>> {
         return await super.bootstrap(token, config, options) as IWorkflowInstance<any>;
     }
 

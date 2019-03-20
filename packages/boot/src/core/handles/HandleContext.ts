@@ -1,5 +1,15 @@
-import { IContainer } from '@ts-ioc/core';
-import { Token, IResolver, ProviderTypes, Type } from '@ts-ioc/ioc';
+import { IContainer, isContainer } from '@ts-ioc/core';
+import { Token, IResolver, ProviderTypes, Type, isFunction, isBaseObject } from '@ts-ioc/ioc';
+
+
+export interface HandleOption {
+    /**
+     * raise container getter.
+     *
+     * @memberof HandleOption
+     */
+    raiseContainerGetter?: () => IContainer;
+}
 
 /**
  * handle context.
@@ -9,12 +19,37 @@ import { Token, IResolver, ProviderTypes, Type } from '@ts-ioc/ioc';
  */
 export class HandleContext implements IResolver {
 
+    private raiseContainerGetter: () => IContainer;
+
+    hasRaiseContainer(): boolean {
+        return isFunction(this.raiseContainerGetter);
+    }
     /**
      * raise container accessor.
      *
      * @memberof ResovleContext
      */
-    getRaiseContainer: () => IContainer;
+    getRaiseContainer(): IContainer {
+        if (this.raiseContainerGetter) {
+            return this.raiseContainerGetter();
+        } else {
+            throw new Error('has not setting raise container.')
+        }
+    }
+
+    /**
+     * set resolve context.
+     *
+     * @param {() => IContainer} raiseContainer
+     * @memberof IocActionContext
+     */
+    setRaiseContainer(raiseContainer: IContainer | (() => IContainer)) {
+        if (isFunction(raiseContainer)) {
+            this.raiseContainerGetter = raiseContainer;
+        } else if (isContainer(raiseContainer)) {
+            this.raiseContainerGetter = () => raiseContainer;
+        }
+    }
 
     /**
      * module type class.
@@ -24,28 +59,21 @@ export class HandleContext implements IResolver {
      */
     type: Type<any>;
 
-    /**
-     * token.
-     *
-     * @type {Token<any>}
-     * @memberof ResovleContext
-     */
-    token?: Token<any>;
-
-
 
     constructor() {
 
     }
 
     /**
-     * set resolve context.
+     * set option.
      *
-     * @param {() => IContainer} raiseContainerGetter
-     * @memberof IocActionContext
+     * @param {HandleOption} options
+     * @memberof BootContext
      */
-    setContext(raiseContainerGetter: () => IContainer) {
-        this.getRaiseContainer = raiseContainerGetter;
+    setOptions(options: HandleOption) {
+        if (isBaseObject(options)) {
+            Object.assign(this, options);
+        }
     }
 
 

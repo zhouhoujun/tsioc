@@ -1,6 +1,6 @@
-import { AnnoationContext } from './core';
+import { AnnoationContext, AnnoationOption } from './core';
 import { RunnableConfigure, ConfigureManager } from './annotations';
-import { IModuleLoader, IContainer } from '@ts-ioc/core';
+import { IModuleLoader } from '@ts-ioc/core';
 import { ProviderTypes, LoadType, isBaseObject, Type, InjectToken } from '@ts-ioc/ioc';
 import { Runnable } from './runnable';
 
@@ -16,7 +16,7 @@ export const ProcessRunRootToken = new InjectToken<string>('__boot_process_root'
  * @export
  * @interface BootOptions
  */
-export interface BootOptions {
+export interface BootOption extends AnnoationOption {
     /**
      * boot base url.
      *
@@ -48,14 +48,6 @@ export interface BootOptions {
      * @memberof BootOptions
      */
     configures?: (string | RunnableConfigure)[];
-
-    /**
-     * the annoation module
-     *
-     * @type {IContainer}
-     * @memberof AnnoationContext
-     */
-    moduleContainer?: IContainer;
 
     /**
      * target module instace.
@@ -180,7 +172,7 @@ export class BootContext extends AnnoationContext {
     bootstrap?: any;
 
     /**
-     *  custom boot data of `BuildOptions`
+     *  custom boot data
      *
      * @type {*}
      * @memberof RunnableOptions
@@ -212,18 +204,6 @@ export class BootContext extends AnnoationContext {
     providers?: ProviderTypes[];
 
     /**
-     * set option.
-     *
-     * @param {BootOptions} options
-     * @memberof BootContext
-     */
-    setOptions(options: BootOptions) {
-        if (isBaseObject(options)) {
-            Object.assign(this, options);
-        }
-    }
-
-    /**
      * get configure manager.
      *
      * @template T
@@ -234,7 +214,7 @@ export class BootContext extends AnnoationContext {
         return this.resolve(ConfigureManager) as ConfigureManager<T>;
     }
 
-    static create(type: Type<any>, options?: BootOptions): BootContext {
+    static parse(type: Type<any>, options?: BootOption): BootContext {
         let ctx = new BootContext(type);
         options && ctx.setOptions(options);
         return ctx;

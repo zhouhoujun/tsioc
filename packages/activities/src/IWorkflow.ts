@@ -1,4 +1,4 @@
-import { IApplicationBuilder, BootOptions } from '@ts-ioc/boot';
+import { IApplicationBuilder, BootOption } from '@ts-ioc/boot';
 import { IActivity, IWorkflowInstance, Active, CoreActivityConfigs } from './core';
 import { Token } from '@ts-ioc/ioc';
 
@@ -8,21 +8,21 @@ export interface IWorkflow extends IApplicationBuilder<IActivity> {
      * bootstrap by activity config.
      *
      * @param {CoreActivityConfigs} config
-     * @param {BootOptions<IActivity>} [options]
+     * @param {BootOption<IActivity>} [options]
      * @returns {Promise<IWorkflowInstance<any>>}
      * @memberof IWorkflow
      */
-    bootstrap(config: Active, options?: BootOptions<IActivity>): Promise<IWorkflowInstance<any>>;
+    bootstrap(config: Active, options?: BootOption<IActivity>): Promise<IWorkflowInstance<any>>;
     /**
      * bootstrap with module and config.
      *
      * @param {Token<IActivity>} token
      * @param {CoreActivityConfigs} config
-     * @param {BootOptions<IActivity>} options
+     * @param {BootOption<IActivity>} options
      * @returns {Promise<IWorkflowInstance<any>>}
      * @memberof IWorkflow
      */
-    bootstrap(token: Token<IActivity>, config: CoreActivityConfigs, options: BootOptions<IActivity>): Promise<IWorkflowInstance<any>>;
+    bootstrap(token: Token<IActivity>, config: CoreActivityConfigs, options: BootOption<IActivity>): Promise<IWorkflowInstance<any>>;
 
     /**
      * get workflow.

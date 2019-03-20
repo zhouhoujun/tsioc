@@ -48,14 +48,20 @@ export class BootApplication {
     protected init(context: Type<any> | BootContext) {
         this.context = context instanceof BootContext ? context : this.createContext(context);
         let container: IContainer;
-        if (this.context.moduleContainer) {
-            container = this.context.moduleContainer;
+        if (this.context.hasRaiseContainer()) {
+            container = this.context.getRaiseContainer();
+            if (!this.getPools().hasParent(container)) {
+                this.getPools().setParent(container);
+            }
+            this.context.setModuleContainer(container);
+        } else if (this.context.hasModuleContainer()) {
+            container = this.context.getModuleContainer();
             if (!this.getPools().hasParent(container)) {
                 this.getPools().setParent(container);
             }
         } else {
             container = this.getPools().getRoot();
-            this.context.moduleContainer = container;
+            this.context.setModuleContainer(container);
         }
         this.container = container;
         container.bindProvider(BootApplication, this);
@@ -90,7 +96,7 @@ export class BootApplication {
      * @memberof BootApplication
      */
     async run(...args: string[]): Promise<BootContext> {
-        this.context.setContext(() => this.container);
+        this.context.setRaiseContainer(this.container);
         this.context.args = args;
         await this.container.resolve(RunnableBuildLifeScope).execute(this.context);
         return this.context;
@@ -117,7 +123,7 @@ export class BootApplication {
     }
 
     protected createContext(type: Type<any>): BootContext {
-        return BootContext.create(type);
+        return BootContext.parse(type);
     }
 
     protected createContainerBuilder(): IContainerBuilder {

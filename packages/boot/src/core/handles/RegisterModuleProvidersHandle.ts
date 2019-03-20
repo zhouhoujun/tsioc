@@ -7,7 +7,7 @@ export class RegisterModuleProvidersHandle extends AnnoationHandle {
 
     async execute(ctx: AnnoationContext, next: Next): Promise<void> {
         let parser = ctx.resolve(ProviderParser);
-        let container = ctx.moduleContainer;
+        let container = ctx.getModuleContainer();
         let tRef = container.getTypeReflects();
         let config = ctx.annoation;
         let map = parser.parse(...config.providers || []);

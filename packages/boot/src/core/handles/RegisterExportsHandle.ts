@@ -11,7 +11,7 @@ export class RegisterExportsHandle extends AnnoationHandle {
     async execute(ctx: AnnoationContext, next: Next): Promise<void> {
         if (ctx.regScope === RegScope.child && ctx.moduleResolver) {
             let pool = ctx.resolve(ContainerPoolToken);
-            let parent = pool.getParent(ctx.moduleContainer);
+            let parent = pool.getParent(ctx.getModuleContainer());
             if (parent) {
                 let diexports = parent.resolve(DIModuleExports);
                 diexports.use(ctx.moduleResolver);

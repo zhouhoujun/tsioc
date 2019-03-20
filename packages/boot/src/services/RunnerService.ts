@@ -28,10 +28,11 @@ export class RunnerService extends IocCoreService {
      * @memberof RunnerService
      */
     async run<T extends BootContext>(target: Type<any> | T, ...args: string[]): Promise<T> {
-        let ctx = target instanceof BootContext ? target : BootContext.create(target);
-        ctx.setContext(() => this.container);
+        let ctx = target instanceof BootContext ? target : BootContext.parse(target);
+        ctx.setRaiseContainer(this.container);
         ctx.args = args;
         await this.container.resolve(RunnableBuildLifeScope).execute(ctx);
+        console.log(ctx);
         return ctx as T;
     }
 }
