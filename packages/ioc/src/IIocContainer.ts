@@ -1,12 +1,9 @@
-import {
-    Type, Token, Factory, SymbolType
-} from './types';
+import { Type, Token, Factory } from './types';
 import { InjectToken } from './InjectToken';
-import { IResolverContainer } from './IResolver';
+import { IResolverContainer, IContextResolver, IBindActionContext } from './IResolver';
 import { ParamProviders, ProviderTypes, IProviderParser } from './providers';
 import { IParameter } from './IParameter';
 import { TypeReflects, ResolveLifeScope } from './services';
-import { IocActionContext, ResovleActionContext } from './actions';
 
 /**
  * IContainer token.
@@ -20,7 +17,7 @@ export const IocContainerToken = new InjectToken<IIocContainer>('DI_IocContainer
  * @export
  * @interface IIocContainer
  */
-export interface IIocContainer extends IResolverContainer {
+export interface IIocContainer extends IResolverContainer, IContextResolver, IBindActionContext {
 
     /**
      * get provider parser.

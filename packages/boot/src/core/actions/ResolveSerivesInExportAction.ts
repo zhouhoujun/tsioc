@@ -3,8 +3,9 @@ import {
     ResovleServicesInRaiseAction, ResovleServicesRefsAction
 } from '@ts-ioc/core';
 import { DIModuleExports } from '../services';
-import { IResolverContainer, Singleton, IocCompositeAction, Autorun } from '@ts-ioc/ioc';
+import { Singleton, IocCompositeAction, Autorun } from '@ts-ioc/ioc';
 import { ContainerPoolToken } from '../ContainerPool';
+import { IModuleResolver } from '../modules';
 
 
 @Singleton
@@ -25,8 +26,9 @@ export class ResolveSerivesInExportAction extends IocCompositeAction<ResolveServ
         next();
     }
 
-    depIterator(ctx: ResolveServicesContext, resolver: IResolverContainer) {
-        resolver.bindActionContext(ctx);
+    depIterator(ctx: ResolveServicesContext, resolver: IModuleResolver) {
+        ctx.setRaiseContainer(resolver.getContainer())
+        ctx.setProviderContainer(resolver.getProviders());
         super.execute(ctx);
         if (resolver.has(DIModuleExports)) {
             resolver.resolve(DIModuleExports).getResolvers()

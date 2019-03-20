@@ -97,7 +97,7 @@ export interface IBindActionContext {
  * @interface IResolverContainer
  * @extends {IResolver}
  */
-export interface IResolverContainer extends IResolver, IContextResolver, IBindActionContext {
+export interface IResolverContainer extends IResolver {
     /**
      * container size.
      *

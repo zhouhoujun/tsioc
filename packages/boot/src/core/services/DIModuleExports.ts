@@ -1,19 +1,20 @@
 import {
-    IocCoreService, IResolverContainer, Singleton, ResovleActionContext,
-    Token, IResolver, ProviderTypes, IContextResolver
+    IocCoreService, Singleton,
+    Token, IResolver, ProviderTypes
 } from '@ts-ioc/ioc';
+import { IModuleResolver } from '../modules';
 
 @Singleton
-export class DIModuleExports extends IocCoreService implements IResolver, IContextResolver {
+export class DIModuleExports extends IocCoreService implements IResolver {
 
     /**
     * resolvers
     *
     * @protected
-    * @type {IResolverContainer[]}
+    * @type {IModuleResolver[]}
     * @memberof ResolverChain
     */
-    protected resolvers: IResolverContainer[];
+    protected resolvers: IModuleResolver[];
 
     constructor() {
         super();
@@ -24,21 +25,30 @@ export class DIModuleExports extends IocCoreService implements IResolver, IConte
         return this.resolvers.some(r => r.has(key, alias));
     }
 
-    resolveContext<T extends ResovleActionContext>(ctx: T): T {
-        this.resolvers.some(r => {
-            r.resolveContext(ctx);
-            return !!ctx.instance;
-        });
-        return ctx;
-    }
-
     resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
         let inst: T;
         this.resolvers.some(r => {
-            inst = r.resolve(token, ...providers);
+            let resover = this.getRegResolver(r, token);
+            if (resover) {
+                inst = resover.resolve(token, ...providers);
+            }
             return !!inst;
         });
         return inst || null;
+    }
+
+    getRegResolver<T>(resolver: IModuleResolver, token: Token<T>) {
+        let r;
+        if (resolver.has(token)) {
+            r = resolver;
+        } else {
+            resolver.getContainer().resolve(DIModuleExports)
+                .getResolvers().some(sr => {
+                    r = this.getRegResolver(sr, token)
+                    return !!r;
+                })
+        }
+        return r;
     }
 
     unregister<T>(token: Token<T>): this {
@@ -55,19 +65,19 @@ export class DIModuleExports extends IocCoreService implements IResolver, IConte
      * @returns {IResolverContainer[]}
      * @memberof DIModuleExports
      */
-    getResolvers(): IResolverContainer[] {
+    getResolvers(): IModuleResolver[] {
         return this.resolvers;
     }
 
     /**
      * reigister next resolver.
      *
-     * @param {IResolverContainer} resolver
+     * @param {IModuleResolver} resolver
      * @param {boolean} [first]
      * @returns {this}
      * @memberof ExportResolvers
      */
-    use(resolver: IResolverContainer, first?: boolean): this {
+    use(resolver: IModuleResolver, first?: boolean): this {
         if (this.hasResolver(resolver)) {
             return this;
         }
@@ -82,11 +92,11 @@ export class DIModuleExports extends IocCoreService implements IResolver, IConte
     /**
      * has resolver or not.
      *
-     * @param {IResolverContainer} resolver
+     * @param {IModuleResolver} resolver
      * @returns
      * @memberof ResolverChain
      */
-    hasResolver(resolver: IResolverContainer): boolean {
+    hasResolver(resolver: IModuleResolver): boolean {
         return this.resolvers.indexOf(resolver) >= 0;
     }
 

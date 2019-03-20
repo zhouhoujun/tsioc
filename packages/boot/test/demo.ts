@@ -80,6 +80,7 @@ export class Logger {
 
 @DIModule({
     imports: [
+        ClassSevice,
         AopModule,
         LogModule,
         Logger,
