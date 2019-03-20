@@ -47,7 +47,7 @@ export class UnitTestRunner extends Runnable<any> {
         oldRunner.unregisterGlobalScope();
         await oldRunner.run();
         let runner = container.resolve(RunnerService);
-        await PromiseUtil.step(suites.filter(v => isClass(v) && hasClassMetadata(Suite, v)).map(s => () => runner.run(UnitTestContext.create(s, { report: false }))));
+        await PromiseUtil.step(suites.filter(v => isClass(v) && hasClassMetadata(Suite, v)).map(s => () => runner.run(s)));
         await container.resolve(TestReport).report();
     }
 }

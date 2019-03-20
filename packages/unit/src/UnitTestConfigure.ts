@@ -10,7 +10,6 @@ import { ITestReport } from './reports';
  * @extends {RunOptions<any>}
  */
 export interface UnitTestOptions extends BootOption {
-    report?: boolean;
     configures?: (string | UnitTestConfigure)[];
 }
 

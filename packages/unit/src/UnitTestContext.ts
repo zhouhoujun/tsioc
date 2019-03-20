@@ -4,7 +4,7 @@ import { Type } from '@ts-ioc/ioc';
 
 
 export class UnitTestContext extends BootContext {
-    report?: boolean;
+
     configures?: (string | UnitTestConfigure)[];
 
     static create(type: Type<any>, options?: UnitTestOptions): UnitTestContext {

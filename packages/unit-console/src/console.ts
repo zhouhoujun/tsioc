@@ -13,16 +13,6 @@ import { ServerLogsModule } from '@ts-ioc/platform-server-logs';
         ServerBootstrapModule,
         ServerLogsModule
     ],
-    // providers: [
-    //     {
-    //         provide: Assert,
-    //         useValue: assert
-    //     },
-    //     {
-    //         provide: ExpectToken,
-    //         useValue: expect
-    //     }
-    // ],
     exports: [
         ServerModule,
         ServerBootstrapModule,
