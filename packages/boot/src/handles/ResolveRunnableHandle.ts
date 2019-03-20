@@ -4,6 +4,7 @@ import { Next, CompositeHandle } from '../core';
 import { Singleton, Autorun } from '@ts-ioc/ioc';
 import { Runnable } from '../runnable';
 import { RefRunnableHandle } from './RefRunnableHandle';
+import { RefDecoratorRunnableHandle } from './RefDecoratorRunnableHandle';
 
 @Singleton
 @Autorun('setup')
@@ -25,5 +26,6 @@ export class ResolveRunnableHandle extends CompositeHandle<BootContext> {
 
     setup() {
         this.use(RefRunnableHandle)
+            .use(RefDecoratorRunnableHandle);
     }
 }

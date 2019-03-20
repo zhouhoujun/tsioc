@@ -8,5 +8,6 @@ export * from './ResolveModuleHandle';
 export * from './ResolveBootstrapHandle';
 export * from './ResolveRunnableHandle';
 export * from './RefRunnableHandle';
+export * from './RefDecoratorRunnableHandle';
 export * from './RunBootHandle';
 

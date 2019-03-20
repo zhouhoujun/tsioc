@@ -81,7 +81,7 @@ export interface IServicesResolver {
 
     /**
     * get all private service providers of target extends class `token`.
-    * 
+    *
     * @template T
     * @param {type: Token<T>} token servive token.
     * @param {TargetRefs} [target] service private of target.

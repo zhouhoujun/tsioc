@@ -1,4 +1,4 @@
-import { ConfigureRegister, RunnableConfigure } from '@ts-ioc/boot';
+import { ConfigureRegister } from '@ts-ioc/boot';
 import { DebugLogAspect } from '@ts-ioc/logs';
 import { Singleton, isArray } from '@ts-ioc/ioc';
 import { UnitTestConfigure } from './UnitTestConfigure';

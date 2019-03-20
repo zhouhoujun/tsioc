@@ -13,5 +13,6 @@ export * from './ResolveServiceInClassChain';
 export * from './ResolveDefaultServiceAction';
 
 export * from './IocResolveServicesAction';
+export * from './ResovleServicesRefsAction';
 export * from './ResovleServicesInTargetAction';
 export * from './ResovleServicesInRaiseAction';

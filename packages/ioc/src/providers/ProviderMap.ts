@@ -21,8 +21,14 @@ export class ProviderMap implements IResolverContainer {
         return this.map.size;
     }
 
+    private containerGetter: () => IIocContainer;
+    getContainer(): IIocContainer {
+        return this.containerGetter();
+    }
+
     map: Map<Token<any>, InstanceFactory<any>>;
-    constructor(private container: IIocContainer) {
+    constructor(container: IIocContainer) {
+        this.containerGetter = () => container;
         this.map = new Map();
     }
 
@@ -35,13 +41,14 @@ export class ProviderMap implements IResolverContainer {
     }
 
     bindActionContext<T extends IocActionContext>(ctx: T): T {
-        ctx.setContext(() => this.container, () => this);
+        ctx.setRaiseContainer(this.containerGetter)
+        ctx.setProviderContainer(this);
         return ctx;
     }
 
     resolveContext<T extends ResovleActionContext>(ctx: T): T {
         this.bindActionContext(ctx);
-        this.container.getResolveLifeScope().execute(ctx);
+        this.getContainer().getResolveLifeScope().execute(ctx);
         return ctx;
     }
 
@@ -69,7 +76,7 @@ export class ProviderMap implements IResolverContainer {
      */
     getTokenKey(token: Token<any> | number): SymbolType<any> {
         if (!isNumber(token)) {
-            return this.container.getTokenKey(token);
+            return this.getContainer().getTokenKey(token);
         }
         return token as any;
     }
@@ -95,7 +102,7 @@ export class ProviderMap implements IResolverContainer {
      * @memberof ProviderMap
      */
     getTokenProvider<T>(token: Token<T>): Type<T> {
-        return this.container.getTokenProvider(token);
+        return this.getContainer().getTokenProvider(token);
     }
 
     /**
@@ -129,9 +136,9 @@ export class ProviderMap implements IResolverContainer {
             return this;
         }
         let factory;
-        if (isToken(provider) && this.container.has(provider)) {
+        if (isToken(provider) && this.getContainer().has(provider)) {
             factory = (...providers: ProviderTypes[]) => {
-                return this.container.resolve(provider, ...providers);
+                return this.getContainer().resolve(provider, ...providers);
             };
         } else {
             if (isFunction(provider)) {

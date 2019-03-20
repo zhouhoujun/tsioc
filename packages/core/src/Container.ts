@@ -134,21 +134,26 @@ export class Container extends IocContainer implements IContainer {
      */
     getServices<T>(token: Token<T>, target?: TargetRefs | ResolveServicesContext | ProviderTypes, ctx?: ResolveServicesContext | ProviderTypes, ...providers: ProviderTypes[]): T[] {
         let context: ResolveServicesContext;
-        if (isProvider(ctx)) {
-            providers.unshift(ctx);
-            ctx = null;
-        } else if (ctx instanceof ResolveServicesContext) {
-            context = ctx;
-        }
+        let tag: TargetRefs;
         if (isProvider(target)) {
             providers.unshift(target);
-            target = null;
+            ctx = null;
+            tag = null;
         } else if (target instanceof ResolveServicesContext) {
             context = target;
-            target = null;
+        } else {
+            tag = target;
         }
 
-        let maps = this.getServiceProviders(token, target as any, context);
+        if (!context) {
+            if (isProvider(ctx)) {
+                providers.unshift(ctx);
+            } else if (ctx instanceof ResolveServicesContext) {
+                context = ctx;
+            }
+        }
+
+        let maps = this.getServiceProviders(token, tag, context);
 
         let services = [];
         maps.iterator((fac) => {
@@ -169,21 +174,23 @@ export class Container extends IocContainer implements IContainer {
      */
     getServiceProviders<T>(token: Token<T>, target?: TargetRefs | ResolveServicesContext, ctx?: ResolveServicesContext): ProviderMap {
         let context: ResolveServicesContext;
-        if (ctx instanceof ResolveServicesContext) {
-            context = ctx;
-        }
+        let tag: TargetRefs;
         if (target instanceof ResolveServicesContext) {
             context = target;
-            target = null;
+        } else {
+            tag = target;
         }
+
+        if (!context && ctx instanceof ResolveServicesContext) {
+            context = ctx;
+        }
+
         if (!context) {
             context = ResolveServicesContext.parse();
         }
-        if (target) {
-            context.target = target;
-        }
         context.setOptions({
-            token: token
+            token: token,
+            target: tag
         });
         this.resolveContext(context);
         return context.services;

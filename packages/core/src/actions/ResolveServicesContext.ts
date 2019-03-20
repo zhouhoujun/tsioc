@@ -40,16 +40,21 @@ export class ResolveServicesContext extends ResolveServiceContext {
      *
      * @static
      * @param {ServicesActionOption} [options]
+     * @param {(IContainer | (() => IContainer))} [raiseContainerGetter]
+     * @param {(IResolverContainer | (() => IResolverContainer))} [providersGetter]
      * @returns {ResolveServicesContext}
      * @memberof ResolveServicesContext
      */
-    static parse(options?: ServicesActionOption, raiseContainerGetter?: () => IContainer, containerGetter?: () => IResolverContainer): ResolveServicesContext {
+    static parse(options?: ServicesActionOption, raiseContainerGetter?: IContainer | (() => IContainer), providersGetter?: IResolverContainer | (() => IResolverContainer)): ResolveServicesContext {
         let ctx = new ResolveServicesContext();
         if (options) {
             Object.assign(ctx, options);
         }
-        if (raiseContainerGetter || containerGetter) {
-            ctx.setContext(raiseContainerGetter, containerGetter);
+        if (raiseContainerGetter) {
+            ctx.setRaiseContainer(raiseContainerGetter);
+        }
+        if (providersGetter) {
+            ctx.setProviderContainer(providersGetter);
         }
         return ctx;
     }

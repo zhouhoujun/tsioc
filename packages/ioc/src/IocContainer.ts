@@ -156,7 +156,7 @@ export class IocContainer implements IIocContainer {
     }
 
     bindActionContext<T extends IocActionContext>(ctx: T): T {
-        ctx.setContext(() => this);
+        ctx.setRaiseContainer(this);
         return ctx;
     }
 

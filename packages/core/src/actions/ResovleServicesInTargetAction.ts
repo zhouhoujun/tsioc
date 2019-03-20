@@ -1,5 +1,6 @@
-import { IocResolveServicesAction, ResolveServicesContext } from './IocResolveServicesAction';
+import { IocResolveServicesAction } from './IocResolveServicesAction';
 import { Singleton, isToken, InjectReference, ProviderMap, isClassType, lang, ProviderTypes } from '@ts-ioc/ioc';
+import { ResolveServicesContext } from './ResolveServicesContext';
 
 @Singleton
 export class ResovleServicesInTargetAction extends IocResolveServicesAction {

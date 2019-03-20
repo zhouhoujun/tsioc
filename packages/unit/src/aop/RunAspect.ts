@@ -19,7 +19,7 @@ export class RunAspect extends LoggerAspect {
     report: ITestReport;
     getReport(): ITestReport {
         if (!this.report) {
-            this.report = this.container.get(TestReport);
+            this.report = this.container.resolve(TestReport);
         }
         return this.report;
     }

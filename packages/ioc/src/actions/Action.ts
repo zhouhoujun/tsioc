@@ -2,7 +2,7 @@ import { IIocContainer } from '../IIocContainer';
 import { ProviderTypes } from '../providers';
 import { Type, Token } from '../types';
 import { IocCoreService } from '../services';
-import { lang } from '../utils';
+import { lang, isFunction } from '../utils';
 import { IResolverContainer } from '../IResolver';
 
 /**
@@ -28,19 +28,11 @@ export interface ActionContextOption {
  * @class IocActionContext
  */
 export class IocActionContext {
-    /**
-     * raise container accessor.
-     *
-     * @memberof ResovleContext
-     */
-    getRaiseContainer: () => IIocContainer;
 
-    /**
-     * resolve conatiner.
-     *
-     * @memberof IocActionContext
-     */
-    getContainer?: () => IResolverContainer;
+    private raiseContainerGetter: () => IIocContainer;
+
+    private providersGetter?: () => IResolverContainer
+
 
     /**
      * token.
@@ -56,15 +48,45 @@ export class IocActionContext {
     }
 
     /**
-     * set resolve context.
+     * get raise container.
      *
-     * @param {() => IResolverContainer} containerGetter
-     * @param {() => IIocContainer} raiseContainerGetter
+     * @memberof ResovleContext
+     */
+    getRaiseContainer() {
+        if (this.raiseContainerGetter) {
+            return this.raiseContainerGetter();
+        } else {
+            throw new Error('has not setting raise container');
+        }
+    }
+
+    setRaiseContainer(raiseContainer: IIocContainer | (() => IIocContainer)) {
+        if (isFunction(raiseContainer)) {
+            this.raiseContainerGetter = raiseContainer;
+        } else {
+            this.raiseContainerGetter = () => raiseContainer;
+        }
+    }
+
+    /**
+     *  get provider resolve conatiner.
+     *
      * @memberof IocActionContext
      */
-    setContext(raiseContainerGetter: () => IIocContainer, containerGetter?: () => IResolverContainer) {
-        this.getContainer = containerGetter;
-        this.getRaiseContainer = raiseContainerGetter;
+    getProviderContainer(): IResolverContainer {
+        if (this.providersGetter) {
+            return this.providersGetter();
+        } else {
+            throw new Error('has not setting raise container');
+        }
+    }
+
+    setProviderContainer(providersGetter: IResolverContainer | (() => IResolverContainer)) {
+        if (isFunction(providersGetter)) {
+            this.providersGetter = providersGetter;
+        } else {
+            this.providersGetter = () => providersGetter;
+        }
     }
 
     /**
@@ -100,8 +122,8 @@ export class IocActionContext {
      * @memberof IResovleContext
      */
     has<T>(token: Token<T>): boolean {
-        if (this.getContainer) {
-            return this.getContainer().has(token);
+        if (this.providersGetter) {
+            return this.getProviderContainer().has(token);
         } else {
             return this.getRaiseContainer().has(token);
         }
@@ -117,8 +139,8 @@ export class IocActionContext {
      * @memberof ResovleContext
      */
     resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
-        if (this.getContainer) {
-            return this.getContainer().resolve(token, ...providers);
+        if (this.providersGetter) {
+            return this.getProviderContainer().resolve(token, ...providers);
         } else {
             return this.getRaiseContainer().get(token, ...providers);
         }

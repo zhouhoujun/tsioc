@@ -15,13 +15,17 @@ import { IContainer } from '@ts-ioc/core';
 @Autorun('setup')
 export class RegisterScopeHandle extends CompositeHandle<AnnoationContext> {
 
-
     async execute(ctx: AnnoationContext, next?: Next): Promise<void> {
         let pools = ctx.resolve(ContainerPoolToken);
-        ctx.regScope = ctx.annoation.regScope || RegScope.child;
+        if (!ctx.regScope) {
+            ctx.regScope = ctx.annoation.regScope || RegScope.child;
+        }
 
-        let moduleContainers: IContainer[] = [];
-        if (!ctx.hasModuleContainer()) {
+        let container = ctx.getRaiseContainer();
+        if (ctx.regScope === RegScope.boot) {
+            await super.execute(ctx, next);
+        } else {
+            let moduleContainers: IContainer[] = [];
             switch (ctx.regScope) {
                 case RegScope.root:
                     moduleContainers.push(pools.getRoot());
@@ -29,21 +33,22 @@ export class RegisterScopeHandle extends CompositeHandle<AnnoationContext> {
                 case RegScope.all:
                     moduleContainers = pools.getContainers();
                     break;
-                case RegScope.booModule:
-                    moduleContainers.push(ctx.getRaiseContainer());
-                    break;
                 case RegScope.child:
-                    moduleContainers.push(pools.create(ctx.getRaiseContainer()));
+                    moduleContainers.push(pools.create(container));
                     break;
             }
-            await PromiseUtil.step(moduleContainers.map(c => () => {
-                ctx.setModuleContainer(c);
-                ctx.setRaiseContainer(c);
-                return super.execute(ctx);
-            }));
-            await next();
-        } else {
-            await super.execute(ctx, next);
+
+            if (moduleContainers.length === 1) {
+                await super.execute(ctx, next);
+            } else if (moduleContainers.length > 1) {
+                await PromiseUtil.step(moduleContainers.map(c => () => {
+                    ctx.setRaiseContainer(c);
+                    return super.execute(ctx);
+                }));
+                // reset raise
+                ctx.setRaiseContainer(container);
+                await next();
+            }
         }
     }
 

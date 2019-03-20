@@ -94,12 +94,12 @@ export abstract class Runnable<T> implements IRunnable<any> {
     }
 
     getTarget(): T {
-        return this.ctx.bootstrap;
+        return this.ctx.bootstrap || this.ctx.target;
     }
 
 
     getTargetType(): Type<T> {
-        return this.ctx.type || lang.getClass(this.ctx.bootstrap);
+        return this.ctx.type || lang.getClass(this.getTarget());
     }
 
     /**

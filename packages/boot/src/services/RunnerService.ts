@@ -32,7 +32,6 @@ export class RunnerService extends IocCoreService {
         ctx.setRaiseContainer(this.container);
         ctx.args = args;
         await this.container.resolve(RunnableBuildLifeScope).execute(ctx);
-        console.log(ctx);
         return ctx as T;
     }
 }

@@ -1,4 +1,4 @@
-import { BootApplication, DIModule } from '@ts-ioc/boot';
+import { BootApplication, DIModule, ConfigureRegister } from '@ts-ioc/boot';
 import { AopModule } from '@ts-ioc/aop';
 import { LogModule } from '@ts-ioc/logs';
 import { UnitSetup } from './UnitSetup';
@@ -7,7 +7,7 @@ import * as aops from './aop';
 import * as asserts from './assert';
 import * as runners from './runner';
 import * as reports from './reports';
-import { LoadType } from '@ts-ioc/ioc';
+import { LoadType, Providers } from '@ts-ioc/ioc';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { UnitTestContext } from './UnitTestContext';
 import { UnitTestRunner } from './runner';
@@ -23,6 +23,9 @@ import { UnitTestRunner } from './runner';
       runners,
       reports,
       asserts
+   ],
+   providers: [
+      { provide: ConfigureRegister, useClass: UnitTestConfigureRegister }
    ],
    bootstrap: UnitTestRunner
 })

@@ -3,6 +3,7 @@ import { ResolveServicesContext } from './ResolveServicesContext';
 import { InitServiceResolveAction } from './InitServiceResolveAction';
 import { ResovleServicesInTargetAction } from './ResovleServicesInTargetAction';
 import { ResovleServicesInRaiseAction } from './ResovleServicesInRaiseAction';
+import { ResovleServicesRefsAction } from './ResovleServicesRefsAction';
 
 
 @Singleton
@@ -21,6 +22,7 @@ export class ResolveServicesAction extends IocCompositeAction<ResolveServicesCon
     setup() {
         this.use(InitServiceResolveAction)
             .use(ResovleServicesInTargetAction)
+            .use(ResovleServicesRefsAction)
             .use(ResovleServicesInRaiseAction);
     }
 }

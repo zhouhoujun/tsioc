@@ -1,6 +1,6 @@
 import { Handle, Next } from './Handle';
 import { HandleContext, HandleOption } from './HandleContext';
-import { Abstract, ProviderMap, Type, isFunction } from '@ts-ioc/ioc';
+import { Abstract, ProviderMap, Type, isFunction, Token, ProviderTypes } from '@ts-ioc/ioc';
 import { ModuleConfigure, ModuleResovler, RegScope } from '../modules';
 import { IContainer, isContainer } from '@ts-ioc/core';
 
@@ -22,13 +22,6 @@ export interface AnnoationOption extends HandleOption {
      */
     regScope?: RegScope;
 
-    /**
-     * the annoation module
-     *
-     * @type {IContainer}
-     * @memberof AnnoationContext
-     */
-    moduleContainerGetter?: () => IContainer;
 }
 
 /**
@@ -49,38 +42,6 @@ export class AnnoationContext extends HandleContext {
         let ctx = new AnnoationContext(type);
         options && ctx.setOptions(options);
         return ctx;
-    }
-
-    private moduleContainerGetter: () => IContainer;
-    /**
-     * has module container.
-     *
-     * @returns {boolean}
-     * @memberof AnnoationContext
-     */
-    hasModuleContainer(): boolean {
-        return isFunction(this.moduleContainerGetter);
-    }
-    /**
-     * the annoation module
-     *
-     * @type {IContainer}
-     * @memberof AnnoationContext
-     */
-    getModuleContainer(): IContainer {
-        if (this.moduleContainerGetter) {
-            return this.moduleContainerGetter();
-        } else {
-            throw new Error('has not setting module container.')
-        }
-    }
-
-    setModuleContainer(container: IContainer | (() => IContainer)) {
-        if (isFunction(container)) {
-            this.moduleContainerGetter = container;
-        } else if (isContainer(container)) {
-            this.moduleContainerGetter = () => container;
-        }
     }
 
     /**

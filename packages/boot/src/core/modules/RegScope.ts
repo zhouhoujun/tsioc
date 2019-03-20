@@ -6,17 +6,18 @@
  */
 export enum RegScope {
     /**
-     * register as child module.
+     * current boot module
      */
-    child = 1,
+    boot = 1,
+
+    /**
+     * regiser as child module
+     */
+    child,
     /**
      * regiser as root module
      */
     root,
-    /**
-     * current boot module
-     */
-    booModule,
     /**
      * register all container in pools.
      */

@@ -53,11 +53,11 @@ export interface ServiceActionOption extends ResovleActionOption {
      */
     defaultToken?: Token<any>;
 
-     /**
-     * ref target factory.
-     *
-     * @memberof ResolveServiceContext
-     */
+    /**
+    * ref target factory.
+    *
+    * @memberof ResolveServiceContext
+    */
     refTargetFactory?: (targetToken: Token<any>, token?: Token<any>) => Token<any> | Token<any>[];
 
     /**
@@ -82,16 +82,21 @@ export class ResolveServiceContext extends ResovleActionContext implements Servi
      *
      * @static
      * @param {ServiceActionOption} [options]
+     * @param {(IContainer | (() => IContainer))} [raiseContainerGetter]
+     * @param {(IResolverContainer | (() => IResolverContainer))} [providersGetter]
      * @returns {ResolveServiceContext}
      * @memberof ResolveServiceContext
      */
-    static parse(options?: ServiceActionOption, raiseContainerGetter?: () => IContainer, containerGetter?: () => IResolverContainer): ResolveServiceContext {
+    static parse(options?: ServiceActionOption, raiseContainerGetter?: IContainer | (() => IContainer), providersGetter?: IResolverContainer | (() => IResolverContainer)): ResolveServiceContext {
         let ctx = new ResolveServiceContext();
         if (options) {
             Object.assign(ctx, options);
         }
-        if (raiseContainerGetter || containerGetter) {
-            ctx.setContext(raiseContainerGetter, containerGetter);
+        if (raiseContainerGetter) {
+            ctx.setRaiseContainer(raiseContainerGetter);
+        }
+        if (providersGetter) {
+            ctx.setProviderContainer(providersGetter);
         }
         return ctx;
     }

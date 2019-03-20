@@ -3,7 +3,7 @@ import {
     Type, LoadType, DecoratorRegisterer, BindProviderAction, IocGetCacheAction,
     IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction, InjectReference
 } from '@ts-ioc/ioc';
-import { ContainerPool } from './core';
+import { ContainerPool, RegScope } from './core';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, ModuleInjectorManager, IContainer } from '@ts-ioc/core';
 import { RunnableBuildLifeScope } from './services';
 import { Bootstrap } from './decorators';
@@ -53,15 +53,8 @@ export class BootApplication {
             if (!this.getPools().hasParent(container)) {
                 this.getPools().setParent(container);
             }
-            this.context.setModuleContainer(container);
-        } else if (this.context.hasModuleContainer()) {
-            container = this.context.getModuleContainer();
-            if (!this.getPools().hasParent(container)) {
-                this.getPools().setParent(container);
-            }
         } else {
             container = this.getPools().getRoot();
-            this.context.setModuleContainer(container);
         }
         this.container = container;
         container.bindProvider(BootApplication, this);
@@ -98,6 +91,7 @@ export class BootApplication {
     async run(...args: string[]): Promise<BootContext> {
         this.context.setRaiseContainer(this.container);
         this.context.args = args;
+        this.context.regScope = RegScope.boot;
         await this.container.resolve(RunnableBuildLifeScope).execute(this.context);
         return this.context;
     }

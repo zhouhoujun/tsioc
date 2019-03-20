@@ -1,4 +1,4 @@
-import { IocCompositeAction, lang, Singleton, isToken, isClass, Autorun } from '@ts-ioc/ioc';
+import { IocCompositeAction, lang, Singleton, isToken, isClass, Autorun, isClassType } from '@ts-ioc/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { TargetService } from '../TargetService';
 import { ResolveRefServiceAction } from './ResolveRefServiceAction';
@@ -12,22 +12,23 @@ export class ResolveServiceInClassChain extends IocCompositeAction<ResolveServic
             let currTgRef = ctx.currTargetRef;
             let targetType = isToken(currTgRef) ? currTgRef : currTgRef.getToken();
             let classType = isClass(targetType) ? targetType : ctx.getTokenProvider(targetType);
-
-            lang.forInClassChain(classType, ty => {
-                if (ty === targetType) {
+            if (isClassType(classType)) {
+                lang.forInClassChain(classType, ty => {
+                    if (ty === targetType) {
+                        return true;
+                    }
+                    if (currTgRef instanceof TargetService) {
+                        ctx.currTargetRef = currTgRef.clone(ty);
+                    } else {
+                        ctx.currTargetRef = ty;
+                    }
+                    super.execute(ctx);
+                    if (ctx.instance) {
+                        return false;
+                    }
                     return true;
-                }
-                if (currTgRef instanceof TargetService) {
-                    ctx.currTargetRef = currTgRef.clone(ty);
-                } else {
-                    ctx.currTargetRef = ty;
-                }
-                super.execute(ctx);
-                if (ctx.instance) {
-                    return false;
-                }
-                return true;
-            });
+                });
+            }
             if (!ctx.instance) {
                 ctx.currTargetRef = currTgRef;
                 next();

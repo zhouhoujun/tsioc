@@ -18,7 +18,6 @@ import { TestReport } from '../reports';
 export class UnitTestRunner extends Runnable<any> {
 
     async run(data?: any): Promise<any> {
-        console.log('run UnitTestRunner');
         let mgr = this.ctx.getConfigureManager<UnitTestConfigure>();
         let config = await mgr.getConfig();
         let src = config.src;
@@ -48,7 +47,6 @@ export class UnitTestRunner extends Runnable<any> {
         oldRunner.unregisterGlobalScope();
         await oldRunner.run();
         let runner = container.resolve(RunnerService);
-        console.log(suites);
         await PromiseUtil.step(suites.filter(v => isClass(v) && hasClassMetadata(Suite, v)).map(s => () => runner.run(UnitTestContext.create(s, { report: false }))));
         await container.resolve(TestReport).report();
     }

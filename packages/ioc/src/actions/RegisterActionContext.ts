@@ -130,16 +130,19 @@ export class RegisterActionContext extends IocActionContext {
      *
      * @static
      * @param {RegisterActionOption} options
-     * @param {() => IIocContainer} raiseContainerGetter
-     * @param {() => IResolverContainer} [containerGetter]
+     * @param {(IIocContainer | (() => IIocContainer))} [raiseContainerGetter]
+     * @param {(IResolverContainer | (() => IResolverContainer))} [providersGetter]
      * @returns {RegisterActionContext}
      * @memberof RegisterActionContext
      */
-    static parse(options: RegisterActionOption, raiseContainerGetter?: () => IIocContainer, containerGetter?: () => IResolverContainer): RegisterActionContext {
+    static parse(options: RegisterActionOption, raiseContainerGetter?: IIocContainer | (() => IIocContainer), providersGetter?: IResolverContainer | (() => IResolverContainer)): RegisterActionContext {
         let ctx = new RegisterActionContext(options.targetType);
         ctx.setOptions(options);
-        if (raiseContainerGetter || containerGetter) {
-            ctx.setContext(raiseContainerGetter, containerGetter);
+        if (raiseContainerGetter) {
+            ctx.setRaiseContainer(raiseContainerGetter);
+        }
+        if (providersGetter) {
+            ctx.setProviderContainer(providersGetter);
         }
         return ctx;
     }
