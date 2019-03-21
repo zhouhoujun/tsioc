@@ -2,6 +2,7 @@ import { ResolveServiceContext } from '@ts-ioc/core';
 import { IocCompositeAction, Singleton, Autorun } from '@ts-ioc/ioc';
 import { ResolveModuleExportAction } from './ResolveModuleExportAction';
 import { ResolveParentAction } from './ResolveParentAction';
+import { ResolveParentServiceAction } from '@ts-ioc/boot';
 
 
 @Singleton
@@ -19,6 +20,6 @@ export class ResolveRouteServiceAction extends IocCompositeAction<ResolveService
 
     setup() {
         this.use(ResolveModuleExportAction)
-            .use(ResolveParentAction);
+            .use(ResolveParentServiceAction);
     }
 }

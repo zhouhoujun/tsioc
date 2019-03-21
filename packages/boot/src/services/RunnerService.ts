@@ -1,7 +1,6 @@
 import { IocCoreService, Type, Inject, Singleton } from '@ts-ioc/ioc';
 import { BootContext } from '../BootContext';
 import { IContainer, ContainerToken } from '@ts-ioc/core';
-import { ContainerPoolToken } from '../core';
 import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
 
 

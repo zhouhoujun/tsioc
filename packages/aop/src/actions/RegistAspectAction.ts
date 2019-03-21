@@ -1,6 +1,6 @@
 import {
     ClassMetadata, getOwnTypeMetadata,
-    isClass, IocRegisterAction, RegisterActionContext, DecoratorRegisterer, lang
+    isClass, GlobalRegisterAction, RegisterActionContext, DecoratorRegisterer, lang
 } from '@ts-ioc/ioc';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
 
@@ -10,9 +10,9 @@ import { IAdvisor, AdvisorToken } from '../IAdvisor';
  *
  * @export
  * @class RegistAspectAction
- * @extends {IocRegisterAction}
+ * @extends {GlobalRegisterAction}
  */
-export class RegistAspectAction extends IocRegisterAction {
+export class RegistAspectAction extends GlobalRegisterAction {
 
     execute(ctx: RegisterActionContext, next: () => void): void {
         let type = ctx.targetType;

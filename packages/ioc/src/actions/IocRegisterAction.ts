@@ -11,8 +11,7 @@ import { IIocContainer } from '../IIocContainer';
  * @extends {IocAction<RegisterActionContext>}
  */
 export abstract class IocRegisterAction extends IocAction<RegisterActionContext> {
-    constructor(protected container?: IIocContainer) {
+    constructor(protected container: IIocContainer) {
         super();
     }
-    isRegister = true;
 }

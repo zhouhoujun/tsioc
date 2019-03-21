@@ -177,5 +177,6 @@ export abstract class IocAction<T extends IocActionContext> extends IocCoreServi
     abstract execute(ctx: T, next: () => void): void;
 }
 
+
 export type IocActionType = Type<IocAction<any>> | IocAction<any> | lang.IAction<any>;
 

@@ -1,23 +1,17 @@
-import { IocResolveAction, ResovleActionContext, Singleton, ResolveScopeAction } from '@ts-ioc/ioc';
+import { IocResolveServicesAction, ResolveServicesContext, ResolveServicesScopeAction } from '@ts-ioc/core';
 import { ParentContainerToken } from '../ContainerPool';
+import { Singleton } from '@ts-ioc/ioc';
 
-/**
- * resolve parent action.
- *
- * @export
- * @class ResolveParentAction
- * @extends {IocResolveAction}
- */
 @Singleton
-export class ResolveParentAction extends IocResolveAction {
+export class ResolveParentServicesAction extends IocResolveServicesAction {
 
-    execute(ctx: ResovleActionContext, next: () => void): void {
+    execute(ctx: ResolveServicesContext, next: () => void): void {
         let curr = ctx.getRaiseContainer();
         let parent = ctx.resolve(ParentContainerToken);
 
         while (parent && !ctx.instance) {
             parent.bindActionContext(ctx);
-            parent.get(ResolveScopeAction).execute(ctx);
+            parent.get(ResolveServicesScopeAction).execute(ctx);
             parent = ctx.resolve(ParentContainerToken);
         }
 

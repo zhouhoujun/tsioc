@@ -1,6 +1,7 @@
 import { IocAction, IocActionType, IocActionContext } from './Action';
 import { lang, isClass } from '../utils';
 import { Type } from '../types';
+import { IocGlobalAction } from './IocGlobalAction';
 
 /**
  * composite action.
@@ -18,6 +19,10 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         this.actions = [];
     }
 
+    has(action: IocActionType) {
+        return this.actions.indexOf(action) >= 0;
+    }
+
     /**
      * use action.
      *
@@ -27,10 +32,12 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
      * @memberof LifeScope
      */
     use(action: IocActionType, first?: boolean): this {
-        if (first) {
-            this.actions.unshift(action);
-        } else {
-            this.actions.push(action);
+        if (!this.has(action)) {
+            if (first) {
+                this.actions.unshift(action);
+            } else {
+                this.actions.push(action);
+            }
         }
         return this;
     }
@@ -44,7 +51,9 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
      * @memberof LifeScope
      */
     useBefore(action: IocActionType, before: IocActionType): this {
-        this.actions.splice(this.actions.indexOf(before) - 1, 0, action);
+        if (!this.has(action)) {
+            this.actions.splice(this.actions.indexOf(before) - 1, 0, action);
+        }
         return this;
     }
     /**
@@ -56,7 +65,9 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
      * @memberof LifeScope
      */
     useAfter(action: IocActionType, after: IocActionType): this {
-        this.actions.splice(this.actions.indexOf(after), 0, action);
+        if (!this.has(action)) {
+            this.actions.splice(this.actions.indexOf(after), 0, action);
+        }
         return this;
     }
 
@@ -84,7 +95,11 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         return ac
     }
 
-    protected resolveAction(ctx: T, ac: Type<IocAction<any>>) {
-        return ctx.resolve(ac);
+    protected resolveAction(ctx: T, ac: Type<IocAction<T>>): IocAction<T> {
+        if (lang.isExtendsClass(ac, IocGlobalAction)) {
+            return ctx.getRaiseContainer().resolve(ac);
+        } else {
+            return ctx.resolve(ac);
+        }
     }
 }

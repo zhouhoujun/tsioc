@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isProvider, ProviderMap } from '@ts-ioc/ioc';
-import { ModuleLoader, IModuleLoader } from './services';
+import { ModuleLoader, IModuleLoader, ServicesResolveLifeScope, ServiceResolveLifeScope } from './services';
 import { registerCores } from './registerCores';
 import { ResolveServiceContext, ResolveServicesContext } from './actions';
 import { TargetRefs } from './TargetService';
@@ -117,7 +117,8 @@ export class Container extends IocContainer implements IContainer {
             token: token,
             providers: providers
         });
-        this.resolveContext(context);
+        context.setRaiseContainer(this);
+        this.get(ServiceResolveLifeScope).execute(context);
         return context.instance || null;
     }
 
@@ -192,7 +193,8 @@ export class Container extends IocContainer implements IContainer {
             token: token,
             target: tag
         });
-        this.resolveContext(context);
+        context.setRaiseContainer(this);
+        this.get(ServicesResolveLifeScope).execute(context);
         return context.services;
     }
 

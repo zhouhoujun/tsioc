@@ -1,12 +1,12 @@
 import { IContainer, ContainerToken } from './IContainer';
-import { ModuleInjectorManager, ModuleLoader } from './services';
+import { ModuleInjectorManager, ModuleLoader, IocExtInjector, ServicesResolveLifeScope, ServiceResolveLifeScope } from './services';
 import { IocExt } from './decorators';
-import { DecoratorRegisterer, MethodAutorunAction, ResolveLifeScope, BindProviderAction, DesignLifeScope } from '@ts-ioc/ioc';
+import { DecoratorRegisterer, MethodAutorunAction, BindProviderAction, DesignLifeScope } from '@ts-ioc/ioc';
 import {
-    InitServiceResolveAction, ResolveRefServiceAction, ResolveServiceAction,
-    ResolveServicesAction, ResolvePrivateServiceAction, ResolveServiceInClassChain,
-    ResolveDefaultServiceAction, DefaultResolveServiceAction, ResolveTargetServiceAction,
-    IocExtRegisterAction, ResovleServicesInTargetAction, ResovleServicesInRaiseAction
+    InitServiceResolveAction, ResolveRefServiceAction, ResolveServiceScopeAction,
+    ResolveServicesScopeAction, ResolvePrivateServiceAction, ResolveServiceInClassChain,
+    ResolveDefaultServiceAction, ResolveTargetServiceAction,
+    IocExtRegisterAction, ResovleServicesInTargetAction, ResovleServicesInRaiseAction, ResolveServiceTokenAction
 } from './actions';
 
 
@@ -14,7 +14,7 @@ export function registerCores(container: IContainer) {
 
     container.bindProvider(ContainerToken, () => container);
     container.register(ModuleLoader);
-
+    container.register(IocExtInjector);
     container.register(ModuleInjectorManager);
 
     if (!container.has(MethodAutorunAction)) {
@@ -22,26 +22,33 @@ export function registerCores(container: IContainer) {
     }
 
     container.register(InitServiceResolveAction);
-    container.register(DefaultResolveServiceAction);
+    container.register(ResolveServiceTokenAction);
+    container.register(ResolveDefaultServiceAction);
+
     container.register(ResolveRefServiceAction);
     container.register(ResolvePrivateServiceAction);
     container.register(ResolveDefaultServiceAction);
 
-    container.register(ResolveServiceAction);
+    container.register(ResolveServiceScopeAction);
     container.register(ResolveServiceInClassChain);
     container.register(ResolveTargetServiceAction);
 
     container.register(IocExtRegisterAction);
 
-    container.register(ResolveServicesAction);
+    container.register(ResolveServicesScopeAction);
     container.register(ResovleServicesInTargetAction);
     container.register(ResovleServicesInRaiseAction);
 
+    container.register(ServiceResolveLifeScope);
+    container.register(ServicesResolveLifeScope);
 
-    let resolveLifeScope = container.get(ResolveLifeScope);
-    resolveLifeScope
-        .use(ResolveServiceAction, true)
-        .use(ResolveServicesAction, true);
+
+    // container.get(ResolveScopeAction)
+    //     .use(ResolveServiceAction, true)
+    //     .use(ResolveServicesAction, true);
+
+    // container.get(ResolveLifeScope)
+    //     .use(ResolveServicesAction, true);
 
 
     container.get(DesignLifeScope)

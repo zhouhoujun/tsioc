@@ -2,8 +2,10 @@ export * from './Action';
 export * from './IocCompositeAction';
 export * from './RegisterActionContext';
 export * from './IocRegisterAction';
+export * from './IocGlobalAction';
 export * from './ResovleActionContext';
 export * from './IocResolveAction';
+export * from './ResolveScopeAction';
 
 // runtime action
 export * from './BindParameterProviderAction';

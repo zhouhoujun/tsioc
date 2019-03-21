@@ -4,9 +4,10 @@ import {
     ComponentInitAction, ComponentAfterInitAction, ResolveLifeScope
 } from '@ts-ioc/ioc';
 import {
-    IContainer, ContainerToken, IocExt, ModuleInjectorManager, ResolveServiceAction,
-    DefaultResolveServiceAction, ResolveTargetServiceAction, ResolvePrivateServiceAction,
-    ResolveServicesAction, ResolveServiceInClassChain
+    IContainer, ContainerToken, IocExt, ModuleInjectorManager,
+    ResolveTargetServiceAction, ResolvePrivateServiceAction,
+    ResolveServiceInClassChain, ServicesResolveLifeScope, ResolveDefaultServiceAction,
+    ServiceResolveLifeScope
 } from '@ts-ioc/core';
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
@@ -15,7 +16,7 @@ import * as actions from './actions';
 import * as handles from './handles';
 import * as services from './services';
 
-import { RouteResolveAction, ResolveSerivesInExportAction, ResolveRouteServiceAction } from './actions';
+import { RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction } from './actions';
 import { DIModuleInjector, RootModuleInjector } from './modules';
 
 /**
@@ -53,8 +54,8 @@ export class BootModule {
 
 
         // route service
-        container.get(ResolveServiceAction)
-            .useAfter(ResolveRouteServiceAction, DefaultResolveServiceAction);
+        container.get(ServiceResolveLifeScope)
+            .useBefore(ResolveRouteServiceAction, ResolveDefaultServiceAction);
 
         container.get(ResolveTargetServiceAction)
             .useAfter(ResolveRouteServiceAction, ResolvePrivateServiceAction);
@@ -62,9 +63,12 @@ export class BootModule {
         container.get(ResolveServiceInClassChain)
             .useAfter(ResolveRouteServiceAction, ResolvePrivateServiceAction);
 
+        container.get(ServicesResolveLifeScope)
+            .use(ResolveRouteServicesAction);
+
         // route services
-        container.get(ResolveServicesAction)
-            .use(ResolveSerivesInExportAction);
+        container.get(ServicesResolveLifeScope)
+            .use(ResolveRouteServicesAction);
 
         container.get(ResolveLifeScope)
             .use(RouteResolveAction);

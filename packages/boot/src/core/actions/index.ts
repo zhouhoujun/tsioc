@@ -1,6 +1,9 @@
 export * from './RouteResolveAction';
 export * from './ResolveModuleExportAction';
 export * from './ResolveParentAction';
-export * from './ResolveRouteServiceAction';
-export * from './ResolveSerivesInExportAction';
 
+export * from './ResolveParentServiceAction';
+
+export * from './ResolveRouteServiceAction';
+export * from './ResolveRouteServicesAction';
+export * from './ResolveSerivesInExportAction';

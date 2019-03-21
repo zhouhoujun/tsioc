@@ -1,4 +1,4 @@
-import { Provider, ParamProviders, lang, IocRegisterAction, RegisterActionContext } from '@ts-ioc/ioc';
+import { Provider, ParamProviders, lang, GlobalRegisterAction, RegisterActionContext } from '@ts-ioc/ioc';
 import { AdvisorToken } from '../IAdvisor';
 import { Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints';
 import { isValideAspectTarget } from '../isValideAspectTarget';
@@ -9,9 +9,9 @@ import { isValideAspectTarget } from '../isValideAspectTarget';
  *
  * @export
  * @class InvokeAfterConstructorAction
- * @extends {ActionComposite}
+ * @extends {GlobalRegisterAction}
  */
-export class InvokeAfterConstructorAction extends IocRegisterAction {
+export class InvokeAfterConstructorAction extends GlobalRegisterAction {
 
     execute(ctx: RegisterActionContext, next: () => void): void {
         // aspect class do nothing.

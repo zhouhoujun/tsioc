@@ -1,4 +1,4 @@
-import { IocCompositeAction, IocActionContext } from '../actions';
+import { IocCompositeAction, IocActionContext, IocActionType } from '../actions';
 import { Type } from '../types';
 import { isArray } from '../utils';
 import { IIocContainer } from '../IIocContainer';
@@ -11,20 +11,32 @@ import { getOwnParamerterNames } from '../factories';
  * @class LifeScope
  * @extends {IocCoreService}
  */
-export abstract class LifeScope<TCtx extends IocActionContext> extends IocCompositeAction<TCtx> {
+export class LifeScope<T extends IocActionContext> extends IocCompositeAction<T> {
 
+    protected afters: IocActionType[];
     constructor() {
         super();
+        this.afters = [];
     }
 
     /**
      * resgister default action.
      *
-     * @abstract
      * @param {IIocContainer} container
      * @memberof LifeScope
      */
-    abstract registerDefault(container: IIocContainer);
+    registerDefault(container: IIocContainer) {
+    }
+
+    after(action: IocActionType) {
+        if (!this.has(action)) {
+            this.afters.push(action);
+        }
+    }
+
+    execute(ctx: T, next?: () => void): void {
+        this.execActions(ctx, this.actions.concat(this.afters), next);
+    }
 
     /**
      * get paramerter names.

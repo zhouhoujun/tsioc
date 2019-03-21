@@ -1,7 +1,7 @@
 import { LifeScope } from './LifeScope';
 import { IIocContainer } from '../IIocContainer';
 import {
-    BindProviderAction, MethodAutorunAction, IocSetCacheAction,
+    BindProviderAction, IocSetCacheAction,
     ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
     InitReflectAction, RegisterActionContext, IocAutorunAction
 } from '../actions';
