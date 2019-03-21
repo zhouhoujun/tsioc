@@ -1,8 +1,8 @@
-import { Provider, ParamProviders, lang, GlobalRegisterAction, RegisterActionContext } from '@ts-ioc/ioc';
+import { Provider, ParamProviders, lang, RegisterActionContext } from '@ts-ioc/ioc';
 import { AdvisorToken } from '../IAdvisor';
 import { Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints';
 import { isValideAspectTarget } from '../isValideAspectTarget';
-
+import { GlobalRegisterAction } from '@ts-ioc/core';
 
 /**
  * invoke after constructor action.

@@ -1,7 +1,6 @@
 import { IocAction, IocActionType, IocActionContext } from './Action';
 import { lang, isClass } from '../utils';
 import { Type } from '../types';
-import { IocGlobalAction } from './IocGlobalAction';
 
 /**
  * composite action.
@@ -96,10 +95,6 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
     }
 
     protected resolveAction(ctx: T, ac: Type<IocAction<T>>): IocAction<T> {
-        if (lang.isExtendsClass(ac, IocGlobalAction)) {
-            return ctx.getRaiseContainer().resolve(ac);
-        } else {
-            return ctx.resolve(ac);
-        }
+        return ctx.resolve(ac);
     }
 }

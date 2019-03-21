@@ -1,5 +1,5 @@
-import { ExtendsProvider, GlobalRegisterAction, RegisterActionContext } from '@ts-ioc/ioc';
-
+import { ExtendsProvider, RegisterActionContext } from '@ts-ioc/ioc';
+import { GlobalRegisterAction } from '@ts-ioc/core';
 
 /**
  * extends instance action.

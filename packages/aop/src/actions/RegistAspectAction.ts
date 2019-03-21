@@ -1,9 +1,9 @@
 import {
     ClassMetadata, getOwnTypeMetadata,
-    isClass, GlobalRegisterAction, RegisterActionContext, DecoratorRegisterer, lang
+    isClass, RegisterActionContext, DecoratorRegisterer, lang
 } from '@ts-ioc/ioc';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
-
+import { GlobalRegisterAction } from '@ts-ioc/core';
 
 /**
  * regist aspect action.

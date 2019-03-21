@@ -1,7 +1,6 @@
-import { IocActionContext, IocAction } from './Action';
-import { RegisterActionContext } from './RegisterActionContext';
-import { ResovleActionContext } from './ResovleActionContext';
-import { IIocContainer } from '../IIocContainer';
+import { IocActionContext, IocAction, RegisterActionContext, ResovleActionContext } from '@ts-ioc/ioc';
+import { IContainer } from '../IContainer';
+
 
 /**
  * global action.
@@ -25,7 +24,7 @@ export abstract class IocGlobalAction<T extends IocActionContext> extends IocAct
  * @extends {IocGlobalAction<RegisterActionContext>}
  */
 export abstract class GlobalRegisterAction extends IocGlobalAction<RegisterActionContext> {
-    constructor(protected container: IIocContainer) {
+    constructor(protected container: IContainer) {
         super();
     }
 }

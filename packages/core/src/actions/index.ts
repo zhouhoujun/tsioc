@@ -1,3 +1,4 @@
+export * from './IocGlobalAction';
 export * from './IocExtRegisterAction';
 export * from './ResolveServiceContext';
 export * from './IocResolveServiceAction';

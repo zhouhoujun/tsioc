@@ -1,7 +1,8 @@
 import { IPointcut } from '../joinpoints';
 import { isValideAspectTarget } from '../isValideAspectTarget';
 import { ProxyMethodToken } from '../access';
-import { RegisterActionContext, lang, getParamerterNames, isUndefined, GlobalRegisterAction } from '@ts-ioc/ioc';
+import { RegisterActionContext, lang, getParamerterNames, isUndefined } from '@ts-ioc/ioc';
+import { GlobalRegisterAction } from '@ts-ioc/core';
 
 /**
  * bind method pointcut action.
