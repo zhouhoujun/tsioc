@@ -57,7 +57,7 @@ export class AopModule {
 
         container.get(AopGlobalRegisterer).register(container);
 
-        let decorReg = container.resolve(DecoratorRegisterer);
+        let decorReg = container.get(DecoratorRegisterer);
         decorReg.register(Aspect, RegistAspectAction, ExetndsInstanceAction);
 
     }

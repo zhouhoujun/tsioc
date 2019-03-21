@@ -1,7 +1,7 @@
 import { AnnoationContext, AnnoationOption } from './core';
 import { RunnableConfigure, ConfigureManager } from './annotations';
 import { IModuleLoader } from '@ts-ioc/core';
-import { ProviderTypes, LoadType, isBaseObject, Type, InjectToken } from '@ts-ioc/ioc';
+import { ProviderTypes, LoadType, Type, InjectToken } from '@ts-ioc/ioc';
 import { Runnable } from './runnable';
 
 

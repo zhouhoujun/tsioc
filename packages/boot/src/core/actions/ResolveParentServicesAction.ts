@@ -7,17 +7,17 @@ export class ResolveParentServicesAction extends IocResolveServicesAction {
 
     execute(ctx: ResolveServicesContext, next: () => void): void {
         let curr = ctx.getRaiseContainer();
-        let parent = ctx.resolve(ParentContainerToken);
+        let parent = curr.get(ParentContainerToken);
 
-        while (parent && !ctx.instance) {
+        while (parent) {
             parent.bindActionContext(ctx);
             parent.get(ResolveServicesScopeAction).execute(ctx);
-            parent = ctx.resolve(ParentContainerToken);
+            parent = parent.get(ParentContainerToken);
         }
 
-        if (!ctx.instance) {
-            curr.bindActionContext(ctx);
-            next();
-        }
+
+        curr.bindActionContext(ctx);
+        next();
+
     }
 }

@@ -16,7 +16,7 @@ export class RegistAspectAction extends GlobalRegisterAction {
 
     execute(ctx: RegisterActionContext, next: () => void): void {
         let type = ctx.targetType;
-        let decorReg = this.container.resolve(DecoratorRegisterer);
+        let decorReg = this.container.get(DecoratorRegisterer);
         let matchs = decorReg.getClassDecorators(type, lang.getClass(this))
         let aspectMgr = this.container.get<IAdvisor>(AdvisorToken);
         let raiseContainer = ctx.getRaiseContainer() || this.container;

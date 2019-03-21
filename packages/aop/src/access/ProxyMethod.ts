@@ -90,7 +90,7 @@ export class ProxyMethod implements IProxyMethod {
         let container = this.container;
         let lifeScope = this.lifeScope;
         return (...args: any[]) => {
-            let joinPoint = this.container.resolve(Joinpoint, Provider.create('options', {
+            let joinPoint = this.container.get(Joinpoint, Provider.create('options', {
                 name: methodName,
                 fullName: fullName,
                 provJoinpoint: provJoinpoint,
@@ -101,7 +101,7 @@ export class ProxyMethod implements IProxyMethod {
                 targetType: targetType
             }));
 
-            let adChain = container.resolve(AdvisorChainFactoryToken, { provide: ContainerToken, useValue: container }, { provide: AdvisorToken, useValue: this.advisor }, ObjectMapProvider.parse({ container: container, advisor: this.advisor, advices: advices }));
+            let adChain = container.get(AdvisorChainFactoryToken, { provide: ContainerToken, useValue: container }, { provide: AdvisorToken, useValue: this.advisor }, ObjectMapProvider.parse({ container: container, advisor: this.advisor, advices: advices }));
             adChain.invoaction(joinPoint, JoinpointState.Before);
             adChain.invoaction(joinPoint, JoinpointState.Pointcut);
             let val, exeErr;

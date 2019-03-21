@@ -28,7 +28,7 @@ export class InvokeAfterConstructorAction extends GlobalRegisterAction {
         let targetType = ctx.targetType;
         let target = ctx.target;
 
-        let joinPoint = this.container.resolve(Joinpoint, Provider.create('options', <IJoinpoint>{
+        let joinPoint = this.container.get(Joinpoint, Provider.create('options', <IJoinpoint>{
             name: 'constructor',
             state: JoinpointState.After,
             fullName: className + '.constructor',

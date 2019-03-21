@@ -9,13 +9,13 @@ import {
 export class AopGlobalRegisterer extends GlobalRegisterer {
     register(container: IContainer): void {
 
-        container.resolve(RuntimeLifeScope)
+        container.get(RuntimeLifeScope)
             .use(BindMethodPointcutAction)
             .useBefore(InvokeBeforeConstructorAction, CreateInstanceAction)
             .useAfter(InvokeAfterConstructorAction, CreateInstanceAction)
             .useBefore(MatchPointcutAction, InvokeBeforeConstructorAction)
             .useAfter(ExetndsInstanceAction, InvokeAfterConstructorAction);
 
-        container.resolve(DesignLifeScope).after(RegistAspectAction);
+        container.get(DesignLifeScope).after(RegistAspectAction);
     }
 }

@@ -25,7 +25,7 @@ export class BindMethodPointcutAction extends GlobalRegisterAction {
         if (!ctx.target || !isValideAspectTarget(ctx.targetType)) {
             return next();
         }
-        if (!this.container.hasRegister(ProxyMethodToken)) {
+        if (!this.container.has(ProxyMethodToken)) {
             return next();
         }
 

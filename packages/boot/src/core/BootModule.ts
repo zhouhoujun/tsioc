@@ -63,9 +63,6 @@ export class BootModule {
         container.get(ResolveServiceInClassChain)
             .useAfter(ResolveRouteServiceAction, ResolvePrivateServiceAction);
 
-        container.get(ServicesResolveLifeScope)
-            .use(ResolveRouteServicesAction);
-
         // route services
         container.get(ServicesResolveLifeScope)
             .use(ResolveRouteServicesAction);

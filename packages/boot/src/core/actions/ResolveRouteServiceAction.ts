@@ -1,8 +1,7 @@
 import { ResolveServiceContext } from '@ts-ioc/core';
 import { IocCompositeAction, Singleton, Autorun } from '@ts-ioc/ioc';
 import { ResolveModuleExportAction } from './ResolveModuleExportAction';
-import { ResolveParentAction } from './ResolveParentAction';
-import { ResolveParentServiceAction } from '@ts-ioc/boot';
+import { ResolveParentServiceAction } from './ResolveParentServiceAction';
 
 
 @Singleton
