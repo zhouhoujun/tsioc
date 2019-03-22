@@ -1,5 +1,6 @@
-import { IocResolveAction, ResovleActionContext, Singleton, ResolveScopeAction } from '@ts-ioc/ioc';
+import { Singleton } from '@ts-ioc/ioc';
 import { ParentContainerToken } from '../../ContainerPool';
+import { IocResolveAction, ResovleActionContext, ResolveScopeAction } from '@ts-ioc/core'
 
 /**
  * resolve parent action.

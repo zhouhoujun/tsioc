@@ -44,7 +44,7 @@ export class InvokeBeforeConstructorAction extends IocRuntimeAction {
         }
 
         advices.Before.forEach(advicer => {
-            advisor.getContainer(advicer.aspectType, this.container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers); // new Joinpoint(joinPoint) // container.resolve(Joinpoint, { json: joinPoint })
+            advisor.getContainer(advicer.aspectType, this.container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
         });
 
         advices.Around.forEach(advicer => {

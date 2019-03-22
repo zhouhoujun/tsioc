@@ -101,7 +101,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
     execute(ctx: T, next?: () => void): void {
         let scope = ctx.currScope;
         ctx.currScope = this;
-        this.execActions(ctx, this.actions.concat(this.afters), next);
+        this.execActions(ctx, [...this.befores, ...this.actions, ...this.afters], next);
         ctx.currScope = scope;
     }
 

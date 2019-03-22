@@ -2,9 +2,9 @@ import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isProvider, ProviderMap } from '@ts-ioc/ioc';
-import { ModuleLoader, IModuleLoader, ServicesResolveLifeScope, ServiceResolveLifeScope } from './services';
+import { ModuleLoader, IModuleLoader, ServicesResolveLifeScope, ServiceResolveLifeScope, ResolveLifeScope } from './services';
 import { registerCores } from './registerCores';
-import { ResolveServiceContext, ResolveServicesContext } from './actions';
+import { ResolveServiceContext, ResolveServicesContext, ResovleActionContext } from './actions';
 import { TargetRefs } from './TargetService';
 
 
@@ -23,6 +23,49 @@ export class Container extends IocContainer implements IContainer {
 
     get size(): number {
         return this.factories.size;
+    }
+
+    getResolveLifeScope(): ResolveLifeScope {
+        if (!this.has(ResolveLifeScope)) {
+            let rlifeScope = new ResolveLifeScope();
+            rlifeScope.registerDefault(this);
+            this.registerSingleton(ResolveLifeScope, rlifeScope);
+        }
+        return this.get(ResolveLifeScope);
+    }
+
+
+      /**
+     * resolve type instance with token and param provider.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {T} [notFoundValue]
+     * @param {...ProviderTypes[]} providers
+     * @memberof Container
+     */
+    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
+        let context = ResovleActionContext.parse({
+            token: token,
+            providers: providers
+        });
+        this.resolveContext(context);
+        return context.instance || null;
+    }
+
+    
+    /**
+     * resolve by context.
+     *
+     * @template T
+     * @param {T} ctx
+     * @returns {T}
+     * @memberof IocContainer
+     */
+    resolveContext<T extends ResovleActionContext>(ctx: T): T {
+        this.bindActionContext(ctx);
+        this.getResolveLifeScope().execute(ctx);
+        return ctx as T;
     }
 
     /**

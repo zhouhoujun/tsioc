@@ -12,6 +12,9 @@ export class RouteRuntimRegisterAction extends IocRuntimeAction {
         super(container);
     }
     execute(ctx: RuntimeActionContext, next: () => void): void {
+        if(this.container !== ctx.getRaiseContainer()){
+            return next();
+        }
         if (ctx.currScope) {
             let container = this.container;
             let scopeType: Type<IocCompositeAction<any>> = lang.getClass(ctx.currScope);
@@ -34,6 +37,9 @@ export class RouteDesignRegisterAction extends IocDesignAction {
         super(container);
     }
     execute(ctx: DesignActionContext, next: () => void): void {
+        if(this.container !== ctx.getRaiseContainer()){
+            return next();
+        }
         if (ctx.currScope) {
             let container = this.container;
             let scopeType: Type<IocCompositeAction<any>> = lang.getClass(ctx.currScope);

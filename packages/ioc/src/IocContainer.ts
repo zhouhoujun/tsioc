@@ -6,11 +6,11 @@ import { Registration } from './Registration';
 
 import { registerCores } from './registerCores';
 import { InjectReference } from './InjectReference';
-import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderParser, isProvider } from './providers';
+import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderParser } from './providers';
 import { IResolver } from './IResolver';
-import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, TypeReflects, ResolveLifeScope } from './services';
+import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, TypeReflects } from './services';
 import { IParameter } from './IParameter';
-import { RegisterActionContext, ResovleActionContext, IocActionContext, RuntimeActionContext } from './actions';
+import { RegisterActionContext, IocActionContext, RuntimeActionContext } from './actions';
 
 /**
  * Container
@@ -52,16 +52,6 @@ export class IocContainer implements IIocContainer {
 
     getTypeReflects(): TypeReflects {
         return this.get(TypeReflects);
-    }
-
-
-    getResolveLifeScope(): ResolveLifeScope {
-        if (!this.has(ResolveLifeScope)) {
-            let rlifeScope = new ResolveLifeScope();
-            rlifeScope.registerDefault(this);
-            this.registerSingleton(ResolveLifeScope, rlifeScope);
-        }
-        return this.get(ResolveLifeScope);
     }
 
     getSingletonManager(): IocSingletonManager {
@@ -131,32 +121,16 @@ export class IocContainer implements IIocContainer {
      * @memberof Container
      */
     resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
-        let context = ResovleActionContext.parse({
-            token: token,
-            providers: providers
-        });
-        this.resolveContext(context);
-        return context.instance || null;
+        let factory = this.factories.get(this.getTokenKey(token));
+        return factory ? factory(...providers) : null;
     }
 
-    /**
-     * resolve by context.
-     *
-     * @template T
-     * @param {T} ctx
-     * @returns {T}
-     * @memberof IocContainer
-     */
-    resolveContext<T extends ResovleActionContext>(ctx: T): T {
-        this.bindActionContext(ctx);
-        this.getResolveLifeScope().execute(ctx);
-        return ctx as T;
-    }
-
+    
     bindActionContext<T extends IocActionContext>(ctx: T): T {
         ctx.setRaiseContainer(this);
         return ctx;
     }
+
 
     /**
      * iterator.

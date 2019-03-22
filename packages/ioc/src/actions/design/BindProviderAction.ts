@@ -2,7 +2,6 @@ import { lang } from '../../utils';
 import { ClassMetadata } from '../../metadatas';
 import { DecoratorRegisterer } from '../../services';
 import { getOwnTypeMetadata } from '../../factories';
-import { IocRegisterAction } from '../IocRegisterAction';
 import { DesignActionContext } from './DesignActionContext';
 import { IocDesignAction } from './IocDesignAction';
 

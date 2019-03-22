@@ -1,5 +1,4 @@
-import { LifeScope } from './LifeScope';
-import { IIocContainer } from '../IIocContainer';
+import { LifeScope, IIocContainer } from '@ts-ioc/ioc';
 import { ResovleActionContext, ResolveScopeAction } from '../actions';
 
 /**

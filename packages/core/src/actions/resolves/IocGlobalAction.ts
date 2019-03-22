@@ -1,5 +1,6 @@
-import { IocActionContext, IocAction, RegisterActionContext, ResovleActionContext } from '@ts-ioc/ioc';
+import { IocActionContext, IocAction, RegisterActionContext } from '@ts-ioc/ioc';
 import { IContainer } from '../../IContainer';
+import { ResovleActionContext } from './ResovleActionContext';
 
 
 /**

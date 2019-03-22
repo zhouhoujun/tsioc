@@ -1,6 +1,6 @@
 import { ProviderTypes } from './providers';
 import { Token, Type, InstanceFactory, SymbolType } from './types';
-import { ResovleActionContext, IocActionContext } from './actions';
+import { IocActionContext } from './actions';
 
 /**
  * resolver.
@@ -50,25 +50,6 @@ export interface IResolver {
      * @memberof IResolver
      */
     unregister<T>(token: Token<T>): this;
-}
-
-/**
- * resolver execute.
- *
- * @export
- * @interface IResolverExecute
- */
-export interface IContextResolver {
-
-    /**
-     * resolve in context.
-     *
-     * @template T
-     * @param {T} ctx
-     * @returns {T}
-     * @memberof IResolverExecute
-     */
-    resolveContext<T extends ResovleActionContext>(ctx: T): T;
 }
 
 /**

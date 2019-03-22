@@ -3,7 +3,6 @@ import { Token, InstanceFactory, SymbolType, Factory, Type } from '../types';
 import { IIocContainer } from '../IIocContainer';
 import { IResolver, IResolverContainer } from '../IResolver';
 import { ProviderTypes } from './types';
-// import { IocActionContext, ResovleActionContext } from '../actions';
 
 // use core-js in browser.
 
@@ -39,18 +38,6 @@ export class ProviderMap implements IResolverContainer {
     values(): InstanceFactory<any>[] {
         return Array.from(this.map.values());
     }
-
-    // bindActionContext<T extends IocActionContext>(ctx: T): T {
-    //     ctx.setRaiseContainer(this.containerGetter)
-    //     ctx.setProviderContainer(this);
-    //     return ctx;
-    // }
-
-    // resolveContext<T extends ResovleActionContext>(ctx: T): T {
-    //     this.bindActionContext(ctx);
-    //     this.getContainer().getResolveLifeScope().execute(ctx);
-    //     return ctx;
-    // }
 
     /**
      * has provide or not.

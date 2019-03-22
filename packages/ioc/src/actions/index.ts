@@ -7,4 +7,3 @@ export * from './IocRegisterAction';
 
 export * from './design';
 export * from './runtime';
-export * from './resolves';

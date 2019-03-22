@@ -1,5 +1,6 @@
-import { IocResolveAction, Token } from '@ts-ioc/ioc';
+import { Token } from '@ts-ioc/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
+import { IocResolveAction } from './IocResolveAction';
 
 /**
  * resolve service base action.

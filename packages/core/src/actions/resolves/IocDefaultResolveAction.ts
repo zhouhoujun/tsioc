@@ -1,4 +1,4 @@
-import { isNullOrUndefined } from '../../utils';
+import { isNullOrUndefined } from '@ts-ioc/ioc';
 import { ResovleActionContext } from './ResovleActionContext';
 import { IocResolveAction } from './IocResolveAction';
 
