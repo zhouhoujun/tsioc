@@ -1,6 +1,6 @@
-import { IocCompositeAction } from './IocCompositeAction';
+import { IocCompositeAction } from '../IocCompositeAction';
 import { ResovleActionContext } from './ResovleActionContext';
-import { IIocContainer } from '../IIocContainer';
+import { IIocContainer } from '../../IIocContainer';
 import { IocDefaultResolveAction } from './IocDefaultResolveAction';
 
 

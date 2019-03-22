@@ -70,19 +70,22 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         return this;
     }
 
-    execute(ctx: T, next?: () => void): void {
-        this.execActions(ctx, this.actions, next);
+    execute(ctx: T, next?: () => void, filter?: (action: IocActionType) => boolean): void {
+        this.execActions(ctx, this.actions, next, filter);
     }
 
-    protected execActions(ctx: T, actions: IocActionType[], next?: () => void) {
-        lang.execAction(actions.map(ac => this.toActionFunc(ac)), ctx, next);
+    protected execActions(ctx: T, actions: IocActionType[], next?: () => void, filter?: (action: IocActionType) => boolean) {
+        actions = filter ? actions.filter(filter) : actions;
+        lang.execAction(actions.map(ac => this.toActionFunc(ac, filter)), ctx, next);
     }
 
-    protected toActionFunc(ac: IocActionType) {
+    protected toActionFunc(ac: IocActionType, filter?: (action: IocActionType) => boolean) {
         if (isClass(ac)) {
             return (ctx: T, next?: () => void) => {
                 let action = this.resolveAction(ctx, ac);
-                if (action instanceof IocAction) {
+                if (action instanceof IocCompositeAction) {
+                    action.execute(ctx, next, filter);
+                } else if (action instanceof IocAction) {
                     action.execute(ctx, next);
                 } else {
                     next();

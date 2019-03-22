@@ -1,24 +1,24 @@
-import { IocRegisterAction } from './IocRegisterAction';
-import { RegisterActionContext } from './RegisterActionContext';
-import { getTypeMetadata, hasClassMetadata } from '../factories';
-import { Autorun } from '../decorators';
-import { AutorunMetadata } from '../metadatas';
-import { isFunction, isClass } from '../utils';
+import { DesignActionContext } from './DesignActionContext';
+import { getTypeMetadata, hasClassMetadata } from '../../factories';
+import { Autorun } from '../../decorators';
+import { AutorunMetadata } from '../../metadatas';
+import { isFunction, isClass } from '../../utils';
+import { IocDesignAction } from './IocDesignAction';
 /**
  * method auto run action.
  *
  * @export
  * @class SetPropAction
- * @extends {IocRegisterAction}
+ * @extends {IocDesignAction}
  */
-export class IocAutorunAction extends IocRegisterAction {
+export class IocAutorunAction extends IocDesignAction {
 
-    execute(ctx: RegisterActionContext, next: () => void) {
+    execute(ctx: DesignActionContext, next: () => void) {
         this.runAuto(ctx, Autorun);
         next();
     }
 
-    protected runAuto(ctx: RegisterActionContext, decorator: string | Function) {
+    protected runAuto(ctx: DesignActionContext, decorator: string | Function) {
         if (isClass(ctx.targetType) && hasClassMetadata(decorator, ctx.targetType)) {
             let metas = getTypeMetadata<AutorunMetadata>(decorator, ctx.targetType);
             let meta = metas.find(it => !!it.autorun);

@@ -1,18 +1,18 @@
-import { LifeScope } from './LifeScope';
 import { ParamProviders } from '../providers';
 import { Type } from '../types';
 import {
-    InitReflectAction, IocGetCacheAction, RegisterActionContext,
+    InitReflectAction, IocGetCacheAction,
     BindParameterProviderAction, BindParameterTypeAction,
     BindPropertyTypeAction, ComponentBeforeInitAction, ComponentInitAction,
     ComponentAfterInitAction, RegisterSingletionAction, InjectPropertyAction,
     GetSingletionAction, ContainerCheckerAction, IocSetCacheAction,
-    CreateInstanceAction, ConstructorArgsAction, MethodAutorunAction
+    CreateInstanceAction, ConstructorArgsAction, MethodAutorunAction, RuntimeActionContext
 } from '../actions';
 import { IIocContainer } from '../IIocContainer';
 import { IParameter } from '../IParameter';
 import { DecoratorRegisterer } from './DecoratorRegisterer';
 import { Inject, AutoWired, Method, Param, Autorun } from '../decorators';
+import { RegisterLifeScope } from './RegisterLifeScope';
 
 /**
  * runtime life scope.
@@ -21,13 +21,13 @@ import { Inject, AutoWired, Method, Param, Autorun } from '../decorators';
  * @class RuntimeLifeScope
  * @extends {LifeScope}
  */
-export class RuntimeLifeScope extends LifeScope<RegisterActionContext> {
+export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
     constructor() {
         super();
     }
 
     getParamProviders(container: IIocContainer, type: Type<any>, propertyKey: string, target?: any): ParamProviders[] {
-        let ctx = RegisterActionContext.parse({
+        let ctx = RuntimeActionContext.parse({
             targetType: type,
             target: target,
             propertyKey: propertyKey
@@ -112,7 +112,7 @@ export class RuntimeLifeScope extends LifeScope<RegisterActionContext> {
 
     protected getParameters<T>(container: IIocContainer, type: Type<T>, instance?: T, propertyKey?: string): IParameter[] {
         propertyKey = propertyKey || 'constructor';
-        let ctx = RegisterActionContext.parse({
+        let ctx = RuntimeActionContext.parse({
             targetType: type,
             target: instance,
             propertyKey: propertyKey

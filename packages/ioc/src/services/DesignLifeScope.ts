@@ -1,15 +1,15 @@
-import { LifeScope } from './LifeScope';
 import { IIocContainer } from '../IIocContainer';
 import {
     BindProviderAction, IocSetCacheAction,
     ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
-    InitReflectAction, RegisterActionContext, IocAutorunAction
+    InitReflectAction, IocAutorunAction, DesignActionContext
 } from '../actions';
 import { DecoratorRegisterer } from './DecoratorRegisterer';
 import {
     Autorun, Singleton, Injectable,
     Component, Providers, Refs, Abstract
 } from '../decorators';
+import { RegisterLifeScope } from './RegisterLifeScope';
 
 /**
  * life scope of design.
@@ -18,7 +18,7 @@ import {
  * @class DesignLifeScope
  * @extends {LifeScope}
  */
-export class DesignLifeScope extends LifeScope<RegisterActionContext> {
+export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> {
     constructor() {
         super();
     }

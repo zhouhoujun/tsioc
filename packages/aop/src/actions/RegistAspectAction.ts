@@ -1,20 +1,19 @@
 import {
-    ClassMetadata, getOwnTypeMetadata,
-    isClass, RegisterActionContext, DecoratorRegisterer, lang
+    ClassMetadata, getOwnTypeMetadata, IocDesignAction,
+    isClass, DecoratorRegisterer, lang, DesignActionContext
 } from '@ts-ioc/ioc';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
-import { GlobalRegisterAction } from '@ts-ioc/core';
 
 /**
  * regist aspect action.
  *
  * @export
  * @class RegistAspectAction
- * @extends {GlobalRegisterAction}
+ * @extends {IocDesignAction}
  */
-export class RegistAspectAction extends GlobalRegisterAction {
+export class RegistAspectAction extends IocDesignAction {
 
-    execute(ctx: RegisterActionContext, next: () => void): void {
+    execute(ctx: DesignActionContext, next: () => void): void {
         let type = ctx.targetType;
         let decorReg = this.container.get(DecoratorRegisterer);
         let matchs = decorReg.getClassDecorators(type, lang.getClass(this))

@@ -90,6 +90,33 @@ export class IocActionContext {
     }
 
     /**
+     * parse context.
+     *
+     * @static
+     * @param {ActionContextOption} options
+     * @param {(IIocContainer | (() => IIocContainer))} [raiseContainerGetter]
+     * @param {(IResolverContainer | (() => IResolverContainer))} [providersGetter]
+     * @returns {IocActionContext}
+     * @memberof IocActionContext
+     */
+    static parse(options: ActionContextOption, raiseContainerGetter?: IIocContainer | (() => IIocContainer), providersGetter?: IResolverContainer | (() => IResolverContainer)): IocActionContext {
+        let ctx = new IocActionContext();
+        ctx.setContext(ctx, options, raiseContainerGetter, providersGetter);
+        return ctx;
+    }
+
+
+    setContext(ctx: IocActionContext, options: ActionContextOption, raiseContainerGetter?: IIocContainer | (() => IIocContainer), providersGetter?: IResolverContainer | (() => IResolverContainer)) {
+        ctx.setOptions(options);
+        if (raiseContainerGetter) {
+            ctx.setRaiseContainer(raiseContainerGetter);
+        }
+        if (providersGetter) {
+            ctx.setProviderContainer(providersGetter);
+        }
+    }
+
+    /**
      * set options.
      *
      * @param {ActionContextOption} options
@@ -97,9 +124,7 @@ export class IocActionContext {
      */
     setOptions(options: ActionContextOption) {
         if (options) {
-            Object.assign(this,
-                lang.omit(options, 'setOptions', 'getRaiseContainer', 'getFactories',
-                    'getTokenProvider', 'has', 'resolve', 'unregister'));
+            Object.assign(this, options);
         }
     }
 

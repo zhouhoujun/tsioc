@@ -43,13 +43,6 @@ export function registerCores(container: IContainer) {
     container.register(ServicesResolveLifeScope);
 
 
-    // container.get(ResolveScopeAction)
-    //     .use(ResolveServiceAction, true)
-    //     .use(ResolveServicesAction, true);
-
-    // container.get(ResolveLifeScope)
-    //     .use(ResolveServicesAction, true);
-
 
     container.get(DesignLifeScope)
         .use(IocExtRegisterAction);

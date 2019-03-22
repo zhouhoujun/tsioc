@@ -13,6 +13,5 @@ export * from './RegisterModuleProvidersHandle';
 export * from './RegisterModuleResolverHandle';
 export * from './RegisterExportsHandle';
 
-export * from './RegisterGlobalRegisterHandle';
 export * from './RegisterChildModuleHandle';
 export * from './RegisterModuleRegisterHandle';

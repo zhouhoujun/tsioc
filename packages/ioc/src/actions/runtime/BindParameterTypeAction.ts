@@ -1,10 +1,10 @@
-import { Token } from '../types';
-import { isClass, isArray, lang } from '../utils';
-import { getParamMetadata, getOwnParamMetadata } from '../factories';
-import { DecoratorRegisterer, RuntimeLifeScope } from '../services';
-import { ParameterMetadata } from '../metadatas';
-import { IocRegisterAction } from './IocRegisterAction';
-import { RegisterActionContext } from './RegisterActionContext';
+import { Token } from '../../types';
+import { isClass, isArray, lang } from '../../utils';
+import { getParamMetadata, getOwnParamMetadata } from '../../factories';
+import { DecoratorRegisterer, RuntimeLifeScope } from '../../services';
+import { ParameterMetadata } from '../../metadatas';
+import { IocRuntimeAction } from './IocRuntimeAction';
+import { RuntimeActionContext } from './RuntimeActionContext';
 
 /**
  * bind parameter type action.
@@ -13,9 +13,9 @@ import { RegisterActionContext } from './RegisterActionContext';
  * @class BindParameterTypeAction
  * @extends {ActionComposite}
  */
-export class BindParameterTypeAction extends IocRegisterAction {
+export class BindParameterTypeAction extends IocRuntimeAction {
 
-    execute(ctx: RegisterActionContext, next: () => void) {
+    execute(ctx: RuntimeActionContext, next: () => void) {
         let propertyKey = ctx.propertyKey || 'constructor';
         if (ctx.targetReflect.methodParams && ctx.targetReflect.methodParams[propertyKey]) {
             return next();

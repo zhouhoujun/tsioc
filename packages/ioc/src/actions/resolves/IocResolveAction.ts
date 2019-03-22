@@ -1,4 +1,4 @@
-import { IocAction } from './Action';
+import { IocAction } from '../Action';
 import { ResovleActionContext } from './ResovleActionContext';
 
 /**

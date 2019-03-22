@@ -1,10 +1,10 @@
-import { ParamProviders } from '../providers';
-import { getParamMetadata } from '../factories';
-import { ParameterMetadata } from '../metadatas';
-import { isArray, lang } from '../utils';
-import { DecoratorRegisterer } from '../services';
-import { IocRegisterAction } from './IocRegisterAction';
-import { RegisterActionContext } from './RegisterActionContext';
+import { ParamProviders } from '../../providers';
+import { getParamMetadata } from '../../factories';
+import { ParameterMetadata } from '../../metadatas';
+import { isArray, lang } from '../../utils';
+import { DecoratorRegisterer } from '../../services';
+import { IocRuntimeAction } from './IocRuntimeAction';
+import { RuntimeActionContext } from './RuntimeActionContext';
 
 
 /**
@@ -14,9 +14,9 @@ import { RegisterActionContext } from './RegisterActionContext';
  * @class BindParameterProviderAction
  * @extends {ActionComposite}
  */
-export class BindParameterProviderAction extends IocRegisterAction {
+export class BindParameterProviderAction extends IocRuntimeAction {
 
-    execute(ctx: RegisterActionContext, next: () => void) {
+    execute(ctx: RuntimeActionContext, next: () => void) {
         let type = ctx.targetType;
         let propertyKey = ctx.propertyKey;
 

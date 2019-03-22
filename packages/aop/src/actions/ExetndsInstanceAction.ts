@@ -1,16 +1,15 @@
-import { ExtendsProvider, RegisterActionContext } from '@ts-ioc/ioc';
-import { GlobalRegisterAction } from '@ts-ioc/core';
+import { ExtendsProvider, RuntimeActionContext, IocRuntimeAction } from '@ts-ioc/ioc';
 
 /**
  * extends instance action.
  *
  * @export
  * @class ExetndsInstanceAction
- * @extends {GlobalRegisterAction}
+ * @extends {IocRuntimeAction}
  */
-export class ExetndsInstanceAction extends GlobalRegisterAction {
+export class ExetndsInstanceAction extends IocRuntimeAction {
 
-    execute(ctx: RegisterActionContext, next: () => void): void {
+    execute(ctx: RuntimeActionContext, next: () => void): void {
         // aspect class do nothing.
         if (ctx.providers && ctx.providers.length) {
             ctx.providers.forEach(p => {

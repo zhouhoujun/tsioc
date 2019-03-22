@@ -9,6 +9,5 @@ export * from './IAdvisor';
 export * from './Advisor';
 export * from './AdviceMatcher';
 export * from './isValideAspectTarget';
-export * from './AopGlobalRegisterer';
 export * from './AopModule';
 

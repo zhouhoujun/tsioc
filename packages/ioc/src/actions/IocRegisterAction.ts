@@ -1,6 +1,7 @@
 import { IocAction } from './Action';
 import { RegisterActionContext } from './RegisterActionContext';
 import { IIocContainer } from '../IIocContainer';
+import { IocCompositeAction } from './IocCompositeAction';
 
 /**
  * ioc register action.
@@ -8,9 +9,10 @@ import { IIocContainer } from '../IIocContainer';
  * @export
  * @abstract
  * @class IocRegisterAction
- * @extends {IocAction<RegisterActionContext>}
+ * @extends {IocAction<T>}
+ * @template T
  */
-export abstract class IocRegisterAction extends IocAction<RegisterActionContext> {
+export abstract class IocRegisterAction<T extends RegisterActionContext> extends IocAction<T> {
     constructor(protected container: IIocContainer) {
         super();
     }

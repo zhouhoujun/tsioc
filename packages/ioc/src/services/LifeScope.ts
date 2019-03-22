@@ -34,8 +34,8 @@ export class LifeScope<T extends IocActionContext> extends IocCompositeAction<T>
         }
     }
 
-    execute(ctx: T, next?: () => void): void {
-        this.execActions(ctx, this.actions.concat(this.afters), next);
+    execute(ctx: T, next?: () => void, filter?: (action: IocActionType) => boolean): void {
+        this.execActions(ctx, this.actions.concat(this.afters), next, filter);
     }
 
     /**

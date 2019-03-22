@@ -1,8 +1,6 @@
-import { ObjectMap, Type, Token } from '../types';
+import { Type, Token } from '../types';
 import { IocActionContext, ActionContextOption } from './Action';
-import { IParameter } from '../IParameter';
 import { ITypeReflect } from '../services';
-import { ParamProviders, ProviderMap } from '../providers';
 import { IIocContainer } from '../IIocContainer';
 import { IResolverContainer } from '../IResolver';
 
@@ -14,29 +12,12 @@ import { IResolverContainer } from '../IResolver';
  */
 export interface RegisterActionOption extends ActionContextOption {
     /**
-     * the args.
+     * resolve token.
      *
-     * @type {any[]}
+     * @type {Token<any>}
      * @memberof RegisterActionContext
      */
-    args?: any[];
-
-    /**
-     * args params types.
-     *
-     * @type {IParameter[]}
-     * @memberof RegisterActionContext
-     */
-    params?: IParameter[];
-
-    /**
-     * target instance.
-     *
-     * @type {*}
-     * @memberof RegisterActionContext
-     */
-    target?: any;
-
+    tokenKey?: Token<any>;
     /**
      * target type.
      *
@@ -61,53 +42,6 @@ export interface RegisterActionOption extends ActionContextOption {
      */
     singleton?: boolean;
 
-    /**
-     * resolve token.
-     *
-     * @type {Token<any>}
-     * @memberof RegisterActionContext
-     */
-    tokenKey?: Token<any>;
-
-    /**
-     * property or method name of type.
-     *
-     * @type {string}
-     * @memberof RegisterActionContext
-     */
-    propertyKey?: string;
-
-    /**
-     * exter providers for resolve. origin providers
-     *
-     * @type {ParamProviders[]}
-     * @memberof RegisterActionContext
-     */
-    providers?: ParamProviders[];
-
-    /**
-     * exter providers convert to map.
-     *
-     * @type {ProviderMap}
-     * @memberof RegisterActionContext
-     */
-    providerMap?: ProviderMap;
-
-    /**
-     * execute context.
-     *
-     * @type {*}
-     * @memberof RegisterActionContext
-     */
-    context?: any;
-
-    /**
-     * has injected.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof IocActionContext
-     */
-    injecteds?: ObjectMap<boolean>;
 }
 
 /**
@@ -118,6 +52,38 @@ export interface RegisterActionOption extends ActionContextOption {
  * @extends {IocActionContext}
  */
 export class RegisterActionContext extends IocActionContext {
+
+    /**
+     * resolve token.
+     *
+     * @type {Token<any>}
+     * @memberof RegisterActionContext
+     */
+    tokenKey?: Token<any>;
+
+    /**
+     * target type.
+     *
+     * @type {Type<any>}
+     * @memberof RegisterActionContext
+     */
+    targetType?: Type<any>;
+
+    /**
+     * target type reflect.
+     *
+     * @type {ITypeReflect}
+     * @memberof IocActionContext
+     */
+    targetReflect?: ITypeReflect;
+
+    /**
+     * custom set singleton or not.
+     *
+     * @type {boolean}
+     * @memberof IocActionContext
+     */
+    singleton?: boolean;
 
     constructor(targetType: Type<any>, tokenKey?: Token<any>) {
         super();
@@ -137,13 +103,7 @@ export class RegisterActionContext extends IocActionContext {
      */
     static parse(options: RegisterActionOption, raiseContainerGetter?: IIocContainer | (() => IIocContainer), providersGetter?: IResolverContainer | (() => IResolverContainer)): RegisterActionContext {
         let ctx = new RegisterActionContext(options.targetType);
-        ctx.setOptions(options);
-        if (raiseContainerGetter) {
-            ctx.setRaiseContainer(raiseContainerGetter);
-        }
-        if (providersGetter) {
-            ctx.setProviderContainer(providersGetter);
-        }
+        ctx.setContext(ctx, options, raiseContainerGetter, providersGetter);
         return ctx;
     }
 
@@ -151,99 +111,4 @@ export class RegisterActionContext extends IocActionContext {
         super.setOptions(options);
     }
 
-    /**
-     * the args.
-     *
-     * @type {any[]}
-     * @memberof RegisterActionContext
-     */
-    args?: any[];
-
-    /**
-     * args params types.
-     *
-     * @type {IParameter[]}
-     * @memberof RegisterActionContext
-     */
-    params?: IParameter[];
-
-    /**
-     * target instance.
-     *
-     * @type {*}
-     * @memberof RegisterActionContext
-     */
-    target?: any;
-
-    /**
-     * target type.
-     *
-     * @type {Type<any>}
-     * @memberof RegisterActionContext
-     */
-    targetType?: Type<any>;
-
-    /**
-     * target type reflect.
-     *
-     * @type {ITypeReflect}
-     * @memberof IocActionContext
-     */
-    targetReflect?: ITypeReflect;
-
-    /**
-     * custom set singleton or not.
-     *
-     * @type {boolean}
-     * @memberof IocActionContext
-     */
-    singleton?: boolean;
-
-    /**
-     * resolve token.
-     *
-     * @type {Token<any>}
-     * @memberof RegisterActionContext
-     */
-    tokenKey?: Token<any>;
-
-    /**
-     * property or method name of type.
-     *
-     * @type {string}
-     * @memberof RegisterActionContext
-     */
-    propertyKey?: string;
-
-    /**
-     * exter providers for resolve. origin providers
-     *
-     * @type {ParamProviders[]}
-     * @memberof RegisterActionContext
-     */
-    providers?: ParamProviders[];
-
-    /**
-     * exter providers convert to map.
-     *
-     * @type {ProviderMap}
-     * @memberof RegisterActionContext
-     */
-    providerMap?: ProviderMap;
-
-    /**
-     * execute context.
-     *
-     * @type {*}
-     * @memberof RegisterActionContext
-     */
-    context?: any;
-
-    /**
-     * has injected.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof IocActionContext
-     */
-    injecteds?: ObjectMap<boolean>;
 }

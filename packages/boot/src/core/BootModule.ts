@@ -1,7 +1,7 @@
 import {
     Inject, DecoratorRegisterer, BindProviderAction,
     IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction,
-    ComponentInitAction, ComponentAfterInitAction, ResolveLifeScope
+    ComponentInitAction, ComponentAfterInitAction, ResolveLifeScope, DesignLifeScope, RuntimeLifeScope
 } from '@ts-ioc/ioc';
 import {
     IContainer, ContainerToken, IocExt, ModuleInjectorManager,
@@ -16,7 +16,7 @@ import * as actions from './actions';
 import * as handles from './handles';
 import * as services from './services';
 
-import { RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction } from './actions';
+import { RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction, RouteDesignRegisterAction, RouteRuntimRegisterAction } from './actions';
 import { DIModuleInjector, RootModuleInjector } from './modules';
 
 /**
@@ -70,5 +70,9 @@ export class BootModule {
         container.get(ResolveLifeScope)
             .use(RouteResolveAction);
 
+        container.get(DesignLifeScope)
+            .use(RouteDesignRegisterAction);
+        container.get(RuntimeLifeScope)
+            .use(RouteRuntimRegisterAction);
     }
 }

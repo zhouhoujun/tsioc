@@ -5,7 +5,6 @@ import { Next } from './Handle';
 import { RegScope } from '../modules';
 import { RegisterExportsHandle } from './RegisterExportsHandle';
 import { RegisterModuleRegisterHandle } from './RegisterModuleRegisterHandle';
-import { RegisterGlobalRegisterHandle } from './RegisterGlobalRegisterHandle';
 
 @Singleton
 @Autorun('setup')
@@ -21,7 +20,6 @@ export class RegisterChildModuleHandle extends CompositeHandle<AnnoationContext>
 
     setup() {
         this.use(RegisterExportsHandle)
-            .use(RegisterModuleRegisterHandle)
-            .use(RegisterGlobalRegisterHandle);
+            .use(RegisterModuleRegisterHandle);
     }
 }

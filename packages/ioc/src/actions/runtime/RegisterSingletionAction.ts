@@ -1,17 +1,17 @@
-import { IocRegisterAction } from './IocRegisterAction';
-import { RegisterActionContext } from './RegisterActionContext';
-import { IocSingletonManager } from '../services';
+import { IocRuntimeAction } from './IocRuntimeAction';
+import { RuntimeActionContext } from './RuntimeActionContext';
+import { IocSingletonManager } from '../../services';
 
 /**
  * singleton action, to set the factory of Token as singleton.
  *
  * @export
  * @class SingletionAction
- * @extends {IocRegisterAction}
+ * @extends {IocRuntimeAction}
  */
-export class RegisterSingletionAction extends IocRegisterAction {
+export class RegisterSingletionAction extends IocRuntimeAction {
 
-    execute(ctx: RegisterActionContext, next: () => void): void {
+    execute(ctx: RuntimeActionContext, next: () => void): void {
         if (ctx.targetType && ctx.target && (ctx.singleton || ctx.targetReflect.singleton)) {
             let mgr = ctx.resolve(IocSingletonManager);
             if (!mgr.has(ctx.targetType)) {

@@ -1,9 +1,9 @@
-import { DecoratorRegisterer } from '../services';
-import { lang, isClass } from '../utils';
-import { PropertyMetadata } from '../metadatas';
-import { getPropertyMetadata } from '../factories';
-import { IocRegisterAction } from './IocRegisterAction';
-import { RegisterActionContext } from './RegisterActionContext';
+import { DecoratorRegisterer } from '../../services';
+import { lang, isClass } from '../../utils';
+import { PropertyMetadata } from '../../metadatas';
+import { getPropertyMetadata } from '../../factories';
+import { IocRuntimeAction } from './IocRuntimeAction';
+import { RuntimeActionContext } from './RuntimeActionContext';
 
 /**
  * bind property type action. to get the property autowride token of Type calss.
@@ -12,9 +12,9 @@ import { RegisterActionContext } from './RegisterActionContext';
  * @class SetPropAction
  * @extends {ActionComposite}
  */
-export class BindPropertyTypeAction extends IocRegisterAction {
+export class BindPropertyTypeAction extends IocRuntimeAction {
 
-    execute(ctx: RegisterActionContext, next: () => void) {
+    execute(ctx: RuntimeActionContext, next: () => void) {
         let type = ctx.targetType;
 
         if (ctx.targetReflect.props) {

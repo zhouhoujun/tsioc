@@ -1,9 +1,10 @@
-import { lang } from '../utils';
-import { ClassMetadata } from '../metadatas';
-import { DecoratorRegisterer } from '../services';
-import { getOwnTypeMetadata } from '../factories';
-import { IocRegisterAction } from './IocRegisterAction';
-import { RegisterActionContext } from './RegisterActionContext';
+import { lang } from '../../utils';
+import { ClassMetadata } from '../../metadatas';
+import { DecoratorRegisterer } from '../../services';
+import { getOwnTypeMetadata } from '../../factories';
+import { IocRegisterAction } from '../IocRegisterAction';
+import { DesignActionContext } from './DesignActionContext';
+import { IocDesignAction } from './IocDesignAction';
 
 /**
  * bind provider action. for binding a factory to an token.
@@ -12,9 +13,9 @@ import { RegisterActionContext } from './RegisterActionContext';
  * @class BindProviderAction
  * @extends {ActionComposite}
  */
-export class BindProviderAction extends IocRegisterAction {
+export class BindProviderAction extends IocDesignAction {
 
-    execute(ctx: RegisterActionContext, next: () => void) {
+    execute(ctx: DesignActionContext, next: () => void) {
         let type = ctx.targetType;
         let tgReflect = ctx.targetReflect;
         let raiseContainer = ctx.getRaiseContainer();

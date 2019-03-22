@@ -1,10 +1,10 @@
-import { IocRegisterAction } from './IocRegisterAction';
-import { RegisterActionContext } from './RegisterActionContext';
-import { IIocContainer } from '../IIocContainer';
-import { InjectReference } from '../InjectReference';
-import { ProviderMap } from '../providers';
-import { IocContainer } from '../IocContainer';
-import { lang, isNullOrUndefined } from '../utils';
+import { IocRuntimeAction } from './IocRuntimeAction';
+import { RuntimeActionContext } from './RuntimeActionContext';
+import { IIocContainer } from '../../IIocContainer';
+import { InjectReference } from '../../InjectReference';
+import { ProviderMap } from '../../providers';
+import { IocContainer } from '../../IocContainer';
+import { lang, isNullOrUndefined } from '../../utils';
 
 
 /**
@@ -14,13 +14,13 @@ import { lang, isNullOrUndefined } from '../utils';
  * @class SetPropAction
  * @extends {ActionComposite}
  */
-export class InjectPropertyAction extends IocRegisterAction {
+export class InjectPropertyAction extends IocRuntimeAction {
 
     constructor(container: IIocContainer) {
         super(container)
     }
 
-    execute(ctx: RegisterActionContext, next: () => void) {
+    execute(ctx: RuntimeActionContext, next: () => void) {
         let providerMap = ctx.providerMap;
         ctx.injecteds = ctx.injecteds || {};
         let container = ctx.getRaiseContainer();

@@ -1,7 +1,7 @@
-import { ProviderTypes } from '../providers';
-import { IResolver, IResolverContainer } from '../IResolver';
-import { IocActionContext, ActionContextOption } from './Action';
-import { IIocContainer } from '../IIocContainer';
+import { ProviderTypes } from '../../providers';
+import { IResolver, IResolverContainer } from '../../IResolver';
+import { IocActionContext, ActionContextOption } from '../Action';
+import { IIocContainer } from '../../IIocContainer';
 
 
 /**

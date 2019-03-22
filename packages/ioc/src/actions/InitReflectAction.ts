@@ -1,6 +1,6 @@
 import { IocRegisterAction } from './IocRegisterAction';
 import { RegisterActionContext } from './RegisterActionContext';
-import { lang, isUndefined } from '../utils';
+import { isUndefined } from '../utils';
 import { DecoratorRegisterer } from '../services';
 import { hasOwnClassMetadata } from '../factories';
 import { Singleton } from '../decorators';
@@ -12,12 +12,9 @@ import { Singleton } from '../decorators';
  * @class InitReflectAction
  * @extends {IocRegisterAction}
  */
-export class InitReflectAction extends IocRegisterAction {
+export class InitReflectAction extends IocRegisterAction<RegisterActionContext> {
 
     execute(ctx: RegisterActionContext, next: () => void): void {
-        if (!ctx.targetType && ctx.target) {
-            ctx.targetType = lang.getClass(ctx.target);
-        }
         if (!ctx.targetType) {
             return;
         }

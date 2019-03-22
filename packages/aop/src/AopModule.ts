@@ -13,7 +13,6 @@ import {
 } from './access';
 import { RuntimeLifeScope, DecoratorRegisterer } from '@ts-ioc/ioc';
 import { IocExt, ContainerToken, IContainer } from '@ts-ioc/core';
-import { AopGlobalRegisterer } from './AopGlobalRegisterer';
 
 
 /**
@@ -46,7 +45,6 @@ export class AopModule {
         container.register(ProxyMethod);
         container.register(Advisor);
         container.register(AdviceMatcher);
-        container.register(AopGlobalRegisterer);
 
         container.registerSingleton(BindMethodPointcutAction, () => new BindMethodPointcutAction(container));
         container.registerSingleton(ExetndsInstanceAction, () => new ExetndsInstanceAction(container));
@@ -55,7 +53,14 @@ export class AopModule {
         container.registerSingleton(MatchPointcutAction, () => new MatchPointcutAction(container));
         container.registerSingleton(RegistAspectAction, () => new RegistAspectAction(container));
 
-        container.get(AopGlobalRegisterer).register(container);
+        container.get(RuntimeLifeScope)
+            .use(BindMethodPointcutAction)
+            .useBefore(InvokeBeforeConstructorAction, CreateInstanceAction)
+            .useAfter(InvokeAfterConstructorAction, CreateInstanceAction)
+            .useBefore(MatchPointcutAction, InvokeBeforeConstructorAction)
+            .useAfter(ExetndsInstanceAction, InvokeAfterConstructorAction);
+
+        container.get(DesignLifeScope).after(RegistAspectAction);
 
         let decorReg = container.get(DecoratorRegisterer);
         decorReg.register(Aspect, RegistAspectAction, ExetndsInstanceAction);

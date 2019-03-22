@@ -1,9 +1,9 @@
-import { IocRegisterAction } from './IocRegisterAction';
-import { RegisterActionContext } from './RegisterActionContext';
-import { DecoratorRegisterer } from '../services';
-import { getOwnTypeMetadata } from '../factories';
-import { ClassMetadata } from '../metadatas';
-import { isNumber, lang } from '../utils';
+import { IocRuntimeAction } from './IocRuntimeAction';
+import { RuntimeActionContext } from './RuntimeActionContext';
+import { DecoratorRegisterer } from '../../services';
+import { getOwnTypeMetadata } from '../../factories';
+import { ClassMetadata } from '../../metadatas';
+import { isNumber, lang } from '../../utils';
 
 /**
  * cache action.
@@ -11,11 +11,11 @@ import { isNumber, lang } from '../utils';
  * @export
  * @abstract
  * @class IocCacheAction
- * @extends {IocRegisterAction}
+ * @extends {IocRuntimeAction}
  */
-export abstract class IocCacheAction extends IocRegisterAction {
+export abstract class IocCacheAction extends IocRuntimeAction {
 
-    getCacheMetadata(ctx: RegisterActionContext): ClassMetadata {
+    getCacheMetadata(ctx: RuntimeActionContext): ClassMetadata {
         if (ctx.targetReflect.expires) {
             return ctx.targetReflect;
         } else {

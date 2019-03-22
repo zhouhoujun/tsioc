@@ -1,24 +1,24 @@
-import { IocRegisterAction } from './IocRegisterAction';
-import { RegisterActionContext } from './RegisterActionContext';
-import { hasMethodMetadata, getMethodMetadata } from '../factories';
-import { Autorun } from '../decorators';
-import { AutorunMetadata } from '../metadatas';
-import { lang, isNumber } from '../utils';
+import { IocRuntimeAction } from './IocRuntimeAction';
+import { RuntimeActionContext } from './RuntimeActionContext';
+import { hasMethodMetadata, getMethodMetadata } from '../../factories';
+import { Autorun } from '../../decorators';
+import { AutorunMetadata } from '../../metadatas';
+import { lang, isNumber } from '../../utils';
 /**
  * method auto run action.
  *
  * @export
  * @class SetPropAction
- * @extends {IocRegisterAction}
+ * @extends {IocRuntimeAction}
  */
-export class MethodAutorunAction extends IocRegisterAction {
+export class MethodAutorunAction extends IocRuntimeAction {
 
-    execute(ctx: RegisterActionContext, next: () => void) {
+    execute(ctx: RuntimeActionContext, next: () => void) {
         this.runAuto(ctx, Autorun);
         next();
     }
 
-    protected runAuto(ctx: RegisterActionContext, decor: string | Function) {
+    protected runAuto(ctx: RuntimeActionContext, decor: string | Function) {
         if (hasMethodMetadata(decor, ctx.targetType)) {
             let metas = getMethodMetadata<AutorunMetadata>(decor, ctx.targetType);
             let lastmetas: AutorunMetadata[] = [];

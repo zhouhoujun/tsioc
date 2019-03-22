@@ -1,6 +1,6 @@
-import { RegisterActionContext } from './RegisterActionContext';
-import { isClass } from '../utils';
-import { IocCacheManager } from '../services';
+import { RuntimeActionContext } from './RuntimeActionContext';
+import { isClass } from '../../utils';
+import { IocCacheManager } from '../../services';
 import { IocCacheAction } from './IocCacheAction';
 
 
@@ -13,7 +13,7 @@ import { IocCacheAction } from './IocCacheAction';
  */
 export class IocSetCacheAction extends IocCacheAction {
 
-    execute(ctx: RegisterActionContext, next: () => void) {
+    execute(ctx: RuntimeActionContext, next: () => void) {
         if (ctx.singleton || !ctx.targetType || !isClass(ctx.targetType)) {
             return next();
         }

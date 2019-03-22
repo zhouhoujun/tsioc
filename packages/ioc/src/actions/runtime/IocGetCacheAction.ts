@@ -1,6 +1,6 @@
-import { RegisterActionContext } from './RegisterActionContext';
+import { RuntimeActionContext } from './RuntimeActionContext';
 import { IocCacheAction } from './IocCacheAction';
-import { IocCacheManager } from '../services';
+import { IocCacheManager } from '../../services';
 
 /**
  * get class cache action.
@@ -10,7 +10,7 @@ import { IocCacheManager } from '../services';
  * @extends {IocCacheAction}
  */
 export class IocGetCacheAction extends IocCacheAction {
-    execute(ctx: RegisterActionContext, next: () => void): void {
+    execute(ctx: RuntimeActionContext, next: () => void): void {
         if (!ctx.target) {
             let cacheMetadata = this.getCacheMetadata(ctx);
             if (cacheMetadata && cacheMetadata.expires) {
