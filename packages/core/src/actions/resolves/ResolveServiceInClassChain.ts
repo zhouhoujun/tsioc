@@ -1,4 +1,4 @@
-import { IocCompositeAction, lang, Singleton, isToken, isClass, Autorun, isClassType, IocActionType } from '@ts-ioc/ioc';
+import { IocCompositeAction, lang, Singleton, isToken, isClass, Autorun, isClassType } from '@ts-ioc/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { TargetService } from '../../TargetService';
 import { ResolveRefServiceAction } from './ResolveRefServiceAction';
@@ -7,7 +7,7 @@ import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
 @Singleton
 @Autorun('setup')
 export class ResolveServiceInClassChain extends IocCompositeAction<ResolveServiceContext> {
-    execute(ctx: ResolveServiceContext, next?: () => void, filter?: (action: IocActionType) => boolean): void {
+    execute(ctx: ResolveServiceContext, next?: () => void): void {
         if (ctx.currTargetRef) {
             let currTgRef = ctx.currTargetRef;
             let targetType = isToken(currTgRef) ? currTgRef : currTgRef.getToken();
@@ -22,7 +22,7 @@ export class ResolveServiceInClassChain extends IocCompositeAction<ResolveServic
                     } else {
                         ctx.currTargetRef = ty;
                     }
-                    super.execute(ctx, null, filter);
+                    super.execute(ctx);
                     if (ctx.instance) {
                         return false;
                     }

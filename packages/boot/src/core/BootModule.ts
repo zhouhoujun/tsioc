@@ -1,7 +1,7 @@
 import {
-    Inject, DecoratorRegisterer, BindProviderAction,
+    Inject, DecoratorRegisterer, BindProviderAction, ResolveLifeScope,
     IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction,
-    ComponentInitAction, ComponentAfterInitAction, ResolveLifeScope, DesignLifeScope, RuntimeLifeScope
+    ComponentInitAction, ComponentAfterInitAction, DesignLifeScope, RuntimeLifeScope
 } from '@ts-ioc/ioc';
 import {
     IContainer, ContainerToken, IocExt, ModuleInjectorManager,
@@ -16,7 +16,10 @@ import * as actions from './actions';
 import * as handles from './handles';
 import * as services from './services';
 
-import { RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction, RouteDesignRegisterAction, RouteRuntimRegisterAction } from './actions';
+import {
+    RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction,
+    RouteDesignRegisterAction, RouteRuntimRegisterAction
+} from './actions';
 import { DIModuleInjector, RootModuleInjector } from './modules';
 
 /**

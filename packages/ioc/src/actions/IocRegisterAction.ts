@@ -1,7 +1,6 @@
 import { IocAction } from './Action';
 import { RegisterActionContext } from './RegisterActionContext';
 import { IIocContainer } from '../IIocContainer';
-import { IocCompositeAction } from './IocCompositeAction';
 
 /**
  * ioc register action.
