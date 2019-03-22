@@ -1,4 +1,7 @@
-import { Inject, CreateInstanceAction, DesignLifeScope } from '@ts-ioc/ioc';
+import {
+    Inject, DesignLifeScope, IocBeforeConstructorScope, DecoratorRegisterer,
+    IocAfterConstructorScope, IocBindMethodScope
+} from '@ts-ioc/ioc';
 import { Aspect } from './decorators/Aspect';
 import { Advisor } from './Advisor';
 import {
@@ -11,7 +14,6 @@ import {
     ProxyMethod, AdvisorChainFactory, AdvisorChain, SyncProceeding,
     AsyncObservableProceeding, AsyncPromiseProceeding, ReturningRecognizer
 } from './access';
-import { RuntimeLifeScope, DecoratorRegisterer } from '@ts-ioc/ioc';
 import { IocExt, ContainerToken, IContainer } from '@ts-ioc/core';
 
 
@@ -53,12 +55,17 @@ export class AopModule {
         container.registerSingleton(MatchPointcutAction, () => new MatchPointcutAction(container));
         container.registerSingleton(RegistAspectAction, () => new RegistAspectAction(container));
 
-        container.get(RuntimeLifeScope)
-            .use(BindMethodPointcutAction)
-            .useBefore(InvokeBeforeConstructorAction, CreateInstanceAction)
-            .useAfter(InvokeAfterConstructorAction, CreateInstanceAction)
-            .useBefore(MatchPointcutAction, InvokeBeforeConstructorAction)
-            .useAfter(ExetndsInstanceAction, InvokeAfterConstructorAction);
+
+        container.get(IocBeforeConstructorScope)
+            .use(MatchPointcutAction)
+            .use(InvokeBeforeConstructorAction);
+
+        container.get(IocAfterConstructorScope)
+            .use(ExetndsInstanceAction)
+            .use(InvokeAfterConstructorAction);
+
+        container.get(IocBindMethodScope)
+            .use(BindMethodPointcutAction);
 
         container.get(DesignLifeScope).after(RegistAspectAction);
 

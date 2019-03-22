@@ -13,9 +13,13 @@ import { Type } from '../types';
 export class IocCompositeAction<T extends IocActionContext> extends IocAction<T> {
 
     protected actions: IocActionType[];
+    protected befores: IocActionType[];
+    protected afters: IocActionType[];
     constructor() {
         super();
+        this.befores = [];
         this.actions = [];
+        this.afters = [];
     }
 
     has(action: IocActionType) {
@@ -70,7 +74,38 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         return this;
     }
 
+    /**
+     * register actions before run this scope.
+     *
+     * @param {IocActionType} action
+     * @memberof IocCompositeAction
+     */
+    before(action: IocActionType) {
+        if (this.befores.indexOf(action) < 0) {
+            this.befores.push(action);
+        }
+    }
+
+    /**
+     * register actions after run this scope.
+     *
+     * @param {IocActionType} action
+     * @memberof IocCompositeAction
+     */
+    after(action: IocActionType) {
+        if (this.afters.indexOf(action) < 0) {
+            this.afters.push(action);
+        }
+    }
+
     execute(ctx: T, next?: () => void): void {
+        let scope = ctx.currScope;
+        ctx.currScope = this;
+        this.execActions(ctx, this.actions.concat(this.afters), next);
+        ctx.currScope = scope;
+    }
+
+    execBody(ctx: T, next?: () => void) {
         this.execActions(ctx, this.actions, next);
     }
 

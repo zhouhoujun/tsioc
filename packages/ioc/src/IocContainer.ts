@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { IIocContainer, IocContainerToken } from './IIocContainer';
 import { Type, Token, Factory, SymbolType, ToInstance, InstanceFactory } from './types';
-import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, isProvideToken } from './utils';
+import { isClass, isFunction, isSymbol, isToken, isString, isUndefined } from './utils';
 import { Registration } from './Registration';
 
 import { registerCores } from './registerCores';
@@ -114,9 +114,7 @@ export class IocContainer implements IIocContainer {
             key = this.getTokenKey(token, alias);
         } else {
             key = this.getTokenKey(token);
-            if (isProvider(alias)) {
-                providers.unshift(alias);
-            }
+            providers.unshift(alias);
         }
 
         let factory = this.factories.get(key);

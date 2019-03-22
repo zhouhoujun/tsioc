@@ -6,7 +6,7 @@ import {
     BindPropertyTypeAction, ComponentBeforeInitAction, ComponentInitAction,
     ComponentAfterInitAction, RegisterSingletionAction, InjectPropertyAction,
     GetSingletionAction, ContainerCheckerAction, IocSetCacheAction,
-    CreateInstanceAction, ConstructorArgsAction, MethodAutorunAction, RuntimeActionContext
+    CreateInstanceAction, ConstructorArgsAction, MethodAutorunAction, RuntimeActionContext, IocBeforeConstructorScope, IocAfterConstructorScope, IocInitInstanceScope, IocBindMethodScope
 } from '../actions';
 import { IIocContainer } from '../IIocContainer';
 import { IParameter } from '../IParameter';
@@ -81,8 +81,14 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
         container.registerSingleton(ComponentAfterInitAction, () => new ComponentAfterInitAction(container));
         container.registerSingleton(RegisterSingletionAction, () => new RegisterSingletionAction(container));
         container.registerSingleton(IocSetCacheAction, () => new IocSetCacheAction(container));
-
         container.registerSingleton(MethodAutorunAction, () => new MethodAutorunAction(container));
+
+
+        container.registerSingleton(IocBeforeConstructorScope, () => new IocBeforeConstructorScope(container));
+        container.registerSingleton(IocAfterConstructorScope, () => new IocAfterConstructorScope(container));
+        container.registerSingleton(IocInitInstanceScope, () => new IocInitInstanceScope(container));
+        container.registerSingleton(IocBindMethodScope, () => new IocBindMethodScope(container));
+
 
         let decRgr = container.get(DecoratorRegisterer);
         decRgr.register(Inject, BindParameterTypeAction, BindPropertyTypeAction);
@@ -91,12 +97,7 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
         decRgr.register(Method, BindParameterProviderAction);
         decRgr.register(Autorun, MethodAutorunAction);
 
-        this.use(InitReflectAction)
-            .use(GetSingletionAction)
-            .use(IocGetCacheAction)
-            .use(ContainerCheckerAction)
-            .use(ConstructorArgsAction)
-            .use(CreateInstanceAction)
+        container.get(IocInitInstanceScope)
             .use(ComponentBeforeInitAction)
             .use(BindPropertyTypeAction)
             .use(InjectPropertyAction)
@@ -105,8 +106,19 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
             .use(ComponentInitAction)
             .use(RegisterSingletionAction)
             .use(IocSetCacheAction)
-            .use(ComponentAfterInitAction)
-            .use(MethodAutorunAction)
+            .use(ComponentAfterInitAction);
+
+        this.use(InitReflectAction)
+            .use(GetSingletionAction)
+            .use(IocGetCacheAction)
+            .use(ContainerCheckerAction)
+            .use(ConstructorArgsAction)
+            .use(IocBeforeConstructorScope)
+            .use(CreateInstanceAction)
+            .use(IocAfterConstructorScope)
+            .use(IocInitInstanceScope)
+            .use(IocBindMethodScope)
+            .use(MethodAutorunAction);
 
     }
 

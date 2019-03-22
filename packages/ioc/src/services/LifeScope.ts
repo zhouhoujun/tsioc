@@ -13,12 +13,6 @@ import { getOwnParamerterNames } from '../factories';
  */
 export class LifeScope<T extends IocActionContext> extends IocCompositeAction<T> {
 
-    protected afters: IocActionType[];
-    constructor() {
-        super();
-        this.afters = [];
-    }
-
     /**
      * resgister default action.
      *
@@ -26,16 +20,6 @@ export class LifeScope<T extends IocActionContext> extends IocCompositeAction<T>
      * @memberof LifeScope
      */
     registerDefault(container: IIocContainer) {
-    }
-
-    after(action: IocActionType) {
-        if (!this.has(action)) {
-            this.afters.push(action);
-        }
-    }
-
-    execute(ctx: T, next?: () => void): void {
-        this.execActions(ctx, this.actions.concat(this.afters), next);
     }
 
     /**

@@ -17,3 +17,8 @@ export * from './IocGetCacheAction';
 export * from './IocSetCacheAction';
 export * from './ConstructorArgsAction';
 export * from './CreateInstanceAction';
+
+export * from './IocBeforeConstructorScope';
+export * from './IocAfterConstructorScope';
+export * from './IocInitInstanceScope';
+export * from './IocBindMethodScope';

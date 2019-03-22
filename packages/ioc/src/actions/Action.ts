@@ -1,9 +1,10 @@
 import { IIocContainer } from '../IIocContainer';
-import { ProviderTypes } from '../providers';
 import { Type, Token } from '../types';
 import { IocCoreService } from '../services';
 import { lang, isFunction } from '../utils';
 import { IResolverContainer } from '../IResolver';
+import { ProviderTypes } from '../providers';
+import { IocCompositeAction } from './IocCompositeAction';
 
 /**
  * action context option.
@@ -41,6 +42,14 @@ export class IocActionContext {
      * @memberof ResovleContext
      */
     token: Token<any>;
+
+    /**
+     * currScope
+     *
+     * @type {IocAction<any>}
+     * @memberof IocActionContext
+     */
+    currScope?: IocCompositeAction<any>;
 
 
     constructor() {

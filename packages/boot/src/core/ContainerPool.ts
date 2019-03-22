@@ -1,4 +1,4 @@
-import { Token, SymbolType, Registration, InjectToken } from '@ts-ioc/ioc';
+import { Token, SymbolType, Registration, InjectToken, IIocContainer } from '@ts-ioc/ioc';
 import { IContainer, IContainerBuilder } from '@ts-ioc/core';
 import { BootModule } from './BootModule';
 
@@ -99,7 +99,7 @@ export class ContainerPool {
         }
     }
 
-    getParent(container: IContainer): IContainer {
+    getParent(container: IIocContainer): IContainer {
         return container.resolve(ParentContainerToken);
     }
 

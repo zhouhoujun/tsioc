@@ -1,6 +1,6 @@
 import {
     Singleton, Inject, IocDesignAction, IocRuntimeAction,
-    RuntimeActionContext, DesignActionContext
+    RuntimeActionContext, DesignActionContext, lang, IocCompositeAction, Type
 } from '@ts-ioc/ioc';
 import { IContainer, ContainerToken } from '@ts-ioc/core';
 import { ContainerPoolToken } from '../../ContainerPool';
@@ -12,12 +12,18 @@ export class RouteRuntimRegisterAction extends IocRuntimeAction {
         super(container);
     }
     execute(ctx: RuntimeActionContext, next: () => void): void {
-        // let pool = this.container.get(ContainerPoolToken);
-        // let parent = pool.getParent(this.container);
-        // while (parent) {
-        //     parent.get(RuntimeLifeScope).register(ctx);
-        //     parent = pool.getParent(parent);
-        // }
+        if (ctx.currScope) {
+            let container = this.container;
+            let scopeType: Type<IocCompositeAction<any>> = lang.getClass(ctx.currScope);
+            let pool = container.get(ContainerPoolToken);
+            let parent = pool.getParent(container);
+            while (parent) {
+                parent.get(scopeType).execBody(ctx);
+                parent = pool.getParent(parent);
+                console.log(!!parent, scopeType);
+            }
+        }
+        next();
     }
 }
 
@@ -28,12 +34,18 @@ export class RouteDesignRegisterAction extends IocDesignAction {
         super(container);
     }
     execute(ctx: DesignActionContext, next: () => void): void {
-        // let pool = this.container.get(ContainerPoolToken);
-        // let parent = pool.getParent(this.container);
-        // while (parent) {
-        //     parent.get(DesignLifeScope).register(ctx);
-        //     parent = pool.getParent(parent);
-        // }
+        if (ctx.currScope) {
+            let container = this.container;
+            let scopeType: Type<IocCompositeAction<any>> = lang.getClass(ctx.currScope);
+            let pool = container.get(ContainerPoolToken);
+            let parent = pool.getParent(container);
+            while (parent) {
+                parent.get(scopeType).execBody(ctx);
+                parent = pool.getParent(parent);
+                console.log(!!parent, scopeType);
+            }
+        }
+        next();
     }
 }
 
