@@ -3,7 +3,7 @@ import {
     RuntimeActionContext, DesignActionContext
 } from '@ts-ioc/ioc';
 import { IContainer, ContainerToken } from '@ts-ioc/core';
-import { ContainerPoolToken } from '../ContainerPool';
+import { ContainerPoolToken } from '../../ContainerPool';
 
 @Singleton
 export class RouteRuntimRegisterAction extends IocRuntimeAction {

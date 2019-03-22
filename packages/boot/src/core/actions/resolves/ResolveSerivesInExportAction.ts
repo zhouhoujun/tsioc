@@ -1,10 +1,10 @@
 import {
     ResolveServicesContext, IocResolveServicesAction, ResolveServicesScopeAction
 } from '@ts-ioc/core';
-import { DIModuleExports } from '../services';
+import { DIModuleExports } from '../../services';
 import { Singleton, Autorun } from '@ts-ioc/ioc';
-import { ContainerPoolToken } from '../ContainerPool';
-import { IModuleResolver } from '../modules';
+import { ContainerPoolToken } from '../../ContainerPool';
+import { IModuleResolver } from '../../modules';
 
 
 @Singleton

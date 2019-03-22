@@ -1,6 +1,6 @@
 import { ResovleActionContext, Token, ResovleActionOption, IResolverContainer, Type, ClassType, ProviderMap } from '@ts-ioc/ioc';
-import { TargetRef } from '../TargetService';
-import { IContainer } from '../IContainer';
+import { TargetRef } from '../../TargetService';
+import { IContainer } from '../../IContainer';
 
 /**
  * service action option.

@@ -1,5 +1,5 @@
 import { IocCompositeAction, ResovleActionContext, Singleton, Autorun, IocActionType } from '@ts-ioc/ioc';
-import { ContainerPoolToken } from '../ContainerPool';
+import { ContainerPoolToken } from '../../ContainerPool';
 import { ResolveModuleExportAction } from './ResolveModuleExportAction';
 import { ResolveParentAction } from './ResolveParentAction';
 

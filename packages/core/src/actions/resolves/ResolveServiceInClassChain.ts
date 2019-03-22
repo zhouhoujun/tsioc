@@ -1,6 +1,6 @@
 import { IocCompositeAction, lang, Singleton, isToken, isClass, Autorun, isClassType, IocActionType } from '@ts-ioc/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
-import { TargetService } from '../TargetService';
+import { TargetService } from '../../TargetService';
 import { ResolveRefServiceAction } from './ResolveRefServiceAction';
 import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
 

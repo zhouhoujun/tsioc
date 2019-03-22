@@ -1,5 +1,5 @@
 import { IocResolveAction, ResovleActionContext, Singleton } from '@ts-ioc/ioc';
-import { DIModuleExports } from '../services';
+import { DIModuleExports } from '../../services';
 
 /**
  * reolve module export.
