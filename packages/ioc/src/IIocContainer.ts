@@ -1,6 +1,6 @@
 import { Type, Token, Factory } from './types';
 import { InjectToken } from './InjectToken';
-import { IResolverContainer, IBindActionContext } from './IResolver';
+import { IResolverContainer } from './IResolver';
 import { ParamProviders, ProviderTypes, IProviderParser } from './providers';
 import { IParameter } from './IParameter';
 import { TypeReflects } from './services';
@@ -17,7 +17,7 @@ export const IocContainerToken = new InjectToken<IIocContainer>('DI_IocContainer
  * @export
  * @interface IIocContainer
  */
-export interface IIocContainer extends IResolverContainer, IBindActionContext {
+export interface IIocContainer extends IResolverContainer {
 
     /**
      * get provider parser.
@@ -34,16 +34,6 @@ export interface IIocContainer extends IResolverContainer, IBindActionContext {
      * @memberof IIocContainer
      */
     getTypeReflects(): TypeReflects;
-
-    /**
-     * current container has register.
-     *
-     * @template T
-     * @param {Token<T>} key
-     * @returns {boolean}
-     * @memberof IContainer
-     */
-    hasRegister<T>(key: Token<T>): boolean;
 
     /**
      * get token factory resolve instace in current container.

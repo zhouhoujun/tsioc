@@ -1,13 +1,14 @@
 import {
     Inject, DecoratorRegisterer, BindProviderAction,
     IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction,
-    ComponentInitAction, ComponentAfterInitAction, DesignLifeScope, RuntimeLifeScope, IocBeforeConstructorScope, IocAfterConstructorScope, IocBindMethodScope
+    ComponentInitAction, ComponentAfterInitAction, DesignLifeScope,
+    IocBeforeConstructorScope, IocAfterConstructorScope, IocBindMethodScope
 } from '@ts-ioc/ioc';
 import {
     IContainer, ContainerToken, IocExt, ModuleInjectorManager,
     ResolveTargetServiceAction, ResolvePrivateServiceAction,
-    ResolveServiceInClassChain, ServicesResolveLifeScope, ResolveDefaultServiceAction,
-    ServiceResolveLifeScope,
+    ResolveServiceInClassChain, ServicesResolveLifeScope,
+    ResolveDefaultServiceAction, ServiceResolveLifeScope,
     ResolveLifeScope
 } from '@ts-ioc/core';
 import { DIModule } from './decorators/DIModule';

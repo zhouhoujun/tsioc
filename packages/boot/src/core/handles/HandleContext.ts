@@ -1,7 +1,12 @@
 import { IContainer, isContainer } from '@ts-ioc/core';
 import { Token, IResolver, ProviderTypes, Type, isFunction, isBaseObject } from '@ts-ioc/ioc';
 
-
+/**
+ * handle option.
+ *
+ * @export
+ * @interface HandleOption
+ */
 export interface HandleOption {
     /**
      * raise container getter.
@@ -75,7 +80,6 @@ export class HandleContext implements IResolver {
             Object.assign(this, options);
         }
     }
-
 
     has<T>(key: Token<T>, alias?: string): boolean {
         return this.getRaiseContainer().has(key, alias);

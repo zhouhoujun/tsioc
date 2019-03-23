@@ -2,7 +2,6 @@ import { Type, Token } from '../types';
 import { IocActionContext, ActionContextOption } from './Action';
 import { ITypeReflect } from '../services';
 import { IIocContainer } from '../IIocContainer';
-import { IResolverContainer } from '../IResolver';
 
 /**
  * register action option.
@@ -24,7 +23,7 @@ export interface RegisterActionOption extends ActionContextOption {
      * @type {Type<any>}
      * @memberof RegisterActionContext
      */
-    targetType?: Type<any>;
+    targetType: Type<any>;
 
     /**
      * target type reflect.
@@ -85,10 +84,9 @@ export class RegisterActionContext extends IocActionContext {
      */
     singleton?: boolean;
 
-    constructor(targetType: Type<any>, tokenKey?: Token<any>) {
-        super();
+    constructor(targetType: Type<any>, raiseContainer?: IIocContainer | (() => IIocContainer)) {
+        super(raiseContainer);
         this.targetType = targetType;
-        this.tokenKey = tokenKey;
     }
 
     /**
@@ -96,14 +94,13 @@ export class RegisterActionContext extends IocActionContext {
      *
      * @static
      * @param {RegisterActionOption} options
-     * @param {(IIocContainer | (() => IIocContainer))} [raiseContainerGetter]
-     * @param {(IResolverContainer | (() => IResolverContainer))} [providersGetter]
+     * @param {(IIocContainer | (() => IIocContainer))} [raiseContainer]
      * @returns {RegisterActionContext}
      * @memberof RegisterActionContext
      */
-    static parse(options: RegisterActionOption, raiseContainerGetter?: IIocContainer | (() => IIocContainer), providersGetter?: IResolverContainer | (() => IResolverContainer)): RegisterActionContext {
-        let ctx = new RegisterActionContext(options.targetType);
-        ctx.setContext(ctx, options, raiseContainerGetter, providersGetter);
+    static parse(options: RegisterActionOption, raiseContainer?: IIocContainer | (() => IIocContainer)): RegisterActionContext {
+        let ctx = new RegisterActionContext(options.targetType, raiseContainer);
+        ctx.setOptions(options);
         return ctx;
     }
 

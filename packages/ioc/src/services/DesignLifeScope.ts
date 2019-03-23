@@ -19,12 +19,9 @@ import { RegisterLifeScope } from './RegisterLifeScope';
  * @extends {LifeScope}
  */
 export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> {
-    constructor() {
-        super();
-    }
 
     registerDefault(container: IIocContainer) {
-        if (!container.hasRegister(InitReflectAction)) {
+        if (!container.has(InitReflectAction)) {
             container.registerSingleton(InitReflectAction, () => new InitReflectAction(container));
         }
         container.registerSingleton(BindProviderAction, () => new BindProviderAction(container));

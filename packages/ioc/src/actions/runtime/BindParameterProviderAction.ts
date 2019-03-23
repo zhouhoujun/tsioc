@@ -25,7 +25,7 @@ export class BindParameterProviderAction extends IocRuntimeAction {
         }
         ctx.targetReflect.methodProviders = ctx.targetReflect.methodProviders || {};
 
-        let decors = ctx.resolve(DecoratorRegisterer).getMethodDecorators(type, lang.getClass(this));
+        let decors = this.container.resolve(DecoratorRegisterer).getMethodDecorators(type, lang.getClass(this));
 
         let providers: ParamProviders[] = [];
         decors.forEach(d => {

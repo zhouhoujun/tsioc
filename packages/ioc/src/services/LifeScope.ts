@@ -14,15 +14,6 @@ import { getOwnParamerterNames } from '../factories';
 export class LifeScope<T extends IocActionContext> extends IocCompositeAction<T> {
 
     /**
-     * resgister default action.
-     *
-     * @param {IIocContainer} container
-     * @memberof LifeScope
-     */
-    registerDefault(container: IIocContainer) {
-    }
-
-    /**
      * get paramerter names.
      *
      * @template T

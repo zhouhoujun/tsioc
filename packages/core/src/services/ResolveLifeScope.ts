@@ -1,4 +1,4 @@
-import { LifeScope, IIocContainer } from '@ts-ioc/ioc';
+import { LifeScope, Singleton, Autorun } from '@ts-ioc/ioc';
 import { ResovleActionContext, ResolveScopeAction } from '../actions';
 
 /**
@@ -8,14 +8,13 @@ import { ResovleActionContext, ResolveScopeAction } from '../actions';
  * @class ResolveLifeScope
  * @extends {LifeScope<IResovleContext>}
  */
+
+ @Singleton
+ @Autorun('setup')
 export class ResolveLifeScope extends LifeScope<ResovleActionContext> {
 
-    registerDefault(container: IIocContainer) {
-        if (!container.has(ResolveLifeScope)) {
-            container.bindProvider(ResolveLifeScope, this);
-        }
-        container.registerSingleton(ResolveScopeAction, () => new ResolveScopeAction());
-        container.get(ResolveScopeAction).registerDefault(container);
+    setup() {
+        this.container.register(ResolveScopeAction);
         this.use(ResolveScopeAction);
     }
 }

@@ -49,18 +49,6 @@ export class ModuleResovler<T> implements IModuleResolver {
         return this.getProviders().size;
     }
 
-    // bindActionContext<T extends IocActionContext>(ctx: T): T {
-    //     this.getProviderMap().bindActionContext(ctx);
-    //     return ctx;
-    // }
-
-    // resolveContext<T extends ResovleActionContext>(ctx: T): T {
-    //     this.bindActionContext(ctx);
-    //     let resolver = this.getProviderMap();
-    //     resolver.resolveContext(ctx);
-    //     return ctx;
-    // }
-
     getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
         return this.getContainer().getTokenKey(token, alias);
     }

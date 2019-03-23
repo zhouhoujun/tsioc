@@ -58,13 +58,6 @@ export interface IContainer extends IIocContainer, IContextResolver, IServiceRes
      */
     getLoader(): IModuleLoader;
 
-    /**
-     * get resolve life scope.
-     *
-     * @returns {ResolveLifeScope}
-     * @memberof IIocContainer
-     */
-    getResolveLifeScope(): ResolveLifeScope;
 
     /**
      * get token implements.
@@ -75,6 +68,17 @@ export interface IContainer extends IIocContainer, IContextResolver, IServiceRes
      * @memberof IContainer
      */
     getTokenImpl<T>(token: Token<T>): Type<T>;
+
+    
+    /**
+     * current container has register.
+     *
+     * @template T
+     * @param {Token<T>} key
+     * @returns {boolean}
+     * @memberof IContainer
+     */
+    hasRegister<T>(key: Token<T>): boolean;
 
     /**
      * use modules.

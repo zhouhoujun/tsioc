@@ -13,7 +13,7 @@ export class GetSingletionAction extends IocRuntimeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void): void {
         if (ctx.targetType && (ctx.singleton || ctx.targetReflect.singleton)) {
-            let mgr = ctx.resolve(IocSingletonManager);
+            let mgr = this.container.resolve(IocSingletonManager);
             if (mgr.has(ctx.targetType)) {
                 ctx.target = mgr.get(ctx.targetType);
                 return;

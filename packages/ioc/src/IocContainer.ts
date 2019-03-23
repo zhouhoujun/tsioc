@@ -75,18 +75,6 @@ export class IocContainer implements IIocContainer {
         return this.factories.has(this.getTokenKey(key));
     }
 
-    /**
-     * has register type.
-     *
-     * @template T
-     * @param {Token<T>} key
-     * @returns
-     * @memberof Container
-     */
-    hasRegister<T>(key: Token<T>): boolean {
-        return this.has(key);
-    }
-
 
     /**
      * get token factory resolve instace in current container.
@@ -124,13 +112,6 @@ export class IocContainer implements IIocContainer {
         let factory = this.factories.get(this.getTokenKey(token));
         return factory ? factory(...providers) : null;
     }
-
-    
-    bindActionContext<T extends IocActionContext>(ctx: T): T {
-        ctx.setRaiseContainer(this);
-        return ctx;
-    }
-
 
     /**
      * iterator.
@@ -454,7 +435,7 @@ export class IocContainer implements IIocContainer {
                 singleton: singleton,
                 providers: providers,
                 providerMap: providerMap
-            }, () => this);
+            }, this);
             this.get(RuntimeLifeScope).register(ctx);
             return ctx.target;
         };
@@ -468,7 +449,7 @@ export class IocContainer implements IIocContainer {
             RegisterActionContext.parse({
                 tokenKey: key,
                 targetType: ClassT
-            }, () => this));
+            }, this));
     }
 
 

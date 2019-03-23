@@ -1,6 +1,7 @@
-import { IocAction, IocActionType, IocActionContext } from './Action';
-import { lang, isClass } from '../utils';
 import { Type } from '../types';
+import { lang, isClass } from '../utils';
+import { IocAction, IocActionType, IocActionContext } from './Action';
+
 
 /**
  * composite action.
@@ -15,8 +16,8 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
     protected actions: IocActionType[];
     protected befores: IocActionType[];
     protected afters: IocActionType[];
-    constructor() {
-        super();
+
+    protected initAction(){
         this.befores = [];
         this.actions = [];
         this.afters = [];
@@ -116,7 +117,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
     protected toActionFunc(ac: IocActionType) {
         if (isClass(ac)) {
             return (ctx: T, next?: () => void) => {
-                let action = this.resolveAction(ctx, ac);
+                let action = this.resolveAction(ac);
                 if (action instanceof IocAction) {
                     action.execute(ctx, next);
                 } else {
@@ -129,7 +130,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         return ac
     }
 
-    protected resolveAction(ctx: T, ac: Type<IocAction<T>>): IocAction<T> {
-        return ctx.resolve(ac);
+    protected resolveAction(ac: Type<IocAction<T>>): IocAction<T> {
+        return this.container.resolve(ac);
     }
 }

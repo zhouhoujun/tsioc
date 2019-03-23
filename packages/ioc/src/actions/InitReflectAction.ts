@@ -1,9 +1,9 @@
+import { Singleton } from '../decorators';
 import { IocRegisterAction } from './IocRegisterAction';
 import { RegisterActionContext } from './RegisterActionContext';
 import { isUndefined } from '../utils';
 import { DecoratorRegisterer } from '../services';
 import { hasOwnClassMetadata } from '../factories';
-import { Singleton } from '../decorators';
 
 /**
  * init class reflect action.
@@ -25,7 +25,7 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
             ctx.targetReflect.provides = ctx.targetReflect.provides || [];
             if (isUndefined(ctx.targetReflect.singleton)) {
                 let singleton = hasOwnClassMetadata(Singleton, ctx.targetType);
-                let metadata = ctx.resolve(DecoratorRegisterer).findClassMetadata(ctx.targetType, m => m.singleton === true);
+                let metadata = this.container.resolve(DecoratorRegisterer).findClassMetadata(ctx.targetType, m => m.singleton === true);
                 singleton = !!metadata;
                 ctx.targetReflect.singleton = singleton;
             }

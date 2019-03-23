@@ -6,7 +6,8 @@ import {
     BindPropertyTypeAction, ComponentBeforeInitAction, ComponentInitAction,
     ComponentAfterInitAction, RegisterSingletionAction, InjectPropertyAction,
     GetSingletionAction, ContainerCheckerAction, IocSetCacheAction,
-    CreateInstanceAction, ConstructorArgsAction, MethodAutorunAction, RuntimeActionContext, IocBeforeConstructorScope, IocAfterConstructorScope, IocInitInstanceScope, IocBindMethodScope
+    CreateInstanceAction, ConstructorArgsAction, MethodAutorunAction, RuntimeActionContext,
+    IocBeforeConstructorScope, IocAfterConstructorScope, IocInitInstanceScope, IocBindMethodScope
 } from '../actions';
 import { IIocContainer } from '../IIocContainer';
 import { IParameter } from '../IParameter';
@@ -22,16 +23,13 @@ import { RegisterLifeScope } from './RegisterLifeScope';
  * @extends {LifeScope}
  */
 export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
-    constructor() {
-        super();
-    }
 
     getParamProviders(container: IIocContainer, type: Type<any>, propertyKey: string, target?: any): ParamProviders[] {
         let ctx = RuntimeActionContext.parse({
             targetType: type,
             target: target,
             propertyKey: propertyKey
-        }, () => container);
+        }, container);
         this.execActions(ctx, [InitReflectAction, BindParameterProviderAction]);
         return ctx.targetReflect.methodProviders[propertyKey] || [];
     }
@@ -63,7 +61,7 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
     }
 
     registerDefault(container: IIocContainer) {
-        if (!container.hasRegister(InitReflectAction)) {
+        if (!container.has(InitReflectAction)) {
             container.registerSingleton(InitReflectAction, () => new InitReflectAction(container));
         }
         container.registerSingleton(GetSingletionAction, () => new GetSingletionAction(container));
@@ -128,7 +126,7 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
             targetType: type,
             target: instance,
             propertyKey: propertyKey
-        }, () => container);
+        }, container);
         this.execActions(ctx, [InitReflectAction, BindParameterTypeAction]);
 
         let params = ctx.targetReflect.methodParams[propertyKey]

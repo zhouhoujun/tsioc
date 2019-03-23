@@ -19,7 +19,7 @@ export abstract class IocCacheAction extends IocRuntimeAction {
         if (ctx.targetReflect.expires) {
             return ctx.targetReflect;
         } else {
-            let matchs = ctx.resolve(DecoratorRegisterer).getClassDecorators(ctx.targetType, lang.getClass(this));
+            let matchs = this.container.resolve(DecoratorRegisterer).getClassDecorators(ctx.targetType, lang.getClass(this));
             let cacheMetadata: ClassMetadata;
             matchs.some(d => {
                 let metadata = getOwnTypeMetadata<ClassMetadata>(d, ctx.targetType);

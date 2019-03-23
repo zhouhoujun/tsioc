@@ -1,6 +1,6 @@
 import { Handle, HandleType, Next } from './Handle';
 import { HandleContext } from './HandleContext';
-import { isClass, PromiseUtil, Type } from '@ts-ioc/ioc';
+import { isClass, PromiseUtil } from '@ts-ioc/ioc';
 
 
 /**
@@ -14,8 +14,7 @@ import { isClass, PromiseUtil, Type } from '@ts-ioc/ioc';
 export class CompositeHandle<T extends HandleContext> extends Handle<T> {
 
     protected handles: HandleType<T>[];
-    constructor() {
-        super();
+    protected initHandle() {
         this.handles = [];
     }
 
@@ -66,13 +65,13 @@ export class CompositeHandle<T extends HandleContext> extends Handle<T> {
     }
 
     protected execHandles(ctx: T, handles: HandleType<T>[], next?: Next): Promise<void> {
-       return PromiseUtil.runInChain(handles.map(ac => this.toHanldeFunc(ac)), ctx, next);
+        return PromiseUtil.runInChain(handles.map(ac => this.toHanldeFunc(ac)), ctx, next);
     }
 
     protected toHanldeFunc(ac: HandleType<T>): PromiseUtil.ActionHandle<T> {
         if (isClass(ac)) {
             return (ctx: T, next?: Next) => {
-                let action = this.resolveHandle(ctx, ac);
+                let action = this.resolve(ac, ctx);
                 if (action instanceof Handle) {
                     return action.execute(ctx, next);
                 } else {
@@ -85,7 +84,5 @@ export class CompositeHandle<T extends HandleContext> extends Handle<T> {
         return ac;
     }
 
-    protected resolveHandle(ctx: T, ac: Type<Handle<T>>) {
-        return ctx.resolve(ac);
-    }
+    
 }

@@ -1,10 +1,10 @@
-import { IIocContainer } from '../IIocContainer';
+import { IIocContainer, IocContainerToken } from '../IIocContainer';
 import { Type, Token } from '../types';
 import { IocCoreService } from '../services';
 import { lang, isFunction } from '../utils';
-import { IResolverContainer } from '../IResolver';
-import { ProviderTypes } from '../providers';
 import { IocCompositeAction } from './IocCompositeAction';
+import { Inject } from '../decorators';
+
 
 /**
  * action context option.
@@ -32,9 +32,6 @@ export class IocActionContext {
 
     private raiseContainerGetter: () => IIocContainer;
 
-    private providersGetter?: () => IResolverContainer
-
-
     /**
      * token.
      *
@@ -52,8 +49,8 @@ export class IocActionContext {
     currScope?: IocCompositeAction<any>;
 
 
-    constructor() {
-
+    constructor(raiseContainer?: IIocContainer | (() => IIocContainer)) {
+        raiseContainer && this.setRaiseContainer(raiseContainer)
     }
 
     /**
@@ -69,7 +66,7 @@ export class IocActionContext {
         }
     }
 
-    setRaiseContainer(raiseContainer: IIocContainer | (() => IIocContainer)) {
+    protected setRaiseContainer(raiseContainer: IIocContainer | (() => IIocContainer)) {
         if (isFunction(raiseContainer)) {
             this.raiseContainerGetter = raiseContainer;
         } else {
@@ -78,52 +75,20 @@ export class IocActionContext {
     }
 
     /**
-     *  get provider resolve conatiner.
-     *
-     * @memberof IocActionContext
-     */
-    getProviderContainer(): IResolverContainer {
-        if (this.providersGetter) {
-            return this.providersGetter();
-        } else {
-            throw new Error('has not setting raise container');
-        }
-    }
-
-    setProviderContainer(providersGetter: IResolverContainer | (() => IResolverContainer)) {
-        if (isFunction(providersGetter)) {
-            this.providersGetter = providersGetter;
-        } else {
-            this.providersGetter = () => providersGetter;
-        }
-    }
-
-    /**
      * parse context.
      *
      * @static
      * @param {ActionContextOption} options
-     * @param {(IIocContainer | (() => IIocContainer))} [raiseContainerGetter]
-     * @param {(IResolverContainer | (() => IResolverContainer))} [providersGetter]
+     * @param {(IIocContainer | (() => IIocContainer))} [raiseContainer]
      * @returns {IocActionContext}
      * @memberof IocActionContext
      */
-    static parse(options: ActionContextOption, raiseContainerGetter?: IIocContainer | (() => IIocContainer), providersGetter?: IResolverContainer | (() => IResolverContainer)): IocActionContext {
-        let ctx = new IocActionContext();
-        ctx.setContext(ctx, options, raiseContainerGetter, providersGetter);
+    static parse(options: ActionContextOption, raiseContainer?: IIocContainer | (() => IIocContainer)): IocActionContext {
+        let ctx = new IocActionContext(raiseContainer);
+        ctx.setOptions(options);
         return ctx;
     }
 
-
-    setContext(ctx: IocActionContext, options: ActionContextOption, raiseContainerGetter?: IIocContainer | (() => IIocContainer), providersGetter?: IResolverContainer | (() => IResolverContainer)) {
-        ctx.setOptions(options);
-        if (raiseContainerGetter) {
-            ctx.setRaiseContainer(raiseContainerGetter);
-        }
-        if (providersGetter) {
-            ctx.setProviderContainer(providersGetter);
-        }
-    }
 
     /**
      * set options.
@@ -135,62 +100,6 @@ export class IocActionContext {
         if (options) {
             Object.assign(this, options);
         }
-    }
-
-    /**
-     * get token provider.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {Type<T>}
-     * @memberof ResovleContext
-     */
-    getTokenProvider<T>(token: Token<T>): Type<T> {
-        return this.getRaiseContainer().getTokenProvider(token);
-    }
-
-    /**
-     * has register token.
-     *
-     * @template T
-     * @memberof IResovleContext
-     */
-    has<T>(token: Token<T>): boolean {
-        if (this.providersGetter) {
-            return this.getProviderContainer().has(token);
-        } else {
-            return this.getRaiseContainer().has(token);
-        }
-    }
-
-    /**
-     * resolve token in factories.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof ResovleContext
-     */
-    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
-        if (this.providersGetter) {
-            return this.getProviderContainer().resolve(token, ...providers);
-        } else {
-            return this.getRaiseContainer().get(token, ...providers);
-        }
-    }
-
-    /**
-     * unregister token in rasie container.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {this}
-     * @memberof ResovleContext
-     */
-    unregister<T>(token: Token<T>): this {
-        this.getRaiseContainer().unregister(token);
-        return this;
     }
 }
 
@@ -204,8 +113,20 @@ export class IocActionContext {
  * @extends {IocCoreService}
  */
 export abstract class IocAction<T extends IocActionContext> extends IocCoreService {
-    constructor() {
+
+    @Inject(IocContainerToken)
+    protected container: IIocContainer
+
+    constructor(container?: IIocContainer) {
         super();
+        if (container) {
+            this.container = container;
+        }
+        this.initAction();
+    }
+
+    protected initAction() {
+
     }
 
     abstract execute(ctx: T, next: () => void): void;

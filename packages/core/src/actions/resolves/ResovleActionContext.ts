@@ -1,6 +1,5 @@
 import {
-    ProviderTypes, IResolver, IResolverContainer,
-    IocActionContext, ActionContextOption, IIocContainer
+    ProviderTypes, IocActionContext, ActionContextOption, IIocContainer
 } from '@ts-ioc/ioc';
 
 
@@ -33,7 +32,7 @@ export interface ResovleActionOption extends ActionContextOption {
  * @export
  * @interface IResovlerContext
  */
-export class ResovleActionContext extends IocActionContext implements IResolver {
+export class ResovleActionContext extends IocActionContext {
 
     /**
      * resolver providers.
@@ -67,20 +66,13 @@ export class ResovleActionContext extends IocActionContext implements IResolver 
      *
      * @static
      * @param {ResovleActionOption} [options]
+     * @param {(IIocContainer | (() => IIocContainer))} [raiseContainer]
      * @returns {ResovleActionContext}
      * @memberof ResovleActionContext
      */
-    static parse(options?: ResovleActionOption, raiseContainerGetter?: IIocContainer | (() => IIocContainer), providersGetter?: IResolverContainer | (() => IResolverContainer)): ResovleActionContext {
-        let ctx = new ResovleActionContext();
-        if (options) {
-            ctx.setOptions(options);
-        }
-        if (raiseContainerGetter) {
-            ctx.setRaiseContainer(raiseContainerGetter);
-        }
-        if (providersGetter) {
-            ctx.setProviderContainer(providersGetter);
-        }
+    static parse(options?: ResovleActionOption, raiseContainer?: IIocContainer | (() => IIocContainer)): ResovleActionContext {
+        let ctx = new ResovleActionContext(raiseContainer);
+        ctx.setOptions(options);
         return ctx;
     }
 }

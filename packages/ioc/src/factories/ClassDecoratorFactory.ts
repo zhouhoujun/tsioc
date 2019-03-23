@@ -1,10 +1,9 @@
 import 'reflect-metadata';
 import { ClassMetadata } from '../metadatas';
-import { Type, Token, ProvideToken, ClassType } from '../types';
+import { Type, Token, ProvideToken } from '../types';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { Registration } from '../Registration';
-import { isString, isSymbol, isObject, isNumber, isBoolean, isToken, isProvideToken } from '../utils';
+import { isString, isNumber, isBoolean, isToken, isProvideToken } from '../utils';
 import { ArgsIterator } from './ArgsIterator';
 
 /**

@@ -12,22 +12,17 @@ import { IModuleResolver } from '../../modules';
 export class ResolveSerivesInExportAction extends IocResolveServicesAction {
 
     execute(ctx: ResolveServicesContext, next: () => void): void {
-        if (ctx.getRaiseContainer().has(ContainerPoolToken)) {
-            let curr = ctx.getRaiseContainer();
-            curr.resolve(DIModuleExports).getResolvers()
+        if (this.container.has(ContainerPoolToken)) {
+            this.container.resolve(DIModuleExports).getResolvers()
                 .forEach(r => {
                     this.depIterator(ctx, r);
                 });
 
-            // reset raise.
-            curr.bindActionContext(ctx);
         }
         next();
     }
 
     depIterator(ctx: ResolveServicesContext, resolver: IModuleResolver) {
-        ctx.setRaiseContainer(resolver.getContainer())
-        ctx.setProviderContainer(resolver.getProviders());
         resolver.getContainer().get(ResolveServicesScopeAction).execute(ctx);
         if (resolver.has(DIModuleExports)) {
             resolver.resolve(DIModuleExports).getResolvers()

@@ -23,7 +23,7 @@ export class InjectPropertyAction extends IocRuntimeAction {
     execute(ctx: RuntimeActionContext, next: () => void) {
         let providerMap = ctx.providerMap;
         ctx.injecteds = ctx.injecteds || {};
-        let container = ctx.getRaiseContainer();
+        let container = this.container;
         ctx.targetReflect.props.forEach((prop, idx) => {
             if (prop && !ctx.injecteds[prop.propertyKey]) {
                 let token = prop.provider ? container.getToken(prop.provider, prop.alias) : prop.type;
@@ -38,7 +38,6 @@ export class InjectPropertyAction extends IocRuntimeAction {
                     ctx.target[prop.propertyKey] = providerMap.resolve(token, providerMap);
                     ctx.injecteds[prop.propertyKey] = true;
                 } else {
-                    let container = ctx.getRaiseContainer();
                     let pv = container.resolve(token, providerMap);
                     if (!isNullOrUndefined(pv)) {
                         ctx.target[prop.propertyKey] = pv;

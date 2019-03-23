@@ -12,9 +12,8 @@ import { IocResolveAction, ResovleActionContext } from '@ts-ioc/core';
 @Singleton
 export class ResolveModuleExportAction extends IocResolveAction {
 
-    execute(ctx: ResovleActionContext, next: () => void): void {
-        let curr = ctx.getRaiseContainer();
-        ctx.instance = curr.resolve(DIModuleExports).resolve(ctx.token, ...ctx.providers);
+    execute(ctx: ResovleActionContext, next: () => void): void {;
+        ctx.instance = this.container.resolve(DIModuleExports).resolve(ctx.token, ...ctx.providers);
         if (!ctx.instance) {
             next();
         }

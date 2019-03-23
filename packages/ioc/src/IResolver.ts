@@ -53,25 +53,6 @@ export interface IResolver {
 }
 
 /**
- * bind action context.
- *
- * @export
- * @interface IBindActionContext
- */
-export interface IBindActionContext {
-
-    /**
-     * bind action context.
-     *
-     * @template T
-     * @param {T} ctx
-     * @returns {T}
-     * @memberof IBindResolveContext
-     */
-    bindActionContext<T extends IocActionContext>(ctx: T): T;
-}
-
-/**
  * resolver container.
  *
  * @export

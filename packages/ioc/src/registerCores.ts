@@ -19,8 +19,8 @@ export function registerCores(container: IIocContainer) {
     container.registerSingleton(IocCacheManager, () => new IocCacheManager(container));
     // bing action.
     container.registerSingleton(DecoratorRegisterer, () => new DecoratorRegisterer());
-    container.registerSingleton(DesignLifeScope, () => new DesignLifeScope());
-    container.registerSingleton(RuntimeLifeScope, () => new RuntimeLifeScope());
+    container.registerSingleton(DesignLifeScope, () => new DesignLifeScope(container));
+    container.registerSingleton(RuntimeLifeScope, () => new RuntimeLifeScope(container));
     container.register(ProviderMap, () => new ProviderMap(container));
     container.registerSingleton(ProviderParser, () => new ProviderParser(container));
     container.registerSingleton(MethodAccessor, () => new MethodAccessor());

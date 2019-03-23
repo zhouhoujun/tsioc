@@ -9,7 +9,7 @@ import { ResovleActionContext } from '@ts-ioc/core';
 export class RouteResolveAction extends IocCompositeAction<ResovleActionContext> {
 
     execute(ctx: ResovleActionContext, next?: () => void): void {
-        if (ctx.getRaiseContainer().has(ContainerPoolToken)) {
+        if (this.container.has(ContainerPoolToken)) {
             super.execute(ctx, next);
         } else {
             next();

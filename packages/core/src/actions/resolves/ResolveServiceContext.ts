@@ -1,4 +1,4 @@
-import { Token, IResolverContainer } from '@ts-ioc/ioc';
+import { Token } from '@ts-ioc/ioc';
 import { TargetRef } from '../../TargetService';
 import { IContainer } from '../../IContainer';
 import { ResovleActionOption, ResovleActionContext } from './ResovleActionContext';
@@ -82,23 +82,15 @@ export class ResolveServiceContext extends ResovleActionContext implements Servi
      * create service resolve context.
      *
      * @static
+     * 
      * @param {ServiceActionOption} [options]
-     * @param {(IContainer | (() => IContainer))} [raiseContainerGetter]
-     * @param {(IResolverContainer | (() => IResolverContainer))} [providersGetter]
+     * @param {(IContainer | (() => IContainer))} [raiseContainer]
      * @returns {ResolveServiceContext}
      * @memberof ResolveServiceContext
      */
-    static parse(options?: ServiceActionOption, raiseContainerGetter?: IContainer | (() => IContainer), providersGetter?: IResolverContainer | (() => IResolverContainer)): ResolveServiceContext {
-        let ctx = new ResolveServiceContext();
-        if (options) {
-            Object.assign(ctx, options);
-        }
-        if (raiseContainerGetter) {
-            ctx.setRaiseContainer(raiseContainerGetter);
-        }
-        if (providersGetter) {
-            ctx.setProviderContainer(providersGetter);
-        }
+    static parse(options?: ServiceActionOption, raiseContainer?: IContainer | (() => IContainer), ): ResolveServiceContext {
+        let ctx = new ResolveServiceContext(raiseContainer);
+        ctx.setOptions(options);
         return ctx;
     }
 

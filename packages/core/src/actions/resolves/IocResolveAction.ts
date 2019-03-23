@@ -10,5 +10,5 @@ import { ResovleActionContext } from './ResovleActionContext';
  * @extends {IocAction<IResovleContext>}
  */
 export abstract class IocResolveAction extends IocAction<ResovleActionContext> {
-    isResolve = true;
+
 }

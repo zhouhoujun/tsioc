@@ -1,4 +1,4 @@
-import { ClassType, ProviderMap, IResolverContainer } from '@ts-ioc/ioc';
+import { ClassType, ProviderMap } from '@ts-ioc/ioc';
 import { ServiceActionOption, ResolveServiceContext } from './ResolveServiceContext';
 import { IContainer } from '../../IContainer';
 
@@ -40,22 +40,13 @@ export class ResolveServicesContext extends ResolveServiceContext {
      *
      * @static
      * @param {ServicesActionOption} [options]
-     * @param {(IContainer | (() => IContainer))} [raiseContainerGetter]
-     * @param {(IResolverContainer | (() => IResolverContainer))} [providersGetter]
+     * @param {(IContainer | (() => IContainer))} [raiseContainer]
      * @returns {ResolveServicesContext}
      * @memberof ResolveServicesContext
      */
-    static parse(options?: ServicesActionOption, raiseContainerGetter?: IContainer | (() => IContainer), providersGetter?: IResolverContainer | (() => IResolverContainer)): ResolveServicesContext {
-        let ctx = new ResolveServicesContext();
-        if (options) {
-            Object.assign(ctx, options);
-        }
-        if (raiseContainerGetter) {
-            ctx.setRaiseContainer(raiseContainerGetter);
-        }
-        if (providersGetter) {
-            ctx.setProviderContainer(providersGetter);
-        }
+    static parse(options?: ServicesActionOption, raiseContainer?: IContainer | (() => IContainer)): ResolveServicesContext {
+        let ctx = new ResolveServicesContext(raiseContainer);
+        ctx.setOptions(options);
         return ctx;
     }
 

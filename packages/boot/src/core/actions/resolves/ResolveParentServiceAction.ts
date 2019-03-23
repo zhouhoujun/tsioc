@@ -6,17 +6,14 @@ import { Singleton } from '@ts-ioc/ioc';
 export class ResolveParentServiceAction extends IocResolveServiceAction {
 
     execute(ctx: ResolveServiceContext, next: () => void): void {
-        let curr = ctx.getRaiseContainer();
-        let parent = curr.get(ParentContainerToken);
+        let parent = this.container.resolve(ParentContainerToken);
 
         while (parent && !ctx.instance) {
-            parent.bindActionContext(ctx);
-            parent.get(ResolveServiceScopeAction).execute(ctx);
-            parent = parent.get(ParentContainerToken);
+            parent.resolve(ResolveServiceScopeAction).execute(ctx);
+            parent = parent.resolve(ParentContainerToken);
         }
 
         if (!ctx.instance) {
-            curr.bindActionContext(ctx);
             next();
         }
     }

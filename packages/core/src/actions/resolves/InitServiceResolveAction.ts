@@ -31,12 +31,12 @@ export class InitServiceResolveAction extends IocResolveServiceAction {
                 if (isClassType(t)) {
                     return t;
                 } else {
-                    return ctx.getTokenProvider(t);
+                    return this.container.getTokenProvider(t);
                 }
             }).concat(ctx.types).filter(ty => isClassType(ty));
         } else {
             if (!isClassType(ctx.token)) {
-                let pdType = ctx.getTokenProvider(ctx.token);
+                let pdType = this.container.getTokenProvider(ctx.token);
                 if (pdType) {
                     ctx.tokens.push(pdType);
                 }

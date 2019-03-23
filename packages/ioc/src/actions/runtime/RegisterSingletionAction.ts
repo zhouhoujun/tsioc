@@ -13,7 +13,7 @@ export class RegisterSingletionAction extends IocRuntimeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void): void {
         if (ctx.targetType && ctx.target && (ctx.singleton || ctx.targetReflect.singleton)) {
-            let mgr = ctx.resolve(IocSingletonManager);
+            let mgr = this.container.resolve(IocSingletonManager);
             if (!mgr.has(ctx.targetType)) {
                 mgr.set(ctx.targetType, ctx.target);
             }

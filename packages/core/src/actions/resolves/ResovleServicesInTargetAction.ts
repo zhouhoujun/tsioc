@@ -8,7 +8,7 @@ export class ResovleServicesInTargetAction extends IocResolveServicesAction {
         if (ctx.targetRefs && ctx.targetRefs.length) {
             ctx.targetRefs.forEach(t => {
                 let tk = isToken(t) ? t : t.getToken();
-                let maps = ctx.resolve(new InjectReference(ProviderMap, tk));
+                let maps = this.container.resolve(new InjectReference(ProviderMap, tk));
                 if (maps && maps.size) {
                     maps.iterator((fac, tk) => {
                         if (isClassType(tk) && ctx.types.some(ty => lang.isExtendsClass(tk, ty))) {

@@ -1,11 +1,12 @@
-import { isNullOrUndefined } from '@ts-ioc/ioc';
+import { isNullOrUndefined, Singleton } from '@ts-ioc/ioc';
 import { ResovleActionContext } from './ResovleActionContext';
 import { IocResolveAction } from './IocResolveAction';
 
+@Singleton
 export class IocDefaultResolveAction extends IocResolveAction {
     execute(ctx: ResovleActionContext, next: () => void): void {
-        if (ctx.has(ctx.token)) {
-            ctx.instance = ctx.resolve(ctx.token, ...ctx.providers);
+        if (this.container.has(ctx.token)) {
+            ctx.instance = this.container.resolve(ctx.token, ...ctx.providers);
         }
         if (isNullOrUndefined(ctx.instance)) {
             next();

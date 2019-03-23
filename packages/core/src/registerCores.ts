@@ -1,7 +1,10 @@
 import { IContainer, ContainerToken } from './IContainer';
-import { ModuleInjectorManager, ModuleLoader, IocExtInjector, ServicesResolveLifeScope, ServiceResolveLifeScope } from './services';
+import {
+    ModuleInjectorManager, ModuleLoader, IocExtInjector,
+    ServicesResolveLifeScope, ServiceResolveLifeScope, ModuleInjector, ResolveLifeScope
+} from './services';
 import { IocExt } from './decorators';
-import { DecoratorRegisterer, MethodAutorunAction, BindProviderAction, DesignLifeScope } from '@ts-ioc/ioc';
+import { DecoratorRegisterer, BindProviderAction, DesignLifeScope } from '@ts-ioc/ioc';
 import {
     InitServiceResolveAction, ResolveRefServiceAction, ResolveServiceScopeAction,
     ResolveServicesScopeAction, ResolvePrivateServiceAction, ResolveServiceInClassChain,
@@ -15,11 +18,11 @@ export function registerCores(container: IContainer) {
     container.bindProvider(ContainerToken, () => container);
     container.register(ModuleLoader);
     container.register(IocExtInjector);
+    container.register(ModuleInjector);
     container.register(ModuleInjectorManager);
 
-    if (!container.has(MethodAutorunAction)) {
-        container.register(MethodAutorunAction);
-    }
+    container.register(ResolveLifeScope);
+
 
     container.register(InitServiceResolveAction);
     container.register(ResolveServiceTokenAction);
@@ -41,7 +44,6 @@ export function registerCores(container: IContainer) {
 
     container.register(ServiceResolveLifeScope);
     container.register(ServicesResolveLifeScope);
-
 
 
     container.get(DesignLifeScope)

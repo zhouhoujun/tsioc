@@ -9,7 +9,7 @@ export class RegisterExportsHandle extends AnnoationHandle {
 
     async execute(ctx: AnnoationContext, next: Next): Promise<void> {
         if (ctx.moduleResolver) {
-            let pool = ctx.resolve(ContainerPoolToken);
+            let pool = this.resolve(ContainerPoolToken);
             let parent = pool.getParent(ctx.getRaiseContainer());
             if (parent) {
                 let diexports = parent.resolve(DIModuleExports);

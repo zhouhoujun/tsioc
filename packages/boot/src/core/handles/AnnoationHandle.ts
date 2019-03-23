@@ -1,8 +1,7 @@
 import { Handle, Next } from './Handle';
 import { HandleContext, HandleOption } from './HandleContext';
-import { Abstract, ProviderMap, Type, isFunction, Token, ProviderTypes } from '@ts-ioc/ioc';
+import { Abstract, ProviderMap, Type } from '@ts-ioc/ioc';
 import { ModuleConfigure, ModuleResovler, RegScope } from '../modules';
-import { IContainer, isContainer } from '@ts-ioc/core';
 
 
 export interface AnnoationOption extends HandleOption {

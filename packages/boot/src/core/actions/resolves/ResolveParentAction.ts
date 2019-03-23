@@ -13,17 +13,15 @@ import { IocResolveAction, ResovleActionContext, ResolveScopeAction } from '@ts-
 export class ResolveParentAction extends IocResolveAction {
 
     execute(ctx: ResovleActionContext, next: () => void): void {
-        let curr = ctx.getRaiseContainer();
-        let parent = curr.get(ParentContainerToken);
+
+        let parent = this.container.resolve(ParentContainerToken);
 
         while (parent && !ctx.instance) {
-            parent.bindActionContext(ctx);
-            parent.get(ResolveScopeAction).execute(ctx);
-            parent = parent.get(ParentContainerToken);
+            parent.resolve(ResolveScopeAction).execute(ctx);
+            parent = parent.resolve(ParentContainerToken);
         }
 
         if (!ctx.instance) {
-            curr.bindActionContext(ctx);
             next();
         }
     }

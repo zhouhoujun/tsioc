@@ -1,12 +1,14 @@
-import { IIocContainer, IocCompositeAction } from '@ts-ioc/ioc';
+import { IocCompositeAction, Singleton, Autorun } from '@ts-ioc/ioc';
 import { ResovleActionContext } from './ResovleActionContext';
 import { IocDefaultResolveAction } from './IocDefaultResolveAction';
 
 
+@Singleton
+@Autorun('setup')
 export class ResolveScopeAction extends IocCompositeAction<ResovleActionContext> {
 
-    registerDefault(container: IIocContainer) {
-        container.registerSingleton(IocDefaultResolveAction, () => new IocDefaultResolveAction());
+    setup() {
+        this.container.register(IocDefaultResolveAction);
         this.use(IocDefaultResolveAction);
     }
 }

@@ -1,5 +1,6 @@
-import { IocCoreService, Type, PromiseUtil } from '@ts-ioc/ioc';
 import { HandleContext } from './HandleContext';
+import { ContainerToken, IContainer } from '@ts-ioc/core';
+import { IocCoreService, Type, PromiseUtil, Inject, ProviderTypes, Token } from '@ts-ioc/ioc';
 
 /**
  *  next
@@ -16,8 +17,24 @@ export type Next = () => Promise<void>;
  * @template T
  */
 export abstract class Handle<T extends HandleContext> extends IocCoreService {
+
+    @Inject(ContainerToken)
+    protected container: IContainer;
+
     constructor() {
         super();
+        this.initHandle();
+    }
+
+    protected initHandle() {
+
+    }
+
+    protected resolve<TK>(token: Token<TK>, ctx?: T, ...providers: ProviderTypes[]) {
+        if (ctx && ctx.has(token)) {
+            return ctx.resolve(token, ...providers);
+        }
+        return this.container.resolve(token, ...providers);
     }
 
     abstract execute(ctx: T, next: Next): Promise<void>;

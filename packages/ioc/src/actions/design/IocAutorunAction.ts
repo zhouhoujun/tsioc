@@ -27,9 +27,9 @@ export class IocAutorunAction extends IocDesignAction {
             }
 
             if (meta) {
-                let instance = ctx.resolve(ctx.tokenKey || ctx.token);
+                let instance = this.container.resolve(ctx.tokenKey || ctx.token);
                 if (instance && meta.autorun && isFunction(instance[meta.autorun])) {
-                    ctx.getRaiseContainer().syncInvoke(instance, meta.autorun);
+                    this.container.syncInvoke(instance, meta.autorun);
                 }
             }
         }
