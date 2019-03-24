@@ -17,7 +17,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
     protected befores: IocActionType[];
     protected afters: IocActionType[];
 
-    protected initAction(){
+    protected initAction() {
         this.befores = [];
         this.actions = [];
         this.afters = [];
