@@ -23,5 +23,5 @@ export abstract class IocRuntimeAction extends IocRegisterAction<RuntimeActionCo
  * @extends {IocCompositeAction<RuntimeActionContext>}
  */
 export abstract class IocRuntimeScopeAction extends IocCompositeAction<RuntimeActionContext> {
- 
+
 }

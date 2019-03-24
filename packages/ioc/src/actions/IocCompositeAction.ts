@@ -131,7 +131,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
     }
 
     protected resolveAction(ac: Type<IocAction<T>>): IocAction<T> {
-        console.log('container type:', lang.getClassName(this.container), lang.getClassName(ac));
+        // console.log('container type:', lang.getClassName(this.container), lang.getClassName(ac));
         return this.container.resolve(ac);
     }
 }
