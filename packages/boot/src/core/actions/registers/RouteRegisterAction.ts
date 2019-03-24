@@ -27,7 +27,7 @@ export class RouteDesignRegisterAction extends IocDesignAction {
             let parent = this.container.get(ParentContainerToken);
             while (parent) {
                 parent.get(scopeType).execBody(ctx);
-                parent = parent.get(ParentContainerToken);;
+                parent = parent.get(ParentContainerToken);
             }
         }
         next();

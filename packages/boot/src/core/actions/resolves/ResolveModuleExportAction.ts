@@ -12,7 +12,7 @@ import { IocResolveAction, ResovleActionContext } from '@ts-ioc/core';
 @Singleton
 export class ResolveModuleExportAction extends IocResolveAction {
 
-    execute(ctx: ResovleActionContext, next: () => void): void {;
+    execute(ctx: ResovleActionContext, next: () => void): void {
         ctx.instance = this.container.resolve(DIModuleExports).resolve(ctx.token, ...ctx.providers);
         if (!ctx.instance) {
             next();

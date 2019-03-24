@@ -106,10 +106,10 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
             .use(IocSetCacheAction)
             .use(ComponentAfterInitAction);
 
-        this.use(InitReflectAction)
+        this.use(ContainerCheckerAction)
+            .use(InitReflectAction)
             .use(GetSingletionAction)
             .use(IocGetCacheAction)
-            .use(ContainerCheckerAction)
             .use(ConstructorArgsAction)
             .use(IocBeforeConstructorScope)
             .use(CreateInstanceAction)

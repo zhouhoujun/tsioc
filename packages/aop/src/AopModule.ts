@@ -35,6 +35,7 @@ export class AopModule {
      * @memberof AopModule
      */
     setup(@Inject(IocContainerToken) container: IIocContainer) {
+
         container.register(Joinpoint);
         container.register(AdvisorChainFactory);
         container.register(ReturningRecognizer);

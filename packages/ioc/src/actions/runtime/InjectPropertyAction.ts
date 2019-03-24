@@ -16,10 +16,6 @@ import { lang, isNullOrUndefined } from '../../utils';
  */
 export class InjectPropertyAction extends IocRuntimeAction {
 
-    constructor(container: IIocContainer) {
-        super(container)
-    }
-
     execute(ctx: RuntimeActionContext, next: () => void) {
         let providerMap = ctx.providerMap;
         ctx.injecteds = ctx.injecteds || {};
@@ -37,12 +33,9 @@ export class InjectPropertyAction extends IocRuntimeAction {
                 } else if (providerMap && providerMap.has(token)) {
                     ctx.target[prop.propertyKey] = providerMap.resolve(token, providerMap);
                     ctx.injecteds[prop.propertyKey] = true;
-                } else {
-                    let pv = container.resolve(token, providerMap);
-                    if (!isNullOrUndefined(pv)) {
-                        ctx.target[prop.propertyKey] = pv;
-                        ctx.injecteds[prop.propertyKey] = true;
-                    }
+                } else if (container.has(token)) {
+                    ctx.target[prop.propertyKey] = container.resolve(token, providerMap);
+                    ctx.injecteds[prop.propertyKey] = true;
                 }
             }
         });
