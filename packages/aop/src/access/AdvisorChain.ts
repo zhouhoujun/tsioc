@@ -1,9 +1,9 @@
-import { Injectable, Inject, Express } from '@ts-ioc/ioc';
+import { Injectable, Inject, Express, IocContainerToken, IIocContainer } from '@ts-ioc/ioc';
 import { Joinpoint } from '../joinpoints';
 import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
 import { AdvisorProceedingToken } from './IAdvisorProceeding';
 import { NonePointcut } from '../decorators/NonePointcut';
-import { ContainerToken, IContainer, IocRecognizer } from '@ts-ioc/core';
+import { IocRecognizer } from './IocRecognizer';
 
 /**
  * advisor chain.
@@ -16,8 +16,8 @@ import { ContainerToken, IContainer, IocRecognizer } from '@ts-ioc/core';
 @Injectable(AdvisorChainToken)
 export class AdvisorChain implements IAdvisorChain {
 
-    @Inject(ContainerToken)
-    container: IContainer;
+    @Inject(IocContainerToken)
+    container: IIocContainer;
 
     protected actions: Express<Joinpoint, any>[];
 

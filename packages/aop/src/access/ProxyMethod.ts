@@ -1,6 +1,7 @@
 import {
     Provider, Singleton, Inject, Type,
-    isFunction, DecoratorRegisterer, RuntimeLifeScope, ObjectMapProvider
+    isFunction, DecoratorRegisterer, RuntimeLifeScope,
+    ObjectMapProvider, IocContainerToken, IIocContainer
 } from '@ts-ioc/ioc';
 import { Advices } from '../advices';
 import { JoinpointState, IPointcut } from '../joinpoints';
@@ -9,7 +10,6 @@ import { IAdvisor, AdvisorToken } from '../IAdvisor';
 import { IProxyMethod, ProxyMethodToken } from './IProxyMethod';
 import { AdvisorChainFactoryToken } from './IAdvisorChainFactory';
 import { NonePointcut } from '../decorators/NonePointcut';
-import { ContainerToken, IContainer } from '@ts-ioc/core';
 
 /**
  * Proxy method.
@@ -22,7 +22,7 @@ import { ContainerToken, IContainer } from '@ts-ioc/core';
 @Singleton(ProxyMethodToken)
 export class ProxyMethod implements IProxyMethod {
 
-    constructor(@Inject(ContainerToken) private container: IContainer) {
+    constructor(@Inject(IocContainerToken) private container: IIocContainer) {
 
     }
 
@@ -101,7 +101,7 @@ export class ProxyMethod implements IProxyMethod {
                 targetType: targetType
             }));
 
-            let adChain = container.get(AdvisorChainFactoryToken, { provide: ContainerToken, useValue: container }, { provide: AdvisorToken, useValue: this.advisor }, ObjectMapProvider.parse({ container: container, advisor: this.advisor, advices: advices }));
+            let adChain = container.get(AdvisorChainFactoryToken, { provide: IocContainerToken, useValue: container }, { provide: AdvisorToken, useValue: this.advisor }, ObjectMapProvider.parse({ container: container, advisor: this.advisor, advices: advices }));
             adChain.invoaction(joinPoint, JoinpointState.Before);
             adChain.invoaction(joinPoint, JoinpointState.Pointcut);
             let val, exeErr;

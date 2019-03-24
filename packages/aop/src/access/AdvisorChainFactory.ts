@@ -1,11 +1,10 @@
-import { Provider, Injectable, Inject, isUndefined, isArray } from '@ts-ioc/ioc';
+import { Provider, Injectable, Inject, isUndefined, isArray, IocContainerToken, IIocContainer } from '@ts-ioc/ioc';
 import { Joinpoint, JoinpointState } from '../joinpoints';
 import { Advicer, Advices } from '../advices';
 import { IAdvisorChainFactory, AdvisorChainFactoryToken } from './IAdvisorChainFactory';
 import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
 import { NonePointcut } from '../decorators/NonePointcut';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
-import { ContainerToken, IContainer } from '@ts-ioc/core';
 
 /**
  * advisor chain factory.
@@ -18,7 +17,7 @@ import { ContainerToken, IContainer } from '@ts-ioc/core';
 @Injectable(AdvisorChainFactoryToken)
 export class AdvisorChainFactory implements IAdvisorChainFactory {
 
-    constructor(@Inject(ContainerToken) private container: IContainer, @Inject(AdvisorToken) private advisor: IAdvisor, private advices: Advices) {
+    constructor(@Inject(IocContainerToken) private container: IIocContainer, @Inject(AdvisorToken) private advisor: IAdvisor, private advices: Advices) {
 
     }
 

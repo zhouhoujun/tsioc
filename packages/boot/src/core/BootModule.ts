@@ -2,7 +2,7 @@ import {
     Inject, DecoratorRegisterer, BindProviderAction,
     IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction,
     ComponentInitAction, ComponentAfterInitAction, DesignLifeScope,
-    IocBeforeConstructorScope, IocAfterConstructorScope, IocBindMethodScope
+    IocBeforeConstructorScope, IocAfterConstructorScope, IocBindMethodScope, IIocContainer
 } from '@ts-ioc/ioc';
 import {
     IContainer, ContainerToken, IocExt, ModuleInjectorManager,
@@ -33,7 +33,7 @@ import { DIModuleInjector, RootModuleInjector } from './modules';
 @IocExt('setup')
 export class BootModule {
 
-    constructor(@Inject(ContainerToken) private container: IContainer) {
+    constructor() {
 
     }
 
@@ -42,8 +42,8 @@ export class BootModule {
      *
      * @memberof AopModule
      */
-    setup() {
-        let container = this.container;
+    setup(@Inject(ContainerToken) container: IContainer) {
+
         let decReg = container.get(DecoratorRegisterer);
         decReg.register(Annotation, BindProviderAction, IocGetCacheAction, IocSetCacheAction,
             ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
@@ -78,11 +78,11 @@ export class BootModule {
         container.get(DesignLifeScope)
             .after(RouteDesignRegisterAction);
 
-        // container.get(IocBeforeConstructorScope)
-        //     .after(RouteRuntimRegisterAction);
+        container.get(IocBeforeConstructorScope)
+            .after(RouteRuntimRegisterAction);
 
-        // container.get(IocAfterConstructorScope)
-        //     .after(RouteRuntimRegisterAction);
+        container.get(IocAfterConstructorScope)
+            .after(RouteRuntimRegisterAction);
 
         container.get(IocBindMethodScope)
             .after(RouteRuntimRegisterAction);
