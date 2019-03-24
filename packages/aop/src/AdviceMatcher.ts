@@ -4,13 +4,12 @@ import {
     Inject, getParamerterNames, getOwnMethodMetadata, hasOwnMethodMetadata,
     hasOwnClassMetadata, Singleton, isString, isRegExp, isUndefined,
     Type, ObjectMap, lang, getOwnTypeMetadata,
-    isArray, isFunction, IIocContainer
+    isArray, isFunction, IIocContainer, IocContainerToken
 } from '@ts-ioc/ioc';
 import { IPointcut, MatchPointcut } from './joinpoints';
 import { Advice } from './decorators/Advice';
 import { Aspect } from './decorators/Aspect';
 import { NonePointcut } from './decorators/NonePointcut';
-import { ContainerToken } from '@ts-ioc/core';
 
 /**
  * match express.
@@ -28,7 +27,7 @@ export type MatchExpress = (method: string, fullName: string, targetType?: Type<
 @Singleton(AdviceMatcherToken)
 export class AdviceMatcher implements IAdviceMatcher {
 
-    constructor(@Inject(ContainerToken) private container: IIocContainer) {
+    constructor(@Inject(IocContainerToken) private container: IIocContainer) {
 
     }
 

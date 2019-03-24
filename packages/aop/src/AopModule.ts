@@ -1,6 +1,6 @@
 import {
     Inject, DesignLifeScope, IocBeforeConstructorScope, DecoratorRegisterer,
-    IocAfterConstructorScope, IocBindMethodScope
+    IocAfterConstructorScope, IocBindMethodScope, IocContainerToken, IIocContainer, Autorun
 } from '@ts-ioc/ioc';
 import { Aspect } from './decorators/Aspect';
 import { Advisor } from './Advisor';
@@ -14,19 +14,18 @@ import {
     ProxyMethod, AdvisorChainFactory, AdvisorChain, SyncProceeding,
     AsyncObservableProceeding, AsyncPromiseProceeding, ReturningRecognizer
 } from './access';
-import { IocExt, ContainerToken, IContainer } from '@ts-ioc/core';
 
 
 /**
  * aop ext for ioc. auto run setup after registered.
- * with @IocExt('setup') decorator.
+ * with @Autorun('setup') decorator.
  * @export
  * @class AopModule
  */
-@IocExt('setup')
+@Autorun('setup')
 export class AopModule {
 
-    constructor(@Inject(ContainerToken) private container: IContainer) {
+    constructor() {
 
     }
 
@@ -35,8 +34,7 @@ export class AopModule {
      *
      * @memberof AopModule
      */
-    setup() {
-        let container = this.container;
+    setup(@Inject(IocContainerToken) container: IIocContainer) {
         container.register(Joinpoint);
         container.register(AdvisorChainFactory);
         container.register(ReturningRecognizer);
@@ -67,7 +65,7 @@ export class AopModule {
         container.get(IocBindMethodScope)
             .use(BindMethodPointcutAction);
 
-        container.get(DesignLifeScope).after(RegistAspectAction);
+        container.get(DesignLifeScope).use(RegistAspectAction);
 
         let decorReg = container.get(DecoratorRegisterer);
         decorReg.register(Aspect, RegistAspectAction, ExetndsInstanceAction);

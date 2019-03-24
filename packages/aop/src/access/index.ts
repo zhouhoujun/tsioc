@@ -1,3 +1,4 @@
+export * from './IocRecognizer';
 export * from './IAdvisorChainFactory';
 export * from './AdvisorChainFactory';
 export * from './IAdvisorChain';

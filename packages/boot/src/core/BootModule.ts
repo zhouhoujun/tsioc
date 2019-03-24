@@ -78,11 +78,11 @@ export class BootModule {
         container.get(DesignLifeScope)
             .after(RouteDesignRegisterAction);
 
-        // container.get(IocBeforeConstructorScope)
-        //     .after(RouteRuntimRegisterAction);
+        container.get(IocBeforeConstructorScope)
+            .after(RouteRuntimRegisterAction);
 
-        // container.get(IocAfterConstructorScope)
-        //     .after(RouteRuntimRegisterAction);
+        container.get(IocAfterConstructorScope)
+            .after(RouteRuntimRegisterAction);
 
         container.get(IocBindMethodScope)
             .after(RouteRuntimRegisterAction);

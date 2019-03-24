@@ -1,6 +1,6 @@
 import { Joinpoint } from '../joinpoints';
 import { Express, InjectToken } from '@ts-ioc/ioc';
-import { IocRecognizer } from '@ts-ioc/core';
+import { IocRecognizer } from './IocRecognizer';
 
 /**
  * Aop IAdvisorChain interface token.

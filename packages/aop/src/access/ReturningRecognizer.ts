@@ -2,7 +2,7 @@ import { Singleton, isPromise, isObservable } from '@ts-ioc/ioc';
 import { ReturningType } from './ReturningType';
 import { JoinpointState } from '../joinpoints';
 import { NonePointcut } from '../decorators/NonePointcut';
-import { IocRecognizer } from '@ts-ioc/core';
+import { IocRecognizer } from './IocRecognizer';
 
 @NonePointcut()
 @Singleton(IocRecognizer, JoinpointState.AfterReturning)
