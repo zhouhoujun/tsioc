@@ -102,9 +102,9 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
             .use(BindParameterProviderAction)
             .use(BindParameterTypeAction)
             .use(ComponentInitAction)
-            .use(RegisterSingletionAction)
-            .use(IocSetCacheAction)
-            .use(ComponentAfterInitAction);
+            .use(ComponentAfterInitAction)
+            .after(RegisterSingletionAction)
+            .after(IocSetCacheAction);
 
         this.use(ContainerCheckerAction)
             .use(InitReflectAction)
