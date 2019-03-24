@@ -81,10 +81,11 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
      * @param {IocActionType} action
      * @memberof IocCompositeAction
      */
-    before(action: IocActionType) {
+    before(action: IocActionType): this {
         if (this.befores.indexOf(action) < 0) {
             this.befores.push(action);
         }
+        return this;
     }
 
     /**
@@ -93,10 +94,11 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
      * @param {IocActionType} action
      * @memberof IocCompositeAction
      */
-    after(action: IocActionType) {
+    after(action: IocActionType): this {
         if (this.afters.indexOf(action) < 0) {
             this.afters.push(action);
         }
+        return this;
     }
 
     execute(ctx: T, next?: () => void): void {
@@ -131,7 +133,6 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
     }
 
     protected resolveAction(ac: Type<IocAction<T>>): IocAction<T> {
-        // console.log('container type:', lang.getClassName(this.container), lang.getClassName(ac));
         return this.container.resolve(ac);
     }
 }

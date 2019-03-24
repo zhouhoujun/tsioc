@@ -9,7 +9,8 @@ import {
     InitServiceResolveAction, ResolveRefServiceAction, ResolveServiceScopeAction,
     ResolveServicesScopeAction, ResolvePrivateServiceAction, ResolveServiceInClassChain,
     ResolveDefaultServiceAction, ResolveTargetServiceAction,
-    IocExtRegisterAction, ResovleServicesInTargetAction, ResovleServicesInRaiseAction, ResolveServiceTokenAction
+    IocExtRegisterAction, ResovleServicesInTargetAction, ResovleServicesInRaiseAction,
+    ResolveServiceTokenAction
 } from './actions';
 
 
@@ -23,21 +24,16 @@ export function registerCores(container: IContainer) {
 
     container.register(ResolveLifeScope);
 
-
     container.register(InitServiceResolveAction);
     container.register(ResolveServiceTokenAction);
     container.register(ResolveDefaultServiceAction);
-
     container.register(ResolveRefServiceAction);
     container.register(ResolvePrivateServiceAction);
     container.register(ResolveDefaultServiceAction);
-
     container.register(ResolveServiceScopeAction);
     container.register(ResolveServiceInClassChain);
     container.register(ResolveTargetServiceAction);
-
     container.register(IocExtRegisterAction);
-
     container.register(ResolveServicesScopeAction);
     container.register(ResovleServicesInTargetAction);
     container.register(ResovleServicesInRaiseAction);
