@@ -1,8 +1,9 @@
-import { ObjectMap, Token, ClassType } from '../types';
+import { Token, ClassType } from '../types';
 import { IocCoreService } from './IocCoreService';
 import { IParameter } from '../IParameter';
 import { ParamProviders } from '../providers';
 import { PropertyMetadata, ClassMetadata } from '../metadatas';
+
 
 
 /**
@@ -20,26 +21,35 @@ export interface ITypeReflect extends ClassMetadata {
      */
     constr?: IParameter[];
     /**
-     * inject props.
+     * props.
+     *
+     * propertyname__decorname
      *
      * @type {PropertyMetadata[]}
      * @memberof ITypeReflect
      */
-    props?: PropertyMetadata[];
+    props: Map<string, PropertyMetadata>;
+    /**
+     * class decorator annotations.
+     *
+     * @type {Map<string, ClassMetadata>}
+     * @memberof ITypeReflect
+     */
+    annotations: Map<string, ClassMetadata>;
     /**
      * method params.
      *
      * @type {ObjectMap<IParameter[]>}
      * @memberof ITypeReflect
      */
-    methodParams?: ObjectMap<IParameter[]>;
+    methodParams: Map<string, IParameter[]>;
     /**
      * method param providers.
      *
      * @type {ObjectMap<ParamProviders[]>}
      * @memberof ITypeReflect
      */
-    methodProviders?: ObjectMap<ParamProviders[]>;
+    methodProviders: Map<string, ParamProviders[]>;
     /**
      * this class provides.
      *
@@ -47,13 +57,7 @@ export interface ITypeReflect extends ClassMetadata {
      * @memberof ITypeReflect
      */
     provides?: Token<any>[];
-    /**
-     * bund decorators of class
-     *
-     * @type {string[]}
-     * @memberof IClassProvides
-     */
-    decors: string[];
+
 
     compBeforeInit?: boolean;
     compInit?: boolean;
@@ -85,11 +89,8 @@ export class TypeReflects extends IocCoreService {
         return this;
     }
 
-    get<T extends ITypeReflect>(type: ClassType<any>, force?: boolean): T {
+    get<T extends ITypeReflect>(type: ClassType<any>): T {
         if (this.map.has(type)) {
-            return this.map.get(type) as T;
-        } else if (force) {
-            this.map.set(type, {} as ITypeReflect);
             return this.map.get(type) as T;
         }
         return null;

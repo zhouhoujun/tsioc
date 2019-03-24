@@ -23,7 +23,6 @@ export class BindParameterProviderAction extends IocRuntimeAction {
         if (ctx.targetReflect.methodProviders && ctx.targetReflect.methodProviders[propertyKey]) {
             return next();
         }
-        ctx.targetReflect.methodProviders = ctx.targetReflect.methodProviders || {};
 
         let decors = this.container.resolve(DecoratorRegisterer).getMethodDecorators(type, lang.getClass(this));
 

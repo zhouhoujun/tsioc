@@ -388,7 +388,7 @@ let propertyMetadataExt = '__props';
  * @param {Type<any>} target
  * @returns {ObjectMap<T[]>}
  */
-export function getPropertyMetadata<T extends PropertyMetadata>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
+export function getPropertyMetadata<T extends PropertyMetadata>(decorator: string | Function, target: ClassType<any>): ObjectMap<T[]> {
     let name = isFunction(decorator) ? decorator.toString() : decorator;
     let meta = Reflect.getMetadata(name + propertyMetadataExt, target);
     if (!meta || isArray(meta) || !lang.hasField(meta)) {
