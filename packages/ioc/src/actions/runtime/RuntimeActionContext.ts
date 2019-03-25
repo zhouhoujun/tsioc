@@ -128,14 +128,6 @@ export class RuntimeActionContext extends RegisterActionContext {
     targetReflect?: ITypeReflect;
 
     /**
-     * custom set singleton or not.
-     *
-     * @type {boolean}
-     * @memberof IocActionContext
-     */
-    singleton?: boolean;
-
-    /**
      * resolve token.
      *
      * @type {Token<any>}
@@ -206,5 +198,4 @@ export class RuntimeActionContext extends RegisterActionContext {
     setOptions(options: RuntimeActionOption) {
         super.setOptions(options);
     }
-
 }

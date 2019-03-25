@@ -1,7 +1,6 @@
-import { IocCompositeAction, IocActionContext, IocActionType } from '../actions';
+import { IocCompositeAction, IocActionContext } from '../actions';
 import { Type } from '../types';
 import { isArray } from '../utils';
-import { IIocContainer } from '../IIocContainer';
 import { getOwnParamerterNames } from '../factories';
 
 /**

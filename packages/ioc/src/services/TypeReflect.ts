@@ -21,21 +21,19 @@ export interface ITypeReflect extends ClassMetadata {
      */
     constr?: IParameter[];
     /**
-     * props.
-     *
-     * propertyname__decorname
-     *
-     * @type {PropertyMetadata[]}
-     * @memberof ITypeReflect
-     */
-    props: Map<string, PropertyMetadata>;
-    /**
      * class decorator annotations.
      *
      * @type {Map<string, ClassMetadata>}
      * @memberof ITypeReflect
      */
     annotations: Map<string, ClassMetadata>;
+    /**
+     * props.
+     *
+     * @type {PropertyMetadata[]}
+     * @memberof ITypeReflect
+     */
+    props: Map<string, Map<string, PropertyMetadata>>;
     /**
      * method params.
      *
@@ -49,7 +47,7 @@ export interface ITypeReflect extends ClassMetadata {
      * @type {ObjectMap<ParamProviders[]>}
      * @memberof ITypeReflect
      */
-    methodProviders: Map<string, ParamProviders[]>;
+    methodParamProviders: Map<string, ParamProviders[]>;
     /**
      * this class provides.
      *
@@ -57,11 +55,6 @@ export interface ITypeReflect extends ClassMetadata {
      * @memberof ITypeReflect
      */
     provides?: Token<any>[];
-
-
-    compBeforeInit?: boolean;
-    compInit?: boolean;
-    compAfterInit?: boolean;
 }
 
 /**

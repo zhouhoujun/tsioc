@@ -1,7 +1,3 @@
-import { lang } from '../../utils';
-import { ClassMetadata } from '../../metadatas';
-import { DecoratorRegisterer } from '../../services';
-import { getOwnTypeMetadata } from '../../factories';
 import { DesignActionContext } from './DesignActionContext';
 import { IocDesignAction } from './IocDesignAction';
 
@@ -15,45 +11,34 @@ import { IocDesignAction } from './IocDesignAction';
 export class BindProviderAction extends IocDesignAction {
 
     execute(ctx: DesignActionContext, next: () => void) {
-        let type = ctx.targetType;
         let tgReflect = ctx.targetReflect;
         let raiseContainer = ctx.getRaiseContainer();
+        let anno = tgReflect.annotations.get(ctx.currDecoractor);
 
-        // let decors = this.container.resolve(DecoratorRegisterer).getClassDecorators(type, lang.getClass(this));
-        // decors = decors.filter(d => tgReflect.decors.indexOf(d) < 0);
+        // bind all provider.
+        if (!anno) {
+            return next();
+        }
+        if (anno.provide) {
+            let provide = raiseContainer.getToken(anno.provide, anno.alias);
+            tgReflect.provides.push(provide);
+            raiseContainer.bindProvider(provide, anno.type);
+        }
+        if (anno.refs && anno.refs.target) {
+            raiseContainer.bindRefProvider(anno.refs.target,
+                anno.refs.provide ? anno.refs.provide : anno.type,
+                anno.type,
+                anno.refs.provide ? anno.refs.alias : '',
+                tk => tgReflect.provides.push(tk));
+        }
+        // class private provider.
+        if (anno.providers && anno.providers.length) {
+            raiseContainer.bindProviders(
+                anno.type,
+                refKey => tgReflect.provides.push(refKey),
+                ...anno.providers);
+        }
 
-
-
-        // if (ctx.decors.length >= t) {
-        //     return next();
-        // }
-
-        tgReflect.annotations.forEach((c, d) => {
-            ctx.decors.push(d);
-            // bind all provider.
-            if (!c) {
-                return;
-            }
-            if (c.provide) {
-                let provide = raiseContainer.getToken(c.provide, c.alias);
-                tgReflect.provides.push(provide);
-                raiseContainer.bindProvider(provide, c.type);
-            }
-            if (c.refs && c.refs.target) {
-                raiseContainer.bindRefProvider(c.refs.target,
-                    c.refs.provide ? c.refs.provide : c.type,
-                    c.type,
-                    c.refs.provide ? c.refs.alias : '',
-                    tk => tgReflect.provides.push(tk));
-            }
-            // class private provider.
-            if (c.providers && c.providers.length) {
-                raiseContainer.bindProviders(
-                    c.type,
-                    refKey => tgReflect.provides.push(refKey),
-                    ...c.providers);
-            }
-        });
         next();
     }
 }

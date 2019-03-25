@@ -1,6 +1,14 @@
 // runtime action
 export * from './IocRuntimeAction';
 export * from './RuntimeActionContext';
+export * from './RuntimeDecoratorAction';
+export * from './RuntimeAnnoationScope';
+export * from './RuntimePropertyScope';
+export * from './RuntimeMethodScope';
+
+export * from './IocBeforeConstructorScope';
+export * from './IocAfterConstructorScope';
+
 export * from './BindParameterProviderAction';
 export * from './BindParameterTypeAction';
 export * from './BindPropertyTypeAction';
@@ -18,7 +26,7 @@ export * from './IocSetCacheAction';
 export * from './ConstructorArgsAction';
 export * from './CreateInstanceAction';
 
-export * from './IocBeforeConstructorScope';
-export * from './IocAfterConstructorScope';
-export * from './IocInitInstanceScope';
-export * from './IocBindMethodScope';
+export * from './IocAutorunAction';
+
+
+

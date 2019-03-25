@@ -1,12 +1,7 @@
 import { IocCoreService } from './IocCoreService';
 import { IocActionType } from '../actions';
-import { ClassType, Express, Type, Express2 } from '../types';
-import {
-    getMethodDecorators, getPropDecorators, getParamDecorators,
-    getClassDecorators, getTypeMetadata, getOwnMethodMetadata, getPropertyMetadata
-} from '../factories';
+import { DecoratorType } from '../factories';
 import { isString } from '../utils';
-import { ClassMetadata, MethodMetadata, PropertyMetadata } from '../metadatas';
 
 /**
  * decorator register.
@@ -16,10 +11,16 @@ import { ClassMetadata, MethodMetadata, PropertyMetadata } from '../metadatas';
  * @extends {IocCoreService}
  */
 export class DecoratorRegisterer extends IocCoreService {
-    protected map: Map<string, IocActionType[]>;
+    protected classMap: Map<string, IocActionType[]>;
+    protected propsMap: Map<string, IocActionType[]>;
+    protected methodMap: Map<string, IocActionType[]>;
+    protected paramMap: Map<string, IocActionType[]>;
     constructor() {
         super();
-        this.map = new Map();
+        this.classMap = new Map();
+        this.propsMap = new Map();
+        this.methodMap = new Map();
+        this.paramMap = new Map();
     }
 
     /**
@@ -29,203 +30,97 @@ export class DecoratorRegisterer extends IocCoreService {
      * @param {...IocActionType[]} actions
      * @memberof DecoratorRegister
      */
-    register(decorator: string | Function, ...actions: IocActionType[]) {
+    register(decorator: string | Function, decorType: DecoratorType, ...actions: IocActionType[]) {
+        if (decorType & DecoratorType.Class) {
+            this.reginMap(this.classMap, decorator, ...actions);
+        }
+        if (decorType & DecoratorType.Property) {
+            this.reginMap(this.propsMap, decorator, ...actions);
+        }
+        if (decorType & DecoratorType.Method) {
+            this.reginMap(this.methodMap, decorator, ...actions);
+        }
+        if (decorType & DecoratorType.Parameter) {
+            this.reginMap(this.paramMap, decorator, ...actions);
+        }
+    }
+
+    has(decorator: string | Function, decorType: DecoratorType): boolean {
+        let map: Map<string, IocActionType[]>;
+        switch (decorType) {
+            case DecoratorType.Class:
+                map = this.classMap;
+                break;
+            case DecoratorType.Method:
+                map = this.methodMap;
+                break;
+            case DecoratorType.Property:
+                map = this.propsMap;
+                break;
+            case DecoratorType.Parameter:
+                map = this.paramMap;
+                break;
+        }
         let dec = this.getKey(decorator);
-        if (this.map.has(dec)) {
-            this.map.get(dec).concat(actions);
-        } else {
-            this.map.set(dec, actions);
-        }
+        return map && map.has(dec);
     }
-
-    get(decorator: string | Function): IocActionType[] {
-        let dec = this.getKey(decorator);
-        if (this.map.has(dec)) {
-            return this.map.get(dec);
-        }
-        return [];
-    }
-
-    getClassDecorators(target: ClassType<any>): string[] {
-        return getClassDecorators(target);
-    }
-
-    getMethodDecorators(target: ClassType<any>): string[] {
-        return getMethodDecorators(target);
-        // .filter(d => actions.length ? this.hasAnyAction(d, ...actions) : this.has(d));
-    }
-
-    getPropertyDecorators(target: ClassType<any>): string[] {
-        return getPropDecorators(target);
-        // .filter(d => actions.length ? this.hasAnyAction(d, ...actions) : this.has(d));
-    }
-
-    getParameterDecorators(target: any, propertyKey?: string): string[] {
-        return getParamDecorators(target, propertyKey);
-        // .filter(d => actions.length ? this.hasAnyAction(d, ...actions) : this.has(d));
-    }
-
-    /**
-     * each class metadata.
-     *
-     * @param {ClassType<any>} target
-     * @param {((meta: ClassMetadata, decor: string) => void | boolean)} express
-     * @param {Express<string, boolean>} [decorFilter]
-     * @memberof DecoratorRegisterer
-     */
-    eachClassMetadata(target: ClassType<any>, express: (meta: ClassMetadata, decor: string) => void | boolean, decorFilter?: Express<string, boolean>) {
-        let decors = this.getClassDecorators(target);
-        if (decorFilter) {
-            decors = decors.filter(decorFilter);
-        }
-        decors.some(decor => {
-            let metas = getTypeMetadata<ClassMetadata>(decor, target);
-            if (metas && metas.length) {
-                return metas.some(meta => {
-                    if (meta && express(meta, decor) === false) {
-                        return true;
-                    }
-                    return false;
-                });
-            }
-            return false;
-        });
-    }
-
-
-    /**
-     * each property metadata.
-     *
-     * @param {ClassType<any>} target
-     * @param {((meta: PropertyMetadata, propertyKey?: string, decor?: string) => void | boolean)} express
-     * @param {Express<string, boolean>} [decorFilter]
-     * @memberof DecoratorRegisterer
-     */
-    eachPropMetadata(target: ClassType<any>, express: (meta: PropertyMetadata, propertyKey?: string, decor?: string) => void | boolean, decorFilter?: Express<string, boolean>) {
-        let decors = this.getClassDecorators(target);
-        if (decorFilter) {
-            decors = decors.filter(decorFilter);
-        }
-        decors.some(decor => {
-            let metas = getPropertyMetadata<PropertyMetadata>(decor, target);
-            if (metas) {
-                return Object.keys(metas).some(key => {
-                    let pMtas = metas[key];
-                    if (pMtas && pMtas.length) {
-                        return pMtas.some(meta => {
-                            if (meta && express(meta, key, decor) === false) {
-                                return true;
-                            }
-                            return false;
-                        });
-                    }
-                    return false;
-                })
-            }
-            return false;
-        });
-    }
-
-    /**
-     * each method metadata.
-     *
-     * @param {Type<any>} target
-     * @param {string} propertyKey
-     * @param {((meta: MethodMetadata, method: string) => void | boolean)} express
-     * @param {Express<string, boolean>} [decorFilter]
-     * @returns {MethodMetadata[]}
-     * @memberof DecoratorRegisterer
-     */
-    eachMethodMetadata(target: Type<any>, propertyKey: string, express: (meta: MethodMetadata, method: string) => void | boolean, decorFilter?: Express<string, boolean>): MethodMetadata[] {
-        let decors = this.getMethodDecorators(target);
-        if (decorFilter) {
-            decors = decors.filter(decorFilter);
-        }
-        let metas: MethodMetadata[] = [];
-        decors.some(decor => {
-            let clmetas = getOwnMethodMetadata<MethodMetadata>(decor, target);
-            let methodmeta = clmetas[propertyKey];
-            if (methodmeta && methodmeta.length) {
-                return methodmeta.some(meta => {
-                    if (meta && express(meta, decor) === false) {
-                        return true;
-                    }
-                    return false;
-                });
-            }
-            return false;
-        });
-        return metas;
-    }
-
-    // filterMethodMetadata(target: Type<any>, propertyKey: string, filter?: Express<MethodMetadata, boolean>, decorFilter?: Express<string, boolean>): MethodMetadata[] {
-    //     let metadatas: MethodMetadata[] = [];
-    //     this.eachMethodMetadata(target, propertyKey, meta => {
-    //         if (!filter) {
-    //             metadatas.push(meta);
-    //         } else if (filter(meta)) {
-    //             metadatas.push(meta);
-    //         }
-    //     }, decorFilter)
-    //     return metadatas;
-    // }
-
-    // findMethodMetadata(target: Type<any>, propertyKey: string, filter: Express<MethodMetadata, boolean>, decorFilter?: Express<string, boolean>): MethodMetadata {
-    //     let metadata: MethodMetadata;
-    //     this.eachMethodMetadata(target, propertyKey, meta => {
-    //         if (filter(meta)) {
-    //             metadata = meta;
-    //             return false;
-    //         }
-    //         return true;
-    //     }, decorFilter)
-    //     return metadata;
-    // }
-
-    // filterClassMetadata(target: ClassType<any>, filter?: Express<ClassMetadata, boolean>, decorFilter?: Express<string, boolean>): ClassMetadata[] {
-    //     let metadatas: ClassMetadata[] = [];
-    //     this.eachClassMetadata(target, meta => {
-    //         if (!filter) {
-    //             metadatas.push(meta);
-    //         } else if (filter(meta)) {
-    //             metadatas.push(meta);
-    //         }
-    //     }, decorFilter)
-    //     return metadatas;
-    // }
-
-    // findClassMetadata(target: ClassType<any>, filter: Express<ClassMetadata, boolean>, decorFilter?: Express<string, boolean>): ClassMetadata {
-    //     let metadata: ClassMetadata;
-    //     this.eachClassMetadata(target, meta => {
-    //         if (filter(meta)) {
-    //             metadata = meta;
-    //             return false;
-    //         }
-    //         return true;
-    //     }, decorFilter)
-    //     return metadata;
-    // }
-
-    has(decorator: string | Function): boolean {
-        let dec = this.getKey(decorator);
-        return this.map.has(dec);
-    }
-
-    // /**
-    //  * has any action or not.
-    //  *
-    //  * @param {(string | Function)} decorator
-    //  * @param {...IocActionType[]} actions
-    //  * @returns {boolean}
-    //  * @memberof DecoratorRegisterer
-    //  */
-    // hasAnyAction(decorator: string | Function, ...actions: IocActionType[]): boolean {
-    //     let dec = this.getKey(decorator);
-    //     return this.map.has(dec) && this.map.get(dec).some(a => actions.indexOf(a) >= 0);
-    // }
 
     getKey(decorator: string | Function) {
         return isString(decorator) ? decorator : decorator.toString();
     }
+
+    protected reginMap(map: Map<string, IocActionType[]>, decorator: string | Function, ...actions: IocActionType[]) {
+        let dec = this.getKey(decorator);
+        if (map.has(dec)) {
+            map.get(dec).concat(actions);
+        } else {
+            map.set(dec, actions);
+        }
+    }
+
+    get(decorator: string | Function, decorType: DecoratorType): IocActionType[] {
+        let map: Map<string, IocActionType[]>;
+        switch (decorType) {
+            case DecoratorType.Class:
+                map = this.classMap;
+                break;
+            case DecoratorType.Method:
+                map = this.methodMap;
+                break;
+            case DecoratorType.Property:
+                map = this.propsMap;
+                break;
+            case DecoratorType.Parameter:
+                map = this.paramMap;
+                break;
+        }
+        let dec = this.getKey(decorator);
+        if (map.has(dec)) {
+            return map.get(dec);
+        }
+        return [];
+    }
+
+}
+
+/**
+ * design decorator register.
+ *
+ * @export
+ * @class DesignDecoratorRegisterer
+ * @extends {DecoratorRegisterer}
+ */
+export class DesignDecoratorRegisterer extends DecoratorRegisterer {
+
+}
+
+/**
+ * runtiem decorator registerer.
+ *
+ * @export
+ * @class RuntimeDecoratorRegisterer
+ * @extends {DecoratorRegisterer}
+ */
+export class RuntimeDecoratorRegisterer extends DecoratorRegisterer {
 
 }

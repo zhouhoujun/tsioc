@@ -2,6 +2,7 @@ export * from './IocCoreService';
 export * from './TypeReflect';
 export * from './ComponentLifecycle';
 export * from './IocCacheManager';
+export * from './MetadataService';
 export * from './MethodAccessor';
 export * from './LifeScope';
 export * from './RegisterLifeScope';

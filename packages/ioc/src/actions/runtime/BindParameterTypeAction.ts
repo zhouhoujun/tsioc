@@ -1,7 +1,7 @@
 import { Token } from '../../types';
 import { isClass, isArray, lang } from '../../utils';
 import { getParamMetadata, getOwnParamMetadata } from '../../factories';
-import { DecoratorRegisterer, RuntimeLifeScope } from '../../services';
+import { DecoratorRegisterer, RuntimeLifeScope, MetadataService } from '../../services';
 import { ParameterMetadata } from '../../metadatas';
 import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
@@ -17,10 +17,11 @@ export class BindParameterTypeAction extends IocRuntimeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void) {
         let propertyKey = ctx.propertyKey || 'constructor';
-        if (ctx.targetReflect.methodParams && ctx.targetReflect.methodParams[propertyKey]) {
+
+        if (ctx.targetReflect.methodParams.has(propertyKey)) {
             return next();
         }
-        ctx.targetReflect.methodParams = ctx.targetReflect.methodParams || {};
+
         let target = ctx.target
         let type = ctx.targetType;
         let designParams: Token<any>[];

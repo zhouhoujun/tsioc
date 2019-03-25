@@ -2,6 +2,7 @@ import { Type, Token } from '../types';
 import { IocActionContext, ActionContextOption } from './Action';
 import { ITypeReflect } from '../services';
 import { IIocContainer } from '../IIocContainer';
+import { DecoratorType } from '../factories';
 
 /**
  * register action option.
@@ -53,6 +54,38 @@ export interface RegisterActionOption extends ActionContextOption {
 export class RegisterActionContext extends IocActionContext {
 
     /**
+     * decors has execute ation.
+     *
+     * @type {string[]}
+     * @memberof DesignActionContext
+     */
+    classDecors: Map<string, boolean>;
+
+    /**
+     * props decors.
+     *
+     * @type {Map<string, boolean>}
+     * @memberof RegisterActionContext
+     */
+    propsDecors: Map<string, boolean>;
+
+    /**
+     * method decors.
+     *
+     * @type {Map<string, boolean>}
+     * @memberof RegisterActionContext
+     */
+    methodDecors: Map<string, boolean>;
+
+    /**
+     * param decors.
+     *
+     * @type {Map<string, boolean>}
+     * @memberof RegisterActionContext
+     */
+    paramDecors: Map<string, boolean>;
+
+    /**
      * resolve token.
      *
      * @type {Token<any>}
@@ -76,13 +109,8 @@ export class RegisterActionContext extends IocActionContext {
      */
     targetReflect?: ITypeReflect;
 
-    /**
-     * custom set singleton or not.
-     *
-     * @type {boolean}
-     * @memberof IocActionContext
-     */
-    singleton?: boolean;
+    currDecoractor?: string;
+    currDecorType?: DecoratorType;
 
     constructor(targetType: Type<any>, raiseContainer?: IIocContainer | (() => IIocContainer)) {
         super(raiseContainer);
@@ -107,5 +135,34 @@ export class RegisterActionContext extends IocActionContext {
     setOptions(options: RegisterActionOption) {
         super.setOptions(options);
     }
+
+    isClassCompleted() {
+        if (this.classDecors) {
+            return !Array.from(this.classDecors.values()).some(inj => !inj);
+        }
+        return false;
+    }
+
+    isPropertyCompleted() {
+        if (this.propsDecors) {
+            return !Array.from(this.propsDecors.values()).some(inj => !inj);
+        }
+        return false;
+    }
+
+    isMethodCompleted() {
+        if (this.methodDecors) {
+            return !Array.from(this.methodDecors.values()).some(inj => !inj);
+        }
+        return false;
+    }
+
+    isParameterCompleted() {
+        if (this.paramDecors) {
+            return !Array.from(this.paramDecors.values()).some(inj => !inj);
+        }
+        return false;
+    }
+
 
 }

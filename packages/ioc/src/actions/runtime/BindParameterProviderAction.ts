@@ -2,7 +2,7 @@ import { ParamProviders } from '../../providers';
 import { getParamMetadata } from '../../factories';
 import { ParameterMetadata } from '../../metadatas';
 import { isArray, lang } from '../../utils';
-import { DecoratorRegisterer } from '../../services';
+import { DecoratorRegisterer, MetadataService } from '../../services';
 import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 
@@ -20,9 +20,11 @@ export class BindParameterProviderAction extends IocRuntimeAction {
         let type = ctx.targetType;
         let propertyKey = ctx.propertyKey;
 
-        if (ctx.targetReflect.methodProviders && ctx.targetReflect.methodProviders[propertyKey]) {
+        if (ctx.targetReflect.methodParamProviders.has(propertyKey)) {
             return next();
         }
+
+        this.container.get(MetadataService).eachParamMetadata(ctx.target, ());
 
         let decors = this.container.resolve(DecoratorRegisterer).getMethodDecorators(type, lang.getClass(this));
 
@@ -39,7 +41,7 @@ export class BindParameterProviderAction extends IocRuntimeAction {
             }
         });
 
-        ctx.targetReflect.methodProviders[propertyKey] = providers;
+        ctx.targetReflect.methodParamProviders[propertyKey] = providers;
 
         next();
     }

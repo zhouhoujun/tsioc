@@ -1,19 +1,21 @@
 import { ParamProviders } from '../providers';
 import { Type } from '../types';
 import {
-    InitReflectAction, IocGetCacheAction,
+    IocGetCacheAction, RuntimeMethodScope,
     BindParameterProviderAction, BindParameterTypeAction,
     BindPropertyTypeAction, ComponentBeforeInitAction, ComponentInitAction,
     ComponentAfterInitAction, RegisterSingletionAction, InjectPropertyAction,
     GetSingletionAction, ContainerCheckerAction, IocSetCacheAction,
     CreateInstanceAction, ConstructorArgsAction, MethodAutorunAction, RuntimeActionContext,
-    IocBeforeConstructorScope, IocAfterConstructorScope, IocInitInstanceScope, IocBindMethodScope
+    IocBeforeConstructorScope, IocAfterConstructorScope,
+    IocParameterScope, IocAutorunAction, RuntimeAnnoationScope, RuntimePropertyScope, InitReflectAction
 } from '../actions';
 import { IIocContainer } from '../IIocContainer';
 import { IParameter } from '../IParameter';
-import { DecoratorRegisterer } from './DecoratorRegisterer';
-import { Inject, AutoWired, Method, Param, Autorun } from '../decorators';
+import { RuntimeDecoratorRegisterer } from './DecoratorRegisterer';
+import { Inject, AutoWired, Method, Param, Autorun, Component, Injectable } from '../decorators';
 import { RegisterLifeScope } from './RegisterLifeScope';
+import { DecoratorType } from '../factories';
 
 /**
  * runtime life scope.
@@ -31,7 +33,7 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
             propertyKey: propertyKey
         }, container);
         this.execActions(ctx, [InitReflectAction, BindParameterProviderAction]);
-        return ctx.targetReflect.methodProviders[propertyKey] || [];
+        return ctx.targetReflect.methodParamProviders[propertyKey] || [];
     }
 
     /**
@@ -60,7 +62,9 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
         return this.getParameters(container, type, instance, propertyKey);
     }
 
-    registerDefault(container: IIocContainer) {
+    setup(container: IIocContainer) {
+        container.registerSingleton(RuntimeDecoratorRegisterer, () => new RuntimeDecoratorRegisterer());
+
         if (!container.has(InitReflectAction)) {
             container.registerSingleton(InitReflectAction, () => new InitReflectAction(container));
         }
@@ -81,30 +85,36 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
         container.registerSingleton(IocSetCacheAction, () => new IocSetCacheAction(container));
         container.registerSingleton(MethodAutorunAction, () => new MethodAutorunAction(container));
 
+        container.registerSingleton(IocAutorunAction, () => new IocAutorunAction(container));
 
         container.registerSingleton(IocBeforeConstructorScope, () => new IocBeforeConstructorScope(container));
         container.registerSingleton(IocAfterConstructorScope, () => new IocAfterConstructorScope(container));
-        container.registerSingleton(IocInitInstanceScope, () => new IocInitInstanceScope(container));
-        container.registerSingleton(IocBindMethodScope, () => new IocBindMethodScope(container));
+
+        container.registerSingleton(RuntimeAnnoationScope, () => new RuntimeAnnoationScope(container));
+        container.registerSingleton(RuntimePropertyScope, () => new RuntimePropertyScope(container));
+        container.registerSingleton(RuntimeMethodScope, () => new RuntimeMethodScope(container));
+        // container.registerSingleton(IocParameterScope, () => new IocParameterScope(container));
+
+        let decRgr = container.get(RuntimeDecoratorRegisterer);
+
+        decRgr.register(Inject, DecoratorType.Property, BindPropertyTypeAction, BindPropertyTypeAction);
+        decRgr.register(AutoWired, DecoratorType.Property, BindPropertyTypeAction, BindPropertyTypeAction);
+
+        decRgr.register(Inject, DecoratorType.Parameter, BindParameterTypeAction);
+        decRgr.register(AutoWired, DecoratorType.Parameter, BindParameterTypeAction);
+        decRgr.register(Param, DecoratorType.Parameter, BindParameterTypeAction);
+
+        decRgr.register(Method, DecoratorType.Method, BindParameterProviderAction);
+        decRgr.register(Autorun, DecoratorType.Method, BindParameterProviderAction, MethodAutorunAction);
+
+        decRgr.register(Autorun, DecoratorType.Class, IocAutorunAction);
+        decRgr.register(Injectable, DecoratorType.Class, RegisterSingletionAction, IocSetCacheAction);
+        decRgr.register(Component, DecoratorType.Class, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction, RegisterSingletionAction, IocSetCacheAction);
 
 
-        let decRgr = container.get(DecoratorRegisterer);
-        decRgr.register(Inject, BindParameterTypeAction, BindPropertyTypeAction);
-        decRgr.register(AutoWired, BindParameterTypeAction, BindPropertyTypeAction);
-        decRgr.register(Param, BindParameterTypeAction);
-        decRgr.register(Method, BindParameterProviderAction);
-        decRgr.register(Autorun, MethodAutorunAction);
-
-        container.get(IocInitInstanceScope)
-            .use(ComponentBeforeInitAction)
-            .use(BindPropertyTypeAction)
-            .use(InjectPropertyAction)
-            .use(BindParameterProviderAction)
-            .use(BindParameterTypeAction)
-            .use(ComponentInitAction)
-            .use(ComponentAfterInitAction)
-            .after(RegisterSingletionAction)
-            .after(IocSetCacheAction);
+        container.get(RuntimeAnnoationScope).setup();
+        container.get(RuntimePropertyScope).setup();
+        container.get(RuntimeMethodScope).setup();
 
         this.use(ContainerCheckerAction)
             .use(InitReflectAction)
@@ -114,9 +124,9 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
             .use(IocBeforeConstructorScope)
             .use(CreateInstanceAction)
             .use(IocAfterConstructorScope)
-            .use(IocInitInstanceScope)
-            .use(IocBindMethodScope)
-            .use(MethodAutorunAction);
+            .use(RuntimePropertyScope)
+            .use(RuntimeAnnoationScope)
+            .use(RuntimeMethodScope);
 
     }
 

@@ -11,7 +11,7 @@ import { IocCacheManager } from '../../services';
  */
 export class IocGetCacheAction extends IocRuntimeAction {
     execute(ctx: RuntimeActionContext, next: () => void): void {
-        if (!ctx.target && ctx.targetReflect.expires) {
+        if (!ctx.target && ctx.targetReflect.expires > 0) {
             let cacheManager = this.container.get(IocCacheManager);
             if (cacheManager.hasCache(ctx.targetType)) {
                 ctx.target = cacheManager.get(ctx.target, ctx.targetReflect.expires);
@@ -20,7 +20,6 @@ export class IocGetCacheAction extends IocRuntimeAction {
                 }
             }
         }
-
         next();
     }
 }

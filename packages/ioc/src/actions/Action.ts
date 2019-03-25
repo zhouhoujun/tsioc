@@ -1,6 +1,5 @@
 import { IIocContainer, IocContainerToken } from '../IIocContainer';
 import { Type, Token } from '../types';
-import { IocCoreService } from '../services';
 import { lang, isFunction } from '../utils';
 import { IocCompositeAction } from './IocCompositeAction';
 import { Inject } from '../decorators';
@@ -112,13 +111,12 @@ export class IocActionContext {
  * @class Action
  * @extends {IocCoreService}
  */
-export abstract class IocAction<T extends IocActionContext> extends IocCoreService {
+export abstract class IocAction<T extends IocActionContext> {
 
     @Inject(IocContainerToken)
     protected container: IIocContainer
 
     constructor(container?: IIocContainer) {
-        super();
         if (container) {
             this.container = container;
         }

@@ -1,7 +1,7 @@
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { isClass } from '../../utils';
 import { IocCacheManager } from '../../services';
-import { IocCacheAction } from './IocCacheAction';
+import { IocRuntimeAction } from './IocRuntimeAction';
 
 
 /**
@@ -11,19 +11,18 @@ import { IocCacheAction } from './IocCacheAction';
  * @class CacheAction
  * @extends {ActionComposite}
  */
-export class IocSetCacheAction extends IocCacheAction {
+export class IocSetCacheAction extends IocRuntimeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void) {
-        if (ctx.singleton || !ctx.targetType || !isClass(ctx.targetType)) {
+        if (!ctx.targetReflect.expires || ctx.targetReflect.singleton || !ctx.targetType || !isClass(ctx.targetType)) {
             return next();
         }
-        let cacheMetadata = this.getCacheMetadata(ctx);
-        if (!cacheMetadata || !cacheMetadata.expires) {
+        if (ctx.targetReflect.expires <= 0) {
             return next();
         }
         let cacheManager = this.container.get(IocCacheManager);
         if (!cacheManager.hasCache(ctx.targetType)) {
-            cacheManager.cache(ctx.targetType, ctx.target, cacheMetadata.expires);
+            cacheManager.cache(ctx.targetType, ctx.target, ctx.targetReflect.expires);
         }
         next();
     }

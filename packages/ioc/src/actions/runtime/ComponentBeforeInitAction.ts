@@ -1,6 +1,5 @@
-import { IIocContainer } from '../../IIocContainer';
-import { isUndefined, lang, isFunction } from '../../utils';
-import { DecoratorRegisterer, BeforeInit } from '../../services';
+import { isFunction } from '../../utils';
+import { BeforeInit } from '../../services';
 import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 
@@ -13,21 +12,10 @@ import { RuntimeActionContext } from './RuntimeActionContext';
  */
 export class ComponentBeforeInitAction extends IocRuntimeAction {
 
-    constructor(container: IIocContainer) {
-        super(container)
-    }
-
     execute(ctx: RuntimeActionContext, next: () => void) {
-        if (isUndefined(ctx.targetReflect.compBeforeInit)) {
-            let decors = this.container.resolve(DecoratorRegisterer).getClassDecorators(ctx.targetType, lang.getClass(this));
-            ctx.targetReflect.compBeforeInit = decors.length > 0
-        }
-        if (ctx.targetReflect.compBeforeInit) {
-            let component = ctx.target as BeforeInit;
-            if (isFunction(component.beforeInit)) {
-                this.container.syncInvoke(ctx.target || ctx.targetType, 'beforeInit', ctx.target);
-            }
-
+        let component = ctx.target as BeforeInit;
+        if (isFunction(component.beforeInit)) {
+            this.container.syncInvoke(ctx.target || ctx.targetType, 'beforeInit', ctx.target);
         }
         next();
     }

@@ -1,9 +1,10 @@
 import { Singleton } from '../decorators';
 import { IocRegisterAction } from './IocRegisterAction';
 import { RegisterActionContext } from './RegisterActionContext';
-import { DecoratorRegisterer, ITypeReflect } from '../services';
+import { ITypeReflect, MetadataService } from '../services';
 import { hasOwnClassMetadata } from '../factories';
-import { isNumber } from '../utils';
+import { isNumber, isClass } from '../utils';
+import { PropertyMetadata } from '../metadatas';
 
 /**
  * init class reflect action.
@@ -15,25 +16,24 @@ import { isNumber } from '../utils';
 export class InitReflectAction extends IocRegisterAction<RegisterActionContext> {
 
     execute(ctx: RegisterActionContext, next: () => void): void {
-        if (!ctx.targetType) {
+        if (!isClass(ctx.targetType)) {
             return;
         }
         if (!ctx.targetReflect && ctx.targetType) {
             let typeRefs = this.container.getTypeReflects();
-            let dreg = this.container.resolve(DecoratorRegisterer);
+            let metaSer = this.container.get(MetadataService);
             if (!typeRefs.has(ctx.targetType)) {
                 let targetReflect: ITypeReflect = {
                     type: ctx.targetType,
                     props: new Map(),
                     methodParams: new Map(),
-                    methodProviders: new Map(),
+                    methodParamProviders: new Map(),
                     annotations: new Map(),
                     provides: []
                 };
                 let map = targetReflect.annotations;
                 let singleton = false;
-                let x;
-                dreg.eachClassMetadata(ctx.targetType, (meta, decor) => {
+                metaSer.eachClassMetadata(ctx.targetType, (meta, decor) => {
                     if (meta) {
                         return;
                     }
@@ -49,15 +49,22 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
                         map.set(decor, Object.assign({}, meta));
                     }
                 });
+
                 targetReflect.singleton = hasOwnClassMetadata(Singleton, ctx.targetType) || singleton;
 
-                map = ctx.targetReflect.props;
-                dreg.eachPropMetadata(ctx.targetType, (meta, propertyKey, decor) => {
-                    let key = `${propertyKey}__${decor}`;
-                    if (map.has(key)) {
-                        map.set(key, Object.assign(map.get(key), meta));
+                let propsMap = ctx.targetReflect.props;
+                metaSer.eachPropMetadata(ctx.targetType, (meta, propertyKey, decor) => {
+                    let map: Map<string, PropertyMetadata>;
+                    if (propsMap.has(decor)) {
+                        map = propsMap.get(decor);
                     } else {
-                        map.set(key, Object.assign({}, meta));
+                        map = new Map();
+                        propsMap.set(decor, map);
+                    }
+                    if (map.has(propertyKey)) {
+                        map.set(propertyKey, Object.assign(map.get(propertyKey), meta));
+                    } else {
+                        map.set(propertyKey, Object.assign({}, meta));
                     }
                 });
 
