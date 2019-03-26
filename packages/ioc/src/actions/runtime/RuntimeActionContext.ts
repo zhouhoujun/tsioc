@@ -82,8 +82,8 @@ export interface RuntimeActionOption extends RegisterActionOption {
  * Ioc Register action context.
  *
  * @export
- * @class RegisterActionContext
- * @extends {IocActionContext}
+ * @class RuntimeActionContext
+ * @extends {RegisterActionContext}
  */
 export class RuntimeActionContext extends RegisterActionContext {
 
@@ -91,7 +91,7 @@ export class RuntimeActionContext extends RegisterActionContext {
      * the args.
      *
      * @type {any[]}
-     * @memberof RegisterActionContext
+     * @memberof RuntimeActionContext
      */
     args?: any[];
 
@@ -99,7 +99,7 @@ export class RuntimeActionContext extends RegisterActionContext {
      * args params types.
      *
      * @type {IParameter[]}
-     * @memberof RegisterActionContext
+     * @memberof RuntimeActionContext
      */
     params?: IParameter[];
 
@@ -107,7 +107,7 @@ export class RuntimeActionContext extends RegisterActionContext {
      * target instance.
      *
      * @type {*}
-     * @memberof RegisterActionContext
+     * @memberof RuntimeActionContext
      */
     target?: any;
 
@@ -115,7 +115,7 @@ export class RuntimeActionContext extends RegisterActionContext {
      * target type.
      *
      * @type {Type<any>}
-     * @memberof RegisterActionContext
+     * @memberof RuntimeActionContext
      */
     targetType?: Type<any>;
 
@@ -131,7 +131,7 @@ export class RuntimeActionContext extends RegisterActionContext {
      * resolve token.
      *
      * @type {Token<any>}
-     * @memberof RegisterActionContext
+     * @memberof RuntimeActionContext
      */
     tokenKey?: Token<any>;
 
@@ -139,7 +139,7 @@ export class RuntimeActionContext extends RegisterActionContext {
      * property or method name of type.
      *
      * @type {string}
-     * @memberof RegisterActionContext
+     * @memberof RuntimeActionContext
      */
     propertyKey?: string;
 
@@ -147,7 +147,7 @@ export class RuntimeActionContext extends RegisterActionContext {
      * exter providers for resolve. origin providers
      *
      * @type {ParamProviders[]}
-     * @memberof RegisterActionContext
+     * @memberof RuntimeActionContext
      */
     providers?: ParamProviders[];
 
@@ -155,7 +155,7 @@ export class RuntimeActionContext extends RegisterActionContext {
      * exter providers convert to map.
      *
      * @type {ProviderMap}
-     * @memberof RegisterActionContext
+     * @memberof RuntimeActionContext
      */
     providerMap?: ProviderMap;
 
@@ -163,15 +163,15 @@ export class RuntimeActionContext extends RegisterActionContext {
      * execute context.
      *
      * @type {*}
-     * @memberof RegisterActionContext
+     * @memberof RuntimeActionContext
      */
     context?: any;
 
     /**
-     * has injected.
+     * runtime props has injected.
      *
      * @type {ObjectMap<boolean>}
-     * @memberof IocActionContext
+     * @memberof RuntimeActionContext
      */
     injecteds?: ObjectMap<boolean>;
 
@@ -194,8 +194,68 @@ export class RuntimeActionContext extends RegisterActionContext {
         return ctx;
     }
 
+    /**
+     * class decorators annoationed state.
+     *
+     * @type {ObjectMap<boolean>}
+     * @memberof ITypeReflect
+     */
+    classDecors: ObjectMap<boolean>;
+
+    /**
+     * props decorators annoationed state.
+     *
+     * @type {ObjectMap<boolean>}
+     * @memberof RegisterActionContext
+     */
+    propsDecors: ObjectMap<boolean>;
+
+    /**
+     * method decorators annoationed state.
+     *
+     * @type {ObjectMap<boolean>}
+     * @memberof RegisterActionContext
+     */
+    methodDecors: ObjectMap<boolean>;
+
+    /**
+     * method param decorators annoationed state.
+     *
+     * @type {ObjectMap<boolean>}
+     * @memberof RegisterActionContext
+     */
+    paramDecors: ObjectMap<boolean>;
+
 
     setOptions(options: RuntimeActionOption) {
         super.setOptions(options);
+    }
+
+    isClassCompleted() {
+        if (this.classDecors) {
+            return !Object.values(this.classDecors).some(inj => !inj);
+        }
+        return false;
+    }
+
+    isPropertyCompleted() {
+        if (this.propsDecors) {
+            return !Object.values(this.propsDecors).some(inj => !inj);
+        }
+        return false;
+    }
+
+    isMethodCompleted() {
+        if (this.methodDecors) {
+            return !Object.values(this.methodDecors).some(inj => !inj);
+        }
+        return false;
+    }
+
+    isParamCompleted() {
+        if (this.paramDecors) {
+            return !Object.values(this.paramDecors).some(inj => !inj);
+        }
+        return false;
     }
 }

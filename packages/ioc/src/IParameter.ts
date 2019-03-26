@@ -21,4 +21,12 @@ export interface IParameter {
      * @memberof IParameter
      */
     type: Token<any>;
+
+    /**
+     * provider for the parameter.
+     *
+     * @type {Token<any>}
+     * @memberof IParameter
+     */
+    provider: Token<any>;
 }

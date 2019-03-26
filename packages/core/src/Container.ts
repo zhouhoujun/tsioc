@@ -72,7 +72,7 @@ export class Container implements IContainer {
      * @memberof Container
      */
     getBuilder(): IContainerBuilder {
-        return this.resolve(ContainerBuilderToken);
+        return this.ioc.resolve(ContainerBuilderToken);
     }
 
     /**
@@ -82,7 +82,7 @@ export class Container implements IContainer {
      * @memberof IContainer
      */
     getLoader(): IModuleLoader {
-        return this.resolve(ModuleLoader);
+        return this.ioc.resolve(ModuleLoader);
     }
 
     /**
@@ -293,10 +293,7 @@ export class Container implements IContainer {
     syncInvoke<T>(target: Token<any>, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
         return this.ioc.syncInvoke(target, propertyKey, instance, ...providers);
     }
-    createSyncParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
-        return this.ioc.createSyncParams(params, ...providers);
-    }
-    createParams(params: IParameter[], ...providers: ParamProviders[]): Promise<any[]> {
+    createParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
         return this.ioc.createParams(params, ...providers);
     }
     getTokenProvider<T>(token: Token<T>): Type<T> {

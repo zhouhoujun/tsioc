@@ -1,7 +1,7 @@
 import { BootContext } from './BootContext';
 import {
     Type, LoadType, DecoratorRegisterer, BindProviderAction, IocGetCacheAction,
-    IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction, InjectReference
+    IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction, InjectReference, DesignDecoratorRegisterer, RuntimeDecoratorRegisterer, DecoratorType
 } from '@ts-ioc/ioc';
 import { ContainerPool, RegScope } from './core';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, ModuleInjectorManager, IContainer } from '@ts-ioc/core';
@@ -60,9 +60,13 @@ export class BootApplication {
         container.bindProvider(BootApplication, this);
         container.bindProvider(new InjectReference(BootApplication, this.context.type), this);
         container.use(annotations, handles, injectors, runnable, services);
-        let decReg = container.get(DecoratorRegisterer);
-        decReg.register(Bootstrap, BindProviderAction, IocGetCacheAction,
-            IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
+        let designReg = container.get(DesignDecoratorRegisterer);
+        designReg.register(Bootstrap, DecoratorType.Class, BindProviderAction);
+
+        let runtimeReg = container.get(RuntimeDecoratorRegisterer);
+        runtimeReg.register(Bootstrap, DecoratorType.Class, IocGetCacheAction,
+            IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction,
+            ComponentAfterInitAction);
 
         container.get(ModuleInjectorManager).use(BootstrapInjector, true);
     }

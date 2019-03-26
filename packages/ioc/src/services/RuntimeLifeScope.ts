@@ -1,19 +1,18 @@
 import { ParamProviders } from '../providers';
 import { Type } from '../types';
 import {
-    IocGetCacheAction, RuntimeMethodScope,
-    BindParameterProviderAction, BindParameterTypeAction,
-    BindPropertyTypeAction, ComponentBeforeInitAction, ComponentInitAction,
+    IocGetCacheAction, RuntimeMethodScope, BindParameterTypeAction,
+    ComponentBeforeInitAction, ComponentInitAction,
     ComponentAfterInitAction, RegisterSingletionAction, InjectPropertyAction,
     GetSingletionAction, ContainerCheckerAction, IocSetCacheAction,
     CreateInstanceAction, ConstructorArgsAction, MethodAutorunAction, RuntimeActionContext,
     IocBeforeConstructorScope, IocAfterConstructorScope,
-    IocParameterScope, IocAutorunAction, RuntimeAnnoationScope, RuntimePropertyScope, InitReflectAction
+    IocAutorunAction, RuntimeAnnoationScope, RuntimePropertyScope, InitReflectAction, RuntimeParamScope
 } from '../actions';
 import { IIocContainer } from '../IIocContainer';
 import { IParameter } from '../IParameter';
 import { RuntimeDecoratorRegisterer } from './DecoratorRegisterer';
-import { Inject, AutoWired, Method, Param, Autorun, Component, Injectable } from '../decorators';
+import { Inject, AutoWired, Param, Autorun, Component, Injectable } from '../decorators';
 import { RegisterLifeScope } from './RegisterLifeScope';
 import { DecoratorType } from '../factories';
 
@@ -27,13 +26,11 @@ import { DecoratorType } from '../factories';
 export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
 
     getParamProviders(container: IIocContainer, type: Type<any>, propertyKey: string, target?: any): ParamProviders[] {
-        let ctx = RuntimeActionContext.parse({
-            targetType: type,
-            target: target,
-            propertyKey: propertyKey
-        }, container);
-        this.execActions(ctx, [InitReflectAction, BindParameterProviderAction]);
-        return ctx.targetReflect.methodParamProviders[propertyKey] || [];
+        let tgRefl = container.getTypeReflects().get(type);
+        if (tgRefl && tgRefl.methodParamProviders.has(propertyKey)) {
+            return tgRefl.methodParamProviders.get(propertyKey) || [];
+        }
+        return [];
     }
 
     /**
@@ -75,10 +72,9 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
         container.registerSingleton(CreateInstanceAction, () => new CreateInstanceAction(container));
 
         container.registerSingleton(ComponentBeforeInitAction, () => new ComponentBeforeInitAction(container));
-        container.registerSingleton(BindPropertyTypeAction, () => new BindPropertyTypeAction(container));
+
         container.registerSingleton(InjectPropertyAction, () => new InjectPropertyAction(container));
         container.registerSingleton(ComponentInitAction, () => new ComponentInitAction(container));
-        container.registerSingleton(BindParameterProviderAction, () => new BindParameterProviderAction(container));
         container.registerSingleton(BindParameterTypeAction, () => new BindParameterTypeAction(container));
         container.registerSingleton(ComponentAfterInitAction, () => new ComponentAfterInitAction(container));
         container.registerSingleton(RegisterSingletionAction, () => new RegisterSingletionAction(container));
@@ -93,19 +89,18 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
         container.registerSingleton(RuntimeAnnoationScope, () => new RuntimeAnnoationScope(container));
         container.registerSingleton(RuntimePropertyScope, () => new RuntimePropertyScope(container));
         container.registerSingleton(RuntimeMethodScope, () => new RuntimeMethodScope(container));
-        // container.registerSingleton(IocParameterScope, () => new IocParameterScope(container));
+        container.registerSingleton(RuntimeParamScope, () => new RuntimeParamScope(container));
 
         let decRgr = container.get(RuntimeDecoratorRegisterer);
 
-        decRgr.register(Inject, DecoratorType.Property, BindPropertyTypeAction, BindPropertyTypeAction);
-        decRgr.register(AutoWired, DecoratorType.Property, BindPropertyTypeAction, BindPropertyTypeAction);
+        decRgr.register(Inject, DecoratorType.Property, InjectPropertyAction);
+        decRgr.register(AutoWired, DecoratorType.Property, InjectPropertyAction);
 
         decRgr.register(Inject, DecoratorType.Parameter, BindParameterTypeAction);
         decRgr.register(AutoWired, DecoratorType.Parameter, BindParameterTypeAction);
         decRgr.register(Param, DecoratorType.Parameter, BindParameterTypeAction);
 
-        decRgr.register(Method, DecoratorType.Method, BindParameterProviderAction);
-        decRgr.register(Autorun, DecoratorType.Method, BindParameterProviderAction, MethodAutorunAction);
+        decRgr.register(Autorun, DecoratorType.Method, MethodAutorunAction);
 
         decRgr.register(Autorun, DecoratorType.Class, IocAutorunAction);
         decRgr.register(Injectable, DecoratorType.Class, RegisterSingletionAction, IocSetCacheAction);
@@ -125,8 +120,8 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
             .use(CreateInstanceAction)
             .use(IocAfterConstructorScope)
             .use(RuntimePropertyScope)
-            .use(RuntimeAnnoationScope)
-            .use(RuntimeMethodScope);
+            .use(RuntimeMethodScope)
+            .use(RuntimeAnnoationScope);
 
     }
 
@@ -137,20 +132,9 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
             target: instance,
             propertyKey: propertyKey
         }, container);
-        this.execActions(ctx, [InitReflectAction, BindParameterTypeAction]);
+        this.execActions(ctx, [InitReflectAction, RuntimeParamScope]);
 
-        let params = ctx.targetReflect.methodParams[propertyKey]
-
-        if (params.length) {
-            return params;
-        } else {
-            let paramNames = this.getParamerterNames(type, propertyKey);
-            return paramNames.map(name => {
-                return {
-                    name: name,
-                    type: undefined
-                }
-            });
-        }
+        let params = ctx.targetReflect.methodParams.get(propertyKey);
+        return params || [];
     }
 }

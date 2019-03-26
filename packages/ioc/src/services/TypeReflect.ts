@@ -1,8 +1,8 @@
-import { Token, ClassType } from '../types';
+import { Token, ClassType, ObjectMap } from '../types';
 import { IocCoreService } from './IocCoreService';
 import { IParameter } from '../IParameter';
 import { ParamProviders } from '../providers';
-import { PropertyMetadata, ClassMetadata } from '../metadatas';
+import { ClassMetadata } from '../metadatas';
 
 
 
@@ -13,6 +13,31 @@ import { PropertyMetadata, ClassMetadata } from '../metadatas';
  * @interface ITypeReflect
  */
 export interface ITypeReflect extends ClassMetadata {
+
+    /**
+     * class decorators annoationed state.
+     *
+     * @type {ObjectMap<boolean>}
+     * @memberof ITypeReflect
+     */
+    classDecors: ObjectMap<boolean>;
+
+    /**
+     * props decorators annoationed state.
+     *
+     * @type {ObjectMap<boolean>}
+     * @memberof RegisterActionContext
+     */
+    propsDecors: ObjectMap<boolean>;
+
+    /**
+     * method decorators annoationed state.
+     *
+     * @type {ObjectMap<boolean>}
+     * @memberof RegisterActionContext
+     */
+    methodDecors: ObjectMap<boolean>;
+
     /**
      * constructor parameter.
      *
@@ -21,19 +46,12 @@ export interface ITypeReflect extends ClassMetadata {
      */
     constr?: IParameter[];
     /**
-     * class decorator annotations.
-     *
-     * @type {Map<string, ClassMetadata>}
-     * @memberof ITypeReflect
-     */
-    annotations: Map<string, ClassMetadata>;
-    /**
      * props.
      *
      * @type {PropertyMetadata[]}
      * @memberof ITypeReflect
      */
-    props: Map<string, Map<string, PropertyMetadata>>;
+    propProviders: Map<string, Token<any>>;
     /**
      * method params.
      *
@@ -41,6 +59,7 @@ export interface ITypeReflect extends ClassMetadata {
      * @memberof ITypeReflect
      */
     methodParams: Map<string, IParameter[]>;
+
     /**
      * method param providers.
      *

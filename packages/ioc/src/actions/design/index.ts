@@ -8,3 +8,5 @@ export * from './DesignMethodScope';
 
 export * from './IocDesignAction';
 export * from './BindProviderAction';
+export * from './BindMethodProviderAction';
+export * from './BindPropertyTypeAction';

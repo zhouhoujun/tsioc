@@ -89,24 +89,14 @@ export interface IMethodAccessor {
     syncInvoke<T>(container: IIocContainer, target: any, propertyKey: string, instance: any, ...providers: ParamProviders[])
 
     /**
-     * create params instances with IParameter and provider.
-     *
-     * @param {IParameter[]} params
-     * @param {...ParamProvider[]} providers
-     * @returns {any[]}
-     * @memberof IMethodAccessor
-     */
-    createSyncParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): any[];
-
-    /**
      * create params instances with IParameter and provider
      *
      * @param {IParameter[]} params
      * @param {...AsyncParamProvider[]} providers
-     * @returns {Promise<any[]>}
+     * @returns {any[]}
      * @memberof IMethodAccessor
      */
-    createParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): Promise<any[]>;
+    createParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): any[];
 }
 
 
@@ -159,9 +149,9 @@ export class MethodAccessor extends IocCoreService implements IMethodAccessor {
         let pds = lifeScope.getParamProviders(container, targetClass, propertyKey, instance);
         providers = providers.concat(pds);
         let parameters = lifeScope.getMethodParameters(container, targetClass, instance, propertyKey);
-        let paramInstances = await this.createParams(container, parameters, ...providers);
+        let paramInstances = this.createParams(container, parameters, ...providers);
 
-        return instance[propertyKey](...paramInstances) as T;
+        return await instance[propertyKey](...paramInstances) as T;
 
     }
 
@@ -187,11 +177,12 @@ export class MethodAccessor extends IocCoreService implements IMethodAccessor {
         let pds = lifeScope.getParamProviders(container, targetClass, propertyKey, instance);
         providers = providers.concat(pds);
         let parameters = lifeScope.getMethodParameters(container, targetClass, instance, propertyKey);
-        let paramInstances = this.createSyncParams(container, parameters, ...providers);
+        let paramInstances = this.createParams(container, parameters, ...providers);
         return instance[propertyKey](...paramInstances) as T;
     }
 
-    createSyncParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): any[] {
+
+    createParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): any[] {
         let providerMap = container.get(ProviderParser).parse(...providers);
         return params.map((param, index) => {
             if (param.name && providerMap.has(param.name)) {
@@ -205,21 +196,5 @@ export class MethodAccessor extends IocCoreService implements IMethodAccessor {
                 return undefined;
             }
         });
-    }
-
-    createParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): Promise<any[]> {
-        let providerMap = container.get(ProviderParser).parse(...providers);
-        return Promise.all(params.map((param, index) => {
-            if (param.name && providerMap.has(param.name)) {
-                return providerMap.resolve(param.name);
-            } else if (isToken(param.type)) {
-                if (providerMap.has(param.type)) {
-                    return providerMap.resolve(param.type);
-                }
-                return container.resolve(param.type, providerMap);
-            } else {
-                return undefined;
-            }
-        }));
     }
 }

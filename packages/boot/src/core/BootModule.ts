@@ -1,8 +1,9 @@
 import {
-    Inject, DecoratorRegisterer, BindProviderAction,
+    Inject, BindProviderAction, DesignDecoratorRegisterer, RuntimeDecoratorRegisterer,
     IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction,
     ComponentInitAction, ComponentAfterInitAction, DesignLifeScope,
-    IocBeforeConstructorScope, IocAfterConstructorScope, IocBindMethodScope, IIocContainer
+    IocBeforeConstructorScope, IocAfterConstructorScope, DecoratorType, RuntimeMethodScope,
+    RuntimePropertyScope, RuntimeAnnoationScope
 } from '@ts-ioc/ioc';
 import {
     IContainer, ContainerToken, IocExt, ModuleInjectorManager,
@@ -44,10 +45,15 @@ export class BootModule {
      */
     setup(@Inject(ContainerToken) container: IContainer) {
 
-        let decReg = container.get(DecoratorRegisterer);
-        decReg.register(Annotation, BindProviderAction, IocGetCacheAction, IocSetCacheAction,
+        let designReg = container.get(DesignDecoratorRegisterer);
+        designReg.register(Annotation, DecoratorType.Class, BindProviderAction);
+        designReg.register(DIModule, DecoratorType.Class, BindProviderAction);
+
+        let runtimeReg = container.get(RuntimeDecoratorRegisterer);
+        runtimeReg.register(Annotation, DecoratorType.Class, IocGetCacheAction, IocSetCacheAction,
             ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
-        decReg.register(DIModule, BindProviderAction, IocGetCacheAction, IocSetCacheAction,
+
+        runtimeReg.register(DIModule, DecoratorType.Class, IocGetCacheAction, IocSetCacheAction,
             ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
 
         container.use(modules, handles, actions, services);
@@ -75,8 +81,11 @@ export class BootModule {
         container.get(ResolveLifeScope)
             .use(RouteResolveAction);
 
+
+        // register route.
         container.get(DesignLifeScope)
             .after(RouteDesignRegisterAction);
+
 
         container.get(IocBeforeConstructorScope)
             .after(RouteRuntimRegisterAction);
@@ -84,7 +93,13 @@ export class BootModule {
         container.get(IocAfterConstructorScope)
             .after(RouteRuntimRegisterAction);
 
-        container.get(IocBindMethodScope)
+        container.get(RuntimePropertyScope)
+            .after(RouteRuntimRegisterAction);
+
+        container.get(RuntimeMethodScope)
+            .after(RouteRuntimRegisterAction);
+
+        container.get(RuntimeAnnoationScope)
             .after(RouteRuntimRegisterAction);
 
     }

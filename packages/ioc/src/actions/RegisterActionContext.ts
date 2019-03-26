@@ -15,14 +15,14 @@ export interface RegisterActionOption extends ActionContextOption {
      * resolve token.
      *
      * @type {Token<any>}
-     * @memberof RegisterActionContext
+     * @memberof RegisterActionOption
      */
     tokenKey?: Token<any>;
     /**
      * target type.
      *
      * @type {Type<any>}
-     * @memberof RegisterActionContext
+     * @memberof RegisterActionOption
      */
     targetType: Type<any>;
 
@@ -30,15 +30,23 @@ export interface RegisterActionOption extends ActionContextOption {
      * target type reflect.
      *
      * @type {ITypeReflect}
-     * @memberof IocActionContext
+     * @memberof RegisterActionOption
      */
     targetReflect?: ITypeReflect;
+
+        /**
+     * property or method name of type.
+     *
+     * @type {string}
+     * @memberof RegisterActionOption
+     */
+    propertyKey?: string;
 
     /**
      * custom set singleton or not.
      *
      * @type {boolean}
-     * @memberof IocActionContext
+     * @memberof RegisterActionOption
      */
     singleton?: boolean;
 
@@ -51,39 +59,7 @@ export interface RegisterActionOption extends ActionContextOption {
  * @class RegisterActionContext
  * @extends {IocActionContext}
  */
-export class RegisterActionContext extends IocActionContext {
-
-    /**
-     * decors has execute ation.
-     *
-     * @type {string[]}
-     * @memberof DesignActionContext
-     */
-    classDecors: Map<string, boolean>;
-
-    /**
-     * props decors.
-     *
-     * @type {Map<string, boolean>}
-     * @memberof RegisterActionContext
-     */
-    propsDecors: Map<string, boolean>;
-
-    /**
-     * method decors.
-     *
-     * @type {Map<string, boolean>}
-     * @memberof RegisterActionContext
-     */
-    methodDecors: Map<string, boolean>;
-
-    /**
-     * param decors.
-     *
-     * @type {Map<string, boolean>}
-     * @memberof RegisterActionContext
-     */
-    paramDecors: Map<string, boolean>;
+export abstract class RegisterActionContext extends IocActionContext {
 
     /**
      * resolve token.
@@ -101,11 +77,12 @@ export class RegisterActionContext extends IocActionContext {
      */
     targetType?: Type<any>;
 
+
     /**
      * target type reflect.
      *
      * @type {ITypeReflect}
-     * @memberof IocActionContext
+     * @memberof RegisterActionContext
      */
     targetReflect?: ITypeReflect;
 
@@ -117,52 +94,13 @@ export class RegisterActionContext extends IocActionContext {
         this.targetType = targetType;
     }
 
-    /**
-     * create register context.
-     *
-     * @static
-     * @param {RegisterActionOption} options
-     * @param {(IIocContainer | (() => IIocContainer))} [raiseContainer]
-     * @returns {RegisterActionContext}
-     * @memberof RegisterActionContext
-     */
-    static parse(options: RegisterActionOption, raiseContainer?: IIocContainer | (() => IIocContainer)): RegisterActionContext {
-        let ctx = new RegisterActionContext(options.targetType, raiseContainer);
-        ctx.setOptions(options);
-        return ctx;
-    }
-
     setOptions(options: RegisterActionOption) {
         super.setOptions(options);
     }
 
-    isClassCompleted() {
-        if (this.classDecors) {
-            return !Array.from(this.classDecors.values()).some(inj => !inj);
-        }
-        return false;
-    }
+    abstract isClassCompleted(): boolean;
 
-    isPropertyCompleted() {
-        if (this.propsDecors) {
-            return !Array.from(this.propsDecors.values()).some(inj => !inj);
-        }
-        return false;
-    }
+    abstract isPropertyCompleted(): boolean;
 
-    isMethodCompleted() {
-        if (this.methodDecors) {
-            return !Array.from(this.methodDecors.values()).some(inj => !inj);
-        }
-        return false;
-    }
-
-    isParameterCompleted() {
-        if (this.paramDecors) {
-            return !Array.from(this.paramDecors.values()).some(inj => !inj);
-        }
-        return false;
-    }
-
-
+    abstract isMethodCompleted(): boolean;
 }

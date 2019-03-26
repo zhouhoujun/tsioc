@@ -5,13 +5,12 @@ export * from './RuntimeDecoratorAction';
 export * from './RuntimeAnnoationScope';
 export * from './RuntimePropertyScope';
 export * from './RuntimeMethodScope';
+export * from './RuntimeParamScope';
 
 export * from './IocBeforeConstructorScope';
 export * from './IocAfterConstructorScope';
 
-export * from './BindParameterProviderAction';
 export * from './BindParameterTypeAction';
-export * from './BindPropertyTypeAction';
 export * from './ComponentBeforeInitAction';
 export * from './ComponentInitAction';
 export * from './ComponentAfterInitAction';

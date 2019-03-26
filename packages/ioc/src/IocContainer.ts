@@ -10,7 +10,7 @@ import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderPa
 import { IResolver } from './IResolver';
 import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, TypeReflects } from './services';
 import { IParameter } from './IParameter';
-import { RegisterActionContext, IocActionContext, RuntimeActionContext } from './actions';
+import { RuntimeActionContext, DesignActionContext } from './actions';
 
 /**
  * Container
@@ -446,7 +446,7 @@ export class IocContainer implements IIocContainer {
         }
 
         this.get(DesignLifeScope).register(
-            RegisterActionContext.parse({
+            DesignActionContext.parse({
                 tokenKey: key,
                 targetType: ClassT
             }, this));
@@ -483,11 +483,7 @@ export class IocContainer implements IIocContainer {
         return this.get(MethodAccessor).syncInvoke(this, target, propertyKey, instance, ...providers);
     }
 
-    createSyncParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
-        return this.get(MethodAccessor).createSyncParams(this, params, ...providers);
-    }
-
-    createParams(params: IParameter[], ...providers: ParamProviders[]): Promise<any[]> {
+    createParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
         return this.get(MethodAccessor).createParams(this, params, ...providers);
     }
 }

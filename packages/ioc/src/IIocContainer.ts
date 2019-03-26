@@ -240,16 +240,6 @@ export interface IIocContainer extends IResolverContainer {
     syncInvoke<T>(target: any, propertyKey: string, instance: any, ...providers: ParamProviders[])
 
     /**
-     * create params instances with IParameter and provider.
-     *
-     * @param {IParameter[]} params
-     * @param {...ParamProvider[]} providers
-     * @returns {any[]}
-     * @memberof IMethodAccessor
-     */
-    createSyncParams(params: IParameter[], ...providers: ParamProviders[]): any[];
-
-    /**
      * create params instances with IParameter and provider
      *
      * @param {IParameter[]} params
@@ -257,6 +247,6 @@ export interface IIocContainer extends IResolverContainer {
      * @returns {Promise<any[]>}
      * @memberof IMethodAccessor
      */
-    createParams(params: IParameter[], ...providers: ParamProviders[]): Promise<any[]>;
+    createParams(params: IParameter[], ...providers: ParamProviders[]): any[];
 
 }

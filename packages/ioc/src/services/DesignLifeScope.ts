@@ -1,12 +1,13 @@
 import { IIocContainer } from '../IIocContainer';
 import {
     BindProviderAction, DesignActionContext, DesignAnnoationScope,
-    InitReflectAction, DesignPropertyScope, DesignMethodScope
+    InitReflectAction, DesignPropertyScope, DesignMethodScope,
+    BindPropertyTypeAction, BindMethodProviderAction
 } from '../actions';
 import { DesignDecoratorRegisterer } from './DecoratorRegisterer';
 import {
-    Singleton, Injectable,
-    Component, Providers, Refs
+    Singleton, Injectable, Component, Providers,
+    Refs, Inject, AutoWired
 } from '../decorators';
 import { RegisterLifeScope } from './RegisterLifeScope';
 import { DecoratorType } from '../factories';
@@ -32,6 +33,9 @@ export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> {
         container.registerSingleton(DesignPropertyScope, () => new DesignPropertyScope(container));
         container.registerSingleton(DesignMethodScope, () => new DesignMethodScope(container));
 
+        container.registerSingleton(BindPropertyTypeAction, () => new BindPropertyTypeAction(container));
+        container.registerSingleton(BindMethodProviderAction, () => new BindMethodProviderAction(container));
+
         let decRgr = container.get(DesignDecoratorRegisterer);
 
         decRgr.register(Injectable, DecoratorType.Class, BindProviderAction);
@@ -41,6 +45,10 @@ export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> {
         decRgr.register(Refs, DecoratorType.Class, BindProviderAction);
         // decRgr.register(Abstract, DecoratorType.Class, BindProviderAction);
         // decRgr.register(Autorun, DecoratorType.Class, BindProviderAction);
+
+        decRgr.register(Inject, DecoratorType.Property, BindPropertyTypeAction);
+        decRgr.register(AutoWired, DecoratorType.Property, BindPropertyTypeAction);
+
 
         container.get(DesignAnnoationScope).setup();
         container.get(DesignPropertyScope).setup();

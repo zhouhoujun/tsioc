@@ -2,12 +2,34 @@ import { IocCoreService } from './IocCoreService';
 import { ClassType, Express, Type } from '../types';
 import {
     getMethodDecorators, getPropDecorators, getParamDecorators,
-    getClassDecorators, getTypeMetadata, getOwnMethodMetadata, getPropertyMetadata, getParamMetadata
+    getClassDecorators, getTypeMetadata, getOwnMethodMetadata, getPropertyMetadata, getParamMetadata, getOwnParamerterNames
 } from '../factories';
 import { ClassMetadata, MethodMetadata, PropertyMetadata, ParameterMetadata } from '../metadatas';
+import { isArray } from '../utils';
 
 
 export class MetadataService extends IocCoreService {
+
+    /**
+     * get paramerter names.
+     *
+     * @template T
+     * @param {Type<T>} type
+     * @param {string} propertyKey
+     * @returns {string[]}
+     * @memberof LifeScope
+     */
+    getParamerterNames<T>(type: Type<T>, propertyKey: string): string[] {
+        let metadata = getOwnParamerterNames(type);
+        let paramNames = [];
+        if (metadata && metadata.hasOwnProperty(propertyKey)) {
+            paramNames = metadata[propertyKey]
+        }
+        if (!isArray(paramNames)) {
+            paramNames = [];
+        }
+        return paramNames;
+    }
 
     getClassDecorators(target: ClassType<any>): string[] {
         return getClassDecorators(target);

@@ -2,9 +2,7 @@ import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { InjectReference } from '../../InjectReference';
 import { ProviderMap } from '../../providers';
-import { IocContainer } from '../../IocContainer';
-import { lang } from '../../utils';
-
+import { isToken } from '../../utils';
 
 /**
  * inject property value action, to inject property value for resolve instance.
@@ -20,15 +18,13 @@ export class InjectPropertyAction extends IocRuntimeAction {
         ctx.injecteds = ctx.injecteds || {};
         let container = this.container;
 
-        let props = ctx.targetReflect.props.get(ctx.currDecoractor);
+        let props = ctx.targetReflect.propProviders;
 
-        props.forEach((prop, propertyKey) => {
-            if (prop && !ctx.injecteds[propertyKey]) {
-                let token = prop.provider ? container.getToken(prop.provider, prop.alias) : prop.type;
+
+        props.forEach((token, propertyKey) => {
+            if (isToken(token) && !ctx.injecteds[propertyKey]) {
+                // let token =  prop.provider ? container.getToken(prop.provider, prop.alias) : prop.type;
                 let pdrMap = container.get(new InjectReference(ProviderMap, ctx.targetType));
-                if (lang.isExtendsClass(IocContainer, container.getTokenProvider(token))) {
-                    Object.defineProperty(ctx.target, propertyKey, { enumerable: false, writable: true });
-                }
                 if (pdrMap && pdrMap.has(token)) {
                     ctx.target[propertyKey] = pdrMap.resolve(token, providerMap);
                     ctx.injecteds[propertyKey] = true;

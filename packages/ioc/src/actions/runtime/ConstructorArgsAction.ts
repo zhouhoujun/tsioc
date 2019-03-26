@@ -13,7 +13,7 @@ export class ConstructorArgsAction extends IocRuntimeAction {
     execute(ctx: RuntimeActionContext, next: () => void): void {
         if (!ctx.params || !ctx.args) {
             ctx.params = this.container.resolve(RuntimeLifeScope).getConstructorParameters(this.container, ctx.targetType);
-            ctx.args = this.container.createSyncParams(ctx.params, ctx.providerMap);
+            ctx.args = this.container.createParams(ctx.params, ctx.providerMap);
         }
         next();
     }
