@@ -25,7 +25,6 @@ export * from './IocSetCacheAction';
 export * from './ConstructorArgsAction';
 export * from './CreateInstanceAction';
 
-export * from './IocAutorunAction';
 
 
 

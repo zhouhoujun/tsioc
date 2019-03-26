@@ -7,12 +7,12 @@ import {
     GetSingletionAction, ContainerCheckerAction, IocSetCacheAction,
     CreateInstanceAction, ConstructorArgsAction, MethodAutorunAction, RuntimeActionContext,
     IocBeforeConstructorScope, IocAfterConstructorScope,
-    IocAutorunAction, RuntimeAnnoationScope, RuntimePropertyScope, InitReflectAction, RuntimeParamScope
+    RuntimeAnnoationScope, RuntimePropertyScope, InitReflectAction, RuntimeParamScope
 } from '../actions';
 import { IIocContainer } from '../IIocContainer';
 import { IParameter } from '../IParameter';
 import { RuntimeDecoratorRegisterer } from './DecoratorRegisterer';
-import { Inject, AutoWired, Param, Autorun, Component, Injectable } from '../decorators';
+import { Inject, AutoWired, Param, Autorun, Component, Injectable, Singleton } from '../decorators';
 import { RegisterLifeScope } from './RegisterLifeScope';
 import { DecoratorType } from '../factories';
 
@@ -81,7 +81,6 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
         container.registerSingleton(IocSetCacheAction, () => new IocSetCacheAction(container));
         container.registerSingleton(MethodAutorunAction, () => new MethodAutorunAction(container));
 
-        container.registerSingleton(IocAutorunAction, () => new IocAutorunAction(container));
 
         container.registerSingleton(IocBeforeConstructorScope, () => new IocBeforeConstructorScope(container));
         container.registerSingleton(IocAfterConstructorScope, () => new IocAfterConstructorScope(container));
@@ -102,8 +101,8 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
 
         decRgr.register(Autorun, DecoratorType.Method, MethodAutorunAction);
 
-        decRgr.register(Autorun, DecoratorType.Class, IocAutorunAction);
-        decRgr.register(Injectable, DecoratorType.Class, RegisterSingletionAction, IocSetCacheAction);
+        decRgr.register(Singleton, DecoratorType.Class, RegisterSingletionAction);
+        decRgr.register(Injectable, DecoratorType.Class, RegisterSingletionAction, RegisterSingletionAction, IocSetCacheAction);
         decRgr.register(Component, DecoratorType.Class, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction, RegisterSingletionAction, IocSetCacheAction);
 
 

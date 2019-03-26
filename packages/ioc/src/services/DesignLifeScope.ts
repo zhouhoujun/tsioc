@@ -2,12 +2,12 @@ import { IIocContainer } from '../IIocContainer';
 import {
     BindProviderAction, DesignActionContext, DesignAnnoationScope,
     InitReflectAction, DesignPropertyScope, DesignMethodScope,
-    BindPropertyTypeAction, BindMethodProviderAction
+    BindPropertyTypeAction, BindMethodProviderAction, IocAutorunAction
 } from '../actions';
 import { DesignDecoratorRegisterer } from './DecoratorRegisterer';
 import {
     Singleton, Injectable, Component, Providers,
-    Refs, Inject, AutoWired
+    Refs, Inject, AutoWired, Autorun
 } from '../decorators';
 import { RegisterLifeScope } from './RegisterLifeScope';
 import { DecoratorType } from '../factories';
@@ -36,6 +36,9 @@ export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> {
         container.registerSingleton(BindPropertyTypeAction, () => new BindPropertyTypeAction(container));
         container.registerSingleton(BindMethodProviderAction, () => new BindMethodProviderAction(container));
 
+        
+        container.registerSingleton(IocAutorunAction, () => new IocAutorunAction(container));
+
         let decRgr = container.get(DesignDecoratorRegisterer);
 
         decRgr.register(Injectable, DecoratorType.Class, BindProviderAction);
@@ -48,6 +51,8 @@ export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> {
 
         decRgr.register(Inject, DecoratorType.Property, BindPropertyTypeAction);
         decRgr.register(AutoWired, DecoratorType.Property, BindPropertyTypeAction);
+
+        decRgr.register(Autorun, DecoratorType.Class, IocAutorunAction);
 
 
         container.get(DesignAnnoationScope).setup();

@@ -60,6 +60,7 @@ export class BootApplication {
         container.bindProvider(BootApplication, this);
         container.bindProvider(new InjectReference(BootApplication, this.context.type), this);
         container.use(annotations, handles, injectors, runnable, services);
+
         let designReg = container.get(DesignDecoratorRegisterer);
         designReg.register(Bootstrap, DecoratorType.Class, BindProviderAction);
 

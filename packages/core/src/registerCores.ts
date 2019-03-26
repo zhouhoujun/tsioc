@@ -4,7 +4,7 @@ import {
     ServicesResolveLifeScope, ServiceResolveLifeScope, ModuleInjector, ResolveLifeScope
 } from './services';
 import { IocExt } from './decorators';
-import { RuntimeDecoratorRegisterer, IocAutorunAction, DecoratorType } from '@ts-ioc/ioc';
+import { RuntimeDecoratorRegisterer, IocAutorunAction, DecoratorType, RegisterSingletionAction, DesignDecoratorRegisterer } from '@ts-ioc/ioc';
 import {
     InitServiceResolveAction, ResolveRefServiceAction, ResolveServiceScopeAction,
     ResolveServicesScopeAction, ResolvePrivateServiceAction, ResolveServiceInClassChain,
@@ -41,6 +41,9 @@ export function registerCores(container: IContainer) {
     container.register(ServicesResolveLifeScope);
 
     let decRgr = container.get(RuntimeDecoratorRegisterer);
-    decRgr.register(IocExt, DecoratorType.Class, IocAutorunAction);
+    decRgr.register(IocExt, DecoratorType.Class, RegisterSingletionAction);
+
+    let desingRgr = container.get(DesignDecoratorRegisterer);
+    desingRgr.register(IocExt, DecoratorType.Class, IocAutorunAction);
 
 }

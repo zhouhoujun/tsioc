@@ -27,6 +27,7 @@ export class ModuleInjectorManager extends IocCoreService {
         container.registerSingleton(ModuleInjector, () => new ModuleInjector());
         this.use(ModuleInjector)
             .use(IocExtInjector);
+        console.log('setup', this.injectors);
     }
 
     /**
@@ -114,7 +115,7 @@ export class ModuleInjectorManager extends IocCoreService {
         };
         lang.execAction(this.injectors.map(jtor => (ctx: InjectorContext, next?: () => void) => {
             if (isClass(jtor)) {
-                return container.resolve(jtor).syncInject(ctx, next);
+                return container.get(jtor).syncInject(ctx, next);
             } else if (jtor instanceof ModuleInjector) {
                 return jtor.syncInject(ctx, next);
             } else {

@@ -1,7 +1,6 @@
 import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { hasMethodMetadata, getMethodMetadata } from '../../factories';
-import { Autorun } from '../../decorators';
 import { AutorunMetadata } from '../../metadatas';
 import { lang, isNumber } from '../../utils';
 /**
@@ -14,13 +13,13 @@ import { lang, isNumber } from '../../utils';
 export class MethodAutorunAction extends IocRuntimeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void) {
-        this.runAuto(ctx, Autorun);
+        this.runAuto(ctx);
         next();
     }
 
-    protected runAuto(ctx: RuntimeActionContext, decor: string | Function) {
-        if (hasMethodMetadata(decor, ctx.targetType)) {
-            let metas = getMethodMetadata<AutorunMetadata>(decor, ctx.targetType);
+    protected runAuto(ctx: RuntimeActionContext) {
+        if (hasMethodMetadata(ctx.currDecoractor, ctx.targetType)) {
+            let metas = getMethodMetadata<AutorunMetadata>(ctx.currDecoractor, ctx.targetType);
             let lastmetas: AutorunMetadata[] = [];
             let idx = Object.keys(metas).length;
             lang.forIn(metas, (mm, key: string) => {

@@ -1,8 +1,8 @@
 import { AutorunMetadata } from '../../metadatas';
 import { isFunction } from '../../utils';
-import { RuntimeActionContext } from './RuntimeActionContext';
-import { IocRuntimeAction } from './IocRuntimeAction';
-import { getOwnTypeMetadata } from '../../factories';
+import { IocDesignAction } from './IocDesignAction';
+import { getOwnTypeMetadata, hasOwnClassMetadata } from '../../factories';
+import { DesignActionContext } from './DesignActionContext';
 /**
  * method auto run action.
  *
@@ -10,14 +10,18 @@ import { getOwnTypeMetadata } from '../../factories';
  * @class SetPropAction
  * @extends {IocDesignAction}
  */
-export class IocAutorunAction extends IocRuntimeAction {
+export class IocAutorunAction extends IocDesignAction {
 
-    execute(ctx: RuntimeActionContext, next: () => void) {
+    execute(ctx: DesignActionContext, next: () => void) {
         this.runAuto(ctx);
         next();
     }
 
-    protected runAuto(ctx: RuntimeActionContext, ) {
+    protected runAuto(ctx: DesignActionContext) {
+        if (!hasOwnClassMetadata(ctx.currDecoractor, ctx.targetType)) {
+            return;
+        }
+        console.log('auto run:', ctx.currDecoractor, ctx.targetType);
         let metadatas = getOwnTypeMetadata<AutorunMetadata>(ctx.currDecoractor, ctx.targetType);
         metadatas.forEach(meta => {
             if (meta && meta.autorun) {
