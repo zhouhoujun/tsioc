@@ -17,7 +17,9 @@ export class DesignMethodScope extends IocDecoratorScope {
     }
     protected getDecorators(ctx: DesignActionContext): string[] {
         let reg = this.container.get(DesignDecoratorRegisterer);
-        return Object.keys(ctx.targetReflect.methodDecors).filter(dec => reg.has(dec, this.getDecorType()));
+        let methodDecors = Object.keys(ctx.targetReflect.methodDecors);
+        return Array.from(reg.getDecoratorMap(this.getDecorType()).keys())
+            .filter(dec => methodDecors.indexOf(dec) >= 0);
     }
     protected getDecorType(): DecoratorType {
         return DecoratorType.Method;

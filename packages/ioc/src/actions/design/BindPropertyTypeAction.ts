@@ -14,7 +14,6 @@ import { PropertyMetadata } from '../../metadatas';
 export class BindPropertyTypeAction extends IocDesignAction {
 
     execute(ctx: DesignActionContext, next: () => void) {
-
         let propMetas = getPropertyMetadata<PropertyMetadata>(ctx.currDecoractor, ctx.targetType);
         Object.keys(propMetas).forEach(key => {
             let props = propMetas[key];
@@ -26,7 +25,7 @@ export class BindPropertyTypeAction extends IocDesignAction {
                     this.container.register(prop.type);
                 }
 
-                if (prop.provider && ctx.targetReflect.propProviders.has(key)) {
+                if (prop.provider && !ctx.targetReflect.propProviders.has(key)) {
                     ctx.targetReflect.propProviders.set(key, this.container.getToken(prop.provider, prop.alias));
                 }
             });

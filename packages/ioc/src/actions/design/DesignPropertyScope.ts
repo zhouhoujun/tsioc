@@ -17,7 +17,9 @@ export class DesignPropertyScope extends IocDecoratorScope {
     }
     protected getDecorators(ctx: DesignActionContext): string[] {
         let reg = this.container.get(DesignDecoratorRegisterer);
-        return Object.keys(ctx.targetReflect.propProviders).filter(dec => reg.has(dec, this.getDecorType()));
+        let propDecors = Object.keys(ctx.targetReflect.propsDecors);
+        return Array.from(reg.getDecoratorMap(this.getDecorType()).keys())
+            .filter(dec => propDecors.indexOf(dec) >= 0);
     }
     protected getDecorType(): DecoratorType {
         return DecoratorType.Property;

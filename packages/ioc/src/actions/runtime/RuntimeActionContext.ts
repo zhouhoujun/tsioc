@@ -226,6 +226,22 @@ export class RuntimeActionContext extends RegisterActionContext {
      */
     paramDecors: ObjectMap<boolean>;
 
+    /**
+     * before constructor decorators annoationed state.
+     *
+     * @type {ObjectMap<boolean>}
+     * @memberof RegisterActionContext
+     */
+    beforeCstrDecors: ObjectMap<boolean>;
+
+    /**
+     * after constructor decorators annoationed state.
+     *
+     * @type {ObjectMap<boolean>}
+     * @memberof RegisterActionContext
+     */
+    afterCstrDecors?: ObjectMap<boolean>;
+
 
     setOptions(options: RuntimeActionOption) {
         super.setOptions(options);

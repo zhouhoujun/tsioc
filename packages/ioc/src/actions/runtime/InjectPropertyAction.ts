@@ -20,7 +20,6 @@ export class InjectPropertyAction extends IocRuntimeAction {
 
         let props = ctx.targetReflect.propProviders;
 
-
         props.forEach((token, propertyKey) => {
             if (isToken(token) && !ctx.injecteds[propertyKey]) {
                 // let token =  prop.provider ? container.getToken(prop.provider, prop.alias) : prop.type;

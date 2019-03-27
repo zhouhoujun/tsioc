@@ -5,17 +5,19 @@ import { DecoratorType } from '../factories';
 
 export abstract class IocDecoratorScope extends IocCompositeAction<RegisterActionContext> {
     execute(ctx: RegisterActionContext, next?: () => void): void {
+
         this.initDecoratorScope(ctx);
         if (!this.isCompleted(ctx)) {
-            Object.keys(this.getDecorators(ctx))
+            this.getDecorators(ctx)
                 .filter(dec => this.filter(ctx, dec))
                 .forEach(dec => {
                     ctx.currDecoractor = dec;
                     ctx.currDecorType = this.getDecorType();
-                    super.execute(ctx, next);
+                    super.execute(ctx);
                     this.done(ctx);
                 });
         }
+        next && next();
     }
 
     protected initDecoratorScope(ctx: RegisterActionContext): void {

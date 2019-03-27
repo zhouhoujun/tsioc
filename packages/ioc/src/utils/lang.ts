@@ -282,7 +282,7 @@ export namespace lang {
         let index = -1;
         function dispatch(idx: number): any {
             if (idx <= index) {
-                return Promise.reject('next called mutiple times');
+                return Promise.reject('next called mutiple times.');
             }
             index = idx;
             let handle = idx < handles.length ? handles[idx] : null;

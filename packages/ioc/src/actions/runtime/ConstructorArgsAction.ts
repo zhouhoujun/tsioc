@@ -1,6 +1,7 @@
-import { IocRuntimeAction } from './IocRuntimeAction';
+import { IocRuntimeScopeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { RuntimeLifeScope } from '../../services';
+import { RuntimeParamScope } from './RuntimeParamScope';
+import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
 
 /**
  * resolve constructor args action.
@@ -9,10 +10,15 @@ import { RuntimeLifeScope } from '../../services';
  * @class ConstructorArgsAction
  * @extends {IocRuntimeAction}
  */
-export class ConstructorArgsAction extends IocRuntimeAction {
+export class ConstructorArgsAction extends IocRuntimeScopeAction {
     execute(ctx: RuntimeActionContext, next: () => void): void {
-        if (!ctx.params || !ctx.args) {
-            ctx.params = this.container.resolve(RuntimeLifeScope).getConstructorParameters(this.container, ctx.targetType);
+        if (!ctx.args) {
+            if (ctx.targetReflect.methodParams.has('constructor')) {
+                ctx.params = ctx.targetReflect.methodParams.get('constructor');
+            } else {
+                this.execActions(ctx, [RuntimeParamScope, BindDeignParamTypeAction]);
+                ctx.params = ctx.targetReflect.methodParams.get('constructor');
+            }
             ctx.args = this.container.createParams(ctx.params, ctx.providerMap);
         }
         next();

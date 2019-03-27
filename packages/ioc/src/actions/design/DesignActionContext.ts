@@ -1,11 +1,24 @@
 import { RegisterActionContext, RegisterActionOption } from '../RegisterActionContext';
 import { IIocContainer } from '../../IIocContainer';
 
-
+/**
+ * design action option.
+ *
+ * @export
+ * @interface DesignActionOption
+ * @extends {RegisterActionOption}
+ */
 export interface DesignActionOption extends RegisterActionOption {
 
 }
 
+/**
+ * design action context.
+ *
+ * @export
+ * @class DesignActionContext
+ * @extends {RegisterActionContext}
+ */
 export class DesignActionContext extends RegisterActionContext {
 
     /**

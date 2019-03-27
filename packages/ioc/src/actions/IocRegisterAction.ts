@@ -12,7 +12,4 @@ import { RegisterActionContext } from './RegisterActionContext';
  */
 export abstract class IocRegisterAction<T extends RegisterActionContext> extends IocAction<T> {
 
-    protected getPropDecorKey(propertyKey: string, decor: string) {
-        return `${propertyKey}___${decor}`;
-    }
 }

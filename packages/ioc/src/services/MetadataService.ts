@@ -46,6 +46,7 @@ export class MetadataService extends IocCoreService {
     }
 
     getParameterDecorators(target: any, propertyKey?: string): string[] {
+        propertyKey = propertyKey || 'constructor';
         return getParamDecorators(target, propertyKey);
         // .filter(d => actions.length ? this.hasAnyAction(d, ...actions) : this.has(d));
     }

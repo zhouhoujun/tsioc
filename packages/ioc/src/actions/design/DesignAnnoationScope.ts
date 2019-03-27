@@ -17,7 +17,10 @@ export class DesignAnnoationScope extends IocDecoratorScope {
     }
     protected getDecorators(ctx: DesignActionContext): string[] {
         let reg = this.container.get(DesignDecoratorRegisterer);
-        return Object.keys(ctx.targetReflect.classDecors).filter(dec => reg.has(dec, this.getDecorType()));
+        let classDecors = Object.keys(ctx.targetReflect.classDecors);
+        return Array.from(reg.getDecoratorMap(this.getDecorType()).keys())
+            .filter(dec => classDecors.indexOf(dec) >= 0);
+
     }
     protected getDecorType(): DecoratorType {
         return DecoratorType.Class;

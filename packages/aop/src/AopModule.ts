@@ -1,6 +1,6 @@
 import {
-    Inject, DesignLifeScope, IocBeforeConstructorScope, DecoratorRegisterer,
-    IocAfterConstructorScope, IocBindMethodScope, IocContainerToken, IIocContainer, Autorun
+    Inject, IocBeforeConstructorScope, IocAfterConstructorScope, IocContainerToken, IIocContainer, Autorun,
+    RuntimeMethodScope, DesignDecoratorRegisterer, DecoratorType, RuntimeDecoratorRegisterer
 } from '@ts-ioc/ioc';
 import { Aspect } from './decorators/Aspect';
 import { Advisor } from './Advisor';
@@ -63,13 +63,13 @@ export class AopModule {
             .use(ExetndsInstanceAction)
             .use(InvokeAfterConstructorAction);
 
-        container.get(IocBindMethodScope)
-            .use(BindMethodPointcutAction);
+        container.get(RuntimeMethodScope)
+            .before(BindMethodPointcutAction);
 
-        container.get(DesignLifeScope).use(RegistAspectAction);
-
-        let decorReg = container.get(DecoratorRegisterer);
-        decorReg.register(Aspect, RegistAspectAction, ExetndsInstanceAction);
+        let decorReg = container.get(DesignDecoratorRegisterer);
+        decorReg.register(Aspect, DecoratorType.Class, RegistAspectAction);
+        // let runtimeReg = container.get(RuntimeDecoratorRegisterer);
+        // runtimeReg.register(Aspect, DecoratorType.AfterConstructor, ExetndsInstanceAction);
 
     }
 }

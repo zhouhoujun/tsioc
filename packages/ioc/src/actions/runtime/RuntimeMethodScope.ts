@@ -9,10 +9,10 @@ export class RuntimeMethodScope extends IocDecoratorScope {
         if (!ctx.methodDecors) {
             ctx.methodDecors = this.container.get(MetadataService)
                 .getMethodDecorators(ctx.targetType)
-                .reduce((obj, dec) =>  {
+                .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
-                }, {})
+                }, {});
         }
     }
     protected filter(ctx: RuntimeActionContext, dec: string): boolean {
@@ -26,7 +26,9 @@ export class RuntimeMethodScope extends IocDecoratorScope {
     }
     protected getDecorators(ctx: RuntimeActionContext): string[] {
         let reg = this.container.get(RuntimeDecoratorRegisterer);
-        return Object.keys(ctx.methodDecors).filter(dec => reg.has(dec, this.getDecorType()));
+        let methodDecors = Object.keys(ctx.methodDecors);
+        return Array.from(reg.getDecoratorMap(this.getDecorType()).keys())
+            .filter(dec => methodDecors.indexOf(dec) >= 0);
     }
     protected getDecorType(): DecoratorType {
         return DecoratorType.Method;

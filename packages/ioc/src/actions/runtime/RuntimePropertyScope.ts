@@ -10,10 +10,10 @@ export class RuntimePropertyScope extends IocDecoratorScope {
         if (!ctx.propsDecors) {
             ctx.propsDecors = this.container.get(MetadataService)
                 .getPropertyDecorators(ctx.targetType)
-                .reduce((obj, dec) =>  {
+                .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
-                }, {})
+                }, {});
         }
     }
     protected filter(ctx: RuntimeActionContext, dec: string): boolean {
@@ -27,7 +27,9 @@ export class RuntimePropertyScope extends IocDecoratorScope {
     }
     protected getDecorators(ctx: RuntimeActionContext): string[] {
         let reg = this.container.get(RuntimeDecoratorRegisterer);
-        return Object.keys(ctx.propsDecors).filter(dec => reg.has(dec, this.getDecorType()));
+        let propsDecors = Object.keys(ctx.propsDecors);
+        return Array.from(reg.getDecoratorMap(this.getDecorType()).keys())
+            .filter(dec => propsDecors.indexOf(dec) >= 0);
     }
     protected getDecorType(): DecoratorType {
         return DecoratorType.Property;

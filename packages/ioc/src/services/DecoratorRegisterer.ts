@@ -31,36 +31,13 @@ export class DecoratorRegisterer extends IocCoreService {
      * @memberof DecoratorRegister
      */
     register(decorator: string | Function, decorType: DecoratorType, ...actions: IocActionType[]) {
-        if (decorType & DecoratorType.Class) {
-            this.reginMap(this.classMap, decorator, ...actions);
-        }
-        if (decorType & DecoratorType.Property) {
-            this.reginMap(this.propsMap, decorator, ...actions);
-        }
-        if (decorType & DecoratorType.Method) {
-            this.reginMap(this.methodMap, decorator, ...actions);
-        }
-        if (decorType & DecoratorType.Parameter) {
-            this.reginMap(this.paramMap, decorator, ...actions);
-        }
+        this.getMaps(decorType).forEach(map => {
+            this.reginMap(map, decorator, ...actions);
+        })
     }
 
     has(decorator: string | Function, decorType: DecoratorType): boolean {
-        let map: Map<string, IocActionType[]>;
-        switch (decorType) {
-            case DecoratorType.Class:
-                map = this.classMap;
-                break;
-            case DecoratorType.Method:
-                map = this.methodMap;
-                break;
-            case DecoratorType.Property:
-                map = this.propsMap;
-                break;
-            case DecoratorType.Parameter:
-                map = this.paramMap;
-                break;
-        }
+        let map = this.getDecoratorMap(decorType);
         let dec = this.getKey(decorator);
         return map && map.has(dec);
     }
@@ -79,6 +56,15 @@ export class DecoratorRegisterer extends IocCoreService {
     }
 
     get(decorator: string | Function, decorType: DecoratorType): IocActionType[] {
+        let map = this.getDecoratorMap(decorType);
+        let dec = this.getKey(decorator);
+        if (map.has(dec)) {
+            return map.get(dec);
+        }
+        return [];
+    }
+
+    getDecoratorMap(decorType: DecoratorType): Map<string, IocActionType[]> {
         let map: Map<string, IocActionType[]>;
         switch (decorType) {
             case DecoratorType.Class:
@@ -94,11 +80,25 @@ export class DecoratorRegisterer extends IocCoreService {
                 map = this.paramMap;
                 break;
         }
-        let dec = this.getKey(decorator);
-        if (map.has(dec)) {
-            return map.get(dec);
+        return map;
+    }
+
+    protected getMaps(decorType: DecoratorType): Map<string, IocActionType[]>[] {
+        let maps = [];
+        if (decorType & DecoratorType.Class) {
+            maps.push(this.classMap);
         }
-        return [];
+        if (decorType & DecoratorType.Property) {
+            maps.push(this.propsMap);
+        }
+        if (decorType & DecoratorType.Method) {
+            maps.push(this.methodMap);
+        }
+        if (decorType & DecoratorType.Parameter) {
+            maps.push(this.paramMap);
+        }
+
+        return maps;
     }
 
 }
@@ -123,4 +123,33 @@ export class DesignDecoratorRegisterer extends DecoratorRegisterer {
  */
 export class RuntimeDecoratorRegisterer extends DecoratorRegisterer {
 
+    protected beforeConstructor: Map<string, IocActionType[]>;
+    protected afterConstructor: Map<string, IocActionType[]>;
+
+    constructor() {
+        super()
+        this.beforeConstructor = new Map();
+        this.afterConstructor = new Map();
+    }
+
+    getDecoratorMap(decorType: DecoratorType): Map<string, IocActionType[]> {
+        switch (decorType) {
+            case DecoratorType.BeforeConstructor:
+                return this.beforeConstructor;
+            case DecoratorType.AfterConstructor:
+                return this.afterConstructor;
+        }
+        return super.getDecoratorMap(decorType);
+    }
+
+    protected getMaps(decorType: DecoratorType): Map<string, IocActionType[]>[] {
+        let maps = super.getMaps(decorType);
+        if (decorType & DecoratorType.BeforeConstructor) {
+            maps.push(this.beforeConstructor);
+        }
+        if (decorType & DecoratorType.AfterConstructor) {
+            maps.push(this.afterConstructor);
+        }
+        return maps;
+    }
 }

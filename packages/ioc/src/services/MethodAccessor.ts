@@ -185,7 +185,12 @@ export class MethodAccessor extends IocCoreService implements IMethodAccessor {
     createParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): any[] {
         let providerMap = container.get(ProviderParser).parse(...providers);
         return params.map((param, index) => {
-            if (param.name && providerMap.has(param.name)) {
+            if (param.provider) {
+                if (providerMap.has(param.provider)) {
+                    return providerMap.resolve(param.provider);
+                }
+                return container.resolve(param.provider, providerMap);
+            } else if (param.name && providerMap.has(param.name)) {
                 return providerMap.resolve(param.name);
             } else if (isToken(param.type)) {
                 if (providerMap.has(param.type)) {

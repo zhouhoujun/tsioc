@@ -1,8 +1,6 @@
-import { ParamProviders } from '../../providers';
-import { getParamMetadata, getMethodMetadata } from '../../factories';
-import { ParameterMetadata, MethodMetadata } from '../../metadatas';
-import { isArray, lang } from '../../utils';
-import { DecoratorRegisterer, MetadataService } from '../../services';
+import { getMethodMetadata } from '../../factories';
+import { MethodMetadata } from '../../metadatas';
+import { isArray } from '../../utils';
 import { DesignActionContext } from './DesignActionContext';
 import { IocDesignAction } from './IocDesignAction';
 

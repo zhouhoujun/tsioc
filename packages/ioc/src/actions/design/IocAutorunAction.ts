@@ -21,7 +21,6 @@ export class IocAutorunAction extends IocDesignAction {
         if (!hasOwnClassMetadata(ctx.currDecoractor, ctx.targetType)) {
             return;
         }
-        console.log('auto run:', ctx.currDecoractor, ctx.targetType);
         let metadatas = getOwnTypeMetadata<AutorunMetadata>(ctx.currDecoractor, ctx.targetType);
         metadatas.forEach(meta => {
             if (meta && meta.autorun) {

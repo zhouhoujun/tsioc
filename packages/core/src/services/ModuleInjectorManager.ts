@@ -27,7 +27,6 @@ export class ModuleInjectorManager extends IocCoreService {
         container.registerSingleton(ModuleInjector, () => new ModuleInjector());
         this.use(ModuleInjector)
             .use(IocExtInjector);
-        console.log('setup', this.injectors);
     }
 
     /**

@@ -2,7 +2,7 @@ import { IIocContainer } from '../IIocContainer';
 import {
     BindProviderAction, DesignActionContext, DesignAnnoationScope,
     InitReflectAction, DesignPropertyScope, DesignMethodScope,
-    BindPropertyTypeAction, BindMethodProviderAction, IocAutorunAction
+    BindPropertyTypeAction, BindMethodProviderAction, IocAutorunAction, DesignDecoratorAction
 } from '../actions';
 import { DesignDecoratorRegisterer } from './DecoratorRegisterer';
 import {
@@ -28,15 +28,12 @@ export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> {
             container.registerSingleton(InitReflectAction, () => new InitReflectAction(container));
         }
         container.registerSingleton(BindProviderAction, () => new BindProviderAction(container));
-
         container.registerSingleton(DesignAnnoationScope, () => new DesignAnnoationScope(container));
         container.registerSingleton(DesignPropertyScope, () => new DesignPropertyScope(container));
         container.registerSingleton(DesignMethodScope, () => new DesignMethodScope(container));
-
+        container.registerSingleton(DesignDecoratorAction, () => new DesignDecoratorAction(container))
         container.registerSingleton(BindPropertyTypeAction, () => new BindPropertyTypeAction(container));
         container.registerSingleton(BindMethodProviderAction, () => new BindMethodProviderAction(container));
-
-        
         container.registerSingleton(IocAutorunAction, () => new IocAutorunAction(container));
 
         let decRgr = container.get(DesignDecoratorRegisterer);
@@ -46,8 +43,6 @@ export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> {
         decRgr.register(Singleton, DecoratorType.Class, BindProviderAction);
         decRgr.register(Providers, DecoratorType.Class, BindProviderAction);
         decRgr.register(Refs, DecoratorType.Class, BindProviderAction);
-        // decRgr.register(Abstract, DecoratorType.Class, BindProviderAction);
-        // decRgr.register(Autorun, DecoratorType.Class, BindProviderAction);
 
         decRgr.register(Inject, DecoratorType.Property, BindPropertyTypeAction);
         decRgr.register(AutoWired, DecoratorType.Property, BindPropertyTypeAction);
@@ -60,8 +55,8 @@ export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> {
         container.get(DesignMethodScope).setup();
 
         this.use(InitReflectAction)
-            .use(DesignAnnoationScope)
             .use(DesignPropertyScope)
-            .use(DesignMethodScope);
+            .use(DesignMethodScope)
+            .use(DesignAnnoationScope);
     }
 }

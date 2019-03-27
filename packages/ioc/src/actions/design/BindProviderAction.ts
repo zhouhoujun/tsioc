@@ -18,7 +18,6 @@ export class BindProviderAction extends IocDesignAction {
 
         let metadatas = getOwnTypeMetadata<ClassMetadata>(ctx.currDecoractor, ctx.targetType);
         metadatas.forEach(anno => {
-
             // bind all provider.
             if (!anno) {
                 return;

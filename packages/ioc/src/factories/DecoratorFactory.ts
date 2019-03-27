@@ -96,7 +96,7 @@ export function createDecorator<T>(name: string, adapter?: MetadataAdapter, meta
     }
 
     factory.toString = () => metaName;
-    (<any>factory).decoratorType = DecoratorType.All;
+    (<any>factory).decoratorType = DecoratorType.Decorator;
     return factory;
 }
 
@@ -600,13 +600,24 @@ export function setParamerterNames(target: ClassType<any>) {
         });
         meta['constructor'] = getParamNames(target.prototype.constructor);
     }
+    // fix bug inherit with no constructor
+    if (meta['constructor'].length === 0) {
+        lang.forInClassChain(target, child => {
+            let names = getParamNames(child.prototype.constructor);
+            if (names.length) {
+                meta['constructor'] = names;
+                return false;
+            }
+            return true;
+        })
+    }
 
     Reflect.defineMetadata(ParamerterName, meta, target);
 }
 
 const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
 const ARGUMENT_NAMES = /([^\s,]+)/g;
-function getParamNames(func) {
+function getParamNames(func){
     if (!isFunction(func)) {
         return [];
     }

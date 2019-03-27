@@ -1,11 +1,12 @@
 import { Token } from '../../types';
 import { isClass, isArray, isToken } from '../../utils';
-import { getParamMetadata, getOwnParamMetadata } from '../../factories';
+import { getParamMetadata } from '../../factories';
 import { MetadataService } from '../../services';
 import { ParameterMetadata } from '../../metadatas';
 import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { IParameter } from '../../IParameter';
+import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
 
 /**
  * bind parameter type action.
@@ -14,11 +15,10 @@ import { IParameter } from '../../IParameter';
  * @class BindParameterTypeAction
  * @extends {ActionComposite}
  */
-export class BindParameterTypeAction extends IocRuntimeAction {
+export class BindParameterTypeAction extends BindDeignParamTypeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void) {
         let propertyKey = ctx.propertyKey || 'constructor';
-
 
         let target = ctx.target
         let type = ctx.targetType;
@@ -29,30 +29,10 @@ export class BindParameterTypeAction extends IocRuntimeAction {
         if (ctx.targetReflect.methodParams.has(propertyKey)) {
             designParams = ctx.targetReflect.methodParams.get(propertyKey);
         } else {
-            let paramTokens: Token<any>[];
-            if (target && propertyKey) {
-                paramTokens = Reflect.getMetadata('design:paramtypes', target, propertyKey) || [];
-            } else {
-                paramTokens = Reflect.getMetadata('design:paramtypes', type) || [];
-            }
-
-            paramTokens = paramTokens.slice(0);
-            paramTokens.forEach(dtype => {
-                if (isClass(dtype) && !this.container.has(dtype)) {
-                    this.container.register(dtype);
-                }
-            });
-
-            let names = this.container.resolve(MetadataService).getParamerterNames(type, propertyKey);
-            designParams = names.map((n, idx) => {
-                return <IParameter>{
-                    name: n,
-                    type: paramTokens[idx]
-                }
-            })
+            designParams = this.createDesignParams(type, target, propertyKey);
         }
 
-        let parameters = (target || propertyKey !== 'constructor') ? getParamMetadata<ParameterMetadata>(ctx.currDecoractor, target, propertyKey) : getOwnParamMetadata<ParameterMetadata>(ctx.currDecoractor, type);
+        let parameters = (target || propertyKey !== 'constructor') ? getParamMetadata<ParameterMetadata>(ctx.currDecoractor, target, propertyKey) : getParamMetadata<ParameterMetadata>(ctx.currDecoractor, type);
         if (isArray(parameters) && parameters.length) {
             parameters.forEach(params => {
                 let parm = (isArray(params) && params.length > 0) ? params[0] : null;

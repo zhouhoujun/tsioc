@@ -37,14 +37,6 @@ export interface ITypeReflect extends ClassMetadata {
      * @memberof RegisterActionContext
      */
     methodDecors: ObjectMap<boolean>;
-
-    /**
-     * constructor parameter.
-     *
-     * @type {IParameter[]}
-     * @memberof ITypeReflect
-     */
-    constr?: IParameter[];
     /**
      * props.
      *

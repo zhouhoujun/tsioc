@@ -163,7 +163,7 @@ export namespace PromiseUtil {
         return dispatch(0);
         function dispatch(idx: number): Promise<any> {
             if (idx <= index) {
-                return Promise.reject('next called mutiple times');
+                return Promise.reject('in chain next called mutiple times.');
             }
             index = idx;
             let handle = idx < handles.length ? handles[idx] : null;

@@ -13,7 +13,7 @@ export class RuntimeAnnoationScope extends IocDecoratorScope {
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
-                }, {})
+                }, {});
         }
     }
 
@@ -28,7 +28,9 @@ export class RuntimeAnnoationScope extends IocDecoratorScope {
     }
     protected getDecorators(ctx: RuntimeActionContext): string[] {
         let reg = this.container.get(RuntimeDecoratorRegisterer);
-        return Object.keys(ctx.classDecors).filter(dec => reg.has(dec, this.getDecorType()));
+        let classDecors = Object.keys(ctx.classDecors);
+        return Array.from(reg.getDecoratorMap(this.getDecorType()).keys())
+            .filter(dec => classDecors.indexOf(dec) >= 0);
     }
     protected getDecorType(): DecoratorType {
         return DecoratorType.Class;
