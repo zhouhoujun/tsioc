@@ -1,4 +1,4 @@
-import { Method, Inject, AutoWired, Injectable, Singleton, IIocContainer, ParameterMetadata, Param, isFunction, getParamDecorators, IocContainer } from '../src';
+import { Inject, AutoWired, Injectable, Singleton, IIocContainer, ParameterMetadata, Param, isFunction, getParamDecorators, IocContainer } from '../src';
 import { hasOwnMethodMetadata, hasPropertyMetadata } from '../src';
 import expect = require('expect');
 // import { AnnotationAspect } from './aop/AnnotationAspect';
@@ -32,7 +32,6 @@ describe('method exec test', () => {
 
         }
 
-        @Method
         sayHello(person: Person) {
             return person.say();
         }
@@ -48,7 +47,6 @@ describe('method exec test', () => {
 
         }
 
-        @Method()
         sayHello( @Inject(Child) person: Person) {
             return person.say();
         }
@@ -61,7 +59,6 @@ describe('method exec test', () => {
 
         }
 
-        @Method
         sayHello( @Inject(Child) personA: Person, personB: Person) {
             return personA.say() + ', ' + personB.say();
         }
@@ -83,11 +80,11 @@ describe('method exec test', () => {
         expect(hasOwnMethodMetadata(Inject, MethodTest3)).toBeFalsy();
     });
 
-    it('show has method metadata', () => {
-        expect(hasOwnMethodMetadata(Method, MethodTest3)).toBeTruthy();
-        expect(hasOwnMethodMetadata(Method, MethodTest3, 'sayHello')).toBeTruthy();
-        expect(hasOwnMethodMetadata(Method, MethodTest3, 'sayHello2')).toBeFalsy();
-    });
+    // it('show has method metadata', () => {
+    //     expect(hasOwnMethodMetadata(Method, MethodTest3)).toBeTruthy();
+    //     expect(hasOwnMethodMetadata(Method, MethodTest3, 'sayHello')).toBeTruthy();
+    //     expect(hasOwnMethodMetadata(Method, MethodTest3, 'sayHello2')).toBeFalsy();
+    // });
 
     it('show exec with type and instance', async () => {
         // container.register(Person);

@@ -1,6 +1,5 @@
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { RuntimeParamScope } from './RuntimeParamScope';
-import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { IIocContainer } from '../../IIocContainer';
 
@@ -18,7 +17,7 @@ export class ConstructorArgsAction extends IocRegisterScope<RuntimeActionContext
             if (ctx.targetReflect.methodParams.has('constructor')) {
                 ctx.params = ctx.targetReflect.methodParams.get('constructor');
             } else {
-                this.execActions(ctx, [RuntimeParamScope, BindDeignParamTypeAction]);
+                this.execActions(ctx, [RuntimeParamScope]);
                 ctx.params = ctx.targetReflect.methodParams.get('constructor');
             }
             ctx.args = this.container.createParams(ctx.params, ctx.providerMap);

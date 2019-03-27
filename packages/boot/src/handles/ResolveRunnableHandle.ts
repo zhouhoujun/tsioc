@@ -10,7 +10,6 @@ import { RefDecoratorRunnableHandle } from './RefDecoratorRunnableHandle';
 @Autorun('setup')
 export class ResolveRunnableHandle extends CompositeHandle<BootContext> {
     async execute(ctx: BootContext, next: Next): Promise<void> {
-
         if (ctx.bootstrap instanceof Runnable) {
             ctx.runnable = ctx.bootstrap;
         } else if (ctx.target instanceof Runnable) {

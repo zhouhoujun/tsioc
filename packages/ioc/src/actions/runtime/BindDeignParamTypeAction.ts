@@ -14,7 +14,6 @@ import { IParameter } from '../../IParameter';
  * @extends {ActionComposite}
  */
 export class BindDeignParamTypeAction extends IocRuntimeAction {
-
     execute(ctx: RuntimeActionContext, next: () => void) {
         let propertyKey = ctx.propertyKey || 'constructor';
         if (!ctx.targetReflect.methodParams.has(propertyKey)) {

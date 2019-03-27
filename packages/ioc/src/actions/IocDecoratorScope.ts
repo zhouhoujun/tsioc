@@ -5,7 +5,7 @@ import { DecoratorRegisterer } from '../services';
 import { IocRegisterScope } from './IocRegisterScope';
 
 
-export abstract class IocDecoratorScope<T extends RegisterActionContext>  extends IocRegisterScope<T> {
+export abstract class IocDecoratorScope<T extends RegisterActionContext> extends IocRegisterScope<T> {
     execute(ctx: T, next?: () => void): void {
         if (!this.isCompleted(ctx)) {
             this.getDecorators(ctx)
