@@ -1,15 +1,15 @@
 import { IocCompositeAction } from './IocCompositeAction';
 import { RegisterActionContext } from './RegisterActionContext';
 import { DecoratorType } from '../factories';
+import { ObjectMap } from '../types';
+import { DecoratorRegisterer } from '../services';
+import { lang } from '../utils';
 
 
 export abstract class IocDecoratorScope extends IocCompositeAction<RegisterActionContext> {
     execute(ctx: RegisterActionContext, next?: () => void): void {
-
-        this.initDecoratorScope(ctx);
         if (!this.isCompleted(ctx)) {
             this.getDecorators(ctx)
-                .filter(dec => this.filter(ctx, dec))
                 .forEach(dec => {
                     ctx.currDecoractor = dec;
                     ctx.currDecorType = this.getDecorType();
@@ -20,14 +20,21 @@ export abstract class IocDecoratorScope extends IocCompositeAction<RegisterActio
         next && next();
     }
 
-    protected initDecoratorScope(ctx: RegisterActionContext): void {
-
+    protected done(ctx: RegisterActionContext): boolean {
+        return this.getState(ctx, this.getDecorType())[ctx.currDecoractor] = true;
+    }
+    protected isCompleted(ctx: RegisterActionContext): boolean {
+        return Object.values(this.getState(ctx, this.getDecorType())).some(inj => inj);
+    }
+    protected getDecorators(ctx: RegisterActionContext): string[] {
+        let reg = this.getRegisterer();
+        let states = this.getState(ctx, this.getDecorType());
+        return Array.from(reg.getDecoratorMap(this.getDecorType()).keys())
+            .filter(dec => states[dec] === false);
     }
 
-    protected abstract done(ctx: RegisterActionContext): void;
-    protected abstract isCompleted(ctx: RegisterActionContext): boolean;
-    protected abstract getDecorators(ctx: RegisterActionContext): string[];
+    protected abstract getState(ctx: RegisterActionContext, dtype: DecoratorType): ObjectMap<boolean>;
+    protected abstract getRegisterer(): DecoratorRegisterer;
     protected abstract getDecorType(): DecoratorType;
-    protected abstract filter(ctx: RegisterActionContext, dec: string): boolean;
     abstract setup();
 }

@@ -83,6 +83,4 @@ export class CompositeHandle<T extends HandleContext> extends Handle<T> {
         }
         return ac;
     }
-
-    
 }

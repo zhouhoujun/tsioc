@@ -246,32 +246,4 @@ export class RuntimeActionContext extends RegisterActionContext {
     setOptions(options: RuntimeActionOption) {
         super.setOptions(options);
     }
-
-    isClassCompleted() {
-        if (this.classDecors) {
-            return !Object.values(this.classDecors).some(inj => !inj);
-        }
-        return false;
-    }
-
-    isPropertyCompleted() {
-        if (this.propsDecors) {
-            return !Object.values(this.propsDecors).some(inj => !inj);
-        }
-        return false;
-    }
-
-    isMethodCompleted() {
-        if (this.methodDecors) {
-            return !Object.values(this.methodDecors).some(inj => !inj);
-        }
-        return false;
-    }
-
-    isParamCompleted() {
-        if (this.paramDecors) {
-            return !Object.values(this.paramDecors).some(inj => !inj);
-        }
-        return false;
-    }
 }

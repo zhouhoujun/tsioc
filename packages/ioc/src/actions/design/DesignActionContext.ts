@@ -36,24 +36,4 @@ export class DesignActionContext extends RegisterActionContext {
         return ctx;
     }
 
-    isClassCompleted() {
-        if (this.targetReflect) {
-            return !Object.values(this.targetReflect.classDecors).some(inj => !inj);
-        }
-        return false;
-    }
-
-    isPropertyCompleted() {
-        if (this.targetReflect) {
-            return !Object.values(this.targetReflect.propsDecors).some(inj => !inj);
-        }
-        return false;
-    }
-
-    isMethodCompleted() {
-        if (this.targetReflect) {
-            return !Object.values(this.targetReflect.methodDecors).some(inj => !inj);
-        }
-        return false;
-    }
 }

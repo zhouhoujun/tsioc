@@ -83,8 +83,8 @@ export class BootModule {
 
 
         // register route.
-        container.get(DesignLifeScope)
-            .after(RouteDesignRegisterAction);
+        // container.get(DesignLifeScope)
+        //     .after(RouteDesignRegisterAction);
 
         // container.get(IocBeforeConstructorScope)
         //     .after(RouteRuntimRegisterAction);

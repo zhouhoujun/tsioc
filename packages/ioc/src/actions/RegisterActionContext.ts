@@ -98,9 +98,4 @@ export abstract class RegisterActionContext extends IocActionContext {
         super.setOptions(options);
     }
 
-    abstract isClassCompleted(): boolean;
-
-    abstract isPropertyCompleted(): boolean;
-
-    abstract isMethodCompleted(): boolean;
 }

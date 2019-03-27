@@ -2,6 +2,7 @@
 export * from './IocRuntimeAction';
 export * from './RuntimeActionContext';
 export * from './RuntimeDecoratorAction';
+export * from './RuntimeDecoratorScope';
 export * from './RuntimeAnnoationScope';
 export * from './RuntimePropertyScope';
 export * from './RuntimeMethodScope';
