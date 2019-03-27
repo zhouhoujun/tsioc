@@ -4,8 +4,9 @@ import { DesignDecoratorRegisterer, DecoratorRegisterer } from '../../services';
 import { DecoratorType } from '../../factories';
 import { IocDecoratorScope } from '../IocDecoratorScope';
 import { ObjectMap } from '../../types';
+import { IIocContainer } from '../../IIocContainer';
 
-export abstract class DesignDecoratorScope extends IocDecoratorScope {
+export abstract class DesignDecoratorScope extends IocDecoratorScope<DesignActionContext> {
 
     protected getState(ctx: DesignActionContext, dtype: DecoratorType): ObjectMap<boolean> {
         switch (dtype) {
@@ -22,7 +23,7 @@ export abstract class DesignDecoratorScope extends IocDecoratorScope {
         return this.container.resolve(DesignDecoratorRegisterer);
     }
 
-    setup() {
+    setup(container: IIocContainer) {
         this.use(DesignDecoratorAction);
     }
 

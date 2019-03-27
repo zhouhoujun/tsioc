@@ -1,7 +1,8 @@
-import { IocRuntimeScopeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { RuntimeParamScope } from './RuntimeParamScope';
 import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
+import { IocRegisterScope } from '../IocRegisterScope';
+import { IIocContainer } from '../../IIocContainer';
 
 /**
  * resolve constructor args action.
@@ -10,7 +11,8 @@ import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
  * @class ConstructorArgsAction
  * @extends {IocRuntimeAction}
  */
-export class ConstructorArgsAction extends IocRuntimeScopeAction {
+export class ConstructorArgsAction extends IocRegisterScope<RuntimeActionContext> {
+
     execute(ctx: RuntimeActionContext, next: () => void): void {
         if (!ctx.args) {
             if (ctx.targetReflect.methodParams.has('constructor')) {
@@ -22,5 +24,9 @@ export class ConstructorArgsAction extends IocRuntimeScopeAction {
             ctx.args = this.container.createParams(ctx.params, ctx.providerMap);
         }
         next();
+    }
+
+    setup(container: IIocContainer) {
+
     }
 }

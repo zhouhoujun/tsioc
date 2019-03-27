@@ -6,7 +6,7 @@ import { ObjectMap } from '../../types';
 import { RuntimeDecoratorAction } from './RuntimeDecoratorAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 
-export abstract class RuntimeDecoratorScope extends IocDecoratorScope {
+export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeActionContext> {
 
     protected getState(ctx: RuntimeActionContext, dtype: DecoratorType): ObjectMap<boolean> {
         switch (dtype) {
