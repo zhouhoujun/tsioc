@@ -617,7 +617,7 @@ export function setParamerterNames(target: ClassType<any>) {
 
 const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
 const ARGUMENT_NAMES = /([^\s,]+)/g;
-function getParamNames(func){
+function getParamNames(func) {
     if (!isFunction(func)) {
         return [];
     }

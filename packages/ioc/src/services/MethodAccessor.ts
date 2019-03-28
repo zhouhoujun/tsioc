@@ -149,6 +149,7 @@ export class MethodAccessor extends IocCoreService implements IMethodAccessor {
         let pds = lifeScope.getParamProviders(container, targetClass, propertyKey, instance);
         providers = providers.concat(pds);
         let parameters = lifeScope.getMethodParameters(container, targetClass, instance, propertyKey);
+        console.log(targetClass,  propertyKey, parameters);
         let paramInstances = this.createParams(container, parameters, ...providers);
 
         return await instance[propertyKey](...paramInstances) as T;
@@ -177,6 +178,7 @@ export class MethodAccessor extends IocCoreService implements IMethodAccessor {
         let pds = lifeScope.getParamProviders(container, targetClass, propertyKey, instance);
         providers = providers.concat(pds);
         let parameters = lifeScope.getMethodParameters(container, targetClass, instance, propertyKey);
+        console.log(targetClass,  propertyKey, parameters);
         let paramInstances = this.createParams(container, parameters, ...providers);
         return instance[propertyKey](...paramInstances) as T;
     }

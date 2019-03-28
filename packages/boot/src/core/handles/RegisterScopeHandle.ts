@@ -18,7 +18,7 @@ export class RegisterScopeHandle extends CompositeHandle<AnnoationContext> {
     async execute(ctx: AnnoationContext, next?: Next): Promise<void> {
         let pools = ctx.resolve(ContainerPoolToken);
         if (!ctx.regScope) {
-            ctx.regScope = ctx.annoation.regScope || RegScope.child;
+            ctx.regScope = ctx.annoation.regScope || RegScope.boot;
         }
 
         let container = ctx.getRaiseContainer();

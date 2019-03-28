@@ -40,11 +40,24 @@ export class BindDeignParamTypeAction extends IocRuntimeAction {
         });
 
         let names = this.container.resolve(MetadataService).getParamerterNames(type, propertyKey);
-        return names.map((n, idx) => {
-            return <IParameter>{
-                name: n,
-                type: paramTokens[idx]
-            }
-        });
+        let params: IParameter[];
+        if (names.length) {
+            params = names.map((name, idx) => {
+                return <IParameter>{
+                    name: name,
+                    type: paramTokens.length ? paramTokens[idx] : undefined
+                }
+            });
+        } else if (paramTokens.length) {
+            params = paramTokens.map((tk, idx) => {
+                return <IParameter>{
+                    name: names.length ? names[idx] : '',
+                    type: tk
+                }
+            });
+        } else {
+            params = [];
+        }
+        return params;
     }
 }

@@ -46,16 +46,16 @@ export function classAnnotations() {
             } else if (ts.isConstructorDeclaration(node)) {
                 if (annations) {
                     let paramNames = node.parameters.map(param => {
-                        return (<ts.Identifier>param.name).text;
+                        return param.name.getText();
                     });
                     annations.params['constructor'] = paramNames;
                 }
             } else if (ts.isMethodDeclaration(node)) {
                 if (annations) {
                     let paramNames = node.parameters.map(param => {
-                        return (<ts.Identifier>param.name).text;
+                        return param.name.getText();
                     });
-                    let method = (<ts.Identifier>node.name).text;
+                    let method = node.name.getText();
                     annations.params[method] = paramNames;
                 }
             }
