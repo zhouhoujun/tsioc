@@ -1,6 +1,6 @@
 import {
-    Inject, BindProviderAction, DesignDecoratorRegisterer, RuntimeDecoratorRegisterer,
-    IocGetCacheAction, IocSetCacheAction, ComponentBeforeInitAction,
+    Inject, BindProviderAction, DesignDecoratorRegisterer,
+    IocSetCacheAction, ComponentBeforeInitAction, RuntimeDecoratorRegisterer,
     ComponentInitAction, ComponentAfterInitAction, DesignLifeScope,
     IocBeforeConstructorScope, IocAfterConstructorScope, DecoratorType, RuntimeMethodScope,
     RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction, RegisterSingletionAction
@@ -83,25 +83,28 @@ export class BootModule {
         container.get(ResolveLifeScope)
             .use(RouteResolveAction);
 
-
-        // register route.
+        // design register route.
         container.get(DesignLifeScope)
-            .after(RouteDesignRegisterAction);
+            .use(RouteDesignRegisterAction);
 
+        // runtime register route.
         // container.get(IocBeforeConstructorScope)
-        //     .after(RouteRuntimRegisterAction);
+        //     .use(RouteRuntimRegisterAction);
 
         // container.get(IocAfterConstructorScope)
-        //     .after(RouteRuntimRegisterAction);
+        //     .use(RouteRuntimRegisterAction);
 
         // container.get(RuntimePropertyScope)
-        //     .after(RouteRuntimRegisterAction);
+        //     .use(RouteRuntimRegisterAction);
 
         // container.get(RuntimeMethodScope)
-        //     .after(RouteRuntimRegisterAction);
+        //     .use(RouteRuntimRegisterAction);
 
-        container.get(RuntimeAnnoationScope)
-            .after(RouteRuntimRegisterAction);
+        // container.get(RuntimeAnnoationScope)
+        //     .use(RouteRuntimRegisterAction);
+
+        // container.get(RuntimeLifeScope)
+        //     .after(RouteRuntimRegisterAction);
 
     }
 }
