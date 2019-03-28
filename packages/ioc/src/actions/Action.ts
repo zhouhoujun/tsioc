@@ -130,6 +130,8 @@ export abstract class IocAction<T extends IocActionContext> {
     abstract execute(ctx: T, next: () => void): void;
 }
 
-
+/**
+ * ioc action type.
+ */
 export type IocActionType = Type<IocAction<any>> | IocAction<any> | lang.IAction<any>;
 

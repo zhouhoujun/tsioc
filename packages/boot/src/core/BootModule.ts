@@ -88,20 +88,20 @@ export class BootModule {
             .use(RouteDesignRegisterAction);
 
         // runtime register route.
-        // container.get(IocBeforeConstructorScope)
-        //     .use(RouteRuntimRegisterAction);
+        container.get(IocBeforeConstructorScope)
+            .use(RouteRuntimRegisterAction);
 
-        // container.get(IocAfterConstructorScope)
-        //     .use(RouteRuntimRegisterAction);
+        container.get(IocAfterConstructorScope)
+            .use(RouteRuntimRegisterAction);
 
-        // container.get(RuntimePropertyScope)
-        //     .use(RouteRuntimRegisterAction);
+        container.get(RuntimePropertyScope)
+            .use(RouteRuntimRegisterAction);
 
-        // container.get(RuntimeMethodScope)
-        //     .use(RouteRuntimRegisterAction);
+        container.get(RuntimeMethodScope)
+            .use(RouteRuntimRegisterAction);
 
-        // container.get(RuntimeAnnoationScope)
-        //     .use(RouteRuntimRegisterAction);
+        container.get(RuntimeAnnoationScope)
+            .use(RouteRuntimRegisterAction);
 
         // container.get(RuntimeLifeScope)
         //     .after(RouteRuntimRegisterAction);
