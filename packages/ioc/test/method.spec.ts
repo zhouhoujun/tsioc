@@ -32,6 +32,7 @@ describe('method exec test', () => {
 
         }
 
+        @AutoWired()
         sayHello(person: Person) {
             return person.say();
         }
@@ -47,7 +48,10 @@ describe('method exec test', () => {
 
         }
 
-        sayHello( @Inject(Child) person: Person) {
+        @AutoWired([
+            { provide: Person, useClass: Child }
+        ])
+        sayHello(person: Person) {
             return person.say();
         }
 
@@ -59,7 +63,7 @@ describe('method exec test', () => {
 
         }
 
-        sayHello( @Inject(Child) personA: Person, personB: Person) {
+        sayHello(@Inject(Child) personA: Person, personB: Person) {
             return personA.say() + ', ' + personB.say();
         }
 

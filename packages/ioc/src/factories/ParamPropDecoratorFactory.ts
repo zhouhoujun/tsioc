@@ -61,12 +61,6 @@ export function createParamPropDecorator<T extends ParamPropMetadata>(
                 metadata.provider = arg;
             }
         });
-        // args.next<T>({
-        //     match: (arg) => isString(arg),
-        //     setMetadata: (metadata, arg) => {
-        //         metadata.alias = arg;
-        //     }
-        // });
     });
     let decorator = createDecorator<T>(name, paramPropAdapter, metadataExtends);
     decorator.decoratorType = DecoratorType.Property | DecoratorType.Parameter;

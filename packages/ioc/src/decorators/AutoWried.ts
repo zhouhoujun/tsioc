@@ -1,4 +1,4 @@
-import { IParamPropDecorator, createParamPropDecorator } from '../factories';
+import { IMethodPropParamDecorator, createMethodPropParamDecorator } from '../factories';
 import { AutoWiredMetadata } from '../metadatas';
 
 /**
@@ -6,5 +6,5 @@ import { AutoWiredMetadata } from '../metadatas';
  *
  * @AutoWired
  */
-export const AutoWired: IParamPropDecorator<AutoWiredMetadata> = createParamPropDecorator<AutoWiredMetadata>('AutoWired');
+export const AutoWired: IMethodPropParamDecorator<AutoWiredMetadata> = createMethodPropParamDecorator<AutoWiredMetadata>('AutoWired');
 

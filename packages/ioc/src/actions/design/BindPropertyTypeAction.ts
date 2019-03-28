@@ -25,8 +25,8 @@ export class BindPropertyTypeAction extends IocDesignAction {
                     this.container.register(prop.type);
                 }
 
-                if (prop.provider && !ctx.targetReflect.propProviders.has(key)) {
-                    ctx.targetReflect.propProviders.set(key, this.container.getToken(prop.provider, prop.alias));
+                if (!ctx.targetReflect.propProviders.has(key)) {
+                    ctx.targetReflect.propProviders.set(key, this.container.getToken(prop.provider || prop.type, prop.alias));
                 }
             });
         });

@@ -1,4 +1,4 @@
-import { ParamPropMetadata } from './ParamPropMetadata';
+import { MethodParamPropMetadata } from './MethodParamPropMetadata';
 
 
 /**
@@ -8,6 +8,6 @@ import { ParamPropMetadata } from './ParamPropMetadata';
  * @interface AutoWiredMetadata
  * @extends {PropertyMetadata}
  */
-export interface AutoWiredMetadata extends ParamPropMetadata {
+export interface AutoWiredMetadata extends MethodParamPropMetadata {
 
 }

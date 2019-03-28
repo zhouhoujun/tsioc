@@ -1,4 +1,4 @@
-import { createDecorator, ArgsIterator } from '../factories';
+import { createDecorator, ArgsIterator, ClassMethodDecorator } from '../factories';
 import { ProvidersMetadata } from '../metadatas';
 import { isArray } from '../utils';
 import { ProviderTypes } from '../providers';
@@ -20,7 +20,7 @@ export interface IProvidersDecorator {
      *
      * @param {(Registration<any> | symbol | string)} providers provider reference service to target.
      */
-    (providers: ProviderTypes[]): ClassDecorator;
+    (providers: ProviderTypes[]): ClassMethodDecorator;
 
     /**
      * Providers decorator, for class. use to add ref service to the class.
@@ -29,7 +29,7 @@ export interface IProvidersDecorator {
      *
      * @param {ProvidersMetadata} [metadata] metadata map.
      */
-    (metadata: ProvidersMetadata): ClassDecorator;
+    (metadata: ProvidersMetadata): ClassMethodDecorator;
 }
 
 /**
