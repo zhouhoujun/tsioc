@@ -43,7 +43,6 @@
     "tslib": "^1.9.3",
     "shelljs": "^0.8.3",
     "chalk": "^2.4.2",
-    "chokidar": "^2.0.4",
     "commander": "^2.18.0",
     "resolve": "^1.9.0",
     "ts-node": "^7.0.1",
