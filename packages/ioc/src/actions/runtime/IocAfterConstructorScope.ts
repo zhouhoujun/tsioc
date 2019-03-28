@@ -19,7 +19,13 @@ export class IocAfterConstructorScope extends IocRegisterScope<RuntimeActionCont
     }
 }
 
-
+/**
+ * after constructor decorator.
+ *
+ * @export
+ * @class IocAfterConstructorDecorScope
+ * @extends {RuntimeDecoratorScope}
+ */
 export class IocAfterConstructorDecorScope extends RuntimeDecoratorScope {
     protected getDecorType(): DecoratorType {
         return DecoratorType.AfterConstructor;

@@ -1,7 +1,7 @@
 import { Injectable, Inject, Express, IocContainerToken, IIocContainer } from '@ts-ioc/ioc';
 import { Joinpoint } from '../joinpoints';
 import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
-import { AdvisorProceedingToken } from './IAdvisorProceeding';
+import { AdvisorProceeding } from './AdvisorProceeding';
 import { NonePointcut } from '../decorators/NonePointcut';
 import { IocRecognizer } from './IocRecognizer';
 
@@ -53,7 +53,7 @@ export class AdvisorChain implements IAdvisorChain {
     process(): void {
         let alias = this.getRecognizer().recognize(this.joinPoint.returning);
         this.container
-            .get(AdvisorProceedingToken, alias)
+            .get(AdvisorProceeding, alias)
             .proceeding(this.joinPoint, ...this.actions);
     }
 

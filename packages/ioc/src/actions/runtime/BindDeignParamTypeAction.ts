@@ -1,4 +1,3 @@
-
 import { Token, Type } from '../../types';
 import { isClass } from '../../utils';
 import { MetadataService } from '../../services';

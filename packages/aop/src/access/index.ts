@@ -8,7 +8,7 @@ export * from './ProxyMethod';
 
 export * from './AsyncPromiseProceeding';
 export * from './AsyncObservableProceeding';
-export * from './IAdvisorProceeding';
+export * from './AdvisorProceeding';
 export * from './ReturningRecognizer';
 export * from './ReturningType';
 export * from './SyncProceeding';

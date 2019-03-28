@@ -1,15 +1,12 @@
 import { isFunction, isObservable, isPromise, Express, Singleton } from '@ts-ioc/ioc';
-import { IAdvisorProceeding, AdvisorProceedingToken } from './IAdvisorProceeding';
+import { AdvisorProceeding } from './AdvisorProceeding';
 import { Joinpoint } from '../joinpoints';
 import { ReturningType } from './ReturningType';
 import { NonePointcut } from '../decorators/NonePointcut';
 
 @NonePointcut()
-@Singleton(AdvisorProceedingToken, ReturningType.observable)
-export class AsyncObservableProceeding implements IAdvisorProceeding {
-    constructor() {
-
-    }
+@Singleton(AdvisorProceeding, ReturningType.observable)
+export class AsyncObservableProceeding extends AdvisorProceeding {
 
     proceeding(joinPoint: Joinpoint, ...actions: Express<Joinpoint, any>[]) {
         if (isObservable(joinPoint.returning) && isFunction(joinPoint.returning.flatMap)) {

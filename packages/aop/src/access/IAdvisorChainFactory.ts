@@ -1,13 +1,5 @@
 import { Joinpoint, JoinpointState } from '../joinpoints';
 import { Advicer } from '../advices';
-import { InjectToken } from '@ts-ioc/ioc';
-
-
-/**
- * Aop IAdvisorChainFactory interface token.
- * it is a token id, you can register yourself IAdvisorChainFactory for this.
- */
-export const AdvisorChainFactoryToken = new InjectToken<IAdvisorChainFactory>('DI_IAdvisorChainFactory');
 
 /**
  * advice advisor chain factory for proxy method invoke.

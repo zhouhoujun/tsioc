@@ -117,12 +117,12 @@ export class MetadataService extends IocCoreService {
      *
      * @param {Type<any>} target
      * @param {string} propertyKey
-     * @param {((meta: MethodMetadata, method: string) => void | boolean)} express
+     * @param {((meta: MethodMetadata, decor: string) => void | boolean)} express
      * @param {Express<string, boolean>} [decorFilter]
      * @returns {MethodMetadata[]}
      * @memberof DecoratorRegisterer
      */
-    eachMethodMetadata(target: Type<any>, propertyKey: string, express: (meta: MethodMetadata, method: string) => void | boolean, decorFilter?: Express<string, boolean>): MethodMetadata[] {
+    eachMethodMetadata(target: Type<any>, propertyKey: string, express: (meta: MethodMetadata, decor: string) => void | boolean, decorFilter?: Express<string, boolean>): MethodMetadata[] {
         let decors = this.getMethodDecorators(target);
         if (decorFilter) {
             decors = decors.filter(decorFilter);
@@ -142,6 +142,21 @@ export class MetadataService extends IocCoreService {
             return false;
         });
         return metas;
+    }
+
+    getMethodMetadatas<T>(target: Type<T>, propertyKey: string, filter?: (meta: MethodMetadata, decor?: string) => boolean): MethodMetadata[] {
+        let metadatas = [];
+        this.eachMethodMetadata(target, propertyKey, (meta, decor) => {
+            if (!meta) {
+                return;
+            }
+            if (filter) {
+                filter(meta, decor) && metadatas.push(meta);
+            } else {
+                metadatas.push(meta);
+            }
+        });
+        return metadatas;
     }
 
     eachParamMetadata(target: any, propertyKey: string, express: (meta: ParameterMetadata, method: string) => void | boolean, decorFilter?: Express<string, boolean>): ParameterMetadata[] {

@@ -1,16 +1,12 @@
 import { Express, Singleton } from '@ts-ioc/ioc';
-import { IAdvisorProceeding, AdvisorProceedingToken } from './IAdvisorProceeding';
+import { AdvisorProceeding } from './AdvisorProceeding';
 import { Joinpoint } from '../joinpoints';
 import { ReturningType } from './ReturningType';
 import { NonePointcut } from '../decorators/NonePointcut';
 
 @NonePointcut()
-@Singleton(AdvisorProceedingToken, ReturningType.promise)
-export class AsyncPromiseProceeding implements IAdvisorProceeding {
-
-    constructor() {
-
-    }
+@Singleton(AdvisorProceeding, ReturningType.promise)
+export class AsyncPromiseProceeding extends AdvisorProceeding {
 
     proceeding(joinPoint: Joinpoint, ...actions: Express<Joinpoint, any>[]) {
         if (joinPoint.returning) {

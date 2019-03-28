@@ -50,10 +50,12 @@ export class BootModule {
         designReg.register(DIModule, DecoratorType.Class, BindProviderAction, IocAutorunAction);
 
         let runtimeReg = container.get(RuntimeDecoratorRegisterer);
-        runtimeReg.register(Annotation, DecoratorType.Class, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
+        runtimeReg.register(Annotation, DecoratorType.Class,
+            ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
             RegisterSingletionAction, IocSetCacheAction);
 
-        runtimeReg.register(DIModule, DecoratorType.Class, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
+        runtimeReg.register(DIModule, DecoratorType.Class,
+            ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
             RegisterSingletionAction, IocSetCacheAction);
 
         container.use(modules, handles, actions, services);

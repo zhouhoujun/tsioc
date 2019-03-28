@@ -81,10 +81,10 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
 
         container.get(IocBeforeConstructorScope).setup(container);
         container.get(IocAfterConstructorScope).setup(container);
+        container.get(RuntimeAnnoationScope).setup(container);
         container.get(RuntimePropertyScope).setup(container);
         container.get(RuntimeMethodScope).setup(container);
         container.get(RuntimeParamScope).setup(container);
-        container.get(RuntimeAnnoationScope).setup(container);
 
         this.use(ContainerCheckerAction)
             .use(InitReflectAction)
