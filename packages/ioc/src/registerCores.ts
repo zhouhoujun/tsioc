@@ -26,8 +26,8 @@ export function registerCores(container: IIocContainer) {
     container.registerSingleton(DesignLifeScope, () => new DesignLifeScope(container));
     container.registerSingleton(RuntimeLifeScope, () => new RuntimeLifeScope(container));
 
-    container.resolve(DesignLifeScope).setup(container);
-    container.resolve(RuntimeLifeScope).setup(container);
+    container.resolve(DesignLifeScope).setup();
+    container.resolve(RuntimeLifeScope).setup();
 
     container.register(Date, () => new Date());
     container.register(String, () => '');

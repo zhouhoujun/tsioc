@@ -20,4 +20,3 @@ export class ComponentAfterInitAction extends IocRuntimeAction {
         next();
     }
 }
-

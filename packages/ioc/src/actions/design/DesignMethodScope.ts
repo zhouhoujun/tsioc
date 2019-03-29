@@ -7,6 +7,9 @@ import { AutoWired, Providers } from '../../decorators';
 
 export class DesignMethodScope extends IocRegisterScope<DesignActionContext> {
     setup() {
+        this.registerAction(BindMethodProviderAction)
+            .registerAction(DesignMethodDecoratorScope, true)
+
         let decRgr = this.container.get(DesignDecoratorRegisterer);
         decRgr.register(AutoWired, DecoratorScopes.Method, BindMethodProviderAction);
         decRgr.register(Providers, DecoratorScopes.Method, BindMethodProviderAction);

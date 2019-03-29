@@ -1,7 +1,6 @@
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { RuntimeParamScope } from './RuntimeParamScope';
 import { IocRegisterScope } from '../IocRegisterScope';
-import { IIocContainer } from '../../IIocContainer';
 
 /**
  * resolve constructor args action.
@@ -25,7 +24,6 @@ export class ConstructorArgsAction extends IocRegisterScope<RuntimeActionContext
         next();
     }
 
-    setup(container: IIocContainer) {
-
+    setup() {
     }
 }

@@ -1,8 +1,7 @@
-import { ObjectMap, Type } from '../types';
+import { ObjectMap } from '../types';
 import { DecoratorScopeRegisterer, DecoratorScopes } from '../services';
 import { IocCompositeAction } from './IocCompositeAction';
 import { DecoratorActionContext } from './DecoratorActionContext';
-import { lang } from '../utils';
 
 
 export abstract class IocDecoratorScope<T extends DecoratorActionContext> extends IocCompositeAction<T> {
@@ -30,15 +29,6 @@ export abstract class IocDecoratorScope<T extends DecoratorActionContext> extend
         let states = this.getState(ctx, this.getDecorScope());
         return Array.from(reg.getRegisterer(this.getDecorScope()).getActions().keys())
             .filter(dec => states[dec] === false);
-    }
-
-    protected registerAction(action: Type<any>) {
-        if (lang.isExtendsClass(action, IocDecoratorScope)) {
-            this.container.registerSingleton(action, () => new action(this.container));
-            this.container.get<IocDecoratorScope<any>>(action).setup();
-        } else {
-            super.registerAction(action);
-        }
     }
 
     protected abstract getState(ctx: T, dtype: DecoratorScopes): ObjectMap<boolean>;

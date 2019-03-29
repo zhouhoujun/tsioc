@@ -22,4 +22,3 @@ export class GetSingletionAction extends IocRuntimeAction {
         next();
     }
 }
-

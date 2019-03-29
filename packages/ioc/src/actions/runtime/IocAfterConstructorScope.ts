@@ -12,6 +12,7 @@ import { DecoratorScopes } from '../../services';
  */
 export class IocAfterConstructorScope extends IocRegisterScope<RuntimeActionContext> {
     setup() {
+        this.registerAction(IocAfterConstructorDecorScope, true);
         this.use(IocAfterConstructorDecorScope);
     }
 }

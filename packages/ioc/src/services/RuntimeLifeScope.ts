@@ -3,9 +3,9 @@ import { Type } from '../types';
 import {
     IocGetCacheAction, RuntimeMethodScope, RuntimeActionContext,
     GetSingletionAction, ContainerCheckerAction, CreateInstanceAction, ConstructorArgsAction,
-    IocBeforeConstructorScope, IocAfterConstructorScope, InstanceCheckAction,
+    IocBeforeConstructorScope, IocAfterConstructorScope,
     RuntimeAnnoationScope, RuntimePropertyScope, InitReflectAction, RuntimeParamScope,
-    RuntimeDecoratorAction
+    InstanceCheckAction, RuntimeDecoratorAction
 } from '../actions';
 import { IIocContainer } from '../IIocContainer';
 import { IParameter } from '../IParameter';
@@ -55,36 +55,27 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
         return this.getParameters(container, type, instance, propertyKey);
     }
 
-    setup(container: IIocContainer) {
-        container.registerSingleton(RuntimeDecoratorRegisterer, () => new RuntimeDecoratorRegisterer(container));
+    setup() {
+        this.container.registerSingleton(RuntimeDecoratorRegisterer, () => new RuntimeDecoratorRegisterer(this.container));
+        if (!this.container.has(InitReflectAction)) {
+            this.registerAction(InitReflectAction);
+        }
 
-        // if (!container.has(InitReflectAction)) {
-        //     container.registerSingleton(InitReflectAction, () => new InitReflectAction(container));
-        // }
+        this.registerAction(ConstructorArgsAction)
+            .registerAction(ContainerCheckerAction)
+            .registerAction(CreateInstanceAction)
+            .registerAction(GetSingletionAction)
+            .registerAction(InstanceCheckAction)
+            .registerAction(IocGetCacheAction)
+            .registerAction(RuntimeDecoratorAction)
 
-        // container.registerSingleton(ConstructorArgsAction, () => new ConstructorArgsAction(container));
-        // container.registerSingleton(ContainerCheckerAction, () => new ContainerCheckerAction(container));
-        // container.registerSingleton(CreateInstanceAction, () => new CreateInstanceAction(container));
-        // container.registerSingleton(GetSingletionAction, () => new GetSingletionAction(container));
-        // container.registerSingleton(InstanceCheckAction, () => new InstanceCheckAction(container));
-        // container.registerSingleton(IocGetCacheAction, () => new IocGetCacheAction(container));
+            .registerAction(IocBeforeConstructorScope, true)
+            .registerAction(IocAfterConstructorScope, true)
+            .registerAction(RuntimeAnnoationScope, true)
+            .registerAction(RuntimePropertyScope, true)
+            .registerAction(RuntimeMethodScope, true)
+            .registerAction(RuntimeParamScope, true);
 
-        // container.registerSingleton(IocBeforeConstructorScope, () => new IocBeforeConstructorScope(container));
-        // container.registerSingleton(IocAfterConstructorScope, () => new IocAfterConstructorScope(container));
-
-        // container.registerSingleton(RuntimeDecoratorAction, () => new RuntimeDecoratorAction(container));
-        // container.registerSingleton(RuntimeAnnoationScope, () => new RuntimeAnnoationScope(container));
-        // container.registerSingleton(RuntimePropertyScope, () => new RuntimePropertyScope(container));
-        // container.registerSingleton(RuntimeMethodScope, () => new RuntimeMethodScope(container));
-        // container.registerSingleton(RuntimeParamScope, () => new RuntimeParamScope(container));
-
-
-        // container.get(IocBeforeConstructorScope).setup(container);
-        // container.get(IocAfterConstructorScope).setup(container);
-        // container.get(RuntimeAnnoationScope).setup(container);
-        // container.get(RuntimePropertyScope).setup(container);
-        // container.get(RuntimeMethodScope).setup(container);
-        // container.get(RuntimeParamScope).setup(container);
 
         this.use(ContainerCheckerAction)
             .use(InitReflectAction)

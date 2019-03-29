@@ -8,6 +8,9 @@ import { Inject, AutoWired } from '../../decorators';
 export class DesignPropertyScope extends IocRegisterScope<DesignActionContext> {
 
     setup() {
+        this.registerAction(BindPropertyTypeAction)
+            .registerAction(DesignPropertyDecoratorScope, true);
+
         let decRgr = this.container.get(DesignDecoratorRegisterer);
         decRgr.register(Inject, DecoratorScopes.Property, BindPropertyTypeAction);
         decRgr.register(AutoWired, DecoratorScopes.Property, BindPropertyTypeAction);

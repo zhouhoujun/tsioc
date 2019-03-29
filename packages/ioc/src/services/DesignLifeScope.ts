@@ -1,4 +1,3 @@
-import { IIocContainer } from '../IIocContainer';
 import {
     InitReflectAction, DesignActionContext, DesignAnnoationScope,
     DesignPropertyScope, DesignMethodScope, DesignDecoratorAction
@@ -16,22 +15,17 @@ import { RegisterLifeScope } from './RegisterLifeScope';
  */
 export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> {
 
-    setup(container: IIocContainer) {
+    setup() {
+        this.container.registerSingleton(DesignDecoratorRegisterer, () => new DesignDecoratorRegisterer(this.container));
 
-        container.registerSingleton(DesignDecoratorRegisterer, () => new DesignDecoratorRegisterer(container));
-        // if (!container.has(InitReflectAction)) {
-        //     container.registerSingleton(InitReflectAction, () => new InitReflectAction(container));
-        // }
+        if (!this.container.has(InitReflectAction)) {
+            this.registerAction(InitReflectAction);
+        }
 
-        // container.registerSingleton(DesignDecoratorAction, () => new DesignDecoratorAction(container));
-        // container.registerSingleton(DesignAnnoationScope, () => new DesignAnnoationScope(container));
-        // container.registerSingleton(DesignPropertyScope, () => new DesignPropertyScope(container));
-        // container.registerSingleton(DesignMethodScope, () => new DesignMethodScope(container));
-
-
-        // container.get(DesignAnnoationScope).setup(container);
-        // container.get(DesignPropertyScope).setup(container);
-        // container.get(DesignMethodScope).setup(container);
+        this.registerAction(DesignDecoratorAction)
+            .registerAction(DesignPropertyScope, true)
+            .registerAction(DesignMethodScope, true)
+            .registerAction(DesignAnnoationScope, true);
 
         this.use(InitReflectAction)
             .use(DesignPropertyScope)

@@ -11,7 +11,6 @@ import { RuntimeActionContext } from './RuntimeActionContext';
  * @extends {ActionComposite}
  */
 export class ComponentBeforeInitAction extends IocRuntimeAction {
-
     execute(ctx: RuntimeActionContext, next: () => void) {
         let component = ctx.target as BeforeInit;
         if (isFunction(component.beforeInit)) {
@@ -20,4 +19,3 @@ export class ComponentBeforeInitAction extends IocRuntimeAction {
         next();
     }
 }
-
