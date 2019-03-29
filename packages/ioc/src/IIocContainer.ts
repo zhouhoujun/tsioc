@@ -166,78 +166,41 @@ export interface IIocContainer extends IResolverContainer {
      */
     getToken<T>(target: Token<T>, alias?: string): Token<T>;
 
-
-    /**
-     * try to async invoke the method of intance, if no instance will create by type.
-     *
-     * @template T
-     * @param {*} target
-     * @param {string} propertyKey
-     * @param {...ParamProviders[]} providers
-     * @returns {Promise<T>}
-     * @memberof IMethodAccessor
-     */
-    invoke<T>(target: any, propertyKey: string, ...providers: ParamProviders[]): Promise<T>;
-
-    /**
-     * try to async invoke the method of intance, if no instance will create by type.
-     *
-     * @template T
-     * @param {Token<any>} target
-     * @param {string} propertyKey
-     * @param {...ParamProviders[]} providers
-     * @returns {Promise<T>}
-     * @memberof IMethodAccessor
-     */
-    invoke<T>(target: Token<any>, propertyKey: string, ...providers: ParamProviders[]): Promise<T>;
-
-    /**
-     * try to async invoke the method of intance, if no instance will create by type.
-     *
-     * @template T
-     * @param {Token<any>} target
-     * @param {string} propertyKey
-     * @param {*} instance
-     * @param {...ParamProviders[]} providers
-     * @returns {Promise<T>}
-     * @memberof IMethodAccessor
-     */
-    invoke<T>(target: Token<any>, propertyKey: string, instance: any, ...providers: ParamProviders[]): Promise<T>;
-
-    /**
-     * try to invoke the method of intance, if is token will create instance to invoke.
-     *
-     * @template T
-     * @param {*} target
-     * @param {string} propertyKey
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IMethodAccessor
-     */
-    syncInvoke<T>(target: any, propertyKey: string, ...providers: ParamProviders[]): T;
     /**
      * try create instance to invoke property method.
      *
      * @template T
-     * @param {*} target
+     * @param {*} target type  instance
      * @param {string} propertyKey
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof IMethodAccessor
      */
-    syncInvoke<T>(target: any, propertyKey: string, ...providers: ParamProviders[]): T;
+    invoke<T>(target: any, propertyKey: string, ...providers: ParamProviders[]): T;
 
     /**
      * try to invoke the method of intance, if is token will create instance to invoke.
      *
      * @template T
-     * @param {*} target
+     * @param {Token<any>} target type class
      * @param {string} propertyKey
-     * @param {*} instance
+     * @param {...ParamProviders[]} providers
+     * @returns {T}
+     * @memberof IMethodAccessor
+     */
+    invoke<T>(target: Token<any>, propertyKey: string, ...providers: ParamProviders[]): T;
+
+    /**
+     * try to invoke the method of intance, if is token will create instance to invoke.
+     *
+     * @template T
+     * @param {Token<any>} target type class
+     * @param {string} propertyKey
+     * @param {*} instance instance of target type.
      * @param {...ParamProviders[]} providers
      * @memberof IMethodAccessor
      */
-    syncInvoke<T>(target: any, propertyKey: string, instance: any, ...providers: ParamProviders[])
+    invoke<T>(target: Token<any>, propertyKey: string, instance: any, ...providers: ParamProviders[])
 
     /**
      * create params instances with IParameter and provider

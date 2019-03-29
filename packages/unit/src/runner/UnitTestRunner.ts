@@ -1,8 +1,7 @@
 import { Injectable, isString, isClass, isArray, PromiseUtil, hasClassMetadata } from '@ts-ioc/ioc';
-import { Runnable, RunnerService, ContainerPoolToken } from '@ts-ioc/boot';
+import { Runnable, RunnerService } from '@ts-ioc/boot';
 import { UnitTestConfigure } from '../UnitTestConfigure';
 import { OldTestRunner } from './OldTestRunner';
-import { UnitTestContext } from '../UnitTestContext';
 import { Suite } from '../decorators';
 import { TestReport } from '../reports';
 

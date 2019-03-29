@@ -1,5 +1,5 @@
 import {
-    Method, Inject, Injectable, IocContainer, IIocContainer
+    Inject, Injectable, IocContainer, IIocContainer, AutoWired
 } from '@ts-ioc/ioc';
 import { AnnotationAspect } from './aop/AnnotationAspect';
 import { CheckRightAspect } from './aop/CheckRightAspect';
@@ -37,7 +37,7 @@ describe('aop test', () => {
 
         }
 
-        @Method
+        @AutoWired
         sayHello(person: Person) {
             return person.say();
         }
@@ -53,7 +53,7 @@ describe('aop test', () => {
 
         }
 
-        @Method()
+        @AutoWired()
         sayHello(@Inject(Child) person: Person) {
             return person.say();
         }
@@ -66,7 +66,7 @@ describe('aop test', () => {
 
         }
 
-        @Method
+        @AutoWired
         sayHello(@Inject(Child) personA: Person, personB: Person) {
             return personA.say() + ', ' + personB.say();
         }
@@ -88,7 +88,7 @@ describe('aop test', () => {
         container.register(AnnotationAspect);
         container.register(CheckRightAspect);
         container.register(MethodTest3);
-        expect(container.syncInvoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
+        expect(container.invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
 
     });
 });

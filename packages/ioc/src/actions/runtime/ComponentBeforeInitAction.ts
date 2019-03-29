@@ -15,7 +15,7 @@ export class ComponentBeforeInitAction extends IocRuntimeAction {
     execute(ctx: RuntimeActionContext, next: () => void) {
         let component = ctx.target as BeforeInit;
         if (isFunction(component.beforeInit)) {
-            this.container.syncInvoke(ctx.target || ctx.targetType, 'beforeInit', ctx.target);
+            this.container.invoke(ctx.target || ctx.targetType, 'beforeInit', ctx.target);
         }
         next();
     }

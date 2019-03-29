@@ -12,7 +12,7 @@ export class RegisterChildModuleHandle extends CompositeHandle<AnnoationContext>
 
     async execute(ctx: AnnoationContext, next: Next): Promise<void> {
         if (ctx.regScope === RegScope.child) {
-            super.execute(ctx, next);
+            await super.execute(ctx, next);
         } else {
             await next();
         }

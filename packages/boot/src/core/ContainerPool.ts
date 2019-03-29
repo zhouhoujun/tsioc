@@ -93,9 +93,6 @@ export class ContainerPool {
         parent = parent || this.root;
         if (parent !== container) {
             container.bindProvider(ParentContainerToken, parent);
-            // let children = parent.get(ChildrenContainerToken) || [];
-            // children.push(container);
-            // parent.bindProvider(ChildrenContainerToken, children);
         }
     }
 

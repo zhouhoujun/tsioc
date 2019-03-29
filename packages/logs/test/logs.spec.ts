@@ -5,7 +5,7 @@ import { LogModule, Logger } from '../src';
 import { DebugLogAspect } from './DebugLogAspect';
 import { AnntotationLogAspect } from './AnntotationLogAspect';
 import expect = require('expect');
-import { Injectable, Method, Inject } from '@ts-ioc/ioc';
+import { Injectable, Inject, AutoWired } from '@ts-ioc/ioc';
 
 @Injectable
 class Person {
@@ -32,7 +32,7 @@ class MethodTest {
 
     }
 
-    @Method
+    @AutoWired
     sayHello(person: Person) {
         return person.say();
     }
@@ -61,7 +61,7 @@ class MethodTest3 {
 
     }
 
-    @Method
+    @AutoWired
     sayHello(@Inject(Child) personA: Person, personB: Person) {
         return personA.say() + ', ' + personB.say();
     }
@@ -83,14 +83,14 @@ describe('logging test', () => {
     it('Aop log test', () => {
         container.register(DebugLogAspect);
         container.register(MethodTest3);
-        expect(container.syncInvoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
+        expect(container.invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
 
     });
 
     it('Aop anntotation log test', () => {
         container.register(AnntotationLogAspect);
         container.register(MethodTest2);
-        expect(container.syncInvoke(MethodTest2, 'sayHello')).toEqual('Mama');
+        expect(container.invoke(MethodTest2, 'sayHello')).toEqual('Mama');
 
     });
 

@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { IIocContainer, IocContainerToken } from './IIocContainer';
 import { Type, Token, Factory, SymbolType, ToInstance, InstanceFactory } from './types';
-import { isClass, isFunction, isSymbol, isToken, isString, isUndefined } from './utils';
+import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, lang } from './utils';
 import { Registration } from './Registration';
 
 import { registerCores } from './registerCores';
@@ -10,7 +10,8 @@ import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderPa
 import { IResolver } from './IResolver';
 import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, TypeReflects } from './services';
 import { IParameter } from './IParameter';
-import { RuntimeActionContext, DesignActionContext } from './actions';
+import { RuntimeActionContext, DesignActionContext, IocRegisterAction, IocRegisterScope } from './actions';
+
 
 /**
  * Container
@@ -426,6 +427,9 @@ export class IocContainer implements IIocContainer {
         if (!Reflect.isExtensible(ClassT)) {
             return;
         }
+        if (lang.isExtendsClass(ClassT, IocRegisterAction) || lang.isExtendsClass(ClassT, IocRegisterScope)) {
+            throw new Error('can not register Register action Class.');
+        }
 
         let factory = (...providers: ParamProviders[]) => {
             let providerMap = this.getProviderParser().parse(...providers);
@@ -452,35 +456,19 @@ export class IocContainer implements IIocContainer {
             }, this));
     }
 
-
-    /**
-     * invoke method async.
-     *
-     * @template T
-     * @param {any} target
-     * @param {string} propertyKey
-     * @param {*} [instance]
-     * @param {...ParamProviders[]} providers
-     * @returns {Promise<T>}
-     * @memberof Container
-     */
-    invoke<T>(target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): Promise<T> {
-        return this.get(MethodAccessor).invoke(this, target, propertyKey, instance, ...providers);
-    }
-
     /**
      * invoke method.
      *
      * @template T
-     * @param {any} target
+     * @param {*} target type of class or instance
      * @param {string} propertyKey
-     * @param {*} [instance]
+     * @param {*} [instance] instance of target type.
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof Container
      */
-    syncInvoke<T>(target: Token<any>, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
-        return this.get(MethodAccessor).syncInvoke(this, target, propertyKey, instance, ...providers);
+    invoke<T>(target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
+        return this.get(MethodAccessor).invoke(this, target, propertyKey, instance, ...providers);
     }
 
     createParams(params: IParameter[], ...providers: ParamProviders[]): any[] {

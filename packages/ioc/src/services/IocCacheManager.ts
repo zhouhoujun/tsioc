@@ -169,7 +169,7 @@ export class IocCacheManager extends IocCoreService implements IIocCacheManager 
         try {
             let component = target as OnDestroy;
             if (isFunction(component.onDestroy)) {
-                this.container.syncInvoke(target || targetType, 'onDestroy', target);
+                this.container.invoke(target || targetType, 'onDestroy', target);
             }
             this.cacheTokens.delete(targetType);
         } catch (err) {

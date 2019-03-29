@@ -63,7 +63,6 @@ export class BindMethodPointcutAction extends IocRuntimeAction {
             }
         });
 
-
         methods.forEach(pointcut => {
             proxy.proceed(target, targetType, pointcut, target['_cache_JoinPoint']);
         });

@@ -15,7 +15,7 @@ export class ComponentAfterInitAction extends IocRuntimeAction {
     execute(ctx: RuntimeActionContext, next: () => void) {
         let component = ctx.target as AfterInit;
         if (isFunction(component.afterInit)) {
-            this.container.syncInvoke(ctx.target || ctx.targetType, 'afterInit', ctx.target);
+            this.container.invoke(ctx.target || ctx.targetType, 'afterInit', ctx.target);
         }
         next();
     }

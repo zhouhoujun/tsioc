@@ -125,7 +125,7 @@ describe('method exec test', () => {
     //     container.register(AnnotationAspect);
     //     container.register(CheckRightAspect);
     //     container.register(MethodTest3);
-    //     expect(container.syncInvoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
+    //     expect(container.invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
 
     // });
 });

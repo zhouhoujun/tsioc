@@ -288,7 +288,7 @@ export class InvokeProvider extends Provider {
 
     resolve<T>(container: IIocContainer, ...providers: ProviderTypes[]): T {
         if (this.method) {
-            return container.syncInvoke<T>(this.type, this.method, ...providers);
+            return container.invoke<T>(this.type, this.method, ...providers);
         }
         return super.resolve(container, ...providers);
     }

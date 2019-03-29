@@ -15,7 +15,7 @@ export class ComponentInitAction extends IocRuntimeAction {
     execute(ctx: RuntimeActionContext, next: () => void) {
         let component = ctx.target as OnInit;
         if (isFunction(component.onInit)) {
-            this.container.syncInvoke(ctx.target || ctx.targetType, 'onInit', ctx.target);
+            this.container.invoke(ctx.target || ctx.targetType, 'onInit', ctx.target);
         }
         next();
     }

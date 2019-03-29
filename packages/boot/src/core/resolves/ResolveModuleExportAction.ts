@@ -1,5 +1,5 @@
 import { Singleton } from '@ts-ioc/ioc';
-import { DIModuleExports } from '../../services';
+import { DIModuleExports } from '../services';
 import { IocResolveAction, ResovleActionContext } from '@ts-ioc/core';
 
 /**

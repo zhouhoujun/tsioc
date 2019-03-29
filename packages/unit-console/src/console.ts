@@ -1,13 +1,14 @@
 import { ISuiteDescribe, RealtimeReporter, ICaseDescribe } from '@ts-ioc/unit';
 import { Token, ObjectMap, lang } from '@ts-ioc/ioc';
 import chalk from 'chalk';
-import { DIModule } from '@ts-ioc/boot';
+import { DIModule, RegScope } from '@ts-ioc/boot';
 import { ServerBootstrapModule } from '@ts-ioc/platform-server-boot';
 import { ServerModule } from '@ts-ioc/platform-server';
 import { ServerLogsModule } from '@ts-ioc/platform-server-logs';
 
 
 @DIModule({
+    regScope: RegScope.boot,
     imports: [
         ServerModule,
         ServerBootstrapModule,

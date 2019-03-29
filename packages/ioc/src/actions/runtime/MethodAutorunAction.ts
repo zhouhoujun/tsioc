@@ -37,7 +37,7 @@ export class MethodAutorunAction extends IocRuntimeAction {
             lastmetas.sort((au1, au2) => {
                 return au1.order - au2.order;
             }).forEach(aut => {
-                this.container.syncInvoke(ctx.target || ctx.targetType, aut.autorun, ctx.target);
+                this.container.invoke(ctx.target || ctx.targetType, aut.autorun, ctx.target);
             });
         }
     }

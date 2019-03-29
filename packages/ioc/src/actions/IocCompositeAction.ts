@@ -108,10 +108,6 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         ctx.currScope = scope;
     }
 
-    execBody(ctx: T, next?: () => void) {
-        this.execActions(ctx, this.actions, next);
-    }
-
     protected execActions(ctx: T, actions: IocActionType[], next?: () => void) {
         lang.execAction(actions.map(ac => this.toActionFunc(ac)), ctx, next);
     }
@@ -133,7 +129,6 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
     }
 
     protected resolveAction(ac: Type<IocAction<T>>): IocAction<T> {
-        console.log(ac);
         return this.container.resolve(ac);
     }
 }

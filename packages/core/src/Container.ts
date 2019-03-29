@@ -291,7 +291,7 @@ export class Container implements IContainer {
         return this.ioc.invoke(target, propertyKey, instance, ...providers);
     }
     syncInvoke<T>(target: Token<any>, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
-        return this.ioc.syncInvoke(target, propertyKey, instance, ...providers);
+        return this.ioc.invoke(target, propertyKey, instance, ...providers);
     }
     createParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
         return this.ioc.createParams(params, ...providers);

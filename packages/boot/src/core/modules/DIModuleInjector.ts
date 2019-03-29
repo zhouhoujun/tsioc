@@ -40,7 +40,8 @@ export class DIModuleInjector extends ModuleInjector {
     }
 
     protected syncSetup(container: IContainer, type: Type<any>) {
-        this.execInjects(container, type);
+        // this.execInjects(container, type);
+        throw new Error('DIModule can not sync setup');
     }
 
     protected async execInjects(container: IContainer, type: Type<any>): Promise<void> {

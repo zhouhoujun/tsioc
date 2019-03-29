@@ -22,10 +22,10 @@ export interface IMethodAccessor {
      * @param {*} target
      * @param {string} propertyKey
      * @param {...ParamProviders[]} providers
-     * @returns {Promise<T>}
+     * @returns {T}
      * @memberof IMethodAccessor
      */
-    invoke<T>(container: IIocContainer, target: any, propertyKey: string, ...providers: ParamProviders[]): Promise<T>;
+    invoke<T>(container: IIocContainer, target: any, propertyKey: string, ...providers: ParamProviders[]): T;
 
     /**
      * try to async invoke the method of intance, if no instance will create by type.
@@ -34,10 +34,10 @@ export interface IMethodAccessor {
      * @param {Token<any>} target
      * @param {string} propertyKey
      * @param {...ParamProviders[]} providers
-     * @returns {Promise<T>}
+     * @returns {T}
      * @memberof IMethodAccessor
      */
-    invoke<T>(container: IIocContainer, target: Token<any>, propertyKey: string, ...providers: ParamProviders[]): Promise<T>;
+    invoke<T>(container: IIocContainer, target: Token<any>, propertyKey: string, ...providers: ParamProviders[]): T;
 
     /**
      * try to async invoke the method of intance, if no instance will create by type.
@@ -48,45 +48,10 @@ export interface IMethodAccessor {
      * @param {string} propertyKey
      * @param {*} instance
      * @param {...ParamProviders[]} providers
-     * @returns {Promise<T>}
-     * @memberof IMethodAccessor
-     */
-    invoke<T>(container: IIocContainer, target: Token<any>, propertyKey: string, instance: any, ...providers: ParamProviders[]): Promise<T>;
-
-    /**
-     * try to invoke the method of intance, if is token will create instance to invoke.
-     *
-     * @template T
-     * @param {*} target
-     * @param {string} propertyKey
-     * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof IMethodAccessor
      */
-    syncInvoke<T>(container: IIocContainer, target: any, propertyKey: string, ...providers: ParamProviders[]): T;
-    /**
-     * try create instance to invoke property method.
-     *
-     * @template T
-     * @param {*} target
-     * @param {string} propertyKey
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IMethodAccessor
-     */
-    syncInvoke<T>(container: IIocContainer, target: any, propertyKey: string, ...providers: ParamProviders[]): T;
-
-    /**
-     * try to invoke the method of intance, if is token will create instance to invoke.
-     *
-     * @template T
-     * @param {*} target
-     * @param {string} propertyKey
-     * @param {*} instance
-     * @param {...ParamProviders[]} providers
-     * @memberof IMethodAccessor
-     */
-    syncInvoke<T>(container: IIocContainer, target: any, propertyKey: string, instance: any, ...providers: ParamProviders[])
+    invoke<T>(container: IIocContainer, target: Token<any>, propertyKey: string, instance: any, ...providers: ParamProviders[]): T;
 
     /**
      * create params instances with IParameter and provider
@@ -122,10 +87,10 @@ export class MethodAccessor extends IocCoreService implements IMethodAccessor {
      * @param {*} target
      * @param {string} propertyKey
      * @param {...ParamProviders[]} providers
-     * @returns {Promise<T>}
+     * @returns {T}
      * @memberof IMethodAccessor
      */
-    async invoke<T>(container: IIocContainer, target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): Promise<T> {
+    invoke<T>(container: IIocContainer, target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
 
         let targetClass: Type<any>;
         if (isProvider(instance)) {
@@ -151,36 +116,9 @@ export class MethodAccessor extends IocCoreService implements IMethodAccessor {
         let parameters = lifeScope.getMethodParameters(container, targetClass, instance, propertyKey);
         let paramInstances = this.createParams(container, parameters, ...providers);
 
-        return await instance[propertyKey](...paramInstances) as T;
-
-    }
-
-    syncInvoke<T>(container: IIocContainer, target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
-        let targetClass: Type<any>;
-        if (isProvider(instance)) {
-            providers.unshift(instance);
-            instance = undefined;
-        }
-        if (isToken(target)) {
-            targetClass = container.getTokenProvider(target);
-            lang.assert(targetClass, target.toString() + ' is not implements by any class.');
-            if (isNullOrUndefined(instance)) {
-                instance = container.resolve(target, ...providers);
-            }
-        } else {
-            targetClass = lang.getClass(target);
-            instance = target;
-        }
-        lang.assertExp(instance && isFunction(instance[propertyKey]), `type: ${targetClass} has no method ${propertyKey.toString()}.`);
-
-        let lifeScope = container.get(RuntimeLifeScope);
-        let pds = lifeScope.getParamProviders(container, targetClass, propertyKey, instance);
-        providers = providers.concat(pds);
-        let parameters = lifeScope.getMethodParameters(container, targetClass, instance, propertyKey);
-        let paramInstances = this.createParams(container, parameters, ...providers);
         return instance[propertyKey](...paramInstances) as T;
-    }
 
+    }
 
     createParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): any[] {
         let providerMap = container.get(ProviderParser).parse(...providers);

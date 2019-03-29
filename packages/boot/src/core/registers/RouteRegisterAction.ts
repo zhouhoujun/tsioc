@@ -1,10 +1,9 @@
 import {
-    Singleton, IocDesignAction, IocRuntimeAction, lang, Type,
+    IocDesignAction, IocRuntimeAction, lang, Type,
     RuntimeActionContext, DesignActionContext, IocCompositeAction
 } from '@ts-ioc/ioc';
-import { ParentContainerToken } from '../../ContainerPool';
+import { ParentContainerToken } from '../ContainerPool';
 
-@Singleton
 export class RouteRuntimRegisterAction extends IocRuntimeAction {
     execute(ctx: RuntimeActionContext, next: () => void): void {
         if (ctx.currScope && this.container.has(ParentContainerToken)) {
@@ -19,7 +18,6 @@ export class RouteRuntimRegisterAction extends IocRuntimeAction {
     }
 }
 
-@Singleton
 export class RouteDesignRegisterAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
         if (ctx.currScope && this.container.has(ParentContainerToken)) {

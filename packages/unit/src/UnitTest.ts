@@ -37,11 +37,11 @@ export class UnitTest {
  * unit test.
  *
  * @export
- * @param {string | string[]} src
- * @param {(string | AppConfigure)} [config]
- * @param {...LoadType[]} used
+ * @param {string | string[]} src test source.
+ * @param {(string | AppConfigure)} [config] test configure.
+ * @param {...LoadType[]} deps unit test dependencies.
  * @returns {Promise<any>}
  */
-export async function runTest(src: string | string[], config?: string | UnitTestConfigure, ...used: LoadType[]): Promise<any> {
-   await BootApplication.run(UnitTestContext.create(UnitTest, { deps: used, configures: [config, { src: src }] }))
+export async function runTest(src: string | string[], config?: string | UnitTestConfigure, ...deps: LoadType[]): Promise<any> {
+   await BootApplication.run(UnitTestContext.create(UnitTest, { deps: deps, configures: [config, { src: src }] }))
 }

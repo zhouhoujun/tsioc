@@ -4,6 +4,8 @@ import { IIocContainer } from '../IIocContainer';
 
 /**
  * register action scope.
+ *  the register type class can only register in ioc as:
+ * ` container.registerSingleton(SubRegisterAction, () => new SubRegisterAction(container));`
  *
  * @export
  * @abstract

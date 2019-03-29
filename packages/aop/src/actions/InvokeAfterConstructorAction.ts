@@ -42,11 +42,11 @@ export class InvokeAfterConstructorAction extends IocRuntimeAction {
         }
 
         advices.After.forEach(advicer => {
-            advisor.getContainer(advicer.aspectType, this.container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
+            advisor.getContainer(advicer.aspectType, this.container).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
         });
 
         advices.Around.forEach(advicer => {
-            advisor.getContainer(advicer.aspectType, this.container).syncInvoke(advicer.aspectType, advicer.advice.propertyKey, null, ...providers);
+            advisor.getContainer(advicer.aspectType, this.container).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
         });
         next();
     }

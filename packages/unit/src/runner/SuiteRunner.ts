@@ -78,7 +78,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
             }
         }, timeout || this.timeout);
 
-        Promise.resolve(this.container.syncInvoke(instance, key,
+        Promise.resolve(this.container.invoke(instance, key,
             { provide: RunCaseToken, useValue: instance[key] },
             { provide: RunSuiteToken, useValue: instance }))
             .then(r => {

@@ -1,5 +1,6 @@
 export * from './decorators';
-export * from './actions';
+export * from './registers';
+export * from './resolves';
 export * from './services';
 export * from './modules';
 export * from './handles';

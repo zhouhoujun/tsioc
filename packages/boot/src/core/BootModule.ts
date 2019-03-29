@@ -15,15 +15,15 @@ import {
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
 import * as modules from './modules';
-import * as actions from './actions';
+import * as resolves from './resolves';
 import * as handles from './handles';
 import * as services from './services';
 
 import {
     RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction,
-    RouteDesignRegisterAction, RouteRuntimRegisterAction
-} from './actions';
+} from './resolves';
 import { DIModuleInjector, RootModuleInjector } from './modules';
+import { RouteDesignRegisterAction, RouteRuntimRegisterAction } from './registers';
 
 /**
  * Bootstrap ext for ioc. auto run setup after registered.
@@ -58,7 +58,7 @@ export class BootModule {
             ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
             RegisterSingletionAction, IocSetCacheAction);
 
-        container.use(modules, handles, actions, services);
+        container.use(modules, handles, resolves, services);
 
         let chain = container.get(ModuleInjectorManager);
         chain
@@ -84,10 +84,13 @@ export class BootModule {
             .use(RouteResolveAction);
 
         // design register route.
+        container.registerSingleton(RouteDesignRegisterAction, () => new RouteRuntimRegisterAction(container));
         container.get(DesignLifeScope)
             .use(RouteDesignRegisterAction);
 
         // runtime register route.
+        container.registerSingleton(RouteRuntimRegisterAction, () => new RouteRuntimRegisterAction(container));
+
         container.get(IocBeforeConstructorScope)
             .use(RouteRuntimRegisterAction);
 
@@ -102,9 +105,6 @@ export class BootModule {
 
         container.get(RuntimeAnnoationScope)
             .use(RouteRuntimRegisterAction);
-
-        // container.get(RuntimeLifeScope)
-        //     .after(RouteRuntimRegisterAction);
 
     }
 }
