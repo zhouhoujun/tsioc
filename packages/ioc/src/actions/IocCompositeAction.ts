@@ -136,7 +136,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
             if (instance && isFunction(instance.setup)) {
                 instance.setup();
             } else {
-                console.log(action);
+                console.log(action, 'action has not setup.');
             }
         }
         return this;
