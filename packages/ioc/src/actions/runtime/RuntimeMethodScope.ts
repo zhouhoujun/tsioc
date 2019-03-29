@@ -1,9 +1,8 @@
-import { DecoratorType } from '../../factories';
 import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { IIocContainer } from '../../IIocContainer';
-import { RuntimeDecoratorRegisterer } from '../../services';
+import { RuntimeDecoratorRegisterer, DecoratorScopes } from '../../services';
 import { Autorun } from '../../decorators';
 import { MethodAutorunAction } from './MethodAutorunAction';
 
@@ -13,7 +12,7 @@ export class RuntimeMethodScope extends IocRegisterScope<RuntimeActionContext> {
         container.registerSingleton(RuntimeMethodDecorScope, () => new RuntimeMethodDecorScope(container));
 
         let decRgr = container.get(RuntimeDecoratorRegisterer);
-        decRgr.register(Autorun, DecoratorType.Method, MethodAutorunAction);
+        decRgr.register(Autorun, DecoratorScopes.Method, MethodAutorunAction);
 
         container.get(RuntimeMethodDecorScope).setup(container);
 
@@ -22,7 +21,7 @@ export class RuntimeMethodScope extends IocRegisterScope<RuntimeActionContext> {
 }
 
 export class RuntimeMethodDecorScope extends RuntimeDecoratorScope {
-    protected getDecorType(): DecoratorType {
-        return DecoratorType.Method;
+    protected getDecorScope(): DecoratorScopes {
+        return DecoratorScopes.Method;
     }
 }

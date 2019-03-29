@@ -1,7 +1,7 @@
 import { IContainer, ContainerToken, IocExt } from '@ts-ioc/core';
 import { Asset } from './decorators/Asset';
 import {
-    Inject, DecoratorRegisterer, BindProviderAction, IocSetCacheAction,
+    Inject, DecoratorScopeRegisterer, BindProviderAction, IocSetCacheAction,
     IocGetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction
 } from '@ts-ioc/ioc';
 
@@ -17,7 +17,7 @@ export class AssetSetup {
 
     }
     setup() {
-        let decReg = this.container.resolve(DecoratorRegisterer);
+        let decReg = this.container.resolve(DecoratorScopeRegisterer);
         decReg.register(Asset, BindProviderAction, IocSetCacheAction, IocGetCacheAction,
             ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
     }

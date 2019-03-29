@@ -1,7 +1,7 @@
 import { IContainer, ContainerToken, IocExt } from '@ts-ioc/core';
 import { Pack } from './decorators';
 import {
-    DecoratorRegisterer, BindProviderAction, IocGetCacheAction,
+    DecoratorScopeRegisterer, BindProviderAction, IocGetCacheAction,
     IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction, Inject
 } from '@ts-ioc/ioc';
 
@@ -19,7 +19,7 @@ export class PackSetup {
     }
 
     setup() {
-        let reg = this.container.resolve(DecoratorRegisterer);
+        let reg = this.container.resolve(DecoratorScopeRegisterer);
         reg.register(Pack, BindProviderAction, IocGetCacheAction, IocSetCacheAction,
             ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
     }

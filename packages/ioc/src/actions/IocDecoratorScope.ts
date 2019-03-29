@@ -1,17 +1,16 @@
-import { RegisterActionContext } from './RegisterActionContext';
-import { DecoratorType } from '../factories';
 import { ObjectMap } from '../types';
-import { DecoratorRegisterer } from '../services';
-import { IocRegisterScope } from './IocRegisterScope';
+import { DecoratorScopeRegisterer, DecoratorScopes } from '../services';
+import { IocCompositeAction } from './IocCompositeAction';
+import { DecoratorActionContext } from './DecoratorActionContext';
 
 
-export abstract class IocDecoratorScope<T extends RegisterActionContext> extends IocRegisterScope<T> {
+export abstract class IocDecoratorScope<T extends DecoratorActionContext> extends IocCompositeAction<T> {
     execute(ctx: T, next?: () => void): void {
         if (!this.isCompleted(ctx)) {
             this.getDecorators(ctx)
                 .forEach(dec => {
                     ctx.currDecoractor = dec;
-                    ctx.currDecorType = this.getDecorType();
+                    ctx.currDecorScope = this.getDecorScope();
                     super.execute(ctx);
                     this.done(ctx);
                 });
@@ -20,19 +19,19 @@ export abstract class IocDecoratorScope<T extends RegisterActionContext> extends
     }
 
     protected done(ctx: T): boolean {
-        return this.getState(ctx, this.getDecorType())[ctx.currDecoractor] = true;
+        return this.getState(ctx, this.getDecorScope())[ctx.currDecoractor] = true;
     }
     protected isCompleted(ctx: T): boolean {
-        return Object.values(this.getState(ctx, this.getDecorType())).some(inj => inj);
+        return Object.values(this.getState(ctx, this.getDecorScope())).some(inj => inj);
     }
     protected getDecorators(ctx: T): string[] {
-        let reg = this.getRegisterer();
-        let states = this.getState(ctx, this.getDecorType());
-        return Array.from(reg.getDecoratorMap(this.getDecorType()).keys())
+        let reg = this.getScopeRegisterer();
+        let states = this.getState(ctx, this.getDecorScope());
+        return Array.from(reg.getRegisterer(this.getDecorScope()).getActions().keys())
             .filter(dec => states[dec] === false);
     }
 
-    protected abstract getState(ctx: T, dtype: DecoratorType): ObjectMap<boolean>;
-    protected abstract getRegisterer(): DecoratorRegisterer;
-    protected abstract getDecorType(): DecoratorType;
+    protected abstract getState(ctx: T, dtype: DecoratorScopes): ObjectMap<boolean>;
+    protected abstract getScopeRegisterer(): DecoratorScopeRegisterer;
+    protected abstract getDecorScope(): DecoratorScopes;
 }

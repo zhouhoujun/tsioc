@@ -8,5 +8,6 @@ export * from './LifeScope';
 export * from './RegisterLifeScope';
 export * from './DesignLifeScope';
 export * from './RuntimeLifeScope';
+export * from './IocDecoratorRegisterer';
 export * from './DecoratorRegisterer';
 export * from './IocSingletonManager';

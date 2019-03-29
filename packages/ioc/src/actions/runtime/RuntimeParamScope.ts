@@ -1,9 +1,8 @@
-import { DecoratorType } from '../../factories';
 import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { IIocContainer } from '../../IIocContainer';
-import { RuntimeDecoratorRegisterer } from '../../services';
+import { RuntimeDecoratorRegisterer, DecoratorScopes } from '../../services';
 import { Inject, AutoWired, Param } from '../../decorators';
 import { BindParameterTypeAction } from './BindParameterTypeAction';
 import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
@@ -16,9 +15,9 @@ export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> {
         container.registerSingleton(RuntimeParamDecorScope, () => new RuntimeParamDecorScope(container));
 
         let decRgr = container.get(RuntimeDecoratorRegisterer);
-        decRgr.register(Inject, DecoratorType.Parameter, BindParameterTypeAction);
-        decRgr.register(AutoWired, DecoratorType.Parameter, BindParameterTypeAction);
-        decRgr.register(Param, DecoratorType.Parameter, BindParameterTypeAction);
+        decRgr.register(Inject, DecoratorScopes.Parameter, BindParameterTypeAction);
+        decRgr.register(AutoWired, DecoratorScopes.Parameter, BindParameterTypeAction);
+        decRgr.register(Param, DecoratorScopes.Parameter, BindParameterTypeAction);
 
         container.get(RuntimeParamDecorScope).setup(container);
 
@@ -29,7 +28,7 @@ export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> {
 
 
 export class RuntimeParamDecorScope extends RuntimeDecoratorScope {
-    protected getDecorType(): DecoratorType {
-        return DecoratorType.Parameter;
+    protected getDecorScope(): DecoratorScopes {
+        return DecoratorScopes.Parameter;
     }
 }

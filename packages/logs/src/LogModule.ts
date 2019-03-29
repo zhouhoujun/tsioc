@@ -1,4 +1,4 @@
-import { Inject, DecoratorType, DesignDecoratorRegisterer, BindMethodProviderAction } from '@ts-ioc/ioc';
+import { Inject, DecoratorScopes, DesignDecoratorRegisterer, BindMethodProviderAction } from '@ts-ioc/ioc';
 import { IContainer, ContainerToken, IocExt } from '@ts-ioc/core';
 import { AopModule } from '@ts-ioc/aop';
 import { Logger } from './decorators/Logger';
@@ -31,8 +31,8 @@ export class LogModule {
             container.register(AopModule);
         }
         let decReg = container.get(DesignDecoratorRegisterer);
-        decReg.register(Logger, DecoratorType.Class, BindMethodProviderAction);
-        decReg.register(Logger, DecoratorType.Method, BindMethodProviderAction);
+        decReg.register(Logger, DecoratorScopes.Class, BindMethodProviderAction);
+        decReg.register(Logger, DecoratorScopes.Method, BindMethodProviderAction);
 
         container.register(ConfigureLoggerManger);
         container.register(AnnotationLogerAspect);

@@ -1,5 +1,5 @@
 import { ExecDecoratorAtion } from '../ExecDecoratorAtion';
-import { DecoratorRegisterer, RuntimeDecoratorRegisterer } from '../../services';
+import { DecoratorScopeRegisterer, RuntimeDecoratorRegisterer } from '../../services';
 
 /**
  * runtime decorator action.
@@ -11,7 +11,7 @@ import { DecoratorRegisterer, RuntimeDecoratorRegisterer } from '../../services'
  * @extends {ExecDecoratorAtion}
  */
 export class RuntimeDecoratorAction extends ExecDecoratorAtion {
-    protected getRegisterer(): DecoratorRegisterer {
+    protected getScopeRegisterer(): DecoratorScopeRegisterer {
         return this.container.resolve(RuntimeDecoratorRegisterer);
     }
 }

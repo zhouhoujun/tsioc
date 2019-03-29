@@ -1,8 +1,8 @@
 import { Type, Token } from '../types';
-import { IocActionContext, ActionContextOption } from './Action';
+import { ActionContextOption } from './Action';
 import { ITypeReflect } from '../services';
 import { IIocContainer } from '../IIocContainer';
-import { DecoratorType } from '../factories';
+import { DecoratorActionContext } from './DecoratorActionContext';
 
 /**
  * register action option.
@@ -59,8 +59,7 @@ export interface RegisterActionOption extends ActionContextOption {
  * @class RegisterActionContext
  * @extends {IocActionContext}
  */
-export abstract class RegisterActionContext extends IocActionContext {
-
+export abstract class RegisterActionContext extends DecoratorActionContext {
     /**
      * resolve token.
      *
@@ -68,7 +67,6 @@ export abstract class RegisterActionContext extends IocActionContext {
      * @memberof RegisterActionContext
      */
     tokenKey?: Token<any>;
-
     /**
      * target type.
      *
@@ -76,8 +74,6 @@ export abstract class RegisterActionContext extends IocActionContext {
      * @memberof RegisterActionContext
      */
     targetType?: Type<any>;
-
-
     /**
      * target type reflect.
      *
@@ -85,9 +81,6 @@ export abstract class RegisterActionContext extends IocActionContext {
      * @memberof RegisterActionContext
      */
     targetReflect?: ITypeReflect;
-
-    currDecoractor?: string;
-    currDecorType?: DecoratorType;
 
     constructor(targetType: Type<any>, raiseContainer?: IIocContainer | (() => IIocContainer)) {
         super(raiseContainer);

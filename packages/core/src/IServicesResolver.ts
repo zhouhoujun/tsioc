@@ -1,5 +1,5 @@
 import { Token, ProviderTypes, ProviderMap } from '@ts-ioc/ioc';
-import { ResolveServicesContext } from './actions';
+import { ResolveServicesContext } from './resolves';
 import { TargetRefs } from './TargetService';
 
 /**

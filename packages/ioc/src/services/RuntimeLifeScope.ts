@@ -56,7 +56,7 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
     }
 
     setup(container: IIocContainer) {
-        container.registerSingleton(RuntimeDecoratorRegisterer, () => new RuntimeDecoratorRegisterer());
+        container.registerSingleton(RuntimeDecoratorRegisterer, () => new RuntimeDecoratorRegisterer(container));
 
         if (!container.has(InitReflectAction)) {
             container.registerSingleton(InitReflectAction, () => new InitReflectAction(container));

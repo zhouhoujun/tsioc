@@ -1,9 +1,8 @@
-import { DecoratorType } from '../../factories';
 import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { IIocContainer } from '../../IIocContainer';
-import { RuntimeDecoratorRegisterer } from '../../services';
+import { RuntimeDecoratorRegisterer, DecoratorScopes } from '../../services';
 import { Singleton, Injectable, Component } from '../../decorators';
 import { RegisterSingletionAction } from './RegisterSingletionAction';
 import { IocSetCacheAction } from './IocSetCacheAction';
@@ -21,9 +20,9 @@ export class RuntimeAnnoationScope extends IocRegisterScope<RuntimeActionContext
         container.registerSingleton(RuntimeAnnoationDecorScope, () => new RuntimeAnnoationDecorScope(container));
 
         let decRgr = container.get(RuntimeDecoratorRegisterer);
-        decRgr.register(Singleton, DecoratorType.Class, RegisterSingletionAction);
-        decRgr.register(Injectable, DecoratorType.Class, RegisterSingletionAction, IocSetCacheAction);
-        decRgr.register(Component, DecoratorType.Class, ComponentBeforeInitAction, ComponentInitAction,
+        decRgr.register(Singleton, DecoratorScopes.Class, RegisterSingletionAction);
+        decRgr.register(Injectable, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
+        decRgr.register(Component, DecoratorScopes.Class, ComponentBeforeInitAction, ComponentInitAction,
             ComponentAfterInitAction, RegisterSingletionAction, IocSetCacheAction);
 
         container.get(RuntimeAnnoationDecorScope).setup(container);
@@ -33,7 +32,7 @@ export class RuntimeAnnoationScope extends IocRegisterScope<RuntimeActionContext
 }
 
 export class RuntimeAnnoationDecorScope extends RuntimeDecoratorScope {
-    protected getDecorType(): DecoratorType {
-        return DecoratorType.Class;
+    protected getDecorScope(): DecoratorScopes {
+        return DecoratorScopes.Class;
     }
 }

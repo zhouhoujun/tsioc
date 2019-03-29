@@ -1,9 +1,8 @@
-import { DecoratorType } from '../../factories';
 import { DesignDecoratorScope } from './DesignDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { DesignActionContext } from './DesignActionContext';
 import { IIocContainer } from '../../IIocContainer';
-import { DesignDecoratorRegisterer } from '../../services';
+import { DesignDecoratorRegisterer, DecoratorScopes } from '../../services';
 import { Injectable, Component, Singleton, Providers, Refs, Autorun } from '../../decorators';
 import { BindProviderAction } from './BindProviderAction';
 import { IocAutorunAction } from './IocAutorunAction';
@@ -16,19 +15,19 @@ export class DesignAnnoationScope extends IocRegisterScope<DesignActionContext> 
         container.get(DesignClassDecoratorScope).setup(container);
 
         let decRgr = container.get(DesignDecoratorRegisterer);
-        decRgr.register(Injectable, DecoratorType.Class, BindProviderAction);
-        decRgr.register(Component, DecoratorType.Class, BindProviderAction);
-        decRgr.register(Singleton, DecoratorType.Class, BindProviderAction);
-        decRgr.register(Providers, DecoratorType.Class, BindProviderAction);
-        decRgr.register(Refs, DecoratorType.Class, BindProviderAction);
-        decRgr.register(Autorun, DecoratorType.Class, IocAutorunAction);
+        decRgr.register(Injectable, DecoratorScopes.Class, BindProviderAction);
+        decRgr.register(Component, DecoratorScopes.Class, BindProviderAction);
+        decRgr.register(Singleton, DecoratorScopes.Class, BindProviderAction);
+        decRgr.register(Providers, DecoratorScopes.Class, BindProviderAction);
+        decRgr.register(Refs, DecoratorScopes.Class, BindProviderAction);
+        decRgr.register(Autorun, DecoratorScopes.Class, IocAutorunAction);
 
         this.use(DesignClassDecoratorScope);
     }
 }
 
 export class DesignClassDecoratorScope extends DesignDecoratorScope {
-    protected getDecorType(): DecoratorType {
-        return DecoratorType.Class;
+    protected getDecorScope(): DecoratorScopes {
+        return DecoratorScopes.Class;
     }
 }

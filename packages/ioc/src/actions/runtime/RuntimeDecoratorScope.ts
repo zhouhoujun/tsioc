@@ -1,6 +1,5 @@
 
-import { DecoratorRegisterer, RuntimeDecoratorRegisterer, MetadataService } from '../../services';
-import { DecoratorType } from '../../factories';
+import { DecoratorScopeRegisterer, RuntimeDecoratorRegisterer, MetadataService, DecoratorScopes } from '../../services';
 import { IocDecoratorScope } from '../IocDecoratorScope';
 import { ObjectMap } from '../../types';
 import { RuntimeDecoratorAction } from './RuntimeDecoratorAction';
@@ -9,19 +8,19 @@ import { IIocContainer } from '../../IIocContainer';
 
 export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeActionContext> {
 
-    protected getState(ctx: RuntimeActionContext, dtype: DecoratorType): ObjectMap<boolean> {
+    protected getState(ctx: RuntimeActionContext, dtype: DecoratorScopes): ObjectMap<boolean> {
         switch (dtype) {
-            case DecoratorType.Class:
+            case DecoratorScopes.Class:
                 return this.getClassDecorState(ctx);
-            case DecoratorType.Method:
+            case DecoratorScopes.Method:
                 return this.getMethodDecorState(ctx);
-            case DecoratorType.Property:
+            case DecoratorScopes.Property:
                 return this.getPropDecorState(ctx);
-            case DecoratorType.Parameter:
+            case DecoratorScopes.Parameter:
                 return this.getParamDecorState(ctx);
-            case DecoratorType.BeforeConstructor:
+            case DecoratorScopes.BeforeConstructor:
                 return this.getBeforeCstrDecorsState(ctx);
-            case DecoratorType.AfterConstructor:
+            case DecoratorScopes.AfterConstructor:
                 return this.getAfterCstrDecorsState(ctx);
         }
         return null;
@@ -77,7 +76,7 @@ export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeAct
 
     protected getBeforeCstrDecorsState(ctx: RuntimeActionContext) {
         if (!ctx.beforeCstrDecors) {
-            ctx.beforeCstrDecors = Array.from(this.getRegisterer().getDecoratorMap(DecoratorType.BeforeConstructor).keys())
+            ctx.beforeCstrDecors = Array.from(this.getScopeRegisterer().getRegisterer(DecoratorScopes.BeforeConstructor).getActions().keys())
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
@@ -88,7 +87,7 @@ export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeAct
 
     protected getAfterCstrDecorsState(ctx: RuntimeActionContext) {
         if (!ctx.afterCstrDecors) {
-            ctx.afterCstrDecors = Array.from(this.getRegisterer().getDecoratorMap(DecoratorType.AfterConstructor).keys())
+            ctx.afterCstrDecors = Array.from(this.getScopeRegisterer().getRegisterer(DecoratorScopes.AfterConstructor).getActions().keys())
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
@@ -97,7 +96,7 @@ export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeAct
         return ctx.afterCstrDecors;
     }
 
-    protected getRegisterer(): DecoratorRegisterer {
+    protected getScopeRegisterer(): DecoratorScopeRegisterer {
         return this.container.resolve(RuntimeDecoratorRegisterer);
     }
 

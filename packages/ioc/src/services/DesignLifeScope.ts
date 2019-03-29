@@ -18,7 +18,7 @@ export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> {
 
     setup(container: IIocContainer) {
 
-        container.registerSingleton(DesignDecoratorRegisterer, () => new DesignDecoratorRegisterer());
+        container.registerSingleton(DesignDecoratorRegisterer, () => new DesignDecoratorRegisterer(container));
         if (!container.has(InitReflectAction)) {
             container.registerSingleton(InitReflectAction, () => new InitReflectAction(container));
         }

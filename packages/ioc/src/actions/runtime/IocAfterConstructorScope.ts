@@ -1,8 +1,8 @@
-import { DecoratorType } from '../../factories';
 import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { IIocContainer } from '../../IIocContainer';
+import { DecoratorScopes } from '../../services';
 
 /**
  * ioc register actions scope run after constructor.
@@ -27,7 +27,7 @@ export class IocAfterConstructorScope extends IocRegisterScope<RuntimeActionCont
  * @extends {RuntimeDecoratorScope}
  */
 export class IocAfterConstructorDecorScope extends RuntimeDecoratorScope {
-    protected getDecorType(): DecoratorType {
-        return DecoratorType.AfterConstructor;
+    protected getDecorScope(): DecoratorScopes {
+        return DecoratorScopes.AfterConstructor;
     }
 }

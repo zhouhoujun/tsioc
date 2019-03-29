@@ -1,8 +1,8 @@
-import { DecoratorType } from '../../factories';
 import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { IIocContainer } from '../../IIocContainer';
+import { DecoratorScopes } from '../../services';
 
 
 /**
@@ -28,7 +28,7 @@ export class IocBeforeConstructorScope extends IocRegisterScope<RuntimeActionCon
  * @extends {RuntimeDecoratorScope}
  */
 export class IocBeforeConstructorDecorScope extends RuntimeDecoratorScope {
-    protected getDecorType(): DecoratorType {
-        return DecoratorType.BeforeConstructor;
+    protected getDecorScope(): DecoratorScopes {
+        return DecoratorScopes.BeforeConstructor;
     }
 }

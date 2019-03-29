@@ -2,7 +2,7 @@ import {
     Inject, BindProviderAction, DesignDecoratorRegisterer,
     IocSetCacheAction, ComponentBeforeInitAction, RuntimeDecoratorRegisterer,
     ComponentInitAction, ComponentAfterInitAction, DesignLifeScope,
-    IocBeforeConstructorScope, IocAfterConstructorScope, DecoratorType, RuntimeMethodScope,
+    IocBeforeConstructorScope, IocAfterConstructorScope, DecoratorScopes, RuntimeMethodScope,
     RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction, RegisterSingletionAction
 } from '@ts-ioc/ioc';
 import {
@@ -46,15 +46,15 @@ export class BootModule {
     setup(@Inject(ContainerToken) container: IContainer) {
 
         let designReg = container.get(DesignDecoratorRegisterer);
-        designReg.register(Annotation, DecoratorType.Class, BindProviderAction, IocAutorunAction);
-        designReg.register(DIModule, DecoratorType.Class, BindProviderAction, IocAutorunAction);
+        designReg.register(Annotation, DecoratorScopes.Class, BindProviderAction, IocAutorunAction);
+        designReg.register(DIModule, DecoratorScopes.Class, BindProviderAction, IocAutorunAction);
 
         let runtimeReg = container.get(RuntimeDecoratorRegisterer);
-        runtimeReg.register(Annotation, DecoratorType.Class,
+        runtimeReg.register(Annotation, DecoratorScopes.Class,
             ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
             RegisterSingletionAction, IocSetCacheAction);
 
-        runtimeReg.register(DIModule, DecoratorType.Class,
+        runtimeReg.register(DIModule, DecoratorScopes.Class,
             ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
             RegisterSingletionAction, IocSetCacheAction);
 

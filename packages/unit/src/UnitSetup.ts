@@ -1,9 +1,8 @@
 import { IContainer, ContainerToken, IocExt } from '@ts-ioc/core';
 import { Suite } from './decorators/Suite';
 import {
-    Inject, DecoratorType, ComponentInitAction, RegisterSingletionAction,
-    ComponentBeforeInitAction, ComponentAfterInitAction, RuntimeDecoratorRegisterer,
-    DesignDecoratorRegisterer, BindProviderAction
+    Inject, DecoratorScopes, ComponentInitAction, RegisterSingletionAction,
+    ComponentBeforeInitAction, ComponentAfterInitAction, RuntimeDecoratorRegisterer
 } from '@ts-ioc/ioc';
 
 
@@ -26,11 +25,8 @@ export class UnitSetup {
      * @memberof AopModule
      */
     setup() {
-        // let designReg = this.container.get(DesignDecoratorRegisterer);
-        // designReg.register(Suite, DecoratorType.Class, BindProviderAction);
-
         let runtimeReg = this.container.get(RuntimeDecoratorRegisterer);
-        runtimeReg.register(Suite, DecoratorType.Class,
+        runtimeReg.register(Suite, DecoratorScopes.Class,
             ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
             RegisterSingletionAction);
     }

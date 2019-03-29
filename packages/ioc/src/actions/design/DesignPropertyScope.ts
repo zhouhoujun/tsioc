@@ -1,9 +1,8 @@
-import { DecoratorType } from '../../factories';
 import { DesignDecoratorScope } from './DesignDecoratorScope';
 import { DesignActionContext } from './DesignActionContext';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { IIocContainer } from '../../IIocContainer';
-import { DesignDecoratorRegisterer } from '../../services';
+import { DesignDecoratorRegisterer, DecoratorScopes } from '../../services';
 import { BindPropertyTypeAction } from './BindPropertyTypeAction';
 import { Inject, AutoWired } from '../../decorators';
 
@@ -15,8 +14,8 @@ export class DesignPropertyScope extends IocRegisterScope<DesignActionContext> {
 
         let decRgr = container.get(DesignDecoratorRegisterer);
 
-        decRgr.register(Inject, DecoratorType.Property, BindPropertyTypeAction);
-        decRgr.register(AutoWired, DecoratorType.Property, BindPropertyTypeAction);
+        decRgr.register(Inject, DecoratorScopes.Property, BindPropertyTypeAction);
+        decRgr.register(AutoWired, DecoratorScopes.Property, BindPropertyTypeAction);
 
         this.use(DesignPropertyDecoratorScope);
     }
@@ -24,7 +23,7 @@ export class DesignPropertyScope extends IocRegisterScope<DesignActionContext> {
 
 
 export class DesignPropertyDecoratorScope extends DesignDecoratorScope {
-    protected getDecorType(): DecoratorType {
-        return DecoratorType.Property;
+    protected getDecorScope(): DecoratorScopes {
+        return DecoratorScopes.Property;
     }
 }
