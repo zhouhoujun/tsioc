@@ -11,7 +11,7 @@ import {
     ResolveDefaultServiceAction, ResolveTargetServiceAction,
     ResovleServicesInTargetAction, ResovleServicesInRaiseAction,
     ResolveServiceTokenAction
-} from './actions';
+} from './resolves';
 
 
 export function registerCores(container: IContainer) {

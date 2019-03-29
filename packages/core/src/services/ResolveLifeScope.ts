@@ -1,5 +1,5 @@
 import { LifeScope, Singleton, Autorun } from '@ts-ioc/ioc';
-import { ResovleActionContext, ResolveScopeAction } from '../actions';
+import { ResovleActionContext, ResolveScopeAction } from '../resolves';
 
 /**
  * resolve life scope.

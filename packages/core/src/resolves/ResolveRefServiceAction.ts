@@ -1,6 +1,6 @@
 import { Singleton, isArray, InjectReference, isToken } from '@ts-ioc/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
-import { TargetRefService } from '../../TargetService';
+import { TargetRefService } from '../TargetService';
 import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
 
 @Singleton

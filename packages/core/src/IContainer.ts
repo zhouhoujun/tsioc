@@ -5,8 +5,8 @@ import {
 import { IContainerBuilder } from './IContainerBuilder';
 import { IServiceResolver } from './IServiceResolver';
 import { IServicesResolver } from './IServicesResolver';
-import { IModuleLoader, ResolveLifeScope } from './services';
-import { ResovleActionContext } from './actions';
+import { IModuleLoader } from './services';
+import { ResovleActionContext } from './resolves';
 
 /**
  * IContainer token.
@@ -69,7 +69,6 @@ export interface IContainer extends IIocContainer, IContextResolver, IServiceRes
      */
     getTokenImpl<T>(token: Token<T>): Type<T>;
 
-    
     /**
      * current container has register.
      *

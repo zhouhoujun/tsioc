@@ -1,10 +1,13 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isProvider, ProviderMap, IIocContainer, IProviderParser, TypeReflects, Factory, ParamProviders, IParameter, SymbolType, InstanceFactory, IResolver } from '@ts-ioc/ioc';
+import {
+    ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isProvider, ProviderMap, IProviderParser,
+    TypeReflects, Factory, ParamProviders, IParameter, SymbolType, InstanceFactory, IResolver
+} from '@ts-ioc/ioc';
 import { ModuleLoader, IModuleLoader, ServicesResolveLifeScope, ServiceResolveLifeScope, ResolveLifeScope } from './services';
 import { registerCores } from './registerCores';
-import { ResolveServiceContext, ResolveServicesContext, ResovleActionContext } from './actions';
+import { ResolveServiceContext, ResolveServicesContext, ResovleActionContext } from './resolves';
 import { TargetRefs } from './TargetService';
 
 
@@ -287,10 +290,7 @@ export class Container implements IContainer {
     getToken<T>(target: Token<T>, alias?: string): Token<T> {
         return this.ioc.getToken(target, alias);
     }
-    invoke<T>(target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): Promise<T> {
-        return this.ioc.invoke(target, propertyKey, instance, ...providers);
-    }
-    syncInvoke<T>(target: Token<any>, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
+    invoke<T>(target: Token<any>, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
         return this.ioc.invoke(target, propertyKey, instance, ...providers);
     }
     createParams(params: IParameter[], ...providers: ParamProviders[]): any[] {

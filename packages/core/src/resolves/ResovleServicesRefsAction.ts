@@ -6,13 +6,12 @@ import { ResolveServicesContext } from './ResolveServicesContext';
 export class ResovleServicesRefsAction extends IocResolveServicesAction {
     execute(ctx: ResolveServicesContext, next: () => void): void {
         if (ctx.targetRefs && ctx.targetRefs.length) {
-            let container = ctx.getRaiseContainer();
             ctx.targetRefs.forEach(t => {
                 let tk = isToken(t) ? t : t.getToken();
                 ctx.types.forEach(ty => {
                     let reftk = new InjectReference(ty, tk);
-                    if (container.has(reftk)) {
-                        ctx.services.add(reftk, (...providers: ProviderTypes[]) => container.get(reftk, ...providers))
+                    if (this.container.has(reftk)) {
+                        ctx.services.add(reftk, (...providers: ProviderTypes[]) => this.container.get(reftk, ...providers))
                     }
                 });
             })
