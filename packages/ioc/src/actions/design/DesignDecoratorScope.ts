@@ -3,7 +3,6 @@ import { DesignActionContext } from './DesignActionContext';
 import { DesignDecoratorRegisterer, DecoratorScopeRegisterer, DecoratorScopes } from '../../services';
 import { IocDecoratorScope } from '../IocDecoratorScope';
 import { ObjectMap } from '../../types';
-import { IIocContainer } from '../../IIocContainer';
 
 export abstract class DesignDecoratorScope extends IocDecoratorScope<DesignActionContext> {
 
@@ -22,7 +21,7 @@ export abstract class DesignDecoratorScope extends IocDecoratorScope<DesignActio
         return this.container.resolve(DesignDecoratorRegisterer);
     }
 
-    setup(container: IIocContainer) {
+    setup() {
         this.use(DesignDecoratorAction);
     }
 

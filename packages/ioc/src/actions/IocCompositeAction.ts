@@ -1,6 +1,7 @@
 import { Type } from '../types';
 import { lang, isClass } from '../utils';
 import { IocAction, IocActionType, IocActionContext } from './Action';
+import { IocRegisterAction } from './IocRegisterAction';
 
 
 /**
@@ -43,6 +44,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
                 this.actions.push(action);
             }
         }
+        this.checkRegister(action);
         return this;
     }
 
@@ -58,6 +60,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         if (!this.has(action)) {
             this.actions.splice(this.actions.indexOf(before) - 1, 0, action);
         }
+        this.checkRegister(action);
         return this;
     }
     /**
@@ -72,6 +75,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         if (!this.has(action)) {
             this.actions.splice(this.actions.indexOf(after), 0, action);
         }
+        this.checkRegister(action);
         return this;
     }
 
@@ -85,6 +89,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         if (this.befores.indexOf(action) < 0) {
             this.befores.push(action);
         }
+        this.checkRegister(action);
         return this;
     }
 
@@ -98,6 +103,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         if (this.afters.indexOf(action) < 0) {
             this.afters.push(action);
         }
+        this.checkRegister(action);
         return this;
     }
 
@@ -127,6 +133,21 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         }
         return ac
     }
+
+    protected checkRegister(action: IocActionType) {
+        if (isClass(action) && !this.container.has(action)) {
+            this.registerAction(action);
+        }
+    }
+
+    protected registerAction(action: Type<any>) {
+        if (lang.isExtendsClass(action, IocRegisterAction)) {
+            this.container.registerSingleton(action, () => new action(this.container));
+        } else {
+            this.container.register(action);
+        }
+    }
+
 
     protected resolveAction(ac: Type<IocAction<T>>): IocAction<T> {
         return this.container.resolve(ac);

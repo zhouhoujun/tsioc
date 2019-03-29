@@ -1,7 +1,6 @@
 import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { IIocContainer } from '../../IIocContainer';
 import { DecoratorScopes } from '../../services';
 
 /**
@@ -12,9 +11,7 @@ import { DecoratorScopes } from '../../services';
  * @extends {IocRuntimeScopeAction}
  */
 export class IocAfterConstructorScope extends IocRegisterScope<RuntimeActionContext> {
-    setup(container: IIocContainer) {
-        container.registerSingleton(IocAfterConstructorDecorScope, () => new IocAfterConstructorDecorScope(container));
-        container.get(IocAfterConstructorDecorScope).setup(container);
+    setup() {
         this.use(IocAfterConstructorDecorScope);
     }
 }

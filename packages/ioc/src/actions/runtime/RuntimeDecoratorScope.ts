@@ -4,7 +4,6 @@ import { IocDecoratorScope } from '../IocDecoratorScope';
 import { ObjectMap } from '../../types';
 import { RuntimeDecoratorAction } from './RuntimeDecoratorAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { IIocContainer } from '../../IIocContainer';
 
 export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeActionContext> {
 
@@ -100,7 +99,7 @@ export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeAct
         return this.container.resolve(RuntimeDecoratorRegisterer);
     }
 
-    setup(container: IIocContainer) {
+    setup() {
         this.use(RuntimeDecoratorAction);
     }
 

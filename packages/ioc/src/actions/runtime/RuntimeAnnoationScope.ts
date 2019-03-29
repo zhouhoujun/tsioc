@@ -11,21 +11,13 @@ import { ComponentInitAction } from './ComponentInitAction';
 import { ComponentAfterInitAction } from './ComponentAfterInitAction';
 
 export class RuntimeAnnoationScope extends IocRegisterScope<RuntimeActionContext> {
-    setup(container: IIocContainer) {
-        container.registerSingleton(RegisterSingletionAction, () => new RegisterSingletionAction(container));
-        container.registerSingleton(IocSetCacheAction, () => new IocSetCacheAction(container));
-        container.registerSingleton(ComponentBeforeInitAction, () => new ComponentBeforeInitAction(container));
-        container.registerSingleton(ComponentInitAction, () => new ComponentInitAction(container));
-        container.registerSingleton(ComponentAfterInitAction, () => new ComponentAfterInitAction(container));
-        container.registerSingleton(RuntimeAnnoationDecorScope, () => new RuntimeAnnoationDecorScope(container));
-
-        let decRgr = container.get(RuntimeDecoratorRegisterer);
+    setup() {
+        let decRgr = this.container.get(RuntimeDecoratorRegisterer);
         decRgr.register(Singleton, DecoratorScopes.Class, RegisterSingletionAction);
         decRgr.register(Injectable, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
         decRgr.register(Component, DecoratorScopes.Class, ComponentBeforeInitAction, ComponentInitAction,
             ComponentAfterInitAction, RegisterSingletionAction, IocSetCacheAction);
 
-        container.get(RuntimeAnnoationDecorScope).setup(container);
 
         this.use(RuntimeAnnoationDecorScope);
     }

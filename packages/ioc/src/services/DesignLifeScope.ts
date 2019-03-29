@@ -19,19 +19,19 @@ export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> {
     setup(container: IIocContainer) {
 
         container.registerSingleton(DesignDecoratorRegisterer, () => new DesignDecoratorRegisterer(container));
-        if (!container.has(InitReflectAction)) {
-            container.registerSingleton(InitReflectAction, () => new InitReflectAction(container));
-        }
+        // if (!container.has(InitReflectAction)) {
+        //     container.registerSingleton(InitReflectAction, () => new InitReflectAction(container));
+        // }
 
-        container.registerSingleton(DesignDecoratorAction, () => new DesignDecoratorAction(container));
-        container.registerSingleton(DesignAnnoationScope, () => new DesignAnnoationScope(container));
-        container.registerSingleton(DesignPropertyScope, () => new DesignPropertyScope(container));
-        container.registerSingleton(DesignMethodScope, () => new DesignMethodScope(container));
+        // container.registerSingleton(DesignDecoratorAction, () => new DesignDecoratorAction(container));
+        // container.registerSingleton(DesignAnnoationScope, () => new DesignAnnoationScope(container));
+        // container.registerSingleton(DesignPropertyScope, () => new DesignPropertyScope(container));
+        // container.registerSingleton(DesignMethodScope, () => new DesignMethodScope(container));
 
 
-        container.get(DesignAnnoationScope).setup(container);
-        container.get(DesignPropertyScope).setup(container);
-        container.get(DesignMethodScope).setup(container);
+        // container.get(DesignAnnoationScope).setup(container);
+        // container.get(DesignPropertyScope).setup(container);
+        // container.get(DesignMethodScope).setup(container);
 
         this.use(InitReflectAction)
             .use(DesignPropertyScope)

@@ -58,33 +58,33 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
     setup(container: IIocContainer) {
         container.registerSingleton(RuntimeDecoratorRegisterer, () => new RuntimeDecoratorRegisterer(container));
 
-        if (!container.has(InitReflectAction)) {
-            container.registerSingleton(InitReflectAction, () => new InitReflectAction(container));
-        }
+        // if (!container.has(InitReflectAction)) {
+        //     container.registerSingleton(InitReflectAction, () => new InitReflectAction(container));
+        // }
 
-        container.registerSingleton(ConstructorArgsAction, () => new ConstructorArgsAction(container));
-        container.registerSingleton(ContainerCheckerAction, () => new ContainerCheckerAction(container));
-        container.registerSingleton(CreateInstanceAction, () => new CreateInstanceAction(container));
-        container.registerSingleton(GetSingletionAction, () => new GetSingletionAction(container));
-        container.registerSingleton(InstanceCheckAction, () => new InstanceCheckAction(container));
-        container.registerSingleton(IocGetCacheAction, () => new IocGetCacheAction(container));
+        // container.registerSingleton(ConstructorArgsAction, () => new ConstructorArgsAction(container));
+        // container.registerSingleton(ContainerCheckerAction, () => new ContainerCheckerAction(container));
+        // container.registerSingleton(CreateInstanceAction, () => new CreateInstanceAction(container));
+        // container.registerSingleton(GetSingletionAction, () => new GetSingletionAction(container));
+        // container.registerSingleton(InstanceCheckAction, () => new InstanceCheckAction(container));
+        // container.registerSingleton(IocGetCacheAction, () => new IocGetCacheAction(container));
 
-        container.registerSingleton(IocBeforeConstructorScope, () => new IocBeforeConstructorScope(container));
-        container.registerSingleton(IocAfterConstructorScope, () => new IocAfterConstructorScope(container));
+        // container.registerSingleton(IocBeforeConstructorScope, () => new IocBeforeConstructorScope(container));
+        // container.registerSingleton(IocAfterConstructorScope, () => new IocAfterConstructorScope(container));
 
-        container.registerSingleton(RuntimeDecoratorAction, () => new RuntimeDecoratorAction(container));
-        container.registerSingleton(RuntimeAnnoationScope, () => new RuntimeAnnoationScope(container));
-        container.registerSingleton(RuntimePropertyScope, () => new RuntimePropertyScope(container));
-        container.registerSingleton(RuntimeMethodScope, () => new RuntimeMethodScope(container));
-        container.registerSingleton(RuntimeParamScope, () => new RuntimeParamScope(container));
+        // container.registerSingleton(RuntimeDecoratorAction, () => new RuntimeDecoratorAction(container));
+        // container.registerSingleton(RuntimeAnnoationScope, () => new RuntimeAnnoationScope(container));
+        // container.registerSingleton(RuntimePropertyScope, () => new RuntimePropertyScope(container));
+        // container.registerSingleton(RuntimeMethodScope, () => new RuntimeMethodScope(container));
+        // container.registerSingleton(RuntimeParamScope, () => new RuntimeParamScope(container));
 
 
-        container.get(IocBeforeConstructorScope).setup(container);
-        container.get(IocAfterConstructorScope).setup(container);
-        container.get(RuntimeAnnoationScope).setup(container);
-        container.get(RuntimePropertyScope).setup(container);
-        container.get(RuntimeMethodScope).setup(container);
-        container.get(RuntimeParamScope).setup(container);
+        // container.get(IocBeforeConstructorScope).setup(container);
+        // container.get(IocAfterConstructorScope).setup(container);
+        // container.get(RuntimeAnnoationScope).setup(container);
+        // container.get(RuntimePropertyScope).setup(container);
+        // container.get(RuntimeMethodScope).setup(container);
+        // container.get(RuntimeParamScope).setup(container);
 
         this.use(ContainerCheckerAction)
             .use(InitReflectAction)

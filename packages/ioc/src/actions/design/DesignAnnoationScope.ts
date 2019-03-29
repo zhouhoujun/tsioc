@@ -1,20 +1,14 @@
 import { DesignDecoratorScope } from './DesignDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { DesignActionContext } from './DesignActionContext';
-import { IIocContainer } from '../../IIocContainer';
 import { DesignDecoratorRegisterer, DecoratorScopes } from '../../services';
 import { Injectable, Component, Singleton, Providers, Refs, Autorun } from '../../decorators';
 import { BindProviderAction } from './BindProviderAction';
 import { IocAutorunAction } from './IocAutorunAction';
 
 export class DesignAnnoationScope extends IocRegisterScope<DesignActionContext> {
-    setup(container: IIocContainer) {
-        container.registerSingleton(BindProviderAction, () => new BindProviderAction(container));
-        container.registerSingleton(IocAutorunAction, () => new IocAutorunAction(container));
-        container.registerSingleton(DesignClassDecoratorScope, () => new DesignClassDecoratorScope(container));
-        container.get(DesignClassDecoratorScope).setup(container);
-
-        let decRgr = container.get(DesignDecoratorRegisterer);
+    setup() {
+        let decRgr = this.container.get(DesignDecoratorRegisterer);
         decRgr.register(Injectable, DecoratorScopes.Class, BindProviderAction);
         decRgr.register(Component, DecoratorScopes.Class, BindProviderAction);
         decRgr.register(Singleton, DecoratorScopes.Class, BindProviderAction);
