@@ -1,6 +1,6 @@
 import {
     ProviderTypes, IocActionContext, ActionContextOption, IIocContainer
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 
 
 /**

@@ -1,6 +1,6 @@
 import { Next } from './Handle';
 import { AnnoationHandle, AnnoationContext } from './AnnoationHandle';
-import { ProviderParser, Type, ProviderTypes, isArray, Singleton } from '@ts-ioc/ioc';
+import { ProviderParser, Type, ProviderTypes, isArray, Singleton } from '@tsdi/ioc';
 
 @Singleton
 export class RegisterModuleProvidersHandle extends AnnoationHandle {

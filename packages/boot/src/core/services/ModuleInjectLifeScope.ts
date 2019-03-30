@@ -2,7 +2,7 @@ import {
     CompositeHandle, AnnoationContext, CheckAnnoHandle,
     RegisterScopeHandle, RegisterChildModuleHandle
 } from '../handles';
-import { Singleton, Autorun } from '@ts-ioc/ioc';
+import { Singleton, Autorun } from '@tsdi/ioc';
 import { AnnoationLifeScope } from './AnnoationLifeScope';
 
 @Singleton

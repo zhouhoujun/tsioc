@@ -1,5 +1,5 @@
-import { Task, Src, CtxType, ActivityConfigure } from '@ts-ioc/activities';
-import { NodeActivity } from '@ts-ioc/build';
+import { Task, Src, CtxType, ActivityConfigure } from '@tsdi/activities';
+import { NodeActivity } from '@tsdi/build';
 
 
 /**

@@ -1,4 +1,4 @@
-import { ExtendsProvider, RuntimeActionContext, IocRuntimeAction } from '@ts-ioc/ioc';
+import { ExtendsProvider, RuntimeActionContext, IocRuntimeAction } from '@tsdi/ioc';
 
 /**
  * extends instance action.

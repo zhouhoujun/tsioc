@@ -1,4 +1,4 @@
-import { AutoWired, Injectable, ParameterMetadata, Param, Registration, Inject, Singleton } from '@ts-ioc/ioc';
+import { AutoWired, Injectable, ParameterMetadata, Param, Registration, Inject, Singleton } from '@tsdi/ioc';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student, InjMClassRoom, InjCollegeClassRoom, InjCollegeAliasClassRoom, StingMClassRoom, StringIdTest, SymbolIdest, SymbolCollegeClassRoom } from './debug';
 import expect = require('expect');
 import { IContainer, ContainerBuilder } from '../src';

@@ -1,4 +1,4 @@
-import { PromiseUtil } from '@ts-ioc/ioc';
+import { PromiseUtil } from '@tsdi/ioc';
 import { Task } from '../decorators/Task';
 import { InjectAcitityToken, DelayConfigure, OnActivityInit } from '../core';
 import { ControlActivity } from './ControlActivity';

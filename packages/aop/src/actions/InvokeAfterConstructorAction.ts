@@ -1,4 +1,4 @@
-import { Provider, ParamProviders, lang, RuntimeActionContext, IocRuntimeAction } from '@ts-ioc/ioc';
+import { Provider, ParamProviders, lang, RuntimeActionContext, IocRuntimeAction } from '@tsdi/ioc';
 import { AdvisorToken } from '../IAdvisor';
 import { Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints';
 import { isValideAspectTarget } from '../isValideAspectTarget';

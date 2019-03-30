@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import { Task, Src, CtxType } from '@ts-ioc/activities';
+import { Task, Src, CtxType } from '@tsdi/activities';
 import { ShellActivity, ShellActivityConfig } from '../ShellActivity';
 
 /**

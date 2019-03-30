@@ -1,8 +1,8 @@
 import {
     Token, Type, Express, IocCoreService, getClassDecorators, isClass,
     getTypeMetadata, isToken, Singleton, InjectReference
-} from '@ts-ioc/ioc';
-import { IContainer } from '@ts-ioc/core';
+} from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
 import { IMetaAccessor, ModuleConfigure } from '../modules';
 
 

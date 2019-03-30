@@ -1,6 +1,6 @@
 import { Handle, HandleType, Next } from './Handle';
 import { HandleContext } from './HandleContext';
-import { isClass, PromiseUtil } from '@ts-ioc/ioc';
+import { isClass, PromiseUtil } from '@tsdi/ioc';
 
 
 /**

@@ -1,8 +1,8 @@
-import { Task } from '@ts-ioc/activities';
+import { Task } from '@tsdi/activities';
 import { ITransformConfigure } from './ITransformConfigure';
 import { TransformType } from './transformTypes';
 import { StreamActivity } from './StreamActivity';
-import { classAnnotations } from '@ts-ioc/annotations';
+import { classAnnotations } from '@tsdi/annotations';
 
 
 export interface AnnotationsConfigure extends ITransformConfigure {

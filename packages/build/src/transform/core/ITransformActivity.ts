@@ -1,4 +1,4 @@
-import { IActivityResult, InjectAcitityToken } from '@ts-ioc/activities';
+import { IActivityResult, InjectAcitityToken } from '@tsdi/activities';
 import { ITransform } from './ITransform';
 
 /**

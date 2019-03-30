@@ -1,4 +1,4 @@
-import { ITypeDecorator, MetadataAdapter, MetadataExtends, createClassDecorator } from '@ts-ioc/ioc';
+import { ITypeDecorator, MetadataAdapter, MetadataExtends, createClassDecorator } from '@tsdi/ioc';
 import { IAnnotationMetadata } from '../modules';
 
 

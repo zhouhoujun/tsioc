@@ -1,6 +1,6 @@
-import { PackModule, Pack, PackActivity } from '@ts-ioc/pack';
-import { Workflow } from '@ts-ioc/activities';
-import { Asset, AssetActivity, TsCompile, CleanToken, TransformContext } from '@ts-ioc/build';
+import { PackModule, Pack, PackActivity } from '@tsdi/pack';
+import { Workflow } from '@tsdi/activities';
+import { Asset, AssetActivity, TsCompile, CleanToken, TransformContext } from '@tsdi/build';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
@@ -29,12 +29,12 @@ const rename = require('gulp-rename');
             external: [
                 'reflect-metadata',
                 'tslib',
-                '@ts-ioc/ioc'
+                '@tsdi/ioc'
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
                 'tslib': 'tslib',
-                '@ts-ioc/ioc': '@ts-ioc/ioc'
+                '@tsdi/ioc': '@tsdi/ioc'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),

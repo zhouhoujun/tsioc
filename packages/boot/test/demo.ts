@@ -1,7 +1,7 @@
 import { DIModule, Runnable } from '../src';
-import { Injectable, Inject } from '@ts-ioc/ioc';
-import { Aspect, AopModule, Around, Joinpoint } from '@ts-ioc/aop';
-import { LogModule } from '@ts-ioc/logs';
+import { Injectable, Inject } from '@tsdi/ioc';
+import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
+import { LogModule } from '@tsdi/logs';
 
 
 export class TestService {

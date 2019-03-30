@@ -1,5 +1,5 @@
 import { Handle, Next } from '../core';
-import { Abstract } from '@ts-ioc/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
 
 /**

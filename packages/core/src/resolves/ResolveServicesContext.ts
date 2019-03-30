@@ -1,4 +1,4 @@
-import { ClassType, ProviderMap } from '@ts-ioc/ioc';
+import { ClassType, ProviderMap } from '@tsdi/ioc';
 import { ServiceActionOption, ResolveServiceContext } from './ResolveServiceContext';
 import { IContainer } from '../IContainer';
 

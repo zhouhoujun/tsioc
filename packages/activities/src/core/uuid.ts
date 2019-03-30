@@ -1,4 +1,4 @@
-import { InjectToken, Singleton } from '@ts-ioc/ioc';
+import { InjectToken, Singleton } from '@tsdi/ioc';
 
 /**
  * uuid factory.

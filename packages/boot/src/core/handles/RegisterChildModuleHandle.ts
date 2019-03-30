@@ -1,4 +1,4 @@
-import { Singleton, Autorun } from '@ts-ioc/ioc';
+import { Singleton, Autorun } from '@tsdi/ioc';
 import { CompositeHandle } from './CompositeHandle';
 import { AnnoationContext } from './AnnoationHandle';
 import { Next } from './Handle';

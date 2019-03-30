@@ -1,4 +1,4 @@
-import { Singleton, IocCompositeAction, Autorun } from '@ts-ioc/ioc';
+import { Singleton, IocCompositeAction, Autorun } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { ResolveRefServiceAction } from './ResolveRefServiceAction';
 import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';

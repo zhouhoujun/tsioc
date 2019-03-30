@@ -1,4 +1,4 @@
-import { isClass, hasOwnClassMetadata } from '@ts-ioc/ioc';
+import { isClass, hasOwnClassMetadata } from '@tsdi/ioc';
 import { DIModule } from './decorators/DIModule';
 
 

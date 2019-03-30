@@ -1,7 +1,7 @@
 import { Next } from './Handle';
 import { AnnoationHandle, AnnoationContext } from './AnnoationHandle';
 import { ModuleResovler, IDIModuleReflect } from '../modules';
-import { Singleton } from '@ts-ioc/ioc';
+import { Singleton } from '@tsdi/ioc';
 
 @Singleton
 export class RegisterModuleResolverHandle extends AnnoationHandle {

@@ -1,5 +1,5 @@
-import { Pack } from '@ts-ioc/pack';
-import { Asset, AssetActivity, TsCompile, TransformContext } from '@ts-ioc/build';
+import { Pack } from '@tsdi/pack';
+import { Asset, AssetActivity, TsCompile, TransformContext } from '@tsdi/build';
 const rename = require('gulp-rename');
 const rollup = require('gulp-rollup');
 const resolve = require('rollup-plugin-node-resolve');
@@ -31,10 +31,10 @@ const commonjs = require('rollup-plugin-commonjs');
                 'reflect-metadata',
                 'tslib',
                 'events',
-                '@ts-ioc/core',
-                '@ts-ioc/aop',
-                '@ts-ioc/logs',
-                '@ts-ioc/boot',
+                '@tsdi/core',
+                '@tsdi/aop',
+                '@tsdi/logs',
+                '@tsdi/boot',
                 'gulp-sourcemaps',
                 'gulp-typescript',
                 'rxjs',
@@ -45,10 +45,10 @@ const commonjs = require('rollup-plugin-commonjs');
                 'tslib': 'tslib',
                 'rxjs': 'rxjs',
                 'rxjs/operators': 'rxjs/operators',
-                '@ts-ioc/core': '@ts-ioc/core',
-                '@ts-ioc/aop': '@ts-ioc/aop',
-                '@ts-ioc/logs': '@ts-ioc/logs',
-                '@ts-ioc/boot': '@ts-ioc/boot'
+                '@tsdi/core': '@tsdi/core',
+                '@tsdi/aop': '@tsdi/aop',
+                '@tsdi/logs': '@tsdi/logs',
+                '@tsdi/boot': '@tsdi/boot'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),

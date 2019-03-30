@@ -1,9 +1,9 @@
-import { IContainer, ContainerToken, IocExt } from '@ts-ioc/core';
+import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { Pack } from './decorators';
 import {
     DecoratorScopeRegisterer, BindProviderAction, IocGetCacheAction,
     IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction, Inject
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 
 /**
  * pack setup.

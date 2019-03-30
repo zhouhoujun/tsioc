@@ -1,4 +1,4 @@
-import { hasOwnMethodMetadata, hasPropertyMetadata, Inject, AutoWired, Injectable, Singleton, ParameterMetadata, Param, isFunction, getParamDecorators } from '@ts-ioc/ioc';
+import { hasOwnMethodMetadata, hasPropertyMetadata, Inject, AutoWired, Injectable, Singleton, ParameterMetadata, Param, isFunction, getParamDecorators } from '@tsdi/ioc';
 import { ContainerBuilder, IContainer } from '../src';
 import expect = require('expect');
 // import { AnnotationAspect } from './aop/AnnotationAspect';

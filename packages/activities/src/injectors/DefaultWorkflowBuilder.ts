@@ -1,7 +1,7 @@
-import { Singleton, Providers } from '@ts-ioc/ioc';
+import { Singleton, Providers } from '@tsdi/ioc';
 import { IActivity, CoreActivityConfigs, Active, ActivityMetaAccessor, ActivityBuilder } from '../core';
-import { ModuleBuilder, AnnotationBuilder, BootOption, IRunnable } from '@ts-ioc/boot';
-import { MetaAccessor } from '@ts-ioc/boot';
+import { ModuleBuilder, AnnotationBuilder, BootOption, IRunnable } from '@tsdi/boot';
+import { MetaAccessor } from '@tsdi/boot';
 
 
 /**

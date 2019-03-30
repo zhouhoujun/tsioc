@@ -4,7 +4,7 @@ import {
     ServicesResolveLifeScope, ServiceResolveLifeScope, ModuleInjector, ResolveLifeScope
 } from './services';
 import { IocExt } from './decorators';
-import { RuntimeDecoratorRegisterer, IocAutorunAction, DecoratorScopes, RegisterSingletionAction, DesignDecoratorRegisterer } from '@ts-ioc/ioc';
+import { RuntimeDecoratorRegisterer, IocAutorunAction, DecoratorScopes, RegisterSingletionAction, DesignDecoratorRegisterer } from '@tsdi/ioc';
 import {
     InitServiceResolveAction, ResolveRefServiceAction, ResolveServiceScopeAction,
     ResolveServicesScopeAction, ResolvePrivateServiceAction, ResolveServiceInClassChain,

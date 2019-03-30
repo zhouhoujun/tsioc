@@ -1,5 +1,5 @@
-import { Token, SymbolType, Registration, InjectToken, IIocContainer } from '@ts-ioc/ioc';
-import { IContainer, IContainerBuilder } from '@ts-ioc/core';
+import { Token, SymbolType, Registration, InjectToken, IIocContainer } from '@tsdi/ioc';
+import { IContainer, IContainerBuilder } from '@tsdi/core';
 import { BootModule } from './BootModule';
 
 /**

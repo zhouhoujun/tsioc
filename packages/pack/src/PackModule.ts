@@ -1,5 +1,5 @@
-import { DIModule } from '@ts-ioc/boot';
-import { BuildModule } from '@ts-ioc/build';
+import { DIModule } from '@tsdi/boot';
+import { BuildModule } from '@tsdi/build';
 import { PackSetup } from './PackSetup';
 import * as cores from './core';
 import * as builds from './build';

@@ -1,4 +1,4 @@
-import { Singleton } from '@ts-ioc/ioc';
+import { Singleton } from '@tsdi/ioc';
 import { AnnoationHandle, AnnoationContext } from './AnnoationHandle';
 import { Next } from './Handle';
 

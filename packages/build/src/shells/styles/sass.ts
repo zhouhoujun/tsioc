@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { Task } from '@ts-ioc/activities';
+import { Task } from '@tsdi/activities';
 import { mkdir } from 'shelljs';
 import { ShellActivity } from '../ShellActivity';
 

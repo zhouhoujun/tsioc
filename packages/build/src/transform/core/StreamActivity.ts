@@ -1,8 +1,8 @@
-import { Task, ActivityConfigure } from '@ts-ioc/activities';
+import { Task, ActivityConfigure } from '@tsdi/activities';
 import { ITransform } from './ITransform';
 import { TransformType, isTransform } from './transformTypes';
-import { InputDataToken, InjectActivityContextToken } from '@ts-ioc/activities';
-import { Injectable, Inject, isArray, isString, isUndefined } from '@ts-ioc/ioc';
+import { InputDataToken, InjectActivityContextToken } from '@tsdi/activities';
+import { Injectable, Inject, isArray, isString, isUndefined } from '@tsdi/ioc';
 import { src } from 'vinyl-fs';
 import { Stream } from 'stream';
 import { CompilerActivity, BuildHandleContext } from '../../core';

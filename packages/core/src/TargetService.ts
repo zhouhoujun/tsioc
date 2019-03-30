@@ -1,4 +1,4 @@
-import { lang, Token, isToken } from '@ts-ioc/ioc';
+import { lang, Token, isToken } from '@tsdi/ioc';
 
 
 /**

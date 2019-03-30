@@ -1,5 +1,5 @@
 import { IRunnable, Runnable } from './Runnable';
-import { Abstract } from '@ts-ioc/ioc';
+import { Abstract } from '@tsdi/ioc';
 
 /**
  * IService interface

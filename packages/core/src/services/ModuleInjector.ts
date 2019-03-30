@@ -1,7 +1,7 @@
 import {
     Type, IocCoreService, PromiseUtil, isClass,
     isString, hasOwnClassMetadata, isArray, Singleton
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 import { IContainer } from '../IContainer';
 
 

@@ -1,4 +1,4 @@
-import { Src, Task, Expression } from '@ts-ioc/activities';
+import { Src, Task, Expression } from '@tsdi/activities';
 import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
 import { CleanToken, CleanConfigure } from './ICleanActivity';
 

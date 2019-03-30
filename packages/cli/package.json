@@ -1,5 +1,5 @@
 {
-  "name": "@ts-ioc/cli",
+  "name": "@tsdi/cli",
   "version": "4.0.5",
   "description": "tsioc cli.",
   "typings": "./lib/cli.d.ts",
@@ -21,7 +21,7 @@
     "framework",
     "cli",
     "ts-ioc",
-    "@ts-ioc",
+    "@tsdi",
     "tsioc",
     "IoC",
     "AOP",

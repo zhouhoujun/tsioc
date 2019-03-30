@@ -1,4 +1,4 @@
-import { Singleton, Autorun, PromiseUtil } from '@ts-ioc/ioc';
+import { Singleton, Autorun, PromiseUtil } from '@tsdi/ioc';
 import { CompositeHandle } from './CompositeHandle';
 import { AnnoationContext } from './AnnoationHandle';
 import { ContainerPoolToken } from '../ContainerPool';
@@ -8,7 +8,7 @@ import { RegisterModuleHandle } from './RegisterModuleHandle';
 import { RegisterImportsHandle } from './RegisterImportsHandle';
 import { RegisterModuleProvidersHandle } from './RegisterModuleProvidersHandle';
 import { RegisterModuleResolverHandle } from './RegisterModuleResolverHandle';
-import { IContainer } from '@ts-ioc/core';
+import { IContainer } from '@tsdi/core';
 
 
 @Singleton

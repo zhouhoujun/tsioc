@@ -1,7 +1,7 @@
 {
-  "name": "@ts-ioc/platform-browser-activities",
+  "name": "@tsdi/platform-browser-activities",
   "version": "4.0.5",
-  "description": "type task framework, base on AOP, Ioc container, via @ts-ioc",
+  "description": "type task framework, base on AOP, Ioc container, via @tsdi",
   "es2015": "./fesm2015/platform-browser-activities.js",
   "esm2015": "./es2015/index.js",
   "esm5": "./lib/index.js",
@@ -20,7 +20,7 @@
     "task",
     "framework",
     "ts-ioc",
-    "@ts-ioc",
+    "@tsdi",
     "tsioc",
     "IoC",
     "AOP",
@@ -40,10 +40,10 @@
   "dependencies": {
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3",
-    "@ts-ioc/ioc": "^5.0.0",
-    "@ts-ioc/core": "^5.0.0",
-    "@ts-ioc/activities": "^4.0.5",
-    "@ts-ioc/platform-browser": "^4.0.5"
+    "@tsdi/ioc": "^5.0.0",
+    "@tsdi/core": "^5.0.0",
+    "@tsdi/activities": "^4.0.5",
+    "@tsdi/platform-browser": "^4.0.5"
   },
   "directories": {
     "lib": "lib",

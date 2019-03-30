@@ -1,4 +1,4 @@
-import { Token, LoadType, Modules, ComponentMetadata, Type } from '@ts-ioc/ioc';
+import { Token, LoadType, Modules, ComponentMetadata, Type } from '@tsdi/ioc';
 import { IMetaAccessor } from './IMetaAccessor';
 import { IRunnable } from '../../runnable';
 import { RegScope } from './RegScope';

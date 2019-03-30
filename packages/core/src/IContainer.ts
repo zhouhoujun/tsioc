@@ -1,7 +1,7 @@
 import {
     Type, Token, Modules, LoadType,
     InjectToken, IIocContainer
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IServiceResolver } from './IServiceResolver';
 import { IServicesResolver } from './IServicesResolver';

@@ -1,4 +1,4 @@
-import { MethodMetadata } from '@ts-ioc/ioc';
+import { MethodMetadata } from '@tsdi/ioc';
 
 /**
  * Test metadata.

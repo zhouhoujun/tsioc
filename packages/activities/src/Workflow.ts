@@ -1,12 +1,12 @@
-import { ApplicationBuilder, BootOption, AppConfigure } from '@ts-ioc/boot';
+import { ApplicationBuilder, BootOption, AppConfigure } from '@tsdi/boot';
 import {
     IActivity, IWorkflowInstance, Active, SequenceConfigure, WorkflowId,
     UUIDToken, RandomUUIDFactory, CoreActivityConfigs
 } from './core';
 import { IWorkflow } from './IWorkflow';
-import { lang, isToken } from '@ts-ioc/ioc';
-import { AopModule } from '@ts-ioc/aop';
-import { LogModule } from '@ts-ioc/logs';
+import { lang, isToken } from '@tsdi/ioc';
+import { AopModule } from '@tsdi/aop';
+import { LogModule } from '@tsdi/logs';
 import { CoreModule } from './CoreModule';
 import { SequenceActivity } from './activities';
 

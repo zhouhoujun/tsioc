@@ -1,9 +1,9 @@
-import { Src, ExpressionToken, ConfigureType, IActivity, CtxType } from '@ts-ioc/activities';
-import { ObjectMap, Token } from '@ts-ioc/core';
+import { Src, ExpressionToken, ConfigureType, IActivity, CtxType } from '@tsdi/activities';
+import { ObjectMap, Token } from '@tsdi/core';
 import {
     BuildConfigure, TestConfigure, CleanConfigure,
     CleanActivity, TestActivity, BuildConfigures
-} from '@ts-ioc/build';
+} from '@tsdi/build';
 import { ServeActivity, ServeConfigure } from '../serves';
 
 /**

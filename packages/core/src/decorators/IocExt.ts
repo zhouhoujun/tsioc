@@ -1,4 +1,4 @@
-import { createClassDecorator, ITypeDecorator, AutorunMetadata, isClassMetadata, isString } from '@ts-ioc/ioc';
+import { createClassDecorator, ITypeDecorator, AutorunMetadata, isClassMetadata, isString } from '@tsdi/ioc';
 
 
 /**

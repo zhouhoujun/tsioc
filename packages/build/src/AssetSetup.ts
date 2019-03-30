@@ -1,9 +1,9 @@
-import { IContainer, ContainerToken, IocExt } from '@ts-ioc/core';
+import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { Asset } from './decorators/Asset';
 import {
     Inject, DecoratorScopeRegisterer, BindProviderAction, IocSetCacheAction,
     IocGetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 
 /**
  * build module setup.

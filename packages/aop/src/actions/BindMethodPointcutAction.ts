@@ -1,7 +1,7 @@
 import { IPointcut } from '../joinpoints';
 import { isValideAspectTarget } from '../isValideAspectTarget';
 import { ProxyMethodToken } from '../access';
-import { RuntimeActionContext, lang, getParamerterNames, isUndefined, IocRuntimeAction } from '@ts-ioc/ioc';
+import { RuntimeActionContext, lang, getParamerterNames, isUndefined, IocRuntimeAction } from '@tsdi/ioc';
 
 
 /**

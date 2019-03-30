@@ -1,7 +1,7 @@
-import { Type, Singleton, ITypeReflect } from '@ts-ioc/ioc';
+import { Type, Singleton, ITypeReflect } from '@tsdi/ioc';
 import { ModuleInjectLifeScope } from '../services';
 import { ModuleResovler } from './ModuleResovler';
-import { IContainer, ModuleInjector } from '@ts-ioc/core';
+import { IContainer, ModuleInjector } from '@tsdi/core';
 import { AnnoationContext } from '../handles';
 
 /**

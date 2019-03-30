@@ -1,4 +1,4 @@
-import { Token } from '@ts-ioc/ioc';
+import { Token } from '@tsdi/ioc';
 import { TargetRef } from '../TargetService';
 import { IContainer } from '../IContainer';
 import { ResovleActionOption, ResovleActionContext } from './ResovleActionContext';

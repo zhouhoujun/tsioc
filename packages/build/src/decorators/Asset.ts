@@ -1,4 +1,4 @@
-import { ITaskDecorator, createTaskDecorator, ActivityBuilder } from '@ts-ioc/activities';
+import { ITaskDecorator, createTaskDecorator, ActivityBuilder } from '@tsdi/activities';
 import { AssetToken, AssetConfigure } from '../core/handles/IAssetBuildHandle';
 import { StreamAssetConfigure } from '../transform/StreamAssetConfigure';
 import { ShellAssetConfigure } from '../shells/IShellAssetActivity';

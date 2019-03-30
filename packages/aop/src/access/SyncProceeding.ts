@@ -1,6 +1,6 @@
 import { AdvisorProceeding } from './AdvisorProceeding';
 import { Joinpoint } from '../joinpoints';
-import { Express, Singleton } from '@ts-ioc/ioc';
+import { Express, Singleton } from '@tsdi/ioc';
 import { ReturningType } from './ReturningType';
 import { NonePointcut } from '../decorators/NonePointcut';
 

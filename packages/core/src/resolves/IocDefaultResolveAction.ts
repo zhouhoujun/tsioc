@@ -1,4 +1,4 @@
-import { isNullOrUndefined, Singleton } from '@ts-ioc/ioc';
+import { isNullOrUndefined, Singleton } from '@tsdi/ioc';
 import { ResovleActionContext } from './ResovleActionContext';
 import { IocResolveAction } from './IocResolveAction';
 

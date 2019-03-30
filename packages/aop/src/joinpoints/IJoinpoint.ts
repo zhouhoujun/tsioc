@@ -1,7 +1,7 @@
 import { IPointcut } from './IPointcut';
 import { JoinpointState } from './JoinpointState';
 import { Advicer } from '../advices';
-import { IParameter, MethodMetadata, Type, InjectToken } from '@ts-ioc/ioc';
+import { IParameter, MethodMetadata, Type, InjectToken } from '@tsdi/ioc';
 
  /**
  * Aop IJoinpoint interface token.

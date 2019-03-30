@@ -1,8 +1,8 @@
-import { Runnable } from '@ts-ioc/boot';
+import { Runnable } from '@tsdi/boot';
 import {
     getMethodMetadata, isNumber, lang, PromiseUtil,
     getOwnTypeMetadata, Injectable
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 import { Before } from '../decorators/Before';
 import { BeforeEach } from '../decorators/BeforeEach';
 import { Test } from '../decorators/Test';

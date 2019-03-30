@@ -1,5 +1,5 @@
 import { IActivity, Activity, IActivityContext } from '../core';
-import { Registration, Type, lang } from '@ts-ioc/ioc';
+import { Registration, Type, lang } from '@tsdi/ioc';
 import { Task } from '../decorators/Task';
 
 

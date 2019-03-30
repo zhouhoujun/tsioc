@@ -1,6 +1,6 @@
-import { Workflow } from '@ts-ioc/activities';
-import { CleanToken, CleanActivity, AssetActivity, Asset, TsCompile, TransformContext } from '@ts-ioc/build';
-import { Pack, PackActivity, PackModule } from '@ts-ioc/pack';
+import { Workflow } from '@tsdi/activities';
+import { CleanToken, CleanActivity, AssetActivity, Asset, TsCompile, TransformContext } from '@tsdi/build';
+import { Pack, PackActivity, PackModule } from '@tsdi/pack';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
@@ -35,17 +35,17 @@ const builtins = require('rollup-plugin-node-builtins');
                 'reflect-metadata',
                 'tslib',
                 'globby', 'path', 'fs', 'events', 'stream', 'child_process',
-                '@ts-ioc/core',
-                '@ts-ioc/aop',
-                '@ts-ioc/logs',
-                '@ts-ioc/boot',
-                '@ts-ioc/pipes',
-                '@ts-ioc/platform-server',
+                '@tsdi/core',
+                '@tsdi/aop',
+                '@tsdi/logs',
+                '@tsdi/boot',
+                '@tsdi/pipes',
+                '@tsdi/platform-server',
                 'minimist', 'gulp-sourcemaps', 'vinyl-fs', 'del', 'chokidar',
-                'gulp-uglify', 'execa', '@ts-ioc/annotations', 'gulp-typescript',
-                '@ts-ioc/activities',
-                '@ts-ioc/platform-server-activities',
-                '@ts-ioc/build',
+                'gulp-uglify', 'execa', '@tsdi/annotations', 'gulp-typescript',
+                '@tsdi/activities',
+                '@tsdi/platform-server-activities',
+                '@tsdi/build',
                 'rxjs',
                 'rxjs/operators'
             ],
@@ -53,11 +53,11 @@ const builtins = require('rollup-plugin-node-builtins');
                 'reflect-metadata': 'Reflect',
                 'tslib': 'tslib',
                 'path': 'path',
-                '@ts-ioc/core': '@ts-ioc/core',
-                '@ts-ioc/aop': '@ts-ioc/aop',
-                '@ts-ioc/boot': '@ts-ioc/boot',
-                '@ts-ioc/activities': '@ts-ioc/activities',
-                '@ts-ioc/build': '@ts-ioc/build'
+                '@tsdi/core': '@tsdi/core',
+                '@tsdi/aop': '@tsdi/aop',
+                '@tsdi/boot': '@tsdi/boot',
+                '@tsdi/activities': '@tsdi/activities',
+                '@tsdi/build': '@tsdi/build'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),

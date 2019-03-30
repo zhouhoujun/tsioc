@@ -1,4 +1,4 @@
-import { InjectRunnableToken, IRunnable } from '@ts-ioc/boot';
+import { InjectRunnableToken, IRunnable } from '@tsdi/boot';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 
 

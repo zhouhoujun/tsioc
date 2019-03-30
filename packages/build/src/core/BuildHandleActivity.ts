@@ -1,19 +1,19 @@
 import {
     HandleActivity, Task, IActivity,
     Expression, ActivityMetaAccessor, IActivityContext, Src
-} from '@ts-ioc/activities';
+} from '@tsdi/activities';
 import {
     isRegExp, isString, isArray, Express, isFunction,
     Providers, lang, Inject, Injectable
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 import { BuidActivityContext } from './BuidActivityContext';
 import minimatch = require('minimatch');
 import { CompilerToken } from './ICompiler';
-import { InputDataToken, InjectActivityContextToken } from '@ts-ioc/activities';
+import { InputDataToken, InjectActivityContextToken } from '@tsdi/activities';
 import { NodeActivityContext } from './NodeActivity';
 import { BuildHandleToken, BuildHandleConfigure } from './BuildHandle';
 import { EmptyCompiler } from './CompilerActivity';
-import { MetaAccessor } from '@ts-ioc/boot';
+import { MetaAccessor } from '@tsdi/boot';
 
 
 /**

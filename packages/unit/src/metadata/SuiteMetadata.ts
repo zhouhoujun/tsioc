@@ -1,4 +1,4 @@
-import { RunnableConfigure } from '@ts-ioc/boot';
+import { RunnableConfigure } from '@tsdi/boot';
 
 /**
  * Suite metadata.

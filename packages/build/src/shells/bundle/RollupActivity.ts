@@ -1,6 +1,6 @@
 import * as path from 'path';
-import { Task, Src, CtxType } from '@ts-ioc/activities';
-import { lang, ObjectMap } from '@ts-ioc/ioc';
+import { Task, Src, CtxType } from '@tsdi/activities';
+import { lang, ObjectMap } from '@tsdi/ioc';
 import { RollupDirOptions, RollupFileOptions, rollup } from 'rollup';
 import { ShellActivity, ShellActivityConfig } from '../ShellActivity';
 

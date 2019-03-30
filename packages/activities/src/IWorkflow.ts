@@ -1,6 +1,6 @@
-import { IApplicationBuilder, BootOption } from '@ts-ioc/boot';
+import { IApplicationBuilder, BootOption } from '@tsdi/boot';
 import { IActivity, IWorkflowInstance, Active, CoreActivityConfigs } from './core';
-import { Token } from '@ts-ioc/ioc';
+import { Token } from '@tsdi/ioc';
 
 export interface IWorkflow extends IApplicationBuilder<IActivity> {
 

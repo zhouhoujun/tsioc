@@ -1,9 +1,9 @@
 import { IActivity, ActivityToken } from './IActivity';
 import { ActivityBuilder } from './ActivityBuilder';
 import { ActivityConfigure, Expression } from './ActivityConfigure';
-import { InjectToken, Token, ObjectMap, Type, InjectReference } from '@ts-ioc/ioc';
-import { IEvents } from '@ts-ioc/boot';
-import { IContainer } from '@ts-ioc/core';
+import { InjectToken, Token, ObjectMap, Type, InjectReference } from '@tsdi/ioc';
+import { IEvents } from '@tsdi/boot';
+import { IContainer } from '@tsdi/core';
 import { ActivityContext } from './ActivityContext';
 
 

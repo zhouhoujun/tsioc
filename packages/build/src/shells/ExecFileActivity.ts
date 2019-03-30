@@ -1,6 +1,6 @@
-import { isString, isArray, isBoolean } from '@ts-ioc/ioc';
+import { isString, isArray, isBoolean } from '@tsdi/ioc';
 import { existsSync } from 'fs';
-import { Src, Task, CtxType } from '@ts-ioc/activities';
+import { Src, Task, CtxType } from '@tsdi/activities';
 import * as execa from 'execa';
 import { CompilerActivity, CompilerConfigure } from '../core';
 

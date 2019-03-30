@@ -1,9 +1,9 @@
 import {
     Src, Task, ActivityContext, InputDataToken, Activity,
     InjectActivityContextToken, ActivityConfigure, ActivityMetaAccessor
-} from '@ts-ioc/activities';
-import { Inject, Injectable, ObjectMap, Express2, isArray, isString, lang, Providers } from '@ts-ioc/ioc';
-import { toAbsolutePath } from '@ts-ioc/platform-server';
+} from '@tsdi/activities';
+import { Inject, Injectable, ObjectMap, Express2, isArray, isString, lang, Providers } from '@tsdi/ioc';
+import { toAbsolutePath } from '@tsdi/platform-server';
 import { existsSync, readdirSync, lstatSync } from 'fs';
 import { join, dirname, normalize, relative } from 'path';
 import {
@@ -12,7 +12,7 @@ import {
 } from 'shelljs';
 import * as globby from 'globby';
 import { CmdOptions, INodeActivityContext } from './INodeContext';
-import { ProcessRunRootToken, MetaAccessor } from '@ts-ioc/boot';
+import { ProcessRunRootToken, MetaAccessor } from '@tsdi/boot';
 
 
 const minimist = require('minimist');

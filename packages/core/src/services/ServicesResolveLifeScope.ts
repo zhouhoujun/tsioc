@@ -1,4 +1,4 @@
-import { Singleton, ProviderMap, Autorun, LifeScope } from '@ts-ioc/ioc';
+import { Singleton, ProviderMap, Autorun, LifeScope } from '@tsdi/ioc';
 import { ResolveServicesContext, InitServiceResolveAction, ResolveServicesScopeAction } from '../resolves';
 
 

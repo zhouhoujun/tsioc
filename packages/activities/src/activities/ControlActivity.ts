@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
 import { Activity } from '../core';
-import { lang } from '@ts-ioc/ioc';
+import { lang } from '@tsdi/ioc';
 
 /**
  * control activity.

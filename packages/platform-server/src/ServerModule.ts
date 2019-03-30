@@ -1,6 +1,6 @@
-import { IocExt, ContainerToken, IContainer, ModuleLoader, ContainerBuilderToken } from '@ts-ioc/core';
+import { IocExt, ContainerToken, IContainer, ModuleLoader, ContainerBuilderToken } from '@tsdi/core';
 import { NodeModuleLoader } from './NodeModuleLoader';
-import { Inject } from '@ts-ioc/ioc';
+import { Inject } from '@tsdi/ioc';
 
 
 declare let process: any;

@@ -1,5 +1,5 @@
 import { ModuleInjector, InjectorContext } from './ModuleInjector';
-import { Type, Singleton } from '@ts-ioc/ioc';
+import { Type, Singleton } from '@tsdi/ioc';
 
 @Singleton
 export class IocExtInjector extends ModuleInjector {

@@ -1,4 +1,4 @@
-import { Token, lang, isClass, Type, Abstract } from '@ts-ioc/ioc';
+import { Token, lang, isClass, Type, Abstract } from '@tsdi/ioc';
 import { ISuiteDescribe, ICaseDescribe } from './ITestReport';
 
 

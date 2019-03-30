@@ -1,6 +1,6 @@
 import { RunnableConfigure } from './RunnableConfigure';
-import { IContainer, ContainerToken } from '@ts-ioc/core';
-import { Abstract, Inject } from '@ts-ioc/ioc';
+import { IContainer, ContainerToken } from '@tsdi/core';
+import { Abstract, Inject } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
 
 /**

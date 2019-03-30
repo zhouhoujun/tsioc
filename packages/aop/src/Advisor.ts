@@ -1,7 +1,7 @@
 import {
     IIocContainer, Singleton, getOwnMethodMetadata,
     Type, ObjectMap, lang, ParamProviders
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 import { Advices } from './advices';
 import { Advice } from './decorators/Advice';
 import { NonePointcut } from './decorators/NonePointcut';

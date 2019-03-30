@@ -1,7 +1,7 @@
-import { CleanActivity, TestActivity, IBuildActivity } from '@ts-ioc/build';
-import { Registration, Type } from '@ts-ioc/ioc';
+import { CleanActivity, TestActivity, IBuildActivity } from '@tsdi/build';
+import { Registration, Type } from '@tsdi/ioc';
 import { ServeActivity } from '../serves';
-import { isAcitvityClass } from '@ts-ioc/activities';
+import { isAcitvityClass } from '@tsdi/activities';
 
 /**
  * package activity.

@@ -1,6 +1,6 @@
-import { IocCoreService, Type, Inject, Singleton } from '@ts-ioc/ioc';
+import { IocCoreService, Type, Inject, Singleton } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
-import { IContainer, ContainerToken } from '@ts-ioc/core';
+import { IContainer, ContainerToken } from '@tsdi/core';
 import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
 
 

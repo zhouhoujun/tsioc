@@ -1,6 +1,6 @@
-import { ConfigureRegister, RunnableConfigure } from '@ts-ioc/boot';
-import { Singleton } from '@ts-ioc/ioc';
-import { DebugLogAspect } from '@ts-ioc/logs';
+import { ConfigureRegister, RunnableConfigure } from '@tsdi/boot';
+import { Singleton } from '@tsdi/ioc';
+import { DebugLogAspect } from '@tsdi/logs';
 
 
 @Singleton

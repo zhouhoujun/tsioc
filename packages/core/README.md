@@ -1,9 +1,9 @@
-# packaged @ts-ioc/core
+# packaged @tsdi/core
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@ts-ioc/core` is AOP, Ioc container, via typescript decorator.
+`@tsdi/core` is AOP, Ioc container, via typescript decorator.
 
 version 2+ of [`tsioc`](https://www.npmjs.com/zhouhoujun/package/tsioc)
 
@@ -26,13 +26,13 @@ npm run build -- --setvs=4.0.0-beta
 
 ```shell
 
-npm install @ts-ioc/core
+npm install @tsdi/core
 
 // in browser
-npm install @ts-ioc/platform-browser
+npm install @tsdi/platform-browser
 
 // in server
-npm install @ts-ioc/platform-server
+npm install @tsdi/platform-server
 ```
 
 ## add extends modules
@@ -42,17 +42,17 @@ npm install @ts-ioc/platform-server
 ```shell
 
 // install aop
-npm install @ts-ioc/aop
+npm install @tsdi/aop
 
 ```
 
 ```ts
 
-import { AopModule } from '@ts-ioc/aop';
+import { AopModule } from '@tsdi/aop';
 // in server
-import { ContainerBuilder } from '@ts-ioc/platform-server'
+import { ContainerBuilder } from '@tsdi/platform-server'
 // in browser
-import { ContainerBuilder } from '@ts-ioc/platform-browser'
+import { ContainerBuilder } from '@tsdi/platform-browser'
 
 let builder = new ContainerBuilder();
 
@@ -66,16 +66,16 @@ container.use(AopModule);
 
 ```shell
 // install aop logs
-npm install @ts-ioc/logs
+npm install @tsdi/logs
 ```
 
 ```ts
 
-import { LogModule } from '@ts-ioc/logs';
+import { LogModule } from '@tsdi/logs';
 // in server
-import { ContainerBuilder } from '@ts-ioc/platform-server'
+import { ContainerBuilder } from '@tsdi/platform-server'
 // in browser
-import { ContainerBuilder } from '@ts-ioc/platform-browser'
+import { ContainerBuilder } from '@tsdi/platform-browser'
 
 let builder = new ContainerBuilder();
 
@@ -147,7 +147,7 @@ see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/maste
 
 ```ts
 
-import { DIModule, ApplicationBuilder } from '@ts-ioc/boot';
+import { DIModule, ApplicationBuilder } from '@tsdi/boot';
 
 
 export class TestService {
@@ -220,7 +220,7 @@ ApplicationBuilder.create(__dirname)
     1. use syncBuild
     2. syncLoadModule
     3. can not use minimatch to match file.
-    4. support es5 uglify, [@ts-ioc/annotations](https://www.npmjs.com/package/@ts-ioc/annotations)  [] or [typescript-class-annotations](https://www.npmjs.com/package/typescript-class-annotations) to get class annotations before typescript compile.
+    4. support es5 uglify, [@tsdi/annotations](https://www.npmjs.com/package/@tsdi/annotations)  [] or [typescript-class-annotations](https://www.npmjs.com/package/typescript-class-annotations) to get class annotations before typescript compile.
 
 ```ts
 let builder = new ContainerBuilder();
@@ -403,7 +403,7 @@ container.resolve(Person, ...providers);
 
 ### Invoke method
 
-you can use yourself `MethodAccessor` by implement IMethodAccessor, register `MethodAccessorToken` with your `MethodAccessor` in container,   see interface [IMethodAccessor](https://github.com/zhouhoujun/@ts-ioc/core/blob/master/packages/core/src/IMethodAccessor.ts).
+you can use yourself `MethodAccessor` by implement IMethodAccessor, register `MethodAccessorToken` with your `MethodAccessor` in container,   see interface [IMethodAccessor](https://github.com/zhouhoujun/@tsdi/core/blob/master/packages/core/src/IMethodAccessor.ts).
 
 ```ts
 
@@ -518,7 +518,7 @@ container.invoke(MethodTest3, 'sayHello')
 
 ```ts
 
-import { Method, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Aspect } from '@ts-ioc/core';
+import { Method, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Aspect } from '@tsdi/core';
 
 
 export class SimppleAutoWried {
@@ -923,7 +923,7 @@ see more interface. all document is typescript .d.ts.
 * [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/LifeScope.ts)
 
 Documentation is available on the
-[@ts-ioc/core docs site](https://github.com/zhouhoujun/tsioc).
+[@tsdi/core docs site](https://github.com/zhouhoujun/tsioc).
 
 ## License
 

@@ -1,5 +1,5 @@
-import { Express2, ObjectMap } from '@ts-ioc/ioc';
-import { Src, IActivityContext } from '@ts-ioc/activities';
+import { Express2, ObjectMap } from '@tsdi/ioc';
+import { Src, IActivityContext } from '@tsdi/activities';
 
 /**
  * cmd options.

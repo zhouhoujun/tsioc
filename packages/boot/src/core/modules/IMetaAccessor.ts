@@ -1,5 +1,5 @@
-import { Token, Express } from '@ts-ioc/ioc';
-import { IContainer } from '@ts-ioc/core';
+import { Token, Express } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
 import { ModuleConfigure } from './ModuleConfigure';
 
 /**

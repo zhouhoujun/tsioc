@@ -1,4 +1,4 @@
-import { IWorkflowInstance, ActivityType, IActivity, Workflow } from '@ts-ioc/activities';
+import { IWorkflowInstance, ActivityType, IActivity, Workflow } from '@tsdi/activities';
 import { BrowserActivitiesModule } from './BrowserActivitiesModule';
 
 /**

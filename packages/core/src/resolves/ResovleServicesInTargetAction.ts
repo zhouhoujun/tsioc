@@ -1,5 +1,5 @@
 import { IocResolveServicesAction } from './IocResolveServicesAction';
-import { Singleton, isToken, InjectReference, ProviderMap, isClassType, lang, ProviderTypes } from '@ts-ioc/ioc';
+import { Singleton, isToken, InjectReference, ProviderMap, isClassType, lang, ProviderTypes } from '@tsdi/ioc';
 import { ResolveServicesContext } from './ResolveServicesContext';
 
 @Singleton

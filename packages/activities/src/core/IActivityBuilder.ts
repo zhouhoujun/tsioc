@@ -1,4 +1,4 @@
-import { IAnnotationBuilder } from '@ts-ioc/boot';
+import { IAnnotationBuilder } from '@tsdi/boot';
 import { IActivity, ActivityToken } from './IActivity';
 
 /**

@@ -1,5 +1,5 @@
 {
-  "name": "@ts-ioc/core",
+  "name": "@tsdi/core",
   "version": "4.0.5",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "es2015": "./fesm2015/core.js",
@@ -20,7 +20,7 @@
     "dependency",
     "injection",
     "ts-ioc",
-    "@ts-ioc",
+    "@tsdi",
     "tsioc",
     "container",
     "decorator",
@@ -42,7 +42,7 @@
   "dependencies": {
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3",
-    "@ts-ioc/ioc": "^5.0.0"
+    "@tsdi/ioc": "^5.0.0"
   },
   "directories": {
     "lib": "lib",

@@ -1,5 +1,5 @@
 import { IAdviceDecorator, createAdviceDecorator } from './Advice';
-import { isString } from '@ts-ioc/ioc';
+import { isString } from '@tsdi/ioc';
 import { AfterThrowingMetadata } from '../metadatas';
 
 /**

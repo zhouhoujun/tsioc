@@ -1,6 +1,6 @@
-import { BootContext } from '@ts-ioc/boot';
+import { BootContext } from '@tsdi/boot';
 import { UnitTestConfigure, UnitTestOptions } from './UnitTestConfigure';
-import { Type } from '@ts-ioc/ioc';
+import { Type } from '@tsdi/ioc';
 
 
 export class UnitTestContext extends BootContext {

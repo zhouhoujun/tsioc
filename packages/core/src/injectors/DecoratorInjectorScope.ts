@@ -2,7 +2,7 @@ import { InjectorActionContext } from './InjectorActionContext';
 import {
     IocDecoratorScope, DecoratorScopeRegisterer, ObjectMap, DecoratorScopes,
     DesignDecoratorRegisterer, Singleton, MetadataService
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 
 
 @Singleton

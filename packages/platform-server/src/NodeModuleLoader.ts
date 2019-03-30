@@ -1,6 +1,6 @@
-import { IModuleLoader, ModuleLoader } from '@ts-ioc/core';
+import { IModuleLoader, ModuleLoader } from '@tsdi/core';
 import { toAbsoluteSrc } from './toAbsolute';
-import { Modules } from '@ts-ioc/ioc';
+import { Modules } from '@tsdi/ioc';
 
 declare let require: any;
 

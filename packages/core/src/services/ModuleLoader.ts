@@ -2,7 +2,7 @@ import {
     LoadType, Modules, Type, IocCoreService, isString,
     isObject, PathModules, isArray, isClass, Singleton,
     InjectReference, Token
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 
 
 /**

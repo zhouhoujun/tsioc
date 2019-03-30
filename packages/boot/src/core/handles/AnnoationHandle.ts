@@ -1,6 +1,6 @@
 import { Handle, Next } from './Handle';
 import { HandleContext, HandleOption } from './HandleContext';
-import { Abstract, ProviderMap, Type } from '@ts-ioc/ioc';
+import { Abstract, ProviderMap, Type } from '@tsdi/ioc';
 import { ModuleConfigure, ModuleResovler, RegScope } from '../modules';
 
 

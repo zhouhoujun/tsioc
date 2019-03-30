@@ -1,4 +1,4 @@
-import { Task, ChainActivity } from '@ts-ioc/activities';
+import { Task, ChainActivity } from '@tsdi/activities';
 
 @Task('gen-lib')
 export class GenerateLibActivity extends ChainActivity {

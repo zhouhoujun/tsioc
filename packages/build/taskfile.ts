@@ -1,6 +1,6 @@
-import { Pack, PackActivity, PackModule } from '@ts-ioc/pack';
-import { Workflow } from '@ts-ioc/activities';
-import { Asset, CleanToken, AssetActivity, TsCompile, TransformContext } from '@ts-ioc/build';
+import { Pack, PackActivity, PackModule } from '@tsdi/pack';
+import { Workflow } from '@tsdi/activities';
+import { Asset, CleanToken, AssetActivity, TsCompile, TransformContext } from '@tsdi/build';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
@@ -39,17 +39,17 @@ const builtins = require('rollup-plugin-node-builtins');
                 'typescript',
                 'shelljs',
                 'rollup',
-                '@ts-ioc/core',
-                '@ts-ioc/aop',
-                '@ts-ioc/logs',
-                '@ts-ioc/boot',
-                '@ts-ioc/pipes',
-                '@ts-ioc/platform-server',
-                '@ts-ioc/annotations',
-                '@ts-ioc/activities',
-                '@ts-ioc/platform-server-activities',
-                '@ts-ioc/unit',
-                '@ts-ioc/unit-console',
+                '@tsdi/core',
+                '@tsdi/aop',
+                '@tsdi/logs',
+                '@tsdi/boot',
+                '@tsdi/pipes',
+                '@tsdi/platform-server',
+                '@tsdi/annotations',
+                '@tsdi/activities',
+                '@tsdi/platform-server-activities',
+                '@tsdi/unit',
+                '@tsdi/unit-console',
                 'minimatch',
                 'minimist',
                 'gulp-sourcemaps',
@@ -81,16 +81,16 @@ const builtins = require('rollup-plugin-node-builtins');
                 'gulp-sourcemaps': 'gulp-sourcemaps',
                 'gulp-uglify': 'gulp-uglify',
                 'rollup': 'rollup',
-                '@ts-ioc/core': '@ts-ioc/core',
-                '@ts-ioc/aop': '@ts-ioc/aop',
-                '@ts-ioc/annotations': '@ts-ioc/annotations',
-                '@ts-ioc/boot': '@ts-ioc/boot',
-                '@ts-ioc/platform-server': '@ts-ioc/platform-server',
-                '@ts-ioc/platform-server-boot': '@ts-ioc/platform-server-boot',
-                '@ts-ioc/activities': '@ts-ioc/activities',
-                '@ts-ioc/platform-server-activities': '@ts-ioc/platform-server-activities',
-                '@ts-ioc/unit': '@ts-ioc/unit',
-                '@ts-ioc/unit-console': '@ts-ioc/unit-console'
+                '@tsdi/core': '@tsdi/core',
+                '@tsdi/aop': '@tsdi/aop',
+                '@tsdi/annotations': '@tsdi/annotations',
+                '@tsdi/boot': '@tsdi/boot',
+                '@tsdi/platform-server': '@tsdi/platform-server',
+                '@tsdi/platform-server-boot': '@tsdi/platform-server-boot',
+                '@tsdi/activities': '@tsdi/activities',
+                '@tsdi/platform-server-activities': '@tsdi/platform-server-activities',
+                '@tsdi/unit': '@tsdi/unit',
+                '@tsdi/unit-console': '@tsdi/unit-console'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),

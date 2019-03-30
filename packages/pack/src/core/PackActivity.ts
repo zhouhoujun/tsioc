@@ -3,15 +3,15 @@ import {
     AssetConfigure, BuildHandleActivity, Asset, StreamAssetConfigure,
     InjectAssetToken, AssetToken, BuildHandleToken,
     CleanConfigure, CleanToken, TestConfigure, TestToken, IAssetBuildHandle
-} from '@ts-ioc/build';
+} from '@tsdi/build';
 import { IPackActivity, PackToken } from './IPackActivity';
 import { ServeActivity } from '../serves';
 import { PackConfigure } from './PackConfigure';
-import { lang, hasClassMetadata, isString, isArray } from '@ts-ioc/ioc';
+import { lang, hasClassMetadata, isString, isArray } from '@tsdi/ioc';
 import {
     Src, SequenceActivity, ParallelActivity, SequenceConfigure,
     SequenceActivityToken, ParallelConfigure, ParallelActivityToken
-} from '@ts-ioc/activities';
+} from '@tsdi/activities';
 import { Pack } from '../decorators/Pack';
 
 

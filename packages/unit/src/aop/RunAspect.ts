@@ -1,10 +1,10 @@
-import { Aspect, Around, Joinpoint, JoinpointState } from '@ts-ioc/aop';
+import { Aspect, Around, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { SuiteRunner, OldTestRunner, ISuiteRunner } from '../runner';
-import { LoggerAspect } from '@ts-ioc/logs';
-import { ContainerToken, IContainer } from '@ts-ioc/core';
+import { LoggerAspect } from '@tsdi/logs';
+import { ContainerToken, IContainer } from '@tsdi/core';
 import { TestReport } from '../reports/TestReport';
 import { ITestReport, ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
-import { Inject } from '@ts-ioc/ioc';
+import { Inject } from '@tsdi/ioc';
 
 @Aspect({
     within: [SuiteRunner, OldTestRunner],

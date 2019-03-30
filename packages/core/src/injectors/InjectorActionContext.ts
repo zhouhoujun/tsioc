@@ -1,4 +1,4 @@
-import { ActionContextOption, IocActionContext, Type, DecoratorType, IIocContainer, ObjectMap } from '@ts-ioc/ioc';
+import { ActionContextOption, IocActionContext, Type, DecoratorType, IIocContainer, ObjectMap } from '@tsdi/ioc';
 
 
 /**

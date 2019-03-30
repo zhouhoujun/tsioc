@@ -1,4 +1,4 @@
-import { createClassDecorator, ITypeDecorator, Registration, Type, isString, isClass, isArray } from '@ts-ioc/ioc';
+import { createClassDecorator, ITypeDecorator, Registration, Type, isString, isClass, isArray } from '@tsdi/ioc';
 import { AspectMetadata } from '../metadatas';
 
 /**

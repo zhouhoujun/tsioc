@@ -1,8 +1,8 @@
 import { IBuildHandleActivity, BuildHandleConfigure } from '../BuildHandle';
 import {  ISourceCompiler, ICompiler, ISourcemapsCompiler, CompilerConfigure, InjectCompilerToken } from '../ICompiler';
-import { Registration, ObjectMap } from '@ts-ioc/ioc';
+import { Registration, ObjectMap } from '@tsdi/ioc';
 import { IWatchActivity, WatchConfigure } from './IWatchActivity';
-import { ExpressionToken, ConfigureType, CtxType, ExpressionType, Src } from '@ts-ioc/activities';
+import { ExpressionToken, ConfigureType, CtxType, ExpressionType, Src } from '@tsdi/activities';
 
 /**
  * asset activity.

@@ -3,58 +3,58 @@
     "importHelpers": true,
     "baseUrl": ".",
     "paths": {
-      "@ts-ioc/annotations":[
+      "@tsdi/annotations":[
         "packages/annotations/src"
       ],
-      "@ts-ioc/ioc": [
+      "@tsdi/ioc": [
         "packages/ioc/src"
       ],
-      "@ts-ioc/core": [
+      "@tsdi/core": [
         "packages/core/src"
       ],
-      "@ts-ioc/aop":[
+      "@tsdi/aop":[
         "packages/aop/src"
       ],
-      "@ts-ioc/boot":[
+      "@tsdi/boot":[
         "packages/boot/src"
       ],
-      "@ts-ioc/logs": [
+      "@tsdi/logs": [
         "packages/logs/src"
       ],
-      "@ts-ioc/platform-browser":[
+      "@tsdi/platform-browser":[
         "packages/platform-browser/src"
       ],
-      "@ts-ioc/platform-browser-boot":[
+      "@tsdi/platform-browser-boot":[
         "packages/platform-browser-boot/src"
       ],
-      "@ts-ioc/platform-server":[
+      "@tsdi/platform-server":[
         "packages/platform-server/src"
       ],
-      "@ts-ioc/platform-server-logs":[
+      "@tsdi/platform-server-logs":[
         "packages/platform-server-logs/src"
       ],
-      "@ts-ioc/platform-server-boot":[
+      "@tsdi/platform-server-boot":[
         "packages/platform-server-boot/src"
       ],
-      "@ts-ioc/unit": [
+      "@tsdi/unit": [
         "packages/unit/src"
       ],
-      "@ts-ioc/unit-console": [
+      "@tsdi/unit-console": [
         "packages/unit-console/src"
       ],
-      "@ts-ioc/activities": [
+      "@tsdi/activities": [
         "packages/activities/src"
       ],
-      "@ts-ioc/build": [
+      "@tsdi/build": [
         "packages/build/src"
       ],
-      "@ts-ioc/pack": [
+      "@tsdi/pack": [
         "packages/pack/src"
       ],
-      "@ts-ioc/platform-server-activities": [
+      "@tsdi/platform-server-activities": [
         "packages/platform-server-activities/src"
       ],
-      "@ts-ioc/platform-browser-activities": [
+      "@tsdi/platform-browser-activities": [
         "packages/platform-browser-activities/src"
       ]
     },

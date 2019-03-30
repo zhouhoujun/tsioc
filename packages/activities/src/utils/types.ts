@@ -1,4 +1,4 @@
-import { IContainer } from '@ts-ioc/core';
+import { IContainer } from '@tsdi/core';
 
 
 /**

@@ -1,12 +1,12 @@
-import { BootApplication, DIModule, ConfigureRegister } from '@ts-ioc/boot';
-import { AopModule } from '@ts-ioc/aop';
-import { LogModule } from '@ts-ioc/logs';
+import { BootApplication, DIModule, ConfigureRegister } from '@tsdi/boot';
+import { AopModule } from '@tsdi/aop';
+import { LogModule } from '@tsdi/logs';
 import { UnitSetup } from './UnitSetup';
 import * as aops from './aop';
 import * as asserts from './assert';
 import * as runners from './runner';
 import * as reports from './reports';
-import { LoadType } from '@ts-ioc/ioc';
+import { LoadType } from '@tsdi/ioc';
 import { UnitTestConfigureRegister } from './UnitTestConfigureRegister';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { UnitTestContext } from './UnitTestContext';

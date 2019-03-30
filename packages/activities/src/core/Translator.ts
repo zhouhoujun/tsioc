@@ -1,4 +1,4 @@
-import { Registration, Token } from '@ts-ioc/ioc';
+import { Registration, Token } from '@tsdi/ioc';
 
 /**
  * translator.

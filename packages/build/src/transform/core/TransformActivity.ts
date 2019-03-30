@@ -1,9 +1,9 @@
-import { isPromise, isToken, isMetadataObject, lang, isFunction } from '@ts-ioc/ioc';
+import { isPromise, isToken, isMetadataObject, lang, isFunction } from '@tsdi/ioc';
 import { ITransformActivity, TransformActivityToken } from './ITransformActivity';
 import { ITransform } from './ITransform';
 import { TransformType, TransformExpress, TransformConfig } from './transformTypes';
 import { ITransformConfigure } from './ITransformConfigure';
-import { Task, isWorkflowInstance, isActivityType } from '@ts-ioc/activities';
+import { Task, isWorkflowInstance, isActivityType } from '@tsdi/activities';
 import { StreamActivity } from './StreamActivity';
 import { NodeActivityContextToken } from '../../core';
 

@@ -1,22 +1,22 @@
-# packaged @ts-ioc/boot
+# packaged @tsdi/boot
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@ts-ioc/boot`： DI Module manager, application bootstrap. base on AOP, Ioc container, via `@ts-ioc/core`.
+`@tsdi/boot`： DI Module manager, application bootstrap. base on AOP, Ioc container, via `@tsdi/core`.
 
 version 2+ of [`tsioc`](https://www.npmjs.com/zhouhoujun/package/tsioc)
 # Install
 
 ```shell
 
-npm install @ts-ioc/boot
+npm install @tsdi/boot
 
 // in browser
-npm install @ts-ioc/platform-browser
+npm install @tsdi/platform-browser
 
 // in server
-npm install @ts-ioc/platform-server
+npm install @tsdi/platform-server
 ```
 
 ## add extends modules
@@ -25,7 +25,7 @@ npm install @ts-ioc/platform-server
 
 
 ```ts
-import { DIModule, ApplicationBuilder } from '@ts-ioc/boot';
+import { DIModule, ApplicationBuilder } from '@tsdi/boot';
 
 
 export class TestService {
@@ -169,7 +169,7 @@ see more interface. all document is typescript .d.ts.
 * [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/LifeScope.ts)
 
 Documentation is available on the
-[@ts-ioc/core docs site](https://github.com/zhouhoujun/tsioc).
+[@tsdi/core docs site](https://github.com/zhouhoujun/tsioc).
 
 ## License
 

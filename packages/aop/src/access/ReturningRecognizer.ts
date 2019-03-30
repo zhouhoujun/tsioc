@@ -1,4 +1,4 @@
-import { Singleton, isPromise, isObservable } from '@ts-ioc/ioc';
+import { Singleton, isPromise, isObservable } from '@tsdi/ioc';
 import { ReturningType } from './ReturningType';
 import { JoinpointState } from '../joinpoints';
 import { NonePointcut } from '../decorators/NonePointcut';

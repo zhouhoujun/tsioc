@@ -1,4 +1,4 @@
-import { Injectable, Inject, Express, IocContainerToken, IIocContainer } from '@ts-ioc/ioc';
+import { Injectable, Inject, Express, IocContainerToken, IIocContainer } from '@tsdi/ioc';
 import { Joinpoint } from '../joinpoints';
 import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
 import { AdvisorProceeding } from './AdvisorProceeding';

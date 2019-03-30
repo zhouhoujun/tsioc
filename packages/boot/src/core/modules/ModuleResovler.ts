@@ -1,9 +1,9 @@
 import {
     Token, Type, ParamProviders, isToken,
     IResolver, IResolverContainer, InstanceFactory, SymbolType
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 import { IModuleMetadata } from './ModuleConfigure';
-import { IContainer, isContainer } from '@ts-ioc/core';
+import { IContainer, isContainer } from '@tsdi/core';
 import { DIModuleExports } from '../services';
 import { IModuleResolver } from './IModuleResovler';
 

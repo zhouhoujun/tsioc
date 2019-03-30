@@ -1,7 +1,7 @@
-import { Injectable, Singleton } from '@ts-ioc/ioc';
+import { Injectable, Singleton } from '@tsdi/ioc';
 import { ILoggerManager, LoggerConfig, LoggerManagerToken } from './ILoggerManager';
 import { ILogger } from './ILogger';
-import { NonePointcut } from '@ts-ioc/aop';
+import { NonePointcut } from '@tsdi/aop';
 import { Levels } from './Level';
 
 /**

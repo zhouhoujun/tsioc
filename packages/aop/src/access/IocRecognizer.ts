@@ -1,4 +1,4 @@
-import { IocCoreService } from '@ts-ioc/ioc';
+import { IocCoreService } from '@tsdi/ioc';
 
 
 /**

@@ -1,4 +1,4 @@
-import { Abstract, Inject, Injectable } from '@ts-ioc/ioc';
+import { Abstract, Inject, Injectable } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '../src';
 
 @Injectable

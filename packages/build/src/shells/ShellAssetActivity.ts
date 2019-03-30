@@ -1,8 +1,8 @@
 import { UglifyCompilerToken, AssetBuildHandle, BuildHandleContext } from '../core';
 import { Asset } from '../decorators/Asset';
-import { Providers } from '@ts-ioc/ioc';
+import { Providers } from '@tsdi/ioc';
 import { ShellUglifyActivity } from './compile';
-import { Src } from '@ts-ioc/activities';
+import { Src } from '@tsdi/activities';
 import { ShellAssetToken } from './IShellAssetActivity';
 
 @Asset(ShellAssetToken)

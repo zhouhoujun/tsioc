@@ -1,8 +1,8 @@
-import { Inject, PromiseUtil, Singleton, Token } from '@ts-ioc/ioc';
+import { Inject, PromiseUtil, Singleton, Token } from '@tsdi/ioc';
 import { ISuiteRunner } from './ISuiteRunner';
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { Assert } from '../assert';
-import { ContainerToken, IContainer } from '@ts-ioc/core';
+import { ContainerToken, IContainer } from '@tsdi/core';
 
 declare let window: any;
 declare let global: any;

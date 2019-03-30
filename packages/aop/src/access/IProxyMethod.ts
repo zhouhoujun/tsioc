@@ -1,4 +1,4 @@
-import { Type, InjectToken } from '@ts-ioc/ioc';
+import { Type, InjectToken } from '@tsdi/ioc';
 import { IPointcut, Joinpoint } from '../joinpoints';
 
 /**

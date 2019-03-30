@@ -1,7 +1,7 @@
 import * as path from 'path';
-import { Task, CtxType, Src } from '@ts-ioc/activities';
+import { Task, CtxType, Src } from '@tsdi/activities';
 import { CompilerOptions, ModuleResolutionKind, ModuleKind, ScriptTarget } from 'typescript';
-import { ObjectMap, lang, isArray, isBoolean } from '@ts-ioc/ioc';
+import { ObjectMap, lang, isArray, isBoolean } from '@tsdi/ioc';
 import { ShellActivity, ShellActivityConfig } from '../ShellActivity';
 
 

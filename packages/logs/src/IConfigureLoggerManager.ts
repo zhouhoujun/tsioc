@@ -1,6 +1,6 @@
 import { ILoggerManager } from './ILoggerManager';
 import { LogConfigure } from './LogConfigure';
-import { Type } from '@ts-ioc/ioc';
+import { Type } from '@tsdi/ioc';
 
 
 /**

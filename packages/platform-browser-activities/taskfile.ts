@@ -1,6 +1,6 @@
-import { PackModule, Pack, PackActivity } from '@ts-ioc/pack';
-import { Workflow } from '@ts-ioc/activities';
-import { Asset, CleanActivity, CleanToken, AssetActivity, TsCompile, TransformContext } from '@ts-ioc/build';
+import { PackModule, Pack, PackActivity } from '@tsdi/pack';
+import { Workflow } from '@tsdi/activities';
+import { Asset, CleanActivity, CleanToken, AssetActivity, TsCompile, TransformContext } from '@tsdi/build';
 const rename = require('gulp-rename');
 const rollup = require('gulp-rollup');
 const resolve = require('rollup-plugin-node-resolve');
@@ -31,25 +31,25 @@ const builtins = require('rollup-plugin-node-builtins');
             external: [
                 'reflect-metadata',
                 'tslib',
-                '@ts-ioc/core',
-                '@ts-ioc/aop',
-                '@ts-ioc/logs',
-                '@ts-ioc/boot',
-                '@ts-ioc/platform-browser',
-                '@ts-ioc/platform-browser-boot',
-                '@ts-ioc/activities'
+                '@tsdi/core',
+                '@tsdi/aop',
+                '@tsdi/logs',
+                '@tsdi/boot',
+                '@tsdi/platform-browser',
+                '@tsdi/platform-browser-boot',
+                '@tsdi/activities'
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
                 'tslib': 'tslib',
-                '@ts-ioc/core': '@ts-ioc/core',
-                '@ts-ioc/aop': '@ts-ioc/aop',
-                '@ts-ioc/logs': '@ts-ioc/logs',
-                '@ts-ioc/annotations': '@ts-ioc/annotations',
-                '@ts-ioc/boot': '@ts-ioc/boot',
-                '@ts-ioc/platform-browser': '@ts-ioc/platform-browser',
-                '@ts-ioc/platform-browser-boot': '@ts-ioc/platform-browser-boot',
-                '@ts-ioc/activities': '@ts-ioc/activities'
+                '@tsdi/core': '@tsdi/core',
+                '@tsdi/aop': '@tsdi/aop',
+                '@tsdi/logs': '@tsdi/logs',
+                '@tsdi/annotations': '@tsdi/annotations',
+                '@tsdi/boot': '@tsdi/boot',
+                '@tsdi/platform-browser': '@tsdi/platform-browser',
+                '@tsdi/platform-browser-boot': '@tsdi/platform-browser-boot',
+                '@tsdi/activities': '@tsdi/activities'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),

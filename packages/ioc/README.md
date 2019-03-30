@@ -1,9 +1,9 @@
-# packaged @ts-ioc/ioc
+# packaged @tsdi/ioc
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@ts-ioc/core` is AOP, Ioc container, via typescript decorator.
+`@tsdi/core` is AOP, Ioc container, via typescript decorator.
 
 version 2+ of [`tsioc`](https://www.npmjs.com/zhouhoujun/package/tsioc)
 
@@ -26,7 +26,7 @@ npm run build -- --setvs=4.0.0-beta
 
 ```shell
 
-npm install @ts-ioc/ioc
+npm install @tsdi/ioc
 
 ```
 
@@ -37,17 +37,17 @@ npm install @ts-ioc/ioc
 ```shell
 
 // install aop
-npm install @ts-ioc/aop
+npm install @tsdi/aop
 
 ```
 
 ```ts
 
-import { AopModule } from '@ts-ioc/aop';
+import { AopModule } from '@tsdi/aop';
 // in server
-import { ContainerBuilder } from '@ts-ioc/platform-server'
+import { ContainerBuilder } from '@tsdi/platform-server'
 // in browser
-import { ContainerBuilder } from '@ts-ioc/platform-browser'
+import { ContainerBuilder } from '@tsdi/platform-browser'
 
 let builder = new ContainerBuilder();
 
@@ -61,16 +61,16 @@ container.use(AopModule);
 
 ```shell
 // install aop logs
-npm install @ts-ioc/logs
+npm install @tsdi/logs
 ```
 
 ```ts
 
-import { LogModule } from '@ts-ioc/logs';
+import { LogModule } from '@tsdi/logs';
 // in server
-import { ContainerBuilder } from '@ts-ioc/platform-server'
+import { ContainerBuilder } from '@tsdi/platform-server'
 // in browser
-import { ContainerBuilder } from '@ts-ioc/platform-browser'
+import { ContainerBuilder } from '@tsdi/platform-browser'
 
 let builder = new ContainerBuilder();
 
@@ -306,7 +306,7 @@ container.invoke(MethodTest3, 'sayHello')
 
 ```ts
 
-import { Method, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Aspect } from '@ts-ioc/core';
+import { Method, ContainerBuilder, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, Aspect } from '@tsdi/core';
 
 
 export class SimppleAutoWried {
@@ -543,7 +543,7 @@ builder.build({
 
 ## Extend decorator
 
-see interface [LifeScope](https://github.com/zhouhoujun/@ts-ioc/core/blob/master/src/LifeScope.ts)
+see interface [LifeScope](https://github.com/zhouhoujun/@tsdi/core/blob/master/src/LifeScope.ts)
 You can extend yourself decorator via:
 
 1. `createClassDecorator`
@@ -709,7 +709,7 @@ see more interface. all document is typescript .d.ts.
 * [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/LifeScope.ts)
 
 Documentation is available on the
-[@ts-ioc/core docs site](https://github.com/zhouhoujun/tsioc).
+[@tsdi/core docs site](https://github.com/zhouhoujun/tsioc).
 
 ## License
 

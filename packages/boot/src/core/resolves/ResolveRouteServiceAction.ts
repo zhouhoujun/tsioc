@@ -1,5 +1,5 @@
-import { ResolveServiceContext } from '@ts-ioc/core';
-import { IocCompositeAction, Singleton, Autorun } from '@ts-ioc/ioc';
+import { ResolveServiceContext } from '@tsdi/core';
+import { IocCompositeAction, Singleton, Autorun } from '@tsdi/ioc';
 import { ResolveModuleExportAction } from './ResolveModuleExportAction';
 import { ResolveParentServiceAction } from './ResolveParentServiceAction';
 

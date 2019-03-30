@@ -5,7 +5,7 @@ import {
 } from '../core';
 import { HandleActivity } from './HandleActivity';
 import { ControlActivity } from './ControlActivity';
-import { isFunction, isNullOrUndefined, PromiseUtil } from '@ts-ioc/ioc';
+import { isFunction, isNullOrUndefined, PromiseUtil } from '@tsdi/ioc';
 
 
 /**

@@ -1,12 +1,12 @@
 import {
     Inject, Injectable, IocContainer, IIocContainer, AutoWired
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 import { AnnotationAspect } from './aop/AnnotationAspect';
 import { CheckRightAspect } from './aop/CheckRightAspect';
 import { IocLog } from './aop/IocLog';
 import { AopModule } from '../src';
 import expect = require('expect');
-import { IContainer, ContainerBuilder } from '@ts-ioc/core';
+import { IContainer, ContainerBuilder } from '@tsdi/core';
 
 
 describe('aop test', () => {

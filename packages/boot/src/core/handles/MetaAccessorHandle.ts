@@ -1,7 +1,7 @@
 import { AnnoationContext, AnnoationHandle } from './AnnoationHandle';
 import { Next } from './Handle';
 import { MetaAccessor } from '../services';
-import { Singleton } from '@ts-ioc/ioc';
+import { Singleton } from '@tsdi/ioc';
 
 /**
  * meta accessor handle.

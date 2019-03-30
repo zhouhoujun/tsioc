@@ -1,7 +1,7 @@
 import {
     Token, MetadataAdapter, MetadataExtends, ITypeDecorator,
     isFunction, isClass, createClassDecorator
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 import { RunnableConfigure } from '../annotations';
 import { BootApplication } from '../BootApplication';
 import { BootContext } from '../BootContext';

@@ -1,6 +1,6 @@
-import { IocResolveServicesAction, ResolveServicesContext, ResolveServicesScopeAction } from '@ts-ioc/core';
+import { IocResolveServicesAction, ResolveServicesContext, ResolveServicesScopeAction } from '@tsdi/core';
 import { ParentContainerToken } from '../ContainerPool';
-import { Singleton } from '@ts-ioc/ioc';
+import { Singleton } from '@tsdi/ioc';
 
 @Singleton
 export class ResolveParentServicesAction extends IocResolveServicesAction {

@@ -1,5 +1,5 @@
 import { IContainer } from './IContainer';
-import { InjectToken, LoadType, Modules, Type } from '@ts-ioc/ioc';
+import { InjectToken, LoadType, Modules, Type } from '@tsdi/ioc';
 
 /**
  * ContainerBuilder interface token.

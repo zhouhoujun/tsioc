@@ -1,11 +1,11 @@
 import {
     IContainer, ContainerBuilder,
-} from '@ts-ioc/core';
+} from '@tsdi/core';
 import { LogModule, Logger } from '../src';
 import { DebugLogAspect } from './DebugLogAspect';
 import { AnntotationLogAspect } from './AnntotationLogAspect';
 import expect = require('expect');
-import { Injectable, Inject, AutoWired } from '@ts-ioc/ioc';
+import { Injectable, Inject, AutoWired } from '@tsdi/ioc';
 
 @Injectable
 class Person {

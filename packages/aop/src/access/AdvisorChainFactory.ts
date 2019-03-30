@@ -1,4 +1,4 @@
-import { Provider, Injectable, Inject, isUndefined, isArray, IocContainerToken, IIocContainer } from '@ts-ioc/ioc';
+import { Provider, Injectable, Inject, isUndefined, isArray, IocContainerToken, IIocContainer } from '@tsdi/ioc';
 import { Joinpoint, JoinpointState } from '../joinpoints';
 import { Advicer, Advices } from '../advices';
 import { IAdvisorChainFactory } from './IAdvisorChainFactory';

@@ -1,5 +1,5 @@
-import { BootOption, RunnableConfigure } from '@ts-ioc/boot';
-import { Type } from '@ts-ioc/ioc';
+import { BootOption, RunnableConfigure } from '@tsdi/boot';
+import { Type } from '@tsdi/ioc';
 import { ITestReport } from './reports';
 
 /**

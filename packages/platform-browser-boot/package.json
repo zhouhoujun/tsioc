@@ -1,5 +1,5 @@
 {
-  "name": "@ts-ioc/platform-browser-boot",
+  "name": "@tsdi/platform-browser-boot",
   "version": "4.0.5",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "es2015": "./fesm2015/platform-browser-boot.js",
@@ -20,7 +20,7 @@
     "dependency",
     "injection",
     "ts-ioc",
-    "@ts-ioc",
+    "@tsdi",
     "tsioc",
     "container",
     "decorator",
@@ -42,10 +42,10 @@
   "dependencies": {
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3",
-    "@ts-ioc/ioc": "^5.0.0",
-    "@ts-ioc/core": "^4.0.5",
-    "@ts-ioc/boot": "^4.0.5",
-    "@ts-ioc/platform-browser": "^4.0.5"
+    "@tsdi/ioc": "^5.0.0",
+    "@tsdi/core": "^4.0.5",
+    "@tsdi/boot": "^4.0.5",
+    "@tsdi/platform-browser": "^4.0.5"
   },
   "directories": {
     "lib": "lib"

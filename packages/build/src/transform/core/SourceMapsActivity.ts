@@ -1,9 +1,9 @@
-import { IActivityResult, Task } from '@ts-ioc/activities';
+import { IActivityResult, Task } from '@tsdi/activities';
 import { ITransform } from './ITransform';
 import { TransformContext } from './StreamActivity';
 import { StreamActivity } from './StreamActivity';
 import { SourceMapsConfigure } from '../../core';
-import { isBoolean } from '@ts-ioc/ioc';
+import { isBoolean } from '@tsdi/ioc';
 
 
 /**

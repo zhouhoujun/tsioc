@@ -1,4 +1,4 @@
-import { Singleton, MethodMetadata } from '@ts-ioc/ioc';
+import { Singleton, MethodMetadata } from '@tsdi/ioc';
 import { Joinpoint, Around, Aspect, Before, After, AdviceMetadata } from '../../src';
 
 

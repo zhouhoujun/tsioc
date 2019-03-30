@@ -1,7 +1,7 @@
 
 import { BootContext } from '../BootContext';
 import { Next, CompositeHandle } from '../core';
-import { Singleton, Autorun } from '@ts-ioc/ioc';
+import { Singleton, Autorun } from '@tsdi/ioc';
 import { Runnable } from '../runnable';
 import { RefRunnableHandle } from './RefRunnableHandle';
 import { RefDecoratorRunnableHandle } from './RefDecoratorRunnableHandle';

@@ -1,7 +1,7 @@
 import {
     Provider, Singleton, Inject, Type, isFunction, RuntimeLifeScope,
     ObjectMapProvider, IocContainerToken, IIocContainer, MetadataService
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 import { Advices } from '../advices';
 import { JoinpointState, IPointcut } from '../joinpoints';
 import { Joinpoint } from '../joinpoints';

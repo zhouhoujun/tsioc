@@ -1,5 +1,5 @@
-import { IResolverContainer } from '@ts-ioc/ioc';
-import { IContainer } from '@ts-ioc/core';
+import { IResolverContainer } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
 
 /**
  * module resolver.

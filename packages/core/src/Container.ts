@@ -4,7 +4,7 @@ import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import {
     ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isProvider, ProviderMap, IProviderParser,
     TypeReflects, Factory, ParamProviders, IParameter, SymbolType, InstanceFactory, IResolver
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 import { ModuleLoader, IModuleLoader, ServicesResolveLifeScope, ServiceResolveLifeScope, ResolveLifeScope } from './services';
 import { registerCores } from './registerCores';
 import { ResolveServiceContext, ResolveServicesContext, ResovleActionContext } from './resolves';

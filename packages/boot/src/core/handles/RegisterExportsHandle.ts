@@ -2,7 +2,7 @@ import { Next } from './Handle';
 import { AnnoationHandle, AnnoationContext } from './AnnoationHandle';
 import { ContainerPoolToken } from '../ContainerPool';
 import { DIModuleExports } from '../services';
-import { Singleton } from '@ts-ioc/ioc';
+import { Singleton } from '@tsdi/ioc';
 
 @Singleton
 export class RegisterExportsHandle extends AnnoationHandle {

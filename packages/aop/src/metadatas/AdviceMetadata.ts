@@ -1,4 +1,4 @@
-import { MethodMetadata, Type } from '@ts-ioc/ioc';
+import { MethodMetadata, Type } from '@tsdi/ioc';
 
 /**
  * advice metadata.

@@ -1,4 +1,4 @@
-# packaged @ts-ioc/annotations
+# packaged @tsdi/annotations
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
@@ -14,14 +14,14 @@ You can install this package either with `npm`.
 
 ```shell
 
-npm install @ts-ioc/annotations --save-dev
+npm install @tsdi/annotations --save-dev
 
 ```
 
 ## Demo
 
 ```ts
-import { classAnnotations } '@ts-ioc/annotations';
+import { classAnnotations } '@tsdi/annotations';
 const ts = require('gulp-typescript');
 gulp.src('src/**/*.ts')
     .pipe(classAnnotations())
@@ -56,7 +56,7 @@ https://github.com/zhouhoujun/tsioc.git
 ## Documentation
 
 Documentation is available on the
-[@ts-ioc/annotations docs site](https://github.com/zhouhoujun/tsioc).
+[@tsdi/annotations docs site](https://github.com/zhouhoujun/tsioc).
 
 ## License
 

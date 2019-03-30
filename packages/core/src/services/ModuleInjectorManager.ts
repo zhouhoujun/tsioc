@@ -1,6 +1,6 @@
 import { ModuleInjector, ModuleInjectorType, InjectorContext } from './ModuleInjector';
 import { IContainer, ContainerToken } from '../IContainer';
-import { Type, IocCoreService, PromiseUtil, isClass, lang, Singleton, Autorun, Inject } from '@ts-ioc/ioc';
+import { Type, IocCoreService, PromiseUtil, isClass, lang, Singleton, Autorun, Inject } from '@tsdi/ioc';
 import { IocExtInjector } from './IocExtInjector';
 
 

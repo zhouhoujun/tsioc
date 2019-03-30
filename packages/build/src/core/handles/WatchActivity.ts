@@ -1,5 +1,5 @@
-import { IActivity, Task } from '@ts-ioc/activities';
-import { PromiseUtil, isArray, Token, lang } from '@ts-ioc/ioc';
+import { IActivity, Task } from '@tsdi/activities';
+import { PromiseUtil, isArray, Token, lang } from '@tsdi/ioc';
 import { fromEventPattern } from 'rxjs';
 import { bufferTime, flatMap, filter, distinctUntilChanged } from 'rxjs/operators';
 import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';

@@ -1,4 +1,4 @@
-import { InjectAcitityToken, ExpressionType, Src, Expression } from '@ts-ioc/activities';
+import { InjectAcitityToken, ExpressionType, Src, Expression } from '@tsdi/activities';
 import { BuildHandleConfigure, IBuildHandleActivity } from '../BuildHandle';
 
 

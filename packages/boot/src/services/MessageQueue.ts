@@ -1,5 +1,5 @@
 import { CompositeHandle, MessageContext, Next } from '../core';
-import { Singleton } from '@ts-ioc/ioc';
+import { Singleton } from '@tsdi/ioc';
 
 
 /**

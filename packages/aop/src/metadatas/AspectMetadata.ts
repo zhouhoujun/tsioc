@@ -1,4 +1,4 @@
-import { Type, ClassMetadata } from '@ts-ioc/ioc';
+import { Type, ClassMetadata } from '@tsdi/ioc';
 
 /**
  * aspect metadata.

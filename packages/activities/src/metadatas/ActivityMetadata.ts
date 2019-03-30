@@ -1,4 +1,4 @@
-import { IAnnotationMetadata } from '@ts-ioc/boot';
+import { IAnnotationMetadata } from '@tsdi/boot';
 import { CoreActivityConfigs } from '../core/ActivityConfigure';
 import { IActivity } from '../core/IActivity';
 

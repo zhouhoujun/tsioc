@@ -1,4 +1,4 @@
-import { InjectToken } from '@ts-ioc/ioc';
+import { InjectToken } from '@tsdi/ioc';
 import { RunnableConfigure } from './RunnableConfigure';
 
 /**

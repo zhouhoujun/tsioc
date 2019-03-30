@@ -1,7 +1,7 @@
 
-import { Workflow } from '@ts-ioc/activities';
-import { Asset, CleanToken, TsCompile, TransformContext } from '@ts-ioc/build';
-import { Pack, PackModule } from '@ts-ioc/pack';
+import { Workflow } from '@tsdi/activities';
+import { Asset, CleanToken, TsCompile, TransformContext } from '@tsdi/build';
+import { Pack, PackModule } from '@tsdi/pack';
 
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -37,16 +37,16 @@ const builtins = require('rollup-plugin-node-builtins');
                 'tslib',
                 'globby', 'path', 'fs',
                 'process',
-                '@ts-ioc/core',
-                '@ts-ioc/aop'
+                '@tsdi/core',
+                '@tsdi/aop'
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
                 'tslib': 'tslib',
                 'path': 'path',
                 'globby': 'globby',
-                '@ts-ioc/core': '@ts-ioc/core',
-                '@ts-ioc/aop': '@ts-ioc/aop'
+                '@tsdi/core': '@tsdi/core',
+                '@tsdi/aop': '@tsdi/aop'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),

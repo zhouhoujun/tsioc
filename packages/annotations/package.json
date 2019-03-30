@@ -1,5 +1,5 @@
 {
-  "name": "@ts-ioc/annotations",
+  "name": "@tsdi/annotations",
   "version": "4.0.5",
   "description": "typescript class annotations is a solution for typescript class compile to es5 uglify.  for project used tsioc to es5 uglify",
   "main": "./lib/index.js",
@@ -15,7 +15,7 @@
     "dependency",
     "injection",
     "ts-ioc",
-    "@ts-ioc",
+    "@tsdi",
     "tsioc",
     "container",
     "decorator",

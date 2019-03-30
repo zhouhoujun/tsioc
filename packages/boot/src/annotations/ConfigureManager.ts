@@ -1,10 +1,10 @@
-import { Inject, isUndefined, Singleton, isString, ObjectMapProvider } from '@ts-ioc/ioc';
+import { Inject, isUndefined, Singleton, isString, ObjectMapProvider } from '@tsdi/ioc';
 import {
     ConfigureMgrToken, ConfigureLoaderToken,
     IConfigureManager, DefaultConfigureToken
 } from './IConfigureManager';
 import { RunnableConfigure } from './RunnableConfigure';
-import { ContainerToken, IContainer } from '@ts-ioc/core';
+import { ContainerToken, IContainer } from '@tsdi/core';
 
 
 /**

@@ -1,6 +1,6 @@
-import { ConfigureRegister } from '@ts-ioc/boot';
-import { DebugLogAspect } from '@ts-ioc/logs';
-import { Singleton, isArray } from '@ts-ioc/ioc';
+import { ConfigureRegister } from '@tsdi/boot';
+import { DebugLogAspect } from '@tsdi/logs';
+import { Singleton, isArray } from '@tsdi/ioc';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { Assert, ExpectToken } from './assert';
 import * as assert from 'assert';

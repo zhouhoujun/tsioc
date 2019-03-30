@@ -1,4 +1,4 @@
-import { isFunction, isObservable, isPromise, Express, Singleton } from '@ts-ioc/ioc';
+import { isFunction, isObservable, isPromise, Express, Singleton } from '@tsdi/ioc';
 import { AdvisorProceeding } from './AdvisorProceeding';
 import { Joinpoint } from '../joinpoints';
 import { ReturningType } from './ReturningType';

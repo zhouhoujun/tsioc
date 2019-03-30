@@ -1,5 +1,5 @@
-# packaged @ts-ioc/cli
-`@ts-ioc/cli` is project build pack tools cli, base on AOP, Ioc container, via @ts-ioc. file stream pipes activities.
+# packaged @tsdi/cli
+`@tsdi/cli` is project build pack tools cli, base on AOP, Ioc container, via @tsdi. file stream pipes activities.
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc/blob/master/packages/cli#readme).
@@ -13,7 +13,7 @@ install cli
 
 ### cli in global
 ```shell
-npm install -g '@ts-ioc/cli'
+npm install -g '@tsdi/cli'
 ```
 
 ```

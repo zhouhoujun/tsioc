@@ -1,6 +1,6 @@
-import { CtxType, Expression, ExpressionType } from '@ts-ioc/activities';
+import { CtxType, Expression, ExpressionType } from '@tsdi/activities';
 import { ITransform } from './ITransform';
-import { ObjectMap, isObservable, isObject, isFunction } from '@ts-ioc/ioc';
+import { ObjectMap, isObservable, isObject, isFunction } from '@tsdi/ioc';
 import { Stream } from 'stream';
 import { AssetConfigure } from '../../core';
 

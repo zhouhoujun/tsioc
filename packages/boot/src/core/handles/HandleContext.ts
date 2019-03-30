@@ -1,5 +1,5 @@
-import { IContainer, isContainer } from '@ts-ioc/core';
-import { Token, IResolver, ProviderTypes, Type, isFunction, isBaseObject } from '@ts-ioc/ioc';
+import { IContainer, isContainer } from '@tsdi/core';
+import { Token, IResolver, ProviderTypes, Type, isFunction, isBaseObject } from '@tsdi/ioc';
 
 /**
  * handle option.

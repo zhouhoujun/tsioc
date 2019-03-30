@@ -1,5 +1,5 @@
-import { Injectable, isString, isClass, isArray, PromiseUtil, hasClassMetadata } from '@ts-ioc/ioc';
-import { Runnable, RunnerService } from '@ts-ioc/boot';
+import { Injectable, isString, isClass, isArray, PromiseUtil, hasClassMetadata } from '@tsdi/ioc';
+import { Runnable, RunnerService } from '@tsdi/boot';
 import { UnitTestConfigure } from '../UnitTestConfigure';
 import { OldTestRunner } from './OldTestRunner';
 import { Suite } from '../decorators';

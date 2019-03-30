@@ -1,9 +1,9 @@
-import { Workflow, IfActivityToken, SequenceActivityToken, ExecuteToken } from '@ts-ioc/activities';
-import { INodeActivityContext, Asset, AssetToken, NodeActivityContext } from '@ts-ioc/build';
+import { Workflow, IfActivityToken, SequenceActivityToken, ExecuteToken } from '@tsdi/activities';
+import { INodeActivityContext, Asset, AssetToken, NodeActivityContext } from '@tsdi/build';
 import * as through from 'through2';
 import * as path from 'path';
-import { isPackClass, PackModule } from '@ts-ioc/pack';
-import { isString } from '@ts-ioc/ioc';
+import { isPackClass, PackModule } from '@tsdi/pack';
+import { isString } from '@tsdi/ioc';
 const inplace = require('json-in-place');
 
 
@@ -26,12 +26,12 @@ let versionSetting = (ctx: INodeActivityContext) => {
                 .set('version', version);
 
             Object.keys(json.peerDependencies || {}).forEach(key => {
-                if (/^@ts-ioc/.test(key)) {
+                if (/^@tsdi/.test(key)) {
                     replaced.set('peerDependencies.' + key, '^' + version);
                 }
             });
             Object.keys(json.dependencies || {}).forEach(key => {
-                if (/^@ts-ioc/.test(key)) {
+                if (/^@tsdi/.test(key)) {
                     replaced.set('dependencies.' + key, '^' + version);
                 }
             });

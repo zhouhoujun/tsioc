@@ -1,6 +1,6 @@
-import { isBoolean, ObjectMap, isString, Providers } from '@ts-ioc/ioc';
+import { isBoolean, ObjectMap, isString, Providers } from '@tsdi/ioc';
 import * as ts from 'gulp-typescript';
-import { CtxType, OnActivityInit, Task } from '@ts-ioc/activities';
+import { CtxType, OnActivityInit, Task } from '@tsdi/activities';
 import {
     ITransform, TransformContext,
     isTransform, ITransformConfigure, TransformActivity, TransformType

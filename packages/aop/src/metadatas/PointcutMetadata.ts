@@ -1,4 +1,4 @@
-import { MethodPropMetadata } from '@ts-ioc/ioc';
+import { MethodPropMetadata } from '@tsdi/ioc';
 
 /**
  * pointcut metadata.

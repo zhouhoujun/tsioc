@@ -1,6 +1,6 @@
 import { HandleContext } from './HandleContext';
-import { ContainerToken, IContainer } from '@ts-ioc/core';
-import { IocCoreService, Type, PromiseUtil, Inject, ProviderTypes, Token } from '@ts-ioc/ioc';
+import { ContainerToken, IContainer } from '@tsdi/core';
+import { IocCoreService, Type, PromiseUtil, Inject, ProviderTypes, Token } from '@tsdi/ioc';
 
 /**
  *  next

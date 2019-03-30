@@ -5,7 +5,7 @@ import {
     hasOwnClassMetadata, Singleton, isString, isRegExp, isUndefined,
     Type, ObjectMap, lang, getOwnTypeMetadata,
     isArray, isFunction, IIocContainer, IocContainerToken
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 import { IPointcut, MatchPointcut } from './joinpoints';
 import { Advice } from './decorators/Advice';
 import { Aspect } from './decorators/Aspect';

@@ -1,4 +1,4 @@
-import { GCoreActivityConfigs, isAcitvityClass } from '@ts-ioc/activities';
+import { GCoreActivityConfigs, isAcitvityClass } from '@tsdi/activities';
 import {
     BuildConfigure, BuildHandleConfigure, TestConfigure, UglifyConfigure,
     WatchConfigure, CleanConfigure, AssetConfigure, DestConfigure, SourceConfigure, IAssetBuildHandle
@@ -8,7 +8,7 @@ import {
     StreamSourceConfigure, StreamUglifyConfigure,
 } from './transform';
 import { ShellActivityConfig, ExecFileActivityConfig } from './shells';
-import { Type } from '@ts-ioc/ioc';
+import { Type } from '@tsdi/ioc';
 
 /**
  *  build configure.

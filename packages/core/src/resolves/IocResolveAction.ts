@@ -1,4 +1,4 @@
-import { IocAction } from '@ts-ioc/ioc';
+import { IocAction } from '@tsdi/ioc';
 import { ResovleActionContext } from './ResovleActionContext';
 
 /**

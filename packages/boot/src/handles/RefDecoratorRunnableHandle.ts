@@ -1,4 +1,4 @@
-import { Singleton, lang, getClassDecorators } from '@ts-ioc/ioc';
+import { Singleton, lang, getClassDecorators } from '@tsdi/ioc';
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
 import { Next } from '../core';

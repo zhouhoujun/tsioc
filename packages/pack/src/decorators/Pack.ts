@@ -1,4 +1,4 @@
-import { ITaskDecorator, createTaskDecorator, ActivityBuilder } from '@ts-ioc/activities';
+import { ITaskDecorator, createTaskDecorator, ActivityBuilder } from '@tsdi/activities';
 import { PackConfigure } from '../core/PackConfigure';
 import { PackToken } from '../core/IPackActivity';
 import * as path from 'path';

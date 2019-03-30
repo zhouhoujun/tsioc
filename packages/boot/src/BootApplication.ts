@@ -3,9 +3,9 @@ import {
     Type, LoadType, BindProviderAction, IocSetCacheAction, ComponentBeforeInitAction,
     ComponentInitAction, ComponentAfterInitAction, InjectReference, DesignDecoratorRegisterer,
     RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 import { ContainerPool, RegScope } from './core';
-import { IContainerBuilder, ContainerBuilder, IModuleLoader, ModuleInjectorManager, IContainer } from '@ts-ioc/core';
+import { IContainerBuilder, ContainerBuilder, IModuleLoader, ModuleInjectorManager, IContainer } from '@tsdi/core';
 import { RunnableBuildLifeScope } from './services';
 import { Bootstrap } from './decorators';
 import { BootstrapInjector } from './injectors';

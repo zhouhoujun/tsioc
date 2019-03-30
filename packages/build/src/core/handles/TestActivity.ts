@@ -1,5 +1,5 @@
-import { Expression, Task, Src } from '@ts-ioc/activities';
-import { isUndefined, Providers } from '@ts-ioc/ioc';
+import { Expression, Task, Src } from '@tsdi/activities';
+import { isUndefined, Providers } from '@tsdi/ioc';
 import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
 import { TestToken, ITestActivity, TestConfigure, TestCompilerToken } from './ITestActivity';
 import { UnitTestActivity } from './UnitTestActivity';

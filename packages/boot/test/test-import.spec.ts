@@ -1,8 +1,8 @@
 import { ModuleA, ModuleB, ClassSevice } from './demo';
 import { BootApplication } from '../src';
 import expect = require('expect');
-// import { AopModule } from '@ts-ioc/aop';
-// import { LogModule } from '@ts-ioc/logs';
+// import { AopModule } from '@tsdi/aop';
+// import { LogModule } from '@tsdi/logs';
 
 
 describe('di module', () => {

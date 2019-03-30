@@ -1,5 +1,5 @@
-# packaged @ts-ioc/platform-browser-activities
-`@ts-ioc/platform-browser-activities` is activities framework for browser, base on AOP, Ioc container, via @ts-ioc. file stream pipes activities.
+# packaged @tsdi/platform-browser-activities
+`@tsdi/platform-browser-activities` is activities framework for browser, base on AOP, Ioc container, via @tsdi. file stream pipes activities.
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme).
@@ -11,18 +11,18 @@ Please file issues and pull requests against that repo.
 1. install modules:
 
 ```shell
-npm install @ts-ioc/platform-browser-activities
+npm install @tsdi/platform-browser-activities
 ```
 
 2. install cli | build pack:
 
 ### cli in global
 ```shell
-npm install -g '@ts-ioc/cli'
+npm install -g '@tsdi/cli'
 ```
 ### build pack
 ```
-npm install '@ts-ioc/pack'
+npm install '@tsdi/pack'
 ```
 
 use command: `pk run [taskfile.ts], pk run [taskfile.js]`

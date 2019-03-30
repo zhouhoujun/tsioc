@@ -1,4 +1,4 @@
-import { ITypeDecorator, ClassMetadata, createClassDecorator,  TypeMetadata, isNumber, ArgsIterator } from '@ts-ioc/ioc';
+import { ITypeDecorator, ClassMetadata, createClassDecorator,  TypeMetadata, isNumber, ArgsIterator } from '@tsdi/ioc';
 import { RegScope } from '../modules/RegScope';
 
 

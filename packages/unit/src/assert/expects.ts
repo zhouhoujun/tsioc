@@ -1,4 +1,4 @@
-import { InjectToken } from '@ts-ioc/ioc';
+import { InjectToken } from '@tsdi/ioc';
 import { Expectation } from 'expect';
 
 export interface IAssertMatch<T> extends Expectation<T> {

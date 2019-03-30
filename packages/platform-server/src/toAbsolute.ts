@@ -1,4 +1,4 @@
-import { isString } from '@ts-ioc/ioc';
+import { isString } from '@tsdi/ioc';
 import * as path from 'path';
 
 /**

@@ -1,5 +1,5 @@
 import { IActivity } from './IActivity';
-import { Token } from '@ts-ioc/ioc';
+import { Token } from '@tsdi/ioc';
 import { IHandleActivity } from './IHandleActivity';
 import { HandleConfigure } from './ActivityConfigure';
 

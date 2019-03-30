@@ -1,4 +1,4 @@
-import { IocAction, IocCompositeAction } from '@ts-ioc/ioc';
+import { IocAction, IocCompositeAction } from '@tsdi/ioc';
 import { InjectorActionContext } from './InjectorActionContext';
 
 

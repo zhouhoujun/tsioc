@@ -1,11 +1,11 @@
 import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
-import { Src, Task } from '@ts-ioc/activities';
+import { Src, Task } from '@tsdi/activities';
 import { ICompiler, ISourcemapsCompiler, ISourceCompiler, CompilerConfigure, IAnnotationCompiler, IDestCompiler } from '../ICompiler';
 import {
     AssetConfigure, SourceConfigure, SourceCompilerToken, DestConfigure, DestCompilerToken,
     UglifyConfigure, UglifyCompilerToken, SourceMapsConfigure, SourcemapsCompilerToken, AnnotationCompilerToken, IAssetBuildHandle
 } from './IAssetBuildHandle';
-import { isBoolean, isToken } from '@ts-ioc/ioc';
+import { isBoolean, isToken } from '@tsdi/ioc';
 import { CompilerActivity } from '../CompilerActivity';
 
 

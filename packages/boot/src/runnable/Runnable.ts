@@ -1,5 +1,5 @@
-import { Token, lang, Inject, Type, Abstract } from '@ts-ioc/ioc';
-import { IContainer, ContainerToken } from '@ts-ioc/core';
+import { Token, lang, Inject, Type, Abstract } from '@tsdi/ioc';
+import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext } from '../BootContext';
 
 

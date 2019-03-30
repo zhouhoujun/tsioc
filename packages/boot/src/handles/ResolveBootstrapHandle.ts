@@ -1,7 +1,7 @@
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
 import { Next } from '../core';
-import { Singleton, lang } from '@ts-ioc/ioc';
+import { Singleton, lang } from '@tsdi/ioc';
 
 @Singleton
 export class ResolveBootstrapHandle extends BootHandle {

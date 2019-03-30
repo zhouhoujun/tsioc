@@ -1,8 +1,8 @@
 import {
     IHandleActivity, Expression, HandleConfigure, ExpressionType,
     Active, CtxType, InjectAcitityToken
-} from '@ts-ioc/activities';
-import { Express } from '@ts-ioc/ioc';
+} from '@tsdi/activities';
+import { Express } from '@tsdi/ioc';
 import { ICompiler } from './ICompiler';
 
 

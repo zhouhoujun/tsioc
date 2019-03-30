@@ -1,6 +1,6 @@
 import * as path from 'path';
-import { Task, CtxType } from '@ts-ioc/activities';
-import { lang } from '@ts-ioc/ioc';
+import { Task, CtxType } from '@tsdi/activities';
+import { lang } from '@tsdi/ioc';
 import { ShellActivity, ShellActivityConfig } from '../ShellActivity';
 
 export interface AngularConfig {

@@ -1,9 +1,9 @@
-import { DIModule, RegScope } from '@ts-ioc/boot';
-import { ServerModule } from '@ts-ioc/platform-server';
-import { ServerBootstrapModule } from '@ts-ioc/platform-server-boot';
+import { DIModule, RegScope } from '@tsdi/boot';
+import { ServerModule } from '@tsdi/platform-server';
+import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
 import { TaskLogAspect, RunnerLogAspect } from './aop';
 import { WorkflowConfigureRegister } from './WorkflowConfigureRegister';
-import { ServerLogsModule } from '@ts-ioc/platform-server-logs';
+import { ServerLogsModule } from '@tsdi/platform-server-logs';
 
 
 @DIModule({

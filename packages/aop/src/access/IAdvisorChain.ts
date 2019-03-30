@@ -1,5 +1,5 @@
 import { Joinpoint } from '../joinpoints';
-import { Express, InjectToken } from '@ts-ioc/ioc';
+import { Express, InjectToken } from '@tsdi/ioc';
 import { IocRecognizer } from './IocRecognizer';
 
 /**

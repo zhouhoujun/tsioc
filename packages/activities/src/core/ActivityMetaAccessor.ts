@@ -1,8 +1,8 @@
 import {
     IContainer
-} from '@ts-ioc/core';
-import { Token, Refs, Singleton } from '@ts-ioc/ioc'
-import { ApplicationBuilder, MetaAccessor } from '@ts-ioc/boot';
+} from '@tsdi/core';
+import { Token, Refs, Singleton } from '@tsdi/ioc'
+import { ApplicationBuilder, MetaAccessor } from '@tsdi/boot';
 import { ActivityConfigure } from './ActivityConfigure';
 import { IActivity } from './IActivity';
 

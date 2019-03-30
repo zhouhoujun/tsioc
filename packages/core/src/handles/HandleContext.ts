@@ -1,6 +1,6 @@
 import { IContainer } from '../IContainer';
 import { isContainer } from '../Container';
-import { Type, isFunction, isBaseObject } from '@ts-ioc/ioc';
+import { Type, isFunction, isBaseObject } from '@tsdi/ioc';
 
 /**
  * handle option.

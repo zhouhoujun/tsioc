@@ -1,6 +1,6 @@
 import { BuildHandleContext } from './BuildHandleActivity';
-import { IActivity, ActivityConfigure } from '@ts-ioc/activities';
-import { Registration, Token } from '@ts-ioc/ioc';
+import { IActivity, ActivityConfigure } from '@tsdi/activities';
+import { Registration, Token } from '@tsdi/ioc';
 
 /**
  * compiler activity

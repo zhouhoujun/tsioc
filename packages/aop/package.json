@@ -1,5 +1,5 @@
 {
-  "name": "@ts-ioc/aop",
+  "name": "@tsdi/aop",
   "version": "4.0.5",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "es2015": "./fesm2015/aop.js",
@@ -39,7 +39,7 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "@ts-ioc/ioc": "^5.0.0",
+    "@tsdi/ioc": "^5.0.0",
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.2"
   },

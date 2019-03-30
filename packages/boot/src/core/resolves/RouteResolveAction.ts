@@ -1,8 +1,8 @@
-import { IocCompositeAction, Singleton, Autorun } from '@ts-ioc/ioc';
+import { IocCompositeAction, Singleton, Autorun } from '@tsdi/ioc';
 import { ContainerPoolToken } from '../ContainerPool';
 import { ResolveModuleExportAction } from './ResolveModuleExportAction';
 import { ResolveParentAction } from './ResolveParentAction';
-import { ResovleActionContext } from '@ts-ioc/core';
+import { ResovleActionContext } from '@tsdi/core';
 
 @Singleton
 @Autorun('setup')

@@ -1,7 +1,7 @@
 {
-  "name": "@ts-ioc/boot",
+  "name": "@tsdi/boot",
   "version": "4.0.5",
-  "description": "DI Module manager, application bootstrap. base on AOP, Ioc container, via @ts-ioc/core .",
+  "description": "DI Module manager, application bootstrap. base on AOP, Ioc container, via @tsdi/core .",
   "es2015": "./fesm2015/bootstrap.js",
   "esm2015": "./es2015/index.js",
   "esm5": "./lib/index.js",
@@ -20,7 +20,7 @@
     "dependency",
     "injection",
     "ts-ioc",
-    "@ts-ioc",
+    "@tsdi",
     "tsioc",
     "container",
     "decorator",
@@ -40,7 +40,7 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "@ts-ioc/core": "^4.0.5",
+    "@tsdi/core": "^4.0.5",
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3"
   },

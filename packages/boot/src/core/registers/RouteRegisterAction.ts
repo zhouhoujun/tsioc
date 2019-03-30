@@ -1,7 +1,7 @@
 import {
     IocDesignAction, IocRuntimeAction, lang, Type,
     RuntimeActionContext, DesignActionContext, IocCompositeAction
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 import { ParentContainerToken } from '../ContainerPool';
 
 export class RouteRuntimRegisterAction extends IocRuntimeAction {

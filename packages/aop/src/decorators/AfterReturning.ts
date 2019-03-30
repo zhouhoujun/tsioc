@@ -1,6 +1,6 @@
 import { IAdviceDecorator, createAdviceDecorator } from './Advice';
 import { AfterReturningMetadata } from '../metadatas';
-import { isString } from '@ts-ioc/ioc';
+import { isString } from '@tsdi/ioc';
 
 /**
  * aop after returning decorator.

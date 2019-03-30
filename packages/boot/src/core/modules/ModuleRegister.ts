@@ -1,5 +1,5 @@
-import { Inject, IocCoreService, Abstract } from '@ts-ioc/ioc';
-import { ContainerToken, IContainer } from '@ts-ioc/core';
+import { Inject, IocCoreService, Abstract } from '@tsdi/ioc';
+import { ContainerToken, IContainer } from '@tsdi/core';
 import { ModuleConfigure } from './ModuleConfigure';
 
 /**

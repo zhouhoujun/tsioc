@@ -1,9 +1,9 @@
-import { IContainer, ContainerToken, IocExt } from '@ts-ioc/core';
+import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { Suite } from './decorators/Suite';
 import {
     Inject, DecoratorScopes, ComponentInitAction, RegisterSingletionAction,
     ComponentBeforeInitAction, ComponentAfterInitAction, RuntimeDecoratorRegisterer
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 
 
 /**

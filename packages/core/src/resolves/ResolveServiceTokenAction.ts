@@ -1,5 +1,5 @@
 import { ResolveServiceContext } from './ResolveServiceContext';
-import { Singleton } from '@ts-ioc/ioc';
+import { Singleton } from '@tsdi/ioc';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 
 @Singleton

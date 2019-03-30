@@ -1,8 +1,8 @@
-import { ObjectMap, Inject, lang } from '@ts-ioc/ioc';
-import { IContainer, ContainerToken } from '@ts-ioc/core';
-import { Around, Aspect, Joinpoint, JoinpointState } from '@ts-ioc/aop';
-import { LoggerAspect } from '@ts-ioc/logs';
-import { Task } from '@ts-ioc/activities';
+import { ObjectMap, Inject, lang } from '@tsdi/ioc';
+import { IContainer, ContainerToken } from '@tsdi/core';
+import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
+import { LoggerAspect } from '@tsdi/logs';
+import { Task } from '@tsdi/activities';
 
 /**
  * Task Log

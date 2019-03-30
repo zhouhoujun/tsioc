@@ -1,4 +1,4 @@
-import { Abstract } from '@ts-ioc/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { ResolveServicesContext } from './ResolveServicesContext';
 import { IocResolveAction } from './IocResolveAction';
 

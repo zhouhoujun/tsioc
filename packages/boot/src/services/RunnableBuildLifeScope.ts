@@ -1,4 +1,4 @@
-import { Singleton, Autorun } from '@ts-ioc/ioc';
+import { Singleton, Autorun } from '@tsdi/ioc';
 import { CompositeHandle, AnnoationContext, ModuleInjectLifeScope } from '../core';
 import {
     BootContextCheckHandle, BootDepsHandle, BootProvidersHandle,

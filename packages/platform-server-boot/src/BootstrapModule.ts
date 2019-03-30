@@ -1,9 +1,9 @@
-import { IContainer } from '@ts-ioc/core';
-import { IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken, RegScope } from '@ts-ioc/boot';
+import { IContainer } from '@tsdi/core';
+import { IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken, RegScope } from '@tsdi/boot';
 import * as path from 'path';
-import { ServerModule } from '@ts-ioc/platform-server';
-import { Injectable } from '@ts-ioc/ioc';
-import { RunnableConfigure } from '@ts-ioc/boot';
+import { ServerModule } from '@tsdi/platform-server';
+import { Injectable } from '@tsdi/ioc';
+import { RunnableConfigure } from '@tsdi/boot';
 
 declare let require: any;
 

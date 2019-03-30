@@ -1,5 +1,5 @@
 {
-  "name": "@ts-ioc/platform-server",
+  "name": "@tsdi/platform-server",
   "version": "4.0.5",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "es2015": "./fesm2015/platform-server.js",
@@ -20,7 +20,7 @@
     "dependency",
     "injection",
     "ts-ioc",
-    "@ts-ioc",
+    "@tsdi",
     "tsioc",
     "container",
     "decorator",
@@ -43,8 +43,8 @@
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3",
     "globby": "^9.0.0",
-    "@ts-ioc/ioc": "^5.0.0",
-    "@ts-ioc/core": "^5.0.0"
+    "@tsdi/ioc": "^5.0.0",
+    "@tsdi/core": "^5.0.0"
   },
   "directories": {
     "lib": "lib",

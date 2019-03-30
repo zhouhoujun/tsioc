@@ -1,7 +1,7 @@
-import { Singleton, Inject, MethodMetadata } from '@ts-ioc/ioc';
-import { Aspect, Around, Joinpoint, Pointcut } from '@ts-ioc/aop';
+import { Singleton, Inject, MethodMetadata } from '@tsdi/ioc';
+import { Aspect, Around, Joinpoint, Pointcut } from '@tsdi/aop';
 import { LoggerAspect } from '../src';
-import { ContainerToken, IContainer } from '@ts-ioc/core';
+import { ContainerToken, IContainer } from '@tsdi/core';
 
 @Singleton
 @Aspect

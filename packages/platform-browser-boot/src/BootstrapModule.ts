@@ -1,6 +1,6 @@
-import { DIModule, ProcessRunRootToken, ModuleScope } from '@ts-ioc/boot';
-import { BrowserModule } from '@ts-ioc/platform-browser';
-import { isUndefined } from '@ts-ioc/ioc';
+import { DIModule, ProcessRunRootToken, ModuleScope } from '@tsdi/boot';
+import { BrowserModule } from '@tsdi/platform-browser';
+import { isUndefined } from '@tsdi/ioc';
 declare let System: any;
 
 let processRoot = !isUndefined(System) ? System.baseURL : '.';

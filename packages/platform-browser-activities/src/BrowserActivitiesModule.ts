@@ -1,5 +1,5 @@
-import { DIModule } from '@ts-ioc/boot';
-import { BrowserModule } from '@ts-ioc/platform-browser';
+import { DIModule } from '@tsdi/boot';
+import { BrowserModule } from '@tsdi/platform-browser';
 import { TaskLogAspect, RunnerLogAspect } from './aop';
 import { WorkflowConfigureRegister } from './WorkflowConfigureRegister';
 

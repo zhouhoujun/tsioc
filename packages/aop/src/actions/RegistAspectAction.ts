@@ -1,7 +1,7 @@
 import {
     ClassMetadata, getOwnTypeMetadata, IocDesignAction,
     isClass, DesignActionContext, isArray
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
 
 /**

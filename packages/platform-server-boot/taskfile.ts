@@ -1,6 +1,6 @@
-import { Workflow } from '@ts-ioc/activities';
-import { Asset, AssetActivity, CleanToken, TsCompile, TransformContext } from '@ts-ioc/build';
-import { Pack, PackActivity, PackModule } from '@ts-ioc/pack';
+import { Workflow } from '@tsdi/activities';
+import { Asset, AssetActivity, CleanToken, TsCompile, TransformContext } from '@tsdi/build';
+import { Pack, PackActivity, PackModule } from '@tsdi/pack';
 
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -35,10 +35,10 @@ const builtins = require('rollup-plugin-node-builtins');
                 'globby',
                 'path',
                 'fs',
-                '@ts-ioc/core',
-                '@ts-ioc/aop',
-                '@ts-ioc/boot',
-                '@ts-ioc/platform-server'
+                '@tsdi/core',
+                '@tsdi/aop',
+                '@tsdi/boot',
+                '@tsdi/platform-server'
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
@@ -46,10 +46,10 @@ const builtins = require('rollup-plugin-node-builtins');
                 'path': 'path',
                 'globby': 'globby',
                 'fs': 'fs',
-                '@ts-ioc/core': '@ts-ioc/core',
-                '@ts-ioc/aop': '@ts-ioc/aop',
-                '@ts-ioc/boot': '@ts-ioc/boot',
-                '@ts-ioc/platform-server': '@ts-ioc/platform-server'
+                '@tsdi/core': '@tsdi/core',
+                '@tsdi/aop': '@tsdi/aop',
+                '@tsdi/boot': '@tsdi/boot',
+                '@tsdi/platform-server': '@tsdi/platform-server'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),

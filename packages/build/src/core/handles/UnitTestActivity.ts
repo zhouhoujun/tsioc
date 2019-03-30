@@ -1,8 +1,8 @@
-import { UnitTest } from '@ts-ioc/unit';
-import { ConsoleReporter } from '@ts-ioc/unit-console';
+import { UnitTest } from '@tsdi/unit';
+import { ConsoleReporter } from '@tsdi/unit-console';
 import { TestConfigure } from './ITestActivity';
 import { CompilerActivity } from '../CompilerActivity';
-import { Task } from '@ts-ioc/activities';
+import { Task } from '@tsdi/activities';
 
 /**
  * test activity.

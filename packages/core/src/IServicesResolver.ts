@@ -1,4 +1,4 @@
-import { Token, ProviderTypes, ProviderMap } from '@ts-ioc/ioc';
+import { Token, ProviderTypes, ProviderMap } from '@tsdi/ioc';
 import { ResolveServicesContext } from './resolves';
 import { TargetRefs } from './TargetService';
 

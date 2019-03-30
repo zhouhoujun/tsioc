@@ -1,4 +1,4 @@
-import { Token, InjectReference } from '@ts-ioc/ioc';
+import { Token, InjectReference } from '@tsdi/ioc';
 import { Runnable } from './Runnable';
 
 

@@ -1,5 +1,5 @@
-import { Inject, Injectable, isArray } from '@ts-ioc/ioc';
-import { InputDataToken, InjectActivityContextToken } from '@ts-ioc/activities';
+import { Inject, Injectable, isArray } from '@tsdi/ioc';
+import { InputDataToken, InjectActivityContextToken } from '@tsdi/activities';
 import { BuildActivity } from './BuildActivity';
 import { NodeActivityContext } from './NodeActivity';
 

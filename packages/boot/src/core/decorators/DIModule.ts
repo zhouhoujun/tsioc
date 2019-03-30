@@ -1,4 +1,4 @@
-import { createClassDecorator, MetadataAdapter, MetadataExtends, ITypeDecorator, isClass, lang } from '@ts-ioc/ioc';
+import { createClassDecorator, MetadataAdapter, MetadataExtends, ITypeDecorator, isClass, lang } from '@tsdi/ioc';
 import { ModuleConfigure } from '../modules/ModuleConfigure';
 
 /**

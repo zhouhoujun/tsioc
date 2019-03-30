@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
 import { InjectAcitityToken, InvokeConfigure } from '../core';
-import { ParamProviders } from '@ts-ioc/ioc';
+import { ParamProviders } from '@tsdi/ioc';
 import { ControlActivity } from './ControlActivity';
 
 /**

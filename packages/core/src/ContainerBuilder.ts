@@ -1,7 +1,7 @@
 import { IContainer } from './IContainer';
 import { Container } from './Container';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { PromiseUtil, Type, Modules, LoadType, Express } from '@ts-ioc/ioc';
+import { PromiseUtil, Type, Modules, LoadType, Express } from '@tsdi/ioc';
 import { IModuleLoader, ModuleLoader, ModuleInjectorManager } from './services';
 
 /**

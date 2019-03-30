@@ -1,6 +1,6 @@
-import { Workflow } from '@ts-ioc/activities';
-import { Asset, AssetActivity, CleanToken, TsCompile, TransformContext } from '@ts-ioc/build';
-import { Pack, PackActivity, PackModule } from '@ts-ioc/pack';
+import { Workflow } from '@tsdi/activities';
+import { Asset, AssetActivity, CleanToken, TsCompile, TransformContext } from '@tsdi/build';
+import { Pack, PackActivity, PackModule } from '@tsdi/pack';
 
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -39,13 +39,13 @@ const builtins = require('rollup-plugin-node-builtins');
                 'fs',
                 'time-stamp', 'chalk', 'pretty-hrtime',
                 'process',
-                '@ts-ioc/core',
-                '@ts-ioc/aop',
-                '@ts-ioc/boot',
-                '@ts-ioc/platform-server',
-                '@ts-ioc/platform-server-logs',
-                '@ts-ioc/platform-server-boot',
-                '@ts-ioc/unit'
+                '@tsdi/core',
+                '@tsdi/aop',
+                '@tsdi/boot',
+                '@tsdi/platform-server',
+                '@tsdi/platform-server-logs',
+                '@tsdi/platform-server-boot',
+                '@tsdi/unit'
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
@@ -56,13 +56,13 @@ const builtins = require('rollup-plugin-node-builtins');
                 'chalk': 'chalk',
                 'pretty-hrtime': 'pretty-hrtime',
                 'time-stamp': 'time-stamp',
-                '@ts-ioc/core': '@ts-ioc/core',
-                '@ts-ioc/aop': '@ts-ioc/aop',
-                '@ts-ioc/boot': '@ts-ioc/boot',
-                '@ts-ioc/platform-server': '@ts-ioc/platform-server',
-                '@ts-ioc/platform-server-logs': '@ts-ioc/platform-server-logs',
-                '@ts-ioc/platform-server-boot': '@ts-ioc/platform-server-boot',
-                '@ts-ioc/unit': '@ts-ioc/unit',
+                '@tsdi/core': '@tsdi/core',
+                '@tsdi/aop': '@tsdi/aop',
+                '@tsdi/boot': '@tsdi/boot',
+                '@tsdi/platform-server': '@tsdi/platform-server',
+                '@tsdi/platform-server-logs': '@tsdi/platform-server-logs',
+                '@tsdi/platform-server-boot': '@tsdi/platform-server-boot',
+                '@tsdi/unit': '@tsdi/unit',
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),

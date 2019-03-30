@@ -1,5 +1,5 @@
 import { BuildHandleConfigure, IBuildHandleActivity } from '../BuildHandle';
-import { ExpressionType, Src, CtxType, InjectAcitityToken, IActivity } from '@ts-ioc/activities';
+import { ExpressionType, Src, CtxType, InjectAcitityToken, IActivity } from '@tsdi/activities';
 import { InjectCompilerToken } from '../ICompiler';
 
 

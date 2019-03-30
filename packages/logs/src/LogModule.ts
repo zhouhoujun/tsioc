@@ -1,6 +1,6 @@
-import { Inject, DecoratorScopes, DesignDecoratorRegisterer, BindMethodProviderAction } from '@ts-ioc/ioc';
-import { IContainer, ContainerToken, IocExt } from '@ts-ioc/core';
-import { AopModule } from '@ts-ioc/aop';
+import { Inject, DecoratorScopes, DesignDecoratorRegisterer, BindMethodProviderAction } from '@tsdi/ioc';
+import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
+import { AopModule } from '@tsdi/aop';
 import { Logger } from './decorators/Logger';
 import { AnnotationLogerAspect } from './AnnotationLogerAspect';
 import { ConsoleLogManager } from './ConsoleLogManager';

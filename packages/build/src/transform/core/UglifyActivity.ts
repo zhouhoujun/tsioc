@@ -1,5 +1,5 @@
 import * as uglify from 'gulp-uglify';
-import { Task, OnActivityInit } from '@ts-ioc/activities';
+import { Task, OnActivityInit } from '@tsdi/activities';
 import { StreamActivity } from './StreamActivity';
 import { ITransformConfigure } from './ITransformConfigure';
 import { UglifyConfigure } from '../../core';

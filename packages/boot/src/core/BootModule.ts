@@ -4,14 +4,14 @@ import {
     ComponentInitAction, ComponentAfterInitAction, DesignLifeScope,
     IocBeforeConstructorScope, IocAfterConstructorScope, DecoratorScopes, RuntimeMethodScope,
     RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction, RegisterSingletionAction
-} from '@ts-ioc/ioc';
+} from '@tsdi/ioc';
 import {
     IContainer, ContainerToken, IocExt, ModuleInjectorManager,
     ResolveTargetServiceAction, ResolvePrivateServiceAction,
     ResolveServiceInClassChain, ServicesResolveLifeScope,
     ResolveDefaultServiceAction, ServiceResolveLifeScope,
     ResolveLifeScope
-} from '@ts-ioc/core';
+} from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
 import * as modules from './modules';

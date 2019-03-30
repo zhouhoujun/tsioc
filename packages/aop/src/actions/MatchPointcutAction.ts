@@ -3,7 +3,7 @@ import { AdviceMetadata } from '../metadatas'
 import { AdviceMatcherToken } from '../IAdviceMatcher';
 import { Advices, Advicer } from '../advices';
 import { isValideAspectTarget } from '../isValideAspectTarget';
-import { RuntimeActionContext, IocRuntimeAction } from '@ts-ioc/ioc';
+import { RuntimeActionContext, IocRuntimeAction } from '@tsdi/ioc';
 
 /**
  *  match pointcut action.

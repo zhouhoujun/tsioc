@@ -1,5 +1,5 @@
 import { AdviceMetadata } from './metadatas';
-import { Type, ObjectMap, InjectToken, IIocContainer, ParamProviders } from '@ts-ioc/ioc';
+import { Type, ObjectMap, InjectToken, IIocContainer, ParamProviders } from '@tsdi/ioc';
 import { Advices } from './advices';
 
 /**

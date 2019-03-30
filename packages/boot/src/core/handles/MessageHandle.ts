@@ -1,6 +1,6 @@
 import { Handle, Next } from './Handle';
 import { HandleContext } from './HandleContext';
-import { Abstract } from '@ts-ioc/ioc';
+import { Abstract } from '@tsdi/ioc';
 
 /**
  * message context.

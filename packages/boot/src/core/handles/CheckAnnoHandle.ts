@@ -1,6 +1,6 @@
 import { AnnoationHandle, AnnoationContext } from './AnnoationHandle';
 import { Next } from './Handle';
-import { isClass, Singleton } from '@ts-ioc/ioc';
+import { isClass, Singleton } from '@tsdi/ioc';
 
 
 @Singleton

@@ -1,6 +1,6 @@
 import { InjectorScope } from './InjectorAction';
 import { InjectorActionContext } from './InjectorActionContext';
-import { Autorun, Singleton } from '@ts-ioc/ioc';
+import { Autorun, Singleton } from '@tsdi/ioc';
 import { DecoratorInjectorScope } from './DecoratorInjectorScope';
 import { ModuleInjectorAction } from './ModuleInjectorAction';
 

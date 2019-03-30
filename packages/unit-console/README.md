@@ -1,23 +1,23 @@
-# packaged @ts-ioc/unit-console
+# packaged @tsdi/unit-console
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@ts-ioc/unit-console`： unit testing console reporter, base on AOP, Ioc container.
+`@tsdi/unit-console`： unit testing console reporter, base on AOP, Ioc container.
 
 version 2+ of [`tsioc`](https://www.npmjs.com/zhouhoujun/package/tsioc)
 # Install
 
 ```shell
 
-npm install @ts-ioc/unit
-npm install @ts-ioc/unit-console
+npm install @tsdi/unit
+npm install @tsdi/unit-console
 
 // in browser
-npm install @ts-ioc/platform-browser
+npm install @tsdi/platform-browser
 
 // in server
-npm install @ts-ioc/platform-server
+npm install @tsdi/platform-server
 ```
 
 ## add extends modules
@@ -27,9 +27,9 @@ npm install @ts-ioc/platform-server
 
 ```ts
 
-import { Suite, BeforeEach, UnitTest, Test, After, AfterEach Assert, Expect, ExpectToken } from '@ts-ioc/unit';
-import { ConsoleReporter } from '@ts-ioc/unit-console';
-import { PromiseUtil } from '@ts-ioc/core';
+import { Suite, BeforeEach, UnitTest, Test, After, AfterEach Assert, Expect, ExpectToken } from '@tsdi/unit';
+import { ConsoleReporter } from '@tsdi/unit-console';
+import { PromiseUtil } from '@tsdi/core';
 
 
 @Suite('Unit Test')
@@ -152,7 +152,7 @@ pk test test/**/*.ts
 
 
 Documentation is available on the
-[@ts-ioc/unit-console docs site](https://github.com/zhouhoujun/tsioc/blob/master/packages/unit-console#readme).
+[@tsdi/unit-console docs site](https://github.com/zhouhoujun/tsioc/blob/master/packages/unit-console#readme).
 
 ## License
 

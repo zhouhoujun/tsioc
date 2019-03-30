@@ -1,5 +1,5 @@
 import { CompositeHandle, AnnoationContext, MetaAccessorHandle } from '../handles';
-import { Singleton, Autorun } from '@ts-ioc/ioc';
+import { Singleton, Autorun } from '@tsdi/ioc';
 
 @Singleton
 @Autorun('setup')

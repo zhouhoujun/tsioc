@@ -1,6 +1,6 @@
 import { InjectorAction } from './InjectorAction';
 import { InjectorActionContext } from './InjectorActionContext';
-import { isClass, Singleton } from '@ts-ioc/ioc';
+import { isClass, Singleton } from '@tsdi/ioc';
 
 
 @Singleton

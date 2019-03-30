@@ -1,5 +1,5 @@
-import { CtxType, ExpressionType, Expression, Task, InjectAcitityToken, IActivity, Src } from '@ts-ioc/activities';
-import { isUndefined } from '@ts-ioc/ioc';
+import { CtxType, ExpressionType, Expression, Task, InjectAcitityToken, IActivity, Src } from '@tsdi/activities';
+import { isUndefined } from '@tsdi/ioc';
 import { BuildHandleActivity, BuildHandleContext } from '../BuildHandleActivity';
 import { BuildHandleConfigure } from '../BuildHandle';
 import { InjectCompilerToken } from '../ICompiler';

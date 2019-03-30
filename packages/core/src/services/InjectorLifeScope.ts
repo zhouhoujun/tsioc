@@ -1,4 +1,4 @@
-import { LifeScope } from '@ts-ioc/ioc';
+import { LifeScope } from '@tsdi/ioc';
 
 export class InjectorLifeScope extends LifeScope<IocActionContext> {
 

@@ -1,5 +1,5 @@
-import { Singleton, Type } from '@ts-ioc/ioc';
-import { ModuleInjector, IContainer } from '@ts-ioc/core';
+import { Singleton, Type } from '@tsdi/ioc';
+import { ModuleInjector, IContainer } from '@tsdi/core';
 import { ContainerPoolToken } from '../ContainerPool';
 
 

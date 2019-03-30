@@ -1,6 +1,6 @@
-import { PackModule, Pack, PackActivity } from '@ts-ioc/pack';
-import { Workflow } from '@ts-ioc/activities';
-import { CleanToken, AssetActivity, Asset, TsCompile, TransformContext } from '@ts-ioc/build';
+import { PackModule, Pack, PackActivity } from '@tsdi/pack';
+import { Workflow } from '@tsdi/activities';
+import { CleanToken, AssetActivity, Asset, TsCompile, TransformContext } from '@tsdi/build';
 
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -35,14 +35,14 @@ const builtins = require('rollup-plugin-node-builtins');
                 'reflect-metadata',
                 'tslib',
                 'globby', 'path', 'fs', 'time-stamp', 'chalk', 'pretty-hrtime',
-                '@ts-ioc/core',
-                '@ts-ioc/aop',
-                '@ts-ioc/logs',
-                '@ts-ioc/boot',
-                '@ts-ioc/platform-server',
-                '@ts-ioc/platform-server-logs',
-                '@ts-ioc/platform-server-boot',
-                '@ts-ioc/activities'
+                '@tsdi/core',
+                '@tsdi/aop',
+                '@tsdi/logs',
+                '@tsdi/boot',
+                '@tsdi/platform-server',
+                '@tsdi/platform-server-logs',
+                '@tsdi/platform-server-boot',
+                '@tsdi/activities'
             ],
             globals: {
                 'reflect-metadata': 'Reflect',
@@ -50,15 +50,15 @@ const builtins = require('rollup-plugin-node-builtins');
                 'chalk': 'chalk',
                 'pretty-hrtime': 'pretty-hrtime',
                 'time-stamp': 'time-stamp',
-                '@ts-ioc/core': '@ts-ioc/core',
-                '@ts-ioc/aop': '@ts-ioc/aop',
-                '@ts-ioc/logs': '@ts-ioc/logs',
-                '@ts-ioc/annotations': '@ts-ioc/annotations',
-                '@ts-ioc/boot': '@ts-ioc/boot',
-                '@ts-ioc/platform-server': '@ts-ioc/platform-server',
-                '@ts-ioc/platform-server-logs': '@ts-ioc/platform-server-logs',
-                '@ts-ioc/platform-server-boot': '@ts-ioc/platform-server-boot',
-                '@ts-ioc/activities': '@ts-ioc/activities'
+                '@tsdi/core': '@tsdi/core',
+                '@tsdi/aop': '@tsdi/aop',
+                '@tsdi/logs': '@tsdi/logs',
+                '@tsdi/annotations': '@tsdi/annotations',
+                '@tsdi/boot': '@tsdi/boot',
+                '@tsdi/platform-server': '@tsdi/platform-server',
+                '@tsdi/platform-server-logs': '@tsdi/platform-server-logs',
+                '@tsdi/platform-server-boot': '@tsdi/platform-server-boot',
+                '@tsdi/activities': '@tsdi/activities'
             },
             input: ctx.relativeRoot(ctx.config.data.input)
         }),

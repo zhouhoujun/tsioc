@@ -1,24 +1,24 @@
-# packaged @ts-ioc/aop
+# packaged @tsdi/aop
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@ts-ioc/aop` is AOP base on Ioc container, via [@ts-ioc/core](https://www.npmjs.com/package/@ts-ioc/core), typescript decorator.
+`@tsdi/aop` is AOP base on Ioc container, via [@tsdi/core](https://www.npmjs.com/package/@tsdi/core), typescript decorator.
 
 # Install
 
 ```shell
 
-npm install @ts-ioc/aop
+npm install @tsdi/aop
 
 ```
 
 ```ts
-import { AopModule } from '@ts-ioc/aop';
+import { AopModule } from '@tsdi/aop';
 // in server
-import { ContainerBuilder } from '@ts-ioc/platform-server'
+import { ContainerBuilder } from '@tsdi/platform-server'
 // in browser
-import { ContainerBuilder } from '@ts-ioc/platform-browser'
+import { ContainerBuilder } from '@tsdi/platform-browser'
 
 let builder = new ContainerBuilder();
 
@@ -56,9 +56,9 @@ see [simples](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop/test/
 
 ```ts
 
-import { TypeMetadata, IClassMethodDecorator, createClassMethodDecorator} from '@ts-ioc/core';
+import { TypeMetadata, IClassMethodDecorator, createClassMethodDecorator} from '@tsdi/core';
 
-import { Joinpoint, Around, Aspect , Pointcut } from '@ts-ioc/aop';
+import { Joinpoint, Around, Aspect , Pointcut } from '@tsdi/aop';
 
 export const Authorization: IClassMethodDecorator<TypeMetadata> = createClassMethodDecorator<TypeMetadata>('Authorization');
 
@@ -110,7 +110,7 @@ see more interface. all document is typescript .d.ts.
 * [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/LifeScope.ts)
 
 Documentation is available on the
-[@ts-ioc/aop docs site](https://github.com/zhouhoujun/tsioc).
+[@tsdi/aop docs site](https://github.com/zhouhoujun/tsioc).
 
 ## License
 

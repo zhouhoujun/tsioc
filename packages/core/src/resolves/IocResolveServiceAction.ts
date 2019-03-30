@@ -1,4 +1,4 @@
-import { Token } from '@ts-ioc/ioc';
+import { Token } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveAction } from './IocResolveAction';
 

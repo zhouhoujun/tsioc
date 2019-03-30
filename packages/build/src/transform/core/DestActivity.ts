@@ -1,5 +1,5 @@
 import { dest, DestOptions } from 'vinyl-fs';
-import { ExpressionType, Task } from '@ts-ioc/activities';
+import { ExpressionType, Task } from '@tsdi/activities';
 import { StreamActivity } from './StreamActivity';
 import { ITransformConfigure } from './ITransformConfigure';
 import { DestConfigure, IDestCompiler } from '../../core';
