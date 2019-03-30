@@ -3,7 +3,7 @@ import { IocActionType } from '../actions';
 import { isString } from '../utils';
 
 /**
- * decorator register.
+ * decorator action registerer.
  *
  * @export
  * @class IocDecoratorRegisterer
@@ -18,6 +18,10 @@ export class IocDecoratorRegisterer extends IocCoreService {
 
     getActions(): Map<string, IocActionType[]> {
         return this.actionMap;
+    }
+
+    getDecorators(): string[] {
+        return Array.from(this.actionMap.keys());
     }
 
     /**

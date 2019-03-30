@@ -19,6 +19,8 @@
     "AOP",
     "dependency",
     "injection",
+    "tsdi",
+    "tsioc",
     "ts-ioc",
     "framework",
     "container",

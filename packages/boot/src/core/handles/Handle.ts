@@ -1,4 +1,3 @@
-import { HandleContext } from './HandleContext';
 import { ContainerToken, IContainer } from '@tsdi/core';
 import { IocCoreService, Type, PromiseUtil, Inject, ProviderTypes, Token } from '@tsdi/ioc';
 
@@ -6,6 +5,10 @@ import { IocCoreService, Type, PromiseUtil, Inject, ProviderTypes, Token } from 
  *  next
  */
 export type Next = () => Promise<void>;
+
+export interface IHandleContext {
+    getRaiseContainer(): IContainer;
+}
 
 /**
  * middleware
@@ -16,7 +19,7 @@ export type Next = () => Promise<void>;
  * @extends {IocCoreService}
  * @template T
  */
-export abstract class Handle<T extends HandleContext> extends IocCoreService {
+export abstract class Handle<T extends IHandleContext> extends IocCoreService {
 
     @Inject(ContainerToken)
     protected container: IContainer;
@@ -31,8 +34,11 @@ export abstract class Handle<T extends HandleContext> extends IocCoreService {
     }
 
     protected resolve<TK>(token: Token<TK>, ctx?: T, ...providers: ProviderTypes[]) {
-        if (ctx && ctx.has(token)) {
-            return ctx.resolve(token, ...providers);
+        if (ctx) {
+            let container = ctx.getRaiseContainer();
+            if (container.has(token)) {
+                return container.resolve(token, ...providers);
+            }
         }
         return this.container.resolve(token, ...providers);
     }
@@ -43,4 +49,4 @@ export abstract class Handle<T extends HandleContext> extends IocCoreService {
 /**
  *  middleware type.
  */
-export type HandleType<T extends HandleContext> = Type<Handle<T>> | Handle<T> | PromiseUtil.ActionHandle<T>;
+export type HandleType<T extends IHandleContext> = Type<Handle<T>> | Handle<T> | PromiseUtil.ActionHandle<T>;

@@ -1,8 +1,8 @@
 import { IContainer } from './IContainer';
 import { Container } from './Container';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { PromiseUtil, Type, Modules, LoadType, Express } from '@tsdi/ioc';
-import { IModuleLoader, ModuleLoader, ModuleInjectorManager } from './services';
+import { Modules, LoadType } from '@tsdi/ioc';
+import { IModuleLoader, ModuleLoader } from './services';
 
 /**
  * default container builder.
@@ -13,7 +13,6 @@ import { IModuleLoader, ModuleLoader, ModuleInjectorManager } from './services';
  */
 export class ContainerBuilder implements IContainerBuilder {
 
-    filter: Express<Type<any>, boolean>;
     private _loader?: IModuleLoader
     constructor(loader?: IModuleLoader) {
         this._loader = loader;
@@ -38,52 +37,17 @@ export class ContainerBuilder implements IContainerBuilder {
     async build(...modules: LoadType[]) {
         let container: IContainer = this.create();
         if (modules.length) {
-            await this.loadModule(container, ...modules);
+            await container.load(container, ...modules);
         }
         return container;
     }
-
-    /**
-     * load modules for container.
-     *
-     * @param {IContainer} container
-     * @param {...LoadType[]} modules
-     * @returns {Promise<Type<any>[]>}
-     * @memberof DefaultContainerBuilder
-     */
-    async loadModule(container: IContainer, ...modules: LoadType[]): Promise<Type<any>[]> {
-        let regModules = await this.getLoader(container).loadTypes(modules);
-        let injTypes = [];
-        if (regModules && regModules.length) {
-            let injMgr = container.get(ModuleInjectorManager);
-            await PromiseUtil.step(regModules.map(typs => async () => {
-                let ityps = await injMgr.inject(container, typs);
-                injTypes = injTypes.concat(ityps);
-            }));
-        }
-        return injTypes;
-    }
-
 
     syncBuild(...modules: Modules[]): IContainer {
         let container: IContainer = this.create();
         if (modules.length) {
-            this.syncLoadModule(container, ...modules);
+            container.use(...modules);
         }
         return container;
-    }
-
-    syncLoadModule(container: IContainer, ...modules: Modules[]): Type<any>[] {
-        let regModules = this.getLoader(container).getTypes(modules);
-        let injTypes: Type<any>[] = [];
-        if (regModules && regModules.length) {
-            let injMgr = container.get(ModuleInjectorManager);
-            regModules.forEach(typs => {
-                let ityps = injMgr.syncInject(container, typs);
-                injTypes = injTypes.concat(ityps);
-            });
-        }
-        return injTypes;
     }
 
     protected getLoader(container: IContainer): IModuleLoader {

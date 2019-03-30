@@ -75,7 +75,9 @@ export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeAct
 
     protected getBeforeCstrDecorsState(ctx: RuntimeActionContext) {
         if (!ctx.beforeCstrDecors) {
-            ctx.beforeCstrDecors = Array.from(this.getScopeRegisterer().getRegisterer(DecoratorScopes.BeforeConstructor).getActions().keys())
+            ctx.beforeCstrDecors = this.getScopeRegisterer()
+                .getRegisterer(DecoratorScopes.BeforeConstructor)
+                .getDecorators()
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
@@ -86,7 +88,9 @@ export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeAct
 
     protected getAfterCstrDecorsState(ctx: RuntimeActionContext) {
         if (!ctx.afterCstrDecors) {
-            ctx.afterCstrDecors = Array.from(this.getScopeRegisterer().getRegisterer(DecoratorScopes.AfterConstructor).getActions().keys())
+            ctx.afterCstrDecors = this.getScopeRegisterer()
+                .getRegisterer(DecoratorScopes.AfterConstructor)
+                .getDecorators()
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;

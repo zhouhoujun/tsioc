@@ -29,7 +29,7 @@ export interface ActionContextOption {
  */
 export class IocActionContext {
 
-    private raiseContainerGetter: () => IIocContainer;
+    protected raiseContainerGetter: () => IIocContainer;
 
     /**
      * token.

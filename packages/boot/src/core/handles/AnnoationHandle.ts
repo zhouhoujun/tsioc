@@ -1,10 +1,11 @@
 import { Handle, Next } from './Handle';
-import { HandleContext, HandleOption } from './HandleContext';
 import { Abstract, ProviderMap, Type } from '@tsdi/ioc';
 import { ModuleConfigure, ModuleResovler, RegScope } from '../modules';
+import { AnnoationActionContext, AnnoationActionOption } from '../injectors';
+import { IContainer } from '@tsdi/core';
 
 
-export interface AnnoationOption extends HandleOption {
+export interface AnnoationOption extends AnnoationActionOption {
     /**
      * annoation config.
      *
@@ -30,15 +31,10 @@ export interface AnnoationOption extends HandleOption {
  * @class AnnoationContext
  * @extends {HandleContext}
  */
-export class AnnoationContext extends HandleContext {
+export class AnnoationContext extends AnnoationActionContext {
 
-    constructor(type: Type<any>) {
-        super();
-        this.type = type;
-    }
-
-    static parse(type: Type<any>, options?: AnnoationOption): AnnoationContext {
-        let ctx = new AnnoationContext(type);
+    static parse(options: AnnoationOption, raiseContainer?: IContainer | (() => IContainer)): AnnoationContext {
+        let ctx = new AnnoationContext(options.type, raiseContainer);
         options && ctx.setOptions(options);
         return ctx;
     }

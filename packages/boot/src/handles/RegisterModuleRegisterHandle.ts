@@ -1,7 +1,5 @@
-import { Next } from './Handle';
-import { AnnoationHandle, AnnoationContext } from './AnnoationHandle';
 import { Singleton } from '@tsdi/ioc';
-import { ModuleRegister } from '../modules';
+import { AnnoationHandle, AnnoationContext, Next, ModuleRegister } from '../core';
 
 @Singleton
 export class RegisterModuleRegisterHandle extends AnnoationHandle {

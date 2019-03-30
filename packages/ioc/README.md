@@ -99,7 +99,7 @@ class name First char must be UpperCase.
 5. `@Inject`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
 6. `@Injectable` class decortator, use to define the class. it can setting provider to some token, singleton or not.
 7. `@IocExt` class decortator, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
-8. `@Method` method decorator.
+8. `@AutoWried` method decorator.
 9. `@Param`   param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
 10. `@Singleton` class decortator, use to define the class is singleton.
 11. `@Providers` Providers decorator, for class. use to add private ref service for the class.
@@ -220,7 +220,7 @@ class MethodTest {
 
     }
 
-    @Method
+    @AutoWried
     sayHello(person: Person) {
         return person.say();
     }
@@ -231,7 +231,7 @@ class MethodTest2 {
 
     }
 
-    @Method()
+    @AutoWried()
     sayHello( @Inject(Child) person: Person) {
         return person.say();
     }
@@ -242,7 +242,7 @@ class MethodTest3 {
 
     }
 
-    @Method
+    @AutoWried
     sayHello( @Inject(Child) personA: Person, personB: Person) {
         return personA.say() + ', '  + personB.say();
     }
@@ -480,7 +480,7 @@ class MethodTestPerson {
 
 class MethodTest {
 
-    @Method
+    @AutoWried
     sayHello(person: MethodTestPerson) {
         return person.say();
     }

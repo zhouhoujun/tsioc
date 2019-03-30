@@ -5,7 +5,7 @@
   "typings": "./lib/cli.d.ts",
   "main": "./lib/cli.js",
   "bin": {
-    "pk": "./lib/cli.js"
+    "tsdi": "./lib/cli.js"
   },
   "scripts": {
     "postinstall": "npm prune",
@@ -20,8 +20,8 @@
     "pipe",
     "framework",
     "cli",
+    "tsdi",
     "ts-ioc",
-    "@tsdi",
     "tsioc",
     "IoC",
     "AOP",

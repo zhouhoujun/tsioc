@@ -15,7 +15,7 @@
     "dependency",
     "injection",
     "ts-ioc",
-    "@tsdi",
+    "tsdi",
     "tsioc",
     "container",
     "decorator",

@@ -1,10 +1,7 @@
 import { Singleton, Autorun } from '@tsdi/ioc';
-import { CompositeHandle } from './CompositeHandle';
-import { AnnoationContext } from './AnnoationHandle';
-import { Next } from './Handle';
-import { RegScope } from '../modules';
 import { RegisterExportsHandle } from './RegisterExportsHandle';
 import { RegisterModuleRegisterHandle } from './RegisterModuleRegisterHandle';
+import { AnnoationContext, CompositeHandle, Next, RegScope } from '../core';
 
 @Singleton
 @Autorun('setup')

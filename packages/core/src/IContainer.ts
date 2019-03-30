@@ -95,6 +95,6 @@ export interface IContainer extends IIocContainer, IContextResolver, IServiceRes
      * @returns {Promise<Type<any>[]>}  types loaded.
      * @memberof IContainer
      */
-    loadModule(...modules: LoadType[]): Promise<Type<any>[]>;
+    load(...modules: LoadType[]): Promise<Type<any>[]>;
 
 }

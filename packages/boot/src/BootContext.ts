@@ -1,7 +1,7 @@
 import { AnnoationContext, AnnoationOption } from './core';
 import { RunnableConfigure, ConfigureManager } from './annotations';
-import { IModuleLoader } from '@tsdi/core';
-import { ProviderTypes, LoadType, Type, InjectToken } from '@tsdi/ioc';
+import { IModuleLoader, IContainer } from '@tsdi/core';
+import { ProviderTypes, LoadType, InjectToken } from '@tsdi/ioc';
 import { Runnable } from './runnable';
 
 
@@ -211,11 +211,11 @@ export class BootContext extends AnnoationContext {
      * @memberof BootContext
      */
     getConfigureManager<T>(): ConfigureManager<T> {
-        return this.resolve(ConfigureManager) as ConfigureManager<T>;
+        return this.getRaiseContainer().resolve(ConfigureManager) as ConfigureManager<T>;
     }
 
-    static parse(type: Type<any>, options?: BootOption): BootContext {
-        let ctx = new BootContext(type);
+    static parse(options: BootOption, raiseContainer?: IContainer | (() => IContainer)): BootContext {
+        let ctx = new BootContext(options.type, raiseContainer);
         options && ctx.setOptions(options);
         return ctx;
     }

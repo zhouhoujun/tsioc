@@ -74,10 +74,10 @@ export interface IModuleMetadata<T> extends IAnnotationMetadata<T> {
     /**
      * imports dependens modules
      *
-     * @type {LoadType[]}
+     * @type {Modules[]}
      * @memberof ModuleConfiguration
      */
-    imports?: LoadType[];
+    imports?: Modules[];
     /**
      * exports modules
      *

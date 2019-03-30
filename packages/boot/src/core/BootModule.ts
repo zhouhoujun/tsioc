@@ -6,24 +6,24 @@ import {
     RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction, RegisterSingletionAction
 } from '@tsdi/ioc';
 import {
-    IContainer, ContainerToken, IocExt, ModuleInjectorManager,
+    IContainer, ContainerToken, IocExt,
     ResolveTargetServiceAction, ResolvePrivateServiceAction,
     ResolveServiceInClassChain, ServicesResolveLifeScope,
     ResolveDefaultServiceAction, ServiceResolveLifeScope,
-    ResolveLifeScope
+    ResolveLifeScope,
+    ModuleDecoratorRegisterer
 } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
 import * as modules from './modules';
 import * as resolves from './resolves';
-import * as handles from './handles';
 import * as services from './services';
 
 import {
     RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction,
 } from './resolves';
-import { DIModuleInjector, RootModuleInjector } from './modules';
 import { RouteDesignRegisterAction, RouteRuntimRegisterAction } from './registers';
+import { DIModuleRegisterScope } from './injectors';
 
 /**
  * Bootstrap ext for ioc. auto run setup after registered.
@@ -58,12 +58,10 @@ export class BootModule {
             ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
             RegisterSingletionAction, IocSetCacheAction);
 
-        container.use(modules, handles, resolves, services);
+        container.use(modules, resolves, services);
 
-        let chain = container.get(ModuleInjectorManager);
-        chain
-            .use(RootModuleInjector, true)
-            .use(DIModuleInjector, true);
+        container.get(ModuleDecoratorRegisterer)
+            .register(DIModule, DIModuleRegisterScope);
 
 
         // route service

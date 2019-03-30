@@ -22,12 +22,13 @@ export abstract class IocDecoratorScope<T extends DecoratorActionContext> extend
         return this.getState(ctx, this.getDecorScope())[ctx.currDecoractor] = true;
     }
     protected isCompleted(ctx: T): boolean {
-        return Object.values(this.getState(ctx, this.getDecorScope())).some(inj => inj);
+        return !Object.values(this.getState(ctx, this.getDecorScope())).some(inj => !inj);
     }
     protected getDecorators(ctx: T): string[] {
         let reg = this.getScopeRegisterer();
         let states = this.getState(ctx, this.getDecorScope());
-        return Array.from(reg.getRegisterer(this.getDecorScope()).getActions().keys())
+        return reg.getRegisterer(this.getDecorScope())
+            .getDecorators()
             .filter(dec => states[dec] === false);
     }
 

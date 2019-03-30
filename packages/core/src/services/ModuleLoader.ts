@@ -15,29 +15,29 @@ export interface IModuleLoader {
     /**
      * load modules by files patterns, module name or modules.
      *
-     * @param {LoadType[]} modules
+     * @param {...LoadType[]} modules
      * @returns {Promise<Modules[]>}
      * @memberof IModuleLoader
      */
-    load(modules: LoadType[]): Promise<Modules[]>;
+    load(...modules: LoadType[]): Promise<Modules[]>;
 
     /**
      * load all class types in modules
      *
-     * @param {LoadType[]} modules
+     * @param {...LoadType[]} modules
      * @returns {Promise<Type<any>[]>}
      * @memberof IModuleLoader
      */
-    loadTypes(modules: LoadType[]): Promise<Type<any>[][]>;
+    loadTypes(...modules: LoadType[]): Promise<Type<any>[][]>;
 
     /**
      * get all class type in modules.
      *
-     * @param {Modules[]} modules
+     * @param {Modules} modules
      * @returns {Type<any>[]}
      * @memberof IModuleLoader
      */
-    getTypes(modules: Modules[]): Type<any>[][];
+    getTypes(modules: Modules): Type<any>[];
 
 }
 
@@ -69,7 +69,7 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
      * @returns {Promise<Modules[]>}
      * @memberof DefaultModuleLoader
      */
-    load(modules: LoadType[]): Promise<Modules[]> {
+    load(...modules: LoadType[]): Promise<Modules[]> {
         if (modules.length) {
             return Promise.all(modules.map(mdty => {
                 if (isString(mdty)) {
@@ -99,9 +99,9 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
      * @returns {Promise<Type<any>[]>}
      * @memberof IContainerBuilder
      */
-    async loadTypes(modules: LoadType[]): Promise<Type<any>[][]> {
+    async loadTypes(...modules: LoadType[]): Promise<Type<any>[][]> {
         let mdls = await this.load(modules);
-        return this.getTypes(mdls);
+        return mdls.map(md => this.getTypes(md));
     }
 
     /**
@@ -112,15 +112,8 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
      * @returns {Type<any>[]}
      * @memberof DefaultModuleLoader
      */
-    getTypes(modules: Modules[]): Type<any>[][] {
-        let regModules: Type<any>[][] = [];
-
-        modules.forEach(m => {
-            let types = this.getContentTypes(m);
-            regModules.push(types);
-        });
-
-        return regModules;
+    getTypes(modules: Modules): Type<any>[] {
+        return this.getContentTypes(modules);
     }
 
     protected loadFile(files: string | string[], basePath?: string): Promise<Modules[]> {

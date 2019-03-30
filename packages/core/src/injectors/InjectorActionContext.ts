@@ -1,4 +1,4 @@
-import { ActionContextOption, IocActionContext, Type, DecoratorType, IIocContainer, ObjectMap } from '@tsdi/ioc';
+import { ActionContextOption, IocActionContext, Type, IIocContainer, ObjectMap, Modules, ClassMetadata } from '@tsdi/ioc';
 
 
 /**
@@ -8,14 +8,7 @@ import { ActionContextOption, IocActionContext, Type, DecoratorType, IIocContain
  * @interface InjectorActionOption
  */
 export interface InjectorActionOption extends ActionContextOption {
-    /**
-     * target type.
-     *
-     * @type {Type<any>}
-     * @memberof InjectorActionOption
-     */
-    targetType: Type<any>;
-
+    modules: Modules;
 }
 
 /**
@@ -25,16 +18,54 @@ export interface InjectorActionOption extends ActionContextOption {
  * @class InjectorActionContext
  * @extends {IocActionContext}
  */
-export abstract class InjectorActionContext extends IocActionContext {
+export class InjectorActionContext extends IocActionContext {
 
-    decorState?: ObjectMap<boolean>;
     /**
-     * target type.
+     * the module to injector to container.
+     *
+     * @type {Modules}
+     * @memberof InjectorActionContext
+     */
+    module: Modules;
+
+    /**
+     * types in  module.
+     *
+     * @type {Type<any>[]}
+     * @memberof InjectorActionContext
+     */
+    types: Type<any>[];
+
+    /**
+     * module has injected or not.
+     *
+     * @type {boolean}
+     * @memberof InjectorActionContext
+     */
+    injected: boolean;
+
+    /**
+     * registered types.
+     *
+     * @type {Type<any>[]}
+     * @memberof InjectorActionContext
+     */
+    registered: Type<any>[];
+
+    /**
+     * decorator action state.
+     *
+     * @type {ObjectMap<boolean>}
+     * @memberof InjectorActionContext
+     */
+    decorState: ObjectMap<boolean>;
+    /**
+     * curr register type.
      *
      * @type {Type<any>}
      * @memberof InjectorActionContext
      */
-    targetType?: Type<any>;
+    currType?: Type<any>;
     /**
      * curr decorator.
      *
@@ -42,17 +73,25 @@ export abstract class InjectorActionContext extends IocActionContext {
      * @memberof InjectorActionContext
      */
     currDecoractor?: string;
+
+
+    constructor(raiseContainer?: IIocContainer | (() => IIocContainer)) {
+        super(raiseContainer);
+    }
+
     /**
-     * curr decorator type.
+     * injector action context.
      *
-     * @type {DecoratorType}
+     * @static
+     * @param {InjectorActionOption} options
+     * @param {(IIocContainer | (() => IIocContainer))} [raiseContainer]
+     * @returns {InjectorActionContext}
      * @memberof InjectorActionContext
      */
-    currDecorType?: DecoratorType;
-
-    constructor(targetType: Type<any>, raiseContainer?: IIocContainer | (() => IIocContainer)) {
-        super(raiseContainer);
-        this.targetType = targetType;
+    static parse(options: InjectorActionOption, raiseContainer?: IIocContainer | (() => IIocContainer)): InjectorActionContext {
+        let ctx = new InjectorActionContext(raiseContainer);
+        ctx.setOptions(options);
+        return ctx;
     }
 
     setOptions(options: InjectorActionOption) {

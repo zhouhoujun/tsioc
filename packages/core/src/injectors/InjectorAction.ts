@@ -1,12 +1,12 @@
-import { IocAction, IocCompositeAction } from '@tsdi/ioc';
+import { IocCompositeAction, IocAction } from '@tsdi/ioc';
 import { InjectorActionContext } from './InjectorActionContext';
 
 
-export abstract class InjectorAction<T extends InjectorActionContext> extends IocAction<T> {
+export abstract class InjectorAction extends IocAction<InjectorActionContext> {
 
 }
 
 
-export abstract class InjectorScope<T extends InjectorActionContext> extends IocCompositeAction<T> {
+export abstract class InjectorScope extends IocCompositeAction<InjectorActionContext> {
     abstract setup();
 }

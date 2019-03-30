@@ -1,5 +1,4 @@
-import { Handle, HandleType, Next } from './Handle';
-import { HandleContext } from './HandleContext';
+import { Handle, HandleType, Next, IHandleContext } from './Handle';
 import { isClass, PromiseUtil } from '@tsdi/ioc';
 
 
@@ -11,7 +10,7 @@ import { isClass, PromiseUtil } from '@tsdi/ioc';
  * @extends {Handle<T>}
  * @template T
  */
-export class CompositeHandle<T extends HandleContext> extends Handle<T> {
+export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
 
     protected handles: HandleType<T>[];
     protected initHandle() {

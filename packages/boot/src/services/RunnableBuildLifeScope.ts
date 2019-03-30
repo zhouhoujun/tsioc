@@ -1,9 +1,9 @@
 import { Singleton, Autorun } from '@tsdi/ioc';
-import { CompositeHandle, AnnoationContext, ModuleInjectLifeScope } from '../core';
+import { CompositeHandle, AnnoationContext } from '../core';
 import {
     BootContextCheckHandle, BootDepsHandle, BootProvidersHandle,
     ResolveModuleHandle, ResolveRunnableHandle, ResolveBootstrapHandle,
-    RunBootHandle, BootConfigureLoadHandle, BootConfigureRegisterHandle
+    RunBootHandle, BootConfigureLoadHandle, BootConfigureRegisterHandle, RegisterChildModuleHandle, RegisterAnnoationHandle
 } from '../handles';
 
 @Singleton
@@ -15,7 +15,8 @@ export class RunnableBuildLifeScope extends CompositeHandle<AnnoationContext> {
             .use(BootProvidersHandle)
             .use(BootDepsHandle)
             .use(BootConfigureLoadHandle)
-            .use(ModuleInjectLifeScope)
+            .use(RegisterAnnoationHandle)
+            .use(RegisterChildModuleHandle)
             .use(BootConfigureRegisterHandle)
             .use(ResolveModuleHandle)
             .use(ResolveBootstrapHandle)

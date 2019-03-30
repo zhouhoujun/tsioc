@@ -1,17 +1,30 @@
-import {
-    CompositeHandle, AnnoationContext, CheckAnnoHandle,
-    RegisterScopeHandle, RegisterChildModuleHandle
-} from '../handles';
-import { Singleton, Autorun } from '@tsdi/ioc';
-import { AnnoationLifeScope } from './AnnoationLifeScope';
+
+import { Singleton, Autorun, LifeScope, Type, Inject } from '@tsdi/ioc';
+import { AnnoationActionContext, CheckAnnoationAction, AnnoationRegisterScope } from '../injectors';
+import { ModuleResovler } from '../modules';
+import { IContainer, ContainerToken } from '@tsdi/core';
 
 @Singleton
 @Autorun('setup')
-export class ModuleInjectLifeScope extends CompositeHandle<AnnoationContext> {
+export class ModuleInjectLifeScope extends LifeScope<AnnoationActionContext> {
+
+    @Inject(ContainerToken)
+    container: IContainer;
+
     setup() {
-        this.use(AnnoationLifeScope)
-            .use(CheckAnnoHandle)
-            .use(RegisterScopeHandle)
-            .use(RegisterChildModuleHandle);
+        this.registerAction(CheckAnnoationAction)
+            .registerAction(AnnoationRegisterScope, true);
+
+        this.use(CheckAnnoationAction)
+            .use(AnnoationRegisterScope);
+    }
+
+    register<T>(type: Type<T>, decorator: string): ModuleResovler<T> {
+        let ctx = AnnoationActionContext.parse({
+            type: type,
+            decorator: decorator
+        }, this.container);
+        this.execute(ctx);
+        return ctx.moduleResolver;
     }
 }

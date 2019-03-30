@@ -5,7 +5,7 @@ import {
     ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isProvider, ProviderMap, IProviderParser,
     TypeReflects, Factory, ParamProviders, IParameter, SymbolType, InstanceFactory, IResolver
 } from '@tsdi/ioc';
-import { ModuleLoader, IModuleLoader, ServicesResolveLifeScope, ServiceResolveLifeScope, ResolveLifeScope } from './services';
+import { ModuleLoader, IModuleLoader, ServicesResolveLifeScope, ServiceResolveLifeScope, ResolveLifeScope, InjectorLifeScope } from './services';
 import { registerCores } from './registerCores';
 import { ResolveServiceContext, ResolveServicesContext, ResovleActionContext } from './resolves';
 import { TargetRefs } from './TargetService';
@@ -109,7 +109,7 @@ export class Container implements IContainer {
      * @memberof Container
      */
     use(...modules: Modules[]): this {
-        this.getBuilder().syncLoadModule(this, ...modules);
+        this.get(InjectorLifeScope).register(...modules);
         return this;
     }
 
@@ -120,8 +120,9 @@ export class Container implements IContainer {
      * @returns {Promise<Type<any>[]>}  types loaded.
      * @memberof IContainer
      */
-    loadModule(...modules: LoadType[]): Promise<Type<any>[]> {
-        return this.getBuilder().loadModule(this, ...modules);
+    async load(...modules: LoadType[]): Promise<Type<any>[]> {
+        let mdls = await this.getLoader().load(...modules);
+        return this.get(InjectorLifeScope).register(...mdls);
     }
 
     /**

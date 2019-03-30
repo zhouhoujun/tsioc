@@ -4,13 +4,11 @@ import {
     ComponentInitAction, ComponentAfterInitAction, InjectReference, DesignDecoratorRegisterer,
     RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction
 } from '@tsdi/ioc';
-import { ContainerPool, RegScope } from './core';
-import { IContainerBuilder, ContainerBuilder, IModuleLoader, ModuleInjectorManager, IContainer } from '@tsdi/core';
+import { ContainerPool, RegScope, DIModuleRegisterScope } from './core';
+import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ModuleDecoratorRegisterer } from '@tsdi/core';
 import { RunnableBuildLifeScope } from './services';
 import { Bootstrap } from './decorators';
-import { BootstrapInjector } from './injectors';
 import * as annotations from './annotations';
-import * as injectors from './injectors';
 import * as runnable from './runnable';
 import * as services from './services';
 import * as handles from './handles';
@@ -60,7 +58,7 @@ export class BootApplication {
         this.container = container;
         container.bindProvider(BootApplication, this);
         container.bindProvider(new InjectReference(BootApplication, this.context.type), this);
-        container.use(annotations, handles, injectors, runnable, services);
+        container.use(annotations, handles, runnable, services);
 
         let designReg = container.get(DesignDecoratorRegisterer);
         designReg.register(Bootstrap, DecoratorScopes.Class, BindProviderAction);
@@ -70,7 +68,9 @@ export class BootApplication {
             ComponentBeforeInitAction, ComponentInitAction,
             ComponentAfterInitAction, RegisterSingletionAction, IocSetCacheAction);
 
-        container.get(ModuleInjectorManager).use(BootstrapInjector, true);
+        container.get(ModuleDecoratorRegisterer)
+            .register(Bootstrap, DIModuleRegisterScope);
+
     }
 
     /**
@@ -123,7 +123,7 @@ export class BootApplication {
     }
 
     protected createContext(type: Type<any>): BootContext {
-        return BootContext.parse(type);
+        return BootContext.parse({ type: type });
     }
 
     protected createContainerBuilder(): IContainerBuilder {

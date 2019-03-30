@@ -15,12 +15,14 @@
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
+    "boot",
+    "frameworks",
+    "Application",
     "IoC",
-    "AOP",
     "dependency",
     "injection",
     "ts-ioc",
-    "@tsdi",
+    "tsdi",
     "tsioc",
     "container",
     "decorator",

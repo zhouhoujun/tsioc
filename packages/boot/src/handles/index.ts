@@ -1,3 +1,8 @@
+export * from './RegisterAnnoationHandle';
+export * from './RegisterChildModuleHandle';
+export * from './RegisterExportsHandle';
+export * from './RegisterModuleRegisterHandle';
+
 export * from './BootHandle';
 export * from './BootConfigureLoadHandle';
 export * from './BootConfigureRegisterHandle';

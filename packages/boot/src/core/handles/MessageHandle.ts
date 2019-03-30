@@ -1,6 +1,6 @@
-import { Handle, Next } from './Handle';
-import { HandleContext } from './HandleContext';
-import { Abstract } from '@tsdi/ioc';
+import { Handle, Next, IHandleContext } from './Handle';
+import { Abstract, isFunction } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
 
 /**
  * message context.
@@ -9,7 +9,16 @@ import { Abstract } from '@tsdi/ioc';
  * @class MessageContext
  * @extends {HandleContext}
  */
-export class MessageContext extends HandleContext {
+export class MessageContext implements IHandleContext {
+    protected raiseContainerGetter: () => IContainer;
+
+    constructor(raseContainer: IContainer | (() => IContainer)) {
+        this.raiseContainerGetter = isFunction(raseContainer) ? raseContainer : () => raseContainer;
+    }
+
+    getRaiseContainer(): IContainer {
+        return this.raiseContainerGetter();
+    }
     /**
      * message data.
      *

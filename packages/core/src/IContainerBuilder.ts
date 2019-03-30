@@ -42,23 +42,4 @@ export interface IContainerBuilder {
      */
     syncBuild(...modules: Modules[]): IContainer;
 
-    /**
-     * load modules for container.
-     *
-     * @param {IContainer} container
-     * @param {...LoadType[]} modules
-     * @returns {Promise<Type<any>[]>}
-     * @memberof IContainerBuilder
-     */
-    loadModule(container: IContainer, ...modules: LoadType[]): Promise<Type<any>[]>;
-
-    /**
-     * sync load modules
-     *
-     * @param {IContainer} container
-     * @param {...Modules[]} modules
-     * @memberof IContainerBuilder
-     */
-    syncLoadModule(container: IContainer, ...modules: Modules[]);
-
 }

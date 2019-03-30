@@ -20,7 +20,7 @@
     "task",
     "framework",
     "ts-ioc",
-    "@tsdi",
+    "tsdi",
     "tsioc",
     "IoC",
     "AOP",
