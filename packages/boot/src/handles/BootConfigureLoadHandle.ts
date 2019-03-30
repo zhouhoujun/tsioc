@@ -9,7 +9,7 @@ import { ConfigureManager } from '../annotations';
 export class BootConfigureLoadHandle extends BootHandle {
     async execute(ctx: BootContext, next: Next): Promise<void> {
         if (ctx.configures && ctx.configures.length) {
-            let mgr = ctx.resolve(ConfigureManager);
+            let mgr = this.resolve(ctx, ConfigureManager);
             ctx.configures.forEach(config => {
                 mgr.useConfiguration(config);
             })

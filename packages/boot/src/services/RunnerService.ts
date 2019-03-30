@@ -31,8 +31,10 @@ export class RunnerService extends IocCoreService {
             target
             :
             BootContext.parse({
-                type: target, args: args
+                type: target,
+                args: args
             }, this.container);
+        console.log('run boot', ctx);
         await this.container.resolve(RunnableBuildLifeScope).execute(ctx);
         return ctx as T;
     }

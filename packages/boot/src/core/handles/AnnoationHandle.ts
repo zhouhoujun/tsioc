@@ -1,10 +1,17 @@
 import { Handle, Next } from './Handle';
+import { IContainer } from '@tsdi/core';
 import { Abstract, ProviderMap, Type } from '@tsdi/ioc';
 import { ModuleConfigure, ModuleResovler, RegScope } from '../modules';
-import { AnnoationActionContext, AnnoationActionOption } from '../injectors';
-import { IContainer } from '@tsdi/core';
+import { AnnoationActionContext, AnnoationActionOption, createAnnoationContext } from '../injectors';
 
 
+/**
+ * annation option.
+ *
+ * @export
+ * @interface AnnoationOption
+ * @extends {AnnoationActionOption}
+ */
 export interface AnnoationOption extends AnnoationActionOption {
     /**
      * annoation config.
@@ -33,10 +40,8 @@ export interface AnnoationOption extends AnnoationActionOption {
  */
 export class AnnoationContext extends AnnoationActionContext {
 
-    static parse(options: AnnoationOption, raiseContainer?: IContainer | (() => IContainer)): AnnoationContext {
-        let ctx = new AnnoationContext(options.type, raiseContainer);
-        options && ctx.setOptions(options);
-        return ctx;
+    static parse(target: Type<any> | AnnoationOption, raiseContainer?: IContainer | (() => IContainer)): AnnoationContext {
+        return createAnnoationContext(AnnoationContext, target, raiseContainer);
     }
 
     /**

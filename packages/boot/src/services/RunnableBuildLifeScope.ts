@@ -3,7 +3,8 @@ import { CompositeHandle, AnnoationContext } from '../core';
 import {
     BootContextCheckHandle, BootDepsHandle, BootProvidersHandle,
     ResolveModuleHandle, ResolveRunnableHandle, ResolveBootstrapHandle,
-    RunBootHandle, BootConfigureLoadHandle, BootConfigureRegisterHandle, RegisterChildModuleHandle, RegisterAnnoationHandle
+    RunBootHandle, BootConfigureLoadHandle, BootConfigureRegisterHandle,
+    RegisterModuleHandle
 } from '../handles';
 
 @Singleton
@@ -15,8 +16,7 @@ export class RunnableBuildLifeScope extends CompositeHandle<AnnoationContext> {
             .use(BootProvidersHandle)
             .use(BootDepsHandle)
             .use(BootConfigureLoadHandle)
-            .use(RegisterAnnoationHandle)
-            .use(RegisterChildModuleHandle)
+            .use(RegisterModuleHandle)
             .use(BootConfigureRegisterHandle)
             .use(ResolveModuleHandle)
             .use(ResolveBootstrapHandle)

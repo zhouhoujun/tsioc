@@ -1,5 +1,5 @@
-import { InjectorActionContext } from './InjectorActionContext';
 import { hasClassMetadata, Type } from '@tsdi/ioc';
+import { InjectorActionContext } from './InjectorActionContext';
 import { ModuleRegisterScope } from './ModuleRegisterScope';
 
 export class IocExtRegisterScope extends ModuleRegisterScope {

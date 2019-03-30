@@ -74,22 +74,6 @@ export class IocActionContext {
     }
 
     /**
-     * parse context.
-     *
-     * @static
-     * @param {ActionContextOption} options
-     * @param {(IIocContainer | (() => IIocContainer))} [raiseContainer]
-     * @returns {IocActionContext}
-     * @memberof IocActionContext
-     */
-    static parse(options: ActionContextOption, raiseContainer?: IIocContainer | (() => IIocContainer)): IocActionContext {
-        let ctx = new IocActionContext(raiseContainer);
-        ctx.setOptions(options);
-        return ctx;
-    }
-
-
-    /**
      * set options.
      *
      * @param {ActionContextOption} options

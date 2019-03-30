@@ -1,8 +1,10 @@
-
 import { Singleton, Autorun, LifeScope, Type, Inject } from '@tsdi/ioc';
-import { AnnoationActionContext, CheckAnnoationAction, AnnoationRegisterScope } from '../injectors';
 import { ModuleResovler } from '../modules';
 import { IContainer, ContainerToken } from '@tsdi/core';
+import {
+    AnnoationActionContext, CheckAnnoationAction, AnnoationRegisterScope,
+    DIModuleRegisterScope, RegModuleExportsAction
+} from '../injectors';
 
 @Singleton
 @Autorun('setup')
@@ -12,16 +14,19 @@ export class ModuleInjectLifeScope extends LifeScope<AnnoationActionContext> {
     container: IContainer;
 
     setup() {
-        this.registerAction(CheckAnnoationAction)
-            .registerAction(AnnoationRegisterScope, true);
+        this.registerAction(DIModuleRegisterScope, true)
+            .registerAction(CheckAnnoationAction)
+            .registerAction(AnnoationRegisterScope, true)
+            .registerAction(RegModuleExportsAction);
 
         this.use(CheckAnnoationAction)
-            .use(AnnoationRegisterScope);
+            .use(AnnoationRegisterScope)
+            .use(RegModuleExportsAction);
     }
 
     register<T>(type: Type<T>, decorator: string): ModuleResovler<T> {
         let ctx = AnnoationActionContext.parse({
-            type: type,
+            type,
             decorator: decorator
         }, this.container);
         this.execute(ctx);

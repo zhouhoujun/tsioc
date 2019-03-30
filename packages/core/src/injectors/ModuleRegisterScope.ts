@@ -7,9 +7,7 @@ export abstract class ModuleRegisterScope extends InjectorScope {
 
     execute(ctx: InjectorActionContext, next?: () => void): void {
         let types = this.getTypes(ctx);
-        if (types && types.length) {
-            this.registerTypes(ctx, types);
-        }
+        this.registerTypes(ctx, types);
         next && next();
     }
 

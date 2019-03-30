@@ -1,6 +1,5 @@
 export * from './RegisterAnnoationHandle';
-export * from './RegisterChildModuleHandle';
-export * from './RegisterExportsHandle';
+export * from './RegisterModuleHandle';
 export * from './RegisterModuleRegisterHandle';
 
 export * from './BootHandle';

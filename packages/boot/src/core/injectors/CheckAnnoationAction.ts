@@ -4,7 +4,7 @@ import { AnnoationActionContext } from './AnnoationActionContext';
 import { ModuleConfigure } from '../modules';
 
 export class CheckAnnoationAction extends AnnoationAction {
-    async execute(ctx: AnnoationActionContext, next: () => void): Promise<void> {
+    execute(ctx: AnnoationActionContext, next: () => void): void {
         if (!ctx.annoation) {
             ctx.annoation = lang.first(getOwnTypeMetadata<ModuleConfigure>(ctx.decorator, ctx.type));
         }

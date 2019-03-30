@@ -12,7 +12,7 @@ export class InjectorLifeScope extends LifeScope<InjectorActionContext> {
         this.container.register(ModuleDecoratorRegisterer);
 
         this.registerAction(ModuleToTypesAction)
-            .registerAction(IocExtRegisterScope)
+            .registerAction(IocExtRegisterScope, true)
             .registerAction(ModuleInjectorScope, true);
 
         let reg = this.container.get(ModuleDecoratorRegisterer);
@@ -25,7 +25,7 @@ export class InjectorLifeScope extends LifeScope<InjectorActionContext> {
     register(...modules: Modules[]): Type<any>[] {
         let types: Type<any>[] = [];
         modules.forEach(md => {
-            let ctx = InjectorActionContext.parse({ modules: md });
+            let ctx = InjectorActionContext.parse({ module: md });
             this.execute(ctx);
             if (ctx.registered) {
                 types.push(...ctx.registered);

@@ -100,7 +100,7 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
      * @memberof IContainerBuilder
      */
     async loadTypes(...modules: LoadType[]): Promise<Type<any>[][]> {
-        let mdls = await this.load(modules);
+        let mdls = await this.load(...modules);
         return mdls.map(md => this.getTypes(md));
     }
 

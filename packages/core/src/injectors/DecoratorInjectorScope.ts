@@ -1,5 +1,5 @@
-import { InjectorActionContext } from './InjectorActionContext';
 import { ObjectMap, IocDecoratorRegisterer } from '@tsdi/ioc';
+import { InjectorActionContext } from './InjectorActionContext';
 import { ModuleDecoratorRegisterer } from './ModuleDecoratorRegisterer';
 import { InjectorScope } from './InjectorAction';
 
@@ -14,10 +14,7 @@ export class DecoratorInjectorScope extends InjectorScope {
                     return this.isCompleted(ctx);
                 });
         }
-        console.log('register default', this.isCompleted(ctx), this.getState(ctx));
-        if (!this.isCompleted(ctx)) {
-            next && next();
-        }
+        next && next();
     }
 
     getRegisterer(): IocDecoratorRegisterer {
@@ -32,7 +29,6 @@ export class DecoratorInjectorScope extends InjectorScope {
                     obj[dec] = false;
                     return obj;
                 }, {});
-            console.log(ctx.decorState);
         }
         return ctx.decorState;
     }

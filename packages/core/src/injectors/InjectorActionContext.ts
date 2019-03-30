@@ -8,7 +8,7 @@ import { ActionContextOption, IocActionContext, Type, IIocContainer, ObjectMap, 
  * @interface InjectorActionOption
  */
 export interface InjectorActionOption extends ActionContextOption {
-    modules: Modules;
+    module: Modules;
 }
 
 /**

@@ -1,15 +1,14 @@
-import { BootContext } from '@tsdi/boot';
+import { BootContext, createAnnoationContext } from '@tsdi/boot';
 import { UnitTestConfigure, UnitTestOptions } from './UnitTestConfigure';
 import { Type } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
 
 
 export class UnitTestContext extends BootContext {
 
     configures?: (string | UnitTestConfigure)[];
 
-    static create(type: Type<any>, options?: UnitTestOptions): UnitTestContext {
-        let ctx = new UnitTestContext(type);
-        options && ctx.setOptions(options);
-        return ctx;
+    static parse(target: Type<any> | UnitTestOptions, raiseContainer?: IContainer | (() => IContainer)): UnitTestContext {
+        return createAnnoationContext(UnitTestContext, target, raiseContainer);
     }
 }

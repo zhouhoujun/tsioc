@@ -7,6 +7,7 @@ export * from './RegModuleAction';
 export * from './RegModuleImportsAction';
 export * from './RegModuleProvidersAction';
 export * from './RegModuleResolverAction';
+export * from './RegModuleExportsAction';
 
 export * from './DIModuleRegisterScope';
 export * from './RegisterDIModuleAction';

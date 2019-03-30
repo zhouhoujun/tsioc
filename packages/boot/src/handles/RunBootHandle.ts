@@ -6,7 +6,6 @@ import { Singleton } from '@tsdi/ioc';
 @Singleton
 export class RunBootHandle extends BootHandle {
     async execute(ctx: BootContext, next: Next): Promise<void> {
-
         await ctx.runnable.onInit();
         await ctx.runnable.run(ctx.data);
 

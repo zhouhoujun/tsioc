@@ -70,7 +70,7 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
     protected toHanldeFunc(ac: HandleType<T>): PromiseUtil.ActionHandle<T> {
         if (isClass(ac)) {
             return (ctx: T, next?: Next) => {
-                let action = this.resolve(ac, ctx);
+                let action = this.resolve(ctx, ac);
                 if (action instanceof Handle) {
                     return action.execute(ctx, next);
                 } else {

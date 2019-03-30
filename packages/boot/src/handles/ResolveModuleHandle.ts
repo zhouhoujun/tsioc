@@ -7,7 +7,7 @@ import { Singleton } from '@tsdi/ioc';
 export class ResolveModuleHandle extends BootHandle {
     async execute(ctx: BootContext, next: Next): Promise<void> {
         if (!ctx.target) {
-            ctx.target = ctx.resolve(ctx.type);
+            ctx.target = this.resolve(ctx, ctx.type);
         }
         await next();
     }

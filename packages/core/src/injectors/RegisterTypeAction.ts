@@ -1,6 +1,6 @@
+import { isClass } from '@tsdi/ioc';
 import { InjectorAction } from './InjectorAction';
 import { InjectorActionContext } from './InjectorActionContext';
-import { isClass } from '@tsdi/ioc';
 
 export class RegisterTypeAction extends InjectorAction {
     execute(ctx: InjectorActionContext, next: () => void): void {

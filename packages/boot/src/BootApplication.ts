@@ -123,7 +123,7 @@ export class BootApplication {
     }
 
     protected createContext(type: Type<any>): BootContext {
-        return BootContext.parse({ type: type });
+        return BootContext.parse(type);
     }
 
     protected createContainerBuilder(): IContainerBuilder {

@@ -6,7 +6,19 @@ import { IocCoreService, Type, PromiseUtil, Inject, ProviderTypes, Token } from 
  */
 export type Next = () => Promise<void>;
 
+/**
+ * handle context.
+ *
+ * @export
+ * @interface IHandleContext
+ */
 export interface IHandleContext {
+    /**
+     * get raise container.
+     *
+     * @returns {IContainer}
+     * @memberof IHandleContext
+     */
     getRaiseContainer(): IContainer;
 }
 
@@ -33,12 +45,10 @@ export abstract class Handle<T extends IHandleContext> extends IocCoreService {
 
     }
 
-    protected resolve<TK>(token: Token<TK>, ctx?: T, ...providers: ProviderTypes[]) {
-        if (ctx) {
-            let container = ctx.getRaiseContainer();
-            if (container.has(token)) {
-                return container.resolve(token, ...providers);
-            }
+    protected resolve<TK>(ctx: T, token: Token<TK>, ...providers: ProviderTypes[]) {
+        let container = ctx.getRaiseContainer();
+        if (container && container.hasRegister(token)) {
+            return container.get(token, ...providers);
         }
         return this.container.resolve(token, ...providers);
     }

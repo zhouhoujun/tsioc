@@ -1,10 +1,53 @@
-import { IocActionContext, Type, ProviderMap, ActionContextOption, isFunction } from '@tsdi/ioc';
+import { IocActionContext, Type, ProviderMap, ActionContextOption, isFunction, isClass } from '@tsdi/ioc';
 import { ModuleConfigure, ModuleResovler, RegScope } from '../modules';
 import { IContainer, isContainer } from '@tsdi/core';
 
+/**
+ * annoation action option.
+ *
+ * @export
+ * @interface AnnoationActionOption
+ * @extends {ActionContextOption}
+ */
 export interface AnnoationActionOption extends ActionContextOption {
+    /**
+     * module type.
+     *
+     * @type {Type<any>}
+     * @memberof AnnoationActionOption
+     */
     type: Type<any>;
+    /**
+     * module decorator.
+     *
+     * @type {string}
+     * @memberof AnnoationActionOption
+     */
     decorator?: string;
+}
+
+/**
+ * create annoation context.
+ *
+ * @export
+ * @template T
+ * @param {Type<T>} CtxType
+ * @param {(Type<any> | AnnoationActionOption)} target
+ * @param {(IContainer | (() => IContainer))} [raiseContainer]
+ * @returns {T}
+ */
+export function createAnnoationContext<T extends AnnoationActionContext>(CtxType: Type<T>, target: Type<any> | AnnoationActionOption, raiseContainer?: IContainer | (() => IContainer)): T {
+    let type: Type<any>;
+    let options: AnnoationActionOption;
+    if (isClass(target)) {
+        type = target;
+    } else {
+        options = target;
+        type = target.type;
+    }
+    let ctx = new CtxType(type, raiseContainer);
+    options && ctx.setOptions(options);
+    return ctx;
 }
 
 /**
@@ -23,10 +66,8 @@ export class AnnoationActionContext extends IocActionContext {
         this.type = type;
     }
 
-    static parse(options: AnnoationActionOption, raiseContainer?: IContainer | (() => IContainer)): AnnoationActionContext {
-        let ctx = new AnnoationActionContext(options.type, raiseContainer);
-        options && ctx.setOptions(options);
-        return ctx;
+    static parse(target: Type<any> | AnnoationActionOption, raiseContainer?: IContainer | (() => IContainer)): AnnoationActionContext {
+        return createAnnoationContext(AnnoationActionContext, target, raiseContainer);
     }
 
     hasRaiseContainer(): boolean {
