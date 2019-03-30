@@ -1,5 +1,5 @@
 import { ContainerToken, IContainer } from '@tsdi/core';
-import { IocCoreService, Type, PromiseUtil, Inject, ProviderTypes, Token } from '@tsdi/ioc';
+import { IocCoreService, Type, PromiseUtil, Inject, ProviderTypes, Token, isClass } from '@tsdi/ioc';
 
 /**
  *  next
@@ -45,6 +45,10 @@ export abstract class Handle<T extends IHandleContext> extends IocCoreService {
 
     }
 
+
+    abstract execute(ctx: T, next: Next): Promise<void>;
+
+
     protected resolve<TK>(ctx: T, token: Token<TK>, ...providers: ProviderTypes[]) {
         let container = ctx.getRaiseContainer();
         if (container && container.hasRegister(token)) {
@@ -53,7 +57,25 @@ export abstract class Handle<T extends IHandleContext> extends IocCoreService {
         return this.container.resolve(token, ...providers);
     }
 
-    abstract execute(ctx: T, next: Next): Promise<void>;
+    protected execHandles(ctx: T, handles: HandleType<T>[], next?: Next): Promise<void> {
+        return PromiseUtil.runInChain(handles.map(ac => this.toHanldeFunc(ac)), ctx, next);
+    }
+
+    protected toHanldeFunc(ac: HandleType<T>): PromiseUtil.ActionHandle<T> {
+        if (isClass(ac)) {
+            return (ctx: T, next?: Next) => {
+                let action = this.resolve(ctx, ac);
+                if (action instanceof Handle) {
+                    return action.execute(ctx, next);
+                } else {
+                    return next();
+                }
+            }
+        } else if (ac instanceof Handle) {
+            return (ctx: T, next?: Next) => ac.execute(ctx, next);
+        }
+        return ac;
+    }
 }
 
 /**

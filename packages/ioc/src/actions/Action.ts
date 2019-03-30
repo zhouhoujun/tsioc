@@ -1,6 +1,6 @@
 import { IIocContainer, IocContainerToken } from '../IIocContainer';
 import { Type, Token } from '../types';
-import { lang, isFunction } from '../utils';
+import { lang, isFunction, isClass } from '../utils';
 import { IocCompositeAction } from './IocCompositeAction';
 import { Inject } from '../decorators';
 
@@ -110,6 +110,31 @@ export abstract class IocAction<T extends IocActionContext> {
     }
 
     abstract execute(ctx: T, next: () => void): void;
+
+    protected execActions(ctx: T, actions: IocActionType[], next?: () => void) {
+        lang.execAction(actions.map(ac => this.toActionFunc(ac)), ctx, next);
+    }
+
+    protected toActionFunc(ac: IocActionType) {
+        if (isClass(ac)) {
+            return (ctx: T, next?: () => void) => {
+                let action = this.resolveAction(ac);
+                if (action instanceof IocAction) {
+                    action.execute(ctx, next);
+                } else {
+                    next();
+                }
+            }
+        } else if (ac instanceof IocAction) {
+            return (ctx: T, next?: () => void) => ac.execute(ctx, next);
+        }
+        return ac
+    }
+
+    protected resolveAction(ac: Type<IocAction<T>>): IocAction<T> {
+        return this.container.resolve(ac);
+    }
+
 }
 
 /**

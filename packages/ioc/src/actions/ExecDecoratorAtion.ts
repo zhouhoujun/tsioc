@@ -1,6 +1,7 @@
 import { DecoratorScopeRegisterer } from '../services/DecoratorRegisterer';
 import { IocCompositeAction } from './IocCompositeAction';
 import { RegisterActionContext } from './RegisterActionContext';
+import { IocAction } from './Action';
 
 
 /**
@@ -10,14 +11,14 @@ import { RegisterActionContext } from './RegisterActionContext';
  * @class ExecDecoratorAtion
  * @extends {IocCompositeAction<RegisterActionContext>}
  */
-export abstract class ExecDecoratorAtion extends IocCompositeAction<RegisterActionContext> {
+export abstract class ExecDecoratorAtion extends IocAction<RegisterActionContext> {
 
     execute(ctx: RegisterActionContext, next?: () => void): void {
         if (ctx.currDecoractor) {
             let decor = this.getScopeRegisterer();
             if (decor.has(ctx.currDecoractor, ctx.currDecorScope)) {
                 let actions = decor.get(ctx.currDecoractor, ctx.currDecorScope);
-                this.execActions(ctx, [...this.befores, ...actions, ...this.afters], next);
+                this.execActions(ctx, actions, next);
             } else {
                 next && next();
             }

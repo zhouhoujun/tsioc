@@ -428,8 +428,7 @@ export class IocContainer implements IIocContainer {
             return;
         }
         if (lang.isExtendsClass(ClassT, IocRegisterAction) || lang.isExtendsClass(ClassT, IocRegisterScope)) {
-            console.log(ClassT);
-            throw new Error('can not register Register action Class.');
+            throw new Error(`can not register Register Action Class [${lang.getClassName(ClassT)}].`);
         }
 
         let factory = (...providers: ParamProviders[]) => {

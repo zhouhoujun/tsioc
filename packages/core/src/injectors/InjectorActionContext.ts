@@ -37,14 +37,6 @@ export class InjectorActionContext extends IocActionContext {
     types: Type<any>[];
 
     /**
-     * module has injected or not.
-     *
-     * @type {boolean}
-     * @memberof InjectorActionContext
-     */
-    injected: boolean;
-
-    /**
      * registered types.
      *
      * @type {Type<any>[]}

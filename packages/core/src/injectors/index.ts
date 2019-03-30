@@ -1,4 +1,5 @@
 export * from './DecoratorInjectorScope';
+export * from './DecoratorInjectAction';
 export * from './InjectCompleteCheckAction';
 export * from './InjectorAction';
 export * from './InjectorActionContext';

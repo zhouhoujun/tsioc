@@ -21,7 +21,12 @@ export abstract class ModuleRegisterScope extends InjectorScope {
                     super.execute(ctx);
                 }
             });
+            this.setNextRegTypes(ctx, types);
         }
+    }
+
+    protected setNextRegTypes(ctx: InjectorActionContext, registered: Type<any>[]) {
+        ctx.types = ctx.types.filter(ty => registered.indexOf(ty) < 0);
     }
 
     setup() {

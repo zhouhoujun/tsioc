@@ -1,5 +1,4 @@
 import { Handle, HandleType, Next, IHandleContext } from './Handle';
-import { isClass, PromiseUtil } from '@tsdi/ioc';
 
 
 /**
@@ -61,25 +60,5 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
 
     async execute(ctx: T, next?: Next): Promise<void> {
         await this.execHandles(ctx, this.handles, next);
-    }
-
-    protected execHandles(ctx: T, handles: HandleType<T>[], next?: Next): Promise<void> {
-        return PromiseUtil.runInChain(handles.map(ac => this.toHanldeFunc(ac)), ctx, next);
-    }
-
-    protected toHanldeFunc(ac: HandleType<T>): PromiseUtil.ActionHandle<T> {
-        if (isClass(ac)) {
-            return (ctx: T, next?: Next) => {
-                let action = this.resolve(ctx, ac);
-                if (action instanceof Handle) {
-                    return action.execute(ctx, next);
-                } else {
-                    return next();
-                }
-            }
-        } else if (ac instanceof Handle) {
-            return (ctx: T, next?: Next) => ac.execute(ctx, next);
-        }
-        return ac;
     }
 }
