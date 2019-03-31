@@ -1,4 +1,4 @@
-import { BootContext } from './BootContext';
+import { BootContext, BootOption } from './BootContext';
 import {
     Type, LoadType, BindProviderAction, IocSetCacheAction, ComponentBeforeInitAction,
     ComponentInitAction, ComponentAfterInitAction, InjectReference, DesignDecoratorRegisterer,
@@ -39,13 +39,13 @@ export class BootApplication {
     protected depModules: LoadType[];
     protected runableScope: RunnableBuildLifeScope;
 
-    constructor(context: Type<any> | BootContext, protected baseURL?: string, protected loader?: IModuleLoader) {
+    constructor(target: Type<any> | BootOption | BootContext, protected baseURL?: string, protected loader?: IModuleLoader) {
         this.depModules = [];
-        this.init(context);
+        this.init(target);
     }
 
-    protected init(context: Type<any> | BootContext) {
-        this.context = context instanceof BootContext ? context : this.createContext(context);
+    protected init(target: Type<any> | BootOption | BootContext) {
+        this.context = target instanceof BootContext ? target : this.createContext(target);
         let container: IContainer;
         if (this.context.hasRaiseContainer()) {
             container = this.context.getRaiseContainer();
@@ -78,12 +78,12 @@ export class BootApplication {
      *
      * @static
      * @template T
-     * @param {Type<T>} target
+     * @param {(Type<T> | BootOption | BootContext)} target
      * @param {...string[]} args
      * @returns {Promise<BootContext>}
      * @memberof BootApplication
      */
-    static async run<T>(target: Type<T> | BootContext, ...args: string[]): Promise<BootContext> {
+    static async run<T>(target: Type<T> | BootOption | BootContext, ...args: string[]): Promise<BootContext> {
         return new BootApplication(target).run(...args);
     }
 
@@ -122,7 +122,7 @@ export class BootApplication {
         return this.pools;
     }
 
-    protected createContext(type: Type<any>): BootContext {
+    protected createContext(type: Type<any> | BootOption): BootContext {
         return BootContext.parse(type);
     }
 

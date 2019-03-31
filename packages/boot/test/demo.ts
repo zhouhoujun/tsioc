@@ -45,30 +45,20 @@ export class ClassSevice extends Runnable<any> {
     @Inject('mark')
     mark: string;
     state: string;
-    start() {
-        console.log('-------log mark---------');
-        console.log(this.mark);
-    }
 
     async run(data?: any): Promise<any> {
-        console.log('running.....')
+        console.log('running.....');
+        console.log(this.container);
     }
 
-    mdOnStart(instance: ClassSevice): void | Promise<any> {
-        console.log('mdOnStart...');
-        // console.log(this.container);
-        console.log(instance);
-        instance.start();
-        instance.state = 'started';
-    }
 }
 
 @Aspect
 export class Logger {
 
-    @Around('execution(*.start)')
+    @Around('execution(*.run)')
     log(jp: Joinpoint) {
-        console.log(jp.fullName, jp.state, 'start........');
+        console.log(jp.fullName, jp.state, 'run........');
     }
 
     @Around('execution(*.test)')
@@ -97,8 +87,3 @@ export class ModuleB {
     }
 
 }
-
-// // test
-// DefaultApplicationBuilder.create()
-//     // .use(AopModule).use(LogModule)
-//     .bootstrap(ModuleB);

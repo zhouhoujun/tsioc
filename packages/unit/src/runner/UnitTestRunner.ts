@@ -17,7 +17,7 @@ import { TestReport } from '../reports';
 export class UnitTestRunner extends Runnable<any> {
 
     async run(data?: any): Promise<any> {
-        let mgr = this.ctx.getConfigureManager<UnitTestConfigure>();
+        let mgr = this.context.getConfigureManager<UnitTestConfigure>();
         let config = await mgr.getConfig();
         let src = config.src;
         let container = this.container;

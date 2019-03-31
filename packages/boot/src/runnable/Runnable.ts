@@ -27,7 +27,7 @@ export interface IRunnable<T> {
      * @type {BootContext}
      * @memberof IRunnable
      */
-    readonly ctx?: BootContext;
+    readonly context?: BootContext;
 
     /**
      * target instance.
@@ -81,7 +81,7 @@ export abstract class Runnable<T> implements IRunnable<any> {
     container: IContainer;
 
     private _ctx: BootContext;
-    get ctx(): BootContext {
+    get context(): BootContext {
         return this._ctx;
     }
 
@@ -94,12 +94,12 @@ export abstract class Runnable<T> implements IRunnable<any> {
     }
 
     getTarget(): T {
-        return this.ctx.bootstrap || this.ctx.target;
+        return this.context.bootstrap || this.context.target;
     }
 
 
     getTargetType(): Type<T> {
-        return this.ctx.type || lang.getClass(this.getTarget());
+        return this.context.type || lang.getClass(this.getTarget());
     }
 
     /**
