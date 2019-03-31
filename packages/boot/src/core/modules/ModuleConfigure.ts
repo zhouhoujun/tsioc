@@ -1,5 +1,4 @@
-import { Token, LoadType, Modules, ComponentMetadata, Type } from '@tsdi/ioc';
-import { IMetaAccessor } from './IMetaAccessor';
+import { Token, Modules, ComponentMetadata, Type } from '@tsdi/ioc';
 import { IRunnable } from '../../runnable';
 import { RegScope } from './RegScope';
 
@@ -85,14 +84,6 @@ export interface IModuleMetadata<T> extends IAnnotationMetadata<T> {
      * @memberof ModuleConfiguration
      */
     exports?: Modules[];
-
-    /**
-     * default metadata accessor.
-     *
-     * @type {Token<MetaAccessor>}
-     * @memberof AnnotationConfigure
-     */
-    metaAccessor?: Token<IMetaAccessor>;
 
     /**
      * default runnerable.
