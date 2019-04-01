@@ -73,14 +73,11 @@ export class Logger {
 
 @DIModule({
     imports: [
-        ClassSevice,
         AopModule,
         LogModule,
         Logger,
+        ClassSevice,
         ModuleA
-    ],
-    exports: [
-        ClassSevice
     ],
     bootstrap: ClassSevice
 })
