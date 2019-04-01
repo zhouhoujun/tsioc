@@ -48,7 +48,10 @@ export class ClassSevice extends Runnable<any> {
 
     async run(data?: any): Promise<any> {
         console.log('running.....');
-        console.log(this.container);
+        let refs = this.container.getTypeReflects();
+        console.log(refs.get(ClassSevice));
+
+        // console.log(this.container);
     }
 
 }

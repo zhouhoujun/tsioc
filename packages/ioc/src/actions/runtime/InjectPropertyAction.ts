@@ -3,6 +3,7 @@ import { RuntimeActionContext } from './RuntimeActionContext';
 import { InjectReference } from '../../InjectReference';
 import { ProviderMap } from '../../providers';
 import { isToken } from '../../utils';
+import { isNullOrUndefined } from 'util';
 
 /**
  * inject property value action, to inject property value for resolve instance.
@@ -31,8 +32,11 @@ export class InjectPropertyAction extends IocRuntimeAction {
                     ctx.target[propertyKey] = providerMap.resolve(token, providerMap);
                     ctx.injecteds[propertyKey] = true;
                 } else {
-                    ctx.target[propertyKey] = container.resolve(token, providerMap);
-                    ctx.injecteds[propertyKey] = true;
+                    let val = container.resolve(token, providerMap);
+                    if (!isNullOrUndefined(val)) {
+                        ctx.target[propertyKey] = val;
+                        ctx.injecteds[propertyKey] = true;
+                    }
                 }
             }
         });

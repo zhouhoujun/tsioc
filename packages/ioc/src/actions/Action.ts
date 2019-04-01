@@ -107,15 +107,10 @@ export abstract class IocAction<T extends IocActionContext> {
 
     protected toActionFunc(ac: IocActionType) {
         if (isClass(ac)) {
-            return (ctx: T, next?: () => void) => {
-                let action = this.resolveAction(ac);
-                if (action instanceof IocAction) {
-                    action.execute(ctx, next);
-                } else {
-                    next();
-                }
-            }
-        } else if (ac instanceof IocAction) {
+            let action = this.container.get(ac);
+            return action instanceof IocAction ? (ctx: T, next?: () => void) => action.execute(ctx, next)
+                : (ctx: T, next?: () => void) => next && next();
+        } if (ac instanceof IocAction) {
             return (ctx: T, next?: () => void) => ac.execute(ctx, next);
         }
         return ac

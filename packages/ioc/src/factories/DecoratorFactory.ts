@@ -312,10 +312,10 @@ export function getMethodMetadata<T extends MethodMetadata>(decorator: string | 
  * @export
  * @template T
  * @param {(string | Function)} decorator
- * @param {Type<any>} target
+ * @param {ClassType<any>} target
  * @returns {ObjectMap<T[]>}
  */
-export function getOwnMethodMetadata<T extends MethodMetadata>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
+export function getOwnMethodMetadata<T extends MethodMetadata>(decorator: string | Function, target: ClassType<any>): ObjectMap<T[]> {
     let name = isFunction(decorator) ? decorator.toString() : decorator;
     let meta = Reflect.getOwnMetadata(name + methodMetadataExt, target);
     if (!meta || isArray(meta) || !lang.hasField(meta)) {
@@ -406,7 +406,7 @@ export function getPropertyMetadata<T extends PropertyMetadata>(decorator: strin
  * @param {Type<any>} target
  * @returns {ObjectMap<T[]>}
  */
-export function getOwnPropertyMetadata<T extends PropertyMetadata>(decorator: string | Function, target: Type<any>): ObjectMap<T[]> {
+export function getOwnPropertyMetadata<T extends PropertyMetadata>(decorator: string | Function, target: ClassType<any>): ObjectMap<T[]> {
     let name = isFunction(decorator) ? decorator.toString() : decorator;
     let meta = Reflect.getOwnMetadata(name + propertyMetadataExt, target);
     if (!meta || isArray(meta) || !lang.hasField(meta)) {
