@@ -1,10 +1,10 @@
-import { AnnoationHandle, AnnoationContext, Next, ModuleInjectLifeScope } from '../core';
+import { AnnoationHandle, AnnoationContext, ModuleInjectLifeScope } from '../core';
 import { ModuleDecoratorRegisterer } from '@tsdi/core';
 import { MetadataService, DesignDecoratorRegisterer, DecoratorScopes, RuntimeDecoratorRegisterer, lang, Singleton } from '@tsdi/ioc';
 
 @Singleton
 export class RegisterAnnoationHandle extends AnnoationHandle {
-    async execute(ctx: AnnoationContext, next: Next): Promise<void> {
+    async execute(ctx: AnnoationContext, next: () => Promise<void>): Promise<void> {
         if (!ctx.decorator) {
             let decorators = this.container.get(MetadataService)
                 .getClassDecorators(ctx.type);

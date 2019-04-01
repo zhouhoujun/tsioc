@@ -1,4 +1,4 @@
-import { ApplicationBuilder, BootOption, AppConfigure } from '@tsdi/boot';
+import { BootOption } from '@tsdi/boot';
 import {
     IActivity, IWorkflowInstance, Active, SequenceConfigure, WorkflowId,
     UUIDToken, RandomUUIDFactory, CoreActivityConfigs

@@ -5,7 +5,7 @@ import { InputDataToken } from './core';
 import * as core from './core';
 import * as injectors from './injectors';
 import * as activites from './activities';
-import { Inject, DecoratorScopeRegisterer, BindProviderAction } from '@tsdi/ioc';
+import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes } from '@tsdi/ioc';
 
 /**
  * register task decorators.
@@ -20,8 +20,8 @@ export class CoreModule {
 
     setup() {
         let container = this.container;
-        let decReg = container.resolve(DecoratorScopeRegisterer);
-        decReg.register(Task, BindProviderAction);
+        let decReg = container.resolve(DesignDecoratorRegisterer);
+        decReg.register(Task, DecoratorScopes.Class, BindProviderAction);
 
         container.bindProvider(InputDataToken, null);
         container.use(core)

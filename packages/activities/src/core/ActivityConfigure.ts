@@ -1,11 +1,11 @@
 import { IActivity, IActivityResult } from './IActivity';
 import { Token, isToken, isMetadataObject, isString } from '@tsdi/ioc';
-import { ModuleConfig } from '@tsdi/boot';
 import { IWorkflowInstance } from './IWorkflowInstance';
 import { WorkflowInstance } from './WorkflowInstance';
 import { IActivityContext, CtxType } from './IActivityContext';
 import { IHandleActivity } from './IHandleActivity';
 import { ExpressionActivity } from './ExpressionActivity';
+import { ModuleConfigure } from '@tsdi/boot';
 
 
 /**
@@ -147,10 +147,10 @@ export function isActivityType(target: any, check = true): target is ActivityTyp
  *
  * @export
  * @interface IActivityConfigure
- * @extends {ModuleConfig<T>}
+ * @extends {ModuleConfigure}
  * @template T
  */
-export interface IActivityConfigure<T> extends ModuleConfig<T> {
+export interface IActivityConfigure<T> extends ModuleConfigure {
     /**
      * task title.
      *

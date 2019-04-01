@@ -1,10 +1,10 @@
 import { Singleton } from '@tsdi/ioc';
-import { AnnoationHandle, AnnoationContext, Next, ModuleRegister, RegScope } from '../core';
+import { AnnoationHandle, AnnoationContext, ModuleRegister, RegScope } from '../core';
 
 @Singleton
 export class RegisterModuleRegisterHandle extends AnnoationHandle {
 
-    async execute(ctx: AnnoationContext, next: Next): Promise<void> {
+    async execute(ctx: AnnoationContext, next: () => Promise<void>): Promise<void> {
         if (ctx.regScope === RegScope.child) {
             let regs = ctx.getRaiseContainer().getServices(ModuleRegister, ctx.type);
             if (regs && regs.length) {

@@ -1,9 +1,8 @@
+import { IContainer } from '@tsdi/core';
 import { IActivity, ActivityToken } from './IActivity';
 import { ActivityBuilder } from './ActivityBuilder';
 import { ActivityConfigure, Expression } from './ActivityConfigure';
 import { InjectToken, Token, ObjectMap, Type, InjectReference } from '@tsdi/ioc';
-import { IEvents } from '@tsdi/boot';
-import { IContainer } from '@tsdi/core';
 import { ActivityContext } from './ActivityContext';
 
 
@@ -90,7 +89,7 @@ export type CtxType<T> = T | ((context?: IActivityContext, config?: ActivityConf
  * @export
  * @interface IActivityContext
  */
-export interface IActivityContext extends IContext, IEvents {
+export interface IActivityContext extends IContext {
     /**
      * parent context.
      *

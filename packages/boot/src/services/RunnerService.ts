@@ -15,7 +15,7 @@ import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
 export class RunnerService extends IocCoreService {
 
     @Inject(ContainerToken)
-    container: IContainer;
+    protected container: IContainer;
 
     /**
      * run module.

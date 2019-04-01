@@ -16,7 +16,6 @@ export interface RunnableConfigure extends ModuleConfigure {
      * @memberof AppConfigure
      */
     name?: string;
-
     /**
      * set enable debug log or not.
      *

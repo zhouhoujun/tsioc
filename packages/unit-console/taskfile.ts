@@ -1,6 +1,7 @@
 import { Workflow } from '@tsdi/activities';
 import { Asset, AssetActivity, CleanToken, TsCompile, TransformContext } from '@tsdi/build';
 import { Pack, PackActivity, PackModule } from '@tsdi/pack';
+import { BootApplication } from '@tsdi/boot';
 
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -104,7 +105,5 @@ export class ConsoleReporterBuilder {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.create()
-        .use(PackModule)
-        .bootstrap(ConsoleReporterBuilder);
+    BootApplication.run(ConsoleReporterBuilder, {deps: [PackModule]});
 }

@@ -72,13 +72,13 @@ export interface IWorkflowInstance<T> extends IService<IActivityResult<T>> {
      */
     readonly resultValue: any;
 
-    /**
-     * context.
-     *
-     * @type {IActivityContextResult<T>}
-     * @memberof IWorkflowInstance
-     */
-    readonly context: IActivityContextResult<T>;
+    // /**
+    //  * context.
+    //  *
+    //  * @type {IActivityContextResult<T>}
+    //  * @memberof IWorkflowInstance
+    //  */
+    // readonly context: IActivityContextResult<T>;
 
     /**
      *state changed.

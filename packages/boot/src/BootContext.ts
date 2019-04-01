@@ -49,13 +49,13 @@ export interface BootOption extends AnnoationOption {
      */
     configures?: (string | RunnableConfigure)[];
 
-    /**
-     * target module instace.
-     *
-     * @type {*}
-     * @memberof BootContext
-     */
-    target?: any;
+    // /**
+    //  * target module instace.
+    //  *
+    //  * @type {*}
+    //  * @memberof BootContext
+    //  */
+    // target?: any;
 
     /**
      * bootstrap instance.
@@ -145,7 +145,7 @@ export class BootContext extends AnnoationContext {
      * @type {((string | RunnableConfigure)[])}
      * @memberof BootContext
      */
-    configures?: (string | RunnableConfigure)[];
+    configures?: (string | RunnableConfigure)[] = [];
 
     /**
      * target module instace.

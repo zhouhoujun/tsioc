@@ -1,4 +1,5 @@
-import { Handle, HandleType, Next, IHandleContext } from './Handle';
+import { Handle, HandleType, IHandleContext } from './Handle';
+import { PromiseUtil } from '@tsdi/ioc';
 
 
 /**
@@ -12,6 +13,7 @@ import { Handle, HandleType, Next, IHandleContext } from './Handle';
 export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
 
     protected handles: HandleType<T>[];
+    private funcs: PromiseUtil.ActionHandle<T>[];
     protected initHandle() {
         this.handles = [];
     }
@@ -30,6 +32,7 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
         } else {
             this.handles.push(handle);
         }
+        this.resetFuncs();
         return this;
     }
 
@@ -43,6 +46,7 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
      */
     useBefore(handle: HandleType<T>, before: HandleType<T>): this {
         this.handles.splice(this.handles.indexOf(before) - 1, 0, handle);
+        this.resetFuncs();
         return this;
     }
     /**
@@ -55,10 +59,18 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
      */
     useAfter(handle: HandleType<T>, after: HandleType<T>): this {
         this.handles.splice(this.handles.indexOf(after), 0, handle);
+        this.resetFuncs();
         return this;
     }
 
-    async execute(ctx: T, next?: Next): Promise<void> {
-        await this.execHandles(ctx, this.handles, next);
+    async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
+        if (!this.funcs) {
+            this.funcs = this.handles.map(ac => this.toHanldeFunc(ac))
+        }
+        await this.execHandles(ctx, this.funcs, next);
+    }
+
+    protected resetFuncs() {
+        this.funcs = null;
     }
 }

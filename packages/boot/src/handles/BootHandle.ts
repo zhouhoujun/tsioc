@@ -1,4 +1,4 @@
-import { Handle, Next } from '../core';
+import { Handle } from '../core';
 import { Abstract } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
 
@@ -17,9 +17,9 @@ export abstract class BootHandle extends Handle<BootContext> {
      *
      * @abstract
      * @param {AnnoationContext} ctx
-     * @param {Next} next
+     * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      * @memberof BootHandle
      */
-    abstract execute(ctx: BootContext, next: Next): Promise<void>;
+    abstract execute(ctx: BootContext, next: () => Promise<void>): Promise<void>;
 }

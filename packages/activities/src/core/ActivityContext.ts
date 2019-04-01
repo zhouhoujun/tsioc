@@ -1,10 +1,10 @@
 import {
     Injectable, isNullOrUndefined, Inject, isFunction,
-    isPromise, Type, hasOwnClassMetadata, ObjectMap, isClass, Express, enumerable
+    isPromise, Type, hasOwnClassMetadata, ObjectMap, isClass, Express
 } from '@tsdi/ioc';
 import { IActivity } from './IActivity';
 import { ITranslator } from './Translator';
-import { Events, ProcessRunRootToken } from '@tsdi/boot';
+import { ProcessRunRootToken } from '@tsdi/boot';
 import { InputDataToken, IActivityContextResult, CtxType, ActivityContextToken, IActivityContext } from './IActivityContext';
 import { ActivityBuilder } from './ActivityBuilder';
 import { Expression, ActivityConfigure, isWorkflowInstance } from './ActivityConfigure';
@@ -22,9 +22,8 @@ import { ContainerToken, IContainer } from '@tsdi/core';
  * @implements {IActivityContext<any>}
  */
 @Injectable(ActivityContextToken)
-export class ActivityContext<T> extends Events implements IActivityContextResult<T> {
+export class ActivityContext<T> implements IActivityContextResult<T> {
 
-    @enumerable(false)
     @Inject(ContainerToken)
     container: IContainer;
 
@@ -63,7 +62,6 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
     target: IActivity;
 
     constructor(@Inject(InputDataToken) public input: any) {
-        super();
         this.setAsResult(input);
     }
 
@@ -82,9 +80,6 @@ export class ActivityContext<T> extends Events implements IActivityContextResult
     }
 
     set result(data: T) {
-        if (data !== this.data) {
-            this.emit('resultChanged', data);
-        }
         if (this.parent && this.parent !== this) {
             this.parent.result = data;
         }

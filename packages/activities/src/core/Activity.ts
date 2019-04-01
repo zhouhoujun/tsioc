@@ -1,17 +1,15 @@
 import {
-    Inject, Express, Token, ProviderType, lang,
-    Providers, isFunction, isToken, isBaseObject, isClass,
-    Type, hasClassMetadata, getOwnTypeMetadata, isBoolean, isNullOrUndefined, enumerable
+    Inject, Express, Token, ProviderType, lang, isFunction, isToken, isBaseObject, isClass,
+    Type, hasClassMetadata, getOwnTypeMetadata, isBoolean, isNullOrUndefined, isString
 } from '@tsdi/ioc';
 import { Task } from '../decorators/Task';
 import { OnActivityInit } from './OnActivityInit';
-import { IActivity,  WorkflowId } from './IActivity';
-import { ActivityConfigure, ExpressionType, Expression, ActivityType, Active, ExpressionToken } from './ActivityConfigure';
+import { IActivity, WorkflowId } from './IActivity';
+import { ActivityConfigure, ExpressionType, Expression, ActivityType, Active, ExpressionToken, isActivityType } from './ActivityConfigure';
 import { IActivityContext, InputDataToken, InjectActivityContextToken, ActivityContextToken } from './IActivityContext';
 import { IActivityMetadata } from '../metadatas';
 import { ContainerToken, IContainer, ResolveServiceContext } from '@tsdi/core';
-import { MetaAccessor } from '@tsdi/boot';
-import { ActivityMetaAccessor } from './ActivityMetaAccessor';
+import { RunnerService } from '@tsdi/boot';
 
 
 /**
@@ -24,9 +22,6 @@ import { ActivityMetaAccessor } from './ActivityMetaAccessor';
  * @implements {OnActivityInit}
  */
 @Task
-@Providers([
-    { provide: MetaAccessor, useClass: ActivityMetaAccessor }
-])
 export abstract class Activity implements IActivity, OnActivityInit {
 
     /**
@@ -35,7 +30,6 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @returns {IContainer}
      * @memberof ActivityBase
      */
-    @enumerable(false)
     @Inject(ContainerToken)
     container: IContainer;
 
@@ -45,7 +39,6 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @type {IActivityContext}
      * @memberof Activity
      */
-    @enumerable(false)
     context: IActivityContext;
 
     /**
@@ -109,7 +102,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
             }),
             provider);
         if (cfgdefCtx) {
-            let defType = this.container.getTokenImpl(cfgdefCtx);
+            let defType = this.container.getTokenProvider(cfgdefCtx);
             if (!(ctx instanceof defType)) {
                 ctx = this.container.resolve(cfgdefCtx, provider);
             }
@@ -279,11 +272,40 @@ export abstract class Activity implements IActivity, OnActivityInit {
         toConfig: Express<Tr, TCfg>,
         valify?: Express<TCfg, TCfg>,
         target?: IActivity): Promise<Ta> {
-        return this.context.getBuilder().toActivity<Tr, Ta, TCfg>(exptype, target || this, isRightActivity, toConfig, valify);
+
+        let result;
+        let config;
+        if (isActivityType(exptype, !valify)) {
+            if (valify) {
+                config = isToken(exptype) ? exptype : valify(exptype as TCfg);
+                result = await this.buildActivity(config, target);
+            } else {
+                result = await this.buildActivity(exptype, target);
+            }
+        } else {
+            result = exptype;
+        }
+
+        if (!isRightActivity(result)) {
+            let rt;
+            if (isString(result)) {
+                rt = result;
+            } else {
+                rt = await target.context.exec(target, result);
+            }
+            config = toConfig(rt);
+            if (valify) {
+                config = valify(config);
+            }
+            if (config) {
+                result = await this.buildActivity(config, target);
+            }
+        }
+        return result;
     }
 
-    protected buildActivity<T extends IActivity>(config: ActivityType<T>): Promise<T> {
-        return this.context.getBuilder().buildActivity(config, this) as Promise<T>;
+    protected buildActivity<T extends IActivity>(config: ActivityType<T>, target?: IActivity): Promise<T> {
+        return this.container.get(RunnerService).run(config);
     }
 
 }

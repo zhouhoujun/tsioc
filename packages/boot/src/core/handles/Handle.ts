@@ -1,10 +1,6 @@
 import { ContainerToken, IContainer } from '@tsdi/core';
 import { IocCoreService, Type, PromiseUtil, Inject, ProviderTypes, Token, isClass } from '@tsdi/ioc';
 
-/**
- *  next
- */
-export type Next = () => Promise<void>;
 
 /**
  * handle context.
@@ -46,7 +42,7 @@ export abstract class Handle<T extends IHandleContext> extends IocCoreService {
     }
 
 
-    abstract execute(ctx: T, next: Next): Promise<void>;
+    abstract execute(ctx: T, next: () => Promise<void>): Promise<void>;
 
 
     protected resolve<TK>(ctx: T, token: Token<TK>, ...providers: ProviderTypes[]) {
@@ -57,22 +53,23 @@ export abstract class Handle<T extends IHandleContext> extends IocCoreService {
         return this.container.resolve(token, ...providers);
     }
 
-    protected execHandles(ctx: T, handles: HandleType<T>[], next?: Next): Promise<void> {
+    protected execHandles(ctx: T, handles: HandleType<T>[], next?: () => Promise<void>): Promise<void> {
         return PromiseUtil.runInChain(handles.map(ac => this.toHanldeFunc(ac)), ctx, next);
+    }
+
+    protected execHandleFuncs(ctx: T, handles: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
+        return PromiseUtil.runInChain(handles, ctx, next);
     }
 
     protected toHanldeFunc(ac: HandleType<T>): PromiseUtil.ActionHandle<T> {
         if (isClass(ac)) {
-            return (ctx: T, next?: Next) => {
-                let action = this.resolve(ctx, ac);
-                if (action instanceof Handle) {
-                    return action.execute(ctx, next);
-                } else {
-                    return next();
-                }
-            }
+            let action = this.container.get(ac);
+            return action instanceof Handle ?
+                (ctx: T, next?: () => Promise<void>) => action.execute(ctx, next)
+                : (ctx: T, next?: () => Promise<void>) => next && next();
+
         } else if (ac instanceof Handle) {
-            return (ctx: T, next?: Next) => ac.execute(ctx, next);
+            return (ctx: T, next?: () => Promise<void>) => ac.execute(ctx, next);
         }
         return ac;
     }

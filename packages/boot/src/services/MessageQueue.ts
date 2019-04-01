@@ -1,4 +1,4 @@
-import { CompositeHandle, MessageContext, Next } from '../core';
+import { CompositeHandle, MessageContext } from '../core';
 import { Singleton } from '@tsdi/ioc';
 
 
@@ -18,11 +18,11 @@ export class MessageQueue<T extends MessageContext> extends CompositeHandle<T> {
      * send message.
      *
      * @param {T} ctx
-     * @param {Next} [next]
+     * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
      * @memberof MessageQueue
      */
-    async send(ctx: T, next?: Next): Promise<void> {
+    async send(ctx: T, next?: () => Promise<void>): Promise<void> {
         return this.execute(ctx, next);
     }
 }

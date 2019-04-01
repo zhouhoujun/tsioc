@@ -1,4 +1,4 @@
-import { Handle, Next } from './Handle';
+import { Handle } from './Handle';
 import { IContainer } from '@tsdi/core';
 import { Abstract, ProviderMap, Type } from '@tsdi/ioc';
 import { ModuleConfigure, ModuleResovler, RegScope } from '../modules';
@@ -92,9 +92,9 @@ export abstract class AnnoationHandle extends Handle<AnnoationContext> {
      *
      * @abstract
      * @param {AnnoationContext} ctx
-     * @param {Next} next
+     * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      * @memberof AnnoationHandle
      */
-    abstract execute(ctx: AnnoationContext, next: Next): Promise<void>;
+    abstract execute(ctx: AnnoationContext, next: () => Promise<void>): Promise<void>;
 }

@@ -1,4 +1,4 @@
-import { Handle, Next, IHandleContext } from './Handle';
+import { Handle, IHandleContext } from './Handle';
 import { Abstract, isFunction } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 
@@ -43,9 +43,9 @@ export abstract class MessageHandle extends Handle<MessageContext> {
      *
      * @abstract
      * @param {MessageContext} ctx
-     * @param {Next} next
+     * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      * @memberof AnnoationMiddleware
      */
-    abstract execute(ctx: MessageContext, next: Next): Promise<void>;
+    abstract execute(ctx: MessageContext, next: () => Promise<void>): Promise<void>;
 }

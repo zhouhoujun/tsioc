@@ -1,11 +1,8 @@
 import { IActivityBuilder } from './IActivityBuilder';
 import { isString, Token, Express, isToken, Providers, Singleton, Refs } from '@tsdi/ioc';
-import { AnnotationBuilder, BuildOptions, IAnnoBuildStrategy, AnnoBuildStrategy } from '@tsdi/boot';
 import { IActivity, ActivityInstance } from './IActivity';
 import { ActivityConfigure, ActivityType, ExpressionType, isActivityType, Expression } from './ActivityConfigure';
-import { ActivityMetaAccessor } from './ActivityMetaAccessor';
 import { isAcitvity, Activity } from './Activity';
-import { MetaAccessor } from '@tsdi/boot';
 
 
 /**
