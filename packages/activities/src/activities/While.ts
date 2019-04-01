@@ -1,12 +1,7 @@
 import { Task } from '../decorators/Task';
-import { InjectAcitityToken, WhileConfigure } from '../core';
+import { WhileConfigure } from '../core';
 import { ControlActivity } from './ControlActivity';
 
-
-/**
- * while activity token.
- */
-export const WhileActivityToken = new InjectAcitityToken<WhileActivity>('while');
 
 /**
  * while control activity.
@@ -15,7 +10,7 @@ export const WhileActivityToken = new InjectAcitityToken<WhileActivity>('while')
  * @class WhileActivity
  * @extends {ControlActivity}
  */
-@Task(WhileActivityToken, 'while & body')
+@Task(ControlActivity, 'while & body')
 export class WhileActivity extends ControlActivity {
 
     protected async execute(): Promise<any> {

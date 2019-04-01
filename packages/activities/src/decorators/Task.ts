@@ -3,7 +3,6 @@ import {
     isClass, ITypeDecorator, Token, isToken, isUndefined, lang, ProvideToken, isProvideToken, ClassType
 } from '@tsdi/ioc';
 import { ActivityMetadata } from '../metadatas/ActivityMetadata';
-import { IActivityBuilder } from '../core/IActivityBuilder';
 import { IActivityContext } from '../core/IActivityContext';
 import { IActivity } from '../core/IActivity';
 import { WorkflowInstanceToken } from '../core/IWorkflowInstance';

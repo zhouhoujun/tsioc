@@ -1,12 +1,6 @@
 import { Task } from '../decorators/Task';
-import { InjectAcitityToken, IfConfigure } from '../core';
+import { IfConfigure, Activity } from '../core';
 import { ControlActivity } from './ControlActivity';
-
-
-/**
- * if activity token.
- */
-export const IfActivityToken = new InjectAcitityToken<IfActivity>('if');
 
 /**
  * if control activity.
@@ -15,7 +9,7 @@ export const IfActivityToken = new InjectAcitityToken<IfActivity>('if');
  * @class IfActivity
  * @extends {ControlActivity}
  */
-@Task(IfActivityToken, 'if')
+@Task(ControlActivity, 'if')
 export class IfActivity extends ControlActivity {
 
     protected async execute(): Promise<void> {

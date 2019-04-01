@@ -1,12 +1,7 @@
 import { Task } from '../decorators/Task';
-import { InjectAcitityToken, SwitchConfigure } from '../core';
+import { SwitchConfigure } from '../core';
 import { isUndefined } from '@tsdi/ioc';
 import { ControlActivity } from './ControlActivity';
-
-/**
- * Switch activity token.
- */
-export const SwitchActivityToken = new InjectAcitityToken<SwitchActivity>('switch');
 
 /**
  * Switch control activity.
@@ -15,7 +10,7 @@ export const SwitchActivityToken = new InjectAcitityToken<SwitchActivity>('switc
  * @class SwitchActivity
  * @extends {ControlActivity}
  */
-@Task(SwitchActivityToken, 'switch')
+@Task(ControlActivity, 'switch')
 export class SwitchActivity extends ControlActivity {
 
     protected async execute(): Promise<void> {

@@ -1,11 +1,8 @@
 import { Task } from '../decorators/Task';
-import { InjectAcitityToken, SequenceConfigure } from '../core';
+import { SequenceConfigure } from '../core';
 import { ControlActivity } from './ControlActivity';
 
-/**
- * sequence activity token
- */
-export const SequenceActivityToken = new InjectAcitityToken<SequenceActivity>('sequence');
+
 
 /**
  * sequence activity.
@@ -14,7 +11,7 @@ export const SequenceActivityToken = new InjectAcitityToken<SequenceActivity>('s
  * @class SequenceActivity
  * @extends {ControlActivity}
  */
-@Task(SequenceActivityToken, 'sequence')
+@Task(ControlActivity, 'sequence')
 export class SequenceActivity extends ControlActivity {
 
     protected async execute(): Promise<void> {

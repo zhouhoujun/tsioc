@@ -11,7 +11,7 @@ import { ControlActivity } from './ControlActivity';
  * @extends {ControlActivity}
  * @implements {IHandleActivity}
  */
-@Task
+@Task(ControlActivity, 'handle')
 export abstract class HandleActivity extends ControlActivity implements IHandleActivity {
 
     /**

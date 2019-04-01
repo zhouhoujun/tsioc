@@ -1,13 +1,7 @@
 import { Task } from '../decorators/Task';
-import { InjectAcitityToken, ParallelConfigure } from '../core';
+import { ParallelConfigure } from '../core';
 import { ControlActivity } from './ControlActivity';
 
-
-
-/**
- * parallel activity token.
- */
-export const ParallelActivityToken = new InjectAcitityToken<ParallelActivity>('parallel');
 
 /**
  * parallel activity.
@@ -16,7 +10,7 @@ export const ParallelActivityToken = new InjectAcitityToken<ParallelActivity>('p
  * @class ParallelActivity
  * @extends {ControlActivity}
  */
-@Task(ParallelActivityToken, 'parallel')
+@Task(ControlActivity, 'parallel')
 export class ParallelActivity extends ControlActivity {
 
     /**

@@ -1,11 +1,7 @@
 import { Task } from '../decorators/Task';
-import { InjectAcitityToken, DoWhileConfigure } from '../core';
+import { DoWhileConfigure } from '../core';
 import { ControlActivity } from './ControlActivity';
 
-/**
- * do while activity token.
- */
-export const DoWhileActivityToken = new InjectAcitityToken<DoWhileActivity>('dowhile');
 
 /**
  * do while control activity.
@@ -14,7 +10,7 @@ export const DoWhileActivityToken = new InjectAcitityToken<DoWhileActivity>('dow
  * @class DoWhileActivity
  * @extends {ControlActivity}
  */
-@Task(DoWhileActivityToken, 'do & while')
+@Task(ControlActivity, 'do & while')
 export class DoWhileActivity extends ControlActivity {
 
     protected async execute(): Promise<any> {

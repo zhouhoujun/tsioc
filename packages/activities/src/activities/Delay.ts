@@ -1,12 +1,8 @@
 import { PromiseUtil } from '@tsdi/ioc';
 import { Task } from '../decorators/Task';
-import { InjectAcitityToken, DelayConfigure, OnActivityInit } from '../core';
+import { DelayConfigure, OnActivityInit } from '../core';
 import { ControlActivity } from './ControlActivity';
 
-/**
- * deloy activity token.
- */
-export const DelayActivityToken = new InjectAcitityToken<DelayActivity>('delay');
 
 /**
  * while control activity.
@@ -15,7 +11,7 @@ export const DelayActivityToken = new InjectAcitityToken<DelayActivity>('delay')
  * @class DelayActivity
  * @extends {ControlActivity}
  */
-@Task(DelayActivityToken, 'delay')
+@Task(ControlActivity, 'delay')
 export class DelayActivity extends ControlActivity implements OnActivityInit {
 
     protected async execute(): Promise<any> {

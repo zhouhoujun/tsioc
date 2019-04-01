@@ -1,12 +1,7 @@
 import { Task } from '../decorators/Task';
-import { InjectAcitityToken, ConfirmConfigure } from '../core';
+import { ConfirmConfigure } from '../core';
 import { ControlActivity } from './ControlActivity';
 
-
-/**
- * Confirm activity token.
- */
-export const ConfirmActivityToken = new InjectAcitityToken<ConfirmActivity>('confirm');
 
 /**
  * while control activity.
@@ -15,7 +10,7 @@ export const ConfirmActivityToken = new InjectAcitityToken<ConfirmActivity>('con
  * @class ConfirmActivity
  * @extends {ControlActivity}
  */
-@Task(ConfirmActivityToken, 'confirm')
+@Task(ControlActivity, 'confirm')
 export class ConfirmActivity extends ControlActivity {
 
     protected async execute() {

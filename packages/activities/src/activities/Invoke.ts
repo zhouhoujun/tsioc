@@ -3,10 +3,6 @@ import { InjectAcitityToken, InvokeConfigure } from '../core';
 import { ParamProviders } from '@tsdi/ioc';
 import { ControlActivity } from './ControlActivity';
 
-/**
- * while activity token.
- */
-export const InvokeActivityToken = new InjectAcitityToken<InvokeActivity>('invoke');
 
 /**
  * while control activity.
@@ -15,7 +11,7 @@ export const InvokeActivityToken = new InjectAcitityToken<InvokeActivity>('invok
  * @class InvokeActivity
  * @extends {ControlActivity}
  */
-@Task(InvokeActivityToken, 'invoke')
+@Task(ControlActivity, 'invoke')
 export class InvokeActivity extends ControlActivity {
 
     protected async execute(): Promise<any> {

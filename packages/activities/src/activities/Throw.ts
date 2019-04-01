@@ -1,10 +1,7 @@
 import { Task } from '../decorators/Task';
-import { InjectAcitityToken, ThrowConfigure } from '../core';
+import { ThrowConfigure } from '../core';
 import { ControlActivity } from './ControlActivity';
-/**
- * throw activity token.
- */
-export const ThrowActivityToken = new InjectAcitityToken<ThrowActivity>('throw');
+
 
 /**
  * throw control activity.
@@ -13,7 +10,7 @@ export const ThrowActivityToken = new InjectAcitityToken<ThrowActivity>('throw')
  * @class ThrowActivity
  * @extends {ControlActivity}
  */
-@Task(ThrowActivityToken, 'throw')
+@Task(ControlActivity, 'throw')
 export class ThrowActivity extends ControlActivity {
 
     protected async execute(): Promise<void> {

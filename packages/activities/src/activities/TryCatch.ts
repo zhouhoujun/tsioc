@@ -1,11 +1,8 @@
 import { Task } from '../decorators/Task';
-import { InjectAcitityToken, TryCatchConfigure } from '../core';
+import { TryCatchConfigure } from '../core';
 import { ChainActivity } from './ChainActivity';
+import { ControlActivity } from './ControlActivity';
 
-/**
- * while activity token.
- */
-export const TryCatchActivityToken = new InjectAcitityToken<TryCatchActivity>('trycatch');
 
 /**
  * while control activity.
@@ -14,7 +11,7 @@ export const TryCatchActivityToken = new InjectAcitityToken<TryCatchActivity>('t
  * @class TryCatchActivity
  * @extends {ControlActivity}
  */
-@Task(TryCatchActivityToken, 'try')
+@Task(ControlActivity, 'try')
 export class TryCatchActivity extends ChainActivity {
 
     protected async execute(): Promise<void> {
