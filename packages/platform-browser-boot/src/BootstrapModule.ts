@@ -7,7 +7,7 @@ let processRoot = !isUndefined(System) ? System.baseURL : '.';
 
 
 @DIModule({
-    regScope: RegScope.all,
+    regScope: RegScope.boot,
     imports: [
         BrowserModule
     ],

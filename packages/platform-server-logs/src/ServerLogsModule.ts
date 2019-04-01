@@ -3,7 +3,7 @@ import { ServerLogFormater } from './ServerLogFormater';
 import { Log4jsAdapter } from './Log4jsAdapter';
 
 @DIModule({
-    regScope: RegScope.all,
+    regScope: RegScope.boot,
     imports: [
         ServerLogFormater,
         Log4jsAdapter

@@ -54,7 +54,7 @@ let processRoot = path.join(path.dirname(cwd), path.basename(cwd));
  * @class ServerBootstrapModule
  */
 @DIModule({
-    regScope: RegScope.all,
+    regScope: RegScope.boot,
     imports: [
         ServerModule,
         ConfigureFileLoader
