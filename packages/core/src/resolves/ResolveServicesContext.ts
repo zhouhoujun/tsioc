@@ -1,6 +1,6 @@
-import { ClassType, ProviderMap } from '@tsdi/ioc';
-import { ServiceActionOption, ResolveServiceContext } from './ResolveServiceContext';
+import { ClassType, ProviderMap, Token, IIocContainer, createResolveContext } from '@tsdi/ioc';
 import { IContainer } from '../IContainer';
+import { ServiceActionOption, ResolveServiceContext } from './ResolveServiceContext';
 
 /**
  * services action options
@@ -9,7 +9,7 @@ import { IContainer } from '../IContainer';
  * @interface ServicesActionOption
  * @extends {ServiceActionOption}
  */
-export interface ServicesActionOption extends ServiceActionOption {
+export interface ServicesActionOption<T> extends ServiceActionOption<T> {
     /**
      * get services both in container and target private refrence service.
      *
@@ -33,7 +33,7 @@ export interface ServicesActionOption extends ServiceActionOption {
  * @class ResolveServicesContext
  * @extends {ResolveServiceContext}
  */
-export class ResolveServicesContext extends ResolveServiceContext {
+export class ResolveServicesContext<T> extends ResolveServiceContext<T> {
 
     /**
      * parse service resolve context.
@@ -44,10 +44,8 @@ export class ResolveServicesContext extends ResolveServiceContext {
      * @returns {ResolveServicesContext}
      * @memberof ResolveServicesContext
      */
-    static parse(options?: ServicesActionOption, raiseContainer?: IContainer | (() => IContainer)): ResolveServicesContext {
-        let ctx = new ResolveServicesContext(raiseContainer);
-        ctx.setOptions(options);
-        return ctx;
+    static parse<T>(target?: Token<T> | ServicesActionOption<T>, raiseContainer?: IIocContainer | (() => IIocContainer)): ResolveServicesContext<T> {
+        return createResolveContext<T, ResolveServicesContext<T>>(ResolveServicesContext, target, raiseContainer);
     }
 
     /**
@@ -67,15 +65,5 @@ export class ResolveServicesContext extends ResolveServiceContext {
      * @memberof ResolveServicesContext
      */
     services?: ProviderMap;
-
-    /**
-     * set options.
-     *
-     * @param {ServicesActionOption} options
-     * @memberof ResolveServiceContext
-     */
-    setOptions(options: ServicesActionOption) {
-        super.setOptions(options);
-    }
 
 }

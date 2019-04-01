@@ -3,11 +3,11 @@ import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import {
     ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isProvider, ProviderMap, IProviderParser,
-    TypeReflects, Factory, ParamProviders, IParameter, SymbolType, InstanceFactory, IResolver
+    TypeReflects, Factory, ParamProviders, IParameter, SymbolType, InstanceFactory, IResolver, ResolveActionContext, ResolveLifeScope
 } from '@tsdi/ioc';
-import { ModuleLoader, IModuleLoader, ServicesResolveLifeScope, ServiceResolveLifeScope, ResolveLifeScope, InjectorLifeScope } from './services';
+import { ModuleLoader, IModuleLoader, ServicesResolveLifeScope, ServiceResolveLifeScope, InjectorLifeScope } from './services';
 import { registerCores } from './registerCores';
-import { ResolveServiceContext, ResolveServicesContext, ResovleActionContext } from './resolves';
+import { ResolveServiceContext, ResolveServicesContext, ServiceActionOption, ServicesActionOption } from './resolves';
 import { TargetRefs } from './TargetService';
 
 
@@ -18,54 +18,28 @@ import { TargetRefs } from './TargetService';
  * @class Container
  * @implements {IContainer}
  */
-export class Container implements IContainer {
+export class Container extends IocContainer implements IContainer {
 
-    ioc: IocContainer;
     constructor() {
-        this.init()
+        super();
     }
 
     protected init() {
-        this.ioc = new IocContainer();
+        super.init();
         registerCores(this);
     }
 
 
-    get size(): number {
-        return this.ioc.size;
-    }
-
-
     /**
-   * resolve type instance with token and param provider.
-   *
-   * @template T
-   * @param {Token<T>} token
-   * @param {T} [notFoundValue]
-   * @param {...ProviderTypes[]} providers
-   * @memberof Container
-   */
-    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
-        let context = ResovleActionContext.parse({
-            token: token,
-            providers: providers
-        }, this);
-        this.resolveContext(context);
-        return context.instance || null;
-    }
-
-
-    /**
-     * resolve by context.
+     * current container has register.
      *
      * @template T
-     * @param {T} ctx
-     * @returns {T}
-     * @memberof IocContainer
+     * @param {Token<T>} key
+     * @returns {boolean}
+     * @memberof IContainer
      */
-    resolveContext<T extends ResovleActionContext>(ctx: T): T {
-        this.get(ResolveLifeScope).execute(ctx);
-        return ctx as T;
+    hasRegister<T>(key: Token<T>): boolean {
+        return this.has(key);
     }
 
     /**
@@ -75,7 +49,7 @@ export class Container implements IContainer {
      * @memberof Container
      */
     getBuilder(): IContainerBuilder {
-        return this.ioc.resolve(ContainerBuilderToken);
+        return this.get(ContainerBuilderToken);
     }
 
     /**
@@ -85,7 +59,7 @@ export class Container implements IContainer {
      * @memberof IContainer
      */
     getLoader(): IModuleLoader {
-        return this.ioc.resolve(ModuleLoader);
+        return this.get(ModuleLoader);
     }
 
     /**
@@ -136,8 +110,8 @@ export class Container implements IContainer {
      * @returns {T}
      * @memberof Container
      */
-    getService<T>(token: Token<T>, target?: TargetRefs | ResolveServiceContext | ProviderTypes, ctx?: ResolveServiceContext | ProviderTypes, ...providers: ProviderTypes[]): T {
-        let context: ResolveServiceContext;
+    getService<T>(token: Token<T>, target?: TargetRefs | ResolveServiceContext<T> | ProviderTypes, ctx?: ResolveServiceContext<T> | ProviderTypes, ...providers: ProviderTypes[]): T {
+        let context: ResolveServiceContext<T>;
         if (isProvider(ctx)) {
             providers.unshift(ctx);
             ctx = null;
@@ -158,7 +132,7 @@ export class Container implements IContainer {
                 providers: providers
             }, this);
         } else {
-            context.setOptions({
+            context.setOptions(<ServiceActionOption<T>>{
                 token: token,
                 target: target,
                 providers: providers
@@ -179,8 +153,8 @@ export class Container implements IContainer {
      * @returns {T[]}
      * @memberof Container
      */
-    getServices<T>(token: Token<T>, target?: TargetRefs | ResolveServicesContext | ProviderTypes, ctx?: ResolveServicesContext | ProviderTypes, ...providers: ProviderTypes[]): T[] {
-        let context: ResolveServicesContext;
+    getServices<T>(token: Token<T>, target?: TargetRefs | ResolveServicesContext<T> | ProviderTypes, ctx?: ResolveServicesContext<T> | ProviderTypes, ...providers: ProviderTypes[]): T[] {
+        let context: ResolveServicesContext<T>;
         let tag: TargetRefs;
         if (isProvider(target)) {
             providers.unshift(target);
@@ -219,8 +193,8 @@ export class Container implements IContainer {
      * @returns {ProviderMap}
      * @memberof Container
      */
-    getServiceProviders<T>(token: Token<T>, target?: TargetRefs | ResolveServicesContext, ctx?: ResolveServicesContext): ProviderMap {
-        let context: ResolveServicesContext;
+    getServiceProviders<T>(token: Token<T>, target?: TargetRefs | ResolveServicesContext<T>, ctx?: ResolveServicesContext<T>): ProviderMap {
+        let context: ResolveServicesContext<T>;
         let tag: TargetRefs;
         if (target instanceof ResolveServicesContext) {
             context = target;
@@ -238,7 +212,7 @@ export class Container implements IContainer {
                 target: tag
             }, this);
         } else {
-            context.setOptions({
+            context.setOptions(<ServicesActionOption<T>>{
                 token: token,
                 target: tag
             });
@@ -246,74 +220,6 @@ export class Container implements IContainer {
         this.get(ServicesResolveLifeScope).execute(context);
         return context.services;
     }
-
-    getProviderParser(): IProviderParser {
-        return this.ioc.getProviderParser();
-    }
-    getTypeReflects(): TypeReflects {
-        return this.ioc.getTypeReflects();
-    }
-    hasRegister<T>(key: Token<T>): boolean {
-        return this.ioc.has(key);
-    }
-    get<T>(token: Token<T>, alias?: string | ProviderTypes, ...providers: ProviderTypes[]): T {
-        return this.ioc.get(token, alias, ...providers);
-    }
-
-    register<T>(token: Token<T>, value?: Factory<T>): this {
-        this.ioc.register(token, value);
-        return this;
-    }
-    registerSingleton<T>(token: Token<T>, value?: Factory<T>): this {
-        this.ioc.registerSingleton(token, value);
-        return this;
-    }
-    registerValue<T>(token: Token<T>, value: T): this {
-        this.ioc.registerValue(token, value);
-        return this;
-    }
-    bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this {
-        this.ioc.bindProvider(provide, provider);
-        return this;
-    }
-    bindProviders(target?: Token<any> | ProviderTypes, onceBinded?: ProviderTypes | ((mapTokenKey: Token<any>) => void), ...providers: ProviderTypes[]): this {
-        this.ioc.bindProviders(target, onceBinded, ...providers);
-        return this;
-    }
-
-    bindRefProvider<T>(target: Token<any>, provide: Token<T>, provider: Token<T> | Factory<T>, alias?: string, onceBinded?: (refToken: Token<T>) => void): this {
-        this.ioc.bindRefProvider(target, provide, provider);
-        return this;
-    }
-    clearCache(targetType: Type<any>) {
-        this.ioc.clearCache(targetType);
-    }
-    getToken<T>(target: Token<T>, alias?: string): Token<T> {
-        return this.ioc.getToken(target, alias);
-    }
-    invoke<T>(target: Token<any>, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
-        return this.ioc.invoke(target, propertyKey, instance, ...providers);
-    }
-    createParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
-        return this.ioc.createParams(params, ...providers);
-    }
-    getTokenProvider<T>(token: Token<T>): Type<T> {
-        return this.ioc.getTokenProvider(token);
-    }
-    getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
-        return this.ioc.getTokenKey(token, alias);
-    }
-    iterator(callbackfn: (fac: InstanceFactory<any>, tk: Token<any>, resolvor?: IResolver) => boolean | void): boolean | void {
-        this.ioc.iterator(callbackfn);
-    }
-    has<T>(key: Token<T>, alias?: string): boolean {
-        return this.ioc.has(key, alias);
-    }
-    unregister<T>(token: Token<T>): this {
-        this.ioc.unregister(token);
-        return this;
-    }
-
 }
 
 /**

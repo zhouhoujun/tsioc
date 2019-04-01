@@ -1,7 +1,7 @@
 import { IIocContainer, IocContainerToken } from './IIocContainer';
 import {
     MethodAccessor, DesignLifeScope, RuntimeLifeScope,
-    TypeReflects, IocCacheManager, IocSingletonManager, MetadataService
+    TypeReflects, IocCacheManager, IocSingletonManager, MetadataService, ResolveLifeScope
 } from './services';
 import { ProviderMap, ProviderParser } from './providers';
 
@@ -25,9 +25,11 @@ export function registerCores(container: IIocContainer) {
     // bing action.
     container.registerSingleton(DesignLifeScope, () => new DesignLifeScope(container));
     container.registerSingleton(RuntimeLifeScope, () => new RuntimeLifeScope(container));
+    container.registerSingleton(ResolveLifeScope, () => new ResolveLifeScope(container));
 
-    container.resolve(DesignLifeScope).setup();
-    container.resolve(RuntimeLifeScope).setup();
+    container.get(DesignLifeScope).setup();
+    container.get(RuntimeLifeScope).setup();
+    container.get(ResolveLifeScope).setup()
 
     container.register(Date, () => new Date());
     container.register(String, () => '');

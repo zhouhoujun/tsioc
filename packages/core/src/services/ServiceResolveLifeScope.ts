@@ -7,7 +7,7 @@ import {
 
 @Singleton
 @Autorun('setup')
-export class ServiceResolveLifeScope extends LifeScope<ResolveServiceContext> {
+export class ServiceResolveLifeScope<T> extends LifeScope<ResolveServiceContext<T>> {
 
     setup() {
         this.use(InitServiceResolveAction)

@@ -1,6 +1,5 @@
-import { Singleton } from '@tsdi/ioc';
+import { Singleton, IocResolveAction, ResolveActionContext } from '@tsdi/ioc';
 import { DIModuleExports } from '../services';
-import { IocResolveAction, ResovleActionContext } from '@tsdi/core';
 
 /**
  * reolve module export.
@@ -12,8 +11,8 @@ import { IocResolveAction, ResovleActionContext } from '@tsdi/core';
 @Singleton
 export class ResolveModuleExportAction extends IocResolveAction {
 
-    execute(ctx: ResovleActionContext, next: () => void): void {
-        ctx.instance = this.container.resolve(DIModuleExports).resolve(ctx.token, ...ctx.providers);
+    execute(ctx: ResolveActionContext<any>, next: () => void): void {
+        ctx.instance = this.container.get(DIModuleExports).resolve(ctx.token, ...ctx.providers);
         if (!ctx.instance) {
             next();
         }

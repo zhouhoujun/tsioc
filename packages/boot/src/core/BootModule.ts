@@ -3,14 +3,13 @@ import {
     IocSetCacheAction, ComponentBeforeInitAction, RuntimeDecoratorRegisterer,
     ComponentInitAction, ComponentAfterInitAction, DesignLifeScope,
     IocBeforeConstructorScope, IocAfterConstructorScope, DecoratorScopes, RuntimeMethodScope,
-    RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction, RegisterSingletionAction
+    RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction, RegisterSingletionAction, ResolveLifeScope
 } from '@tsdi/ioc';
 import {
     IContainer, ContainerToken, IocExt,
     ResolveTargetServiceAction, ResolvePrivateServiceAction,
     ResolveServiceInClassChain, ServicesResolveLifeScope,
     ResolveDefaultServiceAction, ServiceResolveLifeScope,
-    ResolveLifeScope,
     ModuleDecoratorRegisterer
 } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';

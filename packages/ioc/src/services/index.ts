@@ -11,3 +11,6 @@ export * from './RuntimeLifeScope';
 export * from './IocDecoratorRegisterer';
 export * from './DecoratorRegisterer';
 export * from './IocSingletonManager';
+
+export * from './ResolveLifeScope';
+

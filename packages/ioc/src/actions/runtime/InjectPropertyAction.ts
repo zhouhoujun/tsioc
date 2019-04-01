@@ -30,7 +30,7 @@ export class InjectPropertyAction extends IocRuntimeAction {
                 } else if (providerMap && providerMap.has(token)) {
                     ctx.target[propertyKey] = providerMap.resolve(token, providerMap);
                     ctx.injecteds[propertyKey] = true;
-                } else if (container.has(token)) {
+                } else {
                     ctx.target[propertyKey] = container.resolve(token, providerMap);
                     ctx.injecteds[propertyKey] = true;
                 }

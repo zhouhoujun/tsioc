@@ -5,12 +5,12 @@ import { Singleton } from '@tsdi/ioc';
 @Singleton
 export class ResolveParentServicesAction extends IocResolveServicesAction {
 
-    execute(ctx: ResolveServicesContext, next: () => void): void {
-        let parent = this.container.resolve(ParentContainerToken);
+    execute(ctx: ResolveServicesContext<any>, next: () => void): void {
+        let parent = this.container.get(ParentContainerToken);
 
         while (parent) {
-            parent.resolve(ResolveServicesScopeAction).execute(ctx);
-            parent = parent.resolve(ParentContainerToken);
+            parent.get(ResolveServicesScopeAction).execute(ctx);
+            parent = parent.get(ParentContainerToken);
         }
         next();
 

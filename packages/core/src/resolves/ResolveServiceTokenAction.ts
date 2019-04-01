@@ -4,7 +4,7 @@ import { IocResolveServiceAction } from './IocResolveServiceAction';
 
 @Singleton
 export class ResolveServiceTokenAction extends IocResolveServiceAction {
-    execute(ctx: ResolveServiceContext, next: () => void): void {
+    execute(ctx: ResolveServiceContext<any>, next: () => void): void {
         this.resolve(ctx, ctx.currToken || ctx.token);
         if (!ctx.instance) {
             next();
@@ -15,7 +15,7 @@ export class ResolveServiceTokenAction extends IocResolveServiceAction {
 
 @Singleton
 export class ResolveDefaultServiceAction extends IocResolveServiceAction {
-    execute(ctx: ResolveServiceContext, next: () => void): void {
+    execute(ctx: ResolveServiceContext<any>, next: () => void): void {
         if (ctx.defaultToken) {
             this.resolve(ctx, ctx.defaultToken);
         }

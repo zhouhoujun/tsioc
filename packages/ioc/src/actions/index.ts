@@ -11,3 +11,9 @@ export * from './IocRegisterScope';
 
 export * from './design';
 export * from './runtime';
+
+export * from './ResolveActionContext';
+export * from './IocResolveAction';
+export * from './resolves/IocDefaultResolveAction';
+export * from './IocResolveScope';
+

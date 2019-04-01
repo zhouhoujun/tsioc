@@ -1,6 +1,5 @@
-import { Token } from '@tsdi/ioc';
+import { Token, IocResolveAction } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
-import { IocResolveAction } from './IocResolveAction';
 
 /**
  * resolve service base action.
@@ -12,9 +11,9 @@ import { IocResolveAction } from './IocResolveAction';
  */
 export abstract class IocResolveServiceAction extends IocResolveAction {
 
-    abstract execute(ctx: ResolveServiceContext, next: () => void): void;
+    abstract execute(ctx: ResolveServiceContext<any>, next: () => void): void;
 
-    protected resolve(ctx: ResolveServiceContext, token: Token<any>) {
+    protected resolve(ctx: ResolveServiceContext<any>, token: Token<any>) {
         if (this.container.has(token)) {
             ctx.instance = this.container.resolve(token, ...ctx.providers);
         }

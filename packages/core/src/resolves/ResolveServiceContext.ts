@@ -1,8 +1,5 @@
-import { Token } from '@tsdi/ioc';
+import { Token, ResolveActionContext, ResolveActionOption, IIocContainer, createResolveContext } from '@tsdi/ioc';
 import { TargetRef } from '../TargetService';
-import { IContainer } from '../IContainer';
-import { ResovleActionOption, ResovleActionContext } from './ResovleActionContext';
-
 /**
  * service action option.
  *
@@ -10,14 +7,14 @@ import { ResovleActionOption, ResovleActionContext } from './ResovleActionContex
  * @interface ServiceActionOption
  * @extends {ResovleActionOption}
  */
-export interface ServiceActionOption extends ResovleActionOption {
+export interface ServiceActionOption<T> extends ResolveActionOption<T> {
     /**
      * token provider service type.
      *
      * @type {Type<any>}
      * @memberof ServiceActionOption
      */
-    tokens?: Token<any>[];
+    tokens?: Token<T>[];
 
     /**
      * curr token.
@@ -25,7 +22,7 @@ export interface ServiceActionOption extends ResovleActionOption {
      * @type {Token<any>}
      * @memberof ServiceActionOption
      */
-    currToken?: Token<any>;
+    currToken?: Token<T>;
 
     /**
      * service reference target.
@@ -49,10 +46,10 @@ export interface ServiceActionOption extends ResovleActionOption {
     /**
      * reolve this defualt service, if not found any service.
      *
-     * @type {Token<any>}
+     * @type {Token<T>}
      * @memberof ServiceActionOption
      */
-    defaultToken?: Token<any>;
+    defaultToken?: Token<T>;
 
     /**
     * ref target factory.
@@ -76,32 +73,19 @@ export interface ServiceActionOption extends ResovleActionOption {
  * @class ResolveServiceContext
  * @extends {ResovleActionContext}
  */
-export class ResolveServiceContext extends ResovleActionContext implements ServiceActionOption {
+export class ResolveServiceContext<T> extends ResolveActionContext<T> {
 
     /**
-     * create service resolve context.
+     * create resolve context via options.
      *
      * @static
-     * 
-     * @param {ServiceActionOption} [options]
-     * @param {(IContainer | (() => IContainer))} [raiseContainer]
-     * @returns {ResolveServiceContext}
-     * @memberof ResolveServiceContext
+     * @param {ResolveActionOption} [options]
+     * @param {(IIocContainer | (() => IIocContainer))} [raiseContainer]
+     * @returns {ResolveActionContext}
+     * @memberof ResolveActionContext
      */
-    static parse(options?: ServiceActionOption, raiseContainer?: IContainer | (() => IContainer), ): ResolveServiceContext {
-        let ctx = new ResolveServiceContext(raiseContainer);
-        ctx.setOptions(options);
-        return ctx;
-    }
-
-    /**
-     * set options.
-     *
-     * @param {ServiceActionOption} options
-     * @memberof ResolveServiceContext
-     */
-    setOptions(options: ServiceActionOption) {
-        super.setOptions(options);
+    static parse<T>(target?: Token<T> | ServiceActionOption<T>, raiseContainer?: IIocContainer | (() => IIocContainer)): ResolveServiceContext<T> {
+        return createResolveContext<T, ResolveServiceContext<T>>(ResolveServiceContext, target, raiseContainer);
     }
 
     /**

@@ -8,9 +8,9 @@ import { registerCores } from './registerCores';
 import { InjectReference } from './InjectReference';
 import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderParser } from './providers';
 import { IResolver } from './IResolver';
-import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, TypeReflects } from './services';
+import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, TypeReflects, ResolveLifeScope } from './services';
 import { IParameter } from './IParameter';
-import { RuntimeActionContext, DesignActionContext, IocRegisterAction, IocRegisterScope } from './actions';
+import { RuntimeActionContext, DesignActionContext, IocRegisterAction, IocRegisterScope, ResolveActionContext } from './actions';
 
 
 /**
@@ -101,17 +101,16 @@ export class IocContainer implements IIocContainer {
     }
 
     /**
-     * resolve type instance with token and param provider.
+     * resolve type instance with token and param provider via resolve scope.
      *
      * @template T
-     * @param {Token<T>} token
-     * @param {T} [notFoundValue]
+     * @param {(Token<T> | ResolveActionContext<T>)} token
      * @param {...ProviderTypes[]} providers
-     * @memberof Container
+     * @returns {T}
+     * @memberof IocContainer
      */
-    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
-        let factory = this.factories.get(this.getTokenKey(token));
-        return factory ? factory(...providers) : null;
+    resolve<T>(token: Token<T> | ResolveActionContext<T>, ...providers: ProviderTypes[]): T {
+        return this.get(ResolveLifeScope).resolve(token, ...providers);
     }
 
     /**

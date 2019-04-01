@@ -1,5 +1,5 @@
 import { IIocContainer, IocContainerToken } from '../IIocContainer';
-import { Type, Token } from '../types';
+import { Type } from '../types';
 import { lang, isFunction, isClass } from '../utils';
 import { IocCompositeAction } from './IocCompositeAction';
 import { Inject } from '../decorators';
@@ -12,13 +12,7 @@ import { Inject } from '../decorators';
  * @interface ActionContextOption
  */
 export interface ActionContextOption {
-    /**
-     * token.
-     *
-     * @type {Token<any>}
-     * @memberof ActionContextOption
-     */
-    token?: Token<any>;
+
 }
 
 /**
@@ -30,14 +24,6 @@ export interface ActionContextOption {
 export class IocActionContext {
 
     protected raiseContainerGetter: () => IIocContainer;
-
-    /**
-     * token.
-     *
-     * @type {Token<any>}
-     * @memberof ResovleContext
-     */
-    token: Token<any>;
 
     /**
      * currScope
@@ -115,6 +101,10 @@ export abstract class IocAction<T extends IocActionContext> {
         lang.execAction(actions.map(ac => this.toActionFunc(ac)), ctx, next);
     }
 
+    protected execActionFuncs(ctx: T, actions: lang.IAction<any>[], next?: () => void) {
+        lang.execAction(actions, ctx, next);
+    }
+
     protected toActionFunc(ac: IocActionType) {
         if (isClass(ac)) {
             return (ctx: T, next?: () => void) => {
@@ -132,7 +122,7 @@ export abstract class IocAction<T extends IocActionContext> {
     }
 
     protected resolveAction(ac: Type<IocAction<T>>): IocAction<T> {
-        return this.container.resolve(ac);
+        return this.container.get(ac);
     }
 
 }

@@ -24,7 +24,7 @@ export class IocAutorunAction extends IocDesignAction {
         let metadatas = getOwnTypeMetadata<AutorunMetadata>(ctx.currDecoractor, ctx.targetType);
         metadatas.forEach(meta => {
             if (meta && meta.autorun) {
-                let instance = this.container.resolve(ctx.tokenKey || ctx.token);
+                let instance = this.container.get(ctx.tokenKey || ctx.targetType);
                 if (instance && isFunction(instance[meta.autorun])) {
                     this.container.invoke(instance, meta.autorun);
                 }

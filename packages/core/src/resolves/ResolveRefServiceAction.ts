@@ -5,7 +5,7 @@ import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
 
 @Singleton
 export class ResolveRefServiceAction extends ResolvePrivateServiceAction {
-    execute(ctx: ResolveServiceContext, next?: () => void): void {
+    execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
         if (ctx.currToken && !(ctx.currToken instanceof InjectReference) && (isToken(ctx.currTargetRef) || ctx.currTargetRef instanceof TargetRefService)) {
             let currtk = ctx.currToken;
             let targetType = isToken(ctx.currTargetRef) ? ctx.currTargetRef : ctx.currTargetRef.getToken();

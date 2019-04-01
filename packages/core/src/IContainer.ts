@@ -6,7 +6,6 @@ import { IContainerBuilder } from './IContainerBuilder';
 import { IServiceResolver } from './IServiceResolver';
 import { IServicesResolver } from './IServicesResolver';
 import { IModuleLoader } from './services';
-import { ResovleActionContext } from './resolves';
 
 /**
  * IContainer token.
@@ -16,31 +15,12 @@ export const ContainerToken = new InjectToken<IContainer>('DI_IContainer');
 
 
 /**
- * resolver execute.
- *
- * @export
- * @interface IResolverExecute
- */
-export interface IContextResolver {
-
-    /**
-     * resolve in context.
-     *
-     * @template T
-     * @param {T} ctx
-     * @returns {T}
-     * @memberof IResolverExecute
-     */
-    resolveContext<T extends ResovleActionContext>(ctx: T): T;
-}
-
-/**
  * container interface.
  *
  * @export
  * @interface IContainer
  */
-export interface IContainer extends IIocContainer, IContextResolver, IServiceResolver, IServicesResolver {
+export interface IContainer extends IIocContainer, IServiceResolver, IServicesResolver {
 
     /**
      * get container builder of this container.

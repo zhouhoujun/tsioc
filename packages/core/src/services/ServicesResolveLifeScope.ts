@@ -4,9 +4,9 @@ import { ResolveServicesContext, InitServiceResolveAction, ResolveServicesScopeA
 
 @Singleton
 @Autorun('setup')
-export class ServicesResolveLifeScope extends LifeScope<ResolveServicesContext> {
+export class ServicesResolveLifeScope<T> extends LifeScope<ResolveServicesContext<T>> {
 
-    execute(ctx: ResolveServicesContext, next?: () => void): void {
+    execute(ctx: ResolveServicesContext<T>, next?: () => void): void {
         ctx.services = this.container.resolve(ProviderMap);
         super.execute(ctx, next);
     }

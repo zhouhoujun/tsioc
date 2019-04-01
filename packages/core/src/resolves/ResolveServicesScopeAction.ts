@@ -7,7 +7,7 @@ import { ResovleServicesRefsAction } from './ResovleServicesRefsAction';
 
 @Singleton
 @Autorun('setup')
-export class ResolveServicesScopeAction extends IocCompositeAction<ResolveServicesContext> {
+export class ResolveServicesScopeAction extends IocCompositeAction<ResolveServicesContext<any>> {
 
     setup() {
         this.use(ResovleServicesInTargetAction)

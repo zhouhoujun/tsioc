@@ -11,9 +11,9 @@ import { IModuleResolver } from '../modules';
 @Autorun('setup')
 export class ResolveSerivesInExportAction extends IocResolveServicesAction {
 
-    execute(ctx: ResolveServicesContext, next: () => void): void {
+    execute(ctx: ResolveServicesContext<any>, next: () => void): void {
         if (this.container.has(ContainerPoolToken)) {
-            this.container.resolve(DIModuleExports).getResolvers()
+            this.container.get(DIModuleExports).getResolvers()
                 .forEach(r => {
                     this.depIterator(ctx, r);
                 });
@@ -22,7 +22,7 @@ export class ResolveSerivesInExportAction extends IocResolveServicesAction {
         next();
     }
 
-    depIterator(ctx: ResolveServicesContext, resolver: IModuleResolver) {
+    depIterator(ctx: ResolveServicesContext<any>, resolver: IModuleResolver) {
         resolver.getContainer().get(ResolveServicesScopeAction).execute(ctx);
         if (resolver.has(DIModuleExports)) {
             resolver.resolve(DIModuleExports).getResolvers()

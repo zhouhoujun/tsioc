@@ -100,7 +100,7 @@ export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeAct
     }
 
     protected getScopeRegisterer(): DecoratorScopeRegisterer {
-        return this.container.resolve(RuntimeDecoratorRegisterer);
+        return this.container.get(RuntimeDecoratorRegisterer);
     }
 
     setup() {

@@ -3,6 +3,6 @@ import { DecoratorScopeRegisterer, DesignDecoratorRegisterer } from '../../servi
 
 export class DesignDecoratorAction extends ExecDecoratorAtion {
     protected getScopeRegisterer(): DecoratorScopeRegisterer {
-        return this.container.resolve(DesignDecoratorRegisterer);
+        return this.container.get(DesignDecoratorRegisterer);
     }
 }

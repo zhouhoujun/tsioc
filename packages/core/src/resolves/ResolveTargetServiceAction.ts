@@ -6,8 +6,8 @@ import { ResolveServiceInClassChain } from './ResolveServiceInClassChain';
 
 @Singleton
 @Autorun('setup')
-export class ResolveTargetServiceAction extends IocCompositeAction<ResolveServiceContext> {
-    execute(ctx: ResolveServiceContext, next?: () => void): void {
+export class ResolveTargetServiceAction extends IocCompositeAction<ResolveServiceContext<any>> {
+    execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
         if (ctx.targetRefs) {
             let currTk = ctx.currToken;
             if (!ctx.targetRefs.some(t => ctx.tokens.some(tk => {

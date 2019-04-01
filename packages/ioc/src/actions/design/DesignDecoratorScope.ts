@@ -18,7 +18,7 @@ export abstract class DesignDecoratorScope extends IocDecoratorScope<DesignActio
         return null;
     }
     protected getScopeRegisterer(): DecoratorScopeRegisterer {
-        return this.container.resolve(DesignDecoratorRegisterer);
+        return this.container.get(DesignDecoratorRegisterer);
     }
 
     setup() {

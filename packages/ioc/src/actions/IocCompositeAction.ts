@@ -1,5 +1,5 @@
 import { Type } from '../types';
-import { isFunction } from '../utils';
+import { isFunction, lang } from '../utils';
 import { IocAction, IocActionType, IocActionContext } from './Action';
 
 
@@ -17,6 +17,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
     protected befores: IocActionType[];
     protected afters: IocActionType[];
 
+    private actionFuncs: lang.IAction<any>[];
     protected initAction() {
         this.befores = [];
         this.actions = [];
@@ -43,6 +44,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
                 this.actions.push(action);
             }
         }
+        this.resetFuncs();
         return this;
     }
 
@@ -58,6 +60,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         if (!this.has(action)) {
             this.actions.splice(this.actions.indexOf(before) - 1, 0, action);
         }
+        this.resetFuncs();
         return this;
     }
     /**
@@ -72,6 +75,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         if (!this.has(action)) {
             this.actions.splice(this.actions.indexOf(after), 0, action);
         }
+        this.resetFuncs();
         return this;
     }
 
@@ -85,6 +89,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         if (this.befores.indexOf(action) < 0) {
             this.befores.push(action);
         }
+        this.resetFuncs();
         return this;
     }
 
@@ -98,14 +103,22 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         if (this.afters.indexOf(action) < 0) {
             this.afters.push(action);
         }
+        this.resetFuncs();
         return this;
     }
 
     execute(ctx: T, next?: () => void): void {
         let scope = ctx.currScope;
         ctx.currScope = this;
-        this.execActions(ctx, [...this.befores, ...this.actions, ...this.afters], next);
+        if (!this.actionFuncs) {
+            this.actionFuncs = [...this.befores, ...this.actions, ...this.afters].map(ac => this.toActionFunc(ac));
+        }
+        this.execActions(ctx, this.actionFuncs, next);
         ctx.currScope = scope;
+    }
+
+    protected resetFuncs() {
+        this.actionFuncs = null;
     }
 
     protected registerAction(action: Type<any>, setup?: boolean) {

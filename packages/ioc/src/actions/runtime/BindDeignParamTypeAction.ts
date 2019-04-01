@@ -39,7 +39,7 @@ export class BindDeignParamTypeAction extends IocRuntimeAction {
             }
         });
 
-        let names = this.container.resolve(MetadataService).getParamerterNames(type, propertyKey);
+        let names = this.container.get(MetadataService).getParamerterNames(type, propertyKey);
         let params: IParameter[];
         if (names.length) {
             params = names.map((name, idx) => {

@@ -1,5 +1,4 @@
 import { DecoratorScopeRegisterer } from '../services/DecoratorRegisterer';
-import { IocCompositeAction } from './IocCompositeAction';
 import { RegisterActionContext } from './RegisterActionContext';
 import { IocAction } from './Action';
 
@@ -9,7 +8,7 @@ import { IocAction } from './Action';
  *
  * @export
  * @class ExecDecoratorAtion
- * @extends {IocCompositeAction<RegisterActionContext>}
+ * @extends {IocAction<RegisterActionContext>}
  */
 export abstract class ExecDecoratorAtion extends IocAction<RegisterActionContext> {
 

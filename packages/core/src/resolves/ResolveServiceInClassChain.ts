@@ -6,8 +6,8 @@ import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
 
 @Singleton
 @Autorun('setup')
-export class ResolveServiceInClassChain extends IocCompositeAction<ResolveServiceContext> {
-    execute(ctx: ResolveServiceContext, next?: () => void): void {
+export class ResolveServiceInClassChain extends IocCompositeAction<ResolveServiceContext<any>> {
+    execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
         if (ctx.currTargetRef) {
             let currTgRef = ctx.currTargetRef;
             let targetType = isToken(currTgRef) ? currTgRef : currTgRef.getToken();

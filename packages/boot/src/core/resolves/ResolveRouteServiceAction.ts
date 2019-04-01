@@ -6,8 +6,8 @@ import { ResolveParentServiceAction } from './ResolveParentServiceAction';
 
 @Singleton
 @Autorun('setup')
-export class ResolveRouteServiceAction extends IocCompositeAction<ResolveServiceContext>  {
-    execute(ctx: ResolveServiceContext, next?: () => void): void {
+export class ResolveRouteServiceAction extends IocCompositeAction<ResolveServiceContext<any>>  {
+    execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
         let token = ctx.token;
         ctx.token = ctx.currToken || ctx.token;
         let donext = () => {

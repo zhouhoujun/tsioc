@@ -1,12 +1,12 @@
 import { IContainer, ContainerToken } from './IContainer';
 import {
     ModuleLoader, ServicesResolveLifeScope, ServiceResolveLifeScope,
-    ResolveLifeScope, InjectorLifeScope
+    InjectorLifeScope
 } from './services';
 import { IocExt } from './decorators';
 import {
     RuntimeDecoratorRegisterer, IocAutorunAction, DecoratorScopes,
-    RegisterSingletionAction, DesignDecoratorRegisterer
+    RegisterSingletionAction, DesignDecoratorRegisterer, ResolveLifeScope
 } from '@tsdi/ioc';
 import {
     InitServiceResolveAction, ResolveRefServiceAction, ResolveServiceScopeAction,
@@ -24,8 +24,6 @@ export function registerCores(container: IContainer) {
         container.register(ModuleLoader);
     }
     container.register(InjectorLifeScope);
-
-    container.register(ResolveLifeScope);
 
     container.register(InitServiceResolveAction);
     container.register(ResolveServiceTokenAction);
