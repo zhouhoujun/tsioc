@@ -1,12 +1,9 @@
 import { Task } from '../decorators/Task';
 import { Activity } from './Activity';
-import { IActivityResult, InjectAcitityToken } from './IActivity';
 import { OnActivityInit } from './OnActivityInit';
-import { IActivityContextResult, IActivityContext } from './IActivityContext';
 import { ExecuteConfigure } from './ActivityConfigure';
+import { ActivityContext } from './ActivityContext';
 
-
-export const ExecuteToken = new InjectAcitityToken<ExecuteActivity<any>>('Execute')
 
 /**
  * execute activity.
@@ -16,15 +13,15 @@ export const ExecuteToken = new InjectAcitityToken<ExecuteActivity<any>>('Execut
  * @implements {GActivity<T>}
  * @template T
  */
-@Task(ExecuteToken)
-export class ExecuteActivity<T> extends Activity implements IActivityResult<T>, OnActivityInit {
+@Task
+export class ExecuteActivity<T> extends Activity implements OnActivityInit {
     /**
      *  activity execute context.
      *
      * @type {ActivityContext}
      * @memberof Activity
      */
-    context: IActivityContextResult<T>;
+    context: ActivityContext<T>;
 
     /**
      * run task.
@@ -33,7 +30,7 @@ export class ExecuteActivity<T> extends Activity implements IActivityResult<T>, 
      * @returns {Promise<T>}
      * @memberof Activity
      */
-    async run(ctx?: IActivityContext): Promise<IActivityContextResult<T>> {
+    async run(ctx?: ActivityContext<T>): Promise<ActivityContext<T>> {
         this.verifyCtx(ctx);
         await this.execute();
         return this.context;

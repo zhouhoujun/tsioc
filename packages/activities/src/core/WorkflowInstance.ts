@@ -1,12 +1,14 @@
-import { Token, Injectable } from '@tsdi/ioc';
-import { ActivityConfigure } from './ActivityConfigure';
-import { IActivity } from './IActivity';
-import { IWorkflowInstance, WorkflowInstanceToken, RunState } from './IWorkflowInstance';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import { Joinpoint } from '@tsdi/aop';
-import { IActivityContextResult } from './IActivityContext';
 import { Service } from '@tsdi/boot';
+import { Joinpoint } from '@tsdi/aop';
+import { Token, Injectable } from '@tsdi/ioc';
+import { ActivityConfigure } from './ActivityConfigure';
+import { Activity } from './Activity';
+import { ActivityContext } from './ActivityContext';
+import { RunState } from './IWorkflowInstance';
+
+
 
 /**
  * task runner.
@@ -15,14 +17,16 @@ import { Service } from '@tsdi/boot';
  * @class TaskRunner
  * @implements {ITaskRunner}
  */
-@Injectable(WorkflowInstanceToken)
-export class WorkflowInstance<T extends IActivity> extends Service<T> implements IWorkflowInstance<T> {
+@Injectable
+export class WorkflowInstance<T extends Activity> extends Service<T> {
 
     get activity(): Token<T> {
         return this.getTargetType();
     }
+
+    private config: ActivityConfigure;
     get configure(): ActivityConfigure {
-        return this.options.config;
+        return this.config;
     }
 
     private _result = new BehaviorSubject<any>(null);
@@ -35,28 +39,22 @@ export class WorkflowInstance<T extends IActivity> extends Service<T> implements
         return this._resultValue;
     }
 
-    private _ctx: any;
-    get context(): IActivityContextResult<T> {
-        return this._ctx;
-    }
-
 
     state: RunState;
     stateChanged: BehaviorSubject<RunState>;
 
-    constructor() {
-        super();
-        this.stateChanged = new BehaviorSubject(RunState.init);
+
+    async onInit(): Promise<void> {
+        let mgr = this.context.getConfigureManager();
+        this.config = await mgr.getConfig();
     }
 
-    run(data?: any): Promise<IActivityContextResult<T>> {
+    run(data?: any): Promise<ActivityContext<T>> {
         return this.start(data);
     }
 
-    async start(data?: any): Promise<IActivityContextResult<T>> {
+    async start(data?: any): Promise<ActivityContext<T>> {
         this.getTarget().id && this.container.bindProvider(this.getTarget().id, this);
-        let ctx = await this.getTarget().run(data)
-        this._ctx = ctx;
         this.state = RunState.complete;
         this.stateChanged.next(this.state);
         this._resultValue = ctx.result;

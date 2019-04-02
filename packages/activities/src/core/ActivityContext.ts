@@ -1,16 +1,15 @@
 import {
     Injectable, isNullOrUndefined, Inject, isFunction,
-    isPromise, Type, hasOwnClassMetadata, ObjectMap, isClass, Express
+    isPromise, Type, hasOwnClassMetadata, ObjectMap, isClass
 } from '@tsdi/ioc';
-import { IActivity } from './IActivity';
 import { ITranslator } from './Translator';
-import { ProcessRunRootToken } from '@tsdi/boot';
-import { InputDataToken, IActivityContextResult, CtxType, ActivityContextToken, IActivityContext } from './IActivityContext';
-import { ActivityBuilder } from './ActivityBuilder';
+import { BootContext } from '@tsdi/boot';
 import { Expression, ActivityConfigure, isWorkflowInstance } from './ActivityConfigure';
 import { Task } from '../decorators/Task';
-import { isAcitvity } from './Activity';
+import { isAcitvity, Activity } from './Activity';
 import { ContainerToken, IContainer } from '@tsdi/core';
+import { IActivityContext, CtxType } from './IActivityContext';
+
 
 
 
@@ -21,13 +20,8 @@ import { ContainerToken, IContainer } from '@tsdi/core';
  * @class ActivityContext
  * @implements {IActivityContext<any>}
  */
-@Injectable(ActivityContextToken)
-export class ActivityContext<T> implements IActivityContextResult<T> {
-
-    @Inject(ContainerToken)
-    container: IContainer;
-
-    parent: IActivityContext;
+@Injectable
+export class ActivityContext<T> extends BootContext implements IActivityContext {
 
     /**
      * build config.
@@ -43,31 +37,7 @@ export class ActivityContext<T> implements IActivityContextResult<T> {
      * @type {T}
      * @memberof IActivityContext
      */
-    protected data: T;
-
-    /**
-     * execute activity.
-     *
-     * @type {IActivity}
-     * @memberof IRunContext
-     */
-    execute: IActivity;
-
-    /**
-     * target activiy.
-     *
-     * @type {IActivity}
-     * @memberof ActivityContext
-     */
-    target: IActivity;
-
-    constructor(@Inject(InputDataToken) public input: any) {
-        this.setAsResult(input);
-    }
-
-    getBuilder(): ActivityBuilder {
-        return this.container.resolve(ActivityBuilder);
-    }
+    data: T;
 
     /**
      * execute Resulte.
@@ -80,9 +50,6 @@ export class ActivityContext<T> implements IActivityContextResult<T> {
     }
 
     set result(data: T) {
-        if (this.parent && this.parent !== this) {
-            this.parent.result = data;
-        }
         this.data = data;
     }
 
@@ -92,7 +59,6 @@ export class ActivityContext<T> implements IActivityContextResult<T> {
 
     setState(state: any, config: ActivityConfigure) {
         if (state instanceof ActivityContext) {
-            this.parent = state;
             this.target = state.target;
             this.setConfig(config, state);
             state = state.result;
@@ -102,34 +68,34 @@ export class ActivityContext<T> implements IActivityContextResult<T> {
         this.setAsResult(state);
     }
 
-    protected setConfig(config: ActivityConfigure, ctx?: IActivityContext) {
+    protected setConfig(config: ActivityConfigure, ctx?: ActivityContext<T>) {
         this.config = config || {};
     }
 
-    route(express: Express<IActivityContext, boolean | void>): void {
-        let stop = false;
-        let node: IActivityContext = this;
-        while (!stop && node) {
-            stop = !express(node);
-            node = node === node.parent ? null : node.parent;
-        }
-    }
+    // route(express: Express<ActivityContext<T>, boolean | void>): void {
+    //     let stop = false;
+    //     let node: ActivityContext<T> = this;
+    //     while (!stop && node) {
+    //         stop = !express(node);
+    //         node = node === node.parent ? null : node.parent;
+    //     }
+    // }
 
-    find<T extends IActivityContext>(express: T | Express<T, boolean>): T {
-        let context: T;
-        this.route(item => {
-            if (context) {
-                return false;
-            }
-            let isFinded = isFunction(express) ? express(item as T) : express === item;
-            if (isFinded) {
-                context = item as T;
-                return false;
-            }
-            return true;
-        });
-        return context as T;
-    }
+    // find<T extends ActivityContext<any>>(express: T | Express<T, boolean>): T {
+    //     let context: T;
+    //     this.route(item => {
+    //         if (context) {
+    //             return false;
+    //         }
+    //         let isFinded = isFunction(express) ? express(item as T) : express === item;
+    //         if (isFinded) {
+    //             context = item as T;
+    //             return false;
+    //         }
+    //         return true;
+    //     });
+    //     return context as T;
+    // }
 
     protected translate(data: any): any {
         if (isNullOrUndefined(data)) {
@@ -146,13 +112,13 @@ export class ActivityContext<T> implements IActivityContextResult<T> {
         return null;
     }
 
-    getRootPath(): string {
-        let ctx = this.find(c => c.config && c.config.baseURL);
-        if (ctx) {
-            return ctx.config.baseURL;
-        }
-        return this.container.get(ProcessRunRootToken) || '.';
-    }
+    // getRootPath(): string {
+    //     let ctx = this.find(c => c.config && c.config.baseURL);
+    //     if (ctx) {
+    //         return ctx.config.baseURL;
+    //     }
+    //     return this.container.get(ProcessRunRootToken) || '.';
+    // }
 
 
     getEnvArgs(): ObjectMap<any> {
@@ -170,30 +136,30 @@ export class ActivityContext<T> implements IActivityContextResult<T> {
         }
     }
 
-    /**
-     * exec activity result.
-     *
-     * @template T
-     * @param {IActivity} target
-     * @param {Expression<T>} result
-     * @returns {Promise<T>}
-     * @memberof IContext
-     */
-    exec<T>(target: IActivity, expression: Expression<T>): Promise<T> {
-        if (isFunction(expression)) {
-            return Promise.resolve(expression(this, target));
-        } else if (isPromise(expression)) {
-            return expression;
-        } else if (isAcitvity(expression)) {
-            return expression.run(this).then(ctx => ctx.result);
-        } else if (isWorkflowInstance(expression)) {
-            return expression.start(this).then(ctx => ctx.result);
-        } else {
-            return Promise.resolve(expression as T);
-        }
-    }
+    // /**
+    //  * exec activity result.
+    //  *
+    //  * @template T
+    //  * @param {Activity} target
+    //  * @param {Expression<T>} result
+    //  * @returns {Promise<T>}
+    //  * @memberof IContext
+    //  */
+    // exec<T>(target: Activity, expression: Expression<T>): Promise<T> {
+    //     if (isFunction(expression)) {
+    //         return Promise.resolve(expression(this, target));
+    //     } else if (isPromise(expression)) {
+    //         return expression;
+    //     } else if (isAcitvity(expression)) {
+    //         return expression.run(this).then(ctx => ctx.result);
+    //     } else if (isWorkflowInstance(expression)) {
+    //         return expression.start(this).then(ctx => ctx.result);
+    //     } else {
+    //         return Promise.resolve(expression as T);
+    //     }
+    // }
 
-    isTask(task: Type<IActivity>): boolean {
-        return hasOwnClassMetadata(Task, task);
-    }
+    // isTask(task: Type<Activity>): boolean {
+    //     return hasOwnClassMetadata(Task, task);
+    // }
 }

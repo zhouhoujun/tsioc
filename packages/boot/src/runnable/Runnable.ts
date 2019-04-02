@@ -54,7 +54,6 @@ export interface IRunnable<T> {
      */
     onInit(ctx: BootContext): Promise<void>;
 
-
     /**
      * run application via boot instance.
      *

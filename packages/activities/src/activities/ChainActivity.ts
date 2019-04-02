@@ -1,8 +1,5 @@
 import { Task } from '../decorators/Task';
-import {
-    IActivityContext, ChainConfigure,
-    IChainActivity, Activity, Active, HandleType
-} from '../core';
+import { ChainConfigure, Activity, HandleType, ActivityContext } from '../core';
 import { HandleActivity } from './HandleActivity';
 import { ControlActivity } from './ControlActivity';
 import { isFunction, isNullOrUndefined, PromiseUtil } from '@tsdi/ioc';
@@ -16,7 +13,7 @@ import { isFunction, isNullOrUndefined, PromiseUtil } from '@tsdi/ioc';
  * @extends {ControlActivity}
  */
 @Task(ControlActivity, 'handles')
-export class ChainActivity extends ControlActivity implements IChainActivity {
+export class ChainActivity extends ControlActivity {
 
     protected handles: HandleType[];
 
@@ -46,19 +43,8 @@ export class ChainActivity extends ControlActivity implements IChainActivity {
         return handles.concat(this.handles || []);
     }
 
-    /**
-     * execute activity.
-     *
-     * @param {IActivity} activity
-     * @param {IActivityContext} ctx
-     * @returns
-     * @memberof Activity
-     */
-    protected async execActivity(activity: Activity | Active, ctx: IActivityContext | (() => IActivityContext), next?: () => Promise<void>): Promise<IActivityContext> {
-       return await super.execActivity(activity, ctx, next);
-    }
 
-    protected runActivity(activity: Activity, ctx: IActivityContext, data?: any) {
+    protected runActivity<T>(activity: Activity, ctx: ActivityContext<T>, data?: any) {
         if (isFunction(data) && activity instanceof HandleActivity) {
             return activity.run(ctx, data)
         } else {
@@ -79,9 +65,9 @@ export class ChainActivity extends ControlActivity implements IChainActivity {
      * @returns {Promise<void>}
      * @memberof ChainActivity
      */
-    protected handleRequest(ctx: IActivityContext, handles: HandleType[], next?: () => Promise<void>): Promise<void> {
+    protected handleRequest<T>(ctx: ActivityContext<T>, handles: HandleType[], next?: () => Promise<void>): Promise<void> {
         return PromiseUtil.runInChain(handles.map(act => {
-            return async (ctx: IActivityContext, next?: () => Promise<void>) => {
+            return async (ctx: ActivityContext<T>, next?: () => Promise<void>) => {
                 let called = false;
                 await this.execActivity(act, ctx, () => {
                     called = true;

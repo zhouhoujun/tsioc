@@ -1,5 +1,3 @@
-import { Registration, Token } from '@tsdi/ioc';
-
 /**
  * translator.
  *

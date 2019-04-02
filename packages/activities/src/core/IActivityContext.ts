@@ -1,9 +1,8 @@
 import { IContainer } from '@tsdi/core';
-import { IActivity, ActivityToken } from './IActivity';
-import { ActivityBuilder } from './ActivityBuilder';
+import { IActivity } from './IActivity';
 import { ActivityConfigure, Expression } from './ActivityConfigure';
-import { InjectToken, Token, ObjectMap, Type, InjectReference } from '@tsdi/ioc';
-import { ActivityContext } from './ActivityContext';
+import { InjectToken, ObjectMap, Type } from '@tsdi/ioc';
+import { IHandleContext } from '@tsdi/boot';
 
 
 /**
@@ -12,7 +11,7 @@ import { ActivityContext } from './ActivityContext';
  * @export
  * @interface IContext
  */
-export interface IContext {
+export interface IContext extends IHandleContext {
     /**
      * container.
      *
@@ -20,13 +19,6 @@ export interface IContext {
      * @memberof IContext
      */
     container: IContainer;
-    /**
-     * activity builder.
-     *
-     * @type {ActivityBuilder}
-     * @memberof IContext
-     */
-    getBuilder(): ActivityBuilder;
 
     /**
      * get base URL.
@@ -55,26 +47,26 @@ export interface IContext {
      */
     to<T>(target: CtxType<T>, config?: ActivityConfigure): T;
 
-    /**
-     * exec activity result.
-     *
-     * @template T
-     * @param {IActivity} target
-     * @param {Expression<T>} expression
-     * @param {ActivityContext} [ctx]
-     * @returns {Promise<T>}
-     * @memberof IContext
-     */
-    exec<T>(target: IActivity, expression: Expression<T>, ctx?: IActivityContext): Promise<T>;
+    // /**
+    //  * exec activity result.
+    //  *
+    //  * @template T
+    //  * @param {IActivity} target
+    //  * @param {Expression<T>} expression
+    //  * @param {ActivityContext} [ctx]
+    //  * @returns {Promise<T>}
+    //  * @memberof IContext
+    //  */
+    // exec<T>(target: IActivity, expression: Expression<T>, ctx?: IActivityContext): Promise<T>;
 
-    /**
-     * check is task or not.
-     *
-     * @param {Type<IActivity>} task
-     * @returns {boolean}
-     * @memberof IContext
-     */
-    isTask(task: Type<IActivity>): boolean;
+    // /**
+    //  * check is task or not.
+    //  *
+    //  * @param {Type<IActivity>} task
+    //  * @returns {boolean}
+    //  * @memberof IContext
+    //  */
+    // isTask(task: Type<IActivity>): boolean;
 }
 
 /**
@@ -90,13 +82,6 @@ export type CtxType<T> = T | ((context?: IActivityContext, config?: ActivityConf
  * @interface IActivityContext
  */
 export interface IActivityContext extends IContext {
-    /**
-     * parent context.
-     *
-     * @type {IActivityContext}
-     * @memberof IActivityContext
-     */
-    parent?: IActivityContext;
     /**
      * build config.
      *
@@ -171,22 +156,5 @@ export interface IActivityContextResult<T> extends IActivityContext {
     result: T;
 }
 
-/**
- * inject actitiy context token.
- *
- * @export
- * @class InjectActivityContextToken
- * @extends {Registration<IActivityContext<any>>}
- */
-export class InjectActivityContextToken extends InjectReference<IActivityContext> {
-    constructor(type: Token<IActivity>) {
-        super(ActivityContext, type);
-    }
-}
 
 
-
-/**
- * Activity execute Context Token.
- */
-export const ActivityContextToken = new InjectActivityContextToken(ActivityToken);

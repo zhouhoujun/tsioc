@@ -14,7 +14,7 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
 
     protected handles: HandleType<T>[];
     private funcs: PromiseUtil.ActionHandle<T>[];
-    protected initHandle() {
+    protected init() {
         this.handles = [];
     }
 

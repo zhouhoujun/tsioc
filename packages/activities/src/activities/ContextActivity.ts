@@ -1,4 +1,4 @@
-import { IActivity, Activity, IActivityContext } from '../core';
+import { IActivity, Activity, ActivityContext } from '../core';
 import { Registration, Type, lang } from '@tsdi/ioc';
 import { Task } from '../decorators/Task';
 
@@ -47,11 +47,11 @@ export abstract class ContextActivity extends Activity {
     /**
     * run task.
     *
-    * @param {IActivityContext} [ctx] execute context.
+    * @param {ActivityContext<any>} [ctx] execute context.
     * @returns {Promise<T>}
     * @memberof Activity
     */
-    async run(ctx?: IActivityContext): Promise<IActivityContext> {
+    async run(ctx?: ActivityContext<any>): Promise<ActivityContext<any>> {
         this.verifyCtx(ctx);
         await this.executeBefore();
         await this.execute();

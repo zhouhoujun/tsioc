@@ -34,10 +34,10 @@ export abstract class Handle<T extends IHandleContext> extends IocCoreService {
 
     constructor() {
         super();
-        this.initHandle();
+        this.init();
     }
 
-    protected initHandle() {
+    protected init() {
 
     }
 

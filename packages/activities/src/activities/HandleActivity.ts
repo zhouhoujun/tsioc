@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
-import { IActivityContext, IHandleActivity } from '../core';
 import { ControlActivity } from './ControlActivity';
+import { ActivityContext } from '../core';
 
 /**
  * handle activity base.
@@ -9,10 +9,10 @@ import { ControlActivity } from './ControlActivity';
  * @abstract
  * @class HandleActivity
  * @extends {ControlActivity}
- * @implements {IHandleActivity}
+ * @implements {HandleActivity}
  */
 @Task(ControlActivity, 'handle')
-export abstract class HandleActivity extends ControlActivity implements IHandleActivity {
+export abstract class HandleActivity extends ControlActivity {
 
     /**
      * run context.
@@ -22,7 +22,7 @@ export abstract class HandleActivity extends ControlActivity implements IHandleA
      * @returns {Promise<any>}
      * @memberof HandleActivity
      */
-    async run(ctx?: IActivityContext, next?: () => Promise<any>): Promise<IActivityContext> {
+    async run<T>(ctx?: ActivityContext<T>, next?: () => Promise<any>): Promise<ActivityContext<T>> {
         this.verifyCtx(ctx);
         await this.execute(next);
         return this.context;

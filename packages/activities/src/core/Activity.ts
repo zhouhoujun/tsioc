@@ -1,15 +1,19 @@
 import {
-    Inject, Express, Token, ProviderType, lang, isFunction, isToken, isBaseObject, isClass,
+    Express, Token, ProviderType, lang, isFunction, isToken, isBaseObject, isClass,
     Type, hasClassMetadata, getOwnTypeMetadata, isBoolean, isNullOrUndefined, isString
 } from '@tsdi/ioc';
 import { Task } from '../decorators/Task';
 import { OnActivityInit } from './OnActivityInit';
-import { IActivity, WorkflowId } from './IActivity';
-import { ActivityConfigure, ExpressionType, Expression, ActivityType, Active, ExpressionToken, isActivityType } from './ActivityConfigure';
-import { IActivityContext, InputDataToken, InjectActivityContextToken, ActivityContextToken } from './IActivityContext';
+import {
+    ActivityConfigure, ExpressionType, Expression, ActivityType,
+    Active, ExpressionToken, isActivityType
+} from './ActivityConfigure';
 import { IActivityMetadata } from '../metadatas';
-import { ContainerToken, IContainer, ResolveServiceContext } from '@tsdi/core';
-import { RunnerService } from '@tsdi/boot';
+import { ResolveServiceContext } from '@tsdi/core';
+import { RunnerService, Handle } from '@tsdi/boot';
+import { ActivityContext } from './ActivityContext';
+import { IActivity } from './IActivity';
+import { IActivityContext } from './IActivityContext';
 
 
 /**
@@ -22,34 +26,8 @@ import { RunnerService } from '@tsdi/boot';
  * @implements {OnActivityInit}
  */
 @Task
-export abstract class Activity implements IActivity, OnActivityInit {
+export abstract class Activity<T extends IActivityContext> extends Handle<T> implements IActivity, OnActivityInit {
 
-    /**
-     * get container.
-     *
-     * @returns {IContainer}
-     * @memberof ActivityBase
-     */
-    @Inject(ContainerToken)
-    container: IContainer;
-
-    /**
-     *  activity execute context.
-     *
-     * @type {IActivityContext}
-     * @memberof Activity
-     */
-    context: IActivityContext;
-
-    /**
-     * workflow instance uuid.
-     *
-     * @type {string}
-     * @memberof IActivity
-     */
-    get id(): string {
-        return this.container.get(WorkflowId);
-    }
     /**
      * activity display name.
      *
@@ -65,106 +43,10 @@ export abstract class Activity implements IActivity, OnActivityInit {
      */
     private _config: ActivityConfigure;
 
-    constructor() {
-
-    }
-
-    /**
-     * create activity context.
-     *
-     * @param {*} [data]
-     * @param {Token<IActivity>} [type]
-     * @param {Token<T>} [defCtx]
-     * @returns {T}
-     * @memberof ContextFactory
-     */
-    createContext(data?: any, type?: Token<IActivity> | boolean, defCtx?: Token<any> | boolean, subctx?: boolean): IActivityContext {
-        if (isBoolean(type)) {
-            subctx = type;
-            defCtx = undefined;
-            type = undefined;
-        } else if (isBoolean(defCtx)) {
-            subctx = defCtx;
-            type = undefined;
-        }
-
-        let provider = { provide: InputDataToken, useValue: data } as ProviderType;
-        type = type || lang.getClass(this);
-        if (this._config && this._config.contextType) {
-            return this.container.resolve(this._config.contextType, provider);
-        }
-        let cfgdefCtx = this._config ? this._config.baseContextType : null;
-        let ctx = this.container.getService<IActivityContext>(ActivityContextToken,
-            type as Token<any>,
-            ResolveServiceContext.parse({
-                refTargetFactory: tk => new InjectActivityContextToken(tk),
-                defaultToken: (defCtx || cfgdefCtx || ActivityContextToken) as Token<any>
-            }),
-            provider);
-        if (cfgdefCtx) {
-            let defType = this.container.getTokenProvider(cfgdefCtx);
-            if (!(ctx instanceof defType)) {
-                ctx = this.container.resolve(cfgdefCtx, provider);
-            }
-        }
-        this.initContext(ctx);
-        if (subctx === true) {
-            ctx.parent = this.context;
-        }
-        return ctx;
-    }
-
-    protected initContext(ctx: IActivityContext) {
-        ctx.config = this._config;
-    }
-
-
     async onActivityInit(config: ActivityConfigure) {
         this._config = config;
-        if (!this.context) {
-            this.context = this.createContext();
-        }
     }
 
-    /**
-     * run activity.
-     *
-     * @param {IActivityContext} [ctx]
-     * @returns {Promise<IActivityContext>}
-     * @memberof ObjectActivity
-     */
-    async run(ctx?: IActivityContext): Promise<IActivityContext> {
-        this.verifyCtx(ctx);
-        if (this.execute) {
-            await this.execute();
-        }
-        return this.context;
-    }
-
-    /**
-     * execute activity.
-     *
-     * @protected
-     * @abstract
-     * @returns {Promise<void>}
-     * @memberof Activity
-     */
-    protected abstract execute(): Promise<void>;
-
-    /**
-     * verify context.
-     *
-     * @protected
-     * @param {*} [ctx]
-     * @returns {ActivityContext}
-     * @memberof Activity
-     */
-    protected verifyCtx(ctx?: any) {
-        if (!this.context) {
-            this.context = this.createContext();
-        }
-        this.context.setState(ctx, this._config);
-    }
 
     /**
      * convert to expression
@@ -176,8 +58,12 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @returns {Promise<Expression<T>>}
      * @memberof Activity
      */
-    protected toExpression<T>(exptype: ExpressionType<T>, target?: IActivity, ctx?: IActivityContext): Promise<Expression<T>> {
-        return (ctx || this.context).getBuilder().toExpression(exptype, target || this);
+    protected async toExpression<T>(exptype: ExpressionType<T>, target?: IActivity, ctx?: ActivityContext<T>): Promise<Expression<T>> {
+        if (isActivityType(exptype)) {
+            return await this.buildActivity(exptype, target) as Expression<T>;
+        } else {
+            return exptype as Expression<T>;
+        }
     }
 
     /**
@@ -190,7 +76,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @returns {Promise<T>}
      * @memberof Activity
      */
-    protected async resolveExpression<T>(express: ExpressionType<T>, ctx?: IActivityContext): Promise<T> {
+    protected async resolveExpression<T>(express: ExpressionType<T>, ctx?: ActivityContext<T>): Promise<T> {
         if (!this.context) {
             this.context = this.createContext();
         }
@@ -204,13 +90,13 @@ export abstract class Activity implements IActivity, OnActivityInit {
     /**
     * execute activity.
     *
-    * @param {IActivity} activity
-    * @param {IActivityContext} ctx
+    * @param {Activity} activity
+    * @param {ActivityContext<any>} ctx
     * @param {any} [data]
     * @returns
     * @memberof Activity
     */
-    protected async execActivity(activity: Activity | Active | ExpressionToken<any>, ctx: IActivityContext | (() => IActivityContext), data?: any): Promise<IActivityContext> {
+    protected async execActivity(activity: Activity | Active | ExpressionToken<any>, ctx: ActivityContext<any> | (() => ActivityContext<any>), data?: any): Promise<ActivityContext<any>> {
         if (!activity) {
             return null;
         }
@@ -239,7 +125,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
         throw new Error('execActivity activity param is not vaild.');
     }
 
-    protected runActivity(activity: Activity, ctx: IActivityContext, data?: any) {
+    protected runActivity(activity: Activity, ctx: ActivityContext<any>, data?: any) {
         if (!isNullOrUndefined(data)) {
             ctx.setAsResult(data);
         }
@@ -266,7 +152,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
      * @returns {Promise<Ta>}
      * @memberof Activity
      */
-    protected toActivity<Tr, Ta extends IActivity, TCfg extends ActivityConfigure>(
+    protected async toActivity<Tr, Ta extends IActivity, TCfg extends ActivityConfigure>(
         exptype: ExpressionType<Tr> | ActivityType<Ta>,
         isRightActivity: Express<any, boolean>,
         toConfig: Express<Tr, TCfg>,
@@ -291,7 +177,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
             if (isString(result)) {
                 rt = result;
             } else {
-                rt = await target.context.exec(target, result);
+                rt = await this.execActivity(target, result);
             }
             config = toConfig(rt);
             if (valify) {
@@ -305,7 +191,7 @@ export abstract class Activity implements IActivity, OnActivityInit {
     }
 
     protected buildActivity<T extends IActivity>(config: ActivityType<T>, target?: IActivity): Promise<T> {
-        return this.container.get(RunnerService).run(config);
+        return this.container.get(RunnerService).run(isToken(config) ? { type: config, target: target } : Object.assign(config, { targe: target }));
     }
 
 }

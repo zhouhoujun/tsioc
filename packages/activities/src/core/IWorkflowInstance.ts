@@ -1,15 +1,9 @@
-import { IActivityResult, IActivity, ActivityToken } from './IActivity';
+import { IActivityResult } from './IActivity';
 import { Observable } from 'rxjs';
 import { Joinpoint } from '@tsdi/aop';
-import { IService, InjectRunnableToken } from '@tsdi/boot';
+import { IService } from '@tsdi/boot';
 import { IActivityContextResult } from './IActivityContext';
 
-
-
-/**
- * activity runner token.
- */
-export const WorkflowInstanceToken = new InjectRunnableToken<IActivity>(ActivityToken);
 
 /**
  *run state.
