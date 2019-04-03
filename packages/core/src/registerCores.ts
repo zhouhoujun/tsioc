@@ -6,7 +6,7 @@ import {
 import { IocExt } from './decorators';
 import {
     RuntimeDecoratorRegisterer, IocAutorunAction, DecoratorScopes,
-    RegisterSingletionAction, DesignDecoratorRegisterer, ResolveLifeScope
+    RegisterSingletionAction, DesignDecoratorRegisterer
 } from '@tsdi/ioc';
 import {
     InitServiceResolveAction, ResolveRefServiceAction, ResolveServiceScopeAction,

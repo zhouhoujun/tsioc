@@ -17,7 +17,7 @@ import { ControlActivity } from './ControlActivity';
 export class InvokeActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        let config = this.context.config as InvokeConfigure;
+        let config = ctx.config as InvokeConfigure;
         if (config.target && config.invoke) {
             let target = await this.resolveExpression(config.target);
             let invoke = await this.resolveExpression(config.invoke);

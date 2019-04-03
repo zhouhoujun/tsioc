@@ -1,6 +1,6 @@
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Aspect, Joinpoint, Before, AfterReturning } from '@tsdi/aop';
-import { IWorkflowInstance, RunState, Activity } from '../core';
+import { RunState, ActivityContext, WorkflowInstance } from '../core';
 import { Task } from '../decorators/Task';
 import { Inject } from '@tsdi/ioc';
 
@@ -29,9 +29,9 @@ export class RunAspect {
 
     }
 
-    @Before('execution(*.run)')
+    @Before('execution(*.execute)')
     beforeRun(joinPoint: Joinpoint) {
-        let runner = this.getRunner(joinPoint.target);
+        let runner = this.getRunner(joinPoint.args[0]);
         if (!runner) {
             return;
         }
@@ -42,13 +42,12 @@ export class RunAspect {
             case RunState.stop:
                 throw new Error('workflow stop!');
         }
-
     }
 
-    @AfterReturning('execution(*.run)')
+    @AfterReturning('execution(*.execute)')
     afterRun(joinPoint: Joinpoint) {
 
-        let runner = this.getRunner(joinPoint.target);
+        let runner = this.getRunner(joinPoint.args[0]);
         if (!runner) {
             return;
         }
@@ -62,12 +61,7 @@ export class RunAspect {
 
     }
 
-    getRunner(task: any) {
-        if (task instanceof Activity) {
-            if (task.id && this.container.has(task.id)) {
-                return this.container.get<IWorkflowInstance<any>>(task.id);
-            }
-        }
-        return null;
+    getRunner(ctx: ActivityContext) {
+        return this.container.get<WorkflowInstance<any>>(ctx.id);
     }
 }
