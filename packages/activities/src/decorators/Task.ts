@@ -1,12 +1,10 @@
 import {
     isString, createClassDecorator, MetadataExtends, MetadataAdapter,
-    isClass, ITypeDecorator, Token, isToken, isUndefined, lang, ProvideToken, isProvideToken, ClassType
+    isClass, ITypeDecorator, Token, isToken, isUndefined, lang, ProvideToken,
+    isProvideToken, ClassType, isArray
 } from '@tsdi/ioc';
 import { ActivityMetadata } from '../metadatas/ActivityMetadata';
-import { IActivityContext } from '../core/IActivityContext';
-import { IActivity } from '../core/IActivity';
-import { WorkflowInstanceToken } from '../core/IWorkflowInstance';
-import { ActivityBuilder } from '../core/ActivityBuilder';
+import { ActivityContext } from '../core/ActivityContext';
 
 
 /**
@@ -52,7 +50,7 @@ export interface ITaskDecorator<T extends ActivityMetadata> extends ITypeDecorat
      * @param {string} selector metadata selector.
      * @param {string} [alias]  Activity alias name
      */
-    (provide: Token<any>, ctxType: Token<IActivityContext>, selector?: string, alias?: string): ClassDecorator;
+    (provide: Token<any>, ctxType: Token<ActivityContext>, selector?: string, alias?: string): ClassDecorator;
     /**
      * task decorator, use to define class as task element.
      *
@@ -75,8 +73,6 @@ export interface ITaskDecorator<T extends ActivityMetadata> extends ITypeDecorat
  */
 export function createTaskDecorator<T extends ActivityMetadata>(
     taskType: string,
-    defaultBoot?: Token<IActivity> | ((meta: T) => Token<IActivity>),
-    baseClassName?: string,
     adapter?: MetadataAdapter,
     metadataExtends?: MetadataExtends<T>): ITaskDecorator<T> {
 
@@ -96,9 +92,9 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             });
 
             args.next<ActivityMetadata>({
-                match: (arg) => isToken(arg) || isString(arg),
+                match: (arg) => isToken(arg) || isString(arg) || isArray(arg),
                 setMetadata: (metadata, arg) => {
-                    if (isString(arg)) {
+                    if (isString(arg) || isArray(arg)) {
                         metadata.selector = arg;
                     } else {
                         metadata.contextType = arg;
@@ -107,16 +103,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             });
 
             args.next<ActivityMetadata>({
-                match: (arg) => isToken(arg) || isString(arg),
-                setMetadata: (metadata, arg) => {
-                    if (isString(arg)) {
-                        metadata.selector = arg;
-                    }
-                }
-            });
-
-            args.next<ActivityMetadata>({
-                match: (arg) => isString(arg),
+                match: (arg) => isString(arg) || isArray(arg),
                 setMetadata: (metadata, arg) => {
                     metadata.selector = arg;
                 }
@@ -142,21 +129,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
                 metadata.provide = metadata.name;
             }
 
-            if (metadata.selector) {
-                metadata.refs = { provide: metadata.selector, target: metadata.type }
-            }
-
             metadata.decorType = taskType;
-            metadata.defaultRunnable = WorkflowInstanceToken;
-
-            let defboot = isToken(defaultBoot) ? defaultBoot : defaultBoot(metadata as T);
-
-            if (defboot
-                && !metadata.activity
-                && !metadata.task
-                && !lang.isExtendsClass(metadata.type, ty => lang.getClassName(ty) === (baseClassName || 'Activity'))) {
-                metadata.bootstrap = defboot;
-            }
 
             return metadata;
         }) as ITaskDecorator<T>;
@@ -167,5 +140,5 @@ export function createTaskDecorator<T extends ActivityMetadata>(
  *
  * @Task
  */
-export const Task: ITaskDecorator<ActivityMetadata> = createTaskDecorator('Task', ActivityBuilder);
+export const Task: ITaskDecorator<ActivityMetadata> = createTaskDecorator('Task');
 

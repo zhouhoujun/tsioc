@@ -1,6 +1,5 @@
-import { IAnnotationMetadata } from '@tsdi/boot';
-import { CoreActivityConfigs } from '../core/ActivityConfigure';
-import { IActivity } from '../core';
+import { ActivityOption, ActivityContext } from '../core';
+import { ClassMetadata, Token } from '@tsdi/ioc';
 
 /**
  * task metadata.
@@ -9,11 +8,31 @@ import { IActivity } from '../core';
  * @interface TaskMetadata
  * @extends {ClassMetadata}
  */
-export interface IActivityMetadata extends IAnnotationMetadata<IActivity> {
+export interface ActivityMetadata extends ClassMetadata {
     decorType?: string;
+
+    /**
+    * action name.
+    *
+    * @type {string}
+    * @memberof ActivityOption
+    */
+    name?: string;
+
+    /**
+     * context type.
+     *
+     * @type {Token<ActivityContext>}
+     * @memberof ActivityMetadata
+     */
+    contextType?: Token<ActivityContext>;
+
+    /**
+     * selector.
+     *
+     * @type {string}
+     * @memberof ActivityConfigure
+     */
+    selector?: string| string [];
 }
 
-/**
- * activity metadata.
- */
-export type ActivityMetadata = (IActivityMetadata & CoreActivityConfigs);

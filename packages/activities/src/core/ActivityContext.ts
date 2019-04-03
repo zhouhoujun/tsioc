@@ -1,16 +1,83 @@
 import {
-    Injectable, isNullOrUndefined, Inject, isFunction,
-    isPromise, Type, hasOwnClassMetadata, ObjectMap, isClass
+    Injectable, isNullOrUndefined, isFunction, ObjectMap, isClass, InjectToken, Token
 } from '@tsdi/ioc';
 import { ITranslator } from './Translator';
-import { BootContext } from '@tsdi/boot';
-import { Expression, ActivityConfigure, isWorkflowInstance } from './ActivityConfigure';
-import { Task } from '../decorators/Task';
-import { isAcitvity, Activity } from './Activity';
-import { ContainerToken, IContainer } from '@tsdi/core';
-import { IActivityContext, CtxType } from './IActivityContext';
+import { BootContext, BootOption } from '@tsdi/boot';
+import { Activity } from './Activity';
 
 
+export const WorkflowId = new InjectToken<string>('Workflow_ID');
+
+export interface ActivityOption extends BootOption {
+    /**
+     * workflow id.
+     *
+     * @type {string}
+     * @memberof ActivityOption
+     */
+    id: string;
+    /**
+    * action name.
+    *
+    * @type {string}
+    * @memberof ActivityOption
+    */
+    name?: string;
+    /**
+     * input data
+     *
+     * @type {*}
+     * @memberof IRunContext
+     */
+    input: any;
+    /**
+     * task title.
+     *
+     * @type {string}
+     * @memberof IActivityConfigure
+     */
+    title?: string;
+
+    /**
+     * selector.
+     *
+     * @type {string}
+     * @memberof ActivityConfigure
+     */
+    selector?: string;
+}
+
+
+/**
+ * async result.
+ */
+export type AsyncResult<T> = (ctx?: ActivityContext, activity?: Activity<any>) => Promise<T>;
+
+/**
+ * activity result.
+ */
+export type ExecuteResult<T> = Promise<T> | AsyncResult<T>;
+
+
+/**
+ * expression.
+ */
+export type Expression<T> = T | ExecuteResult<T>;
+
+/**
+ * ActivityResult type
+ */
+export type ActivityResultType<T> = Token<Activity<any>> | Token<any>;
+
+/**
+ * expression type.
+ */
+export type ExpressionType<T> = Expression<T> | ActivityResultType<T>;
+
+/**
+ * context type.
+ */
+export type CtxType<T> = T | ((context?: ActivityContext, activity?: Activity<any>) => T);
 
 
 /**
@@ -21,23 +88,28 @@ import { IActivityContext, CtxType } from './IActivityContext';
  * @implements {IActivityContext<any>}
  */
 @Injectable
-export class ActivityContext<T> extends BootContext implements IActivityContext {
-
+export class ActivityContext extends BootContext {
     /**
-     * build config.
+     * workflow id.
+     *
+     * @type {string}
+     * @memberof ActivityContext
+     */
+    id: string;
+    /**
+    * action name.
+    *
+    * @type {string}
+    * @memberof ActivityOption
+    */
+    name: string;
+    /**
+     * input.
      *
      * @type {*}
-     * @memberof BuidActivityContext
+     * @memberof ActivityContext
      */
-    config: any;
-
-    /**
-     * execute data.
-     *
-     * @type {T}
-     * @memberof IActivityContext
-     */
-    data: T;
+    private _input: any;
 
     /**
      * execute Resulte.
@@ -45,57 +117,25 @@ export class ActivityContext<T> extends BootContext implements IActivityContext 
      * @readonly
      * @memberof ActivityContext
      */
-    get result(): T {
-        return this.data;
+    get input(): any {
+        return this._input;
     }
 
-    set result(data: T) {
-        this.data = data;
-    }
-
-    setAsResult(data: any) {
-        this.result = this.translate(data);
-    }
-
-    setState(state: any, config: ActivityConfigure) {
-        if (state instanceof ActivityContext) {
-            this.target = state.target;
-            this.setConfig(config, state);
-            state = state.result;
-        } else {
-            this.setConfig(config);
+    set input(data: any) {
+        if (this._input !== data) {
+            this.data = this.translate(data);
         }
-        this.setAsResult(state);
+        this._input = data;
     }
 
-    protected setConfig(config: ActivityConfigure, ctx?: ActivityContext<T>) {
-        this.config = config || {};
-    }
 
-    // route(express: Express<ActivityContext<T>, boolean | void>): void {
-    //     let stop = false;
-    //     let node: ActivityContext<T> = this;
-    //     while (!stop && node) {
-    //         stop = !express(node);
-    //         node = node === node.parent ? null : node.parent;
-    //     }
-    // }
-
-    // find<T extends ActivityContext<any>>(express: T | Express<T, boolean>): T {
-    //     let context: T;
-    //     this.route(item => {
-    //         if (context) {
-    //             return false;
-    //         }
-    //         let isFinded = isFunction(express) ? express(item as T) : express === item;
-    //         if (isFinded) {
-    //             context = item as T;
-    //             return false;
-    //         }
-    //         return true;
-    //     });
-    //     return context as T;
-    // }
+    /**
+     * execute data.
+     *
+     * @type {*}
+     * @memberof IActivityContext
+     */
+    data: any;
 
     protected translate(data: any): any {
         if (isNullOrUndefined(data)) {
@@ -112,25 +152,16 @@ export class ActivityContext<T> extends BootContext implements IActivityContext 
         return null;
     }
 
-    // getRootPath(): string {
-    //     let ctx = this.find(c => c.config && c.config.baseURL);
-    //     if (ctx) {
-    //         return ctx.config.baseURL;
-    //     }
-    //     return this.container.get(ProcessRunRootToken) || '.';
-    // }
-
-
     getEnvArgs(): ObjectMap<any> {
         return {};
     }
 
-    to<T>(target: CtxType<T>, config?: ActivityConfigure): T {
+    to<T>(target: CtxType<T>): T {
         if (isFunction(target)) {
             if (isClass(target)) {
                 return target as any;
             }
-            return target(this, config);
+            return target(this);
         } else {
             return target;
         }
@@ -145,7 +176,7 @@ export class ActivityContext<T> extends BootContext implements IActivityContext 
     //  * @returns {Promise<T>}
     //  * @memberof IContext
     //  */
-    // exec<T>(target: Activity, expression: Expression<T>): Promise<T> {
+    // exec<T>(target: Activity<any>, expression: Expression<T>): Promise<T> {
     //     if (isFunction(expression)) {
     //         return Promise.resolve(expression(this, target));
     //     } else if (isPromise(expression)) {
@@ -157,9 +188,5 @@ export class ActivityContext<T> extends BootContext implements IActivityContext 
     //     } else {
     //         return Promise.resolve(expression as T);
     //     }
-    // }
-
-    // isTask(task: Type<Activity>): boolean {
-    //     return hasOwnClassMetadata(Task, task);
     // }
 }

@@ -11,12 +11,12 @@ import { IContainer, isContainer } from '@tsdi/core';
  */
 export interface AnnoationActionOption extends ActionContextOption {
     /**
-     * module type.
+     * target module type.
      *
      * @type {Type<any>}
      * @memberof AnnoationActionOption
      */
-    type: Type<any>;
+    targetType: Type<any>;
     /**
      * module decorator.
      *
@@ -43,7 +43,7 @@ export function createAnnoationContext<T extends AnnoationActionContext>(CtxType
         type = target;
     } else {
         options = target;
-        type = target.type;
+        type = target.targetType;
     }
     let ctx = new CtxType(type, raiseContainer);
     options && ctx.setOptions(options);

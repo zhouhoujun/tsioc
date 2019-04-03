@@ -59,7 +59,6 @@ export interface IIocContainer extends IResolverContainer {
      */
     get<T>(token: Token<T>, alias: string, ...providers: ProviderTypes[]): T;
 
-
     /**
      * resolve type instance with token and param provider via resolve scope.
      *
@@ -70,6 +69,7 @@ export interface IIocContainer extends IResolverContainer {
      * @memberof IIocContainer
      */
     resolve<T>(token: Token<T> | ResolveActionContext<T>, ...providers: ProviderTypes[]): T;
+
     /**
      * register type.
      *

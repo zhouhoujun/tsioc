@@ -1,5 +1,5 @@
 import { ContainerToken, IContainer } from '@tsdi/core';
-import { IocCoreService, Type, PromiseUtil, Inject, ProviderTypes, Token, isClass } from '@tsdi/ioc';
+import { Type, PromiseUtil, Inject, ProviderTypes, Token, isClass, OnInit } from '@tsdi/ioc';
 
 
 /**
@@ -27,17 +27,16 @@ export interface IHandleContext {
  * @extends {IocCoreService}
  * @template T
  */
-export abstract class Handle<T extends IHandleContext> extends IocCoreService {
+export abstract class Handle<T extends IHandleContext> implements OnInit {
 
     @Inject(ContainerToken)
     protected container: IContainer;
 
     constructor() {
-        super();
-        this.init();
+        this.onInit();
     }
 
-    protected init() {
+    onInit() {
 
     }
 
@@ -53,15 +52,15 @@ export abstract class Handle<T extends IHandleContext> extends IocCoreService {
         return this.container.resolve(token, ...providers);
     }
 
-    protected execHandles(ctx: T, handles: HandleType<T>[], next?: () => Promise<void>): Promise<void> {
-        return PromiseUtil.runInChain(handles.map(ac => this.toHanldeFunc(ac)), ctx, next);
+    protected execActions(ctx: T, handles: HandleType<T>[], next?: () => Promise<void>): Promise<void> {
+        return PromiseUtil.runInChain(handles.map(ac => this.toFunc(ac)), ctx, next);
     }
 
-    protected execHandleFuncs(ctx: T, handles: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
+    protected execFuncs(ctx: T, handles: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
         return PromiseUtil.runInChain(handles, ctx, next);
     }
 
-    protected toHanldeFunc(ac: HandleType<T>): PromiseUtil.ActionHandle<T> {
+    protected toFunc(ac: HandleType<T>): PromiseUtil.ActionHandle<T> {
         if (isClass(ac)) {
             let action = this.container.get(ac);
             return action instanceof Handle ?
@@ -76,6 +75,6 @@ export abstract class Handle<T extends IHandleContext> extends IocCoreService {
 }
 
 /**
- *  middleware type.
+ *  handle type.
  */
 export type HandleType<T extends IHandleContext> = Type<Handle<T>> | Handle<T> | PromiseUtil.ActionHandle<T>;

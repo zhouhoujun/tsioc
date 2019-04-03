@@ -1,4 +1,5 @@
 import { ExecuteActivity } from './ExecuteActivity';
+import { ActivityContext } from './ActivityContext';
 
 /**
  * expression activity.
@@ -9,6 +10,6 @@ import { ExecuteActivity } from './ExecuteActivity';
  * @extends {ExecuteActivity<T>}
  * @template T
  */
-export abstract class ExpressionActivity<T> extends ExecuteActivity<T> {
+export abstract class ExpressionActivity<T extends ActivityContext> extends ExecuteActivity<T> {
 
 }

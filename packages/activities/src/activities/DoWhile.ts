@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { DoWhileConfigure } from '../core';
+import { ActivityContext } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 
@@ -10,15 +10,17 @@ import { ControlActivity } from './ControlActivity';
  * @class DoWhileActivity
  * @extends {ControlActivity}
  */
-@Task(ControlActivity, 'do & while')
-export class DoWhileActivity extends ControlActivity {
+@Task({
+    selector: 'dowhile'
+})
+export class DoWhileActivity<T extends ActivityContext> extends ControlActivity<T> {
 
-    protected async execute(): Promise<any> {
+    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         let config = this.context.config as DoWhileConfigure;
-        await this.execActivity(config.do, this.context);
+        await super.execute(ctx);
         let condition = await this.resolveExpression(config.while);
         while (condition) {
-            await this.execActivity(config.do, this.context);
+            await super.execute(ctx);
             condition = await this.resolveExpression(config.while);
         }
     }

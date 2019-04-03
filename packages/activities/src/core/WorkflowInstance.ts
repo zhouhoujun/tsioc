@@ -3,12 +3,37 @@ import { filter } from 'rxjs/operators';
 import { Service } from '@tsdi/boot';
 import { Joinpoint } from '@tsdi/aop';
 import { Token, Injectable } from '@tsdi/ioc';
-import { ActivityConfigure } from './ActivityConfigure';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
-import { RunState } from './IWorkflowInstance';
 
-
+/**
+ *run state.
+ *
+ * @export
+ * @enum {number}
+ */
+export enum RunState {
+    /**
+     * activity init.
+     */
+    init,
+    /**
+     * runing.
+     */
+    running,
+    /**
+     * activity parused.
+     */
+    pause,
+    /**
+     * activity stopped.
+     */
+    stop,
+    /**
+     * activity complete.
+     */
+    complete
+}
 
 /**
  * task runner.
@@ -18,15 +43,15 @@ import { RunState } from './IWorkflowInstance';
  * @implements {ITaskRunner}
  */
 @Injectable
-export class WorkflowInstance<T extends Activity> extends Service<T> {
+export class WorkflowInstance<T extends Activity<any>> extends Service<T> {
 
     get activity(): Token<T> {
         return this.getTargetType();
     }
 
-    private config: ActivityConfigure;
-    get configure(): ActivityConfigure {
-        return this.config;
+    private _ctx: ActivityContext;
+    get context(): ActivityContext {
+        return this._ctx;
     }
 
     private _result = new BehaviorSubject<any>(null);
@@ -49,12 +74,12 @@ export class WorkflowInstance<T extends Activity> extends Service<T> {
         this.config = await mgr.getConfig();
     }
 
-    run(data?: any): Promise<ActivityContext<T>> {
+    run(data?: any): Promise<ActivityContext> {
         return this.start(data);
     }
 
-    async start(data?: any): Promise<ActivityContext<T>> {
-        this.getTarget().id && this.container.bindProvider(this.getTarget().id, this);
+    async start(data?: any): Promise<ActivityContext> {
+        this.context.id && this.container.bindProvider(this.getTarget().id, this);
         this.state = RunState.complete;
         this.stateChanged.next(this.state);
         this._resultValue = ctx.result;

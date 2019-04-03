@@ -29,7 +29,7 @@ export class RunnerService extends IocCoreService {
     async run<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
         let ctx: BootContext;
         if (isClass(target)) {
-            ctx = BootContext.parse({ type: target, args: args }, this.container);
+            ctx = BootContext.parse({ targetType: target, args: args }, this.container);
         } else if (target instanceof BootContext) {
             ctx = target;
         } else {

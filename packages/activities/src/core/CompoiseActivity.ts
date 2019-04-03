@@ -1,18 +1,21 @@
-import { Handle, HandleType, IHandleContext } from './Handle';
+
+import { Task } from '../decorators/Task';
+import { ActivityContext, ActivityType } from '../core';
 import { PromiseUtil } from '@tsdi/ioc';
+import { Activity } from './Activity';
 
 
 /**
- * composite handles.
+ * chain activity.
  *
  * @export
- * @class CompositeHandle
- * @extends {Handle<T>}
- * @template T
+ * @class ChainActivity
+ * @extends {ControlActivity}
  */
-export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
+@Task
+export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
 
-    protected handles: HandleType<T>[];
+    protected handles: ActivityType<T>[];
     private funcs: PromiseUtil.ActionHandle<T>[];
 
     onInit() {
@@ -22,12 +25,12 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
     /**
      * use handle.
      *
-     * @param {HandleType} handle
+     * @param {ActivityType} handle
      * @param {boolean} [first]  use action at first or last.
      * @returns {this}
      * @memberof LifeScope
      */
-    use(handle: HandleType<T>, first?: boolean): this {
+    use(handle: ActivityType<T>, first?: boolean): this {
         if (first) {
             this.handles.unshift(handle);
         } else {
@@ -40,12 +43,12 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
     /**
      * use handle before
      *
-     * @param {HandleType} handle
-     * @param {HandleType} before
+     * @param {ActivityType} handle
+     * @param {ActivityType} before
      * @returns {this}
      * @memberof LifeScope
      */
-    useBefore(handle: HandleType<T>, before: HandleType<T>): this {
+    useBefore(handle: ActivityType<T>, before: ActivityType<T>): this {
         this.handles.splice(this.handles.indexOf(before) - 1, 0, handle);
         this.resetFuncs();
         return this;
@@ -53,12 +56,12 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
     /**
      * use handle after.
      *
-     * @param {HandleType} handle
-     * @param {HandleType} after
+     * @param {ActivityType} handle
+     * @param {ActivityType} after
      * @returns {this}
      * @memberof LifeScope
      */
-    useAfter(handle: HandleType<T>, after: HandleType<T>): this {
+    useAfter(handle: ActivityType<T>, after: ActivityType<T>): this {
         this.handles.splice(this.handles.indexOf(after), 0, handle);
         this.resetFuncs();
         return this;

@@ -1,5 +1,5 @@
-import { Task } from '../decorators/Task';
 import { ExecuteActivity } from './ExecuteActivity';
+import { ActivityContext } from './ActivityContext';
 
 
 /**
@@ -10,7 +10,6 @@ import { ExecuteActivity } from './ExecuteActivity';
  * @extends {Activity<T>}
  * @template T
  */
-@Task
-export abstract class AssignActivity<T> extends ExecuteActivity<T> {
+export abstract class AssignActivity<T extends ActivityContext> extends ExecuteActivity<T> {
 
 }

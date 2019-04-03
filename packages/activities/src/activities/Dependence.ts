@@ -1,4 +1,4 @@
-import { DependenceConfigure } from '../core';
+import { ActivityContext } from '../core';
 import { Task } from '../decorators/Task';
 import { ControlActivity } from './ControlActivity';
 
@@ -9,8 +9,10 @@ import { ControlActivity } from './ControlActivity';
  * @class DependenceActivity
  * @extends {ControlActivity}
  */
-@Task(ControlActivity, 'dependence')
-export class DependenceActivity extends ControlActivity {
+@Task({
+    selector: 'dependence'
+})
+export class DependenceActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     /**
      * execute body.
@@ -18,8 +20,9 @@ export class DependenceActivity extends ControlActivity {
      * @protected
      * @memberof DependenceActivity
      */
-    protected async execute() {
+    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         let config = this.context.config as DependenceConfigure;
-        await this.execActivity(config.dependence, this.context);
+        await this.execActions(ctx, config.dependence);
+        await super.execute(ctx, next);
     }
 }

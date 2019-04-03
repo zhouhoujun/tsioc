@@ -1,6 +1,6 @@
 import { PromiseUtil } from '@tsdi/ioc';
 import { Task } from '../decorators/Task';
-import { DelayConfigure, OnActivityInit } from '../core';
+import { DelayConfigure, ActivityContext } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 
@@ -11,11 +11,17 @@ import { ControlActivity } from './ControlActivity';
  * @class DelayActivity
  * @extends {ControlActivity}
  */
-@Task(ControlActivity, 'delay')
-export class DelayActivity extends ControlActivity implements OnActivityInit {
+@Task({
+    selector: 'delay'
+})
+export class DelayActivity<T extends ActivityContext> extends ControlActivity<T> {
 
-    protected async execute(): Promise<any> {
-        let config = this.context.config as DelayConfigure;
+    constructor(protected delay: number) {
+        super();
+    }
+
+    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
+        let config = ctx.config as DelayConfigure;
         let delay = await this.resolveExpression(config.delay);
         let defer = PromiseUtil.defer();
         let timmer = setTimeout(() => {
@@ -23,7 +29,7 @@ export class DelayActivity extends ControlActivity implements OnActivityInit {
             clearTimeout(timmer);
         }, delay);
         await defer.promise;
-        await this.execActivity(config.body, this.context);
+        await super.execute(ctx, next);
     }
 }
 

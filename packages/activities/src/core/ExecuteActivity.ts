@@ -1,8 +1,7 @@
 import { Task } from '../decorators/Task';
 import { Activity } from './Activity';
-import { OnActivityInit } from './OnActivityInit';
-import { ExecuteConfigure } from './ActivityConfigure';
 import { ActivityContext } from './ActivityContext';
+import { PromiseUtil } from '@tsdi/ioc';
 
 
 /**
@@ -13,33 +12,16 @@ import { ActivityContext } from './ActivityContext';
  * @implements {GActivity<T>}
  * @template T
  */
-@Task
-export class ExecuteActivity<T> extends Activity implements OnActivityInit {
-    /**
-     *  activity execute context.
-     *
-     * @type {ActivityContext}
-     * @memberof Activity
-     */
-    context: ActivityContext<T>;
+@Task({
+    selector: 'execute'
+})
+export class ExecuteActivity<T extends ActivityContext> extends Activity<T>  {
 
-    /**
-     * run task.
-     *
-     * @param {ActivityContext} [ctx] execute context.
-     * @returns {Promise<T>}
-     * @memberof Activity
-     */
-    async run(ctx?: ActivityContext<T>): Promise<ActivityContext<T>> {
-        this.verifyCtx(ctx);
-        await this.execute();
-        return this.context;
+    constructor(protected action: PromiseUtil.ActionHandle<T>) {
+        super();
     }
 
-    protected async execute(): Promise<void> {
-        let cfg = this.context.config as ExecuteConfigure;
-        if (cfg.execute) {
-            await this.execActivity(cfg.execute, this.context);
-        }
+    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
+        await this.execFuncs(ctx, [this.action], next);
     }
 }

@@ -1,5 +1,4 @@
-import { Task } from '../decorators/Task';
-import { Activity } from '../core';
+import { ActivityContext, Activity } from '../core';
 import { lang } from '@tsdi/ioc';
 
 /**
@@ -10,8 +9,7 @@ import { lang } from '@tsdi/ioc';
  * @class ControlActivity
  * @extends {Activity}
  */
-@Task
-export abstract class ControlActivity extends Activity {
+export abstract class ControlActivity<T extends ActivityContext> extends Activity<T> {
     /**
      * to string.
      *

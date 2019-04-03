@@ -25,7 +25,7 @@ export interface OnInit {
      *
      * @memberof OnInit
      */
-    onInit();
+     onInit();
 }
 
 /**

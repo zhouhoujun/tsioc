@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { IfConfigure, Activity } from '../core';
+import { Activity, ActivityContext } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 /**
@@ -9,28 +9,30 @@ import { ControlActivity } from './ControlActivity';
  * @class IfActivity
  * @extends {ControlActivity}
  */
-@Task(ControlActivity, 'if')
-export class IfActivity extends ControlActivity {
+@Task({
+    selector: 'if'
+})
+export class IfActivity<T extends ActivityContext> extends ControlActivity<T> {
 
-    protected async execute(): Promise<void> {
-        let confg = this.context.config as IfConfigure;
+    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
+        let confg = ctx.config as IfConfigure;
         let condition = await this.resolveExpression(confg.if);
         if (condition) {
-            await this.execIf(confg);
+            await this.execIf(ctx, confg);
         } else {
-            await this.execElse(confg);
+            await this.execElse(ctx, confg);
         }
     }
 
-    protected async execIf(confg: IfConfigure): Promise<void> {
+    protected async execIf(ctx: T, confg: IfConfigure): Promise<void> {
         if (confg.ifBody) {
-            await this.execActivity(confg.ifBody, this.context)
+            await this.execActions(ctx, [confg.ifBody])
         }
     }
 
-    protected async execElse(confg: IfConfigure): Promise<void> {
+    protected async execElse(ctx: T, confg: IfConfigure): Promise<void> {
         if (confg.elseBody) {
-            await this.execActivity(confg.elseBody, this.context);
+            await this.execActions(ctx, [confg.elseBody]);
         }
     }
 

@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ConfirmConfigure } from '../core';
+import { ActivityContext, CompoiseActivity } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 
@@ -10,14 +10,18 @@ import { ControlActivity } from './ControlActivity';
  * @class ConfirmActivity
  * @extends {ControlActivity}
  */
-@Task(ControlActivity, 'confirm')
-export class ConfirmActivity extends ControlActivity {
+@Task({
+    selector: 'confirm'
+})
+export class ConfirmActivity<T extends ActivityContext> extends ControlActivity<T> {
 
-    protected async execute() {
-        let config = this.context.config as ConfirmConfigure;
+    body: CompoiseActivity<T>;
+
+    async execute(ctx: T, next: () => Promise<void>): Promise<void>{
+        let config = ctx.config as ConfirmConfigure;
         let confirm = this.resolveExpression(config.confirm);
         if (confirm) {
-            this.execActivity(config.body, this.context);
+            await this.execActivity(ctx, next);
         }
     }
 }
