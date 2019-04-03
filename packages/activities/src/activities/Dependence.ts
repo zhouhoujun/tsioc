@@ -21,7 +21,7 @@ export class DependenceActivity<T extends ActivityContext> extends ControlActivi
      * @memberof DependenceActivity
      */
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        let config = this.context.config as DependenceConfigure;
+        let config = ctx.config as DependenceConfigure;
         await this.execActions(ctx, config.dependence);
         await super.execute(ctx, next);
     }
