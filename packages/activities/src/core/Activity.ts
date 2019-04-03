@@ -1,11 +1,8 @@
-import {
-    isClass, Type, hasClassMetadata, getOwnTypeMetadata, PromiseUtil
-} from '@tsdi/ioc';
 import { Task } from '../decorators/Task';
 import { Handle } from '@tsdi/boot';
 import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
-
+import { isClass, Type, hasClassMetadata, getOwnTypeMetadata, PromiseUtil } from '@tsdi/ioc';
 
 /**
  *  activity type.

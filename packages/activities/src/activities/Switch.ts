@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { SwitchConfigure, ActivityContext, Activity } from '../core';
+import { SwitchConfigure, ActivityContext, Activity, ActivityType } from '../core';
 import { isUndefined } from '@tsdi/ioc';
 import { ControlActivity } from './ControlActivity';
 
@@ -21,6 +21,8 @@ export class CaseActivity<T extends ActivityContext> extends Activity<T> {
 })
 export class SwitchActivity<T extends ActivityContext> extends ControlActivity<T> {
 
+    defaults: ActivityType<T>[];
+
     addCase(activity: CaseActivity<T>) {
         this.use(activity);
     }
@@ -28,12 +30,11 @@ export class SwitchActivity<T extends ActivityContext> extends ControlActivity<T
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         let config = ctx.config as SwitchConfigure;
         let matchkey = await this.resolveExpression(config.switch);
-        if (!isUndefined(matchkey)
-            && config.cases.length
-            && this.handles.some(it => it.case === matchkey)) {
-            await this.execActivity(ctx, config.cases.find(it => it.key === matchkey).value);
-        } else if (config.defaultBody) {
-            await this.execActivity(ctx, config.defaultBody);
+        let casehandle = this.handles.find(it => it.key === matchkey);
+        if (casehandle) {
+            await this.execActivity(ctx, casehandle, next);
+        } else if (this.defaults.length) {
+            await this.execActivity(ctx, ...this.defaults.concat([next]));
         }
     }
 }

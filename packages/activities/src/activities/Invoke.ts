@@ -28,5 +28,6 @@ export class InvokeActivity<T extends ActivityContext> extends ControlActivity<T
             args = args || [];
             return this.container.invoke(target, invoke, ...args);
         }
+        await next();
     }
 }

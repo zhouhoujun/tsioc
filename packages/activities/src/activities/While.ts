@@ -16,7 +16,7 @@ import { ControlActivity } from './ControlActivity';
 export class WhileActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        let config = this.context.config as WhileConfigure;
+        let config = ctx.config as WhileConfigure;
         let condition = await this.resolveExpression(config.while);
         while (condition) {
             await super.execute(ctx);

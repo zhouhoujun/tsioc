@@ -19,7 +19,7 @@ export class TryCatchActivity<T extends ActivityContext> extends ControlActivity
     finallies: ActivityType<T>[];
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        let config = this.context.config as TryCatchConfigure;
+        let config = ctx.config as TryCatchConfigure;
         try {
             await super.execute(ctx, next);
         } catch (err) {

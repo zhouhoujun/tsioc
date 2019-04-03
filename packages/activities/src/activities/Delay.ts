@@ -16,10 +16,6 @@ import { ControlActivity } from './ControlActivity';
 })
 export class DelayActivity<T extends ActivityContext> extends ControlActivity<T> {
 
-    constructor(protected delay: number) {
-        super();
-    }
-
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         let config = ctx.config as DelayConfigure;
         let delay = await this.resolveExpression(config.delay);

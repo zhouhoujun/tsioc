@@ -23,5 +23,6 @@ export class DoWhileActivity<T extends ActivityContext> extends ControlActivity<
             await super.execute(ctx);
             condition = await this.resolveExpression(config.while);
         }
+        await next();
     }
 }

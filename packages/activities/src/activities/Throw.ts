@@ -16,7 +16,7 @@ import { ControlActivity } from './ControlActivity';
 export class ThrowActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        let config = this.context.config as ThrowConfigure;
+        let config = ctx.config as ThrowConfigure;
         let error = await this.resolveExpression(config.throw);
         throw error;
     }
