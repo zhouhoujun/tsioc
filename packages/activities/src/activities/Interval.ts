@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { IntervalConfigure, Activity } from '../core';
+import { ActivityContext } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 /**
@@ -9,14 +9,16 @@ import { ControlActivity } from './ControlActivity';
  * @class IntervalActivity
  * @extends {ControlActivity}
  */
-@Task(ControlActivity, 'interval')
-export class IntervalActivity extends ControlActivity {
+@Task({
+    selector: 'interval'
+})
+export class IntervalActivity<T extends ActivityContext> extends ControlActivity<T> {
 
-    protected async execute(): Promise<void> {
+    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         let config = this.context.config as IntervalConfigure;
         let interval = await this.resolveExpression(config.interval);
         setInterval(() => {
-            this.execActivity(config.body, this.context);
+            super.execute(ctx, next);
         }, interval);
     }
 }

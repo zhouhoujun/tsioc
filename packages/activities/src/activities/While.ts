@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { WhileConfigure } from '../core';
+import { WhileConfigure, ActivityContext } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 
@@ -10,15 +10,18 @@ import { ControlActivity } from './ControlActivity';
  * @class WhileActivity
  * @extends {ControlActivity}
  */
-@Task(ControlActivity, 'while & body')
-export class WhileActivity extends ControlActivity {
+@Task({
+    selector: 'while'
+})
+export class WhileActivity<T extends ActivityContext> extends ControlActivity<T> {
 
-    protected async execute(): Promise<any> {
+    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         let config = this.context.config as WhileConfigure;
         let condition = await this.resolveExpression(config.while);
         while (condition) {
-            await this.execActivity(config.body, this.context);
+            await super.execute(ctx);
             condition = await this.resolveExpression(config.while);
         }
+        await next();
     }
 }

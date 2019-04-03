@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ParallelConfigure } from '../core';
+import { ParallelConfigure, ActivityContext } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 
@@ -10,8 +10,10 @@ import { ControlActivity } from './ControlActivity';
  * @class ParallelActivity
  * @extends {ControlActivity}
  */
-@Task(ControlActivity, 'parallel')
-export class ParallelActivity extends ControlActivity {
+@Task({
+    selector: 'parallel'
+})
+export class ParallelActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     /**
      * execute parallel.
@@ -20,10 +22,11 @@ export class ParallelActivity extends ControlActivity {
      * @returns {Promise<void>}
      * @memberof ParallelActivity
      */
-    protected async execute(): Promise<void> {
-        let config = this.context.config as ParallelConfigure;
+    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
+        let config = ctx.config as ParallelConfigure;
         if (config.parallel && config.parallel.length) {
-            await Promise.all(config.parallel.map(act => this.execActivity(act, this.context)));
+            await Promise.all(config.parallel.map(act => this.execActivity(ctx, act)));
         }
+        await next();
     }
 }

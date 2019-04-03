@@ -1,4 +1,4 @@
-import { ActivityContext, Activity } from '../core';
+import { ActivityContext, CompoiseActivity } from '../core';
 import { lang } from '@tsdi/ioc';
 
 /**
@@ -9,7 +9,7 @@ import { lang } from '@tsdi/ioc';
  * @class ControlActivity
  * @extends {Activity}
  */
-export abstract class ControlActivity<T extends ActivityContext> extends Activity<T> {
+export abstract class ControlActivity<T extends ActivityContext> extends CompoiseActivity<T> {
     /**
      * to string.
      *

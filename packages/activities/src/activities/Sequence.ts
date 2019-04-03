@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { SequenceConfigure } from '../core';
+import { ActivityContext } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 
@@ -11,17 +11,9 @@ import { ControlActivity } from './ControlActivity';
  * @class SequenceActivity
  * @extends {ControlActivity}
  */
-@Task(ControlActivity, 'sequence')
-export class SequenceActivity extends ControlActivity {
+@Task({
+    selector: 'sequence'
+})
+export class SequenceActivity<T extends ActivityContext> extends ControlActivity<T> {
 
-    protected async execute(): Promise<void> {
-        let config = this.context.config as SequenceConfigure;
-        if (config.sequence && config.sequence.length) {
-            let execPromise = Promise.resolve(this.context);
-            (config.sequence || []).forEach(act => {
-                execPromise = execPromise.then(ctx => this.execActivity(act, ctx));
-            });
-            await execPromise;
-        }
-    }
 }

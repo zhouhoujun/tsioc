@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { Activity, ActivityContext } from '../core';
+import { ActivityContext } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 /**
@@ -18,22 +18,9 @@ export class IfActivity<T extends ActivityContext> extends ControlActivity<T> {
         let confg = ctx.config as IfConfigure;
         let condition = await this.resolveExpression(confg.if);
         if (condition) {
-            await this.execIf(ctx, confg);
+            await this.execActions(ctx, this.handles.slice(0, 1), next);
         } else {
-            await this.execElse(ctx, confg);
+            await this.execActions(ctx, this.handles.slice(1, 2), next);
         }
     }
-
-    protected async execIf(ctx: T, confg: IfConfigure): Promise<void> {
-        if (confg.ifBody) {
-            await this.execActions(ctx, [confg.ifBody])
-        }
-    }
-
-    protected async execElse(ctx: T, confg: IfConfigure): Promise<void> {
-        if (confg.elseBody) {
-            await this.execActions(ctx, [confg.elseBody]);
-        }
-    }
-
 }

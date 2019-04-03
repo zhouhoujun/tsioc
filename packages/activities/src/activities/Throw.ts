@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ThrowConfigure } from '../core';
+import { ThrowConfigure, ActivityContext } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 
@@ -10,10 +10,12 @@ import { ControlActivity } from './ControlActivity';
  * @class ThrowActivity
  * @extends {ControlActivity}
  */
-@Task(ControlActivity, 'throw')
-export class ThrowActivity extends ControlActivity {
+@Task({
+    selector: 'throw'
+})
+export class ThrowActivity<T extends ActivityContext> extends ControlActivity<T> {
 
-    protected async execute(): Promise<void> {
+    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         let config = this.context.config as ThrowConfigure;
         let error = await this.resolveExpression(config.throw);
         throw error;

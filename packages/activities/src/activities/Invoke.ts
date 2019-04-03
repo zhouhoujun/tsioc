@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { InjectAcitityToken, InvokeConfigure } from '../core';
+import { InvokeConfigure, ActivityContext } from '../core';
 import { ParamProviders } from '@tsdi/ioc';
 import { ControlActivity } from './ControlActivity';
 
@@ -11,10 +11,12 @@ import { ControlActivity } from './ControlActivity';
  * @class InvokeActivity
  * @extends {ControlActivity}
  */
-@Task(ControlActivity, 'invoke')
-export class InvokeActivity extends ControlActivity {
+@Task({
+    selector: 'invoke'
+})
+export class InvokeActivity<T extends ActivityContext> extends ControlActivity<T> {
 
-    protected async execute(): Promise<any> {
+    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         let config = this.context.config as InvokeConfigure;
         if (config.target && config.invoke) {
             let target = await this.resolveExpression(config.target);

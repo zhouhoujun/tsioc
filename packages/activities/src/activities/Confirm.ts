@@ -21,7 +21,7 @@ export class ConfirmActivity<T extends ActivityContext> extends ControlActivity<
         let config = ctx.config as ConfirmConfigure;
         let confirm = this.resolveExpression(config.confirm);
         if (confirm) {
-            await this.execActivity(ctx, next);
+            await super.execute(ctx, next);
         }
     }
 }
