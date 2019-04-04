@@ -1,10 +1,6 @@
-import { BootOption } from '@tsdi/boot';
-import {
-    IActivity, IWorkflowInstance, Active, SequenceConfigure, WorkflowId,
-    UUIDToken, RandomUUIDFactory, CoreActivityConfigs
-} from './core';
-import { IWorkflow } from './IWorkflow';
-import { lang, isToken } from '@tsdi/ioc';
+import { BootOption, BootApplication, BootContext } from '@tsdi/boot';
+import { WorkflowId, UUIDToken, RandomUUIDFactory, WorkflowInstance, ActivityContext } from './core';
+import { lang, isToken, Type } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 import { CoreModule } from './CoreModule';
@@ -15,61 +11,40 @@ import { SequenceActivity } from './activities';
  *
  * @export
  * @class Workflow
- * @extends {ApplicationBuilder<IActivity>}
- * @implements {IWorkflow}
+ * @extends {BootApplication}
  */
-export class Workflow extends ApplicationBuilder<IActivity> implements IWorkflow {
-    constructor() {
-        super();
-        this.onInit();
-    }
+export class Workflow extends BootApplication {
 
-    protected onInit() {
+
+    protected onInit(target: Type<any> | BootOption | BootContext) {
+        super.onInit(target);
         this.use(AopModule)
             .use(LogModule)
             .use(CoreModule);
     }
 
 
-    /**
-     * create task container.
-     *
-     * @static
-     * @param {(string | AppConfigure)} [config]
-     * @returns {IWorkflow}
-     * @memberof Workflow
-     */
-    static create(config?: string | AppConfigure): IWorkflow {
-        let workflow = new Workflow();
-        if (config) {
-            workflow.useConfiguration(config);
-        }
-        return workflow;
-    }
-
-    getWorkflow<T>(workflowId: string): IWorkflowInstance<T> {
+    getWorkflow<T extends ActivityContext>(workflowId: string): WorkflowInstance<T> {
         return this.getPools().getRoot().get(workflowId);
     }
 
-    async bootstrap(token: Active, config?: CoreActivityConfigs | BootOption<IActivity>, options?: BootOption<IActivity>): Promise<IWorkflowInstance<any>> {
-        return await super.bootstrap(token, config, options) as IWorkflowInstance<any>;
-    }
 
-    async createActivity(activity: Active, workflowId?: string): Promise<IWorkflowInstance<any>> {
-        let boot: Active;
-        workflowId = workflowId || this.createUUID();
 
-        if (isToken(activity)) {
-            boot = activity;
-        } else {
-            boot = activity || {};
-        }
-        let env = this.getPools().getRoot();
-        let options = { };
-        env.bindProvider(WorkflowId, workflowId);
-        let runner = await this.bootstrap(boot, options) as IWorkflowInstance<any>;
-        return runner;
-    }
+    // async createActivity(activity: Active, workflowId?: string): Promise<IWorkflowInstance<any>> {
+    //     let boot: Active;
+    //     workflowId = workflowId || this.createUUID();
+
+    //     if (isToken(activity)) {
+    //         boot = activity;
+    //     } else {
+    //         boot = activity || {};
+    //     }
+    //     let env = this.getPools().getRoot();
+    //     let options = {};
+    //     env.bindProvider(WorkflowId, workflowId);
+    //     let runner = await this.bootstrap(boot, options) as IWorkflowInstance<any>;
+    //     return runner;
+    // }
 
     async sequence(...activities: Active[]): Promise<IWorkflowInstance<any>> {
         let workflows = (activities.length > 1) ? <SequenceConfigure>{ sequence: activities, activity: SequenceActivity } : lang.first(activities);
@@ -77,9 +52,9 @@ export class Workflow extends ApplicationBuilder<IActivity> implements IWorkflow
         return runner;
     }
 
-    run(...activities: Active[]): Promise<IWorkflowInstance<any>> {
-        return this.sequence(...activities);
-    }
+    // run(...activities: Active[]): Promise<IWorkflowInstance<any>> {
+    //     return this.sequence(...activities);
+    // }
 
     protected createUUID() {
         let container = this.getPools().getRoot();

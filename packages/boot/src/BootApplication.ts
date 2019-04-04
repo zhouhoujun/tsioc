@@ -41,10 +41,10 @@ export class BootApplication {
 
     constructor(target: Type<any> | BootOption | BootContext, protected baseURL?: string, protected loader?: IModuleLoader) {
         this.depModules = [];
-        this.init(target);
+        this.onInit(target);
     }
 
-    protected init(target: Type<any> | BootOption | BootContext) {
+    protected onInit(target: Type<any> | BootOption | BootContext) {
         this.context = target instanceof BootContext ? target : this.createContext(target);
         let container: IContainer;
         if (this.context.hasRaiseContainer()) {

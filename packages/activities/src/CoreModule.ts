@@ -1,7 +1,6 @@
 import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { Task } from './decorators/Task';
 import { RunAspect } from './aop';
-import { InputDataToken } from './core';
 import * as core from './core';
 import * as injectors from './injectors';
 import * as activites from './activities';
@@ -23,7 +22,6 @@ export class CoreModule {
         let decReg = container.resolve(DesignDecoratorRegisterer);
         decReg.register(Task, DecoratorScopes.Class, BindProviderAction);
 
-        container.bindProvider(InputDataToken, null);
         container.use(core)
             .use(injectors)
             .use(RunAspect)

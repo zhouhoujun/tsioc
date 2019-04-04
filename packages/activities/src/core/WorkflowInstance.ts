@@ -43,14 +43,14 @@ export enum RunState {
  * @implements {ITaskRunner}
  */
 @Injectable
-export class WorkflowInstance<T extends Activity<any>> extends Service<T> {
+export class WorkflowInstance<T extends ActivityContext> extends Service<Activity<T>> {
 
     get activity(): Token<T> {
         return this.getTargetType();
     }
 
-    private _ctx: ActivityContext;
-    get context(): ActivityContext {
+    protected _ctx: T;
+    get context(): T {
         return this._ctx;
     }
 

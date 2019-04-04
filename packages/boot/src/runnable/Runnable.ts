@@ -79,7 +79,7 @@ export abstract class Runnable<T> implements IRunnable<any> {
     @Inject(ContainerToken)
     container: IContainer;
 
-    private _ctx: BootContext;
+    protected _ctx: BootContext;
     get context(): BootContext {
         return this._ctx;
     }

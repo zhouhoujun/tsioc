@@ -8,7 +8,7 @@ import { ResolveActionContext } from './actions';
 
 /**
  * IContainer token.
- * it is a symbol id, you can use  @Inject, @Autowried or @Param to get container instance in yourself class.
+ * it is a symbol id, you can use  `@Inject`, `@Autowried` or `@Param` to get container instance in yourself class.
  */
 export const IocContainerToken = new InjectToken<IIocContainer>('DI_IocContainer');
 
