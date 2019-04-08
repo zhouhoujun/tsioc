@@ -29,28 +29,10 @@ export interface ITaskDecorator<T extends ActivityMetadata> extends ITypeDecorat
      * Activity decorator, use to define class as Activity element.
      *
      * @Task
-     * @param {ProvideToken<any>} provide Activity name or provide.
-     */
-    (provide: ProvideToken<any>): ClassDecorator
-    /**
-     * Activity decorator, use to define class as Activity element.
-     *
-     * @Task
-     * @param {Token<any>} provide Activity name or provide.
      * @param {string} selector metadata selector.
-     * @param {string} [alias] Activity alias name.
      */
-    (provide: Token<any>, selector: string, alias?: string): ClassDecorator;
-    /**
-     * Activity decorator, use to define class as Activity element.
-     *
-     * @Task
-     * @param {string} provide Activity name or provide.
-     * @param {Token<IActivityContext>} ctxType Activity context token.
-     * @param {string} selector metadata selector.
-     * @param {string} [alias]  Activity alias name
-     */
-    (provide: Token<any>, ctxType: Token<ActivityContext>, selector?: string, alias?: string): ClassDecorator;
+    (selector: string): ClassDecorator;
+
     /**
      * task decorator, use to define class as task element.
      *
@@ -82,39 +64,12 @@ export function createTaskDecorator<T extends ActivityMetadata>(
                 adapter(args);
             }
             args.next<ActivityMetadata>({
-                match: (arg, args) => args.length > 1 ? isToken(arg) : isProvideToken(arg),
-                setMetadata: (metadata, arg) => {
-                    if (isString(arg)) {
-                        metadata.name = arg;
-                    }
-                    metadata.provide = arg;
-                }
-            });
-
-            args.next<ActivityMetadata>({
-                match: (arg) => isToken(arg) || isString(arg),
-                setMetadata: (metadata, arg) => {
-                    if (isString(arg)) {
-                        metadata.selector = arg;
-                    } else {
-                        metadata.contextType = arg;
-                    }
-                }
-            });
-
-            args.next<ActivityMetadata>({
                 match: (arg) => isString(arg),
                 setMetadata: (metadata, arg) => {
                     metadata.selector = arg;
                 }
             });
 
-            args.next<ActivityMetadata>({
-                match: (arg) => isString(arg),
-                setMetadata: (metadata, arg) => {
-                    metadata.alias = arg;
-                }
-            });
         },
         metadata => {
             if (metadataExtends) {
@@ -125,9 +80,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
                 metadata.name = lang.getClassName(metadata.type);
             }
 
-            if (isUndefined(metadata.provide)) {
-                metadata.provide = metadata.name;
-            }
+            metadata.provide = metadata.selector;
 
             metadata.decorType = taskType;
 

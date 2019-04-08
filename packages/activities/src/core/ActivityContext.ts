@@ -45,7 +45,7 @@ export interface ActivityOption extends BootOption {
      * @type {string}
      * @memberof ActivityConfigure
      */
-    selector?: string;
+    selector: string;
 }
 
 
@@ -58,6 +58,7 @@ export type Expression<T> = T | Promise<T> | ((ctx: ActivityContext) => T | Prom
  * context type.
  */
 export type CtxType<T> = T | ((context?: ActivityContext, activity?: Activity<any>) => T);
+
 
 
 /**
@@ -83,6 +84,7 @@ export class ActivityContext extends BootContext {
     * @memberof ActivityOption
     */
     name: string;
+
     /**
      * input.
      *

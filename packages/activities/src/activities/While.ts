@@ -10,9 +10,7 @@ import { ControlActivity } from './ControlActivity';
  * @class WhileActivity
  * @extends {ControlActivity}
  */
-@Task({
-    selector: 'while'
-})
+@Task('while')
 export class WhileActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {

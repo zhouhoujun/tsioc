@@ -10,12 +10,11 @@ import { ControlActivity } from './ControlActivity';
  * @class DoWhileActivity
  * @extends {ControlActivity}
  */
-@Task({
-    selector: 'dowhile'
-})
+@Task('dowhile')
 export class DoWhileActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
+
         await super.execute(ctx);
         let condition = await this.resolveSelector(ctx);
         while (condition) {

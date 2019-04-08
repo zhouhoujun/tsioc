@@ -9,9 +9,7 @@ import { ControlActivity } from './ControlActivity';
  * @class DependenceActivity
  * @extends {ControlActivity}
  */
-@Task({
-    selector: 'dependence'
-})
+@Task('dependence')
 export class DependenceActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     /**

@@ -11,9 +11,7 @@ import { ControlActivity } from './ControlActivity';
  * @class DelayActivity
  * @extends {ControlActivity}
  */
-@Task({
-    selector: 'delay'
-})
+@Task('delay')
 export class DelayActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {

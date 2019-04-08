@@ -15,9 +15,7 @@ export abstract class CaseActivity<T extends ActivityContext> extends Activity<T
  * @class SwitchActivity
  * @extends {ControlActivity}
  */
-@Task({
-    selector: 'switch'
-})
+@Task('switch')
 export class SwitchActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     defaults: ActivityType<T>[];

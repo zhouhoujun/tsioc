@@ -10,9 +10,7 @@ import { ControlActivity } from './ControlActivity';
  * @class ThrowActivity
  * @extends {ControlActivity}
  */
-@Task({
-    selector: 'throw'
-})
+@Task('throw')
 export class ThrowActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {

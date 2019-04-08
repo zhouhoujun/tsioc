@@ -4,6 +4,7 @@ import { RunAspect } from './aop';
 import * as core from './core';
 import * as activites from './activities';
 import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes } from '@tsdi/ioc';
+import { RegSelectorAction } from './core/RegSelectorAction';
 
 /**
  * register task decorators.
@@ -19,7 +20,7 @@ export class CoreModule {
     setup() {
         let container = this.container;
         let decReg = container.resolve(DesignDecoratorRegisterer);
-        decReg.register(Task, DecoratorScopes.Class, BindProviderAction);
+        decReg.register(Task, DecoratorScopes.Class, BindProviderAction, RegSelectorAction);
 
         container.use(core)
             .use(RunAspect)

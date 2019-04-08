@@ -3,8 +3,6 @@ import { PromiseUtil } from '@tsdi/ioc';
 import { Activity, ActivityType } from './Activity';
 import { ActivityContext } from './ActivityContext';
 
-
-
 /**
  * chain activity.
  *
@@ -17,6 +15,7 @@ export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
 
     protected activities: ActivityType<T>[];
     private funcs: PromiseUtil.ActionHandle<T>[];
+
 
     onInit() {
         this.activities = [];

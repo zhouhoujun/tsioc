@@ -10,9 +10,7 @@ import { ControlActivity } from './ControlActivity';
  * @class TryCatchActivity
  * @extends {ControlActivity}
  */
-@Task({
-    selector: 'try'
-})
+@Task('try')
 export class TryCatchActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     catchs: ActivityType<T>[];

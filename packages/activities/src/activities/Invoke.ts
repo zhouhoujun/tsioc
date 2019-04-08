@@ -16,9 +16,7 @@ export interface InvokeTarget {
  * @class InvokeActivity
  * @extends {ControlActivity}
  */
-@Task({
-    selector: 'invoke'
-})
+@Task('invoke')
 export class InvokeActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {

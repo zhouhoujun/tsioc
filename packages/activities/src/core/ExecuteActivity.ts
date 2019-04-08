@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { Activity } from './Activity';
+import { Activity, ActivityType } from './Activity';
 import { ActivityContext } from './ActivityContext';
 
 
@@ -16,12 +16,8 @@ import { ActivityContext } from './ActivityContext';
 })
 export class ExecuteActivity<T extends ActivityContext> extends Activity<T>  {
 
-    constructor() {
-        super();
-    }
-
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        let exec = await this.resolveSelector<Activity<T>>(ctx);
+        let exec = await this.resolveSelector<ActivityType<T>>(ctx);
         await this.execActions(ctx, [exec], next);
     }
 }

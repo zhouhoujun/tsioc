@@ -14,9 +14,7 @@ export interface ConfirmConfigure {
  * @class ConfirmActivity
  * @extends {ControlActivity}
  */
-@Task({
-    selector: 'confirm'
-})
+@Task('confirm')
 export class ConfirmActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {

@@ -9,9 +9,7 @@ import { ControlActivity } from './ControlActivity';
  * @class IfActivity
  * @extends {ControlActivity}
  */
-@Task({
-    selector: 'if'
-})
+@Task('if')
 export class IfActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {

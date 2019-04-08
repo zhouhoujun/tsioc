@@ -9,9 +9,7 @@ import { ControlActivity } from './ControlActivity';
  * @class IntervalActivity
  * @extends {ControlActivity}
  */
-@Task({
-    selector: 'interval'
-})
+@Task('interval')
 export class IntervalActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
