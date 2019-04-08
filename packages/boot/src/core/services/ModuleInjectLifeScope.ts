@@ -26,7 +26,7 @@ export class ModuleInjectLifeScope extends LifeScope<AnnoationActionContext> {
 
     register<T>(type: Type<T>, decorator: string): ModuleResovler<T> {
         let ctx = AnnoationActionContext.parse({
-            targetType: type,
+            module: type,
             decorator: decorator
         }, this.container);
         this.execute(ctx);

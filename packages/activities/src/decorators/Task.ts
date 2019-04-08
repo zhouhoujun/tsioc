@@ -92,9 +92,9 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             });
 
             args.next<ActivityMetadata>({
-                match: (arg) => isToken(arg) || isString(arg) || isArray(arg),
+                match: (arg) => isToken(arg) || isString(arg),
                 setMetadata: (metadata, arg) => {
-                    if (isString(arg) || isArray(arg)) {
+                    if (isString(arg)) {
                         metadata.selector = arg;
                     } else {
                         metadata.contextType = arg;
@@ -103,7 +103,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             });
 
             args.next<ActivityMetadata>({
-                match: (arg) => isString(arg) || isArray(arg),
+                match: (arg) => isString(arg),
                 setMetadata: (metadata, arg) => {
                     metadata.selector = arg;
                 }

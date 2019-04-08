@@ -1,8 +1,9 @@
 import { Task } from '../decorators/Task';
-import { Handle } from '@tsdi/boot';
-import { ActivityContext } from './ActivityContext';
+import { Handle, RunnerService } from '@tsdi/boot';
+import { ActivityContext, Expression, ActivityOption } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
-import { isClass, Type, hasClassMetadata, getOwnTypeMetadata, PromiseUtil } from '@tsdi/ioc';
+import { isClass, Type, hasClassMetadata, getOwnTypeMetadata, PromiseUtil, isFunction, isPromise } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
 
 /**
  *  activity type.
@@ -31,6 +32,42 @@ export abstract class Activity<T extends ActivityContext> extends Handle<T> {
 
     protected async execActivity(ctx: T, ...acitivites: ActivityType<T>[]): Promise<void> {
         await this.execActions(ctx, acitivites);
+    }
+
+
+    protected createContext(target: Type<any> | ActivityOption, raiseContainer?: IContainer | (() => IContainer)): ActivityContext {
+        return ActivityContext.parse(target, raiseContainer || this.container);
+    }
+
+    protected getSelector(ctx: T): Expression<any> {
+        let actAnn = ctx.annoation as ActivityOption;
+        return ctx.annoation[actAnn.selector];
+    }
+
+    /**
+     * resolve expression.
+     *
+     * @protected
+     * @template TVal
+     * @param {ExpressionType<T>} express
+     * @param {T} ctx
+     * @returns {Promise<TVal>}
+     * @memberof Activity
+     */
+    protected async resolveExpression<TVal>(express: Expression<TVal>, ctx: T): Promise<TVal> {
+        if (isClass(express)) {
+            let bctx = await this.container.get(RunnerService).run(this.createContext(express));
+            return bctx.result;
+        } else if (isFunction(express)) {
+            return await express(ctx);
+        } else if (isPromise(express)) {
+            return await express;
+        }
+        return express;
+    }
+
+    protected resolveSelector<TVal>(ctx: T): Promise<TVal> {
+        return this.resolveExpression(this.getSelector(ctx), ctx);
     }
 }
 

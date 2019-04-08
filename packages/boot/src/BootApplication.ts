@@ -57,7 +57,7 @@ export class BootApplication {
         }
         this.container = container;
         container.bindProvider(BootApplication, this);
-        container.bindProvider(new InjectReference(BootApplication, this.context.type), this);
+        container.bindProvider(new InjectReference(BootApplication, this.context.module), this);
         container.use(annotations, handles, runnable, services);
 
         let designReg = container.get(DesignDecoratorRegisterer);

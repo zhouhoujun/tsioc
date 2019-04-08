@@ -43,5 +43,5 @@ export class UnitTest {
  * @returns {Promise<any>}
  */
 export async function runTest(src: string | string[], config?: string | UnitTestConfigure, ...deps: LoadType[]): Promise<any> {
-   await BootApplication.run(UnitTestContext.parse({ targetType: UnitTest, deps: deps, configures: [config, { src: src }] }))
+   await BootApplication.run(UnitTestContext.parse({ module: UnitTest, deps: deps, configures: [config, { src: src }] }))
 }

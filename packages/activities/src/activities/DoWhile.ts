@@ -16,12 +16,11 @@ import { ControlActivity } from './ControlActivity';
 export class DoWhileActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        let config = ctx.config as DoWhileConfigure;
         await super.execute(ctx);
-        let condition = await this.resolveExpression(config.while);
+        let condition = await this.resolveSelector(ctx);
         while (condition) {
             await super.execute(ctx);
-            condition = await this.resolveExpression(config.while);
+            condition = await this.resolveSelector(ctx);
         }
         await next();
     }

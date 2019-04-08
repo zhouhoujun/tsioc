@@ -7,7 +7,7 @@ export class RegisterAnnoationHandle extends AnnoationHandle {
     async execute(ctx: AnnoationContext, next: () => Promise<void>): Promise<void> {
         if (!ctx.decorator) {
             let decorators = this.container.get(MetadataService)
-                .getClassDecorators(ctx.type);
+                .getClassDecorators(ctx.module);
 
             let mdRgr = this.container.get(ModuleDecoratorRegisterer);
             ctx.decorator = decorators.find(c => mdRgr.has(c));
@@ -24,8 +24,8 @@ export class RegisterAnnoationHandle extends AnnoationHandle {
             this.container.get(ModuleInjectLifeScope).execute(ctx);
             await next();
         } else {
-            console.log(ctx.type);
-            throw new Error(`boot type [${lang.getClassName(ctx.type)}] is not vaild annoation class.`);
+            console.log(ctx.module);
+            throw new Error(`boot type [${lang.getClassName(ctx.module)}] is not vaild annoation class.`);
         }
     }
 }

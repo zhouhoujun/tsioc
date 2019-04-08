@@ -8,16 +8,8 @@ import { ClassMetadata, Token } from '@tsdi/ioc';
  * @interface TaskMetadata
  * @extends {ClassMetadata}
  */
-export interface ActivityMetadata extends ClassMetadata {
+export interface ActivityMetadata extends ClassMetadata, ActivityOption {
     decorType?: string;
-
-    /**
-    * action name.
-    *
-    * @type {string}
-    * @memberof ActivityOption
-    */
-    name?: string;
 
     /**
      * context type.
@@ -27,12 +19,5 @@ export interface ActivityMetadata extends ClassMetadata {
      */
     contextType?: Token<ActivityContext>;
 
-    /**
-     * selector.
-     *
-     * @type {string}
-     * @memberof ActivityConfigure
-     */
-    selector?: string| string [];
 }
 

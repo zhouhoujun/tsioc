@@ -1,4 +1,3 @@
-
 import { BootContext } from '../BootContext';
 import { CompositeHandle } from '../core';
 import { Singleton, Autorun } from '@tsdi/ioc';

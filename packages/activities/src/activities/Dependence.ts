@@ -1,4 +1,4 @@
-import { ActivityContext } from '../core';
+import { ActivityContext, Activity } from '../core';
 import { Task } from '../decorators/Task';
 import { ControlActivity } from './ControlActivity';
 
@@ -21,8 +21,8 @@ export class DependenceActivity<T extends ActivityContext> extends ControlActivi
      * @memberof DependenceActivity
      */
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        let config = ctx.config as DependenceConfigure;
-        await this.execActions(ctx, config.dependence);
+        let dependence = await this.resolveSelector<Activity<T>>(ctx);
+        await this.execActions(ctx, [dependence]);
         await super.execute(ctx, next);
     }
 }

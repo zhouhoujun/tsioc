@@ -1,8 +1,13 @@
 import { Task } from '../decorators/Task';
-import { InvokeConfigure, ActivityContext } from '../core';
-import { ParamProviders } from '@tsdi/ioc';
+import { ActivityContext } from '../core';
+import { Token } from '@tsdi/ioc';
 import { ControlActivity } from './ControlActivity';
 
+export interface InvokeTarget {
+    target: Token<any>,
+    method: string,
+    args: any[]
+}
 
 /**
  * while control activity.
@@ -17,16 +22,9 @@ import { ControlActivity } from './ControlActivity';
 export class InvokeActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        let config = ctx.config as InvokeConfigure;
-        if (config.target && config.invoke) {
-            let target = await this.resolveExpression(config.target);
-            let invoke = await this.resolveExpression(config.invoke);
-            let args: ParamProviders[];
-            if (config.args) {
-                args = await this.resolveExpression(config.args);
-            }
-            args = args || [];
-            return this.container.invoke(target, invoke, ...args);
+        let invoke = await this.resolveSelector<InvokeTarget>(ctx);
+        if (invoke) {
+            return this.container.invoke(invoke.target, invoke.method, ...(invoke.args || []));
         }
         await next();
     }

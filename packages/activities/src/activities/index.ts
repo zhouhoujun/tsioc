@@ -6,8 +6,6 @@ export * from './DoWhile';
 export * from './If';
 export * from './Dependence';
 export * from './Invoke';
-export * from './Parallel';
-export * from './Sequence';
 export * from './Switch';
 export * from './Throw';
 export * from './TryCatch';

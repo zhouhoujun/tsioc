@@ -6,7 +6,7 @@ import { ModuleConfigure } from '../modules';
 export class CheckAnnoationAction extends AnnoationAction {
     execute(ctx: AnnoationActionContext, next: () => void): void {
         if (!ctx.annoation) {
-            ctx.annoation = lang.first(getOwnTypeMetadata<ModuleConfigure>(ctx.decorator, ctx.type));
+            ctx.annoation = lang.first(getOwnTypeMetadata<ModuleConfigure>(ctx.decorator, ctx.module));
         }
         if (ctx.annoation) {
             next();

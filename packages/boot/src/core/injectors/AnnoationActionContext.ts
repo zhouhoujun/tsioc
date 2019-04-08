@@ -16,7 +16,7 @@ export interface AnnoationActionOption extends ActionContextOption {
      * @type {Type<any>}
      * @memberof AnnoationActionOption
      */
-    targetType: Type<any>;
+    module?: Type<any>;
     /**
      * module decorator.
      *
@@ -43,7 +43,7 @@ export function createAnnoationContext<T extends AnnoationActionContext>(CtxType
         type = target;
     } else {
         options = target;
-        type = target.targetType;
+        type = target.module;
     }
     let ctx = new CtxType(type, raiseContainer);
     options && ctx.setOptions(options);
@@ -63,7 +63,7 @@ export class AnnoationActionContext extends IocActionContext {
 
     constructor(type: Type<any>, raiseContainer?: IContainer | (() => IContainer)) {
         super(raiseContainer);
-        this.type = type;
+        this.module = type;
     }
 
     static parse(target: Type<any> | AnnoationActionOption, raiseContainer?: IContainer | (() => IContainer)): AnnoationActionContext {
@@ -93,7 +93,7 @@ export class AnnoationActionContext extends IocActionContext {
     }
 
 
-    type: Type<any>;
+    module: Type<any>;
 
     decorator?: string;
 

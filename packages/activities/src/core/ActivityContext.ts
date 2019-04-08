@@ -1,9 +1,10 @@
 import {
-    Injectable, isNullOrUndefined, isFunction, ObjectMap, isClass, InjectToken, Token
+    Injectable, isNullOrUndefined, isFunction, ObjectMap, isClass, InjectToken, Type
 } from '@tsdi/ioc';
 import { ITranslator } from './Translator';
-import { BootContext, BootOption } from '@tsdi/boot';
+import { BootContext, BootOption, createAnnoationContext } from '@tsdi/boot';
 import { Activity } from './Activity';
+import { IContainer } from '@tsdi/core';
 
 
 export const WorkflowId = new InjectToken<string>('Workflow_ID');
@@ -15,7 +16,7 @@ export interface ActivityOption extends BootOption {
      * @type {string}
      * @memberof ActivityOption
      */
-    id: string;
+    id?: string;
     /**
     * action name.
     *
@@ -29,7 +30,7 @@ export interface ActivityOption extends BootOption {
      * @type {*}
      * @memberof IRunContext
      */
-    input: any;
+    input?: any;
     /**
      * task title.
      *
@@ -49,30 +50,9 @@ export interface ActivityOption extends BootOption {
 
 
 /**
- * async result.
- */
-export type AsyncResult<T> = (ctx?: ActivityContext, activity?: Activity<any>) => Promise<T>;
-
-/**
- * activity result.
- */
-export type ExecuteResult<T> = Promise<T> | AsyncResult<T>;
-
-
-/**
  * expression.
  */
-export type Expression<T> = T | ExecuteResult<T>;
-
-/**
- * ActivityResult type
- */
-export type ActivityResultType<T> = Token<Activity<any>> | Token<any>;
-
-/**
- * expression type.
- */
-export type ExpressionType<T> = Expression<T> | ActivityResultType<T>;
+export type Expression<T> = T | Promise<T> | ((ctx: ActivityContext) => T | Promise<T>) | Type<any>;
 
 /**
  * context type.
@@ -123,7 +103,7 @@ export class ActivityContext extends BootContext {
 
     set input(data: any) {
         if (this._input !== data) {
-            this.data = this.translate(data);
+            this.result = this.translate(data);
         }
         this._input = data;
     }
@@ -135,7 +115,7 @@ export class ActivityContext extends BootContext {
      * @type {*}
      * @memberof IActivityContext
      */
-    data: any;
+    result: any;
 
     protected translate(data: any): any {
         if (isNullOrUndefined(data)) {
@@ -167,26 +147,7 @@ export class ActivityContext extends BootContext {
         }
     }
 
-    // /**
-    //  * exec activity result.
-    //  *
-    //  * @template T
-    //  * @param {Activity} target
-    //  * @param {Expression<T>} result
-    //  * @returns {Promise<T>}
-    //  * @memberof IContext
-    //  */
-    // exec<T>(target: Activity<any>, expression: Expression<T>): Promise<T> {
-    //     if (isFunction(expression)) {
-    //         return Promise.resolve(expression(this, target));
-    //     } else if (isPromise(expression)) {
-    //         return expression;
-    //     } else if (isAcitvity(expression)) {
-    //         return expression.run(this).then(ctx => ctx.result);
-    //     } else if (isWorkflowInstance(expression)) {
-    //         return expression.start(this).then(ctx => ctx.result);
-    //     } else {
-    //         return Promise.resolve(expression as T);
-    //     }
-    // }
+    static parse(target: Type<any> | ActivityOption, raiseContainer?: IContainer | (() => IContainer)): ActivityContext {
+        return createAnnoationContext(ActivityContext, target, raiseContainer);
+    }
 }

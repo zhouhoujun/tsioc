@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { TryCatchConfigure, ActivityContext, ActivityType } from '../core';
+import { ActivityContext, ActivityType } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 
@@ -19,7 +19,6 @@ export class TryCatchActivity<T extends ActivityContext> extends ControlActivity
     finallies: ActivityType<T>[];
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        let config = ctx.config as TryCatchConfigure;
         try {
             await super.execute(ctx, next);
         } catch (err) {

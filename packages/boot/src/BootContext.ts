@@ -138,7 +138,6 @@ export class BootContext extends AnnoationContext {
      */
     annoation?: RunnableConfigure;
 
-
     /**
      * custom configures
      *
@@ -177,7 +176,7 @@ export class BootContext extends AnnoationContext {
      * @type {*}
      * @memberof RunnableOptions
      */
-    data?: any;
+    result?: any;
 
     /**
      * bootstrap runnable service.

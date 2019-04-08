@@ -15,8 +15,7 @@ import { ControlActivity } from './ControlActivity';
 export class IntervalActivity<T extends ActivityContext> extends ControlActivity<T> {
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        let config = this.context.config as IntervalConfigure;
-        let interval = await this.resolveExpression(config.interval);
+        let interval = await this.resolveSelector<number>(ctx);
         setInterval(() => {
             super.execute(ctx, next);
         }, interval);
