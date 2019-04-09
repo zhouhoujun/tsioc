@@ -5,7 +5,7 @@ import { ControlActivity } from './ControlActivity';
 
 
 /**
- * while control activity.
+ * delay control activity.
  *
  * @export
  * @class DelayActivity

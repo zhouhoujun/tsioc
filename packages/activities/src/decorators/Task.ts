@@ -1,10 +1,8 @@
 import {
     isString, createClassDecorator, MetadataExtends, MetadataAdapter,
-    isClass, ITypeDecorator, Token, isToken, isUndefined, lang, ProvideToken,
-    isProvideToken, ClassType, isArray
+    isClass, ITypeDecorator, lang, ClassType
 } from '@tsdi/ioc';
 import { ActivityMetadata } from '../metadatas/ActivityMetadata';
-import { ActivityContext } from '../core/ActivityContext';
 
 
 /**

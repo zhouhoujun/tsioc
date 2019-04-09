@@ -1,4 +1,4 @@
-import { ActivityOption, ActivityContext } from '../core';
+import { ActivityContext, ControlType, ActivityOption } from '../core';
 import { ClassMetadata, Token } from '@tsdi/ioc';
 
 /**
@@ -8,7 +8,7 @@ import { ClassMetadata, Token } from '@tsdi/ioc';
  * @interface TaskMetadata
  * @extends {ClassMetadata}
  */
-export interface ActivityMetadata extends ClassMetadata, ActivityOption {
+export interface IActivityMetadata extends ClassMetadata, ActivityOption<ActivityContext> {
     decorType?: string;
 
     /**
@@ -18,6 +18,7 @@ export interface ActivityMetadata extends ClassMetadata, ActivityOption {
      * @memberof ActivityMetadata
      */
     contextType?: Token<ActivityContext>;
-
 }
+
+export type ActivityMetadata = IActivityMetadata & ControlType<ActivityContext>;
 

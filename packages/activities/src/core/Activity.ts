@@ -1,15 +1,17 @@
 import { Task } from '../decorators/Task';
-import { Handle, RunnerService } from '@tsdi/boot';
-import { ActivityContext, Expression, ActivityOption } from './ActivityContext';
+import { IContainer, ContainerToken } from '@tsdi/core';
+import { RunnerService } from '@tsdi/boot';
+import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
-import { isClass, Type, hasClassMetadata, getOwnTypeMetadata, PromiseUtil, isFunction, isPromise } from '@tsdi/ioc';
-import { IContainer } from '@tsdi/core';
+import {
+    isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
+    isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, InjectToken
+} from '@tsdi/ioc';
+import { ActivityType, ActivityOption, Expression, ControlType } from './ActivityOption';
+import { SelectorManager } from './SelectorManager';
 
-/**
- *  activity type.
- */
-export type ActivityType<T extends ActivityContext> = Type<Activity<T>> | Activity<T> | PromiseUtil.ActionHandle<T>;
 
+export const TemplateToken = new InjectToken('activity_template');
 
 /**
  * activity base.
@@ -20,7 +22,7 @@ export type ActivityType<T extends ActivityContext> = Type<Activity<T>> | Activi
  * @implements {IActivity}
  * @implements {OnActivityInit}
  */
-export abstract class Activity<T extends ActivityContext> extends Handle<T> {
+export abstract class Activity<T extends ActivityContext> {
 
     /**
      * activity display name.
@@ -30,18 +32,63 @@ export abstract class Activity<T extends ActivityContext> extends Handle<T> {
      */
     name: string;
 
-    protected async execActivity(ctx: T, ...acitivites: ActivityType<T>[]): Promise<void> {
-        await this.execActions(ctx, acitivites);
+    @Inject(ContainerToken)
+    container: IContainer;
+
+
+    constructor() {
     }
 
 
-    protected createContext(target: Type<any> | ActivityOption, raiseContainer?: IContainer | (() => IContainer)): ActivityContext {
+    abstract execute(ctx: T, next: () => Promise<void>): Promise<void>;
+
+
+    protected execActivity(ctx: T, handles: ActivityType<T>[], next?: () => Promise<void>): Promise<void> {
+        return PromiseUtil.runInChain(handles.map(ac => this.toAction(ac)), ctx, next);
+    }
+
+    protected execActions(ctx: T, handles: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
+        return PromiseUtil.runInChain(handles, ctx, next);
+    }
+
+    protected toAction(ac: ActivityType<T>): PromiseUtil.ActionHandle<T> {
+        if (isClass(ac)) {
+            let action = this.container.get(ac);
+            return action instanceof Activity ?
+                (ctx: T, next?: () => Promise<void>) => action.execute(ctx, next)
+                : (ctx: T, next?: () => Promise<void>) => next && next();
+
+        } else if (ac instanceof Activity) {
+            return (ctx: T, next?: () => Promise<void>) => ac.execute(ctx, next);
+        } else if (isFunction(ac)) {
+            return ac;
+        } else if (isMetadataObject(ac)) {
+            let action = this.resolveControl(ac);
+            return action instanceof Activity ?
+                (ctx: T, next?: () => Promise<void>) => action.execute(ctx, next)
+                : (ctx: T, next?: () => Promise<void>) => next && next();
+
+        } else {
+            return (ctx: T, next?: () => Promise<void>) => next && next();
+        }
+    }
+
+    protected resolveControl(option: ControlType<T>): Activity<T> {
+        let mgr = this.container.get(SelectorManager);
+        let key = Object.keys(option).find(key => mgr.has(key));
+        let act = mgr.get(key)();
+        return act;
+    }
+
+
+    protected createContext(target: Type<any> | ActivityOption<T>, raiseContainer?: IContainer | (() => IContainer)): ActivityContext {
         return ActivityContext.parse(target, raiseContainer || this.container);
     }
 
     protected getSelector(ctx: T): Expression<any> {
-        let actAnn = ctx.annoation as ActivityOption;
-        return ctx.annoation[actAnn.selector];
+        let actAnn = ctx.annoation as ActivityOption<T>;
+
+        return actAnn[actAnn.selector];
     }
 
     /**
@@ -69,6 +116,7 @@ export abstract class Activity<T extends ActivityContext> extends Handle<T> {
     protected resolveSelector<TVal>(ctx: T): Promise<TVal> {
         return this.resolveExpression(this.getSelector(ctx), ctx);
     }
+
 }
 
 /**

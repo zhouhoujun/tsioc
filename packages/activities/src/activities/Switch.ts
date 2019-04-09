@@ -1,10 +1,13 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, Activity, ActivityType } from '../core';
+import { ActivityContext, ActivityType, Activity } from '../core';
 import { ControlActivity } from './ControlActivity';
 
-@Task
+@Task('case')
 export abstract class CaseActivity<T extends ActivityContext> extends Activity<T> {
     case: any;
+    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
+
+    }
 
 }
 

@@ -1,6 +1,5 @@
 import { Task } from '../decorators/Task';
-import { Activity, ActivityType } from './Activity';
-import { ActivityContext } from './ActivityContext';
+import { ActivityContext, Activity, ActivityType } from '../core';
 
 
 /**
@@ -11,9 +10,7 @@ import { ActivityContext } from './ActivityContext';
  * @implements {GActivity<T>}
  * @template T
  */
-@Task({
-    selector: 'execute'
-})
+@Task('execute')
 export class ExecuteActivity<T extends ActivityContext> extends Activity<T>  {
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {

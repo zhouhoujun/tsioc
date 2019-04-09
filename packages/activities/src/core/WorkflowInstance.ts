@@ -4,7 +4,8 @@ import { Service } from '@tsdi/boot';
 import { Joinpoint } from '@tsdi/aop';
 import { Token, Injectable } from '@tsdi/ioc';
 import { Activity } from './Activity';
-import { ActivityContext, ActivityOption } from './ActivityContext';
+import { ActivityContext } from './ActivityContext';
+import { ActivityOption } from './ActivityOption';
 
 /**
  *run state.
@@ -70,7 +71,7 @@ export class WorkflowInstance<T extends ActivityContext> extends Service<Activit
 
 
     async onInit(): Promise<void> {
-        let mgr = this.context.getConfigureManager<ActivityOption>();
+        let mgr = this.context.getConfigureManager<ActivityOption<T>>();
         await mgr.getConfig();
     }
 

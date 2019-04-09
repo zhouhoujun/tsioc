@@ -1,13 +1,7 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, ActivityOption } from './ActivityContext';
-import { CompoiseActivity } from './CompoiseActivity';
-import { ActivityType } from './Activity';
+import { CompoiseActivity, ActivityContext, ActivityType } from '../core';
 
 
-
-export interface ParallelOption<T extends ActivityContext> extends ActivityOption {
-    parallel: ActivityType<T>[];
-}
 
 /**
  * parallel activity.
@@ -16,9 +10,7 @@ export interface ParallelOption<T extends ActivityContext> extends ActivityOptio
  * @class ParallelActivity
  * @extends {ControlActivity}
  */
-@Task({
-    selector: 'parallel'
-})
+@Task('parallel')
 export class ParallelActivity<T extends ActivityContext> extends CompoiseActivity<T> {
 
     /**

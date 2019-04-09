@@ -1,7 +1,8 @@
 import { Task } from '../decorators/Task';
 import { PromiseUtil } from '@tsdi/ioc';
-import { Activity, ActivityType } from './Activity';
+import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
+import { ActivityType } from './ActivityOption';
 
 /**
  * chain activity.
@@ -14,7 +15,7 @@ import { ActivityContext } from './ActivityContext';
 export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
 
     protected activities: ActivityType<T>[];
-    private funcs: PromiseUtil.ActionHandle<T>[];
+    private actions: PromiseUtil.ActionHandle<T>[];
 
 
     onInit() {
@@ -67,13 +68,13 @@ export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
     }
 
     async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
-        if (!this.funcs) {
-            this.funcs = this.activities.map(ac => this.toFunc(ac))
+        if (!this.actions) {
+            this.actions = this.activities.map(ac => this.toAction(ac))
         }
-        await this.execActions(ctx, this.funcs, next);
+        await this.execActions(ctx, this.actions, next);
     }
 
     protected resetFuncs() {
-        this.funcs = null;
+        this.actions = null;
     }
 }

@@ -1,5 +1,6 @@
 import { Pack } from '@tsdi/pack';
 import { Asset, AssetActivity, TsCompile, TransformContext } from '@tsdi/build';
+import { Task, ExecuteActivity } from './src';
 const rename = require('gulp-rename');
 const rollup = require('gulp-rollup');
 const resolve = require('rollup-plugin-node-resolve');

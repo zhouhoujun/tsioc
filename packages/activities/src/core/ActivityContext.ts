@@ -1,63 +1,10 @@
 import {
-    Injectable, isNullOrUndefined, isFunction, ObjectMap, isClass, InjectToken, Type
+    Injectable, isNullOrUndefined, isFunction, ObjectMap, isClass, Type
 } from '@tsdi/ioc';
 import { ITranslator } from './Translator';
-import { BootContext, BootOption, createAnnoationContext } from '@tsdi/boot';
-import { Activity } from './Activity';
+import { BootContext, createAnnoationContext } from '@tsdi/boot';
 import { IContainer } from '@tsdi/core';
-
-
-export const WorkflowId = new InjectToken<string>('Workflow_ID');
-
-export interface ActivityOption extends BootOption {
-    /**
-     * workflow id.
-     *
-     * @type {string}
-     * @memberof ActivityOption
-     */
-    id?: string;
-    /**
-    * action name.
-    *
-    * @type {string}
-    * @memberof ActivityOption
-    */
-    name?: string;
-    /**
-     * input data
-     *
-     * @type {*}
-     * @memberof IRunContext
-     */
-    input?: any;
-    /**
-     * task title.
-     *
-     * @type {string}
-     * @memberof IActivityConfigure
-     */
-    title?: string;
-
-    /**
-     * selector.
-     *
-     * @type {string}
-     * @memberof ActivityConfigure
-     */
-    selector: string;
-}
-
-
-/**
- * expression.
- */
-export type Expression<T> = T | Promise<T> | ((ctx: ActivityContext) => T | Promise<T>) | Type<any>;
-
-/**
- * context type.
- */
-export type CtxType<T> = T | ((context?: ActivityContext, activity?: Activity<any>) => T);
+import { CtxType, ActivityOption } from './ActivityOption';
 
 
 
@@ -110,6 +57,13 @@ export class ActivityContext extends BootContext {
         this._input = data;
     }
 
+    /**
+     * assign value.
+     *
+     * @type {*}
+     * @memberof ActivityContext
+     */
+    assign: any;
 
     /**
      * execute data.
@@ -118,6 +72,14 @@ export class ActivityContext extends BootContext {
      * @memberof IActivityContext
      */
     result: any;
+
+    /**
+     * condition.
+     *
+     * @type {boolean}
+     * @memberof ActivityContext
+     */
+    condition: boolean;
 
     protected translate(data: any): any {
         if (isNullOrUndefined(data)) {
@@ -149,7 +111,7 @@ export class ActivityContext extends BootContext {
         }
     }
 
-    static parse(target: Type<any> | ActivityOption, raiseContainer?: IContainer | (() => IContainer)): ActivityContext {
+    static parse(target: Type<any> | ActivityOption<ActivityContext>, raiseContainer?: IContainer | (() => IContainer)): ActivityContext {
         return createAnnoationContext(ActivityContext, target, raiseContainer);
     }
 }

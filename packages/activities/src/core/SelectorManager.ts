@@ -20,7 +20,7 @@ export class SelectorManager {
         return this.map.get(selector);
     }
 
-    forEach(func: (val: InstanceFactory<any>, key: string) => void) {
+    forEach(func: (fac: InstanceFactory<any>, key: string) => void) {
         this.map.forEach(func);
     }
 }
