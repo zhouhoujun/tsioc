@@ -183,7 +183,7 @@ export class BootContext extends AnnoationContext {
      * @type {*}
      * @memberof RunnableOptions
      */
-    result?: any;
+    data?: any;
 
     /**
      * bootstrap runnable service.

@@ -85,8 +85,8 @@ export class WorkflowInstance<T extends ActivityContext> extends Service<Activit
         }
         this.state = RunState.complete;
         this.stateChanged.next(this.state);
-        this._resultValue = this.context.result;
-        this._result.next(this.context.result);
+        this._resultValue = this.context.data;
+        this._result.next(this.context.data);
         return this.context;
 
     }

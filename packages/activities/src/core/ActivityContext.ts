@@ -52,7 +52,7 @@ export class ActivityContext extends BootContext {
 
     set input(data: any) {
         if (this._input !== data) {
-            this.result = this.translate(data);
+            this.data = this.translate(data);
         }
         this._input = data;
     }
@@ -64,14 +64,6 @@ export class ActivityContext extends BootContext {
      * @memberof ActivityContext
      */
     assign: any;
-
-    /**
-     * execute data.
-     *
-     * @type {*}
-     * @memberof IActivityContext
-     */
-    result: any;
 
     /**
      * condition.
