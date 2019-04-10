@@ -20,7 +20,7 @@ export class DependenceActivity<T extends ActivityContext> extends ControlActivi
      */
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         let dependence = await this.resolveSelector<Activity<T>>(ctx);
-        await this.execActions(ctx, [dependence]);
+        await this.execActivity(ctx, [dependence]);
         await super.execute(ctx, next);
     }
 }

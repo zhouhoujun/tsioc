@@ -15,6 +15,6 @@ export class ExecuteActivity<T extends ActivityContext> extends Activity<T>  {
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         let exec = await this.resolveSelector<ActivityType<T>>(ctx);
-        await this.execActions(ctx, [exec], next);
+        await this.execActivity(ctx, [exec], next);
     }
 }

@@ -23,7 +23,7 @@ export class ParallelActivity<T extends ActivityContext> extends CompoiseActivit
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         let parallel = await this.resolveSelector<ActivityType<T>[]>(ctx);
         if (parallel && parallel.length) {
-            await Promise.all(parallel.map(act => this.execActivity(ctx, act)));
+            await Promise.all(parallel.map(act => this.execActivity(ctx, [act])));
         }
         await next();
     }
