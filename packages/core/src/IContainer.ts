@@ -1,7 +1,4 @@
-import {
-    Type, Token, Modules, LoadType,
-    InjectToken, IIocContainer
-} from '@tsdi/ioc';
+import { Type, Token, Modules, LoadType, InjectToken, IIocContainer } from '@tsdi/ioc';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IServiceResolver } from './IServiceResolver';
 import { IServicesResolver } from './IServicesResolver';
@@ -9,7 +6,7 @@ import { IModuleLoader } from './services';
 
 /**
  * IContainer token.
- * it is a symbol id, you can use  @Inject, @Autowried or @Param to get container instance in yourself class.
+ * it is a symbol id, you can use  `@Inject`, `@Autowried` or `@Param` to get container instance in yourself class.
  */
 export const ContainerToken = new InjectToken<IContainer>('DI_IContainer');
 

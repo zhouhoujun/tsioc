@@ -31,7 +31,7 @@ export interface IServicesResolver {
      * @returns {T[]}
      * @memberof IServicesResolver
      */
-    getServices<T>(token: Token<T>, ctx: ResolveServicesContext, ...providers: ProviderTypes[]): T[];
+    getServices<T>(token: Token<T>, ctx: ResolveServicesContext<T>, ...providers: ProviderTypes[]): T[];
 
     /**
     * get all private services of target extends class `token`.
@@ -50,12 +50,12 @@ export interface IServicesResolver {
     * @template T
     * @param {type: Token<T>} token servive token.
     * @param {TargetRefs} [target] service private of target.
-    * @param {ResolveServicesContext} service resolve context.
+    * @param {ResolveServicesContext<T>} service resolve context.
     * @param {...ProviderTypes[]} providers
     * @returns {T}
     * @memberof IContainer
     */
-    getServices<T>(token: Token<T>, target: TargetRefs, ctx: ResolveServicesContext, ...providers: ProviderTypes[]): T[];
+    getServices<T>(token: Token<T>, target: TargetRefs, ctx: ResolveServicesContext<T>, ...providers: ProviderTypes[]): T[];
 
 
     /**
@@ -73,11 +73,11 @@ export interface IServicesResolver {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {ResolveServicesContext} ctx
+     * @param {ResolveServicesContext<T>} ctx
      * @returns {T[]}
      * @memberof IServicesResolver
      */
-    getServiceProviders<T>(token: Token<T>, ctx: ResolveServicesContext): ProviderMap;
+    getServiceProviders<T>(token: Token<T>, ctx: ResolveServicesContext<T>): ProviderMap;
 
     /**
     * get all private service providers of target extends class `token`.
@@ -96,9 +96,9 @@ export interface IServicesResolver {
     * @template T
     * @param {type: Token<T>} token servive token.
     * @param {TargetRefs} [target] service private of target.
-    * @param {ResolveServicesContext} service resolve context.
+    * @param {ResolveServicesContext<T>} service resolve context.
     * @returns {T}
     * @memberof IContainer
     */
-   getServiceProviders<T>(token: Token<T>, target: TargetRefs, ctx: ResolveServicesContext): ProviderMap;
+   getServiceProviders<T>(token: Token<T>, target: TargetRefs, ctx: ResolveServicesContext<T>): ProviderMap;
 }

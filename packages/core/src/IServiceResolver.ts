@@ -42,7 +42,7 @@ export interface IServiceResolver {
      * @returns {T}
      * @memberof IServiceResolver
      */
-    getService<T>(token: Token<T>, ctx: ResolveServiceContext, ...providers: ProviderTypes[]): T;
+    getService<T>(token: Token<T>, ctx: ResolveServiceContext<T>, ...providers: ProviderTypes[]): T;
 
     /**
      * get service or target reference service.
@@ -55,6 +55,6 @@ export interface IServiceResolver {
      * @returns {T}
      * @memberof IServiceResolver
      */
-    getService<T>(token: Token<T>, target: TargetRefs, ctx: ResolveServiceContext, ...providers: ProviderTypes[]): T;
+    getService<T>(token: Token<T>, target: TargetRefs, ctx: ResolveServiceContext<T>, ...providers: ProviderTypes[]): T;
 
 }

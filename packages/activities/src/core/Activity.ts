@@ -5,7 +5,7 @@ import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {
     isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
-    isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, InjectToken
+    isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, InjectToken, lang
 } from '@tsdi/ioc';
 import { ActivityType, ActivityOption, Expression, ControlType } from './ActivityOption';
 import { SelectorManager } from './SelectorManager';
@@ -22,6 +22,7 @@ export const TemplateToken = new InjectToken('activity_template');
  * @implements {IActivity}
  * @implements {OnActivityInit}
  */
+@Abstract()
 export abstract class Activity<T extends ActivityContext> {
 
     /**
@@ -76,19 +77,13 @@ export abstract class Activity<T extends ActivityContext> {
     protected resolveControl(option: ControlType<T>): Activity<T> {
         let mgr = this.container.get(SelectorManager);
         let key = Object.keys(option).find(key => mgr.has(key));
-        let act = mgr.get(key)();
+        let act = mgr.resolve(key);
         return act;
     }
 
 
     protected createContext(target: Type<any> | ActivityOption<T>, raiseContainer?: IContainer | (() => IContainer)): ActivityContext {
         return ActivityContext.parse(target, raiseContainer || this.container);
-    }
-
-    protected getSelector(ctx: T): Expression<any> {
-        let actAnn = ctx.annoation as ActivityOption<T>;
-
-        return actAnn[actAnn.selector];
     }
 
     /**
@@ -111,6 +106,13 @@ export abstract class Activity<T extends ActivityContext> {
             return await express;
         }
         return express;
+    }
+
+    protected getSelector(ctx: T): Expression<any> {
+        let actAnn = ctx.annoation as ActivityOption<T>;
+        let mgr = this.container.get(SelectorManager);
+        let selector = mgr.getSelector(lang.getClass(this));
+        return actAnn[selector];
     }
 
     protected resolveSelector<TVal>(ctx: T): Promise<TVal> {

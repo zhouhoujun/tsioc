@@ -1,8 +1,8 @@
-import { BootContext, BootOption } from './BootContext';
+import { BootContext, BootOption, BootTargetToken } from './BootContext';
 import {
     Type, LoadType, BindProviderAction, IocSetCacheAction, ComponentBeforeInitAction,
     ComponentInitAction, ComponentAfterInitAction, InjectReference, DesignDecoratorRegisterer,
-    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction
+    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction, isClass
 } from '@tsdi/ioc';
 import { ContainerPool, RegScope, DIModuleRegisterScope } from './core';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ModuleDecoratorRegisterer } from '@tsdi/core';
@@ -45,30 +45,36 @@ export class BootApplication {
     }
 
     protected onInit(target: Type<any> | BootOption | BootContext) {
-        this.context = target instanceof BootContext ? target : this.createContext(target);
-        let container: IContainer;
-        if (this.context.hasRaiseContainer()) {
-            container = this.context.getRaiseContainer();
-            if (!this.getPools().hasParent(container)) {
-                this.getPools().setParent(container);
+        if (target instanceof BootContext) {
+            this.context = target;
+            if (this.context.hasRaiseContainer()) {
+                this.container = this.context.getRaiseContainer();
+                if (!this.getPools().hasParent(this.container)) {
+                    this.getPools().setParent(this.container);
+                }
+            } else {
+                this.container = this.getPools().getRoot();
+                this.context.setRaiseContainer(this.container);
             }
+            this.container.register(BootContext);
         } else {
-            container = this.getPools().getRoot();
+            this.container = this.getPools().getRoot();
+            this.container.register(BootContext);
+            this.createContext(target);
         }
-        this.container = container;
-        container.bindProvider(BootApplication, this);
-        container.bindProvider(new InjectReference(BootApplication, this.context.module), this);
-        container.use(annotations, handles, runnable, services);
+        this.container.bindProvider(BootApplication, this);
+        this.container.bindProvider(new InjectReference(BootApplication, this.context.module), this);
+        this.container.use(annotations, handles, runnable, services);
 
-        let designReg = container.get(DesignDecoratorRegisterer);
+        let designReg = this.container.get(DesignDecoratorRegisterer);
         designReg.register(Bootstrap, DecoratorScopes.Class, BindProviderAction);
 
-        let runtimeReg = container.get(RuntimeDecoratorRegisterer);
+        let runtimeReg = this.container.get(RuntimeDecoratorRegisterer);
         runtimeReg.register(Bootstrap, DecoratorScopes.Class,
             ComponentBeforeInitAction, ComponentInitAction,
             ComponentAfterInitAction, RegisterSingletionAction, IocSetCacheAction);
 
-        container.get(ModuleDecoratorRegisterer)
+        this.container.get(ModuleDecoratorRegisterer)
             .register(Bootstrap, DIModuleRegisterScope);
 
     }
@@ -122,8 +128,13 @@ export class BootApplication {
         return this.pools;
     }
 
-    protected createContext(type: Type<any> | BootOption): BootContext {
-        return BootContext.parse(type);
+    protected createContext(target: Type<any> | BootOption): BootContext {
+        let md = isClass(target) ? target : target.module;
+        let ctx = this.container.getService(BootContext, md, { provide: BootTargetToken, useValue: md });
+        if (!isClass(target)) {
+            ctx.setOptions(target);
+        }
+        return ctx;
     }
 
     protected createContainerBuilder(): IContainerBuilder {

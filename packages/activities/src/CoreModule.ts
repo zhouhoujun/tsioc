@@ -19,6 +19,7 @@ export class CoreModule {
 
     setup() {
         let container = this.container;
+        container.registerSingleton(RegSelectorAction, () => new RegSelectorAction(container));
         let decReg = container.resolve(DesignDecoratorRegisterer);
         decReg.register(Task, DecoratorScopes.Class, BindProviderAction, RegSelectorAction);
 

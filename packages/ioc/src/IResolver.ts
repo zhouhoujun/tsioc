@@ -1,6 +1,5 @@
 import { ProviderTypes } from './providers';
 import { Token, Type, InstanceFactory, SymbolType } from './types';
-import { IocActionContext } from './actions';
 
 /**
  * resolver.

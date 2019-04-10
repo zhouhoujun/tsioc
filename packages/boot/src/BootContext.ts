@@ -1,7 +1,7 @@
 import { AnnoationContext, AnnoationOption, createAnnoationContext } from './core';
 import { RunnableConfigure, ConfigureManager } from './annotations';
-import { IModuleLoader, IContainer } from '@tsdi/core';
-import { ProviderTypes, LoadType, InjectToken, Type } from '@tsdi/ioc';
+import { IModuleLoader, IContainer, ContainerToken } from '@tsdi/core';
+import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject } from '@tsdi/ioc';
 import { Runnable } from './runnable';
 
 
@@ -106,6 +106,7 @@ export interface BootOption extends AnnoationOption {
     providers?: ProviderTypes[];
 }
 
+export const BootTargetToken = new InjectToken('module_type');
 /**
  * application boot context.
  *
@@ -113,7 +114,13 @@ export interface BootOption extends AnnoationOption {
  * @class BootContext
  * @extends {HandleContext}
  */
+@Injectable
 export class BootContext extends AnnoationContext {
+
+    constructor(@Inject(BootTargetToken) type: Type<any>, @Inject(ContainerToken) raiseContainer?: IContainer | (() => IContainer)) {
+        super(type, raiseContainer);
+    }
+
     /**
      * boot base url.
      *

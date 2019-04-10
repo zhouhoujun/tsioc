@@ -8,7 +8,7 @@ export class RegSelectorAction extends IocDesignAction {
         let mgr = this.container.get(RootContainerToken).get(SelectorManager);
         let metas = getOwnTypeMetadata(ctx.currDecoractor, ctx.targetType) as ActivityOption<any>[];
         metas.forEach(meta => {
-            mgr.set(meta.selector, (...providers: ProviderTypes[]) => this.container.get(ctx.targetType, ...providers));
+            mgr.set(meta.selector, ctx.targetType, (...providers: ProviderTypes[]) => this.container.get(ctx.targetType, ...providers));
         });
 
         next();

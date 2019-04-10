@@ -1,11 +1,7 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, Expression } from '../core';
+import { ActivityContext } from '../core';
 import { ControlActivity } from './ControlActivity';
 
-
-export interface ConfirmConfigure {
-    confirm: Expression<boolean>;
-}
 
 /**
  * while control activity.
