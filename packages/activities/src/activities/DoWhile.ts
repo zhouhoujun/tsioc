@@ -15,9 +15,9 @@ export class DoWhileActivity<T extends ActivityContext> extends ControlActivity<
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         await super.execute(ctx, async () => {
-            let condition = await this.resolveSelector(ctx);
+            let condition = await this.resolveSelector<boolean>(ctx);
             if (condition) {
-                this.execute(ctx, next);
+                await this.execute(ctx, next);
             } else {
                 await next();
             }

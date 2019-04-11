@@ -1,10 +1,7 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import {
-    ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isProvider, ProviderMap, IProviderParser,
-    TypeReflects, Factory, ParamProviders, IParameter, SymbolType, InstanceFactory, IResolver, ResolveActionContext, ResolveLifeScope
-} from '@tsdi/ioc';
+import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isProvider, ProviderMap } from '@tsdi/ioc';
 import { ModuleLoader, IModuleLoader, ServicesResolveLifeScope, ServiceResolveLifeScope, InjectorLifeScope } from './services';
 import { registerCores } from './registerCores';
 import { ResolveServiceContext, ResolveServicesContext, ServiceActionOption, ServicesActionOption } from './resolves';

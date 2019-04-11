@@ -66,11 +66,10 @@ export type Token<T> = Registration<T> | SymbolType<T>;
  */
 export type ProvideToken<T> = Registration<T> | string | symbol;
 
-
 /**
  * instance factory.
  */
-export type InstanceFactory<T> = (...providers: ProviderTypes[]) => T
+export type InstanceFactory<T> = (...providers: ProviderTypes[]) => T;
 
 /**
  * to instance via container.
