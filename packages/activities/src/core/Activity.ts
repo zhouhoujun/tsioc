@@ -42,25 +42,25 @@ export abstract class Activity<T extends ActivityContext> {
     abstract execute(ctx: T, next: () => Promise<void>): Promise<void>;
 
 
-    protected execActivity(ctx: T, handles: ActivityType<T>[], next?: () => Promise<void>): Promise<void> {
-        return PromiseUtil.runInChain(handles.map(ac => this.toAction(ac)), ctx, next);
+    protected execActivity(ctx: T, activities: ActivityType<T>[], next?: () => Promise<void>): Promise<void> {
+        return PromiseUtil.runInChain(activities.map(ac => this.toAction(ac)), ctx, next);
     }
 
-    protected execActions(ctx: T, handles: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
-        return PromiseUtil.runInChain(handles, ctx, next);
+    protected execActions(ctx: T, actions: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
+        return PromiseUtil.runInChain(actions, ctx, next);
     }
 
-    protected toAction(ac: ActivityType<T>): PromiseUtil.ActionHandle<T> {
-        if (ac instanceof Activity) {
-            return (ctx: T, next?: () => Promise<void>) => ac.execute(ctx, next);
-        } else if (isClass(ac) || isMetadataObject(ac)) {
-            let action = isClass(ac) ? this.container.get(ac) : this.resolveControl(ac as ControlType<T>);
+    protected toAction(activity: ActivityType<T>): PromiseUtil.ActionHandle<T> {
+        if (activity instanceof Activity) {
+            return (ctx: T, next?: () => Promise<void>) => activity.execute(ctx, next);
+        } else if (isClass(activity) || isMetadataObject(activity)) {
+            let action = isClass(activity) ? this.container.get(activity) : this.resolveControl(activity as ControlType<T>);
             return action instanceof Activity ?
                 (ctx: T, next?: () => Promise<void>) => action.execute(ctx, next)
                 : (ctx: T, next?: () => Promise<void>) => next && next();
 
-        } else if (isFunction(ac)) {
-            return ac;
+        } else if (isFunction(activity)) {
+            return activity;
         } else {
             return (ctx: T, next?: () => Promise<void>) => next && next();
         }
