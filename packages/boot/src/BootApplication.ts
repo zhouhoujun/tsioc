@@ -60,7 +60,7 @@ export class BootApplication {
         } else {
             this.container = this.getPools().getRoot();
             this.container.register(BootContext);
-            this.createContext(target);
+            this.context = this.createContext(target);
         }
         this.container.bindProvider(BootApplication, this);
         this.container.bindProvider(new InjectReference(BootApplication, this.context.module), this);

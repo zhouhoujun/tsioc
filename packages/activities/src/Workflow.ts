@@ -1,9 +1,10 @@
 import { BootOption, BootApplication, BootContext } from '@tsdi/boot';
-import { UUIDToken, RandomUUIDFactory, WorkflowInstance, ActivityContext, ActivityType, SequenceActivity, SequenceOption } from './core';
+import { UUIDToken, RandomUUIDFactory, WorkflowInstance, ActivityContext, ActivityType, SequenceOption } from './core';
 import { Type } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 import { CoreModule } from './CoreModule';
+import { SequenceActivity } from './activities';
 
 /**
  * workflow builder.
@@ -29,17 +30,14 @@ export class Workflow extends BootApplication {
 
 
     static async sequence<T extends ActivityContext>(ctx?: T | ActivityType<T>, ...activities: ActivityType<T>[]): Promise<T> {
-        let context: T;
         if (ctx instanceof ActivityContext) {
             ctx.annoation = Object.assign(ctx.annoation || {}, { sequence: activities, module: SequenceActivity });
-            context = ctx;
         } else {
             activities.unshift(ctx);
-            ctx = null;
-            context = ActivityContext.parse({sequence: activities, module: SequenceActivity } as SequenceOption<T>) as T;
+            ctx = {sequence: activities, module: SequenceActivity } as SequenceOption<T>;
         }
 
-        let runner = await Workflow.run(context) as T;
+        let runner = await Workflow.run(ctx) as T;
         return runner;
     }
 

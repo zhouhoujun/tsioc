@@ -1,7 +1,7 @@
 import { isClass, lang } from '../../utils';
 import { IocDesignAction } from './IocDesignAction';
 import { DesignActionContext } from './DesignActionContext';
-import { getPropertyMetadata, getOwnPropertyMetadata } from '../../factories';
+import { getOwnPropertyMetadata } from '../../factories';
 import { PropertyMetadata } from '../../metadatas';
 
 /**

@@ -1,11 +1,11 @@
 import {
-    Injectable, isNullOrUndefined, isFunction, ObjectMap, isClass, Type
+    Injectable, isNullOrUndefined, isFunction, ObjectMap, isClass, Type, Refs
 } from '@tsdi/ioc';
 import { ITranslator } from './Translator';
 import { BootContext, createAnnoationContext } from '@tsdi/boot';
 import { IContainer } from '@tsdi/core';
 import { CtxType, ActivityOption } from './ActivityOption';
-
+import { Activity } from './Activity';
 
 
 /**
@@ -16,6 +16,7 @@ import { CtxType, ActivityOption } from './ActivityOption';
  * @implements {IActivityContext<any>}
  */
 @Injectable
+@Refs(Activity)
 export class ActivityContext extends BootContext {
     /**
      * workflow id.

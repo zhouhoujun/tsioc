@@ -99,29 +99,29 @@ export interface ActivityOption<T extends ActivityContext> extends BootOption {
 }
 
 
-export interface IfActivityOption<T extends ActivityContext> {
+export interface IfActivityOption<T extends ActivityContext> extends ActivityOption<T> {
     if: ConditionOption<T>;
     elseif?: ConditionOption<T> | ConditionOption<T>[];
     else?: ActivityType<T> | ActivityType<T>[];
 }
 
-export interface ConfirmActivityOption<T extends ActivityContext> {
+export interface ConfirmActivityOption<T extends ActivityContext> extends ActivityOption<T> {
     confirm: ConditionOption<T>;
 }
 
-export interface WhileActivityOption<T extends ActivityContext> {
+export interface WhileActivityOption<T extends ActivityContext> extends ActivityOption<T> {
     while: ConditionOption<T>;
 }
 
-export interface DoWhileActivityOption<T extends ActivityContext> {
+export interface DoWhileActivityOption<T extends ActivityContext> extends ActivityOption<T> {
     dowhile: ConditionOption<T>;
 }
 
-export interface SequenceOption<T extends ActivityContext> {
+export interface SequenceOption<T extends ActivityContext> extends ActivityOption<T> {
     sequence: ActivityType<T>[];
 }
 
-export interface ParallelOption<T extends ActivityContext> {
+export interface ParallelOption<T extends ActivityContext> extends ActivityOption<T> {
     parallel: ActivityType<T>[];
 }
 
@@ -143,24 +143,24 @@ export interface TimerOption<T extends ActivityContext> {
     body: ActivityType<T> | ActivityType<T>[];
 }
 
-export interface DeplylOption<T extends ActivityContext> {
+export interface DeplylOption<T extends ActivityContext> extends ActivityOption<T> {
     delay: TimerOption<T>;
 }
 
-export interface IntervalOption<T extends ActivityContext> {
+export interface IntervalOption<T extends ActivityContext> extends ActivityOption<T> {
     interval: TimerOption<T>;
 }
 
-export interface ThrowOption<T extends ActivityContext> {
+export interface ThrowOption<T extends ActivityContext> extends ActivityOption<T> {
     throw: Expression<Error>;
 }
 
-export interface SwitchOption<T extends ActivityContext> {
+export interface SwitchOption<T extends ActivityContext> extends ActivityOption<T> {
     switch: Expression<any>;
     cases: CaseOption<T>[];
 }
 
-export interface CaseOption<T extends ActivityContext> {
+export interface CaseOption<T extends ActivityContext> extends ActivityOption<T> {
     case: Expression<any>;
     /**
      * body.
@@ -172,7 +172,7 @@ export interface CaseOption<T extends ActivityContext> {
 }
 
 
-export interface TryCatchOption<T extends ActivityContext> {
+export interface TryCatchOption<T extends ActivityContext> extends ActivityOption<T> {
     try: ActivityType<T>[];
     catchs: ActivityType<T>[];
     finally?: ActivityType<T>
