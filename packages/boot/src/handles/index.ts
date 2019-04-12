@@ -9,6 +9,9 @@ export * from './BootContextCheckHandle';
 export * from './BootProvidersHandle';
 export * from './BootDepsHandle';
 export * from './ResolveModuleHandle';
+
+export * from './ModuleBuildHandle';
+
 export * from './ResolveBootstrapHandle';
 export * from './ResolveRunnableHandle';
 export * from './RefRunnableHandle';

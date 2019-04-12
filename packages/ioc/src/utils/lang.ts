@@ -161,7 +161,7 @@ export namespace lang {
 
 
     /**
-     * get calss of object.
+     * get class of object.
      *
      * @export
      * @param {*} target

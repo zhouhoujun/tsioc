@@ -37,7 +37,6 @@ export class BootApplication {
 
     protected pools: ContainerPool;
     protected depModules: LoadType[];
-    protected runableScope: RunnableBuildLifeScope;
 
     constructor(target: Type<any> | BootOption | BootContext, protected baseURL?: string, protected loader?: IModuleLoader) {
         this.depModules = [];

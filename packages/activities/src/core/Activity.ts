@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { RunnerService } from '@tsdi/boot';
+import { RunnerService, BuilderService } from '@tsdi/boot';
 import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {
@@ -46,18 +46,18 @@ export abstract class Activity<T extends ActivityContext> {
         return PromiseUtil.runInChain(activities.map(ac => this.toAction(ac)), ctx, next);
     }
 
-    protected execActions(ctx: T, actions: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
-        return PromiseUtil.runInChain(actions, ctx, next);
-    }
-
     protected toAction(activity: ActivityType<T>): PromiseUtil.ActionHandle<T> {
         if (activity instanceof Activity) {
             return (ctx: T, next?: () => Promise<void>) => activity.execute(ctx, next);
         } else if (isClass(activity) || isMetadataObject(activity)) {
-            let action = isClass(activity) ? this.container.get(activity) : this.resolveControl(activity as ControlType<T>);
-            return action instanceof Activity ?
-                (ctx: T, next?: () => Promise<void>) => action.execute(ctx, next)
-                : (ctx: T, next?: () => Promise<void>) => next && next();
+            return async (ctx: T, next?: () => Promise<void>) => {
+                let act = await this.resolveActivity(activity as Type<any> | ControlType<T>);
+                if (act) {
+                    await act.execute(ctx, next);
+                } else {
+                    await next();
+                }
+            };
 
         } else if (isFunction(activity)) {
             return activity;
@@ -66,12 +66,16 @@ export abstract class Activity<T extends ActivityContext> {
         }
     }
 
-    protected resolveControl(option: ControlType<T>): Activity<T> {
-        let mgr = this.container.get(SelectorManager);
-        let key = Object.keys(option).find(key => mgr.has(key));
-        let act = mgr.resolve(key);
-        return act;
+    protected async resolveActivity(activity: Type<any> | ControlType<T>): Promise<Activity<T>> {
+        let ctx = await this.container.get(BuilderService).build(activity);
+        if (ctx.target instanceof Activity) {
+            return ctx.target;
+        } else {
+            // await this.container.get(RunnerService).run(ctx);
+            // return ctx.runnable;
+        }
     }
+
 
     /**
      * resolve expression.
@@ -104,6 +108,13 @@ export abstract class Activity<T extends ActivityContext> {
 
     protected resolveSelector<TVal>(ctx: T): Promise<TVal> {
         return this.resolveExpression(this.getSelector(ctx), ctx);
+    }
+
+    protected resolveControl(option: ControlType<T>): Activity<T> {
+        let mgr = this.container.get(SelectorManager);
+        let key = Object.keys(option).find(key => mgr.has(key));
+        let act = mgr.resolve(key);
+        return act;
     }
 
 }

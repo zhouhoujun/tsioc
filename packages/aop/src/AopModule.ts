@@ -1,6 +1,7 @@
 import {
     Inject, IocBeforeConstructorScope, IocAfterConstructorScope, IocContainerToken, IIocContainer, Autorun,
-    RuntimeMethodScope, DesignDecoratorRegisterer, DesignAnnoationScope, BindProviderAction, RuntimeDecoratorRegisterer, RegisterSingletionAction, DecoratorScopes
+    RuntimeMethodScope, DesignDecoratorRegisterer, DesignAnnoationScope, BindProviderAction,
+    RuntimeDecoratorRegisterer, RegisterSingletionAction, DecoratorScopes
 } from '@tsdi/ioc';
 import { Aspect } from './decorators/Aspect';
 import { Advisor } from './Advisor';
@@ -18,7 +19,7 @@ import {
 
 /**
  * aop ext for ioc. auto run setup after registered.
- * with @Autorun('setup') decorator.
+ * with `@Autorun('setup')` decorator.
  * @export
  * @class AopModule
  */

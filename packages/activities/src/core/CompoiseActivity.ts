@@ -23,46 +23,46 @@ export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
     }
 
     /**
-     * use handle.
+     * use activity.
      *
-     * @param {ActivityType} handle
+     * @param {ActivityType} activity
      * @param {boolean} [first]  use action at first or last.
      * @returns {this}
      * @memberof LifeScope
      */
-    use(handle: ActivityType<T>, first?: boolean): this {
+    use(activity: ActivityType<T>, first?: boolean): this {
         if (first) {
-            this.activities.unshift(handle);
+            this.activities.unshift(activity);
         } else {
-            this.activities.push(handle);
+            this.activities.push(activity);
         }
         this.resetFuncs();
         return this;
     }
 
     /**
-     * use handle before
+     * use activity before
      *
-     * @param {ActivityType} handle
+     * @param {ActivityType} activity
      * @param {ActivityType} before
      * @returns {this}
      * @memberof LifeScope
      */
-    useBefore(handle: ActivityType<T>, before: ActivityType<T>): this {
-        this.activities.splice(this.activities.indexOf(before) - 1, 0, handle);
+    useBefore(activity: ActivityType<T>, before: ActivityType<T>): this {
+        this.activities.splice(this.activities.indexOf(before) - 1, 0, activity);
         this.resetFuncs();
         return this;
     }
     /**
-     * use handle after.
+     * use activity after.
      *
-     * @param {ActivityType} handle
+     * @param {ActivityType} activity
      * @param {ActivityType} after
      * @returns {this}
      * @memberof LifeScope
      */
-    useAfter(handle: ActivityType<T>, after: ActivityType<T>): this {
-        this.activities.splice(this.activities.indexOf(after), 0, handle);
+    useAfter(activity: ActivityType<T>, after: ActivityType<T>): this {
+        this.activities.splice(this.activities.indexOf(after), 0, activity);
         this.resetFuncs();
         return this;
     }
@@ -71,7 +71,7 @@ export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
         if (!this.actions) {
             this.actions = this.activities.map(ac => this.toAction(ac))
         }
-        await this.execActions(ctx, this.actions, next);
+        await PromiseUtil.runInChain(this.actions, ctx, next);
     }
 
     protected resetFuncs() {
