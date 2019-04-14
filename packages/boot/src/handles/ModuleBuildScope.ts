@@ -6,12 +6,12 @@ import { BootDepsHandle } from './BootDepsHandle';
 import { BootConfigureLoadHandle } from './BootConfigureLoadHandle';
 import { RegisterModuleHandle } from './RegisterModuleHandle';
 import { BootConfigureRegisterHandle } from './BootConfigureRegisterHandle';
-import { ResolveModuleHandle } from './ResolveModuleHandle';
 import { BootContext } from '../BootContext';
+import { ResolveMoudleScope } from './ResolveMoudleScope';
 
 @Singleton
 @Autorun('setup')
-export class ModuleBuildHandle extends CompositeHandle<BootContext> {
+export class ModuleBuildScope extends CompositeHandle<BootContext> {
 
     async execute(ctx: BootContext, next?: () => Promise<void>): Promise<void> {
         // has build module instance.
@@ -29,6 +29,6 @@ export class ModuleBuildHandle extends CompositeHandle<BootContext> {
             .use(BootConfigureLoadHandle)
             .use(RegisterModuleHandle)
             .use(BootConfigureRegisterHandle)
-            .use(ResolveModuleHandle);
+            .use(ResolveMoudleScope);
     }
 }

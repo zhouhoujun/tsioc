@@ -10,7 +10,10 @@ export * from './BootProvidersHandle';
 export * from './BootDepsHandle';
 export * from './ResolveModuleHandle';
 
-export * from './ModuleBuildHandle';
+export * from './ModuleBuildScope';
+export * from './BuildModuleHandle';
+export * from './DecoratorBuildHandle';
+export * from './ResolveMoudleScope';
 
 export * from './ResolveBootstrapHandle';
 export * from './ResolveRunnableHandle';

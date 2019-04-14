@@ -1,6 +1,6 @@
 import { IocCoreService } from './IocCoreService';
-import { IocActionType } from '../actions';
 import { isString } from '../utils';
+import { IocActionType } from '../actions';
 
 /**
  * decorator action registerer.
@@ -9,14 +9,14 @@ import { isString } from '../utils';
  * @class IocDecoratorRegisterer
  * @extends {IocCoreService}
  */
-export class IocDecoratorRegisterer extends IocCoreService {
-    protected actionMap: Map<string, IocActionType[]>;
+export class DecoratorRegisterer<T> extends IocCoreService {
+    protected actionMap: Map<string, T[]>;
     constructor() {
         super();
         this.actionMap = new Map();
     }
 
-    getActions(): Map<string, IocActionType[]> {
+    getActions(): Map<string, T[]> {
         return this.actionMap;
     }
 
@@ -28,10 +28,10 @@ export class IocDecoratorRegisterer extends IocCoreService {
      * register decorator actions.
      *
      * @param {(string | Function)} decorator
-     * @param {...IocActionType[]} actions
+     * @param {...T[]} actions
      * @memberof DecoratorRegister
      */
-    register(decorator: string | Function, ...actions: IocActionType[]) {
+    register(decorator: string | Function, ...actions: T[]) {
         let dec = this.getKey(decorator);
         if (this.actionMap.has(dec)) {
             this.actionMap.get(dec).concat(actions);
@@ -49,7 +49,7 @@ export class IocDecoratorRegisterer extends IocCoreService {
         return isString(decorator) ? decorator : decorator.toString();
     }
 
-    get(decorator: string | Function): IocActionType[] {
+    get(decorator: string | Function): T[] {
         let dec = this.getKey(decorator);
         if (this.actionMap.has(dec)) {
             return this.actionMap.get(dec);
@@ -58,3 +58,13 @@ export class IocDecoratorRegisterer extends IocCoreService {
     }
 }
 
+/**
+ * ioc decorator registerer.
+ *
+ * @export
+ * @class IocDecoratorRegisterer
+ * @extends {DecoratorRegisterer<IocActionType>}
+ */
+export class IocDecoratorRegisterer extends DecoratorRegisterer<IocActionType> {
+
+}

@@ -8,6 +8,8 @@ export class ResolveModuleHandle extends BootHandle {
         if (!ctx.target) {
             ctx.target = this.resolve(ctx, ctx.module);
         }
-        await next();
+        if (ctx.target) {
+            await next();
+        }
     }
 }

@@ -100,9 +100,7 @@ export class BootApplication {
      * @memberof BootApplication
      */
     async run(...args: string[]): Promise<BootContext> {
-        this.context.setRaiseContainer(this.container);
-        this.context.args = args;
-        this.context.regScope = RegScope.boot;
+        this.initContext(args);
         await this.container.resolve(RunnableBuildLifeScope).execute(this.context);
         return this.context;
     }
@@ -134,6 +132,12 @@ export class BootApplication {
             ctx.setOptions(target);
         }
         return ctx;
+    }
+
+    protected initContext(args: string[]) {
+        this.context.setRaiseContainer(this.container);
+        this.context.args = args;
+        this.context.regScope = this.context.regScope || RegScope.boot;
     }
 
     protected createContainerBuilder(): IContainerBuilder {

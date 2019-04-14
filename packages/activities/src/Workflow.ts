@@ -1,4 +1,4 @@
-import { BootOption, BootApplication, BootContext } from '@tsdi/boot';
+import { BootOption, BootApplication } from '@tsdi/boot';
 import { UUIDToken, RandomUUIDFactory, WorkflowInstance, ActivityContext, ActivityType, SequenceOption } from './core';
 import { Type } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
@@ -15,8 +15,8 @@ import { SequenceActivity } from './activities';
  */
 export class Workflow extends BootApplication {
 
-
-    protected onInit(target: Type<any> | BootOption | BootContext) {
+    context: ActivityContext;
+    protected onInit(target: Type<any> | BootOption | ActivityContext) {
         super.onInit(target);
         this.use(AopModule)
             .use(LogModule)
@@ -34,11 +34,16 @@ export class Workflow extends BootApplication {
             ctx.annoation = Object.assign(ctx.annoation || {}, { sequence: activities, module: SequenceActivity });
         } else {
             activities.unshift(ctx);
-            ctx = {sequence: activities, module: SequenceActivity } as SequenceOption<T>;
+            ctx = { sequence: activities, module: SequenceActivity } as SequenceOption<T>;
         }
 
         let runner = await Workflow.run(ctx) as T;
         return runner;
+    }
+
+    protected initContext(args: string[]) {
+        super.initContext(args);
+        this.context.id = this.context.id || this.createUUID();
     }
 
     protected createUUID() {
