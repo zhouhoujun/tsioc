@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext } from '../core';
+import { ActivityContext, ThrowOption, Expression } from '../core';
 import { ControlActivity } from './ControlActivity';
 
 
@@ -13,8 +13,13 @@ import { ControlActivity } from './ControlActivity';
 @Task('throw')
 export class ThrowActivity<T extends ActivityContext> extends ControlActivity<T> {
 
+    throw: Expression<Error>;
+    async init(option: ThrowOption<T>) {
+        this.throw = option.throw;
+    }
+
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        let error = await this.resolveSelector(ctx);
+        let error = await this.resolveExpression(this.throw, ctx);
         throw error;
     }
 }

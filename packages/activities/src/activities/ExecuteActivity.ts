@@ -1,7 +1,6 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, Activity, ActivityType, ExecuteOption } from '../core';
+import { ActivityContext, ExecuteOption } from '../core';
 import { ControlActivity } from './ControlActivity';
-import { isArray } from '@tsdi/ioc';
 
 
 /**

@@ -1,7 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, IntervalOption, Expression } from '../core';
-import { ControlActivity } from './ControlActivity';
-import { isArray } from '@tsdi/ioc';
+import { ActivityContext, IntervalOption } from '../core';
 import { TimerActivity } from './TimerActivity';
 
 /**

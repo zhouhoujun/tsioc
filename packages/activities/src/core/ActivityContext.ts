@@ -76,12 +76,12 @@ export class ActivityContext extends BootContext {
     assign: any;
 
     /**
-     * condition.
+     * previous if elseif condition.
      *
      * @type {boolean}
      * @memberof ActivityContext
      */
-    condition: boolean;
+    preCondition: boolean;
 
     protected translate(data: any): any {
         if (isNullOrUndefined(data)) {

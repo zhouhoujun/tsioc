@@ -126,36 +126,33 @@ export interface ConditionOption<T extends ActivityContext> extends ActivityOpti
 }
 
 
-/**
- * condition option.
- *
- * @export
- * @interface ConditionOption
- * @extends {ActivityOption}
- */
-export interface ContentOption<T extends ActivityContext> extends ConditionOption<T>, BodyOption<T> {
 
-}
 
 
 
 
 export interface IfActivityOption<T extends ActivityContext> extends ActivityOption<T> {
-    if: ContentOption<T>;
-    elseif?: ContentOption<T> | ContentOption<T>[];
+    if: ConditionOption<T>;
+}
+
+export interface ElseIfActivityOption<T extends ActivityContext> extends ActivityOption<T> {
+    elseif?: ConditionOption<T>;
+}
+
+export interface ElseActivityOption<T extends ActivityContext> extends ActivityOption<T> {
     else?: ActivityType<T> | ActivityType<T>[];
 }
 
 export interface ConfirmActivityOption<T extends ActivityContext> extends ActivityOption<T> {
-    confirm: ContentOption<T>;
+    confirm: ConditionOption<T>;
 }
 
 export interface WhileActivityOption<T extends ActivityContext> extends ActivityOption<T> {
-    while: ContentOption<T>;
+    while: ConditionOption<T>;
 }
 
 export interface DoWhileActivityOption<T extends ActivityContext> extends ActivityOption<T> {
-    dowhile: ContentOption<T>;
+    dowhile: ConditionOption<T>;
 }
 
 export interface SequenceOption<T extends ActivityContext> extends ActivityOption<T> {
@@ -224,7 +221,7 @@ export interface TryCatchOption<T extends ActivityContext> extends ActivityOptio
 }
 
 export type ControlType<T extends ActivityContext> =
-    ExecuteOption<T> | ContentOption<T> | IfActivityOption<T> | ConfirmActivityOption<T>
+    ExecuteOption<T> | ConditionOption<T> | IfActivityOption<T> | ConfirmActivityOption<T>
     | WhileActivityOption<T> | DoWhileActivityOption<T> | SequenceOption<T> | ParallelOption<T>
     | DelaylOption<T> | IntervalOption<T> | ThrowOption<T> | SwitchOption<T> | TryCatchOption<T>;
 

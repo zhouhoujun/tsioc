@@ -15,8 +15,4 @@ export class ConfirmActivity<T extends ActivityContext> extends ConditionActivit
     async init(option: ConfirmActivityOption<T>) {
         this.initCondition(option.confirm);
     }
-
-    protected async whenFalse(ctx: T, next?: () => Promise<void>) {
-
-    }
 }

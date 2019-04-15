@@ -1,4 +1,4 @@
-import { ActivityContext, Expression, ConditionOption, ContentOption, ActivityOption } from '../core';
+import { ActivityContext, Expression, ConditionOption, ActivityOption } from '../core';
 import { Task } from '../decorators';
 import { ControlActivity } from './ControlActivity';
 
@@ -21,12 +21,16 @@ export class ConditionActivity<T extends ActivityContext> extends ControlActivit
     }
 
     async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
-        let condition = await this.resolveExpression(this.condition, ctx);
-        if (condition) {
+        if (this.vaild(ctx)) {
             await this.whenTrue(ctx, next);
         } else {
             await this.whenFalse(ctx, next);
         }
+    }
+
+    protected async vaild(ctx: T): Promise<boolean> {
+        let condition = await this.resolveExpression(this.condition, ctx);
+        return condition;
     }
 
     protected async whenTrue(ctx: T, next?: () => Promise<void>): Promise<void> {

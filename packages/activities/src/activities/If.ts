@@ -20,13 +20,11 @@ export class IfActivity<T extends ActivityContext> extends ConditionActivity<T> 
      */
     async init(option: IfActivityOption<T>) {
         this.initCondition(option.if);
-        this.initBody(option.elseif);
-        this.initBody(option.else);
     }
 
-    protected async whenFalse(ctx: T, next?: () => Promise<void>): Promise<void> {
-        if (next) {
-            await next();
-        }
+    protected async vaild(ctx: T): Promise<boolean> {
+        let condition = await this.resolveExpression(this.condition, ctx);
+        ctx.preCondition = condition;
+        return condition;
     }
 }
