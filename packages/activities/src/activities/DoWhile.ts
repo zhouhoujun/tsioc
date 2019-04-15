@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext } from '../core';
-import { ControlActivity } from './ControlActivity';
+import { ActivityContext, DoWhileActivityOption } from '../core';
+import { ConditionActivity } from './ConditionActivity';
 
 
 /**
@@ -8,19 +8,24 @@ import { ControlActivity } from './ControlActivity';
  *
  * @export
  * @class DoWhileActivity
- * @extends {ControlActivity}
+ * @extends {ContentActivity}
  */
 @Task('dowhile')
-export class DoWhileActivity<T extends ActivityContext> extends ControlActivity<T> {
+export class DoWhileActivity<T extends ActivityContext> extends ConditionActivity<T> {
+
+    async init(option: DoWhileActivityOption<T>) {
+        this.initCondition(option.dowhile);
+    }
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
+        await this.execActions(ctx);
+        await super.execute(ctx, next);
+    }
+
+    protected async whenTrue(ctx: T, next?: () => Promise<void>): Promise<void> {
         await super.execute(ctx, async () => {
-            let condition = await this.resolveSelector<boolean>(ctx);
-            if (condition) {
-                await this.execute(ctx, next);
-            } else {
-                await next();
-            }
+            await super.execute(ctx, next);
         });
     }
+
 }

@@ -1,4 +1,4 @@
-import { InjectToken, Type, PromiseUtil } from '@tsdi/ioc';
+import { InjectToken, Type, PromiseUtil, Token } from '@tsdi/ioc';
 import { BootOption } from '@tsdi/boot';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
@@ -8,32 +8,6 @@ import { ActivityContext } from './ActivityContext';
 export const WorkflowId = new InjectToken<string>('Workflow_ID');
 
 
-
-
-
-/**
- * condition option.
- *
- * @export
- * @interface ConditionOption
- * @extends {ActivityOption}
- */
-export interface ConditionOption<T extends ActivityContext> {
-    /**
-     * condition
-     *
-     * @type {Expression<boolean>}
-     * @memberof ConditionOption
-     */
-    condition: Expression<boolean>;
-    /**
-     * body.
-     *
-     * @type {(ActivityType<T> | ActivityType<T>[])}
-     * @memberof ConditionOption
-     */
-    body: ActivityType<T> | ActivityType<T>[];
-}
 
 
 /**
@@ -99,22 +73,89 @@ export interface ActivityOption<T extends ActivityContext> extends BootOption {
 }
 
 
+export interface InvokeTarget {
+    target: Token<any>,
+    method: string,
+    args: any[]
+}
+
+export interface InvokeTargetOption<T extends ActivityContext> extends ActivityOption<T> {
+    invoke: Expression<InvokeTarget>;
+}
+
+/**
+ * condition option.
+ *
+ * @export
+ * @interface BodyOption
+ * @extends {ActivityOption}
+ */
+export interface BodyOption<T extends ActivityContext> extends ActivityOption<T> {
+    /**
+     * body.
+     *
+     * @type {(ActivityType<T> | ActivityType<T>[])}
+     * @memberof BodyOption
+     */
+    body: ActivityType<T> | ActivityType<T>[];
+}
+
+/**
+ * condition option.
+ *
+ * @export
+ * @interface ConditionOption
+ * @extends {ActivityOption}
+ */
+export interface ConditionOption<T extends ActivityContext> extends ActivityOption<T> {
+    /**
+     * condition
+     *
+     * @type {Expression<boolean>}
+     * @memberof ConditionOption
+     */
+    condition: Expression<boolean>;
+
+    /**
+     * body.
+     *
+     * @type {(ActivityType<T> | ActivityType<T>[])}
+     * @memberof BodyOption
+     */
+    body?: ActivityType<T> | ActivityType<T>[];
+}
+
+
+/**
+ * condition option.
+ *
+ * @export
+ * @interface ConditionOption
+ * @extends {ActivityOption}
+ */
+export interface ContentOption<T extends ActivityContext> extends ConditionOption<T>, BodyOption<T> {
+
+}
+
+
+
+
 export interface IfActivityOption<T extends ActivityContext> extends ActivityOption<T> {
-    if: ConditionOption<T>;
-    elseif?: ConditionOption<T> | ConditionOption<T>[];
+    if: ContentOption<T>;
+    elseif?: ContentOption<T> | ContentOption<T>[];
     else?: ActivityType<T> | ActivityType<T>[];
 }
 
 export interface ConfirmActivityOption<T extends ActivityContext> extends ActivityOption<T> {
-    confirm: ConditionOption<T>;
+    confirm: ContentOption<T>;
 }
 
 export interface WhileActivityOption<T extends ActivityContext> extends ActivityOption<T> {
-    while: ConditionOption<T>;
+    while: ContentOption<T>;
 }
 
 export interface DoWhileActivityOption<T extends ActivityContext> extends ActivityOption<T> {
-    dowhile: ConditionOption<T>;
+    dowhile: ContentOption<T>;
 }
 
 export interface SequenceOption<T extends ActivityContext> extends ActivityOption<T> {
@@ -125,8 +166,12 @@ export interface ParallelOption<T extends ActivityContext> extends ActivityOptio
     parallel: ActivityType<T>[];
 }
 
+export interface ExecuteOption<T extends ActivityContext> extends ActivityOption<T> {
+    execute: ActivityType<T> | ActivityType<T>[];
+}
 
-export interface TimerOption<T extends ActivityContext> {
+
+export interface TimerOption<T extends ActivityContext> extends ActivityOption<T> {
     /**
      * time.
      *
@@ -143,7 +188,7 @@ export interface TimerOption<T extends ActivityContext> {
     body: ActivityType<T> | ActivityType<T>[];
 }
 
-export interface DeplylOption<T extends ActivityContext> extends ActivityOption<T> {
+export interface DelaylOption<T extends ActivityContext> extends ActivityOption<T> {
     delay: TimerOption<T>;
 }
 
@@ -179,9 +224,9 @@ export interface TryCatchOption<T extends ActivityContext> extends ActivityOptio
 }
 
 export type ControlType<T extends ActivityContext> =
-    IfActivityOption<T> | ConfirmActivityOption<T>
+    ExecuteOption<T> | ContentOption<T> | IfActivityOption<T> | ConfirmActivityOption<T>
     | WhileActivityOption<T> | DoWhileActivityOption<T> | SequenceOption<T> | ParallelOption<T>
-    | DeplylOption<T> | IntervalOption<T> | ThrowOption<T> | SwitchOption<T> | TryCatchOption<T>;
+    | DelaylOption<T> | IntervalOption<T> | ThrowOption<T> | SwitchOption<T> | TryCatchOption<T>;
 
 
 /**

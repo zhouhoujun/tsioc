@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext } from '../core';
-import { ControlActivity } from './ControlActivity';
+import { ActivityContext, ConfirmActivityOption } from '../core';
+import { ConditionActivity } from './ConditionActivity';
 
 
 /**
@@ -11,12 +11,12 @@ import { ControlActivity } from './ControlActivity';
  * @extends {ControlActivity}
  */
 @Task('confirm')
-export class ConfirmActivity<T extends ActivityContext> extends ControlActivity<T> {
+export class ConfirmActivity<T extends ActivityContext> extends ConditionActivity<T> {
+    async init(option: ConfirmActivityOption<T>) {
+        this.initCondition(option.confirm);
+    }
 
-    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        let confirm = await this.resolveSelector<boolean>(ctx);
-        if (confirm) {
-            await super.execute(ctx, next);
-        }
+    protected async whenFalse(ctx: T, next?: () => Promise<void>) {
+
     }
 }

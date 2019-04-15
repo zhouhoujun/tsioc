@@ -1,11 +1,12 @@
 import { BehaviorSubject, Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import { Service } from '@tsdi/boot';
+import { Service, BuilderService } from '@tsdi/boot';
 import { Joinpoint } from '@tsdi/aop';
-import { Token, Injectable } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
 import { ActivityOption } from './ActivityOption';
+import { ExecuteActivity } from '../activities';
 
 /**
  *run state.
@@ -46,8 +47,9 @@ export enum RunState {
 @Injectable
 export class WorkflowInstance<T extends ActivityContext> extends Service<Activity<T>> {
 
-    get activity(): Token<T> {
-        return this.getTargetType();
+    _activity: Activity<any>;
+    getActivity(): Activity<any> {
+        return this._activity;
     }
 
     protected _ctx: T;
@@ -73,6 +75,13 @@ export class WorkflowInstance<T extends ActivityContext> extends Service<Activit
     async onInit(): Promise<void> {
         let mgr = this.context.getConfigureManager<ActivityOption<T>>();
         await mgr.getConfig();
+        let target = this.getTarget();
+        if (target instanceof Activity) {
+            this._activity = target;
+        } else {
+            let option = this.context.annoation as ActivityOption<T>;
+            this._activity = await this.container.get(BuilderService).create(<ActivityOption<T>>{ execute: option, module: ExecuteActivity })
+        }
     }
 
     run(data?: any): Promise<T> {
@@ -83,10 +92,14 @@ export class WorkflowInstance<T extends ActivityContext> extends Service<Activit
         if (this.context.id && !this.container.has(this.context.id)) {
             this.container.bindProvider(this.context.id, this);
         }
-        this.state = RunState.complete;
-        this.stateChanged.next(this.state);
-        this._resultValue = this.context.data;
-        this._result.next(this.context.data);
+
+        await this.getActivity().execute(this.context, async () => {
+            this.state = RunState.complete;
+            this.stateChanged.next(this.state);
+            this._resultValue = this.context.data;
+            this._result.next(this.context.data);
+        })
+
         return this.context;
 
     }

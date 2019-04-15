@@ -21,7 +21,7 @@ export interface BootOption extends AnnoationOption {
      * boot base url.
      *
      * @type {string}
-     * @memberof BootContext
+     * @memberof BootOptions
      */
     baseURL?: string;
 
@@ -29,7 +29,7 @@ export interface BootOption extends AnnoationOption {
      * module loader
      *
      * @type {IModuleLoader}
-     * @memberof BootContext
+     * @memberof BootOptions
      */
     loader?: IModuleLoader;
 
@@ -53,7 +53,7 @@ export interface BootOption extends AnnoationOption {
      * target module instace.
      *
      * @type {*}
-     * @memberof BootContext
+     * @memberof BootOptions
      */
     target?: any;
 
@@ -61,7 +61,7 @@ export interface BootOption extends AnnoationOption {
      * bootstrap instance.
      *
      * @type {T}
-     * @memberof RunnableOptions
+     * @memberof BootOptions
      */
     bootstrap?: any;
 
@@ -77,7 +77,7 @@ export interface BootOption extends AnnoationOption {
      *  custom boot data of `BuildOptions`
      *
      * @type {*}
-     * @memberof RunnableOptions
+     * @memberof BootOptions
      */
     data?: any;
 
@@ -85,15 +85,23 @@ export interface BootOption extends AnnoationOption {
      * bootstrap reference runable service.
      *
      * @type {Runnable<any>}
-     * @memberof BootContext
+     * @memberof BootOptions
      */
     runnable?: Runnable<any>;
+
+    /**
+     * auto run runnable or not.
+     *
+     * @type {boolean}
+     * @memberof BootOptions
+     */
+    autorun?: boolean;
 
     /**
      * boot dependencies.
      *
      * @type {LoadType[]}
-     * @memberof BootContext
+     * @memberof BootOptions
      */
     deps?: LoadType[];
 
@@ -184,6 +192,14 @@ export class BootContext extends AnnoationContext {
      * @memberof RunnableOptions
      */
     data?: any;
+
+    /**
+     * auto run runnable or not.
+     *
+     * @type {boolean}
+     * @memberof BootContext
+     */
+    autorun?: boolean;
 
     /**
      * bootstrap runnable service.

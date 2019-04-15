@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
-import { CompoiseActivity, ActivityContext, ActivityType } from '../core';
-import { isArray } from '@tsdi/ioc';
+import { ActivityContext, SequenceOption } from '../core';
+import { ControlActivity } from './ControlActivity';
 
 /**
  * sequence activity.
@@ -10,18 +10,8 @@ import { isArray } from '@tsdi/ioc';
  * @extends {ControlActivity}
  */
 @Task('sequence')
-export class SequenceActivity<T extends ActivityContext> extends CompoiseActivity<T> {
-    /**
-     * execute sequence.
-     *
-     * @protected
-     * @returns {Promise<void>}
-     * @memberof ParallelActivity
-     */
-    async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
-        this.resetFuncs();
-        let acts = await this.resolveSelector<ActivityType<T>[]>(ctx);
-        this.activities = isArray(acts) ? acts : [acts];
-        await super.execute(ctx, next);
+export class SequenceActivity<T extends ActivityContext> extends ControlActivity<T> {
+    async init(option: SequenceOption<T>) {
+        this.initBody(option.sequence);
     }
 }

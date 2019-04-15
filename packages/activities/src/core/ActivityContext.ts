@@ -6,6 +6,7 @@ import { BootContext, createAnnoationContext } from '@tsdi/boot';
 import { IContainer } from '@tsdi/core';
 import { CtxType, ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
+import { WorkflowInstance } from './WorkflowInstance';
 
 
 /**
@@ -57,6 +58,14 @@ export class ActivityContext extends BootContext {
         }
         this._input = data;
     }
+
+    /**
+     * bootstrap runnable service.
+     *
+     * @type {Runnable<any>}
+     * @memberof BootContext
+     */
+    runnable?: WorkflowInstance<any>;
 
     /**
      * assign value.

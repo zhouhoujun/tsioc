@@ -3,7 +3,7 @@ import { Singleton, InstanceFactory, Type, ProviderTypes } from '@tsdi/ioc';
 @Singleton
 export class SelectorManager {
     protected factories: Map<string, InstanceFactory<any>>;
-    protected selectors: Map<Type<any>, string>;
+    protected selectors: Map<string, Type<any>>;
 
     constructor() {
         this.factories = new Map();
@@ -11,11 +11,11 @@ export class SelectorManager {
     }
 
     has(selector: string): boolean {
-        return this.factories.has(selector);
+        return this.selectors.has(selector);
     }
 
     set(selector: string, type: Type<any>, factory: InstanceFactory<any>) {
-        this.selectors.set(type, selector);
+        this.selectors.set(selector, type);
         this.factories.set(selector, factory);
     }
 
@@ -23,11 +23,11 @@ export class SelectorManager {
         return this.factories.get(selector)(...providers);
     }
 
-    forEach(func: (fac: InstanceFactory<any>, key: string) => void) {
-        this.factories.forEach(func);
+    forEach(func: (type: Type<any>, selector: string) => void) {
+        this.selectors.forEach(func);
     }
 
-    getSelector(type: Type<any>): string {
-        return this.selectors.get(type);
+    get(selector: string): Type<any> {
+        return this.selectors.get(selector);
     }
 }

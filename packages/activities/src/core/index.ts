@@ -4,6 +4,7 @@ export * from './Activity';
 export * from './ActivityOption';
 export * from './CompoiseActivity';
 
+export * from './ActivityBuildHandle';
 export * from './SelectorManager';
 
 export * from './WorkflowInstance';

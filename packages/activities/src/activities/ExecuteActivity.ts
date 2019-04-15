@@ -1,5 +1,7 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, Activity, ActivityType } from '../core';
+import { ActivityContext, Activity, ActivityType, ExecuteOption } from '../core';
+import { ControlActivity } from './ControlActivity';
+import { isArray } from '@tsdi/ioc';
 
 
 /**
@@ -11,10 +13,9 @@ import { ActivityContext, Activity, ActivityType } from '../core';
  * @template T
  */
 @Task('execute')
-export class ExecuteActivity<T extends ActivityContext> extends Activity<T>  {
+export class ExecuteActivity<T extends ActivityContext> extends ControlActivity<T>  {
 
-    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        let exec = await this.resolveSelector<ActivityType<T>>(ctx);
-        await this.execActivity(ctx, [exec], next);
+    async init(option: ExecuteOption<T>) {
+        this.initBody(option.execute);
     }
 }

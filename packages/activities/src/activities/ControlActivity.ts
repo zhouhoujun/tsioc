@@ -1,5 +1,5 @@
-import { ActivityContext, CompoiseActivity } from '../core';
-import { lang } from '@tsdi/ioc';
+import { ActivityContext, CompoiseActivity, ActivityType } from '../core';
+import { lang, isArray } from '@tsdi/ioc';
 
 
 /**
@@ -12,6 +12,9 @@ import { lang } from '@tsdi/ioc';
  */
 export abstract class ControlActivity<T extends ActivityContext> extends CompoiseActivity<T> {
 
+    protected initBody(option: ActivityType<T> | ActivityType<T>[]) {
+        option && this.add(...isArray(option) ? option : [option]);
+    }
     /**
      * to string.
      *

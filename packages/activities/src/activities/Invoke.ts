@@ -1,13 +1,7 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext } from '../core';
-import { Token } from '@tsdi/ioc';
+import { ActivityContext, InvokeTargetOption, InvokeTarget, Expression } from '../core';
 import { ControlActivity } from './ControlActivity';
 
-export interface InvokeTarget {
-    target: Token<any>,
-    method: string,
-    args: any[]
-}
 
 /**
  * while control activity.
@@ -19,8 +13,13 @@ export interface InvokeTarget {
 @Task('invoke')
 export class InvokeActivity<T extends ActivityContext> extends ControlActivity<T> {
 
+    invoke: Expression<InvokeTarget>;
+    async init(option: InvokeTargetOption<T>) {
+        this.invoke = option.invoke;
+    }
+
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        let invoke = await this.resolveSelector<InvokeTarget>(ctx);
+        let invoke = await this.resolveExpression(this.invoke, ctx);
         if (invoke) {
             return this.container.invoke(invoke.target, invoke.method, ...(invoke.args || []));
         }

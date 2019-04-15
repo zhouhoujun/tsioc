@@ -5,9 +5,9 @@ import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {
     isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
-    isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, lang
+    isPromise, Abstract, PromiseUtil, Inject, isMetadataObject
 } from '@tsdi/ioc';
-import { ActivityType, ActivityOption, Expression, ControlType } from './ActivityOption';
+import { ActivityType, Expression, ControlType, ActivityOption } from './ActivityOption';
 import { SelectorManager } from './SelectorManager';
 
 
@@ -38,9 +38,26 @@ export abstract class Activity<T extends ActivityContext> {
     constructor() {
     }
 
+    /**
+     * init activity.
+     *
+     * @param {ActivityOption<T>} option
+     * @memberof Activity
+     */
+    async init(option: ActivityOption<T>) {
 
+    }
+
+    /**
+     * execute activity.
+     *
+     * @abstract
+     * @param {T} ctx
+     * @param {() => Promise<void>} next
+     * @returns {Promise<void>}
+     * @memberof Activity
+     */
     abstract execute(ctx: T, next: () => Promise<void>): Promise<void>;
-
 
     protected execActivity(ctx: T, activities: ActivityType<T>[], next?: () => Promise<void>): Promise<void> {
         return PromiseUtil.runInChain(activities.map(ac => this.toAction(ac)), ctx, next);
@@ -51,7 +68,7 @@ export abstract class Activity<T extends ActivityContext> {
             return (ctx: T, next?: () => Promise<void>) => activity.execute(ctx, next);
         } else if (isClass(activity) || isMetadataObject(activity)) {
             return async (ctx: T, next?: () => Promise<void>) => {
-                let act = await this.resolveActivity(activity as Type<any> | ControlType<T>);
+                let act = await this.buildActivity(activity as Type<any> | ControlType<T>);
                 if (act) {
                     await act.execute(ctx, next);
                 } else {
@@ -66,13 +83,25 @@ export abstract class Activity<T extends ActivityContext> {
         }
     }
 
-    protected async resolveActivity(activity: Type<any> | ControlType<T>): Promise<Activity<T>> {
-        let ctx = await this.container.get(BuilderService).build(activity);
+    protected async buildActivity(activity: Type<any> | ControlType<T>): Promise<Activity<T>> {
+        if (!isClass(activity)) {
+            if (!activity.module) {
+                let mgr = this.container.get(SelectorManager);
+                Object.keys(activity).some(key => {
+                    if (mgr.has(key)) {
+                        activity.module = mgr.get(key);
+                    }
+                    return isClass(activity.module);
+                });
+            }
+        }
+        let ctx = await this.container.get(BuilderService).build(activity) as ActivityContext;
         if (ctx.target instanceof Activity) {
             return ctx.target;
         } else {
-            // await this.container.get(RunnerService).run(ctx);
-            // return ctx.runnable;
+            ctx.autorun = false;
+            await this.container.get(RunnerService).run(ctx);
+            return ctx.runnable.getActivity();
         }
     }
 
@@ -97,24 +126,6 @@ export abstract class Activity<T extends ActivityContext> {
             return await express;
         }
         return express;
-    }
-
-    protected getSelector(ctx: T): Expression<any> {
-        let actAnn = ctx.annoation as ActivityOption<T>;
-        let mgr = this.container.get(SelectorManager);
-        let selector = mgr.getSelector(lang.getClass(this));
-        return actAnn[selector];
-    }
-
-    protected resolveSelector<TVal>(ctx: T): Promise<TVal> {
-        return this.resolveExpression(this.getSelector(ctx), ctx);
-    }
-
-    protected resolveControl(option: ControlType<T>): Activity<T> {
-        let mgr = this.container.get(SelectorManager);
-        let key = Object.keys(option).find(key => mgr.has(key));
-        let act = mgr.resolve(key);
-        return act;
     }
 
 }

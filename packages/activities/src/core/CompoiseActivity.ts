@@ -14,12 +14,13 @@ import { ActivityType } from './ActivityOption';
 @Task
 export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
 
-    protected activities: ActivityType<T>[];
+    protected activities: ActivityType<T>[] = [];
     private actions: PromiseUtil.ActionHandle<T>[];
 
-
-    onInit() {
-        this.activities = [];
+    add(...activities: ActivityType<T>[]): this {
+        this.activities.push(...activities);
+        this.resetFuncs();
+        return this;
     }
 
     /**
@@ -68,10 +69,19 @@ export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
     }
 
     async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
+        this.execActions(ctx, next);
+    }
+
+    protected async execActions(ctx: T, next?: () => Promise<void>, actionGetter?: () => PromiseUtil.ActionHandle<T>[]): Promise<void> {
+        let actions = actionGetter ? actionGetter() : this.getActions();
+        await PromiseUtil.runInChain(actions, ctx, next);
+    }
+
+    protected getActions(): PromiseUtil.ActionHandle<T>[] {
         if (!this.actions) {
             this.actions = this.activities.map(ac => this.toAction(ac))
         }
-        await PromiseUtil.runInChain(this.actions, ctx, next);
+        return this.actions;
     }
 
     protected resetFuncs() {
