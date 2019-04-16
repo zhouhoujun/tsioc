@@ -14,6 +14,7 @@ import { PromiseUtil } from '@tsdi/ioc';
 export class BodyActivity<T extends ActivityContext> extends Activity<T> {
 
     body: ActivityType<T>[];
+
     private bodyActions: PromiseUtil.ActionHandle<T>[];
     async init(option: BodyOption<T>) {
         this.body = option.body || [];

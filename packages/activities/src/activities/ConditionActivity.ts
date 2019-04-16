@@ -32,8 +32,7 @@ export class ConditionActivity<T extends ActivityContext> extends BodyActivity<T
     }
 
     protected async vaildate(ctx: T): Promise<boolean> {
-        let condition = await this.resolveExpression(this.condition, ctx);
-        return condition;
+        return await this.resolveExpression(this.condition, ctx);
     }
 
     protected async whenTrue(ctx: T, next?: () => Promise<void>): Promise<void> {

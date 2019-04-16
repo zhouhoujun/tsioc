@@ -14,9 +14,6 @@ import { ActivityContext } from '../core';
 export class ElseActivity<T extends ActivityContext> extends ConditionActivity<T> {
 
     protected async vaildate(ctx: T): Promise<boolean> {
-        if (!ctx.preCondition) {
-            return true;
-        }
-        return false;
+        return !ctx.preCondition;
     }
 }

@@ -16,7 +16,9 @@ export class ElseIfActivity<T extends ActivityContext> extends ConditionActivity
     protected async vaildate(ctx: T): Promise<boolean> {
         if (!ctx.preCondition) {
             ctx.preCondition = await this.resolveExpression(this.condition, ctx);
+            return ctx.preCondition;
+        } else {
+            return false;
         }
-        return ctx.preCondition;
     }
 }
