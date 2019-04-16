@@ -1,17 +1,17 @@
 import { Task } from '../decorators';
 import { Expression, TimerOption, ActivityContext } from '../core';
-import { isArray } from '@tsdi/ioc';
-import { ControlActivity } from './ControlActivity';
+import { BodyActivity } from './BodyActivity';
 
 
 @Task
-export class TimerActivity<T extends ActivityContext> extends ControlActivity<T> {
-    protected time: Expression<number>;
+export abstract class TimerActivity<T extends ActivityContext> extends BodyActivity<T> {
 
-    protected initTimerOption(option: TimerOption<T>) {
-        if (option.time && option.body) {
+    time: Expression<number>;
+
+    async init(option: TimerOption<T>) {
+        if (option.time) {
             this.time = option.time;
-            this.add(...isArray(option.body) ? option.body : [option.body]);
+            await super.init(option);
         }
     }
 }

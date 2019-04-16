@@ -1,7 +1,7 @@
-import { BootOption, BootApplication } from '@tsdi/boot';
+import { BootApplication } from '@tsdi/boot';
 import {
     UUIDToken, RandomUUIDFactory, WorkflowInstance, ActivityContext,
-    ActivityType, SequenceOption, ControlType
+    ActivityType, ActivityOption
 } from './core';
 import { Type } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
@@ -19,7 +19,7 @@ import { SequenceActivity } from './activities';
 export class Workflow extends BootApplication {
 
     context: ActivityContext;
-    protected onInit(target: Type<any> | BootOption | ActivityContext) {
+    protected onInit(target: Type<any> | ActivityOption<ActivityContext> | ActivityContext) {
         super.onInit(target);
         this.use(AopModule)
             .use(LogModule)
@@ -36,20 +36,13 @@ export class Workflow extends BootApplication {
      *
      * @static
      * @template T
-     * @param {(T | ActivityType<T>)} [ctx]
      * @param {...ActivityType<T>[]} activities
      * @returns {Promise<T>}
      * @memberof Workflow
      */
-    static async sequence<T extends ActivityContext>(ctx?: T | ActivityType<T>, ...activities: ActivityType<T>[]): Promise<T> {
-        if (ctx instanceof ActivityContext) {
-            ctx.annoation = Object.assign(ctx.annoation || {}, { sequence: activities, module: SequenceActivity });
-        } else {
-            activities.unshift(ctx);
-            ctx = { sequence: activities, module: SequenceActivity } as SequenceOption<T>;
-        }
-
-        let runner = await Workflow.run(ctx);
+    static async sequence<T extends ActivityContext>(...activities: ActivityType<T>[]): Promise<T> {
+        let option = { template: activities, module: SequenceActivity } as ActivityOption<T>;
+        let runner = await Workflow.run(option) as T;
         return runner;
     }
 
@@ -58,12 +51,12 @@ export class Workflow extends BootApplication {
      *
      * @static
      * @template T
-     * @param {(Type<any> | ControlType<T> | T)} target
+     * @param {(T | Type<any> | ActivityOption<T>)} target
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof Workflow
      */
-    static async run<T extends ActivityContext>(target: Type<any> | ControlType<T> | T, ...args: string[]): Promise<T> {
+    static async run<T extends ActivityContext>(target: T | Type<any> | ActivityOption<T>, ...args: string[]): Promise<T> {
         return await new Workflow(target).run(...args) as T;
     }
 

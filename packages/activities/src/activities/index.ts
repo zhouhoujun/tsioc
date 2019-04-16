@@ -1,5 +1,3 @@
-export * from './ControlActivity';
-
 export * from './BodyActivity';
 export * from './ExecuteActivity';
 export * from './ConditionActivity';

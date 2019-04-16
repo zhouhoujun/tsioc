@@ -59,6 +59,8 @@ export class ActivityContext extends BootContext {
         this._input = data;
     }
 
+    annoation: ActivityOption<ActivityContext>;
+
     /**
      * bootstrap runnable service.
      *

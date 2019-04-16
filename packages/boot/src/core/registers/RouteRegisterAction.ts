@@ -1,6 +1,6 @@
 import {
-    IocDesignAction, IocRuntimeAction, lang, Type,
-    RuntimeActionContext, DesignActionContext, IocCompositeAction
+    IocDesignAction, IocRuntimeAction, lang, Type, RuntimeActionContext,
+    DesignActionContext, IocCompositeAction
 } from '@tsdi/ioc';
 import { ParentContainerToken } from '../ContainerPool';
 

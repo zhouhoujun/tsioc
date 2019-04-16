@@ -1,40 +1,43 @@
-import { ActivityContext, Expression, ConditionOption, ActivityOption } from '../core';
 import { Task } from '../decorators';
-import { ControlActivity } from './ControlActivity';
+import { ActivityContext, Expression, ConditionOption } from '../core';
+import { BodyActivity } from './BodyActivity';
 
 
-
+/**
+ * condition activity.
+ *
+ * @export
+ * @class ConditionActivity
+ * @extends {ControlActivity<T>}
+ * @template T
+ */
 @Task('condition')
-export class ConditionActivity<T extends ActivityContext> extends ControlActivity<T> {
+export class ConditionActivity<T extends ActivityContext> extends BodyActivity<T> {
 
-    protected condition: Expression<boolean>;
+    condition: Expression<boolean>;
 
-    protected initCondition(option: ConditionOption<T>) {
+    async init(option: ConditionOption<T>) {
         if (option.condition) {
             this.condition = option.condition;
-            this.initBody(option.body);
+            await super.init(option);
         }
     }
 
-    async init(option: ActivityOption<T>) {
-        this.initCondition(option as ConditionOption<T>);
-    }
-
     async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
-        if (this.vaild(ctx)) {
+        if (this.vaildate(ctx)) {
             await this.whenTrue(ctx, next);
         } else {
             await this.whenFalse(ctx, next);
         }
     }
 
-    protected async vaild(ctx: T): Promise<boolean> {
+    protected async vaildate(ctx: T): Promise<boolean> {
         let condition = await this.resolveExpression(this.condition, ctx);
         return condition;
     }
 
     protected async whenTrue(ctx: T, next?: () => Promise<void>): Promise<void> {
-        super.execute(ctx, next);
+        await this.execBody(ctx, next);
     }
 
     protected async whenFalse(ctx: T, next?: () => Promise<void>): Promise<void> {

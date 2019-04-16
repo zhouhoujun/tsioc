@@ -1,6 +1,5 @@
 import { ActivityContext, Activity } from '../core';
 import { Task } from '../decorators/Task';
-import { ControlActivity } from './ControlActivity';
 
 /**
  * dependence activity.
@@ -10,7 +9,7 @@ import { ControlActivity } from './ControlActivity';
  * @extends {ControlActivity}
  */
 @Task('dependence')
-export class DependenceActivity<T extends ActivityContext> extends ControlActivity<T> {
+export class DependenceActivity<T extends ActivityContext> extends Activity<T> {
 
     /**
      * execute body.
@@ -21,6 +20,6 @@ export class DependenceActivity<T extends ActivityContext> extends ControlActivi
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         // let dependence = await this.resolveSelector<Activity<T>>(ctx);
         // await this.execActivity(ctx, [dependence]);
-        await super.execute(ctx, next);
+        // await super.execute(ctx, next);
     }
 }

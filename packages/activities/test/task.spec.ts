@@ -1,18 +1,14 @@
 import expect = require('expect');
-import { Workflow, IWorkflow, SequenceActivity, WorkflowInstance } from '../src';
+import { Workflow, SequenceActivity, WorkflowInstance } from '../src';
 import { SimpleTask, SimpleCTask, TaskModuleTest } from './simples.task';
 
 
 describe('activity test', () => {
     describe('#auto register with build', () => {
 
-        let container: IWorkflow;
-        before(async () => {
-            container = Workflow.create();
-        });
-
         it('should bootstrap with single task.', async () => {
-            let runner = await container.bootstrap(SimpleTask);
+            let ctx = await Workflow.run(SimpleTask);
+            let runner = ctx.runnable;
             expect(runner instanceof WorkflowInstance).toBe(true);
             let result = await runner.start();
             // console.log(result);
@@ -20,45 +16,45 @@ describe('activity test', () => {
         });
 
         it('should bootstrap with single task via name or provider.', async () => {
-            let result = await container.use(SimpleTask).bootstrap('stest');
+            let result = await Workflow.run(SimpleTask);
             // console.log(result);
-            expect(result.resultValue).toEqual('simple task');
+            expect(result.data).toEqual('simple task');
         });
 
         it('should bootstrap with component task.', async () => {
-            let result = await container.bootstrap(SimpleCTask);
-            expect(result.resultValue).toEqual('component task');
+            let result = await Workflow.run(SimpleCTask);
+            expect(result.data).toEqual('component task');
         });
 
         it('should bootstrap with component task via name or provider.', async () => {
-            let result = await container.use(SimpleCTask).bootstrap('comptest');
+            let result = await Workflow.run(SimpleCTask);
             // console.log('comptest:' , result.activity, result.instance);
-            expect(result.resultValue).toEqual('component task');
+            expect(result.data).toEqual('component task');
         });
 
         it('should bootstrap with configure.', async () => {
-            let result = await container.bootstrap({
+            let result = await Workflow.run({
                 name: 'test1',
-                activity: SequenceActivity,
-                sequence: [
+                module: SequenceActivity,
+                template: [
                     {
                         name: 'test------1',
-                        task: SimpleTask
+                        activity: SimpleTask
                     },
                     {
                         name: 'test------2',
-                        task: SimpleCTask
+                        activity: SimpleCTask
                     }
                 ]
             });
             // console.log('configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue);
-            expect(result.resultValue).toEqual('component task');
+            expect(result.data).toEqual('component task');
         });
 
         it('should bootstrap with meta IConfigure.', async () => {
-            let result = await container.bootstrap(TaskModuleTest);
+            let result = await Workflow.run(TaskModuleTest);
             // console.log('meta configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue)
-            expect(result.resultValue).toEqual('component task');
+            expect(result.data).toEqual('component task');
         });
 
     });

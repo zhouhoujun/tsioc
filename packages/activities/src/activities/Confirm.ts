@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, ConfirmActivityOption } from '../core';
+import { ActivityContext } from '../core';
 import { ConditionActivity } from './ConditionActivity';
 
 
@@ -12,7 +12,5 @@ import { ConditionActivity } from './ConditionActivity';
  */
 @Task('confirm')
 export class ConfirmActivity<T extends ActivityContext> extends ConditionActivity<T> {
-    async init(option: ConfirmActivityOption<T>) {
-        this.initCondition(option.confirm);
-    }
+
 }

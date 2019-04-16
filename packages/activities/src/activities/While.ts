@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, WhileActivityOption } from '../core';
+import { ActivityContext } from '../core';
 import { ConditionActivity } from './ConditionActivity';
 
 
@@ -13,12 +13,8 @@ import { ConditionActivity } from './ConditionActivity';
 @Task('while')
 export class WhileActivity<T extends ActivityContext> extends ConditionActivity<T> {
 
-    async init(option: WhileActivityOption<T>) {
-        this.initCondition(option.while);
-    }
-
     protected async whenTrue(ctx: T, next?: () => Promise<void>): Promise<void> {
-        await super.execute(ctx, () => {
+        await this.execBody(ctx, () => {
             return this.execute(ctx, next);
         });
     }

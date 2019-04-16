@@ -1,6 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, InvokeTargetOption, InvokeTarget, Expression } from '../core';
-import { ControlActivity } from './ControlActivity';
+import { ActivityContext, InvokeTargetOption, InvokeTarget, Expression, Activity } from '../core';
 
 
 /**
@@ -11,7 +10,7 @@ import { ControlActivity } from './ControlActivity';
  * @extends {ControlActivity}
  */
 @Task('invoke')
-export class InvokeActivity<T extends ActivityContext> extends ControlActivity<T> {
+export class InvokeActivity<T extends ActivityContext> extends Activity<T> {
 
     invoke: Expression<InvokeTarget>;
     async init(option: InvokeTargetOption<T>) {

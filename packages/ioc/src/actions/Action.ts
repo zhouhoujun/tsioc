@@ -1,7 +1,6 @@
 import { IIocContainer, IocContainerToken } from '../IIocContainer';
 import { Type } from '../types';
 import { lang, isFunction, isClass } from '../utils';
-import { IocCompositeAction } from './IocCompositeAction';
 import { Inject } from '../decorators';
 
 
@@ -24,14 +23,6 @@ export interface ActionContextOption {
 export class IocActionContext {
 
     protected raiseContainerGetter: () => IIocContainer;
-
-    /**
-     * currScope
-     *
-     * @type {IocAction<any>}
-     * @memberof IocActionContext
-     */
-    currScope?: IocCompositeAction<any>;
 
 
     constructor(raiseContainer?: IIocContainer | (() => IIocContainer)) {

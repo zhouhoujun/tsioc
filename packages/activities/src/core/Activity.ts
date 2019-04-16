@@ -5,9 +5,9 @@ import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {
     isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
-    isPromise, Abstract, PromiseUtil, Inject, isMetadataObject
+    isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, isArray
 } from '@tsdi/ioc';
-import { ActivityType, Expression, ControlType, ActivityOption } from './ActivityOption';
+import { ActivityType, Expression, ActivityOption, TemplateType } from './ActivityOption';
 import { SelectorManager } from './SelectorManager';
 
 
@@ -41,10 +41,10 @@ export abstract class Activity<T extends ActivityContext> {
     /**
      * init activity.
      *
-     * @param {ActivityOption<T>} option
+     * @param {TemplateType<T>} option
      * @memberof Activity
      */
-    async init(option: ActivityOption<T>) {
+    async init(option: TemplateType<T>) {
 
     }
 
@@ -59,8 +59,12 @@ export abstract class Activity<T extends ActivityContext> {
      */
     abstract execute(ctx: T, next: () => Promise<void>): Promise<void>;
 
-    protected execActivity(ctx: T, activities: ActivityType<T>[], next?: () => Promise<void>): Promise<void> {
-        return PromiseUtil.runInChain(activities.map(ac => this.toAction(ac)), ctx, next);
+    protected execActivity(ctx: T, activities: ActivityType<T> | ActivityType<T>[], next?: () => Promise<void>): Promise<void> {
+        return PromiseUtil.runInChain((isArray(activities) ? activities : [activities]).map(ac => this.toAction(ac)), ctx, next);
+    }
+
+    protected execActions(ctx: T, actions: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
+        return PromiseUtil.runInChain(actions, ctx, next);
     }
 
     protected toAction(activity: ActivityType<T>): PromiseUtil.ActionHandle<T> {
@@ -68,7 +72,7 @@ export abstract class Activity<T extends ActivityContext> {
             return (ctx: T, next?: () => Promise<void>) => activity.execute(ctx, next);
         } else if (isClass(activity) || isMetadataObject(activity)) {
             return async (ctx: T, next?: () => Promise<void>) => {
-                let act = await this.buildActivity(activity as Type<any> | ControlType<T>);
+                let act = await this.buildActivity(activity as Type<any> | ActivityOption<T>);
                 if (act) {
                     await act.execute(ctx, next);
                 } else {
@@ -83,7 +87,7 @@ export abstract class Activity<T extends ActivityContext> {
         }
     }
 
-    protected async buildActivity(activity: Type<any> | ControlType<T>): Promise<Activity<T>> {
+    protected async buildActivity(activity: Type<any> | ActivityOption<T>): Promise<Activity<T>> {
         if (!isClass(activity)) {
             if (!activity.module) {
                 let mgr = this.container.get(SelectorManager);

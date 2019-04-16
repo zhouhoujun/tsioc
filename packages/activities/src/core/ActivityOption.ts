@@ -3,11 +3,32 @@ import { BootOption } from '@tsdi/boot';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
 import { ActivityContext } from './ActivityContext';
+import { type } from 'os';
 
 
 export const WorkflowId = new InjectToken<string>('Workflow_ID');
 
 
+/**
+ * selectors.
+ *
+ * @export
+ * @enum {number}
+ */
+export enum Activities {
+    if = 'if',
+    elseif = 'elseif',
+    else = 'else',
+    dowhile = 'dowhile',
+    while = 'while',
+    switch = 'switch',
+    throw = 'throw',
+    try = 'try',
+    catch = 'catch',
+    invoke = 'invoke',
+    sequence = 'sequence',
+    parallel = 'parallel'
+}
 
 
 /**
@@ -70,7 +91,34 @@ export interface ActivityOption<T extends ActivityContext> extends BootOption {
      * @memberof BootContext
      */
     runnable?: WorkflowInstance<T>;
+
+    /**
+     * activities component template scope.
+     *
+     * @type {TemplateScope<T>}
+     * @memberof ActivityOption
+     */
+    template?: TemplateScope<T>
 }
+
+
+export interface TemplateOption<T extends ActivityContext> {
+    /**
+     * name.
+     *
+     * @type {string}
+     * @memberof TemplateOption
+     */
+    name?: string;
+    /**
+     * activity selector math the template option tag.
+     *
+     * @type {string}
+     * @memberof ConditionOption
+     */
+    activity: string | Activities | Type<any>;
+}
+
 
 
 export interface InvokeTarget {
@@ -79,25 +127,17 @@ export interface InvokeTarget {
     args: any[]
 }
 
-export interface InvokeTargetOption<T extends ActivityContext> extends ActivityOption<T> {
+export interface InvokeTargetOption<T extends ActivityContext>  extends TemplateOption<T> {
     invoke: Expression<InvokeTarget>;
 }
 
-/**
- * condition option.
- *
- * @export
- * @interface BodyOption
- * @extends {ActivityOption}
- */
-export interface BodyOption<T extends ActivityContext> extends ActivityOption<T> {
-    /**
-     * body.
-     *
-     * @type {(ActivityType<T> | ActivityType<T>[])}
-     * @memberof BodyOption
-     */
-    body: ActivityType<T> | ActivityType<T>[];
+
+export interface IBodyOption<T extends ActivityContext> {
+    body?: ActivityType<T>[];
+}
+
+
+export interface BodyOption<T extends ActivityContext> extends TemplateOption<T>, IBodyOption<T> {
 }
 
 /**
@@ -107,7 +147,7 @@ export interface BodyOption<T extends ActivityContext> extends ActivityOption<T>
  * @interface ConditionOption
  * @extends {ActivityOption}
  */
-export interface ConditionOption<T extends ActivityContext> extends ActivityOption<T> {
+export interface ConditionOption<T extends ActivityContext> extends BodyOption<T> {
     /**
      * condition
      *
@@ -115,60 +155,10 @@ export interface ConditionOption<T extends ActivityContext> extends ActivityOpti
      * @memberof ConditionOption
      */
     condition: Expression<boolean>;
-
-    /**
-     * body.
-     *
-     * @type {(ActivityType<T> | ActivityType<T>[])}
-     * @memberof BodyOption
-     */
-    body?: ActivityType<T> | ActivityType<T>[];
 }
 
 
-
-
-
-
-
-export interface IfActivityOption<T extends ActivityContext> extends ActivityOption<T> {
-    if: ConditionOption<T>;
-}
-
-export interface ElseIfActivityOption<T extends ActivityContext> extends ActivityOption<T> {
-    elseif?: ConditionOption<T>;
-}
-
-export interface ElseActivityOption<T extends ActivityContext> extends ActivityOption<T> {
-    else?: ActivityType<T> | ActivityType<T>[];
-}
-
-export interface ConfirmActivityOption<T extends ActivityContext> extends ActivityOption<T> {
-    confirm: ConditionOption<T>;
-}
-
-export interface WhileActivityOption<T extends ActivityContext> extends ActivityOption<T> {
-    while: ConditionOption<T>;
-}
-
-export interface DoWhileActivityOption<T extends ActivityContext> extends ActivityOption<T> {
-    dowhile: ConditionOption<T>;
-}
-
-export interface SequenceOption<T extends ActivityContext> extends ActivityOption<T> {
-    sequence: ActivityType<T>[];
-}
-
-export interface ParallelOption<T extends ActivityContext> extends ActivityOption<T> {
-    parallel: ActivityType<T>[];
-}
-
-export interface ExecuteOption<T extends ActivityContext> extends ActivityOption<T> {
-    execute: ActivityType<T> | ActivityType<T>[];
-}
-
-
-export interface TimerOption<T extends ActivityContext> extends ActivityOption<T> {
+export interface TimerOption<T extends ActivityContext> extends BodyOption<T> {
     /**
      * time.
      *
@@ -176,60 +166,58 @@ export interface TimerOption<T extends ActivityContext> extends ActivityOption<T
      * @memberof TimerOption
      */
     time: Expression<number>;
-    /**
-     * body.
-     *
-     * @type {(ActivityType<T> | ActivityType<T>[])}
-     * @memberof ConditionOption
-     */
-    body: ActivityType<T> | ActivityType<T>[];
 }
 
-export interface DelaylOption<T extends ActivityContext> extends ActivityOption<T> {
-    delay: TimerOption<T>;
-}
-
-export interface IntervalOption<T extends ActivityContext> extends ActivityOption<T> {
-    interval: TimerOption<T>;
-}
-
-export interface ThrowOption<T extends ActivityContext> extends ActivityOption<T> {
+export interface ThrowOption<T extends ActivityContext> extends TemplateOption<T> {
     throw: Expression<Error>;
 }
 
-export interface SwitchOption<T extends ActivityContext> extends ActivityOption<T> {
-    switch: Expression<any>;
+export interface SwitchOption<T extends ActivityContext> extends TemplateOption<T> {
+    switch: Expression<string|number>;
     cases: CaseOption<T>[];
+    defaults?: ActivityType<T>[];
 }
 
-export interface CaseOption<T extends ActivityContext> extends ActivityOption<T> {
-    case: Expression<any>;
+export interface CaseOption<T extends ActivityContext> extends IBodyOption<T> {
     /**
-     * body.
+     * case
      *
-     * @type {(ActivityType<T> | ActivityType<T>[])}
-     * @memberof ConditionOption
+     * @type {*}
+     * @memberof CaseOption
      */
-    body: ActivityType<T> | ActivityType<T>[];
+    case: any;
 }
 
+export interface CatchOption<T extends ActivityContext> extends IBodyOption<T> {
+    /**
+     * to catch typeof this error.
+     *
+     * @type {Type<Error>}
+     * @memberof CatchOption
+     */
+    error: Type<Error>;
+}
 
-export interface TryCatchOption<T extends ActivityContext> extends ActivityOption<T> {
+export interface TryOption<T extends ActivityContext> extends TemplateOption<T> {
     try: ActivityType<T>[];
-    catchs: ActivityType<T>[];
-    finally?: ActivityType<T>
+    catchs?: CatchOption<T>[];
+    finally?: ActivityType<T>[];
 }
 
 export type ControlType<T extends ActivityContext> =
-    ExecuteOption<T> | ConditionOption<T> | IfActivityOption<T> | ConfirmActivityOption<T>
-    | WhileActivityOption<T> | DoWhileActivityOption<T> | SequenceOption<T> | ParallelOption<T>
-    | DelaylOption<T> | IntervalOption<T> | ThrowOption<T> | SwitchOption<T> | TryCatchOption<T>;
+    ConditionOption<T> | InvokeTargetOption<T> | BodyOption<T>
+    | TimerOption<T> | ThrowOption<T> | SwitchOption<T> | TryOption<T>;
 
+
+export type TemplateType<T extends ActivityContext> = Type<any> | ControlType<T> | PromiseUtil.ActionHandle<T>;
 
 /**
  *  activity type.
  */
-export type ActivityType<T extends ActivityContext> = Type<any> | Activity<T> | PromiseUtil.ActionHandle<T> | ControlType<T>;
+export type ActivityType<T extends ActivityContext> = TemplateType<T> | Activity<T>;
+
+
+export type TemplateScope<T extends ActivityContext> = TemplateType<T> | TemplateType<T>[];
 
 /**
  * expression.

@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, IntervalOption } from '../core';
+import { ActivityContext } from '../core';
 import { TimerActivity } from './TimerActivity';
 
 /**
@@ -12,14 +12,10 @@ import { TimerActivity } from './TimerActivity';
 @Task('interval')
 export class IntervalActivity<T extends ActivityContext> extends TimerActivity<T> {
 
-    async init(option: IntervalOption<T>) {
-        this.initTimerOption(option.interval);
-    }
-
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         let interval = await this.resolveExpression<number>(this.time, ctx);
         setInterval(() => {
-            super.execute(ctx);
+            this.execBody(ctx);
         }, interval);
     }
 }

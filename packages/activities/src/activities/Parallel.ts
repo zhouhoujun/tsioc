@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, ParallelOption } from '../core';
-import { ControlActivity } from './ControlActivity';
+import { ActivityContext } from '../core';
+import { BodyActivity } from './BodyActivity';
 
 
 
@@ -12,11 +12,8 @@ import { ControlActivity } from './ControlActivity';
  * @extends {ControlActivity}
  */
 @Task('parallel')
-export class ParallelActivity<T extends ActivityContext> extends ControlActivity<T> {
+export class ParallelActivity<T extends ActivityContext> extends BodyActivity<T> {
 
-    async init(option: ParallelOption<T>) {
-        this.initBody(option.parallel);
-    }
     /**
      * execute parallel.
      *
@@ -25,7 +22,7 @@ export class ParallelActivity<T extends ActivityContext> extends ControlActivity
      * @memberof ParallelActivity
      */
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        await Promise.all(this.activities.map(act => this.execActivity(ctx, [act])));
+        await Promise.all(this.body.map(act => this.execActivity(ctx, act)));
         await next();
     }
 }

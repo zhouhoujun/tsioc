@@ -1,10 +1,10 @@
-import { Task, Activity, SequenceActivity, ActivityContext } from '../src';
+import { Task, Activity, SequenceActivity, ActivityContext, Activities } from '../src';
 
 @Task('stest')
-export class SimpleTask extends Activity {
-    protected async execute(): Promise<void> {
+export class SimpleTask extends Activity<ActivityContext> {
+    async execute(ctx: ActivityContext, next: () => Promise<void>): Promise<void> {
         // console.log('before simple task:', this.name);
-        this.context.result = await Promise.resolve('simple task')
+        ctx.data = await Promise.resolve('simple task')
             .then(val => {
                 console.log('return simple task:', val);
                 return val;
@@ -13,13 +13,30 @@ export class SimpleTask extends Activity {
 
 }
 
-@Task('comptest')
-export class SimpleCTask extends SequenceActivity {
+@Task({
+    selector: 'comptest',
+    template: [
+        { activity: Activities.if, condition: (ctx) => !!ctx.args[0], body: [] },
+        {
+            activity: Activities.else,
+            body: [
+                {
+                    activity: Activities.switch,
+                    switch: (ctx) => ctx.configures.length,
+                    cases: [
+                        { case: 1, body: [] }
+                    ]
+                }
+            ]
+        }
+    ]
+})
+export class SimpleCTask extends SequenceActivity<ActivityContext> {
 
-    protected async execute(): Promise<void> {
-        await super.execute();
+    async execute(ctx: ActivityContext, next?: () => Promise<void>): Promise<void> {
+        await super.execute(ctx, next);
         // console.log('before component task:', this.name);
-        this.context.result = await Promise.resolve('component task')
+        ctx.data = await Promise.resolve('component task')
             .then(val => {
                 console.log('return component task:', val);
                 return val;
@@ -31,18 +48,17 @@ export class SimpleCTask extends SequenceActivity {
 @Task({
     name: 'test-module',
     // activity: SequenceActivity,
-    sequence: [
+    template: [
         {
-            name: 'test------3',
-            task: SimpleTask
+            // name: 'test------3',
+            activity: Activities.if,
+            condition: ctx => ctx.args[0],
+            body: [SimpleTask]
         },
-        {
-            name: 'test------4',
-            task: SimpleCTask
-        }
+        SimpleCTask
     ]
 })
-export class TaskModuleTest extends SequenceActivity {
+export class TaskModuleTest extends SequenceActivity<ActivityContext>  {
 
 }
 

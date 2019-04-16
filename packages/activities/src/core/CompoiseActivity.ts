@@ -69,13 +69,9 @@ export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
     }
 
     async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
-        this.execActions(ctx, next);
+        await this.execActions(ctx, this.getActions(), next);
     }
 
-    protected async execActions(ctx: T, next?: () => Promise<void>, actionGetter?: () => PromiseUtil.ActionHandle<T>[]): Promise<void> {
-        let actions = actionGetter ? actionGetter() : this.getActions();
-        await PromiseUtil.runInChain(actions, ctx, next);
-    }
 
     protected getActions(): PromiseUtil.ActionHandle<T>[] {
         if (!this.actions) {

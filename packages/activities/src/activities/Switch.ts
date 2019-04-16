@@ -1,15 +1,6 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, ActivityType, Activity } from '../core';
-import { ControlActivity } from './ControlActivity';
-
-@Task('case')
-export abstract class CaseActivity<T extends ActivityContext> extends Activity<T> {
-    case: any;
-    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-
-    }
-
-}
+import { ActivityContext, ActivityType, SwitchOption, Expression, Activity } from '../core';
+import { isArray } from '@tsdi/ioc';
 
 /**
  * Switch control activity.
@@ -19,21 +10,34 @@ export abstract class CaseActivity<T extends ActivityContext> extends Activity<T
  * @extends {ControlActivity}
  */
 @Task('switch')
-export class SwitchActivity<T extends ActivityContext> extends ControlActivity<T> {
+export class SwitchActivity<T extends ActivityContext> extends Activity<T> {
 
     defaults: ActivityType<T>[];
+    cases: Map<string | number, ActivityType<T> | ActivityType<T>[]>;
+    switch: Expression<string | number>;
+    async init(option: SwitchOption<T>) {
+        this.cases = new Map();
+        option.cases.forEach(ca => {
+            this.addCase(ca.case, ca.body);
+        });
+        this.switch = option.switch;
+        this.defaults = isArray(option.defaults) ? option.defaults : [option.defaults];
+    }
 
-    addCase(activity: CaseActivity<T>) {
-        this.use(activity);
+    addCase(key: any, activity: ActivityType<T> | ActivityType<T>[]) {
+        this.cases.set(key, activity);
     }
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
-        let matchkey = await this.resolveSelector<any>(ctx);
-        let casehandle = this.activities.find(it => it instanceof CaseActivity && it.case === matchkey);
-        if (casehandle) {
-            await this.execActivity(ctx, casehandle, next);
+        let matchkey = await this.resolveExpression(this.switch, ctx);
+        let activity = this.cases.get(matchkey);
+
+        if (activity) {
+            await this.execActivity(ctx, activity, next);
         } else if (this.defaults.length) {
-            await this.execActivity(ctx, ...this.defaults.concat([next]));
+            await this.execActivity(ctx, this.defaults, next);
+        } else {
+            await next();
         }
     }
 }

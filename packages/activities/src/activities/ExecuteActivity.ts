@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, ExecuteOption } from '../core';
-import { ControlActivity } from './ControlActivity';
+import { ActivityContext } from '../core';
+import { BodyActivity } from './BodyActivity';
 
 
 /**
@@ -12,9 +12,6 @@ import { ControlActivity } from './ControlActivity';
  * @template T
  */
 @Task('execute')
-export class ExecuteActivity<T extends ActivityContext> extends ControlActivity<T>  {
+export class ExecuteActivity<T extends ActivityContext> extends BodyActivity<T>  {
 
-    async init(option: ExecuteOption<T>) {
-        this.initBody(option.execute);
-    }
 }

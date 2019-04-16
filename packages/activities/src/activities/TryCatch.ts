@@ -1,6 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, ActivityType } from '../core';
-import { ControlActivity } from './ControlActivity';
+import { ActivityContext, ActivityType, Activity } from '../core';
 
 
 /**
@@ -11,14 +10,14 @@ import { ControlActivity } from './ControlActivity';
  * @extends {ControlActivity}
  */
 @Task('try')
-export class TryCatchActivity<T extends ActivityContext> extends ControlActivity<T> {
-
+export class TryCatchActivity<T extends ActivityContext> extends Activity<T> {
+    try: ActivityType<T>[];
     catchs: ActivityType<T>[];
     finallies: ActivityType<T>[];
 
     async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
         try {
-            await super.execute(ctx, next);
+            await this.execActivity(ctx, this.try, next);
         } catch (err) {
             await this.execActivity(ctx, this.catchs, next);
         } finally {
