@@ -4,9 +4,10 @@ import {
 import { ITranslator } from './Translator';
 import { BootContext, createAnnoationContext } from '@tsdi/boot';
 import { IContainer } from '@tsdi/core';
-import { CtxType, ActivityOption } from './ActivityOption';
+import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
+import { ActivityConfigure, CtxType } from './ActivityConfigure';
 
 
 /**
@@ -59,7 +60,7 @@ export class ActivityContext extends BootContext {
         this._input = data;
     }
 
-    annoation: ActivityOption<ActivityContext>;
+    annoation: ActivityConfigure<ActivityContext>;
 
     /**
      * bootstrap runnable service.

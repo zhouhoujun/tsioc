@@ -7,6 +7,7 @@ import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
 import { ActivityOption } from './ActivityOption';
 import { ExecuteActivity } from '../activities';
+import { ActivityConfigure } from './ActivityConfigure';
 
 /**
  *run state.
@@ -73,13 +74,13 @@ export class WorkflowInstance<T extends ActivityContext> extends Service<Activit
 
 
     async onInit(): Promise<void> {
-        let mgr = this.context.getConfigureManager<ActivityOption<T>>();
+        let mgr = this.context.getConfigureManager<ActivityConfigure<T>>();
         await mgr.getConfig();
         let target = this.getTarget();
         if (target instanceof Activity) {
             this._activity = target;
         } else {
-            let option = this.context.annoation as ActivityOption<T>;
+            let option = this.context.annoation as ActivityConfigure<T>;
             this._activity = await this.container.get(BuilderService).create(<ActivityOption<T>>{ execute: option, module: ExecuteActivity })
         }
     }

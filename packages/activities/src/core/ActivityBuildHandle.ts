@@ -2,7 +2,7 @@ import { BootHandle } from '@tsdi/boot';
 import { ActivityContext } from './ActivityContext';
 import { Singleton, isArray } from '@tsdi/ioc';
 import { Activity } from './Activity';
-import { Activities } from './ActivityOption';
+import { Activities } from './ActivityConfigure';
 
 @Singleton
 export class ActivityBuildHandle extends BootHandle {
