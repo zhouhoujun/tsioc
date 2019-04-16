@@ -1,5 +1,5 @@
 import { Task } from '../decorators';
-import { ActivityContext, Expression, ConditionOption } from '../core';
+import { ActivityContext, Expression, ConditionTemplate } from '../core';
 import { BodyActivity } from './BodyActivity';
 
 
@@ -16,7 +16,7 @@ export class ConditionActivity<T extends ActivityContext> extends BodyActivity<T
 
     condition: Expression<boolean>;
 
-    async init(option: ConditionOption<T>) {
+    async init(option: ConditionTemplate<T>) {
         if (option.condition) {
             this.condition = option.condition;
             await super.init(option);

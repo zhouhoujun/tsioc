@@ -2,7 +2,7 @@ import { Task } from '../decorators/Task';
 import { PromiseUtil } from '@tsdi/ioc';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
-import { ActivityType } from './ActivityOption';
+import { ActivityType } from './ActivityConfigure';
 
 /**
  * chain activity.

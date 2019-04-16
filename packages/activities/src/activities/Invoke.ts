@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, InvokeTargetOption, InvokeTarget, Expression, Activity } from '../core';
+import { ActivityContext, InvokeTemplate, InvokeTarget, Expression, Activity } from '../core';
 
 
 /**
@@ -13,7 +13,7 @@ import { ActivityContext, InvokeTargetOption, InvokeTarget, Expression, Activity
 export class InvokeActivity<T extends ActivityContext> extends Activity<T> {
 
     invoke: Expression<InvokeTarget>;
-    async init(option: InvokeTargetOption<T>) {
+    async init(option: InvokeTemplate<T>) {
         this.invoke = option.invoke;
     }
 

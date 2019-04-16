@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, ThrowOption, Expression, Activity } from '../core';
+import { ActivityContext, ThrowTemplate, Expression, Activity } from '../core';
 
 
 /**
@@ -13,7 +13,7 @@ import { ActivityContext, ThrowOption, Expression, Activity } from '../core';
 export class ThrowActivity<T extends ActivityContext> extends Activity<T> {
 
     throw: Expression<Error>;
-    async init(option: ThrowOption<T>) {
+    async init(option: ThrowTemplate<T>) {
         this.throw = option.throw;
     }
 

@@ -1,5 +1,5 @@
 import { Task } from '../decorators';
-import { Expression, TimerOption, ActivityContext } from '../core';
+import { Expression, TimerTemplate, ActivityContext } from '../core';
 import { BodyActivity } from './BodyActivity';
 
 
@@ -8,7 +8,7 @@ export abstract class TimerActivity<T extends ActivityContext> extends BodyActiv
 
     time: Expression<number>;
 
-    async init(option: TimerOption<T>) {
+    async init(option: TimerTemplate<T>) {
         if (option.time) {
             this.time = option.time;
             await super.init(option);

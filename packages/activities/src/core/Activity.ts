@@ -7,8 +7,9 @@ import {
     isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
     isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, isArray
 } from '@tsdi/ioc';
-import { ActivityType, Expression, ActivityOption, TemplateType } from './ActivityOption';
+import { ActivityType, Expression, TemplateType } from './ActivityConfigure';
 import { SelectorManager } from './SelectorManager';
+import { ActivityOption } from './ActivityOption';
 
 
 /**

@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, ActivityType, SwitchOption, Expression, Activity } from '../core';
+import { ActivityContext, ActivityType, SwitchTemplate, Expression, Activity } from '../core';
 import { isArray } from '@tsdi/ioc';
 
 /**
@@ -15,7 +15,7 @@ export class SwitchActivity<T extends ActivityContext> extends Activity<T> {
     defaults: ActivityType<T>[];
     cases: Map<string | number, ActivityType<T> | ActivityType<T>[]>;
     switch: Expression<string | number>;
-    async init(option: SwitchOption<T>) {
+    async init(option: SwitchTemplate<T>) {
         this.cases = new Map();
         option.cases.forEach(ca => {
             this.addCase(ca.case, ca.body);

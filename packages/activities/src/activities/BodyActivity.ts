@@ -1,5 +1,5 @@
 import { Task } from '../decorators';
-import { ActivityContext, BodyOption, Activity, ActivityType } from '../core';
+import { ActivityContext, BodyTemplate, Activity, ActivityType } from '../core';
 import { PromiseUtil } from '@tsdi/ioc';
 
 /**
@@ -16,7 +16,7 @@ export class BodyActivity<T extends ActivityContext> extends Activity<T> {
     body: ActivityType<T>[];
 
     private bodyActions: PromiseUtil.ActionHandle<T>[];
-    async init(option: BodyOption<T>) {
+    async init(option: BodyTemplate<T>) {
         this.body = option.body || [];
     }
 
