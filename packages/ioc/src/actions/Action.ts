@@ -22,6 +22,14 @@ export interface ActionContextOption {
  */
 export class IocActionContext {
 
+    /**
+     * currScope
+     *
+     * @type {IocAction<any>}
+     * @memberof IocActionContext
+     */
+    currScope?: any;
+
     protected raiseContainerGetter: () => IIocContainer;
 
 

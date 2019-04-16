@@ -82,13 +82,6 @@ export abstract class RegisterActionContext extends DecoratorActionContext {
      */
     targetReflect?: ITypeReflect;
 
-    /**
-     * currScope
-     *
-     * @type {IocAction<any>}
-     * @memberof IocActionContext
-     */
-    currScope?: any;
 
     constructor(targetType: Type<any>, raiseContainer?: IIocContainer | (() => IIocContainer)) {
         super(raiseContainer);
