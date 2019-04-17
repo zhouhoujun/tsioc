@@ -19,7 +19,7 @@ export class MetadataService extends IocCoreService {
      * @returns {string[]}
      * @memberof LifeScope
      */
-    getParamerterNames<T>(type: Type<T>, propertyKey: string): string[] {
+    getParamerterNames<T>(type: ClassType<T>, propertyKey: string): string[] {
         let metadata = getOwnParamerterNames(type);
         let paramNames = [];
         if (metadata && metadata.hasOwnProperty(propertyKey)) {

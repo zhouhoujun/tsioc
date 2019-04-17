@@ -7,7 +7,7 @@ import {
     isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
     isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, isArray
 } from '@tsdi/ioc';
-import { ActivityType, Expression, TemplateType } from './ActivityConfigure';
+import { ActivityType, Expression, ControlTemplate } from './ActivityConfigure';
 import { SelectorManager } from './SelectorManager';
 import { ActivityOption } from './ActivityOption';
 
@@ -32,6 +32,12 @@ export abstract class Activity<T extends ActivityContext> {
      */
     name: string;
 
+    /**
+     * conatiner.
+     *
+     * @type {IContainer}
+     * @memberof Activity
+     */
     @Inject(ContainerToken)
     container: IContainer;
 
@@ -42,10 +48,10 @@ export abstract class Activity<T extends ActivityContext> {
     /**
      * init activity.
      *
-     * @param {TemplateType<T>} option
+     * @param {ControlTemplate<T>} option
      * @memberof Activity
      */
-    async init(option: TemplateType<T>) {
+    async init(option: ControlTemplate<T>) {
 
     }
 

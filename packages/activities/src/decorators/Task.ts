@@ -3,6 +3,7 @@ import {
     isClass, ITypeDecorator, lang, ClassType
 } from '@tsdi/ioc';
 import { ActivityMetadata } from '../metadatas/ActivityMetadata';
+import { RegScope } from '@tsdi/boot';
 
 
 /**
@@ -73,6 +74,8 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             if (metadataExtends) {
                 metadataExtends(metadata as T);
             }
+
+            metadata.regScope = metadata.regScope || RegScope.boot;
 
             if (!metadata.name && isClass(metadata.type)) {
                 metadata.name = lang.getClassName(metadata.type);

@@ -28,6 +28,14 @@ export enum Activities {
     parallel = 'parallel'
 }
 
+/**
+ * activity configuration.
+ *
+ * @export
+ * @interface ActivityConfigure
+ * @extends {RunnableConfigure}
+ * @template T
+ */
 export interface ActivityConfigure<T extends ActivityContext> extends RunnableConfigure {
     /**
     * action name.
@@ -35,7 +43,7 @@ export interface ActivityConfigure<T extends ActivityContext> extends RunnableCo
     * @type {string}
     * @memberof ActivityConfigure
     */
-   name?: string;
+    name?: string;
     /**
      * task title.
      *
@@ -60,7 +68,13 @@ export interface ActivityConfigure<T extends ActivityContext> extends RunnableCo
     template?: ActivityTemplate<T>
 }
 
-
+/**
+ * template option.
+ *
+ * @export
+ * @interface TemplateOption
+ * @template T
+ */
 export interface TemplateOption<T extends ActivityContext> {
     /**
      * name.
@@ -116,7 +130,14 @@ export interface ConditionTemplate<T extends ActivityContext> extends BodyTempla
     condition: Expression<boolean>;
 }
 
-
+/**
+ * timer template.
+ *
+ * @export
+ * @interface TimerTemplate
+ * @extends {BodyTemplate<T>}
+ * @template T
+ */
 export interface TimerTemplate<T extends ActivityContext> extends BodyTemplate<T> {
     /**
      * time.
@@ -127,6 +148,14 @@ export interface TimerTemplate<T extends ActivityContext> extends BodyTemplate<T
     time: Expression<number>;
 }
 
+/**
+ * throw template.
+ *
+ * @export
+ * @interface ThrowTemplate
+ * @extends {TemplateOption<T>}
+ * @template T
+ */
 export interface ThrowTemplate<T extends ActivityContext> extends TemplateOption<T> {
     throw: Expression<Error>;
 }

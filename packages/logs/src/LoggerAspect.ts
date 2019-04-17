@@ -1,7 +1,7 @@
 import { Level } from './Level';
 import { Joinpoint, JoinpointState } from '@tsdi/aop';
-import { IContainer } from '@tsdi/core';
-import { Abstract, isFunction, Type, isToken, isString, isObject, lang, ObjectMapProvider } from '@tsdi/ioc'
+import { IContainer, ContainerToken } from '@tsdi/core';
+import { Abstract, isFunction, Type, isToken, isString, isObject, lang, ObjectMapProvider, Inject } from '@tsdi/ioc'
 import { LoggerMetadata } from './decorators/Logger';
 import { LogConfigure } from './LogConfigure';
 import { ILogger } from './ILogger';
@@ -21,7 +21,7 @@ export abstract class LoggerAspect {
     private _logger: ILogger;
     private _logManger: IConfigureLoggerManager;
 
-    constructor(protected container: IContainer, private config?: LogConfigure | Type<LogConfigure>) {
+    constructor(@Inject(ContainerToken) protected container: IContainer, private config?: LogConfigure | Type<LogConfigure>) {
 
     }
 

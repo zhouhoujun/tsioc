@@ -12,6 +12,7 @@ import { ActivityContext, Activity } from '../core';
  */
 @Task('expression')
 export class ExpressionActivity<T extends ActivityContext> extends Activity<T> {
+
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
         // ctx.preCondition = await this.resolveSelector<boolean>(ctx);
         next();

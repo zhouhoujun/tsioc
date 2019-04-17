@@ -2,6 +2,7 @@ import { BootOption } from '@tsdi/boot';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
 import { ActivityContext } from './ActivityContext';
+import { ActivityTemplate } from './ActivityConfigure';
 
 
 
@@ -43,4 +44,12 @@ export interface ActivityOption<T extends ActivityContext> extends BootOption {
      * @memberof BootContext
      */
     runnable?: WorkflowInstance<T>;
+
+    /**
+     * activities component template scope.
+     *
+     * @type {ActivityTemplate<T>}
+     * @memberof ActivityConfigure
+     */
+    template?: ActivityTemplate<T>
 }

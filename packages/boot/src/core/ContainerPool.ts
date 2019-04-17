@@ -41,6 +41,8 @@ export class ContainerPool {
         } else {
             this.setParent(container, parent || this.root);
         }
+
+        container.bindProvider(RootContainerToken, this.root);
         container.bindProvider(ContainerPoolToken, () => this);
         container.bindProvider(ContainerPool, () => this);
         container.register(BootModule);
@@ -85,7 +87,6 @@ export class ContainerPool {
         if (this.isRoot(container)) {
             return;
         }
-        container.bindProvider(RootContainerToken, this.root);
         if (!container.has(ContainerPoolToken)) {
             container.bindProvider(ContainerPoolToken, () => this);
             container.bindProvider(ContainerPool, () => this);

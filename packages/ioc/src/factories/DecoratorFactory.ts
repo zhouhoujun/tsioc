@@ -208,7 +208,7 @@ export function getPropDecorators(target: Type<any> | AbstractType<any>): string
  * @returns {string[]}
  */
 export function getParamDecorators(target: any, propertyKey?: string): string[] {
-    return ((propertyKey && propertyKey !== 'constructor') ? Reflect.getMetadataKeys(target, propertyKey) : Reflect.getOwnMetadataKeys(lang.getClass(target)) || [])
+    return ((propertyKey && propertyKey !== 'constructor') ? Reflect.getMetadataKeys(target, propertyKey) : Reflect.getMetadataKeys(lang.getClass(target)) || [])
         .filter(d => d && isString(d) && /^@\S+__params$/.test(d))
         .map((d: string) => d.replace(/__params$/ig, ''));
 }

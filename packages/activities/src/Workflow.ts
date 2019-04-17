@@ -3,7 +3,7 @@ import {
     UUIDToken, RandomUUIDFactory, WorkflowInstance, ActivityContext,
     ActivityType, ActivityOption
 } from './core';
-import { Type } from '@tsdi/ioc';
+import { Type, isClass } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 import { CoreModule } from './CoreModule';
@@ -18,10 +18,15 @@ import { SequenceActivity } from './activities';
  */
 export class Workflow extends BootApplication {
 
-    context: ActivityContext;
     protected onInit(target: Type<any> | ActivityOption<ActivityContext> | ActivityContext) {
         super.onInit(target);
-        this.use(AopModule)
+        if (!isClass(target)) {
+            if (!target.module && target.template) {
+                target.module = SequenceActivity;
+            }
+        }
+        this.container
+            .use(AopModule)
             .use(LogModule)
             .use(CoreModule);
     }
@@ -29,6 +34,10 @@ export class Workflow extends BootApplication {
 
     getWorkflow<T extends ActivityContext>(workflowId: string): WorkflowInstance<T> {
         return this.getPools().getRoot().get(workflowId);
+    }
+
+    getContext(): ActivityContext {
+        return super.getContext() as ActivityContext;
     }
 
     /**
@@ -60,9 +69,9 @@ export class Workflow extends BootApplication {
         return await new Workflow(target).run(...args) as T;
     }
 
-    protected initContext(args: string[]) {
-        super.initContext(args);
-        this.context.id = this.context.id || this.createUUID();
+    protected initContext(ctx: ActivityContext, args: string[]) {
+        super.initContext(ctx, args);
+        ctx.id = ctx.id || this.createUUID();
     }
 
     protected createUUID() {

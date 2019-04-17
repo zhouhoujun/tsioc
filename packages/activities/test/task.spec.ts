@@ -9,6 +9,7 @@ describe('activity test', () => {
         it('should bootstrap with single task.', async () => {
             let ctx = await Workflow.run(SimpleTask);
             let runner = ctx.runnable;
+            // console.log(ctx);
             expect(runner instanceof WorkflowInstance).toBe(true);
             let result = await runner.start();
             // console.log(result);
@@ -35,7 +36,6 @@ describe('activity test', () => {
         it('should bootstrap with configure.', async () => {
             let result = await Workflow.run({
                 name: 'test1',
-                module: SequenceActivity,
                 template: [
                     {
                         name: 'test------1',
@@ -46,6 +46,7 @@ describe('activity test', () => {
                         activity: SimpleCTask
                     }
                 ]
+
             });
             // console.log('configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue);
             expect(result.data).toEqual('component task');

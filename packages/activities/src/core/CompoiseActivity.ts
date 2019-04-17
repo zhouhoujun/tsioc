@@ -1,5 +1,4 @@
-import { Task } from '../decorators/Task';
-import { PromiseUtil } from '@tsdi/ioc';
+import { PromiseUtil, Injectable } from '@tsdi/ioc';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
 import { ActivityType } from './ActivityConfigure';
@@ -11,7 +10,7 @@ import { ActivityType } from './ActivityConfigure';
  * @class ChainActivity
  * @extends {ControlActivity}
  */
-@Task
+@Injectable
 export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
 
     protected activities: ActivityType<T>[] = [];
@@ -69,7 +68,10 @@ export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
     }
 
     async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
+        let scope = ctx.currScope;
+        ctx.currScope = this;
         await this.execActions(ctx, this.getActions(), next);
+        ctx.currScope = scope;
     }
 
 

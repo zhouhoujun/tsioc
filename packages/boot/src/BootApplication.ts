@@ -1,6 +1,6 @@
 import { BootContext, BootOption, BootTargetToken } from './BootContext';
 import {
-    Type, LoadType, BindProviderAction, IocSetCacheAction, ComponentBeforeInitAction,
+    Type, BindProviderAction, IocSetCacheAction, ComponentBeforeInitAction,
     ComponentInitAction, ComponentAfterInitAction, InjectReference, DesignDecoratorRegisterer,
     RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction, isClass
 } from '@tsdi/ioc';
@@ -26,7 +26,7 @@ export class BootApplication {
      * @type {BootContext}
      * @memberof BootApplication
      */
-    public context: BootContext;
+    private context: BootContext;
     /**
      * application module root container.
      *
@@ -36,10 +36,8 @@ export class BootApplication {
     public container: IContainer;
 
     protected pools: ContainerPool;
-    protected depModules: LoadType[];
 
-    constructor(target: Type<any> | BootOption | BootContext, protected baseURL?: string, protected loader?: IModuleLoader) {
-        this.depModules = [];
+    constructor(protected target: Type<any> | BootOption | BootContext, protected baseURL?: string, protected loader?: IModuleLoader) {
         this.onInit(target);
     }
 
@@ -59,10 +57,8 @@ export class BootApplication {
         } else {
             this.container = this.getPools().getRoot();
             this.container.register(BootContext);
-            this.context = this.createContext(target);
         }
         this.container.bindProvider(BootApplication, this);
-        this.container.bindProvider(new InjectReference(BootApplication, this.context.module), this);
         this.container.use(annotations, handles, runnable, services);
 
         let designReg = this.container.get(DesignDecoratorRegisterer);
@@ -76,6 +72,13 @@ export class BootApplication {
         this.container.get(ModuleDecoratorRegisterer)
             .register(Bootstrap, DIModuleRegisterScope);
 
+    }
+
+    getContext(): BootContext {
+        if (!this.context) {
+            this.context = this.createContext(this.target);
+        }
+        return this.context;
     }
 
     /**
@@ -100,22 +103,10 @@ export class BootApplication {
      * @memberof BootApplication
      */
     async run(...args: string[]): Promise<BootContext> {
-        this.initContext(args);
-        await this.container.resolve(RunnableBuildLifeScope).execute(this.context);
-        return this.context;
-    }
-
-
-    /**
-     * use module as global Depdences module.
-     *
-     * @param {...LoadType[]} modules
-     * @returns {this}
-     * @memberof RunnableBuilder
-     */
-    use(...modules: LoadType[]): this {
-        this.depModules = this.depModules.concat(modules);
-        return this;
+        let ctx = this.getContext();
+        this.initContext(ctx, args);
+        await this.container.resolve(RunnableBuildLifeScope).execute(ctx);
+        return ctx;
     }
 
     getPools(): ContainerPool {
@@ -134,10 +125,11 @@ export class BootApplication {
         return ctx;
     }
 
-    protected initContext(args: string[]) {
-        this.context.setRaiseContainer(this.container);
-        this.context.args = args;
-        this.context.regScope = this.context.regScope || RegScope.boot;
+    protected initContext(ctx: BootContext, args: string[]) {
+        this.container.bindProvider(new InjectReference(BootApplication, this.context.module), this);
+        ctx.setRaiseContainer(this.container);
+        ctx.args = args;
+        ctx.regScope = ctx.regScope || RegScope.boot;
     }
 
     protected createContainerBuilder(): IContainerBuilder {

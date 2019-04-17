@@ -45,19 +45,26 @@ export class BindDeignParamTypeAction extends IocRuntimeAction {
             params = names.map((name, idx) => {
                 return <IParameter>{
                     name: name,
-                    type: paramTokens.length ? paramTokens[idx] : undefined
+                    type: paramTokens.length ? this.checkParamType(paramTokens[idx]) : undefined
                 }
             });
         } else if (paramTokens.length) {
             params = paramTokens.map((tk, idx) => {
                 return <IParameter>{
                     name: names.length ? names[idx] : '',
-                    type: tk
+                    type: this.checkParamType(tk)
                 }
             });
         } else {
             params = [];
         }
         return params;
+    }
+
+    checkParamType(type: any): Type<any> {
+        if (type === Object) {
+            return undefined;
+        }
+        return isClass(type) ? type : undefined;
     }
 }

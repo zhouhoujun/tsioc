@@ -8,7 +8,6 @@ export class RegisterAnnoationHandle extends AnnoationHandle {
         if (!ctx.decorator) {
             let decorators = this.container.get(MetadataService)
                 .getClassDecorators(ctx.module);
-
             let mdRgr = this.container.get(ModuleDecoratorRegisterer);
             ctx.decorator = decorators.find(c => mdRgr.has(c));
             if (!ctx.decorator) {

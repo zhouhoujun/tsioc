@@ -7,7 +7,7 @@ import { IContainer } from '@tsdi/core';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
-import { ActivityConfigure, CtxType } from './ActivityConfigure';
+import { ActivityConfigure, CtxType, ActivityTemplate } from './ActivityConfigure';
 
 
 /**
@@ -18,7 +18,7 @@ import { ActivityConfigure, CtxType } from './ActivityConfigure';
  * @implements {IActivityContext<any>}
  */
 @Injectable
-@Refs(Activity)
+@Refs(Activity, BootContext)
 export class ActivityContext extends BootContext {
     /**
      * workflow id.
@@ -60,6 +60,14 @@ export class ActivityContext extends BootContext {
         this._input = data;
     }
 
+    /**
+     * activities component template scope.
+     *
+     * @type {ActivityTemplate<T>}
+     * @memberof ActivityConfigure
+     */
+    template?: ActivityTemplate<ActivityContext>;
+
     annoation: ActivityConfigure<ActivityContext>;
 
     /**
@@ -69,14 +77,6 @@ export class ActivityContext extends BootContext {
      * @memberof BootContext
      */
     runnable?: WorkflowInstance<any>;
-
-    /**
-     * assign value.
-     *
-     * @type {*}
-     * @memberof ActivityContext
-     */
-    assign: any;
 
     /**
      * previous if elseif condition.
