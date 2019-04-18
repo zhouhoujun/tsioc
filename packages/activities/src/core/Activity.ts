@@ -79,7 +79,7 @@ export abstract class Activity<T extends ActivityContext> {
             return (ctx: T, next?: () => Promise<void>) => activity.execute(ctx, next);
         } else if (isClass(activity) || isMetadataObject(activity)) {
             return async (ctx: T, next?: () => Promise<void>) => {
-                let act = await this.buildActivity(activity as Type<any> | ActivityOption<T>);
+                let act = await this.buildActivity(activity as Type<any> | ControlTemplate<T>);
                 if (act) {
                     await act.execute(ctx, next);
                 } else {
@@ -94,27 +94,26 @@ export abstract class Activity<T extends ActivityContext> {
         }
     }
 
-    protected async buildActivity(activity: Type<any> | ActivityOption<T>): Promise<Activity<T>> {
-        if (!isClass(activity)) {
-            if (!activity.module) {
-                let mgr = this.container.get(SelectorManager);
-                Object.keys(activity).some(key => {
-                    if (mgr.has(key)) {
-                        activity.module = mgr.get(key);
-                    }
-                    return isClass(activity.module);
-                });
+    protected async buildActivity(activity: Type<any> | ControlTemplate<T>): Promise<Activity<T>> {
+        let ctx: ActivityContext;
+        if (isClass(activity)) {
+            ctx = await this.container.get(BuilderService).build(activity) as ActivityContext;
+        } else {
+            let md: Type<any>;
+            let mgr = this.container.get(SelectorManager);
+            if (isClass(activity.activity)) {
+                md = activity.activity;
+            } else {
+                md = mgr.get(activity.activity)
             }
+
+            let option = {
+                module: md,
+                template: activity
+            };
+            ctx = await this.container.get(BuilderService).build(option) as ActivityContext;
         }
-        let ctx = await this.container.get(BuilderService).build(activity) as ActivityContext;
         return ctx.target;
-        // if (ctx.target instanceof Activity) {
-        //     return ctx.target;
-        // } else {
-        //     ctx.autorun = false;
-        //     await this.container.get(RunnerService).run(ctx);
-        //     return ctx.runnable.getActivity();
-        // }
     }
 
 

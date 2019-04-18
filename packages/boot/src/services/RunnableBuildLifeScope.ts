@@ -1,7 +1,7 @@
 import { Singleton, Autorun } from '@tsdi/ioc';
 import { CompositeHandle, AnnoationContext } from '../core';
 import {
-    ResolveRunnableHandle, ResolveBootstrapHandle, RunBootHandle, ModuleBuildScope
+    ResolveRunnableHandle, RunBootHandle, ModuleBuildScope
 } from '../handles';
 
 @Singleton
@@ -10,7 +10,6 @@ export class RunnableBuildLifeScope extends CompositeHandle<AnnoationContext> {
 
     setup() {
         this.use(ModuleBuildScope)
-            .use(ResolveBootstrapHandle)
             .use(ResolveRunnableHandle)
             .use(RunBootHandle);
     }

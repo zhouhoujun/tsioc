@@ -8,7 +8,6 @@ import { BuildModuleHandle } from './BuildModuleHandle';
 @Singleton
 @Autorun('setup')
 export class ResolveMoudleScope extends CompositeHandle<BootContext> {
-
     setup() {
         this.use(ResolveModuleHandle)
             .use(BuildModuleHandle)

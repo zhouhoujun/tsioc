@@ -14,8 +14,9 @@ export * from './ModuleBuildScope';
 export * from './BuildModuleHandle';
 export * from './DecoratorBuildHandle';
 export * from './ResolveMoudleScope';
-
 export * from './ResolveBootstrapHandle';
+export * from './ResolveBootScope';
+
 export * from './ResolveRunnableHandle';
 export * from './RefRunnableHandle';
 export * from './RefDecoratorRunnableHandle';
