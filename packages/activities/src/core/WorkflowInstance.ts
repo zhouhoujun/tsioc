@@ -1,8 +1,8 @@
 import { BehaviorSubject, Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import { Service, BuilderService } from '@tsdi/boot';
+import { Service, BuilderService, Runnable } from '@tsdi/boot';
 import { Joinpoint } from '@tsdi/aop';
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, Refs } from '@tsdi/ioc';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
 import { ActivityOption } from './ActivityOption';
@@ -46,6 +46,8 @@ export enum RunState {
  * @implements {ITaskRunner}
  */
 @Injectable
+@Refs(Activity, Runnable)
+@Refs('@Task', Runnable)
 export class WorkflowInstance<T extends ActivityContext> extends Service<Activity<T>> {
 
     _activity: Activity<any>;

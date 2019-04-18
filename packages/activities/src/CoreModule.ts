@@ -6,7 +6,7 @@ import * as activites from './activities';
 import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes } from '@tsdi/ioc';
 import { RegSelectorAction } from './core/RegSelectorAction';
 import { ModuleBuildDecoratorRegisterer, DIModuleRegisterScope } from '@tsdi/boot';
-import { ActivityBuildHandle } from './core';
+import { ActivityBuildHandle, BuildTemplateHandle } from './handles';
 
 /**
  * register task decorators.
@@ -29,6 +29,7 @@ export class CoreModule {
         container.get(ModuleBuildDecoratorRegisterer).register(Task, ActivityBuildHandle);
 
         container.use(core)
+            .use(BuildTemplateHandle, ActivityBuildHandle)
             .use(RunAspect)
             .use(activites);
     }

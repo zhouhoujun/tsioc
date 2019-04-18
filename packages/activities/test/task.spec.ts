@@ -8,23 +8,20 @@ describe('activity test', () => {
 
         it('should bootstrap with single task.', async () => {
             let ctx = await Workflow.run(SimpleTask);
-            let runner = ctx.runnable;
-            // console.log(ctx);
-            expect(runner instanceof WorkflowInstance).toBe(true);
-            let result = await runner.start();
+            expect(ctx.runnable instanceof WorkflowInstance).toBe(true);
             // console.log(result);
-            expect(result.result).toEqual('simple task');
+            expect(ctx.data).toEqual('simple task');
         });
 
         it('should bootstrap with single task via name or provider.', async () => {
-            let result = await Workflow.run(SimpleTask);
+            let ctx = await Workflow.run(SimpleTask);
             // console.log(result);
-            expect(result.data).toEqual('simple task');
+            expect(ctx.data).toEqual('simple task');
         });
 
         it('should bootstrap with component task.', async () => {
-            let result = await Workflow.run(SimpleCTask);
-            expect(result.data).toEqual('component task');
+            let ctx = await Workflow.run(SimpleCTask);
+            expect(ctx.data).toEqual('component task');
         });
 
         it('should bootstrap with component task via name or provider.', async () => {

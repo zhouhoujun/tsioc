@@ -107,13 +107,14 @@ export abstract class Activity<T extends ActivityContext> {
             }
         }
         let ctx = await this.container.get(BuilderService).build(activity) as ActivityContext;
-        if (ctx.target instanceof Activity) {
-            return ctx.target;
-        } else {
-            ctx.autorun = false;
-            await this.container.get(RunnerService).run(ctx);
-            return ctx.runnable.getActivity();
-        }
+        return ctx.target;
+        // if (ctx.target instanceof Activity) {
+        //     return ctx.target;
+        // } else {
+        //     ctx.autorun = false;
+        //     await this.container.get(RunnerService).run(ctx);
+        //     return ctx.runnable.getActivity();
+        // }
     }
 
 
