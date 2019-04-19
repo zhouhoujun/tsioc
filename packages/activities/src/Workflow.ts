@@ -69,14 +69,6 @@ export class Workflow extends BootApplication {
         return await new Workflow(target).run(...args) as T;
     }
 
-    // protected createContext<T extends ActivityContext>(target: Type<any> | ActivityOption<T>): T {
-    //     if (!isClass(target) && !target.module) {
-    //         target.module = SequenceActivity;
-    //     }
-    //     console.log(target)
-    //     return super.createContext(target) as T;
-    // }
-
     protected initContext(ctx: ActivityContext, args: string[]) {
         super.initContext(ctx, args);
         ctx.id = ctx.id || this.createUUID();

@@ -1,6 +1,6 @@
 import { BootHandle } from '@tsdi/boot';
 import { ActivityContext, Activities } from '../core';
-import { Singleton, isArray, isClass, isFunction } from '@tsdi/ioc';
+import { Singleton, isArray, isClass, isFunction, lang } from '@tsdi/ioc';
 
 @Singleton
 export class BuildTemplateHandle extends BootHandle {
@@ -8,9 +8,10 @@ export class BuildTemplateHandle extends BootHandle {
         let template = ctx.template;
         let option = isArray(template) ? { body: template, activity: Activities.sequence } : template;
         if (isClass(option) || isFunction(option)) {
-            await ctx.target.init({ body: [option], activity: Activities.sequence })
+            await ctx.getActivity().init({ body: [option], activity: Activities.sequence })
         } else {
-            await ctx.target.init(option);
+            console.log(lang.getClass(ctx));
+            await ctx.getActivity().init(option);
         }
 
         await next();

@@ -63,7 +63,7 @@ export class SimpleCTask extends SequenceActivity<ActivityContext> {
         SimpleCTask
     ]
 })
-export class TaskModuleTest extends SequenceActivity<ActivityContext>  {
+export class TaskModuleTest  {
 
 }
 

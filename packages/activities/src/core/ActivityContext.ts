@@ -19,6 +19,7 @@ import { ActivityConfigure, CtxType, ActivityTemplate } from './ActivityConfigur
  */
 @Injectable
 @Refs(Activity, BootContext)
+@Refs('@Task', BootContext)
 export class ActivityContext extends BootContext {
     /**
      * workflow id.
@@ -77,6 +78,16 @@ export class ActivityContext extends BootContext {
      * @memberof BootContext
      */
     runnable?: WorkflowInstance<any>;
+
+    getActivity<T extends ActivityContext>(): Activity<T> {
+        if (this.target instanceof Activity) {
+            return this.target;
+        } else if (this.bootstrap instanceof Activity) {
+            return this.bootstrap;
+        } else {
+            return null;
+        }
+    }
 
     /**
      * previous if elseif condition.
