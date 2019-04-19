@@ -9,6 +9,7 @@ export class SimpleTask extends Activity<ActivityContext> {
                 console.log('return simple task:', val);
                 return val;
             });
+        await next();
     }
 
 }
@@ -34,13 +35,17 @@ export class SimpleTask extends Activity<ActivityContext> {
 export class SimpleCTask extends SequenceActivity<ActivityContext> {
 
     async execute(ctx: ActivityContext, next?: () => Promise<void>): Promise<void> {
-        await super.execute(ctx, next);
+        console.log('execute SimpleCTask');
+        await super.execute(ctx);
         // console.log('before component task:', this.name);
         ctx.data = await Promise.resolve('component task')
             .then(val => {
                 console.log('return component task:', val);
                 return val;
             });
+        if (next) {
+            await next();
+        }
     }
 }
 

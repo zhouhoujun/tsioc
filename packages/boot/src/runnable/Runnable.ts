@@ -98,7 +98,7 @@ export abstract class Runnable<T> implements IRunnable<any> {
 
 
     getTargetType(): Type<T> {
-        return this.context.module || lang.getClass(this.getTarget());
+        return lang.getClass(this.getTarget());
     }
 
     /**

@@ -15,6 +15,7 @@ export class ThrowActivity<T extends ActivityContext> extends Activity<T> {
     throw: Expression<Error>;
     async init(option: ThrowTemplate<T>) {
         this.throw = option.throw;
+        await super.init(option);
     }
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {

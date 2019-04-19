@@ -5,7 +5,7 @@ import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {
     isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
-    isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, isArray
+    isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, isArray, lang
 } from '@tsdi/ioc';
 import { ActivityType, Expression, ControlTemplate } from './ActivityConfigure';
 import { SelectorManager } from './SelectorManager';
@@ -52,7 +52,9 @@ export abstract class Activity<T extends ActivityContext> {
      * @memberof Activity
      */
     async init(option: ControlTemplate<T>) {
-
+        if (option && option.name) {
+            this.name = option.name;
+        }
     }
 
     /**
@@ -113,7 +115,13 @@ export abstract class Activity<T extends ActivityContext> {
             };
             ctx = await this.container.get(BuilderService).build(option) as ActivityContext;
         }
-        return ctx.target;
+        if (ctx.target instanceof Activity) {
+            return ctx.target
+        } else if (ctx.bootstrap instanceof Activity) {
+            return ctx.bootstrap;
+        } else {
+            return null;
+        }
     }
 
 

@@ -1,6 +1,6 @@
 import { Task } from '../decorators';
 import { ActivityContext, BodyTemplate, Activity, ActivityType } from '../core';
-import { PromiseUtil } from '@tsdi/ioc';
+import { PromiseUtil, lang } from '@tsdi/ioc';
 
 /**
  * body activity.
@@ -18,6 +18,7 @@ export class BodyActivity<T extends ActivityContext> extends Activity<T> {
     private bodyActions: PromiseUtil.ActionHandle<T>[];
     async init(option: BodyTemplate<T>) {
         this.body = option.body || [];
+        await super.init(option);
     }
 
     protected async execBody(ctx: T, next?: () => Promise<void>) {
@@ -27,7 +28,7 @@ export class BodyActivity<T extends ActivityContext> extends Activity<T> {
         await this.execActions(ctx, this.bodyActions, next);
     }
 
-    execute(ctx: T, next: () => Promise<void>): Promise<void> {
+    execute(ctx: T, next?: () => Promise<void>): Promise<void> {
         return this.execBody(ctx, next);
     }
 }

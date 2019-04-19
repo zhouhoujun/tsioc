@@ -18,10 +18,8 @@ export class ConditionActivity<T extends ActivityContext> extends BodyActivity<T
     condition: Expression<boolean>;
 
     async init(option: ConditionTemplate<T>) {
-        if (!isUndefined(option.condition)) {
-            this.condition = option.condition;
-            await super.init(option);
-        }
+        this.condition = option.condition;
+        await super.init(option);
     }
 
     async execute(ctx: T, next?: () => Promise<void>): Promise<void> {

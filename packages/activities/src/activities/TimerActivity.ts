@@ -11,7 +11,7 @@ export abstract class TimerActivity<T extends ActivityContext> extends BodyActiv
     async init(option: TimerTemplate<T>) {
         if (option.time) {
             this.time = option.time;
-            await super.init(option);
         }
+        await super.init(option);
     }
 }

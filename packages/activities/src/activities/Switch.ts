@@ -22,6 +22,7 @@ export class SwitchActivity<T extends ActivityContext> extends Activity<T> {
         });
         this.switch = option.switch;
         this.defaults = isArray(option.defaults) ? option.defaults : [option.defaults];
+        await super.init(option);
     }
 
     addCase(key: any, activity: ActivityType<T> | ActivityType<T>[]) {

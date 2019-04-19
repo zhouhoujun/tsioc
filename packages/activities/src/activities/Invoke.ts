@@ -15,6 +15,7 @@ export class InvokeActivity<T extends ActivityContext> extends Activity<T> {
     invoke: Expression<InvokeTarget>;
     async init(option: InvokeTemplate<T>) {
         this.invoke = option.invoke;
+        await super.init(option);
     }
 
     async execute(ctx: T, next: () => Promise<void>): Promise<void> {
