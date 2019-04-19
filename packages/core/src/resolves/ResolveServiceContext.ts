@@ -1,4 +1,4 @@
-import { Token, ResolveActionContext, ResolveActionOption, IIocContainer, createResolveContext } from '@tsdi/ioc';
+import { Token, ResolveActionContext, ResolveActionOption, IIocContainer, createResolveContext, Type, ClassType } from '@tsdi/ioc';
 import { TargetRef } from '../TargetService';
 /**
  * service action option.
@@ -127,6 +127,9 @@ export class ResolveServiceContext<T> extends ResolveActionContext<T> {
      * @memberof ServiceActionOption
      */
     currTargetRef?: TargetRef;
+
+
+    currTargetType?: ClassType<any>;
 
     /**
      * ref target factory.

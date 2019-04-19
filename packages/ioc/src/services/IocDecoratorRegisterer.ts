@@ -16,6 +16,10 @@ export class DecoratorRegisterer<T> extends IocCoreService {
         this.actionMap = new Map();
     }
 
+    get size(): number {
+        return this.actionMap.size;
+    }
+
     getActions(): Map<string, T[]> {
         return this.actionMap;
     }

@@ -1,7 +1,7 @@
 import { IContainer, ContainerToken } from './IContainer';
 import {
     ModuleLoader, ServicesResolveLifeScope, ServiceResolveLifeScope,
-    InjectorLifeScope
+    InjectorLifeScope, ServiceDecoratorRegisterer
 } from './services';
 import { IocExt } from './decorators';
 import {
@@ -24,6 +24,8 @@ export function registerCores(container: IContainer) {
         container.register(ModuleLoader);
     }
     container.register(InjectorLifeScope);
+
+    container.register(ServiceDecoratorRegisterer);
 
     container.register(InitServiceResolveAction);
     container.register(ResolveServiceTokenAction);

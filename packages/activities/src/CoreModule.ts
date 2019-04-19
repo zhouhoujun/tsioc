@@ -1,12 +1,14 @@
-import { IContainer, ContainerToken, IocExt, ModuleDecoratorRegisterer } from '@tsdi/core';
+import { IContainer, ContainerToken, IocExt, ModuleDecoratorRegisterer, ServiceDecoratorRegisterer } from '@tsdi/core';
 import { Task } from './decorators/Task';
 import { RunAspect } from './aop';
 import * as core from './core';
+import { TaskDecoratorServiceAction } from './resolvers';
 import * as activites from './activities';
 import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes } from '@tsdi/ioc';
 import { RegSelectorAction } from './core/RegSelectorAction';
 import { ModuleBuildDecoratorRegisterer, DIModuleRegisterScope } from '@tsdi/boot';
 import { ActivityBuildHandle, BuildTemplateHandle } from './handles';
+
 
 /**
  * register task decorators.
@@ -29,8 +31,11 @@ export class CoreModule {
         container.get(ModuleBuildDecoratorRegisterer).register(Task, ActivityBuildHandle);
 
         container.use(core)
+            .use(TaskDecoratorServiceAction)
             .use(BuildTemplateHandle, ActivityBuildHandle)
             .use(RunAspect)
             .use(activites);
+
+        container.get(ServiceDecoratorRegisterer).register(Task, TaskDecoratorServiceAction);
     }
 }
