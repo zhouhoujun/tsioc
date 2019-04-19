@@ -8,8 +8,8 @@ export class ResolveRefServiceAction extends ResolvePrivateServiceAction {
     execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
         if (ctx.currToken && !(ctx.currToken instanceof InjectReference) && (isToken(ctx.currTargetRef) || ctx.currTargetRef instanceof TargetRefService)) {
             let currtk = ctx.currToken;
-            let targetType = isToken(ctx.currTargetRef) ? ctx.currTargetRef : ctx.currTargetRef.getToken();
-            let refTk = ctx.refTargetFactory ? ctx.refTargetFactory(targetType, currtk) : new InjectReference(currtk, targetType);
+            let targetTk = ctx.currTargetToken;
+            let refTk = ctx.refTargetFactory ? ctx.refTargetFactory(targetTk, currtk) : new InjectReference(currtk, targetTk);
             let refTks = isArray(refTk) ? refTk : [refTk];
             if (!refTks.some(tk => {
                 this.resolvePrivate(ctx, tk);

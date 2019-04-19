@@ -15,12 +15,10 @@ export class ResolvePrivateServiceAction extends IocResolveServiceAction {
 
     protected resolvePrivate(ctx: ResolveServiceContext<any>, token: Token<any>) {
         if (ctx.currTargetRef && (isToken(ctx.currTargetRef) || ctx.currTargetRef instanceof TargetPrivateService)) {
-            let targetToken = isToken(ctx.currTargetRef) ? ctx.currTargetRef : ctx.currTargetRef.getToken();
-            let targetType = isClassType(targetToken) ? targetToken : this.container.getTokenProvider(targetToken);
-            if (!targetType) {
+            if (!isClassType(ctx.currTargetType)) {
                 return;
             }
-            let tk = new InjectReference(ProviderMap, targetType);
+            let tk = new InjectReference(ProviderMap, ctx.currTargetType);
             if (tk !== token) {
                 let map = this.container.has(tk) ? this.container.resolve(tk) : null;
                 if (map && map.has(token)) {

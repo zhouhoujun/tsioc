@@ -1,12 +1,11 @@
-import { Singleton, isToken, isClassType, MetadataService } from '@tsdi/ioc';
+import { Singleton, isClassType, MetadataService } from '@tsdi/ioc';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { ServiceDecoratorRegisterer } from '../services';
 
 @Singleton
-export class ResolveTargetDecoratorServiceAction extends IocResolveServiceAction {
+export class ResolveDecoratorServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext<any>, next: () => void): void {
-        console.log('ResolveTargetDecoratorServiceAction');
         if (isClassType(ctx.currTargetType)) {
             let decReg = this.container.get(ServiceDecoratorRegisterer);
             if (decReg.size > 0) {

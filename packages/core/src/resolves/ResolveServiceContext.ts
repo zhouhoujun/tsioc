@@ -129,8 +129,9 @@ export class ResolveServiceContext<T> extends ResolveActionContext<T> {
     currTargetRef?: TargetRef;
 
 
-    currTargetType?: ClassType<any>;
+    currTargetToken?: Token<any>;
 
+    currTargetType?: ClassType<any>;
     /**
      * ref target factory.
      *

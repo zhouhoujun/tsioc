@@ -1,5 +1,5 @@
 import { IocResolveServiceAction, ResolveServiceContext } from '@tsdi/core';
-import { Singleton, getOwnTypeMetadata } from '@tsdi/ioc';
+import { Singleton, getOwnTypeMetadata, isClassType } from '@tsdi/ioc';
 import { Task } from '../decorators';
 import { ActivityMetadata } from '../metadatas';
 import { ActivityContext } from '../core';
@@ -7,6 +7,9 @@ import { ActivityContext } from '../core';
 @Singleton
 export class TaskDecoratorServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext<any>, next: () => void): void {
+        if (!isClassType(ctx.currTargetType)) {
+            return next();
+        }
         let metas = getOwnTypeMetadata<ActivityMetadata>(Task, ctx.currTargetType);
         metas.some(m => {
             if (m && m.contextType) {

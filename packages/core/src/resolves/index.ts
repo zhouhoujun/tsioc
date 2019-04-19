@@ -7,7 +7,7 @@ export * from './ResolveRefServiceAction';
 export * from './ResolveServiceScope';
 export * from './ResolveServiceInClassChain';
 export * from './ResolveServiceTokenAction';
-export * from './ResolveTargetDecoratorServiceAction';
+export * from './ResolveDecoratorServiceAction';
 
 export * from './IocResolveServicesAction';
 export * from './ResolveServicesContext';

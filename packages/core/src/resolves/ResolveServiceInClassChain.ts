@@ -1,4 +1,4 @@
-import { IocCompositeAction, lang, Singleton, isToken, isClass, Autorun, isClassType } from '@tsdi/ioc';
+import { IocCompositeAction, lang, Singleton, Autorun, isClassType, isToken } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { TargetService } from '../TargetService';
 import { ResolveRefServiceAction } from './ResolveRefServiceAction';
@@ -10,12 +10,11 @@ export class ResolveServiceInClassChain extends IocCompositeAction<ResolveServic
     execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
         if (ctx.currTargetRef) {
             let currTgRef = ctx.currTargetRef;
-            let targetType = isToken(currTgRef) ? currTgRef : currTgRef.getToken();
-            let classType = isClass(targetType) ? targetType : this.container.getTokenProvider(targetType);
+            let classType = ctx.currTargetType;
+            let currTagTk = ctx.currTargetToken;
             if (isClassType(classType)) {
-                ctx.currTargetType = classType;
                 lang.forInClassChain(classType, ty => {
-                    if (ty === targetType) {
+                    if (ty === classType) {
                         return true;
                     }
                     if (currTgRef instanceof TargetService) {
@@ -23,15 +22,16 @@ export class ResolveServiceInClassChain extends IocCompositeAction<ResolveServic
                     } else {
                         ctx.currTargetRef = ty;
                     }
+                    ctx.currTargetToken = isToken(ctx.currTargetRef) ? ctx.currTargetRef : ctx.currTargetRef.getToken();
+                    ctx.currTargetType = isClassType(ctx.currTargetToken) ? ctx.currTargetToken : this.container.getTokenProvider(ctx.currTargetToken);
                     super.execute(ctx);
-                    if (ctx.instance) {
-                        return false;
-                    }
-                    return true;
+                    return !ctx.instance;
                 });
             }
             if (!ctx.instance) {
                 ctx.currTargetRef = currTgRef;
+                ctx.currTargetToken = currTagTk;
+                ctx.currTargetType = classType;
                 next && next();
             }
         } else {
