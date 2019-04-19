@@ -3,6 +3,7 @@ import { ResolveServiceContext } from './ResolveServiceContext';
 import { ResolveRefServiceAction } from './ResolveRefServiceAction';
 import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
 import { ResolveServiceInClassChain } from './ResolveServiceInClassChain';
+import { ResolveTargetDecoratorServiceAction } from './ResolveTargetDecoratorServiceAction';
 
 @Singleton
 @Autorun('setup')
@@ -28,6 +29,7 @@ export class ResolveTargetServiceAction extends IocCompositeAction<ResolveServic
     setup() {
         this.use(ResolveRefServiceAction)
             .use(ResolvePrivateServiceAction)
-            .use(ResolveServiceInClassChain);
+            .use(ResolveServiceInClassChain)
+            .use(ResolveTargetDecoratorServiceAction);
     }
 }
