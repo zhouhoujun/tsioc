@@ -4,14 +4,14 @@ export * from './ResolveTargetServiceAction';
 export * from './InitServiceResolveAction';
 export * from './ResolvePrivateServiceAction';
 export * from './ResolveRefServiceAction';
-export * from './ResolveServiceScopeAction';
+export * from './ResolveServiceScope';
 export * from './ResolveServiceInClassChain';
 export * from './ResolveServiceTokenAction';
 export * from './ResolveTargetDecoratorServiceAction';
 
 export * from './IocResolveServicesAction';
 export * from './ResolveServicesContext';
-export * from './ResolveServicesScopeAction';
+export * from './ResolveServicesScope';
 export * from './ResovleServicesRefsAction';
 export * from './ResovleServicesInTargetAction';
 export * from './ResovleServicesInRaiseAction';

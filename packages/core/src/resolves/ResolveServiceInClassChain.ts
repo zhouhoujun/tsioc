@@ -13,6 +13,7 @@ export class ResolveServiceInClassChain extends IocCompositeAction<ResolveServic
             let targetType = isToken(currTgRef) ? currTgRef : currTgRef.getToken();
             let classType = isClass(targetType) ? targetType : this.container.getTokenProvider(targetType);
             if (isClassType(classType)) {
+                ctx.currTargetType = classType;
                 lang.forInClassChain(classType, ty => {
                     if (ty === targetType) {
                         return true;

@@ -1,5 +1,5 @@
 import { Singleton, ProviderMap, Autorun, LifeScope } from '@tsdi/ioc';
-import { ResolveServicesContext, InitServiceResolveAction, ResolveServicesScopeAction } from '../resolves';
+import { ResolveServicesContext, InitServiceResolveAction, ResolveServicesScope } from '../resolves';
 
 
 @Singleton
@@ -13,6 +13,6 @@ export class ServicesResolveLifeScope<T> extends LifeScope<ResolveServicesContex
 
     setup() {
         this.use(InitServiceResolveAction)
-            .use(ResolveServicesScopeAction)
+            .use(ResolveServicesScope)
     }
 }

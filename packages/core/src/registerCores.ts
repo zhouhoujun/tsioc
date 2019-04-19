@@ -9,8 +9,8 @@ import {
     RegisterSingletionAction, DesignDecoratorRegisterer
 } from '@tsdi/ioc';
 import {
-    InitServiceResolveAction, ResolveRefServiceAction, ResolveServiceScopeAction,
-    ResolveServicesScopeAction, ResolvePrivateServiceAction, ResolveServiceInClassChain,
+    InitServiceResolveAction, ResolveRefServiceAction, ResolveServiceScope,
+    ResolveServicesScope, ResolvePrivateServiceAction, ResolveServiceInClassChain,
     ResolveDefaultServiceAction, ResolveTargetServiceAction,
     ResovleServicesInTargetAction, ResovleServicesInRaiseAction,
     ResolveServiceTokenAction
@@ -33,10 +33,10 @@ export function registerCores(container: IContainer) {
     container.register(ResolveRefServiceAction);
     container.register(ResolvePrivateServiceAction);
     container.register(ResolveDefaultServiceAction);
-    container.register(ResolveServiceScopeAction);
+    container.register(ResolveServiceScope);
     container.register(ResolveServiceInClassChain);
     container.register(ResolveTargetServiceAction);
-    container.register(ResolveServicesScopeAction);
+    container.register(ResolveServicesScope);
     container.register(ResovleServicesInTargetAction);
     container.register(ResovleServicesInRaiseAction);
 

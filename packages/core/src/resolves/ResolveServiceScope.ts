@@ -14,11 +14,10 @@ import { ResolveServiceTokenAction } from './ResolveServiceTokenAction';
  */
 @Singleton
 @Autorun('setup')
-export class ResolveServiceScopeAction extends IocCompositeAction<ResolveServiceContext<any>> {
+export class ResolveServiceScope extends IocCompositeAction<ResolveServiceContext<any>> {
 
     setup() {
         this.use(ResolveTargetServiceAction)
-            .use(ResolveServiceInClassChain)
             .use(ResolveServiceTokenAction);
     }
 }

@@ -1,4 +1,4 @@
-import { IocResolveServiceAction, ResolveServiceContext, ResolveServiceScopeAction } from '@tsdi/core';
+import { IocResolveServiceAction, ResolveServiceContext, ResolveServiceScope } from '@tsdi/core';
 import { ParentContainerToken } from '../ContainerPool';
 import { Singleton } from '@tsdi/ioc';
 
@@ -9,7 +9,7 @@ export class ResolveParentServiceAction extends IocResolveServiceAction {
         let parent = this.container.get(ParentContainerToken);
 
         while (parent && !ctx.instance) {
-            parent.resolve(ResolveServiceScopeAction).execute(ctx);
+            parent.resolve(ResolveServiceScope).execute(ctx);
             parent = parent.resolve(ParentContainerToken);
         }
 

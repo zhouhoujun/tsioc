@@ -1,5 +1,5 @@
 import {
-    ResolveServicesContext, IocResolveServicesAction, ResolveServicesScopeAction
+    ResolveServicesContext, IocResolveServicesAction, ResolveServicesScope
 } from '@tsdi/core';
 import { DIModuleExports } from '../services';
 import { Singleton, Autorun } from '@tsdi/ioc';
@@ -23,7 +23,7 @@ export class ResolveSerivesInExportAction extends IocResolveServicesAction {
     }
 
     depIterator(ctx: ResolveServicesContext<any>, resolver: IModuleResolver) {
-        resolver.getContainer().get(ResolveServicesScopeAction).execute(ctx);
+        resolver.getContainer().get(ResolveServicesScope).execute(ctx);
         if (resolver.has(DIModuleExports)) {
             resolver.resolve(DIModuleExports).getResolvers()
                 .forEach(r => {

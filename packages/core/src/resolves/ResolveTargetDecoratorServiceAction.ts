@@ -6,16 +6,13 @@ import { ServiceDecoratorRegisterer } from '../services';
 @Singleton
 export class ResolveTargetDecoratorServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext<any>, next: () => void): void {
-        console.log('ResolveTargetDecoratorServiceAction')
-        let currTgRef = ctx.currTargetRef;
-        let targetType = isToken(currTgRef) ? currTgRef : currTgRef.getToken()
-        if (isClassType(targetType)) {
-            ctx.currTargetType = targetType;
+        console.log('ResolveTargetDecoratorServiceAction');
+        if (isClassType(ctx.currTargetType)) {
             let decReg = this.container.get(ServiceDecoratorRegisterer);
             if (decReg.size > 0) {
                 this.container
                     .get(MetadataService)
-                    .getClassDecorators(targetType)
+                    .getClassDecorators(ctx.currTargetType)
                     .some(dec => {
                         if (decReg.has(dec)) {
                             this.execActions(ctx, decReg.get(dec));
