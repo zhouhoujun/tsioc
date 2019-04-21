@@ -3,7 +3,6 @@ import {
 } from '@tsdi/core';
 import { DIModuleExports } from '../services';
 import { Singleton, Autorun } from '@tsdi/ioc';
-import { ContainerPoolToken } from '../ContainerPool';
 import { IModuleResolver } from '../modules';
 
 
@@ -12,13 +11,11 @@ import { IModuleResolver } from '../modules';
 export class ResolveSerivesInExportAction extends IocResolveServicesAction {
 
     execute(ctx: ResolveServicesContext<any>, next: () => void): void {
-        if (this.container.has(ContainerPoolToken)) {
-            this.container.get(DIModuleExports).getResolvers()
-                .forEach(r => {
-                    this.depIterator(ctx, r);
-                });
+        this.container.get(DIModuleExports).getResolvers()
+            .forEach(r => {
+                this.depIterator(ctx, r);
+            });
 
-        }
         next();
     }
 
