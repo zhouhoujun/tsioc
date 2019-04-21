@@ -17,6 +17,10 @@ export class ResolveRouteServicesAction extends IocCompositeAction<ResolveServic
         super.execute(ctx, donext);
     }
 
+    protected setScope(ctx: ResolveServicesContext<any>, parentScope?: any) {
+
+    }
+
     setup() {
         this.use(ResolveSerivesInExportAction)
             .use(ResolveParentServicesAction);

@@ -3,14 +3,14 @@ import {
     IocSetCacheAction, ComponentBeforeInitAction, RuntimeDecoratorRegisterer,
     ComponentInitAction, ComponentAfterInitAction, DesignLifeScope,
     IocBeforeConstructorScope, IocAfterConstructorScope, DecoratorScopes, RuntimeMethodScope,
-    RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction, RegisterSingletionAction, ResolveLifeScope
+    RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction, RegisterSingletionAction, ResolveLifeScope, IocResolveScope
 } from '@tsdi/ioc';
 import {
     IContainer, ContainerToken, IocExt,
     ResolveTargetServiceAction, ResolvePrivateServiceAction,
-    ResolveServiceInClassChain, ServicesResolveLifeScope,
-    ResolveDefaultServiceAction, ServiceResolveLifeScope,
-    ModuleDecoratorRegisterer
+    ResolveServiceInClassChain, ResolveServiceScope,
+    ModuleDecoratorRegisterer, ResolveServiceTokenAction,
+    ResolveServicesScope
 } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
@@ -64,8 +64,8 @@ export class BootModule {
 
 
         // route service
-        container.get(ServiceResolveLifeScope)
-            .useBefore(ResolveRouteServiceAction, ResolveDefaultServiceAction);
+        container.get(ResolveServiceScope)
+            .useAfter(ResolveRouteServiceAction, ResolveServiceTokenAction);
 
         container.get(ResolveTargetServiceAction)
             .useAfter(ResolveRouteServiceAction, ResolvePrivateServiceAction);
@@ -74,10 +74,10 @@ export class BootModule {
             .useAfter(ResolveRouteServiceAction, ResolvePrivateServiceAction);
 
         // route services
-        container.get(ServicesResolveLifeScope)
+        container.get(ResolveServicesScope)
             .use(ResolveRouteServicesAction);
 
-        container.get(ResolveLifeScope)
+        container.get(IocResolveScope)
             .use(RouteResolveAction);
 
         // design register route.

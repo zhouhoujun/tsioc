@@ -18,7 +18,6 @@ export class TaskDecoratorServiceAction extends IocResolveServiceAction {
             return !!ctx.instance;
         });
 
-        console.log(metas);
         if (!ctx.instance) {
             if (!ctx.defaultToken) {
                 ctx.defaultToken = ActivityContext;

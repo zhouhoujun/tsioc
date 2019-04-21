@@ -1,4 +1,4 @@
-import { Singleton, IocCompositeAction, Autorun, isToken, isClass, isClassType } from '@tsdi/ioc';
+import { Singleton, IocCompositeAction, Autorun, isToken, isClassType } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { ResolveRefServiceAction } from './ResolveRefServiceAction';
 import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';

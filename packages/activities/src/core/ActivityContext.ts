@@ -69,6 +69,12 @@ export class ActivityContext extends BootContext {
      */
     template?: ActivityTemplate<ActivityContext>;
 
+    /**
+     * activity annoation metadata.
+     *
+     * @type {ActivityConfigure<ActivityContext>}
+     * @memberof ActivityContext
+     */
     annoation: ActivityConfigure<ActivityContext>;
 
     /**

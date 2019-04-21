@@ -15,6 +15,10 @@ export class RouteResolveAction extends IocCompositeAction<ResolveActionContext<
         }
     }
 
+    protected setScope(ctx: ResolveActionContext<any>, parentScope?: any) {
+
+    }
+
     setup() {
         this.use(ResolveModuleExportAction)
             .use(ResolveParentAction);
