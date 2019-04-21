@@ -5,13 +5,14 @@ import { Singleton, Type, IocCompositeAction, lang } from '@tsdi/ioc';
 @Singleton
 export class ResolveParentServicesAction extends IocResolveServicesAction {
     execute(ctx: ResolveServicesContext<any>, next: () => void): void {
-        if (ctx.currScope instanceof IocCompositeAction && this.container.has(ParentContainerToken)) {
+        if (ctx.currScope) {
             let scopeType: Type<IocCompositeAction<any>> = lang.getClass(ctx.currScope);
             let parent = this.container.get(ParentContainerToken);
             if (parent && parent !== this.container) {
-                parent.get(scopeType).execute(ctx, next);
+                parent.get(scopeType).execute(ctx);
             }
-        } else {
+        }
+        if (!ctx.instance) {
             next();
         }
     }

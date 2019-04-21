@@ -1,7 +1,4 @@
-import {
-    IocCoreService, Singleton,
-    Token, IResolver, ProviderTypes
-} from '@tsdi/ioc';
+import { IocCoreService, Singleton, Token, IResolver, ProviderTypes } from '@tsdi/ioc';
 import { IModuleResolver } from '../modules';
 
 @Singleton

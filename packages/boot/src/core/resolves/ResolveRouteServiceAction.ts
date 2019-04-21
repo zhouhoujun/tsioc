@@ -10,11 +10,11 @@ export class ResolveRouteServiceAction extends IocCompositeAction<ResolveService
     execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
         let token = ctx.token;
         ctx.token = ctx.currToken || ctx.token;
-        let donext = () => {
+        super.execute(ctx);
+        if (!ctx.instance) {
             ctx.token = token;
             next && next();
         }
-        super.execute(ctx, donext);
     }
 
     protected setScope(ctx: ResolveServiceContext<any>, parentScope?: any) {
