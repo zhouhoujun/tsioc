@@ -9,9 +9,10 @@ export class RouteResolveAction extends IocCompositeAction<ResolveActionContext<
 
     execute(ctx: ResolveActionContext<any>, next?: () => void): void {
         if (this.container.has(ContainerPoolToken)) {
-            super.execute(ctx, next);
-        } else {
-            next();
+            super.execute(ctx);
+        }
+        if (!ctx.instance) {
+            next && next();
         }
     }
 
