@@ -16,6 +16,12 @@ import { IocDefaultResolveAction } from './resolves/IocDefaultResolveAction';
  */
 export class IocResolveScope extends IocCompositeAction<ResolveActionContext<any>> {
 
+    execute(ctx: ResolveActionContext<any>, next?: () => void): void {
+        if (!ctx.instance) {
+            super.execute(ctx, next);
+        }
+    }
+
     setup() {
         this.registerAction(IocDefaultResolveAction);
         this.use(IocDefaultResolveAction);

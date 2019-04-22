@@ -15,6 +15,12 @@ import { ResolveServiceTokenAction } from './ResolveServiceTokenAction';
 @Autorun('setup')
 export class ResolveServiceScope extends IocCompositeAction<ResolveServiceContext<any>> {
 
+    execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
+        if (!ctx.instance) {
+            super.execute(ctx, next);
+        }
+    }
+
     setup() {
         this.use(ResolveTargetServiceAction)
             .use(ResolveServiceTokenAction);
