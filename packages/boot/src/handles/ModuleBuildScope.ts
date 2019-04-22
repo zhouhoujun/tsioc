@@ -8,7 +8,6 @@ import { RegisterModuleHandle } from './RegisterModuleHandle';
 import { BootConfigureRegisterHandle } from './BootConfigureRegisterHandle';
 import { BootContext } from '../BootContext';
 import { ResolveMoudleScope } from './ResolveMoudleScope';
-import { ResolveBootScope } from './ResolveBootScope';
 
 @Singleton
 @Autorun('setup')
@@ -30,7 +29,6 @@ export class ModuleBuildScope extends CompositeHandle<BootContext> {
             .use(BootConfigureLoadHandle)
             .use(RegisterModuleHandle)
             .use(BootConfigureRegisterHandle)
-            .use(ResolveMoudleScope)
-            .use(ResolveBootScope);
+            .use(ResolveMoudleScope);
     }
 }

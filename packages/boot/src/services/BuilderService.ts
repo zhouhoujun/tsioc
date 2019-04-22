@@ -2,6 +2,7 @@ import { IocCoreService, Type, Inject, Singleton, isClass } from '@tsdi/ioc';
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
+import { CompositeHandle } from '../core';
 
 
 /**
@@ -23,7 +24,7 @@ export class BuilderService extends IocCoreService {
     }
 
     /**
-     * run module.
+     * build module.
      *
      * @template T
      * @param {(Type<any> | T)} target
@@ -31,7 +32,11 @@ export class BuilderService extends IocCoreService {
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    async build<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
+    build<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
+        return this.execLifeScope(this.container.get(ModuleBuilderLifeScope), target, ...args);
+    }
+
+    protected async execLifeScope<T extends BootContext>(scope: CompositeHandle<BootContext>, target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
         let ctx: BootContext;
         if (target instanceof BootContext) {
             ctx = target;
@@ -46,7 +51,7 @@ export class BuilderService extends IocCoreService {
             }
         }
         ctx.args = args;
-        await this.container.resolve(ModuleBuilderLifeScope).execute(ctx);
+        await scope.execute(ctx);
         return ctx as T;
     }
 }

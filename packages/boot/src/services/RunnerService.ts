@@ -1,7 +1,7 @@
-import { IocCoreService, Type, Inject, Singleton, isClass } from '@tsdi/ioc';
-import { BootContext, BootOption, BootTargetToken } from '../BootContext';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { Type, Singleton } from '@tsdi/ioc';
+import { BootContext, BootOption } from '../BootContext';
 import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
+import { BuilderService } from './BuilderService';
 
 
 /**
@@ -12,10 +12,7 @@ import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
  * @extends {IocCoreService}
  */
 @Singleton
-export class RunnerService extends IocCoreService {
-
-    @Inject(ContainerToken)
-    protected container: IContainer;
+export class RunnerService extends BuilderService {
 
     /**
      * run module.
@@ -26,22 +23,7 @@ export class RunnerService extends IocCoreService {
      * @returns {Promise<T>}
      * @memberof RunnerService
      */
-    async run<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
-        let ctx: BootContext;
-        if (target instanceof BootContext) {
-            ctx = target;
-            if (!ctx.hasRaiseContainer()) {
-                ctx.setRaiseContainer(this.container);
-            }
-        } else {
-            let md = isClass(target) ? target : target.module;
-            ctx = this.container.getService(BootContext, md, { provide: BootTargetToken, useValue: md });
-            if (!isClass(target)) {
-                ctx.setOptions(target);
-            }
-        }
-        ctx.args = args;
-        await this.container.resolve(RunnableBuildLifeScope).execute(ctx);
-        return ctx as T;
+    run<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
+        return this.execLifeScope(this.container.get(RunnableBuildLifeScope), target, ...args);
     }
 }
