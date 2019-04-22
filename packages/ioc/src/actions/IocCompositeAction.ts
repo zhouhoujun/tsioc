@@ -73,7 +73,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
      */
     useAfter(action: IocActionType, after: IocActionType): this {
         if (!this.has(action)) {
-            this.actions.splice(this.actions.indexOf(after), 0, action);
+            this.actions.splice(this.actions.indexOf(after) + 1, 0, action);
         }
         this.resetFuncs();
         return this;

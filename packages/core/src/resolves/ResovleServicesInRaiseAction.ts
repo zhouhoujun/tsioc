@@ -1,8 +1,7 @@
 import { IocResolveServicesAction } from './IocResolveServicesAction';
-import { Singleton, isClassType, lang, ProviderTypes } from '@tsdi/ioc';
+import { isClassType, lang, ProviderTypes } from '@tsdi/ioc';
 import { ResolveServicesContext } from './ResolveServicesContext';
 
-@Singleton
 export class ResovleServicesInRaiseAction extends IocResolveServicesAction {
     execute(ctx: ResolveServicesContext<any>, next: () => void): void {
         this.container.iterator((fac, tk) => {

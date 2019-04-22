@@ -91,6 +91,7 @@ export class ActivityContext extends BootContext {
         } else if (this.bootstrap instanceof Activity) {
             return this.bootstrap;
         } else {
+            console.log(this.target, this.bootstrap);
             return null;
         }
     }

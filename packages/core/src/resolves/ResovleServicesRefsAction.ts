@@ -1,8 +1,8 @@
 import { IocResolveServicesAction } from './IocResolveServicesAction';
-import { Singleton, isToken, InjectReference, ProviderTypes } from '@tsdi/ioc';
+import { isToken, InjectReference, ProviderTypes } from '@tsdi/ioc';
 import { ResolveServicesContext } from './ResolveServicesContext';
 
-@Singleton
+
 export class ResovleServicesRefsAction extends IocResolveServicesAction {
     execute(ctx: ResolveServicesContext<any>, next: () => void): void {
         if (ctx.targetRefs && ctx.targetRefs.length) {

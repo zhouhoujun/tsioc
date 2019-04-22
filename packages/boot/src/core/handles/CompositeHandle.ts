@@ -59,7 +59,7 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
      * @memberof LifeScope
      */
     useAfter(handle: HandleType<T>, after: HandleType<T>): this {
-        this.handles.splice(this.handles.indexOf(after), 0, handle);
+        this.handles.splice(this.handles.indexOf(after) + 1, 0, handle);
         this.resetFuncs();
         return this;
     }

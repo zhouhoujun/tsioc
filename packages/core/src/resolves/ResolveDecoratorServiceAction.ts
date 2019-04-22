@@ -1,9 +1,8 @@
-import { Singleton, isClassType, MetadataService } from '@tsdi/ioc';
+import { isClassType, MetadataService } from '@tsdi/ioc';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { ServiceDecoratorRegisterer } from '../services';
 
-@Singleton
 export class ResolveDecoratorServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext<any>, next: () => void): void {
         if (isClassType(ctx.currTargetType)) {

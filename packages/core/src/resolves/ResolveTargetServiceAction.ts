@@ -1,7 +1,5 @@
 import { Singleton, IocCompositeAction, Autorun, isToken, isClassType } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
-import { ResolveRefServiceAction } from './ResolveRefServiceAction';
-import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
 import { ResolveServiceInClassChain } from './ResolveServiceInClassChain';
 import { ResolveDecoratorServiceAction } from './ResolveDecoratorServiceAction';
 
@@ -9,8 +7,7 @@ import { ResolveDecoratorServiceAction } from './ResolveDecoratorServiceAction';
 @Autorun('setup')
 export class ResolveTargetServiceAction extends IocCompositeAction<ResolveServiceContext<any>> {
     execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
-        if (ctx.targetRefs) {
-            let currTk = ctx.currToken;
+        if (!ctx.instance && ctx.targetRefs) {
             let has = ctx.targetRefs.some(t => {
                 ctx.currTargetRef = t;
                 ctx.currTargetToken = isToken(t) ? t : t.getToken();
@@ -22,7 +19,7 @@ export class ResolveTargetServiceAction extends IocCompositeAction<ResolveServic
                 })
             });
             if (!has) {
-                ctx.currToken = currTk;
+                this.clear(ctx);
                 next && next();
             }
         } else {
@@ -30,10 +27,18 @@ export class ResolveTargetServiceAction extends IocCompositeAction<ResolveServic
         }
     }
 
+    protected clear(ctx: ResolveServiceContext<any>) {
+        ctx.currToken = null;
+        ctx.currTargetRef = null;
+        ctx.currTargetType = null;
+        ctx.currTargetToken = null;
+    }
+
     setup() {
-        this.use(ResolveRefServiceAction)
-            .use(ResolvePrivateServiceAction)
-            .use(ResolveServiceInClassChain)
+        this.registerAction(ResolveServiceInClassChain, true)
+            .registerAction(ResolveDecoratorServiceAction);
+
+        this.use(ResolveServiceInClassChain)
             .use(ResolveDecoratorServiceAction);
     }
 }

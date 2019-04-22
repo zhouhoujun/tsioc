@@ -1,10 +1,9 @@
-import { Singleton, isFunction, isToken, isArray, lang, isClassType } from '@tsdi/ioc';
+import { isFunction, isToken, isArray, lang, isClassType } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { TargetService } from '../TargetService';
 import { ResolveServicesContext } from './ResolveServicesContext';
 
-@Singleton
 export class InitServiceResolveAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext<any>, next: () => void): void {
         if (ctx.target) {

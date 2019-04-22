@@ -1,9 +1,9 @@
 import {
     isString, createClassDecorator, MetadataExtends, MetadataAdapter,
-    isClass, ITypeDecorator, lang, ClassType
+    isClass, ITypeDecorator, lang, ClassType, Type
 } from '@tsdi/ioc';
 import { ActivityMetadata } from '../metadatas/ActivityMetadata';
-import { RegScope } from '@tsdi/boot';
+import { RegScope, BootContext } from '@tsdi/boot';
 
 
 /**
@@ -55,6 +55,7 @@ export interface ITaskDecorator<T extends ActivityMetadata> extends ITypeDecorat
 export function createTaskDecorator<T extends ActivityMetadata>(
     taskType: string,
     adapter?: MetadataAdapter,
+    defaultContext?: Type<BootContext>,
     metadataExtends?: MetadataExtends<T>): ITaskDecorator<T> {
 
     return createClassDecorator<ActivityMetadata>('Task',
@@ -82,7 +83,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             }
 
             metadata.provide = metadata.selector;
-
+            metadata.contextType = defaultContext;
             metadata.decorType = taskType;
 
             return metadata;

@@ -1,9 +1,8 @@
-import { Singleton, isArray, InjectReference, isToken } from '@tsdi/ioc';
+import { isArray, InjectReference, isToken } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { TargetRefService } from '../TargetService';
 import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
 
-@Singleton
 export class ResolveRefServiceAction extends ResolvePrivateServiceAction {
     execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
         if (ctx.currToken && !(ctx.currToken instanceof InjectReference) && (isToken(ctx.currTargetRef) || ctx.currTargetRef instanceof TargetRefService)) {
@@ -14,7 +13,7 @@ export class ResolveRefServiceAction extends ResolvePrivateServiceAction {
             if (!refTks.some(tk => {
                 this.resolvePrivate(ctx, tk);
                 if (!ctx.instance) {
-                    this.resolve(ctx, tk);
+                    this.get(ctx, tk);
                 }
                 return !!ctx.instance;
             })) {

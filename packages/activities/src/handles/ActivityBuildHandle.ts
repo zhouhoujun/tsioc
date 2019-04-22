@@ -2,6 +2,7 @@ import { CompositeHandle } from '@tsdi/boot';
 import { ActivityContext } from '../core';
 import { Singleton, Autorun } from '@tsdi/ioc';
 import { BuildTemplateHandle } from './BuildTemplateHandle';
+import { TaskDecorBootBuildHandle } from './TaskDecorBootBuildHandle';
 
 
 @Singleton
@@ -17,6 +18,7 @@ export class ActivityBuildHandle extends CompositeHandle<ActivityContext> {
     }
 
     setup() {
-        this.use(BuildTemplateHandle)
+        this.use(TaskDecorBootBuildHandle)
+            .use(BuildTemplateHandle)
     }
 }

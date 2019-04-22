@@ -1,11 +1,9 @@
-import { IocCompositeAction, lang, Singleton, Autorun, isClassType, isToken } from '@tsdi/ioc';
+import { IocCompositeAction, lang, isClassType, isToken } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { TargetService } from '../TargetService';
 import { ResolveRefServiceAction } from './ResolveRefServiceAction';
 import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
 
-@Singleton
-@Autorun('setup')
 export class ResolveServiceInClassChain extends IocCompositeAction<ResolveServiceContext<any>> {
     execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
         if (ctx.currTargetRef) {
@@ -14,9 +12,6 @@ export class ResolveServiceInClassChain extends IocCompositeAction<ResolveServic
             let currTagTk = ctx.currTargetToken;
             if (isClassType(classType)) {
                 lang.forInClassChain(classType, ty => {
-                    if (ty === classType) {
-                        return true;
-                    }
                     if (currTgRef instanceof TargetService) {
                         ctx.currTargetRef = currTgRef.clone(ty);
                     } else {
@@ -27,6 +22,8 @@ export class ResolveServiceInClassChain extends IocCompositeAction<ResolveServic
                     super.execute(ctx);
                     return !ctx.instance;
                 });
+            } else {
+                super.execute(ctx);
             }
             if (!ctx.instance) {
                 ctx.currTargetRef = currTgRef;
@@ -40,6 +37,9 @@ export class ResolveServiceInClassChain extends IocCompositeAction<ResolveServic
     }
 
     setup() {
+        this.registerAction(ResolveRefServiceAction)
+            .registerAction(ResolvePrivateServiceAction);
+
         this.use(ResolveRefServiceAction)
             .use(ResolvePrivateServiceAction);
     }

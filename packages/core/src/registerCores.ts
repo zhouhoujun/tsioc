@@ -8,13 +8,7 @@ import {
     RuntimeDecoratorRegisterer, IocAutorunAction, DecoratorScopes,
     RegisterSingletionAction, DesignDecoratorRegisterer
 } from '@tsdi/ioc';
-import {
-    InitServiceResolveAction, ResolveRefServiceAction, ResolveServiceScope,
-    ResolveServicesScope, ResolvePrivateServiceAction, ResolveServiceInClassChain,
-    ResolveDefaultServiceAction, ResolveTargetServiceAction,
-    ResovleServicesInTargetAction, ResovleServicesInRaiseAction,
-    ResolveServiceTokenAction
-} from './resolves';
+
 
 
 export function registerCores(container: IContainer) {
@@ -27,18 +21,20 @@ export function registerCores(container: IContainer) {
 
     container.register(ServiceDecoratorRegisterer);
 
-    container.register(InitServiceResolveAction);
-    container.register(ResolveServiceTokenAction);
-    container.register(ResolveDefaultServiceAction);
-    container.register(ResolveRefServiceAction);
-    container.register(ResolvePrivateServiceAction);
-    container.register(ResolveDefaultServiceAction);
-    container.register(ResolveServiceScope);
-    container.register(ResolveServiceInClassChain);
-    container.register(ResolveTargetServiceAction);
-    container.register(ResolveServicesScope);
-    container.register(ResovleServicesInTargetAction);
-    container.register(ResovleServicesInRaiseAction);
+    // container.register(InitServiceResolveAction);
+    // container.register(ResolveServiceTokenAction);
+    // container.register(ResolveDefaultServiceAction);
+    // container.register(ResolveRefServiceAction);
+    // container.register(ResolvePrivateServiceAction);
+    // container.register(ResolveDefaultServiceAction);
+    // container.register(ResolveServiceScope);
+    // container.register(ResolveServiceInClassChain);
+    // container.register(ResolveTargetServiceAction);
+    // container.register(ResolveDecoratorServiceAction);
+
+    // container.register(ResolveServicesScope);
+    // container.register(ResovleServicesInTargetAction);
+    // container.register(ResovleServicesInRaiseAction);
 
     container.register(ServiceResolveLifeScope);
     container.register(ServicesResolveLifeScope);

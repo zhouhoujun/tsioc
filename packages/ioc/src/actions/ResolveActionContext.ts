@@ -50,7 +50,7 @@ export function createResolveContext<T, Ctx extends ResolveActionContext<T>>(Ctx
  */
 export class ResolveActionContext<T> extends IocActionContext {
 
-    constructor(token: Token<T>, raiseContainer?: IIocContainer | (() => IIocContainer)){
+    constructor(token: Token<T>, raiseContainer?: IIocContainer | (() => IIocContainer)) {
         super(raiseContainer);
         this.token = token
     }
@@ -70,6 +70,7 @@ export class ResolveActionContext<T> extends IocActionContext {
      * @memberof IResolveContext
      */
     providers: ProviderTypes[];
+
     /**
      * reslove result instance.
      *

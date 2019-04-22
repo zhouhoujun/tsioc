@@ -1,4 +1,4 @@
-import { IocCompositeAction, Singleton, Autorun } from '@tsdi/ioc';
+import { IocCompositeAction } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { ResolveTargetServiceAction } from './ResolveTargetServiceAction';
 import { ResolveServiceTokenAction } from './ResolveServiceTokenAction';
@@ -11,8 +11,6 @@ import { ResolveServiceTokenAction } from './ResolveServiceTokenAction';
  * @class ResolveServiceAction
  * @extends {IocCompositeAction<ResolveServiceContext>}
  */
-@Singleton
-@Autorun('setup')
 export class ResolveServiceScope extends IocCompositeAction<ResolveServiceContext<any>> {
 
     execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
@@ -22,6 +20,9 @@ export class ResolveServiceScope extends IocCompositeAction<ResolveServiceContex
     }
 
     setup() {
+        this.registerAction(ResolveTargetServiceAction, true)
+            .registerAction(ResolveServiceTokenAction);
+
         this.use(ResolveTargetServiceAction)
             .use(ResolveServiceTokenAction);
     }

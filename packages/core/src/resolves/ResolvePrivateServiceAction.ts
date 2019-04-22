@@ -1,9 +1,8 @@
-import { InjectReference, ProviderMap, Singleton, Token, isToken, isClassType } from '@tsdi/ioc';
+import { InjectReference, ProviderMap, Token, isToken, isClassType } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { TargetPrivateService } from '../TargetService';
 
-@Singleton
 export class ResolvePrivateServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext<any>, next: () => void): void {
         // resolve private service.
