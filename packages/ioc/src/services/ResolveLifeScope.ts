@@ -5,6 +5,12 @@ import { ProviderTypes } from '../providers';
 
 export class ResolveLifeScope<T> extends LifeScope<ResolveActionContext<T>> {
 
+    execute(ctx: ResolveActionContext<any>, next?: () => void): void {
+        if (!ctx.instance) {
+            super.execute(ctx, next);
+        }
+    }
+
     setup() {
         this.registerAction(IocResolveScope, true);
         this.use(IocResolveScope);

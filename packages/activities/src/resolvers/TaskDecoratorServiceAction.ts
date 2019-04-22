@@ -7,6 +7,7 @@ import { ActivityContext } from '../core';
 @Singleton
 export class TaskDecoratorServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext<any>, next: () => void): void {
+        console.log('TaskDecoratorServiceAction');
         if (!isClassType(ctx.currTargetType)) {
             return next();
         }

@@ -14,7 +14,7 @@ export abstract class IocResolveServiceAction extends IocResolveAction {
     abstract execute(ctx: ResolveServiceContext<any>, next: () => void): void;
 
     protected resolve(ctx: ResolveServiceContext<any>, token: Token<any>) {
-        if (this.container.has(token)) {
+        if (!ctx.instance && this.container.has(token)) {
             ctx.instance = this.container.resolve(token, ...ctx.providers);
         }
     }
