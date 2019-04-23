@@ -48,11 +48,10 @@ export interface IRunnable<T> {
     /**
      * on boot init.
      *
-     * @param {BootContext} ctx
      * @returns {Promise<void>}
      * @memberof IRunnable
      */
-    onInit(ctx: BootContext): Promise<void>;
+    onInit(): Promise<void>;
 
     /**
      * run application via boot instance.
