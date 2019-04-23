@@ -1,10 +1,8 @@
-import { Singleton, IocCompositeAction, Autorun, isToken, isClassType } from '@tsdi/ioc';
+import { IocCompositeAction, isToken, isClassType } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { ResolveServiceInClassChain } from './ResolveServiceInClassChain';
 import { ResolveDecoratorServiceAction } from './ResolveDecoratorServiceAction';
 
-@Singleton
-@Autorun('setup')
 export class ResolveTargetServiceAction extends IocCompositeAction<ResolveServiceContext<any>> {
     execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
         if (!ctx.instance && ctx.targetRefs) {

@@ -2,12 +2,9 @@ import {
     ResolveServicesContext, IocResolveServicesAction, ResolveServicesScope
 } from '@tsdi/core';
 import { DIModuleExports } from '../services';
-import { Singleton, Autorun } from '@tsdi/ioc';
 import { IModuleResolver } from '../modules';
 
 
-@Singleton
-@Autorun('setup')
 export class ResolveSerivesInExportAction extends IocResolveServicesAction {
 
     execute(ctx: ResolveServicesContext<any>, next: () => void): void {

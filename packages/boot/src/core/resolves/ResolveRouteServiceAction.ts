@@ -1,12 +1,11 @@
 import { ResolveServiceContext } from '@tsdi/core';
-import { IocCompositeAction, Singleton, Autorun } from '@tsdi/ioc';
+import { IocCompositeAction } from '@tsdi/ioc';
 import { ResolveModuleExportAction } from './ResolveModuleExportAction';
 import { ResolveParentServiceAction } from './ResolveParentServiceAction';
 import { ContainerPool } from '../ContainerPool';
 
 
-@Singleton
-@Autorun('setup')
+
 export class ResolveRouteServiceAction extends IocCompositeAction<ResolveServiceContext<any>>  {
     execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
         if (this.container.has(ContainerPool)) {
@@ -29,6 +28,9 @@ export class ResolveRouteServiceAction extends IocCompositeAction<ResolveService
     }
 
     setup() {
+        this.registerAction(ResolveModuleExportAction)
+            .registerAction(ResolveParentServiceAction);
+
         this.use(ResolveModuleExportAction)
             .use(ResolveParentServiceAction);
     }

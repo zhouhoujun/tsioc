@@ -1,10 +1,8 @@
-import { IocCompositeAction, Singleton, Autorun, ResolveActionContext } from '@tsdi/ioc';
+import { IocCompositeAction, ResolveActionContext } from '@tsdi/ioc';
 import { ContainerPoolToken } from '../ContainerPool';
 import { ResolveModuleExportAction } from './ResolveModuleExportAction';
 import { ResolveParentAction } from './ResolveParentAction';
 
-@Singleton
-@Autorun('setup')
 export class RouteResolveAction extends IocCompositeAction<ResolveActionContext<any>> {
 
     execute(ctx: ResolveActionContext<any>, next?: () => void): void {
@@ -17,6 +15,9 @@ export class RouteResolveAction extends IocCompositeAction<ResolveActionContext<
     }
 
     setup() {
+        this.registerAction(ResolveModuleExportAction)
+            .registerAction(ResolveParentAction);
+
         this.use(ResolveModuleExportAction)
             .use(ResolveParentAction);
     }

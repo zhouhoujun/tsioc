@@ -35,5 +35,4 @@ export abstract class IocDecoratorScope<T extends DecoratorActionContext> extend
     protected abstract getState(ctx: T, dtype: DecoratorScopes): ObjectMap<boolean>;
     protected abstract getScopeRegisterer(): DecoratorScopeRegisterer;
     protected abstract getDecorScope(): DecoratorScopes;
-    protected abstract setup();
 }

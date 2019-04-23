@@ -1,4 +1,4 @@
-import { Singleton, IocResolveAction, ResolveActionContext, Type, IocCompositeAction, lang } from '@tsdi/ioc';
+import { IocResolveAction, ResolveActionContext, Type, IocCompositeAction, lang } from '@tsdi/ioc';
 import { ParentContainerToken } from '../ContainerPool';
 
 
@@ -9,7 +9,6 @@ import { ParentContainerToken } from '../ContainerPool';
  * @class ResolveParentAction
  * @extends {IocResolveAction}
  */
-@Singleton
 export class ResolveParentAction extends IocResolveAction {
     execute(ctx: ResolveActionContext<any>, next: () => void): void {
         if (ctx.currScope) {

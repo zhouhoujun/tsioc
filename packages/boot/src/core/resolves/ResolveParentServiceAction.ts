@@ -1,8 +1,7 @@
 import { IocResolveServiceAction, ResolveServiceContext } from '@tsdi/core';
 import { ParentContainerToken } from '../ContainerPool';
-import { Singleton, Type, IocCompositeAction, lang } from '@tsdi/ioc';
+import { Type, IocCompositeAction, lang } from '@tsdi/ioc';
 
-@Singleton
 export class ResolveParentServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext<any>, next: () => void): void {
         if (ctx.currScope) {

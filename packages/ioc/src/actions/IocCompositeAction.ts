@@ -125,17 +125,21 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         this.actionFuncs = null;
     }
 
-    protected registerAction(action: Type<any>, setup?: boolean) {
+    registerAction(action: Type<any>, setup?: boolean) {
         this.container.registerSingleton(action, () => new action(this.container));
         if (setup) {
             let instance = this.container.get(action);
-            if (instance && isFunction(instance.setup)) {
+            if (instance instanceof IocCompositeAction) {
                 instance.setup();
             } else {
                 console.log(action, 'action has not setup.');
             }
         }
         return this;
+    }
+
+    setup?() {
+
     }
 
 }

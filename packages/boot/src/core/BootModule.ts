@@ -13,7 +13,6 @@ import {
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
 import * as modules from './modules';
-import * as resolves from './resolves';
 import * as services from './services';
 
 import {
@@ -55,7 +54,7 @@ export class BootModule {
             ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
             RegisterSingletionAction, IocSetCacheAction);
 
-        container.use(modules, resolves, services);
+        container.use(modules, services);
 
         container.get(ModuleDecoratorRegisterer)
             .register(DIModule, DIModuleRegisterScope);
@@ -63,13 +62,16 @@ export class BootModule {
 
         // route service
         container.get(ResolveServiceInClassChain)
+            .registerAction(ResolvePrivateServiceAction)
             .useAfter(ResolveRouteServiceAction, ResolvePrivateServiceAction);
 
         // route services
         container.get(ResolveServicesScope)
+            .registerAction(ResolveRouteServicesAction, true)
             .use(ResolveRouteServicesAction);
 
         container.get(IocResolveScope)
+            .registerAction(RouteResolveAction, true)
             .use(RouteResolveAction);
 
         // design register route.
