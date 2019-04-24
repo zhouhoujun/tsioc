@@ -57,24 +57,10 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
 
     setup() {
         this.container.registerSingleton(RuntimeDecoratorRegisterer, () => new RuntimeDecoratorRegisterer(this.container));
-        if (!this.container.has(InitReflectAction)) {
-            this.registerAction(InitReflectAction);
-        }
 
-        this.registerAction(ConstructorArgsAction)
-            .registerAction(ContainerCheckerAction)
-            .registerAction(CreateInstanceAction)
-            .registerAction(GetSingletionAction)
-            .registerAction(InstanceCheckAction)
-            .registerAction(IocGetCacheAction)
+        this.registerAction(InstanceCheckAction)
             .registerAction(RuntimeDecoratorAction)
-
-            .registerAction(IocBeforeConstructorScope, true)
-            .registerAction(IocAfterConstructorScope, true)
-            .registerAction(RuntimeAnnoationScope, true)
-            .registerAction(RuntimePropertyScope, true)
-            .registerAction(RuntimeMethodScope, true)
-            .registerAction(RuntimeParamScope, true);
+            .registerAction(RuntimeParamScope);
 
 
         this.use(ContainerCheckerAction)

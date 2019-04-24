@@ -1,11 +1,10 @@
-import { Singleton, lang } from '@tsdi/ioc';
+import { lang } from '@tsdi/ioc';
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
 import { Runnable } from '../runnable';
 
 
 
-@Singleton
 export class RefDecoratorRunnableHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
         ctx.runnable = ctx.getRaiseContainer().getService(

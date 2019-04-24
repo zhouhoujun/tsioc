@@ -19,7 +19,6 @@ export class DIModuleRegisterScope extends ModuleRegisterScope {
     }
 
     setup() {
-        this.registerAction(RegisterDIModuleAction);
         this.use(RegisterDIModuleAction);
     }
 }

@@ -10,8 +10,6 @@ import { BootContext } from '../BootContext';
 import { ResolveMoudleScope } from './ResolveMoudleScope';
 import { ResolveBootScope } from './ResolveBootScope';
 
-@Singleton
-@Autorun('setup')
 export class ModuleBuildScope extends CompositeHandle<BootContext> {
 
     async execute(ctx: BootContext, next?: () => Promise<void>): Promise<void> {

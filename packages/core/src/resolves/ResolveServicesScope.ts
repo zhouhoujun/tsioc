@@ -9,10 +9,6 @@ import { ResovleServicesRefsAction } from './ResovleServicesRefsAction';
 export class ResolveServicesScope extends IocCompositeAction<ResolveServicesContext<any>> {
 
     setup() {
-        this.registerAction(ResovleServicesInTargetAction)
-            .registerAction(ResovleServicesRefsAction)
-            .registerAction(ResovleServicesInRaiseAction);
-
         this.use(ResovleServicesInTargetAction)
             .use(ResovleServicesRefsAction)
             .use(ResovleServicesInRaiseAction);

@@ -82,11 +82,7 @@ export class IocActionContext {
  */
 export abstract class IocAction<T extends IocActionContext> {
 
-    @Inject(IocContainerToken)
-    protected container: IIocContainer;
-
-    constructor(container?: IIocContainer) {
-        this.container = container;
+    constructor(@Inject(IocContainerToken) protected container?: IIocContainer) {
         this.initAction();
     }
 

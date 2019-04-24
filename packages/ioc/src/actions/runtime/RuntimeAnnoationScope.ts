@@ -15,8 +15,7 @@ export class RuntimeAnnoationScope extends IocRegisterScope<RuntimeActionContext
         .registerAction(IocSetCacheAction)
         .registerAction(ComponentBeforeInitAction)
         .registerAction(ComponentInitAction)
-        .registerAction(ComponentAfterInitAction)
-        .registerAction(RuntimeAnnoationDecorScope, true);
+        .registerAction(ComponentAfterInitAction);
 
         let decRgr = this.container.get(RuntimeDecoratorRegisterer);
         decRgr.register(Singleton, DecoratorScopes.Class, RegisterSingletionAction);

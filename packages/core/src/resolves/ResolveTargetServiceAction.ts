@@ -33,9 +33,6 @@ export class ResolveTargetServiceAction extends IocCompositeAction<ResolveServic
     }
 
     setup() {
-        this.registerAction(ResolveServiceInClassChain, true)
-            .registerAction(ResolveDecoratorServiceAction);
-
         this.use(ResolveServiceInClassChain)
             .use(ResolveDecoratorServiceAction);
     }

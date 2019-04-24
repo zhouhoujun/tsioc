@@ -1,10 +1,9 @@
 import { BootContext } from '../BootContext';
-import { Singleton, MetadataService, isClass } from '@tsdi/ioc';
+import { MetadataService, isClass } from '@tsdi/ioc';
 import { ModuleBuildDecoratorRegisterer } from '../services';
 import { BootHandle } from './BootHandle';
 
 
-@Singleton
 export class DecoratorBuildHandle extends BootHandle {
     async execute(ctx: BootContext, next?: () => Promise<void>): Promise<void> {
         let reg = this.container.get(ModuleBuildDecoratorRegisterer);
@@ -28,7 +27,6 @@ export class DecoratorBuildHandle extends BootHandle {
     }
 }
 
-@Singleton
 export class BootDecoratorBuildHandle extends DecoratorBuildHandle {
     protected getDecortaors(ctx: BootContext) {
         if (isClass(ctx.annoation.bootstrap)) {

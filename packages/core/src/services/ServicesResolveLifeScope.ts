@@ -12,11 +12,6 @@ export class ServicesResolveLifeScope<T> extends LifeScope<ResolveServicesContex
     }
 
     setup() {
-        if (!this.container.has(InitServiceResolveAction)) {
-            this.registerAction(InitServiceResolveAction);
-        }
-        this.registerAction(ResolveServicesScope, true);
-
         this.use(InitServiceResolveAction)
             .use(ResolveServicesScope)
     }

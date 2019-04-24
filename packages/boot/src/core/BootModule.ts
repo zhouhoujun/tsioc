@@ -62,26 +62,20 @@ export class BootModule {
 
         // route service
         container.get(ResolveServiceInClassChain)
-            .registerAction(ResolvePrivateServiceAction)
             .useAfter(ResolveRouteServiceAction, ResolvePrivateServiceAction);
 
         // route services
         container.get(ResolveServicesScope)
-            .registerAction(ResolveRouteServicesAction, true)
             .use(ResolveRouteServicesAction);
 
         container.get(IocResolveScope)
-            .registerAction(RouteResolveAction, true)
             .use(RouteResolveAction);
 
         // design register route.
-        container.registerSingleton(RouteDesignRegisterAction, () => new RouteRuntimRegisterAction(container));
         container.get(DesignLifeScope)
             .use(RouteDesignRegisterAction);
 
         // runtime register route.
-        container.registerSingleton(RouteRuntimRegisterAction, () => new RouteRuntimRegisterAction(container));
-
         container.get(IocBeforeConstructorScope)
             .use(RouteRuntimRegisterAction);
 

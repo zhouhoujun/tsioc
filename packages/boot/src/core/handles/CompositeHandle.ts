@@ -1,5 +1,5 @@
 import { Handle, HandleType, IHandleContext } from './Handle';
-import { PromiseUtil } from '@tsdi/ioc';
+import { PromiseUtil, Type, isClass, lang } from '@tsdi/ioc';
 
 
 /**
@@ -33,6 +33,7 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
         } else {
             this.handles.push(handle);
         }
+        this.registerHandle(handle);
         this.resetFuncs();
         return this;
     }
@@ -47,6 +48,7 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
      */
     useBefore(handle: HandleType<T>, before: HandleType<T>): this {
         this.handles.splice(this.handles.indexOf(before) - 1, 0, handle);
+        this.registerHandle(handle);
         this.resetFuncs();
         return this;
     }
@@ -60,6 +62,7 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
      */
     useAfter(handle: HandleType<T>, after: HandleType<T>): this {
         this.handles.splice(this.handles.indexOf(after) + 1, 0, handle);
+        this.registerHandle(handle);
         this.resetFuncs();
         return this;
     }
@@ -73,5 +76,26 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
 
     protected resetFuncs() {
         this.funcs = null;
+    }
+
+    protected registerHandle(HandleType: HandleType<T>): this {
+        if (!isClass(HandleType)) {
+            return this;
+        }
+        if (this.container.has(HandleType)) {
+            return this;
+        }
+        this.container.registerSingleton(HandleType, () => new HandleType(this.container));
+        if (lang.isExtendsClass(HandleType, CompositeHandle)) {
+            let handle = this.container.get(HandleType);
+            if (handle instanceof CompositeHandle) {
+                handle.setup();
+            }
+        }
+        return this;
+    }
+
+    setup?() {
+
     }
 }

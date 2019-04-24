@@ -7,8 +7,7 @@ import { MethodAutorunAction } from './MethodAutorunAction';
 
 export class RuntimeMethodScope extends IocRegisterScope<RuntimeActionContext> {
     setup() {
-        this.registerAction(MethodAutorunAction)
-            .registerAction(RuntimeMethodDecorScope, true);
+        this.registerAction(MethodAutorunAction);
 
         let decRgr = this.container.get(RuntimeDecoratorRegisterer);
         decRgr.register(Autorun, DecoratorScopes.Method, MethodAutorunAction);

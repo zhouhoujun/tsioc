@@ -1,7 +1,6 @@
-import { Singleton } from '@tsdi/ioc';
 import { AnnoationHandle, AnnoationContext, ModuleRegister, RegScope } from '../core';
 
-@Singleton
+
 export class RegisterModuleRegisterHandle extends AnnoationHandle {
 
     async execute(ctx: AnnoationContext, next: () => Promise<void>): Promise<void> {

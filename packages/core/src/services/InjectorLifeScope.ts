@@ -11,9 +11,7 @@ export class InjectorLifeScope extends LifeScope<InjectorActionContext> {
     setup() {
         this.container.register(ModuleDecoratorRegisterer);
 
-        this.registerAction(ModuleToTypesAction)
-            .registerAction(IocExtRegisterScope, true)
-            .registerAction(ModuleInjectorScope, true);
+        this.registerAction(IocExtRegisterScope);
 
         let reg = this.container.get(ModuleDecoratorRegisterer);
         reg.register(IocExt, IocExtRegisterScope);

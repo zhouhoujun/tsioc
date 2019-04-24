@@ -15,9 +15,6 @@ export class RouteResolveAction extends IocCompositeAction<ResolveActionContext<
     }
 
     setup() {
-        this.registerAction(ResolveModuleExportAction)
-            .registerAction(ResolveParentAction);
-
         this.use(ResolveModuleExportAction)
             .use(ResolveParentAction);
     }

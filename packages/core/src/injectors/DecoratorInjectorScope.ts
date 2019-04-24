@@ -47,7 +47,6 @@ export class DecoratorInjectorScope extends InjectorScope {
     }
 
     setup() {
-        this.registerAction(DecoratorInjectAction);
         this.use(DecoratorInjectAction);
     }
 }

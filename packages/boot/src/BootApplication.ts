@@ -11,7 +11,6 @@ import { Bootstrap } from './decorators';
 import * as annotations from './annotations';
 import * as runnable from './runnable';
 import * as services from './services';
-import * as handles from './handles';
 
 /**
  * boot application.
@@ -59,7 +58,7 @@ export class BootApplication {
             this.container.register(BootContext);
         }
         this.container.bindProvider(BootApplication, this);
-        this.container.use(annotations, handles, runnable, services);
+        this.container.use(annotations, runnable, services);
 
         let designReg = this.container.get(DesignDecoratorRegisterer);
         designReg.register(Bootstrap, DecoratorScopes.Class, BindProviderAction);

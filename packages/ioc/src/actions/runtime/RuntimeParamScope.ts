@@ -8,9 +8,7 @@ import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
 
 export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> {
     setup() {
-        this.registerAction(BindDeignParamTypeAction)
-            .registerAction(BindParameterTypeAction)
-            .registerAction(RuntimeParamDecorScope, true)
+        this.registerAction(BindParameterTypeAction);
 
         let decRgr = this.container.get(RuntimeDecoratorRegisterer);
         decRgr.register(Inject, DecoratorScopes.Parameter, BindParameterTypeAction);

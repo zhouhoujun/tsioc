@@ -30,7 +30,6 @@ export abstract class ModuleRegisterScope extends InjectorScope {
     }
 
     setup() {
-        this.registerAction(RegisterTypeAction);
         this.use(RegisterTypeAction);
     }
 }

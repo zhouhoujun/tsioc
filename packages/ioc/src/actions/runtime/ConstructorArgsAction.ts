@@ -23,7 +23,4 @@ export class ConstructorArgsAction extends IocRegisterScope<RuntimeActionContext
         }
         next();
     }
-
-    setup() {
-    }
 }

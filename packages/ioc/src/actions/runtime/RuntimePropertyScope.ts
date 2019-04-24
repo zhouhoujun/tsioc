@@ -7,8 +7,7 @@ import { InjectPropertyAction } from './InjectPropertyAction';
 
 export class RuntimePropertyScope extends IocRegisterScope<RuntimeActionContext> {
     setup() {
-        this.registerAction(InjectPropertyAction)
-            .registerAction(RuntimePropertyDecorScope, true);
+        this.registerAction(InjectPropertyAction);
 
         let decRgr = this.container.get(RuntimeDecoratorRegisterer);
         decRgr.register(Inject, DecoratorScopes.Property, InjectPropertyAction);

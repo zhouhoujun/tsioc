@@ -1,5 +1,5 @@
 import { Type } from '../types';
-import { isFunction, lang } from '../utils';
+import { isFunction, lang, isClass } from '../utils';
 import { IocAction, IocActionType, IocActionContext } from './Action';
 
 
@@ -44,6 +44,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
                 this.actions.push(action);
             }
         }
+        this.registerAction(action);
         this.resetFuncs();
         return this;
     }
@@ -60,6 +61,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         if (!this.has(action)) {
             this.actions.splice(this.actions.indexOf(before) - 1, 0, action);
         }
+        this.registerAction(action);
         this.resetFuncs();
         return this;
     }
@@ -75,6 +77,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         if (!this.has(action)) {
             this.actions.splice(this.actions.indexOf(after) + 1, 0, action);
         }
+        this.registerAction(action);
         this.resetFuncs();
         return this;
     }
@@ -89,6 +92,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         if (this.befores.indexOf(action) < 0) {
             this.befores.push(action);
         }
+        this.registerAction(action);
         this.resetFuncs();
         return this;
     }
@@ -103,6 +107,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         if (this.afters.indexOf(action) < 0) {
             this.afters.push(action);
         }
+        this.registerAction(action);
         this.resetFuncs();
         return this;
     }
@@ -125,15 +130,17 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         this.actionFuncs = null;
     }
 
-    registerAction(action: Type<any>, setup?: boolean) {
+    protected registerAction(action: IocActionType) {
+        if (!isClass(action)) {
+            return this;
+        }
+        if (this.container.has(action)) {
+            return this;
+        }
         this.container.registerSingleton(action, () => new action(this.container));
-        if (setup) {
-            let instance = this.container.get(action);
-            if (instance instanceof IocCompositeAction) {
-                instance.setup();
-            } else {
-                console.log(action, 'action has not setup.');
-            }
+        if (lang.isExtendsClass(action, IocCompositeAction)) {
+            let instance = this.container.get<IocCompositeAction<T>>(action);
+            instance.setup();
         }
         return this;
     }

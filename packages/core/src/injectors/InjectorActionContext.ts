@@ -1,4 +1,4 @@
-import { ActionContextOption, IocActionContext, Type, IIocContainer, ObjectMap, Modules, ClassMetadata } from '@tsdi/ioc';
+import { ActionContextOption, IocActionContext, Type, IIocContainer, ObjectMap, Modules } from '@tsdi/ioc';
 
 
 /**

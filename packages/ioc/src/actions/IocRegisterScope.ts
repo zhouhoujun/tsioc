@@ -14,5 +14,5 @@ import { RegisterActionContext } from './RegisterActionContext';
  * @template T
  */
 export abstract class IocRegisterScope<T extends RegisterActionContext> extends IocCompositeAction<T> {
-    abstract setup();
+
 }

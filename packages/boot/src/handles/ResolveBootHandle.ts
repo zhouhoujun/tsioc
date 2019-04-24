@@ -1,8 +1,8 @@
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
-import { Singleton, lang } from '@tsdi/ioc';
+import { lang } from '@tsdi/ioc';
 
-@Singleton
+
 export class ResolveBootHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
         if (ctx.annoation.bootstrap && !ctx.bootstrap) {

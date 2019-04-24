@@ -29,10 +29,8 @@ export interface IHandleContext {
  */
 export abstract class Handle<T extends IHandleContext> implements OnInit {
 
-    @Inject(ContainerToken)
-    protected container: IContainer;
 
-    constructor() {
+    constructor(@Inject(ContainerToken) protected container: IContainer) {
         this.onInit();
     }
 
@@ -72,6 +70,7 @@ export abstract class Handle<T extends IHandleContext> implements OnInit {
         }
         return ac;
     }
+
 }
 
 /**

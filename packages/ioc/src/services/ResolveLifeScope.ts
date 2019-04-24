@@ -12,7 +12,6 @@ export class ResolveLifeScope<T> extends LifeScope<ResolveActionContext<T>> {
     }
 
     setup() {
-        this.registerAction(IocResolveScope, true);
         this.use(IocResolveScope);
     }
 

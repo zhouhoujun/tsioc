@@ -23,7 +23,6 @@ export class IocResolveScope extends IocCompositeAction<ResolveActionContext<any
     }
 
     setup() {
-        this.registerAction(IocDefaultResolveAction);
         this.use(IocDefaultResolveAction);
     }
 }

@@ -17,15 +17,7 @@ export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> {
 
     setup() {
         this.container.registerSingleton(DesignDecoratorRegisterer, () => new DesignDecoratorRegisterer(this.container));
-
-        if (!this.container.has(InitReflectAction)) {
-            this.registerAction(InitReflectAction);
-        }
-
-        this.registerAction(DesignDecoratorAction)
-            .registerAction(DesignPropertyScope, true)
-            .registerAction(DesignMethodScope, true)
-            .registerAction(DesignAnnoationScope, true);
+        this.registerAction(DesignDecoratorAction);
 
         this.use(InitReflectAction)
             .use(DesignPropertyScope)

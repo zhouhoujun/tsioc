@@ -49,11 +49,6 @@ export class AnnoationRegisterScope extends IocCompositeAction<AnnoationActionCo
     }
 
     setup() {
-        this.registerAction(RegModuleAction)
-            .registerAction(RegModuleImportsAction)
-            .registerAction(RegModuleProvidersAction)
-            .registerAction(RegModuleResolverAction);
-
         this.use(RegModuleAction)
             .use(RegModuleImportsAction)
             .use(RegModuleProvidersAction)

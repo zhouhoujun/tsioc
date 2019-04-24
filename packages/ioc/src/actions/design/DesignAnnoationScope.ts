@@ -9,8 +9,7 @@ import { IocAutorunAction } from './IocAutorunAction';
 export class DesignAnnoationScope extends IocRegisterScope<DesignActionContext> {
     setup() {
         this.registerAction(BindProviderAction)
-            .registerAction(IocAutorunAction)
-            .registerAction(DesignClassDecoratorScope, true);
+            .registerAction(IocAutorunAction);
 
         let decRgr = this.container.get(DesignDecoratorRegisterer);
         decRgr.register(Injectable, DecoratorScopes.Class, BindProviderAction);

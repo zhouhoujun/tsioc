@@ -25,9 +25,6 @@ export class ResolveRouteServicesAction extends IocCompositeAction<ResolveServic
     }
 
     setup() {
-        this.registerAction(ResolveSerivesInExportAction)
-            .registerAction(ResolveParentServicesAction);
-
         this.use(ResolveSerivesInExportAction)
             .use(ResolveParentServicesAction);
     }
