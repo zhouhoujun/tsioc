@@ -1,6 +1,6 @@
 import { Task } from '../decorators';
 import { ActivityContext, BodyTemplate, Activity, ActivityType } from '../core';
-import { PromiseUtil, lang } from '@tsdi/ioc';
+import { PromiseUtil } from '@tsdi/ioc';
 
 /**
  * body activity.

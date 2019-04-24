@@ -37,11 +37,16 @@ export abstract class Activity<T extends ActivityContext> {
      * @type {IContainer}
      * @memberof Activity
      */
-    @Inject(ContainerToken)
-    container: IContainer;
+    private containerGetter: () => IContainer;
 
 
-    constructor() {
+    constructor(@Inject(ContainerToken) container: IContainer) {
+        this.containerGetter = () => container;
+    }
+
+
+    getContainer(): IContainer {
+        return this.containerGetter();
     }
 
     /**
@@ -66,6 +71,7 @@ export abstract class Activity<T extends ActivityContext> {
      * @memberof Activity
      */
     abstract run(ctx: T, next?: () => Promise<void>): Promise<void>;
+
     // async run(ctx: T, next?: () => Promise<void>): Promise<void> {
     //     let vaildate = await this.vaildate(ctx);
     //     if (vaildate) {
@@ -120,11 +126,12 @@ export abstract class Activity<T extends ActivityContext> {
 
     protected async buildActivity(activity: Type<any> | ControlTemplate<T>): Promise<Activity<T>> {
         let ctx: ActivityContext;
+        let container = this.getContainer();
         if (isClass(activity)) {
-            ctx = await this.container.get(BuilderService).build(activity) as ActivityContext;
+            ctx = await container.get(BuilderService).build(activity) as ActivityContext;
         } else {
             let md: Type<any>;
-            let mgr = this.container.get(SelectorManager);
+            let mgr = container.get(SelectorManager);
             if (isClass(activity.activity)) {
                 md = activity.activity;
             } else {
@@ -135,7 +142,7 @@ export abstract class Activity<T extends ActivityContext> {
                 module: md,
                 template: activity
             };
-            ctx = await this.container.get(BuilderService).build(option) as ActivityContext;
+            ctx = await container.get(BuilderService).build(option) as ActivityContext;
         }
         return ctx.getActivity();
     }
@@ -153,7 +160,7 @@ export abstract class Activity<T extends ActivityContext> {
      */
     protected async resolveExpression<TVal>(express: Expression<TVal>, ctx: T): Promise<TVal> {
         if (isClass(express)) {
-            let bctx = await this.container.get(RunnerService).run(express);
+            let bctx = await this.getContainer().get(RunnerService).run(express);
             return bctx.data;
         } else if (isFunction(express)) {
             return await express(ctx);
