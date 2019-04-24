@@ -1,5 +1,5 @@
 import { Task } from '../decorators';
-import { ActivityContext, BodyTemplate, Activity, ActivityType } from '../core';
+import { ActivityContext, BodyTemplate, Activity, ActivityType, ActivityResult } from '../core';
 import { PromiseUtil } from '@tsdi/ioc';
 
 /**
@@ -28,7 +28,7 @@ export class BodyActivity<T extends ActivityContext> extends Activity<T> {
         await this.execActions(ctx, this.bodyActions, next);
     }
 
-    run(ctx: T, next?: () => Promise<void>): Promise<void> {
-        return this.execBody(ctx, next);
+    protected execute(ctx: T): Promise<void> {
+        return this.execBody(ctx);
     }
 }

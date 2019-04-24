@@ -5,10 +5,11 @@ import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {
     isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
-    isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, isArray
+    isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, isArray, ProviderTypes, lang
 } from '@tsdi/ioc';
 import { ActivityType, Expression, ControlTemplate } from './ActivityConfigure';
 import { SelectorManager } from './SelectorManager';
+import { ActivityResult, NextToken } from './ActivityResult';
 
 
 /**
@@ -61,6 +62,11 @@ export abstract class Activity<T extends ActivityContext> {
         }
     }
 
+    protected result: ActivityResult;
+    getResult(): ActivityResult {
+        return this.result;
+    }
+
     /**
      * run activity.
      *
@@ -70,31 +76,24 @@ export abstract class Activity<T extends ActivityContext> {
      * @returns {Promise<void>}
      * @memberof Activity
      */
-    abstract run(ctx: T, next?: () => Promise<void>): Promise<void>;
+    // abstract run(ctx: T, next?: () => Promise<void>): Promise<void>;
 
-    // async run(ctx: T, next?: () => Promise<void>): Promise<void> {
-    //     let vaildate = await this.vaildate(ctx);
-    //     if (vaildate) {
-    //         ctx.runnable.status.current = this;
-    //         let state = await this.execute(ctx);
-    //         ctx.runnable.status.setState(state);
-    //         if (this.completed(ctx, state)) {
-    //             await next && next();
-    //         }
-    //     } else {
-    //         await next && next();
-    //     }
-    // }
+    async run(ctx: T, next?: () => Promise<void>): Promise<void> {
+        this.result = this.createResult(next);
+        ctx.runnable.status.current = this;
+        await this.execute(ctx);
+        let action = this.result.getNext();
+        if (action) {
+            await action();
+        }
+    }
 
-    // protected abstract execute(ctx: T): Promise<ActivityResult>;
+    protected abstract execute(ctx: T): Promise<void>;
 
-    // protected async vaildate(ctx: T): Promise<boolean> {
-    //     return true;
-    // }
-
-    // protected completed(ctx: T, result: ActivityResult): boolean {
-    //     return false;
-    // }
+    protected createResult(next?: () => Promise<void>, ...providers: ProviderTypes[]): ActivityResult {
+        providers.unshift({ provide: NextToken, useValue: next });
+        return this.getContainer().getService(ActivityResult, lang.getClass(this), ...providers);
+    }
 
     protected execActivity(ctx: T, activities: ActivityType<T> | ActivityType<T>[], next?: () => Promise<void>): Promise<void> {
         return PromiseUtil.runInChain((isArray(activities) ? activities : [activities]).map(ac => this.toAction(ac)), ctx, next);

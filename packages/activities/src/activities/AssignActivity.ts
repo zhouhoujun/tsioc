@@ -1,4 +1,4 @@
-import { Activity, ActivityContext } from '../core';
+import { Activity, ActivityContext, ActivityResult } from '../core';
 import { Task } from '../decorators';
 
 
@@ -13,8 +13,7 @@ import { Task } from '../decorators';
  */
 @Task('assign')
 export class AssignActivity<T extends ActivityContext> extends Activity<T> {
-    async run(ctx: T, next: () => Promise<void>): Promise<void> {
+    protected async execute(ctx: T): Promise<void> {
         // ctx.assign = await this.resolveSelector<any>(ctx);
-        next();
     }
 }

@@ -21,11 +21,11 @@ export class ConditionActivity<T extends ActivityContext> extends BodyActivity<T
         await super.init(option);
     }
 
-    async run(ctx: T, next?: () => Promise<void>): Promise<void> {
+    async execute(ctx: T): Promise<void> {
         if (this.vaildate(ctx)) {
-            await this.whenTrue(ctx, next);
+            await this.whenTrue(ctx);
         } else {
-            await this.whenFalse(ctx, next);
+            await this.whenFalse(ctx);
         }
     }
 
@@ -34,7 +34,7 @@ export class ConditionActivity<T extends ActivityContext> extends BodyActivity<T
     }
 
     protected async whenTrue(ctx: T, next?: () => Promise<void>): Promise<void> {
-        await this.execBody(ctx, next);
+        await this.execBody(ctx);
     }
 
     protected async whenFalse(ctx: T, next?: () => Promise<void>): Promise<void> {

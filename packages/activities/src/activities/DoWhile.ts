@@ -13,14 +13,14 @@ import { ConditionActivity } from './ConditionActivity';
 @Task('dowhile')
 export class DoWhileActivity<T extends ActivityContext> extends ConditionActivity<T> {
 
-    async run(ctx: T, next: () => Promise<void>): Promise<void> {
+    async execute(ctx: T): Promise<void> {
         await this.execBody(ctx);
-        await super.run(ctx, next);
+        await super.execute(ctx);
     }
 
-    protected async whenTrue(ctx: T, next?: () => Promise<void>): Promise<void> {
+    protected async whenTrue(ctx: T): Promise<void> {
         await this.execBody(ctx, async () => {
-            await super.run(ctx, next);
+            await super.execute(ctx);
         });
     }
 

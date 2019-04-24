@@ -9,7 +9,7 @@ export class ActivityStatus {
 
     history: Activity<any>[];
 
-    private _current;
+    private _current: Activity<any>;
     /**
      * current actiivty.
      *
