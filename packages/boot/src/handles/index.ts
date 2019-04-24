@@ -1,3 +1,4 @@
+
 export * from './RegisterAnnoationHandle';
 export * from './RegisterModuleHandle';
 export * from './RegisterModuleRegisterHandle';
@@ -16,7 +17,6 @@ export * from './DecoratorBuildHandle';
 export * from './ResolveMoudleScope';
 export * from './ResolveBootHandle';
 export * from './ResolveBootScope';
-export * from './BootBuildScope';
 
 export * from './ResolveRunnableHandle';
 export * from './RefRunnableHandle';
