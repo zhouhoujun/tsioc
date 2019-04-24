@@ -14,7 +14,7 @@ export class DesignPropertyScope extends IocRegisterScope<DesignActionContext> {
         decRgr.register(Inject, DecoratorScopes.Property, BindPropertyTypeAction);
         decRgr.register(AutoWired, DecoratorScopes.Property, BindPropertyTypeAction);
 
-        this.use(DesignPropertyDecoratorScope);
+        this.use(DesignPropertyDecoratorScope, true);
     }
 }
 

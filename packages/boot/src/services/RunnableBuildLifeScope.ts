@@ -7,8 +7,8 @@ import { ResolveRunnableHandle, RunBootHandle, ModuleBuildScope } from '../handl
 export class RunnableBuildLifeScope extends CompositeHandle<AnnoationContext> {
 
     setup() {
-        this.use(ModuleBuildScope)
-            .use(ResolveRunnableHandle)
+        this.use(ModuleBuildScope, true)
+            .use(ResolveRunnableHandle, true)
             .use(RunBootHandle);
     }
 }

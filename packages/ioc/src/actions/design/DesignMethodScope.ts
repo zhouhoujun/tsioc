@@ -13,7 +13,7 @@ export class DesignMethodScope extends IocRegisterScope<DesignActionContext> {
         decRgr.register(AutoWired, DecoratorScopes.Method, BindMethodProviderAction);
         decRgr.register(Providers, DecoratorScopes.Method, BindMethodProviderAction);
 
-        this.use(DesignMethodDecoratorScope);
+        this.use(DesignMethodDecoratorScope, true);
     }
 }
 

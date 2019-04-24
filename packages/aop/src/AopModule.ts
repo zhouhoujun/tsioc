@@ -48,23 +48,18 @@ export class AopModule {
         container.register(Advisor);
         container.register(AdviceMatcher);
 
-        container.registerSingleton(BindMethodPointcutAction, () => new BindMethodPointcutAction(container));
-        container.registerSingleton(ExetndsInstanceAction, () => new ExetndsInstanceAction(container));
-        container.registerSingleton(InvokeBeforeConstructorAction, () => new InvokeBeforeConstructorAction(container));
-        container.registerSingleton(InvokeAfterConstructorAction, () => new InvokeAfterConstructorAction(container));
-        container.registerSingleton(MatchPointcutAction, () => new MatchPointcutAction(container));
         container.registerSingleton(RegistAspectAction, () => new RegistAspectAction(container));
 
 
         container.get(IocBeforeConstructorScope)
-            .use(InvokeBeforeConstructorAction, true);
+            .useBefore(InvokeBeforeConstructorAction);
 
         container.get(IocAfterConstructorScope)
             .use(ExetndsInstanceAction)
             .use(InvokeAfterConstructorAction);
 
         container.get(RuntimeMethodScope)
-            .use(BindMethodPointcutAction, true);
+            .useBefore(BindMethodPointcutAction);
 
         container.get(DesignAnnoationScope)
             .use(MatchPointcutAction);

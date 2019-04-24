@@ -24,7 +24,7 @@ export class RuntimeAnnoationScope extends IocRegisterScope<RuntimeActionContext
             ComponentAfterInitAction, RegisterSingletionAction, IocSetCacheAction);
 
 
-        this.use(RuntimeAnnoationDecorScope);
+        this.use(RuntimeAnnoationDecorScope, true);
     }
 }
 

@@ -6,8 +6,8 @@ import { InjectCompleteCheckAction } from './InjectCompleteCheckAction';
 export class ModuleInjectorScope extends InjectorScope {
 
     setup() {
-        this.use(DecoratorInjectorScope)
+        this.use(DecoratorInjectorScope, true)
             .use(InjectCompleteCheckAction)
-            .use(TypesRegisterScope);
+            .use(TypesRegisterScope, true);
     }
 }

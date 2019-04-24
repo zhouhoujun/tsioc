@@ -20,8 +20,8 @@ export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> {
         this.registerAction(DesignDecoratorAction);
 
         this.use(InitReflectAction)
-            .use(DesignPropertyScope)
-            .use(DesignMethodScope)
-            .use(DesignAnnoationScope);
+            .use(DesignPropertyScope, true)
+            .use(DesignMethodScope, true)
+            .use(DesignAnnoationScope, true);
     }
 }

@@ -1,5 +1,5 @@
 import { Handle, HandleType, IHandleContext } from './Handle';
-import { PromiseUtil, Type, isClass, lang } from '@tsdi/ioc';
+import { PromiseUtil, isClass, isBoolean } from '@tsdi/ioc';
 
 
 /**
@@ -23,19 +23,21 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
      * use handle.
      *
      * @param {HandleType} handle
-     * @param {boolean} [first]  use action at first or last.
+     * @param {boolean} [setup]  setup handle type or not.
      * @returns {this}
      * @memberof LifeScope
      */
-    use(handle: HandleType<T>, first?: boolean): this {
-        if (first) {
-            this.handles.unshift(handle);
-        } else {
+    use(handle: HandleType<T>, setup?: boolean): this {
+        if (!this.has(handle)) {
             this.handles.push(handle);
+            this.registerHandle(handle, setup);
+            this.resetFuncs();
         }
-        this.registerHandle(handle);
-        this.resetFuncs();
         return this;
+    }
+
+    has(handle: HandleType<T>): boolean {
+        return this.handles.indexOf(handle) >= 0;
     }
 
     /**
@@ -46,9 +48,21 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
      * @returns {this}
      * @memberof LifeScope
      */
-    useBefore(handle: HandleType<T>, before: HandleType<T>): this {
-        this.handles.splice(this.handles.indexOf(before) - 1, 0, handle);
-        this.registerHandle(handle);
+    useBefore(handle: HandleType<T>, before: HandleType<T> | boolean, setup?: boolean): this {
+        if (this.has(handle)) {
+            return this;
+        }
+        if (before) {
+            if (isBoolean(before)) {
+                this.handles.unshift(handle);
+                setup = before;
+            } else {
+                this.handles.splice(this.handles.indexOf(before) - 1, 0, handle);
+            }
+        } else {
+            this.handles.unshift(handle);
+        }
+        this.registerHandle(handle, setup);
         this.resetFuncs();
         return this;
     }
@@ -60,9 +74,22 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
      * @returns {this}
      * @memberof LifeScope
      */
-    useAfter(handle: HandleType<T>, after: HandleType<T>): this {
-        this.handles.splice(this.handles.indexOf(after) + 1, 0, handle);
-        this.registerHandle(handle);
+    useAfter(handle: HandleType<T>, after?: HandleType<T>, setup?: boolean): this {
+        if (this.has(handle)) {
+            return this;
+        }
+        if (after) {
+            if (isBoolean(after)) {
+                this.handles.push(handle);
+                setup = after;
+            } else {
+                this.handles.splice(this.handles.indexOf(after) + 1, 0, handle);
+            }
+
+        } else {
+            this.handles.push(handle);
+        }
+        this.registerHandle(handle, setup);
         this.resetFuncs();
         return this;
     }
@@ -78,7 +105,7 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
         this.funcs = null;
     }
 
-    protected registerHandle(HandleType: HandleType<T>): this {
+    protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {
         if (!isClass(HandleType)) {
             return this;
         }
@@ -86,7 +113,7 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
             return this;
         }
         this.container.registerSingleton(HandleType, () => new HandleType(this.container));
-        if (lang.isExtendsClass(HandleType, CompositeHandle)) {
+        if (setup) {
             let handle = this.container.get(HandleType);
             if (handle instanceof CompositeHandle) {
                 handle.setup();

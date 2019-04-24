@@ -3,7 +3,6 @@ export * from './DecoratorInjectAction';
 export * from './InjectCompleteCheckAction';
 export * from './InjectorAction';
 export * from './InjectorActionContext';
-export * from './ModuleDecoratorRegisterer';
 export * from './ModuleToTypesAction';
 export * from './RegisterTypeAction';
 export * from './ModuleInjectorScope';

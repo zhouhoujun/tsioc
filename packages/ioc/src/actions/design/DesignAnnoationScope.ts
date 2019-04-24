@@ -19,7 +19,7 @@ export class DesignAnnoationScope extends IocRegisterScope<DesignActionContext> 
         decRgr.register(Refs, DecoratorScopes.Class, BindProviderAction);
         decRgr.register(Autorun, DecoratorScopes.Class, IocAutorunAction);
 
-        this.use(DesignClassDecoratorScope);
+        this.use(DesignClassDecoratorScope, true);
     }
 }
 

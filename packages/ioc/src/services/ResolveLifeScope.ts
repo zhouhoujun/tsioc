@@ -12,7 +12,7 @@ export class ResolveLifeScope<T> extends LifeScope<ResolveActionContext<T>> {
     }
 
     setup() {
-        this.use(IocResolveScope);
+        this.use(IocResolveScope, true);
     }
 
     /**

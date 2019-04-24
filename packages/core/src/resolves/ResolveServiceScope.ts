@@ -20,7 +20,7 @@ export class ResolveServiceScope extends IocCompositeAction<ResolveServiceContex
     }
 
     setup() {
-        this.use(ResolveTargetServiceAction)
+        this.use(ResolveTargetServiceAction, true)
             .use(ResolveServiceTokenAction);
     }
 }

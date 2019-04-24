@@ -7,6 +7,6 @@ import { ModuleBuildScope } from '../handles';
 export class ModuleBuilderLifeScope extends CompositeHandle<AnnoationContext> {
 
     setup() {
-        this.use(ModuleBuildScope);
+        this.use(ModuleBuildScope, true);
     }
 }

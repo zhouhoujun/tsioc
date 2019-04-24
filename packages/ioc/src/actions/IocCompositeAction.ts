@@ -1,5 +1,4 @@
-import { Type } from '../types';
-import { isFunction, lang, isClass } from '../utils';
+import { lang, isClass, isBoolean } from '../utils';
 import { IocAction, IocActionType, IocActionContext } from './Action';
 
 
@@ -32,19 +31,16 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
      * use action.
      *
      * @param {IocActionType} action
-     * @param {boolean} [first]  use action at first or last.
+     * @param {boolean} [setup]  register action type or not.
      * @returns {this}
      * @memberof LifeScope
      */
-    use(action: IocActionType, first?: boolean): this {
-        if (!this.has(action)) {
-            if (first) {
-                this.actions.unshift(action);
-            } else {
-                this.actions.push(action);
-            }
+    use(action: IocActionType, setup?: boolean): this {
+        if (this.has(action)) {
+            return this;
         }
-        this.registerAction(action);
+        this.actions.push(action);
+        this.registerAction(action, setup);
         this.resetFuncs();
         return this;
     }
@@ -53,31 +49,54 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
      * use action before
      *
      * @param {IocActionType} action
-     * @param {IocActionType} before
+     * @param {(IocActionType | boolean)} [before]
+     * @param {boolean} [setup]
      * @returns {this}
-     * @memberof LifeScope
+     * @memberof IocCompositeAction
      */
-    useBefore(action: IocActionType, before: IocActionType): this {
-        if (!this.has(action)) {
-            this.actions.splice(this.actions.indexOf(before) - 1, 0, action);
+    useBefore(action: IocActionType, before?: IocActionType | boolean, setup?: boolean): this {
+        if (this.has(action)) {
+            return this;
         }
-        this.registerAction(action);
+        if (before) {
+            if (isBoolean(before)) {
+                this.actions.unshift(action);
+                setup = before;
+            } else {
+                this.actions.splice(this.actions.indexOf(before) - 1, 0, action);
+            }
+        } else {
+            this.actions.unshift(action);
+        }
+        this.registerAction(action, setup);
         this.resetFuncs();
         return this;
     }
+
     /**
      * use action after.
      *
      * @param {IocActionType} action
-     * @param {IocActionType} after
+     * @param {(IocActionType | boolean)} after
+     * @param {boolean} [setup]
      * @returns {this}
-     * @memberof LifeScope
+     * @memberof IocCompositeAction
      */
-    useAfter(action: IocActionType, after: IocActionType): this {
-        if (!this.has(action)) {
-            this.actions.splice(this.actions.indexOf(after) + 1, 0, action);
+    useAfter(action: IocActionType, after: IocActionType | boolean, setup?: boolean): this {
+        if (this.has(action)) {
+            return this;
         }
-        this.registerAction(action);
+        if (after) {
+            if (isBoolean(after)) {
+                this.actions.unshift(action);
+                setup = after;
+            } else {
+                this.actions.splice(this.actions.indexOf(after) - 1, 0, action);
+            }
+        } else {
+            this.actions.unshift(action)
+        }
+        this.registerAction(action, setup);
         this.resetFuncs();
         return this;
     }
@@ -88,12 +107,12 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
      * @param {IocActionType} action
      * @memberof IocCompositeAction
      */
-    before(action: IocActionType): this {
+    before(action: IocActionType, setup?: boolean): this {
         if (this.befores.indexOf(action) < 0) {
             this.befores.push(action);
+            this.registerAction(action, setup);
+            this.resetFuncs();
         }
-        this.registerAction(action);
-        this.resetFuncs();
         return this;
     }
 
@@ -103,12 +122,12 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
      * @param {IocActionType} action
      * @memberof IocCompositeAction
      */
-    after(action: IocActionType): this {
+    after(action: IocActionType, setup?: boolean): this {
         if (this.afters.indexOf(action) < 0) {
             this.afters.push(action);
+            this.registerAction(action, setup);
+            this.resetFuncs();
         }
-        this.registerAction(action);
-        this.resetFuncs();
         return this;
     }
 
@@ -130,7 +149,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         this.actionFuncs = null;
     }
 
-    protected registerAction(action: IocActionType) {
+    registerAction(action: IocActionType, setup?: boolean) {
         if (!isClass(action)) {
             return this;
         }
@@ -138,9 +157,11 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
             return this;
         }
         this.container.registerSingleton(action, () => new action(this.container));
-        if (lang.isExtendsClass(action, IocCompositeAction)) {
-            let instance = this.container.get<IocCompositeAction<T>>(action);
-            instance.setup();
+        if (setup) {
+            let instance = this.container.get(action);
+            if (instance instanceof IocCompositeAction) {
+                instance.setup();
+            }
         }
         return this;
     }

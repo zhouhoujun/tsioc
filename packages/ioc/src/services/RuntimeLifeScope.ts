@@ -60,7 +60,7 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
 
         this.registerAction(InstanceCheckAction)
             .registerAction(RuntimeDecoratorAction)
-            .registerAction(RuntimeParamScope);
+            .registerAction(RuntimeParamScope, true);
 
 
         this.use(ContainerCheckerAction)
@@ -68,12 +68,12 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
             .use(GetSingletionAction)
             .use(IocGetCacheAction)
             .use(ConstructorArgsAction)
-            .use(IocBeforeConstructorScope)
+            .use(IocBeforeConstructorScope, true)
             .use(CreateInstanceAction)
-            .use(IocAfterConstructorScope)
-            .use(RuntimePropertyScope)
-            .use(RuntimeMethodScope)
-            .use(RuntimeAnnoationScope);
+            .use(IocAfterConstructorScope, true)
+            .use(RuntimePropertyScope, true)
+            .use(RuntimeMethodScope, true)
+            .use(RuntimeAnnoationScope, true);
 
     }
 

@@ -26,9 +26,9 @@ export class ModuleBuildScope extends CompositeHandle<BootContext> {
             .use(BootProvidersHandle)
             .use(BootDepsHandle)
             .use(BootConfigureLoadHandle)
-            .use(RegisterModuleHandle)
+            .use(RegisterModuleHandle, true)
             .use(BootConfigureRegisterHandle)
-            .use(ResolveMoudleScope)
-            .use(ResolveBootScope);
+            .use(ResolveMoudleScope, true)
+            .use(ResolveBootScope, true);
     }
 }

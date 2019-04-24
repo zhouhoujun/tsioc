@@ -13,6 +13,6 @@ export class ServicesResolveLifeScope<T> extends LifeScope<ResolveServicesContex
 
     setup() {
         this.use(InitServiceResolveAction)
-            .use(ResolveServicesScope)
+            .use(ResolveServicesScope, true)
     }
 }

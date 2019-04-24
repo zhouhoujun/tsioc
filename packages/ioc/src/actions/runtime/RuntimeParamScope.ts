@@ -15,7 +15,7 @@ export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> {
         decRgr.register(AutoWired, DecoratorScopes.Parameter, BindParameterTypeAction);
         decRgr.register(Param, DecoratorScopes.Parameter, BindParameterTypeAction);
 
-        this.use(RuntimeParamDecorScope)
+        this.use(RuntimeParamDecorScope, true)
             .use(BindDeignParamTypeAction);
     }
 }
