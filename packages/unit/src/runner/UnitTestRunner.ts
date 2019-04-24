@@ -20,7 +20,7 @@ export class UnitTestRunner extends Runnable<any> {
         let mgr = this.context.getConfigureManager<UnitTestConfigure>();
         let config = await mgr.getConfig();
         let src = config.src;
-        let container = this.container;
+        let container = this.getContainer();
         let suites: any[] = [];
 
         let oldRunner = container.resolve(OldTestRunner);

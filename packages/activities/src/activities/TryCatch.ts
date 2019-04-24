@@ -15,7 +15,7 @@ export class TryCatchActivity<T extends ActivityContext> extends Activity<T> {
     catchs: ActivityType<T>[];
     finallies: ActivityType<T>[];
 
-    async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
+    async run(ctx: T, next?: () => Promise<void>): Promise<void> {
         try {
             await this.execActivity(ctx, this.try, next);
         } catch (err) {

@@ -19,7 +19,7 @@ export interface IRunnable<T> {
      * @type {IContainer}
      * @memberof IBoot
      */
-    container: IContainer;
+    getContainer(): IContainer;
 
     /**
      * runable context.
@@ -75,9 +75,6 @@ export interface IRunnable<T> {
 @Abstract()
 export abstract class Runnable<T> implements IRunnable<any> {
 
-    @Inject(ContainerToken)
-    container: IContainer;
-
     protected _ctx: BootContext;
     get context(): BootContext {
         return this._ctx;
@@ -85,6 +82,10 @@ export abstract class Runnable<T> implements IRunnable<any> {
 
     constructor(ctx: BootContext) {
         this._ctx = ctx;
+    }
+
+    getContainer(): IContainer {
+        return this.context.getRaiseContainer();
     }
 
     async onInit(): Promise<void> {

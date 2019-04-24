@@ -5,9 +5,9 @@ import * as core from './core';
 import { TaskDecoratorServiceAction } from './resolvers';
 import * as activites from './activities';
 import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes } from '@tsdi/ioc';
-import { RegSelectorAction } from './core/RegSelectorAction';
 import { ModuleBuildDecoratorRegisterer, DIModuleRegisterScope } from '@tsdi/boot';
 import { ActivityBuildHandle, BuildTemplateHandle } from './handles';
+import { RegSelectorAction } from './core';
 
 
 /**
@@ -24,9 +24,7 @@ export class CoreModule {
     setup() {
         let container = this.container;
         container.registerSingleton(RegSelectorAction, () => new RegSelectorAction(container));
-        let decReg = container.get(DesignDecoratorRegisterer);
-        decReg.register(Task, DecoratorScopes.Class, BindProviderAction, RegSelectorAction);
-
+        container.get(DesignDecoratorRegisterer).register(Task, DecoratorScopes.Class, BindProviderAction, RegSelectorAction);
         container.get(ModuleDecoratorRegisterer).register(Task, DIModuleRegisterScope);
         container.get(ModuleBuildDecoratorRegisterer).register(Task, ActivityBuildHandle);
 

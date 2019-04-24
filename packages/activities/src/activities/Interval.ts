@@ -12,7 +12,7 @@ import { TimerActivity } from './TimerActivity';
 @Task('interval')
 export class IntervalActivity<T extends ActivityContext> extends TimerActivity<T> {
 
-    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
+    async run(ctx: T, next: () => Promise<void>): Promise<void> {
         let interval = await this.resolveExpression<number>(this.time, ctx);
         setInterval(() => {
             this.execBody(ctx);

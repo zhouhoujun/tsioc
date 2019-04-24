@@ -1,9 +1,9 @@
 import { Service, Runnable } from '@tsdi/boot';
-import { Joinpoint } from '@tsdi/aop';
-import { Injectable, Refs } from '@tsdi/ioc';
+import { Injectable, Refs, Inject } from '@tsdi/ioc';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
 import { ActivityConfigure } from './ActivityConfigure';
+import { ActivityStatus } from './ActivityStatus';
 
 /**
  *run state.
@@ -56,6 +56,14 @@ export class WorkflowInstance<T extends ActivityContext> extends Service<Activit
         return this._result;
     }
 
+    /**
+     * workflow status.
+     *
+     * @type {ActivityStatus}
+     * @memberof ActivityContext
+     */
+    @Inject
+    status: ActivityStatus;
 
     state: RunState;
 
@@ -70,22 +78,18 @@ export class WorkflowInstance<T extends ActivityContext> extends Service<Activit
     }
 
     async start(data?: any): Promise<T> {
-        if (this.context.id && !this.container.has(this.context.id)) {
-            this.container.bindProvider(this.context.id, this);
+        let container = this.getContainer();
+        if (this.context.id && !container.has(this.context.id)) {
+            container.bindProvider(this.context.id, this);
         }
 
-        await this.getTarget().execute(this.context, async () => {
+        await this.getTarget().run(this.context, async () => {
             this.state = RunState.complete;
             this._result = this.context.data;
         })
 
         return this.context;
 
-    }
-
-    _currState: Joinpoint;
-    saveState(state: Joinpoint) {
-        this._currState = state;
     }
 
     async stop(): Promise<any> {

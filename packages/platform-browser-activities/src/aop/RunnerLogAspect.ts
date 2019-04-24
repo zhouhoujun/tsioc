@@ -1,7 +1,7 @@
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LoggerAspect } from '@tsdi/logs';
-import { IWorkflowInstance, WorkflowInstance } from '@tsdi/activities';
+import {  WorkflowInstance } from '@tsdi/activities';
 import { ObjectMap, Inject } from '@tsdi/ioc';
 /**
  * Task Log
@@ -25,8 +25,8 @@ export class RunnerLogAspect extends LoggerAspect {
     @Around('execution(*.start)')
     logStart(joinPoint: Joinpoint) {
         let logger = this.logger;
-        let runner = joinPoint.target as IWorkflowInstance<any>;
-        let uuid = runner.getTarget().id;
+        let runner = joinPoint.target as WorkflowInstance<any>;
+        let uuid = runner.context.id;
         let name = runner.getTarget().name;
         let start: Date, end: Date;
         let taskname = '\'' + name + '\'';

@@ -18,7 +18,7 @@ export class InvokeActivity<T extends ActivityContext> extends Activity<T> {
         await super.init(option);
     }
 
-    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
+    async run(ctx: T, next: () => Promise<void>): Promise<void> {
         let invoke = await this.resolveExpression(this.invoke, ctx);
         if (invoke) {
             return this.container.invoke(invoke.target, invoke.method, ...(invoke.args || []));

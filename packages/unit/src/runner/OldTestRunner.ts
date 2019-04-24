@@ -31,7 +31,11 @@ let globals = typeof window !== 'undefined' ? window : global;
 export class OldTestRunner implements ISuiteRunner {
 
     @Inject(ContainerToken)
-    container: IContainer;
+    private container: IContainer;
+
+    getContainer(): IContainer {
+        return this.container;
+    }
 
     timeout: number;
     describe: string;
@@ -187,7 +191,7 @@ export class OldTestRunner implements ISuiteRunner {
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
-                let assert = this.container.resolve(Assert);
+                let assert = this.getContainer().resolve(Assert);
                 let err = new assert.AssertionError({
                     message: `${describe}, timeout ${timeout}`,
                     stackStartFunction: fn,

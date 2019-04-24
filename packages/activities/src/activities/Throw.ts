@@ -18,7 +18,7 @@ export class ThrowActivity<T extends ActivityContext> extends Activity<T> {
         await super.init(option);
     }
 
-    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
+    async run(ctx: T, next: () => Promise<void>): Promise<void> {
         let error = await this.resolveExpression(this.throw, ctx);
         throw error;
     }

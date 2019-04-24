@@ -1,5 +1,5 @@
 import {
-    Injectable, isNullOrUndefined, isFunction, ObjectMap, isClass, Type, Refs
+    Injectable, isNullOrUndefined, ObjectMap, Type, Refs
 } from '@tsdi/ioc';
 import { ITranslator } from './Translator';
 import { BootContext, createAnnoationContext } from '@tsdi/boot';
@@ -7,7 +7,7 @@ import { IContainer } from '@tsdi/core';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
-import { ActivityConfigure, CtxType, ActivityTemplate } from './ActivityConfigure';
+import { ActivityConfigure, ActivityTemplate } from './ActivityConfigure';
 
 
 /**
@@ -21,6 +21,7 @@ import { ActivityConfigure, CtxType, ActivityTemplate } from './ActivityConfigur
 @Refs(Activity, BootContext)
 @Refs('@Task', BootContext)
 export class ActivityContext extends BootContext {
+
     /**
      * workflow id.
      *
@@ -80,10 +81,10 @@ export class ActivityContext extends BootContext {
     /**
      * bootstrap runnable service.
      *
-     * @type {Runnable<any>}
+     * @type {WorkflowInstance<ActivityContext>}
      * @memberof BootContext
      */
-    runnable?: WorkflowInstance<any>;
+    runnable?: WorkflowInstance<ActivityContext>;
 
     getActivity<T extends ActivityContext>(): Activity<T> {
         if (this.target instanceof Activity) {
@@ -121,17 +122,6 @@ export class ActivityContext extends BootContext {
 
     getEnvArgs(): ObjectMap<any> {
         return {};
-    }
-
-    to<T>(target: CtxType<T>): T {
-        if (isFunction(target)) {
-            if (isClass(target)) {
-                return target as any;
-            }
-            return target(this);
-        } else {
-            return target;
-        }
     }
 
     static parse(target: Type<any> | ActivityOption<ActivityContext>, raiseContainer?: IContainer | (() => IContainer)): ActivityContext {

@@ -212,8 +212,4 @@ export type ActivityTemplate<T extends ActivityContext> = TemplateType<T> | Temp
  */
 export type Expression<T> = T | Promise<T> | ((ctx: ActivityContext) => T | Promise<T>) | Type<any>;
 
-/**
- * context type.
- */
-export type CtxType<T> = T | ((context?: ActivityContext, activity?: Activity<any>) => T);
 

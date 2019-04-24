@@ -29,7 +29,7 @@ export class SwitchActivity<T extends ActivityContext> extends Activity<T> {
         this.cases.set(key, activity);
     }
 
-    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
+    async run(ctx: T, next: () => Promise<void>): Promise<void> {
         let matchkey = await this.resolveExpression(this.switch, ctx);
         let activity = this.cases.get(matchkey);
 

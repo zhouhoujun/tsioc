@@ -1,9 +1,8 @@
-import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
+import { IContainer, ContainerToken, IocExt, ServiceDecoratorRegisterer, ModuleDecoratorRegisterer } from '@tsdi/core';
 import { Pack } from './decorators';
-import {
-    DecoratorScopeRegisterer, BindProviderAction, IocGetCacheAction,
-    IocSetCacheAction, ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction, Inject
-} from '@tsdi/ioc';
+import { BindProviderAction, Inject, DesignDecoratorRegisterer, DecoratorScopes } from '@tsdi/ioc';
+import { TaskDecoratorServiceAction, ActivityBuildHandle, RegSelectorAction } from '@tsdi/activities';
+import { ModuleBuildDecoratorRegisterer, DIModuleRegisterScope } from '@tsdi/boot';
 
 /**
  * pack setup.
@@ -19,8 +18,13 @@ export class PackSetup {
     }
 
     setup() {
-        let reg = this.container.resolve(DecoratorScopeRegisterer);
-        reg.register(Pack, BindProviderAction, IocGetCacheAction, IocSetCacheAction,
-            ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction);
+        this.registerDecorator(Pack);
+    }
+
+    protected registerDecorator(decor: Function | string) {
+        this.container.get(DesignDecoratorRegisterer).register(decor, DecoratorScopes.Class, BindProviderAction, RegSelectorAction);
+        this.container.get(ModuleDecoratorRegisterer).register(decor, DIModuleRegisterScope);
+        this.container.get(ModuleBuildDecoratorRegisterer).register(decor, ActivityBuildHandle);
+        this.container.get(ServiceDecoratorRegisterer).register(decor, TaskDecoratorServiceAction);
     }
 }

@@ -128,6 +128,7 @@ export class ResolveServiceContext<T> extends ResolveActionContext<T> {
      */
     currTargetRef?: TargetRef;
 
+    currDecorator?: string;
 
     currTargetToken?: Token<any>;
 

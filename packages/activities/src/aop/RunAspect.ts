@@ -1,6 +1,6 @@
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Aspect, Joinpoint, Before, AfterReturning } from '@tsdi/aop';
-import { RunState, ActivityContext, WorkflowInstance } from '../core';
+import { RunState, ActivityContext } from '../core';
 import { Task } from '../decorators/Task';
 import { Inject } from '@tsdi/ioc';
 
@@ -35,13 +35,7 @@ export class RunAspect {
         if (!runner) {
             return;
         }
-        runner.saveState(joinPoint);
-        switch (runner.state) {
-            case RunState.pause:
-                throw new Error('workflow paused!');
-            case RunState.stop:
-                throw new Error('workflow stop!');
-        }
+        runner.status.current = joinPoint.target;
     }
 
     @AfterReturning('execution(*.execute)')
@@ -51,7 +45,7 @@ export class RunAspect {
         if (!runner) {
             return;
         }
-        runner.saveState(joinPoint);
+        runner.status.setState(joinPoint.returningValue, joinPoint.target);
         switch (runner.state) {
             case RunState.pause:
                 throw new Error('workflow paused!');
@@ -62,6 +56,6 @@ export class RunAspect {
     }
 
     getRunner(ctx: ActivityContext) {
-        return this.container.get<WorkflowInstance<any>>(ctx.id);
+        return ctx.runnable;
     }
 }

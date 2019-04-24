@@ -1,7 +1,6 @@
 import { Task } from '../decorators';
 import { ActivityContext, Expression, ConditionTemplate } from '../core';
 import { BodyActivity } from './BodyActivity';
-import { isUndefined } from '@tsdi/ioc';
 
 
 /**
@@ -22,7 +21,7 @@ export class ConditionActivity<T extends ActivityContext> extends BodyActivity<T
         await super.init(option);
     }
 
-    async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
+    async run(ctx: T, next?: () => Promise<void>): Promise<void> {
         if (this.vaildate(ctx)) {
             await this.whenTrue(ctx, next);
         } else {

@@ -7,7 +7,7 @@ import { ServerLogsModule } from '@tsdi/platform-server-logs';
 
 
 @DIModule({
-    regScope: RegScope.all,
+    regScope: RegScope.boot,
     imports: [
         ServerModule,
         ServerBootstrapModule,

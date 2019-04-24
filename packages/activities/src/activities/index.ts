@@ -1,5 +1,4 @@
 export * from './BodyActivity';
-export * from './ExecuteActivity';
 export * from './ConditionActivity';
 export * from './TimerActivity';
 export * from './AssignActivity';

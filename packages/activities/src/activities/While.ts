@@ -15,7 +15,7 @@ export class WhileActivity<T extends ActivityContext> extends ConditionActivity<
 
     protected async whenTrue(ctx: T, next?: () => Promise<void>): Promise<void> {
         await this.execBody(ctx, () => {
-            return this.execute(ctx, next);
+            return this.run(ctx, next);
         });
     }
 }

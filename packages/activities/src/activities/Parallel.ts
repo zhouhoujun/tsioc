@@ -21,7 +21,7 @@ export class ParallelActivity<T extends ActivityContext> extends BodyActivity<T>
      * @returns {Promise<void>}
      * @memberof ParallelActivity
      */
-    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
+    async run(ctx: T, next: () => Promise<void>): Promise<void> {
         await Promise.all(this.body.map(act => this.execActivity(ctx, act)));
         await next();
     }

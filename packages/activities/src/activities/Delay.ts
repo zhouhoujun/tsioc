@@ -14,7 +14,7 @@ import { TimerActivity } from './TimerActivity';
 @Task('delay')
 export class DelayActivity<T extends ActivityContext> extends TimerActivity<T> {
 
-    async execute(ctx: T, next: () => Promise<void>): Promise<void> {
+    async run(ctx: T, next: () => Promise<void>): Promise<void> {
         let delay = await this.resolveExpression(this.time, ctx);
         let defer = PromiseUtil.defer();
         let timmer = setTimeout(() => {

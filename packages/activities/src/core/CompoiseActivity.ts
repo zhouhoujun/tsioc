@@ -67,7 +67,7 @@ export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
         return this;
     }
 
-    async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
+    async run(ctx: T, next?: () => Promise<void>): Promise<void> {
         let scope = ctx.currScope;
         this.setScope(ctx);
         await this.execActions(ctx, this.getActions(), next);

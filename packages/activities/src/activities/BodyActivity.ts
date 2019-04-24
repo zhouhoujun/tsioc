@@ -28,7 +28,7 @@ export class BodyActivity<T extends ActivityContext> extends Activity<T> {
         await this.execActions(ctx, this.bodyActions, next);
     }
 
-    execute(ctx: T, next?: () => Promise<void>): Promise<void> {
+    run(ctx: T, next?: () => Promise<void>): Promise<void> {
         return this.execBody(ctx, next);
     }
 }

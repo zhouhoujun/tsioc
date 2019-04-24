@@ -13,6 +13,7 @@ export class ResolveDecoratorServiceAction extends IocResolveServiceAction {
                     .getClassDecorators(ctx.currTargetType)
                     .some(dec => {
                         if (decReg.has(dec)) {
+                            ctx.currDecorator = dec;
                             this.execActions(ctx, decReg.get(dec));
                             return !!ctx.instance;
                         } else {
@@ -23,6 +24,7 @@ export class ResolveDecoratorServiceAction extends IocResolveServiceAction {
         }
 
         if (!ctx.instance) {
+            ctx.currDecorator = null;
             return next();
         }
     }

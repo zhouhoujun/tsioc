@@ -57,7 +57,7 @@ export abstract class Activity<T extends ActivityContext> {
     }
 
     /**
-     * execute activity.
+     * run activity.
      *
      * @abstract
      * @param {T} ctx
@@ -65,7 +65,30 @@ export abstract class Activity<T extends ActivityContext> {
      * @returns {Promise<void>}
      * @memberof Activity
      */
-    abstract execute(ctx: T, next: () => Promise<void>): Promise<void>;
+    abstract run(ctx: T, next?: () => Promise<void>): Promise<void>;
+    // async run(ctx: T, next?: () => Promise<void>): Promise<void> {
+    //     let vaildate = await this.vaildate(ctx);
+    //     if (vaildate) {
+    //         ctx.runnable.status.current = this;
+    //         let state = await this.execute(ctx);
+    //         ctx.runnable.status.setState(state);
+    //         if (this.completed(ctx, state)) {
+    //             await next && next();
+    //         }
+    //     } else {
+    //         await next && next();
+    //     }
+    // }
+
+    // protected abstract execute(ctx: T): Promise<ActivityResult>;
+
+    // protected async vaildate(ctx: T): Promise<boolean> {
+    //     return true;
+    // }
+
+    // protected completed(ctx: T, result: ActivityResult): boolean {
+    //     return false;
+    // }
 
     protected execActivity(ctx: T, activities: ActivityType<T> | ActivityType<T>[], next?: () => Promise<void>): Promise<void> {
         return PromiseUtil.runInChain((isArray(activities) ? activities : [activities]).map(ac => this.toAction(ac)), ctx, next);
@@ -77,12 +100,12 @@ export abstract class Activity<T extends ActivityContext> {
 
     protected toAction(activity: ActivityType<T>): PromiseUtil.ActionHandle<T> {
         if (activity instanceof Activity) {
-            return (ctx: T, next?: () => Promise<void>) => activity.execute(ctx, next);
+            return (ctx: T, next?: () => Promise<void>) => activity.run(ctx, next);
         } else if (isClass(activity) || isMetadataObject(activity)) {
             return async (ctx: T, next?: () => Promise<void>) => {
                 let act = await this.buildActivity(activity as Type<any> | ControlTemplate<T>);
                 if (act) {
-                    await act.execute(ctx, next);
+                    await act.run(ctx, next);
                 } else {
                     await next();
                 }

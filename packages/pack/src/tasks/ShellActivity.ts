@@ -1,7 +1,7 @@
 import { ExecOptions, exec } from 'child_process';
-import { isString, isBoolean, isArray, lang, ObjectMap, isNullOrUndefined } from '@tsdi/ioc';
-import { Src, CtxType, OnActivityInit, Task, Activity } from '@tsdi/activities';
-import { CompilerActivity, CompilerConfigure, NodeActivityContext } from '../core';
+import { isBoolean, isArray, lang, ObjectMap, isNullOrUndefined, PromiseUtil } from '@tsdi/ioc';
+import { Src, Task, TemplateOption, Activity, Expression } from '@tsdi/activities';
+import { NodeActivityContext } from '../core';
 
 
 /**
@@ -11,35 +11,35 @@ import { CompilerActivity, CompilerConfigure, NodeActivityContext } from '../cor
  * @interface ShellActivityConfig
  * @extends {ActivityConfigure}
  */
-export interface ShellActivityConfig extends Activity<NodeActivityContext {
+export interface ShellActivityOption<T extends NodeActivityContext> extends TemplateOption<T> {
     /**
      * shell cmd
      *
      * @type {CtxType<Src>}
      * @memberof ShellActivityConfig
      */
-    shell?: CtxType<Src>;
+    shell?: Expression<Src>;
     /**
      * shell args.
      *
      * @type {CtxType<string[] | ObjectMap<any>>}
      * @memberof ShellActivityConfig
      */
-    args?: CtxType<string[] | ObjectMap<any>>;
+    args?: Expression<string[] | ObjectMap<any>>;
     /**
      * shell exec options.
      *
      * @type {CtxType<ExecOptions>}
      * @memberof ShellActivityConfig
      */
-    options?: CtxType<ExecOptions>;
+    options?: Expression<ExecOptions>;
     /**
      * allow error or not.
      *
      * @type {CtxType<boolean>}
      * @memberof ShellActivityConfig
      */
-    allowError?: CtxType<boolean>;
+    allowError?: Expression<boolean>;
 }
 
 
@@ -50,78 +50,59 @@ export interface ShellActivityConfig extends Activity<NodeActivityContext {
  * @implements {ITask}
  */
 @Task('shell')
-export class ShellActivity extends CompilerActivity implements OnActivityInit {
+export class ShellActivity<T extends NodeActivityContext> extends Activity<T> {
     /**
      * shell cmd.
      *
      * @type {Src}
      * @memberof ShellActivity
      */
-    shell: Src;
+    shell: Expression<Src>;
     /**
      * shell args.
      *
      * @type {string[]}
      * @memberof ShellActivity
      */
-    args: string[];
+    args: Expression<string[] | ObjectMap<any>>;
     /**
      * shell exec options.
      *
-     * @type {ExecOptions}
+     * @type {CtxType<ExecOptions>}
      * @memberof ShellActivity
      */
-    options: ExecOptions;
+    options: Expression<ExecOptions>;
     /**
      * allow error or not.
      *
      * @memberof ShellActivity
      */
-    allowError: boolean;
+    allowError: Expression<boolean>
 
-    async onActivityInit(config: ShellActivityConfig) {
-        await super.onActivityInit(config);
-        this.shell = this.context.to(config.shell);
-        let args = this.context.to(config.args);
-        this.args = isArray(args) ? args : this.formatArgs(args);
-        this.options = this.context.to(config.options);
-        this.allowError = this.context.to(config.allowError);
-        if (!isBoolean(this.allowError)) {
-            this.allowError = true;
-        }
+    async init(option: ShellActivityOption<T>) {
+        await super.init(option);
+        this.shell = option.shell;
+        this.args = option.args;
+        this.options = option.options;
+        this.allowError = option.allowError;
     }
 
-    protected async execute(): Promise<void> {
-        await this.executeBefore();
-        await Promise.resolve(this.shell)
-            .then(cmds => {
-                let options = this.options;
-                if (isString(cmds)) {
-                    return this.execShell(cmds, options);
-                } else if (isArray(cmds)) {
-                    let pip = Promise.resolve();
-                    cmds.forEach(cmd => {
-                        pip = pip.then(() => this.execShell(cmd, options));
-                    });
-                    return pip;
-                } else {
-                    return Promise.reject('shell task config error');
-                }
-            });
-        await this.executeAfter();
-    }
+    async run(ctx: T, next: () => Promise<void>): Promise<void> {
 
-    protected async executeBefore(): Promise<void> {
+        let shell = await this.resolveExpression(this.shell, ctx);
+        let options = await this.resolveExpression(this.options, ctx);
+        let args = await this.resolveExpression(this.args, ctx);
+        let argstrs = isArray(args) ? args : this.formatArgs(args);
+        let allowError = await this.resolveExpression(this.allowError, ctx);
+
+        await PromiseUtil.step((isArray(shell) ? shell : [shell]).map(sh => () => this.execShell(sh, argstrs, options, allowError)));
+        await next();
 
     }
 
-    protected async executeAfter(): Promise<void> {
-
-    }
-
-    protected formatShell(shell: string): string {
-        if (this.args && this.args.length) {
-            return shell + ' ' + this.args.join(' ');
+    protected formatShell(shell: string, args: string[]): string {
+        if (args.length) {
+            return shell + ' ' + args.join(' ');
         }
         return shell;
     }
@@ -154,8 +135,8 @@ export class ShellActivity extends CompilerActivity implements OnActivityInit {
         return '';
     }
 
-    protected execShell(cmd: string, options?: ExecOptions): Promise<any> {
-        cmd = this.formatShell(cmd);
+    protected execShell(cmd: string, args: string[], options?: ExecOptions, allowError?: boolean): Promise<any> {
+        cmd = this.formatShell(cmd, args);
         if (!cmd) {
             return Promise.resolve();
         }
@@ -173,7 +154,7 @@ export class ShellActivity extends CompilerActivity implements OnActivityInit {
             });
 
             shell.stderr.on('data', err => {
-                this.checkStderr(err, resolve, reject);
+                this.checkStderr(err, reject, allowError);
             });
 
             shell.on('exit', (code) => {
@@ -186,9 +167,9 @@ export class ShellActivity extends CompilerActivity implements OnActivityInit {
         });
     }
 
-    protected checkStderr(err: string | Buffer, resolve: Function, reject: Function) {
+    protected checkStderr(err: string | Buffer, reject: Function, allowError: boolean) {
         console.error(err);
-        if (this.allowError === false) {
+        if (allowError === false) {
             reject(err);
         }
     }

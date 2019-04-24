@@ -58,7 +58,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
     defaultContext?: Type<BootContext>,
     metadataExtends?: MetadataExtends<T>): ITaskDecorator<T> {
 
-    return createClassDecorator<ActivityMetadata>('Task',
+    return createClassDecorator<ActivityMetadata>(taskType,
         args => {
             if (adapter) {
                 adapter(args);
@@ -83,7 +83,9 @@ export function createTaskDecorator<T extends ActivityMetadata>(
             }
 
             metadata.provide = metadata.selector;
-            metadata.contextType = defaultContext;
+            if (!metadata.contextType) {
+                metadata.contextType = defaultContext;
+            }
             metadata.decorType = taskType;
 
             return metadata;

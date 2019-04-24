@@ -2,7 +2,7 @@ import { Task, Activity, SequenceActivity, ActivityContext, Activities } from '.
 
 @Task('stest')
 export class SimpleTask extends Activity<ActivityContext> {
-    async execute(ctx: ActivityContext, next: () => Promise<void>): Promise<void> {
+    async run(ctx: ActivityContext, next: () => Promise<void>): Promise<void> {
         // console.log('before simple task:', this.name);
         ctx.data = await Promise.resolve('simple task')
             .then(val => {
@@ -34,9 +34,9 @@ export class SimpleTask extends Activity<ActivityContext> {
 })
 export class SimpleCTask extends SequenceActivity<ActivityContext> {
 
-    async execute(ctx: ActivityContext, next?: () => Promise<void>): Promise<void> {
+    async run(ctx: ActivityContext, next?: () => Promise<void>): Promise<void> {
         console.log('execute SimpleCTask');
-        await super.execute(ctx);
+        await super.run(ctx);
         // console.log('before component task:', this.name);
         ctx.data = await Promise.resolve('component task')
             .then(val => {

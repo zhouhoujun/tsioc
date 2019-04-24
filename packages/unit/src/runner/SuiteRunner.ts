@@ -68,7 +68,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
-                let assert = this.container.resolve(Assert);
+                let assert = this.getContainer().resolve(Assert);
                 let err = new assert.AssertionError({
                     message: `${describe}, timeout ${timeout}`,
                     stackStartFunction: instance[key],
@@ -78,7 +78,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
             }
         }, timeout || this.timeout);
 
-        Promise.resolve(this.container.invoke(instance, key,
+        Promise.resolve(this.getContainer().invoke(instance, key,
             { provide: RunCaseToken, useValue: instance[key] },
             { provide: RunSuiteToken, useValue: instance }))
             .then(r => {

@@ -1,10 +1,12 @@
-import { Src, ExpressionToken, ConfigureType, IActivity, CtxType } from '@tsdi/activities';
-import { ObjectMap, Token } from '@tsdi/core';
+import { Src } from '@tsdi/activities';
 import {
     BuildConfigure, TestConfigure, CleanConfigure,
     CleanActivity, TestActivity, BuildConfigures
 } from '@tsdi/build';
 import { ServeActivity, ServeConfigure } from '../serves';
+
+
+
 
 /**
  * pack configure.
