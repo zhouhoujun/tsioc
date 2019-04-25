@@ -1,5 +1,5 @@
 import { Task } from '../decorators';
-import { ActivityContext, BodyTemplate, Activity, ActivityType, ActivityResult } from '../core';
+import { ActivityContext, BodyTemplate, Activity, ActivityType, ActivityResult, ActivityConfigure, BodyConfigure } from '../core';
 import { PromiseUtil } from '@tsdi/ioc';
 
 /**
@@ -10,25 +10,27 @@ import { PromiseUtil } from '@tsdi/ioc';
  * @extends {ControlActivity<T>}
  * @template T
  */
-@Task('body')
-export class BodyActivity<T extends ActivityContext> extends Activity<T> {
+@Task('[body]')
+export class BodyActivity<T> extends Activity<T> {
+    isScope = true;
 
-    body: ActivityType<T>[];
+    protected body: ActivityType[];
 
-    private bodyActions: PromiseUtil.ActionHandle<T>[];
-    async init(option: BodyTemplate<T>) {
+    private bodyActions: PromiseUtil.ActionHandle<ActivityContext>[];
+
+    onActivityInit(option: BodyConfigure) {
+        super.onActivityInit(option);
         this.body = option.body || [];
-        await super.init(option);
     }
 
-    protected async execBody(ctx: T, next?: () => Promise<void>) {
+    protected async execBody(ctx: ActivityContext, next?: () => Promise<void>) {
         if (!this.bodyActions) {
             this.bodyActions = this.body.map(ac => this.toAction(ac));
         }
         await this.execActions(ctx, this.bodyActions, next);
     }
 
-    protected execute(ctx: T): Promise<void> {
+    protected execute(ctx: ActivityContext): Promise<void> {
         return this.execBody(ctx);
     }
 }

@@ -65,28 +65,28 @@ export class ActivityContext extends BootContext {
     /**
      * activities component template scope.
      *
-     * @type {ActivityTemplate<T>}
+     * @type {ActivityTemplate}
      * @memberof ActivityConfigure
      */
-    template?: ActivityTemplate<ActivityContext>;
+    template?: ActivityTemplate;
 
     /**
      * activity annoation metadata.
      *
-     * @type {ActivityConfigure<ActivityContext>}
+     * @type {ActivityConfigure}
      * @memberof ActivityContext
      */
-    annoation: ActivityConfigure<ActivityContext>;
+    annoation: ActivityConfigure;
 
     /**
      * bootstrap runnable service.
      *
-     * @type {WorkflowInstance<ActivityContext>}
+     * @type {WorkflowInstance}
      * @memberof BootContext
      */
     runnable?: WorkflowInstance<ActivityContext>;
 
-    getActivity<T extends ActivityContext>(): Activity<T> {
+    getActivity<T>(): Activity<T> {
         if (this.target instanceof Activity) {
             return this.target;
         } else if (this.bootstrap instanceof Activity) {

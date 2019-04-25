@@ -48,8 +48,8 @@ export interface ActivityOption<T extends ActivityContext> extends BootOption {
     /**
      * activities component template scope.
      *
-     * @type {ActivityTemplate<T>}
+     * @type {ActivityTemplate}
      * @memberof ActivityConfigure
      */
-    template?: ActivityTemplate<T>
+    template?: ActivityTemplate
 }

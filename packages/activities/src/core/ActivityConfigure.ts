@@ -2,6 +2,7 @@ import { InjectToken, Type, PromiseUtil, Token } from '@tsdi/ioc';
 import { RunnableConfigure } from '@tsdi/boot';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
+import { ActivityOption } from './ActivityOption';
 
 
 export const WorkflowId = new InjectToken<string>('Workflow_ID');
@@ -36,7 +37,7 @@ export enum Activities {
  * @extends {RunnableConfigure}
  * @template T
  */
-export interface ActivityConfigure<T extends ActivityContext> extends RunnableConfigure {
+export interface ActivityConfigure extends RunnableConfigure {
     /**
     * action name.
     *
@@ -62,10 +63,10 @@ export interface ActivityConfigure<T extends ActivityContext> extends RunnableCo
     /**
      * activities component template scope.
      *
-     * @type {ActivityTemplate<T>}
+     * @type {ActivityTemplate}
      * @memberof ActivityConfigure
      */
-    template?: ActivityTemplate<T>
+    template?: ActivityTemplate
 }
 
 /**
@@ -75,21 +76,14 @@ export interface ActivityConfigure<T extends ActivityContext> extends RunnableCo
  * @interface TemplateOption
  * @template T
  */
-export interface TemplateOption<T extends ActivityContext> {
-    /**
-     * name.
-     *
-     * @type {string}
-     * @memberof TemplateOption
-     */
-    name?: string;
+export interface TemplateOption {
     /**
      * activity selector math the template option tag.
      *
      * @type {string}
      * @memberof ConditionOption
      */
-    activity: string | Activities | Type<any>;
+    activity?: string | Activities | Type<any>;
 }
 
 
@@ -100,27 +94,47 @@ export interface InvokeTarget {
     args: any[]
 }
 
-export interface InvokeTemplate<T extends ActivityContext> extends TemplateOption<T> {
+export interface InvokeTemplate extends TemplateOption {
     invoke: Expression<InvokeTarget>;
 }
 
 
-export interface IBodyTemplate<T extends ActivityContext> {
-    body?: ActivityType<T>[];
+export interface IBodyTemplate {
+    body?: ActivityType[];
 }
 
+export interface BodyTemplate extends TemplateOption, IBodyTemplate {
+}
 
-export interface BodyTemplate<T extends ActivityContext> extends TemplateOption<T>, IBodyTemplate<T> {
+export interface BodyConfigure extends ActivityConfigure, IBodyTemplate {
+
+}
+
+export interface IExpressionTemplate {
+    /**
+     * expression
+     *
+     * @type {Expression<any>}
+     * @memberof ExpressionOption
+     */
+    expression: Expression<any>;
 }
 
 /**
- * condition option.
+ * expression option.
  *
  * @export
- * @interface ConditionTemplate
+ * @interface ExpressionTemplate
  * @extends {ActivityOption}
  */
-export interface ConditionTemplate<T extends ActivityContext> extends BodyTemplate<T> {
+export interface ExpressionTemplate extends TemplateOption, IExpressionTemplate {
+}
+
+export interface ExpressionConfigure extends ActivityConfigure, IExpressionTemplate {
+}
+
+
+export interface IConditionTemplate {
     /**
      * condition
      *
@@ -131,14 +145,19 @@ export interface ConditionTemplate<T extends ActivityContext> extends BodyTempla
 }
 
 /**
- * timer template.
+ * condition option.
  *
  * @export
- * @interface TimerTemplate
- * @extends {BodyTemplate<T>}
- * @template T
+ * @interface ConditionTemplate
+ * @extends {ActivityOption}
  */
-export interface TimerTemplate<T extends ActivityContext> extends BodyTemplate<T> {
+export interface ConditionTemplate extends BodyTemplate, IConditionTemplate {
+}
+
+export interface ConditionConfigure extends ActivityConfigure, IConditionTemplate {
+}
+
+export interface ITimerTemplate {
     /**
      * time.
      *
@@ -148,25 +167,39 @@ export interface TimerTemplate<T extends ActivityContext> extends BodyTemplate<T
     time: Expression<number>;
 }
 
+export interface TimerConfigure extends ActivityConfigure, ITimerTemplate {
+}
+
+/**
+ * timer template.
+ *
+ * @export
+ * @interface TimerTemplate
+ * @extends {BodyTemplate}
+ */
+export interface TimerTemplate extends BodyTemplate, ITimerTemplate {
+}
+
+
+
 /**
  * throw template.
  *
  * @export
  * @interface ThrowTemplate
- * @extends {TemplateOption<T>}
- * @template T
+ * @extends {TemplateOption}
  */
-export interface ThrowTemplate<T extends ActivityContext> extends TemplateOption<T> {
+export interface ThrowTemplate extends TemplateOption {
     throw: Expression<Error>;
 }
 
-export interface SwitchTemplate<T extends ActivityContext> extends TemplateOption<T> {
+export interface SwitchTemplate extends TemplateOption {
     switch: Expression<string | number>;
-    cases: CaseTemplate<T>[];
-    defaults?: ActivityType<T>[];
+    cases: CaseTemplate[];
+    defaults?: ActivityType[];
 }
 
-export interface CaseTemplate<T extends ActivityContext> extends IBodyTemplate<T> {
+export interface CaseTemplate extends IBodyTemplate {
     /**
      * case
      *
@@ -176,7 +209,7 @@ export interface CaseTemplate<T extends ActivityContext> extends IBodyTemplate<T
     case: any;
 }
 
-export interface CatchTemplate<T extends ActivityContext> extends IBodyTemplate<T> {
+export interface CatchTemplate extends IBodyTemplate {
     /**
      * to catch typeof this error.
      *
@@ -186,26 +219,25 @@ export interface CatchTemplate<T extends ActivityContext> extends IBodyTemplate<
     error: Type<Error>;
 }
 
-export interface TryTemplate<T extends ActivityContext> extends TemplateOption<T> {
-    try: ActivityType<T>[];
-    catchs?: CatchTemplate<T>[];
-    finally?: ActivityType<T>[];
+export interface TryTemplate extends TemplateOption {
+    try: ActivityType[];
+    catchs?: CatchTemplate[];
+    finally?: ActivityType[];
 }
 
-export type ControlTemplate<T extends ActivityContext> =
-    ConditionTemplate<T> | InvokeTemplate<T> | BodyTemplate<T>
-    | TimerTemplate<T> | ThrowTemplate<T> | SwitchTemplate<T> | TryTemplate<T>;
+export type ControlTemplate = ExpressionTemplate | ConditionTemplate | InvokeTemplate
+    | BodyTemplate | TimerTemplate | ThrowTemplate | SwitchTemplate | TryTemplate;
 
 
-export type TemplateType<T extends ActivityContext> = Type<any> | ControlTemplate<T> | PromiseUtil.ActionHandle<T>;
+export type TemplateType = Type<any> | ControlTemplate | PromiseUtil.ActionHandle<ActivityContext>;
 
 /**
  *  activity type.
  */
-export type ActivityType<T extends ActivityContext> = TemplateType<T> | Activity<T>;
+export type ActivityType = TemplateType | Activity<any>;
 
 
-export type ActivityTemplate<T extends ActivityContext> = TemplateType<T> | TemplateType<T>[];
+export type ActivityTemplate = TemplateType | TemplateType[];
 
 /**
  * expression.

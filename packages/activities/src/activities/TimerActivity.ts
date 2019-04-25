@@ -1,17 +1,18 @@
 import { Task } from '../decorators';
-import { Expression, TimerTemplate, ActivityContext } from '../core';
-import { BodyActivity } from './BodyActivity';
+import { Expression, Activity, TimerConfigure, ActivityContext } from '../core';
 
 
-@Task
-export abstract class TimerActivity<T extends ActivityContext> extends BodyActivity<T> {
+@Task('[timer]')
+export class TimerActivity extends Activity<number> {
 
-    time: Expression<number>;
+    protected time: Expression<number>;
 
-    async init(option: TimerTemplate<T>) {
-        if (option.time) {
-            this.time = option.time;
-        }
-        await super.init(option);
+    onActivityInit(option: TimerConfigure) {
+        super.onActivityInit(option);
+        this.time = option.time;
+    }
+
+    protected async execute(ctx: ActivityContext): Promise<void> {
+        this.result.value = await this.resolveExpression(this.time, ctx);
     }
 }

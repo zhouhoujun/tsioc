@@ -1,13 +1,23 @@
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, lang } from '@tsdi/ioc';
 import { Activity } from './Activity';
-import { ActivityResult } from './ActivityResult';
+import { CompoiseActivity } from './CompoiseActivity';
 
+export interface RunScopes {
+    scope: Activity<any>,
+    subs: Activity<any>[]
+}
 
 @Injectable
 export class ActivityStatus {
-    map: WeakMap<Activity<any>, ActivityResult>;
 
-    history: Activity<any>[];
+    tracks: Activity<any>[];
+    scopes: RunScopes[];
+
+    constructor() {
+        this.tracks = [];
+        this.scopes = [];
+    }
+
 
     private _current: Activity<any>;
     /**
@@ -22,38 +32,28 @@ export class ActivityStatus {
 
     set current(activity: Activity<any>) {
         this._current = activity;
-        this.history.unshift(activity);
-    }
-
-    constructor() {
-        this.map = new WeakMap();
-        this.history = [];
-    }
-
-
-
-    getState<T extends ActivityResult>(activity?: Activity<any>): T {
-        if (!activity) {
-            activity = this.current;
-        }
-        if (activity && this.map.has(activity)) {
-            return this.map.get(activity) as T;
-        } else {
-            return null;
+        this.tracks.unshift(activity);
+        if (activity.isScope) {
+            this.scopes.unshift({ scope: activity, subs: [] });
+        } else if (this.currentScope) {
+            this.currentScope.subs.unshift(activity);
         }
     }
 
-    has(activity: Activity<any>) {
-        return this.map.has(activity);
+    get currentScope(): RunScopes {
+        return lang.first(this.scopes);
     }
 
-    setState(state: ActivityResult, activity?: Activity<any>) {
-        if (!activity) {
-            activity = this.current;
+    get parentScope(): RunScopes {
+        if (this.scopes.length > 1) {
+            return this.scopes[1];
         }
-        if (activity) {
-            this.map.set(activity, state);
-        }
+        return null;
+    }
+
+
+    getScopes(): CompoiseActivity<any>[] {
+        return this.tracks.filter(a => a instanceof CompoiseActivity) as CompoiseActivity<any>[];
     }
 
 }

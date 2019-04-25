@@ -44,7 +44,7 @@ export enum RunState {
 @Injectable
 @Refs(Activity, Runnable)
 @Refs('@Task', Runnable)
-export class WorkflowInstance<T extends ActivityContext> extends Service<Activity<T>> {
+export class WorkflowInstance<T extends ActivityContext> extends Service<Activity<any>> {
 
     protected _ctx: T;
     get context(): T {
@@ -69,7 +69,7 @@ export class WorkflowInstance<T extends ActivityContext> extends Service<Activit
 
 
     async onInit(): Promise<void> {
-        let mgr = this.context.getConfigureManager<ActivityConfigure<T>>();
+        let mgr = this.context.getConfigureManager<ActivityConfigure>();
         await mgr.getConfig();
     }
 

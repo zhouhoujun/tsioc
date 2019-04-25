@@ -32,8 +32,10 @@ export class TaskDecorBootBuildHandle extends BootHandle {
                     };
                 }
             }
-            let bootctx = await this.container.get(BuilderService).build(option) as ActivityContext;
-            ctx.bootstrap = bootctx.getActivity();
+            if (option) {
+                let bootctx = await this.container.get(BuilderService).build(option) as ActivityContext;
+                ctx.bootstrap = bootctx.getActivity();
+            }
         }
 
         await next();

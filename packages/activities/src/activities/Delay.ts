@@ -1,7 +1,9 @@
 import { PromiseUtil } from '@tsdi/ioc';
 import { Task } from '../decorators/Task';
-import { ActivityContext } from '../core';
+import { Activity, ActivityContext } from '../core';
 import { TimerActivity } from './TimerActivity';
+import { BodyActivity } from './BodyActivity';
+import { Input } from '../decorators';
 
 
 /**
@@ -12,17 +14,23 @@ import { TimerActivity } from './TimerActivity';
  * @extends {ControlActivity}
  */
 @Task('delay')
-export class DelayActivity<T extends ActivityContext> extends TimerActivity<T> {
+export class DelayActivity<T> extends Activity<T> {
 
-    async execute(ctx: T): Promise<void> {
-        let delay = await this.resolveExpression(this.time, ctx);
+    @Input()
+    timer: TimerActivity;
+
+    @Input()
+    body: BodyActivity<T>;
+
+    protected async execute(ctx: ActivityContext): Promise<void> {
+        await this.timer.run(ctx);
         let defer = PromiseUtil.defer();
         let timmer = setTimeout(() => {
             defer.resolve();
             clearTimeout(timmer);
-        }, delay);
+        }, this.timer.result.value);
         await defer.promise;
-        await this.execBody(ctx);
+        await this.body.run(ctx);
     }
 }
 

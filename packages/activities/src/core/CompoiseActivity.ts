@@ -13,10 +13,11 @@ import { ActivityType } from './ActivityConfigure';
 @Injectable
 export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
 
-    protected activities: ActivityType<T>[] = [];
+    isScope = true;
+    protected activities: ActivityType[] = [];
     private actions: PromiseUtil.ActionHandle<T>[];
 
-    add(...activities: ActivityType<T>[]): this {
+    add(...activities: ActivityType[]): this {
         this.activities.push(...activities);
         this.resetFuncs();
         return this;
@@ -30,7 +31,7 @@ export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
      * @returns {this}
      * @memberof LifeScope
      */
-    use(activity: ActivityType<T>, first?: boolean): this {
+    use(activity: ActivityType, first?: boolean): this {
         if (first) {
             this.activities.unshift(activity);
         } else {
@@ -48,7 +49,7 @@ export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
      * @returns {this}
      * @memberof LifeScope
      */
-    useBefore(activity: ActivityType<T>, before: ActivityType<T>): this {
+    useBefore(activity: ActivityType, before: ActivityType): this {
         this.activities.splice(this.activities.indexOf(before) - 1, 0, activity);
         this.resetFuncs();
         return this;
@@ -61,7 +62,7 @@ export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
      * @returns {this}
      * @memberof LifeScope
      */
-    useAfter(activity: ActivityType<T>, after: ActivityType<T>): this {
+    useAfter(activity: ActivityType, after: ActivityType): this {
         this.activities.splice(this.activities.indexOf(after) + 1, 0, activity);
         this.resetFuncs();
         return this;

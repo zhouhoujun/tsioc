@@ -1,6 +1,8 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext } from '../core';
+import { Activity, ActivityContext } from '../core';
 import { ConditionActivity } from './ConditionActivity';
+import { BodyActivity } from './BodyActivity';
+import { Input } from '../decorators';
 
 
 /**
@@ -11,16 +13,21 @@ import { ConditionActivity } from './ConditionActivity';
  * @extends {ContentActivity}
  */
 @Task('dowhile')
-export class DoWhileActivity<T extends ActivityContext> extends ConditionActivity<T> {
+export class DoWhileActivity<T> extends Activity<T> {
+    isScope = true;
 
-    async execute(ctx: T): Promise<void> {
-        await this.execBody(ctx);
-        await super.execute(ctx);
-    }
+    @Input()
+    condition: ConditionActivity;
 
-    protected async whenTrue(ctx: T): Promise<void> {
-        await this.execBody(ctx, async () => {
-            await super.execute(ctx);
+    @Input()
+    body: BodyActivity<T>;
+
+    async execute(ctx: ActivityContext): Promise<void> {
+        await this.body.run(ctx, async () => {
+            await this.condition.run(ctx);
+            if (this.condition.result.value) {
+                await this.execute(ctx);
+            }
         });
     }
 

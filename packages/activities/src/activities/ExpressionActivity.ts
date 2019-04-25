@@ -1,5 +1,5 @@
 import { Task } from '../decorators';
-import { ActivityContext, Activity } from '../core';
+import { ActivityContext, Activity, Expression, ExpressionTemplate } from '../core';
 
 /**
  * expression activity.
@@ -10,11 +10,17 @@ import { ActivityContext, Activity } from '../core';
  * @extends {ExecuteActivity<T>}
  * @template T
  */
-@Task('expression')
-export class ExpressionActivity<T extends ActivityContext> extends Activity<T> {
+@Task('[expression]')
+export class ExpressionActivity<T> extends Activity<T> {
 
-    async run(ctx: T, next: () => Promise<void>): Promise<void> {
-        // ctx.preCondition = await this.resolveSelector<boolean>(ctx);
-        next();
+    expression: Expression<T>;
+
+    async init(option: ExpressionTemplate) {
+        this.expression = option.expression;
+        await super.init(option);
+    }
+
+    protected async execute(ctx: ActivityContext): Promise<void> {
+        this.result.value = await this.resolveExpression(this.expression, ctx);
     }
 }

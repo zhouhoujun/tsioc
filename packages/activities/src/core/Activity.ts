@@ -7,7 +7,7 @@ import {
     isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
     isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, isArray, ProviderTypes, lang
 } from '@tsdi/ioc';
-import { ActivityType, Expression, ControlTemplate } from './ActivityConfigure';
+import { ActivityType, Expression, ControlTemplate, ActivityConfigure } from './ActivityConfigure';
 import { SelectorManager } from './SelectorManager';
 import { ActivityResult, NextToken } from './ActivityResult';
 
@@ -22,7 +22,7 @@ import { ActivityResult, NextToken } from './ActivityResult';
  * @implements {OnActivityInit}
  */
 @Abstract()
-export abstract class Activity<T extends ActivityContext> {
+export abstract class Activity<T> {
 
     /**
      * activity display name.
@@ -31,6 +31,19 @@ export abstract class Activity<T extends ActivityContext> {
      * @memberof Activity
      */
     name: string;
+
+    private _result: ActivityResult<T>;
+    /**
+     * activity result.
+     *
+     * @type {ActivityResult<T>}
+     * @memberof Activity
+     */
+    get result(): ActivityResult<T> {
+        return this._result;
+    }
+
+    isScope?: boolean;
 
     /**
      * conatiner.
@@ -46,25 +59,12 @@ export abstract class Activity<T extends ActivityContext> {
     }
 
 
+    onActivityInit(option: ActivityConfigure) {
+        this.name = option.name;
+    }
+
     getContainer(): IContainer {
         return this.containerGetter();
-    }
-
-    /**
-     * init activity.
-     *
-     * @param {ControlTemplate<T>} option
-     * @memberof Activity
-     */
-    async init(option: ControlTemplate<T>) {
-        if (option && option.name) {
-            this.name = option.name;
-        }
-    }
-
-    protected result: ActivityResult;
-    getResult(): ActivityResult {
-        return this.result;
     }
 
     /**
@@ -76,39 +76,37 @@ export abstract class Activity<T extends ActivityContext> {
      * @returns {Promise<void>}
      * @memberof Activity
      */
-    // abstract run(ctx: T, next?: () => Promise<void>): Promise<void>;
-
-    async run(ctx: T, next?: () => Promise<void>): Promise<void> {
-        this.result = this.createResult(next);
+    async run(ctx: ActivityContext, next?: () => Promise<void>): Promise<void> {
         ctx.runnable.status.current = this;
+        this._result = this.createResult(next);
         await this.execute(ctx);
-        let action = this.result.getNext();
-        if (action) {
-            await action();
+        if (this.isScope) {
+            ctx.runnable.status.scopes.shift();
         }
+        await this.result.next(ctx);
     }
 
-    protected abstract execute(ctx: T): Promise<void>;
+    protected abstract execute(ctx: ActivityContext): Promise<void>;
 
-    protected createResult(next?: () => Promise<void>, ...providers: ProviderTypes[]): ActivityResult {
+    protected createResult(next?: () => Promise<void>, ...providers: ProviderTypes[]): ActivityResult<any> {
         providers.unshift({ provide: NextToken, useValue: next });
         return this.getContainer().getService(ActivityResult, lang.getClass(this), ...providers);
     }
 
-    protected execActivity(ctx: T, activities: ActivityType<T> | ActivityType<T>[], next?: () => Promise<void>): Promise<void> {
+    protected execActivity(ctx: ActivityContext, activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void> {
         return PromiseUtil.runInChain((isArray(activities) ? activities : [activities]).map(ac => this.toAction(ac)), ctx, next);
     }
 
-    protected execActions(ctx: T, actions: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
+    protected execActions<T extends ActivityContext>(ctx: ActivityContext, actions: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
         return PromiseUtil.runInChain(actions, ctx, next);
     }
 
-    protected toAction(activity: ActivityType<T>): PromiseUtil.ActionHandle<T> {
+    protected toAction<T extends ActivityContext>(activity: ActivityType): PromiseUtil.ActionHandle<T> {
         if (activity instanceof Activity) {
             return (ctx: T, next?: () => Promise<void>) => activity.run(ctx, next);
         } else if (isClass(activity) || isMetadataObject(activity)) {
             return async (ctx: T, next?: () => Promise<void>) => {
-                let act = await this.buildActivity(activity as Type<any> | ControlTemplate<T>);
+                let act = await this.buildActivity(activity as Type<any> | ControlTemplate);
                 if (act) {
                     await act.run(ctx, next);
                 } else {
@@ -123,11 +121,11 @@ export abstract class Activity<T extends ActivityContext> {
         }
     }
 
-    protected async buildActivity(activity: Type<any> | ControlTemplate<T>): Promise<Activity<T>> {
+    protected async buildActivity(activity: Type<any> | ControlTemplate): Promise<Activity<any>> {
         let ctx: ActivityContext;
         let container = this.getContainer();
         if (isClass(activity)) {
-            ctx = await container.get(BuilderService).build(activity) as ActivityContext;
+            ctx = await container.get(BuilderService).build<ActivityContext>(activity);
         } else {
             let md: Type<any>;
             let mgr = container.get(SelectorManager);
@@ -141,7 +139,7 @@ export abstract class Activity<T extends ActivityContext> {
                 module: md,
                 template: activity
             };
-            ctx = await container.get(BuilderService).build(option) as ActivityContext;
+            ctx = await container.get(BuilderService).build<ActivityContext>(option);
         }
         return ctx.getActivity();
     }
@@ -157,7 +155,7 @@ export abstract class Activity<T extends ActivityContext> {
      * @returns {Promise<TVal>}
      * @memberof Activity
      */
-    protected async resolveExpression<TVal>(express: Expression<TVal>, ctx: T): Promise<TVal> {
+    protected async resolveExpression<TVal>(express: Expression<TVal>, ctx: ActivityContext): Promise<TVal> {
         if (isClass(express)) {
             let bctx = await this.getContainer().get(RunnerService).run(express);
             return bctx.data;

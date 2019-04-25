@@ -1,4 +1,4 @@
-import { Activity, ActivityContext, ActivityResult } from '../core';
+import { Activity, ActivityContext } from '../core';
 import { Task } from '../decorators';
 
 

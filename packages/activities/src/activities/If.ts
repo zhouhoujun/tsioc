@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext } from '../core';
+import { ActivityContext, Activity } from '../core';
 import { ConditionActivity } from './ConditionActivity';
 
 /**
@@ -10,7 +10,7 @@ import { ConditionActivity } from './ConditionActivity';
  * @extends {ControlActivity}
  */
 @Task('if')
-export class IfActivity<T extends ActivityContext> extends ConditionActivity<T> {
+export class IfActivity<T extends ActivityContext> extends Activity<T> {
 
     protected async vaildate(ctx: T): Promise<boolean> {
         let condition = await this.resolveExpression(this.condition, ctx);
