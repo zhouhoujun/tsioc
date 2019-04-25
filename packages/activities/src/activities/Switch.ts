@@ -1,6 +1,8 @@
 import { Task } from '../decorators/Task';
 import { ActivityContext, ActivityType, SwitchTemplate, Expression, Activity } from '../core';
 import { isArray } from '@tsdi/ioc';
+import { BodyActivity } from './BodyActivity';
+import { Input } from '../decorators';
 
 /**
  * Switch control activity.
@@ -10,9 +12,11 @@ import { isArray } from '@tsdi/ioc';
  * @extends {ControlActivity}
  */
 @Task('switch')
-export class SwitchActivity<T extends ActivityContext> extends Activity<T> {
+export class SwitchActivity<T> extends Activity<T> {
 
-    defaults: ActivityType<T>[];
+    @Input()
+    defaults: BodyActivity<T>;
+
     cases: Map<string | number, ActivityType<T> | ActivityType<T>[]>;
     switch: Expression<string | number>;
     async init(option: SwitchTemplate<T>) {
@@ -29,7 +33,7 @@ export class SwitchActivity<T extends ActivityContext> extends Activity<T> {
         this.cases.set(key, activity);
     }
 
-    async run(ctx: T, next: () => Promise<void>): Promise<void> {
+    protected async execute(ctx: ActivityContext): Promise<void> {
         let matchkey = await this.resolveExpression(this.switch, ctx);
         let activity = this.cases.get(matchkey);
 

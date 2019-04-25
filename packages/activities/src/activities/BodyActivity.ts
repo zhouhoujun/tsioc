@@ -1,5 +1,5 @@
-import { Task } from '../decorators';
-import { ActivityContext, BodyTemplate, Activity, ActivityType, ActivityResult, ActivityConfigure, BodyConfigure } from '../core';
+import { Task, Input } from '../decorators';
+import { ActivityContext, Activity, ActivityType } from '../core';
 import { PromiseUtil } from '@tsdi/ioc';
 
 /**
@@ -14,14 +14,10 @@ import { PromiseUtil } from '@tsdi/ioc';
 export class BodyActivity<T> extends Activity<T> {
     isScope = true;
 
+    @Input()
     protected body: ActivityType[];
 
     private bodyActions: PromiseUtil.ActionHandle<ActivityContext>[];
-
-    onActivityInit(option: BodyConfigure) {
-        super.onActivityInit(option);
-        this.body = option.body || [];
-    }
 
     protected async execBody(ctx: ActivityContext, next?: () => Promise<void>) {
         if (!this.bodyActions) {

@@ -1,5 +1,7 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, InvokeTemplate, InvokeTarget, Expression, Activity } from '../core';
+import { ActivityContext, Expression, Activity } from '../core';
+import { Input } from '../decorators';
+import { Token, ProviderTypes } from '@tsdi/ioc';
 
 
 /**
@@ -10,19 +12,21 @@ import { ActivityContext, InvokeTemplate, InvokeTarget, Expression, Activity } f
  * @extends {ControlActivity}
  */
 @Task('invoke')
-export class InvokeActivity<T extends ActivityContext> extends Activity<T> {
+export class InvokeActivity<T> extends Activity<T> {
 
-    invoke: Expression<InvokeTarget>;
-    async init(option: InvokeTemplate<T>) {
-        this.invoke = option.invoke;
-        await super.init(option);
-    }
+    @Input()
+    target: Expression<Token<any>>;
+    @Input()
+    method: Expression<string>;
+    @Input()
+    args: Expression<ProviderTypes[]>;
 
-    async run(ctx: T, next: () => Promise<void>): Promise<void> {
-        let invoke = await this.resolveExpression(this.invoke, ctx);
-        if (invoke) {
-            return this.getContainer().invoke(invoke.target, invoke.method, ...(invoke.args || []));
+    protected async execute(ctx: ActivityContext): Promise<void> {
+        let target = await this.resolveExpression(this.target, ctx);
+        let method = await this.resolveExpression(this.method, ctx);
+        let args = await this.resolveExpression(this.args, ctx);
+        if (target && method) {
+            this.result.value = this.getContainer().invoke(target, method, ...(args || []));
         }
-        await next();
     }
 }

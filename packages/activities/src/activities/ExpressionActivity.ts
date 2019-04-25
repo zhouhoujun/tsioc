@@ -1,5 +1,5 @@
-import { Task } from '../decorators';
-import { ActivityContext, Activity, Expression, ExpressionTemplate } from '../core';
+import { Task, Input } from '../decorators';
+import { ActivityContext, Activity, Expression } from '../core';
 
 /**
  * expression activity.
@@ -13,12 +13,8 @@ import { ActivityContext, Activity, Expression, ExpressionTemplate } from '../co
 @Task('[expression]')
 export class ExpressionActivity<T> extends Activity<T> {
 
+    @Input()
     expression: Expression<T>;
-
-    async init(option: ExpressionTemplate) {
-        this.expression = option.expression;
-        await super.init(option);
-    }
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         this.result.value = await this.resolveExpression(this.expression, ctx);

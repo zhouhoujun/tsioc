@@ -1,3 +1,6 @@
+export * from './resolvers';
+export * from './registers';
+
 export * from './Translator';
 export * from './Activity';
 export * from './ActivityResult';
@@ -8,6 +11,5 @@ export * from './CompoiseActivity';
 export * from './SelectorManager';
 export * from './WorkflowInstance';
 export * from './ActivityContext';
-export * from './RegSelectorAction';
 
 export * from './uuid';

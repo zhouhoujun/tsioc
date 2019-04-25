@@ -10,6 +10,7 @@ import {
 import { ActivityType, Expression, ControlTemplate, ActivityConfigure } from './ActivityConfigure';
 import { SelectorManager } from './SelectorManager';
 import { ActivityResult, NextToken } from './ActivityResult';
+import { Input } from '../decorators';
 
 
 /**
@@ -30,6 +31,7 @@ export abstract class Activity<T> {
      * @type {string}
      * @memberof Activity
      */
+    @Input()
     name: string;
 
     private _result: ActivityResult<T>;
@@ -56,11 +58,6 @@ export abstract class Activity<T> {
 
     constructor(@Inject(ContainerToken) container: IContainer) {
         this.containerGetter = () => container;
-    }
-
-
-    onActivityInit(option: ActivityConfigure) {
-        this.name = option.name;
     }
 
     getContainer(): IContainer {

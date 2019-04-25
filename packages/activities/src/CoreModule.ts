@@ -2,12 +2,13 @@ import { IContainer, ContainerToken, IocExt, ModuleDecoratorRegisterer, ServiceD
 import { Task } from './decorators/Task';
 import { RunAspect } from './aop';
 import * as core from './core';
-import { TaskDecoratorServiceAction } from './resolvers';
+import * as handles from './handles';
 import * as activites from './activities';
 import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes } from '@tsdi/ioc';
 import { ModuleBuildDecoratorRegisterer, DIModuleRegisterScope } from '@tsdi/boot';
-import { ActivityBuildHandle, BuildTemplateHandle } from './handles';
-import { RegSelectorAction } from './core';
+import { RegSelectorAction, TaskDecoratorServiceAction, BindInputPropertyTypeAction } from './core';
+import { Input } from './decorators';
+import { ActivityBuildHandle } from './handles';
 
 
 /**
@@ -24,13 +25,16 @@ export class CoreModule {
     setup() {
         let container = this.container;
         container.registerSingleton(RegSelectorAction, () => new RegSelectorAction(container));
+        container.registerSingleton(BindInputPropertyTypeAction, () => new BindInputPropertyTypeAction(container));
+
         container.get(DesignDecoratorRegisterer).register(Task, DecoratorScopes.Class, BindProviderAction, RegSelectorAction);
+        container.get(DesignDecoratorRegisterer).register(Input, DecoratorScopes.Property, BindInputPropertyTypeAction);
+
         container.get(ModuleDecoratorRegisterer).register(Task, DIModuleRegisterScope);
         container.get(ModuleBuildDecoratorRegisterer).register(Task, ActivityBuildHandle);
 
         container.use(core)
-            .use(TaskDecoratorServiceAction)
-            .use(BuildTemplateHandle, ActivityBuildHandle)
+            .use(handles)
             .use(RunAspect)
             .use(activites);
 

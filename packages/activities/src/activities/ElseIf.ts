@@ -1,7 +1,5 @@
-import { ConditionActivity } from './ConditionActivity';
-import { Task, Input } from '../decorators';
-import { ActivityContext, Activity } from '../core';
-import { BodyActivity } from './BodyActivity';
+import { Task } from '../decorators';
+import { ActivityContext } from '../core';
 import { IfActivity } from './If';
 
 /**
@@ -9,28 +7,18 @@ import { IfActivity } from './If';
  *
  * @export
  * @class ElseIfActivity
- * @extends {ConditionActivity<T>}
+ * @extends {IfActivity<T>}
  * @template T
  */
 @Task('elseif')
-export class ElseIfActivity<T> extends Activity<T> {
-    isScope = true;
-
-    @Input()
-    condition: ConditionActivity;
-
-    @Input()
-    body: BodyActivity<T>;
+export class ElseIfActivity<T> extends IfActivity<T> {
 
     async execute(ctx: ActivityContext): Promise<void> {
         let curr = ctx.runnable.status.parentScope;
         if (curr && curr.subs.length) {
             let activity = curr.subs.find(a => a instanceof ElseIfActivity || a instanceof IfActivity);
             if (activity && !activity.result.value) {
-                await this.condition.run(ctx);
-                if (this.condition.result.value) {
-                    await this.execute(ctx);
-                }
+                await super.execute(ctx);
             }
         }
     }

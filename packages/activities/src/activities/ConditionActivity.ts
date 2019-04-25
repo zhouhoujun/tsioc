@@ -1,5 +1,5 @@
-import { Task } from '../decorators';
-import { ActivityContext, Expression, ConditionTemplate, Activity, ConditionConfigure } from '../core';
+import { Task, Input } from '../decorators';
+import { ActivityContext, Expression, Activity } from '../core';
 
 /**
  * condition activity.
@@ -12,12 +12,8 @@ import { ActivityContext, Expression, ConditionTemplate, Activity, ConditionConf
 @Task('[condition]')
 export class ConditionActivity extends Activity<boolean> {
 
+    @Input()
     protected condition: Expression<boolean>;
-
-    onActivityInit(option: ConditionConfigure) {
-        super.onActivityInit(option);
-        this.condition = option.condition;
-    }
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         this.result.value = await this.resolveExpression(this.condition, ctx);

@@ -1,6 +1,8 @@
 import { Task } from '../decorators/Task';
 import { ActivityContext, Activity } from '../core';
 import { ConditionActivity } from './ConditionActivity';
+import { Input } from '../decorators';
+import { BodyActivity } from './BodyActivity';
 
 /**
  * if control activity.
@@ -10,11 +12,19 @@ import { ConditionActivity } from './ConditionActivity';
  * @extends {ControlActivity}
  */
 @Task('if')
-export class IfActivity<T extends ActivityContext> extends Activity<T> {
+export class IfActivity<T> extends Activity<T> {
+    isScope = true;
 
-    protected async vaildate(ctx: T): Promise<boolean> {
-        let condition = await this.resolveExpression(this.condition, ctx);
-        ctx.preCondition = condition;
-        return condition;
+    @Input()
+    condition: ConditionActivity;
+
+    @Input()
+    body: BodyActivity<T>;
+
+    protected async execute(ctx: ActivityContext): Promise<void> {
+        await this.condition.run(ctx);
+        if (this.condition.result.value) {
+            await this.execute(ctx);
+        }
     }
 }

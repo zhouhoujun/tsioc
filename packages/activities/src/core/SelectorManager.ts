@@ -30,4 +30,16 @@ export class SelectorManager {
     get(selector: string): Type<any> {
         return this.selectors.get(selector);
     }
+
+    hasRef(name: string) {
+        return this.has(this.getRefName(name));
+    }
+
+    getRef(name: string): Type<any> {
+        return this.get(this.getRefName(name));
+    }
+
+    getRefName(name: string): string {
+        return /^\[\w*\]$/.test(name) ? name : `[${name}]`
+    }
 }

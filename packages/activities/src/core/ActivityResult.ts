@@ -15,6 +15,8 @@ export class ActivityResult<T> {
 
     value: T;
 
+    error: Error;
+
     next<T extends ActivityContext>(ctx: T): Promise<void> {
         return PromiseUtil.runInChain(this.nexts, ctx);
     }

@@ -1,14 +1,12 @@
 import { BootHandle, BuilderService } from '@tsdi/boot';
-import { ActivityContext, CompoiseActivity, SelectorManager } from '../core';
-import { Singleton, isArray } from '@tsdi/ioc';
+import { Singleton, isArray, isClass, isUndefined, isString, hasOwnClassMetadata, lang } from '@tsdi/ioc';
+import { ActivityContext, CompoiseActivity, SelectorManager, IActivityReflect, Activity } from '../core';
+
 
 @Singleton
 export class BuildTemplateHandle extends BootHandle {
     async execute(ctx: ActivityContext, next: () => Promise<void>): Promise<void> {
         let activity = ctx.getActivity();
-        if (ctx.annoation) {
-            activity.onActivityInit(ctx.annoation);
-        }
         let template = ctx.template;
         if (template) {
             if (isArray(template)) {
@@ -16,14 +14,23 @@ export class BuildTemplateHandle extends BootHandle {
                     activity.add(...template);
                 }
             } else {
+                let ref = this.container.getTypeReflects().get(ctx.module) as IActivityReflect;
                 let mgr = this.container.get(SelectorManager);
-                await Promise.all(Object.keys(template).map(async n => {
-                    let refSelector = `[${n}]`;
-                    if (mgr.has(refSelector)) {
-                        let option = { module: mgr.get(refSelector) };
-                        option[n] = template[n];
-                        let ctx = await this.container.get(BuilderService).build<ActivityContext>(option);
-                        activity[n] = ctx.getActivity();
+
+                await Promise.all(Array.from(ref.inputs.keys()).map(async n => {
+                    let tk = ref.inputs.get(n);
+                    if (!isUndefined(template[n])) {
+                        if (isString(tk) && mgr.hasRef(tk)) {
+                            let ctx = await this.container.get(BuilderService).build<ActivityContext>({ module: mgr.getRef(tk), template: template[n] });
+                            activity[n] = ctx.getActivity();
+                        } else if (isClass(tk) && (
+                            hasOwnClassMetadata(ctx.decorator, tk)
+                            || lang.isExtendsClass(tk, Activity))) {
+                            let ctx = await this.container.get(BuilderService).build<ActivityContext>({ module: tk, template: template[n] });
+                            activity[n] = ctx.getActivity();
+                        } else {
+                            activity[n] = template[n];
+                        }
                     }
                 }));
             }

@@ -1,8 +1,7 @@
-import { InjectToken, Type, PromiseUtil, Token } from '@tsdi/ioc';
+import { InjectToken, Type, PromiseUtil, Token, ProviderTypes } from '@tsdi/ioc';
 import { RunnableConfigure } from '@tsdi/boot';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
-import { ActivityOption } from './ActivityOption';
 
 
 export const WorkflowId = new InjectToken<string>('Workflow_ID');
@@ -87,15 +86,10 @@ export interface TemplateOption {
 }
 
 
-
-export interface InvokeTarget {
-    target: Token<any>,
-    method: string,
-    args: any[]
-}
-
 export interface InvokeTemplate extends TemplateOption {
-    invoke: Expression<InvokeTarget>;
+    target: Expression<Token<any>>,
+    method: Expression<string>,
+    args: Expression<ProviderTypes[]>
 }
 
 
@@ -106,9 +100,6 @@ export interface IBodyTemplate {
 export interface BodyTemplate extends TemplateOption, IBodyTemplate {
 }
 
-export interface BodyConfigure extends ActivityConfigure, IBodyTemplate {
-
-}
 
 export interface IExpressionTemplate {
     /**
@@ -128,9 +119,6 @@ export interface IExpressionTemplate {
  * @extends {ActivityOption}
  */
 export interface ExpressionTemplate extends TemplateOption, IExpressionTemplate {
-}
-
-export interface ExpressionConfigure extends ActivityConfigure, IExpressionTemplate {
 }
 
 
@@ -154,21 +142,6 @@ export interface IConditionTemplate {
 export interface ConditionTemplate extends BodyTemplate, IConditionTemplate {
 }
 
-export interface ConditionConfigure extends ActivityConfigure, IConditionTemplate {
-}
-
-export interface ITimerTemplate {
-    /**
-     * time.
-     *
-     * @type {Expression<number>}
-     * @memberof TimerOption
-     */
-    time: Expression<number>;
-}
-
-export interface TimerConfigure extends ActivityConfigure, ITimerTemplate {
-}
 
 /**
  * timer template.
@@ -177,7 +150,14 @@ export interface TimerConfigure extends ActivityConfigure, ITimerTemplate {
  * @interface TimerTemplate
  * @extends {BodyTemplate}
  */
-export interface TimerTemplate extends BodyTemplate, ITimerTemplate {
+export interface TimerTemplate extends BodyTemplate {
+    /**
+     * time.
+     *
+     * @type {Expression<number>}
+     * @memberof TimerOption
+     */
+    time: Expression<number>;
 }
 
 

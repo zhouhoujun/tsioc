@@ -1,6 +1,8 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext } from '../core';
+import { ActivityContext, Activity } from '../core';
 import { TimerActivity } from './TimerActivity';
+import { Input } from '../decorators';
+import { BodyActivity } from './BodyActivity';
 
 /**
  * while control activity.
@@ -10,12 +12,18 @@ import { TimerActivity } from './TimerActivity';
  * @extends {ControlActivity}
  */
 @Task('interval')
-export class IntervalActivity<T extends ActivityContext> extends TimerActivity<T> {
+export class IntervalActivity<T extends ActivityContext> extends Activity<T> {
+
+    @Input()
+    timer: TimerActivity;
+
+    @Input()
+    body: BodyActivity<T>;
 
     async execute(ctx: T): Promise<void> {
-        let interval = await this.resolveExpression<number>(this.time, ctx);
+        await this.timer.run(ctx);
         setInterval(() => {
-            this.execBody(ctx);
-        }, interval);
+            this.body.run(ctx);
+        }, this.timer.result.value);
     }
 }
