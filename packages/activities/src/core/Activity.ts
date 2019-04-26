@@ -7,7 +7,7 @@ import {
     isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
     isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, isArray, ProviderTypes, lang
 } from '@tsdi/ioc';
-import { ActivityType, Expression, ControlTemplate, ActivityConfigure } from './ActivityConfigure';
+import { ActivityType, Expression, ControlTemplate } from './ActivityConfigure';
 import { SelectorManager } from './SelectorManager';
 import { ActivityResult, NextToken } from './ActivityResult';
 import { Input } from '../decorators';
@@ -24,6 +24,14 @@ import { Input } from '../decorators';
  */
 @Abstract()
 export abstract class Activity<T> {
+
+    /**
+     * is scope or not.
+     *
+     * @type {boolean}
+     * @memberof Activity
+     */
+    isScope?: boolean;
 
     /**
      * activity display name.
@@ -44,8 +52,6 @@ export abstract class Activity<T> {
     get result(): ActivityResult<T> {
         return this._result;
     }
-
-    isScope?: boolean;
 
     /**
      * conatiner.

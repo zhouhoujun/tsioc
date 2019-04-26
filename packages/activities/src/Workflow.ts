@@ -49,7 +49,7 @@ export class Workflow extends BootApplication {
      * @returns {Promise<T>}
      * @memberof Workflow
      */
-    static async sequence<T extends ActivityContext>(...activities: ActivityType<T>[]): Promise<T> {
+    static async sequence<T extends ActivityContext>(...activities: ActivityType[]): Promise<T> {
         let option = { template: activities, module: SequenceActivity } as ActivityOption<T>;
         let runner = await Workflow.run(option) as T;
         return runner;

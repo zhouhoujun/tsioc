@@ -16,8 +16,10 @@ export class InvokeActivity<T> extends Activity<T> {
 
     @Input()
     target: Expression<Token<any>>;
+
     @Input()
     method: Expression<string>;
+
     @Input()
     args: Expression<ProviderTypes[]>;
 

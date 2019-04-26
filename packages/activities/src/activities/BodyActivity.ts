@@ -1,6 +1,7 @@
-import { Task, Input } from '../decorators';
-import { ActivityContext, Activity, ActivityType } from '../core';
-import { PromiseUtil } from '@tsdi/ioc';
+import { Task } from '../decorators';
+import { ActivityType, CompoiseActivity } from '../core';
+import { Inject } from '@tsdi/ioc';
+import { IContainer, ContainerToken } from '@tsdi/core';
 
 /**
  * body activity.
@@ -11,22 +12,12 @@ import { PromiseUtil } from '@tsdi/ioc';
  * @template T
  */
 @Task('[body]')
-export class BodyActivity<T> extends Activity<T> {
-    isScope = true;
+export class BodyActivity<T> extends CompoiseActivity<T> {
 
-    @Input()
-    protected body: ActivityType[];
-
-    private bodyActions: PromiseUtil.ActionHandle<ActivityContext>[];
-
-    protected async execBody(ctx: ActivityContext, next?: () => Promise<void>) {
-        if (!this.bodyActions) {
-            this.bodyActions = this.body.map(ac => this.toAction(ac));
-        }
-        await this.execActions(ctx, this.bodyActions, next);
-    }
-
-    protected execute(ctx: ActivityContext): Promise<void> {
-        return this.execBody(ctx);
+    constructor(
+        @Inject('[body]') activities: ActivityType[],
+        @Inject(ContainerToken) container: IContainer) {
+        super(container)
+        this.activities = activities || [];
     }
 }

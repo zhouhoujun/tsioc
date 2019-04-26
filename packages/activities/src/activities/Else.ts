@@ -15,6 +15,7 @@ import { IfActivity } from './If';
 @Task('else')
 export class ElseActivity<T extends ActivityContext> extends Activity<T> {
     isScope = true;
+
     @Input()
     body: BodyActivity<T>;
 

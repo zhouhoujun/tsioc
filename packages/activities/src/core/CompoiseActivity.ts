@@ -11,11 +11,11 @@ import { ActivityType } from './ActivityConfigure';
  * @extends {ControlActivity}
  */
 @Injectable
-export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
+export class CompoiseActivity<T> extends Activity<T> {
 
     isScope = true;
     protected activities: ActivityType[] = [];
-    private actions: PromiseUtil.ActionHandle<T>[];
+    private actions: PromiseUtil.ActionHandle<ActivityContext>[];
 
     add(...activities: ActivityType[]): this {
         this.activities.push(...activities);
@@ -54,6 +54,7 @@ export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
         this.resetFuncs();
         return this;
     }
+
     /**
      * use activity after.
      *
@@ -68,16 +69,16 @@ export class CompoiseActivity<T extends ActivityContext> extends Activity<T> {
         return this;
     }
 
-    protected async execute(ctx: T): Promise<void> {
+    protected async execute(ctx: ActivityContext): Promise<void> {
         await this.execActions(ctx, this.getActions());
     }
 
-    protected setScope(ctx: T, parentScope?: any) {
+    protected setScope(ctx: ActivityContext, parentScope?: any) {
         ctx.currScope = parentScope || this;
     }
 
 
-    protected getActions(): PromiseUtil.ActionHandle<T>[] {
+    protected getActions(): PromiseUtil.ActionHandle<ActivityContext>[] {
         if (!this.actions) {
             this.actions = this.activities.map(ac => this.toAction(ac))
         }

@@ -8,7 +8,7 @@ import { Token } from '@tsdi/ioc';
  * @interface TaskMetadata
  * @extends {ClassMetadata}
  */
-export interface ActivityMetadata extends ActivityConfigure<ActivityContext> {
+export interface ActivityMetadata extends ActivityConfigure {
     decorType?: string;
 
     /**

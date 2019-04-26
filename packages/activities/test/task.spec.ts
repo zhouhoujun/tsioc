@@ -1,5 +1,5 @@
 import expect = require('expect');
-import { Workflow, SequenceActivity, WorkflowInstance } from '../src';
+import { Workflow, WorkflowInstance } from '../src';
 import { SimpleTask, SimpleCTask, TaskModuleTest } from './simples.task';
 
 

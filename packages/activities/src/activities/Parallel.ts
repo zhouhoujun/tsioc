@@ -1,6 +1,7 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext } from '../core';
-import { BodyActivity } from './BodyActivity';
+import { ActivityContext, CompoiseActivity, ActivityType } from '../core';
+import { Inject } from '@tsdi/ioc';
+import { ContainerToken, IContainer } from '@tsdi/core';
 
 
 
@@ -12,8 +13,14 @@ import { BodyActivity } from './BodyActivity';
  * @extends {ControlActivity}
  */
 @Task('parallel')
-export class ParallelActivity<T extends ActivityContext> extends BodyActivity<T> {
+export class ParallelActivity<T> extends CompoiseActivity<T> {
 
+    constructor(
+        @Inject('parallel') activities: ActivityType[],
+        @Inject(ContainerToken) container: IContainer) {
+        super(container)
+        this.activities = activities || [];
+    }
     /**
      * execute parallel.
      *
@@ -21,7 +28,7 @@ export class ParallelActivity<T extends ActivityContext> extends BodyActivity<T>
      * @returns {Promise<void>}
      * @memberof ParallelActivity
      */
-    async execute(ctx: T): Promise<void> {
-        await Promise.all(this.body.map(act => this.execActivity(ctx, act)));
+    async execute(ctx: ActivityContext): Promise<void> {
+        await Promise.all(this.activities.map(act => this.execActivity(ctx, act)));
     }
 }

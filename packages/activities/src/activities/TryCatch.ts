@@ -5,7 +5,7 @@ import { Input } from '../decorators';
 import { lang, Type } from '@tsdi/ioc';
 
 @Task('catch')
-export class CatchActivity<T extends Error> extends Activity<T> {
+export class CatchActivity<T> extends Activity<T> {
 
     @Input()
     error: Type<Error>;
@@ -23,7 +23,6 @@ export class CatchActivity<T extends Error> extends Activity<T> {
             this.body.run(ctx);
         }
     }
-
 }
 
 /**
@@ -36,11 +35,12 @@ export class CatchActivity<T extends Error> extends Activity<T> {
 @Task('try')
 export class TryCatchActivity<T> extends Activity<T> {
     isScope = true;
+
     @Input()
     try: BodyActivity<T>;
 
-    @Input()
-    catchs: CatchActivity<Error>[];
+    @Input(CatchActivity)
+    catchs: CatchActivity<T>[];
 
     @Input()
     finallies: BodyActivity<T>;
@@ -51,7 +51,7 @@ export class TryCatchActivity<T> extends Activity<T> {
         } catch (err) {
             this.result.error = err;
             if (this.catchs) {
-                await this.execActivity(ctx, this.catchs);
+                await this.catchs.run(ctx);
             }
         } finally {
             if (this.finallies) {
