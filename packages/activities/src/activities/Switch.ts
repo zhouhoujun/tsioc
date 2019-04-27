@@ -33,7 +33,7 @@ export class SwitchActivity<T> extends Activity<T> {
     @Input()
     switch: Expression<any>;
 
-    @Input()
+    @Input('cases', CaseActivity)
     cases: CaseActivity<T>[];
 
     @Input()

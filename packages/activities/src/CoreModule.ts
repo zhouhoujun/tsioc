@@ -25,6 +25,7 @@ export class CoreModule {
         let container = this.container;
         container.registerSingleton(RegSelectorAction, () => new RegSelectorAction(container));
         container.registerSingleton(BindInputPropertyTypeAction, () => new BindInputPropertyTypeAction(container));
+        container.registerSingleton(TaskDecoratorServiceAction, () => new TaskDecoratorServiceAction(container));
 
         container.get(DesignDecoratorRegisterer).register(Task, DecoratorScopes.Class,
             BindProviderAction, RegSelectorAction);

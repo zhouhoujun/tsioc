@@ -1,10 +1,9 @@
 import { IocResolveServiceAction, ResolveServiceContext } from '@tsdi/core';
-import { Singleton, getOwnTypeMetadata, isClassType, lang } from '@tsdi/ioc';
+import { getOwnTypeMetadata, isClassType, lang } from '@tsdi/ioc';
 import { ActivityMetadata } from '../../metadatas';
 import { BootContext } from '@tsdi/boot';
 import { ActivityContext } from '../ActivityContext';
 
-@Singleton
 export class TaskDecoratorServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext<any>, next: () => void): void {
         if (!isClassType(ctx.currTargetType)) {

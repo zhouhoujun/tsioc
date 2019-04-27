@@ -85,13 +85,12 @@ export abstract class Activity<T> {
         await this.execute(ctx);
         if (this.isScope) {
             ctx.runnable.status.scopes.shift();
-        } else {
-            this.bindingResult(ctx);
         }
+        this.bindingResult(ctx);
         await this.result.next(ctx);
     }
 
-    protected bindingResult(ctx: ActivityContext){
+    protected bindingResult(ctx: ActivityContext) {
         ctx.data = this.result.value;
     }
 
