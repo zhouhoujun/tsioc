@@ -19,6 +19,6 @@ export class ActivityBuildHandle extends CompositeHandle<ActivityContext> {
 
     setup() {
         this.use(TaskDecorBootBuildHandle)
-            .use(BuildTemplateHandle)
+            .use(BuildTemplateHandle, true)
     }
 }

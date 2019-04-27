@@ -1,10 +1,8 @@
 import { BootHandle, BuilderService } from '@tsdi/boot';
 import { ActivityContext, ActivityOption, SelectorManager, Activity } from '../core';
-import { Singleton, isArray, Type, isClass, isFunction } from '@tsdi/ioc';
+import { isArray, Type, isClass, isFunction } from '@tsdi/ioc';
 import { SequenceActivity } from '../activities';
 
-
-@Singleton
 export class TaskDecorBootBuildHandle extends BootHandle {
     async execute(ctx: ActivityContext, next: () => Promise<void>): Promise<void> {
         if (!(ctx.target instanceof Activity)) {

@@ -1,4 +1,4 @@
-import { createPropDecorator, PropertyMetadata, Token, isString, Registration, ClassType } from '@tsdi/ioc';
+import { createPropDecorator, PropertyMetadata, Token, isString } from '@tsdi/ioc';
 
 export interface InputPropertyMetadata extends PropertyMetadata {
     bindingName?: string;
@@ -17,12 +17,6 @@ export interface IPutPropertyDecorator {
      * @param {string} bindingName binding property name
      */
     (bindingName?: string): PropertyDecorator;
-    /**
-     * define Input property decorator with provider.
-     *
-     * @param {ClassType<any> | Registration<any>} provider define provider to resolve value to the property.
-     */
-    (provider: ClassType<any> | Registration<any>): PropertyDecorator;
     /**
      * define Input property decorator with binding property name and provider.
      *

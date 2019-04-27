@@ -45,7 +45,6 @@ export class RunAspect {
         if (!runner) {
             return;
         }
-        runner.status.setState(joinPoint.returningValue, joinPoint.target);
         switch (runner.state) {
             case RunState.pause:
                 throw new Error('workflow paused!');

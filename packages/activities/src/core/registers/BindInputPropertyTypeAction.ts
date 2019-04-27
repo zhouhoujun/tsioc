@@ -5,7 +5,8 @@ export interface IPropertyBinding<T> {
     name: string;
     bindingName?: string;
     type: ClassType<T>;
-    provider?: Token<T>
+    provider?: Token<T>,
+    bindingValue?: any;
 }
 export interface IActivityReflect extends ITypeReflect {
     inputBindings: Map<string, IPropertyBinding<any>>;
@@ -31,12 +32,12 @@ export class BindInputPropertyTypeAction extends IocDesignAction {
                     if (prop.bindingName && !binding.bindingName) {
                         binding.bindingName = prop.bindingName;
                     }
-                    if (isClass(prop.provider) && !this.container.has(prop.provider)) {
-                        this.container.register(prop.provider);
-                    }
-                    if (isClass(prop.type) && !this.container.has(prop.type)) {
-                        this.container.register(prop.type);
-                    }
+                    // if (isClass(prop.provider) && !this.container.has(prop.provider)) {
+                    //     this.container.register(prop.provider);
+                    // }
+                    // if (isClass(prop.type) && !this.container.has(prop.type)) {
+                    //     this.container.register(prop.type);
+                    // }
 
                     if (!binding.type && isClassType(prop.type)) {
                         binding.type = prop.type;

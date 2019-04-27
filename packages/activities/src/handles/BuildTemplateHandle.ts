@@ -1,10 +1,10 @@
-import { BootHandle, BuilderService } from '@tsdi/boot';
-import { Singleton, isArray, isClass, isUndefined, hasOwnClassMetadata, lang, isString } from '@tsdi/ioc';
-import { ActivityContext, CompoiseActivity, SelectorManager, IActivityReflect, Activity } from '../core';
+import { CompositeHandle } from '@tsdi/boot';
+import { isArray, isNullOrUndefined } from '@tsdi/ioc';
+import { ActivityContext, CompoiseActivity, IActivityReflect } from '../core';
+import { BindingInputPropertyHandle, BindingArrayInputPropertyHandle } from './BindingInputPropertyHandle';
 
 
-@Singleton
-export class BuildTemplateHandle extends BootHandle {
+export class BuildTemplateHandle extends CompositeHandle<ActivityContext> {
     async execute(ctx: ActivityContext, next: () => Promise<void>): Promise<void> {
         let activity = ctx.getActivity();
         let template = ctx.template;
@@ -15,30 +15,21 @@ export class BuildTemplateHandle extends BootHandle {
                 }
             } else {
                 let ref = this.container.getTypeReflects().get(ctx.module) as IActivityReflect;
-                let mgr = this.container.get(SelectorManager);
-
                 await Promise.all(Array.from(ref.inputBindings.keys()).map(async n => {
                     let binding = ref.inputBindings.get(n);
-                    let tk = binding.provider;
                     let tempVal = template[binding.bindingName || binding.name];
-                    if (!isUndefined(tempVal)) {
-                        if (isString(tk) && mgr.hasRef(tk)) {
-                            let ctx = await this.container.get(BuilderService).build<ActivityContext>({ module: mgr.getRef(tk), providers: [{ provide: mgr.getRefName(tk), useValue: tempVal }] });
-                            activity[n] = ctx.getActivity();
-                        } else if (mgr.hasRef(n)) {
-                            let ctx = await this.container.get(BuilderService).build<ActivityContext>({ module: mgr.getRef(n), providers: [{ provide: mgr.getRefName(n), useValue: tempVal }] });
-                            activity[n] = ctx.getActivity();
-                        } else if (isClass(tk) && (hasOwnClassMetadata(ctx.decorator, tk) || lang.isExtendsClass(tk, Activity))) {
-                            let providers = [{ provide: n, useValue: tempVal }];
-                            let ctx = await this.container.get(BuilderService).build<ActivityContext>({ module: tk, template: tempVal, providers: providers });
-                            activity[n] = ctx.getActivity();
-                        } else {
-                            activity[n] = tempVal;
-                        }
+                    if (!isNullOrUndefined(tempVal)) {
+                        ctx.currPropertyBinding = Object.assign({ bindingValue: tempVal }, binding);
+                        await super.execute(ctx);
                     }
                 }));
             }
         }
         await next();
+    }
+
+    setup() {
+        this.use(BindingArrayInputPropertyHandle)
+            .use(BindingInputPropertyHandle);
     }
 }

@@ -39,7 +39,7 @@ export class TryCatchActivity<T> extends Activity<T> {
     @Input()
     try: BodyActivity<T>;
 
-    @Input(CatchActivity)
+    @Input('catchs', CatchActivity)
     catchs: CatchActivity<T>[];
 
     @Input()
@@ -51,7 +51,7 @@ export class TryCatchActivity<T> extends Activity<T> {
         } catch (err) {
             this.result.error = err;
             if (this.catchs) {
-                await this.catchs.run(ctx);
+                await this.execActivity(ctx, this.catchs);
             }
         } finally {
             if (this.finallies) {

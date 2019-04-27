@@ -8,6 +8,8 @@ import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
 import { ActivityConfigure, ActivityTemplate } from './ActivityConfigure';
+import { IPropertyBinding } from './registers';
+
 
 
 /**
@@ -77,6 +79,9 @@ export class ActivityContext extends BootContext {
      * @memberof ActivityContext
      */
     annoation: ActivityConfigure;
+
+
+    currPropertyBinding?: IPropertyBinding<any>;
 
     /**
      * bootstrap runnable service.
