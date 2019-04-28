@@ -14,7 +14,7 @@ import { ContainerToken, IContainer } from '@tsdi/core';
 export class SequenceActivity<T> extends CompoiseActivity<T> {
 
     constructor(
-        @Inject('parallel') activities: ActivityType[],
+        @Inject('sequence') activities: ActivityType[],
         @Inject(ContainerToken) container: IContainer) {
         super(container)
         this.activities = activities || [];

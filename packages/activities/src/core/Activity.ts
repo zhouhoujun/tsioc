@@ -5,7 +5,7 @@ import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {
     isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
-    isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, isArray, ProviderTypes, lang
+    isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, isArray, ProviderTypes, lang, isNullOrUndefined
 } from '@tsdi/ioc';
 import { ActivityType, Expression, ControlTemplate } from './ActivityConfigure';
 import { SelectorManager } from './SelectorManager';
@@ -86,12 +86,15 @@ export abstract class Activity<T> {
         if (this.isScope) {
             ctx.runnable.status.scopes.shift();
         }
+
         this.bindingResult(ctx);
         await this.result.next(ctx);
     }
 
     protected bindingResult(ctx: ActivityContext) {
-        ctx.data = this.result.value;
+        if (!isNullOrUndefined(this.result.value)) {
+            ctx.data = this.result.value;
+        }
     }
 
     protected abstract execute(ctx: ActivityContext): Promise<void>;

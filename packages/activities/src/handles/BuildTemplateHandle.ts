@@ -8,7 +8,6 @@ export class BuildTemplateHandle extends CompositeHandle<ActivityContext> {
     async execute(ctx: ActivityContext, next: () => Promise<void>): Promise<void> {
         let activity = ctx.getActivity();
         let template = ctx.template;
-        console.log(template);
         if (template) {
             if (isArray(template)) {
                 if (activity instanceof CompoiseActivity) {

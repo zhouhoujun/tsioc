@@ -82,7 +82,7 @@ export function createTaskDecorator<T extends ActivityMetadata>(
                 metadata.name = lang.getClassName(metadata.type);
             }
 
-            metadata.provide = metadata.selector;
+            metadata.provide = 'activity_' + metadata.selector;
             if (!metadata.contextType) {
                 metadata.contextType = defaultContext;
             }

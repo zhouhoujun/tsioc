@@ -5,7 +5,6 @@ import { isString, hasOwnClassMetadata, lang, isToken, isBaseType, isClass, Toke
 export class BindingInputPropertyHandle extends BootHandle {
     async execute(ctx: ActivityContext, next: () => Promise<void>): Promise<void> {
         let binding = ctx.currPropertyBinding;
-        console.log(binding);
         let value = await this.resolveBindingProperty(ctx, binding, binding.bindingValue);
         if (!isNullOrUndefined(value)) {
             let activity = ctx.getActivity();
@@ -24,7 +23,6 @@ export class BindingInputPropertyHandle extends BootHandle {
         } else {
             value = await this.resolveBindingValue(ctx, binding.name, binding.provider, bindingValue);
         }
-        console.log(value);
         return value;
     }
 
