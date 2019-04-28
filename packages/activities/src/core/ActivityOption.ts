@@ -40,10 +40,10 @@ export interface ActivityOption<T extends ActivityContext> extends BootOption {
     /**
      * bootstrap reference runable service.
      *
-     * @type {WorkflowInstance<T>}
+     * @type {WorkflowInstance}
      * @memberof BootContext
      */
-    runnable?: WorkflowInstance<T>;
+    runnable?: WorkflowInstance;
 
     /**
      * activities component template scope.

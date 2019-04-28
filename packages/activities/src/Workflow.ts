@@ -32,7 +32,7 @@ export class Workflow extends BootApplication {
     }
 
 
-    getWorkflow<T extends ActivityContext>(workflowId: string): WorkflowInstance<T> {
+    getWorkflow(workflowId: string): WorkflowInstance {
         return this.getPools().getRoot().get(workflowId);
     }
 

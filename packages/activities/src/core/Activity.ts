@@ -5,7 +5,8 @@ import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {
     isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
-    isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, isArray, ProviderTypes, lang, isNullOrUndefined
+    isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, isArray,
+    ProviderTypes, lang, isNullOrUndefined
 } from '@tsdi/ioc';
 import { ActivityType, Expression, ControlTemplate } from './ActivityConfigure';
 import { SelectorManager } from './SelectorManager';

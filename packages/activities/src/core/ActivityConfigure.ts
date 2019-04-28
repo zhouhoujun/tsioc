@@ -179,6 +179,9 @@ export interface SwitchTemplate extends TemplateOption {
     defaults?: ActivityType[];
 }
 
+/**
+ * case template.
+ */
 export interface CaseTemplate extends IBodyTemplate {
     /**
      * case
@@ -221,7 +224,9 @@ export type GActivityType<T> = Activity<T> | Type<Activity<T>> | TemplateType;
  */
 export type ActivityType = GActivityType<any>;
 
-
+/**
+ * activity template.
+ */
 export type ActivityTemplate = TemplateType | TemplateType[];
 
 /**

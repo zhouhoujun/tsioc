@@ -89,7 +89,7 @@ export class ActivityContext extends BootContext {
      * @type {WorkflowInstance}
      * @memberof BootContext
      */
-    runnable?: WorkflowInstance<ActivityContext>;
+    runnable?: WorkflowInstance;
 
     getActivity<T>(): Activity<T> {
         if (this.target instanceof Activity) {
