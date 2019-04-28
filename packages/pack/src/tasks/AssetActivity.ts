@@ -1,5 +1,8 @@
-import { Src, Task, TemplateOption, Expression, ActivityType, BodyActivity } from '@tsdi/activities';
-import { NodeActivityContext } from '../core';
+import { Src, Task, TemplateOption, Expression, ActivityType, Activity, Input } from '@tsdi/activities';
+import { NodeActivityContext, ITransform } from '../core';
+import { StreamActivity } from './StreamActivity';
+import { SourceActivity } from './SourceActivity';
+import { DestActivity } from './DestActivity';
 
 
 /**
@@ -9,7 +12,7 @@ import { NodeActivityContext } from '../core';
  * @interface ShellActivityConfig
  * @extends {ActivityConfigure}
  */
-export interface ShellActivityOption<T extends NodeActivityContext> extends TemplateOption<T> {
+export interface ShellActivityOption extends TemplateOption {
     /**
      * shell cmd
      *
@@ -25,7 +28,13 @@ export interface ShellActivityOption<T extends NodeActivityContext> extends Temp
      */
     dist?: Expression<Src>;
 
-    pipes?: ActivityType<T>[];
+    /**
+     *
+     *
+     * @type {ActivityType[]}
+     * @memberof ShellActivityOption
+     */
+    pipes?: ActivityType[];
 
 }
 
@@ -37,33 +46,36 @@ export interface ShellActivityOption<T extends NodeActivityContext> extends Temp
  * @implements {ITask}
  */
 @Task('asset')
-export class AssetActivity<T extends NodeActivityContext> extends BodyActivity<T> {
+export class AssetActivity extends Activity<ITransform> {
     /**
-     * shell cmd
+     * assert src.
      *
      * @type {Expression<Src>}
      * @memberof ShellActivityConfig
      */
-    src?: Expression<Src>;
+    @Input()
+    src: SourceActivity;
     /**
      * shell args.
      *
      * @type {Expression<Src>}
      * @memberof ShellActivityConfig
      */
-    dist?: Expression<Src>;
+    @Input()
+    dist: DestActivity;
 
-    async init(option: ShellActivityOption<T>) {
-        await super.init(option);
-        this.src = option.src;
-        this.dist = option.dist;
-        this.body = option.pipes;
-    }
+    @Input()
+    pipes: StreamActivity
 
-    async run(ctx: T, next?: () => Promise<void>): Promise<void> {
-        this.currSrc = await this.resolveExpression(this.src, ctx);
-        this.currDist = await this.resolveExpression(this.dist, ctx);
-        await super.run(ctx, next);
-
+    protected async execute(ctx: NodeActivityContext): Promise<void> {
+        if (this.src) {
+            await this.src.run(ctx);
+        }
+        if (this.pipes) {
+            await this.pipes.run(ctx);
+        }
+        if (this.dist) {
+            await this.dist.run(ctx);
+        }
     }
 }

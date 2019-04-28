@@ -212,9 +212,14 @@ export type ControlTemplate = ExpressionTemplate | ConditionTemplate | InvokeTem
 export type TemplateType = Type<any> | ControlTemplate | PromiseUtil.ActionHandle<ActivityContext>;
 
 /**
+*  activity type.
+*/
+export type GActivityType<T> = Activity<T> | Type<Activity<T>> | TemplateType;
+
+/**
  *  activity type.
  */
-export type ActivityType = TemplateType | Activity<any>;
+export type ActivityType = GActivityType<any>;
 
 
 export type ActivityTemplate = TemplateType | TemplateType[];

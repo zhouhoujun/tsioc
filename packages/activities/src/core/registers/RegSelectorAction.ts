@@ -9,7 +9,13 @@ export class RegSelectorAction extends IocDesignAction {
         let mgr = this.container.get(RootContainerToken).get(SelectorManager);
         let metas = getOwnTypeMetadata(ctx.currDecoractor, ctx.targetType) as ActivityConfigure[];
         metas.forEach(meta => {
-            mgr.set(meta.selector, ctx.targetType, (...providers: ProviderTypes[]) => this.container.get(ctx.targetType, ...providers));
+            if (meta.selector.indexOf(',') > 0) {
+                meta.selector.split(',').forEach(sel => {
+                    mgr.set(sel.trim(), ctx.targetType, (...providers: ProviderTypes[]) => this.container.get(ctx.targetType, ...providers));
+                })
+            } else {
+                mgr.set(meta.selector, ctx.targetType, (...providers: ProviderTypes[]) => this.container.get(ctx.targetType, ...providers));
+            }
         });
 
         next();

@@ -1,6 +1,6 @@
 import { ExecOptions, exec } from 'child_process';
 import { isBoolean, isArray, lang, ObjectMap, isNullOrUndefined, PromiseUtil } from '@tsdi/ioc';
-import { Src, Task, TemplateOption, Activity, Expression } from '@tsdi/activities';
+import { Src, Task, TemplateOption, Activity, Expression, Input } from '@tsdi/activities';
 import { NodeActivityContext } from '../core';
 
 
@@ -11,7 +11,7 @@ import { NodeActivityContext } from '../core';
  * @interface ShellActivityConfig
  * @extends {ActivityConfigure}
  */
-export interface ShellActivityOption<T extends NodeActivityContext> extends TemplateOption<T> {
+export interface ShellActivityOption extends TemplateOption {
     /**
      * shell cmd
      *
@@ -50,13 +50,14 @@ export interface ShellActivityOption<T extends NodeActivityContext> extends Temp
  * @implements {ITask}
  */
 @Task('shell')
-export class ShellActivity<T extends NodeActivityContext> extends Activity<T> {
+export class ShellActivity extends Activity<void> {
     /**
      * shell cmd.
      *
      * @type {Src}
      * @memberof ShellActivity
      */
+    @Input()
     shell: Expression<Src>;
     /**
      * shell args.
@@ -64,6 +65,7 @@ export class ShellActivity<T extends NodeActivityContext> extends Activity<T> {
      * @type {string[]}
      * @memberof ShellActivity
      */
+    @Input()
     args: Expression<string[] | ObjectMap<any>>;
     /**
      * shell exec options.
@@ -71,23 +73,18 @@ export class ShellActivity<T extends NodeActivityContext> extends Activity<T> {
      * @type {CtxType<ExecOptions>}
      * @memberof ShellActivity
      */
+    @Input()
     options: Expression<ExecOptions>;
     /**
      * allow error or not.
      *
      * @memberof ShellActivity
      */
+    @Input()
     allowError: Expression<boolean>
 
-    async init(option: ShellActivityOption<T>) {
-        await super.init(option);
-        this.shell = option.shell;
-        this.args = option.args;
-        this.options = option.options;
-        this.allowError = option.allowError;
-    }
 
-    async run(ctx: T, next: () => Promise<void>): Promise<void> {
+    protected async execute(ctx: NodeActivityContext): Promise<void> {
 
         let shell = await this.resolveExpression(this.shell, ctx);
         let options = await this.resolveExpression(this.options, ctx);
@@ -96,7 +93,6 @@ export class ShellActivity<T extends NodeActivityContext> extends Activity<T> {
         let allowError = await this.resolveExpression(this.allowError, ctx);
 
         await PromiseUtil.step((isArray(shell) ? shell : [shell]).map(sh => () => this.execShell(sh, argstrs, options, allowError)));
-        await next();
 
     }
 
