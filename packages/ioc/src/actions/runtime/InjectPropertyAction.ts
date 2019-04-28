@@ -2,8 +2,8 @@ import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { InjectReference } from '../../InjectReference';
 import { ProviderMap } from '../../providers';
-import { isToken } from '../../utils';
-import { isNullOrUndefined } from 'util';
+import { isToken, isNullOrUndefined } from '../../utils';
+
 
 /**
  * inject property value action, to inject property value for resolve instance.

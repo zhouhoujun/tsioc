@@ -44,10 +44,10 @@ export enum RunState {
 @Injectable
 @Refs(Activity, Runnable)
 @Refs('@Task', Runnable)
-export class WorkflowInstance<T extends ActivityContext> extends Service<Activity<any>> {
+export class WorkflowInstance extends Service<Activity<any>> {
 
-    protected _ctx: T;
-    get context(): T {
+    protected _ctx: ActivityContext;
+    get context(): ActivityContext {
         return this._ctx;
     }
 
@@ -73,11 +73,11 @@ export class WorkflowInstance<T extends ActivityContext> extends Service<Activit
         await mgr.getConfig();
     }
 
-    run(data?: any): Promise<T> {
+    run<T extends ActivityContext>(data?: any): Promise<T> {
         return this.start(data);
     }
 
-    async start(data?: any): Promise<T> {
+    async start<T extends ActivityContext>(data?: any): Promise<T> {
         let container = this.getContainer();
         if (this.context.id && !container.has(this.context.id)) {
             container.bindProvider(this.context.id, this);
@@ -88,7 +88,7 @@ export class WorkflowInstance<T extends ActivityContext> extends Service<Activit
             this._result = this.context.data;
         })
 
-        return this.context;
+        return this.context as T;
 
     }
 

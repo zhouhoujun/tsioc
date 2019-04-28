@@ -24,7 +24,7 @@ export class TaskLogAspect extends LoggerAspect {
         this.startHrts = {};
     }
 
-    @Around('execution(*.run)')
+    @Around('execution(*.execute)')
     logging(joinPoint: Joinpoint) {
         let logger = this.logger;
         let target = joinPoint.target;
