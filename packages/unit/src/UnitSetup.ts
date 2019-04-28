@@ -1,9 +1,10 @@
-import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
+import { IContainer, ContainerToken, IocExt, ServiceDecoratorRegisterer } from '@tsdi/core';
 import { Suite } from './decorators/Suite';
 import {
     Inject, DecoratorScopes, ComponentInitAction, RegisterSingletionAction,
     ComponentBeforeInitAction, ComponentAfterInitAction, RuntimeDecoratorRegisterer
 } from '@tsdi/ioc';
+import { SuiteDecoratorRegisterer } from './registers';
 
 
 /**
@@ -29,5 +30,7 @@ export class UnitSetup {
         runtimeReg.register(Suite, DecoratorScopes.Class,
             ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
             RegisterSingletionAction);
+        this.container.registerSingleton(SuiteDecoratorRegisterer, () => new SuiteDecoratorRegisterer(this.container));
+        this.container.get(ServiceDecoratorRegisterer).register(Suite, SuiteDecoratorRegisterer);
     }
 }

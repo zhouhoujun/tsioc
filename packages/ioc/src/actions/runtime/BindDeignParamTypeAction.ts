@@ -65,6 +65,6 @@ export class BindDeignParamTypeAction extends IocRuntimeAction {
         if (type === Object) {
             return undefined;
         }
-        return isClass(type) ? type : undefined;
+        return type;
     }
 }

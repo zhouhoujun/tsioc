@@ -1,4 +1,4 @@
-import { Runnable } from '@tsdi/boot';
+import { Runnable, ParentContainerToken } from '@tsdi/boot';
 import {
     getMethodMetadata, isNumber, lang, PromiseUtil,
     getOwnTypeMetadata, Injectable

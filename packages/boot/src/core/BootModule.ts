@@ -8,7 +8,7 @@ import {
 import {
     IContainer, ContainerToken, IocExt,
     ResolvePrivateServiceAction, ResolveServiceInClassChain,
-    ModuleDecoratorRegisterer, ResolveServicesScope
+    ModuleDecoratorRegisterer, ServicesResolveLifeScope
 } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
@@ -68,7 +68,7 @@ export class BootModule {
             .useAfter(ResolveRouteServiceAction, ResolvePrivateServiceAction, true);
 
         // route services
-        container.get(ResolveServicesScope)
+        container.get(ServicesResolveLifeScope)
             .use(ResolveRouteServicesAction, true);
 
         container.get(IocResolveScope)

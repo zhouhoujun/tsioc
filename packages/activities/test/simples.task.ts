@@ -1,4 +1,7 @@
 import { Task, Activity, SequenceActivity, ActivityContext, Activities } from '../src';
+import { IContainer, ContainerToken } from '@tsdi/core';
+import { Inject } from '@tsdi/ioc';
+import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 
 @Task('stest')
 export class SimpleTask extends Activity<string> {
@@ -24,7 +27,7 @@ export class SimpleTask extends Activity<string> {
                     activity: Activities.switch,
                     switch: (ctx) => ctx.configures.length,
                     cases: [
-                        { case: 1, body: [] }
+                        { case: 0, body: [] }
                     ]
                 }
             ]
@@ -48,18 +51,23 @@ export class SimpleCTask extends SequenceActivity<string> {
 
 @Task({
     name: 'test-module',
-    // activity: SequenceActivity,
+    imports: [
+        ServerActivitiesModule
+    ],
     template: [
         {
             // name: 'test------3',
             activity: Activities.if,
-            condition: ctx => ctx.args[0],
+            condition: ctx => true,
             body: [SimpleTask]
         },
         SimpleCTask
     ]
 })
-export class TaskModuleTest  {
+export class TaskModuleTest {
+    constructor(@Inject(ContainerToken) container: IContainer){
+
+    }
 
 }
 

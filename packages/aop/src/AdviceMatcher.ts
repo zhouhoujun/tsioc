@@ -37,8 +37,10 @@ export class AdviceMatcher implements IAdviceMatcher {
         if (aspectMeta) {
             if (aspectMeta.within) {
                 let ins = isArray(aspectMeta.within) ? aspectMeta.within : [aspectMeta.within];
-                if (ins.indexOf(targetType) < 0) {
-                    return [];
+                if (!ins.some(t => lang.isExtendsClass(targetType, t))) {
+                    if (!aspectMeta.annotation) {
+                        return [];
+                    }
                 }
             }
             if (aspectMeta.annotation) {
@@ -150,9 +152,9 @@ export class AdviceMatcher implements IAdviceMatcher {
         if (metadata.within) {
             expresses.push((method: string, fullName: string, targetType?: Type<any>) => {
                 if (isArray(metadata.within)) {
-                    return metadata.within.indexOf(targetType) >= 0;
+                    return metadata.within.some(t => lang.isExtendsClass(targetType, t));
                 } else {
-                    return metadata.within === targetType;
+                    return  lang.isExtendsClass(targetType, metadata.within);
                 }
             });
             expresses.push('&&')

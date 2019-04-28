@@ -1,4 +1,4 @@
-import { MethodMetadata, Type } from '@tsdi/ioc';
+import { MethodMetadata, ClassType } from '@tsdi/ioc';
 
 /**
  * advice metadata.
@@ -35,10 +35,10 @@ export interface AdviceMetadata extends MethodMetadata {
     /**
      * advice within.
      *
-     * @type {(Type<any> | Type<any>[])}
+     * @type {(ClassType<any> | ClassType<any>[])}
      * @memberof AdviceMetadata
      */
-    within?: Type<any> | Type<any>[];
+    within?: ClassType<any> | ClassType<any>[];
 
     /**
      * annotation name, special annotation metadata for annotation advices.

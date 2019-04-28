@@ -10,7 +10,7 @@ export class RouteResolveAction extends IocCompositeAction<ResolveActionContext<
             super.execute(ctx);
         }
         if (!ctx.instance) {
-            next();
+            next && next();
         }
     }
 

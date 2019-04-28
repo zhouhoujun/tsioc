@@ -2,7 +2,7 @@ import { IContainer, ContainerToken } from '@tsdi/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LoggerAspect } from '@tsdi/logs';
 import chalk from 'chalk';
-import { Task } from '@tsdi/activities';
+import { Task, Activity } from '@tsdi/activities';
 import { ObjectMap, Inject, lang } from '@tsdi/ioc';
 const timestamp = require('time-stamp');
 const prettyTime = require('pretty-hrtime');
@@ -15,6 +15,7 @@ const prettyTime = require('pretty-hrtime');
  */
 @Aspect({
     annotation: Task,
+    within: Activity,
     singleton: true
 })
 export class TaskLogAspect extends LoggerAspect {
@@ -25,7 +26,7 @@ export class TaskLogAspect extends LoggerAspect {
         this.startHrts = {};
     }
 
-    @Around('execution(*.run)')
+    @Around('execution(*.execute)')
     logging(joinPoint: Joinpoint) {
         let logger = this.logger;
         let target = joinPoint.target;

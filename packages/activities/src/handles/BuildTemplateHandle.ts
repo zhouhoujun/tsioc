@@ -6,12 +6,11 @@ import { BindingInputPropertyHandle, BindingArrayInputPropertyHandle } from './B
 
 export class BuildTemplateHandle extends CompositeHandle<ActivityContext> {
     async execute(ctx: ActivityContext, next: () => Promise<void>): Promise<void> {
-        let activity = ctx.getActivity();
         let template = ctx.template;
         if (template) {
             if (isArray(template)) {
-                if (activity instanceof CompoiseActivity) {
-                    activity.add(...template);
+                if (ctx.target instanceof CompoiseActivity) {
+                    ctx.target.add(...template);
                 }
             } else {
                 let ref = this.container.getTypeReflects().get(ctx.module) as IActivityReflect;

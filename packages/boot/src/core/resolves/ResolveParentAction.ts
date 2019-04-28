@@ -1,4 +1,4 @@
-import { IocResolveAction, ResolveActionContext, Type, IocCompositeAction, lang } from '@tsdi/ioc';
+import { IocResolveAction, ResolveActionContext, Type, IocCompositeAction, lang, IocResolveScope } from '@tsdi/ioc';
 import { ParentContainerToken } from '../ContainerPool';
 
 
@@ -12,10 +12,10 @@ import { ParentContainerToken } from '../ContainerPool';
 export class ResolveParentAction extends IocResolveAction {
     execute(ctx: ResolveActionContext<any>, next: () => void): void {
         if (ctx.currScope) {
-            let scopeType: Type<IocCompositeAction<any>> = lang.getClass(ctx.currScope);
+            // let scopeType: Type<IocCompositeAction<any>> = lang.getClass(ctx.currScope);
             let parent = this.container.get(ParentContainerToken);
             if (parent && parent !== this.container) {
-                parent.get(scopeType).execute(ctx);
+                parent.get(IocResolveScope).execute(ctx);
             }
         }
         if (!ctx.instance) {

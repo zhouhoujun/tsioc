@@ -115,7 +115,6 @@ export class MethodAccessor extends IocCoreService implements IMethodAccessor {
         providers = providers.concat(pds);
         let parameters = lifeScope.getMethodParameters(container, targetClass, instance, propertyKey);
         let paramInstances = this.createParams(container, parameters, ...providers);
-
         return instance[propertyKey](...paramInstances) as T;
 
     }

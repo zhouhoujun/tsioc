@@ -1,4 +1,4 @@
-import { Type, ClassMetadata } from '@tsdi/ioc';
+import { Type, ClassMetadata, ClassType } from '@tsdi/ioc';
 
 /**
  * aspect metadata.
@@ -7,10 +7,10 @@ export interface AspectMetadata extends ClassMetadata {
     /**
      * set pointcut in the type only.
      *
-     * @type {(Type<any> | Type<any>[])}
+     * @type {(ClassType<any> | ClassType<any>[])}
      * @memberof AspectMetadata
      */
-    within?: Type<any> | Type<any>[];
+    within?: ClassType<any> | ClassType<any>[];
 
     /**
      * set pointcut in the class with the annotation decorator only.

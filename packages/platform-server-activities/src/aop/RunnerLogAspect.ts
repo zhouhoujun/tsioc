@@ -32,11 +32,11 @@ export class RunnerLogAspect extends LoggerAspect {
         let uuid = runner.context.id;
         let name = runner.getTarget().name;
         let start, end;
-        let taskname = '\'' + chalk.cyan(name) + '\'';
+        let taskname = '\'' + chalk.cyan(name || uuid) + '\'';
         if (joinPoint.state === JoinpointState.Before) {
             start = process.hrtime();
             this.startHrts[uuid] = start;
-            logger.log('[' + chalk.grey(timestamp('HH:mm:ss', new Date())) + ']', 'Starting workflow',  taskname, '...');
+            logger.log('[' + chalk.grey(timestamp('HH:mm:ss', new Date())) + ']', 'Starting workflow', taskname, '...');
         }
 
         if (joinPoint.state === JoinpointState.AfterReturning) {

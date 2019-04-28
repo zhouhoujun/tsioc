@@ -2,7 +2,7 @@ import { ObjectMap, Inject, lang } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LoggerAspect } from '@tsdi/logs';
-import { Task } from '@tsdi/activities';
+import { Task, Activity } from '@tsdi/activities';
 
 /**
  * Task Log
@@ -12,6 +12,7 @@ import { Task } from '@tsdi/activities';
  */
 @Aspect({
     annotation: Task,
+    within: Activity,
     singleton: true
 })
 export class TaskLogAspect extends LoggerAspect {
