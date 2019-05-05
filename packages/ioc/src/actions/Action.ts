@@ -1,4 +1,4 @@
-import { IIocContainer, IocContainerToken } from '../IIocContainer';
+import { IIocContainer, IocContainerToken, ContainerFactory, ContainerFactoryToken } from '../IIocContainer';
 import { Type } from '../types';
 import { lang, isFunction, isClass } from '../utils';
 import { Inject } from '../decorators';
@@ -30,11 +30,11 @@ export class IocActionContext {
      */
     currScope?: any;
 
-    protected raiseContainerGetter: () => IIocContainer;
+    @Inject(ContainerFactoryToken)
+    protected raiseContainerGetter: ContainerFactory;
 
 
-    constructor(raiseContainer?: IIocContainer | (() => IIocContainer)) {
-        raiseContainer && this.setRaiseContainer(raiseContainer)
+    constructor() {
     }
 
     /**
@@ -50,7 +50,7 @@ export class IocActionContext {
         }
     }
 
-    protected setRaiseContainer(raiseContainer: IIocContainer | (() => IIocContainer)) {
+    setRaiseContainer(raiseContainer: IIocContainer | (() => IIocContainer)) {
         if (isFunction(raiseContainer)) {
             this.raiseContainerGetter = raiseContainer;
         } else {

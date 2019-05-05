@@ -31,7 +31,8 @@ export class DesignActionContext extends RegisterActionContext {
      * @memberof DesignActionContext
      */
     static parse(options: DesignActionOption, raiseContainer?: IIocContainer | (() => IIocContainer)): DesignActionContext {
-        let ctx = new DesignActionContext(options.targetType, raiseContainer);
+        let ctx = new DesignActionContext(options.targetType);
+        ctx.setRaiseContainer(raiseContainer);
         ctx.setOptions(options);
         return ctx;
     }

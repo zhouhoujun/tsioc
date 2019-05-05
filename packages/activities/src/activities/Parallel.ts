@@ -1,7 +1,6 @@
 import { Task } from '../decorators/Task';
 import { ActivityContext, CompoiseActivity, ActivityType } from '../core';
 import { Inject } from '@tsdi/ioc';
-import { ContainerToken, IContainer } from '@tsdi/core';
 
 
 
@@ -15,10 +14,8 @@ import { ContainerToken, IContainer } from '@tsdi/core';
 @Task('parallel')
 export class ParallelActivity<T> extends CompoiseActivity<T> {
 
-    constructor(
-        @Inject('parallel') activities: ActivityType[],
-        @Inject(ContainerToken) container: IContainer) {
-        super(container)
+    constructor(@Inject('parallel') activities: ActivityType[]) {
+        super()
         this.activities = activities || [];
     }
     /**

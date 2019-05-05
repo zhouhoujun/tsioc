@@ -1,7 +1,6 @@
 import { Task } from '../decorators';
 import { ActivityType, CompoiseActivity } from '../core';
 import { Inject } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
 
 /**
  * body activity.
@@ -14,10 +13,8 @@ import { IContainer, ContainerToken } from '@tsdi/core';
 @Task('[body]')
 export class BodyActivity<T> extends CompoiseActivity<T> {
 
-    constructor(
-        @Inject('[body]') activities: ActivityType[],
-        @Inject(ContainerToken) container: IContainer) {
-        super(container)
+    constructor(@Inject('[body]') activities: ActivityType[]) {
+        super()
         this.activities = activities || [];
     }
 }

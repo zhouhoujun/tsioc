@@ -1,9 +1,8 @@
 import {
-    Injectable, isNullOrUndefined, ObjectMap, Type, Refs
+    Injectable, isNullOrUndefined, ObjectMap, Type, Refs, ContainerFactory
 } from '@tsdi/ioc';
 import { ITranslator } from './Translator';
 import { BootContext, createAnnoationContext } from '@tsdi/boot';
-import { IContainer } from '@tsdi/core';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
@@ -128,7 +127,7 @@ export class ActivityContext extends BootContext {
         return {};
     }
 
-    static parse(target: Type<any> | ActivityOption<ActivityContext>, raiseContainer?: IContainer | (() => IContainer)): ActivityContext {
+    static parse(target: Type<any> | ActivityOption<ActivityContext>, raiseContainer?: ContainerFactory): ActivityContext {
         return createAnnoationContext(ActivityContext, target, raiseContainer);
     }
 }

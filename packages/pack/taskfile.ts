@@ -98,7 +98,5 @@ export class PackBuilder {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.create()
-        .use(PackModule)
-        .bootstrap(PackBuilder);
+    Workflow.run(PackBuilder);
 }

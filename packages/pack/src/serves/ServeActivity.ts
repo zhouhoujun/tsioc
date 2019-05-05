@@ -1,5 +1,4 @@
-import { Task, Src, CtxType, ActivityConfigure } from '@tsdi/activities';
-import { NodeActivity } from '@tsdi/build';
+import { Task, Src, ActivityConfigure, Activity, Input, Expression } from '@tsdi/activities';
 
 
 /**
@@ -33,33 +32,25 @@ export interface ServeConfigure extends ActivityConfigure {
  * @extends {BuildActivity}
  */
 @Task('serve')
-export class ServeActivity extends NodeActivity {
+export class ServeActivity extends Activity<void> {
 
     /**
      * serve port.
      *
-     * @type {number}
+     * @type {Expression<number>}
      * @memberof ServeActivity
      */
-    port: number;
+    @Input()
+    port: Expression<number>;
 
     /**
      * dirs.
      *
-     * @type {Src}
+     * @type {Expression<Src>}
      * @memberof ServeActivity
      */
-    dirs: Src;
-
-    constructor() {
-        super();
-    }
-
-    async onActivityInit(config: ServeConfigure): Promise<void> {
-        await super.onActivityInit(config);
-        this.dirs = await this.context.to(config.dirs);
-        this.port = await this.context.to(config.port);
-    }
+    @Input()
+    dirs: Expression<Src>;
 
     /**
      * before run sequence.

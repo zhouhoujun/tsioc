@@ -1,12 +1,12 @@
 import { Task } from '../decorators/Task';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { IContainer } from '@tsdi/core';
 import { RunnerService, BuilderService } from '@tsdi/boot';
 import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {
     isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
     isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, isArray,
-    ProviderTypes, lang, isNullOrUndefined
+    ProviderTypes, lang, isNullOrUndefined, ContainerFactoryToken, ContainerFactory
 } from '@tsdi/ioc';
 import { ActivityType, Expression, ControlTemplate } from './ActivityConfigure';
 import { SelectorManager } from './SelectorManager';
@@ -60,15 +60,16 @@ export abstract class Activity<T> {
      * @type {IContainer}
      * @memberof Activity
      */
-    private containerGetter: () => IContainer;
+    @Inject(ContainerFactoryToken)
+    private containerGetter: ContainerFactory;
 
 
-    constructor(@Inject(ContainerToken) container: IContainer) {
-        this.containerGetter = () => container;
+    constructor() {
+
     }
 
     getContainer(): IContainer {
-        return this.containerGetter();
+        return this.containerGetter() as IContainer;
     }
 
     /**

@@ -2,7 +2,7 @@ import { ObjectMap, Type, Token } from '../../types';
 import { IParameter } from '../../IParameter';
 import { ITypeReflect } from '../../services';
 import { ParamProviders, ProviderMap } from '../../providers';
-import { IIocContainer } from '../../IIocContainer';
+import { IIocContainer, ContainerFactory } from '../../IIocContainer';
 import { RegisterActionOption, RegisterActionContext } from '../RegisterActionContext';
 
 
@@ -175,8 +175,8 @@ export class RuntimeActionContext extends RegisterActionContext {
      */
     injecteds?: ObjectMap<boolean>;
 
-    constructor(targetType: Type<any>, raiseContainer?: IIocContainer | (() => IIocContainer)) {
-        super(targetType, raiseContainer);
+    constructor(targetType: Type<any>) {
+        super(targetType);
     }
 
     /**
@@ -184,12 +184,13 @@ export class RuntimeActionContext extends RegisterActionContext {
      *
      * @static
      * @param {RuntimeActionOption} options
-     * @param {(IIocContainer | (() => IIocContainer))} [raiseContainer]
+     * @param {ContainerFactory} [raiseContainer]
      * @returns {RegisterActionContext}
      * @memberof RegisterActionContext
      */
-    static parse(options: RuntimeActionOption, raiseContainer?: IIocContainer | (() => IIocContainer)): RuntimeActionContext {
-        let ctx = new RuntimeActionContext(options.targetType, raiseContainer);
+    static parse(options: RuntimeActionOption, raiseContainer?: ContainerFactory): RuntimeActionContext {
+        let ctx = new RuntimeActionContext(options.targetType)
+        raiseContainer && ctx.setRaiseContainer(raiseContainer);
         ctx.setOptions(options);
         return ctx;
     }

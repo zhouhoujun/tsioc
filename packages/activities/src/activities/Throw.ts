@@ -1,7 +1,6 @@
 import { Task } from '../decorators/Task';
 import { ActivityContext, Expression, Activity } from '../core';
 import { Inject } from '@tsdi/ioc';
-import { ContainerToken, IContainer } from '@tsdi/core';
 
 
 /**
@@ -14,10 +13,8 @@ import { ContainerToken, IContainer } from '@tsdi/core';
 @Task('[throw]')
 export class ThrowActivity extends Activity<Error> {
 
-    constructor(
-        @Inject('[throw]') protected error: Expression<Error>,
-        @Inject(ContainerToken) container: IContainer) {
-        super(container)
+    constructor(@Inject('[throw]') protected error: Expression<Error>) {
+        super()
     }
 
     protected async execute(ctx: ActivityContext): Promise<void> {

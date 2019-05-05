@@ -11,6 +11,14 @@ import { ResolveActionContext } from './actions';
  * it is a symbol id, you can use  `@Inject`, `@Autowried` or `@Param` to get container instance in yourself class.
  */
 export const IocContainerToken = new InjectToken<IIocContainer>('DI_IocContainer');
+/**
+ *  container factory.
+ */
+export type ContainerFactory = () => IIocContainer;
+/**
+ * container factory token.
+ */
+export const ContainerFactoryToken = new InjectToken<ContainerFactory>('DI_ContainerFactory')
 
 /**
  * container interface.

@@ -3,7 +3,8 @@ import {
     IocSetCacheAction, ComponentBeforeInitAction, RuntimeDecoratorRegisterer,
     ComponentInitAction, ComponentAfterInitAction, DesignLifeScope,
     IocBeforeConstructorScope, IocAfterConstructorScope, DecoratorScopes, RuntimeMethodScope,
-    RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction, RegisterSingletionAction, IocResolveScope, RuntimeLifeScope
+    RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction,
+    RegisterSingletionAction, IocResolveScope, RuntimeLifeScope
 } from '@tsdi/ioc';
 import {
     IContainer, ContainerToken, IocExt,

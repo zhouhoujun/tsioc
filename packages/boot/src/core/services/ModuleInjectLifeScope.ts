@@ -28,7 +28,7 @@ export class ModuleInjectLifeScope extends LifeScope<AnnoationActionContext> {
         let ctx = AnnoationActionContext.parse({
             module: type,
             decorator: decorator
-        }, this.container);
+        }, () => this.container);
         this.execute(ctx);
         return ctx.moduleResolver;
     }

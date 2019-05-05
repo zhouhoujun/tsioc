@@ -9,8 +9,7 @@ import { ServeActivity } from '../serves';
 import { PackConfigure } from './PackConfigure';
 import { lang, hasClassMetadata, isString, isArray } from '@tsdi/ioc';
 import {
-    Src, SequenceActivity, ParallelActivity, SequenceConfigure,
-    SequenceActivityToken, ParallelConfigure, ParallelActivityToken
+    Src, SequenceActivity, ParallelActivity
 } from '@tsdi/activities';
 import { Pack } from '../decorators/Pack';
 

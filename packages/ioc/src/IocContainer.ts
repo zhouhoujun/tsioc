@@ -438,7 +438,7 @@ export class IocContainer implements IIocContainer {
                 singleton: singleton,
                 providers: providers,
                 providerMap: providerMap
-            }, this);
+            }, () => this);
             this.get(RuntimeLifeScope).register(ctx);
             return ctx.target;
         };

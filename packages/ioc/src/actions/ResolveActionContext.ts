@@ -37,7 +37,8 @@ export function createResolveContext<T, Ctx extends ResolveActionContext<T>>(Ctx
         options = target;
         token = target.token;
     }
-    let ctx = new CtxType(token, raiseContainer);
+    let ctx = new CtxType(token);
+    raiseContainer && ctx.setRaiseContainer(raiseContainer);
     options && ctx.setOptions(options);
     return ctx;
 }
@@ -50,8 +51,8 @@ export function createResolveContext<T, Ctx extends ResolveActionContext<T>>(Ctx
  */
 export class ResolveActionContext<T> extends IocActionContext {
 
-    constructor(token: Token<T>, raiseContainer?: IIocContainer | (() => IIocContainer)) {
-        super(raiseContainer);
+    constructor(token: Token<T>) {
+        super();
         this.token = token
     }
 

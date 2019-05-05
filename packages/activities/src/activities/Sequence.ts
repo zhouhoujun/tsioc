@@ -1,7 +1,6 @@
 import { Task } from '../decorators/Task';
 import { CompoiseActivity, ActivityType } from '../core';
 import { Inject } from '@tsdi/ioc';
-import { ContainerToken, IContainer } from '@tsdi/core';
 
 /**
  * sequence activity.
@@ -13,10 +12,8 @@ import { ContainerToken, IContainer } from '@tsdi/core';
 @Task('sequence')
 export class SequenceActivity<T> extends CompoiseActivity<T> {
 
-    constructor(
-        @Inject('sequence') activities: ActivityType[],
-        @Inject(ContainerToken) container: IContainer) {
-        super(container)
+    constructor(@Inject('sequence') activities: ActivityType[]) {
+        super()
         this.activities = activities || [];
     }
 

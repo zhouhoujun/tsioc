@@ -66,11 +66,6 @@ export class InjectorActionContext extends IocActionContext {
      */
     currDecoractor?: string;
 
-
-    constructor(raiseContainer?: IIocContainer | (() => IIocContainer)) {
-        super(raiseContainer);
-    }
-
     /**
      * injector action context.
      *
@@ -81,7 +76,8 @@ export class InjectorActionContext extends IocActionContext {
      * @memberof InjectorActionContext
      */
     static parse(options: InjectorActionOption, raiseContainer?: IIocContainer | (() => IIocContainer)): InjectorActionContext {
-        let ctx = new InjectorActionContext(raiseContainer);
+        let ctx = new InjectorActionContext();
+        ctx.setRaiseContainer(raiseContainer);
         ctx.setOptions(options);
         return ctx;
     }

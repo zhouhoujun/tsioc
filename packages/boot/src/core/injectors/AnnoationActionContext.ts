@@ -1,4 +1,4 @@
-import { IocActionContext, Type, ProviderMap, ActionContextOption, isFunction, isClass } from '@tsdi/ioc';
+import { IocActionContext, Type, ProviderMap, ActionContextOption, isFunction, isClass, Inject, ContainerFactory } from '@tsdi/ioc';
 import { ModuleConfigure, ModuleResovler, RegScope } from '../modules';
 import { IContainer, isContainer } from '@tsdi/core';
 
@@ -36,7 +36,7 @@ export interface AnnoationActionOption extends ActionContextOption {
  * @param {(IContainer | (() => IContainer))} [raiseContainer]
  * @returns {T}
  */
-export function createAnnoationContext<T extends AnnoationActionContext>(CtxType: Type<T>, target: Type<any> | AnnoationActionOption, raiseContainer?: IContainer | (() => IContainer)): T {
+export function createAnnoationContext<T extends AnnoationActionContext>(CtxType: Type<T>, target: Type<any> | AnnoationActionOption, raiseContainer?: ContainerFactory): T {
     let type: Type<any>;
     let options: AnnoationActionOption;
     if (isClass(target)) {
@@ -45,7 +45,8 @@ export function createAnnoationContext<T extends AnnoationActionContext>(CtxType
         options = target;
         type = target.module;
     }
-    let ctx = new CtxType(type, raiseContainer);
+    let ctx = new CtxType(type);
+    raiseContainer && ctx.setRaiseContainer(raiseContainer);
     options && ctx.setOptions(options);
     return ctx;
 }
@@ -59,33 +60,17 @@ export function createAnnoationContext<T extends AnnoationActionContext>(CtxType
  */
 export class AnnoationActionContext extends IocActionContext {
 
-    protected raiseContainerGetter: () => IContainer;
-
-    constructor(type: Type<any>, raiseContainer?: IContainer | (() => IContainer)) {
-        super(raiseContainer);
+    constructor(type: Type<any>) {
+        super();
         this.module = type;
     }
 
-    static parse(target: Type<any> | AnnoationActionOption, raiseContainer?: IContainer | (() => IContainer)): AnnoationActionContext {
+    static parse(target: Type<any> | AnnoationActionOption, raiseContainer?: ContainerFactory): AnnoationActionContext {
         return createAnnoationContext(AnnoationActionContext, target, raiseContainer);
     }
 
     hasRaiseContainer(): boolean {
         return isFunction(this.raiseContainerGetter);
-    }
-
-    /**
-     * set resolve context.
-     *
-     * @param {() => IContainer} raiseContainer
-     * @memberof IocActionContext
-     */
-    setRaiseContainer(raiseContainer: IContainer | (() => IContainer)) {
-        if (isFunction(raiseContainer)) {
-            this.raiseContainerGetter = raiseContainer;
-        } else if (isContainer(raiseContainer)) {
-            this.raiseContainerGetter = () => raiseContainer;
-        }
     }
 
     getRaiseContainer(): IContainer {

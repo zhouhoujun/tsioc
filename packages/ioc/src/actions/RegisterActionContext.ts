@@ -1,7 +1,6 @@
 import { Type, Token } from '../types';
 import { ActionContextOption } from './Action';
 import { ITypeReflect } from '../services';
-import { IIocContainer } from '../IIocContainer';
 import { DecoratorActionContext } from './DecoratorActionContext';
 
 /**
@@ -83,8 +82,8 @@ export abstract class RegisterActionContext extends DecoratorActionContext {
     targetReflect?: ITypeReflect;
 
 
-    constructor(targetType: Type<any>, raiseContainer?: IIocContainer | (() => IIocContainer)) {
-        super(raiseContainer);
+    constructor(targetType: Type<any>) {
+        super();
         this.targetType = targetType;
     }
 

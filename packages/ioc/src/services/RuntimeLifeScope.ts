@@ -7,7 +7,7 @@ import {
     RuntimeAnnoationScope, RuntimePropertyScope, InitReflectAction, RuntimeParamScope,
     InstanceCheckAction, RuntimeDecoratorAction
 } from '../actions';
-import { IIocContainer } from '../IIocContainer';
+import { IIocContainer, ContainerFactoryToken } from '../IIocContainer';
 import { IParameter } from '../IParameter';
 import { RuntimeDecoratorRegisterer } from './DecoratorRegisterer';
 import { RegisterLifeScope } from './RegisterLifeScope';
@@ -83,7 +83,7 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
             targetType: type,
             target: instance,
             propertyKey: propertyKey
-        }, container);
+        }, container.get(ContainerFactoryToken));
         this.execActions(ctx, [InitReflectAction, RuntimeParamScope]);
         let params = ctx.targetReflect.methodParams.get(propertyKey);
         return params || [];
