@@ -51,14 +51,13 @@ export class BootModule {
         designReg.register(Annotation, DecoratorScopes.Class, BindProviderAction, IocAutorunAction);
         designReg.register(DIModule, DecoratorScopes.Class, BindProviderAction, IocAutorunAction);
 
-        let runtimeReg = container.get(RuntimeDecoratorRegisterer);
-        runtimeReg.register(Annotation, DecoratorScopes.Class,
-            ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
-            RegisterSingletionAction, IocSetCacheAction);
-
-        runtimeReg.register(DIModule, DecoratorScopes.Class,
-            ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
-            RegisterSingletionAction, IocSetCacheAction);
+        container.get(RuntimeDecoratorRegisterer)
+            .register(Annotation, DecoratorScopes.Class,
+                ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
+                RegisterSingletionAction, IocSetCacheAction)
+            .register(DIModule, DecoratorScopes.Class,
+                ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
+                RegisterSingletionAction, IocSetCacheAction);
 
         container.use(modules, services);
 
@@ -107,10 +106,10 @@ export class BootModule {
             .register(container, BindInputPropertyTypeAction)
             .register(container, BindInputParamTypeAction);
 
-        container.get(DesignDecoratorRegisterer).register(Component, DecoratorScopes.Class,
-            RegSelectorAction);
-        container.get(DesignDecoratorRegisterer).register(Input, DecoratorScopes.Property,
-            BindInputPropertyTypeAction);
+        container.get(DesignDecoratorRegisterer)
+            .register(Component, DecoratorScopes.Class, RegSelectorAction)
+            .register(Input, DecoratorScopes.Property, BindInputPropertyTypeAction)
+            .register(Input, DecoratorScopes.Parameter, BindInputParamTypeAction);
 
         container.get(RuntimeDecoratorRegisterer).register(Input, DecoratorScopes.Parameter,
             BindInputParamTypeAction);

@@ -11,13 +11,13 @@ export class DesignAnnoationScope extends IocRegisterScope<DesignActionContext> 
         this.registerAction(BindProviderAction)
             .registerAction(IocAutorunAction);
 
-        let decRgr = this.container.get(DesignDecoratorRegisterer);
-        decRgr.register(Injectable, DecoratorScopes.Class, BindProviderAction);
-        decRgr.register(Component, DecoratorScopes.Class, BindProviderAction);
-        decRgr.register(Singleton, DecoratorScopes.Class, BindProviderAction);
-        decRgr.register(Providers, DecoratorScopes.Class, BindProviderAction);
-        decRgr.register(Refs, DecoratorScopes.Class, BindProviderAction);
-        decRgr.register(Autorun, DecoratorScopes.Class, IocAutorunAction);
+        this.container.get(DesignDecoratorRegisterer)
+            .register(Injectable, DecoratorScopes.Class, BindProviderAction)
+            .register(Component, DecoratorScopes.Class, BindProviderAction)
+            .register(Singleton, DecoratorScopes.Class, BindProviderAction)
+            .register(Providers, DecoratorScopes.Class, BindProviderAction)
+            .register(Refs, DecoratorScopes.Class, BindProviderAction)
+            .register(Autorun, DecoratorScopes.Class, IocAutorunAction);
 
         this.use(DesignClassDecoratorScope, true);
     }

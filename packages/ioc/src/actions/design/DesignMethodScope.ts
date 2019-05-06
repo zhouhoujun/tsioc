@@ -9,9 +9,9 @@ export class DesignMethodScope extends IocRegisterScope<DesignActionContext> {
     setup() {
         this.registerAction(BindMethodProviderAction);
 
-        let decRgr = this.container.get(DesignDecoratorRegisterer);
-        decRgr.register(AutoWired, DecoratorScopes.Method, BindMethodProviderAction);
-        decRgr.register(Providers, DecoratorScopes.Method, BindMethodProviderAction);
+        this.container.get(DesignDecoratorRegisterer)
+            .register(AutoWired, DecoratorScopes.Method, BindMethodProviderAction)
+            .register(Providers, DecoratorScopes.Method, BindMethodProviderAction);
 
         this.use(DesignMethodDecoratorScope, true);
     }

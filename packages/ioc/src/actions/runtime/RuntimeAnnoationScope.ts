@@ -12,16 +12,16 @@ import { ComponentAfterInitAction } from './ComponentAfterInitAction';
 export class RuntimeAnnoationScope extends IocRegisterScope<RuntimeActionContext> {
     setup() {
         this.registerAction(RegisterSingletionAction)
-        .registerAction(IocSetCacheAction)
-        .registerAction(ComponentBeforeInitAction)
-        .registerAction(ComponentInitAction)
-        .registerAction(ComponentAfterInitAction);
+            .registerAction(IocSetCacheAction)
+            .registerAction(ComponentBeforeInitAction)
+            .registerAction(ComponentInitAction)
+            .registerAction(ComponentAfterInitAction);
 
-        let decRgr = this.container.get(RuntimeDecoratorRegisterer);
-        decRgr.register(Singleton, DecoratorScopes.Class, RegisterSingletionAction);
-        decRgr.register(Injectable, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
-        decRgr.register(Component, DecoratorScopes.Class, ComponentBeforeInitAction, ComponentInitAction,
-            ComponentAfterInitAction, RegisterSingletionAction, IocSetCacheAction);
+        this.container.get(RuntimeDecoratorRegisterer)
+            .register(Singleton, DecoratorScopes.Class, RegisterSingletionAction)
+            .register(Injectable, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
+            .register(Component, DecoratorScopes.Class, ComponentBeforeInitAction, ComponentInitAction,
+                ComponentAfterInitAction, RegisterSingletionAction, IocSetCacheAction);
 
 
         this.use(RuntimeAnnoationDecorScope, true);

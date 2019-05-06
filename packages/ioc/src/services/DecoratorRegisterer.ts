@@ -34,9 +34,10 @@ export abstract class DecoratorScopeRegisterer extends IocCoreService {
      * @param {...IocActionType[]} actions
      * @memberof DecoratorRegister
      */
-    register(decorator: string | Function, scope: DecoratorScopes, ...actions: IocActionType[]) {
+    register(decorator: string | Function, scope: DecoratorScopes, ...actions: IocActionType[]): this {
         this.getRegisterer(scope)
             .register(decorator, ...actions);
+        return this;
     }
 
     has(decorator: string | Function, scope: DecoratorScopes): boolean {

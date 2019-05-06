@@ -10,9 +10,9 @@ export class DesignPropertyScope extends IocRegisterScope<DesignActionContext> {
     setup() {
         this.registerAction(BindPropertyTypeAction);
 
-        let decRgr = this.container.get(DesignDecoratorRegisterer);
-        decRgr.register(Inject, DecoratorScopes.Property, BindPropertyTypeAction);
-        decRgr.register(AutoWired, DecoratorScopes.Property, BindPropertyTypeAction);
+        this.container.get(DesignDecoratorRegisterer)
+            .register(Inject, DecoratorScopes.Property, BindPropertyTypeAction)
+            .register(AutoWired, DecoratorScopes.Property, BindPropertyTypeAction);
 
         this.use(DesignPropertyDecoratorScope, true);
     }

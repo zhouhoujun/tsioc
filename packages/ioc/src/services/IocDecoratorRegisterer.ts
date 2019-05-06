@@ -35,13 +35,14 @@ export class DecoratorRegisterer<T> extends IocCoreService {
      * @param {...T[]} actions
      * @memberof DecoratorRegister
      */
-    register(decorator: string | Function, ...actions: T[]) {
+    register(decorator: string | Function, ...actions: T[]): this {
         let dec = this.getKey(decorator);
         if (this.actionMap.has(dec)) {
             this.actionMap.get(dec).concat(actions);
         } else {
             this.actionMap.set(dec, actions);
         }
+        return this;
     }
 
     has(decorator: string | Function): boolean {

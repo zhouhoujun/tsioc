@@ -10,10 +10,10 @@ export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> {
     setup() {
         this.registerAction(BindParameterTypeAction);
 
-        let decRgr = this.container.get(RuntimeDecoratorRegisterer);
-        decRgr.register(Inject, DecoratorScopes.Parameter, BindParameterTypeAction);
-        decRgr.register(AutoWired, DecoratorScopes.Parameter, BindParameterTypeAction);
-        decRgr.register(Param, DecoratorScopes.Parameter, BindParameterTypeAction);
+        this.container.get(RuntimeDecoratorRegisterer)
+            .register(Inject, DecoratorScopes.Parameter, BindParameterTypeAction)
+            .register(AutoWired, DecoratorScopes.Parameter, BindParameterTypeAction)
+            .register(Param, DecoratorScopes.Parameter, BindParameterTypeAction);
 
         this.use(RuntimeParamDecorScope, true)
             .use(BindDeignParamTypeAction);

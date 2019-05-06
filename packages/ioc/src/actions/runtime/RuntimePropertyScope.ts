@@ -10,9 +10,9 @@ export class RuntimePropertyScope extends IocRegisterScope<RuntimeActionContext>
     setup() {
         this.registerAction(InjectPropertyAction);
 
-        let decRgr = this.container.get(RuntimeDecoratorRegisterer);
-        decRgr.register(Inject, DecoratorScopes.Property, InjectPropertyAction);
-        decRgr.register(AutoWired, DecoratorScopes.Property, InjectPropertyAction);
+        this.container.get(RuntimeDecoratorRegisterer)
+            .register(Inject, DecoratorScopes.Property, InjectPropertyAction)
+            .register(AutoWired, DecoratorScopes.Property, InjectPropertyAction);
 
         this.use(RuntimePropertyDecorScope, true);
     }

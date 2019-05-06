@@ -61,13 +61,13 @@ export class BootApplication {
         this.container.bindProvider(BootApplication, this);
         this.container.use(annotations, runnable, services);
 
-        let designReg = this.container.get(DesignDecoratorRegisterer);
-        designReg.register(Bootstrap, DecoratorScopes.Class, BindProviderAction);
+        this.container.get(DesignDecoratorRegisterer)
+            .register(Bootstrap, DecoratorScopes.Class, BindProviderAction);
 
-        let runtimeReg = this.container.get(RuntimeDecoratorRegisterer);
-        runtimeReg.register(Bootstrap, DecoratorScopes.Class,
-            ComponentBeforeInitAction, ComponentInitAction,
-            ComponentAfterInitAction, RegisterSingletionAction, IocSetCacheAction);
+        this.container.get(RuntimeDecoratorRegisterer)
+            .register(Bootstrap, DecoratorScopes.Class,
+                ComponentBeforeInitAction, ComponentInitAction,
+                ComponentAfterInitAction, RegisterSingletionAction, IocSetCacheAction);
 
         this.container.get(ModuleDecoratorRegisterer)
             .register(Bootstrap, DIModuleRegisterScope);
@@ -75,7 +75,9 @@ export class BootApplication {
         this.container
             .get(HandleRegisterer)
             .register(this.container, BindingScope, true);
-        this.container.get(ModuleBuildDecoratorRegisterer).register(Component, BindingScope);
+
+        this.container.get(ModuleBuildDecoratorRegisterer)
+            .register(Component, BindingScope);
 
     }
 

@@ -2,7 +2,7 @@ import { ObjectMap, Type, Token } from '../../types';
 import { IParameter } from '../../IParameter';
 import { ITypeReflect } from '../../services';
 import { ParamProviders, ProviderMap } from '../../providers';
-import { IIocContainer, ContainerFactory } from '../../IIocContainer';
+import { ContainerFactory } from '../../IIocContainer';
 import { RegisterActionOption, RegisterActionContext } from '../RegisterActionContext';
 
 

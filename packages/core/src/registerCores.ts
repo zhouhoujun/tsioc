@@ -25,10 +25,10 @@ export function registerCores(container: IContainer) {
         .register(container, ServiceResolveLifeScope, true)
         .register(container, ServicesResolveLifeScope, true);
 
-    let decRgr = container.get(RuntimeDecoratorRegisterer);
-    decRgr.register(IocExt, DecoratorScopes.Class, RegisterSingletionAction);
+    container.get(RuntimeDecoratorRegisterer)
+        .register(IocExt, DecoratorScopes.Class, RegisterSingletionAction);
 
-    let desingRgr = container.get(DesignDecoratorRegisterer);
-    desingRgr.register(IocExt, DecoratorScopes.Class, IocAutorunAction);
+    container.get(DesignDecoratorRegisterer)
+        .register(IocExt, DecoratorScopes.Class, IocAutorunAction);
 
 }
