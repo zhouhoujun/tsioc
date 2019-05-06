@@ -1,4 +1,4 @@
-import { Singleton, Autorun, LifeScope, Type, Inject } from '@tsdi/ioc';
+import { Singleton, Autorun, LifeScope, Type, Inject, ContainerFactoryToken } from '@tsdi/ioc';
 import { ModuleResovler } from '../modules';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import {
@@ -28,7 +28,7 @@ export class ModuleInjectLifeScope extends LifeScope<AnnoationActionContext> {
         let ctx = AnnoationActionContext.parse({
             module: type,
             decorator: decorator
-        }, () => this.container);
+        }, this.container.get(ContainerFactoryToken));
         this.execute(ctx);
         return ctx.moduleResolver;
     }

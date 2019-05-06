@@ -50,11 +50,11 @@ export class IocActionContext {
         }
     }
 
-    setRaiseContainer(raiseContainer: IIocContainer | (() => IIocContainer)) {
+    setRaiseContainer(raiseContainer: IIocContainer | ContainerFactory) {
         if (isFunction(raiseContainer)) {
             this.raiseContainerGetter = raiseContainer;
-        } else {
-            this.raiseContainerGetter = () => raiseContainer;
+        } else if (raiseContainer) {
+            this.raiseContainerGetter = raiseContainer.get(ContainerFactoryToken);
         }
     }
 

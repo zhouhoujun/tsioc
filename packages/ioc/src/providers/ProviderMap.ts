@@ -1,6 +1,6 @@
 import { isToken, isFunction, isUndefined, isObject, isNumber } from '../utils';
 import { Token, InstanceFactory, SymbolType, Factory, Type } from '../types';
-import { IIocContainer } from '../IIocContainer';
+import { IIocContainer, ContainerFactoryToken, ContainerFactory } from '../IIocContainer';
 import { IResolver, IResolverContainer } from '../IResolver';
 import { ProviderTypes } from './types';
 
@@ -20,14 +20,14 @@ export class ProviderMap implements IResolverContainer {
         return this.map.size;
     }
 
-    private containerGetter: () => IIocContainer;
+    private containerFac: ContainerFactory;
     getContainer(): IIocContainer {
-        return this.containerGetter();
+        return this.containerFac();
     }
 
     map: Map<Token<any>, InstanceFactory<any>>;
     constructor(container: IIocContainer) {
-        this.containerGetter = () => container;
+        this.containerFac = container.get(ContainerFactoryToken); //() => container;
         this.map = new Map();
     }
 
