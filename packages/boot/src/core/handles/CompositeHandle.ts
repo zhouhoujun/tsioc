@@ -1,5 +1,6 @@
 import { Handle, HandleType, IHandleContext } from './Handle';
-import { PromiseUtil, isClass, isBoolean } from '@tsdi/ioc';
+import { PromiseUtil, isClass, isBoolean, Inject, Singleton } from '@tsdi/ioc';
+import { ContainerToken, IContainer } from '@tsdi/core';
 
 
 /**
@@ -106,23 +107,34 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
     }
 
     protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {
-        if (!isClass(HandleType)) {
-            return this;
-        }
-        if (this.container.has(HandleType)) {
-            return this;
-        }
-        this.container.registerSingleton(HandleType, () => new HandleType(this.container));
-        if (setup) {
-            let handle = this.container.get(HandleType);
-            if (handle instanceof CompositeHandle) {
-                handle.setup();
-            }
-        }
+        this.container.get(HandleRegisterer)
+            .register(this.container, HandleType, setup);
         return this;
     }
 
     setup?() {
 
+    }
+}
+
+@Singleton
+export class HandleRegisterer {
+    constructor() {
+    }
+    register<T extends IHandleContext>(container: IContainer, HandleType: HandleType<T>, setup?: boolean): this {
+        if (!isClass(HandleType)) {
+            return this;
+        }
+        if (container.has(HandleType)) {
+            return this;
+        }
+        container.registerSingleton(HandleType, () => new HandleType(container));
+        if (setup) {
+            let handle = container.get(HandleType);
+            if (handle instanceof CompositeHandle) {
+                handle.setup();
+            }
+        }
+        return this;
     }
 }

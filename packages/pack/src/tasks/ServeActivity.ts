@@ -21,7 +21,7 @@ export interface ServeConfigure extends ActivityConfigure {
      * @type {CtxType<Src>}
      * @memberof ServeConfigure
      */
-    dirs: CtxType<Src>;
+    dirs: Expression<Src>;
 }
 
 /**

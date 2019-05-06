@@ -1,6 +1,6 @@
-import { Task } from '../decorators/Task';
+import { Task } from '../decorators';
 import { ActivityContext, Expression, Activity } from '../core';
-import { Input } from '../decorators';
+import { Input } from '@tsdi/boot';
 import { Token, ProviderTypes } from '@tsdi/ioc';
 
 

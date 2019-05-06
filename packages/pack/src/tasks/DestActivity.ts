@@ -1,12 +1,47 @@
 import { NodeActivityContext, ITransform } from '../core';
-import { Task, Expression, Input, GActivityType } from '@tsdi/activities';
+import { Task, Expression, Input, GActivityType, TemplateOption } from '@tsdi/activities';
 import { Inject } from '@tsdi/ioc';
-import { ContainerToken, IContainer } from '@tsdi/core';
 import { DestOptions, dest } from 'vinyl-fs';
 import { StreamActivity } from './StreamActivity';
 
+
+
 /**
- * Source activity.
+ * dist activity template option.
+ *
+ * @export
+ * @interface DistActivityOption
+ * @extends {TemplateOption}
+ */
+export interface DistActivityOption extends TemplateOption {
+    /**
+     * source stream to dist.
+     *
+     * @type {Expression<string>}
+     * @memberof DistActivityOption
+     */
+    dist: Expression<string>;
+
+    /**
+     * dist stream pipes.
+     *
+     * @type {GActivityType<ITransform>[]}
+     * @memberof DistActivityOption
+     */
+    destPipes?: GActivityType<ITransform>[]
+
+    /**
+     * dist option
+     *
+     * @type {Expression<DestOptions>}
+     * @memberof DistActivityOption
+     */
+    distOptions?: Expression<DestOptions>;
+}
+
+
+/**
+ * source stream to dist activity.
  *
  * @export
  * @class DestActivity
@@ -18,16 +53,14 @@ export class DestActivity extends StreamActivity {
     @Input()
     dist: Expression<string>;
 
-    @Input()
+    @Input('destOptions')
     options: Expression<DestOptions>;
 
-    @Input()
-    pipes: GActivityType<ITransform>[]
+    @Input('destPipes')
+    pipes: GActivityType<ITransform>[];
 
-    constructor(
-        @Inject('[dist]') dist: Expression<string>,
-        @Inject(ContainerToken) container: IContainer) {
-        super([], container)
+    constructor(@Inject('[dist]') dist: Expression<string>) {
+        super([])
         this.dist = dist;
     }
 

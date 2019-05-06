@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
 import { IContainer } from '@tsdi/core';
-import { RunnerService, BuilderService } from '@tsdi/boot';
+import { RunnerService, BuilderService, Input, SelectorManager } from '@tsdi/boot';
 import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {
@@ -9,9 +9,8 @@ import {
     ProviderTypes, lang, isNullOrUndefined, ContainerFactoryToken, ContainerFactory
 } from '@tsdi/ioc';
 import { ActivityType, Expression, ControlTemplate } from './ActivityConfigure';
-import { SelectorManager } from './SelectorManager';
 import { ActivityResult, NextToken } from './ActivityResult';
-import { Input } from '../decorators';
+
 
 
 /**
@@ -61,7 +60,7 @@ export abstract class Activity<T> {
      * @memberof Activity
      */
     @Inject(ContainerFactoryToken)
-    private containerGetter: ContainerFactory;
+    private containerFac: ContainerFactory;
 
 
     constructor() {
@@ -69,7 +68,7 @@ export abstract class Activity<T> {
     }
 
     getContainer(): IContainer {
-        return this.containerGetter() as IContainer;
+        return this.containerFac() as IContainer;
     }
 
     /**
@@ -154,7 +153,7 @@ export abstract class Activity<T> {
             };
             ctx = await container.get(BuilderService).build<ActivityContext>(option);
         }
-        return ctx.getActivity();
+        return ctx.getBootTarget();
     }
 
 

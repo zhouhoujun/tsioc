@@ -53,41 +53,43 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
         }
 
         if (propertyKey === 'constructor') {
-            lang.forInClassChain(ctx.targetType, ty => {
-                if (ty === ctx.targetType) {
-                    return;
-                }
-
-                let parameters = getParamMetadata<ParameterMetadata>(ctx.currDecoractor, ty);
-                if (parameters.length < 1) {
-                    return;
-                }
-
-                let names = this.container.get(MetadataService).getParamerterNames(ty, propertyKey);
-                if (names.length < 1) {
-                    return;
-                }
-
-                parameters.map((params) => {
-                    let parm = (isArray(params) && params.length > 0) ? params[0] : null;
-                    let n = names.length > parm.index ? [parm.index] : '';
-                    if (!parm) {
-                        return { name: n };
+            if (designParams.some(pa => !pa.type && !pa.provider)) {
+                lang.forInClassChain(ctx.targetType, ty => {
+                    if (ty === ctx.targetType) {
+                        return;
                     }
-                    return {
-                        name: n,
-                        provider: this.container.getTokenKey(parm.provider, parm.alias)
+
+                    let parameters = getParamMetadata<ParameterMetadata>(ctx.currDecoractor, ty);
+                    if (parameters.length < 1) {
+                        return;
                     }
-                }).forEach(parm => {
-                    if (parm.provider) {
-                        designParams.forEach(pa => {
-                            if (!pa.type && !pa.provider && pa.name === parm.name) {
-                                pa.provider = parm.provider;
-                            }
-                        });
+
+                    let names = this.container.get(MetadataService).getParamerterNames(ty, propertyKey);
+                    if (names.length < 1) {
+                        return;
                     }
-                });
-            })
+
+                    parameters.map((params) => {
+                        let parm = (isArray(params) && params.length > 0) ? params[0] : null;
+                        let n = names.length > parm.index ? names[parm.index] : '';
+                        if (!parm) {
+                            return { name: n };
+                        }
+                        return {
+                            name: n,
+                            provider: this.container.getTokenKey(parm.provider, parm.alias)
+                        }
+                    }).forEach(parm => {
+                        if (parm.provider) {
+                            designParams.forEach(pa => {
+                                if (!pa.type && !pa.provider && pa.name === parm.name) {
+                                    pa.provider = parm.provider;
+                                }
+                            });
+                        }
+                    });
+                })
+            }
         }
 
         ctx.targetReflect.methodParams.set(propertyKey, designParams);

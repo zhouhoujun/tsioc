@@ -1,7 +1,7 @@
-import { Task } from '../decorators/Task';
+import { Task } from '../decorators';
 import { ActivityContext, Activity } from '../core';
 import { TimerActivity } from './TimerActivity';
-import { Input } from '../decorators';
+import { Input } from '@tsdi/boot';
 import { BodyActivity } from './BodyActivity';
 
 /**

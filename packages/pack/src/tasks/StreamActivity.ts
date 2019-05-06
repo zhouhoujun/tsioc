@@ -1,16 +1,13 @@
 import { Activity, GActivityType, Input, Task } from '@tsdi/activities';
 import { ITransform, NodeActivityContext, isTransform } from '../core';
 import { Inject, isUndefined } from '@tsdi/ioc';
-import { ContainerToken, IContainer } from '@tsdi/core';
 
 
 @Task('[pipes]')
 export class StreamActivity extends Activity<ITransform> {
 
-    constructor(
-        @Inject('[pipes]') protected pipes: GActivityType<ITransform>[],
-        @Inject(ContainerToken) container: IContainer) {
-        super(container)
+    constructor(@Inject('[pipes]') protected pipes: GActivityType<ITransform>[]) {
+        super()
 
     }
 

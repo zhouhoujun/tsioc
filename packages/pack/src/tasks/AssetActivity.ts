@@ -9,22 +9,22 @@ import { DestActivity } from './DestActivity';
  * shell activity config.
  *
  * @export
- * @interface ShellActivityConfig
+ * @interface AssetActivityOption
  * @extends {ActivityConfigure}
  */
-export interface ShellActivityOption extends TemplateOption {
+export interface AssetActivityOption extends TemplateOption {
     /**
      * shell cmd
      *
      * @type {Expression<Src>}
-     * @memberof ShellActivityConfig
+     * @memberof AssetActivityOption
      */
     src?: Expression<Src>;
     /**
      * shell args.
      *
      * @type {Expression<Src>}
-     * @memberof ShellActivityConfig
+     * @memberof AssetActivityOption
      */
     dist?: Expression<Src>;
 
@@ -51,7 +51,7 @@ export class AssetActivity extends Activity<ITransform> {
      * assert src.
      *
      * @type {Expression<Src>}
-     * @memberof ShellActivityConfig
+     * @memberof AssetActivity
      */
     @Input()
     src: SourceActivity;
@@ -59,7 +59,7 @@ export class AssetActivity extends Activity<ITransform> {
      * shell args.
      *
      * @type {Expression<Src>}
-     * @memberof ShellActivityConfig
+     * @memberof AssetActivity
      */
     @Input()
     dist: DestActivity;

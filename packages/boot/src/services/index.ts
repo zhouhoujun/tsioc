@@ -5,3 +5,4 @@ export * from './ModuleBuildDecoratorRegisterer';
 export * from './ModuleBuilder';
 export * from './BuilderService';
 export * from './RunnerService';
+export * from './TemplateTranlator';

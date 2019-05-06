@@ -1,4 +1,4 @@
-import { LifeScope, Singleton, Autorun, Type, Modules } from '@tsdi/ioc';
+import { LifeScope, Type, Modules } from '@tsdi/ioc';
 import {
     InjectorActionContext, ModuleInjectorScope, ModuleToTypesAction,
     IocExtRegisterScope
@@ -6,8 +6,6 @@ import {
 import { IocExt } from '../decorators';
 import { ModuleDecoratorRegisterer } from './ModuleDecoratorRegisterer';
 
-@Singleton
-@Autorun('setup')
 export class InjectorLifeScope extends LifeScope<InjectorActionContext> {
     setup() {
         this.container.register(ModuleDecoratorRegisterer);

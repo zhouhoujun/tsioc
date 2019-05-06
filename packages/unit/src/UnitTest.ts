@@ -40,7 +40,7 @@ export class UnitTest {
  * @export
  * @param {(string | Type<any> | (string | Type<any>)[])} src test source.
  * @param {(string | AppConfigure)} [config] test configure.
- * @param {...LoadType[]} deps unit test dependencies.
+ * @param {...LoadType[]} deps custom set unit test dependencies.
  * @returns {Promise<any>}
  */
 export async function runTest(src: string | Type<any> | (string | Type<any>)[], config?: string | UnitTestConfigure, ...deps: LoadType[]): Promise<any> {

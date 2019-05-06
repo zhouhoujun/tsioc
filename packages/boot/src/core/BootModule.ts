@@ -4,7 +4,7 @@ import {
     ComponentInitAction, ComponentAfterInitAction, DesignLifeScope,
     IocBeforeConstructorScope, IocAfterConstructorScope, DecoratorScopes, RuntimeMethodScope,
     RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction,
-    RegisterSingletionAction, IocResolveScope, RuntimeLifeScope
+    RegisterSingletionAction, IocResolveScope, RuntimeLifeScope, Component, ActionRegisterer
 } from '@tsdi/ioc';
 import {
     IContainer, ContainerToken, IocExt,
@@ -19,8 +19,12 @@ import * as services from './services';
 import {
     RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction,
 } from './resolves';
-import { RouteDesignRegisterAction, RouteRuntimRegisterAction } from './registers';
+import { RouteDesignRegisterAction, RouteRuntimRegisterAction, RegSelectorAction, BindInputPropertyTypeAction, BindInputParamTypeAction } from './registers';
 import { DIModuleRegisterScope } from './injectors';
+import { SelectorManager } from './SelectorManager';
+import { Input } from '../decorators';
+import { HandleRegisterer } from './handles';
+
 
 /**
  * Bootstrap ext for ioc. auto run setup after registered.
@@ -42,6 +46,7 @@ export class BootModule {
      */
     setup(@Inject(ContainerToken) container: IContainer) {
 
+        container.register(HandleRegisterer);
         let designReg = container.get(DesignDecoratorRegisterer);
         designReg.register(Annotation, DecoratorScopes.Class, BindProviderAction, IocAutorunAction);
         designReg.register(DIModule, DecoratorScopes.Class, BindProviderAction, IocAutorunAction);
@@ -57,8 +62,8 @@ export class BootModule {
 
         container.use(modules, services);
 
-        container.get(RuntimeLifeScope)
-            .registerAction(DIModuleRegisterScope, true);
+        container.get(ActionRegisterer)
+            .register(container, DIModuleRegisterScope, true);
 
         container.get(ModuleDecoratorRegisterer)
             .register(DIModule, DIModuleRegisterScope);
@@ -94,6 +99,21 @@ export class BootModule {
 
         container.get(RuntimeAnnoationScope)
             .use(RouteRuntimRegisterAction);
+
+
+        container.register(SelectorManager);
+        container.get(ActionRegisterer)
+            .register(container, RegSelectorAction)
+            .register(container, BindInputPropertyTypeAction)
+            .register(container, BindInputParamTypeAction);
+
+        container.get(DesignDecoratorRegisterer).register(Component, DecoratorScopes.Class,
+            RegSelectorAction);
+        container.get(DesignDecoratorRegisterer).register(Input, DecoratorScopes.Property,
+            BindInputPropertyTypeAction);
+
+        container.get(RuntimeDecoratorRegisterer).register(Input, DecoratorScopes.Parameter,
+            BindInputParamTypeAction);
 
     }
 }

@@ -10,7 +10,11 @@ export class BootConfigureLoadHandle extends BootHandle {
             ctx.configures.forEach(config => {
                 mgr.useConfiguration(config);
             })
-            await mgr.getConfig();
+            let config = await mgr.getConfig();
+            if (config.deps && config.deps.length) {
+                let container = ctx.getRaiseContainer();
+                await container.load(...config.deps);
+            }
         }
         await next();
     }

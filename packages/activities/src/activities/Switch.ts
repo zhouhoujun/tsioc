@@ -1,7 +1,7 @@
-import { Task } from '../decorators/Task';
-import { ActivityContext, ActivityType, Expression, Activity, CaseTemplate } from '../core';
+import { Task } from '../decorators';
+import { ActivityContext, Expression, Activity } from '../core';
 import { BodyActivity } from './BodyActivity';
-import { Input } from '../decorators';
+import { Input } from '@tsdi/boot';
 
 
 @Task('case')

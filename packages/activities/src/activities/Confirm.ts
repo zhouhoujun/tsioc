@@ -2,7 +2,8 @@ import { Task } from '../decorators/Task';
 import { BodyActivity } from './BodyActivity';
 import { ActivityContext, Activity } from '../core';
 import { ConditionActivity } from './ConditionActivity';
-import { Input } from '../decorators';
+import { Input } from '@tsdi/boot';
+
 
 
 /**

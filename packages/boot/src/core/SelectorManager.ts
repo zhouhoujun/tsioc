@@ -31,15 +31,15 @@ export class SelectorManager {
         return this.selectors.get(selector);
     }
 
-    hasRef(name: string) {
-        return this.has(this.getRefName(name));
+    hasAttr(name: string) {
+        return this.has(this.getAttrName(name));
     }
 
-    getRef(name: string): Type<any> {
-        return this.get(this.getRefName(name));
+    getAttr(name: string): Type<any> {
+        return this.get(this.getAttrName(name));
     }
 
-    getRefName(name: string): string {
+    getAttrName(name: string): string {
         return /^\[\w*\]$/.test(name) ? name : `[${name}]`
     }
 }

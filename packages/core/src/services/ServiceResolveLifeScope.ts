@@ -1,12 +1,9 @@
-import { Singleton, Autorun, LifeScope } from '@tsdi/ioc';
+import { LifeScope } from '@tsdi/ioc';
 import {
     ResolveServiceContext, InitServiceResolveAction, ResolveServiceScope,
     ResolveDefaultServiceAction
 } from '../resolves';
 
-
-@Singleton
-@Autorun('setup')
 export class ServiceResolveLifeScope<T> extends LifeScope<ResolveServiceContext<T>> {
 
     execute(ctx: ResolveServiceContext<any>, next?: () => void): void {

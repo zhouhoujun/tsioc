@@ -1,32 +1,24 @@
-import { IocDesignAction, DesignActionContext, lang, getOwnPropertyMetadata, isClass, ITypeReflect, Token, Type, ClassType, isClassType } from '@tsdi/ioc';
-import { InputPropertyMetadata } from '../../decorators';
+import { IocDesignAction, DesignActionContext, lang, getOwnPropertyMetadata, isClassType } from '@tsdi/ioc';
+import { BindingPropertyMetadata } from '../../decorators';
+import { IBindingTypeReflect } from './IPropertyBindingReflect';
 
-export interface IPropertyBinding<T> {
-    name: string;
-    bindingName?: string;
-    type: ClassType<T>;
-    provider?: Token<T>,
-    bindingValue?: any;
-}
-export interface IActivityReflect extends ITypeReflect {
-    inputBindings: Map<string, IPropertyBinding<any>>;
-}
 
 export class BindInputPropertyTypeAction extends IocDesignAction {
 
     execute(ctx: DesignActionContext, next: () => void) {
-        let ref = ctx.targetReflect as IActivityReflect;
-        if (ref.inputBindings) {
-            return next();
+        let ref = ctx.targetReflect as IBindingTypeReflect;
+        if (!ref.propBindings) {
+            ref.propBindings = new Map();
+            ref.paramsBindings = new Map();
         }
-        ref.inputBindings = new Map();
+
         lang.forInClassChain(ctx.targetType, ty => {
-            let propMetas = getOwnPropertyMetadata<InputPropertyMetadata>(ctx.currDecoractor, ty);
+            let propMetas = getOwnPropertyMetadata<BindingPropertyMetadata>(ctx.currDecoractor, ty);
             Object.keys(propMetas).forEach(key => {
-                if (!ref.inputBindings.has(key)) {
-                    ref.inputBindings.set(key, { name: key, type: null });
+                if (!ref.propBindings.has(key)) {
+                    ref.propBindings.set(key, { name: key, type: null });
                 }
-                let binding = ref.inputBindings.get(key);
+                let binding = ref.propBindings.get(key);
                 let props = propMetas[key];
                 props.forEach(prop => {
                     if (prop.bindingName && !binding.bindingName) {

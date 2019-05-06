@@ -7,7 +7,6 @@ import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
 import { ActivityConfigure, ActivityTemplate } from './ActivityConfigure';
-import { IPropertyBinding } from './registers';
 
 
 
@@ -79,9 +78,6 @@ export class ActivityContext extends BootContext {
      */
     annoation: ActivityConfigure;
 
-
-    currPropertyBinding?: IPropertyBinding<any>;
-
     /**
      * bootstrap runnable service.
      *
@@ -90,7 +86,7 @@ export class ActivityContext extends BootContext {
      */
     runnable?: WorkflowInstance;
 
-    getActivity<T>(): Activity<T> {
+    getBootTarget<T>(): Activity<T> {
         if (this.target instanceof Activity) {
             return this.target;
         } else if (this.bootstrap instanceof Activity) {

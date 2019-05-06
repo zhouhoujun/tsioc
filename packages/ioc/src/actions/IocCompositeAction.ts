@@ -1,6 +1,36 @@
 import { lang, isClass, isBoolean } from '../utils';
 import { IocAction, IocActionType, IocActionContext } from './Action';
+import { Inject } from '../decorators';
+import { IocContainerToken, IIocContainer } from '../IIocContainer';
 
+/**
+ * action registerer.
+ *
+ * @export
+ * @class ActionRegisterer
+ */
+export class ActionRegisterer {
+    constructor() {
+
+    }
+
+    register(container: IIocContainer, action: IocActionType, setup?: boolean): this {
+        if (!isClass(action)) {
+            return this;
+        }
+        if (container.has(action)) {
+            return this;
+        }
+        container.registerSingleton(action, () => new action(container));
+        if (setup) {
+            let instance = container.get(action);
+            if (instance instanceof IocCompositeAction) {
+                instance.setup();
+            }
+        }
+        return this;
+    }
+}
 
 /**
  * composite action.
@@ -141,6 +171,12 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         this.setScope(ctx, scope);
     }
 
+    protected registerAction(action: IocActionType, setup?: boolean): this {
+        this.container.get(ActionRegisterer)
+            .register(this.container, action, setup);
+        return this;
+    }
+
     protected setScope(ctx: T, parentScope?: any) {
         ctx.currScope = parentScope || this;
     }
@@ -149,22 +185,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         this.actionFuncs = null;
     }
 
-    registerAction(action: IocActionType, setup?: boolean) {
-        if (!isClass(action)) {
-            return this;
-        }
-        if (this.container.has(action)) {
-            return this;
-        }
-        this.container.registerSingleton(action, () => new action(this.container));
-        if (setup) {
-            let instance = this.container.get(action);
-            if (instance instanceof IocCompositeAction) {
-                instance.setup();
-            }
-        }
-        return this;
-    }
+
 
     setup?() {
 

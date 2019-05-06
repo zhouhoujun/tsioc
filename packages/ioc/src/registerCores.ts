@@ -4,6 +4,7 @@ import {
     TypeReflects, IocCacheManager, IocSingletonManager, MetadataService, ResolveLifeScope
 } from './services';
 import { ProviderMap, ProviderParser } from './providers';
+import { ActionRegisterer } from './actions';
 
 /**
  * register core for container.
@@ -15,6 +16,7 @@ export function registerCores(container: IIocContainer) {
     container.bindProvider(IocContainerToken, container);
     container.bindProvider(ContainerFactoryToken, () => () => container);
     container.bindProvider(IocSingletonManager, new IocSingletonManager(container));
+    container.registerSingleton(ActionRegisterer, () => new ActionRegisterer());
 
     container.registerSingleton(TypeReflects, () => new TypeReflects());
     container.registerSingleton(IocCacheManager, () => new IocCacheManager(container));
@@ -24,13 +26,10 @@ export function registerCores(container: IIocContainer) {
     container.registerSingleton(MethodAccessor, () => new MethodAccessor());
 
     // bing action.
-    container.registerSingleton(DesignLifeScope, () => new DesignLifeScope(container));
-    container.registerSingleton(RuntimeLifeScope, () => new RuntimeLifeScope(container));
-    container.registerSingleton(ResolveLifeScope, () => new ResolveLifeScope(container));
-
-    container.get(DesignLifeScope).setup();
-    container.get(RuntimeLifeScope).setup();
-    container.get(ResolveLifeScope).setup()
+    container.get(ActionRegisterer)
+        .register(container, DesignLifeScope, true)
+        .register(container, RuntimeLifeScope, true)
+        .register(container, ResolveLifeScope, true);
 
     container.register(Date, () => new Date());
     container.register(String, () => '');

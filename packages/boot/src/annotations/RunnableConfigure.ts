@@ -1,4 +1,4 @@
-import { ObjectMap } from '@tsdi/ioc';
+import { ObjectMap, LoadType } from '@tsdi/ioc';
 import { ModuleConfigure } from '../core';
 
 /**
@@ -9,6 +9,13 @@ import { ModuleConfigure } from '../core';
  * @extends {ModuleConfigure}
  */
 export interface RunnableConfigure extends ModuleConfigure {
+    /**
+     * deps.
+     *
+     * @type {LoadType[]}
+     * @memberof RunnableConfigure
+     */
+    deps?: LoadType[];
     /**
      * application name.
      *

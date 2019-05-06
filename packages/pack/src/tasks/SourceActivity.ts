@@ -1,8 +1,34 @@
 import { NodeActivityContext, ITransform } from '../core';
-import { Activity, Task, Src, Expression, Input } from '@tsdi/activities';
+import { Activity, Task, Src, Expression, Input, TemplateOption } from '@tsdi/activities';
 import { Inject } from '@tsdi/ioc';
-import { ContainerToken, IContainer } from '@tsdi/core';
 import { SrcOptions, src } from 'vinyl-fs';
+
+
+
+/**
+ * source activity template option.
+ *
+ * @export
+ * @interface SourceActivityOption
+ * @extends {TemplateOption}
+ */
+export interface SourceActivityOption extends TemplateOption {
+    /**
+     * source.
+     *
+     * @type {Expression<Src>}
+     * @memberof SourceActivityOption
+     */
+    src: Expression<Src>;
+
+    /**
+     * src option
+     *
+     * @type {Expression<DestOptions>}
+     * @memberof DistActivityOption
+     */
+    srcOptions?: Expression<SrcOptions>;
+}
 
 /**
  * Source activity.
@@ -17,13 +43,11 @@ export class SourceActivity extends Activity<ITransform> {
     @Input()
     protected src: Expression<Src>;
 
-    @Input()
+    @Input('srcOptions')
     protected options: Expression<SrcOptions>;
 
-    constructor(
-        @Inject('[src]') src: Expression<Src>,
-        @Inject(ContainerToken) container: IContainer) {
-        super(container)
+    constructor(@Inject('[src]') src: Expression<Src>) {
+        super()
         this.src = src;
     }
 

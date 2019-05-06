@@ -1,6 +1,6 @@
-import { AnnoationContext, AnnoationOption, createAnnoationContext } from './core';
+import { AnnoationContext, AnnoationOption, createAnnoationContext, IBinding } from './core';
 import { RunnableConfigure, ConfigureManager } from './annotations';
-import { IModuleLoader, IContainer, ContainerToken } from '@tsdi/core';
+import { IModuleLoader } from '@tsdi/core';
 import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory } from '@tsdi/ioc';
 import { Runnable } from './runnable';
 
@@ -64,6 +64,14 @@ export interface BootOption extends AnnoationOption {
      * @memberof BootOptions
      */
     bootstrap?: any;
+
+    /**
+     * bind template
+     *
+     * @type {*}
+     * @memberof BootOption
+     */
+    template?: any;
 
     /**
      * boot run args.
@@ -154,6 +162,28 @@ export class BootContext extends AnnoationContext {
     annoation?: RunnableConfigure;
 
     /**
+     * curr target to binding property.
+     *
+     * @type {*}
+     * @memberof BootContext
+     */
+    currTarget?: any;
+    /**
+     * the template data to binding property.
+     *
+     * @type {*}
+     * @memberof BootOption
+     */
+    template?: any;
+    /**
+     * curr property bining.
+     *
+     * @type {IPropertyBinding<any>}
+     * @memberof BootContext
+     */
+    currPropertyBinding?: IBinding<any>;
+
+    /**
      * custom configures
      *
      * @type {((string | RunnableConfigure)[])}
@@ -224,6 +254,10 @@ export class BootContext extends AnnoationContext {
     * @memberof BootOptions
     */
     providers?: ProviderTypes[];
+
+    getBootTarget(): any {
+        return this.bootstrap || this.target;
+    }
 
     /**
      * get configure manager.

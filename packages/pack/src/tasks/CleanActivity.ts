@@ -1,32 +1,48 @@
-import { Input, Expression, Src, Task, Activity } from '@tsdi/activities';
+import { Input, Expression, Src, Task, Activity, TemplateOption } from '@tsdi/activities';
 import { Inject } from '@tsdi/ioc';
+import { NodeActivityContext } from '../core';
+
+/**
+ * clean activity template option.
+ *
+ * @export
+ * @interface CleanActivityOption
+ * @extends {TemplateOption}
+ */
+export interface CleanActivityOption extends TemplateOption {
+    /**
+     * clean source.
+     *
+     * @type {Expression<Src>}
+     * @memberof CleanActivityOption
+     */
+    clean: Expression<Src>
+}
 
 /**
  * Source activity.
  *
  * @export
- * @class SourceActivity
- * @extends {TransformActivity}
+ * @class CleanActivity
+ * @extends {Activity}
  */
 @Task('clean, [clean]')
-export class SourceActivity extends Activity<void> {
+export class CleanActivity extends Activity<void> {
 
     @Input()
     protected clean: Expression<Src>;
 
 
     constructor(
-        @Inject('[src]') src: Expression<Src>,
-        @Inject(ContainerToken) container: IContainer) {
-        super(container)
-        this.src = src;
+        @Inject('[clean]') clean: Expression<Src>) {
+        super()
+        this.clean = clean;
     }
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
-        let strSrc = await this.resolveExpression(this.src, ctx);
-        if (strSrc) {
-            let options = await this.resolveExpression(this.options, ctx);
-            this.result.value = src(ctx.toRootSrc(strSrc), options || undefined);
+        let clean = await this.resolveExpression(this.clean, ctx);
+        if (clean) {
+            await ctx.del(ctx.toRootSrc(clean));
         }
     }
 }

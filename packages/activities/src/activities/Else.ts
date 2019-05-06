@@ -1,8 +1,9 @@
-import { Task, Input } from '../decorators';
+import { Task } from '../decorators';
 import { ActivityContext, Activity } from '../core';
 import { BodyActivity } from './BodyActivity';
 import { ElseIfActivity } from './ElseIf';
 import { IfActivity } from './If';
+import { Input } from '@tsdi/boot';
 
 /**
  * else activity.

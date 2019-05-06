@@ -1,5 +1,5 @@
-import { BootHandle, BuilderService } from '@tsdi/boot';
-import { ActivityContext, ActivityOption, SelectorManager, Activity } from '../core';
+import { BootHandle, BuilderService, SelectorManager } from '@tsdi/boot';
+import { ActivityContext, ActivityOption, Activity } from '../core';
 import { isArray, Type, isClass, isFunction } from '@tsdi/ioc';
 import { SequenceActivity } from '../activities';
 
@@ -32,7 +32,7 @@ export class TaskDecorBootBuildHandle extends BootHandle {
             }
             if (option) {
                 let bootctx = await this.container.get(BuilderService).build(option) as ActivityContext;
-                ctx.bootstrap = bootctx.getActivity();
+                ctx.bootstrap = bootctx.getBootTarget();
             }
         }
 

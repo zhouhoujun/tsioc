@@ -1,6 +1,7 @@
 import { Token, Modules, ComponentMetadata, Type } from '@tsdi/ioc';
-import { IRunnable, Runnable } from '../../runnable';
+import { Runnable } from '../../runnable';
 import { RegScope } from './RegScope';
+import { any } from 'expect';
 
 
 /**
@@ -12,6 +13,19 @@ import { RegScope } from './RegScope';
  * @template T
  */
 export interface IAnnotationMetadata<T> extends ComponentMetadata {
+    /**
+     * selector for binding property.
+     *
+     * @type {string}
+     * @memberof ActivityConfigure
+     */
+    selector?: string;
+
+    /**
+     * template data for target to binding property.
+     */
+    template?: any;
+
     /**
      * annotation for the type.
      *
