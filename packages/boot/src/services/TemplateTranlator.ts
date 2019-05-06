@@ -1,4 +1,4 @@
-import { Singleton, Inject, isBaseObject, isArray, isNullOrUndefined, Type, isObject, lang } from '@tsdi/ioc';
+import { Singleton, Inject, isBaseObject, isArray, isNullOrUndefined, Type, isObject, lang, isClass, isBaseType } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '@tsdi/core';
 import { BuilderService } from './BuilderService';
 import { SelectorManager, IBinding } from '../core';
@@ -32,6 +32,8 @@ export class TemplateTranlator {
     async resolve<T>(template: any, binding: IBinding<T>): Promise<T | T[]> {
         if (isArray(template) && binding.type === Array) {
             return await this.resolveTempArray(template, binding);
+        } else if (isClass(template) && !isBaseType(template) && template !== Error) {
+
         } else if (isBaseObject(template)) {
             let selector = this.getSelector(template);
             let moduleType: Type<any>;
@@ -53,7 +55,7 @@ export class TemplateTranlator {
             }
         }
 
-        return undefined;
+        return binding.defaultValue;
     }
 
     protected async resolveTempArray(template: any[], binding: IBinding<any>): Promise<any[]> {

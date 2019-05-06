@@ -108,8 +108,8 @@ export class BootModule {
 
         container.get(DesignDecoratorRegisterer)
             .register(Component, DecoratorScopes.Class, RegSelectorAction)
-            .register(Input, DecoratorScopes.Property, BindInputPropertyTypeAction)
-            .register(Input, DecoratorScopes.Parameter, BindInputParamTypeAction);
+            .register(Input, DecoratorScopes.Property, BindInputPropertyTypeAction);
+            // .register(Input, DecoratorScopes.Parameter, BindInputParamTypeAction);
 
         container.get(RuntimeDecoratorRegisterer).register(Input, DecoratorScopes.Parameter,
             BindInputParamTypeAction);

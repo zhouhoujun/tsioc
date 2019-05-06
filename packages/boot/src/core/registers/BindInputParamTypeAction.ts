@@ -1,4 +1,4 @@
-import { BindDeignParamTypeAction, RuntimeActionContext, IParameter, getParamMetadata, isArray, ParameterMetadata, lang, MetadataService, isClass, isToken, ClassType, isNullOrUndefined } from '@tsdi/ioc';
+import { BindDeignParamTypeAction, RuntimeActionContext, IParameter, getParamMetadata, isArray, ParameterMetadata, lang, MetadataService, isClass, isToken, ClassType, isNullOrUndefined, InjectReference } from '@tsdi/ioc';
 import { IBindingTypeReflect, IBinding } from './IPropertyBindingReflect';
 import { BindingPropertyMetadata } from '../../decorators';
 
@@ -98,8 +98,16 @@ export class BindInputParamTypeAction extends BindDeignParamTypeAction {
                 })
             }
         }
-
         ref.paramsBindings.set(propertyKey, bindParams);
+        // reset binding provider
+        ref.methodParams.get(propertyKey)
+            .forEach(p => {
+                bindParams.forEach(b => {
+                    if (p.name === b.name) {
+                        p.provider = new InjectReference(b.provider || b.type || b.name, '__binding');
+                    }
+                })
+            });
 
         next();
     }
