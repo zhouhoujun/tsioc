@@ -1,7 +1,6 @@
 import { lang, isClass, isBoolean } from '../utils';
 import { IocAction, IocActionType, IocActionContext } from './Action';
-import { Inject } from '../decorators';
-import { IocContainerToken, IIocContainer } from '../IIocContainer';
+import { IIocContainer } from '../IIocContainer';
 
 /**
  * action registerer.

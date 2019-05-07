@@ -1,11 +1,13 @@
-import { IHandleContext, IBinding } from '../core';
+import { IHandleContext, IBinding } from '../../core';
 import { IContainer } from '@tsdi/core';
 import { Inject, ContainerFactoryToken, ContainerFactory, Injectable, Type } from '@tsdi/ioc';
 
 @Injectable
-export class BindingContext implements IHandleContext {
+export class ParseContext implements IHandleContext {
 
     template: any;
+
+    selector?: Type<any>;
 
     type: Type<any>;
 
@@ -21,8 +23,9 @@ export class BindingContext implements IHandleContext {
         return this.raiseContainerGetter() as IContainer;
     }
 
-    static parse(template: any, binding: IBinding<any>, raiseContainer: ContainerFactory): BindingContext {
-        let ctx = new BindingContext(raiseContainer);
+    static parse(type: Type<any>, template: any, binding: IBinding<any>, raiseContainer: ContainerFactory): ParseContext {
+        let ctx = new ParseContext(raiseContainer);
+        ctx.type = type;
         ctx.template = template;
         ctx.binding = binding;
         return ctx;

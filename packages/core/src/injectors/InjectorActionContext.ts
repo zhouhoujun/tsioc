@@ -77,7 +77,7 @@ export class InjectorActionContext extends IocActionContext {
      */
     static parse(options: InjectorActionOption, raiseContainer?: IIocContainer | (() => IIocContainer)): InjectorActionContext {
         let ctx = new InjectorActionContext();
-        ctx.setRaiseContainer(raiseContainer);
+        raiseContainer && ctx.setRaiseContainer(raiseContainer);
         ctx.setOptions(options);
         return ctx;
     }

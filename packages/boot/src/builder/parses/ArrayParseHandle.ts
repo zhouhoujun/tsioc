@@ -1,0 +1,19 @@
+import { ParseHandle } from './ParseHandle';
+import { ParseContext } from './ParseContext';
+import { isArray, ContainerFactoryToken } from '@tsdi/ioc';
+import { ParseScope } from './ParseScope';
+
+export class ArrayParseHandle extends ParseHandle {
+
+    async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
+        if (isArray(ctx.template) && ctx.binding.type === Array) {
+            ctx.bindingValue = await Promise.all(ctx.template.map(async tp => {
+                let subCtx = ParseContext.parse(ctx.type, tp, ctx.binding, this.container.get(ContainerFactoryToken));
+                await this.execActions(subCtx, [ParseScope])
+                return subCtx.bindingValue;
+            }));
+        } else {
+            await next();
+        }
+    }
+}

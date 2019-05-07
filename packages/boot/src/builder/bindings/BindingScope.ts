@@ -1,5 +1,5 @@
-import { CompositeHandle } from '../core';
-import { BootContext } from '../BootContext';
+import { CompositeHandle } from '../../core';
+import { BootContext } from '../../BootContext';
 import { BindingTemplateHandle } from './BindingTemplateHandle';
 
 

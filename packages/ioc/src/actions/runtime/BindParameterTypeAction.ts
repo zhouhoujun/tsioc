@@ -56,17 +56,17 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
             if (designParams.some(pa => !pa.type && !pa.provider)) {
                 lang.forInClassChain(ctx.targetType, ty => {
                     if (ty === ctx.targetType) {
-                        return;
+                        return true;
                     }
 
                     let parameters = getParamMetadata<ParameterMetadata>(ctx.currDecoractor, ty);
                     if (parameters.length < 1) {
-                        return;
+                        return true;
                     }
 
                     let names = this.container.get(MetadataService).getParamerterNames(ty, propertyKey);
                     if (names.length < 1) {
-                        return;
+                        return true;
                     }
 
                     parameters.map((params) => {
@@ -88,6 +88,7 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
                             });
                         }
                     });
+                    return false;
                 })
             }
         }

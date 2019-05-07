@@ -3,6 +3,6 @@ export * from './services';
 export * from './annotations';
 export * from './runnable';
 export * from './core';
-export * from './handles';
+export * from './builder';
 export * from './BootApplication';
 export * from './BootContext';

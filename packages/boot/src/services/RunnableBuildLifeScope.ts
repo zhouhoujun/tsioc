@@ -1,6 +1,6 @@
 import { Singleton, Autorun } from '@tsdi/ioc';
 import { CompositeHandle, AnnoationContext } from '../core';
-import { ResolveRunnableHandle, RunBootHandle, ModuleBuildScope } from '../handles';
+import { ResolveRunnableHandle, RunBootHandle, ModuleBuildScope } from '../builder';
 
 @Singleton
 @Autorun('setup')

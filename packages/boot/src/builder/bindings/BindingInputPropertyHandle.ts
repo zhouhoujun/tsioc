@@ -1,8 +1,8 @@
-import { IBinding, SelectorManager } from '../core';
+import { IBinding, SelectorManager } from '../../core';
 import { isString, hasOwnClassMetadata, isToken, isBaseType, isClass, Token, isMetadataObject, isNullOrUndefined, isArray } from '@tsdi/ioc';
-import { BootHandle } from './BootHandle';
-import { BootContext } from '../BootContext';
-import { BuilderService } from '../services';
+import { BootHandle } from '../BootHandle';
+import { BootContext } from '../../BootContext';
+import { BuilderService } from '../../services';
 
 export class BindingInputPropertyHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {

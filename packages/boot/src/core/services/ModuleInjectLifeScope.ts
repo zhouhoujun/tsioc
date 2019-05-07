@@ -6,8 +6,6 @@ import {
     DIModuleRegisterScope, RegModuleExportsAction
 } from '../injectors';
 
-@Singleton
-@Autorun('setup')
 export class ModuleInjectLifeScope extends LifeScope<AnnoationActionContext> {
 
     @Inject(ContainerToken)

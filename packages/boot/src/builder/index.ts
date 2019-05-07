@@ -23,7 +23,3 @@ export * from './RefRunnableHandle';
 export * from './RefDecoratorRunnableHandle';
 export * from './RunBootHandle';
 
-export * from './BindingInputPropertyHandle';
-export * from './BindingTemplateHandle';
-export * from './BindingScope';
-

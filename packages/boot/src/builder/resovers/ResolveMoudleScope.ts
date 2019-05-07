@@ -1,4 +1,4 @@
-import { CompositeHandle } from '../core';
+import { CompositeHandle } from '../../core';
 import { BootContext } from '../BootContext';
 import { DecoratorBuildHandle } from './DecoratorBuildHandle';
 import { ResolveModuleHandle } from './ResolveModuleHandle';

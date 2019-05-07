@@ -14,7 +14,6 @@ import {
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
 import * as modules from './modules';
-import * as services from './services';
 
 import {
     RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction,
@@ -24,6 +23,7 @@ import { DIModuleRegisterScope } from './injectors';
 import { SelectorManager } from './SelectorManager';
 import { Input } from '../decorators';
 import { HandleRegisterer } from './handles';
+import { DIModuleExports, ModuleInjectLifeScope } from './services';
 
 
 /**
@@ -59,9 +59,10 @@ export class BootModule {
                 ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
                 RegisterSingletionAction, IocSetCacheAction);
 
-        container.use(modules, services);
-
+        container.use(modules);
+        container.register(DIModuleExports);
         container.get(ActionRegisterer)
+            .register(container, ModuleInjectLifeScope, true)
             .register(container, DIModuleRegisterScope, true);
 
         container.get(ModuleDecoratorRegisterer)
@@ -109,7 +110,7 @@ export class BootModule {
         container.get(DesignDecoratorRegisterer)
             .register(Component, DecoratorScopes.Class, RegSelectorAction)
             .register(Input, DecoratorScopes.Property, BindInputPropertyTypeAction);
-            // .register(Input, DecoratorScopes.Parameter, BindInputParamTypeAction);
+        // .register(Input, DecoratorScopes.Parameter, BindInputParamTypeAction);
 
         container.get(RuntimeDecoratorRegisterer).register(Input, DecoratorScopes.Parameter,
             BindInputParamTypeAction);

@@ -2,7 +2,7 @@ import { BootContext, BootOption, BootTargetToken } from './BootContext';
 import {
     Type, BindProviderAction, IocSetCacheAction, ComponentBeforeInitAction,
     ComponentInitAction, ComponentAfterInitAction, InjectReference, DesignDecoratorRegisterer,
-    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction, isClass, Component, ActionRegisterer
+    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction, isClass, Component
 } from '@tsdi/ioc';
 import { ContainerPool, RegScope, DIModuleRegisterScope, HandleRegisterer } from './core';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ModuleDecoratorRegisterer } from '@tsdi/core';
@@ -11,7 +11,7 @@ import { Bootstrap } from './decorators';
 import * as annotations from './annotations';
 import * as runnable from './runnable';
 import * as services from './services';
-import { BindingScope } from './handles';
+import { BindingScope } from './bindings';
 
 /**
  * boot application.

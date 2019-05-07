@@ -2,7 +2,7 @@ import { IContainer, ContainerToken, IocExt, ServiceDecoratorRegisterer } from '
 import { Suite } from './decorators/Suite';
 import {
     Inject, DecoratorScopes, ComponentInitAction, RegisterSingletionAction,
-    ComponentBeforeInitAction, ComponentAfterInitAction, RuntimeDecoratorRegisterer
+    ComponentBeforeInitAction, ComponentAfterInitAction, RuntimeDecoratorRegisterer, ActionRegisterer
 } from '@tsdi/ioc';
 import { SuiteDecoratorRegisterer } from './registers';
 
@@ -26,11 +26,14 @@ export class UnitSetup {
      * @memberof AopModule
      */
     setup() {
-        let runtimeReg = this.container.get(RuntimeDecoratorRegisterer);
-        runtimeReg.register(Suite, DecoratorScopes.Class,
-            ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
-            RegisterSingletionAction);
-        this.container.registerSingleton(SuiteDecoratorRegisterer, () => new SuiteDecoratorRegisterer(this.container));
+        this.container.get(RuntimeDecoratorRegisterer)
+            .register(Suite, DecoratorScopes.Class,
+                ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
+                RegisterSingletionAction);
+
+        this.container.get(ActionRegisterer)
+            .register(this.container, SuiteDecoratorRegisterer);
+
         this.container.get(ServiceDecoratorRegisterer).register(Suite, SuiteDecoratorRegisterer);
     }
 }

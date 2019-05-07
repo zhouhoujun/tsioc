@@ -1,7 +1,7 @@
 import { isNullOrUndefined } from '@tsdi/ioc';
 import { BindingInputPropertyHandle, BindingArrayInputPropertyHandle } from './BindingInputPropertyHandle';
-import { CompositeHandle, IBindingTypeReflect } from '../core';
-import { BootContext } from '../BootContext';
+import { CompositeHandle, IBindingTypeReflect } from '../../core';
+import { BootContext } from '../../BootContext';
 
 
 export class BindingTemplateHandle extends CompositeHandle<BootContext> {

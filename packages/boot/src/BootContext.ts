@@ -175,13 +175,6 @@ export class BootContext extends AnnoationContext {
      * @memberof BootOption
      */
     template?: any;
-    /**
-     * curr property bining.
-     *
-     * @type {IPropertyBinding<any>}
-     * @memberof BootContext
-     */
-    currPropertyBinding?: IBinding<any>;
 
     /**
      * custom configures

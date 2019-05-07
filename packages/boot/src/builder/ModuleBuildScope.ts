@@ -1,5 +1,4 @@
 import { CompositeHandle } from '../core';
-import { Singleton, Autorun } from '@tsdi/ioc';
 import { BootContextCheckHandle } from './BootContextCheckHandle';
 import { BootProvidersHandle } from './BootProvidersHandle';
 import { BootDepsHandle } from './BootDepsHandle';

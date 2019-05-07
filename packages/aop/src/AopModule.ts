@@ -1,7 +1,7 @@
 import {
     Inject, IocBeforeConstructorScope, IocAfterConstructorScope, IocContainerToken, IIocContainer, Autorun,
     RuntimeMethodScope, DesignDecoratorRegisterer, DesignAnnoationScope, BindProviderAction,
-    RuntimeDecoratorRegisterer, RegisterSingletionAction, DecoratorScopes, RuntimeLifeScope, ConstructorArgsAction
+    RuntimeDecoratorRegisterer, RegisterSingletionAction, DecoratorScopes, RuntimeLifeScope, ConstructorArgsAction, ActionRegisterer
 } from '@tsdi/ioc';
 import { Aspect } from './decorators/Aspect';
 import { Advisor } from './Advisor';
@@ -48,8 +48,8 @@ export class AopModule {
         container.register(Advisor);
         container.register(AdviceMatcher);
 
-        container.registerSingleton(RegistAspectAction, () => new RegistAspectAction(container));
-
+        container.get(ActionRegisterer)
+            .register(container, RegistAspectAction);
 
         container.get(IocBeforeConstructorScope)
             .useBefore(InvokeBeforeConstructorAction);
@@ -66,11 +66,11 @@ export class AopModule {
         container.get(RuntimeLifeScope)
             .useBefore(MatchPointcutAction, ConstructorArgsAction);
 
-        let decorReg = container.get(DesignDecoratorRegisterer);
-        decorReg.register(Aspect, DecoratorScopes.Class, BindProviderAction, RegistAspectAction);
+        container.get(DesignDecoratorRegisterer)
+            .register(Aspect, DecoratorScopes.Class, BindProviderAction, RegistAspectAction);
 
-        let runtimeReg = container.get(RuntimeDecoratorRegisterer);
-        runtimeReg.register(Aspect, DecoratorScopes.Class, RegisterSingletionAction);
+        container.get(RuntimeDecoratorRegisterer)
+            .register(Aspect, DecoratorScopes.Class, RegisterSingletionAction);
 
     }
 }
