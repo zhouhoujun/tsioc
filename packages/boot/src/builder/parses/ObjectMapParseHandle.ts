@@ -15,7 +15,7 @@ export class ObjectMapParseHandle extends CompositeParserHandle {
             let bindingName = binding.bindingName || binding.name;
             let subTeamplat = template[bindingName];
             if (!isNullOrUndefined(subTeamplat)) {
-                return await this.container.get(BuilderService).resolve(selector, subTeamplat);
+                ctx.bindingValue = await this.container.get(BuilderService).resolve(selector, subTeamplat, ctx.getRaiseContainer(), ...(ctx.providers || []));
             }
         }
         if (isNullOrUndefined(ctx.bindingValue)) {

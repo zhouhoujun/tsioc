@@ -10,7 +10,7 @@ export class ResolveBootHandle extends BootHandle {
             let bootModule = ctx.annoation.bootstrap;
             let container = ctx.getRaiseContainer();
             if (isClass(bootModule)) {
-                ctx.bootstrap = await container.resolve(BuilderService).resolve(bootModule, ctx.template, container, ...(ctx.providers || []));
+                ctx.bootstrap = await this.container.get(BuilderService).resolve(bootModule, ctx.template || ctx.annoation.template, container, ...(ctx.providers || []));
             } else {
                 ctx.bootstrap = container.resolve(bootModule, ...ctx.providers);
             }

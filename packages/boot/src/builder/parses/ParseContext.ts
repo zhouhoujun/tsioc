@@ -1,6 +1,6 @@
 import { IHandleContext, IBinding } from '../../core';
 import { IContainer } from '@tsdi/core';
-import { Inject, ContainerFactoryToken, ContainerFactory, Injectable, Type, IocActionContext } from '@tsdi/ioc';
+import { ContainerFactory, Injectable, Type, IocActionContext, ProviderTypes } from '@tsdi/ioc';
 
 @Injectable
 export class ParseContext extends IocActionContext implements IHandleContext {
@@ -14,6 +14,14 @@ export class ParseContext extends IocActionContext implements IHandleContext {
     binding: IBinding<any>;
 
     bindingValue?: any;
+
+    /**
+    * providers.
+    *
+    * @type {ProviderTypes[]}
+    * @memberof BootOptions
+    */
+    providers?: ProviderTypes[];
 
     constructor(type?: Type<any>, template?: any, binding?: IBinding<any>) {
         super();

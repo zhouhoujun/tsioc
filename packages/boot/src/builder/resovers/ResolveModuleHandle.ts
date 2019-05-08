@@ -1,29 +1,33 @@
-import { TemplateTranlator } from '../../services';
-import { BuildContext  } from './BuildContext';
+import { BuildContext } from './BuildContext';
 import { IBindingTypeReflect, Handle } from '../../core';
 import { InjectReference, isNullOrUndefined, RuntimeLifeScope } from '@tsdi/ioc';
-
+import { ParseScope, ParseContext } from '../parses';
 
 
 export class ResolveModuleHandle extends Handle<BuildContext> {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         if (!ctx.target) {
             let container = ctx.getRaiseContainer();
-            let ref = container.getTypeReflects().get(ctx.type) as IBindingTypeReflect;
-            // init if not init constructor params action.
-            if (!ref.methodParams.has('constructor')) {
-                container.get(RuntimeLifeScope).getConstructorParameters(container, ctx.type);
-            }
             ctx.providers = ctx.providers || [];
-            if (ref.paramsBindings) {
-                let bparams = ref.paramsBindings.get('constructor');
-                if (bparams && bparams.length) {
-                    await Promise.all(bparams.map(async bp => {
-                        let paramVal = await container.getService(TemplateTranlator, ctx.type).resolve(ctx.template, bp);
-                        if (!isNullOrUndefined(paramVal)) {
-                            ctx.providers.push({ provide: new InjectReference(bp.provider || bp.type || bp.name, '__binding'), useValue: paramVal });
-                        }
-                    }));
+            if (ctx.template) {
+                let ref = container.getTypeReflects().get(ctx.type) as IBindingTypeReflect;
+                // init if not init constructor params action.
+                if (!ref.methodParams.has('constructor')) {
+                    container.get(RuntimeLifeScope).getConstructorParameters(container, ctx.type);
+                }
+                if (ref.paramsBindings) {
+                    let bparams = ref.paramsBindings.get('constructor');
+                    if (bparams && bparams.length) {
+                        await Promise.all(bparams.map(async bp => {
+                            let pCtx = ParseContext.parse(ctx.type, ctx.template, bp, ctx.getRaiseContainer());
+                            await this.container.get(ParseScope)
+                                .execute(pCtx);
+                            let paramVal = pCtx.bindingValue;
+                            if (!isNullOrUndefined(paramVal)) {
+                                ctx.providers.push({ provide: new InjectReference(bp.provider || bp.type || bp.name, '__binding'), useValue: paramVal });
+                            }
+                        }));
+                    }
                 }
             }
             ctx.target = this.resolve(ctx, ctx.type, ...ctx.providers);
