@@ -58,15 +58,13 @@ export abstract class Handle<T extends IHandleContext> implements OnInit {
         if (isClass(ac)) {
             let action = this.container.get(ac);
             return action instanceof Handle ?
-                (ctx: T, next?: () => Promise<void>) => action.execute(ctx, next)
-                : (ctx: T, next?: () => Promise<void>) => next && next();
+                (ctx: T, next?: () => Promise<void>) => action.execute(ctx, next) : null;
 
         } else if (ac instanceof Handle) {
             return (ctx: T, next?: () => Promise<void>) => ac.execute(ctx, next);
         }
         return ac;
     }
-
 }
 
 /**

@@ -1,5 +1,4 @@
 import { Handle } from './Handle';
-import { IContainer } from '@tsdi/core';
 import { Abstract, ProviderMap, Type, ContainerFactory } from '@tsdi/ioc';
 import { ModuleConfigure, ModuleResovler, RegScope } from '../modules';
 import { AnnoationActionContext, AnnoationActionOption, createAnnoationContext } from '../injectors';

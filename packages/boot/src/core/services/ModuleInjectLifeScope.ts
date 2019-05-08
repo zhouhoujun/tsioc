@@ -1,4 +1,4 @@
-import { Singleton, Autorun, LifeScope, Type, Inject, ContainerFactoryToken } from '@tsdi/ioc';
+import { LifeScope, Type, Inject, ContainerFactoryToken } from '@tsdi/ioc';
 import { ModuleResovler } from '../modules';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import {

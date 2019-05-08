@@ -70,7 +70,7 @@ export abstract class DecoratorRegisterer<T> extends IocCoreService {
     getFuncs(container: IIocContainer, decorator: string | Function) {
         let dec = this.getKey(decorator);
         if (!this.funcs.has(dec)) {
-            this.funcs.set(dec, this.get(dec).map(a => this.toFunc(container, a)));
+            this.funcs.set(dec, this.get(dec).map(a => this.toFunc(container, a)).filter(c => c));
         }
         return this.funcs.get(dec);
     }
@@ -89,17 +89,12 @@ export class IocSyncDecoratorRegisterer<T> extends DecoratorRegisterer<T> {
         if (isClass(ac)) {
             let action = container.get(ac);
             return action instanceof IocAction ?
-                (ctx: T, next?: () => void) => action.execute(ctx, next)
-                : (ctx: T, next?: () => void) => next && next();
+                (ctx: T, next?: () => void) => action.execute(ctx, next) : null;
         } if (ac instanceof IocAction) {
             return (ctx: T, next?: () => void) => ac.execute(ctx, next);
         }
-        if (isFunction(ac)) {
-            return ac;
-        }
-        return null;
+        return isFunction(ac) ? ac : null;
     }
-
 }
 
 /**

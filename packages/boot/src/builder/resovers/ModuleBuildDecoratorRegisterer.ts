@@ -1,8 +1,8 @@
-import { DecoratorRegisterer, Singleton } from '@tsdi/ioc';
-import { HandleType } from '../../core';
+import { Singleton } from '@tsdi/ioc';
+import { HandleType, IocASyncDecoratorRegisterer } from '../../core';
 import { BuildContext } from './BuildContext';
 
 @Singleton
-export class ModuleBuildDecoratorRegisterer extends DecoratorRegisterer<HandleType<BuildContext>> {
+export class ModuleBuildDecoratorRegisterer extends IocASyncDecoratorRegisterer<HandleType<BuildContext>> {
 
 }
