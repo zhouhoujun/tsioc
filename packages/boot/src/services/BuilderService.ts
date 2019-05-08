@@ -1,8 +1,9 @@
-import { IocCoreService, Type, Inject, Singleton, isClass } from '@tsdi/ioc';
+import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes } from '@tsdi/ioc';
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
-import { IContainer, ContainerToken } from '@tsdi/core';
-import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
-import { CompositeHandle } from '../core';
+import { IContainer, ContainerToken, isContainer } from '@tsdi/core';
+import { CompositeHandle, HandleRegisterer } from '../core';
+import { ModuleBuilderLifeScope, RunnableBuildLifeScope, ResolveMoudleScope, BuildContext } from '../builder';
+
 
 
 /**
@@ -12,11 +13,45 @@ import { CompositeHandle } from '../core';
  * @class BuilderService
  * @extends {IocCoreService}
  */
-@Singleton
+@Singleton()
+@Autorun('setup')
 export class BuilderService extends IocCoreService {
 
     @Inject(ContainerToken)
     protected container: IContainer;
+
+    setup() {
+        this.container.get(HandleRegisterer)
+            .register(this.container, ResolveMoudleScope, true)
+            .register(this.container, ModuleBuilderLifeScope, true)
+            .register(this.container, RunnableBuildLifeScope, true);
+    }
+
+    /**
+     * binding resolve.
+     *
+     * @template T
+     * @param {Type<any>} target
+     * @param {*} bindingTemplate
+     * @param {(IContainer | ProviderTypes)} [container]
+     * @param {...ProviderTypes[]} providers
+     * @returns {Promise<T>}
+     * @memberof BuilderService
+     */
+    async resolve<T>(target: Type<any>, bindingTemplate: any, container?: IContainer | ProviderTypes, ...providers: ProviderTypes[]): Promise<T> {
+        let raiseContainer: IContainer;
+        if (isContainer(container)) {
+            raiseContainer = container;
+        } else {
+            providers.unshift(container as ProviderTypes);
+            raiseContainer = this.container;
+        }
+        let rctx = BuildContext.parse(target, bindingTemplate, raiseContainer);
+        rctx.providers = providers;
+        await this.container.get(ResolveMoudleScope)
+            .execute(rctx);
+        return rctx.target;
+    }
 
     async create<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<any> {
         let ctx = await this.build(target, ...args);
@@ -34,6 +69,19 @@ export class BuilderService extends IocCoreService {
      */
     build<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
         return this.execLifeScope(this.container.get(ModuleBuilderLifeScope), target, ...args);
+    }
+
+    /**
+     * run module.
+     *
+     * @template T
+     * @param {(Type<any> | T)} target
+     * @param {...string[]} args
+     * @returns {Promise<T>}
+     * @memberof RunnerService
+     */
+    run<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
+        return this.execLifeScope(this.container.get(RunnableBuildLifeScope), target, ...args);
     }
 
     protected async execLifeScope<T extends BootContext>(scope: CompositeHandle<BootContext>, target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {

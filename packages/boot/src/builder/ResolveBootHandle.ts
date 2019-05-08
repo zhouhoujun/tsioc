@@ -1,8 +1,7 @@
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
-import { BuilderService } from '../services';
 import { isClass } from '@tsdi/ioc';
-import { RegScope } from '../core';
+import { BuilderService } from '../services';
 
 
 export class ResolveBootHandle extends BootHandle {
@@ -11,13 +10,11 @@ export class ResolveBootHandle extends BootHandle {
             let bootModule = ctx.annoation.bootstrap;
             let container = ctx.getRaiseContainer();
             if (isClass(bootModule)) {
-                ctx.bootstrap = await container.get(BuilderService).create({ regScope: RegScope.boot, module: bootModule, template: ctx.template, providers: ctx.providers }, ...ctx.args)// this.resolve(ctx, ctx.annoation.bootstrap, ...[...providers, { provide: BootContext, useValue: ctx }, { provide: lang.getClass(ctx), useValue: ctx }]);
+                ctx.bootstrap = await container.resolve(BuilderService).resolve(bootModule, ctx.template, container, ...(ctx.providers || []));
             } else {
                 ctx.bootstrap = container.resolve(bootModule, ...ctx.providers);
             }
         }
-
-        ctx.currTarget = ctx.bootstrap;
         await next();
 
     }

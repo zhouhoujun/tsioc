@@ -144,7 +144,6 @@ export class BootContext extends AnnoationContext {
      * @memberof BootContext
      */
     baseURL?: string;
-
     /**
      * module loader
      *
@@ -152,7 +151,6 @@ export class BootContext extends AnnoationContext {
      * @memberof BootContext
      */
     loader?: IModuleLoader;
-
     /**
      * annoation metadata config.
      *
@@ -160,14 +158,6 @@ export class BootContext extends AnnoationContext {
      * @memberof AnnoationContext
      */
     annoation?: RunnableConfigure;
-
-    /**
-     * curr target to binding property.
-     *
-     * @type {*}
-     * @memberof BootContext
-     */
-    currTarget?: any;
     /**
      * the template data to binding property.
      *

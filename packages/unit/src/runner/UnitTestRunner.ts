@@ -1,5 +1,5 @@
 import { Injectable, isString, isClass, isArray, PromiseUtil, hasClassMetadata } from '@tsdi/ioc';
-import { Runnable, RunnerService } from '@tsdi/boot';
+import { Runnable, BuilderService } from '@tsdi/boot';
 import { UnitTestConfigure } from '../UnitTestConfigure';
 import { OldTestRunner } from './OldTestRunner';
 import { Suite } from '../decorators';
@@ -45,8 +45,8 @@ export class UnitTestRunner extends Runnable<any> {
         }
         oldRunner.unregisterGlobalScope();
         await oldRunner.run();
-        let runner = container.resolve(RunnerService);
-        await PromiseUtil.step(suites.filter(v => isClass(v) && hasClassMetadata(Suite, v)).map(s => () => runner.run(s)));
+        let builder = container.resolve(BuilderService);
+        await PromiseUtil.step(suites.filter(v => isClass(v) && hasClassMetadata(Suite, v)).map(s => () => builder.run(s)));
         await container.resolve(TestReport).report();
     }
 }

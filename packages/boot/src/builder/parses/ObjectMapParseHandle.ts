@@ -1,7 +1,7 @@
 import { CompositeParserHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
 import { isBaseObject, isNullOrUndefined } from '@tsdi/ioc';
-import { BuilderService } from '../services';
+import { BuilderService } from '../../services';
 
 export class ObjectMapParseHandle extends CompositeParserHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
@@ -15,7 +15,7 @@ export class ObjectMapParseHandle extends CompositeParserHandle {
             let bindingName = binding.bindingName || binding.name;
             let subTeamplat = template[bindingName];
             if (!isNullOrUndefined(subTeamplat)) {
-                return await this.container.get(BuilderService).create({ module: selector, template: subTeamplat });
+                return await this.container.get(BuilderService).resolve(selector, subTeamplat);
             }
         }
         if (isNullOrUndefined(ctx.bindingValue)) {

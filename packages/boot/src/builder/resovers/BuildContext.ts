@@ -7,12 +7,11 @@ export class BuildContext extends IocActionContext implements IHandleContext {
 
     template: any;
 
-    selector?: Type<any>;
-
     type: Type<any>;
 
     target?: any;
 
+    decorator?: string;
     /**
     * providers.
     *
@@ -32,7 +31,7 @@ export class BuildContext extends IocActionContext implements IHandleContext {
         return this.raiseContainerGetter() as IContainer;
     }
 
-    static parse(type: Type<any>, template: any, binding: IBinding<any>, raiseContainer: ContainerFactory): BuildContext {
+    static parse(type: Type<any>, template: any, raiseContainer: IContainer | ContainerFactory): BuildContext {
         let ctx = new BuildContext(type, template);
         ctx.type = type;
         ctx.template = template;

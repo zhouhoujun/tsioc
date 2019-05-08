@@ -9,17 +9,19 @@ export * from './BootConfigureRegisterHandle';
 export * from './BootContextCheckHandle';
 export * from './BootProvidersHandle';
 export * from './BootDepsHandle';
-export * from './ResolveModuleHandle';
 
 export * from './ModuleBuildScope';
-export * from './BuildModuleHandle';
-export * from './DecoratorBuildHandle';
-export * from './ResolveMoudleScope';
+
 export * from './ResolveBootHandle';
-export * from './ResolveBootScope';
+export * from './ResolveTypeHandle';
 
 export * from './ResolveRunnableHandle';
 export * from './RefRunnableHandle';
 export * from './RefDecoratorRunnableHandle';
 export * from './RunBootHandle';
 
+export * from './ModuleBuilderLifeScope';
+export * from './RunnableBuildLifeScope';
+
+export * from './parses';
+export * from './resovers';

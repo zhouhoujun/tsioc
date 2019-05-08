@@ -2,16 +2,15 @@ import { BootContext, BootOption, BootTargetToken } from './BootContext';
 import {
     Type, BindProviderAction, IocSetCacheAction, ComponentBeforeInitAction,
     ComponentInitAction, ComponentAfterInitAction, InjectReference, DesignDecoratorRegisterer,
-    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction, isClass, Component
+    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction, isClass
 } from '@tsdi/ioc';
-import { ContainerPool, RegScope, DIModuleRegisterScope, HandleRegisterer } from './core';
+import { ContainerPool, RegScope, DIModuleRegisterScope } from './core';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ModuleDecoratorRegisterer } from '@tsdi/core';
-import { RunnableBuildLifeScope, ModuleBuildDecoratorRegisterer } from './services';
 import { Bootstrap } from './decorators';
 import * as annotations from './annotations';
 import * as runnable from './runnable';
 import * as services from './services';
-import { BindingScope } from './bindings';
+import { BuilderService } from './services';
 
 /**
  * boot application.
@@ -61,6 +60,7 @@ export class BootApplication {
         this.container.bindProvider(BootApplication, this);
         this.container.use(annotations, runnable, services);
 
+
         this.container.get(DesignDecoratorRegisterer)
             .register(Bootstrap, DecoratorScopes.Class, BindProviderAction);
 
@@ -71,13 +71,6 @@ export class BootApplication {
 
         this.container.get(ModuleDecoratorRegisterer)
             .register(Bootstrap, DIModuleRegisterScope);
-
-        this.container
-            .get(HandleRegisterer)
-            .register(this.container, BindingScope, true);
-
-        this.container.get(ModuleBuildDecoratorRegisterer)
-            .register(Component, BindingScope);
 
     }
 
@@ -111,8 +104,8 @@ export class BootApplication {
      */
     async run(...args: string[]): Promise<BootContext> {
         let ctx = this.getContext();
-        this.initContext(ctx, args);
-        await this.container.resolve(RunnableBuildLifeScope).execute(ctx);
+        this.initContext(ctx);
+        await this.container.resolve(BuilderService).run(ctx, ...args);
         return ctx;
     }
 
@@ -132,10 +125,9 @@ export class BootApplication {
         return ctx;
     }
 
-    protected initContext(ctx: BootContext, args: string[]) {
-        this.container.bindProvider(new InjectReference(BootApplication, this.context.module), this);
+    protected initContext(ctx: BootContext) {
+        this.container.bindProvider(new InjectReference(BootApplication, ctx.module), this);
         ctx.setRaiseContainer(this.container);
-        ctx.args = args;
         ctx.regScope = ctx.regScope || RegScope.boot;
     }
 

@@ -1,7 +1,7 @@
-import { MetadataService, isClass } from '@tsdi/ioc';
-import { ModuleBuildDecoratorRegisterer } from '../../services';
+import { MetadataService } from '@tsdi/ioc';
 import { Handle } from '../../core';
 import { BuildContext } from './BuildContext';
+import { ModuleBuildDecoratorRegisterer } from './ModuleBuildDecoratorRegisterer';
 
 
 export class DecoratorBuildHandle extends Handle<BuildContext> {
@@ -22,7 +22,8 @@ export class DecoratorBuildHandle extends Handle<BuildContext> {
     }
 
     protected getDecortaors(ctx: BuildContext) {
-        return this.container.get(MetadataService)
+        return this.container
+            .get(MetadataService)
             .getClassDecorators(ctx.type);
     }
 }

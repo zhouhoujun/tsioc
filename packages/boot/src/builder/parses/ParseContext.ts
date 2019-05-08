@@ -1,9 +1,9 @@
 import { IHandleContext, IBinding } from '../../core';
 import { IContainer } from '@tsdi/core';
-import { Inject, ContainerFactoryToken, ContainerFactory, Injectable, Type } from '@tsdi/ioc';
+import { Inject, ContainerFactoryToken, ContainerFactory, Injectable, Type, IocActionContext } from '@tsdi/ioc';
 
 @Injectable
-export class ParseContext implements IHandleContext {
+export class ParseContext extends IocActionContext implements IHandleContext {
 
     template: any;
 
@@ -15,19 +15,20 @@ export class ParseContext implements IHandleContext {
 
     bindingValue?: any;
 
-    constructor(@Inject(ContainerFactoryToken) protected raiseContainerGetter?: ContainerFactory) {
-
+    constructor(type?: Type<any>, template?: any, binding?: IBinding<any>) {
+        super();
+        this.type = type;
+        this.template = template;
+        this.binding = binding;
     }
 
     getRaiseContainer(): IContainer {
         return this.raiseContainerGetter() as IContainer;
     }
 
-    static parse(type: Type<any>, template: any, binding: IBinding<any>, raiseContainer: ContainerFactory): ParseContext {
-        let ctx = new ParseContext(raiseContainer);
-        ctx.type = type;
-        ctx.template = template;
-        ctx.binding = binding;
+    static parse(type: Type<any>, template: any, binding: IBinding<any>, raiseContainer: IContainer | ContainerFactory): ParseContext {
+        let ctx = new ParseContext(type, template, binding);
+        raiseContainer && ctx.setRaiseContainer(raiseContainer);
         return ctx;
     }
 }

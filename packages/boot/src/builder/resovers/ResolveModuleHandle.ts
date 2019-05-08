@@ -1,7 +1,8 @@
-import { IBindingTypeReflect, Handle } from '../../core';
-import { InjectReference, ProviderTypes, isNullOrUndefined, RuntimeLifeScope } from '@tsdi/ioc';
 import { TemplateTranlator } from '../../services';
-import { BuildContext,  } from './BuildContext';
+import { BuildContext  } from './BuildContext';
+import { IBindingTypeReflect, Handle } from '../../core';
+import { InjectReference, isNullOrUndefined, RuntimeLifeScope } from '@tsdi/ioc';
+
 
 
 export class ResolveModuleHandle extends Handle<BuildContext> {
