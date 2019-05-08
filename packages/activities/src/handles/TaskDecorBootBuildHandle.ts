@@ -1,39 +1,28 @@
-import { BootHandle, BuilderService, SelectorManager } from '@tsdi/boot';
+import { BuilderService, SelectorManager, ResolveHandle, BuildContext } from '@tsdi/boot';
 import { ActivityContext, ActivityOption, Activity } from '../core';
 import { isArray, Type, isClass, isFunction } from '@tsdi/ioc';
 import { SequenceActivity } from '../activities';
 
-export class TaskDecorBootBuildHandle extends BootHandle {
-    async execute(ctx: ActivityContext, next: () => Promise<void>): Promise<void> {
+export class TaskDecorBootBuildHandle extends ResolveHandle {
+    async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         if (!(ctx.target instanceof Activity)) {
             let template = ctx.template;
-            let option: ActivityOption<ActivityContext> | Type<any>;
+            let md: Type<any>;
             if (isArray(template)) {
-                option = { template: template, module: SequenceActivity };
+                md = SequenceActivity;
             } else {
                 if (isClass(template)) {
-                    option = template;
-                } else if (isFunction(template)) {
-                    option = null;
+                    md = template;
                 } else {
-                    let md: Type<any>;
                     let mgr = this.container.get(SelectorManager);
                     if (isClass(template.activity)) {
                         md = template.activity;
                     } else {
                         md = mgr.get(template.activity)
                     }
-
-                    option = {
-                        module: md,
-                        template: template
-                    };
                 }
             }
-            if (option) {
-                let bootctx = await this.container.get(BuilderService).build(option) as ActivityContext;
-                ctx.bootstrap = bootctx.getBootTarget();
-            }
+            ctx.target = await this.container.get(BuilderService).resolve(md, template, ctx.getRaiseContainer(), ...(ctx.providers || []));
         }
 
         await next();

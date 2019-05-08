@@ -1,5 +1,5 @@
 export * from './IPropertyBindingReflect';
-export * from './BindInputPropertyTypeAction';
-export * from './BindInputParamTypeAction';
+export * from './BindingPropertyTypeAction';
+export * from './BindingParamTypeAction';
 export * from './RegSelectorAction';
 export * from './RouteRegisterAction';

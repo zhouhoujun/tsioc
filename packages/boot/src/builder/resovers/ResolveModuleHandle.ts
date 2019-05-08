@@ -1,10 +1,11 @@
 import { BuildContext } from './BuildContext';
-import { IBindingTypeReflect, Handle } from '../../core';
+import { IBindingTypeReflect } from '../../core';
 import { InjectReference, isNullOrUndefined, RuntimeLifeScope } from '@tsdi/ioc';
 import { ParseScope, ParseContext } from '../parses';
+import { ResolveHandle } from './ResolveHandle';
 
 
-export class ResolveModuleHandle extends Handle<BuildContext> {
+export class ResolveModuleHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         if (!ctx.target) {
             let container = ctx.getRaiseContainer();
@@ -20,8 +21,7 @@ export class ResolveModuleHandle extends Handle<BuildContext> {
                     if (bparams && bparams.length) {
                         await Promise.all(bparams.map(async bp => {
                             let pCtx = ParseContext.parse(ctx.type, ctx.template, bp, ctx.getRaiseContainer());
-                            await this.container.get(ParseScope)
-                                .execute(pCtx);
+                            await this.container.get(ParseScope).execute(pCtx);
                             let paramVal = pCtx.bindingValue;
                             if (!isNullOrUndefined(paramVal)) {
                                 ctx.providers.push({ provide: new InjectReference(bp.provider || bp.type || bp.name, '__binding'), useValue: paramVal });

@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
 import { ActivityContext, CompoiseActivity, ActivityType } from '../core';
-import { Inject } from '@tsdi/ioc';
+import { Input } from '@tsdi/boot';
 
 
 
@@ -14,7 +14,7 @@ import { Inject } from '@tsdi/ioc';
 @Task('parallel')
 export class ParallelActivity<T> extends CompoiseActivity<T> {
 
-    constructor(@Inject('parallel') activities: ActivityType[]) {
+    constructor(@Input() activities: ActivityType[]) {
         super()
         this.activities = activities || [];
     }

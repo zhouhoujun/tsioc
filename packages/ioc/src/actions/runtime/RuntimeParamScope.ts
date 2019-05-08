@@ -5,12 +5,17 @@ import { RuntimeDecoratorRegisterer, DecoratorScopes } from '../../services';
 import { Inject, AutoWired, Param } from '../../decorators';
 import { BindParameterTypeAction } from './BindParameterTypeAction';
 import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
+import { InitReflectAction } from '../InitReflectAction';
 
 export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> {
     execute(ctx: RuntimeActionContext, next?: () => void): void {
         if (!ctx.targetReflect) {
             let typeRefs = this.container.getTypeReflects();
-            ctx.targetReflect = typeRefs.get(ctx.targetType);
+            if (typeRefs.has(ctx.targetType)) {
+                ctx.targetReflect = typeRefs.get(ctx.targetType);
+            } else {
+                this.container.get(InitReflectAction).execute(ctx, () => 0);
+            }
         }
         super.execute(ctx, next);
     }

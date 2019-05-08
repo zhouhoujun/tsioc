@@ -1,9 +1,10 @@
-import { Handle, IBindingTypeReflect } from '../../core';
+import { IBindingTypeReflect } from '../../core';
 import { BuildContext } from './BuildContext';
 import { isNullOrUndefined } from '@tsdi/ioc';
 import { ParseScope, ParseContext } from '../parses';
+import { ResolveHandle } from './ResolveHandle';
 
-export class BindingPropertyHandle extends Handle<BuildContext> {
+export class BindingPropertyHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         let ref = this.container.getTypeReflects().get(ctx.type) as IBindingTypeReflect;
         if (ref.propBindings) {

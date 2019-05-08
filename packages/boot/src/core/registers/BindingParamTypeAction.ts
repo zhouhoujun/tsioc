@@ -3,7 +3,7 @@ import { IBindingTypeReflect, IBinding } from './IPropertyBindingReflect';
 import { BindingPropertyMetadata } from '../../decorators';
 
 
-export class BindInputParamTypeAction extends BindDeignParamTypeAction {
+export class BindingParamTypeAction extends BindDeignParamTypeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void) {
         let propertyKey = ctx.propertyKey || 'constructor';
@@ -15,10 +15,9 @@ export class BindInputParamTypeAction extends BindDeignParamTypeAction {
         if (!ref.paramsBindings) {
             ref.paramsBindings = new Map();
         }
-
         let bindParams: IBinding<any>[]
         if (ref.paramsBindings.has(propertyKey)) {
-            bindParams = ref.paramsBindings.get(propertyKey);
+            bindParams = ref.paramsBindings.get(propertyKey) || [];
         } else {
             bindParams = [];
         }
@@ -62,8 +61,8 @@ export class BindInputParamTypeAction extends BindDeignParamTypeAction {
                         return true;
                     }
 
-                    let parameters = getParamMetadata<BindingPropertyMetadata>(ctx.currDecoractor, ty);
-                    if (parameters.length < 1) {
+                    let subparameters = getParamMetadata<BindingPropertyMetadata>(ctx.currDecoractor, ty);
+                    if (!subparameters || subparameters.length < 1) {
                         return true;
                     }
 
@@ -72,10 +71,10 @@ export class BindInputParamTypeAction extends BindDeignParamTypeAction {
                         return true;
                     }
 
-                    parameters.forEach((params) => {
+                    subparameters.forEach((params) => {
                         let parm = (isArray(params) && params.length > 0) ? params[0] : null;
                         let n = names.length > parm.index ? names[parm.index] : '';
-                        if (parm && (parm.type || parm.provider || parm.bindingName)) {
+                        if (bindParams && parm && (parm.type || parm.provider || parm.bindingName)) {
                             bindParams.forEach(bp => {
                                 if (!bp.type && !bp.provider && bp.name === n) {
                                     if (parm.bindingName) {
@@ -95,19 +94,29 @@ export class BindInputParamTypeAction extends BindDeignParamTypeAction {
                         }
                     });
                     return false;
-                })
+                });
             }
         }
         ref.paramsBindings.set(propertyKey, bindParams);
         // reset binding provider
-        ref.methodParams.get(propertyKey)
-            .forEach(p => {
-                bindParams.forEach(b => {
-                    if (p.name === b.name) {
-                        p.provider = new InjectReference(b.provider || b.type || b.name, '__binding');
-                    }
-                })
-            });
+        if (ref.methodParams.has(propertyKey)) {
+            ref.methodParams.get(propertyKey)
+                .forEach(p => {
+                    bindParams.forEach(b => {
+                        if (p.name === b.name) {
+                            p.provider = new InjectReference(b.provider || b.type || b.name, '__binding');
+                        }
+                    })
+                });
+        } else {
+            ref.methodParams.set(propertyKey, designParams.map(dp => {
+                let bdp = bindParams.find(p => p.name === dp.name);
+                if (bdp) {
+                    dp.provider = new InjectReference(bdp.provider || bdp.type || bdp.name, '__binding');
+                }
+                return dp;
+            }));
+        }
 
         next();
     }

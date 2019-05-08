@@ -4,7 +4,7 @@ import {
     ComponentInitAction, ComponentAfterInitAction, DesignLifeScope,
     IocBeforeConstructorScope, IocAfterConstructorScope, DecoratorScopes, RuntimeMethodScope,
     RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction,
-    RegisterSingletionAction, IocResolveScope, RuntimeLifeScope, Component, ActionRegisterer
+    RegisterSingletionAction, IocResolveScope, Component, ActionRegisterer
 } from '@tsdi/ioc';
 import {
     IContainer, ContainerToken, IocExt,
@@ -18,7 +18,7 @@ import * as modules from './modules';
 import {
     RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction,
 } from './resolves';
-import { RouteDesignRegisterAction, RouteRuntimRegisterAction, RegSelectorAction, BindInputPropertyTypeAction, BindInputParamTypeAction } from './registers';
+import { RouteDesignRegisterAction, RouteRuntimRegisterAction, RegSelectorAction, BindingPropertyTypeAction, BindingParamTypeAction } from './registers';
 import { DIModuleRegisterScope } from './injectors';
 import { SelectorManager } from './SelectorManager';
 import { Input } from '../decorators';
@@ -104,16 +104,16 @@ export class BootModule {
         container.register(SelectorManager);
         container.get(ActionRegisterer)
             .register(container, RegSelectorAction)
-            .register(container, BindInputPropertyTypeAction)
-            .register(container, BindInputParamTypeAction);
+            .register(container, BindingPropertyTypeAction)
+            .register(container, BindingParamTypeAction);
 
         container.get(DesignDecoratorRegisterer)
             .register(Component, DecoratorScopes.Class, RegSelectorAction)
-            .register(Input, DecoratorScopes.Property, BindInputPropertyTypeAction);
+            .register(Input, DecoratorScopes.Property, BindingPropertyTypeAction);
         // .register(Input, DecoratorScopes.Parameter, BindInputParamTypeAction);
 
-        container.get(RuntimeDecoratorRegisterer).register(Input, DecoratorScopes.Parameter,
-            BindInputParamTypeAction);
+        container.get(RuntimeDecoratorRegisterer)
+            .register(Input, DecoratorScopes.Parameter, BindingParamTypeAction);
 
     }
 }

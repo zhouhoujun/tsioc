@@ -5,6 +5,7 @@ import { BuildModuleHandle } from './BuildModuleHandle';
 import { BuildContext } from './BuildContext';
 import { BindingScope } from './BindingScope';
 import { ModuleBuildDecoratorRegisterer } from './ModuleBuildDecoratorRegisterer';
+import { ParseScope } from '../parses';
 
 
 export class ResolveMoudleScope extends CompositeHandle<BuildContext> {
@@ -13,7 +14,8 @@ export class ResolveMoudleScope extends CompositeHandle<BuildContext> {
         if (!this.container.has(ModuleBuildDecoratorRegisterer)) {
             this.container.register(ModuleBuildDecoratorRegisterer);
         }
-        this.registerHandle(BindingScope, true);
+        this.registerHandle(ParseScope, true)
+            .registerHandle(BindingScope, true);
 
         this.use(ResolveModuleHandle)
             .use(BuildModuleHandle)

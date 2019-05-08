@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
 import { ActivityContext, Expression, Activity } from '../core';
-import { Inject } from '@tsdi/ioc';
+import { Input } from '@tsdi/boot';
 
 
 /**
@@ -13,7 +13,7 @@ import { Inject } from '@tsdi/ioc';
 @Task('[throw]')
 export class ThrowActivity extends Activity<Error> {
 
-    constructor(@Inject('[throw]') protected error: Expression<Error>) {
+    constructor(@Input('throw') protected error: Expression<Error>) {
         super()
     }
 

@@ -1,6 +1,6 @@
 import { Task } from '../decorators';
 import { ActivityContext, Activity, Expression } from '../core';
-import { Inject } from '@tsdi/ioc';
+import { Input } from '@tsdi/boot';
 
 /**
  * expression activity.
@@ -14,7 +14,7 @@ import { Inject } from '@tsdi/ioc';
 @Task('[expression]')
 export class ExpressionActivity<T> extends Activity<T> {
 
-    constructor(@Inject('[expression]') protected expression: Expression<T>) {
+    constructor(@Input('expression') protected expression: Expression<T>) {
         super()
     }
 

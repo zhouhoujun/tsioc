@@ -72,7 +72,7 @@ export abstract class DecoratorRegisterer<T> extends IocCoreService {
         if (!this.funcs.has(dec)) {
             this.funcs.set(dec, this.get(dec).map(a => this.toFunc(container, a)).filter(c => c));
         }
-        return this.funcs.get(dec);
+        return this.funcs.get(dec) || [];
     }
 
     abstract toFunc(container: IIocContainer, action: T): Function;

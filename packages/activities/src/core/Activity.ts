@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
 import { IContainer } from '@tsdi/core';
-import { RunnerService, BuilderService, Input, SelectorManager } from '@tsdi/boot';
+import { BuilderService, Input, SelectorManager } from '@tsdi/boot';
 import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {
@@ -169,7 +169,7 @@ export abstract class Activity<T> {
      */
     protected async resolveExpression<TVal>(express: Expression<TVal>, ctx: ActivityContext): Promise<TVal> {
         if (isClass(express)) {
-            let bctx = await this.getContainer().get(RunnerService).run(express);
+            let bctx = await this.getContainer().get(BuilderService).run(express);
             return bctx.data;
         } else if (isFunction(express)) {
             return await express(ctx);

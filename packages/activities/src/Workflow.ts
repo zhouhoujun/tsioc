@@ -69,8 +69,8 @@ export class Workflow extends BootApplication {
         return await new Workflow(target).run(...args) as T;
     }
 
-    protected initContext(ctx: ActivityContext, args: string[]) {
-        super.initContext(ctx, args);
+    protected initContext(ctx: ActivityContext) {
+        super.initContext(ctx);
         ctx.id = ctx.id || this.createUUID();
     }
 

@@ -1,12 +1,13 @@
 import { Task } from '../decorators';
 import { Expression, Activity, ActivityContext } from '../core';
 import { Inject } from '@tsdi/ioc';
+import { Input } from '@tsdi/boot';
 
 
 @Task('[timer]')
 export class TimerActivity extends Activity<number> {
 
-    constructor(@Inject('[timer]') protected time: Expression<number>) {
+    constructor(@Input('timer') protected time: Expression<number>) {
         super()
     }
 

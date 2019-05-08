@@ -3,7 +3,7 @@ import { BindingPropertyMetadata } from '../../decorators';
 import { IBindingTypeReflect } from './IPropertyBindingReflect';
 
 
-export class BindInputPropertyTypeAction extends IocDesignAction {
+export class BindingPropertyTypeAction extends IocDesignAction {
 
     execute(ctx: DesignActionContext, next: () => void) {
         let ref = ctx.targetReflect as IBindingTypeReflect;
