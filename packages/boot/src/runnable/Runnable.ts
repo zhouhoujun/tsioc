@@ -1,5 +1,5 @@
-import { Token, lang, Inject, Type, Abstract } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { Token, lang, Type, Abstract } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
 import { BootContext } from '../BootContext';
 
 
@@ -93,7 +93,6 @@ export abstract class Runnable<T> implements IRunnable<any> {
     }
 
     getTarget(): T {
-        console.log(this.context.getBootTarget());
         return this.context.getBootTarget();
     }
 
@@ -102,8 +101,8 @@ export abstract class Runnable<T> implements IRunnable<any> {
         return lang.getClass(this.getTarget());
     }
 
-    /**
-     * run application via boot instance.
+    /**     * run application via boot instance.
+
      *
      * @param {*} [data]
      * @returns {Promise<any>}

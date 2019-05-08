@@ -1,10 +1,13 @@
 import { ParseHandle, ParseContext, SelectorManager } from '@tsdi/boot';
-import { isString, isClass, hasOwnClassMetadata, lang, Type } from '@tsdi/ioc';
+import { isString, isClass, hasOwnClassMetadata, lang, Type, isMetadataObject } from '@tsdi/ioc';
 import { Activity } from '../core';
 
 export class TaskDecorSelectorHandle extends ParseHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.template.activity) {
+        if (this.isActivity(ctx.decorator, ctx.template)) {
+            ctx.selector = ctx.template;
+            ctx.template = null
+        } else if (isMetadataObject(ctx.template) && ctx.template.activity) {
             let mgr = this.container.get(SelectorManager);
             let activity = ctx.template.activity;
             if (isString(activity) && mgr.has(activity)) {
@@ -12,6 +15,7 @@ export class TaskDecorSelectorHandle extends ParseHandle {
             } else if (this.isActivity(ctx.decorator, activity)) {
                 ctx.selector = activity;
             }
+            ctx.template.activity = null;
         }
         if (!ctx.selector && this.isActivity(ctx.decorator, ctx.binding.provider)) {
             ctx.selector = ctx.binding.provider;

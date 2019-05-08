@@ -23,6 +23,7 @@ export class TaskDecorBootBuildHandle extends ResolveHandle {
                 }
             }
             ctx.target = await this.container.get(BuilderService).resolve(md, template, ctx.getRaiseContainer(), ...(ctx.providers || []));
+            console.log(ctx.target);
         }
 
         await next();

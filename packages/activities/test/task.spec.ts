@@ -38,6 +38,7 @@ describe('activity test', () => {
                         name: 'test------1',
                         activity: SimpleTask
                     },
+                    SimpleCTask
                     // {
                     //     name: 'test------2',
                     //     activity: SimpleCTask
