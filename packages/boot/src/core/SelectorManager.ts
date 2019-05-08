@@ -1,4 +1,4 @@
-import { Singleton, InstanceFactory, Type, ProviderTypes } from '@tsdi/ioc';
+import { Singleton, InstanceFactory, Type, ProviderTypes, isString } from '@tsdi/ioc';
 
 @Singleton
 export class SelectorManager {
@@ -10,8 +10,12 @@ export class SelectorManager {
         this.selectors = new Map();
     }
 
-    has(selector: string): boolean {
-        return this.selectors.has(selector);
+    has(selector: string | Type<any>): boolean {
+        if (isString(selector)) {
+            return this.selectors.has(selector);
+        } else {
+            return Array.from(this.selectors.values()).indexOf(selector) >= 0;
+        }
     }
 
     set(selector: string, type: Type<any>, factory: InstanceFactory<any>) {

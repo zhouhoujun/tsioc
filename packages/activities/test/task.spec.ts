@@ -38,10 +38,10 @@ describe('activity test', () => {
                         name: 'test------1',
                         activity: SimpleTask
                     },
-                    {
-                        name: 'test------2',
-                        activity: SimpleCTask
-                    }
+                    // {
+                    //     name: 'test------2',
+                    //     activity: SimpleCTask
+                    // }
                 ]
 
             });

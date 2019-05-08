@@ -12,8 +12,11 @@ export class ArrayParseHandle extends ParseHandle {
                 await this.container.get(ParseScope).execute(subCtx);
                 return subCtx.bindingValue;
             }));
-        } else {
+        }
+
+        if (!ctx.bindingValue) {
             await next();
         }
+
     }
 }

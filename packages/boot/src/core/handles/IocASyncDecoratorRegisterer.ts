@@ -4,8 +4,8 @@ import { Handle } from './Handle';
 
 export class IocASyncDecoratorRegisterer<T> extends DecoratorRegisterer<T> {
 
-    getFuncs(container: IIocContainer, decorator: string | Function): PromiseUtil.ActionHandle<T>[] {
-        return super.getFuncs(container, decorator) as PromiseUtil.ActionHandle<T>[];
+    getFuncs(container: IIocContainer, decorator: string | Function): PromiseUtil.ActionHandle<any>[] {
+        return super.getFuncs(container, decorator) as PromiseUtil.ActionHandle<any>[];
     }
 
     toFunc(container: IIocContainer, ac: T): Function {

@@ -15,6 +15,8 @@ export class ParseContext extends IocActionContext implements IHandleContext {
 
     bindingValue?: any;
 
+    decorator?: string;
+
     /**
     * providers.
     *

@@ -1,6 +1,6 @@
 import { BuilderService, SelectorManager, ResolveHandle, BuildContext } from '@tsdi/boot';
-import { ActivityContext, ActivityOption, Activity } from '../core';
-import { isArray, Type, isClass, isFunction } from '@tsdi/ioc';
+import { Activity } from '../core';
+import { isArray, Type, isClass } from '@tsdi/ioc';
 import { SequenceActivity } from '../activities';
 
 export class TaskDecorBootBuildHandle extends ResolveHandle {

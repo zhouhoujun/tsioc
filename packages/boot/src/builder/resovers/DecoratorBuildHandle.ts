@@ -9,14 +9,16 @@ export class DecoratorBuildHandle extends ResolveHandle {
         let reg = this.container.get(ModuleBuildDecoratorRegisterer);
         let decors = this.getDecortaors(ctx);
         if (decors.length) {
-            let hanles = [];
-            decors.forEach(d => {
+            await Promise.all(decors.map(async d => {
                 if (reg.has(d)) {
-                    hanles = hanles.concat(reg.getFuncs(this.container, d));
+                    ctx.decorator = d;
+                    await this.execFuncs(ctx, reg.getFuncs(this.container, d));
                 }
-            });
-            await this.execFuncs(ctx, hanles, next);
-        } else if (next) {
+            }));
+            ctx.decorator = null;
+        }
+
+        if (next) {
             await next();
         }
     }

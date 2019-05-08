@@ -1,7 +1,7 @@
 import { ParseHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
 import { SelectorManager } from '../../core';
-import { isString } from '@tsdi/ioc';
+import { isString, isClass } from '@tsdi/ioc';
 
 export class AttrSelectorHandle extends ParseHandle {
 
@@ -10,8 +10,10 @@ export class AttrSelectorHandle extends ParseHandle {
         let pdr = ctx.binding.provider;
         if (isString(pdr) && mgr.hasAttr(pdr)) {
             ctx.selector = mgr.getAttr(pdr);
-        } else if (mgr.hasAttr(ctx.binding.name)) {
-            ctx.selector = mgr.getAttr(ctx.binding.name);
+        } else if (isClass(ctx.binding.provider) && mgr.has(ctx.binding.provider)) {
+            ctx.selector = ctx.binding.provider;
+        } else if (isClass(ctx.binding.type) && mgr.has(ctx.binding.type)) {
+            ctx.selector = ctx.binding.type;
         }
 
         if (!ctx.selector) {
