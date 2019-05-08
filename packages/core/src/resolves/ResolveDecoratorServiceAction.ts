@@ -14,7 +14,7 @@ export class ResolveDecoratorServiceAction extends IocResolveServiceAction {
                     .some(dec => {
                         if (decReg.has(dec)) {
                             ctx.currDecorator = dec;
-                            this.execActions(ctx, decReg.get(dec));
+                            this.execFuncs(ctx, decReg.getFuncs(this.container, dec));
                             return !!ctx.instance;
                         } else {
                             return false;

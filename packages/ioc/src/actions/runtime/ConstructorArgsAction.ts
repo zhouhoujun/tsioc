@@ -16,7 +16,8 @@ export class ConstructorArgsAction extends IocRegisterScope<RuntimeActionContext
             if (ctx.targetReflect.methodParams.has('constructor')) {
                 ctx.params = ctx.targetReflect.methodParams.get('constructor');
             } else {
-                this.execActions(ctx, [RuntimeParamScope]);
+                this.container.get(RuntimeParamScope)
+                    .execute(ctx);
                 ctx.params = ctx.targetReflect.methodParams.get('constructor');
             }
             ctx.args = this.container.createParams(ctx.params, ctx.providerMap);

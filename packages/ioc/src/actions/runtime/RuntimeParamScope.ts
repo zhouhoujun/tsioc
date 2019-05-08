@@ -7,6 +7,14 @@ import { BindParameterTypeAction } from './BindParameterTypeAction';
 import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
 
 export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> {
+    execute(ctx: RuntimeActionContext, next?: () => void): void {
+        if (!ctx.targetReflect) {
+            let typeRefs = this.container.getTypeReflects();
+            ctx.targetReflect = typeRefs.get(ctx.targetType);
+        }
+        super.execute(ctx, next);
+    }
+
     setup() {
         this.registerAction(BindParameterTypeAction);
 

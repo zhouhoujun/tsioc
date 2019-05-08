@@ -99,7 +99,7 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
         if (!this.funcs) {
             this.funcs = this.handles.map(ac => this.toFunc(ac))
         }
-        await this.execActions(ctx, this.funcs, next);
+        await this.execFuncs(ctx, this.funcs, next);
     }
 
     protected resetFuncs() {

@@ -12,10 +12,10 @@ export class DecoratorBuildHandle extends Handle<BuildContext> {
             let hanles = [];
             decors.forEach(d => {
                 if (reg.has(d)) {
-                    hanles.push(...reg.get(d));
+                    hanles.push(...reg.getFuncs(this.container, d));
                 }
             });
-            await this.execActions(ctx, hanles, next);
+            await this.execFuncs(ctx, hanles, next);
         } else if (next) {
             await next();
         }

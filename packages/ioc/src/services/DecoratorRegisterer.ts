@@ -1,9 +1,10 @@
 import { IocCoreService } from './IocCoreService';
 import { IocActionType } from '../actions';
-import { isString } from '../utils';
+import { isString, lang } from '../utils';
 import { IocDecoratorRegisterer } from './IocDecoratorRegisterer';
 import { Registration } from '../Registration';
 import { IIocContainer } from '../IIocContainer';
+
 
 
 export enum DecoratorScopes {
@@ -50,6 +51,10 @@ export abstract class DecoratorScopeRegisterer extends IocCoreService {
 
     get(decorator: string | Function, scope: DecoratorScopes): IocActionType[] {
         return this.getRegisterer(scope).get(decorator) || [];
+    }
+
+    getFuncs(container: IIocContainer, decorator: string | Function, scope: DecoratorScopes): lang.IAction<any>[] {
+        return this.getRegisterer(scope).getFuncs(container, decorator);
     }
 
     getRegisterer(scope: DecoratorScopes): IocDecoratorRegisterer {

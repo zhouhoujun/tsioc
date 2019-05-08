@@ -7,8 +7,8 @@ export class DecoratorInjectAction extends InjectorAction {
         if (ctx.currDecoractor) {
             let decRgr = this.container.get(ModuleDecoratorRegisterer);
             if (decRgr.has(ctx.currDecoractor)) {
-                let actions = decRgr.get(ctx.currDecoractor);
-                this.execActions(ctx, actions, next);
+                let actions = decRgr.getFuncs(this.container, ctx.currDecoractor);
+                this.execFuncs(ctx, actions, next);
             } else {
                 next && next();
             }

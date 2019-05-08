@@ -92,11 +92,7 @@ export abstract class IocAction<T extends IocActionContext> {
 
     abstract execute(ctx: T, next: () => void): void;
 
-    protected execActions(ctx: T, actions: IocActionType[], next?: () => void) {
-        lang.execAction(actions.map(ac => this.toActionFunc(ac)), ctx, next);
-    }
-
-    protected execActionFuncs(ctx: T, actions: lang.IAction<any>[], next?: () => void) {
+    protected execFuncs(ctx: T, actions: lang.IAction<any>[], next?: () => void) {
         lang.execAction(actions, ctx, next);
     }
 

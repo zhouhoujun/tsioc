@@ -1,7 +1,7 @@
-import { DecoratorRegisterer, Singleton, Type } from '@tsdi/ioc';
+import { Singleton, Type, IocSyncDecoratorRegisterer } from '@tsdi/ioc';
 import { IocResolveServiceAction } from '../resolves';
 
 @Singleton
-export class ServiceDecoratorRegisterer extends DecoratorRegisterer<Type<IocResolveServiceAction>> {
+export class ServiceDecoratorRegisterer extends IocSyncDecoratorRegisterer<Type<IocResolveServiceAction>> {
 
 }

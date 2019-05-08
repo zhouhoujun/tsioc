@@ -166,7 +166,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         if (!this.actionFuncs) {
             this.actionFuncs = [...this.befores, ...this.actions, ...this.afters].map(ac => this.toActionFunc(ac));
         }
-        this.execActions(ctx, this.actionFuncs, next);
+        this.execFuncs(ctx, this.actionFuncs, next);
         this.setScope(ctx, scope);
     }
 

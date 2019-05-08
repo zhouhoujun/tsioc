@@ -16,8 +16,8 @@ export abstract class ExecDecoratorAtion extends IocAction<RegisterActionContext
         if (ctx.currDecoractor) {
             let decor = this.getScopeRegisterer();
             if (decor.has(ctx.currDecoractor, ctx.currDecorScope)) {
-                let actions = decor.get(ctx.currDecoractor, ctx.currDecorScope);
-                this.execActions(ctx, actions, next);
+                let actions = decor.getFuncs(this.container, ctx.currDecoractor, ctx.currDecorScope);
+                this.execFuncs(ctx, actions, next);
             } else {
                 next && next();
             }

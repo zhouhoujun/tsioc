@@ -50,10 +50,6 @@ export abstract class Handle<T extends IHandleContext> implements OnInit {
         return this.container.resolve(token, ...providers);
     }
 
-    protected execActions(ctx: T, handles: HandleType<T>[], next?: () => Promise<void>): Promise<void> {
-        return PromiseUtil.runInChain(handles.map(ac => this.toFunc(ac)), ctx, next);
-    }
-
     protected execFuncs(ctx: T, handles: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
         return PromiseUtil.runInChain(handles, ctx, next);
     }
