@@ -5,7 +5,6 @@ import { BuildModuleHandle } from './BuildModuleHandle';
 import { BuildContext } from './BuildContext';
 import { BindingScope } from './BindingScope';
 import { ModuleBuildDecoratorRegisterer } from './ModuleBuildDecoratorRegisterer';
-import { Component } from '@tsdi/ioc';
 
 
 export class ResolveMoudleScope extends CompositeHandle<BuildContext> {
@@ -15,9 +14,6 @@ export class ResolveMoudleScope extends CompositeHandle<BuildContext> {
             this.container.register(ModuleBuildDecoratorRegisterer);
         }
         this.registerHandle(BindingScope, true);
-
-        this.container.get(ModuleBuildDecoratorRegisterer)
-            .register(Component, BindingScope);
 
         this.use(ResolveModuleHandle)
             .use(BuildModuleHandle)

@@ -1,12 +1,11 @@
+import { ParseHandle } from './ParseHandle';
+import { ParseContext } from './ParseContext';
+import { SelectorDecoratorRegisterer } from './SelectorDecoratorRegisterer';
 import { MetadataService } from '@tsdi/ioc';
-import { Handle } from '../../core';
-import { BuildContext } from './BuildContext';
-import { ModuleBuildDecoratorRegisterer } from './ModuleBuildDecoratorRegisterer';
 
-
-export class DecoratorBuildHandle extends Handle<BuildContext> {
-    async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
-        let reg = this.container.get(ModuleBuildDecoratorRegisterer);
+export class DecorSelectorHandle extends ParseHandle {
+    async execute(ctx: ParseContext, next?: () => Promise<void>): Promise<void> {
+        let reg = this.container.get(SelectorDecoratorRegisterer);
         let decors = this.getDecortaors(ctx);
         if (decors.length) {
             let hanles = [];
@@ -21,7 +20,7 @@ export class DecoratorBuildHandle extends Handle<BuildContext> {
         }
     }
 
-    protected getDecortaors(ctx: BuildContext) {
+    protected getDecortaors(ctx: ParseContext) {
         return this.container
             .get(MetadataService)
             .getClassDecorators(ctx.type);

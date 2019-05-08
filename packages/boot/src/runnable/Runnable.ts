@@ -93,7 +93,8 @@ export abstract class Runnable<T> implements IRunnable<any> {
     }
 
     getTarget(): T {
-        return this.context.bootstrap || this.context.target;
+        console.log(this.context.getBootTarget());
+        return this.context.getBootTarget();
     }
 
 

@@ -79,6 +79,7 @@ export class WorkflowInstance extends Service<Activity<any>> {
 
     async start<T extends ActivityContext>(data?: any): Promise<T> {
         let container = this.getContainer();
+        this.context.data = data;
         if (this.context.id && !container.has(this.context.id)) {
             container.bindProvider(this.context.id, this);
         }
