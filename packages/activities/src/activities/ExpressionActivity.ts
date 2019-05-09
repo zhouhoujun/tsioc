@@ -14,7 +14,7 @@ import { Input } from '@tsdi/boot';
 @Task('[expression]')
 export class ExpressionActivity<T> extends Activity<T> {
 
-    constructor(@Input('expression') protected expression: Expression<T>) {
+    constructor(@Input() protected expression: Expression<T>) {
         super()
     }
 

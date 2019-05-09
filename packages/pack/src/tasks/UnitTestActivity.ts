@@ -1,7 +1,7 @@
-import { Task, Input, Expression, Activity, Src, TemplateOption } from '@tsdi/activities';
-import { Inject } from '@tsdi/ioc';
+import { Task, Expression, Activity, Src, TemplateOption } from '@tsdi/activities';
 import { NodeActivityContext } from '../core';
 import { runTest, UnitTestConfigure } from '@tsdi/unit';
+import { Input } from '@tsdi/boot';
 
 
 
@@ -41,7 +41,7 @@ export class UnitTestActivity extends Activity<void> {
     options: Expression<UnitTestConfigure>;
 
 
-    constructor(@Inject('[test]') test: Expression<Src>) {
+    constructor(@Input() test: Expression<Src>) {
         super()
         this.test = test;
     }

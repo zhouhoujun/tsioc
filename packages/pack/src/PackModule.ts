@@ -1,16 +1,18 @@
 import { DIModule } from '@tsdi/boot';
 import * as cores from './core';
 import * as tasks from './tasks';
-
+import * as builds from './builds';
 
 @DIModule({
     imports: [
         cores,
-        tasks
+        tasks,
+        builds
     ],
     exports: [
         cores,
-        tasks
+        tasks,
+        builds
     ]
 })
 export class PackModule {

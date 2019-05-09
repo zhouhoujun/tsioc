@@ -1,6 +1,6 @@
-import { Workflow } from '@tsdi/activities';
+import { Workflow, Task, ActivityTemplate } from '@tsdi/activities';
 import { CleanToken, CleanActivity, AssetActivity, Asset, TsCompile, TransformContext } from '@tsdi/build';
-import { Pack, PackActivity, PackModule } from '@tsdi/pack';
+import { PackModule, PackTemplates, AssetActivityOption, TsBuildOption } from '@tsdi/pack';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
@@ -67,31 +67,41 @@ const builtins = require('rollup-plugin-node-builtins');
 export class RollupTs extends AssetActivity {
 }
 
-@Pack({
+@Task({
+    imports: [
+        PackModule
+    ],
     baseURL: __dirname,
-    clean: ['lib', 'bundles', 'fesm5', 'es2015', 'fesm2015'],
-    src: 'src',
-    // watch: true,
-    assets: {
-        ts: {
-            sequence: [
-                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.es2017.json', activity: TsCompile },
-                RollupTs
-            ]
-        },
-        ts2015: {
-            sequence: [
-                { src: 'src/**/*.ts', dest: 'es2015', tds: false, annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
-                {
-                    src: 'es2015/**/*.js',
-                    dest: 'fesm2015',
-                    data: {
-                        name: 'pack.js',
-                        input: 'es2015/index.js'
-                    }, activity: RollupTs
-                }
-            ]
-        }
+    template: <TsBuildOption>{
+        activity: 'ts',
+        clean: ['lib', 'bundles', 'fesm5', 'es2015', 'fesm2015'],
+        src: 'src',
+        dist: 'lib',
+        annotation: true,
+        uglify: false,
+        tsconfig: './tsconfig.es2017.json'
+        // watch: true,
+        // assets: {
+        //     ts: {
+        //         sequence: [
+        //             { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.es2017.json', activity: TsCompile },
+        //             RollupTs
+        //         ]
+        //     },
+        //     ts2015: {
+        //         sequence: [
+        //             { src: 'src/**/*.ts', dest: 'es2015', tds: false, annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
+        //             {
+        //                 src: 'es2015/**/*.js',
+        //                 dest: 'fesm2015',
+        //                 data: {
+        //                     name: 'pack.js',
+        //                     input: 'es2015/index.js'
+        //                 }, activity: RollupTs
+        //             }
+        //         ]
+        //     }
+        // }
     }
 })
 export class PackBuilder {

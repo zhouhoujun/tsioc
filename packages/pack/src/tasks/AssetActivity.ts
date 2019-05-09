@@ -1,8 +1,11 @@
-import { Src, Task, TemplateOption, Expression, ActivityType, Activity, Input } from '@tsdi/activities';
-import { NodeActivityContext, ITransform } from '../core';
+import { Src, Task, TemplateOption, Expression, ActivityType } from '@tsdi/activities';
+import { NodeActivityContext } from '../core';
 import { StreamActivity } from './StreamActivity';
 import { SourceActivity } from './SourceActivity';
 import { DestActivity } from './DestActivity';
+import { Input } from '@tsdi/boot';
+import { CleanActivity } from './CleanActivity';
+import { PipeActivity } from './PipeActivity';
 
 
 /**
@@ -13,6 +16,7 @@ import { DestActivity } from './DestActivity';
  * @extends {ActivityConfigure}
  */
 export interface AssetActivityOption extends TemplateOption {
+    clean?: Expression<Src>;
     /**
      * shell cmd
      *
@@ -46,7 +50,10 @@ export interface AssetActivityOption extends TemplateOption {
  * @implements {ITask}
  */
 @Task('asset')
-export class AssetActivity extends Activity<ITransform> {
+export class AssetActivity extends PipeActivity {
+
+    @Input()
+    clean: CleanActivity;
     /**
      * assert src.
      *
@@ -61,19 +68,38 @@ export class AssetActivity extends Activity<ITransform> {
      * @type {Expression<Src>}
      * @memberof AssetActivity
      */
-    @Input()
+    @Input('dist', './dist')
     dist: DestActivity;
 
     @Input()
     pipes: StreamActivity
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
+        await this.startClean(ctx);
+        await this.startSource(ctx);
+        await this.startPipe(ctx);
+        await this.startDest(ctx);
+    }
+
+    protected async startClean(ctx: NodeActivityContext): Promise<void> {
+        if (this.clean) {
+            await this.clean.run(ctx);
+        }
+    }
+
+    protected async startSource(ctx: NodeActivityContext): Promise<void> {
         if (this.src) {
             await this.src.run(ctx);
         }
+    }
+
+    protected async startPipe(ctx: NodeActivityContext): Promise<void> {
         if (this.pipes) {
             await this.pipes.run(ctx);
         }
+    }
+
+    protected async startDest(ctx: NodeActivityContext): Promise<void> {
         if (this.dist) {
             await this.dist.run(ctx);
         }

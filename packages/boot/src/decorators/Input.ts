@@ -1,4 +1,4 @@
-import { Token, isString, PropParamDecorator, createParamPropDecorator, ParamPropMetadata, isToken, isObject } from '@tsdi/ioc';
+import { Token, isString, PropParamDecorator, createParamPropDecorator, ParamPropMetadata, isToken, isObject, ClassType, Registration, isUndefined } from '@tsdi/ioc';
 
 
 export interface BindingPropertyMetadata extends ParamPropMetadata {
@@ -23,9 +23,17 @@ export interface IPutPropertyDecorator {
      * define Input property decorator with binding property name and provider.
      *
      * @param {string} bindingName binding property name
-     * @param {Token<any>} provider define provider to resolve value to the property.
+     * @param {(Registration<any> | ClassType<any>)} provider define provider to resolve value to the property.
      */
-    (bindingName: string, provider: Token<any>): PropParamDecorator;
+    (bindingName: string, provider: Registration<any> | ClassType<any>): PropParamDecorator;
+
+    /**
+     * define Input property decorator with binding property name and provider.
+     *
+     * @param {string} bindingName binding property name
+     * @param {*} binding default value.
+     */
+    (bindingName: string, defaultVal: any): PropParamDecorator;
 
     /**
      * define Input property decorator with binding property name and provider.
@@ -49,9 +57,13 @@ export const Input: IPutPropertyDecorator = createParamPropDecorator<BindingProp
         }
     });
     args.next<BindingPropertyMetadata>({
-        match: (arg) => isToken(arg),
+        match: (arg) => !isUndefined(arg),
         setMetadata: (metadata, arg) => {
-            metadata.provider = arg;
+            if (isToken(arg) && !isString(arg)) {
+                metadata.provider = arg;
+            } else {
+                metadata.defaultValue = arg;
+            }
         }
     });
     args.next<BindingPropertyMetadata>({

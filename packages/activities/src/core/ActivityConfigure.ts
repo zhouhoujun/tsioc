@@ -52,20 +52,13 @@ export interface ActivityConfigure extends RunnableConfigure {
      */
     title?: string;
 
-    /**
-     * selector.
-     *
-     * @type {string}
-     * @memberof ActivityConfigure
-     */
-    selector?: string;
-    /**
-     * activities component template scope.
-     *
-     * @type {ActivityTemplate}
-     * @memberof ActivityConfigure
-     */
-    template?: ActivityTemplate
+    // /**
+    //  * activities component template scope.
+    //  *
+    //  * @type {ActivityTemplate}
+    //  * @memberof ActivityConfigure
+    //  */
+    // template?: ActivityTemplate
 }
 
 /**
@@ -208,7 +201,7 @@ export interface TryTemplate extends TemplateOption {
     finally?: ActivityType[];
 }
 
-export type ControlTemplate = ExpressionTemplate | ConditionTemplate | InvokeTemplate
+export type ControlTemplate = TemplateOption | ExpressionTemplate | ConditionTemplate | InvokeTemplate
     | BodyTemplate | TimerTemplate | ThrowTemplate | SwitchTemplate | TryTemplate;
 
 

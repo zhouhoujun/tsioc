@@ -1,4 +1,5 @@
-import { Task, Src, ActivityConfigure, Activity, Input, Expression } from '@tsdi/activities';
+import { Task, Src, ActivityConfigure, Activity, Expression } from '@tsdi/activities';
+import { Input } from '@tsdi/boot';
 
 
 /**

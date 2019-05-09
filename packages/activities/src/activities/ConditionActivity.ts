@@ -1,6 +1,5 @@
 import { Task } from '../decorators';
 import { ActivityContext, Expression, Activity } from '../core';
-import { Inject } from '@tsdi/ioc';
 import { Input } from '@tsdi/boot';
 
 /**
@@ -14,7 +13,7 @@ import { Input } from '@tsdi/boot';
 @Task('[condition]')
 export class ConditionActivity extends Activity<boolean> {
 
-    constructor(@Input('condition') protected condition: Expression<boolean>) {
+    constructor(@Input() protected condition: Expression<boolean>) {
         super()
     }
 

@@ -1,8 +1,8 @@
 import { NodeActivityContext, ITransform } from '../core';
-import { Task, Expression, Input, GActivityType, TemplateOption } from '@tsdi/activities';
-import { Inject } from '@tsdi/ioc';
+import { Task, Expression, GActivityType, TemplateOption } from '@tsdi/activities';
 import { DestOptions, dest } from 'vinyl-fs';
 import { StreamActivity } from './StreamActivity';
+import { Input } from '@tsdi/boot';
 
 
 
@@ -57,9 +57,9 @@ export class DestActivity extends StreamActivity {
     options: Expression<DestOptions>;
 
     @Input('destPipes')
-    pipes: GActivityType<ITransform>[];
+    pipes: Expression<ITransform>[];
 
-    constructor(@Inject('[dist]') dist: Expression<string>) {
+    constructor(@Input() dist: Expression<string>) {
         super([])
         this.dist = dist;
     }

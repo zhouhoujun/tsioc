@@ -38,31 +38,6 @@ export class ActivityContext extends BootContext {
     name: string;
 
     /**
-     * input.
-     *
-     * @type {*}
-     * @memberof ActivityContext
-     */
-    private _input: any;
-
-    /**
-     * execute Resulte.
-     *
-     * @readonly
-     * @memberof ActivityContext
-     */
-    get input(): any {
-        return this._input;
-    }
-
-    set input(data: any) {
-        if (this._input !== data) {
-            this.data = this.translate(data);
-        }
-        this._input = data;
-    }
-
-    /**
      * activities component template scope.
      *
      * @type {ActivityTemplate}
@@ -103,21 +78,6 @@ export class ActivityContext extends BootContext {
      * @memberof ActivityContext
      */
     preCondition: boolean;
-
-    protected translate(data: any): any {
-        if (isNullOrUndefined(data)) {
-            return null;
-        }
-        let translator = this.getTranslator(data);
-        if (translator) {
-            return translator.translate(data);
-        }
-        return data;
-    }
-
-    protected getTranslator(input: any): ITranslator {
-        return null;
-    }
 
     getEnvArgs(): ObjectMap<any> {
         return {};

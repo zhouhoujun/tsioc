@@ -10,6 +10,7 @@ import {
 } from '@tsdi/ioc';
 import { ActivityType, Expression, ControlTemplate } from './ActivityConfigure';
 import { ActivityResult, NextToken } from './ActivityResult';
+import { ValuePipe } from './ValuePipe';
 
 
 
@@ -41,6 +42,9 @@ export abstract class Activity<T> {
      */
     @Input()
     name: string;
+
+    @Input()
+    valuePipe: ValuePipe;
 
     private _result: ActivityResult<T>;
     /**
@@ -82,27 +86,39 @@ export abstract class Activity<T> {
      */
     async run(ctx: ActivityContext, next?: () => Promise<void>): Promise<void> {
         ctx.runnable.status.current = this;
-        this._result = this.createResult(next);
+        this._result = await this.initResult(ctx, next);
         await this.execute(ctx);
         if (this.isScope) {
             ctx.runnable.status.scopes.shift();
         }
 
-        this.bindingResult(ctx);
+        await this.pipeResult(ctx);
         await this.result.next(ctx);
     }
 
-    protected bindingResult(ctx: ActivityContext) {
-        if (!isNullOrUndefined(this.result.value)) {
-            ctx.data = this.result.value;
-        }
-    }
 
     protected abstract execute(ctx: ActivityContext): Promise<void>;
 
-    protected createResult(next?: () => Promise<void>, ...providers: ProviderTypes[]): ActivityResult<any> {
+    protected async initResult(ctx: ActivityContext, next?: () => Promise<void>, ...providers: ProviderTypes[]): Promise<ActivityResult<any>> {
         providers.unshift({ provide: NextToken, useValue: next });
-        return this.getContainer().getService(ActivityResult, lang.getClass(this), ...providers);
+        let result = this.getContainer().getService(ActivityResult, lang.getClass(this), ...providers);
+        if (this.valuePipe) {
+            result.value = this.valuePipe.transform(ctx.data);
+        } else {
+            result.value = ctx.data;
+        }
+        return result;
+    }
+
+
+    protected async pipeResult(ctx: ActivityContext) {
+        if (!isNullOrUndefined(this.result.value)) {
+            if (this.valuePipe) {
+                await this.valuePipe.refresh(ctx, this.result.value);
+            } else {
+                ctx.data = this.result.value;
+            }
+        }
     }
 
     protected execActivity(ctx: ActivityContext, activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void> {

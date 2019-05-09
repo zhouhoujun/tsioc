@@ -1,6 +1,6 @@
 export * from './resolvers';
 
-export * from './Translator';
+export * from './ValuePipe';
 export * from './Activity';
 export * from './ActivityResult';
 export * from './ActivityStatus';

@@ -1,12 +1,13 @@
-import { Activity, GActivityType, Input, Task } from '@tsdi/activities';
+import { Task, Expression } from '@tsdi/activities';
 import { ITransform, NodeActivityContext, isTransform } from '../core';
-import { Inject, isUndefined } from '@tsdi/ioc';
+import { Input } from '@tsdi/boot';
+import { PipeActivity } from './PipeActivity';
 
 
 @Task('[pipes]')
-export class StreamActivity extends Activity<ITransform> {
+export class StreamActivity extends PipeActivity {
 
-    constructor(@Inject('[pipes]') protected pipes: GActivityType<ITransform>[]) {
+    constructor(@Input() protected pipes: Expression<ITransform>[]) {
         super()
 
     }
@@ -26,11 +27,11 @@ export class StreamActivity extends Activity<ITransform> {
      * @protected
      * @param {NodeActivityContext} ctx
      * @param {ITransform} stream
-     * @param {...GActivityType<ITransform>[]} pipes
+     * @param {...Expression<ITransform>[]} pipes
      * @returns {Promise<ITransform>}
      * @memberof StreamActivity
      */
-    protected async pipeStream(ctx: NodeActivityContext, stream: ITransform, ...pipes: GActivityType<ITransform>[]): Promise<ITransform> {
+    protected async pipeStream(ctx: NodeActivityContext, stream: ITransform, ...pipes: Expression<ITransform>[]): Promise<ITransform> {
         if (pipes.length < 1) {
             return stream;
         }
@@ -51,56 +52,4 @@ export class StreamActivity extends Activity<ITransform> {
         return await pstream;
     }
 
-    /**
-    * execute stream pipe.
-    *
-    * @protected
-    * @param {NodeActivityContext} ctx
-    * @param {ITransform} stream stream pipe from
-    * @param {GActivityType<ITransform>} transform steam pipe to.
-    * @param {boolean} [waitend=false] wait pipe end or not.
-    * @returns {Promise<ITransform>}
-    * @memberof TransformActivity
-    */
-    protected async executePipe(ctx: NodeActivityContext, stream: ITransform, transform: GActivityType<ITransform>, waitend = false): Promise<ITransform> {
-        let next: ITransform;
-        await this.execActivity(ctx, transform);
-        let transPipe = ctx.data;
-        let vaild = false;
-        if (isTransform(stream)) {
-            if (isTransform(transPipe) && !transPipe.changeAsOrigin) {
-                vaild = true;
-            } else {
-                next = stream;
-            }
-        } else if (isTransform(transPipe) && transPipe.changeAsOrigin) {
-            next = transPipe;
-        }
-
-        if (vaild) {
-            next = stream.pipe(transPipe);
-            if (waitend) {
-                return await new Promise((r, j) => {
-                    next
-                        .once('end', r)
-                        .once('error', j);
-                }).then(() => {
-                    next.removeAllListeners('error');
-                    next.removeAllListeners('end');
-                    return next;
-                }, err => {
-                    next.removeAllListeners('error');
-                    next.removeAllListeners('end');
-                    if (!isUndefined(process)) {
-                        console.error(err);
-                        process.exit(1);
-                        return err;
-                    } else {
-                        return Promise.reject(new Error(err));
-                    }
-                });
-            }
-        }
-        return next;
-    }
 }

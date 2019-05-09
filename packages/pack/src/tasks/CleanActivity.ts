@@ -1,6 +1,6 @@
-import { Input, Expression, Src, Task, Activity, TemplateOption } from '@tsdi/activities';
-import { Inject } from '@tsdi/ioc';
+import { Expression, Src, Task, Activity, TemplateOption } from '@tsdi/activities';
 import { NodeActivityContext } from '../core';
+import { Input } from '@tsdi/boot';
 
 /**
  * clean activity template option.
@@ -33,8 +33,7 @@ export class CleanActivity extends Activity<void> {
     protected clean: Expression<Src>;
 
 
-    constructor(
-        @Inject('[clean]') clean: Expression<Src>) {
+    constructor(@Input() clean: Expression<Src>) {
         super()
         this.clean = clean;
     }
