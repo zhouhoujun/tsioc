@@ -43,8 +43,8 @@ export abstract class Activity<T> {
     @Input()
     name: string;
 
-    @Input()
-    valuePipe: ValuePipe;
+    @Input('pipe')
+    pipe: ValuePipe;
 
     private _result: ActivityResult<T>;
     /**
@@ -102,8 +102,8 @@ export abstract class Activity<T> {
     protected async initResult(ctx: ActivityContext, next?: () => Promise<void>, ...providers: ProviderTypes[]): Promise<ActivityResult<any>> {
         providers.unshift({ provide: NextToken, useValue: next });
         let result = this.getContainer().getService(ActivityResult, lang.getClass(this), ...providers);
-        if (this.valuePipe) {
-            result.value = this.valuePipe.transform(ctx.data);
+        if (this.pipe) {
+            result.value = this.pipe.transform(ctx.data);
         } else {
             result.value = ctx.data;
         }
@@ -113,8 +113,10 @@ export abstract class Activity<T> {
 
     protected async pipeResult(ctx: ActivityContext) {
         if (!isNullOrUndefined(this.result.value)) {
-            if (this.valuePipe) {
-                await this.valuePipe.refresh(ctx, this.result.value);
+            if (this.pipe) {
+                if (isFunction(this.pipe.refresh)) {
+                    await this.pipe.refresh(ctx, this.result.value);
+                }
             } else {
                 ctx.data = this.result.value;
             }

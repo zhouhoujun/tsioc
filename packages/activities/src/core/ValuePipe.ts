@@ -27,5 +27,5 @@ export abstract class ValuePipe {
      * @returns {Promise<void>}
      * @memberof ValuePipe
      */
-    abstract refresh?(ctx: ActivityContext, value: any): Promise<void>;
+    refresh?(ctx: ActivityContext, value: any): Promise<void>;
 }

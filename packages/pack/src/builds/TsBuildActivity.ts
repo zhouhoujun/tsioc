@@ -1,4 +1,4 @@
-import { Task, Expression } from '@tsdi/activities';
+import { Task, Expression, ValuePipe } from '@tsdi/activities';
 import { Input } from '@tsdi/boot';
 import { NodeActivityContext } from '../core';
 import {
@@ -7,6 +7,7 @@ import {
 } from '../tasks';
 import { ObjectMap, isString } from '@tsdi/ioc';
 import * as ts from 'gulp-typescript';
+import { TypeScriptJsPipe, TypeScriptTdsPipe } from './TsPipe';
 
 export interface TsBuildOption extends AssetActivityOption {
     annotation?: Expression<boolean>;
@@ -39,6 +40,12 @@ export class TsBuildActivity extends AssetActivity {
     @Input()
     dts: DestActivity;
 
+    @Input('jsValuePipe', TypeScriptJsPipe)
+    jsPipe: ValuePipe;
+
+    @Input('tdsValuePipe', TypeScriptTdsPipe)
+    tdsPipe: ValuePipe;
+
 
     @Input('tsconfig', './tsconfig.json')
     tsconfig: Expression<string | ObjectMap<any>>;
@@ -62,11 +69,20 @@ export class TsBuildActivity extends AssetActivity {
         }
     }
 
+    protected async startPipe(ctx: NodeActivityContext): Promise<void> {
+        if (this.pipes) {
+            this.pipes.pipe = this.pipes.pipe || this.jsPipe;
+            await this.pipes.run(ctx);
+        }
+    }
+
     protected async startDest(ctx: NodeActivityContext): Promise<void> {
         if (this.dist) {
+            this.dist.pipe = this.dist.pipe || this.jsPipe;
             await this.dist.run(ctx);
         }
         if (this.dts) {
+            this.dts.pipe = this.dts.pipe || this.tdsPipe;
             await this.dts.run(ctx);
         }
     }
