@@ -37,7 +37,7 @@ export class CoreModule {
 
 
         container.get(ModuleDecoratorRegisterer).register(Task, DIModuleRegisterScope);
-        container.get(ModuleBuildDecoratorRegisterer).register(Task, BindingScope);
+        container.get(ModuleBuildDecoratorRegisterer).register(Task, TaskDecorBootBuildHandle);
         container.get(SelectorDecoratorRegisterer).register(Task, TaskDecorSelectorHandle);
 
         container.use(core)

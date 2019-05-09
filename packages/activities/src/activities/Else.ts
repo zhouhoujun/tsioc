@@ -25,7 +25,7 @@ export class ElseActivity<T extends ActivityContext> extends Activity<T> {
         if (curr && curr.subs.length) {
             let activity = curr.subs.find(a => a instanceof ElseIfActivity || a instanceof IfActivity);
             if (activity && !activity.result.value) {
-                await this.execute(ctx);
+                await this.body.run(ctx);
             }
         }
     }

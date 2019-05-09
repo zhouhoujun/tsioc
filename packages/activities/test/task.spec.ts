@@ -46,6 +46,7 @@ describe('activity test', () => {
                 ]
 
             });
+            // console.log(result.target.activities[1])
             // console.log('configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue);
             expect(result.data).toEqual('component task');
         });

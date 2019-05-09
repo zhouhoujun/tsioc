@@ -24,7 +24,7 @@ export class IfActivity<T> extends Activity<T> {
     protected async execute(ctx: ActivityContext): Promise<void> {
         await this.condition.run(ctx);
         if (this.condition.result.value) {
-            await this.execute(ctx);
+            await this.body.run(ctx);
         }
     }
 }

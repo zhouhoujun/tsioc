@@ -126,11 +126,9 @@ export abstract class Activity<T> {
                 }
             };
 
-        } else if (isFunction(activity)) {
-            return activity;
-        } else {
-            return (ctx: T, next?: () => Promise<void>) => next && next();
         }
+        return isFunction(activity) ? activity : null;
+
     }
 
     protected async buildActivity(activity: Type<any> | ControlTemplate): Promise<Activity<any>> {

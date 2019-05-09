@@ -1,6 +1,7 @@
 import { Task } from '../decorators/Task';
 import { CompoiseActivity, ActivityType } from '../core';
 import { Input } from '@tsdi/boot';
+import { lang } from '@tsdi/ioc';
 
 /**
  * sequence activity.
@@ -14,8 +15,6 @@ export class SequenceActivity<T> extends CompoiseActivity<T> {
 
     constructor(@Input() activities: ActivityType[]) {
         super()
-        console.log('SequenceActivity args');
-        console.log(activities);
         this.activities = activities || [];
     }
 

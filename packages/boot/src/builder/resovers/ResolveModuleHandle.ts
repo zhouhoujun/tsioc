@@ -23,7 +23,7 @@ export class ResolveModuleHandle extends ResolveHandle {
                             let pCtx = ParseContext.parse(ctx.type, ctx.template, bp, ctx.getRaiseContainer());
                             await this.container.get(ParseScope).execute(pCtx);
                             let paramVal = pCtx.bindingValue;
-                            console.log('paramVal', paramVal, ctx.type, ctx.template, bp);
+                            // console.log(ctx.type, 'paramVal:', paramVal, ctx.template, bp);
                             if (!isNullOrUndefined(paramVal)) {
                                 ctx.providers.push({ provide: new InjectReference(bp.provider || bp.type || bp.name, '__binding'), useValue: paramVal });
                             }
