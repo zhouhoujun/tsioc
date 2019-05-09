@@ -1,7 +1,6 @@
 import { Task } from '../decorators/Task';
 import { CompoiseActivity, ActivityType } from '../core';
 import { Input } from '@tsdi/boot';
-import { lang } from '@tsdi/ioc';
 
 /**
  * sequence activity.

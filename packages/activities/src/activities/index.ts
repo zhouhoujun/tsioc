@@ -21,4 +21,5 @@ export * from './Switch';
 export * from './Throw';
 export * from './TryCatch';
 export * from './While';
+export * from './Each';
 

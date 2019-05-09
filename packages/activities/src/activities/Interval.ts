@@ -12,7 +12,7 @@ import { BodyActivity } from './BodyActivity';
  * @extends {ControlActivity}
  */
 @Task('interval')
-export class IntervalActivity<T extends ActivityContext> extends Activity<T> {
+export class IntervalActivity<T> extends Activity<T> {
 
     @Input()
     timer: TimerActivity;
@@ -20,7 +20,7 @@ export class IntervalActivity<T extends ActivityContext> extends Activity<T> {
     @Input()
     body: BodyActivity<T>;
 
-    async execute(ctx: T): Promise<void> {
+    async execute(ctx: ActivityContext): Promise<void> {
         await this.timer.run(ctx);
         setInterval(() => {
             this.body.run(ctx);
