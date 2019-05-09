@@ -2,7 +2,7 @@ import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderType
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { IContainer, ContainerToken, isContainer } from '@tsdi/core';
 import { CompositeHandle, HandleRegisterer } from '../core';
-import { ModuleBuilderLifeScope, RunnableBuildLifeScope, ResolveMoudleScope, BuildContext } from '../builder';
+import { ModuleBuilderLifeScope, RunnableBuildLifeScope, ResolveMoudleScope, BuildContext, IModuleResolveOption } from '../builder';
 
 
 
@@ -32,13 +32,13 @@ export class BuilderService extends IocCoreService {
      *
      * @template T
      * @param {Type<any>} target
-     * @param {*} bindingTemplate
+     * @param {IModuleResolveOption} options
      * @param {(IContainer | ProviderTypes)} [container]
      * @param {...ProviderTypes[]} providers
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    async resolve<T>(target: Type<any>, bindingTemplate: any, container?: IContainer | ProviderTypes, ...providers: ProviderTypes[]): Promise<T> {
+    async resolve<T>(target: Type<any>, options: IModuleResolveOption, container?: IContainer | ProviderTypes, ...providers: ProviderTypes[]): Promise<T> {
         let raiseContainer: IContainer;
         if (isContainer(container)) {
             raiseContainer = container;
@@ -46,8 +46,10 @@ export class BuilderService extends IocCoreService {
             providers.unshift(container as ProviderTypes);
             raiseContainer = this.container;
         }
-        let rctx = BuildContext.parse(target, bindingTemplate, raiseContainer);
-        rctx.providers = providers;
+        let rctx = BuildContext.parse(target, options, raiseContainer);
+        if (providers.length) {
+            rctx.providers = (rctx.providers || []).concat(providers);
+        }
         await this.container.get(ResolveMoudleScope)
             .execute(rctx);
         return rctx.target;

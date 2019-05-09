@@ -12,7 +12,12 @@ export class BindingPropertyHandle extends ResolveHandle {
                 let binding = ref.propBindings.get(n);
                 let tempVal = ctx.template[binding.bindingName || binding.name];
                 if (!isNullOrUndefined(tempVal)) {
-                    let pctx = ParseContext.parse(ctx.type, tempVal, binding, ctx.getRaiseContainer())
+                    let pctx = ParseContext.parse(ctx.type, {
+                        template: tempVal,
+                        binding: binding,
+                        annoation: ctx.annoation,
+                        decorator: ctx.decorator
+                    }, ctx.getRaiseContainer())
                     await this.container.get(ParseScope)
                         .execute(pctx);
                     ctx.target[binding.name] = pctx.bindingValue;

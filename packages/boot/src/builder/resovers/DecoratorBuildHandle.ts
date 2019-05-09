@@ -1,22 +1,13 @@
 import { MetadataService } from '@tsdi/ioc';
 import { BuildContext } from './BuildContext';
-import { ModuleBuildDecoratorRegisterer } from './ModuleBuildDecoratorRegisterer';
+import { BuildDecoratorRegisterer } from './BuildDecoratorRegisterer';
 import { ResolveHandle } from './ResolveHandle';
 
 
 export class DecoratorBuildHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
-        let reg = this.container.get(ModuleBuildDecoratorRegisterer);
-        let decors = this.getDecortaors(ctx);
-        if (decors.length) {
-            await Promise.all(decors.map(async d => {
-                if (reg.has(d)) {
-                    ctx.decorator = d;
-                    await this.execFuncs(ctx, reg.getFuncs(this.container, d));
-                }
-            }));
-            ctx.decorator = null;
-        }
+        let reg = this.container.get(BuildDecoratorRegisterer);
+        await this.execFuncs(ctx, reg.getFuncs(this.container, ctx.decorator));
 
         if (next) {
             await next();

@@ -8,6 +8,7 @@ import { BootConfigureRegisterHandle } from './BootConfigureRegisterHandle';
 import { BootContext } from '../BootContext';
 import { ResolveBootHandle } from './ResolveBootHandle';
 import { ResolveTypeHandle } from './ResolveTypeHandle';
+import { BootDecoratorRegisterer } from './BootDecoratorRegisterer';
 
 
 export class ModuleBuildScope extends CompositeHandle<BootContext> {
@@ -22,6 +23,7 @@ export class ModuleBuildScope extends CompositeHandle<BootContext> {
     }
 
     setup() {
+        this.container.register(BootDecoratorRegisterer);
         this.use(BootContextCheckHandle)
             .use(BootProvidersHandle)
             .use(BootDepsHandle)

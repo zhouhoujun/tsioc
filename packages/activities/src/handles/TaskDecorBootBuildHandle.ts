@@ -1,12 +1,13 @@
-import { BuilderService, SelectorManager, ResolveHandle, BuildContext } from '@tsdi/boot';
+import { BuilderService, SelectorManager, BootHandle, BootContext } from '@tsdi/boot';
 import { Activity } from '../core';
 import { isArray, Type, isClass } from '@tsdi/ioc';
 import { SequenceActivity } from '../activities';
 
-export class TaskDecorBootBuildHandle extends ResolveHandle {
-    async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
-        if (!(ctx.target instanceof Activity)) {
-            let template = ctx.template;
+export class TaskDecorBootBuildHandle extends BootHandle {
+
+    async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
+        if (!(ctx.target instanceof Activity) && !(ctx.bootstrap instanceof Activity)) {
+            let template = ctx.template || ctx.annoation.template;
             let md: Type<any>;
             if (isArray(template)) {
                 md = SequenceActivity;
@@ -22,9 +23,8 @@ export class TaskDecorBootBuildHandle extends ResolveHandle {
                     }
                 }
             }
-            ctx.target = await this.container.get(BuilderService).resolve(md, template, ctx.getRaiseContainer(), ...(ctx.providers || []));
+            ctx.target = await this.container.get(BuilderService).resolve(md, { template: template, providers: ctx.providers }, ctx.getRaiseContainer());
         }
-
         await next();
     }
 }

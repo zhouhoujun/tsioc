@@ -1,6 +1,28 @@
-import { IHandleContext, IBinding } from '../../core';
+import { IHandleContext, ModuleConfigure } from '../../core';
 import { IContainer } from '@tsdi/core';
 import { ContainerFactory, Injectable, Type, IocActionContext, ProviderTypes } from '@tsdi/ioc';
+
+export interface IModuleResolveOption {
+
+    template?: any;
+
+    decorator?: string;
+
+    /**
+     * annoation metadata config.
+     *
+     * @type {ModuleConfigure}
+     * @memberof BuildContext
+     */
+    annoation?: ModuleConfigure;
+    /**
+    * providers.
+    *
+    * @type {ProviderTypes[]}
+    * @memberof BootOptions
+    */
+    providers?: ProviderTypes[];
+}
 
 @Injectable
 export class BuildContext extends IocActionContext implements IHandleContext {
@@ -11,7 +33,15 @@ export class BuildContext extends IocActionContext implements IHandleContext {
 
     target?: any;
 
-    decorator?: string;
+    decorator: string;
+
+    /**
+     * annoation metadata config.
+     *
+     * @type {ModuleConfigure}
+     * @memberof BuildContext
+     */
+    annoation?: ModuleConfigure;
     /**
     * providers.
     *
@@ -20,10 +50,9 @@ export class BuildContext extends IocActionContext implements IHandleContext {
     */
     providers?: ProviderTypes[];
 
-    constructor(type: Type<any>, template?: any) {
+    constructor(type: Type<any>) {
         super();
         this.type = type;
-        this.template = template;
     }
 
 
@@ -31,10 +60,9 @@ export class BuildContext extends IocActionContext implements IHandleContext {
         return this.raiseContainerGetter() as IContainer;
     }
 
-    static parse(type: Type<any>, template: any, raiseContainer: IContainer | ContainerFactory): BuildContext {
-        let ctx = new BuildContext(type, template);
-        ctx.type = type;
-        ctx.template = template;
+    static parse(type: Type<any>, options: IModuleResolveOption, raiseContainer: IContainer | ContainerFactory): BuildContext {
+        let ctx = new BuildContext(type);
+        ctx.setOptions(options);
         raiseContainer && ctx.setRaiseContainer(raiseContainer);
         return ctx;
     }

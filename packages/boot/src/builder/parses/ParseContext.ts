@@ -1,43 +1,33 @@
 import { IHandleContext, IBinding } from '../../core';
 import { IContainer } from '@tsdi/core';
-import { ContainerFactory, Injectable, Type, IocActionContext, ProviderTypes } from '@tsdi/ioc';
+import { ContainerFactory, Injectable, Type } from '@tsdi/ioc';
+import { BuildContext, IModuleResolveOption } from '../resovers';
+
+export interface IBindingParseOption extends IModuleResolveOption  {
+    selector?: Type<any>;
+    binding: IBinding<any>;
+}
 
 @Injectable
-export class ParseContext extends IocActionContext implements IHandleContext {
-
-    template: any;
+export class ParseContext extends BuildContext implements IHandleContext {
 
     selector?: Type<any>;
-
-    type: Type<any>;
 
     binding: IBinding<any>;
 
     bindingValue?: any;
 
-    decorator?: string;
-
-    /**
-    * providers.
-    *
-    * @type {ProviderTypes[]}
-    * @memberof BootOptions
-    */
-    providers?: ProviderTypes[];
-
-    constructor(type?: Type<any>, template?: any, binding?: IBinding<any>) {
-        super();
-        this.type = type;
-        this.template = template;
-        this.binding = binding;
+    constructor(type: Type<any>) {
+        super(type);
     }
 
     getRaiseContainer(): IContainer {
         return this.raiseContainerGetter() as IContainer;
     }
 
-    static parse(type: Type<any>, template: any, binding: IBinding<any>, raiseContainer: IContainer | ContainerFactory): ParseContext {
-        let ctx = new ParseContext(type, template, binding);
+    static parse(type: Type<any>, options: IBindingParseOption, raiseContainer: IContainer | ContainerFactory): ParseContext {
+        let ctx = new ParseContext(type);
+        ctx.setOptions(options);
         raiseContainer && ctx.setRaiseContainer(raiseContainer);
         return ctx;
     }

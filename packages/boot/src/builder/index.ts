@@ -9,6 +9,7 @@ export * from './BootConfigureRegisterHandle';
 export * from './BootContextCheckHandle';
 export * from './BootProvidersHandle';
 export * from './BootDepsHandle';
+export * from './BootDecoratorRegisterer';
 
 export * from './ModuleBuildScope';
 
