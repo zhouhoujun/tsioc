@@ -6,7 +6,7 @@ export class TaskDecorSelectorHandle extends ParseHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
         if (this.isActivity(ctx.decorator, ctx.template)) {
             ctx.selector = ctx.template;
-            ctx.template = null
+            ctx.template = null;
         } else if (isMetadataObject(ctx.template) && ctx.template.activity) {
             let mgr = this.container.get(SelectorManager);
             let activity = ctx.template.activity;
@@ -15,7 +15,6 @@ export class TaskDecorSelectorHandle extends ParseHandle {
             } else if (this.isActivity(ctx.decorator, activity)) {
                 ctx.selector = activity;
             }
-            ctx.template.activity = null;
         }
         if (!ctx.selector && this.isActivity(ctx.decorator, ctx.binding.provider)) {
             ctx.selector = ctx.binding.provider;

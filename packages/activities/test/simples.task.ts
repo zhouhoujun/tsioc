@@ -37,7 +37,7 @@ export class SimpleTask extends Activity<string> {
 export class SimpleCTask extends SequenceActivity<string> {
 
     async execute(ctx: ActivityContext): Promise<void> {
-        console.log('execute SimpleCTask');
+        console.log('execute SimpleCTask........');
         await super.execute(ctx);
         // console.log('before component task:', this.name);
         this.result.value = await Promise.resolve('component task')

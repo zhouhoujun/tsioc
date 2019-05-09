@@ -7,7 +7,9 @@ export class InitTemplateHandle extends ResolveHandle {
         if (!ctx.template) {
             ctx.template = ctx.annoation.template;
         } else if (ctx.annoation.template) {
-            if (!isArray(ctx.template) && !isArray(ctx.annoation.template)) {
+            if (!isArray(ctx.template) && isArray(ctx.annoation.template)) {
+                ctx.template = ctx.annoation.template;
+            } else if (!isArray(ctx.template)) {
                 ctx.template = Object.assign({}, ctx.annoation.template, ctx.template);
             }
         }
