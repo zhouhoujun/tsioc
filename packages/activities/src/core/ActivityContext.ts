@@ -1,7 +1,6 @@
 import {
-    Injectable, isNullOrUndefined, ObjectMap, Type, Refs, ContainerFactory
+    Injectable, ObjectMap, Type, Refs, ContainerFactory
 } from '@tsdi/ioc';
-import { ITranslator } from './Translator';
 import { BootContext, createAnnoationContext } from '@tsdi/boot';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
