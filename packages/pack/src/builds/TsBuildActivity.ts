@@ -12,8 +12,12 @@ import { TypeScriptJsPipe, TypeScriptTdsPipe } from './TsPipe';
 export interface TsBuildOption extends AssetActivityOption {
     annotation?: Expression<boolean>;
     sourceMaps?: Expression<string>;
+    tsconfig: Expression<string | ObjectMap<any>>;
+    dts?: Expression<string>;
     uglify?: Expression<boolean>;
     uglifyOptions?: Expression<any>;
+    jsValuePipe?: ValuePipe;
+    tdsValuePipe?: ValuePipe;
 }
 
 
