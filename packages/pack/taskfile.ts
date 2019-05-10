@@ -7,7 +7,10 @@ const commonjs = require('rollup-plugin-commonjs');
 const rollup = require('gulp-rollup');
 const rename = require('gulp-rename');
 const builtins = require('rollup-plugin-node-builtins');
-
+import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
+import { rollupClassAnnotations } from '@tsdi/annotations';
+// const ts = require('rollup-plugin-typescript2');
+import * as ts from 'rollup-plugin-typescript';
 
 // @Asset({
 //     src: 'lib/**/*.js',
@@ -68,6 +71,7 @@ const builtins = require('rollup-plugin-node-builtins');
 
 @Task({
     imports: [
+        ServerActivitiesModule,
         PackModule
     ],
     baseURL: __dirname,
@@ -90,15 +94,56 @@ const builtins = require('rollup-plugin-node-builtins');
             // },
             <RollupOption>{
                 activity: 'rollup',
-                annoation: true,
-                ts: ctx => {
-                    return {
-                        tsconfig: ctx.body.tsconfig
-                    }
-                },
+                // annoation: true,
+                // ts: ctx => {
+                //     return {
+                //         tsconfig: ctx.body.tsconfig
+                //     }
+                // },
                 options: ctx => {
                     return {
-                        input: 'src/index.ts'
+                        input: 'src/index.ts',
+                        plugins: [
+                            resolve(),
+                            commonjs({
+                                exclude: ['node_modules/**', '../../node_modules/**']
+                            }),
+                            rollupClassAnnotations(),
+                            ts(),
+                            // builtins(),
+                            rollupSourcemaps()
+                        ],
+                        output: {
+                            file: `${ctx.body.dist}/pack.js`
+                        },
+                        external: [
+                            'reflect-metadata',
+                            'tslib',
+                            'globby', 'path', 'fs', 'events', 'stream', 'child_process',
+                            '@tsdi/core',
+                            '@tsdi/aop',
+                            '@tsdi/logs',
+                            '@tsdi/boot',
+                            '@tsdi/pipes',
+                            '@tsdi/platform-server',
+                            'minimist', 'gulp-sourcemaps', 'vinyl-fs', 'del', 'chokidar',
+                            'gulp-uglify', 'execa', '@tsdi/annotations', 'gulp-typescript',
+                            '@tsdi/activities',
+                            '@tsdi/platform-server-activities',
+                            '@tsdi/build',
+                            'rxjs',
+                            'rxjs/operators'
+                        ],
+                        globals: {
+                            'reflect-metadata': 'Reflect',
+                            'tslib': 'tslib',
+                            'path': 'path',
+                            '@tsdi/core': '@tsdi/core',
+                            '@tsdi/aop': '@tsdi/aop',
+                            '@tsdi/boot': '@tsdi/boot',
+                            '@tsdi/activities': '@tsdi/activities',
+                            '@tsdi/build': '@tsdi/build'
+                        },
                     }
                 }
 

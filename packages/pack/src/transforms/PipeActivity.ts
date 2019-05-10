@@ -1,7 +1,6 @@
-import { ITransform, NodeActivityContext, isTransform } from '../core';
+import { ITransform, NodeActivity, NodeActivityContext, isTransform } from '../core';
 import { Expression } from '@tsdi/activities';
 import { isUndefined } from '@tsdi/ioc';
-import { NodeActivity } from '../core/NodeActivity';
 
 /**
  * pipe stream activity
