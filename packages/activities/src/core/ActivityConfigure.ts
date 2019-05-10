@@ -25,7 +25,9 @@ export enum Activities {
     catch = 'catch',
     invoke = 'invoke',
     sequence = 'sequence',
-    parallel = 'parallel'
+    parallel = 'parallel',
+    interval = 'interval',
+    each = 'each'
 }
 
 /**
@@ -52,13 +54,13 @@ export interface ActivityConfigure extends RunnableConfigure {
      */
     title?: string;
 
-    // /**
-    //  * activities component template scope.
-    //  *
-    //  * @type {ActivityTemplate}
-    //  * @memberof ActivityConfigure
-    //  */
-    // template?: ActivityTemplate
+    /**
+     * activities component template scope.
+     *
+     * @type {ActivityTemplate}
+     * @memberof ActivityConfigure
+     */
+    template?: ActivityTemplate;
 }
 
 /**
@@ -135,6 +137,9 @@ export interface IConditionTemplate {
 export interface ConditionTemplate extends BodyTemplate, IConditionTemplate {
 }
 
+export interface EachTeamplate extends BodyTemplate {
+    each: Expression<any[]>
+}
 
 /**
  * timer template.
@@ -201,7 +206,7 @@ export interface TryTemplate extends TemplateOption {
     finally?: ActivityType[];
 }
 
-export type ControlTemplate = TemplateOption | ExpressionTemplate | ConditionTemplate | InvokeTemplate
+export type ControlTemplate = TemplateOption | ExpressionTemplate | ConditionTemplate | EachTeamplate | InvokeTemplate
     | BodyTemplate | TimerTemplate | ThrowTemplate | SwitchTemplate | TryTemplate;
 
 

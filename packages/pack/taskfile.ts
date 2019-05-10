@@ -1,5 +1,4 @@
 import { Workflow, Task, ActivityTemplate } from '@tsdi/activities';
-import { CleanToken, CleanActivity, AssetActivity, Asset, TsCompile, TransformContext } from '@tsdi/build';
 import { PackModule, PackTemplates, AssetActivityOption, TsBuildOption } from '@tsdi/pack';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -72,14 +71,18 @@ export class RollupTs extends AssetActivity {
         PackModule
     ],
     baseURL: __dirname,
-    template: <TsBuildOption>{
-        activity: 'ts',
-        clean: ['lib', 'bundles', 'fesm5', 'es2015', 'fesm2015'],
-        src: 'src',
-        dist: 'lib',
-        annotation: true,
-        uglify: false,
-        tsconfig: './tsconfig.es2017.json'
+    template: {
+        each: [
+            { clean: 'lib', dist: 'lib', uglify: false, tsconfig: './tsconfig.es2017.json' },
+            { dist: 'es2015', uglify: true, tsconfig: './tsconfig.es2015.json' }
+        ],
+        body: [
+            <TsBuildOption>{
+                activity: 'ts',
+                clean: ['lib', 'bundles', 'fesm5', 'es2015', 'fesm2015'],
+                src: 'src/**/*.ts',
+                annotation: true
+            }]
         // watch: true,
         // assets: {
         //     ts: {
