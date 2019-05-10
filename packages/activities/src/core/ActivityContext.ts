@@ -22,6 +22,14 @@ import { ActivityConfigure, ActivityTemplate } from './ActivityConfigure';
 export class ActivityContext extends BootContext {
 
     /**
+     * body
+     *
+     * @type {ObjectMap<any>}
+     * @memberof ActivityContext
+     */
+    body: ObjectMap<any> = {};
+
+    /**
      * workflow id.
      *
      * @type {string}
