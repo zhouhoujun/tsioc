@@ -1,5 +1,5 @@
-import {  Src, ActivityContext } from '@tsdi/activities';
-import { Injectable, ObjectMap, Express2, isArray, isString, lang } from '@tsdi/ioc';
+import {  Src, ActivityContext, Activity } from '@tsdi/activities';
+import { Injectable, ObjectMap, Express2, isArray, isString, lang, Refs } from '@tsdi/ioc';
 import { toAbsolutePath } from '@tsdi/platform-server';
 import { existsSync, readdirSync, lstatSync } from 'fs';
 import { join, dirname, normalize, relative } from 'path';
@@ -8,7 +8,7 @@ import {
     /* ls, test, cd, ShellString, pwd, ShellArray, find, mv, TestOptions, cat, sed */
 } from 'shelljs';
 import * as globby from 'globby';
-import { ProcessRunRootToken } from '@tsdi/boot';
+import { ProcessRunRootToken, BootContext } from '@tsdi/boot';
 const minimist = require('minimist');
 const del = require('del');
 
@@ -46,6 +46,8 @@ export interface CmdOptions {
  * @implements {IActivityContext<ITransform>}
  */
 @Injectable
+@Refs(Activity, BootContext)
+@Refs('@Task', BootContext)
 export class NodeActivityContext extends ActivityContext {
 
     packageFile = 'package.json';

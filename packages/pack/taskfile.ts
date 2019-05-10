@@ -12,63 +12,6 @@ import { rollupClassAnnotations } from '@tsdi/annotations';
 // const ts = require('rollup-plugin-typescript2');
 import * as ts from 'rollup-plugin-typescript';
 
-// @Asset({
-//     src: 'lib/**/*.js',
-//     sourcemaps: true,
-//     dest: 'fesm5',
-//     data: {
-//         name: 'pack.js',
-//         input: 'lib/index.js'
-//     },
-//     pipes: [
-//         (ctx: TransformContext) => rollup({
-//             name: ctx.config.data.name,
-//             format: 'cjs',
-//             sourceMap: true,
-//             plugins: [
-//                 resolve(),
-//                 commonjs({
-//                     exclude: ['node_modules/**', '../../node_modules/**']
-//                 }),
-//                 // builtins(),
-//                 rollupSourcemaps()
-//             ],
-//             external: [
-//                 'reflect-metadata',
-//                 'tslib',
-//                 'globby', 'path', 'fs', 'events', 'stream', 'child_process',
-//                 '@tsdi/core',
-//                 '@tsdi/aop',
-//                 '@tsdi/logs',
-//                 '@tsdi/boot',
-//                 '@tsdi/pipes',
-//                 '@tsdi/platform-server',
-//                 'minimist', 'gulp-sourcemaps', 'vinyl-fs', 'del', 'chokidar',
-//                 'gulp-uglify', 'execa', '@tsdi/annotations', 'gulp-typescript',
-//                 '@tsdi/activities',
-//                 '@tsdi/platform-server-activities',
-//                 '@tsdi/build',
-//                 'rxjs',
-//                 'rxjs/operators'
-//             ],
-//             globals: {
-//                 'reflect-metadata': 'Reflect',
-//                 'tslib': 'tslib',
-//                 'path': 'path',
-//                 '@tsdi/core': '@tsdi/core',
-//                 '@tsdi/aop': '@tsdi/aop',
-//                 '@tsdi/boot': '@tsdi/boot',
-//                 '@tsdi/activities': '@tsdi/activities',
-//                 '@tsdi/build': '@tsdi/build'
-//             },
-//             input: ctx.relativeRoot(ctx.config.data.input)
-//         }),
-//         (ctx) => rename(ctx.config.data.name)
-//     ],
-// })
-// export class RollupTs extends AssetActivity {
-// }
-
 @Task({
     imports: [
         ServerActivitiesModule,
@@ -105,12 +48,20 @@ import * as ts from 'rollup-plugin-typescript';
                         input: 'src/index.ts',
                         plugins: [
                             resolve(),
-                            commonjs({
-                                exclude: ['node_modules/**', '../../node_modules/**']
-                            }),
+                            // {
+                            //     resolveId(id) {
+                            //         if (/^\./.test(id)) {
+                            //             return id;
+                            //         }
+                            //         return null;
+                            //     }
+                            // },
+                            // commonjs({
+                            //     exclude: ['node_modules/**', '../../node_modules/**']
+                            // }),
                             rollupClassAnnotations(),
                             ts(),
-                            // builtins(),
+                            builtins(),
                             rollupSourcemaps()
                         ],
                         output: {
@@ -120,17 +71,17 @@ import * as ts from 'rollup-plugin-typescript';
                             'reflect-metadata',
                             'tslib',
                             'globby', 'path', 'fs', 'events', 'stream', 'child_process',
+                            '@tsdi/ioc',
                             '@tsdi/core',
                             '@tsdi/aop',
                             '@tsdi/logs',
                             '@tsdi/boot',
-                            '@tsdi/pipes',
+                            '@tsdi/unit',
                             '@tsdi/platform-server',
                             'minimist', 'gulp-sourcemaps', 'vinyl-fs', 'del', 'chokidar',
                             'gulp-uglify', 'execa', '@tsdi/annotations', 'gulp-typescript',
                             '@tsdi/activities',
                             '@tsdi/platform-server-activities',
-                            '@tsdi/build',
                             'rxjs',
                             'rxjs/operators'
                         ],
@@ -138,39 +89,17 @@ import * as ts from 'rollup-plugin-typescript';
                             'reflect-metadata': 'Reflect',
                             'tslib': 'tslib',
                             'path': 'path',
+                            '@tsdi/ioc': '@tsdi/ioc',
                             '@tsdi/core': '@tsdi/core',
                             '@tsdi/aop': '@tsdi/aop',
                             '@tsdi/boot': '@tsdi/boot',
-                            '@tsdi/activities': '@tsdi/activities',
-                            '@tsdi/build': '@tsdi/build'
+                            '@tsdi/activities': '@tsdi/activities'
                         },
                     }
                 }
 
             }
         ]
-        // watch: true,
-        // assets: {
-        //     ts: {
-        //         sequence: [
-        //             { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.es2017.json', activity: TsCompile },
-        //             RollupTs
-        //         ]
-        //     },
-        //     ts2015: {
-        //         sequence: [
-        //             { src: 'src/**/*.ts', dest: 'es2015', tds: false, annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
-        //             {
-        //                 src: 'es2015/**/*.js',
-        //                 dest: 'fesm2015',
-        //                 data: {
-        //                     name: 'pack.js',
-        //                     input: 'es2015/index.js'
-        //                 }, activity: RollupTs
-        //             }
-        //         ]
-        //     }
-        // }
     }
 })
 export class PackBuilder {

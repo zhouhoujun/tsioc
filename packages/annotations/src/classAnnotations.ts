@@ -94,7 +94,7 @@ export function rollupClassAnnotations(options?: AnnOptions): Plugin {
     return {
         name: 'classAnnations',
         transform(code, id) {
-            if (!filter(id) && !/.ts$/.test(id)) {
+            if (!filter(id) && !/\.ts$/.test(id)) {
                 return null
             }
             return new Promise((resolve) => {
