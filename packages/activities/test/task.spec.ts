@@ -10,28 +10,28 @@ describe('activity test', () => {
             let ctx = await Workflow.run(SimpleTask);
             expect(ctx.runnable instanceof WorkflowInstance).toBe(true);
             // console.log(result);
-            expect(ctx.data).toEqual('simple task');
+            expect(ctx.result).toEqual('simple task');
         });
 
         it('should bootstrap with single task via name or provider.', async () => {
             let ctx = await Workflow.run(SimpleTask);
             // console.log(result);
-            expect(ctx.data).toEqual('simple task');
+            expect(ctx.result).toEqual('simple task');
         });
 
         it('should bootstrap with component task.', async () => {
             let ctx = await Workflow.run(SimpleCTask);
-            expect(ctx.data).toEqual('component task');
+            expect(ctx.result).toEqual('component task');
         });
 
         it('should bootstrap with component task via name or provider.', async () => {
-            let result = await Workflow.run(SimpleCTask);
+            let ctx = await Workflow.run(SimpleCTask);
             // console.log('comptest:' , result.activity, result.instance);
-            expect(result.data).toEqual('component task');
+            expect(ctx.result).toEqual('component task');
         });
 
         it('should bootstrap with configure.', async () => {
-            let result = await Workflow.run({
+            let ctx = await Workflow.run({
                 name: 'test1',
                 template: [
                     {
@@ -48,13 +48,13 @@ describe('activity test', () => {
             });
             // console.log(result.target.activities[1])
             // console.log('configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue);
-            expect(result.data).toEqual('component task');
+            expect(ctx.result).toEqual('component task');
         });
 
         it('should bootstrap with meta IConfigure.', async () => {
-            let result = await Workflow.run(TaskModuleTest);
+            let ctx = await Workflow.run(TaskModuleTest);
             // console.log('meta configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue)
-            expect(result.data).toEqual('component task');
+            expect(ctx.result).toEqual('component task');
         });
 
     });

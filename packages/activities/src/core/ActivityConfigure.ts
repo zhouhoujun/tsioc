@@ -2,6 +2,7 @@ import { InjectToken, Type, PromiseUtil, Token, ProviderTypes } from '@tsdi/ioc'
 import { RunnableConfigure } from '@tsdi/boot';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
+import { ValuePipe } from './ValuePipe';
 
 
 export const WorkflowId = new InjectToken<string>('Workflow_ID');
@@ -78,6 +79,22 @@ export interface TemplateOption {
      * @memberof ConditionOption
      */
     activity?: string | Activities | Type<any>;
+
+    /**
+     * action name.
+     *
+     * @type {Expression<string>}
+     * @memberof TemplateOption
+     */
+    name?: Expression<string>;
+
+    /**
+     * value pipe.
+     *
+     * @type {(Type<ValuePipe> | ValuePipe)}
+     * @memberof TemplateOption
+     */
+    pipe?: Type<ValuePipe> | ValuePipe;
 }
 
 

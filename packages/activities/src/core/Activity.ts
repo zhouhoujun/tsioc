@@ -92,7 +92,9 @@ export abstract class Activity<T> {
             ctx.runnable.status.scopes.shift();
         }
 
-        await this.pipeResult(ctx);
+        if (!isNullOrUndefined(this.result.value)) {
+            await this.pipeResult(ctx);
+        }
         await this.result.next(ctx);
     }
 
@@ -102,24 +104,31 @@ export abstract class Activity<T> {
     protected async initResult(ctx: ActivityContext, next?: () => Promise<void>, ...providers: ProviderTypes[]): Promise<ActivityResult<any>> {
         providers.unshift({ provide: NextToken, useValue: next });
         let result = this.getContainer().getService(ActivityResult, lang.getClass(this), ...providers);
-        if (this.pipe) {
-            result.value = this.pipe.transform(ctx.data);
-        } else {
-            result.value = ctx.data;
+        if (!isNullOrUndefined(ctx.result)) {
+            if (this.pipe) {
+                result.value = this.pipe.transform(ctx.result);
+            } else {
+                result.value = ctx.result;
+            }
         }
         return result;
     }
 
-
     protected async pipeResult(ctx: ActivityContext) {
-        if (!isNullOrUndefined(this.result.value)) {
-            if (this.pipe) {
-                if (isFunction(this.pipe.refresh)) {
-                    await this.pipe.refresh(ctx, this.result.value);
-                }
-            } else {
-                ctx.data = this.result.value;
+        if (this.pipe) {
+            if (isFunction(this.pipe.refresh)) {
+                await this.pipe.refresh(ctx, this.result.value);
             }
+        } else {
+            ctx.result = this.result.value;
+        }
+    }
+
+    protected async setBody(ctx: ActivityContext, data: any, name?: string) {
+        if (name) {
+            ctx.body[name] = data;
+        } else {
+            ctx.body = Object.assign(ctx.body, data);
         }
     }
 

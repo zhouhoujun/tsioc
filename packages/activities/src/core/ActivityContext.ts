@@ -22,13 +22,19 @@ import { ActivityConfigure, ActivityTemplate } from './ActivityConfigure';
 export class ActivityContext extends BootContext {
 
     /**
-     * body
+     * input body data.
      *
-     * @type {ObjectMap<any>}
+     * @type {*}
      * @memberof ActivityContext
      */
-    body: ObjectMap<any> = {};
-
+    body: any = {};
+    /**
+     * activty execute result data.
+     *
+     * @type {*}
+     * @memberof ActivityContext
+     */
+    result: any;
     /**
      * workflow id.
      *

@@ -10,7 +10,7 @@ export class TypeScriptJsPipe extends ValuePipe {
     }
 
     async refresh?(ctx: NodeActivityContext, value: any): Promise<void> {
-        ctx.data.js = value;
+        ctx.result.js = value;
     }
 }
 

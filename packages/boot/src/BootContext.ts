@@ -199,7 +199,7 @@ export class BootContext extends AnnoationContext {
     bootstrap?: any;
 
     /**
-     *  custom boot data
+     *  custom boot input data
      *
      * @type {*}
      * @memberof RunnableOptions

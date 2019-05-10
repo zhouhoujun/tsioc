@@ -22,7 +22,7 @@ export class ConfirmActivity<T> extends Activity<T> {
     @Input()
     body: BodyActivity<T>;
 
-    async execute(ctx: ActivityContext): Promise<void> {
+    protected async execute(ctx: ActivityContext): Promise<void> {
         await this.condition.run(ctx);
         if (this.condition.result.value) {
             await this.body.run(ctx)

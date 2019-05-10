@@ -86,7 +86,7 @@ export class WorkflowInstance extends Service<Activity<any>> {
 
         await this.getTarget().run(this.context, async () => {
             this.state = RunState.complete;
-            this._result = this.context.data;
+            this._result = this.context.result;
         })
 
         return this.context as T;

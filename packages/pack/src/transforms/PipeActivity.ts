@@ -1,6 +1,7 @@
 import { ITransform, NodeActivityContext, isTransform } from '../core';
-import { Activity, Expression } from '@tsdi/activities';
+import { Expression } from '@tsdi/activities';
 import { isUndefined } from '@tsdi/ioc';
+import { NodeActivity } from '../core/NodeActivity';
 
 /**
  * pipe stream activity
@@ -10,17 +11,7 @@ import { isUndefined } from '@tsdi/ioc';
  * @class PipeActivity
  * @extends {Activity<ITransform>}
  */
-export abstract class PipeActivity extends Activity<ITransform> {
-    /**
-     * pipe stream activity
-     *
-     * @protected
-     * @abstract
-     * @param {NodeActivityContext} ctx
-     * @returns {Promise<void>}
-     * @memberof PipeActivity
-     */
-    protected abstract execute(ctx: NodeActivityContext): Promise<void>;
+export abstract class PipeActivity extends NodeActivity<ITransform> {
 
     /**
    * execute stream pipe.

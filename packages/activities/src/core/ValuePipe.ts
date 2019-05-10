@@ -1,5 +1,6 @@
 import { ActivityContext } from './ActivityContext';
 
+
 /**
  * value pipe.
  *
@@ -28,4 +29,5 @@ export abstract class ValuePipe {
      * @memberof ValuePipe
      */
     refresh?(ctx: ActivityContext, value: any): Promise<void>;
+
 }

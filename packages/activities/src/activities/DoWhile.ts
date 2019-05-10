@@ -23,7 +23,7 @@ export class DoWhileActivity<T> extends Activity<T> {
     @Input()
     body: BodyActivity<T>;
 
-    async execute(ctx: ActivityContext): Promise<void> {
+    protected async execute(ctx: ActivityContext): Promise<void> {
         await this.body.run(ctx, async () => {
             await this.condition.run(ctx);
             if (this.condition.result.value) {

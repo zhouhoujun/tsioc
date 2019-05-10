@@ -13,14 +13,7 @@ export class ActivityResult<T> {
         this.nexts = [next];
     }
 
-    protected val: T;
-    get value(): T {
-        return this.val;
-    }
-
-    set value(val: T) {
-        this.val = val;
-    }
+    value: T;
 
     error: Error;
 

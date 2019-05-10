@@ -13,7 +13,7 @@ import { IfActivity } from './If';
 @Task('elseif')
 export class ElseIfActivity<T> extends IfActivity<T> {
 
-    async execute(ctx: ActivityContext): Promise<void> {
+    protected async execute(ctx: ActivityContext): Promise<void> {
         let curr = ctx.runnable.status.parentScope;
         if (curr && curr.subs.length) {
             let activity = curr.subs.find(a => a instanceof ElseIfActivity || a instanceof IfActivity);

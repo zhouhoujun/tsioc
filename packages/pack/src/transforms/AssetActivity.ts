@@ -4,7 +4,7 @@ import { StreamActivity } from './StreamActivity';
 import { SourceActivity } from './SourceActivity';
 import { DestActivity } from './DestActivity';
 import { Input } from '@tsdi/boot';
-import { CleanActivity } from './CleanActivity';
+import { CleanActivity } from '../tasks';
 import { PipeActivity } from './PipeActivity';
 
 

@@ -20,7 +20,7 @@ export class IntervalActivity<T> extends Activity<T> {
     @Input()
     body: BodyActivity<T>;
 
-    async execute(ctx: ActivityContext): Promise<void> {
+    protected async execute(ctx: ActivityContext): Promise<void> {
         await this.timer.run(ctx);
         setInterval(() => {
             this.body.run(ctx);

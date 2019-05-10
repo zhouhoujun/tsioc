@@ -1,14 +1,22 @@
 import { Task, Expression, ValuePipe } from '@tsdi/activities';
 import { Input } from '@tsdi/boot';
 import { NodeActivityContext } from '../core';
-import {
-    AssetActivity, SourceActivity, DestActivity, AssetActivityOption,
-    AnnoationActivity, UglifyActivity
-} from '../tasks';
 import { ObjectMap, isString } from '@tsdi/ioc';
 import * as ts from 'gulp-typescript';
 import { TypeScriptJsPipe, TypeScriptTdsPipe } from './TsPipe';
+import { AssetActivityOption, AssetActivity } from './AssetActivity';
+import { SourceActivity } from './SourceActivity';
+import { DestActivity } from './DestActivity';
+import { UglifyActivity } from './UglifyActivity';
+import { AnnoationActivity } from './AnnoationActivity';
 
+/**
+ * ts build option.
+ *
+ * @export
+ * @interface TsBuildOption
+ * @extends {AssetActivityOption}
+ */
 export interface TsBuildOption extends AssetActivityOption {
     annotation?: Expression<boolean>;
     sourceMaps?: Expression<string>;
