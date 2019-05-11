@@ -87,14 +87,12 @@ export abstract class Activity<T> {
     async run(ctx: ActivityContext, next?: () => Promise<void>): Promise<void> {
         ctx.runnable.status.current = this;
         this._result = await this.initResult(ctx, next);
+        await this.refreshResult(ctx);
         await this.execute(ctx);
         if (this.isScope) {
             ctx.runnable.status.scopes.shift();
         }
-
-        if (!isNullOrUndefined(this.result.value)) {
-            await this.pipeResult(ctx);
-        }
+        await this.refreshContext(ctx);
         await this.result.next(ctx);
     }
 
@@ -114,13 +112,25 @@ export abstract class Activity<T> {
         return result;
     }
 
-    protected async pipeResult(ctx: ActivityContext) {
-        if (this.pipe) {
-            if (isFunction(this.pipe.refresh)) {
-                await this.pipe.refresh(ctx, this.result.value);
+    protected async refreshResult(ctx: ActivityContext): Promise<any> {
+        if (!isNullOrUndefined(ctx.result)) {
+            if (this.pipe) {
+                this.result.value = await this.pipe.transform(ctx.result);
+            } else {
+                this.result.value = ctx.result;
             }
-        } else {
-            ctx.result = this.result.value;
+        }
+    }
+
+    protected async refreshContext(ctx: ActivityContext) {
+        if (!isNullOrUndefined(this.result.value)) {
+            if (this.pipe) {
+                if (isFunction(this.pipe.refresh)) {
+                    await this.pipe.refresh(ctx, this.result.value);
+                }
+            } else {
+                ctx.result = this.result.value;
+            }
         }
     }
 
@@ -132,12 +142,18 @@ export abstract class Activity<T> {
         }
     }
 
-    protected execActivity(ctx: ActivityContext, activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void> {
-        return PromiseUtil.runInChain((isArray(activities) ? activities : [activities]).map(ac => this.toAction(ac)), ctx, next);
+    protected async runActivity(ctx: ActivityContext, activities: ActivityType | ActivityType[], next?: () => Promise<void>, refresh?: boolean): Promise<void> {
+        if (!activities || (isArray(activities) && activities.length < 1)) {
+            return;
+        }
+        await this.execActions(ctx, (isArray(activities) ? activities : [activities]).map(ac => this.toAction(ac)), next);
+        if (refresh !== false) {
+            await this.refreshResult(ctx);
+        }
     }
 
     protected execActions<T extends ActivityContext>(ctx: ActivityContext, actions: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
-        return PromiseUtil.runInChain(actions, ctx, next);
+        return PromiseUtil.runInChain(actions.filter(f => f), ctx, next);
     }
 
     protected toAction<T extends ActivityContext>(activity: ActivityType): PromiseUtil.ActionHandle<T> {
@@ -155,7 +171,15 @@ export abstract class Activity<T> {
 
         }
         return isFunction(activity) ? activity : null;
+    }
 
+    protected promiseLikeToAction<T extends ActivityContext>(action: (ctx?: T) => Promise<any>): PromiseUtil.ActionHandle<T> {
+        return async (ctx: T, next?: () => Promise<void>) => {
+            await action(ctx);
+            if (next) {
+                await next();
+            }
+        }
     }
 
     protected async buildActivity(activity: Type<any> | ControlTemplate): Promise<Activity<any>> {

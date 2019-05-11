@@ -26,6 +26,6 @@ export class ParallelActivity<T> extends CompoiseActivity<T> {
      * @memberof ParallelActivity
      */
     protected async execute(ctx: ActivityContext): Promise<void> {
-        await Promise.all(this.activities.map(act => this.execActivity(ctx, act)));
+        await Promise.all(this.activities.map(act => this.runActivity(ctx, act)));
     }
 }

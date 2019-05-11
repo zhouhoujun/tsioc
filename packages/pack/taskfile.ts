@@ -14,9 +14,7 @@ import * as ts from 'rollup-plugin-typescript';
 
 @Task({
     deps: [
-        PackModule
-    ],
-    imports: [
+        PackModule,
         ServerActivitiesModule
     ],
     baseURL: __dirname,
@@ -32,75 +30,76 @@ import * as ts from 'rollup-plugin-typescript';
                 // clean: ['lib', 'bundles', 'fesm5', 'es2015', 'fesm2015'],
                 src: 'src/**/*.ts',
                 annotation: true,
+                sourceMaps: './sourcemaps',
                 tsconfig: ctx => ctx.body.tsconfig,
                 uglify: ctx => ctx.body.uglify,
                 dist: ctx => ctx.body.dist,
                 clean: ctx => ctx.body.clean
             },
-            <RollupOption>{
-                activity: 'rollup',
-                // annoation: true,
-                // ts: ctx => {
-                //     return {
-                //         tsconfig: ctx.body.tsconfig
-                //     }
-                // },
-                options: ctx => {
-                    return {
-                        input: 'src/index.ts',
-                        plugins: [
-                            resolve(),
-                            // {
-                            //     resolveId(id) {
-                            //         if (/^\./.test(id)) {
-                            //             return id;
-                            //         }
-                            //         return null;
-                            //     }
-                            // },
-                            // commonjs({
-                            //     exclude: ['node_modules/**', '../../node_modules/**']
-                            // }),
-                            rollupClassAnnotations(),
-                            ts(),
-                            builtins(),
-                            rollupSourcemaps()
-                        ],
-                        output: {
-                            file: `${ctx.body.dist}/pack.js`
-                        },
-                        external: [
-                            'reflect-metadata',
-                            'tslib',
-                            'globby', 'path', 'fs', 'events', 'stream', 'child_process',
-                            '@tsdi/ioc',
-                            '@tsdi/core',
-                            '@tsdi/aop',
-                            '@tsdi/logs',
-                            '@tsdi/boot',
-                            '@tsdi/unit',
-                            '@tsdi/platform-server',
-                            'minimist', 'gulp-sourcemaps', 'vinyl-fs', 'del', 'chokidar',
-                            'gulp-uglify', 'execa', '@tsdi/annotations', 'gulp-typescript',
-                            '@tsdi/activities',
-                            '@tsdi/platform-server-activities',
-                            'rxjs',
-                            'rxjs/operators'
-                        ],
-                        globals: {
-                            'reflect-metadata': 'Reflect',
-                            'tslib': 'tslib',
-                            'path': 'path',
-                            '@tsdi/ioc': '@tsdi/ioc',
-                            '@tsdi/core': '@tsdi/core',
-                            '@tsdi/aop': '@tsdi/aop',
-                            '@tsdi/boot': '@tsdi/boot',
-                            '@tsdi/activities': '@tsdi/activities'
-                        },
-                    }
-                }
+            // <RollupOption>{
+            //     activity: 'rollup',
+            //     // annoation: true,
+            //     // ts: ctx => {
+            //     //     return {
+            //     //         tsconfig: ctx.body.tsconfig
+            //     //     }
+            //     // },
+            //     options: ctx => {
+            //         return {
+            //             input: 'src/index.ts',
+            //             plugins: [
+            //                 resolve(),
+            //                 // {
+            //                 //     resolveId(id) {
+            //                 //         if (/^\./.test(id)) {
+            //                 //             return id;
+            //                 //         }
+            //                 //         return null;
+            //                 //     }
+            //                 // },
+            //                 // commonjs({
+            //                 //     exclude: ['node_modules/**', '../../node_modules/**']
+            //                 // }),
+            //                 rollupClassAnnotations(),
+            //                 ts(),
+            //                 builtins(),
+            //                 rollupSourcemaps()
+            //             ],
+            //             output: {
+            //                 file: `${ctx.body.dist}/pack.js`
+            //             },
+            //             external: [
+            //                 'reflect-metadata',
+            //                 'tslib',
+            //                 'globby', 'path', 'fs', 'events', 'stream', 'child_process',
+            //                 '@tsdi/ioc',
+            //                 '@tsdi/core',
+            //                 '@tsdi/aop',
+            //                 '@tsdi/logs',
+            //                 '@tsdi/boot',
+            //                 '@tsdi/unit',
+            //                 '@tsdi/platform-server',
+            //                 'minimist', 'gulp-sourcemaps', 'vinyl-fs', 'del', 'chokidar',
+            //                 'gulp-uglify', 'execa', '@tsdi/annotations', 'gulp-typescript',
+            //                 '@tsdi/activities',
+            //                 '@tsdi/platform-server-activities',
+            //                 'rxjs',
+            //                 'rxjs/operators'
+            //             ],
+            //             globals: {
+            //                 'reflect-metadata': 'Reflect',
+            //                 'tslib': 'tslib',
+            //                 'path': 'path',
+            //                 '@tsdi/ioc': '@tsdi/ioc',
+            //                 '@tsdi/core': '@tsdi/core',
+            //                 '@tsdi/aop': '@tsdi/aop',
+            //                 '@tsdi/boot': '@tsdi/boot',
+            //                 '@tsdi/activities': '@tsdi/activities'
+            //             },
+            //         }
+            //     }
 
-            }
+            // }
         ]
     }
 })

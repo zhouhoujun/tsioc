@@ -3,6 +3,7 @@ import { Task, Expression, GActivityType, TemplateOption } from '@tsdi/activitie
 import { DestOptions, dest } from 'vinyl-fs';
 import { StreamActivity } from './StreamActivity';
 import { Input } from '@tsdi/boot';
+import { PipeActivity } from './PipeActivity';
 
 
 
@@ -48,7 +49,7 @@ export interface DistActivityOption extends TemplateOption {
  * @extends {TransformActivity}
  */
 @Task('dist, [dist]')
-export class DestActivity extends StreamActivity {
+export class DestActivity extends PipeActivity {
 
     @Input()
     dist: Expression<string>;
@@ -56,21 +57,17 @@ export class DestActivity extends StreamActivity {
     @Input('destOptions')
     options: Expression<DestOptions>;
 
-    @Input('destPipes')
-    pipes: Expression<ITransform>[];
-
     constructor(@Input() dist: Expression<string>) {
-        super([])
+        super()
         this.dist = dist;
     }
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
-
         let dist = await this.resolveExpression(this.dist, ctx);
         if (dist) {
-            await super.execute(ctx);
             let options = await this.resolveExpression(this.options, ctx);
-            await this.executePipe(ctx, this.result.value, (ctx: NodeActivityContext) => dest(ctx.relativeRoot(dist), options) as any, true)
+            await this.executePipe(ctx, this.result.value, (ctx: NodeActivityContext) => dest(ctx.relativeRoot(dist), options) as any, true);
         }
+        ctx.result.value = null;
     }
 }

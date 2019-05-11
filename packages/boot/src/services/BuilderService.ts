@@ -132,7 +132,6 @@ export class BuilderService extends IocCoreService {
 
         ctx.args = args;
         if (application) {
-            console.log(ctx, this.container);
             this.container.bindProvider(new InjectReference(BootApplication, ctx.module), application);
             if (isFunction(application.onContextInit)) {
                 application.onContextInit(ctx);

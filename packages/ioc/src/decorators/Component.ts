@@ -2,21 +2,31 @@ import { createClassDecorator, IClassDecorator } from '../factories';
 import { InjectableMetadata } from '../metadatas';
 
 /**
+ * component metadata.
+ *
+ * @export
+ * @interface IComponentMetadata
+ * @extends {InjectableMetadata}
+ */
+export interface IComponentMetadata  extends InjectableMetadata {
+    selector?: string;
+}
+/**
  * Component decorator
  *
  * @export
  * @interface IInjectableDecorator
- * @extends {IClassDecorator<InjectableMetadata>}
+ * @extends {IClassDecorator<IComponentMetadata>}
  */
-export interface IComponentDecorator extends IClassDecorator<InjectableMetadata> {
+export interface IComponentDecorator extends IClassDecorator<IComponentMetadata> {
     /**
      * Component decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`ComponentLifecycle`]
      *
      * @Component
      *
-     * @param {InjectableMetadata} [metadata] metadata map.
+     * @param {IComponentMetadata} [metadata] metadata map.
      */
-    (metadata?: InjectableMetadata): ClassDecorator;
+    (metadata?: IComponentMetadata): ClassDecorator;
 }
 
 /**
@@ -24,5 +34,5 @@ export interface IComponentDecorator extends IClassDecorator<InjectableMetadata>
  *
  * @Component
  */
-export const Component: IComponentDecorator = createClassDecorator<InjectableMetadata>('Component');
+export const Component: IComponentDecorator = createClassDecorator<IComponentMetadata>('Component');
 

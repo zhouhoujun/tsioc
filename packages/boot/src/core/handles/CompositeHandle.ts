@@ -1,6 +1,6 @@
 import { Handle, HandleType, IHandleContext } from './Handle';
-import { PromiseUtil, isClass, isBoolean, Inject, Singleton } from '@tsdi/ioc';
-import { ContainerToken, IContainer } from '@tsdi/core';
+import { PromiseUtil, isClass, isBoolean, Singleton } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
 
 
 /**

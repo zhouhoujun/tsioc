@@ -1,5 +1,6 @@
 export * from './PipeActivity';
 export * from './AnnoationActivity';
+export * from './SourceMap';
 export * from './UglifyActivity';
 export * from './AssetActivity';
 export * from './DestActivity';

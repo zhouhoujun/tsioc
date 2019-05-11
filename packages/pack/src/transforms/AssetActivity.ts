@@ -1,4 +1,4 @@
-import { Src, Task, TemplateOption, Expression, ActivityType } from '@tsdi/activities';
+import { Src, Task, TemplateOption, Expression, ActivityType, Activity } from '@tsdi/activities';
 import { NodeActivityContext } from '../core';
 import { StreamActivity } from './StreamActivity';
 import { SourceActivity } from './SourceActivity';
@@ -71,37 +71,20 @@ export class AssetActivity extends PipeActivity {
     @Input('dist', './dist')
     dist: DestActivity;
 
-    @Input()
-    pipes: StreamActivity
+    @Input('pipes')
+    streamPipes: StreamActivity;
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
-        await this.startClean(ctx);
-        await this.startSource(ctx);
-        await this.startPipe(ctx);
-        await this.startDest(ctx);
+        await this.runActivity(ctx, this.getRunSequence());
     }
 
-    protected async startClean(ctx: NodeActivityContext): Promise<void> {
-        if (this.clean) {
-            await this.clean.run(ctx);
-        }
+    protected getRunSequence(): ActivityType[] {
+        return [
+            this.clean,
+            this.src,
+            this.streamPipes,
+            this.dist
+        ]
     }
 
-    protected async startSource(ctx: NodeActivityContext): Promise<void> {
-        if (this.src) {
-            await this.src.run(ctx);
-        }
-    }
-
-    protected async startPipe(ctx: NodeActivityContext): Promise<void> {
-        if (this.pipes) {
-            await this.pipes.run(ctx);
-        }
-    }
-
-    protected async startDest(ctx: NodeActivityContext): Promise<void> {
-        if (this.dist) {
-            await this.dist.run(ctx);
-        }
-    }
 }
