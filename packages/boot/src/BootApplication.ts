@@ -1,10 +1,10 @@
-import { BootContext, BootOption, BootTargetToken } from './BootContext';
+import { BootContext, BootOption } from './BootContext';
 import {
     Type, BindProviderAction, IocSetCacheAction, ComponentBeforeInitAction,
-    ComponentInitAction, ComponentAfterInitAction, InjectReference, DesignDecoratorRegisterer,
-    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction, isClass
+    ComponentInitAction, ComponentAfterInitAction, DesignDecoratorRegisterer,
+    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction, LoadType, isArray, isString
 } from '@tsdi/ioc';
-import { ContainerPool, RegScope, DIModuleRegisterScope } from './core';
+import { ContainerPool, DIModuleRegisterScope } from './core';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ModuleDecoratorRegisterer } from '@tsdi/core';
 import { Bootstrap } from './decorators';
 import * as annotations from './annotations';
@@ -13,12 +13,28 @@ import * as services from './services';
 import { BuilderService } from './services';
 
 /**
+ * boot application hooks.
+ *
+ * @export
+ * @interface ContextInit
+ */
+export interface ContextInit {
+    /**
+     * on context init.
+     *
+     * @param {BootContext} ctx
+     * @memberof ContextInit
+     */
+    onContextInit(ctx: BootContext);
+}
+/**
  * boot application.
  *
  * @export
  * @class BootApplication
  */
-export class BootApplication {
+export class BootApplication implements ContextInit {
+
     /**
      * application context.
      *
@@ -36,7 +52,7 @@ export class BootApplication {
 
     protected pools: ContainerPool;
 
-    constructor(protected target: Type<any> | BootOption | BootContext, protected baseURL?: string, protected loader?: IModuleLoader) {
+    constructor(public target: Type<any> | BootOption | BootContext, protected baseURL?: string, protected loader?: IModuleLoader) {
         this.onInit(target);
     }
 
@@ -74,39 +90,44 @@ export class BootApplication {
 
     }
 
-    getContext(): BootContext {
-        if (!this.context) {
-            this.context = this.createContext(this.target);
-        }
+    getContext() {
         return this.context;
     }
 
+    onContextInit(ctx: BootContext) {
+        this.context = ctx;
+    }
+
     /**
-     * run module.
+     * run application.
      *
      * @static
      * @template T
      * @param {(Type<T> | BootOption | BootContext)} target
+     * @param {(LoadType[] | LoadType | string)} [deps]  application run depdences.
      * @param {...string[]} args
      * @returns {Promise<BootContext>}
      * @memberof BootApplication
      */
-    static async run<T>(target: Type<T> | BootOption | BootContext, ...args: string[]): Promise<BootContext> {
-        return new BootApplication(target).run(...args);
+    static run<T>(target: Type<T> | BootOption | BootContext, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<BootContext> {
+        return new BootApplication(target).run(deps, ...args);
     }
 
     /**
      * run application of module.
      *
+     * @param {(LoadType[] | LoadType | string)} [deps]  application run depdences.
      * @param {...string[]} args
      * @returns {Promise<BootContext>}
      * @memberof BootApplication
      */
-    async run(...args: string[]): Promise<BootContext> {
-        let ctx = this.getContext();
-        this.initContext(ctx);
-        await this.container.resolve(BuilderService).run(ctx, ...args);
-        return ctx;
+    async run(deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<BootContext> {
+        if (isString(deps)) {
+            args.unshift(deps);
+        } else if (deps) {
+            await this.container.load(...(isArray(deps) ? deps : [deps]));
+        }
+        return await this.container.resolve(BuilderService).boot(this, ...args);
     }
 
     getPools(): ContainerPool {
@@ -116,20 +137,6 @@ export class BootApplication {
         return this.pools;
     }
 
-    protected createContext(target: Type<any> | BootOption): BootContext {
-        let md = isClass(target) ? target : target.module;
-        let ctx = this.container.getService(BootContext, md, { provide: BootTargetToken, useValue: md });
-        if (!isClass(target)) {
-            ctx.setOptions(target);
-        }
-        return ctx;
-    }
-
-    protected initContext(ctx: BootContext) {
-        this.container.bindProvider(new InjectReference(BootApplication, ctx.module), this);
-        ctx.setRaiseContainer(this.container);
-        ctx.regScope = ctx.regScope || RegScope.boot;
-    }
 
     protected createContainerBuilder(): IContainerBuilder {
         return new ContainerBuilder(this.loader);

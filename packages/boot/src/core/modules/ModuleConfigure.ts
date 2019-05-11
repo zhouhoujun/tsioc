@@ -1,8 +1,6 @@
 import { Token, Modules, ComponentMetadata, Type } from '@tsdi/ioc';
 import { Runnable } from '../../runnable';
 import { RegScope } from './RegScope';
-import { any } from 'expect';
-
 
 /**
  * annotation metadata.

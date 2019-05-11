@@ -23,6 +23,7 @@ export * from './RunBootHandle';
 
 export * from './ModuleBuilderLifeScope';
 export * from './RunnableBuildLifeScope';
+export * from './BootLifeScope';
 
 export * from './parses';
 export * from './resovers';

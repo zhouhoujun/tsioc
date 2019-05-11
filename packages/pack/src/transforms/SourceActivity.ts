@@ -54,7 +54,6 @@ export class SourceActivity extends PipeActivity {
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let strSrc = await this.resolveExpression(this.src, ctx);
-        console.log(this.src, strSrc);
         if (strSrc) {
             let options = await this.resolveExpression(this.options, ctx);
             this.result.value = src(ctx.toRootSrc(strSrc), options || undefined);

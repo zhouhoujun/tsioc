@@ -1,9 +1,9 @@
-import { BootApplication } from '@tsdi/boot';
+import { BootApplication, ContextInit } from '@tsdi/boot';
 import {
     UUIDToken, RandomUUIDFactory, WorkflowInstance, ActivityContext,
     ActivityType, ActivityOption
 } from './core';
-import { Type, isClass } from '@tsdi/ioc';
+import { Type, isClass, LoadType } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 import { CoreModule } from './CoreModule';
@@ -16,7 +16,7 @@ import { SequenceActivity } from './activities';
  * @class Workflow
  * @extends {BootApplication}
  */
-export class Workflow extends BootApplication {
+export class Workflow extends BootApplication implements ContextInit {
 
     protected onInit(target: Type<any> | ActivityOption<ActivityContext> | ActivityContext) {
         super.onInit(target);
@@ -61,16 +61,17 @@ export class Workflow extends BootApplication {
      * @static
      * @template T
      * @param {(T | Type<any> | ActivityOption<T>)} target
+     * @param {(LoadType[] | LoadType | string)} [deps]  workflow run depdences.
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof Workflow
      */
-    static async run<T extends ActivityContext>(target: T | Type<any> | ActivityOption<T>, ...args: string[]): Promise<T> {
-        return await new Workflow(target).run(...args) as T;
+    static async run<T extends ActivityContext>(target: T | Type<any> | ActivityOption<T>, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<T> {
+        return await new Workflow(target).run(deps, ...args) as T;
     }
 
-    protected initContext(ctx: ActivityContext) {
-        super.initContext(ctx);
+    onContextInit(ctx: ActivityContext) {
+        super.onContextInit(ctx);
         ctx.id = ctx.id || this.createUUID();
     }
 

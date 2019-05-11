@@ -1,8 +1,10 @@
-import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes } from '@tsdi/ioc';
+import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, InjectReference, isFunction, MetadataService, getOwnTypeMetadata } from '@tsdi/ioc';
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { IContainer, ContainerToken, isContainer } from '@tsdi/core';
 import { CompositeHandle, HandleRegisterer } from '../core';
-import { ModuleBuilderLifeScope, RunnableBuildLifeScope, ResolveMoudleScope, BuildContext, IModuleResolveOption } from '../builder';
+import { ModuleBuilderLifeScope, RunnableBuildLifeScope, ResolveMoudleScope, BuildContext, IModuleResolveOption, BootLifeScope } from '../builder';
+import { BootApplication } from '../BootApplication';
+import { RunnableConfigure } from '../annotations';
 
 
 
@@ -24,7 +26,8 @@ export class BuilderService extends IocCoreService {
         this.container.get(HandleRegisterer)
             .register(this.container, ResolveMoudleScope, true)
             .register(this.container, ModuleBuilderLifeScope, true)
-            .register(this.container, RunnableBuildLifeScope, true);
+            .register(this.container, RunnableBuildLifeScope, true)
+            .register(this.container, BootLifeScope, true);
     }
 
     /**
@@ -70,7 +73,7 @@ export class BuilderService extends IocCoreService {
      * @memberof BuilderService
      */
     build<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
-        return this.execLifeScope(this.container.get(ModuleBuilderLifeScope), target, ...args);
+        return this.execLifeScope(null, this.container.get(ModuleBuilderLifeScope), target, ...args);
     }
 
     /**
@@ -83,10 +86,36 @@ export class BuilderService extends IocCoreService {
      * @memberof RunnerService
      */
     run<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
-        return this.execLifeScope(this.container.get(RunnableBuildLifeScope), target, ...args);
+        return this.execLifeScope(null, this.container.get(RunnableBuildLifeScope), target, ...args);
     }
 
-    protected async execLifeScope<T extends BootContext>(scope: CompositeHandle<BootContext>, target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
+    /**
+     * boot application.
+     *
+     * @template T
+     * @param {(Type<any> | BootOption | T)} target
+     * @param {...string[]} args
+     * @returns {Promise<T>}
+     * @memberof BuilderService
+     */
+    async boot(application: BootApplication, ...args: string[]): Promise<BootContext> {
+        if (isClass(application.target)) {
+            let target = application.target;
+            await Promise.all(this.container.get(MetadataService)
+                .getClassDecorators(target)
+                .map(async d => {
+                    let metas = getOwnTypeMetadata<RunnableConfigure>(d, target);
+                    if (metas && metas.length) {
+                        await Promise.all(metas.filter(m => m && m.deps && m.deps.length > 0).map(m => this.container.load(m.deps)));
+                    }
+                }));
+        } else if (application.target.deps) {
+            await this.container.load(...application.target.deps);
+        }
+        return await this.execLifeScope(application, this.container.get(BootLifeScope), application.target, ...args);
+    }
+
+    protected async execLifeScope<T extends BootContext>(application: BootApplication, scope: CompositeHandle<BootContext>, target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
         let ctx: BootContext;
         if (target instanceof BootContext) {
             ctx = target;
@@ -100,7 +129,15 @@ export class BuilderService extends IocCoreService {
                 ctx.setOptions(target);
             }
         }
+
         ctx.args = args;
+        if (application) {
+            console.log(ctx, this.container);
+            this.container.bindProvider(new InjectReference(BootApplication, ctx.module), application);
+            if (isFunction(application.onContextInit)) {
+                application.onContextInit(ctx);
+            }
+        }
         await scope.execute(ctx);
         return ctx as T;
     }

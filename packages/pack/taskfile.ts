@@ -13,9 +13,11 @@ import { rollupClassAnnotations } from '@tsdi/annotations';
 import * as ts from 'rollup-plugin-typescript';
 
 @Task({
-    imports: [
-        ServerActivitiesModule,
+    deps: [
         PackModule
+    ],
+    imports: [
+        ServerActivitiesModule
     ],
     baseURL: __dirname,
     template: {

@@ -19,8 +19,6 @@ export class DefaultParseHandle extends ParseHandle {
             ctx.bindingValue = ctx.binding.defaultValue;
         }
 
-        console.log(ctx.binding, ctx.template, ctx.bindingValue);
-
         if (isNullOrUndefined(ctx.bindingValue)) {
             await next();
         }
