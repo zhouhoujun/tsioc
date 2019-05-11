@@ -20,10 +20,8 @@ const prettyTime = require('pretty-hrtime');
 })
 export class TaskLogAspect extends LoggerAspect {
 
-    private startHrts: ObjectMap<any>;
     constructor(@Inject(ContainerToken) container: IContainer) {
         super(container);
-        this.startHrts = {};
     }
 
     @Around('execution(*.execute)')
@@ -42,21 +40,21 @@ export class TaskLogAspect extends LoggerAspect {
                 logger.log('\n' + chalk.grey(target.context.config.title + ' ' + name + '\n'));
             }
             start = process.hrtime();
-            this.startHrts[name] = start;
+            target['__startAt'] = start;
             logger.log('[' + chalk.grey(timestamp('HH:mm:ss', new Date())) + ']', 'Starting', taskname, '...');
         }
 
         if (joinPoint.state === JoinpointState.AfterReturning) {
-            start = this.startHrts[name];
+            start = target['__startAt'];
             end = prettyTime(process.hrtime(start));
-            delete this.startHrts[name];
+            delete target['__startAt'];
             logger.log('[' + chalk.grey(timestamp('HH:mm:ss', new Date())) + ']', 'Finished', taskname, ' after ', chalk.magenta(end));
         }
 
         if (joinPoint.state === JoinpointState.AfterThrowing) {
-            start = this.startHrts[name];
+            start = target['__startAt'];
             end = prettyTime(process.hrtime(start));
-            delete this.startHrts[name];
+            delete target['__startAt'];
             logger.log('[' + chalk.grey(timestamp('HH:mm:ss', new Date())) + ']', 'Finished', taskname, chalk.red('errored after'), chalk.magenta(end));
             process.exit(1);
         }

@@ -17,11 +17,8 @@ import { Task, Activity } from '@tsdi/activities';
 })
 export class TaskLogAspect extends LoggerAspect {
 
-    private startHrts: ObjectMap<any>;
     constructor(@Inject(ContainerToken) container: IContainer) {
         super(container);
-
-        this.startHrts = {};
     }
 
     @Around('execution(*.execute)')
@@ -40,21 +37,21 @@ export class TaskLogAspect extends LoggerAspect {
                 logger.log('\n' + target.context.config.title + taskname + '\n');
             }
             start = new Date();
-            this.startHrts[name] = start;
+            target['__startAt'] = start;
             logger.log('[' + start.toString() + ']', 'Starting', taskname, '...');
         }
 
         if (joinPoint.state === JoinpointState.AfterReturning) {
-            start = this.startHrts[name];
+            start = target['__startAt'];
             end = new Date();
-            delete this.startHrts[name];
+            delete target['__startAt'];
             logger.log('[' + end.toString() + ']', 'Finished', taskname, ' after ', end.getTime() - start.getTime());
         }
 
         if (joinPoint.state === JoinpointState.AfterThrowing) {
-            start = this.startHrts[name];
+            start = target['__startAt'];
             end = new Date();
-            delete this.startHrts[name];
+            delete target['__startAt'];
             logger.log('[' + end.toString() + ']', 'Finished', taskname, 'errored after', end.getTime() - start.getTime());
         }
     }

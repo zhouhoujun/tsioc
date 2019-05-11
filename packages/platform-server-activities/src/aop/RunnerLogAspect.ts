@@ -19,10 +19,8 @@ const prettyTime = require('pretty-hrtime');
 })
 export class RunnerLogAspect extends LoggerAspect {
 
-    private startHrts: ObjectMap<any>;
     constructor(@Inject(ContainerToken) container: IContainer) {
         super(container);
-        this.startHrts = {};
     }
 
     @Around('execution(*.start)')
@@ -35,21 +33,21 @@ export class RunnerLogAspect extends LoggerAspect {
         let taskname = '\'' + chalk.cyan(name || uuid) + '\'';
         if (joinPoint.state === JoinpointState.Before) {
             start = process.hrtime();
-            this.startHrts[uuid] = start;
+            runner['__startAt'] = start;
             logger.log('[' + chalk.grey(timestamp('HH:mm:ss', new Date())) + ']', 'Starting workflow', taskname, '...');
         }
 
         if (joinPoint.state === JoinpointState.AfterReturning) {
-            start = this.startHrts[uuid];
+            start = runner['__startAt'];
             end = prettyTime(process.hrtime(start));
-            delete this.startHrts[uuid];
+            delete runner['__startAt'];
             logger.log('[' + chalk.grey(timestamp('HH:mm:ss', new Date())) + ']', 'Finished workflow', taskname, ' after ', chalk.magenta(end));
         }
 
         if (joinPoint.state === JoinpointState.AfterThrowing) {
-            start = this.startHrts[uuid];
+            start = runner['__startAt'];
             end = prettyTime(process.hrtime(start));
-            delete this.startHrts[uuid];
+            delete runner['__startAt'];
             logger.log('[' + chalk.grey(timestamp('HH:mm:ss', new Date())) + ']', 'Finished workflow', taskname, chalk.red('errored after'), chalk.magenta(end));
             process.exit(1);
         }

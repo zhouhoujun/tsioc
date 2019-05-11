@@ -15,11 +15,8 @@ import { ObjectMap, Inject, lang } from '@tsdi/ioc';
 })
 export class RunnerLogAspect extends LoggerAspect {
 
-    private startHrts: ObjectMap<any>;
     constructor(@Inject(ContainerToken) container: IContainer) {
         super(container);
-
-        this.startHrts = {};
     }
 
     @Around('execution(*.start)')
@@ -32,21 +29,21 @@ export class RunnerLogAspect extends LoggerAspect {
         let taskname = '\'' + name + '\'';
         if (joinPoint.state === JoinpointState.Before) {
             start = new Date();
-            this.startHrts[uuid] = start;
+            runner['__startAt'] = start;
             logger.log('[' + start.toString() + ']', 'Starting workflow', taskname, '...');
         }
 
         if (joinPoint.state === JoinpointState.AfterReturning) {
-            start = this.startHrts[uuid];
+            start = runner['__startAt'];
             end = new Date();
-            delete this.startHrts[uuid];
+            delete runner['__startAt'];
             logger.log('[' + end.toString() + ']', 'Finished workflow', taskname, ' after ', end.getTime() - start.getTime());
         }
 
         if (joinPoint.state === JoinpointState.AfterThrowing) {
-            start = this.startHrts[uuid];
+            start = runner['__startAt'];
             end = new Date();
-            delete this.startHrts[uuid];
+            delete runner['__startAt'];
             logger.log('[' + end.toString() + ']', 'Finished workflow', taskname, 'errored after', end.getTime() - start.getTime());
         }
     }

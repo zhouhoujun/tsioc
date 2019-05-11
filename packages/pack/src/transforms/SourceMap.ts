@@ -22,10 +22,10 @@ export class SourceMapActivity extends PipeActivity {
         if (sourcemap) {
             if (!this.framework) {
                 this.framework = require('gulp-sourcemaps');
-            }
-            if (!this.framework) {
-                console.error('not found gulp-sourcemaps');
-                return;
+                if (!this.framework) {
+                    console.error('not found gulp-sourcemaps');
+                    return;
+                }
             }
             if (!this.inited) {
                 this.result.value = await this.executePipe(ctx, this.result.value, this.framework.init())
