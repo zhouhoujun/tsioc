@@ -1,4 +1,4 @@
-import { Activity, ActivityContext } from '../core';
+import { Activity, ActivityContext, Expression } from '../core';
 import { Task } from '../decorators';
 import { Input } from '@tsdi/boot';
 import { BodyActivity } from './BodyActivity';
@@ -8,14 +8,15 @@ import { BodyActivity } from './BodyActivity';
 export class EachActicity<T> extends Activity<T> {
 
     @Input()
-    each: any[];
+    each: Expression<any[]>;
 
     @Input()
     body: BodyActivity<T>;
 
     async execute(ctx: ActivityContext): Promise<void> {
-        if (this.each && this.each.length) {
-            await this.execActions(ctx, this.each.map(v => async (c: ActivityContext , next) => {
+        let items = await this.resolveExpression(this.each, ctx);
+        if (items && items.length) {
+            await this.execActions(ctx, items.map(v => async (c: ActivityContext , next) => {
                 await this.setBody(c, v);
                 await this.body.run(c, next);
             }));

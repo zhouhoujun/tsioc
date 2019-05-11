@@ -1,6 +1,6 @@
 import { Input } from '@tsdi/boot';
 import { Expression, Task } from '@tsdi/activities';
-import { NodeActivityContext, ITransform } from '../core';
+import { NodeActivityContext } from '../core';
 import { PipeActivity } from './PipeActivity';
 
 
@@ -17,22 +17,22 @@ export class SourceMapActivity extends PipeActivity {
         this.inited = false;
     }
 
-    async init(ctx: NodeActivityContext, stream: ITransform) {
-        if (this.sourcemaps) {
-            if (!this.framework) {
-                this.framework = require('gulp-sourcemaps');
-            }
-            await this.executePipe(ctx, stream, this.framework.init());
-            this.inited = true;
-        }
-    }
-
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let sourcemap = await this.resolveExpression(this.sourcemaps, ctx);
         if (sourcemap) {
-            await this.executePipe(ctx, ctx.result, this.framework.write(sourcemap));
-            this.inited = false;
+            if (!this.framework) {
+                this.framework = require('gulp-sourcemaps');
+            }
+            if (!this.framework) {
+                console.error('not found gulp-sourcemaps');
+                return;
+            }
+            if (!this.inited) {
+                this.result.value = await this.executePipe(ctx, this.result.value, this.framework.init())
+            } else {
+                this.result.value = await this.executePipe(ctx, this.result.value, this.framework.write(sourcemap));
+                this.inited = false;
+            }
         }
-        this.result.value = null;
     }
 }

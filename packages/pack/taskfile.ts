@@ -22,7 +22,7 @@ import * as ts from 'rollup-plugin-typescript';
         activity: 'each',
         each: [
             { clean: ['../../dist/pack/fesm5'], dist: '../../dist/pack/fesm5', uglify: false, tsconfig: './tsconfig.es2017.json' },
-            { clean: ['../../dist/pack/fesm2015'], dist: '../../dist/pack/fesm2015', uglify: true, tsconfig: './tsconfig.es2015.json' }
+            // { clean: ['../../dist/pack/fesm2015'], dist: '../../dist/pack/fesm2015', uglify: true, tsconfig: './tsconfig.es2015.json' }
         ],
         body: [
             <TsBuildOption>{

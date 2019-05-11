@@ -1,4 +1,4 @@
-import { Task, Expression, ValuePipe, Activity, ActivityType } from '@tsdi/activities';
+import { Task, Expression, ValuePipe, ActivityType, Src } from '@tsdi/activities';
 import { Input } from '@tsdi/boot';
 import { NodeActivityContext } from '../core';
 import { ObjectMap, isString } from '@tsdi/ioc';
@@ -11,6 +11,7 @@ import { UglifyActivity } from './UglifyActivity';
 import { AnnoationActivity } from './AnnoationActivity';
 import { SourceMapActivity } from './SourceMap';
 import { StreamActivity } from './StreamActivity';
+import { UnitTestActivity } from '../tasks';
 
 /**
  * ts build option.
@@ -20,6 +21,7 @@ import { StreamActivity } from './StreamActivity';
  * @extends {AssetActivityOption}
  */
 export interface TsBuildOption extends AssetActivityOption {
+    test?: Expression<Src>;
     annotation?: Expression<boolean>;
     sourceMaps?: Expression<string>;
     tsconfig: Expression<string | ObjectMap<any>>;
@@ -33,6 +35,10 @@ export interface TsBuildOption extends AssetActivityOption {
 
 @Task('ts')
 export class TsBuildActivity extends AssetActivity {
+
+
+    @Input()
+    test: UnitTestActivity;
 
     @Input('sourceMaps')
     sourceMap: SourceMapActivity;
@@ -78,10 +84,11 @@ export class TsBuildActivity extends AssetActivity {
             this.dts.pipe = this.dts.pipe || this.tdsPipe;
         }
         return [
+            this.test,
             this.clean,
             this.src,
             this.annotation,
-            this.sourceMap ? this.promiseLikeToAction<NodeActivityContext>(ctx => this.sourceMap.init(ctx, this.result.value)) : null,
+            this.sourceMap,
             this.tsPipes,
             this.promiseLikeToAction<NodeActivityContext>(ctx => this.complieTs(ctx)),
             this.streamPipes,

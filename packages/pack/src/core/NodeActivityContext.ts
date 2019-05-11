@@ -1,4 +1,4 @@
-import {  Src, ActivityContext, Activity } from '@tsdi/activities';
+import { Src, ActivityContext, Activity } from '@tsdi/activities';
 import { Injectable, ObjectMap, Express2, isArray, isString, lang, Refs } from '@tsdi/ioc';
 import { toAbsolutePath } from '@tsdi/platform-server';
 import { existsSync, readdirSync, lstatSync } from 'fs';
@@ -169,8 +169,8 @@ export class NodeActivityContext extends ActivityContext {
         });
     }
 
-    del(src: Src): Promise<any> {
-        return del(src);
+    del(src: Src, opts?: { force?: boolean, dryRun?: boolean }): Promise<any> {
+        return del(src, opts);
     }
 
     /**
