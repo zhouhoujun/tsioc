@@ -6,7 +6,7 @@ import { Injectable } from '@tsdi/ioc';
 export class TypeScriptJsPipe extends ValuePipe {
 
     async transform(value: any): Promise<any> {
-        return value.js
+        return value.js;
     }
 
     async refresh?(ctx: NodeActivityContext, value: any): Promise<void> {
@@ -18,6 +18,10 @@ export class TypeScriptJsPipe extends ValuePipe {
 export class TypeScriptTdsPipe extends ValuePipe {
 
     async transform(value: any): Promise<any> {
-        return value.tds
+        return value.tds;
+    }
+
+    async refresh?(ctx: NodeActivityContext, value: any): Promise<void> {
+        ctx.result.tds = value;
     }
 }

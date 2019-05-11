@@ -23,13 +23,13 @@ import { UnitTestActivity } from '../tasks';
 export interface TsBuildOption extends AssetActivityOption {
     test?: Expression<Src>;
     annotation?: Expression<boolean>;
-    sourceMaps?: Expression<string>;
+    sourcemaps?: Expression<string>;
     tsconfig: Expression<string | ObjectMap<any>>;
     dts?: Expression<string>;
     uglify?: Expression<boolean>;
     uglifyOptions?: Expression<any>;
-    jsValuePipe?: ValuePipe;
-    tdsValuePipe?: ValuePipe;
+    jsValuePipe?: Expression<ValuePipe | boolean>;
+    tdsValuePipe?: Expression<ValuePipe | boolean>;
 }
 
 
@@ -40,7 +40,7 @@ export class TsBuildActivity extends AssetActivity {
     @Input()
     test: UnitTestActivity;
 
-    @Input('sourceMaps')
+    @Input('sourcemaps')
     sourceMap: SourceMapActivity;
 
     @Input()
@@ -63,10 +63,10 @@ export class TsBuildActivity extends AssetActivity {
     @Input()
     dts: DestActivity;
 
-    @Input('jsValuePipe', TypeScriptJsPipe)
+    @Input('jsValuePipe')
     jsPipe: ValuePipe;
 
-    @Input('tdsValuePipe', TypeScriptTdsPipe)
+    @Input('tdsValuePipe')
     tdsPipe: ValuePipe;
 
 
@@ -83,6 +83,9 @@ export class TsBuildActivity extends AssetActivity {
         if (this.dts) {
             this.dts.pipe = this.dts.pipe || this.tdsPipe;
         }
+        if (this.sourceMap) {
+            this.sourceMap.pipe = this.sourceMap.pipe || this.jsPipe;
+        }
         return [
             this.test,
             this.clean,
@@ -92,9 +95,9 @@ export class TsBuildActivity extends AssetActivity {
             this.tsPipes,
             this.promiseLikeToAction<NodeActivityContext>(ctx => this.complieTs(ctx)),
             this.streamPipes,
+            this.dts,
             this.sourceMap,
-            this.dist,
-            this.dts
+            this.dist
         ]
     }
 

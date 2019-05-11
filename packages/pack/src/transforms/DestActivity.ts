@@ -1,7 +1,6 @@
 import { NodeActivityContext, ITransform } from '../core';
 import { Task, Expression, GActivityType, TemplateOption } from '@tsdi/activities';
 import { DestOptions, dest } from 'vinyl-fs';
-import { StreamActivity } from './StreamActivity';
 import { Input } from '@tsdi/boot';
 import { PipeActivity } from './PipeActivity';
 
