@@ -1,6 +1,6 @@
-import { BindDeignParamTypeAction, RuntimeActionContext, IParameter, getParamMetadata, isArray, ParameterMetadata, lang, MetadataService, isClass, isToken, ClassType, isNullOrUndefined, InjectReference } from '@tsdi/ioc';
+import { BindDeignParamTypeAction, RuntimeActionContext, IParameter, getParamMetadata, isArray, ParameterMetadata, lang, MetadataService, isClass, isToken, ClassType, isNullOrUndefined, InjectReference, isUndefined } from '@tsdi/ioc';
 import { IBindingTypeReflect, IBinding } from './IPropertyBindingReflect';
-import { BindingPropertyMetadata } from '../../decorators';
+import { BindingPropertyMetadata } from '../decorators';
 
 
 export class BindingParamTypeAction extends BindDeignParamTypeAction {
@@ -86,7 +86,7 @@ export class BindingParamTypeAction extends BindDeignParamTypeAction {
                                     if (parm.type) {
                                         bp.type = parm.type as ClassType<any>;
                                     }
-                                    if (!isNullOrUndefined(parm.defaultValue)) {
+                                    if (!isUndefined(parm.defaultValue)) {
                                         bp.defaultValue = parm.defaultValue;
                                     }
                                 }

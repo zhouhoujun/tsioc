@@ -67,6 +67,7 @@ export class TsBuildActivity extends AssetActivity {
         await super.startSource(ctx);
         if (this.annotation) {
             await this.annotation.run(ctx);
+            console.log(ctx.data);
         }
         if (this.tsconfig) {
             let tsconfig = await this.resolveExpression(this.tsconfig, ctx);

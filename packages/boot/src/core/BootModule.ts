@@ -21,7 +21,7 @@ import {
 import { RouteDesignRegisterAction, RouteRuntimRegisterAction, RegSelectorAction, BindingPropertyTypeAction, BindingParamTypeAction } from './registers';
 import { DIModuleRegisterScope } from './injectors';
 import { SelectorManager } from './SelectorManager';
-import { Input } from '../decorators';
+import { Input } from './decorators';
 import { HandleRegisterer } from './handles';
 import { DIModuleExports, ModuleInjectLifeScope } from './services';
 

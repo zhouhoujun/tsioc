@@ -1,5 +1,5 @@
 import { Workflow, Task, ActivityTemplate } from '@tsdi/activities';
-import { PackModule, PackTemplates, RollupOption } from '@tsdi/pack';
+import { PackModule, PackTemplates, RollupOption, TsBuildOption } from '@tsdi/pack';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
@@ -21,20 +21,20 @@ import * as ts from 'rollup-plugin-typescript';
     template: {
         activity: 'each',
         each: [
-            { clean: ['lib', 'fesm5'], dist: 'lib', uglify: false, tsconfig: './tsconfig.es2017.json' },
-            { clean: ['es2015', 'fesm2015'], dist: 'es2015', uglify: true, tsconfig: './tsconfig.es2015.json' }
+            { clean: ['../../dist/pack/fesm5'], dist: '../../dist/pack/fesm5', uglify: false, tsconfig: './tsconfig.es2017.json' },
+            { clean: ['../../dist/pack/fesm2015'], dist: '../../dist/pack/fesm2015', uglify: true, tsconfig: './tsconfig.es2015.json' }
         ],
         body: [
-            // <TsBuildOption>{
-            //     activity: 'ts',
-            //     // clean: ['lib', 'bundles', 'fesm5', 'es2015', 'fesm2015'],
-            //     src: 'src/**/*.ts',
-            //     annotation: true,
-            //     tsconfig: ctx => ctx.body.tsconfig,
-            //     uglify: ctx => ctx.body.uglify,
-            //     dist: ctx => ctx.body.dist,
-            //     clean: ctx => ctx.body.clean
-            // },
+            <TsBuildOption>{
+                activity: 'ts',
+                // clean: ['lib', 'bundles', 'fesm5', 'es2015', 'fesm2015'],
+                src: 'src/**/*.ts',
+                annotation: true,
+                tsconfig: ctx => ctx.body.tsconfig,
+                uglify: ctx => ctx.body.uglify,
+                dist: ctx => ctx.body.dist,
+                clean: ctx => ctx.body.clean
+            },
             <RollupOption>{
                 activity: 'rollup',
                 // annoation: true,
