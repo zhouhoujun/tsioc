@@ -11,7 +11,7 @@ export class ResolveTypeHandle extends BootHandle {
                 annoation: ctx.annoation,
                 decorator: ctx.decorator,
                 providers: ctx.providers
-            });
+            }, ctx.getRaiseContainer());
         }
         await next();
     }

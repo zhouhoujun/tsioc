@@ -1,6 +1,7 @@
-import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken } from '../src';
+import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken, runTest } from '../src';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { PromiseUtil, Inject } from '@tsdi/ioc';
+import { ConsoleReporter } from '@tsdi/unit-console';
 
 
 
@@ -44,6 +45,4 @@ export class SuiteTest {
 }
 
 
-// new UnitTest()
-//     .use(ConsoleReporter)
-//     .test(SuiteTest);
+// runTest(SuiteTest, {}, ConsoleReporter);

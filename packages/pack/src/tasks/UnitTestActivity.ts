@@ -1,6 +1,7 @@
 import { Task, Expression, Activity, Src, TemplateOption } from '@tsdi/activities';
 import { NodeActivityContext } from '../core';
 import { runTest, UnitTestConfigure } from '@tsdi/unit';
+import { ConsoleReporter } from '@tsdi/unit-console';
 import { Input } from '@tsdi/boot';
 
 
@@ -50,7 +51,7 @@ export class UnitTestActivity extends Activity<void> {
         let test = await this.resolveExpression(this.test, ctx);
         let options = await this.resolveExpression(this.options, ctx);
         if (test) {
-            await runTest(test, options);
+            await runTest(test, options, ConsoleReporter);
         }
     }
 }

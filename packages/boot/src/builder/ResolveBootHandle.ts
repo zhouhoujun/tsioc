@@ -16,7 +16,7 @@ export class ResolveBootHandle extends BootHandle {
                     // annoation: ctx.annoation,
                     // decorator: ctx.decorator,
                     providers: ctx.providers
-                });
+                }, ctx.getRaiseContainer());
             } else {
                 ctx.bootstrap = container.resolve(bootModule, ...ctx.providers);
             }

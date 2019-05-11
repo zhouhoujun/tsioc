@@ -1,11 +1,15 @@
 import { CompositeHandle, AnnoationContext } from '../core';
-import { ResolveRunnableHandle, RunBootHandle, ModuleBuildScope } from '../builder';
+import { RegisterModuleScope } from './RegisterModuleScope';
+import { ModuleBuildScope } from './ModuleBuildScope';
+import { ResolveRunnableHandle } from './ResolveRunnableHandle';
+import { RunBootHandle } from './RunBootHandle';
 
 
 export class RunnableBuildLifeScope extends CompositeHandle<AnnoationContext> {
 
     setup() {
-        this.use(ModuleBuildScope, true)
+        this.use(RegisterModuleScope, true)
+            .use(ModuleBuildScope, true)
             .use(ResolveRunnableHandle, true)
             .use(RunBootHandle);
     }

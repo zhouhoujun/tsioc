@@ -84,7 +84,6 @@ program
                     '@tsdi/platform-server-boot',
                     '@tsdi/activities',
                     '@tsdi/platform-server-activities',
-                    '@tsdi/build',
                     '@tsdi/pack',
                     '@tsdi/unit',
                     '@tsdi/unit-console'
@@ -141,7 +140,7 @@ function requireRegisters() {
 function runActivity(fileName, options) {
     const wf = requireCwd('@tsdi/activities');
     const pk = requireCwd('@tsdi/pack');
-    const bd = requireCwd('@tsdi/build');
+
     let config;
     if (options.config && isString(options.config)) {
         config = requireCwd(options.config);
@@ -153,11 +152,7 @@ function runActivity(fileName, options) {
     let wfi = wf.Workflow.create(config).use(pk.PackModule);
     let md = requireCwd(fileName);
     let activites = Object.values(md);
-    if (activites.some(v => pk.isPackClass(v))) {
-        wfi.sequence(...activites.filter(v => pk.isPackClass(v)));
-    } else if (activites.some(v => bd.isAssetClass(v))) {
-        wfi.sequence(...activites.filter(v => bd.isAssetClass(v)));
-    } else if (activites.some(v => wf.isAcitvityClass(v))) {
+    if (activites.some(v => wf.isAcitvityClass(v))) {
         wfi.sequence(...activites.filter(v => wf.isAcitvityClass(v)));
     } else {
         md.watch = options.watch === true;

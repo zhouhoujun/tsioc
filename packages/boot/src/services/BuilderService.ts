@@ -1,7 +1,7 @@
 import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, InjectReference, isFunction, MetadataService, getOwnTypeMetadata } from '@tsdi/ioc';
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { IContainer, ContainerToken, isContainer } from '@tsdi/core';
-import { CompositeHandle, HandleRegisterer } from '../core';
+import { CompositeHandle, HandleRegisterer, RegScope } from '../core';
 import { ModuleBuilderLifeScope, RunnableBuildLifeScope, ResolveMoudleScope, BuildContext, IModuleResolveOption, BootLifeScope } from '../builder';
 import { BootApplication } from '../BootApplication';
 import { RunnableConfigure } from '../annotations';
@@ -132,6 +132,7 @@ export class BuilderService extends IocCoreService {
 
         ctx.args = args;
         if (application) {
+            ctx.regScope = RegScope.boot;
             this.container.bindProvider(new InjectReference(BootApplication, ctx.module), application);
             if (isFunction(application.onContextInit)) {
                 application.onContextInit(ctx);

@@ -1,10 +1,12 @@
 import { CompositeHandle, AnnoationContext } from '../core';
-import { ModuleBuildScope } from '../builder';
+import { RegisterModuleScope } from './RegisterModuleScope';
+import { ModuleBuildScope } from './ModuleBuildScope';
 
 
 export class ModuleBuilderLifeScope extends CompositeHandle<AnnoationContext> {
 
     setup() {
-        this.use(ModuleBuildScope, true);
+        this.use(RegisterModuleScope, true)
+            .use(ModuleBuildScope, true);
     }
 }

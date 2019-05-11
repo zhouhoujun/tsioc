@@ -1,8 +1,4 @@
 import { CompositeHandle } from '../core';
-import { BootContextCheckHandle } from './BootContextCheckHandle';
-import { BootProvidersHandle } from './BootProvidersHandle';
-import { BootDepsHandle } from './BootDepsHandle';
-import { RegisterModuleHandle } from './RegisterModuleHandle';
 import { BootContext } from '../BootContext';
 import { ResolveBootHandle } from './ResolveBootHandle';
 import { ResolveTypeHandle } from './ResolveTypeHandle';
@@ -13,7 +9,7 @@ export class ModuleBuildScope extends CompositeHandle<BootContext> {
 
     async execute(ctx: BootContext, next?: () => Promise<void>): Promise<void> {
         // has build module instance.
-        if (ctx.annoation && ctx.target) {
+        if (ctx.target) {
             await next && next();
         } else {
             await super.execute(ctx, next);
@@ -22,11 +18,7 @@ export class ModuleBuildScope extends CompositeHandle<BootContext> {
 
     setup() {
         this.container.register(BootDecoratorRegisterer);
-        this.use(BootContextCheckHandle)
-            .use(BootProvidersHandle)
-            .use(BootDepsHandle)
-            .use(RegisterModuleHandle, true)
-            .use(ResolveTypeHandle)
+        this.use(ResolveTypeHandle)
             .use(ResolveBootHandle);
     }
 }

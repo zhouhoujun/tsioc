@@ -1,12 +1,11 @@
 
 export * from './RegisterAnnoationHandle';
-export * from './RegisterModuleHandle';
 export * from './RegisterModuleRegisterHandle';
+export * from './RegisterModuleScope';
 
 export * from './BootHandle';
 export * from './BootConfigureLoadHandle';
 export * from './BootConfigureRegisterHandle';
-export * from './BootContextCheckHandle';
 export * from './BootProvidersHandle';
 export * from './BootDepsHandle';
 export * from './BootDecoratorRegisterer';
