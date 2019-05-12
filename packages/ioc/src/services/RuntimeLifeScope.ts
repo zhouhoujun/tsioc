@@ -84,7 +84,7 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
             target: instance,
             propertyKey: propertyKey
         }, container.get(ContainerFactoryToken));
-        this.container.actions.get(RuntimeParamScope).execute(ctx);
+        this.container.getActionRegisterer().get(RuntimeParamScope).execute(ctx);
         let params = ctx.targetReflect.methodParams.get(propertyKey);
         return params || [];
     }

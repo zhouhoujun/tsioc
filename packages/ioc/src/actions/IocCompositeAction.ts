@@ -179,18 +179,8 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         this.setScope(ctx, scope);
     }
 
-    protected parseAction(ac: IocActionType) {
-        if (isClass(ac)) {
-            let action = this.container.actions.get(ac);
-            return action instanceof IocAction ? action.toAction() : null;
-        } if (ac instanceof IocAction) {
-            return ac.toAction()
-        }
-        return isFunction(ac) ? ac : null;
-    }
-
     protected registerAction(action: IocActionType, setup?: boolean): this {
-        this.container.actions.register(this.container, action, setup);
+        this.container.getActionRegisterer().register(this.container, action, setup);
         return this;
     }
 

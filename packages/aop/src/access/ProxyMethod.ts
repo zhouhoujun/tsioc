@@ -36,7 +36,7 @@ export class ProxyMethod implements IProxyMethod {
     private _lifeScope: RuntimeLifeScope;
     get lifeScope(): RuntimeLifeScope {
         if (!this._lifeScope) {
-            this._lifeScope = this.container.actions.get(RuntimeLifeScope);
+            this._lifeScope = this.container.getActionRegisterer().get(RuntimeLifeScope);
         }
         return this._lifeScope;
     }

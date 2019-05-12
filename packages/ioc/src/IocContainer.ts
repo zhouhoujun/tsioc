@@ -46,12 +46,8 @@ export class IocContainer implements IIocContainer {
         return this.factories.size;
     }
 
-    private _actions: ActionRegisterer
-    get actions(): ActionRegisterer {
-        if (!this._actions) {
-            this._actions = this.get(ActionRegisterer);
-        }
-        return this._actions;
+    getActionRegisterer(): ActionRegisterer {
+        return this.get(ActionRegisterer);
     }
 
     getProviderParser(): IProviderParser {
@@ -117,7 +113,7 @@ export class IocContainer implements IIocContainer {
      * @memberof IocContainer
      */
     resolve<T>(token: Token<T> | ResolveActionContext<T>, ...providers: ProviderTypes[]): T {
-        return this.actions.get(ResolveLifeScope).resolve(token, ...providers);
+        return this.getActionRegisterer().get(ResolveLifeScope).resolve(token, ...providers);
     }
 
     /**
@@ -446,7 +442,7 @@ export class IocContainer implements IIocContainer {
                 providers: providers,
                 providerMap: providerMap
             }, () => this);
-            this.actions.get(RuntimeLifeScope).register(ctx);
+            this.getActionRegisterer().get(RuntimeLifeScope).register(ctx);
             return ctx.target;
         };
 
@@ -455,7 +451,7 @@ export class IocContainer implements IIocContainer {
             this.bindProvider(key, ClassT);
         }
 
-        this.actions.get(DesignLifeScope).register(
+        this.getActionRegisterer().get(DesignLifeScope).register(
             DesignActionContext.parse({
                 tokenKey: key,
                 targetType: ClassT

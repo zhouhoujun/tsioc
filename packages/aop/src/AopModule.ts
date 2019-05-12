@@ -48,22 +48,23 @@ export class AopModule {
         container.register(Advisor);
         container.register(AdviceMatcher);
 
-        container.actions
-            .register(container, RegistAspectAction);
+        let registerer = container.getActionRegisterer();
 
-        container.actions.get(IocBeforeConstructorScope)
+        registerer.register(container, RegistAspectAction);
+
+        registerer.get(IocBeforeConstructorScope)
             .useBefore(InvokeBeforeConstructorAction);
 
-        container.actions.get(IocAfterConstructorScope)
+        registerer.get(IocAfterConstructorScope)
             .use(ExetndsInstanceAction)
             .use(InvokeAfterConstructorAction);
 
-        container.actions.get(RuntimeMethodScope)
+        registerer.get(RuntimeMethodScope)
             .useBefore(BindMethodPointcutAction);
 
         // container.get(DesignAnnoationScope)
         //     .use(MatchPointcutAction);
-        container.actions.get(RuntimeLifeScope)
+        registerer.get(RuntimeLifeScope)
             .useBefore(MatchPointcutAction, ConstructorArgsAction);
 
         container.get(DesignDecoratorRegisterer)

@@ -87,7 +87,7 @@ export class IocSyncDecoratorRegisterer<T> extends DecoratorRegisterer<T> {
 
     toFunc(container: IIocContainer, ac: T): Function {
         if (isClass(ac)) {
-            let action = container.actions.get(ac);
+            let action = container.getActionRegisterer().get(ac);
             return action instanceof IocAction ? action.toAction() : null;
         } if (ac instanceof IocAction) {
             return ac.toAction()

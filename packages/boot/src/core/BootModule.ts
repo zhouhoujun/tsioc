@@ -61,8 +61,10 @@ export class BootModule {
 
         container.use(modules);
         container.register(DIModuleExports);
-        container.actions
-            .register(container, ModuleInjectLifeScope, true)
+
+        let registerer = container.getActionRegisterer();
+
+        registerer.register(container, ModuleInjectLifeScope, true)
             .register(container, DIModuleRegisterScope, true);
 
         container.get(ModuleDecoratorRegisterer)
@@ -70,39 +72,39 @@ export class BootModule {
 
 
         // route service
-        container.actions.get(ResolveServiceInClassChain)
+        registerer.get(ResolveServiceInClassChain)
             .useAfter(ResolveRouteServiceAction, ResolvePrivateServiceAction, true);
 
         // route services
-        container.actions.get(ServicesResolveLifeScope)
+        registerer.get(ServicesResolveLifeScope)
             .use(ResolveRouteServicesAction, true);
 
-        container.actions.get(IocResolveScope)
+        registerer.get(IocResolveScope)
             .use(RouteResolveAction, true);
 
         // design register route.
-        container.actions.get(DesignLifeScope)
+        registerer.get(DesignLifeScope)
             .use(RouteDesignRegisterAction);
 
         // runtime register route.
-        container.actions.get(IocBeforeConstructorScope)
+        registerer.get(IocBeforeConstructorScope)
             .use(RouteRuntimRegisterAction);
 
-        container.actions.get(IocAfterConstructorScope)
+        registerer.get(IocAfterConstructorScope)
             .use(RouteRuntimRegisterAction);
 
-        container.actions.get(RuntimePropertyScope)
+        registerer.get(RuntimePropertyScope)
             .use(RouteRuntimRegisterAction);
 
-        container.actions.get(RuntimeMethodScope)
+        registerer.get(RuntimeMethodScope)
             .use(RouteRuntimRegisterAction);
 
-        container.actions.get(RuntimeAnnoationScope)
+        registerer.get(RuntimeAnnoationScope)
             .use(RouteRuntimRegisterAction);
 
 
         container.register(SelectorManager);
-        container.actions
+        registerer
             .register(container, RegSelectorAction)
             .register(container, BindingPropertyTypeAction)
             .register(container, BindingParamTypeAction);

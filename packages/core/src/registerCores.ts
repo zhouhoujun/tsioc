@@ -20,7 +20,7 @@ export function registerCores(container: IContainer) {
 
     container.register(ServiceDecoratorRegisterer);
     // register action
-    container.actions
+    container.getActionRegisterer()
         .register(container, InjectorLifeScope, true)
         .register(container, ServiceResolveLifeScope, true)
         .register(container, ServicesResolveLifeScope, true);

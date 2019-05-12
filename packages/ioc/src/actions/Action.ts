@@ -104,8 +104,14 @@ export abstract class IocAction<T extends IocActionContext> {
         return this._action;
     }
 
-    protected resolveAction(ac: Type<IocAction<T>>): IocAction<T> {
-        return this.container.actions.get(ac);
+    protected parseAction(ac: IocActionType) {
+        if (isClass(ac)) {
+            let action = this.container.getActionRegisterer().get(ac);
+            return action instanceof IocAction ? action.toAction() : null;
+        } if (ac instanceof IocAction) {
+            return ac.toAction()
+        }
+        return isFunction(ac) ? ac : null;
     }
 
 }

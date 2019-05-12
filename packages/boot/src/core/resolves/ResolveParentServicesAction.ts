@@ -9,7 +9,7 @@ export class ResolveParentServicesAction extends IocResolveServicesAction {
             let scopeType: Type<IocCompositeAction<any>> = lang.getClass(ctx.currScope);
             let parent = this.container.get(ParentContainerToken);
             if (parent && parent !== this.container) {
-                parent.actions.get(scopeType).execute(ctx);
+                parent.getActionRegisterer().get(scopeType).execute(ctx);
             }
         }
         if (!ctx.instance) {

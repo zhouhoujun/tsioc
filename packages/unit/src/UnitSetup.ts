@@ -31,7 +31,7 @@ export class UnitSetup {
                 ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
                 RegisterSingletionAction);
 
-        this.container.actions
+        this.container.getActionRegisterer()
             .register(this.container, SuiteDecoratorRegisterer);
 
         this.container.get(ServiceDecoratorRegisterer).register(Suite, SuiteDecoratorRegisterer);

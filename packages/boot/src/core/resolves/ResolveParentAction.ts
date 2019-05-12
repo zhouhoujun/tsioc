@@ -19,7 +19,7 @@ export class ResolveParentAction extends IocResolveAction {
                     ctx.instance = parent.get(ctx.token, ...ctx.providers);
                 }
                 if (!ctx.instance) {
-                    parent.actions.get(scopeType).execute(ctx);
+                    parent.getActionRegisterer().get(scopeType).execute(ctx);
                 }
             }
         }
