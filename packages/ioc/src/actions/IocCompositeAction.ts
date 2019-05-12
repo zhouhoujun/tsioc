@@ -1,6 +1,7 @@
-import { lang, isClass, isBoolean } from '../utils';
+import { lang, isClass, isBoolean, isFunction } from '../utils';
 import { IocAction, IocActionType, IocActionContext } from './Action';
 import { IIocContainer } from '../IIocContainer';
+import { Type } from '../types';
 
 /**
  * action registerer.
@@ -9,24 +10,30 @@ import { IIocContainer } from '../IIocContainer';
  * @class ActionRegisterer
  */
 export class ActionRegisterer {
+    maps: Map<Type<IocAction<any>>, IocAction<any>>;
     constructor() {
-
+        this.maps = new Map();
     }
 
-    get
+    get<T extends IocAction<any>>(type: Type<T>): T {
+        if (this.maps.has(type)) {
+            return this.maps.get(type) as T;
+        }
+        return null;
+    }
 
     register(container: IIocContainer, action: IocActionType, setup?: boolean): this {
         if (!isClass(action)) {
             return this;
         }
-        if (container.has(action)) {
+        if (this.maps.has(action)) {
             return this;
         }
-        container.registerSingleton(action, () => new action(container));
+        let actionInstance = new action(container);
+        this.maps.set(action, actionInstance);
         if (setup) {
-            let instance = container.get(action);
-            if (instance instanceof IocCompositeAction) {
-                instance.setup();
+            if (actionInstance instanceof IocCompositeAction) {
+                actionInstance.setup();
             }
         }
         return this;

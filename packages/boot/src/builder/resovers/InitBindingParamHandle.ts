@@ -13,7 +13,7 @@ export class InitBindingParamHandle extends ResolveHandle {
             let ref = container.getTypeReflects().get(ctx.type) as IBindingTypeReflect;
             // init if not init constructor params action.
             if (!ref.methodParams.has('constructor')) {
-                container.get(RuntimeLifeScope).getConstructorParameters(container, ctx.type);
+                register.get(RuntimeLifeScope).getConstructorParameters(container, ctx.type);
             }
             if (ref.paramsBindings) {
                 let bparams = ref.paramsBindings.get('constructor');

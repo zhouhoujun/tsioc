@@ -1,13 +1,12 @@
 import { PackModule, TsBuildOption } from '@tsdi/pack';
 import { Task, Workflow } from './src';
+import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 const rename = require('gulp-rename');
 const rollup = require('gulp-rollup');
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
 // const builtins = require('rollup-plugin-node-builtins');
-
-import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 
 
 @Task({
@@ -19,9 +18,8 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
     template: {
         activity: 'each',
         each: [
-            { clean: ['../../dist/core/lib'], dist: '../../dist/core/lib', uglify: true, tsconfig: './tsconfig.json' },
-            // { clean: ['../../dist/core/fesm5'], dist: '../../dist/core/fesm5', uglify: false, tsconfig: './tsconfig.es2017.json' },
-            // { clean: ['../../dist/core/fesm2015'], dist: '../../dist/core/fesm2015', uglify: true, tsconfig: './tsconfig.es2015.json' }
+            { clean: ['../../dist/activities/lib'], dist: '../../dist/activities/lib', uglify: true, tsconfig: './tsconfig.json' },
+            // { clean: ['../../dist/pack/fesm2015'], dist: '../../dist/pack/fesm2015', uglify: true, tsconfig: './tsconfig.es2015.json' }
         ],
         body: [
             <TsBuildOption>{
@@ -104,13 +102,12 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
         ]
     }
 })
-export class ActivityBuilder {
+export class PackBuilder {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.run(ActivityBuilder);
+    Workflow.run(PackBuilder);
 }
-
 
 
 // @Asset({

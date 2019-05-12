@@ -1,5 +1,5 @@
 import { ContainerToken, IContainer } from '@tsdi/core';
-import { Type, PromiseUtil, Inject, ProviderTypes, Token, isClass, OnInit } from '@tsdi/ioc';
+import { Type, PromiseUtil, Inject, ProviderTypes, Token, isClass, OnInit, isFunction } from '@tsdi/ioc';
 
 
 /**
@@ -54,7 +54,7 @@ export abstract class Handle<T extends IHandleContext> implements OnInit {
         return PromiseUtil.runInChain(handles, ctx, next);
     }
 
-    private _action: PromiseUtil.ActionHandle<T>;
+    _action: PromiseUtil.ActionHandle<T>
     toAction(): PromiseUtil.ActionHandle<T> {
         if (!this._action) {
             this._action = (ctx: T, next?: () => Promise<void>) => this.execute(ctx, next);
@@ -70,7 +70,7 @@ export abstract class Handle<T extends IHandleContext> implements OnInit {
         } else if (ac instanceof Handle) {
             return ac.toAction();
         }
-        return ac;
+        return isFunction(ac) ? ac : null;
     }
 }
 
