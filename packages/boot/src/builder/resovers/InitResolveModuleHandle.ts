@@ -20,6 +20,7 @@ export class InitResolveModuleHandle extends ResolveHandle {
                 ctx.decorator = decorators.find(c => runtimeReg.has(c));
             }
         }
+
         if (ctx.decorator) {
             if (!ctx.annoation) {
                 ctx.annoation = lang.first(getOwnTypeMetadata<ModuleConfigure>(ctx.decorator, ctx.type));

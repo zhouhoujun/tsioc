@@ -53,7 +53,7 @@ export class BuilderService extends IocCoreService {
         if (providers.length) {
             rctx.providers = (rctx.providers || []).concat(providers);
         }
-        await this.container.get(ResolveMoudleScope)
+        await this.container.get(HandleRegisterer).get(ResolveMoudleScope)
             .execute(rctx);
         return rctx.target;
     }
@@ -73,7 +73,7 @@ export class BuilderService extends IocCoreService {
      * @memberof BuilderService
      */
     build<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
-        return this.execLifeScope(null, this.container.get(ModuleBuilderLifeScope), target, ...args);
+        return this.execLifeScope(null, this.container.get(HandleRegisterer).get(ModuleBuilderLifeScope), target, ...args);
     }
 
     /**
@@ -86,7 +86,7 @@ export class BuilderService extends IocCoreService {
      * @memberof RunnerService
      */
     run<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
-        return this.execLifeScope(null, this.container.get(RunnableBuildLifeScope), target, ...args);
+        return this.execLifeScope(null, this.container.get(HandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
     }
 
     /**
@@ -112,7 +112,7 @@ export class BuilderService extends IocCoreService {
         } else if (application.target.deps) {
             await this.container.load(...application.target.deps);
         }
-        return await this.execLifeScope(application, this.container.get(BootLifeScope), application.target, ...args);
+        return await this.execLifeScope(application, this.container.get(HandleRegisterer).get(BootLifeScope), application.target, ...args);
     }
 
     protected async execLifeScope<T extends BootContext>(application: BootApplication, scope: CompositeHandle<BootContext>, target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {

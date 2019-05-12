@@ -1,10 +1,9 @@
 import { ParseHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
-import { isNullOrUndefined, isObject, lang, isBaseType, isUndefined } from '@tsdi/ioc';
+import { isNullOrUndefined, lang, isBaseType, isUndefined } from '@tsdi/ioc';
 
 export class DefaultParseHandle extends ParseHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
-
         if (!isNullOrUndefined(ctx.template)) {
             if (ctx.binding.type && !isBaseType(ctx.binding.type)) {
                 let ttype = lang.getClass(ctx.template);

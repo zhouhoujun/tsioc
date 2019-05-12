@@ -1,6 +1,42 @@
 import { Handle, HandleType, IHandleContext } from './Handle';
-import { PromiseUtil, isClass, isBoolean, Singleton } from '@tsdi/ioc';
+import { PromiseUtil, isBoolean, isClass, Type, Singleton, isFunction } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
+
+
+
+@Singleton()
+export class HandleRegisterer {
+
+    private maps: Map<Type<Handle<any>>, Handle<any>>;
+
+    constructor() {
+        this.maps = new Map();
+    }
+
+    get<T extends Handle<any>>(type: Type<T>): T {
+        if (this.maps.has(type)) {
+            return this.maps.get(type) as T;
+        }
+        return null;
+    }
+
+    register<T extends IHandleContext>(container: IContainer, HandleType: HandleType<T>, setup?: boolean): this {
+        if (!isClass(HandleType)) {
+            return this;
+        }
+        if (this.maps.has(HandleType)) {
+            return this;
+        }
+        let handle = new HandleType(container);
+        this.maps.set(HandleType, handle);
+        if (setup) {
+            if (handle instanceof CompositeHandle) {
+                handle.setup();
+            }
+        }
+        return this;
+    }
+}
 
 
 /**
@@ -112,29 +148,18 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
         return this;
     }
 
+    protected parseAction(ac: HandleType<T>): PromiseUtil.ActionHandle<T> {
+        if (isClass(ac)) {
+            let action = this.container.get(HandleRegisterer).get(ac);
+            return action instanceof Handle ? action.toAction() : null;
+
+        } else if (ac instanceof Handle) {
+            return ac.toAction();
+        }
+        return isFunction(ac) ? ac : null;
+    }
+
     setup?() {
 
-    }
-}
-
-@Singleton
-export class HandleRegisterer {
-    constructor() {
-    }
-    register<T extends IHandleContext>(container: IContainer, HandleType: HandleType<T>, setup?: boolean): this {
-        if (!isClass(HandleType)) {
-            return this;
-        }
-        if (container.has(HandleType)) {
-            return this;
-        }
-        container.registerSingleton(HandleType, () => new HandleType(container));
-        if (setup) {
-            let handle = container.get(HandleType);
-            if (handle instanceof CompositeHandle) {
-                handle.setup();
-            }
-        }
-        return this;
     }
 }

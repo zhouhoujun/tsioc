@@ -7,6 +7,7 @@ export class ResolveModuleHandle extends ResolveHandle {
         if (!ctx.target) {
             ctx.target = this.resolve(ctx, ctx.type, ...ctx.providers);
         }
+
         if (ctx.target) {
             await next();
         }

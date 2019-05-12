@@ -10,7 +10,8 @@ import { Type } from '../types';
  * @class ActionRegisterer
  */
 export class ActionRegisterer {
-    maps: Map<Type<IocAction<any>>, IocAction<any>>;
+    private maps: Map<Type<IocAction<any>>, IocAction<any>>;
+
     constructor() {
         this.maps = new Map();
     }

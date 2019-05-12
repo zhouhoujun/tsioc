@@ -18,6 +18,13 @@ export interface IHandleContext {
     getRaiseContainer(): IContainer;
 }
 
+
+/**
+ *  handle type.
+ */
+export type HandleType<T extends IHandleContext> = Type<Handle<T>> | Handle<T> | PromiseUtil.ActionHandle<T>;
+
+
 /**
  * middleware
  *
@@ -54,7 +61,7 @@ export abstract class Handle<T extends IHandleContext> implements OnInit {
         return PromiseUtil.runInChain(handles, ctx, next);
     }
 
-    _action: PromiseUtil.ActionHandle<T>
+     private _action: PromiseUtil.ActionHandle<T>
     toAction(): PromiseUtil.ActionHandle<T> {
         if (!this._action) {
             this._action = (ctx: T, next?: () => Promise<void>) => this.execute(ctx, next);
@@ -62,19 +69,4 @@ export abstract class Handle<T extends IHandleContext> implements OnInit {
         return this._action;
     }
 
-    protected parseAction(ac: HandleType<T>): PromiseUtil.ActionHandle<T> {
-        if (isClass(ac)) {
-            let action = this.container.get(ac);
-            return action instanceof Handle ? action.toAction() : null;
-
-        } else if (ac instanceof Handle) {
-            return ac.toAction();
-        }
-        return isFunction(ac) ? ac : null;
-    }
 }
-
-/**
- *  handle type.
- */
-export type HandleType<T extends IHandleContext> = Type<Handle<T>> | Handle<T> | PromiseUtil.ActionHandle<T>;

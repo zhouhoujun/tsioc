@@ -21,7 +21,9 @@ export class RegisterAnnoationHandle extends AnnoationHandle {
             }
         }
         if (ctx.decorator) {
-            this.container.getActionRegisterer().get(ModuleInjectLifeScope).execute(ctx);
+            this.container
+                .getActionRegisterer()
+                .get(ModuleInjectLifeScope).execute(ctx);
             await next();
         } else {
             console.log(ctx.module);

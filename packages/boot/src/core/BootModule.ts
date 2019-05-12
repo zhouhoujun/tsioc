@@ -64,7 +64,8 @@ export class BootModule {
 
         let registerer = container.getActionRegisterer();
 
-        registerer.register(container, ModuleInjectLifeScope, true)
+        registerer
+            .register(container, ModuleInjectLifeScope, true)
             .register(container, DIModuleRegisterScope, true);
 
         container.get(ModuleDecoratorRegisterer)
