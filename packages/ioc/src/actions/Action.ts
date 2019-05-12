@@ -96,13 +96,20 @@ export abstract class IocAction<T extends IocActionContext> {
         lang.execAction(actions, ctx, next);
     }
 
-    protected toActionFunc(ac: IocActionType) {
+    private _action: lang.IAction<T>
+    toAction(): lang.IAction<T> {
+        if (!this._action) {
+            this._action = (ctx: T, next?: () => void) => this.execute(ctx, next);
+        }
+        return this._action;
+    }
+
+    protected parseAction(ac: IocActionType) {
         if (isClass(ac)) {
             let action = this.container.get(ac);
-            return action instanceof IocAction ?
-                (ctx: T, next?: () => void) => action.execute(ctx, next) : null;
+            return action instanceof IocAction ? action.toAction() : null;
         } if (ac instanceof IocAction) {
-            return (ctx: T, next?: () => void) => ac.execute(ctx, next);
+            return ac.toAction();
         }
         return ac
     }

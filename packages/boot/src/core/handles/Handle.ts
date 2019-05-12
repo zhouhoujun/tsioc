@@ -54,14 +54,21 @@ export abstract class Handle<T extends IHandleContext> implements OnInit {
         return PromiseUtil.runInChain(handles, ctx, next);
     }
 
-    protected toFunc(ac: HandleType<T>): PromiseUtil.ActionHandle<T> {
+    private _action: PromiseUtil.ActionHandle<T>;
+    toAction(): PromiseUtil.ActionHandle<T> {
+        if (!this._action) {
+            this._action = (ctx: T, next?: () => Promise<void>) => this.execute(ctx, next);
+        }
+        return this._action;
+    }
+
+    protected parseAction(ac: HandleType<T>): PromiseUtil.ActionHandle<T> {
         if (isClass(ac)) {
             let action = this.container.get(ac);
-            return action instanceof Handle ?
-                (ctx: T, next?: () => Promise<void>) => action.execute(ctx, next) : null;
+            return action instanceof Handle ? action.toAction() : null;
 
         } else if (ac instanceof Handle) {
-            return (ctx: T, next?: () => Promise<void>) => ac.execute(ctx, next);
+            return ac.toAction();
         }
         return ac;
     }
