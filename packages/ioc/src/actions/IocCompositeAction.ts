@@ -13,6 +13,8 @@ export class ActionRegisterer {
 
     }
 
+    get
+
     register(container: IIocContainer, action: IocActionType, setup?: boolean): this {
         if (!isClass(action)) {
             return this;
@@ -171,8 +173,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
     }
 
     protected registerAction(action: IocActionType, setup?: boolean): this {
-        this.container.get(ActionRegisterer)
-            .register(this.container, action, setup);
+        this.container.getActionRegisterer().register(this.container, action, setup);
         return this;
     }
 

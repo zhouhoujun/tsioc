@@ -80,7 +80,7 @@ export class Container extends IocContainer implements IContainer {
      * @memberof Container
      */
     use(...modules: Modules[]): this {
-        this.get(InjectorLifeScope).register(...modules);
+        this.getActionRegisterer().get(InjectorLifeScope).register(...modules);
         return this;
     }
 
@@ -93,7 +93,7 @@ export class Container extends IocContainer implements IContainer {
      */
     async load(...modules: LoadType[]): Promise<Type<any>[]> {
         let mdls = await this.getLoader().load(...modules);
-        return this.get(InjectorLifeScope).register(...mdls);
+        return this.getActionRegisterer().get(InjectorLifeScope).register(...mdls);
     }
 
     /**
@@ -135,7 +135,7 @@ export class Container extends IocContainer implements IContainer {
                 providers: providers
             });
         }
-        this.get(ServiceResolveLifeScope).execute(context);
+        this.getActionRegisterer().get(ServiceResolveLifeScope).execute(context);
         return context.instance || null;
     }
 
@@ -214,7 +214,7 @@ export class Container extends IocContainer implements IContainer {
                 target: tag
             });
         }
-        this.get(ServicesResolveLifeScope).execute(context);
+        this.getActionRegisterer().get(ServicesResolveLifeScope).execute(context);
         return context.services;
     }
 }

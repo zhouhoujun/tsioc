@@ -26,7 +26,7 @@ export function registerCores(container: IIocContainer) {
     container.registerSingleton(MethodAccessor, () => new MethodAccessor());
 
     // bing action.
-    container.get(ActionRegisterer)
+    container.getActionRegisterer()
         .register(container, DesignLifeScope, true)
         .register(container, RuntimeLifeScope, true)
         .register(container, ResolveLifeScope, true);

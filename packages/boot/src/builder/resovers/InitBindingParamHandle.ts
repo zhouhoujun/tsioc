@@ -7,6 +7,7 @@ import { ParseContext, ParseScope } from '../parses';
 export class InitBindingParamHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         let container = ctx.getRaiseContainer();
+        let register = container.getActionRegisterer();
         ctx.providers = ctx.providers || [];
         if (ctx.template) {
             let ref = container.getTypeReflects().get(ctx.type) as IBindingTypeReflect;

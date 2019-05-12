@@ -61,8 +61,10 @@ export class BootModule {
 
         container.use(modules);
         container.register(DIModuleExports);
-        container.get(ActionRegisterer)
-            .register(container, ModuleInjectLifeScope, true)
+
+        let registerer = container.getActionRegisterer();
+
+        registerer.register(container, ModuleInjectLifeScope, true)
             .register(container, DIModuleRegisterScope, true);
 
         container.get(ModuleDecoratorRegisterer)
@@ -70,39 +72,39 @@ export class BootModule {
 
 
         // route service
-        container.get(ResolveServiceInClassChain)
+        registerer.get(ResolveServiceInClassChain)
             .useAfter(ResolveRouteServiceAction, ResolvePrivateServiceAction, true);
 
         // route services
-        container.get(ServicesResolveLifeScope)
+        registerer.get(ServicesResolveLifeScope)
             .use(ResolveRouteServicesAction, true);
 
-        container.get(IocResolveScope)
+        registerer.get(IocResolveScope)
             .use(RouteResolveAction, true);
 
         // design register route.
-        container.get(DesignLifeScope)
+        registerer.get(DesignLifeScope)
             .use(RouteDesignRegisterAction);
 
         // runtime register route.
-        container.get(IocBeforeConstructorScope)
+        registerer.get(IocBeforeConstructorScope)
             .use(RouteRuntimRegisterAction);
 
-        container.get(IocAfterConstructorScope)
+        registerer.get(IocAfterConstructorScope)
             .use(RouteRuntimRegisterAction);
 
-        container.get(RuntimePropertyScope)
+        registerer.get(RuntimePropertyScope)
             .use(RouteRuntimRegisterAction);
 
-        container.get(RuntimeMethodScope)
+        registerer.get(RuntimeMethodScope)
             .use(RouteRuntimRegisterAction);
 
-        container.get(RuntimeAnnoationScope)
+        registerer.get(RuntimeAnnoationScope)
             .use(RouteRuntimRegisterAction);
 
 
         container.register(SelectorManager);
-        container.get(ActionRegisterer)
+        registerer
             .register(container, RegSelectorAction)
             .register(container, BindingPropertyTypeAction)
             .register(container, BindingParamTypeAction);

@@ -10,7 +10,7 @@ import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderPa
 import { IResolver } from './IResolver';
 import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, TypeReflects, ResolveLifeScope } from './services';
 import { IParameter } from './IParameter';
-import { RuntimeActionContext, DesignActionContext, IocRegisterAction, IocRegisterScope, ResolveActionContext } from './actions';
+import { RuntimeActionContext, DesignActionContext, IocRegisterAction, IocRegisterScope, ResolveActionContext, ActionRegisterer } from './actions';
 
 
 /**
@@ -46,6 +46,9 @@ export class IocContainer implements IIocContainer {
         return this.factories.size;
     }
 
+    getActionRegisterer(): ActionRegisterer {
+        return this.get(ActionRegisterer);
+    }
 
     getProviderParser(): IProviderParser {
         return this.get(ProviderParser);
@@ -110,7 +113,7 @@ export class IocContainer implements IIocContainer {
      * @memberof IocContainer
      */
     resolve<T>(token: Token<T> | ResolveActionContext<T>, ...providers: ProviderTypes[]): T {
-        return this.get(ResolveLifeScope).resolve(token, ...providers);
+        return this.getActionRegisterer().get(ResolveLifeScope).resolve(token, ...providers);
     }
 
     /**
@@ -439,7 +442,7 @@ export class IocContainer implements IIocContainer {
                 providers: providers,
                 providerMap: providerMap
             }, () => this);
-            this.get(RuntimeLifeScope).register(ctx);
+            this.getActionRegisterer().get(RuntimeLifeScope).register(ctx);
             return ctx.target;
         };
 
@@ -448,7 +451,7 @@ export class IocContainer implements IIocContainer {
             this.bindProvider(key, ClassT);
         }
 
-        this.get(DesignLifeScope).register(
+        this.getActionRegisterer().get(DesignLifeScope).register(
             DesignActionContext.parse({
                 tokenKey: key,
                 targetType: ClassT

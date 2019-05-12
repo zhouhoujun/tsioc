@@ -24,7 +24,7 @@ export class CoreModule {
     setup() {
         let container = this.container;
 
-        container.get(ActionRegisterer)
+        container.getActionRegisterer()
             .register(container, TaskDecoratorServiceAction);
 
         container.get(HandleRegisterer)
