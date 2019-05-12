@@ -7,12 +7,13 @@ import { ParseContext, ParseScope } from '../parses';
 export class InitBindingParamHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         let container = ctx.getRaiseContainer();
+        let register = container.actions;
         ctx.providers = ctx.providers || [];
         if (ctx.template) {
             let ref = container.getTypeReflects().get(ctx.type) as IBindingTypeReflect;
             // init if not init constructor params action.
             if (!ref.methodParams.has('constructor')) {
-                container.get(RuntimeLifeScope).getConstructorParameters(container, ctx.type);
+                register.get(RuntimeLifeScope).getConstructorParameters(container, ctx.type);
             }
             if (ref.paramsBindings) {
                 let bparams = ref.paramsBindings.get('constructor');

@@ -1,6 +1,7 @@
-import { lang, isClass, isBoolean } from '../utils';
+import { lang, isClass, isBoolean, isFunction } from '../utils';
 import { IocAction, IocActionType, IocActionContext } from './Action';
 import { IIocContainer } from '../IIocContainer';
+import { Type } from '../types';
 
 /**
  * action registerer.
@@ -9,22 +10,30 @@ import { IIocContainer } from '../IIocContainer';
  * @class ActionRegisterer
  */
 export class ActionRegisterer {
+    maps: Map<Type<IocAction<any>>, IocAction<any>>;
     constructor() {
+        this.maps = new Map();
+    }
 
+    get<T extends IocAction<any>>(type: Type<T>): T {
+        if (this.maps.has(type)) {
+            return this.maps.get(type) as T;
+        }
+        return null;
     }
 
     register(container: IIocContainer, action: IocActionType, setup?: boolean): this {
         if (!isClass(action)) {
             return this;
         }
-        if (container.has(action)) {
+        if (this.maps.has(action)) {
             return this;
         }
-        container.registerSingleton(action, () => new action(container));
+        let actionInstance = new action(container);
+        this.maps.set(action, actionInstance);
         if (setup) {
-            let instance = container.get(action);
-            if (instance instanceof IocCompositeAction) {
-                instance.setup();
+            if (actionInstance instanceof IocCompositeAction) {
+                actionInstance.setup();
             }
         }
         return this;
@@ -164,15 +173,24 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         let scope = ctx.currScope;
         this.setScope(ctx);
         if (!this.actionFuncs) {
-            this.actionFuncs = [...this.befores, ...this.actions, ...this.afters].map(ac => this.toActionFunc(ac)).filter(f => f);
+            this.actionFuncs = [...this.befores, ...this.actions, ...this.afters].map(ac => this.parseAction(ac)).filter(f => f);
         }
         this.execFuncs(ctx, this.actionFuncs, next);
         this.setScope(ctx, scope);
     }
 
+    protected parseAction(ac: IocActionType) {
+        if (isClass(ac)) {
+            let action = this.container.actions.get(ac);
+            return action instanceof IocAction ? action.toAction() : null;
+        } if (ac instanceof IocAction) {
+            return ac.toAction()
+        }
+        return isFunction(ac) ? ac : null;
+    }
+
     protected registerAction(action: IocActionType, setup?: boolean): this {
-        this.container.get(ActionRegisterer)
-            .register(this.container, action, setup);
+        this.container.actions.register(this.container, action, setup);
         return this;
     }
 

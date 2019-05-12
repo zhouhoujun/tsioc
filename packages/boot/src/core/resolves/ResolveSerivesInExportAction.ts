@@ -17,7 +17,7 @@ export class ResolveSerivesInExportAction extends IocResolveServicesAction {
     }
 
     depIterator(ctx: ResolveServicesContext<any>, resolver: IModuleResolver) {
-        resolver.getContainer().get(ResolveServicesScope).execute(ctx);
+        resolver.getContainer().actions.get(ResolveServicesScope).execute(ctx);
         if (resolver.has(DIModuleExports)) {
             resolver.resolve(DIModuleExports).getResolvers()
                 .forEach(r => {

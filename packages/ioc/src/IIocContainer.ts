@@ -4,7 +4,7 @@ import { IResolverContainer } from './IResolver';
 import { ParamProviders, ProviderTypes, IProviderParser } from './providers';
 import { IParameter } from './IParameter';
 import { TypeReflects } from './services';
-import { ResolveActionContext } from './actions';
+import { ResolveActionContext, ActionRegisterer } from './actions';
 
 /**
  * IContainer token.
@@ -28,6 +28,7 @@ export const ContainerFactoryToken = new InjectToken<ContainerFactory>('DI_Conta
  */
 export interface IIocContainer extends IResolverContainer {
 
+    readonly actions: ActionRegisterer;
     /**
      * get provider parser.
      *

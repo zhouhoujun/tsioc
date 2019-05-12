@@ -97,7 +97,7 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
 
     async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
         if (!this.funcs) {
-            this.funcs = this.handles.map(ac => this.toFunc(ac)).filter(f => f);
+            this.funcs = this.handles.map(ac => this.parseAction(ac)).filter(f => f);
         }
         await this.execFuncs(ctx, this.funcs, next);
     }

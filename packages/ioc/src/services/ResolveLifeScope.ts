@@ -32,7 +32,7 @@ export class ResolveLifeScope<T> extends LifeScope<ResolveActionContext<T>> {
         } else {
             ctx = ResolveActionContext.parse({ token: token, providers: providers });
         }
-        this.container.get(ResolveLifeScope).execute(ctx);
+        this.container.actions.get(ResolveLifeScope).execute(ctx);
         return ctx.instance;
     }
 }

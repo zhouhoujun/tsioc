@@ -10,7 +10,7 @@ export class RouteRuntimRegisterAction extends IocRuntimeAction {
             let scopeType: Type<IocCompositeAction<any>> = lang.getClass(ctx.currScope);
             let parent = this.container.get(ParentContainerToken);
             if (parent && parent !== this.container) {
-                parent.get(scopeType).execute(ctx, next);
+                parent.actions.get(scopeType).execute(ctx, next);
             }
         } else {
             next();
@@ -24,7 +24,7 @@ export class RouteDesignRegisterAction extends IocDesignAction {
             let scopeType: Type<IocCompositeAction<any>> = lang.getClass(ctx.currScope);
             let parent = this.container.get(ParentContainerToken);
             if (parent && parent !== this.container) {
-                parent.get(scopeType).execute(ctx, next);
+                parent.actions.get(scopeType).execute(ctx, next);
             }
         } else {
             next();
