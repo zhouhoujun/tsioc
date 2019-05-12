@@ -1,7 +1,6 @@
-import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken, runTest } from '../src';
+import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken } from '../src';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { PromiseUtil, Inject } from '@tsdi/ioc';
-import { ConsoleReporter } from '@tsdi/unit-console';
 
 
 
@@ -22,7 +21,7 @@ export class SuiteTest {
         setTimeout(() => {
             console.log('out time do...');
             def.resolve('out time do...')
-        }, 300)
+        }, 100)
         return def.promise;
     }
 

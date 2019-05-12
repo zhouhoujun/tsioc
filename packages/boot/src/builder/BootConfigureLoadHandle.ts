@@ -18,6 +18,9 @@ export class BootConfigureLoadHandle extends BootHandle {
                 let container = ctx.getRaiseContainer();
                 await container.load(...config.deps);
             }
+            if (config.baseURL) {
+                ctx.baseURL = config.baseURL;
+            }
         }
         await next();
     }

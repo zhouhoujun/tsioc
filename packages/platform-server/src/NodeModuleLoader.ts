@@ -21,6 +21,7 @@ export class NodeModuleLoader extends ModuleLoader implements IModuleLoader {
 
     protected loadFile(files: string | string[], basePath?: string): Promise<Modules[]> {
         let globby = require('globby');
+        basePath = basePath || process.cwd();
         return globby(toAbsoluteSrc(basePath, files)).then((mflies: string[]) => {
             return mflies.map(fp => {
                 return require(fp);
