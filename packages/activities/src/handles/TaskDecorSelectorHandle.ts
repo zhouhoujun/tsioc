@@ -16,11 +16,13 @@ export class TaskDecorSelectorHandle extends ParseHandle {
                 ctx.selector = activity;
             }
         }
-        if (!ctx.selector && this.isActivity(ctx.decorator, ctx.binding.provider)) {
-            ctx.selector = ctx.binding.provider;
-        }
-        if (!ctx.selector && this.isActivity(ctx.decorator, ctx.binding.type)) {
-            ctx.selector = ctx.binding.type;
+        if (ctx.binding) {
+            if (!ctx.selector && this.isActivity(ctx.decorator, ctx.binding.provider)) {
+                ctx.selector = ctx.binding.provider;
+            }
+            if (!ctx.selector && this.isActivity(ctx.decorator, ctx.binding.type)) {
+                ctx.selector = ctx.binding.type;
+            }
         }
 
         if (!ctx.selector) {

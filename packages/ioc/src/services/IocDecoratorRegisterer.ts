@@ -49,9 +49,13 @@ export abstract class DecoratorRegisterer<T> extends IocCoreService {
         return this;
     }
 
-    has(decorator: string | Function): boolean {
+    has(decorator: string | Function, action?: T): boolean {
         let dec = this.getKey(decorator);
-        return this.actionMap.has(dec);
+        let has = this.actionMap.has(dec);
+        if (has && action) {
+            return this.actionMap.get(dec).indexOf(action) >= 0;
+        }
+        return has;
     }
 
     getKey(decorator: string | Function) {

@@ -17,7 +17,7 @@ import * as modules from './modules';
 import {
     RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction,
 } from './resolves';
-import { RouteDesignRegisterAction, RouteRuntimRegisterAction, RegSelectorAction, BindingPropertyTypeAction, BindingParamTypeAction } from './registers';
+import { RouteDesignRegisterAction, RouteRuntimRegisterAction, ComponentRegisterAction, BindingPropertyTypeAction, BindingParamTypeAction } from './registers';
 import { DIModuleRegisterScope } from './injectors';
 import { SelectorManager } from './SelectorManager';
 import { Input, Component } from './decorators';
@@ -103,12 +103,12 @@ export class BootModule {
 
         container.register(SelectorManager);
         registerer
-            .register(container, RegSelectorAction)
+            .register(container, ComponentRegisterAction)
             .register(container, BindingPropertyTypeAction)
             .register(container, BindingParamTypeAction);
 
         container.get(DesignDecoratorRegisterer)
-            .register(Component, DecoratorScopes.Class, RegSelectorAction)
+            .register(Component, DecoratorScopes.Class, ComponentRegisterAction)
             .register(Input, DecoratorScopes.Property, BindingPropertyTypeAction);
         // .register(Input, DecoratorScopes.Parameter, BindInputParamTypeAction);
 

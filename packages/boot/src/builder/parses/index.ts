@@ -3,9 +3,9 @@ export * from './DefaultParseHandle';
 export * from './SelectorParseHandle';
 export * from './ParseContext';
 export * from './ParseHandle';
-export * from './TranslateSelectorScope';
+export * from './TemplateParseScope';
 export * from './ParseScope';
 
 export * from './AttrSelectorHandle';
-export * from './DecorSelectorHandle';
-export * from './SelectorDecoratorRegisterer';
+export * from './DecorTemplateParseHandle';
+export * from './DecoratorTemplateRegisterer';

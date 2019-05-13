@@ -4,7 +4,7 @@ import { SelectorManager } from '../SelectorManager';
 import { ModuleConfigure } from '../modules';
 
 
-export class RegSelectorAction extends IocDesignAction {
+export class ComponentRegisterAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
         let mgr = this.container.get(RootContainerToken).get(SelectorManager);
         let metas = getOwnTypeMetadata<ModuleConfigure>(ctx.currDecoractor, ctx.targetType);

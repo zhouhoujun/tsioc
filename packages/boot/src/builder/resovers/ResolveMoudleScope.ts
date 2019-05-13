@@ -1,13 +1,15 @@
 import { CompositeHandle } from '../../core';
 import { DecoratorBuildHandle } from './DecoratorBuildHandle';
 import { ResolveModuleHandle } from './ResolveModuleHandle';
-import { BuildModuleHandle } from './BuildModuleHandle';
 import { BuildContext } from './BuildContext';
 import { BindingScope } from './BindingScope';
 import { BuildDecoratorRegisterer } from './BuildDecoratorRegisterer';
 import { ParseScope } from '../parses';
 import { InitResolveModuleHandle } from './InitResolveModuleHandle';
 import { InitBindingParamHandle } from './InitBindingParamHandle';
+import { ModuleBeforeInitHandle } from './ModuleBeforeInitHandle';
+import { ModuleAfterInitHandle } from './ModuleAfterInitHandle';
+import { ResolveTemplateScope } from './ResolveTemplateScope';
 
 
 export class ResolveMoudleScope extends CompositeHandle<BuildContext> {
@@ -20,11 +22,12 @@ export class ResolveMoudleScope extends CompositeHandle<BuildContext> {
             .registerHandle(BindingScope, true);
 
         this.use(InitResolveModuleHandle)
-            // .use(InitTemplateHandle)
             .use(InitBindingParamHandle)
             .use(ResolveModuleHandle)
-            .use(BuildModuleHandle)
+            .use(ModuleBeforeInitHandle)
             .use(DecoratorBuildHandle)
-            .use(BindingScope);
+            .use(BindingScope)
+            .use(ModuleAfterInitHandle)
+            .use(ResolveTemplateScope);
     }
 }
