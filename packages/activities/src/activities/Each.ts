@@ -13,11 +13,11 @@ export class EachActicity<T> extends Activity<T> {
     @Input()
     body: BodyActivity<T>;
 
-    async execute(ctx: ActivityContext): Promise<void> {
+    protected async execute(ctx: ActivityContext): Promise<void> {
         let items = await this.resolveExpression(this.each, ctx);
         if (items && items.length) {
             await this.execActions(ctx, items.map(v => async (c: ActivityContext , next) => {
-                await this.setBody(c, v);
+                await ctx.setBody(v, true);
                 await this.body.run(c, next);
             }));
         }

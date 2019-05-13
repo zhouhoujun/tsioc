@@ -3,6 +3,7 @@ import { RunnableConfigure, ConfigureManager } from './annotations';
 import { IModuleLoader } from '@tsdi/core';
 import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory } from '@tsdi/ioc';
 import { Runnable } from './runnable';
+import { IComponentContext } from './builder';
 
 
 /**
@@ -131,7 +132,7 @@ export const BootTargetToken = new InjectToken('module_type');
  * @extends {HandleContext}
  */
 @Injectable
-export class BootContext extends AnnoationContext {
+export class BootContext extends AnnoationContext implements IComponentContext {
 
     constructor(@Inject(BootTargetToken) type: Type<any>) {
         super(type);

@@ -1,10 +1,9 @@
 import {
     Inject, BindProviderAction, DesignDecoratorRegisterer,
-    IocSetCacheAction, ComponentBeforeInitAction, RuntimeDecoratorRegisterer,
-    ComponentInitAction, ComponentAfterInitAction, DesignLifeScope,
+    IocSetCacheAction, RuntimeDecoratorRegisterer, DesignLifeScope,
     IocBeforeConstructorScope, IocAfterConstructorScope, DecoratorScopes, RuntimeMethodScope,
     RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction,
-    RegisterSingletionAction, IocResolveScope, Component, ActionRegisterer
+    RegisterSingletionAction, IocResolveScope, ActionRegisterer
 } from '@tsdi/ioc';
 import {
     IContainer, ContainerToken, IocExt,
@@ -21,7 +20,7 @@ import {
 import { RouteDesignRegisterAction, RouteRuntimRegisterAction, RegSelectorAction, BindingPropertyTypeAction, BindingParamTypeAction } from './registers';
 import { DIModuleRegisterScope } from './injectors';
 import { SelectorManager } from './SelectorManager';
-import { Input } from './decorators';
+import { Input, Component } from './decorators';
 import { HandleRegisterer } from './handles';
 import { DIModuleExports, ModuleInjectLifeScope } from './services';
 
@@ -50,14 +49,12 @@ export class BootModule {
         let designReg = container.get(DesignDecoratorRegisterer);
         designReg.register(Annotation, DecoratorScopes.Class, BindProviderAction, IocAutorunAction);
         designReg.register(DIModule, DecoratorScopes.Class, BindProviderAction, IocAutorunAction);
+        designReg.register(Component, DecoratorScopes.Class, BindProviderAction)
 
         container.get(RuntimeDecoratorRegisterer)
-            .register(Annotation, DecoratorScopes.Class,
-                ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
-                RegisterSingletionAction, IocSetCacheAction)
-            .register(DIModule, DecoratorScopes.Class,
-                ComponentBeforeInitAction, ComponentInitAction, ComponentAfterInitAction,
-                RegisterSingletionAction, IocSetCacheAction);
+            .register(Component, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
+            .register(Annotation, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
+            .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
         container.use(modules);
         container.register(DIModuleExports);

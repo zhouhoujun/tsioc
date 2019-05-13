@@ -1,7 +1,8 @@
-import { IHandleContext, IBinding } from '../../core';
+import { IBinding } from '../../core';
 import { IContainer } from '@tsdi/core';
 import { ContainerFactory, Injectable, Type } from '@tsdi/ioc';
 import { BuildContext, IModuleResolveOption } from '../resovers';
+import { IComponentContext } from '../ComponentContext';
 
 export interface IBindingParseOption extends IModuleResolveOption  {
     selector?: Type<any>;
@@ -9,7 +10,7 @@ export interface IBindingParseOption extends IModuleResolveOption  {
 }
 
 @Injectable
-export class ParseContext extends BuildContext implements IHandleContext {
+export class ParseContext extends BuildContext implements IComponentContext {
 
     selector?: Type<any>;
 

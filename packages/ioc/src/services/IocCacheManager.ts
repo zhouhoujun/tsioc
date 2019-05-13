@@ -1,6 +1,5 @@
 import { Type } from '../types';
 import { isFunction, isNumber } from '../utils';
-import { OnDestroy } from './ComponentLifecycle';
 import { IIocContainer } from '../IIocContainer';
 import { IocCoreService } from './IocCoreService';
 
@@ -58,6 +57,21 @@ export interface IIocCacheManager {
      * @memberof ICacheManager
      */
     destroy(targetType: Type<any>, target?: any);
+}
+
+/**
+ * after component destory.
+ *
+ * @export
+ * @interface OnDestroy
+ */
+export interface OnDestroy {
+    /**
+     * component after destory hooks. after property inject.
+     *
+     * @memberof OnDestroy
+     */
+    onDestroy();
 }
 
 

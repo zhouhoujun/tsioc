@@ -1,4 +1,4 @@
-import { Src, Task, TemplateOption, Expression, ActivityType, Activity } from '@tsdi/activities';
+import { Src, Task, TemplateOption, Expression, ActivityType } from '@tsdi/activities';
 import { NodeActivityContext } from '../core';
 import { StreamActivity } from './StreamActivity';
 import { SourceActivity } from './SourceActivity';

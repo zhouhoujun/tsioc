@@ -8,3 +8,4 @@ export * from './modules';
 export * from './handles';
 export * from './ContainerPool';
 export * from './types';
+export * from './ComponentLifecycle';

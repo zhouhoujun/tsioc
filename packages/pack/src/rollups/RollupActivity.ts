@@ -1,22 +1,75 @@
 import { NodeActivityContext, NodeActivity } from '../core';
 import { Input } from '@tsdi/boot';
-import { Expression, TemplateOption, Task } from '@tsdi/activities';
-import { RollupFileOptions, rollup, WatcherOptions, watch, PluginImpl, RollupDirOptions } from 'rollup';
-// import { rollupClassAnnotations, AnnOptions } from '@tsdi/annotations';
-// import { isBoolean } from '@tsdi/ioc';
-// import * as typescript from 'typescript';
-// import * as ts from 'rollup-plugin-typescript';
-// import { SourceFile, TransformerFactory, LanguageService, CustomTransformers } from 'typescript';
+import { Expression, TemplateOption, Task, Src } from '@tsdi/activities';
+import { RollupFileOptions, rollup, WatcherOptions, RollupDirOptions, RollupCache, OutputOptionsFile, OutputOptionsDir, ExternalOption } from 'rollup';
+import { isArray, isNullOrUndefined } from '@tsdi/ioc';
 
+/**
+ * rollup activity template option.
+ *
+ * @export
+ * @interface RollupOption
+ * @extends {TemplateOption}
+ */
 export interface RollupOption extends TemplateOption {
-    options: Expression<RollupFileOptions | RollupDirOptions>;
+    /**
+     * rollup input setting.
+     *
+     * @type {Expression<Src>}
+     * @memberof RollupOption
+     */
+    input: Expression<Src>;
+    /**
+     * rollup output setting.
+     *
+     * @type {(Expression<OutputOptionsFile | OutputOptionsDir>)}
+     * @memberof RollupOption
+     */
+    output?: Expression<OutputOptionsFile | OutputOptionsDir>;
+    /**
+     * rollup external setting.
+     *
+     * @type {Expression<ExternalOption>}
+     * @memberof RollupOption
+     */
+    external?: Expression<ExternalOption>;
+    /**
+     * rollup plugins setting.
+     *
+     * @type {Expression<Plugin[]>}
+     * @memberof RollupOption
+     */
+    plugins?: Expression<Plugin[]>;
+
+    cache?: Expression<RollupCache>;
     watch?: Expression<WatcherOptions>;
-    // annoation?: Expression<boolean>;
-    // ts?: Expression<ITsOptions>;
+
+    /**
+     * custom setup rollup options.
+     *
+     * @type {(Expression<RollupFileOptions | RollupDirOptions>)}
+     * @memberof RollupOption
+     */
+    options?: Expression<RollupFileOptions | RollupDirOptions>;
 }
 
 @Task('rollup')
 export class RollupActivity extends NodeActivity<void> {
+
+    @Input()
+    input: Expression<Src>;
+
+    @Input()
+    output: Expression<OutputOptionsFile | OutputOptionsDir>;
+
+    @Input()
+    plugins: Expression<Plugin[]>;
+
+    @Input()
+    external: Expression<ExternalOption>;
+
+    @Input()
+    cache: Expression<RollupCache>;
 
     @Input()
     options: Expression<RollupFileOptions | RollupDirOptions>;
@@ -24,29 +77,23 @@ export class RollupActivity extends NodeActivity<void> {
     @Input()
     watch: Expression<WatcherOptions>;
 
-
-    // @Input()
-    // annoation: Expression<boolean | AnnOptions>;
-
     protected async execute(ctx: NodeActivityContext): Promise<void> {
-        let fopts = await this.resolveExpression(this.options, ctx);
-        // if (this.tsOptions) {
-        //     let tsOption = await this.resolveExpression(this.tsOptions, ctx);
-        //     fopts.plugins = fopts.plugins || [];
-        //     fopts.plugins.unshift(ts(tsOption));
-        //     let annoation = await this.resolveExpression(this.annoation, ctx);
-        //     if (annoation) {
-        //         fopts.plugins.unshift(rollupClassAnnotations(isBoolean(annoation) ? null : annoation));
-        //     }
-        // }
-        let bundle = await rollup(fopts as any);
-        await bundle.write(fopts.output);
-        if (this.watch) {
-            let wopts = await this.resolveExpression(this.watch, ctx);
-            watch([{
-                ...fopts,
-                watch: wopts
-            }]);
-        }
+        let opts = await this.resolveExpression(this.options, ctx);
+        opts = opts || { input: '' };
+        await Promise.all(['input', 'output', 'plugins', 'external', 'cache', 'watch']
+            .map(async n => {
+                let val = await this.resolveExpression(this[n], ctx);
+                if (isArray(val) && val.length) {
+                    val = val.filter(f => !isNullOrUndefined(f));
+                    if (val.length) {
+                        opts[n] = val;
+                    }
+                } else if (val) {
+                    opts[n] = val;
+                }
+            }));
+
+        let bundle = await rollup(opts as any);
+        await bundle.write(opts.output);
     }
 }

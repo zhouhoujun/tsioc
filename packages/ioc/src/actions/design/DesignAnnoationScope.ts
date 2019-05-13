@@ -2,7 +2,7 @@ import { DesignDecoratorScope } from './DesignDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { DesignActionContext } from './DesignActionContext';
 import { DesignDecoratorRegisterer, DecoratorScopes } from '../../services';
-import { Injectable, Component, Singleton, Providers, Refs, Autorun } from '../../decorators';
+import { Injectable, Singleton, Providers, Refs, Autorun } from '../../decorators';
 import { BindProviderAction } from './BindProviderAction';
 import { IocAutorunAction } from './IocAutorunAction';
 
@@ -13,7 +13,6 @@ export class DesignAnnoationScope extends IocRegisterScope<DesignActionContext> 
 
         this.container.get(DesignDecoratorRegisterer)
             .register(Injectable, DecoratorScopes.Class, BindProviderAction)
-            .register(Component, DecoratorScopes.Class, BindProviderAction)
             .register(Singleton, DecoratorScopes.Class, BindProviderAction)
             .register(Providers, DecoratorScopes.Class, BindProviderAction)
             .register(Refs, DecoratorScopes.Class, BindProviderAction)

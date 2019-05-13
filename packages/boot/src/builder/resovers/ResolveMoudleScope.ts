@@ -7,7 +7,6 @@ import { BindingScope } from './BindingScope';
 import { BuildDecoratorRegisterer } from './BuildDecoratorRegisterer';
 import { ParseScope } from '../parses';
 import { InitResolveModuleHandle } from './InitResolveModuleHandle';
-import { InitTemplateHandle } from './InitTemplateHandle';
 import { InitBindingParamHandle } from './InitBindingParamHandle';
 
 
@@ -21,7 +20,7 @@ export class ResolveMoudleScope extends CompositeHandle<BuildContext> {
             .registerHandle(BindingScope, true);
 
         this.use(InitResolveModuleHandle)
-            .use(InitTemplateHandle)
+            // .use(InitTemplateHandle)
             .use(InitBindingParamHandle)
             .use(ResolveModuleHandle)
             .use(BuildModuleHandle)

@@ -1,6 +1,7 @@
-import { IHandleContext, ModuleConfigure } from '../../core';
+import { ModuleConfigure } from '../../core';
 import { IContainer } from '@tsdi/core';
 import { ContainerFactory, Injectable, Type, IocActionContext, ProviderTypes } from '@tsdi/ioc';
+import { IComponentContext } from '../ComponentContext';
 
 export interface IModuleResolveOption {
 
@@ -25,7 +26,7 @@ export interface IModuleResolveOption {
 }
 
 @Injectable
-export class BuildContext extends IocActionContext implements IHandleContext {
+export class BuildContext extends IocActionContext implements IComponentContext {
 
     template: any;
 

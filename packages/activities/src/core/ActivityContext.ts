@@ -1,5 +1,5 @@
 import {
-    Injectable, ObjectMap, Type, Refs, ContainerFactory
+    Injectable, ObjectMap, Type, Refs, ContainerFactory, isString
 } from '@tsdi/ioc';
 import { BootContext, createAnnoationContext } from '@tsdi/boot';
 import { ActivityOption } from './ActivityOption';
@@ -28,6 +28,7 @@ export class ActivityContext extends BootContext {
      * @memberof ActivityContext
      */
     body: any = {};
+
     /**
      * activty execute result data.
      *
@@ -73,6 +74,21 @@ export class ActivityContext extends BootContext {
      * @memberof BootContext
      */
     runnable?: WorkflowInstance;
+
+    /**
+     * set body.
+     *
+     * @param {*} value the value set to body.
+     * @param {(string | boolean)} [name] name of filed to set value to, or a flag. if true will replace the body with value.
+     * @memberof ActivityContext
+     */
+    async setBody(value: any, name?: string | boolean) {
+        if (isString(name)) {
+            this.body[name] = value;
+        } else {
+            this.body = name ? value : Object.assign(this.body || {}, value);
+        }
+    }
 
     getBootTarget<T>(): Activity<T> {
         if (this.target instanceof Activity) {

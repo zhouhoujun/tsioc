@@ -1,7 +1,7 @@
 export * from './BuildContext';
 export * from './ResolveHandle';
 export * from './InitResolveModuleHandle';
-export * from './InitTemplateHandle';
+// export * from './InitTemplateHandle';
 export * from './InitBindingParamHandle';
 export * from './ResolveModuleHandle';
 export * from './BuildModuleHandle';

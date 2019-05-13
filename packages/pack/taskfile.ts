@@ -21,18 +21,19 @@ import * as ts from 'rollup-plugin-typescript';
     template: {
         activity: 'each',
         each: [
-            { lib: true, clean: ['../../dist/pack/lib'], dist: '../../dist/pack/lib', uglify: true, tsconfig: './tsconfig.json' },
-            { clean: ['../../dist/pack/fesm5'], dist: '../../dist/pack/fesm5', uglify: false, tsconfig: './tsconfig.json' },
-            // { clean: ['../../dist/pack/fesm2015'], dist: '../../dist/pack/fesm2015', uglify: true, tsconfig: './tsconfig.es2015.json' }
+            { clean: ['../../dist/pack/lib'], dist: '../../dist/pack/lib', uglify: true, tsconfig: './tsconfig.json' },
+            { clean: ['../../dist/pack/fesm5'], dist: '../../dist/pack/fesm5',  format: 'cjs', uglify: false, tsconfig: './tsconfig.json' },
+            { clean: ['../../dist/pack/fesm2015'], dist: '../../dist/pack/fesm2015', format: 'cjs',  uglify: true, tsconfig: './tsconfig.es2015.json' }
         ],
         body: [
             {
                 activity: 'if',
-                condition: ctx => ctx.body.lib,
+                condition: ctx => /lib$/.test(ctx.body.dist),
                 body: <TsBuildOption>{
                     activity: 'ts',
                     clean: ctx => ctx.body.clean,
                     src: 'src/**/*.ts',
+                    test: 'test/**/*.ts',
                     uglify: ctx => ctx.body.uglify,
                     dist: ctx => ctx.body.dist,
                     annotation: true,
@@ -45,59 +46,52 @@ import * as ts from 'rollup-plugin-typescript';
                 activity: Activities.else,
                 body: <RollupOption>{
                     activity: 'rollup',
-                    // annoation: true,
-                    // ts: ctx => {
-                    //     return {
-                    //         tsconfig: ctx.body.tsconfig
-                    //     }
-                    // },
-                    options: ctx => {
+                    input: ctx => ctx.body.input || 'src/index.ts',
+                    plugins: ctx => [
+                        resolve(),
+                        // {
+                        //     resolveId(id) {
+                        //         if (/^\./.test(id)) {
+                        //             return id;
+                        //         }
+                        //         return null;
+                        //     }
+                        // },
+                        commonjs({
+                            exclude: ['node_modules/**', '../../node_modules/**']
+                        }),
+                        rollupClassAnnotations(),
+                        ts(),
+                        builtins(),
+                        rollupSourcemaps()
+                    ],
+                    external: ctx => [
+                        'reflect-metadata',
+                        'tslib',
+                        'process',
+                        'util',
+                        'globby', 'path', 'fs', 'events', 'stream', 'child_process',
+                        '@tsdi/ioc',
+                        '@tsdi/core',
+                        '@tsdi/aop',
+                        '@tsdi/logs',
+                        '@tsdi/boot',
+                        '@tsdi/unit',
+                        '@tsdi/annotations',
+                        '@tsdi/unit-console',
+                        '@tsdi/platform-server',
+                        'uglify',
+                        'minimist', 'gulp-sourcemaps', 'vinyl-fs', 'del', 'chokidar',
+                        'gulp-uglify', 'execa', 'gulp-typescript',
+                        '@tsdi/activities',
+                        '@tsdi/platform-server-activities',
+                        'rxjs',
+                        'rxjs/operators'
+                    ],
+                    output: ctx => {
                         return {
-                            input: 'src/index.ts',
-                            plugins: [
-                                resolve(),
-                                // {
-                                //     resolveId(id) {
-                                //         if (/^\./.test(id)) {
-                                //             return id;
-                                //         }
-                                //         return null;
-                                //     }
-                                // },
-                                // commonjs({
-                                //     exclude: ['node_modules/**', '../../node_modules/**']
-                                // }),
-                                rollupClassAnnotations(),
-                                ts(),
-                                builtins(),
-                                rollupSourcemaps()
-                            ],
-                            output: {
-                                file: `${ctx.body.dist}/pack.js`
-                            },
-                            external: [
-                                'reflect-metadata',
-                                'tslib',
-                                'process',
-                                'util',
-                                'globby', 'path', 'fs', 'events', 'stream', 'child_process',
-                                '@tsdi/ioc',
-                                '@tsdi/core',
-                                '@tsdi/aop',
-                                '@tsdi/logs',
-                                '@tsdi/boot',
-                                '@tsdi/unit',
-                                '@tsdi/annotations',
-                                '@tsdi/unit-console',
-                                '@tsdi/platform-server',
-                                'uglify',
-                                'minimist', 'gulp-sourcemaps', 'vinyl-fs', 'del', 'chokidar',
-                                'gulp-uglify', 'execa',  'gulp-typescript',
-                                '@tsdi/activities',
-                                '@tsdi/platform-server-activities',
-                                'rxjs',
-                                'rxjs/operators'
-                            ],
+                            format: ctx.body.format || 'umd',
+                            file: `${ctx.body.dist}/pack.js`,
                             globals: {
                                 'reflect-metadata': 'Reflect',
                                 'tslib': 'tslib',
@@ -108,10 +102,9 @@ import * as ts from 'rollup-plugin-typescript';
                                 '@tsdi/aop': '@tsdi/aop',
                                 '@tsdi/boot': '@tsdi/boot',
                                 '@tsdi/activities': '@tsdi/activities'
-                            },
+                            }
                         }
                     }
-
                 }
             }
         ]

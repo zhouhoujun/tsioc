@@ -1,7 +1,6 @@
 import { BootContext, BootOption } from './BootContext';
 import {
-    Type, BindProviderAction, IocSetCacheAction, ComponentBeforeInitAction,
-    ComponentInitAction, ComponentAfterInitAction, DesignDecoratorRegisterer,
+    Type, BindProviderAction, IocSetCacheAction, DesignDecoratorRegisterer,
     RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction, LoadType, isArray, isString
 } from '@tsdi/ioc';
 import { ContainerPool, DIModuleRegisterScope } from './core';
@@ -81,9 +80,7 @@ export class BootApplication implements ContextInit {
             .register(Bootstrap, DecoratorScopes.Class, BindProviderAction);
 
         this.container.get(RuntimeDecoratorRegisterer)
-            .register(Bootstrap, DecoratorScopes.Class,
-                ComponentBeforeInitAction, ComponentInitAction,
-                ComponentAfterInitAction, RegisterSingletionAction, IocSetCacheAction);
+            .register(Bootstrap, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
         this.container.get(ModuleDecoratorRegisterer)
             .register(Bootstrap, DIModuleRegisterScope);

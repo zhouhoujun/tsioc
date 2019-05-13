@@ -3,7 +3,7 @@ import { Input } from '@tsdi/boot';
 import { NodeActivityContext } from '../core';
 import { ObjectMap, isString } from '@tsdi/ioc';
 import * as ts from 'gulp-typescript';
-import { TypeScriptJsPipe, TypeScriptTdsPipe } from './TsPipe';
+import { CompilerOptions } from 'typescript';
 import { AssetActivityOption, AssetActivity } from './AssetActivity';
 import { SourceActivity } from './SourceActivity';
 import { DestActivity } from './DestActivity';
@@ -24,7 +24,7 @@ export interface TsBuildOption extends AssetActivityOption {
     test?: Expression<Src>;
     annotation?: Expression<boolean>;
     sourcemaps?: Expression<string>;
-    tsconfig: Expression<string | ObjectMap<any>>;
+    tsconfig: Expression<string | CompilerOptions>;
     dts?: Expression<string>;
     uglify?: Expression<boolean>;
     uglifyOptions?: Expression<any>;

@@ -134,13 +134,6 @@ export abstract class Activity<T> {
         }
     }
 
-    protected async setBody(ctx: ActivityContext, data: any, name?: string) {
-        if (name) {
-            ctx.body[name] = data;
-        } else {
-            ctx.body = data;
-        }
-    }
 
     protected async runActivity(ctx: ActivityContext, activities: ActivityType | ActivityType[], next?: () => Promise<void>, refresh?: boolean): Promise<void> {
         if (!activities || (isArray(activities) && activities.length < 1)) {

@@ -14,9 +14,6 @@ export * from './IocAfterConstructorScope';
 export * from './InstanceCheckAction';
 export * from './BindDeignParamTypeAction';
 export * from './BindParameterTypeAction';
-export * from './ComponentBeforeInitAction';
-export * from './ComponentInitAction';
-export * from './ComponentAfterInitAction';
 export * from './InjectPropertyAction';
 export * from './MethodAutorunAction';
 

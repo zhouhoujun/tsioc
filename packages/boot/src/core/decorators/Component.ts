@@ -1,5 +1,4 @@
-import { createClassDecorator, IClassDecorator } from '../factories';
-import { InjectableMetadata } from '../metadatas';
+import { createClassDecorator, IClassDecorator, InjectableMetadata } from '@tsdi/ioc';
 
 /**
  * component metadata.
@@ -9,7 +8,20 @@ import { InjectableMetadata } from '../metadatas';
  * @extends {InjectableMetadata}
  */
 export interface IComponentMetadata  extends InjectableMetadata {
+    /**
+     * component selector.
+     *
+     * @type {string}
+     * @memberof IComponentMetadata
+     */
     selector?: string;
+    /**
+     * template for component.
+     *
+     * @type {*}
+     * @memberof IComponentMetadata
+     */
+    template?: any;
 }
 /**
  * Component decorator
@@ -27,6 +39,14 @@ export interface IComponentDecorator extends IClassDecorator<IComponentMetadata>
      * @param {IComponentMetadata} [metadata] metadata map.
      */
     (metadata?: IComponentMetadata): ClassDecorator;
+
+    /**
+     * Component decorator, use to define class as Component element.
+     *
+     * @Task
+     * @param {string} selector metadata selector.
+     */
+    (selector: string): ClassDecorator;
 }
 
 /**

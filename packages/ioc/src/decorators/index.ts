@@ -1,4 +1,3 @@
-export * from './Component';
 export * from './Injectable';
 export * from './Refs';
 export * from './Providers';
