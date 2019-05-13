@@ -1,6 +1,5 @@
 import { Injectable, lang } from '@tsdi/ioc';
 import { Activity } from './Activity';
-import { CompoiseActivity } from './CompoiseActivity';
 
 export interface RunScopes {
     scope: Activity<any>,

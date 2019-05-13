@@ -14,7 +14,7 @@ export class DefaultParseHandle extends ParseHandle {
                 ctx.bindingValue = ctx.template;
             }
         }
-        if (isNullOrUndefined(ctx.bindingValue) && ctx.binding && !isUndefined(ctx.binding.defaultValue)) {
+        if (isNullOrUndefined(ctx.bindingValue) && !isUndefined(ctx.binding.defaultValue)) {
             ctx.bindingValue = ctx.binding.defaultValue;
         }
 
