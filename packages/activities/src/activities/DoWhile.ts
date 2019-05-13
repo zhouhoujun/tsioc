@@ -15,7 +15,6 @@ import { Input } from '@tsdi/boot';
  */
 @Task('dowhile')
 export class DoWhileActivity<T> extends Activity<T> {
-    isScope = true;
 
     @Input()
     condition: ConditionActivity;

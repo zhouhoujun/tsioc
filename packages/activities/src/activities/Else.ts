@@ -15,13 +15,12 @@ import { Input } from '@tsdi/boot';
  */
 @Task('else')
 export class ElseActivity<T extends ActivityContext> extends Activity<T> {
-    isScope = true;
 
     @Input()
     body: BodyActivity<T>;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
-        let curr = ctx.runnable.status.parentScope;
+        let curr = ctx.runnable.status.currentScope;
         if (curr && curr.subs.length) {
             let activity = curr.subs.find(a => a instanceof ElseIfActivity || a instanceof IfActivity);
             if (activity && !activity.result.value) {

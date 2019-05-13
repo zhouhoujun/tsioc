@@ -13,7 +13,6 @@ import { BodyActivity } from './BodyActivity';
  */
 @Task('if')
 export class IfActivity<T> extends Activity<T> {
-    isScope = true;
 
     @Input()
     condition: ConditionActivity;

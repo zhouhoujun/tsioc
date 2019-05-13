@@ -89,10 +89,10 @@ export abstract class Activity<T> {
         this._result = await this.initResult(ctx, next);
         await this.refreshResult(ctx);
         await this.execute(ctx);
-        if (this.isScope) {
-            ctx.runnable.status.scopes.shift();
-        }
         await this.refreshContext(ctx);
+        if (this.isScope) {
+            ctx.runnable.status.scopeEnd();
+        }
         await this.result.next(ctx);
     }
 
@@ -138,7 +138,7 @@ export abstract class Activity<T> {
         if (name) {
             ctx.body[name] = data;
         } else {
-            ctx.body = Object.assign(ctx.body, data);
+            ctx.body = data;
         }
     }
 

@@ -1,7 +1,7 @@
 {
   "name": "@tsdi/pack",
   "version": "4.0.5",
-  "description": "type task framework, base on AOP, Ioc container, via @tsdi. dev pack activities.",
+  "description": "type task framework, base on AOP, Ioc container, via @tsdi. dev build pack activities.",
   "es2015": "./fesm2015/pack.js",
   "esm2015": "./es2015/index.js",
   "esm5": "./lib/index.js",
@@ -15,6 +15,9 @@
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
+    "build",
+    "builder",
+    "pack",
     "activity",
     "workflow",
     "task",

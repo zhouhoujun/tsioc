@@ -40,6 +40,10 @@ export class ActivityStatus {
         }
     }
 
+    scopeEnd() {
+        this.scopes.shift();
+    }
+
     get currentScope(): RunScopes {
         return lang.first(this.scopes);
     }
@@ -50,10 +54,4 @@ export class ActivityStatus {
         }
         return null;
     }
-
-
-    getScopes(): CompoiseActivity<any>[] {
-        return this.tracks.filter(a => a instanceof CompoiseActivity) as CompoiseActivity<any>[];
-    }
-
 }

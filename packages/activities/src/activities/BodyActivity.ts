@@ -12,7 +12,6 @@ import { Input } from '@tsdi/boot';
  */
 @Task('[body]')
 export class BodyActivity<T> extends CompoiseActivity<T> {
-
     constructor(@Input() activities: ActivityType[]) {
         super()
         this.activities = activities || [];

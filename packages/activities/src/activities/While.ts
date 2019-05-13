@@ -14,7 +14,6 @@ import { BodyActivity } from './BodyActivity';
  */
 @Task('while')
 export class WhileActivity<T> extends Activity<T> {
-    isScope = true;
 
     @Input()
     condition: ConditionActivity;
