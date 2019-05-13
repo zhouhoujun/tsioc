@@ -22,7 +22,7 @@ import * as ts from 'rollup-plugin-typescript';
         activity: 'each',
         each: [
             { lib: true, clean: ['../../dist/pack/lib'], dist: '../../dist/pack/lib', uglify: true, tsconfig: './tsconfig.json' },
-            { clean: ['../../dist/pack/fesm5'], dist: '../../dist/pack/fesm5', uglify: false, tsconfig: './tsconfig.es2017.json' },
+            { clean: ['../../dist/pack/fesm5'], dist: '../../dist/pack/fesm5', uglify: false, tsconfig: './tsconfig.json' },
             // { clean: ['../../dist/pack/fesm2015'], dist: '../../dist/pack/fesm2015', uglify: true, tsconfig: './tsconfig.es2015.json' }
         ],
         body: [
@@ -78,6 +78,8 @@ import * as ts from 'rollup-plugin-typescript';
                             external: [
                                 'reflect-metadata',
                                 'tslib',
+                                'process',
+                                'util',
                                 'globby', 'path', 'fs', 'events', 'stream', 'child_process',
                                 '@tsdi/ioc',
                                 '@tsdi/core',
@@ -85,9 +87,12 @@ import * as ts from 'rollup-plugin-typescript';
                                 '@tsdi/logs',
                                 '@tsdi/boot',
                                 '@tsdi/unit',
+                                '@tsdi/annotations',
+                                '@tsdi/unit-console',
                                 '@tsdi/platform-server',
+                                'uglify',
                                 'minimist', 'gulp-sourcemaps', 'vinyl-fs', 'del', 'chokidar',
-                                'gulp-uglify', 'execa', '@tsdi/annotations', 'gulp-typescript',
+                                'gulp-uglify', 'execa',  'gulp-typescript',
                                 '@tsdi/activities',
                                 '@tsdi/platform-server-activities',
                                 'rxjs',
@@ -97,6 +102,7 @@ import * as ts from 'rollup-plugin-typescript';
                                 'reflect-metadata': 'Reflect',
                                 'tslib': 'tslib',
                                 'path': 'path',
+                                'globby': 'globby',
                                 '@tsdi/ioc': '@tsdi/ioc',
                                 '@tsdi/core': '@tsdi/core',
                                 '@tsdi/aop': '@tsdi/aop',

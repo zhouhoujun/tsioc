@@ -22,8 +22,8 @@ export class ElseActivity<T extends ActivityContext> extends Activity<T> {
     protected async execute(ctx: ActivityContext): Promise<void> {
         let curr = ctx.runnable.status.currentScope;
         if (curr && curr.subs.length) {
-            let activity = curr.subs.find(a => a instanceof ElseIfActivity || a instanceof IfActivity);
-            if (activity && !activity.result.value) {
+            let activity = curr.subs.find(a => a instanceof ElseIfActivity || a instanceof IfActivity) as IfActivity<any>;
+            if (activity && !activity.condition.result.value) {
                 await this.body.run(ctx);
             }
         }
