@@ -1,6 +1,7 @@
 import { Task } from '../decorators';
-import { ActivityContext, Activity, Expression } from '../core';
+import { ActivityContext, Expression } from '../core';
 import { Input } from '@tsdi/boot';
+import { ControlerActivity } from './ControlerActivity';
 
 /**
  * expression activity.
@@ -12,7 +13,7 @@ import { Input } from '@tsdi/boot';
  * @template T
  */
 @Task('[expression]')
-export class ExpressionActivity<T> extends Activity<T> {
+export class ExpressionActivity<T> extends ControlerActivity<T> {
 
     constructor(@Input() protected expression: Expression<T>) {
         super()
@@ -21,4 +22,5 @@ export class ExpressionActivity<T> extends Activity<T> {
     protected async execute(ctx: ActivityContext): Promise<void> {
         this.result.value = await this.resolveExpression(this.expression, ctx);
     }
+
 }

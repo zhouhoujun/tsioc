@@ -2,7 +2,6 @@ import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
 import { isClass } from '@tsdi/ioc';
 import { BuilderService } from '../services';
-import { BootDecoratorRegisterer } from './BootDecoratorRegisterer';
 
 
 export class ResolveBootHandle extends BootHandle {
@@ -20,10 +19,6 @@ export class ResolveBootHandle extends BootHandle {
             } else {
                 ctx.bootstrap = container.resolve(bootModule, ...ctx.providers);
             }
-        }
-        if (ctx.decorator) {
-            await this.execFuncs(ctx,
-                this.container.get(BootDecoratorRegisterer).getFuncs(this.container, ctx.decorator));
         }
         await next();
     }

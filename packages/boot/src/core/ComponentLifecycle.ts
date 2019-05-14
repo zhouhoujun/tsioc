@@ -10,7 +10,7 @@ export interface BeforeInit {
      *
      * @memberof BeforeInit
      */
-    beforeInit(): void | Promise<void>;
+    onBeforeInit(): void | Promise<void>;
 }
 
 /**
@@ -40,6 +40,6 @@ export interface AfterInit {
      *
      * @memberof AfterInit
      */
-    afterInit(): void | Promise<void>;
+    onAfterInit(): void | Promise<void>;
 }
 

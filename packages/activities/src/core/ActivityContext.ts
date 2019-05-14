@@ -90,16 +90,6 @@ export class ActivityContext extends BootContext {
         }
     }
 
-    getBootTarget<T>(): Activity<T> {
-        if (this.target instanceof Activity) {
-            return this.target;
-        } else if (this.bootstrap instanceof Activity) {
-            return this.bootstrap;
-        } else {
-            return null;
-        }
-    }
-
     /**
      * previous if elseif condition.
      *

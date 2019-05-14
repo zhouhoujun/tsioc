@@ -4,21 +4,29 @@ import { isNullOrUndefined, lang, isBaseType, isUndefined } from '@tsdi/ioc';
 
 export class DefaultParseHandle extends ParseHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
-        if (!isNullOrUndefined(ctx.template)) {
-            if (ctx.binding.type && !isBaseType(ctx.binding.type)) {
+
+        if (ctx.binding && ctx.binding.type) {
+            if (ctx.scope && !isNullOrUndefined(ctx.scope[ctx.binding.name])) {
+                let sval = ctx.scope[ctx.binding.name];
+                if (lang.isExtendsClass(lang.getClass(sval), ctx.binding.type)) {
+                    ctx.value = sval;
+                }
+            }
+            if (isNullOrUndefined(ctx.value)) {
                 let ttype = lang.getClass(ctx.template);
                 if (lang.isExtendsClass(ttype, ctx.binding.type)) {
-                    ctx.bindingValue = ctx.template;
+                    ctx.value = ctx.template;
                 }
-            } else {
-                ctx.bindingValue = ctx.template;
             }
-        }
-        if (isNullOrUndefined(ctx.bindingValue) && !isUndefined(ctx.binding.defaultValue)) {
-            ctx.bindingValue = ctx.binding.defaultValue;
+        } else {
+            ctx.value = ctx.template;
         }
 
-        if (isNullOrUndefined(ctx.bindingValue)) {
+        if (ctx.binding && isNullOrUndefined(ctx.value) && !isUndefined(ctx.binding.defaultValue)) {
+            ctx.value = ctx.binding.defaultValue;
+        }
+
+        if (isNullOrUndefined(ctx.value)) {
             await next();
         }
     }

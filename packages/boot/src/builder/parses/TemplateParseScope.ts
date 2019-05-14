@@ -7,7 +7,7 @@ import { isNullOrUndefined } from '@tsdi/ioc';
 export class TemplateParseScope extends CompositeParserHandle {
     async execute(ctx: ParseContext, next?: () => Promise<void>): Promise<void> {
         await super.execute(ctx);
-        if (isNullOrUndefined(ctx.bindingValue) && next) {
+        if (isNullOrUndefined(ctx.value) && next) {
             await next();
         }
     }

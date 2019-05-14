@@ -88,4 +88,12 @@ export class CompoiseActivity<T> extends Activity<T> {
     protected resetFuncs() {
         this.actions = null;
     }
+
+    protected setActivityResult(ctx: ActivityContext) {
+
+    }
+
+    protected setContextResult(ctx: ActivityContext) {
+
+    }
 }

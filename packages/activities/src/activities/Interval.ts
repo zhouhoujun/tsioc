@@ -1,8 +1,9 @@
 import { Task } from '../decorators';
-import { ActivityContext, Activity } from '../core';
+import { ActivityContext } from '../core';
 import { TimerActivity } from './TimerActivity';
 import { Input } from '@tsdi/boot';
 import { BodyActivity } from './BodyActivity';
+import { ControlerActivity } from './ControlerActivity';
 
 /**
  * while control activity.
@@ -12,7 +13,7 @@ import { BodyActivity } from './BodyActivity';
  * @extends {ControlActivity}
  */
 @Task('interval')
-export class IntervalActivity<T> extends Activity<T> {
+export class IntervalActivity<T> extends ControlerActivity<T> {
 
     @Input()
     timer: TimerActivity;

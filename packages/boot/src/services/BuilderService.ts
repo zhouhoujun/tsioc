@@ -1,7 +1,7 @@
 import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, InjectReference, isFunction, MetadataService, getOwnTypeMetadata } from '@tsdi/ioc';
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { IContainer, ContainerToken, isContainer } from '@tsdi/core';
-import { CompositeHandle, HandleRegisterer, RegScope } from '../core';
+import { CompositeHandle, HandleRegisterer, RegScope, TemplateManager } from '../core';
 import { ModuleBuilderLifeScope, RunnableBuildLifeScope, ResolveMoudleScope, BuildContext, IModuleResolveOption, BootLifeScope } from '../builder';
 import { BootApplication } from '../BootApplication';
 import { RunnableConfigure } from '../annotations';
@@ -42,6 +42,11 @@ export class BuilderService extends IocCoreService {
      * @memberof BuilderService
      */
     async resolve<T>(target: Type<any>, options: IModuleResolveOption, container?: IContainer | ProviderTypes, ...providers: ProviderTypes[]): Promise<T> {
+        let rctx = await this.resolveModule(target, options, container, ...providers);
+        return rctx.target;
+    }
+
+    protected async resolveModule<T>(target: Type<any>, options: IModuleResolveOption, container?: IContainer | ProviderTypes, ...providers: ProviderTypes[]): Promise<BuildContext> {
         let raiseContainer: IContainer;
         if (isContainer(container)) {
             raiseContainer = container;
@@ -55,7 +60,24 @@ export class BuilderService extends IocCoreService {
         }
         await this.container.get(HandleRegisterer).get(ResolveMoudleScope)
             .execute(rctx);
-        return rctx.target;
+        return rctx;
+    }
+
+    /**
+     * resolve component ify.
+     *
+     * @template T
+     * @param {Type<any>} target
+     * @param {IModuleResolveOption} options
+     * @param {(IContainer | ProviderTypes)} [container]
+     * @param {...ProviderTypes[]} providers
+     * @returns {Promise<T>}
+     * @memberof BuilderService
+     */
+    async resolveCompoent<T>(target: Type<any>, options: IModuleResolveOption, container?: IContainer | ProviderTypes, ...providers: ProviderTypes[]): Promise<T> {
+        let rctx = await this.resolveModule(target, options, container, ...providers);
+        let mgr = rctx.getRaiseContainer().get(TemplateManager);
+        return mgr.has(rctx.target) ? mgr.get(rctx.target) : rctx.target;
     }
 
     async create<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<any> {

@@ -1,11 +1,12 @@
-import { Activity, ActivityContext, Expression } from '../core';
+import { ActivityContext, Expression } from '../core';
 import { Task } from '../decorators';
 import { Input } from '@tsdi/boot';
 import { BodyActivity } from './BodyActivity';
+import { ControlerActivity } from './ControlerActivity';
 
 
 @Task('each')
-export class EachActicity<T> extends Activity<T> {
+export class EachActicity<T> extends ControlerActivity<T> {
 
     @Input()
     each: Expression<any[]>;

@@ -5,8 +5,9 @@ import { BuildContext, IModuleResolveOption } from '../resovers';
 import { IComponentContext } from '../ComponentContext';
 
 export interface IBindingParseOption extends IModuleResolveOption  {
+    scope?: any;
     selector?: Type<any>;
-    binding: IBinding<any>;
+    binding?: IBinding<any>;
 }
 
 @Injectable
@@ -14,9 +15,11 @@ export class ParseContext extends BuildContext implements IComponentContext {
 
     selector?: Type<any>;
 
-    binding: IBinding<any>;
+    binding?: IBinding<any>;
 
-    bindingValue?: any;
+    scope?: any;
+
+    value?: any;
 
     constructor(type: Type<any>) {
         super(type);

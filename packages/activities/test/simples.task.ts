@@ -1,4 +1,4 @@
-import { Task, Activity, SequenceActivity, ActivityContext, Activities } from '../src';
+import { Task, Activity, ActivityContext, Activities } from '../src';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Inject } from '@tsdi/ioc';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
@@ -16,36 +16,59 @@ export class SimpleTask extends Activity<string> {
 
 }
 
+@Task('comowork')
+export class WorkTask extends Activity<string> {
+    async execute(ctx: ActivityContext): Promise<void> {
+        // console.log('before simple task:', this.name);
+        this.result.value = await Promise.resolve('component task')
+            .then(val => {
+                console.log('return component work task:', val);
+                return val;
+            });
+    }
+
+}
+
 @Task({
+    imports: [
+        WorkTask
+    ],
     selector: 'comptest',
     template: [
         { activity: Activities.if, condition: (ctx) => !!ctx.args[0], body: [] },
         {
             activity: Activities.else,
             body: [
+                // WorkTask
                 {
                     activity: Activities.switch,
                     switch: (ctx) => ctx.configures.length,
                     cases: [
                         { case: 0, body: [] }
                     ]
+                },
+                {
+                    activity: 'comowork'
                 }
             ]
-        }
+        },
+        // {
+        //     activity: 'comowork'
+        // }
     ]
 })
-export class SimpleCTask extends SequenceActivity<string> {
+export class SimpleCTask {
 
-    async execute(ctx: ActivityContext): Promise<void> {
-        console.log('execute SimpleCTask........');
-        await super.execute(ctx);
-        // console.log('before component task:', this.name);
-        this.result.value = await Promise.resolve('component task')
-            .then(val => {
-                console.log('return component task:', val);
-                return val;
-            });
-    }
+    // async execute(ctx: ActivityContext): Promise<void> {
+    //     console.log('execute SimpleCTask........');
+    //     await super.execute(ctx);
+    //     // console.log('before component task:', this.name);
+    //     this.result.value = await Promise.resolve('component task')
+    //         .then(val => {
+    //             console.log('return component task:', val);
+    //             return val;
+    //         });
+    // }
 }
 
 
@@ -65,7 +88,7 @@ export class SimpleCTask extends SequenceActivity<string> {
     ]
 })
 export class TaskModuleTest {
-    constructor(@Inject(ContainerToken) container: IContainer){
+    constructor(@Inject(ContainerToken) container: IContainer) {
 
     }
 

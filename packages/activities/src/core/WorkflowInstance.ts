@@ -83,8 +83,11 @@ export class WorkflowInstance extends Service<Activity<any>> {
         if (this.context.id && !container.has(this.context.id)) {
             container.bindProvider(this.context.id, this);
         }
-
-        await this.getTarget().run(this.context, async () => {
+        let target = this.getTarget();
+        if (!target.run) {
+            console.log(target);
+        }
+        await target.run(this.context, async () => {
             this.state = RunState.complete;
             this._result = this.context.result;
         })

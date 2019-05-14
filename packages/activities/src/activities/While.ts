@@ -1,8 +1,9 @@
 import { Task } from '../decorators';
-import { ActivityContext, Activity } from '../core';
+import { ActivityContext } from '../core';
 import { ConditionActivity } from './ConditionActivity';
 import { Input } from '@tsdi/boot';
 import { BodyActivity } from './BodyActivity';
+import { ControlerActivity } from './ControlerActivity';
 
 
 /**
@@ -13,7 +14,7 @@ import { BodyActivity } from './BodyActivity';
  * @extends {ControlActivity}
  */
 @Task('while')
-export class WhileActivity<T> extends Activity<T> {
+export class WhileActivity<T> extends ControlerActivity<T> {
 
     @Input()
     condition: ConditionActivity;

@@ -5,6 +5,14 @@ import { IComponentContext } from '../ComponentContext';
 
 export interface IModuleResolveOption {
 
+    /**
+     * component scope.
+     *
+     * @type {*}
+     * @memberof BootOption
+     */
+    scope?: any;
+
     template?: any;
 
     decorator?: string;
@@ -28,6 +36,19 @@ export interface IModuleResolveOption {
 @Injectable
 export class BuildContext extends IocActionContext implements IComponentContext {
 
+    /**
+     * component scope.
+     *
+     * @type {*}
+     * @memberof BootOption
+     */
+    scope?: any;
+    /**
+     * template of module.
+     *
+     * @type {*}
+     * @memberof BuildContext
+     */
     template: any;
 
     type: Type<any>;

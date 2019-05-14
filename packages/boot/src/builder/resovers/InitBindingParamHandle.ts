@@ -27,7 +27,7 @@ export class InitBindingParamHandle extends ResolveHandle {
                             decorator: ctx.decorator
                         }, ctx.getRaiseContainer());
                         await hregisterer.get(ParseScope).execute(pCtx);
-                        let paramVal = pCtx.bindingValue;
+                        let paramVal = pCtx.value;
 
                         if (!isNullOrUndefined(paramVal)) {
                             ctx.providers.push({ provide: new InjectReference(bp.provider || bp.type || bp.name, '__binding'), useValue: paramVal });

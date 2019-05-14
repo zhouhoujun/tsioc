@@ -117,9 +117,13 @@ export abstract class Activity<T> {
             if (this.pipe) {
                 this.result.value = await this.pipe.transform(ctx.result);
             } else {
-                this.result.value = ctx.result;
+                this.setActivityResult(ctx);
             }
         }
+    }
+
+    protected setActivityResult(ctx: ActivityContext) {
+        this.result.value = ctx.result;
     }
 
     protected async refreshContext(ctx: ActivityContext) {
@@ -129,9 +133,13 @@ export abstract class Activity<T> {
                     await this.pipe.refresh(ctx, this.result.value);
                 }
             } else {
-                ctx.result = this.result.value;
+                this.setContextResult(ctx);
             }
         }
+    }
+
+    protected setContextResult(ctx: ActivityContext) {
+        ctx.result = this.result.value;
     }
 
 

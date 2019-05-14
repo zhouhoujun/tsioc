@@ -1,3 +1,4 @@
+export * from './ControlerActivity';
 export * from './BodyActivity';
 export * from './ConditionActivity';
 export * from './TimerActivity';

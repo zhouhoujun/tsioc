@@ -10,8 +10,8 @@ export class ModuleBeforeInitHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
         if (ctx.decorator && this.container.get(ModuleDecoratorRegisterer).has(ctx.decorator, ComponentRegisterAction)) {
             let target = ctx.target as BeforeInit;
-            if (target && isFunction(target.beforeInit)) {
-                await target.beforeInit();
+            if (target && isFunction(target.onBeforeInit)) {
+                await target.onBeforeInit();
             }
         }
         if (next) {

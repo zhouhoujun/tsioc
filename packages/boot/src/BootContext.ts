@@ -1,4 +1,4 @@
-import { AnnoationContext, AnnoationOption, createAnnoationContext } from './core';
+import { AnnoationContext, AnnoationOption, createAnnoationContext, TemplateManager } from './core';
 import { RunnableConfigure, ConfigureManager } from './annotations';
 import { IModuleLoader } from '@tsdi/core';
 import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory } from '@tsdi/ioc';
@@ -66,6 +66,13 @@ export interface BootOption extends AnnoationOption {
      */
     bootstrap?: any;
 
+    /**
+     * component scope.
+     *
+     * @type {*}
+     * @memberof BootOption
+     */
+    scope?: any;
     /**
      * bind template
      *
@@ -159,6 +166,16 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof AnnoationContext
      */
     annoation?: RunnableConfigure;
+
+
+    /**
+     * component scope.
+     *
+     * @type {*}
+     * @memberof BootOption
+     */
+    scope?: any;
+
     /**
      * the template data to binding property.
      *
@@ -239,7 +256,20 @@ export class BootContext extends AnnoationContext implements IComponentContext {
     */
     providers?: ProviderTypes[];
 
+    /**
+     * get boot target.
+     *
+     * @returns {*}
+     * @memberof BootContext
+     */
     getBootTarget(): any {
+        let mgr = this.getRaiseContainer().get(TemplateManager);
+        if (this.bootstrap && mgr.has(this.bootstrap)) {
+            return mgr.get(this.bootstrap);
+        }
+        if (this.target && mgr.has(this.target)) {
+            return mgr.get(this.target);
+        }
         return this.bootstrap || this.target;
     }
 

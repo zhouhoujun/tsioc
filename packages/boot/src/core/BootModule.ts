@@ -23,6 +23,7 @@ import { SelectorManager } from './SelectorManager';
 import { Input, Component } from './decorators';
 import { HandleRegisterer } from './handles';
 import { DIModuleExports, ModuleInjectLifeScope } from './services';
+import { TemplateManager } from './TemplateManager';
 
 
 /**
@@ -101,7 +102,8 @@ export class BootModule {
             .use(RouteRuntimRegisterAction);
 
 
-        container.register(SelectorManager);
+        container.register(SelectorManager)
+            .register(TemplateManager);
         registerer
             .register(container, ComponentRegisterAction)
             .register(container, BindingPropertyTypeAction)

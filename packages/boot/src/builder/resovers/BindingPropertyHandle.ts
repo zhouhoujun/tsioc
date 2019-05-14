@@ -21,7 +21,7 @@ export class BindingPropertyHandle extends ResolveHandle {
                         decorator: ctx.decorator
                     }, ctx.getRaiseContainer())
                     await registerer.get(ParseScope).execute(pctx);
-                    ctx.target[binding.name] = pctx.bindingValue;
+                    ctx.target[binding.name] = pctx.value;
                 }
             }));
         }

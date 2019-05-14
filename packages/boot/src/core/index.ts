@@ -1,4 +1,5 @@
 export * from './SelectorManager';
+export * from './TemplateManager';
 export * from './decorators';
 export * from './registers';
 export * from './injectors';
