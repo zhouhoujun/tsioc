@@ -83,7 +83,7 @@ export interface LibPackBuilderOption extends TemplateOption {
     selector: BuilderTypes.libs,
     template: {
         activity: 'each',
-        // each: ctx => ctx.body.each,
+        each: ctx => ctx.scope.tasks,
         body: [
             {
                 activity: 'if',
