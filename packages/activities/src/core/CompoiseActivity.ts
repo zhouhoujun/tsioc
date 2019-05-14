@@ -80,7 +80,7 @@ export class CompoiseActivity<T> extends Activity<T> {
 
     protected getActions(): PromiseUtil.ActionHandle<ActivityContext>[] {
         if (!this.actions) {
-            this.actions = this.activities.map(ac => this.toAction(ac))
+            this.actions = this.activities.map(ac => this.parseAction(ac))
         }
         return this.actions;
     }

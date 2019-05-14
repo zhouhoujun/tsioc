@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
 import { IContainer } from '@tsdi/core';
-import { BuilderService, Input, SelectorManager } from '@tsdi/boot';
+import { BuilderService, Input, SelectorManager, TemplateManager } from '@tsdi/boot';
 import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {
@@ -158,7 +158,7 @@ export abstract class Activity<T> {
         if (!activities || (isArray(activities) && activities.length < 1)) {
             return;
         }
-        await this.execActions(ctx, (isArray(activities) ? activities : [activities]).map(ac => this.toAction(ac)), next);
+        await this.execActions(ctx, (isArray(activities) ? activities : [activities]).map(ac => this.parseAction(ac)), next);
         if (refresh !== false) {
             await this.refreshResult(ctx);
         }
@@ -168,9 +168,17 @@ export abstract class Activity<T> {
         return PromiseUtil.runInChain(actions.filter(f => f), ctx, next);
     }
 
-    protected toAction<T extends ActivityContext>(activity: ActivityType): PromiseUtil.ActionHandle<T> {
+    private _actionFunc: PromiseUtil.ActionHandle<any>;
+    toAction<T extends ActivityContext>(): PromiseUtil.ActionHandle<T> {
+        if (!this._actionFunc) {
+            this._actionFunc = (ctx: T, next?: () => Promise<void>) => this.run(ctx, next);
+        }
+        return this._actionFunc;
+    }
+
+    protected parseAction<T extends ActivityContext>(activity: ActivityType): PromiseUtil.ActionHandle<T> {
         if (activity instanceof Activity) {
-            return (ctx: T, next?: () => Promise<void>) => activity.run(ctx, next);
+            return activity.toAction();
         } else if (isClass(activity) || isMetadataObject(activity)) {
             return async (ctx: T, next?: () => Promise<void>) => {
                 let act = await this.buildActivity(activity as Type<any> | ControlTemplate);
@@ -182,7 +190,15 @@ export abstract class Activity<T> {
             };
 
         }
-        return isFunction(activity) ? activity : null;
+        if (isFunction(activity)) {
+            return activity;
+        }
+        let component = this.getContainer().get(TemplateManager).get(activity);
+        if (component instanceof Activity) {
+            return component.toAction();
+        }
+        return null;
+
     }
 
     protected promiseLikeToAction<T extends ActivityContext>(action: (ctx?: T) => Promise<any>): PromiseUtil.ActionHandle<T> {
