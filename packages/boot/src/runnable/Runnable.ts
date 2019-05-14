@@ -65,6 +65,21 @@ export interface IRunnable<T> {
 }
 
 /**
+ * runnablle on init hooks
+ *
+ * @export
+ * @interface RunnableInit
+ */
+export interface RunnableInit {
+    /**
+     * on init hooks.
+     *
+     * @returns {(void | Promise<void>)}
+     */
+    onInit(): void | Promise<void>;
+}
+
+/**
  * boot.
  *
  * @export
@@ -101,8 +116,8 @@ export abstract class Runnable<T> implements IRunnable<any> {
         return lang.getClass(this.getTarget());
     }
 
-    /**     * run application via boot instance.
-
+    /**
+     * run application via boot instance.
      *
      * @param {*} [data]
      * @returns {Promise<any>}

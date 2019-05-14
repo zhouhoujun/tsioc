@@ -5,7 +5,7 @@ import { BootConfigureLoadHandle } from './BootConfigureLoadHandle';
 import { RegisterModuleScope } from './RegisterModuleScope';
 import { ModuleBuildScope } from './ModuleBuildScope';
 import { BootConfigureRegisterHandle } from './BootConfigureRegisterHandle';
-import { ResolveRunnableHandle } from './ResolveRunnableHandle';
+import { ResolveRunnableScope } from './ResolveRunnableScope';
 import { RunBootHandle } from './RunBootHandle';
 
 
@@ -18,7 +18,7 @@ export class BootLifeScope extends CompositeHandle<AnnoationContext> {
             .use(RegisterModuleScope, true)
             .use(ModuleBuildScope, true)
             .use(BootConfigureRegisterHandle)
-            .use(ResolveRunnableHandle, true)
+            .use(ResolveRunnableScope, true)
             .use(RunBootHandle);
     }
 }

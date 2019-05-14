@@ -1,4 +1,4 @@
-import { IRunnable, Runnable } from './Runnable';
+import { IRunnable, Runnable, RunnableInit } from './Runnable';
 import { Abstract } from '@tsdi/ioc';
 
 /**
@@ -24,6 +24,16 @@ export interface IService<T> extends IRunnable<T> {
     stop?(): Promise<any>;
 }
 
+/**
+ * service on init hooks
+ *
+ * @export
+ * @interface ServiceInit
+ * @extends {RunnableInit}
+ */
+export interface ServiceInit extends RunnableInit {
+
+}
 
 /**
  * base service.
