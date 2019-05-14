@@ -82,6 +82,11 @@ export class BuilderService extends IocCoreService {
 
     async create<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<any> {
         let ctx = await this.build(target, ...args);
+        return ctx.target;
+    }
+
+    async createBoot<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<any> {
+        let ctx = await this.build(target, ...args);
         return ctx.getBootTarget();
     }
 

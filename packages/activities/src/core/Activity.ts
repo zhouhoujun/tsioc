@@ -94,6 +94,9 @@ export abstract class Activity<T> {
      */
     async run(ctx: ActivityContext, next?: () => Promise<void>): Promise<void> {
         ctx.runnable.status.current = this;
+        if (this.scope) {
+            ctx.scope = this.scope;
+        }
         this._result = await this.initResult(ctx, next);
         await this.refreshResult(ctx);
         await this.execute(ctx);

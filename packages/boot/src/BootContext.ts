@@ -128,6 +128,14 @@ export interface BootOption extends AnnoationOption {
     * @memberof BootOptions
     */
     providers?: ProviderTypes[];
+
+    /**
+     * container getter.
+     *
+     * @type {ContainerFactory}
+     * @memberof BootOption
+     */
+    raiseContainerGetter?: ContainerFactory;
 }
 
 export const BootTargetToken = new InjectToken('module_type');

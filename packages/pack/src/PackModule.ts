@@ -3,6 +3,7 @@ import * as cores from './core';
 import * as tasks from './tasks';
 import * as transforms from './transforms';
 import * as rollups from './rollups';
+import * as builds from './builds';
 
 @DIModule({
     regScope: RegScope.boot,
@@ -10,13 +11,15 @@ import * as rollups from './rollups';
         cores,
         tasks,
         rollups,
-        transforms
+        transforms,
+        builds
     ],
     exports: [
         cores,
         tasks,
         rollups,
-        transforms
+        transforms,
+        builds
     ]
 })
 export class PackModule {

@@ -5,6 +5,7 @@ import { TsBuildOption } from '../transforms';
 import { CompilerOptions } from 'typescript';
 import { ExternalOption, RollupCache, WatcherOptions, RollupFileOptions, RollupDirOptions } from 'rollup';
 import { RollupOption } from '../rollups';
+import { Input } from '@tsdi/boot';
 
 
 export interface LibTaskOption {
@@ -82,7 +83,7 @@ export interface LibPackBuilderOption extends TemplateOption {
     selector: BuilderTypes.libs,
     template: {
         activity: 'each',
-        each: ctx => ctx.body.each,
+        // each: ctx => ctx.body.each,
         body: [
             {
                 activity: 'if',
@@ -105,14 +106,15 @@ export interface LibPackBuilderOption extends TemplateOption {
                 body: <RollupOption>{
                     activity: 'rollup',
                     input: ctx => ctx.body.input,
-                    plugins: ctx => ctx.body.plugins,
-                    external: ctx => ctx.body.external,
+                    plugins: ctx => ctx.scope.plugins,
+                    external: ctx => ctx.scope.external,
+                    options: ctx => ctx.scope.options,
                     output: ctx => {
                         return {
                             format: ctx.body.format || 'cjs',
                             file: ctx.body.outputFile,
                             dir: ctx.body.outputDir,
-                            globals: ctx.body.globals
+                            globals: ctx.scope.globals
                         }
                     }
                 }
@@ -122,8 +124,45 @@ export interface LibPackBuilderOption extends TemplateOption {
 })
 export class LibPackBuilder {
 
-    // protected execute(ctx: NodeActivityContext): Promise<void> {
+    /**
+     * tasks
+     *
+     * @type {(Expression<LibTaskOption|LibTaskOption[]>)}
+     * @memberof LibPackBuilderOption
+     */
+    @Input()
+    tasks: Expression<LibTaskOption | LibTaskOption[]>;
+    /**
+     * rollup external setting.
+     *
+     * @type {Expression<ExternalOption>}
+     * @memberof RollupOption
+     */
+    @Input()
+    external?: Expression<ExternalOption>;
+    /**
+     * rollup plugins setting.
+     *
+     * @type {Expression<Plugin[]>}
+     * @memberof RollupOption
+     */
+    @Input()
+    plugins?: Expression<Plugin[]>;
 
-    // }
+    @Input()
+    cache?: Expression<RollupCache>;
+
+    @Input()
+    watch?: Expression<WatcherOptions>;
+    /**
+     * custom setup rollup options.
+     *
+     * @type {(Expression<RollupFileOptions | RollupDirOptions>)}
+     * @memberof RollupOption
+     */
+    @Input()
+    options?: Expression<RollupFileOptions | RollupDirOptions>;
+
+
 
 }
