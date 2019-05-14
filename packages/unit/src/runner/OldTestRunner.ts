@@ -1,4 +1,4 @@
-import { Inject, PromiseUtil, Singleton, Token } from '@tsdi/ioc';
+import { Inject, PromiseUtil, Singleton, Type } from '@tsdi/ioc';
 import { ISuiteRunner } from './ISuiteRunner';
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { Assert } from '../assert';
@@ -42,12 +42,12 @@ export class OldTestRunner implements ISuiteRunner {
 
     suites: Map<string, ISuiteDescribe>;
 
-    getTargetType(): Token<any> {
+    getBootType(): Type<any> {
         return null;
     }
 
 
-    getTarget() {
+    getBoot() {
         return this.suites;
     }
 

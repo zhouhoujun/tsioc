@@ -3,7 +3,7 @@ import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LoggerAspect } from '@tsdi/logs';
 import chalk from 'chalk';
 import { WorkflowInstance } from '@tsdi/activities';
-import { ObjectMap, Inject, lang } from '@tsdi/ioc';
+import { Inject, lang } from '@tsdi/ioc';
 const timestamp = require('time-stamp');
 const prettyTime = require('pretty-hrtime');
 /**
@@ -28,7 +28,7 @@ export class RunnerLogAspect extends LoggerAspect {
         let logger = this.logger;
         let runner = joinPoint.target as WorkflowInstance;
         let uuid = runner.context.id;
-        let name = runner.getTarget().name || lang.getClassName(runner.context.module);
+        let name = runner.getBoot().name || lang.getClassName(runner.context.module);
         let start, end;
         let taskname = '\'' + chalk.cyan(name || uuid) + '\'';
         if (joinPoint.state === JoinpointState.Before) {

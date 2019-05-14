@@ -35,7 +35,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
      * @memberof SuiteRunner
      */
     getSuiteDescribe(): ISuiteDescribe {
-        let type = this.getTargetType();
+        let type = this.getBootType();
         let metas = getOwnTypeMetadata<SuiteMetadata>(Suite, type);
         let meta = metas.find(m => isNumber(m.timeout));
         this.timeout = meta ? meta.timeout : (3 * 60 * 60 * 1000);
@@ -63,7 +63,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
     }
 
     runTimeout(key: string, describe: string, timeout: number): Promise<any> {
-        let instance = this.getTarget();
+        let instance = this.getBoot();
         let defer = PromiseUtil.defer();
         let timer = setTimeout(() => {
             if (timer) {
@@ -96,7 +96,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
     }
 
     async runBefore(describe: ISuiteDescribe) {
-        let methodMaps = getMethodMetadata<BeforeTestMetadata>(Before, this.getTarget());
+        let methodMaps = getMethodMetadata<BeforeTestMetadata>(Before, this.getBoot());
         await PromiseUtil.step(
             Object.keys(methodMaps)
                 .map(key => () => {
@@ -109,7 +109,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
     }
 
     async runBeforeEach() {
-        let methodMaps = getMethodMetadata<BeforeEachTestMetadata>(BeforeEach, this.getTarget());
+        let methodMaps = getMethodMetadata<BeforeEachTestMetadata>(BeforeEach, this.getBoot());
         await PromiseUtil.step(
             Object.keys(methodMaps)
                 .map(key => () => {
@@ -122,7 +122,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
     }
 
     async runAfterEach() {
-        let methodMaps = getMethodMetadata<BeforeEachTestMetadata>(AfterEach, this.getTarget());
+        let methodMaps = getMethodMetadata<BeforeEachTestMetadata>(AfterEach, this.getBoot());
         await PromiseUtil.step(
             Object.keys(methodMaps)
                 .map(key => () => {
@@ -135,7 +135,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
     }
 
     async runAfter(describe: ISuiteDescribe) {
-        let methodMaps = getMethodMetadata<BeforeTestMetadata>(After, this.getTarget());
+        let methodMaps = getMethodMetadata<BeforeTestMetadata>(After, this.getBoot());
         await PromiseUtil.step(
             Object.keys(methodMaps)
                 .map(key => () => {
@@ -148,7 +148,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
     }
 
     async runTest(desc: ISuiteDescribe) {
-        let methodMaps = getMethodMetadata<TestCaseMetadata>(Test, this.getTarget());
+        let methodMaps = getMethodMetadata<TestCaseMetadata>(Test, this.getBoot());
         let keys = Object.keys(methodMaps);
         await PromiseUtil.step(
             keys.map(key => {

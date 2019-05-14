@@ -30,11 +30,11 @@ export class RunAspect extends LoggerAspect {
         let desc = joinPoint.args[0] as ISuiteDescribe;
         switch (joinPoint.state) {
             case JoinpointState.Before:
-                this.getReport().addSuite(runner.getTargetType() || desc.describe, desc);
+                this.getReport().addSuite(runner.getBootType() || desc.describe, desc);
                 break;
             case JoinpointState.AfterReturning:
             case JoinpointState.AfterThrowing:
-                this.getReport().setSuiteCompleted(runner.getTargetType() || desc.describe);
+                this.getReport().setSuiteCompleted(runner.getBootType() || desc.describe);
                 break;
         }
     }
@@ -46,7 +46,7 @@ export class RunAspect extends LoggerAspect {
         let runner = joinPoint.target as SuiteRunner;
         switch (joinPoint.state) {
             case JoinpointState.Before:
-                this.getReport().addCase(runner.getTargetType() || suiteDesc.describe, desc);
+                this.getReport().addCase(runner.getBootType() || suiteDesc.describe, desc);
                 break;
             case JoinpointState.AfterReturning:
             case JoinpointState.AfterThrowing:

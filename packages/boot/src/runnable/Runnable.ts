@@ -1,4 +1,4 @@
-import { Token, lang, Type, Abstract } from '@tsdi/ioc';
+import { lang, Type, Abstract } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BootContext } from '../BootContext';
 
@@ -30,20 +30,20 @@ export interface IRunnable<T> {
     readonly context?: BootContext;
 
     /**
-     * target instance.
+     * get boot instance.
      *
      * @type {T}
      * @memberof IBoot
      */
-    getTarget(): T;
+    getBoot(): T;
 
     /**
-     * get target token.
+     * get boot type.
      *
-     * @returns {Token<T>}
+     * @returns {Type<T>}
      * @memberof IBoot
      */
-    getTargetType(): Token<T>;
+    getBootType(): Type<T>;
 
     /**
      * run application via boot instance.
@@ -95,13 +95,13 @@ export abstract class Runnable<T> implements IRunnable<any> {
         return this.context.getRaiseContainer();
     }
 
-    getTarget(): T {
+    getBoot(): T {
         return this.context.getBootTarget();
     }
 
 
-    getTargetType(): Type<T> {
-        return lang.getClass(this.getTarget());
+    getBootType(): Type<T> {
+        return lang.getClass(this.getBoot());
     }
 
     /**

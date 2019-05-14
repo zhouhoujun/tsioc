@@ -1,2 +1,2 @@
-// export * from './TaskDecorBootBuildHandle';
+export * from './BindingTaskTemplateHandle';
 export * from './TaskDecorSelectorHandle';

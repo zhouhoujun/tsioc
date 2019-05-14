@@ -43,3 +43,17 @@ export interface AfterInit {
     onAfterInit(): void | Promise<void>;
 }
 
+/**
+ * ater content init hooks.
+ *
+ * @export
+ * @interface AfterContentInit
+ */
+export interface AfterContentInit {
+    /**
+     * component after content init hooks. after property inject.
+     *
+     * @memberof AfterInit
+     */
+    onAfterContentInit(): void | Promise<void>;
+}

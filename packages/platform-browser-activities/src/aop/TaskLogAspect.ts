@@ -1,4 +1,4 @@
-import { ObjectMap, Inject, lang } from '@tsdi/ioc';
+import { Inject, lang } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LoggerAspect } from '@tsdi/logs';
@@ -24,18 +24,17 @@ export class TaskLogAspect extends LoggerAspect {
     @Around('execution(*.execute)')
     logging(joinPoint: Joinpoint) {
         let logger = this.logger;
-        let target = joinPoint.target;
+        let target = joinPoint.target as Activity<any>;
         let name = target.name;
+        if (!name && target.scope) {
+            name = lang.getClassName(target.scope);
+        }
         if (!name) {
-            let classAnnations = lang.getClassAnnations(joinPoint.targetType);
-            name = classAnnations ? classAnnations.name : joinPoint.targetType.name;
+            name = lang.getClassName(joinPoint.targetType);
         }
         let start: Date, end: Date;
         let taskname = '\'' + name + '\'';
         if (joinPoint.state === JoinpointState.Before) {
-            if (target.context && target.context.config && target.context.config.title) {
-                logger.log('\n' + target.context.config.title + taskname + '\n');
-            }
             start = new Date();
             target['__startAt'] = start;
             logger.log('[' + start.toString() + ']', 'Starting', taskname, '...');

@@ -83,7 +83,7 @@ export class WorkflowInstance extends Service<Activity<any>> {
         if (this.context.id && !container.has(this.context.id)) {
             container.bindProvider(this.context.id, this);
         }
-        let target = this.getTarget();
+        let target = this.getBoot();
         if (!target.run) {
             console.log(target);
         }

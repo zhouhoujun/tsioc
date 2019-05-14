@@ -35,6 +35,14 @@ export abstract class Activity<T> {
     isScope?: boolean;
 
     /**
+     * component scope of this activity.
+     *
+     * @type {*}
+     * @memberof Activity
+     */
+    scope?: any;
+
+    /**
      * activity display name.
      *
      * @type {string}

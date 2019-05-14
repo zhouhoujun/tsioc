@@ -4,9 +4,9 @@ import { RunAspect } from './aop';
 import * as core from './core';
 import * as activites from './activities';
 import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes } from '@tsdi/ioc';
-import { DIModuleRegisterScope, ComponentRegisterAction, DecoratorTemplateRegisterer, HandleRegisterer } from '@tsdi/boot';
+import { DIModuleRegisterScope, ComponentRegisterAction, DecoratorTemplateRegisterer, HandleRegisterer, BindingTemplateDecoratorRegisterer } from '@tsdi/boot';
 import { TaskDecoratorServiceAction } from './core';
-import { TaskDecorSelectorHandle } from './handles';
+import { TaskDecorSelectorHandle, BindingTaskTemplateHandle } from './handles';
 
 
 
@@ -28,6 +28,7 @@ export class CoreModule {
             .register(container, TaskDecoratorServiceAction);
 
         container.get(HandleRegisterer)
+            .register(container, BindingTaskTemplateHandle)
             .register(container, TaskDecorSelectorHandle);
 
 
@@ -37,6 +38,7 @@ export class CoreModule {
 
         container.get(ModuleDecoratorRegisterer).register(Task, DIModuleRegisterScope);
         container.get(DecoratorTemplateRegisterer).register(Task, TaskDecorSelectorHandle);
+        container.get(BindingTemplateDecoratorRegisterer).register(Task, BindingTaskTemplateHandle);
 
         container.use(core)
             .use(RunAspect)

@@ -51,8 +51,27 @@ export class BuildContext extends IocActionContext implements IComponentContext 
      */
     template: any;
 
+    /**
+     * instance of current type annoation template
+     *
+     * @type {*}
+     * @memberof BuildContext
+     */
+    component?: any;
+    /**
+     * current module type.
+     *
+     * @type {Type<any>}
+     * @memberof BuildContext
+     */
     type: Type<any>;
 
+    /**
+     * current target module
+     *
+     * @type {*}
+     * @memberof BuildContext
+     */
     target?: any;
 
     decorator: string;

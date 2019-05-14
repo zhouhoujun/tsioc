@@ -1,8 +1,6 @@
 import { IContainer, ContainerToken, IocExt, ServiceDecoratorRegisterer } from '@tsdi/core';
 import { Suite } from './decorators/Suite';
-import {
-    Inject, DecoratorScopes, RegisterSingletionAction, RuntimeDecoratorRegisterer
-} from '@tsdi/ioc';
+import { Inject, DecoratorScopes, RegisterSingletionAction, RuntimeDecoratorRegisterer } from '@tsdi/ioc';
 import { SuiteDecoratorRegisterer } from './registers';
 
 
