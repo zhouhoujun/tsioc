@@ -10,12 +10,14 @@ export class TemplateManager {
 
     get(component: any): any {
         if (this.componetns.has(component)) {
+            // return this.componetns.get(component);
             return this.getReslut(component);
         }
         return null;
     }
 
     protected getReslut(component: any) {
+        component = this.componetns.get(component);
         while (this.componetns.has(component)) {
             component = this.componetns.get(component);
         }
