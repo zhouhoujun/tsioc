@@ -46,14 +46,6 @@ export interface IRunnable<T> {
     getTargetType(): Token<T>;
 
     /**
-     * on boot init.
-     *
-     * @returns {Promise<void>}
-     * @memberof IRunnable
-     */
-    onInit(): Promise<void>;
-
-    /**
      * run application via boot instance.
      *
      * @param {*} [data]
@@ -101,10 +93,6 @@ export abstract class Runnable<T> implements IRunnable<any> {
 
     getContainer(): IContainer {
         return this.context.getRaiseContainer();
-    }
-
-    async onInit(): Promise<void> {
-
     }
 
     getTarget(): T {

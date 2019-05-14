@@ -13,9 +13,13 @@ export class ResolveTemplateScope extends ResolveHandle {
                 annoation: ctx.annoation,
                 decorator: ctx.decorator
             }, ctx.getRaiseContainer());
-            await this.container.get(HandleRegisterer).get(ParseScope).execute(pCtx);
+            await this.container
+                .get(HandleRegisterer)
+                .get(ParseScope)
+                .execute(pCtx);
             if (!isNullOrUndefined(pCtx.value)) {
-                ctx.getRaiseContainer().get(TemplateManager)
+                ctx.getRaiseContainer()
+                    .get(TemplateManager)
                     .set(ctx.target, pCtx.value);
             }
         }
