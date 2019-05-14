@@ -11,7 +11,7 @@ export class SelectorParseHandle extends CompositeParserHandle {
             if (selector) {
                 let container = ctx.getRaiseContainer();
                 if (container.has(selector)) {
-                    ctx.value = await this.container.get(BuilderService).resolveCompoent(selector, { scope: ctx.scope, template: ctx.template, providers: ctx.providers });
+                    ctx.value = await this.container.get(BuilderService).resolve(selector, { scope: ctx.scope, template: ctx.template, providers: ctx.providers });
                 } else {
                     ctx.value = await this.container.get(BuilderService).create({ module: selector, scope: ctx.scope, template: ctx.template, regScope: RegScope.boot, providers: ctx.providers });
                 }
