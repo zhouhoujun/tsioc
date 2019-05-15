@@ -12,7 +12,7 @@ const commonjs = require('rollup-plugin-commonjs');
 const ts = require('rollup-plugin-typescript');
 import { uglify } from 'rollup-plugin-uglify';
 import { rollupClassAnnotations } from '@tsdi/annotations';
-import { isString, isBoolean } from '@tsdi/ioc';
+import { isString, isBoolean, isNullOrUndefined } from '@tsdi/ioc';
 
 export interface LibTaskOption {
     clean?: Src;
@@ -209,7 +209,9 @@ export class LibPackBuilder implements AfterInit {
         }
 
         if (!this.plugins) {
-            this.sourceMap = true;
+            if (isNullOrUndefined(this.sourceMap)) {
+                this.sourceMap = true;
+            }
             this.plugins = (ctx: NodeActivityContext) => [
                 resolve(),
                 commonjs(),

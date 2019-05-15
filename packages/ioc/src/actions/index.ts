@@ -1,4 +1,5 @@
 export * from './Action';
+export * from './ActionRegisterer';
 export * from './IocCompositeAction';
 export * from './IocCacheManager';
 export * from './LifeScope';

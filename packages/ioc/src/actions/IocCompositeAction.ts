@@ -1,45 +1,6 @@
-import { lang, isClass, isBoolean } from '../utils';
+import { lang, isBoolean } from '../utils';
 import { IocAction, IocActionType, IocActionContext } from './Action';
-import { IIocContainer } from '../IIocContainer';
-import { Type } from '../types';
 
-/**
- * action registerer.
- *
- * @export
- * @class ActionRegisterer
- */
-export class ActionRegisterer {
-    private maps: Map<Type<IocAction<any>>, IocAction<any>>;
-
-    constructor() {
-        this.maps = new Map();
-    }
-
-    get<T extends IocAction<any>>(type: Type<T>): T {
-        if (this.maps.has(type)) {
-            return this.maps.get(type) as T;
-        }
-        return null;
-    }
-
-    register(container: IIocContainer, action: IocActionType, setup?: boolean): this {
-        if (!isClass(action)) {
-            return this;
-        }
-        if (this.maps.has(action)) {
-            return this;
-        }
-        let actionInstance = new action(container);
-        this.maps.set(action, actionInstance);
-        if (setup) {
-            if (actionInstance instanceof IocCompositeAction) {
-                actionInstance.setup();
-            }
-        }
-        return this;
-    }
-}
 
 /**
  * composite action.
@@ -193,9 +154,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         this.actionFuncs = null;
     }
 
-
-
-    setup?() {
+    setup() {
 
     }
 
