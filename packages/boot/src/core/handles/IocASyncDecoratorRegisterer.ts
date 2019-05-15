@@ -1,6 +1,6 @@
 import { DecoratorRegisterer, IIocContainer, isFunction, isClass, PromiseUtil } from '@tsdi/ioc';
 import { Handle } from './Handle';
-import { HandleRegisterer } from './HandleRegisterer';
+import { HandleRegisterer } from './CompositeHandle';
 
 
 export class IocASyncDecoratorRegisterer<T> extends DecoratorRegisterer<T> {

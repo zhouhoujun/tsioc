@@ -3,7 +3,7 @@ import { DecoratorBuildHandle } from './DecoratorBuildHandle';
 import { ResolveModuleHandle } from './ResolveModuleHandle';
 import { BuildContext } from './BuildContext';
 import { BuildDecoratorRegisterer } from './BuildDecoratorRegisterer';
-import { ParseScope } from '../parses';
+import { ParseScope } from '../parses/ParseScope';
 import { InitResolveModuleHandle } from './InitResolveModuleHandle';
 import { InitBindingParamHandle } from './InitBindingParamHandle';
 import { ModuleBeforeInitHandle } from './ModuleBeforeInitHandle';

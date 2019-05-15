@@ -1,16 +1,12 @@
 import { BootContext, BootOption } from './BootContext';
 import {
-    Type, BindProviderAction, IocSetCacheAction, DesignDecoratorRegisterer,
-    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction, LoadType, isArray, isString, InjectReference
+    Type, LoadType, isArray, isString, InjectReference
 } from '@tsdi/ioc';
-import { ContainerPool, DIModuleRegisterScope } from './core';
-import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ModuleDecoratorRegisterer } from '@tsdi/core';
-import { Bootstrap } from './decorators';
-import * as annotations from './annotations';
-import * as runnable from './runnable';
-import * as services from './services';
+import { ContainerPool } from './core';
+import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
 import { BuilderService } from './services';
 import { IBootApplication } from './IBootApplication';
+import { bootSetup } from './setup';
 
 /**
  * boot application hooks.
@@ -33,7 +29,7 @@ export interface ContextInit {
  * @export
  * @class BootApplication
  */
-export class BootApplication implements IBootApplication,  ContextInit {
+export class BootApplication implements IBootApplication, ContextInit {
 
     /**
      * application context.
@@ -73,18 +69,9 @@ export class BootApplication implements IBootApplication,  ContextInit {
             this.container = this.getPools().getRoot();
             this.container.register(BootContext);
         }
+
         this.container.bindProvider(BootApplication, this);
-        this.container.use(annotations, runnable, services);
-
-
-        this.container.get(DesignDecoratorRegisterer)
-            .register(Bootstrap, DecoratorScopes.Class, BindProviderAction);
-
-        this.container.get(RuntimeDecoratorRegisterer)
-            .register(Bootstrap, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
-
-        this.container.get(ModuleDecoratorRegisterer)
-            .register(Bootstrap, DIModuleRegisterScope);
+        bootSetup(this.container);
 
     }
 

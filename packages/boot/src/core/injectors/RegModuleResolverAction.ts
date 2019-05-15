@@ -1,6 +1,7 @@
 import { AnnoationAction } from './AnnoationAction';
 import { AnnoationActionContext } from './AnnoationActionContext';
-import { ModuleResovler, IDIModuleReflect } from '../modules';
+import { IDIModuleReflect } from '../modules';
+import { ModuleResovler } from './ModuleResovler';
 
 export class RegModuleResolverAction extends AnnoationAction {
     execute(ctx: AnnoationActionContext, next: () => void): void {

@@ -1,4 +1,4 @@
-export * from './decorators';
+export * from './decorators/Bootstrap';
 export * from './bindings';
 export * from './services';
 export * from './annotations';

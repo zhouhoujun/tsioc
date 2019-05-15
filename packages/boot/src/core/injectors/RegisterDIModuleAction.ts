@@ -1,6 +1,6 @@
 import { InjectorAction, InjectorActionContext } from '@tsdi/core';
 import { isClass } from '@tsdi/ioc';
-import { ModuleInjectLifeScope } from '../services';
+import { ModuleInjectLifeScope } from './ModuleInjectLifeScope';
 
 export class RegisterDIModuleAction extends InjectorAction {
     execute(ctx: InjectorActionContext, next: () => void): void {

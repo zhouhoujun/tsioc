@@ -1,10 +1,12 @@
 import { LifeScope, Type, Inject, ContainerFactoryToken } from '@tsdi/ioc';
-import { ModuleResovler } from '../modules';
+import { ModuleResovler } from './ModuleResovler';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import {
-    AnnoationActionContext, CheckAnnoationAction, AnnoationRegisterScope,
-    DIModuleRegisterScope, RegModuleExportsAction
-} from '../injectors';
+import { AnnoationActionContext } from './AnnoationActionContext';
+import { DIModuleRegisterScope } from './DIModuleRegisterScope';
+import { CheckAnnoationAction } from './CheckAnnoationAction';
+import { AnnoationRegisterScope } from './AnnoationRegisterScope';
+import { RegModuleExportsAction } from './RegModuleExportsAction';
+
 
 export class ModuleInjectLifeScope extends LifeScope<AnnoationActionContext> {
 
@@ -28,6 +30,6 @@ export class ModuleInjectLifeScope extends LifeScope<AnnoationActionContext> {
             decorator: decorator
         }, this.container.get(ContainerFactoryToken));
         this.execute(ctx);
-        return ctx.moduleResolver;
+        return ctx.moduleResolver as ModuleResovler<T>;
     }
 }

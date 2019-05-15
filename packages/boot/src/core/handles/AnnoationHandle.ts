@@ -1,6 +1,6 @@
 import { Handle } from './Handle';
 import { Abstract, ProviderMap, Type, ContainerFactory } from '@tsdi/ioc';
-import { ModuleConfigure, ModuleResovler, RegScope } from '../modules';
+import { ModuleConfigure, IModuleResolver, RegScope } from '../modules';
 import { AnnoationActionContext, AnnoationActionOption, createAnnoationContext } from '../injectors';
 
 
@@ -65,7 +65,7 @@ export class AnnoationContext extends AnnoationActionContext {
      * @type {ModuleResovler}
      * @memberof AnnoationContext
      */
-    moduleResolver?: ModuleResovler<any>;
+    moduleResolver?: IModuleResolver;
 
     /**
      * the way to register the module. default as child module.

@@ -18,11 +18,10 @@ import {
     RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction,
 } from './resolves';
 import { RouteDesignRegisterAction, RouteRuntimRegisterAction, ComponentRegisterAction, BindingPropertyTypeAction, BindingParamTypeAction } from './registers';
-import { DIModuleRegisterScope } from './injectors';
+import { DIModuleRegisterScope, DIModuleExports, ModuleInjectLifeScope } from './injectors';
 import { SelectorManager } from './SelectorManager';
 import { Input, Component } from './decorators';
 import { HandleRegisterer } from './handles';
-import { DIModuleExports, ModuleInjectLifeScope } from './services';
 import { TemplateManager } from './TemplateManager';
 
 

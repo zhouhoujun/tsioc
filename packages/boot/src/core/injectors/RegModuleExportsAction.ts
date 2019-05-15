@@ -1,7 +1,7 @@
 import { AnnoationAction } from './AnnoationAction';
 import { AnnoationActionContext } from './AnnoationActionContext';
 import { ContainerPoolToken } from '../ContainerPoolToken';
-import { DIModuleExports } from '../services';
+import { DIModuleExports } from './DIModuleExports';
 import { RegScope } from '../modules';
 
 export class RegModuleExportsAction extends AnnoationAction {

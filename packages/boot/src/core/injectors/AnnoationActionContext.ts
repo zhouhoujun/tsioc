@@ -1,6 +1,6 @@
 import { IocActionContext, Type, ProviderMap, ActionContextOption, isFunction, isClass, Inject, ContainerFactory } from '@tsdi/ioc';
-import { ModuleConfigure, ModuleResovler, RegScope } from '../modules';
-import { IContainer, isContainer } from '@tsdi/core';
+import { ModuleConfigure, RegScope, IModuleResolver } from '../modules';
+import { IContainer } from '@tsdi/core';
 
 /**
  * annoation action option.
@@ -104,7 +104,7 @@ export class AnnoationActionContext extends IocActionContext {
      * @type {ModuleResovler}
      * @memberof AnnoationContext
      */
-    moduleResolver?: ModuleResovler<any>;
+    moduleResolver?: IModuleResolver;
 
     /**
      * the way to register the module. default as child module.
