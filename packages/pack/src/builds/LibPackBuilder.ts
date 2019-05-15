@@ -82,7 +82,7 @@ export interface LibPackBuilderOption extends TemplateOption {
     selector: BuilderTypes.libs,
     template: {
         activity: 'each',
-        each: ctx => ctx.scope.tasks,
+        each: 'binding: tasks',
         body: [
             {
                 activity: 'if',
@@ -122,6 +122,10 @@ export interface LibPackBuilderOption extends TemplateOption {
     }
 })
 export class LibPackBuilder implements AfterInit {
+
+    constructor() {
+
+    }
 
     /**
      * tasks

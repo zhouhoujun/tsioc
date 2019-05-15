@@ -1,5 +1,5 @@
 # packaged @tsdi/activities
-`@tsdi/activities` is activities framework, base on AOP, Ioc container, via @tsdi. file stream pipes activities.
+`@tsdi/pack` is project build pack tools, base on AOP, Ioc container, via @tsdi. file stream pipes activities.
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme).
@@ -11,7 +11,7 @@ Please file issues and pull requests against that repo.
 1. install modules:
 
 ```shell
-npm install @tsdi/activities
+npm install @tsdi/pack
 ```
 
 2. install cli | build pack:
@@ -25,8 +25,8 @@ npm install -g '@tsdi/cli'
 npm install '@tsdi/pack'
 ```
 
-use command: `pk run [taskfile.ts], pk run [taskfile.js]`
-
+use command: `tsdi run [taskfile.ts], tsdi run [taskfile.js]`
+use command: `tsdi build [options]`
 
 You can `import` modules:
 
@@ -35,25 +35,30 @@ You can `import` modules:
 
 ### Define Task
 
-* Single task
+* define task component or attr task item.
 
 ```ts
-@Task('test')
-class SimpleTask extends AbstractTask implements ITask {
 
-    constructor(name: string) {
-        super(name);
+@Task('clean, [clean]')
+export class CleanActivity extends Activity<void> {
+
+    @Input()
+    protected clean: Expression<Src>;
+
+
+    constructor(@Input() clean?: Expression<Src>) {
+        super()
+        this.clean = clean;
     }
 
-    run(): Promise<any> {
-        // console.log('before simple activity:', this.name);
-        return Promise.resolve('simple task')
-            .then(val => {
-                console.log('return simple activity:', val);
-                return val;
-            });
+    protected async execute(ctx: NodeActivityContext): Promise<void> {
+        let clean = await this.resolveExpression(this.clean, ctx);
+        if (clean) {
+            await ctx.del(ctx.toRootSrc(clean), {force: true});
+        }
     }
 }
+
 
 ```
 
@@ -62,176 +67,193 @@ class SimpleTask extends AbstractTask implements ITask {
 see [control flow codes](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities/src/activities)
 
 
-* Task module
+### Define component Task
 
 ```ts
+export interface LibTaskOption {
+    clean?: Binding<Expression<Src>>;
+    src?: Binding<Expression<Src>>;
+    dist?: Binding<Expression<Src>>;
+    uglify?: Binding<Expression<boolean>>;
+    tsconfig?: Binding<Expression<string | CompilerOptions>>;
 
+    /**
+     * rollup input.
+     *
+     * @type {Binding<Expression<string>>}
+     * @memberof LibTaskOption
+     */
+    input?: Binding<Expression<string>>;
+    /**
+     * rollup output file.
+     *
+     * @type {Binding<string>}
+     * @memberof LibTaskOption
+     */
+    outputFile?: Binding<Expression<string>>;
+    /**
+     * rollup output dir.
+     *
+     * @type {Binding<string>}
+     * @memberof LibTaskOption
+     */
+    outputDir?: Binding<Expression<string>>;
+    /**
+     * rollup format option.
+     *
+     * @type {Binding<string>}
+     * @memberof LibTaskOption
+     */
+    format?: Binding<Expression<string>>;
+}
+
+@Task({
+    selector: 'libs',
+    template: {
+        activity: 'each',
+        each: 'binding: tasks'
+        body: [
+            {
+                activity: 'if',
+                condition: ctx => ctx.body.src,
+                body: <TsBuildOption>{
+                    activity: 'ts',
+                    clean: ctx => ctx.body.clean,
+                    src: ctx => ctx.body.src,
+                    test: ctx => ctx.body.test,
+                    uglify: ctx => ctx.body.uglify,
+                    dist: ctx => ctx.body.dist,
+                    annotation: true,
+                    sourcemaps: './sourcemaps',
+                    tsconfig: ctx => ctx.body.tsconfig
+                }
+            },
+            {
+                activity: Activities.if,
+                condition: ctx => ctx.body.input,
+                body: <RollupOption>{
+                    activity: 'rollup',
+                    input: ctx => ctx.body.input,
+                    plugins: 'binding: plugins',
+                    external: 'binding: external',
+                    options: 'binding: options',
+                    output: ctx => {
+                        return {
+                            format: ctx.body.format || 'cjs',
+                            file: ctx.body.outputFile,
+                            dir: ctx.body.outputDir,
+                            globals: ctx.scope.globals
+                        }
+                    }
+                }
+            }
+        ]
+    }
+})
+export class LibPackBuilder implements AfterInit {
+
+    constructor(private yourService: ServiceClass){
+
+    }
+    /**
+     * tasks
+     *
+     * @type {(Expression<LibTaskOption|LibTaskOption[]>)}
+     * @memberof LibPackBuilderOption
+     */
+    @Input()
+    tasks: Expression<LibTaskOption | LibTaskOption[]>;
+    /**
+     * rollup external setting.
+     *
+     * @type {Expression<ExternalOption>}
+     * @memberof RollupOption
+     */
+    @Input()
+    external?: Expression<ExternalOption>;
+    /**
+     * rollup plugins setting.
+     *
+     * @type {Expression<Plugin[]>}
+     * @memberof RollupOption
+     */
+    @Input()
+    plugins?: Expression<Plugin[]>;
+
+    @Input()
+    cache?: Expression<RollupCache>;
+
+    @Input()
+    watch?: Expression<WatcherOptions>;
+    /**
+     * custom setup rollup options.
+     *
+     * @type {(Expression<RollupFileOptions | RollupDirOptions>)}
+     * @memberof RollupOption
+     */
+    @Input()
+    options?: Expression<RollupFileOptions | RollupDirOptions>;
+
+
+    async onAfterInit(): Promise<void> {
+        // to do init you component
+        // this.yourService.
+    }
+
+
+}
 
 ```
+
 
 ### Run task
 
+* use coustom task component.
 ```ts
-1.
-let wf = new Worflow(moudles)
-2.
-Workflow.create( moudles)
-    .bootstrap(<IConfigure>{
-        ...
-        activity:...
-    });
-3.
-Workflow.create( moudles)
-    .bootstrap(TestTask);
-4.
-Workflow.create()
-    .sequence(TestTask, TsCompile, <IConfigure>{
-        ...
-        activity: ...
-    });
-5.
-Workflow.create()
-    .run(...[TestTask, TsCompile, <IConfigure>{
-        ...
-        activity: ...
-    }]);
+@Task({
+    deps: [
+        PackModule,
+        ServerActivitiesModule
+    ],
+    imports:[ LibPackBuilder ],
+    baseURL: __dirname,
+    template: <LibPackBuilderOption>{
+        activity: 'libs',
+        tasks:[
+            { src: 'src/**/*.ts', clean: ['../../dist/pack/lib'], dist: '../../dist/pack/lib', uglify: false, tsconfig: './tsconfig.json' }
+        ]
+    }
+})
+export class PackBuilder implements AfterInit {
+    onAfterInit(): void | Promise<void> {
+        console.log('pack build has inited...')
+    }
+}
 
 ```
 
-## Simples
-
+* run task.
 ```ts
-import { Workflow, IfActivityToken, SequenceActivityToken, ExecuteToken } from '@tsdi/activities';
-import { INodeActivityContext, Asset, BuildModule, AssetToken, ShellModule, TransformModule, NodeActivityContext } from '@tsdi/build';
-import * as through from 'through2';
-import * as path from 'path';
-import { isPackClass, PackModule } from '@tsdi/pack';
+// 1. run modue
+Workflow.Workflow.run(PackBuilder);
 
-@Asset({
-    pipes: [
+
+// 2. run option
+Workflow.run({
+    name: 'test1',
+    template: [
         {
-            ifBody: {
-                sequence: [
-                    {
-                        src: ['packages/**/package.json', '!packages/activities/**/package.json', '!node_modules/**/package.json'],
-                        pipes: [
-                            ctx => versionSetting(ctx)
-                        ],
-                        dest: 'packages',
-                        activity: AssetToken
-                    },
-                    {
-                        src: ['package.json'],
-                        pipes: [
-                            ctx => versionSetting(ctx)
-                        ],
-                        dest: '.',
-                        activity: AssetToken
-                    }
-                ],
-                activity: SequenceActivityToken
-            },
-            if: ctx => ctx.getEnvArgs().setvs,
-            activity: IfActivityToken
+            name: 'test------1',
+            activity: SimpleTask
         },
-        {
-            execute: (ctx: INodeActivityContext) => {
-                let envArgs = ctx.getEnvArgs();
-                let packages = ctx.getFolders('packages').filter(f => !/activities/.test(f)); // (f => !/(annotations|aop|bootstrap)/.test(f));
-
-                let activities = [];
-                packages.forEach(fd => {
-                    let objs = require(path.join(fd, 'taskfile.ts'));
-                    let builder = Object.values(objs).find(v => isPackClass(v));
-                    activities.push(builder);
-                });
-                if (envArgs.deploy) {
-                    let cmd = 'npm publish --access=public'; // envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
-                    let cmds = packages.map(fd => {
-                        return `cd ${fd} && ${cmd}`;
-                    });
-                    console.log(cmds);
-                    activities.push({
-                        shell: cmds,
-                        activity: 'shell'
-                    });
-                }
-                return {
-                    contextType: NodeActivityContext,
-                    sequence: activities,
-                    activity: SequenceActivityToken
-                }
-            },
-            activity: ExecuteToken
-        }
+        SimpleCTask
+        // {
+        //     name: 'test------2',
+        //     activity: SimpleCTask
+        // }
     ]
-})
-export class BuilderIoc {
-}
 
-@Asset({
-    pipes: [
-        {
-            if: ctx => ctx.getEnvArgs().setvs,
-            ifBody: {
-                src: ['packages/activities/**/package.json', '!node_modules/**/package.json'],
-                pipes: [
-                    (ctx) => actVersionSetting(ctx)
-                ],
-                dest: 'packages/activities',
-                activity: AssetToken
-            },
-            activity: IfActivityToken
-        },
-        {
-            execute: (ctx: INodeActivityContext) => {
-                let envArgs = ctx.getEnvArgs();
-                let packages = ctx.getFolders('packages/activities');
-
-                let activities = [];
-                packages.forEach(fd => {
-                    // console.log(path.join(fd, 'taskfile.ts'));
-                    let objs = require(path.join(fd, 'taskfile.ts'));
-                    let builder = Object.values(objs).find(v => isPackClass(v));
-                    activities.push(builder);
-                });
-                if (envArgs.deploy) {
-                    let cmd = 'npm publish --access=public';
-                    let cmds = packages.map(fd => {
-                        return `cd ${fd} && ${cmd}`;
-                    });
-                    console.log(cmds);
-                    activities.push({
-                        shell: cmds,
-                        activity: 'shell'
-                    });
-                }
-                return {
-                    sequence: activities,
-                    activity: SequenceActivityToken
-                }
-            },
-            activity: ExecuteToken
-        }
-    ]
-})
-export class BuilderActivities {
-}
-
-
-
-Workflow.create()
-    .use(PackModule)
-    .bootstrap({
-        contextType: NodeActivityContext,
-        if: ctx => ctx.getEnvArgs().act,
-        ifBody: BuilderActivities,
-        elseBody: BuilderIoc,
-        activity: IfActivityToken
-    });
-
-
-
+});
 ```
 
 ## Documentation [github](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme)
