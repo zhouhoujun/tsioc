@@ -1,97 +1,29 @@
-import { Workflow } from '@tsdi/activities';
-import { Asset, AssetActivity, CleanToken, TsCompile, TransformContext } from '@tsdi/build';
-import { Pack, PackActivity, PackModule } from '@tsdi/pack';
+import { Workflow, Task } from '@tsdi/activities';
+import { PackModule, LibPackBuilderOption } from '@tsdi/pack';
+import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
+import { AfterInit } from '@tsdi/boot';
 
-const resolve = require('rollup-plugin-node-resolve');
-const rollupSourcemaps = require('rollup-plugin-sourcemaps');
-const commonjs = require('rollup-plugin-commonjs');
-// import { rollup } from 'rollup';
-const rollup = require('gulp-rollup');
-const rename = require('gulp-rename');
-const builtins = require('rollup-plugin-node-builtins');
-
-@Asset({
-    src: 'lib/**/*.js',
-    dest: 'fesm5',
-    data: {
-        name: 'platform-server-boot.js',
-        input: 'lib/index.js'
-    },
-    sourcemaps: true,
-    pipes: [
-        (ctx: TransformContext) => rollup({
-            name: ctx.config.data.name,
-            format: 'cjs',
-            sourceMap: true,
-            plugins: [
-                resolve(),
-                commonjs(),
-                // builtins(),
-                rollupSourcemaps()
-            ],
-            external: [
-                'reflect-metadata',
-                'tslib',
-                'globby',
-                'path',
-                'fs',
-                '@tsdi/core',
-                '@tsdi/aop',
-                '@tsdi/boot',
-                '@tsdi/platform-server'
-            ],
-            globals: {
-                'reflect-metadata': 'Reflect',
-                'tslib': 'tslib',
-                'path': 'path',
-                'globby': 'globby',
-                'fs': 'fs',
-                '@tsdi/core': '@tsdi/core',
-                '@tsdi/aop': '@tsdi/aop',
-                '@tsdi/boot': '@tsdi/boot',
-                '@tsdi/platform-server': '@tsdi/platform-server'
-            },
-            input: ctx.relativeRoot(ctx.config.data.input)
-        }),
-        (ctx) => rename(ctx.config.data.name)
-    ]
-})
-export class BootRollup extends AssetActivity {
-}
-
-@Pack({
+@Task({
+    deps: [
+        PackModule,
+        ServerActivitiesModule
+    ],
     baseURL: __dirname,
-    src: 'src',
-    test: 'test/**/*.spec.ts',
-    clean: ['lib', 'bundles', 'fesm5', 'es2015', 'fesm2015'],
-    assets: {
-        ts: {
-            sequence: [
-                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, tsconfig: './tsconfig.json', activity: TsCompile },
-                BootRollup
-            ]
-        },
-        ts2015: {
-            sequence: [
-                { src: 'src/**/*.ts', dest: 'es2015', tds: false, annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
-                {
-                    src: 'es2015/**/*.js',
-                    dest: 'fesm2015',
-                    data: {
-                        name: 'platform-server-activities.js',
-                        input: './es2015/index.js'
-                    },
-                    activity: BootRollup
-                }
-            ]
-        }
+    template: <LibPackBuilderOption>{
+        activity: 'libs',
+        tasks: [
+            { src: 'src/**/*.ts', clean: ['../../dist/platform-server-boot/lib'], dist: '../../dist/platform-server-boot/lib', uglify: false, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', clean: ['../../dist/platform-server-boot/fesm5'], outputFile: '../../dist/platform-server-boot/fesm5/platform-server-boot.js', format: 'cjs', uglify: false, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', clean: ['../../dist/platform-server-boot/fesm2015'], outputFile: '../../dist/platform-server-boot/fesm2015/platform-server-boot.js', format: 'cjs', tsconfig: './tsconfig.es2015.json' }
+        ]
     }
 })
-export class PfServerBootBuilder {
+export class PfServerBootBuilder implements AfterInit {
+    onAfterInit(): void | Promise<void> {
+        console.log('pack build has inited...')
+    }
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.create()
-        .use(PackModule)
-        .bootstrap(PfServerBootBuilder);
+    Workflow.run(PfServerBootBuilder);
 }

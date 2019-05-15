@@ -19,12 +19,12 @@ import { AfterInit } from '@tsdi/boot';
         ]
     }
 })
-export class LogsBuilder implements AfterInit {
+export class PackBuilder implements AfterInit {
     onAfterInit(): void | Promise<void> {
         console.log('pack build has inited...')
     }
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.run(LogsBuilder);
+    Workflow.run(PackBuilder);
 }

@@ -80,7 +80,7 @@ describe('aop test', () => {
     beforeEach(async () => {
         let build  = new ContainerBuilder();
         container =  build.create();
-        container.loadModule(AopModule, IocLog);
+        container.load(AopModule, IocLog);
     });
 
     it('Aop anntotation test', () => {
