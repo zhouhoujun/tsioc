@@ -1,4 +1,4 @@
-import { lang, isClass, isBoolean, isFunction } from '../utils';
+import { lang, isClass, isBoolean } from '../utils';
 import { IocAction, IocActionType, IocActionContext } from './Action';
 import { IIocContainer } from '../IIocContainer';
 import { Type } from '../types';

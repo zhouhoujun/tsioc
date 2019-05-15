@@ -3,7 +3,6 @@ import { IParameter } from '../IParameter';
 import { ParamProviders, isProvider, ProviderParser } from '../providers';
 import { isToken, isNullOrUndefined, lang, isFunction } from '../utils';
 import { IIocContainer } from '../IIocContainer';
-import { IocCoreService } from './IocCoreService';
 import { RuntimeLifeScope } from './RuntimeLifeScope';
 
 /**
@@ -73,10 +72,10 @@ export interface IMethodAccessor {
  * @class MethodAccessor
  * @implements {IMethodAccessor}
  */
-export class MethodAccessor extends IocCoreService implements IMethodAccessor {
+export class MethodAccessor implements IMethodAccessor {
 
     constructor() {
-        super();
+
     }
 
     /**

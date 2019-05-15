@@ -2,7 +2,7 @@ import { DesignDecoratorScope } from './DesignDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { DesignActionContext } from './DesignActionContext';
 import { BindMethodProviderAction } from './BindMethodProviderAction';
-import { DesignDecoratorRegisterer, DecoratorScopes } from '../../services';
+import { DesignDecoratorRegisterer, DecoratorScopes } from '../DecoratorRegisterer';
 import { AutoWired, Providers } from '../../decorators';
 
 export class DesignMethodScope extends IocRegisterScope<DesignActionContext> {

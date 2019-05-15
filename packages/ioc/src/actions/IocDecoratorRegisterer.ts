@@ -1,7 +1,6 @@
-import { IocCoreService } from './IocCoreService';
 import { isString, isClass, lang, isFunction } from '../utils';
-import { IocActionType, IocAction } from '../actions';
 import { IIocContainer } from '../IIocContainer';
+import { IocAction, IocActionType } from './Action';
 
 /**
  * decorator action registerer.
@@ -10,11 +9,10 @@ import { IIocContainer } from '../IIocContainer';
  * @class IocDecoratorRegisterer
  * @extends {IocCoreService}
  */
-export abstract class DecoratorRegisterer<T> extends IocCoreService {
+export abstract class DecoratorRegisterer<T> {
     protected actionMap: Map<string, T[]>;
     protected funcs: Map<string, Function[]>;
     constructor() {
-        super();
         this.actionMap = new Map();
         this.funcs = new Map();
     }

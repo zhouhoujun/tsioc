@@ -1,6 +1,6 @@
 import { DesignDecoratorAction } from './DesignDecoratorAction';
 import { DesignActionContext } from './DesignActionContext';
-import { DesignDecoratorRegisterer, DecoratorScopeRegisterer, DecoratorScopes } from '../../services';
+import { DesignDecoratorRegisterer, DecoratorScopeRegisterer, DecoratorScopes } from '../DecoratorRegisterer';
 import { IocDecoratorScope } from '../IocDecoratorScope';
 import { ObjectMap } from '../../types';
 

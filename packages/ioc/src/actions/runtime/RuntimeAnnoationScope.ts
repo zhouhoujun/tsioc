@@ -1,7 +1,7 @@
 import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { RuntimeDecoratorRegisterer, DecoratorScopes } from '../../services';
+import { RuntimeDecoratorRegisterer, DecoratorScopes } from '../DecoratorRegisterer';
 import { Singleton, Injectable } from '../../decorators';
 import { RegisterSingletionAction } from './RegisterSingletionAction';
 import { IocSetCacheAction } from './IocSetCacheAction';

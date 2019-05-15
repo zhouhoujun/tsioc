@@ -1,4 +1,6 @@
-import { IocCompositeAction, IocActionContext } from '../actions';
+import { IocActionContext } from './Action';
+import { IocCompositeAction } from './IocCompositeAction';
+
 
 /**
  * register Type init life scope action.

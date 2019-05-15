@@ -1,10 +1,10 @@
 import { IIocContainer, IocContainerToken, ContainerFactoryToken } from './IIocContainer';
-import {
-    MethodAccessor, DesignLifeScope, RuntimeLifeScope,
-    TypeReflects, IocCacheManager, IocSingletonManager, MetadataService, ResolveLifeScope
-} from './services';
+import { TypeReflects, MetadataService } from './services';
 import { ProviderMap, ProviderParser } from './providers';
-import { ActionRegisterer } from './actions';
+import {
+    MethodAccessor, DesignLifeScope, RuntimeLifeScope, IocCacheManager,
+    IocSingletonManager, ResolveLifeScope, ActionRegisterer
+} from './actions';
 
 /**
  * register core for container.

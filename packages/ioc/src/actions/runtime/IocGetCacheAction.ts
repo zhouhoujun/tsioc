@@ -1,6 +1,6 @@
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { IocRuntimeAction } from './IocRuntimeAction';
-import { IocCacheManager } from '../../services';
+import { IocCacheManager } from '../IocCacheManager';
 
 /**
  * get class cache action.

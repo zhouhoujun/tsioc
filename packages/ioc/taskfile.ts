@@ -11,16 +11,16 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
     template: <LibPackBuilderOption>{
         activity: 'libs',
         tasks: [
-            { src: 'src/**/*.ts', clean: ['../../dist/ioc/lib'], dist: '../../dist/ioc/lib', uglify: false, tsconfig: './tsconfig.json' },
+            { src: 'src/**/*.ts', test: 'test/**/*.ts', clean: ['../../dist/ioc/lib'], dist: '../../dist/ioc/lib', uglify: false, tsconfig: './tsconfig.json' },
             { input: 'src/index.ts', clean: ['../../dist/ioc/bundle'], outputFile: '../../dist/ioc/bundle/ioc.umd.js', format: 'umd', uglify: false, tsconfig: './tsconfig.json' },
             { input: 'src/index.ts', clean: ['../../dist/ioc/fesm5'], outputFile: '../../dist/ioc/fesm5/ioc.js', format: 'cjs', uglify: false, tsconfig: './tsconfig.json' },
             { input: 'src/index.ts', clean: ['../../dist/ioc/fesm2015'], outputFile: '../../dist/ioc/fesm2015/ioc.js', format: 'cjs', tsconfig: './tsconfig.es2015.json' }
         ]
     }
 })
-export class CoreBuilder {
+export class IocBuilder {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.run(CoreBuilder);
+    Workflow.run(IocBuilder);
 }

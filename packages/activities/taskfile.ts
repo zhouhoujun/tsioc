@@ -13,7 +13,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
     template: <LibPackBuilderOption>{
         activity: 'libs',
         tasks: [
-            { src: 'src/**/*.ts', clean: ['../../dist/activities/lib'], dist: '../../dist/activities/lib', uglify: false, tsconfig: './tsconfig.json' },
+            { src: 'src/**/*.ts', test: 'test/**/*.ts', clean: ['../../dist/activities/lib'], dist: '../../dist/activities/lib', uglify: false, tsconfig: './tsconfig.json' },
             { input: 'src/index.ts', clean: ['../../dist/activities/bundles'], outputFile: '../../dist/activities/bundles/activities.umd.js', format: 'umd', uglify: false, tsconfig: './tsconfig.json' },
             { input: 'src/index.ts', clean: ['../../dist/activities/fesm5'], outputFile: '../../dist/activities/fesm5/activities.js', format: 'cjs', uglify: false, tsconfig: './tsconfig.json' },
             { input: 'src/index.ts', clean: ['../../dist/activities/fesm2015'], outputFile: '../../dist/activities/fesm2015/activities.js', format: 'cjs', tsconfig: './tsconfig.es2015.json' }

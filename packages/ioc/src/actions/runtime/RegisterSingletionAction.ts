@@ -1,6 +1,6 @@
 import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { IocSingletonManager } from '../../services';
+import { IocSingletonManager } from '../IocSingletonManager';
 
 /**
  * singleton action, to set the factory of Token as singleton.

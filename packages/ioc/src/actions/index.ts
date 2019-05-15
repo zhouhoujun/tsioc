@@ -1,5 +1,17 @@
 export * from './Action';
 export * from './IocCompositeAction';
+export * from './IocCacheManager';
+export * from './LifeScope';
+export * from './RegisterLifeScope';
+export * from './DesignLifeScope';
+export * from './RuntimeLifeScope';
+export * from './IocDecoratorRegisterer';
+export * from './DecoratorRegisterer';
+export * from './IocSingletonManager';
+export * from './ResolveLifeScope';
+
+export * from './MethodAccessor';
+
 export * from './DecoratorActionContext';
 export * from './IocDecoratorScope';
 

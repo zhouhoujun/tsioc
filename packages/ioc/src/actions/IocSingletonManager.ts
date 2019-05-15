@@ -1,12 +1,10 @@
-import { IocCoreService } from './IocCoreService';
 import { Token } from '../types';
 import { IIocContainer } from '../IIocContainer';
 
-export class IocSingletonManager extends IocCoreService {
+export class IocSingletonManager {
 
     protected singletons: Map<Token<any>, any>;
     constructor(protected container: IIocContainer) {
-        super()
         this.singletons = new Map();
     }
 

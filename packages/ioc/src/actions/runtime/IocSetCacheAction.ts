@@ -1,6 +1,6 @@
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { isClass } from '../../utils';
-import { IocCacheManager } from '../../services';
+import { IocCacheManager } from '../IocCacheManager';
 import { IocRuntimeAction } from './IocRuntimeAction';
 
 

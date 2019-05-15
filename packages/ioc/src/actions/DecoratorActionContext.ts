@@ -1,5 +1,5 @@
 import { IocActionContext } from './Action';
-import { DecoratorScopes } from '../services';
+import { DecoratorScopes } from './DecoratorRegisterer';
 
 export class DecoratorActionContext extends IocActionContext {
     /**

@@ -1,7 +1,6 @@
 import { Type } from '../types';
 import { isFunction, isNumber } from '../utils';
 import { IIocContainer } from '../IIocContainer';
-import { IocCoreService } from './IocCoreService';
 
 /**
  * cache manager inteface.
@@ -93,11 +92,10 @@ export interface CacheTarget {
  * @class CacheManager
  * @implements {ICacheManager}
  */
-export class IocCacheManager extends IocCoreService implements IIocCacheManager {
+export class IocCacheManager implements IIocCacheManager {
 
     cacheTokens: Map<Type<any>, CacheTarget>;
     constructor(protected container: IIocContainer) {
-        super()
         this.cacheTokens = new Map();
     }
 

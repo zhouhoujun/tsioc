@@ -1,5 +1,5 @@
 import { Type, AbstractType, Token, SymbolType } from './types';
-import { isClass, isFunction, lang } from './utils';
+import { isClass, isFunction, lang } from './utils/lang';
 
 
 /**
@@ -97,3 +97,4 @@ export class Registration<T> {
         return '';
     }
 }
+

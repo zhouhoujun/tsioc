@@ -4,13 +4,14 @@ import {
     IocGetCacheAction, RuntimeMethodScope, RuntimeActionContext,
     GetSingletionAction, ContainerCheckerAction, CreateInstanceAction, ConstructorArgsAction,
     IocBeforeConstructorScope, IocAfterConstructorScope,
-    RuntimeAnnoationScope, RuntimePropertyScope, InitReflectAction, RuntimeParamScope,
+    RuntimeAnnoationScope, RuntimePropertyScope, RuntimeParamScope,
     InstanceCheckAction, RuntimeDecoratorAction
-} from '../actions';
+} from './runtime';
 import { IIocContainer, ContainerFactoryToken } from '../IIocContainer';
 import { IParameter } from '../IParameter';
 import { RuntimeDecoratorRegisterer } from './DecoratorRegisterer';
 import { RegisterLifeScope } from './RegisterLifeScope';
+import { InitReflectAction } from './InitReflectAction';
 
 /**
  * runtime life scope.

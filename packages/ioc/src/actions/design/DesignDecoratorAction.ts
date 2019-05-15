@@ -1,5 +1,5 @@
 import { ExecDecoratorAtion } from '../ExecDecoratorAtion';
-import { DecoratorScopeRegisterer, DesignDecoratorRegisterer } from '../../services';
+import { DecoratorScopeRegisterer, DesignDecoratorRegisterer } from '../DecoratorRegisterer';
 
 export class DesignDecoratorAction extends ExecDecoratorAtion {
     protected getScopeRegisterer(): DecoratorScopeRegisterer {

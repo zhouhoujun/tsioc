@@ -1,7 +1,8 @@
 import { LifeScope } from './LifeScope';
-import { ResolveActionContext, IocResolveScope } from '../actions';
 import { Token } from '../types';
 import { ProviderTypes } from '../providers';
+import { ResolveActionContext } from './ResolveActionContext';
+import { IocResolveScope } from './IocResolveScope';
 
 export class ResolveLifeScope<T> extends LifeScope<ResolveActionContext<T>> {
 

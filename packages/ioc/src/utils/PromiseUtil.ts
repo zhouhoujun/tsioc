@@ -1,4 +1,4 @@
-import { isFunction } from './typeCheck';
+import { isFunction } from './lang';
 import { Express } from '../types';
 
 

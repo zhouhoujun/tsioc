@@ -1,9 +1,7 @@
-import {
-    InitReflectAction, DesignActionContext, DesignAnnoationScope,
-    DesignPropertyScope, DesignMethodScope, DesignDecoratorAction
-} from '../actions';
 import { DesignDecoratorRegisterer } from './DecoratorRegisterer';
 import { RegisterLifeScope } from './RegisterLifeScope';
+import { DesignActionContext, DesignDecoratorAction, DesignPropertyScope, DesignMethodScope, DesignAnnoationScope } from './design';
+import { InitReflectAction } from './InitReflectAction';
 
 
 /**

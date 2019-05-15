@@ -1,6 +1,6 @@
-import { DecoratorScopeRegisterer } from '../services/DecoratorRegisterer';
 import { RegisterActionContext } from './RegisterActionContext';
 import { IocAction } from './Action';
+import { DecoratorScopeRegisterer } from './DecoratorRegisterer';
 
 
 /**

@@ -1,9 +1,8 @@
-import { IocCoreService } from './IocCoreService';
-import { IocActionType } from '../actions';
 import { isString, lang } from '../utils';
 import { IocDecoratorRegisterer } from './IocDecoratorRegisterer';
 import { Registration } from '../Registration';
 import { IIocContainer } from '../IIocContainer';
+import { IocActionType } from './Action';
 
 
 
@@ -21,11 +20,10 @@ export enum DecoratorScopes {
  *
  * @export
  * @class DecoratorRegisterer
- * @extends {IocCoreService}
  */
-export abstract class DecoratorScopeRegisterer extends IocCoreService {
+export abstract class DecoratorScopeRegisterer {
     constructor(protected container: IIocContainer) {
-        super();
+
     }
 
     /**

@@ -8,9 +8,13 @@ import { registerCores } from './registerCores';
 import { InjectReference } from './InjectReference';
 import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderParser } from './providers';
 import { IResolver } from './IResolver';
-import { IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, TypeReflects, ResolveLifeScope } from './services';
+import { TypeReflects } from './services';
 import { IParameter } from './IParameter';
-import { RuntimeActionContext, DesignActionContext, IocRegisterAction, IocRegisterScope, ResolveActionContext, ActionRegisterer } from './actions';
+import {
+    RuntimeActionContext, DesignActionContext, IocRegisterAction,
+    IocRegisterScope, ResolveActionContext, ActionRegisterer, ResolveLifeScope,
+    IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager
+} from './actions';
 
 
 /**

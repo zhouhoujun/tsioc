@@ -1,9 +1,10 @@
 
-import { DecoratorScopeRegisterer, RuntimeDecoratorRegisterer, MetadataService, DecoratorScopes } from '../../services';
+import { DecoratorScopeRegisterer, RuntimeDecoratorRegisterer, DecoratorScopes } from '../DecoratorRegisterer';
 import { IocDecoratorScope } from '../IocDecoratorScope';
 import { ObjectMap } from '../../types';
 import { RuntimeDecoratorAction } from './RuntimeDecoratorAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
+import { MetadataService } from '../../services';
 
 export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeActionContext> {
 

@@ -2,8 +2,8 @@ export * from './IResolver';
 export * from './IIocContainer';
 export * from './IocContainer';
 
-export * from './types';
 export * from './Registration';
+export * from './types';
 export * from './InjectReference';
 export * from './InjectToken';
 export * from './IParameter';

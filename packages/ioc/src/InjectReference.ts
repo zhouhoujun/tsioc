@@ -1,6 +1,6 @@
-import { Registration } from './Registration';
-import { Token } from './types';
 import { isString } from './utils';
+import { Token } from './types';
+import { Registration } from './Registration';
 
 
 /**

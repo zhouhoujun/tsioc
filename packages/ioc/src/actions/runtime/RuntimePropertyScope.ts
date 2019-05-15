@@ -1,7 +1,7 @@
 import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { RuntimeDecoratorRegisterer, DecoratorScopes } from '../../services';
+import { RuntimeDecoratorRegisterer, DecoratorScopes } from '../DecoratorRegisterer';
 import { Inject, AutoWired } from '../../decorators';
 import { InjectPropertyAction } from './InjectPropertyAction';
 

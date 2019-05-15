@@ -1,7 +1,7 @@
 import { ObjectMap } from '../types';
-import { DecoratorScopeRegisterer, DecoratorScopes } from '../services';
 import { IocCompositeAction } from './IocCompositeAction';
 import { DecoratorActionContext } from './DecoratorActionContext';
+import { DecoratorScopes, DecoratorScopeRegisterer } from './DecoratorRegisterer';
 
 
 export abstract class IocDecoratorScope<T extends DecoratorActionContext> extends IocCompositeAction<T> {

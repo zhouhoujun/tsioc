@@ -1,5 +1,5 @@
 import { LifeScope } from './LifeScope';
-import { RegisterActionContext } from '../actions';
+import { RegisterActionContext } from './RegisterActionContext';
 
 export class RegisterLifeScope<T extends RegisterActionContext> extends LifeScope<RegisterActionContext> {
 

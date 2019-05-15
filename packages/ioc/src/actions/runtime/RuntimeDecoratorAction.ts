@@ -1,5 +1,5 @@
 import { ExecDecoratorAtion } from '../ExecDecoratorAtion';
-import { DecoratorScopeRegisterer, RuntimeDecoratorRegisterer } from '../../services';
+import { DecoratorScopeRegisterer, RuntimeDecoratorRegisterer } from '../DecoratorRegisterer';
 
 /**
  * runtime decorator action.
