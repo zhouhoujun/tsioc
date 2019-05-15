@@ -1,6 +1,6 @@
 import { InjectorAction } from './InjectorAction';
 import { InjectorActionContext } from './InjectorActionContext';
-import { ModuleDecoratorRegisterer } from '../services';
+import { ModuleDecoratorRegisterer } from './ModuleDecoratorRegisterer';
 
 export class DecoratorInjectAction extends InjectorAction {
     execute(ctx: InjectorActionContext, next?: () => void): void {

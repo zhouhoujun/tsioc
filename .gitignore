@@ -3,6 +3,7 @@
 esnext
 node_modules
 lib
+dist
 bundles
 es2015
 es2017

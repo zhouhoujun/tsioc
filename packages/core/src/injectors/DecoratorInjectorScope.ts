@@ -2,7 +2,7 @@ import { ObjectMap, IocDecoratorRegisterer } from '@tsdi/ioc';
 import { InjectorActionContext } from './InjectorActionContext';
 import { InjectorScope } from './InjectorAction';
 import { DecoratorInjectAction } from './DecoratorInjectAction';
-import { ModuleDecoratorRegisterer } from '../services';
+import { ModuleDecoratorRegisterer } from './ModuleDecoratorRegisterer';
 
 export class DecoratorInjectorScope extends InjectorScope {
     execute(ctx: InjectorActionContext, next?: () => void): void {

@@ -9,3 +9,5 @@ export * from './ModuleInjectorScope';
 export * from './ModuleRegisterScope';
 export * from './TypesRegisterScope';
 export * from './IocExtRegisterScope';
+export * from './InjectorLifeScope';
+export * from './ModuleDecoratorRegisterer';

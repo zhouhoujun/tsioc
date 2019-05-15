@@ -1,7 +1,7 @@
 import { isClassType, MetadataService } from '@tsdi/ioc';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { ResolveServiceContext } from './ResolveServiceContext';
-import { ServiceDecoratorRegisterer } from '../services';
+import { ServiceDecoratorRegisterer } from './ServiceDecoratorRegisterer';
 
 export class ResolveDecoratorServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext<any>, next: () => void): void {

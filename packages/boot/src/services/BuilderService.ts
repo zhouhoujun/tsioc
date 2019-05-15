@@ -1,10 +1,10 @@
-import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, InjectReference, isFunction, MetadataService, getOwnTypeMetadata } from '@tsdi/ioc';
+import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, MetadataService, getOwnTypeMetadata } from '@tsdi/ioc';
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { IContainer, ContainerToken, isContainer } from '@tsdi/core';
 import { CompositeHandle, HandleRegisterer, RegScope, TemplateManager } from '../core';
 import { ModuleBuilderLifeScope, RunnableBuildLifeScope, ResolveMoudleScope, BuildContext, IModuleResolveOption, BootLifeScope } from '../builder';
-import { BootApplication } from '../BootApplication';
 import { RunnableConfigure } from '../annotations';
+import { IBootApplication } from '../IBootApplication';
 
 
 
@@ -125,7 +125,7 @@ export class BuilderService extends IocCoreService {
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    async boot(application: BootApplication, ...args: string[]): Promise<BootContext> {
+    async boot(application: IBootApplication, ...args: string[]): Promise<BootContext> {
         if (isClass(application.target)) {
             let target = application.target;
             await Promise.all(this.container.get(MetadataService)
@@ -142,7 +142,7 @@ export class BuilderService extends IocCoreService {
         return await this.execLifeScope(application, this.container.get(HandleRegisterer).get(BootLifeScope), application.target, ...args);
     }
 
-    protected async execLifeScope<T extends BootContext>(application: BootApplication, scope: CompositeHandle<BootContext>, target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
+    protected async execLifeScope<T extends BootContext>(application: IBootApplication, scope: CompositeHandle<BootContext>, target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
         let ctx: BootContext;
         if (target instanceof BootContext) {
             ctx = target;
@@ -160,7 +160,6 @@ export class BuilderService extends IocCoreService {
         ctx.args = args;
         if (application) {
             ctx.regScope = RegScope.boot;
-            this.container.bindProvider(new InjectReference(BootApplication, ctx.module), application);
             if (isFunction(application.onContextInit)) {
                 application.onContextInit(ctx);
             }

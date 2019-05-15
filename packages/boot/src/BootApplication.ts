@@ -1,7 +1,7 @@
 import { BootContext, BootOption } from './BootContext';
 import {
     Type, BindProviderAction, IocSetCacheAction, DesignDecoratorRegisterer,
-    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction, LoadType, isArray, isString
+    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction, LoadType, isArray, isString, InjectReference
 } from '@tsdi/ioc';
 import { ContainerPool, DIModuleRegisterScope } from './core';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ModuleDecoratorRegisterer } from '@tsdi/core';
@@ -10,6 +10,7 @@ import * as annotations from './annotations';
 import * as runnable from './runnable';
 import * as services from './services';
 import { BuilderService } from './services';
+import { IBootApplication } from './IBootApplication';
 
 /**
  * boot application hooks.
@@ -32,7 +33,7 @@ export interface ContextInit {
  * @export
  * @class BootApplication
  */
-export class BootApplication implements ContextInit {
+export class BootApplication implements IBootApplication,  ContextInit {
 
     /**
      * application context.
@@ -87,12 +88,13 @@ export class BootApplication implements ContextInit {
 
     }
 
-    getContext() {
+    getContext(): BootContext {
         return this.context;
     }
 
     onContextInit(ctx: BootContext) {
         this.context = ctx;
+        this.container.bindProvider(new InjectReference(BootApplication, ctx.module), this);
     }
 
     /**

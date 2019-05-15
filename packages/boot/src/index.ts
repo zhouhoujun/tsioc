@@ -5,5 +5,6 @@ export * from './annotations';
 export * from './runnable';
 export * from './core';
 export * from './builder';
+export * from './IBootApplication';
 export * from './BootApplication';
 export * from './BootContext';

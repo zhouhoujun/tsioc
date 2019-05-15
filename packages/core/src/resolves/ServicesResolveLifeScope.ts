@@ -1,5 +1,7 @@
 import { ProviderMap, LifeScope } from '@tsdi/ioc';
-import { ResolveServicesContext, InitServiceResolveAction, ResolveServicesScope } from '../resolves';
+import { ResolveServicesContext } from './ResolveServicesContext';
+import { InitServiceResolveAction } from './InitServiceResolveAction';
+import { ResolveServicesScope } from './ResolveServicesScope';
 
 
 export class ServicesResolveLifeScope<T> extends LifeScope<ResolveServicesContext<T>> {

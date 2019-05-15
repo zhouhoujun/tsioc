@@ -15,3 +15,7 @@ export * from './ResolveServicesScope';
 export * from './ResovleServicesRefsAction';
 export * from './ResovleServicesInTargetAction';
 export * from './ResovleServicesInRaiseAction';
+
+export * from './ServiceDecoratorRegisterer';
+export * from './ServiceResolveLifeScope';
+export * from './ServicesResolveLifeScope';

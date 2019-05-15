@@ -1,100 +1,26 @@
-import { PackModule, Pack, PackActivity } from '@tsdi/pack';
-import { Workflow } from '@tsdi/activities';
-import { Asset, AssetActivity, TsCompile, CleanToken, TransformContext } from '@tsdi/build';
-const resolve = require('rollup-plugin-node-resolve');
-const rollupSourcemaps = require('rollup-plugin-sourcemaps');
-const commonjs = require('rollup-plugin-commonjs');
-const rollup = require('gulp-rollup');
-const rename = require('gulp-rename');
+import { PackModule, LibPackBuilderOption } from '@tsdi/pack';
+import { Workflow, Task } from '@tsdi/activities';
+import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 
-@Asset({
-    src: 'lib/**/*.js',
-    dest: 'bundles',
-    data: {
-        name: 'ioc.umd.js',
-        input: 'lib/index.js',
-        format: 'umd'
-    },
-    sourcemaps: true,
-    pipes: [
-        (ctx: TransformContext) => rollup({
-            name: ctx.config.data.name,
-            format: ctx.config.data.format || 'umd',
-            sourceMap: true,
-            plugins: [
-                resolve(),
-                commonjs(),
-                rollupSourcemaps()
-            ],
-            external: [
-                'reflect-metadata',
-                'tslib',
-                '@tsdi/ioc'
-            ],
-            globals: {
-                'reflect-metadata': 'Reflect',
-                'tslib': 'tslib',
-                '@tsdi/ioc': '@tsdi/ioc'
-            },
-            input: ctx.relativeRoot(ctx.config.data.input)
-        }),
-        (ctx) => rename(ctx.config.data.name)
-    ]
-})
-export class IocRollup {
-}
-
-@Pack({
+@Task({
+    deps: [
+        PackModule,
+        ServerActivitiesModule
+    ],
     baseURL: __dirname,
-    clean: ['lib', 'bundles', 'fesm5', 'es2015', 'fesm2015'],
-    test: (ctx) => ctx.getEnvArgs().test === 'false' ? '' : 'test/**/*.spec.ts',
-    assets: {
-        ts: {
-            sequence: [
-                { src: 'src/**/*.ts', dest: 'lib', annotation: true, uglify: false, activity: TsCompile },
-                IocRollup,
-                {
-                    name: 'zip',
-                    src: 'bundles/ioc.umd.js',
-                    dest: 'bundles',
-                    sourcemaps: true,
-                    uglify: true,
-                    pipes: [
-                        () => rename('ioc.umd.min.js')
-                    ],
-                    task: AssetActivity
-                },
-                {
-                    src: 'lib/**/*.js', dest: 'fesm5',
-                    data: {
-                        name: 'ioc.js',
-                        input: 'lib/index.js',
-                        format: 'cjs'
-                    },
-                    activity: IocRollup
-                }
-            ]
-        },
-        ts2015: {
-            sequence: [
-                { src: 'src/**/*.ts', dest: 'es2015', tds: false, annotation: true, uglify: false, tsconfig: './tsconfig.es2015.json', activity: TsCompile },
-                {
-                    src: 'es2015/**/*.js', dest: 'fesm2015',
-                    data: {
-                        name: 'core.js',
-                        input: './es2015/index.js',
-                        format: 'cjs'
-                    }, activity: IocRollup
-                }
-            ]
-        }
+    template: <LibPackBuilderOption>{
+        activity: 'libs',
+        tasks: [
+            { src: 'src/**/*.ts', clean: ['../../dist/ioc/lib'], dist: '../../dist/ioc/lib', uglify: false, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', clean: ['../../dist/ioc/bundle'], outputFile: '../../dist/ioc/bundle/ioc.umd.js', format: 'umd', uglify: false, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', clean: ['../../dist/ioc/fesm5'], outputFile: '../../dist/ioc/fesm5/ioc.js', format: 'cjs', uglify: false, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', clean: ['../../dist/ioc/fesm2015'], outputFile: '../../dist/ioc/fesm2015/ioc.js', format: 'cjs', tsconfig: './tsconfig.es2015.json' }
+        ]
     }
 })
-export class IocBuilder {
+export class CoreBuilder {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.create()
-        .use(PackModule)
-        .bootstrap(IocBuilder);
+    Workflow.run(CoreBuilder);
 }

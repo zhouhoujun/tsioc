@@ -1,10 +1,10 @@
 import { LifeScope, Type, Modules } from '@tsdi/ioc';
-import {
-    InjectorActionContext, ModuleInjectorScope, ModuleToTypesAction,
-    IocExtRegisterScope
-} from '../injectors';
 import { IocExt } from '../decorators';
 import { ModuleDecoratorRegisterer } from './ModuleDecoratorRegisterer';
+import { InjectorActionContext } from './InjectorActionContext';
+import { IocExtRegisterScope } from './IocExtRegisterScope';
+import { ModuleToTypesAction } from './ModuleToTypesAction';
+import { ModuleInjectorScope } from './ModuleInjectorScope';
 
 export class InjectorLifeScope extends LifeScope<InjectorActionContext> {
     setup() {
