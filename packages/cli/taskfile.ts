@@ -1,20 +1,21 @@
-import { PackModule, Pack, PackActivity } from '@tsdi/pack';
-import { Workflow } from '@tsdi/activities';
+import { Workflow, Task } from '@tsdi/activities';
+import { TsBuildOption, PackModule } from '@tsdi/pack';
 
-@Pack({
+@Task({
+    deps: [
+        PackModule
+    ],
     baseURL: __dirname,
-    src: 'src',
-    clean: 'lib',
-    test: 'test/**/*.spec.ts',
-    assets: {
-        ts: { dest: 'lib', annotation: true, uglify: false }
+    template: <TsBuildOption>{
+        activity: 'ts',
+        src: 'src/**/*.ts',
+        clean: 'lib',
+        test: 'test/**/*.spec.ts',
     }
 })
 export class CliBuilder {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.create()
-        .use(PackModule)
-        .bootstrap(CliBuilder);
+    Workflow.run(CliBuilder);
 }

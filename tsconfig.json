@@ -45,9 +45,6 @@
       "@tsdi/activities": [
         "packages/activities/src"
       ],
-      "@tsdi/build": [
-        "packages/build/src"
-      ],
       "@tsdi/pack": [
         "packages/pack/src"
       ],
