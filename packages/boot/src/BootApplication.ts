@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { ContainerPool } from './core';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
-import { BuilderService } from './services';
+import { BuilderService } from './builder';
 import { IBootApplication } from './IBootApplication';
 import { bootSetup } from './setup';
 

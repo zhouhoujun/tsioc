@@ -2,9 +2,12 @@ import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderType
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { IContainer, ContainerToken, isContainer } from '@tsdi/core';
 import { CompositeHandle, HandleRegisterer, RegScope, TemplateManager } from '../core';
-import { ModuleBuilderLifeScope, RunnableBuildLifeScope, ResolveMoudleScope, BuildContext, IModuleResolveOption, BootLifeScope } from '../builder';
 import { RunnableConfigure } from '../annotations';
 import { IBootApplication } from '../IBootApplication';
+import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
+import { ResolveMoudleScope, IModuleResolveOption, BuildContext } from './resovers';
+import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
+import { BootLifeScope } from './BootLifeScope';
 
 
 

@@ -1,7 +1,7 @@
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
 import { isClass } from '@tsdi/ioc';
-import { BuilderService } from '../services';
+import { BuilderService } from './BuilderService';
 
 
 export class ResolveBootHandle extends BootHandle {

@@ -1,6 +1,6 @@
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
-import { BuilderService } from '../services';
+import { BuilderService } from './BuilderService';
 
 
 export class ResolveTypeHandle extends BootHandle {

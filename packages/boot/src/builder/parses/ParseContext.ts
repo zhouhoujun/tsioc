@@ -1,7 +1,7 @@
 import { IBinding } from '../../core';
 import { IContainer } from '@tsdi/core';
 import { ContainerFactory, Injectable, Type } from '@tsdi/ioc';
-import { BuildContext, IModuleResolveOption } from '../resovers';
+import { BuildContext, IModuleResolveOption } from '../resovers/BuildContext';
 import { IComponentContext } from '../ComponentContext';
 
 export interface IBindingParseOption extends IModuleResolveOption  {
@@ -20,10 +20,6 @@ export class ParseContext extends BuildContext implements IComponentContext {
     scope?: any;
 
     value?: any;
-
-    constructor(type: Type<any>) {
-        super(type);
-    }
 
     getRaiseContainer(): IContainer {
         return this.raiseContainerGetter() as IContainer;

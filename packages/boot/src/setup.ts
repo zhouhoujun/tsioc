@@ -8,10 +8,12 @@ import {
     RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction,
 } from '@tsdi/ioc';
 import { DIModuleRegisterScope } from './core';
+import { BuilderService } from './builder';
 
 
 export function bootSetup(container: IContainer) {
 
+    container.register(BuilderService);
     container.use(annotations, runnable, services);
 
     container.get(DesignDecoratorRegisterer)

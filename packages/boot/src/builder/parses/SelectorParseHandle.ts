@@ -1,7 +1,7 @@
 import { ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
 import { isNullOrUndefined } from '@tsdi/ioc';
-import { BuilderService } from '../../services';
+import { BuilderService } from '../BuilderService';
 import { RegScope } from '../../core';
 
 export class SelectorParseHandle extends ParsersHandle {

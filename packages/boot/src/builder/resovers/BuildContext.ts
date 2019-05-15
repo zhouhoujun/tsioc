@@ -20,7 +20,7 @@ export interface IModuleResolveOption {
     /**
      * annoation metadata config.
      *
-     * @type {ModuleConfigure}
+     * @type {IAnnotationMetadata}
      * @memberof BuildContext
      */
     annoation?: ModuleConfigure;
