@@ -10,7 +10,6 @@ export class SelectorParseHandle extends ParsersHandle {
             let selector = ctx.selector;
             if (selector) {
                 let container = ctx.getRaiseContainer();
-                let tpval = ctx.template;
                 if (container.has(selector)) {
                     ctx.value = await this.container.get(BuilderService).resolve(selector,
                         { scope: ctx.scope, template: ctx.template, providers: ctx.providers });

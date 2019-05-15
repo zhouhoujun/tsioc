@@ -1,5 +1,5 @@
 import { IocResolveAction, ResolveActionContext, Type, IocCompositeAction, lang } from '@tsdi/ioc';
-import { ParentContainerToken } from '../ContainerPool';
+import { ParentContainerToken } from '../ContainerPoolToken';
 
 
 /**

@@ -14,8 +14,8 @@ export class ParseScope extends ParsersHandle {
         this.container.register(TemplateDecoratorRegisterer);
         this.container.register(BindingScopeDecoratorRegisterer);
 
-        this.use(BindingScopeHandle)
-            .use(ArrayParseHandle)
+        this.use(ArrayParseHandle)
+            .use(BindingScopeHandle)
             .use(TemplateParseScope, true)
             .use(SelectorParseHandle)
             .use(DefaultParseHandle)

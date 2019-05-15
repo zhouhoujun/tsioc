@@ -1,6 +1,6 @@
 import { AnnoationAction } from './AnnoationAction';
 import { AnnoationActionContext } from './AnnoationActionContext';
-import { ContainerPoolToken } from '../ContainerPool';
+import { ContainerPoolToken } from '../ContainerPoolToken';
 import { DIModuleExports } from '../services';
 import { RegScope } from '../modules';
 

@@ -2,7 +2,6 @@ import { Task, Expression, ValuePipe, ActivityType, Src } from '@tsdi/activities
 import { Input, Binding } from '@tsdi/boot';
 import { NodeActivityContext } from '../core';
 import { ObjectMap, isString } from '@tsdi/ioc';
-import * as ts from 'gulp-typescript';
 import { CompilerOptions } from 'typescript';
 import { AssetActivityOption, AssetActivity } from './AssetActivity';
 import { SourceActivity } from './SourceActivity';
@@ -12,6 +11,7 @@ import { AnnoationActivity } from './AnnoationActivity';
 import { SourceMapActivity } from './SourceMap';
 import { StreamActivity } from './StreamActivity';
 import { UnitTestActivity } from '../tasks';
+const ts = require('gulp-typescript');
 
 /**
  * ts build option.
@@ -109,7 +109,7 @@ export class TsBuildActivity extends AssetActivity {
         let tsconfig = await this.resolveExpression(this.tsconfig, ctx);
         let tsCompile;
         if (isString(tsconfig)) {
-            let tsProject = ts.createProject(ctx.relativeRoot(tsconfig));
+            let tsProject = ts.createProject(ctx.platform.relativeRoot(tsconfig));
             tsCompile = tsProject();
         } else {
             tsCompile = ts(tsconfig);

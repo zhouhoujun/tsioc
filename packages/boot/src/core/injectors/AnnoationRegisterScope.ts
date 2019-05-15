@@ -1,6 +1,6 @@
 import { IocCompositeAction } from '@tsdi/ioc';
 import { AnnoationActionContext } from './AnnoationActionContext';
-import { ContainerPoolToken } from '../ContainerPool';
+import { ContainerPoolToken } from '../ContainerPoolToken';
 import { RegScope } from '../modules';
 import { IContainer } from '@tsdi/core';
 import { RegModuleAction } from './RegModuleAction';

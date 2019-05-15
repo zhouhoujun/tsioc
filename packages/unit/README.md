@@ -136,14 +136,14 @@ new UnitTest()
 ```
 
 ### use command run test code
-`pk test [test/**/*.ts]`
+`tsdi test [test/**/*.ts]`
 
 ```shell
 
-pk test  //default load test/**/*.ts
+tsdi test  //default load test/**/*.ts
 
 //or
-pk test test/**/*.ts
+tsdi test test/**/*.ts
 
 ```
 

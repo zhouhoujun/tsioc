@@ -1,23 +1,8 @@
-import { Token, SymbolType, Registration, InjectToken, IIocContainer } from '@tsdi/ioc';
+import { Token, SymbolType, Registration, IIocContainer } from '@tsdi/ioc';
 import { IContainer, IContainerBuilder } from '@tsdi/core';
 import { BootModule } from './BootModule';
+import { ParentContainerToken, ContainerPoolToken, RootContainerToken, IContainerPool } from './ContainerPoolToken';
 
-/**
- * root container token.
- */
-export const RootContainerToken = new InjectToken<IContainer>('__ioc_root_container');
-/**
- * parent container token.
- */
-export const ParentContainerToken = new InjectToken<IContainer>('__ioc_parent_container');
-/**
- * children container token.
- */
-export const ChildrenContainerToken = new InjectToken<IContainer[]>('__ioc_children_container');
-/**
- *  container pool token.
- */
-export const ContainerPoolToken = new InjectToken<ContainerPool>('DI_ContainerPool');
 
 /**
  * container pool
@@ -25,7 +10,7 @@ export const ContainerPoolToken = new InjectToken<ContainerPool>('DI_ContainerPo
  * @export
  * @class ContainerPool
  */
-export class ContainerPool {
+export class ContainerPool implements IContainerPool {
     protected pools: IContainer[];
     protected root: IContainer;
     constructor(protected containerBuilder: IContainerBuilder) {

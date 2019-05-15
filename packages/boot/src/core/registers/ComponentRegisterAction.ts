@@ -1,7 +1,7 @@
 import { IocDesignAction, DesignActionContext, ProviderTypes, getOwnTypeMetadata } from '@tsdi/ioc';
-import { RootContainerToken } from '@tsdi/boot';
 import { SelectorManager } from '../SelectorManager';
 import { ModuleConfigure } from '../modules';
+import { RootContainerToken } from '../ContainerPoolToken';
 
 
 export class ComponentRegisterAction extends IocDesignAction {

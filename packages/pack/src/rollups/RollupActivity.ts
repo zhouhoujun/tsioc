@@ -19,6 +19,14 @@ export interface RollupOption extends TemplateOption {
      * @memberof RollupOption
      */
     input: Binding<Expression<Src>>;
+
+    /**
+     * rollup source maps
+     *
+     * @type {Binding<Expression<boolean>>}
+     * @memberof RollupOption
+     */
+    sourceMap?: Binding<Expression<boolean>>;
     /**
      * rollup output setting.
      *
@@ -69,6 +77,9 @@ export class RollupActivity extends NodeActivity<void> {
     external: Expression<ExternalOption>;
 
     @Input()
+    sourceMap?: Expression<boolean>;
+
+    @Input()
     cache: Expression<RollupCache>;
 
     @Input()
@@ -92,7 +103,14 @@ export class RollupActivity extends NodeActivity<void> {
                     opts[n] = val;
                 }
             }));
-
+        if (this.sourceMap) {
+            let sourceMap = await this.resolveExpression(this.sourceMap, ctx);
+            opts.output.sourcemap = sourceMap;
+        }
+        if (!opts.output.name && opts.output.file) {
+            opts.output.name = ctx.platform.getFileName(opts.output.file);
+        }
+        opts.plugins = opts.plugins.filter(p => p);
         let bundle = await rollup(opts as any);
         await bundle.write(opts.output);
     }

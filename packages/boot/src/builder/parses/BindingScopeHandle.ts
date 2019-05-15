@@ -20,8 +20,6 @@ export class BindingScopeHandle extends ParseHandle {
             let bindingField = ctx.template.replace('binding:', '').trim();
             ctx.template = ctx.scope ? ctx.scope[bindingField] : undefined;
         }
-
-
         await next();
 
     }

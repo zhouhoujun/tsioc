@@ -52,6 +52,7 @@ program
             case 'activity':
                 console.log(chalk.gray('init activity project...'));
                 cmds = [
+                    '@tsdi/ioc',
                     '@tsdi/core',
                     '@tsdi/annotations',
                     '@tsdi/aop',
@@ -75,6 +76,7 @@ program
             case 'pack':
                 console.log(chalk.gray('init pack project...'));
                 cmds = [
+                    '@tsdi/ioc',
                     '@tsdi/core',
                     '@tsdi/annotations',
                     '@tsdi/aop',
@@ -95,6 +97,7 @@ program
             case 'boot':
                 console.log(chalk.gray('init boot project...'));
                 cmds = [
+                    '@tsdi/ioc',
                     '@tsdi/core',
                     '@tsdi/annotations',
                     '@tsdi/aop',
@@ -115,6 +118,7 @@ program
             default:
                 console.log(chalk.gray('init tsioc project...'));
                 cmds = [
+                    '@tsdi/ioc',
                     '@tsdi/core',
                     '@tsdi/annotations',
                     '@tsdi/aop',

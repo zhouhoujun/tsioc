@@ -8,5 +8,6 @@ export * from './services';
 export * from './modules';
 export * from './handles';
 export * from './ContainerPool';
+export * from './ContainerPoolToken';
 export * from './types';
 export * from './ComponentLifecycle';

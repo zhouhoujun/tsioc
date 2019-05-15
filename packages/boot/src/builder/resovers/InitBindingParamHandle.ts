@@ -21,6 +21,7 @@ export class InitBindingParamHandle extends ResolveHandle {
                 if (bparams && bparams.length) {
                     await Promise.all(bparams.map(async bp => {
                         let pCtx = ParseContext.parse(ctx.type, {
+                            scope: ctx.scope,
                             template: ctx.template,
                             binding: bp,
                             annoation: ctx.annoation,

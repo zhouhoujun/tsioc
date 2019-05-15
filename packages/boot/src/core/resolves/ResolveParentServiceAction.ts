@@ -1,5 +1,5 @@
 import { IocResolveServiceAction, ResolveServiceContext } from '@tsdi/core';
-import { ParentContainerToken } from '../ContainerPool';
+import { ParentContainerToken } from '../ContainerPoolToken';
 import { Type, IocCompositeAction, lang } from '@tsdi/ioc';
 
 export class ResolveParentServiceAction extends IocResolveServiceAction {

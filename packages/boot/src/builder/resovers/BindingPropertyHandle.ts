@@ -16,6 +16,7 @@ export class BindingPropertyHandle extends ResolveHandle {
                     if (!isNullOrUndefined(tempVal)) {
                         let pctx = ParseContext.parse(ctx.type, {
                             // target: ctx.target,
+                            scope: ctx.scope,
                             template: tempVal,
                             binding: binding,
                             annoation: ctx.annoation,

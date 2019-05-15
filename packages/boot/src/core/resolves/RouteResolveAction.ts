@@ -1,5 +1,5 @@
 import { IocCompositeAction, ResolveActionContext } from '@tsdi/ioc';
-import { ContainerPoolToken } from '../ContainerPool';
+import { ContainerPoolToken } from '../ContainerPoolToken';
 import { ResolveModuleExportAction } from './ResolveModuleExportAction';
 import { ResolveParentAction } from './ResolveParentAction';
 

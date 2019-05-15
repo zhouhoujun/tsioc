@@ -2,46 +2,53 @@ import { Task, TemplateOption, Expression, Src, Activities } from '@tsdi/activit
 import { BuilderTypes } from './BuilderTypes';
 import { TsBuildOption } from '../transforms';
 import { CompilerOptions } from 'typescript';
-import { ExternalOption, RollupCache, WatcherOptions, RollupFileOptions, RollupDirOptions } from 'rollup';
+import { ExternalOption, RollupCache, WatcherOptions, RollupFileOptions, RollupDirOptions, GlobalsOption } from 'rollup';
 import { RollupOption } from '../rollups';
 import { Input, AfterInit, Binding } from '@tsdi/boot';
-
+import { PlatformService, NodeActivityContext } from '../core';
+const resolve = require('rollup-plugin-node-resolve');
+const rollupSourcemaps = require('rollup-plugin-sourcemaps');
+const commonjs = require('rollup-plugin-commonjs');
+const ts = require('rollup-plugin-typescript');
+import { uglify } from 'rollup-plugin-uglify';
+import { rollupClassAnnotations } from '@tsdi/annotations';
+import { isString, isBoolean } from '@tsdi/ioc';
 
 export interface LibTaskOption {
-    clean?: Binding<Expression<Src>>;
-    src?: Binding<Expression<Src>>;
-    dist?: Binding<Expression<Src>>;
-    uglify?: Binding<Expression<boolean>>;
-    tsconfig?: Binding<Expression<string | CompilerOptions>>;
+    clean?: Src;
+    src?: Src;
+    dist?: Src;
+    uglify?: boolean;
+    tsconfig?: string | CompilerOptions;
 
     /**
      * rollup input.
      *
-     * @type {Binding<Expression<string>>}
+     * @type {string>>}
      * @memberof LibTaskOption
      */
-    input?: Binding<Expression<string>>;
+    input?: string;
     /**
      * rollup output file.
      *
-     * @type {Binding<string>}
+     * @type {string>}
      * @memberof LibTaskOption
      */
-    outputFile?: Binding<Expression<string>>;
+    outputFile?: string;
     /**
      * rollup output dir.
      *
-     * @type {Binding<string>}
+     * @type {string>}
      * @memberof LibTaskOption
      */
-    outputDir?: Binding<Expression<string>>;
+    outputDir?: string;
     /**
      * rollup format option.
      *
-     * @type {Binding<string>}
+     * @type {string>}
      * @memberof LibTaskOption
      */
-    format?: Binding<Expression<string>>;
+    format?: string;
 }
 
 export interface LibPackBuilderOption extends TemplateOption {
@@ -51,31 +58,43 @@ export interface LibPackBuilderOption extends TemplateOption {
      * @type {(Expression<LibTaskOption|LibTaskOption[]>)}
      * @memberof LibPackBuilderOption
      */
-    tasks?: Expression<LibTaskOption | LibTaskOption[]>;
+    tasks?: Binding<Expression<LibTaskOption | LibTaskOption[]>>;
     /**
      * rollup external setting.
      *
      * @type {Expression<ExternalOption>}
      * @memberof RollupOption
      */
-    external?: Expression<ExternalOption>;
+    external?: Binding<Expression<ExternalOption>>;
+
+    /**
+     * enable source maps or not.
+     *
+     * @type {Binding<Expression<boolean>>}
+     * @memberof RollupOption
+     */
+    sourceMap?: Binding<Expression<boolean>>;
+
     /**
      * rollup plugins setting.
      *
      * @type {Expression<Plugin[]>}
      * @memberof RollupOption
      */
-    plugins?: Expression<Plugin[]>;
+    plugins?: Binding<Expression<Plugin[]>>;
 
-    cache?: Expression<RollupCache>;
-    watch?: Expression<WatcherOptions>;
+    cache?: Binding<Expression<RollupCache>>;
+
+    watch?: Binding<Expression<WatcherOptions>>;
+
+    globals?: Binding<Expression<GlobalsOption>>;
     /**
      * custom setup rollup options.
      *
      * @type {(Expression<RollupFileOptions | RollupDirOptions>)}
      * @memberof RollupOption
      */
-    options?: Expression<RollupFileOptions | RollupDirOptions>;
+    options?: Binding<Expression<RollupFileOptions | RollupDirOptions>>;
 }
 
 @Task({
@@ -105,6 +124,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                 body: <RollupOption>{
                     activity: 'rollup',
                     input: ctx => ctx.body.input,
+                    sourceMap: 'binding: sourceMap',
                     plugins: 'binding: plugins',
                     external: 'binding: external',
                     options: 'binding: options',
@@ -123,7 +143,7 @@ export interface LibPackBuilderOption extends TemplateOption {
 })
 export class LibPackBuilder implements AfterInit {
 
-    constructor() {
+    constructor(private platform: PlatformService) {
 
     }
 
@@ -143,6 +163,9 @@ export class LibPackBuilder implements AfterInit {
      */
     @Input()
     external?: Expression<ExternalOption>;
+
+    @Input()
+    sourceMap?: Expression<boolean>;
     /**
      * rollup plugins setting.
      *
@@ -150,7 +173,10 @@ export class LibPackBuilder implements AfterInit {
      * @memberof RollupOption
      */
     @Input()
-    plugins?: Expression<Plugin[]>;
+    plugins: Expression<Plugin[]>;
+
+    @Input()
+    globals: Expression<GlobalsOption>;
 
     @Input()
     cache?: Expression<RollupCache>;
@@ -166,9 +192,33 @@ export class LibPackBuilder implements AfterInit {
     @Input()
     options?: Expression<RollupFileOptions | RollupDirOptions>;
 
-
     async onAfterInit(): Promise<void> {
+        if (!this.external) {
+            this.external = [
+                'process', 'util', 'path', 'fs', 'events', 'stream', 'child_process', 'os',
+                ...Object.keys(this.platform.getPackage().dependencies || {})];
+            if (this.external.indexOf('rxjs')) {
+                this.external.push('rxjs/operators')
+            }
+            this.globals = this.globals || {};
+            this.external.forEach(k => {
+                if (!this.globals[k]) {
+                    this.globals[k] = k;
+                }
+            });
+        }
 
+        if (!this.plugins) {
+            this.sourceMap = true;
+            this.plugins = (ctx: NodeActivityContext) => [
+                resolve(),
+                commonjs(),
+                rollupClassAnnotations(),
+                rollupSourcemaps(),
+                ts(isString(ctx.body.tsconfig) ? ctx.platform.getCompilerOptions(ctx.body.tsconfig) : ctx.body.tsconfig),
+                ctx.body.uglify ? uglify(isBoolean(ctx.body.uglify) ? undefined : ctx.body.uglify) : null
+            ];
+        }
     }
 
 }

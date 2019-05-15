@@ -56,7 +56,7 @@ export class SourceActivity extends PipeActivity {
         let strSrc = await this.resolveExpression(this.src, ctx);
         if (strSrc) {
             let options = await this.resolveExpression(this.options, ctx);
-            this.result.value = src(ctx.toRootSrc(strSrc), options || undefined);
+            this.result.value = src(ctx.platform.toRootSrc(strSrc), options || undefined);
         }
     }
 }
