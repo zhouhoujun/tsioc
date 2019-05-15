@@ -3,7 +3,7 @@ import { NodeActivityContext } from '../core';
 import { StreamActivity } from './StreamActivity';
 import { SourceActivity } from './SourceActivity';
 import { DestActivity } from './DestActivity';
-import { Input } from '@tsdi/boot';
+import { Input, Binding } from '@tsdi/boot';
 import { CleanActivity } from '../tasks';
 import { PipeActivity } from './PipeActivity';
 
@@ -16,21 +16,21 @@ import { PipeActivity } from './PipeActivity';
  * @extends {ActivityConfigure}
  */
 export interface AssetActivityOption extends TemplateOption {
-    clean?: Expression<Src>;
+    clean?: Binding<Expression<Src>>;
     /**
      * shell cmd
      *
-     * @type {Expression<Src>}
+     * @type {Binding<Src>}
      * @memberof AssetActivityOption
      */
-    src?: Expression<Src>;
+    src?: Binding<Expression<Src>>;
     /**
      * shell args.
      *
-     * @type {Expression<Src>}
+     * @type {Binding<Src>}
      * @memberof AssetActivityOption
      */
-    dist?: Expression<Src>;
+    dist?: Binding<Expression<Src>>;
 
     /**
      *
@@ -38,7 +38,7 @@ export interface AssetActivityOption extends TemplateOption {
      * @type {ActivityType[]}
      * @memberof ShellActivityOption
      */
-    pipes?: ActivityType[];
+    pipes?: Binding<ActivityType[]>;
 
 }
 

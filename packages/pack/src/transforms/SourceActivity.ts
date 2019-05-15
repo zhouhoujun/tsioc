@@ -1,7 +1,7 @@
 import { NodeActivityContext } from '../core';
 import { Task, Src, Expression, TemplateOption } from '@tsdi/activities';
 import { SrcOptions, src } from 'vinyl-fs';
-import { Input } from '@tsdi/boot';
+import { Input, Binding } from '@tsdi/boot';
 import { PipeActivity } from './PipeActivity';
 
 
@@ -20,7 +20,7 @@ export interface SourceActivityOption extends TemplateOption {
      * @type {Expression<Src>}
      * @memberof SourceActivityOption
      */
-    src: Expression<Src>;
+    src: Binding<Expression<Src>>;
 
     /**
      * src option
@@ -28,7 +28,7 @@ export interface SourceActivityOption extends TemplateOption {
      * @type {Expression<DestOptions>}
      * @memberof DistActivityOption
      */
-    srcOptions?: Expression<SrcOptions>;
+    srcOptions?: Binding<Expression<SrcOptions>>;
 }
 
 /**

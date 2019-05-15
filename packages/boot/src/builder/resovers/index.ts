@@ -1,6 +1,5 @@
 export * from './BindingPropertyHandle';
-export * from './BindingScope';
-export * from './BindingTemplateDecoratorRegisterer';
+export * from './BindingComponentDecoratorRegisterer';
 export * from './BindingTemplateHandle';
 export * from './BuildContext';
 export * from './BuildDecoratorRegisterer';

@@ -23,21 +23,12 @@ import { AfterInit } from '@tsdi/boot';
     template: <LibPackBuilderOption>{
         activity: 'libs',
         tasks: [
-            { src: 'src/**/*.ts', clean: ['../../dist/pack/lib'], dist: '../../dist/pack/lib', uglify: true, tsconfig: './tsconfig.json' },
+            { src: 'src/**/*.ts', clean: ['../../dist/pack/lib'], dist: '../../dist/pack/lib', uglify: false, tsconfig: './tsconfig.json' },
             { input: 'src/index.ts', clean: ['../../dist/pack/fesm5'], outputFile: '../../dist/pack/fesm5/pack.js', format: 'cjs', uglify: false, tsconfig: './tsconfig.json' },
             // { clean: ['../../dist/pack/fesm2015'], dist: '../../dist/pack/fesm2015', format: 'cjs', uglify: true, tsconfig: './tsconfig.es2015.json' }
         ],
-
         plugins: ctx => [
             resolve(),
-            // {
-            //     resolveId(id) {
-            //         if (/^\./.test(id)) {
-            //             return id;
-            //         }
-            //         return null;
-            //     }
-            // },
             commonjs({
                 exclude: ['node_modules/**', '../../node_modules/**']
             }),

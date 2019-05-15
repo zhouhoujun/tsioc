@@ -1,5 +1,5 @@
 import { NodeActivityContext, NodeActivity } from '../core';
-import { Input } from '@tsdi/boot';
+import { Input, Binding } from '@tsdi/boot';
 import { Expression, TemplateOption, Task, Src } from '@tsdi/activities';
 import { RollupFileOptions, rollup, WatcherOptions, RollupDirOptions, RollupCache, OutputOptionsFile, OutputOptionsDir, ExternalOption } from 'rollup';
 import { isArray, isNullOrUndefined } from '@tsdi/ioc';
@@ -15,42 +15,42 @@ export interface RollupOption extends TemplateOption {
     /**
      * rollup input setting.
      *
-     * @type {Expression<Src>}
+     * @type {Binding<Expression<Src>>}
      * @memberof RollupOption
      */
-    input: Expression<Src>;
+    input: Binding<Expression<Src>>;
     /**
      * rollup output setting.
      *
-     * @type {(Expression<OutputOptionsFile | OutputOptionsDir>)}
+     * @type {(Binding<Expression<OutputOptionsFile | OutputOptionsDir>>)}
      * @memberof RollupOption
      */
-    output?: Expression<OutputOptionsFile | OutputOptionsDir>;
+    output?: Binding<Expression<OutputOptionsFile | OutputOptionsDir>>;
     /**
      * rollup external setting.
      *
-     * @type {Expression<ExternalOption>}
+     * @type {Binding<Expression<ExternalOption>>}
      * @memberof RollupOption
      */
-    external?: Expression<ExternalOption>;
+    external?: Binding<Expression<ExternalOption>>;
     /**
      * rollup plugins setting.
      *
-     * @type {Expression<Plugin[]>}
+     * @type {Binding<Expression<Plugin[]>>}
      * @memberof RollupOption
      */
-    plugins?: Expression<Plugin[]>;
+    plugins?: Binding<Expression<Plugin[]>>;
 
-    cache?: Expression<RollupCache>;
-    watch?: Expression<WatcherOptions>;
+    cache?: Binding<Expression<RollupCache>>;
+    watch?: Binding<Expression<WatcherOptions>>;
 
     /**
      * custom setup rollup options.
      *
-     * @type {(Expression<RollupFileOptions | RollupDirOptions>)}
+     * @type {(Binding<RollupFileOptions | RollupDirOptions>)}
      * @memberof RollupOption
      */
-    options?: Expression<RollupFileOptions | RollupDirOptions>;
+    options?: Binding<Expression<RollupFileOptions | RollupDirOptions>>;
 }
 
 @Task('rollup')

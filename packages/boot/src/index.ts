@@ -1,4 +1,5 @@
 export * from './decorators';
+export * from './bindings';
 export * from './services';
 export * from './annotations';
 export * from './runnable';

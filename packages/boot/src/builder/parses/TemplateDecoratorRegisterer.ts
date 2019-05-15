@@ -3,6 +3,6 @@ import { Singleton, Type } from '@tsdi/ioc';
 import { ParseHandle } from './ParseHandle';
 
 @Singleton
-export class DecoratorTemplateRegisterer extends IocASyncDecoratorRegisterer<Type<ParseHandle>> {
+export class TemplateDecoratorRegisterer extends IocASyncDecoratorRegisterer<Type<ParseHandle>> {
 
 }

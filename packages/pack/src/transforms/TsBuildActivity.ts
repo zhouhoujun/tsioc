@@ -1,5 +1,5 @@
 import { Task, Expression, ValuePipe, ActivityType, Src } from '@tsdi/activities';
-import { Input } from '@tsdi/boot';
+import { Input, Binding } from '@tsdi/boot';
 import { NodeActivityContext } from '../core';
 import { ObjectMap, isString } from '@tsdi/ioc';
 import * as ts from 'gulp-typescript';
@@ -21,15 +21,15 @@ import { UnitTestActivity } from '../tasks';
  * @extends {AssetActivityOption}
  */
 export interface TsBuildOption extends AssetActivityOption {
-    test?: Expression<Src>;
-    annotation?: Expression<boolean>;
-    sourcemaps?: Expression<string>;
-    tsconfig: Expression<string | CompilerOptions>;
-    dts?: Expression<string>;
-    uglify?: Expression<boolean>;
-    uglifyOptions?: Expression<any>;
-    jsValuePipe?: Expression<ValuePipe | boolean>;
-    tdsValuePipe?: Expression<ValuePipe | boolean>;
+    test?: Binding<Expression<Src>>;
+    annotation?: Binding<Expression<boolean>>;
+    sourcemaps?: Binding<Expression<string>>;
+    tsconfig: Binding<Expression<string | CompilerOptions>>;
+    dts?: Binding<Expression<string>>;
+    uglify?: Binding<Expression<boolean>>;
+    uglifyOptions?: Binding<Expression<any>>;
+    jsValuePipe?: Binding<Expression<ValuePipe | boolean>>;
+    tdsValuePipe?: Binding<Expression<ValuePipe | boolean>>;
 }
 
 
@@ -96,6 +96,7 @@ export class TsBuildActivity extends AssetActivity {
             this.promiseLikeToAction<NodeActivityContext>(ctx => this.complieTs(ctx)),
             this.streamPipes,
             this.dts,
+            this.uglify,
             this.sourceMap,
             this.dist
         ]

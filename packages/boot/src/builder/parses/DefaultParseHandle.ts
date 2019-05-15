@@ -6,13 +6,6 @@ export class DefaultParseHandle extends ParseHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
 
         if (ctx.binding && ctx.binding.type) {
-            let name = ctx.binding.bindingName || ctx.binding.name;
-            if (ctx.scope && !isNullOrUndefined(ctx.scope[name])) {
-                let sval = ctx.scope[name];
-                if (lang.isExtendsClass(lang.getClass(sval), ctx.binding.type)) {
-                    ctx.value = sval;
-                }
-            }
             if (isNullOrUndefined(ctx.value)) {
                 let ttype = lang.getClass(ctx.template);
                 if (lang.isExtendsClass(ttype, ctx.binding.type)) {

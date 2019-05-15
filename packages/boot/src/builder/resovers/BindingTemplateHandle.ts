@@ -1,7 +1,7 @@
 import { ResolveHandle } from './ResolveHandle';
 import { BuildContext } from './BuildContext';
 import { TemplateManager } from '../../core';
-import { BindingTemplateDecoratorRegisterer } from './BindingTemplateDecoratorRegisterer';
+import { BindingComponentDecoratorRegisterer } from './BindingComponentDecoratorRegisterer';
 
 export class BindingTemplateHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
@@ -11,7 +11,7 @@ export class BindingTemplateHandle extends ResolveHandle {
             raiseContainer.get(TemplateManager)
                 .set(ctx.target, ctx.component);
 
-            await this.execFuncs(ctx, this.container.get(BindingTemplateDecoratorRegisterer)
+            await this.execFuncs(ctx, this.container.get(BindingComponentDecoratorRegisterer)
                 .getFuncs(this.container, ctx.decorator));
 
         }

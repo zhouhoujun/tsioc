@@ -14,6 +14,6 @@ export abstract class ParseHandle extends Handle<ParseContext> {
     abstract execute(ctx: ParseContext, next: () => Promise<void>): Promise<void>;
 }
 
-export class CompositeParserHandle extends CompositeHandle<ParseContext> {
+export class ParsersHandle extends CompositeHandle<ParseContext> {
 
 }

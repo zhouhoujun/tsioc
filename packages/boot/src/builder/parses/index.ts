@@ -8,4 +8,5 @@ export * from './ParseScope';
 
 export * from './AttrSelectorHandle';
 export * from './DecorTemplateParseHandle';
-export * from './DecoratorTemplateRegisterer';
+export * from './BindingScopeDecoratorRegisterer';
+export * from './TemplateDecoratorRegisterer';

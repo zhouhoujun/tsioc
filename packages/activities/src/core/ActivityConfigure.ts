@@ -1,5 +1,5 @@
 import { InjectToken, Type, PromiseUtil, Token, ProviderTypes } from '@tsdi/ioc';
-import { RunnableConfigure } from '@tsdi/boot';
+import { RunnableConfigure, Binding } from '@tsdi/boot';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
 import { ValuePipe } from './ValuePipe';
@@ -86,7 +86,7 @@ export interface TemplateOption {
      * @type {Expression<string>}
      * @memberof TemplateOption
      */
-    name?: Expression<string>;
+    name?: Binding<string>;
 
     /**
      * value pipe.
@@ -99,9 +99,9 @@ export interface TemplateOption {
 
 
 export interface InvokeTemplate extends TemplateOption {
-    target: Expression<Token<any>>,
-    method: Expression<string>,
-    args: Expression<ProviderTypes[]>
+    target: Binding<Token<any>>,
+    method: Binding<string>,
+    args: Binding<ProviderTypes[]>
 }
 
 
@@ -120,7 +120,7 @@ export interface IExpressionTemplate {
      * @type {Expression<any>}
      * @memberof ExpressionOption
      */
-    expression: Expression<any>;
+    expression: Binding<any>;
 }
 
 /**
@@ -141,7 +141,7 @@ export interface IConditionTemplate {
      * @type {Expression<boolean>}
      * @memberof ConditionOption
      */
-    condition: Expression<boolean>;
+    condition: Binding<boolean>;
 }
 
 /**
@@ -155,7 +155,7 @@ export interface ConditionTemplate extends BodyTemplate, IConditionTemplate {
 }
 
 export interface EachTeamplate extends BodyTemplate {
-    each: Expression<any[]>
+    each: Binding<Expression<any[]>>;
 }
 
 /**
@@ -169,10 +169,10 @@ export interface TimerTemplate extends BodyTemplate {
     /**
      * time.
      *
-     * @type {Expression<number>}
+     * @type {Binding<Expression<number>>}
      * @memberof TimerOption
      */
-    time: Expression<number>;
+    time: Binding<Expression<number>>;
 }
 
 
@@ -185,13 +185,13 @@ export interface TimerTemplate extends BodyTemplate {
  * @extends {TemplateOption}
  */
 export interface ThrowTemplate extends TemplateOption {
-    throw: Expression<Error>;
+    throw: Binding<Expression<Error>>;
 }
 
 export interface SwitchTemplate extends TemplateOption {
-    switch: Expression<string | number>;
-    cases: CaseTemplate[];
-    defaults?: ActivityType[];
+    switch: Binding<Expression<string | number>>;
+    cases: Binding<CaseTemplate[]>;
+    defaults?: Binding<ActivityType[]>;
 }
 
 /**
@@ -201,10 +201,10 @@ export interface CaseTemplate extends IBodyTemplate {
     /**
      * case
      *
-     * @type {*}
+     * @type {Binding<any>}
      * @memberof CaseTemplate
      */
-    case: any;
+    case: Binding<any>;
 }
 
 export interface CatchTemplate extends IBodyTemplate {
@@ -214,13 +214,13 @@ export interface CatchTemplate extends IBodyTemplate {
      * @type {Type<Error>}
      * @memberof CatchTemplate
      */
-    error: Type<Error>;
+    error: Binding<Type<Error>>;
 }
 
 export interface TryTemplate extends TemplateOption {
-    try: ActivityType[];
-    catchs?: CatchTemplate[];
-    finally?: ActivityType[];
+    try: Binding<ActivityType[]>;
+    catchs?: Binding<CatchTemplate[]>;
+    finally?: Binding<ActivityType[]>;
 }
 
 export type ControlTemplate = TemplateOption | ExpressionTemplate | ConditionTemplate | EachTeamplate | InvokeTemplate
@@ -248,5 +248,6 @@ export type ActivityTemplate = TemplateType | TemplateType[];
  * expression.
  */
 export type Expression<T> = T | Promise<T> | ((ctx: ActivityContext) => T | Promise<T>) | Type<any>;
+
 
 

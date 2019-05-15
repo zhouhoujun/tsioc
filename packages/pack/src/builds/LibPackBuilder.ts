@@ -1,48 +1,47 @@
-import { NodeActivity, NodeActivityContext } from '../core';
 import { Task, TemplateOption, Expression, Src, Activities } from '@tsdi/activities';
 import { BuilderTypes } from './BuilderTypes';
 import { TsBuildOption } from '../transforms';
 import { CompilerOptions } from 'typescript';
 import { ExternalOption, RollupCache, WatcherOptions, RollupFileOptions, RollupDirOptions } from 'rollup';
 import { RollupOption } from '../rollups';
-import { Input } from '@tsdi/boot';
+import { Input, AfterInit, Binding } from '@tsdi/boot';
 
 
 export interface LibTaskOption {
-    clean?: Expression<Src>;
-    src?: Expression<Src>;
-    dist?: Expression<Src>;
-    uglify?: Expression<boolean>;
-    tsconfig?: Expression<string | CompilerOptions>;
+    clean?: Binding<Expression<Src>>;
+    src?: Binding<Expression<Src>>;
+    dist?: Binding<Expression<Src>>;
+    uglify?: Binding<Expression<boolean>>;
+    tsconfig?: Binding<Expression<string | CompilerOptions>>;
 
     /**
      * rollup input.
      *
-     * @type {Expression<string>}
+     * @type {Binding<Expression<string>>}
      * @memberof LibTaskOption
      */
-    input?: Expression<string>;
+    input?: Binding<Expression<string>>;
     /**
      * rollup output file.
      *
-     * @type {Expression<string>}
+     * @type {Binding<string>}
      * @memberof LibTaskOption
      */
-    outputFile?: Expression<string>;
+    outputFile?: Binding<Expression<string>>;
     /**
      * rollup output dir.
      *
-     * @type {Expression<string>}
+     * @type {Binding<string>}
      * @memberof LibTaskOption
      */
-    outputDir?: Expression<string>;
+    outputDir?: Binding<Expression<string>>;
     /**
      * rollup format option.
      *
-     * @type {Expression<string>}
+     * @type {Binding<string>}
      * @memberof LibTaskOption
      */
-    format?: Expression<string>;
+    format?: Binding<Expression<string>>;
 }
 
 export interface LibPackBuilderOption extends TemplateOption {
@@ -92,7 +91,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                     activity: 'ts',
                     clean: ctx => ctx.body.clean,
                     src: ctx => ctx.body.src,
-                    test:  ctx => ctx.body.test,
+                    test: ctx => ctx.body.test,
                     uglify: ctx => ctx.body.uglify,
                     dist: ctx => ctx.body.dist,
                     annotation: true,
@@ -106,9 +105,9 @@ export interface LibPackBuilderOption extends TemplateOption {
                 body: <RollupOption>{
                     activity: 'rollup',
                     input: ctx => ctx.body.input,
-                    plugins: ctx => ctx.scope.plugins,
-                    external: ctx => ctx.scope.external,
-                    options: ctx => ctx.scope.options,
+                    plugins: 'binding: plugins',
+                    external: 'binding: external',
+                    options: 'binding: options',
                     output: ctx => {
                         return {
                             format: ctx.body.format || 'cjs',
@@ -122,7 +121,7 @@ export interface LibPackBuilderOption extends TemplateOption {
         ]
     }
 })
-export class LibPackBuilder {
+export class LibPackBuilder implements AfterInit {
 
     /**
      * tasks
@@ -164,5 +163,8 @@ export class LibPackBuilder {
     options?: Expression<RollupFileOptions | RollupDirOptions>;
 
 
+    async onAfterInit(): Promise<void> {
+
+    }
 
 }

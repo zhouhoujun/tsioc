@@ -1,13 +1,13 @@
 import { ParseHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
 import { SelectorManager } from '../../core';
-import { isString, isClass } from '@tsdi/ioc';
+import { isString, isClass, isNullOrUndefined } from '@tsdi/ioc';
 
 export class AttrSelectorHandle extends ParseHandle {
 
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
 
-        if (ctx.binding) {
+        if (ctx.binding && !isNullOrUndefined(ctx.template)) {
             let mgr = this.container.get(SelectorManager);
             let pdr = ctx.binding.provider;
             if (isString(pdr) && mgr.hasAttr(pdr)) {
