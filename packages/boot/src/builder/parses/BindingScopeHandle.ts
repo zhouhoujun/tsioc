@@ -9,9 +9,9 @@ export class BindingScopeHandle extends ParseHandle {
 
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
 
-
-        if (isString(ctx.template)) {
-            await this.execFuncs(ctx, this.container.get(BindingScopeDecoratorRegisterer).getFuncs(this.container, ctx.decorator));
+        let regs = this.container.get(BindingScopeDecoratorRegisterer);
+        if (isString(ctx.template) && regs.has(ctx.decorator)) {
+            await this.execFuncs(ctx, regs.getFuncs(this.container, ctx.decorator));
         }
 
         if (ctx.template instanceof BindingExpression) {

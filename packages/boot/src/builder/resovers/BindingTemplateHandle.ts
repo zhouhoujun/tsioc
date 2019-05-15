@@ -10,10 +10,10 @@ export class BindingTemplateHandle extends ResolveHandle {
 
             raiseContainer.get(TemplateManager)
                 .set(ctx.target, ctx.component);
-
-            await this.execFuncs(ctx, this.container.get(BindingComponentDecoratorRegisterer)
-                .getFuncs(this.container, ctx.decorator));
-
+            let regs = this.container.get(BindingComponentDecoratorRegisterer);
+            if (regs.has(ctx.decorator)) {
+                await this.execFuncs(ctx, regs.getFuncs(this.container, ctx.decorator));
+            }
         }
         if (next) {
             await next();
