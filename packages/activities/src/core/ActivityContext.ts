@@ -1,12 +1,9 @@
-import {
-    Injectable, ObjectMap, Type, Refs, ContainerFactory, isString
-} from '@tsdi/ioc';
-import { BootContext, createAnnoationContext } from '@tsdi/boot';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
+import { BootContext, createAnnoationContext } from '@tsdi/boot';
 import { ActivityConfigure, ActivityTemplate } from './ActivityConfigure';
-
+import { Injectable, ObjectMap, Type, Refs, ContainerFactory, isString } from '@tsdi/ioc';
 
 
 /**
