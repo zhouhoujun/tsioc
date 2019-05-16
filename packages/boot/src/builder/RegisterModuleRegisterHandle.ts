@@ -1,5 +1,5 @@
 import { AnnoationHandle, ModuleRegister, RegScope } from '../core';
-import { BootContext } from '../BootContext';
+import { BootContext, ProcessRunRootToken } from '../BootContext';
 
 
 export class RegisterModuleRegisterHandle extends AnnoationHandle {
@@ -9,7 +9,11 @@ export class RegisterModuleRegisterHandle extends AnnoationHandle {
             ctx.baseURL = ctx.annoation.baseURL;
         }
         if (ctx.regScope === RegScope.child) {
-            let regs = ctx.getRaiseContainer().getServices(ModuleRegister, ctx.module);
+            let container = ctx.getRaiseContainer();
+            if (ctx.annoation.baseURL) {
+                container.bindProvider(ProcessRunRootToken, ctx.annoation.baseURL);
+            }
+            let regs = container.getServices(ModuleRegister, ctx.module);
             if (regs && regs.length) {
                 await Promise.all(regs.map(reg => reg.register(ctx.annoation)));
             }

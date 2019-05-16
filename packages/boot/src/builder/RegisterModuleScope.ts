@@ -11,7 +11,7 @@ export class RegisterModuleScope extends CompositeHandle<AnnoationContext> {
             return;
         }
         // has build module instance.
-        if (ctx.annoation) {
+        if (ctx.annoation || this.container.has(ctx.module) || ctx.getRaiseContainer().has(ctx.module)) {
             await next && next();
         } else {
             await super.execute(ctx, next);

@@ -1,6 +1,6 @@
 import { ParseHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
-import { isArray, isNullOrUndefined, lang } from '@tsdi/ioc';
+import { isArray, isNullOrUndefined } from '@tsdi/ioc';
 import { ParseScope } from './ParseScope';
 import { HandleRegisterer } from '../../core';
 
