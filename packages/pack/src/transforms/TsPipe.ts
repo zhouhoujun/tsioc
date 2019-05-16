@@ -21,7 +21,7 @@ export class TypeScriptDtsPipe extends ValuePipe {
         return value.dts;
     }
 
-    async refresh(ctx: NodeActivityContext, value: any): Promise<void> {
-        ctx.result.dts = value;
-    }
+    // async refresh(ctx: NodeActivityContext, value: any): Promise<void> {
+    //     ctx.result.dts = value;
+    // }
 }

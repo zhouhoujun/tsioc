@@ -5,7 +5,11 @@ import { isNullOrUndefined, lang, isUndefined } from '@tsdi/ioc';
 export class DefaultParseHandle extends ParseHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
 
-        if (ctx.binding && ctx.binding.type) {
+        if (isNullOrUndefined(ctx.template)) {
+            if (ctx.binding) {
+                ctx.value = ctx.binding.defaultValue;
+            }
+        } else if (ctx.binding && ctx.binding.type) {
             if (isNullOrUndefined(ctx.value)) {
                 let ttype = lang.getClass(ctx.template);
                 if (lang.isExtendsClass(ttype, ctx.binding.type)) {
@@ -14,10 +18,6 @@ export class DefaultParseHandle extends ParseHandle {
             }
         } else {
             ctx.value = ctx.template;
-        }
-
-        if (ctx.binding && isNullOrUndefined(ctx.value) && !isUndefined(ctx.binding.defaultValue)) {
-            ctx.value = ctx.binding.defaultValue;
         }
 
         if (isNullOrUndefined(ctx.value)) {
