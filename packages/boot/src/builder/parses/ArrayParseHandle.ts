@@ -19,7 +19,7 @@ export class ArrayParseHandle extends ParseHandle {
                         annoation: ctx.annoation
                     }, ctx.getRaiseContainer());
                     await registerer.get(ParseScope).execute(subCtx);
-                    return subCtx.value;
+                    return isNullOrUndefined(subCtx.value) ? tp : subCtx.value;
                 }));
             }
         }

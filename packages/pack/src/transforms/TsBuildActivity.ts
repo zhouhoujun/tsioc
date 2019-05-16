@@ -8,7 +8,6 @@ import { SourceActivity } from './SourceActivity';
 import { DestActivity } from './DestActivity';
 import { UglifyActivity } from './UglifyActivity';
 import { AnnoationActivity } from './AnnoationActivity';
-import { SourcemapInitActivity, SourcemapWriteActivity } from './SourceMap';
 import { StreamActivity } from './StreamActivity';
 import { UnitTestActivity } from '../tasks';
 import { TypeScriptJsPipe, TypeScriptDtsPipe } from './TsPipe';
@@ -24,7 +23,6 @@ const ts = require('gulp-typescript');
 export interface TsBuildOption extends AssetActivityOption {
     test?: Binding<Expression<Src>>;
     annotation?: Binding<Expression<boolean>>;
-    sourcemaps?: Binding<Expression<string>>;
     tsconfig: Binding<Expression<string | CompilerOptions>>;
     dts?: Binding<Expression<string>>;
     uglify?: Binding<Expression<boolean>>;
@@ -41,11 +39,7 @@ export class TsBuildActivity extends AssetActivity implements AfterInit {
     @Input()
     test: UnitTestActivity;
 
-    @Input('sourcemap')
-    sourcemapInit: SourcemapInitActivity;
 
-    @Input('sourcemap')
-    sourcemapWrite: SourcemapWriteActivity;
 
     @Input()
     annotation: AnnoationActivity;

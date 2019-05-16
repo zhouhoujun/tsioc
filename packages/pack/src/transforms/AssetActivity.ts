@@ -1,5 +1,5 @@
 import { Src, Task, TemplateOption, Expression, ActivityType } from '@tsdi/activities';
-import { NodeActivityContext } from '../core';
+import { NodeActivityContext, ITransform } from '../core';
 import { StreamActivity } from './StreamActivity';
 import { SourceActivity } from './SourceActivity';
 import { DestActivity } from './DestActivity';
@@ -7,6 +7,7 @@ import { Input, Binding, AfterInit } from '@tsdi/boot';
 import { CleanActivity } from '../tasks';
 import { PipeActivity } from './PipeActivity';
 
+import { SourcemapInitActivity, SourcemapWriteActivity } from './SourceMap';
 
 /**
  * shell activity config.
@@ -24,6 +25,8 @@ export interface AssetActivityOption extends TemplateOption {
      * @memberof AssetActivityOption
      */
     src?: Binding<Expression<Src>>;
+
+    sourcemaps?: Binding<Expression<string>>;
     /**
      * shell args.
      *
@@ -35,10 +38,10 @@ export interface AssetActivityOption extends TemplateOption {
     /**
      *
      *
-     * @type {ActivityType[]}
+     * @type {Binding<Expression<ITransform[]>>}
      * @memberof ShellActivityOption
      */
-    pipes?: Binding<ActivityType[]>;
+    pipes?: Binding<Expression<ITransform[]>>;
 
 }
 
@@ -71,6 +74,12 @@ export class AssetActivity extends PipeActivity {
     @Input('dist', './dist')
     dist: DestActivity;
 
+    @Input('sourcemap')
+    sourcemapInit: SourcemapInitActivity;
+
+    @Input('sourcemap')
+    sourcemapWrite: SourcemapWriteActivity;
+
     @Input('pipes')
     streamPipes: StreamActivity;
 
@@ -80,9 +89,11 @@ export class AssetActivity extends PipeActivity {
 
     protected getRunSequence(): ActivityType[] {
         return [
+            this.sourcemapInit,
             this.clean,
             this.src,
             this.streamPipes,
+            this.sourcemapWrite,
             this.dist
         ]
     }

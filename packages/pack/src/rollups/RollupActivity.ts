@@ -1,7 +1,10 @@
 import { NodeActivityContext, NodeActivity } from '../core';
 import { Input, Binding } from '@tsdi/boot';
 import { Expression, TemplateOption, Task, Src } from '@tsdi/activities';
-import { RollupFileOptions, rollup, WatcherOptions, RollupDirOptions, RollupCache, OutputOptionsFile, OutputOptionsDir, ExternalOption } from 'rollup';
+import {
+    RollupFileOptions, rollup, WatcherOptions, RollupDirOptions, RollupCache,
+    OutputOptionsFile, OutputOptionsDir, ExternalOption
+} from 'rollup';
 import { isArray, isNullOrUndefined, isString } from '@tsdi/ioc';
 
 /**

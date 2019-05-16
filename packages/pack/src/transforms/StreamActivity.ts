@@ -7,17 +7,17 @@ import { PipeActivity } from './PipeActivity';
 @Task('[pipes]')
 export class StreamActivity extends PipeActivity {
 
-    constructor(@Input() protected pipes: Expression<ITransform>[]) {
+    constructor(@Input('pipes') protected pipes: Expression<ITransform[]>) {
         super()
-
     }
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         if (isTransform(ctx.data)) {
             this.result.value = ctx.data;
         }
-        if (this.pipes && this.pipes.length) {
-            await this.pipeStream(ctx, this.result.value, ...this.pipes);
+        let pipes = await this.resolveExpression(this.pipes, ctx);
+        if (pipes && pipes.length) {
+            await this.pipeStream(ctx, this.result.value, ...pipes);
         }
     }
 

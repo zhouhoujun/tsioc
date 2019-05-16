@@ -1,6 +1,6 @@
 import { Task, TemplateOption, Expression, Src, Activities } from '@tsdi/activities';
 import { BuilderTypes } from './BuilderTypes';
-import { TsBuildOption } from '../transforms';
+import { TsBuildOption, AssetActivityOption } from '../transforms';
 import { CompilerOptions } from 'typescript';
 import { ExternalOption, RollupCache, WatcherOptions, RollupFileOptions, RollupDirOptions, GlobalsOption } from 'rollup';
 import { RollupOption } from '../rollups';
@@ -10,9 +10,11 @@ const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
 const ts = require('rollup-plugin-typescript');
-import { uglify } from 'rollup-plugin-uglify';
 import { rollupClassAnnotations } from '@tsdi/annotations';
-import { isString, isBoolean, isNullOrUndefined } from '@tsdi/ioc';
+import { isString, isNullOrUndefined } from '@tsdi/ioc';
+import { dirname, basename } from 'path';
+const uglify = require('gulp-uglify');
+const rename = require('gulp-rename');
 
 export interface LibTaskOption {
     clean?: Src;
@@ -124,22 +126,38 @@ export interface LibPackBuilderOption extends TemplateOption {
             {
                 activity: Activities.if,
                 condition: ctx => ctx.body.input,
-                body: <RollupOption>{
-                    activity: 'rollup',
-                    input: ctx => ctx.body.input,
-                    sourcemap: 'binding: sourcemap',
-                    plugins: 'binding: plugins',
-                    external: 'binding: external',
-                    options: 'binding: options',
-                    output: ctx => {
-                        return {
-                            format: ctx.body.format || 'cjs',
-                            file: ctx.body.outputFile,
-                            dir: ctx.body.outputDir,
-                            globals: ctx.scope.globals
+                body: [
+                    <RollupOption>{
+                        activity: 'rollup',
+                        input: ctx => ctx.body.input,
+                        sourcemap: 'binding: sourcemap',
+                        plugins: 'binding: plugins',
+                        external: 'binding: external',
+                        options: 'binding: options',
+                        output: ctx => {
+                            return {
+                                format: ctx.body.format || 'cjs',
+                                file: ctx.body.outputFile,
+                                dir: ctx.body.outputDir,
+                                globals: ctx.scope.globals
+                            }
+                        }
+                    },
+                    {
+                        activity: Activities.if,
+                        condition: ctx => ctx.body.uglify && ctx.body.outputFile,
+                        body: <AssetActivityOption>{
+                            activity: 'asset',
+                            src: ctx => ctx.body.outputFile,
+                            dist: ctx => dirname(ctx.body.outputFile),
+                            sourcemap: 'binding: sourcemap',
+                            pipes: ctx => [
+                                uglify(),
+                                rename(basename(ctx.body.outputFile.replace(/\.js$/, '.min.js')))
+                            ]
                         }
                     }
-                }
+                ]
             }
         ]
     }
@@ -220,8 +238,7 @@ export class LibPackBuilder implements AfterInit {
                 commonjs(),
                 ctx.body.annotation ? rollupClassAnnotations() : null,
                 rollupSourcemaps(),
-                ts(isString(ctx.body.tsconfig) ? ctx.platform.getCompilerOptions(ctx.body.tsconfig) : ctx.body.tsconfig),
-                ctx.body.uglify ? (isBoolean(ctx.body.uglify) ? uglify() : uglify(ctx.body.uglify)) : null
+                ctx.body.tsconfig ? ts(isString(ctx.body.tsconfig) ? ctx.platform.getCompilerOptions(ctx.body.tsconfig) : ctx.body.tsconfig) : null
             ];
         }
     }

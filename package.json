@@ -87,6 +87,7 @@
     "tslint": "^5.14.0",
     "tslint-stylish": "^2.1.0",
     "typescript": "^3.4.5",
+    "uglify-js": "^3.5.12",
     "vinyl-buffer": "^1.0.0",
     "vinyl-fs": "^3.0.3",
     "vinyl-paths": "^2.1.0",
