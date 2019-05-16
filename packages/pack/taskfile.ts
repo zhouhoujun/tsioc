@@ -14,7 +14,6 @@ import { AfterInit } from '@tsdi/boot';
         activity: 'libs',
         tasks: [
             { src: 'src/**/*.ts', clean: '../../dist/pack/lib', dist: '../../dist/pack/lib', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            // { input: '../../dist/pack/lib/index.js', clean: '../../dist/pack/fesm5', outputFile: '../../dist/pack/fesm5/pack.js', format: 'cjs', uglify: false },
             { input: 'src/index.ts', clean: '../../dist/pack/fesm5', outputFile: '../../dist/pack/fesm5/pack.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
             { input: 'src/index.ts', clean: '../../dist/pack/fesm2015', outputFile: '../../dist/pack/fesm2015/pack.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2015.json' }
         ]

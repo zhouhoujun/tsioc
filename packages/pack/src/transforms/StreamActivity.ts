@@ -7,7 +7,7 @@ import { PipeActivity } from './PipeActivity';
 @Task('[pipes]')
 export class StreamActivity extends PipeActivity {
 
-    constructor(@Input('pipes') protected pipes: Expression<ITransform[]>) {
+    constructor(@Input('pipes') protected pipes: Expression<ITransform>[]) {
         super()
     }
 

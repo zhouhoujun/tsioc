@@ -151,9 +151,9 @@ export interface LibPackBuilderOption extends TemplateOption {
                             src: ctx => ctx.body.outputFile,
                             dist: ctx => dirname(ctx.body.outputFile),
                             sourcemap: 'binding: sourcemap',
-                            pipes: ctx => [
-                                uglify(),
-                                rename(basename(ctx.body.outputFile.replace(/\.js$/, '.min.js')))
+                            pipes: [
+                                ctx => uglify(),
+                                (ctx) => rename(basename(ctx.body.outputFile.replace(/\.js$/, '.min.js')))
                             ]
                         }
                     }

@@ -38,10 +38,10 @@ export interface AssetActivityOption extends TemplateOption {
     /**
      *
      *
-     * @type {Binding<Expression<ITransform[]>>}
+     * @type {Binding<Expression<ITransform>[]>}
      * @memberof ShellActivityOption
      */
-    pipes?: Binding<Expression<ITransform[]>>;
+    pipes?: Binding<Expression<ITransform>[]>;
 
 }
 

@@ -250,6 +250,9 @@ export abstract class Activity<T> {
             return bctx.data;
         } else if (isFunction(express)) {
             return await express(ctx);
+        } else if (express instanceof Activity) {
+            await express.run(ctx);
+            return express.result.value;
         } else if (isPromise(express)) {
             return await express;
         }
