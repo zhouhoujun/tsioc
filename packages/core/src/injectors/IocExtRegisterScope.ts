@@ -1,8 +1,8 @@
 import { Type, hasOwnClassMetadata } from '@tsdi/ioc';
 import { InjectorActionContext } from './InjectorActionContext';
-import { ModuleRegisterScope } from './ModuleRegisterScope';
+import { InjectorRegisterScope } from './InjectorRegisterScope';
 
-export class IocExtRegisterScope extends ModuleRegisterScope {
+export class IocExtRegisterScope extends InjectorRegisterScope {
     protected getTypes(ctx: InjectorActionContext): Type<any>[] {
         return ctx.types.filter(ty => hasOwnClassMetadata(ctx.currDecoractor, ty));
     }

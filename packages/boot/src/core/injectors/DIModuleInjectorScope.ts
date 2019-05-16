@@ -1,8 +1,8 @@
-import { InjectorActionContext, ModuleRegisterScope } from '@tsdi/core';
+import { InjectorActionContext, InjectorRegisterScope } from '@tsdi/core';
 import { Type, hasOwnClassMetadata } from '@tsdi/ioc';
 import { RegisterDIModuleAction } from './RegisterDIModuleAction';
 
-export class DIModuleRegisterScope extends ModuleRegisterScope {
+export class DIModuleInjectorScope extends InjectorRegisterScope {
 
     execute(ctx: InjectorActionContext, next?: () => void): void {
         let types = this.getTypes(ctx);

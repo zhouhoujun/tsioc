@@ -1,5 +1,5 @@
 import { Task, Expression, ValuePipe, ActivityType, Src } from '@tsdi/activities';
-import { Input, Binding } from '@tsdi/boot';
+import { Input, Binding, AfterInit } from '@tsdi/boot';
 import { NodeActivityContext } from '../core';
 import { ObjectMap, isString } from '@tsdi/ioc';
 import { CompilerOptions } from 'typescript';
@@ -8,9 +8,10 @@ import { SourceActivity } from './SourceActivity';
 import { DestActivity } from './DestActivity';
 import { UglifyActivity } from './UglifyActivity';
 import { AnnoationActivity } from './AnnoationActivity';
-import { SourceMapActivity } from './SourceMap';
+import { SourcemapInitActivity, SourcemapWriteActivity } from './SourceMap';
 import { StreamActivity } from './StreamActivity';
 import { UnitTestActivity } from '../tasks';
+import { TypeScriptJsPipe, TypeScriptDtsPipe } from './TsPipe';
 const ts = require('gulp-typescript');
 
 /**
@@ -29,19 +30,22 @@ export interface TsBuildOption extends AssetActivityOption {
     uglify?: Binding<Expression<boolean>>;
     uglifyOptions?: Binding<Expression<any>>;
     jsValuePipe?: Binding<Expression<ValuePipe | boolean>>;
-    tdsValuePipe?: Binding<Expression<ValuePipe | boolean>>;
+    dtsValuePipe?: Binding<Expression<ValuePipe | boolean>>;
 }
 
 
 @Task('ts')
-export class TsBuildActivity extends AssetActivity {
+export class TsBuildActivity extends AssetActivity implements AfterInit {
 
 
     @Input()
     test: UnitTestActivity;
 
-    @Input('sourcemaps')
-    sourceMap: SourceMapActivity;
+    @Input('sourcemap')
+    sourcemapInit: SourcemapInitActivity;
+
+    @Input('sourcemap')
+    sourcemapWrite: SourcemapWriteActivity;
 
     @Input()
     annotation: AnnoationActivity;
@@ -60,22 +64,28 @@ export class TsBuildActivity extends AssetActivity {
     @Input('tsPipes')
     tsPipes: StreamActivity;
 
-    @Input()
+    @Input('dts')
     dts: DestActivity;
 
     @Input('jsValuePipe')
     jsPipe: ValuePipe;
 
-    @Input('tdsValuePipe')
+    @Input('dtsValuePipe')
     tdsPipe: ValuePipe;
 
 
     @Input('tsconfig', './tsconfig.json')
     tsconfig: Expression<string | ObjectMap<any>>;
 
-    protected getRunSequence(): ActivityType[] {
+
+    onAfterInit(): void | Promise<void> {
+        this.jsPipe = this.jsPipe || this.getContainer().resolve(TypeScriptJsPipe);
+        this.tdsPipe = this.tdsPipe || this.getContainer().resolve(TypeScriptDtsPipe);
         if (this.streamPipes) {
             this.streamPipes.pipe = this.streamPipes.pipe || this.jsPipe;
+        }
+        if (this.uglify) {
+            this.uglify.pipe = this.uglify.pipe || this.jsPipe;
         }
         if (this.dist) {
             this.dist.pipe = this.dist.pipe || this.jsPipe;
@@ -83,21 +93,26 @@ export class TsBuildActivity extends AssetActivity {
         if (this.dts) {
             this.dts.pipe = this.dts.pipe || this.tdsPipe;
         }
-        if (this.sourceMap) {
-            this.sourceMap.pipe = this.sourceMap.pipe || this.jsPipe;
+        if (this.sourcemapWrite) {
+            this.sourcemapWrite.pipe = this.sourcemapWrite.pipe || this.jsPipe;
         }
+    }
+
+
+    protected getRunSequence(): ActivityType[] {
+
         return [
             this.test,
             this.clean,
             this.src,
             this.annotation,
-            this.sourceMap,
+            this.sourcemapInit,
             this.tsPipes,
             this.promiseLikeToAction<NodeActivityContext>(ctx => this.complieTs(ctx)),
             this.streamPipes,
             this.dts,
             this.uglify,
-            this.sourceMap,
+            this.sourcemapWrite,
             this.dist
         ]
     }

@@ -1,4 +1,5 @@
 export * from './resolvers';
+export * from './injectors'
 
 export * from './ValuePipe';
 export * from './Activity';

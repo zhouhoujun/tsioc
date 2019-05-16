@@ -9,6 +9,6 @@ import { Singleton, IocDecoratorRegisterer } from '@tsdi/ioc';
  * @extends {IocDecoratorRegisterer}
  */
 @Singleton
-export class ModuleDecoratorRegisterer extends IocDecoratorRegisterer {
+export class InjectorDecoratorRegisterer extends IocDecoratorRegisterer {
 
 }

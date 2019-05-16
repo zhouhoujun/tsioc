@@ -2,37 +2,49 @@ import { Input } from '@tsdi/boot';
 import { Expression, Task } from '@tsdi/activities';
 import { NodeActivityContext } from '../core';
 import { PipeActivity } from './PipeActivity';
+import { isString } from '@tsdi/ioc';
 
-
-@Task('[sourcemaps]')
-export class SourceMapActivity extends PipeActivity {
-
+export abstract class SourcemapActivity extends PipeActivity {
     @Input('sourceMapFramework')
     framework: any;
 
-    private inited: boolean;
-
-    constructor(@Input() private sourcemaps: Expression<string>) {
+    constructor(@Input() protected sourcemap: Expression<string | boolean>) {
         super()
-        this.inited = false;
     }
 
-    protected async execute(ctx: NodeActivityContext): Promise<void> {
-        let sourcemap = await this.resolveExpression(this.sourcemaps, ctx);
-        if (sourcemap) {
+    getFramework() {
+        if (!this.framework) {
+            this.framework = require('gulp-sourcemaps');
             if (!this.framework) {
-                this.framework = require('gulp-sourcemaps');
-                if (!this.framework) {
-                    console.error('not found gulp-sourcemaps');
-                    return;
-                }
+                console.error('not found gulp-sourcemaps');
+                return;
             }
-            if (!this.inited) {
-                this.result.value = await this.executePipe(ctx, this.result.value, this.framework.init())
-            } else {
-                this.result.value = await this.executePipe(ctx, this.result.value, this.framework.write(sourcemap));
-                this.inited = false;
-            }
+        }
+        return this.framework;
+    }
+}
+
+@Task('[sourcemapInit]')
+export class SourcemapInitActivity extends SourcemapActivity {
+
+    protected async execute(ctx: NodeActivityContext): Promise<void> {
+        let sourcemap = await this.resolveExpression(this.sourcemap, ctx);
+        if (sourcemap) {
+            let framework = this.getFramework();
+            this.result.value = await this.executePipe(ctx, this.result.value, framework.init());
+        }
+    }
+}
+
+
+@Task('[sourcemapWrite]')
+export class SourcemapWriteActivity extends SourcemapActivity {
+
+    protected async execute(ctx: NodeActivityContext): Promise<void> {
+        let sourcemap = await this.resolveExpression(this.sourcemap, ctx);
+        if (sourcemap) {
+            let framework = this.getFramework();
+            this.result.value = await this.executePipe(ctx, this.result.value, framework.write(isString(sourcemap) ? sourcemap : './sourcemaps'));
         }
     }
 }

@@ -1,13 +1,12 @@
-import { IContainer, ContainerToken, IocExt, ModuleDecoratorRegisterer, ServiceDecoratorRegisterer } from '@tsdi/core';
 import { Task } from './decorators/Task';
 import { RunAspect } from './aop';
 import * as core from './core';
 import * as activites from './activities';
+import { IContainer, ContainerToken, IocExt, InjectorDecoratorRegisterer, ServiceDecoratorRegisterer } from '@tsdi/core';
 import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes } from '@tsdi/ioc';
-import { DIModuleRegisterScope, ComponentRegisterAction, TemplateDecoratorRegisterer, HandleRegisterer, BindingComponentDecoratorRegisterer } from '@tsdi/boot';
-import { TaskDecoratorServiceAction } from './core';
+import { ComponentRegisterAction, TemplateDecoratorRegisterer, HandleRegisterer, BindingComponentDecoratorRegisterer } from '@tsdi/boot';
+import { TaskDecoratorServiceAction, TaskInjectorRegisterAction } from './core';
 import { TaskDecorSelectorHandle, BindingTaskTemplateHandle } from './handles';
-
 
 
 /**
@@ -17,7 +16,7 @@ import { TaskDecorSelectorHandle, BindingTaskTemplateHandle } from './handles';
  * @param {IContainer} container
  */
 @IocExt('setup')
-export class CoreModule {
+export class ActivityCoreModule {
     constructor(@Inject(ContainerToken) private container: IContainer) {
     }
 
@@ -25,7 +24,8 @@ export class CoreModule {
         let container = this.container;
 
         container.getActionRegisterer()
-            .register(container, TaskDecoratorServiceAction);
+            .register(container, TaskDecoratorServiceAction)
+            .register(container, TaskInjectorRegisterAction, true);
 
         container.get(HandleRegisterer)
             .register(container, BindingTaskTemplateHandle)
@@ -36,7 +36,7 @@ export class CoreModule {
             BindProviderAction, ComponentRegisterAction);
 
 
-        container.get(ModuleDecoratorRegisterer).register(Task, DIModuleRegisterScope);
+        container.get(InjectorDecoratorRegisterer).register(Task, TaskInjectorRegisterAction);
         container.get(TemplateDecoratorRegisterer).register(Task, TaskDecorSelectorHandle);
         container.get(BindingComponentDecoratorRegisterer).register(Task, BindingTaskTemplateHandle);
 

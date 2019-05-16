@@ -18,6 +18,8 @@ export interface LibTaskOption {
     clean?: Src;
     src?: Src;
     dist?: Src;
+    dts?: Src,
+    annotation?: boolean;
     uglify?: boolean;
     tsconfig?: string | CompilerOptions;
 
@@ -70,10 +72,10 @@ export interface LibPackBuilderOption extends TemplateOption {
     /**
      * enable source maps or not.
      *
-     * @type {Binding<Expression<boolean>>}
+     * @type {Binding<Expression<boolean|string>>}
      * @memberof RollupOption
      */
-    sourceMap?: Binding<Expression<boolean>>;
+    sourcemap?: Binding<Expression<boolean | string>>;
 
     /**
      * rollup plugins setting.
@@ -113,8 +115,9 @@ export interface LibPackBuilderOption extends TemplateOption {
                     test: ctx => ctx.body.test,
                     uglify: ctx => ctx.body.uglify,
                     dist: ctx => ctx.body.dist,
-                    annotation: true,
-                    sourcemaps: './sourcemaps',
+                    dts: ctx => ctx.body.dts || ctx.body.dist,
+                    annotation: ctx => ctx.body.annotation,
+                    sourcemap: 'binding: sourcemap',
                     tsconfig: ctx => ctx.body.tsconfig
                 }
             },
@@ -124,7 +127,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                 body: <RollupOption>{
                     activity: 'rollup',
                     input: ctx => ctx.body.input,
-                    sourceMap: 'binding: sourceMap',
+                    sourcemap: 'binding: sourcemap',
                     plugins: 'binding: plugins',
                     external: 'binding: external',
                     options: 'binding: options',
@@ -165,7 +168,7 @@ export class LibPackBuilder implements AfterInit {
     external?: Expression<ExternalOption>;
 
     @Input()
-    sourceMap?: Expression<boolean>;
+    sourcemap?: Expression<boolean | string>;
     /**
      * rollup plugins setting.
      *
@@ -209,8 +212,8 @@ export class LibPackBuilder implements AfterInit {
         }
 
         if (!this.plugins) {
-            if (isNullOrUndefined(this.sourceMap)) {
-                this.sourceMap = true;
+            if (isNullOrUndefined(this.sourcemap)) {
+                this.sourcemap = true;
             }
             this.plugins = (ctx: NodeActivityContext) => [
                 resolve(),

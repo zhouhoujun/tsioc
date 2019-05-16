@@ -1,6 +1,6 @@
 import { Singleton, Type, Inject, MetadataService, DesignDecoratorRegisterer, DecoratorScopes, RuntimeDecoratorRegisterer, lang, getOwnTypeMetadata } from '@tsdi/ioc';
-import { ModuleConfigure } from '../core';
-import { ContainerToken, IContainer, ModuleDecoratorRegisterer } from '@tsdi/core';
+import { ModuleConfigure, ComponentRegisterAction } from '../core';
+import { ContainerToken, IContainer, InjectorDecoratorRegisterer } from '@tsdi/core';
 
 @Singleton()
 export class ModuleDecoratorService {
@@ -12,12 +12,17 @@ export class ModuleDecoratorService {
         let decorator = '';
         let decorators = this.container.get(MetadataService)
             .getClassDecorators(type);
-        let mdRgr = this.container.get(ModuleDecoratorRegisterer);
-        decorator = decorators.find(c => mdRgr.has(c));
+
+        let designReg = this.container.get(DesignDecoratorRegisterer).getRegisterer(DecoratorScopes.Class);
+        decorator = decorators.find(c => designReg.has(c, ComponentRegisterAction));
+
         if (!decorator) {
-            let designReg = this.container.get(DesignDecoratorRegisterer).getRegisterer(DecoratorScopes.Class)
-            decorator = decorators.find(c => designReg.has(c));
+            let mdRgr = this.container.get(InjectorDecoratorRegisterer);
+            decorator = decorators.find(c => mdRgr.has(c));
         }
+
+        decorator = decorator || decorators.find(c => designReg.has(c));
+
         if (!decorator) {
             let runtimeReg = this.container.get(RuntimeDecoratorRegisterer).getRegisterer(DecoratorScopes.Class)
             decorator = decorators.find(c => runtimeReg.has(c));

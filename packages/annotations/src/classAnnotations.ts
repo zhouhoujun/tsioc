@@ -101,7 +101,7 @@ export function rollupClassAnnotations(options?: AnnOptions): Plugin {
                 try {
                     resolve({
                         code: iocAnnotations(code),
-                        map: { mappings: '' }
+                        map: null
                     });
                 } catch (err) {
                     // istanbul ignore else

@@ -8,7 +8,7 @@ export * from './RegModuleProvidersAction';
 export * from './RegModuleResolverAction';
 export * from './RegModuleExportsAction';
 
-export * from './DIModuleRegisterScope';
+export * from './DIModuleInjectorScope';
 export * from './RegisterDIModuleAction';
 
 

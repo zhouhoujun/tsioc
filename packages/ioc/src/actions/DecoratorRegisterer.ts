@@ -40,8 +40,8 @@ export abstract class DecoratorScopeRegisterer  extends IocCoreService {
         return this;
     }
 
-    has(decorator: string | Function, scope: DecoratorScopes): boolean {
-        return this.getRegisterer(scope).has(decorator);
+    has(decorator: string | Function, scope: DecoratorScopes, action?: IocActionType): boolean {
+        return this.getRegisterer(scope).has(decorator, action);
     }
 
     getKey(decorator: string | Function) {

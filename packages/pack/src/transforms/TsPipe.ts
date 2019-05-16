@@ -9,19 +9,19 @@ export class TypeScriptJsPipe extends ValuePipe {
         return value.js;
     }
 
-    async refresh?(ctx: NodeActivityContext, value: any): Promise<void> {
+    async refresh(ctx: NodeActivityContext, value: any): Promise<void> {
         ctx.result.js = value;
     }
 }
 
 @Injectable()
-export class TypeScriptTdsPipe extends ValuePipe {
+export class TypeScriptDtsPipe extends ValuePipe {
 
     async transform(value: any): Promise<any> {
-        return value.tds;
+        return value.dts;
     }
 
-    async refresh?(ctx: NodeActivityContext, value: any): Promise<void> {
-        ctx.result.tds = value;
+    async refresh(ctx: NodeActivityContext, value: any): Promise<void> {
+        ctx.result.dts = value;
     }
 }

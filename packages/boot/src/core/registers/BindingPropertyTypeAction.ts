@@ -24,12 +24,6 @@ export class BindingPropertyTypeAction extends IocDesignAction {
                     if (prop.bindingName && !binding.bindingName) {
                         binding.bindingName = prop.bindingName;
                     }
-                    // if (isClass(prop.provider) && !this.container.has(prop.provider)) {
-                    //     this.container.register(prop.provider);
-                    // }
-                    // if (isClass(prop.type) && !this.container.has(prop.type)) {
-                    //     this.container.register(prop.type);
-                    // }
 
                     if (!binding.type && isClassType(prop.type)) {
                         binding.type = prop.type;

@@ -2,7 +2,7 @@ import { ObjectMap, IocDecoratorRegisterer } from '@tsdi/ioc';
 import { InjectorActionContext } from './InjectorActionContext';
 import { InjectorScope } from './InjectorAction';
 import { DecoratorInjectAction } from './DecoratorInjectAction';
-import { ModuleDecoratorRegisterer } from './ModuleDecoratorRegisterer';
+import { InjectorDecoratorRegisterer } from './InjectorDecoratorRegisterer';
 
 export class DecoratorInjectorScope extends InjectorScope {
     execute(ctx: InjectorActionContext, next?: () => void): void {
@@ -19,12 +19,12 @@ export class DecoratorInjectorScope extends InjectorScope {
     }
 
     getRegisterer(): IocDecoratorRegisterer {
-        return this.container.get(ModuleDecoratorRegisterer);
+        return this.container.get(InjectorDecoratorRegisterer);
     }
 
     protected getState(ctx: InjectorActionContext): ObjectMap<boolean> {
         if (!ctx.decorState) {
-            ctx.decorState = this.container.get(ModuleDecoratorRegisterer)
+            ctx.decorState = this.container.get(InjectorDecoratorRegisterer)
                 .getDecorators()
                 .reduce((obj, dec) => {
                     obj[dec] = false;

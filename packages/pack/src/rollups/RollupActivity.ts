@@ -2,7 +2,7 @@ import { NodeActivityContext, NodeActivity } from '../core';
 import { Input, Binding } from '@tsdi/boot';
 import { Expression, TemplateOption, Task, Src } from '@tsdi/activities';
 import { RollupFileOptions, rollup, WatcherOptions, RollupDirOptions, RollupCache, OutputOptionsFile, OutputOptionsDir, ExternalOption } from 'rollup';
-import { isArray, isNullOrUndefined } from '@tsdi/ioc';
+import { isArray, isNullOrUndefined, isString } from '@tsdi/ioc';
 
 /**
  * rollup activity template option.
@@ -26,7 +26,7 @@ export interface RollupOption extends TemplateOption {
      * @type {Binding<Expression<boolean>>}
      * @memberof RollupOption
      */
-    sourceMap?: Binding<Expression<boolean>>;
+    sourcemap?: Binding<Expression<boolean>>;
     /**
      * rollup output setting.
      *
@@ -77,7 +77,7 @@ export class RollupActivity extends NodeActivity<void> {
     external: Expression<ExternalOption>;
 
     @Input()
-    sourceMap?: Expression<boolean>;
+    sourcemap?: Expression<boolean>;
 
     @Input()
     cache: Expression<RollupCache>;
@@ -103,9 +103,11 @@ export class RollupActivity extends NodeActivity<void> {
                     opts[n] = val;
                 }
             }));
-        if (this.sourceMap) {
-            let sourceMap = await this.resolveExpression(this.sourceMap, ctx);
-            opts.output.sourcemap = sourceMap;
+        if (this.sourcemap) {
+            let sourceMap = await this.resolveExpression(this.sourcemap, ctx);
+            if (sourceMap) {
+                opts.output.sourcemap = isString(sourceMap) ? true : sourceMap;
+            }
         }
         if (!opts.output.name && opts.output.file) {
             opts.output.name = ctx.platform.getFileName(opts.output.file);

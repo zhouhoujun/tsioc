@@ -3,7 +3,7 @@ import { NodeActivityContext } from '../core';
 import { StreamActivity } from './StreamActivity';
 import { SourceActivity } from './SourceActivity';
 import { DestActivity } from './DestActivity';
-import { Input, Binding } from '@tsdi/boot';
+import { Input, Binding, AfterInit } from '@tsdi/boot';
 import { CleanActivity } from '../tasks';
 import { PipeActivity } from './PipeActivity';
 

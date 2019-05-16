@@ -6,7 +6,7 @@ import {
 import { Type, isClass, LoadType } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
-import { CoreModule } from './CoreModule';
+import { ActivityCoreModule } from './CoreModule';
 import { SequenceActivity } from './activities';
 
 /**
@@ -74,7 +74,7 @@ export class Workflow extends BootApplication implements ContextInit {
     }
 
     getBootDeps() {
-        return [ AopModule, LogModule, CoreModule, ...super.getBootDeps() ];
+        return [ AopModule, LogModule, ActivityCoreModule, ...super.getBootDeps() ];
     }
 
     protected createUUID() {

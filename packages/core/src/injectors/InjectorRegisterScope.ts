@@ -3,7 +3,7 @@ import { InjectorScope } from './InjectorAction';
 import { InjectorActionContext } from './InjectorActionContext';
 import { RegisterTypeAction } from './RegisterTypeAction';
 
-export abstract class ModuleRegisterScope extends InjectorScope {
+export abstract class InjectorRegisterScope extends InjectorScope {
 
     execute(ctx: InjectorActionContext, next?: () => void): void {
         let types = this.getTypes(ctx);

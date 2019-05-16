@@ -8,7 +8,7 @@ import {
 import {
     IContainer, ContainerToken, IocExt,
     ResolvePrivateServiceAction, ResolveServiceInClassChain,
-    ModuleDecoratorRegisterer, ServicesResolveLifeScope
+    InjectorDecoratorRegisterer, ServicesResolveLifeScope
 } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
@@ -18,7 +18,7 @@ import {
     RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction,
 } from './resolves';
 import { RouteDesignRegisterAction, RouteRuntimRegisterAction, ComponentRegisterAction, BindingPropertyTypeAction, BindingParamTypeAction } from './registers';
-import { DIModuleRegisterScope, DIModuleExports, ModuleInjectLifeScope } from './injectors';
+import { DIModuleInjectorScope, DIModuleExports, ModuleInjectLifeScope } from './injectors';
 import { SelectorManager } from './SelectorManager';
 import { Input, Component } from './decorators';
 import { HandleRegisterer } from './handles';
@@ -63,10 +63,10 @@ export class BootModule {
 
         registerer
             .register(container, ModuleInjectLifeScope, true)
-            .register(container, DIModuleRegisterScope, true);
+            .register(container, DIModuleInjectorScope, true);
 
-        container.get(ModuleDecoratorRegisterer)
-            .register(DIModule, DIModuleRegisterScope);
+        container.get(InjectorDecoratorRegisterer)
+            .register(DIModule, DIModuleInjectorScope);
 
 
         // route service
