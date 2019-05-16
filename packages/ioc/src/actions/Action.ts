@@ -2,6 +2,7 @@ import { IIocContainer, IocContainerToken, ContainerFactory, ContainerFactoryTok
 import { Type } from '../types';
 import { lang, isFunction, isClass } from '../utils';
 import { Inject } from '../decorators';
+import { IocCoreService } from '../services';
 
 
 /**
@@ -20,7 +21,7 @@ export interface ActionContextOption {
  * @export
  * @class IocActionContext
  */
-export class IocActionContext {
+export class IocActionContext extends IocCoreService {
 
     /**
      * currScope
@@ -35,6 +36,7 @@ export class IocActionContext {
 
 
     constructor() {
+        super()
     }
 
     /**

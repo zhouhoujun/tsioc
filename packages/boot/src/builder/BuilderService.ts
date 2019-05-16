@@ -1,8 +1,7 @@
-import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, MetadataService, getOwnTypeMetadata } from '@tsdi/ioc';
+import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction } from '@tsdi/ioc';
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { IContainer, ContainerToken, isContainer } from '@tsdi/core';
 import { CompositeHandle, HandleRegisterer, RegScope, TemplateManager } from '../core';
-import { RunnableConfigure } from '../annotations';
 import { IBootApplication } from '../IBootApplication';
 import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
 import { ResolveMoudleScope, IModuleResolveOption, BuildContext } from './resovers';
@@ -129,19 +128,7 @@ export class BuilderService extends IocCoreService {
      * @memberof BuilderService
      */
     async boot(application: IBootApplication, ...args: string[]): Promise<BootContext> {
-        if (isClass(application.target)) {
-            let target = application.target;
-            await Promise.all(this.container.get(MetadataService)
-                .getClassDecorators(target)
-                .map(async d => {
-                    let metas = getOwnTypeMetadata<RunnableConfigure>(d, target);
-                    if (metas && metas.length) {
-                        await Promise.all(metas.filter(m => m && m.deps && m.deps.length > 0).map(m => this.container.load(m.deps)));
-                    }
-                }));
-        } else if (application.target.deps) {
-            await this.container.load(...application.target.deps);
-        }
+        await this.container.load(...application.getBootDeps());
         return await this.execLifeScope(application, this.container.get(HandleRegisterer).get(BootLifeScope), application.target, ...args);
     }
 

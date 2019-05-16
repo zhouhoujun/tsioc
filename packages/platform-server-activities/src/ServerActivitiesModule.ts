@@ -10,10 +10,10 @@ import { ServerLogsModule } from '@tsdi/platform-server-logs';
     regScope: RegScope.boot,
     imports: [
         ServerModule,
-        ServerBootstrapModule,
         ServerLogsModule,
-        TaskLogAspect,
         RunnerLogAspect,
+        TaskLogAspect,
+        ServerBootstrapModule,
         WorkflowConfigureRegister
     ]
 })

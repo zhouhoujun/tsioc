@@ -1,4 +1,4 @@
-import { BootApplication, ContextInit } from '@tsdi/boot';
+import { BootApplication, ContextInit, checkBootArgs } from '@tsdi/boot';
 import {
     UUIDToken, RandomUUIDFactory, WorkflowInstance, ActivityContext,
     ActivityType, ActivityOption
@@ -25,10 +25,7 @@ export class Workflow extends BootApplication implements ContextInit {
                 target.module = SequenceActivity;
             }
         }
-        this.container
-            .use(AopModule)
-            .use(LogModule)
-            .use(CoreModule);
+
     }
 
 
@@ -67,12 +64,17 @@ export class Workflow extends BootApplication implements ContextInit {
      * @memberof Workflow
      */
     static async run<T extends ActivityContext>(target: T | Type<any> | ActivityOption<T>, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<T> {
-        return await new Workflow(target).run(deps, ...args) as T;
+        let mdargs = checkBootArgs(deps, ...args);
+        return await new Workflow(target, mdargs.deps).run(...mdargs.args) as T;
     }
 
     onContextInit(ctx: ActivityContext) {
         super.onContextInit(ctx);
         ctx.id = ctx.id || this.createUUID();
+    }
+
+    getBootDeps() {
+        return [ AopModule, LogModule, CoreModule, ...super.getBootDeps() ];
     }
 
     protected createUUID() {

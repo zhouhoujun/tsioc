@@ -3,6 +3,7 @@ import { Token, InstanceFactory, SymbolType, Factory, Type } from '../types';
 import { IIocContainer, ContainerFactoryToken, ContainerFactory } from '../IIocContainer';
 import { IResolver, IResolverContainer } from '../IResolver';
 import { ProviderTypes } from './types';
+import { IocCoreService } from '../services';
 
 // use core-js in browser.
 
@@ -14,7 +15,7 @@ import { ProviderTypes } from './types';
  * @export
  * @class Providers
  */
-export class ProviderMap implements IResolverContainer {
+export class ProviderMap extends IocCoreService implements IResolverContainer {
 
     get size(): number {
         return this.map.size;
@@ -27,7 +28,8 @@ export class ProviderMap implements IResolverContainer {
 
     map: Map<Token<any>, InstanceFactory<any>>;
     constructor(container: IIocContainer) {
-        this.containerFac = container.get(ContainerFactoryToken); //() => container;
+        super()
+        this.containerFac = container.get(ContainerFactoryToken);
         this.map = new Map();
     }
 

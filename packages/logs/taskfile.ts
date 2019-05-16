@@ -4,8 +4,8 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 
 @Task({
     deps: [
-        PackModule,
-        ServerActivitiesModule
+        ServerActivitiesModule,
+        PackModule
     ],
     baseURL: __dirname,
     template: <LibPackBuilderOption>{

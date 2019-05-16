@@ -7,7 +7,7 @@ import { IocCompositeAction } from './IocCompositeAction';
  *
  * @export
  * @class LifeScope
- * @extends {IocCoreService}
+ * @extends {IocCompositeAction<T>}
  */
 export class LifeScope<T extends IocActionContext> extends IocCompositeAction<T> {
 

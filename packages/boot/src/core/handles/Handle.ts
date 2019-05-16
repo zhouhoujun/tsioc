@@ -1,5 +1,5 @@
 import { ContainerToken, IContainer } from '@tsdi/core';
-import { Type, PromiseUtil, Inject, ProviderTypes, Token } from '@tsdi/ioc';
+import { Type, PromiseUtil, Inject, ProviderTypes, Token, IocCoreService } from '@tsdi/ioc';
 
 
 /**
@@ -34,10 +34,11 @@ export type HandleType<T extends IHandleContext> = Type<Handle<T>> | Handle<T> |
  * @extends {IocCoreService}
  * @template T
  */
-export abstract class Handle<T extends IHandleContext>  {
+export abstract class Handle<T extends IHandleContext>  extends IocCoreService {
 
 
     constructor(@Inject(ContainerToken) protected container: IContainer) {
+        super();
         this.onInit();
     }
 

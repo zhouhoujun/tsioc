@@ -656,6 +656,7 @@ export function isBaseType(target: any): boolean {
         || target === Boolean
         || target === String
         || target === Number
-        || target === Date;
+        || target === Date
+        || target === Array;
 }
 

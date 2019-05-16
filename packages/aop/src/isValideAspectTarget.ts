@@ -1,4 +1,4 @@
-import { Type, hasOwnClassMetadata, isClass, isBaseType } from '@tsdi/ioc';
+import { Type, hasOwnClassMetadata, isClass, isBaseType, lang, IocCoreService } from '@tsdi/ioc';
 import { NonePointcut } from './decorators/NonePointcut';
 
 /**
@@ -14,8 +14,12 @@ export function isValideAspectTarget(targetType: Type<any>): boolean {
         return false;
     }
 
-
     if (hasOwnClassMetadata(NonePointcut, targetType)) {
+        return false;
+    }
+
+
+    if (lang.isExtendsClass(targetType, IocCoreService)) {
         return false;
     }
 

@@ -1,12 +1,11 @@
 import { BootContext, BootOption } from './BootContext';
-import {
-    Type, LoadType, isArray, isString, InjectReference
-} from '@tsdi/ioc';
+import { Type, LoadType, isArray, isString, InjectReference, isClass, MetadataService, getOwnTypeMetadata } from '@tsdi/ioc';
 import { ContainerPool } from './core';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
 import { BuilderService } from './builder';
 import { IBootApplication } from './IBootApplication';
 import { bootSetup } from './setup';
+import { RunnableConfigure } from './annotations';
 
 /**
  * boot application hooks.
@@ -22,6 +21,19 @@ export interface ContextInit {
      * @memberof ContextInit
      */
     onContextInit(ctx: BootContext);
+}
+
+export function checkBootArgs(deps?: LoadType[] | LoadType | string, ...args: string[]): { args: string[], deps: LoadType[] } {
+    let mdeps: LoadType[] = [];
+    if (isString(deps)) {
+        args.unshift(deps);
+    } else if (deps) {
+        mdeps = isArray(deps) ? deps : [deps];
+    }
+    return {
+        args: args,
+        deps: mdeps
+    }
 }
 /**
  * boot application.
@@ -48,11 +60,12 @@ export class BootApplication implements IBootApplication, ContextInit {
 
     protected pools: ContainerPool;
 
-    constructor(public target: Type<any> | BootOption | BootContext, protected baseURL?: string, protected loader?: IModuleLoader) {
+    constructor(public target: Type<any> | BootOption | BootContext, public deps?: LoadType[], protected baseURL?: string, protected loader?: IModuleLoader) {
         this.onInit(target);
     }
 
     protected onInit(target: Type<any> | BootOption | BootContext) {
+        this.deps = this.deps || [];
         if (target instanceof BootContext) {
             this.context = target;
             if (this.context.hasRaiseContainer()) {
@@ -96,23 +109,18 @@ export class BootApplication implements IBootApplication, ContextInit {
      * @memberof BootApplication
      */
     static run<T>(target: Type<T> | BootOption | BootContext, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<BootContext> {
-        return new BootApplication(target).run(deps, ...args);
+        let mdargs = checkBootArgs(deps, ...args);
+        return new BootApplication(target, mdargs.deps).run(...mdargs.args);
     }
 
     /**
      * run application of module.
      *
-     * @param {(LoadType[] | LoadType | string)} [deps]  application run depdences.
      * @param {...string[]} args
      * @returns {Promise<BootContext>}
      * @memberof BootApplication
      */
-    async run(deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<BootContext> {
-        if (isString(deps)) {
-            args.unshift(deps);
-        } else if (deps) {
-            await this.container.load(...(isArray(deps) ? deps : [deps]));
-        }
+    async run(...args: string[]): Promise<BootContext> {
         return await this.container.resolve(BuilderService).boot(this, ...args);
     }
 
@@ -121,6 +129,27 @@ export class BootApplication implements IBootApplication, ContextInit {
             this.pools = new ContainerPool(this.createContainerBuilder());
         }
         return this.pools;
+    }
+
+    getBootDeps(): LoadType[] {
+        let dependences = [...this.deps];
+        if (isClass(this.target)) {
+            let target = this.target;
+            this.container.get(MetadataService)
+                .getClassDecorators(target)
+                .forEach(d => {
+                    let metas = getOwnTypeMetadata<RunnableConfigure>(d, target);
+                    if (metas && metas.length) {
+                        metas.filter(m => m && m.deps && m.deps.length > 0)
+                            .forEach(m => {
+                                dependences.push(...m.deps);
+                            });
+                    }
+                });
+        } else if (this.target.deps) {
+            dependences.push(...this.target.deps);
+        }
+        return dependences;
     }
 
 

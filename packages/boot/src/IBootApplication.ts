@@ -19,4 +19,12 @@ export interface IBootApplication extends ContextInit {
     run(deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<BootContext>;
 
     getPools(): IContainerPool;
+
+    /**
+     * boot applicaton extends.
+     *
+     * @returns {LoadType[]}
+     * @memberof IBootApplication
+     */
+    getBootDeps(): LoadType[];
 }

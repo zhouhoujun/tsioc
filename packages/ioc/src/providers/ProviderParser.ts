@@ -7,6 +7,7 @@ import { IProviderParser } from './IProviderParser';
 import { IIocContainer } from '../IIocContainer';
 import { ProviderMap, isProviderMap } from './ProviderMap';
 import { Provider, ParamProvider, ObjectMapProvider } from './Provider';
+import { IocCoreService } from '../services';
 
 /**
  * provider matcher. use to find custome providers in resolve.
@@ -17,10 +18,10 @@ import { Provider, ParamProvider, ObjectMapProvider } from './Provider';
  * @class ProviderMatcher
  * @implements {IProviderMatcher}
  */
-export class ProviderParser implements IProviderParser {
+export class ProviderParser extends IocCoreService implements IProviderParser {
 
     constructor(private container: IIocContainer) {
-
+        super()
     }
 
     parse(...providers: ParamProviders[]): ProviderMap {

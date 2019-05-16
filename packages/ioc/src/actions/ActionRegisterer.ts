@@ -3,6 +3,7 @@ import { IocAction, IocActionType } from './Action';
 import { IIocContainer } from '../IIocContainer';
 import { isClass } from '../utils';
 import { IocCompositeAction } from './IocCompositeAction';
+import { IocCoreService } from '../services';
 
 /**
  * action registerer.
@@ -10,10 +11,11 @@ import { IocCompositeAction } from './IocCompositeAction';
  * @export
  * @class ActionRegisterer
  */
-export class ActionRegisterer {
+export class ActionRegisterer extends IocCoreService {
     private maps: Map<Type<IocAction<any>>, IocAction<any>>;
 
     constructor() {
+        super()
         this.maps = new Map();
     }
 
