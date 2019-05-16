@@ -218,7 +218,7 @@ export class LibPackBuilder implements AfterInit {
             this.plugins = (ctx: NodeActivityContext) => [
                 resolve(),
                 commonjs(),
-                rollupClassAnnotations(),
+                ctx.body.annotation ? rollupClassAnnotations() : null,
                 rollupSourcemaps(),
                 ts(isString(ctx.body.tsconfig) ? ctx.platform.getCompilerOptions(ctx.body.tsconfig) : ctx.body.tsconfig),
                 ctx.body.uglify ? (isBoolean(ctx.body.uglify) ? uglify() : uglify(ctx.body.uglify)) : null
