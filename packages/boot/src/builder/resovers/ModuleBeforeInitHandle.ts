@@ -1,13 +1,13 @@
 
 import { BuildContext } from './BuildContext';
 import { ResolveHandle } from './ResolveHandle';
-import { BeforeInit, ComponentRegisterAction } from '../../core';
-import { isFunction, DesignDecoratorRegisterer, DecoratorScopes } from '@tsdi/ioc';
+import { BeforeInit } from '../../core';
+import { isFunction } from '@tsdi/ioc';
 
 
 export class ModuleBeforeInitHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
-        if (!this.container.get(DesignDecoratorRegisterer).has(ctx.decorator, DecoratorScopes.Class, ComponentRegisterAction)) {
+        if (!this.isComponent(ctx)) {
             return;
         }
         if (ctx.decorator) {

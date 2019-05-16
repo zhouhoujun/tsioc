@@ -7,11 +7,8 @@ import { RefDecoratorRunnableHandle } from './RefDecoratorRunnableHandle';
 
 export class ResolveRunnableScope extends CompositeHandle<BootContext> {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.bootstrap instanceof Runnable) {
-            ctx.runnable = ctx.bootstrap;
-        } else if (ctx.target instanceof Runnable) {
-            ctx.runnable = ctx.target;
-        } else {
+        ctx.runnable = ctx.getBootTarget();
+        if (!(ctx.runnable instanceof Runnable)) {
             super.execute(ctx);
         }
 

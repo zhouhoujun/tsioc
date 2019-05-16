@@ -9,7 +9,7 @@ export class RefRunnableHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
         ctx.runnable = ctx.getRaiseContainer().getService(
             Runnable,
-            ctx.bootstrap || ctx.target,
+            ctx.getBootTarget(),
             ResolveServiceContext.parse({ defaultToken: ctx.annoation.defaultRunnable }),
             { provide: BootContext, useValue: ctx },
             { provide: lang.getClass(ctx), useValue: ctx });

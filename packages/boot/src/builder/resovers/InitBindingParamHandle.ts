@@ -8,7 +8,7 @@ export class InitBindingParamHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         let container = ctx.getRaiseContainer();
         ctx.providers = ctx.providers || [];
-        if (ctx.template) {
+        if (ctx.template && this.isComponent(ctx)) {
             let register = this.container.getActionRegisterer();
             let ref = container.getTypeReflects().get(ctx.type) as IBindingTypeReflect;
             // init if not init constructor params action.

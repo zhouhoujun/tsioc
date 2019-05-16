@@ -13,6 +13,8 @@ export class ResolveTypeHandle extends BootHandle {
                 providers: ctx.providers
             }, ctx.getRaiseContainer());
         }
-        await next();
+        if (ctx.target) {
+            await next();
+        }
     }
 }
