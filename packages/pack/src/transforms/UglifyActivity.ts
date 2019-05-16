@@ -22,7 +22,7 @@ export class UglifyActivity extends PipeActivity {
         let enable = await this.resolveExpression(this.uglify, ctx);
         if (enable) {
             let options = await this.resolveExpression(this.options, ctx);
-            this.result.value = await this.executePipe(ctx, this.result.value, options ? uglify(options) : uglify);
+            this.result.value = await this.executePipe(ctx, this.result.value, options ? uglify(options) : uglify());
         }
     }
 }

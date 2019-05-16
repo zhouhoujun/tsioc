@@ -221,7 +221,7 @@ export class LibPackBuilder implements AfterInit {
                 rollupClassAnnotations(),
                 rollupSourcemaps(),
                 ts(isString(ctx.body.tsconfig) ? ctx.platform.getCompilerOptions(ctx.body.tsconfig) : ctx.body.tsconfig),
-                ctx.body.uglify ? uglify(isBoolean(ctx.body.uglify) ? undefined : ctx.body.uglify) : null
+                ctx.body.uglify ? (isBoolean(ctx.body.uglify) ? uglify() : uglify(ctx.body.uglify)) : null
             ];
         }
     }

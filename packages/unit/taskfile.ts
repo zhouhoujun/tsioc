@@ -11,10 +11,10 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
     template: <LibPackBuilderOption>{
         activity: 'libs',
         tasks: [
-            { src: 'src/**/*.ts', test: 'test/**/*.ts', clean: ['../../dist/unit/lib'], dist: '../../dist/unit/lib', uglify: false, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', clean: ['../../dist/unit/bundle'], outputFile: '../../dist/unit/bundle/unit.umd.js', format: 'umd', uglify: false, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', clean: ['../../dist/unit/fesm5'], outputFile: '../../dist/unit/fesm5/unit.js', format: 'cjs', uglify: false, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', clean: ['../../dist/unit/fesm2015'], outputFile: '../../dist/unit/fesm2015/unit.js', format: 'cjs', tsconfig: './tsconfig.es2015.json' }
+            { src: 'src/**/*.ts', test: 'test/**/*.ts', clean: '../../dist/unit/lib', dist: '../../dist/unit/lib', uglify: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', clean: '../../dist/unit/bundle', outputFile: '../../dist/unit/bundle/unit.umd.js', format: 'umd', uglify: false, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', clean: '../../dist/unit/fesm5', outputFile: '../../dist/unit/fesm5/unit.js', format: 'cjs', uglify: false, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', clean: '../../dist/unit/fesm2015', outputFile: '../../dist/unit/fesm2015/unit.js', format: 'cjs', tsconfig: './tsconfig.es2015.json' }
         ]
     }
 })
