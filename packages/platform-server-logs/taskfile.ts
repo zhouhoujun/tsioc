@@ -12,9 +12,10 @@ import { AfterInit } from '@tsdi/boot';
     template: <LibPackBuilderOption>{
         activity: 'libs',
         tasks: [
-            { src: 'src/**/*.ts', clean: ['../../dist/platform-server-logs/lib'], dist: '../../dist/platform-server-logs/lib', uglify: false, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', clean: ['../../dist/platform-server-logs/fesm5'], outputFile: '../../dist/platform-server-logs/fesm5/platform-server-logs.js', format: 'cjs', uglify: false, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', clean: ['../../dist/platform-server-logs/fesm2015'], outputFile: '../../dist/platform-server-logs/fesm2015/platform-server-logs.js', format: 'cjs', tsconfig: './tsconfig.es2015.json' }
+            { src: 'src/**/*.ts', clean: '../../dist/platform-server-logs/lib', dist: '../../dist/platform-server-logs/lib', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', clean: '../../dist/platform-server-logs/fesm5', outputFile: '../../dist/platform-server-logs/fesm5/platform-server-logs.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', clean: '../../dist/platform-server-logs/fesm2015', outputFile: '../../dist/platform-server-logs/fesm2015/platform-server-logs.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2015.json' },
+            { input: 'src/index.ts', clean: '../../dist/platform-server-logs/fesm2017', outputFile: '../../dist/platform-server-logs/fesm2017/platform-server-logs.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2017.json' }
         ]
     }
 })

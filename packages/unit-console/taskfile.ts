@@ -12,9 +12,10 @@ import { AfterInit } from '@tsdi/boot';
     template: <LibPackBuilderOption>{
         activity: 'libs',
         tasks: [
-            { src: 'src/**/*.ts', clean: ['../../dist/unit-console/lib'], dist: '../../dist/unit-console/lib', uglify: false, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', clean: ['../../dist/unit-console/fesm5'], outputFile: '../../dist/unit-console/fesm5/unit-console.js', format: 'cjs', uglify: false, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', clean: ['../../dist/unit-console/fesm2015'], outputFile: '../../dist/unit-console/fesm2015/unit-console.js', format: 'cjs', tsconfig: './tsconfig.es2015.json' }
+            { src: 'src/**/*.ts', clean: '../../dist/unit-console/lib', dist: '../../dist/unit-console/lib', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', clean: '../../dist/unit-console/fesm5', outputFile: '../../dist/unit-console/fesm5/unit-console.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', clean: '../../dist/unit-console/fesm2015', outputFile: '../../dist/unit-console/fesm2015/unit-console.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2015.json' },
+            { input: 'src/index.ts', clean: '../../dist/unit-console/fesm2017', outputFile: '../../dist/unit-console/fesm2017/unit-console.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2017.json' }
         ]
     }
 })

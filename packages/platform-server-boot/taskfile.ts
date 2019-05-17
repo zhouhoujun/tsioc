@@ -12,9 +12,10 @@ import { AfterInit } from '@tsdi/boot';
     template: <LibPackBuilderOption>{
         activity: 'libs',
         tasks: [
-            { src: 'src/**/*.ts', clean: ['../../dist/platform-server-boot/lib'], dist: '../../dist/platform-server-boot/lib', uglify: false, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', clean: ['../../dist/platform-server-boot/fesm5'], outputFile: '../../dist/platform-server-boot/fesm5/platform-server-boot.js', format: 'cjs', uglify: false, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', clean: ['../../dist/platform-server-boot/fesm2015'], outputFile: '../../dist/platform-server-boot/fesm2015/platform-server-boot.js', format: 'cjs', tsconfig: './tsconfig.es2015.json' }
+            { src: 'src/**/*.ts', clean: '../../dist/platform-server-boot/lib', dist: '../../dist/platform-server-boot/lib', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', clean: '../../dist/platform-server-boot/fesm5', outputFile: '../../dist/platform-server-boot/fesm5/platform-server-boot.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', clean: '../../dist/platform-server-boot/fesm2015', outputFile: '../../dist/platform-server-boot/fesm2015/platform-server-boot.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2015.json' },
+            { input: 'src/index.ts', clean: '../../dist/platform-server-boot/fesm2017', outputFile: '../../dist/platform-server-boot/fesm2017/platform-server-boot.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2017.json' }
         ]
     }
 })
