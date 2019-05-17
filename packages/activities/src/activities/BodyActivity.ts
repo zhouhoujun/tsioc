@@ -12,7 +12,7 @@ import { Input } from '@tsdi/boot';
  */
 @Task('[body]')
 export class BodyActivity<T> extends CompoiseActivity<T> {
-    constructor(@Input() activities: ActivityType[]) {
+    constructor(@Input('body') activities: ActivityType[]) {
         super()
         this.activities = activities || [];
     }

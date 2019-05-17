@@ -7,6 +7,7 @@ import { IComponentContext } from '../ComponentContext';
 export interface IBindingParseOption extends IModuleResolveOption  {
     scope?: any;
     selector?: Type<any>;
+    bindExpression?: any;
     binding?: IBinding<any>;
 }
 
@@ -16,6 +17,8 @@ export class ParseContext extends BuildContext implements IComponentContext {
     selector?: Type<any>;
 
     binding?: IBinding<any>;
+
+    bindExpression?: any;
 
     scope?: any;
 

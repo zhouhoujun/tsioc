@@ -13,11 +13,11 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
     template: <LibPackBuilderOption>{
         activity: 'libs',
         tasks: [
-            { src: 'src/**/*.ts', test: 'test/**/*.ts', clean: '../../dist/activities/lib', dist: '../../dist/activities/lib', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', clean: '../../dist/activities/bundles', outputFile: '../../dist/activities/bundles/activities.umd.js', format: 'umd', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', clean: '../../dist/activities/fesm5', outputFile: '../../dist/activities/fesm5/activities.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', clean: '../../dist/activities/fesm2015', outputFile: '../../dist/activities/fesm2015/activities.js', format: 'cjs',  annotation: true, tsconfig: './tsconfig.es2015.json' },
-            { input: 'src/index.ts', clean: '../../dist/activities/fesm2017', outputFile: '../../dist/activities/fesm2017/activities.js', format: 'cjs',  annotation: true, tsconfig: './tsconfig.es2017.json' }
+            { src: 'src/**/*.ts', test: 'test/**/*.ts', dist: '../../dist/activities/lib', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', dist: '../../dist/activities/bundles', outputFile: 'activities.umd.js', format: 'umd', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', dist: '../../dist/activities/fesm5', outputFile: 'activities.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', dist: '../../dist/activities/fesm2015', outputFile: 'activities.js', format: 'cjs',  annotation: true, tsconfig: './tsconfig.es2015.json' },
+            { input: 'src/index.ts', dist: '../../dist/activities/fesm2017', outputFile: 'activities.js', format: 'cjs',  annotation: true, tsconfig: './tsconfig.es2017.json' }
         ]
     }
 })

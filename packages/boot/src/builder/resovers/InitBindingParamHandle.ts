@@ -1,6 +1,6 @@
 import { ResolveHandle } from './ResolveHandle';
 import { BuildContext } from './BuildContext';
-import { RuntimeLifeScope, isNullOrUndefined, InjectReference } from '@tsdi/ioc';
+import { RuntimeLifeScope, isNullOrUndefined, InjectReference, isArray } from '@tsdi/ioc';
 import { IBindingTypeReflect, HandleRegisterer } from '../../core';
 import { ParseContext, ParseScope } from '../parses';
 
@@ -22,9 +22,11 @@ export class InitBindingParamHandle extends ResolveHandle {
                     await Promise.all(bparams.map(async bp => {
                         let paramVal;
                         if (!isNullOrUndefined(ctx.template)) {
+                            let bindExpression = isArray(ctx.template) ? ctx.template : ctx.template[bp.bindingName || bp.name];
                             let pCtx = ParseContext.parse(ctx.type, {
                                 scope: ctx.scope,
-                                template: ctx.template,
+                                bindExpression: bindExpression,
+                                template: isArray(ctx.template) ? undefined : ctx.template,
                                 binding: bp,
                                 annoation: ctx.annoation,
                                 decorator: ctx.decorator

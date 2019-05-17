@@ -1,5 +1,7 @@
 import { Task } from '../decorators';
 import { ExpressionActivity } from './ExpressionActivity';
+import { Input } from '@tsdi/boot';
+import { Expression } from '../core';
 
 /**
  * condition activity.
@@ -11,5 +13,7 @@ import { ExpressionActivity } from './ExpressionActivity';
  */
 @Task('[condition]')
 export class ConditionActivity extends ExpressionActivity<boolean> {
-
+    constructor(@Input() condition: Expression<boolean>) {
+        super(condition)
+    }
 }

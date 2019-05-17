@@ -1,8 +1,9 @@
 import { ParsersHandle } from './ParseHandle';
-import { AttrSelectorHandle } from './AttrSelectorHandle';
-import { DecorTemplateParseHandle } from './DecorTemplateParseHandle';
 import { ParseContext } from './ParseContext';
 import { isNullOrUndefined } from '@tsdi/ioc';
+import { ParseSelectorHandle } from './ParseSelectorHandle';
+import { TranslateSelectorScope } from './TranslateSelectorScope';
+
 
 export class TemplateParseScope extends ParsersHandle {
     async execute(ctx: ParseContext, next?: () => Promise<void>): Promise<void> {
@@ -12,7 +13,8 @@ export class TemplateParseScope extends ParsersHandle {
         }
     }
     setup() {
-        this.use(DecorTemplateParseHandle)
-            .use(AttrSelectorHandle);
+        this.use(TranslateSelectorScope, true)
+            .use(ParseSelectorHandle);
     }
 }
+

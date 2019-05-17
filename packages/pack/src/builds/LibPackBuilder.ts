@@ -11,16 +11,38 @@ const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
 const ts = require('rollup-plugin-typescript');
 import { rollupClassAnnotations } from '@tsdi/annotations';
-import { isString, isNullOrUndefined, isBoolean } from '@tsdi/ioc';
-import { dirname, basename } from 'path';
+import { isString, isNullOrUndefined, isBoolean, isArray } from '@tsdi/ioc';
+import { join } from 'path';
+import { CleanActivityOption } from '../tasks';
 const uglify = require('gulp-uglify');
 const rename = require('gulp-rename');
+const inplace = require('json-in-place');
 
 export interface LibTaskOption {
-    clean?: Src;
+    /**
+     * package export module name.
+     *
+     * @type {string}
+     * @memberof LibTaskOption
+     */
+    moduleName?: string;
+    /**
+     * pipe stream src.
+     *
+     * @type {Src}
+     * @memberof LibTaskOption
+     */
     src?: Src;
-    dist?: Src;
-    dts?: Src,
+
+    /**
+     * output dir path. 
+     *
+     * @type {string}
+     * @memberof LibTaskOption
+     */
+    dist: string;
+
+    dts?: string,
     annotation?: boolean;
     uglify?: boolean;
     tsconfig?: string | CompilerOptions;
@@ -28,24 +50,18 @@ export interface LibTaskOption {
     /**
      * rollup input.
      *
-     * @type {string>>}
+     * @type {Src>>}
      * @memberof LibTaskOption
      */
-    input?: string;
+    input?: Src;
     /**
-     * rollup output file.
+     * the file name (with out dir path) rollup to write
      *
      * @type {string>}
      * @memberof LibTaskOption
      */
     outputFile?: string;
-    /**
-     * rollup output dir.
-     *
-     * @type {string>}
-     * @memberof LibTaskOption
-     */
-    outputDir?: string;
+
     /**
      * rollup format option.
      *
@@ -59,10 +75,10 @@ export interface LibPackBuilderOption extends TemplateOption {
     /**
      * tasks
      *
-     * @type {(Expression<LibTaskOption|LibTaskOption[]>)}
+     * @type { Binding<LibTaskOption[]>}
      * @memberof LibPackBuilderOption
      */
-    tasks?: Binding<Expression<LibTaskOption | LibTaskOption[]>>;
+    tasks?: Binding<Expression<LibTaskOption[]>>;
     /**
      * rollup external setting.
      *
@@ -108,13 +124,21 @@ export interface LibPackBuilderOption extends TemplateOption {
         each: 'binding: tasks',
         body: [
             {
+                activity: Activities.if,
+                condition: ctx => ctx.body.test,
+                body: {
+                    activity: 'test',
+                    test: ctx => ctx.body.test
+                }
+            },
+            {
                 activity: 'if',
                 condition: ctx => ctx.body.src,
                 body: <TsBuildOption>{
                     activity: 'ts',
-                    clean: ctx => ctx.body.clean,
+                    clean: ctx => ctx.body.dist,
                     src: ctx => ctx.body.src,
-                    test: ctx => ctx.body.test,
+                    // test: ctx => ctx.body.test,
                     uglify: ctx => ctx.body.uglify,
                     dist: ctx => ctx.body.dist,
                     dts: ctx => ctx.body.dts || ctx.body.dist,
@@ -127,6 +151,10 @@ export interface LibPackBuilderOption extends TemplateOption {
                 activity: Activities.if,
                 condition: ctx => ctx.body.input,
                 body: [
+                    <CleanActivityOption>{
+                        activity: 'clean',
+                        clean: ctx => ctx.body.dist
+                    },
                     <RollupOption>{
                         activity: 'rollup',
                         input: ctx => ctx.body.input,
@@ -137,26 +165,42 @@ export interface LibPackBuilderOption extends TemplateOption {
                         output: ctx => {
                             return {
                                 format: ctx.body.format || 'cjs',
-                                file: ctx.body.outputFile,
-                                dir: ctx.body.outputDir,
+                                file: ctx.body.outputFile ? join(ctx.body.dist, ctx.body.outputFile) : undefined,
+                                dir: ctx.body.outputFile ? undefined : ctx.body.outputDir,
                                 globals: ctx.scope.globals
                             }
                         }
                     },
                     {
                         activity: Activities.if,
-                        condition: ctx => ctx.body.uglify && (ctx.body.outputFile || ctx.body.outputDir),
+                        condition: ctx => ctx.body.uglify,
                         body: <AssetActivityOption>{
                             activity: 'asset',
-                            src: ctx => ctx.body.outputFile || (ctx.body.outputDir + '/**/*.js'),
-                            dist: ctx => ctx.body.outputFile ? dirname(ctx.body.outputFile) : ctx.body.outputDir,
+                            src: ctx => isArray(ctx.body.input) ? join(ctx.body.dist, '/**/*.js') : join(ctx.body.dist, ctx.body.outputFile),
+                            dist: ctx => ctx.body.dist,
                             sourcemap: 'binding: zipMapsource',
                             pipes: [
                                 ctx => uglify(),
-                                (ctx) => rename(basename(ctx.body.outputFile.replace(/\.js$/, '.min.js')))
+                                (ctx) => rename(ctx.body.outputFile.replace(/\.js$/, '.min.js'))
                             ]
                         }
                     }
+                ]
+            },
+            {
+                activity: Activities.if,
+                condition: ctx => ctx.body.moduleName,
+                body: [
+                    {
+                        activity: Activities.if,
+                        condition: (ctx: NodeActivityContext) => !ctx.platform.existsFile(join(ctx.body.dist, 'package.json')),
+                        body: {
+                            activity: Activities.execute,
+                            action: (ctx: NodeActivityContext) => ctx.platform.copyFile(join(ctx.body.dist, 'package.json'), ctx.body.dist)
+                        }
+                    }
+                    // to replace module export.
+
                 ]
             }
         ]
@@ -171,11 +215,11 @@ export class LibPackBuilder implements AfterInit {
     /**
      * tasks
      *
-     * @type {(Expression<LibTaskOption|LibTaskOption[]>)}
+     * @type {(LibTaskOption[])}
      * @memberof LibPackBuilderOption
      */
     @Input()
-    tasks: Expression<LibTaskOption | LibTaskOption[]>;
+    tasks: Expression<LibTaskOption[]>;
     /**
      * rollup external setting.
      *

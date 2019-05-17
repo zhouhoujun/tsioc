@@ -12,7 +12,7 @@ const commonjs = require('rollup-plugin-commonjs');
 const ts = require('rollup-plugin-typescript');
 import { rollupClassAnnotations } from '@tsdi/annotations';
 import { isString, isNullOrUndefined, isBoolean, isArray } from '@tsdi/ioc';
-import { dirname, basename, join } from 'path';
+import { join } from 'path';
 import { CleanActivityOption } from '../tasks';
 const uglify = require('gulp-uglify');
 const rename = require('gulp-rename');
