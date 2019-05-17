@@ -79,7 +79,7 @@ export class SimpleCTask {
     ],
     template: [
         {
-            // name: 'test------3',
+            name: 'test---task---3',
             activity: Activities.if,
             condition: ctx => true,
             body: [SimpleTask]

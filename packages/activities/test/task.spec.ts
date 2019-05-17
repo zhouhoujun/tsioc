@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Workflow, WorkflowInstance } from '../src';
 import { SimpleTask, SimpleCTask, TaskModuleTest } from './simples.task';
+import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 
 
 describe('activity test', () => {
@@ -32,10 +33,13 @@ describe('activity test', () => {
 
         it('should bootstrap with configure.', async () => {
             let ctx = await Workflow.run({
+                // deps: [
+                //     ServerActivitiesModule
+                // ],
                 name: 'test1',
                 template: [
                     {
-                        name: 'test------1',
+                        name: 'test---ccc---1',
                         activity: SimpleTask
                     },
                     SimpleCTask
@@ -46,8 +50,8 @@ describe('activity test', () => {
                 ]
 
             });
-            // console.log(result.target.activities[1])
             // console.log('configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue);
+            // console.log(ctx.module, ctx.target, ctx.getBootTarget());
             expect(ctx.result).toEqual('component task');
         });
 

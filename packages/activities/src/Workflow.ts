@@ -3,7 +3,7 @@ import {
     UUIDToken, RandomUUIDFactory, WorkflowInstance, ActivityContext,
     ActivityType, ActivityOption
 } from './core';
-import { Type, isClass, LoadType } from '@tsdi/ioc';
+import { Type, isClass, LoadType, isArray } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 import { ActivityCoreModule } from './CoreModule';
@@ -19,13 +19,12 @@ import { SequenceActivity } from './activities';
 export class Workflow extends BootApplication implements ContextInit {
 
     protected onInit(target: Type<any> | ActivityOption<ActivityContext> | ActivityContext) {
-        super.onInit(target);
         if (!isClass(target)) {
-            if (!target.module && target.template) {
+            if (!target.module && isArray(target.template)) {
                 target.module = SequenceActivity;
             }
         }
-
+        super.onInit(target);
     }
 
 
@@ -74,7 +73,7 @@ export class Workflow extends BootApplication implements ContextInit {
     }
 
     getBootDeps() {
-        return [ AopModule, LogModule, ActivityCoreModule, ...super.getBootDeps() ];
+        return [AopModule, LogModule, ActivityCoreModule, ...super.getBootDeps()];
     }
 
     protected createUUID() {

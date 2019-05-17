@@ -17,6 +17,16 @@ import { BindingPropertyHandle } from './BindingPropertyHandle';
 
 export class ResolveMoudleScope extends CompositeHandle<BuildContext> {
 
+    async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
+        // has build module instance.
+        if (!ctx.target) {
+            await super.execute(ctx, next);
+        }
+        if (next) {
+            await next();
+        }
+    }
+
     setup() {
         if (!this.container.has(BuildDecoratorRegisterer)) {
             this.container.register(BuildDecoratorRegisterer);

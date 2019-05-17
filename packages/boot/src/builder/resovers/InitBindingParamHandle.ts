@@ -34,7 +34,6 @@ export class InitBindingParamHandle extends ResolveHandle {
                         } else if (!isNullOrUndefined(bp.defaultValue)) {
                             paramVal = bp.defaultValue;
                         }
-
                         if (!isNullOrUndefined(paramVal)) {
                             ctx.providers.push({ provide: new InjectReference(bp.provider || bp.type || bp.name, '__binding'), useValue: paramVal });
                         }

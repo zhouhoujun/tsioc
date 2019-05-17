@@ -1,6 +1,6 @@
 import { ParseHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
-import { isNullOrUndefined, lang, isUndefined } from '@tsdi/ioc';
+import { isNullOrUndefined, lang } from '@tsdi/ioc';
 
 export class DefaultParseHandle extends ParseHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {

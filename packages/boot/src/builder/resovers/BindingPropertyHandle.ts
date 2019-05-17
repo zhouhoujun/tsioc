@@ -12,7 +12,7 @@ export class BindingPropertyHandle extends ResolveHandle {
                 let registerer = this.container.get(HandleRegisterer);
                 await Promise.all(Array.from(ref.propBindings.keys()).map(async n => {
                     let binding = ref.propBindings.get(n);
-                    let tempVal = ctx.template[binding.bindingName || binding.name];
+                    let tempVal = ctx.template ? ctx.template[binding.bindingName || binding.name] : null;
                     if (!isNullOrUndefined(tempVal)) {
                         let pctx = ParseContext.parse(ctx.type, {
                             scope: ctx.scope,

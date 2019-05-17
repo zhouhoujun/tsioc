@@ -8,8 +8,7 @@ export class BindingTemplateHandle extends ResolveHandle {
         if (ctx.target && ctx.component) {
             let raiseContainer = ctx.getRaiseContainer();
 
-            raiseContainer.get(TemplateManager)
-                .set(ctx.target, ctx.component);
+            raiseContainer.get(TemplateManager).set(ctx.target, ctx.component);
             let regs = this.container.get(BindingComponentDecoratorRegisterer);
             if (regs.has(ctx.decorator)) {
                 await this.execFuncs(ctx, regs.getFuncs(this.container, ctx.decorator));

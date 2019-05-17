@@ -120,8 +120,8 @@ export class BootApplication implements IBootApplication, ContextInit {
      * @returns {Promise<BootContext>}
      * @memberof BootApplication
      */
-    async run(...args: string[]): Promise<BootContext> {
-        return await this.container.resolve(BuilderService).boot(this, ...args);
+    run(...args: string[]): Promise<BootContext> {
+        return this.container.resolve(BuilderService).boot(this, ...args);
     }
 
     getPools(): ContainerPool {

@@ -2,6 +2,7 @@ import { RegisterModuleRegisterHandle } from './RegisterModuleRegisterHandle';
 import { AnnoationContext, CompositeHandle } from '../core';
 import { RegisterAnnoationHandle } from './RegisterAnnoationHandle';
 import { BootContext } from '../BootContext';
+import { ModuleDecoratorService } from '../services';
 
 
 export class RegisterModuleScope extends CompositeHandle<AnnoationContext> {
@@ -11,10 +12,20 @@ export class RegisterModuleScope extends CompositeHandle<AnnoationContext> {
             return;
         }
         // has build module instance.
-        if (ctx.annoation || ctx.getRaiseContainer().has(ctx.module)) {
-            await next && next();
+        if (!(this.container.has(ctx.module) && ctx.getRaiseContainer().has(ctx.module))) {
+            await super.execute(ctx);
         } else {
-            await super.execute(ctx, next);
+            if (!ctx.decorator) {
+                ctx.decorator = this.container.get(ModuleDecoratorService).getDecorator(ctx.module);
+            }
+            if (ctx.decorator) {
+                if (!ctx.annoation) {
+                    ctx.annoation = this.container.get(ModuleDecoratorService).getAnnoation(ctx.module, ctx.decorator);
+                }
+            }
+        }
+        if (next) {
+            await next();
         }
 
     }

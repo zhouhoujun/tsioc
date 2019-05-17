@@ -60,7 +60,8 @@ export class BuilderService extends IocCoreService {
         if (providers.length) {
             rctx.providers = (rctx.providers || []).concat(providers);
         }
-        await this.container.get(HandleRegisterer).get(ResolveMoudleScope)
+        await this.container.get(HandleRegisterer)
+            .get(ResolveMoudleScope)
             .execute(rctx);
         return rctx;
     }

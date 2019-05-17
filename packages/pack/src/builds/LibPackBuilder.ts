@@ -185,8 +185,6 @@ export class LibPackBuilder implements AfterInit {
     @Input()
     external?: Expression<ExternalOption>;
 
-    @Input()
-    sourcemap?: Expression<boolean | string>;
     /**
      * rollup plugins setting.
      *
@@ -212,6 +210,9 @@ export class LibPackBuilder implements AfterInit {
      */
     @Input()
     options?: Expression<RollupFileOptions | RollupDirOptions>;
+
+    @Input()
+    sourcemap?: Expression<boolean | string>;
 
     get zipMapsource() {
         if (this.sourcemap && isBoolean(this.sourcemap)) {
