@@ -26,7 +26,7 @@ export interface AssetActivityOption extends TemplateOption {
      */
     src?: Binding<Expression<Src>>;
 
-    sourcemaps?: Binding<Expression<string>>;
+    sourcemap?: Binding<Expression<string | boolean>>;
     /**
      * shell args.
      *
@@ -89,9 +89,9 @@ export class AssetActivity extends PipeActivity {
 
     protected getRunSequence(): ActivityType[] {
         return [
-            this.sourcemapInit,
             this.clean,
             this.src,
+            this.sourcemapInit,
             this.streamPipes,
             this.sourcemapWrite,
             this.dist

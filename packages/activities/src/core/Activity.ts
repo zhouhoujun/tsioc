@@ -245,18 +245,7 @@ export abstract class Activity<T> {
      * @memberof Activity
      */
     protected async resolveExpression<TVal>(express: Expression<TVal>, ctx: ActivityContext): Promise<TVal> {
-        if (isClass(express)) {
-            let bctx = await this.getContainer().get(BuilderService).run(express);
-            return bctx.data;
-        } else if (isFunction(express)) {
-            return await express(ctx);
-        } else if (express instanceof Activity) {
-            await express.run(ctx);
-            return express.result.value;
-        } else if (isPromise(express)) {
-            return await express;
-        }
-        return express;
+        return await ctx.resolveExpression(express, this.getContainer());
     }
 
 }

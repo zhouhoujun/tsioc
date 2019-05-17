@@ -48,7 +48,7 @@
     "@tsdi/boot": "^4.0.5",
     "@tsdi/core": "^4.0.5",
     "@tsdi/unit": "^4.0.5",
-    "@tsdi/unit-console":"^4.0.5",
+    "@tsdi/unit-console": "^4.0.5",
     "@tsdi/logs": "^4.0.5",
     "@tsdi/annotations": "^4.0.5",
     "@tsdi/activities": "^4.0.5",
@@ -73,7 +73,6 @@
     "rollup-plugin-commonjs": "^8.4.1",
     "rollup-plugin-node-resolve": "^3.3.0",
     "rollup-plugin-sourcemaps": "^0.4.2",
-    "rollup-plugin-uglify": "^6.0.2",
     "vinyl-fs": "^3.0.3",
     "rxjs": "^6.3.3",
     "shelljs": "^0.8.3",
@@ -83,5 +82,7 @@
   "directories": {
     "lib": "lib",
     "test": "test"
+  },
+  "devDependencies": {
   }
 }

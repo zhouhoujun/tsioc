@@ -11,7 +11,7 @@ const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
 const ts = require('rollup-plugin-typescript');
 import { rollupClassAnnotations } from '@tsdi/annotations';
-import { isString, isNullOrUndefined } from '@tsdi/ioc';
+import { isString, isNullOrUndefined, isBoolean } from '@tsdi/ioc';
 import { dirname, basename } from 'path';
 const uglify = require('gulp-uglify');
 const rename = require('gulp-rename');
@@ -145,12 +145,12 @@ export interface LibPackBuilderOption extends TemplateOption {
                     },
                     {
                         activity: Activities.if,
-                        condition: ctx => ctx.body.uglify && ctx.body.outputFile,
+                        condition: ctx => ctx.body.uglify && (ctx.body.outputFile || ctx.body.outputDir),
                         body: <AssetActivityOption>{
                             activity: 'asset',
-                            src: ctx => ctx.body.outputFile,
-                            dist: ctx => dirname(ctx.body.outputFile),
-                            sourcemap: 'binding: sourcemap',
+                            src: ctx => ctx.body.outputFile || (ctx.body.outputDir + '/**/*.js'),
+                            dist: ctx => ctx.body.outputFile ? dirname(ctx.body.outputFile) : ctx.body.outputDir,
+                            sourcemap: 'binding: zipMapsource',
                             pipes: [
                                 ctx => uglify(),
                                 (ctx) => rename(basename(ctx.body.outputFile.replace(/\.js$/, '.min.js')))
@@ -213,6 +213,13 @@ export class LibPackBuilder implements AfterInit {
     @Input()
     options?: Expression<RollupFileOptions | RollupDirOptions>;
 
+    get zipMapsource() {
+        if (this.sourcemap && isBoolean(this.sourcemap)) {
+            return './';
+        }
+        return this.sourcemap;
+    }
+
     async onAfterInit(): Promise<void> {
         if (!this.external) {
             this.external = [
@@ -228,11 +235,10 @@ export class LibPackBuilder implements AfterInit {
                 }
             });
         }
-
+        if (isNullOrUndefined(this.sourcemap)) {
+            this.sourcemap = true;
+        }
         if (!this.plugins) {
-            if (isNullOrUndefined(this.sourcemap)) {
-                this.sourcemap = true;
-            }
             this.plugins = (ctx: NodeActivityContext) => [
                 resolve(),
                 commonjs(),

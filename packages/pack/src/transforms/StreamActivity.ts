@@ -1,5 +1,5 @@
 import { Task, Expression } from '@tsdi/activities';
-import { ITransform, NodeActivityContext, isTransform } from '../core';
+import { ITransform, NodeActivityContext } from '../core';
 import { Input } from '@tsdi/boot';
 import { PipeActivity } from './PipeActivity';
 
@@ -12,12 +12,9 @@ export class StreamActivity extends PipeActivity {
     }
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
-        if (isTransform(ctx.data)) {
-            this.result.value = ctx.data;
-        }
         let pipes = await this.resolveExpression(this.pipes, ctx);
         if (pipes && pipes.length) {
-            await this.pipeStream(ctx, this.result.value, ...pipes);
+            this.result.value = await this.pipeStream(ctx, this.result.value, ...pipes);
         }
     }
 
