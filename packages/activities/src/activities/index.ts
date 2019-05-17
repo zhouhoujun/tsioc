@@ -8,7 +8,7 @@ export * from './AssignActivity';
 export * from './Parallel';
 export * from './Sequence';
 export * from './ExpressionActivity';
-
+export * from './ExecuteActivity';
 
 export * from './Confirm';
 export * from './Delay';

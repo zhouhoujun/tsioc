@@ -171,6 +171,10 @@ export class PlatformService {
         }
     }
 
+    existsFile(filename: string): boolean {
+        return existsSync(this.toRootPath(filename));
+    }
+
     copyDir(src: Src, dist: string, options?: CmdOptions) {
         if (!existsSync(dist)) {
             mkdir('-p', dist);

@@ -28,7 +28,8 @@ export enum Activities {
     sequence = 'sequence',
     parallel = 'parallel',
     interval = 'interval',
-    each = 'each'
+    each = 'each',
+    execute = 'execute'
 }
 
 /**
@@ -102,6 +103,10 @@ export interface InvokeTemplate extends TemplateOption {
     target: Binding<Token<any>>,
     method: Binding<string>,
     args: Binding<ProviderTypes[]>
+}
+
+export interface ExecuteOption extends TemplateOption {
+    action: Binding<Expression<any>>;
 }
 
 
@@ -223,7 +228,7 @@ export interface TryTemplate extends TemplateOption {
     finally?: Binding<ActivityType[]>;
 }
 
-export type ControlTemplate = TemplateOption | ExpressionTemplate | ConditionTemplate | EachTeamplate | InvokeTemplate
+export type ControlTemplate = TemplateOption | ExecuteOption | ExpressionTemplate | ConditionTemplate | EachTeamplate | InvokeTemplate
     | BodyTemplate | TimerTemplate | ThrowTemplate | SwitchTemplate | TryTemplate;
 
 
