@@ -10,7 +10,7 @@ import {
 // import * as globby from 'globby';
 import { ProcessRunRootToken } from '@tsdi/boot';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { sys, CompilerOptions, readConfigFile, parseJsonConfigFileContent } from 'typescript';
+import { CompilerOptions } from 'typescript';
 const globby = require('globby');
 const minimist = require('minimist');
 const del = require('del');
