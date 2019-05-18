@@ -65,7 +65,7 @@ export class DestActivity extends PipeActivity {
         let dist = await this.resolveExpression(this.dist, ctx);
         if (dist) {
             let options = await this.resolveExpression(this.options, ctx);
-            await this.executePipe(ctx, this.result.value, dest(ctx.platform.relativeRoot(dist), options), true);
+            await this.executePipe(ctx, this.result.value, dest(ctx.platform.toRootPath(dist), options), true);
         }
         this.result.value = null;
     }

@@ -97,6 +97,9 @@ export class RollupActivity extends NodeActivity<void> {
         await Promise.all(['input', 'output', 'plugins', 'external', 'cache', 'watch']
             .map(async n => {
                 let val = await this.resolveExpression(this[n], ctx);
+                if (n === 'input') {
+                    val = ctx.platform.toRootSrc(val);
+                }
                 if (isArray(val) && val.length) {
                     val = val.filter(f => !isNullOrUndefined(f));
                     if (val.length) {
@@ -112,12 +115,16 @@ export class RollupActivity extends NodeActivity<void> {
                 opts.output.sourcemap = isString(sourceMap) ? true : sourceMap;
             }
         }
+        if (opts.output.file) {
+            opts.output.file = ctx.platform.toRootPath(opts.output.file);
+        }
+        if (opts.output.dir) {
+            opts.output.dir = ctx.platform.toRootPath(opts.output.dir);
+        }
         if (!opts.output.name && opts.output.file) {
             opts.output.name = ctx.platform.getFileName(opts.output.file);
         }
         opts.plugins = opts.plugins.filter(p => p);
-        console.log(ctx.getCurrBaseURL(), ctx.platform.getRootPath())
-        console.log(opts);
         let bundle = await rollup(opts as any);
         await bundle.write(opts.output);
     }
