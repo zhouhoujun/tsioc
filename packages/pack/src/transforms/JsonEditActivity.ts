@@ -1,10 +1,10 @@
-import { PipeActivity } from './PipeActivity';
 import { Task, TemplateOption } from '@tsdi/activities';
 import { NodeActivityContext } from '../core';
 const inplace = require('json-in-place');
 import * as through from 'through2';
 import { Input, Binding } from '@tsdi/boot';
 import { isFunction } from '@tsdi/ioc';
+import { TransformActivity } from './TransformActivity';
 
 
 export type JsonEdit = (json: any, ctx?: NodeActivityContext) => Map<string, any>;
@@ -20,7 +20,7 @@ export interface JsonEditActivityOption extends TemplateOption {
 }
 
 @Task('jsonEdit')
-export class JsonEditActivity extends PipeActivity {
+export class JsonEditActivity extends TransformActivity {
 
     @Input()
     fields: JsonEdit;
@@ -30,7 +30,7 @@ export class JsonEditActivity extends PipeActivity {
         if (!isFunction(fields)) {
             return;
         }
-        this.result.value = await this.executePipe(ctx, ctx.result.value, through.obj(function (file, encoding, callback) {
+        this.result.value = through.obj(function (file, encoding, callback) {
             if (file.isNull()) {
                 return callback(null, file);
             }
@@ -49,6 +49,6 @@ export class JsonEditActivity extends PipeActivity {
             file.contents = new Buffer(contents);
             this.push(file);
             callback();
-        }))
+        });
     }
 }

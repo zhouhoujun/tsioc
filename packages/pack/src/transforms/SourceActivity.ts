@@ -3,6 +3,7 @@ import { Task, Src, Expression, TemplateOption } from '@tsdi/activities';
 import { SrcOptions, src } from 'vinyl-fs';
 import { Input, Binding } from '@tsdi/boot';
 import { PipeActivity } from './PipeActivity';
+import { TransformActivity } from './TransformActivity';
 
 
 
@@ -39,7 +40,7 @@ export interface SourceActivityOption extends TemplateOption {
  * @extends {TransformActivity}
  */
 @Task('src, [src]')
-export class SourceActivity extends PipeActivity {
+export class SourceActivity extends TransformActivity {
 
     @Input()
     protected src: Expression<Src>;

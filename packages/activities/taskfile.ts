@@ -12,12 +12,13 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
     baseURL: __dirname,
     template: <LibPackBuilderOption>{
         activity: 'libs',
+        outDir: '../../dist/activities',
         tasks: [
-            { src: 'src/**/*.ts', test: 'test/**/*.ts', dist: '../../dist/activities/lib', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', dist: '../../dist/activities/bundles', outputFile: 'activities.umd.js', format: 'umd', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', dist: '../../dist/activities/fesm5', outputFile: 'activities.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', dist: '../../dist/activities/fesm2015', outputFile: 'activities.js', format: 'cjs',  annotation: true, tsconfig: './tsconfig.es2015.json' },
-            { input: 'src/index.ts', dist: '../../dist/activities/fesm2017', outputFile: 'activities.js', format: 'cjs',  annotation: true, tsconfig: './tsconfig.es2017.json' }
+            { src: 'src/**/*.ts', test: 'test/**/*.ts', moduleName: 'esm5', moduleFolder: 'lib', dtsMain: 'index.d.ts', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', moduleName: 'main', moduleFolder: 'bundles', fileName: 'activities.umd.js', format: 'umd', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', moduleName: 'fesm5', fileName: 'activities.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', moduleName: 'fesm2015', fileName: 'activities.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2015.json' },
+            { input: 'src/index.ts', moduleName: 'fesm2017', fileName: 'activities.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2017.json' }
         ]
     }
 })

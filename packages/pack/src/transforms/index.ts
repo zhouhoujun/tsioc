@@ -1,3 +1,4 @@
+export * from './TransformActivity';
 export * from './PipeActivity';
 export * from './AnnoationActivity';
 export * from './SourceMap';

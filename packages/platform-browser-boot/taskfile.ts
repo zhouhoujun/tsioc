@@ -10,12 +10,13 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
     baseURL: __dirname,
     template: <LibPackBuilderOption>{
         activity: 'libs',
+        outDir: '../../dist/platform-browser-boot',
         tasks: [
-            { src: 'src/**/*.ts', test: 'test/**/*.ts', dist: '../../dist/platform-browser-boot/lib', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', dist: '../../dist/platform-browser-boot/bundle', outputFile: 'platform-browser-boot.umd.js', format: 'umd', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', dist: '../../dist/platform-browser-boot/fesm5', outputFile: 'platform-browser-boot.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', dist: '../../dist/platform-browser-boot/fesm2015', outputFile: 'platform-browser-boot.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2015.json' },
-            { input: 'src/index.ts', dist: '../../dist/platform-browser-boot/fesm2017', outputFile: 'platform-browser-boot.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2017.json' }
+            { src: 'src/**/*.ts', test: 'test/**/*.ts', moduleName: 'esm5', moduleFolder: 'lib', dtsMain: 'index.d.ts', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', moduleName: 'main', moduleFolder: 'bundle', fileName: 'platform-browser-boot.umd.js', format: 'umd', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', moduleName: 'fesm5', fileName: 'platform-browser-boot.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', moduleName: 'fesm2015', fileName: 'platform-browser-boot.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2015.json' },
+            { input: 'src/index.ts', moduleName: 'fesm2017', fileName: 'platform-browser-boot.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2017.json' }
         ]
     }
 })

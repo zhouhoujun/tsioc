@@ -252,7 +252,7 @@ export type ActivityTemplate = TemplateType | TemplateType[];
 /**
  * expression.
  */
-export type Expression<T> = T | Promise<T> | Activity<T> | ((ctx: ActivityContext) => T | Promise<T>) | Type<any>;
+export type Expression<T> = T | Promise<T> | Type<Activity<T>> | Activity<T> | ((ctx: ActivityContext) => T | Promise<T>) | Type<any>;
 
 
 

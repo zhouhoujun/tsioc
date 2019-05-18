@@ -10,12 +10,13 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
     baseURL: __dirname,
     template: <LibPackBuilderOption>{
         activity: 'libs',
+        outDir: '../../dist/platform-browser',
         tasks: [
-            { src: 'src/**/*.ts', test: 'test/**/*.ts', dist: '../../dist/platform-browser/lib', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', dist: '../../dist/platform-browser/bundle', outputFile: 'platform-browser.umd.js', format: 'umd', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', dist: '../../dist/platform-browser/fesm5', outputFile: 'platform-browser.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', dist: '../../dist/platform-browser/fesm2015', outputFile: 'platform-browser.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2015.json' },
-            { input: 'src/index.ts', dist: '../../dist/platform-browser/fesm2017', outputFile: 'platform-browser.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2017.json' }
+            { src: 'src/**/*.ts', test: 'test/**/*.ts', moduleName: 'esm5', moduleFolder: 'lib', dtsMain: 'index.d.ts', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', moduleName: 'main', moduleFolder: 'bundle', fileName: 'platform-browser.umd.js', format: 'umd', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', moduleName: 'fesm5', fileName: 'platform-browser.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', moduleName: 'fesm2015', fileName: 'platform-browser.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2015.json' },
+            { input: 'src/index.ts', moduleName: 'fesm2017', fileName: 'platform-browser.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2017.json' }
         ]
     }
 })

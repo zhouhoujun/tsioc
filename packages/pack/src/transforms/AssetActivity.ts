@@ -1,4 +1,4 @@
-import { Src, Task, TemplateOption, Expression, ActivityType } from '@tsdi/activities';
+import { Src, Task, TemplateOption, Expression, ActivityType, GActivityType } from '@tsdi/activities';
 import { NodeActivityContext, ITransform } from '../core';
 import { StreamActivity } from './StreamActivity';
 import { SourceActivity } from './SourceActivity';
@@ -41,7 +41,7 @@ export interface AssetActivityOption extends TemplateOption {
      * @type {Binding<Expression<ITransform>[]>}
      * @memberof ShellActivityOption
      */
-    pipes?: Binding<Expression<ITransform>[]>;
+    pipes?: Binding<GActivityType<ITransform>[]>;
 
 }
 
