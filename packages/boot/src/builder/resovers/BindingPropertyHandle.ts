@@ -1,7 +1,7 @@
 import { IBindingTypeReflect, HandleRegisterer } from '../../core';
 import { BuildContext } from './BuildContext';
 import { isNullOrUndefined } from '@tsdi/ioc';
-import { ParseScope, ParseContext } from '../parses';
+import { BindingScope, ParseContext } from '../parses';
 import { ResolveHandle } from './ResolveHandle';
 
 export class BindingPropertyHandle extends ResolveHandle {
@@ -22,7 +22,8 @@ export class BindingPropertyHandle extends ResolveHandle {
                             annoation: ctx.annoation,
                             decorator: ctx.decorator
                         }, ctx.getRaiseContainer())
-                        await registerer.get(ParseScope).execute(pctx);
+                        await registerer.get(BindingScope).execute(pctx);
+                        console.log(pctx.type, binding, pctx.value)
                         ctx.target[binding.name] = pctx.value;
                     } else if (!isNullOrUndefined(binding.defaultValue)) {
                         ctx.target[binding.name] = binding.defaultValue;

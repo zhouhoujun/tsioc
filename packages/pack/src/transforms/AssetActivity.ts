@@ -71,7 +71,7 @@ export class AssetActivity extends PipeActivity {
      * @type {Expression<Src>}
      * @memberof AssetActivity
      */
-    @Input('dist', './dist')
+    @Input('dist')
     dist: DestActivity;
 
     @Input('sourcemap')

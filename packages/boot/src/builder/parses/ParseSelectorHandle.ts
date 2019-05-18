@@ -1,11 +1,11 @@
 import { ParsersHandle } from './ParseHandle';
-import { ParseContext } from './ParseContext';
+import { TemplateContext } from './TemplateContext';
 import { isNullOrUndefined } from '@tsdi/ioc';
 import { BuilderService } from '../BuilderService';
 import { RegScope } from '../../core';
 
 export class ParseSelectorHandle extends ParsersHandle {
-    async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
+    async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
         if (ctx.selector) {
             let selector = ctx.selector;
             let container = ctx.getRaiseContainer();
@@ -23,7 +23,6 @@ export class ParseSelectorHandle extends ParsersHandle {
                     regScope: RegScope.boot, providers: ctx.providers
                 });
             }
-            console.log(selector, ctx.type, ctx.value);
         }
         if (isNullOrUndefined(ctx.value)) {
             await next();

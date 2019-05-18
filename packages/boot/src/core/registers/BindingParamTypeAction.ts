@@ -45,8 +45,9 @@ export class BindingParamTypeAction extends BindDeignParamTypeAction {
                     if (!bindParams.some(b => b.name === desp.name)) {
                         bindParams.push({
                             name: desp.name,
+                            bindingName: parm.bindingName,
                             type: desp.type as ClassType<any>,
-                            provider: this.container.getTokenKey(parm.provider, parm.alias),
+                            provider: parm.provider,
                             defaultValue: parm.defaultValue
                         });
                     }

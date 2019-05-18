@@ -3,7 +3,6 @@ import { DecoratorBuildHandle } from './DecoratorBuildHandle';
 import { ResolveModuleHandle } from './ResolveModuleHandle';
 import { BuildContext } from './BuildContext';
 import { BuildDecoratorRegisterer } from './BuildDecoratorRegisterer';
-import { ParseScope } from '../parses/ParseScope';
 import { InitResolveModuleHandle } from './InitResolveModuleHandle';
 import { InitBindingParamHandle } from './InitBindingParamHandle';
 import { ModuleBeforeInitHandle } from './ModuleBeforeInitHandle';
@@ -13,6 +12,7 @@ import { BindingComponentDecoratorRegisterer } from './BindingComponentDecorator
 import { BindingTemplateHandle } from './BindingTemplateHandle';
 import { ModuleAfterContentInitHandle } from './ModuleAfterContentInitHandle';
 import { BindingPropertyHandle } from './BindingPropertyHandle';
+import { BindingScope, TemplateParseScope } from '../parses';
 
 
 export class ResolveMoudleScope extends CompositeHandle<BuildContext> {
@@ -34,7 +34,8 @@ export class ResolveMoudleScope extends CompositeHandle<BuildContext> {
         if (!this.container.has(BindingComponentDecoratorRegisterer)) {
             this.container.register(BindingComponentDecoratorRegisterer);
         }
-        this.registerHandle(ParseScope, true);
+        this.registerHandle(BindingScope, true)
+            .registerHandle(TemplateParseScope, true);
 
         this.use(InitResolveModuleHandle)
             .use(InitBindingParamHandle)

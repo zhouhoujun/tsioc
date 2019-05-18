@@ -2,7 +2,7 @@ import { ResolveHandle } from './ResolveHandle';
 import { BuildContext } from './BuildContext';
 import { RuntimeLifeScope, isNullOrUndefined, InjectReference, isArray } from '@tsdi/ioc';
 import { IBindingTypeReflect, HandleRegisterer } from '../../core';
-import { ParseContext, ParseScope } from '../parses';
+import { ParseContext, BindingScope } from '../parses';
 
 export class InitBindingParamHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
@@ -23,7 +23,7 @@ export class InitBindingParamHandle extends ResolveHandle {
                         let paramVal;
                         if (!isNullOrUndefined(ctx.template)) {
                             let bindExpression = isArray(ctx.template) ? ctx.template : ctx.template[bp.bindingName || bp.name];
-                            let pCtx = ParseContext.parse(ctx.type, {
+                            let pctx = ParseContext.parse(ctx.type, {
                                 scope: ctx.scope,
                                 bindExpression: bindExpression,
                                 template: isArray(ctx.template) ? undefined : ctx.template,
@@ -31,13 +31,14 @@ export class InitBindingParamHandle extends ResolveHandle {
                                 annoation: ctx.annoation,
                                 decorator: ctx.decorator
                             }, ctx.getRaiseContainer());
-                            await hregisterer.get(ParseScope).execute(pCtx);
-                            paramVal = pCtx.value;
+                            await hregisterer.get(BindingScope).execute(pctx);
+                            console.log(pctx.type, bp, pctx.value)
+                            paramVal = pctx.value;
                         } else if (!isNullOrUndefined(bp.defaultValue)) {
                             paramVal = bp.defaultValue;
                         }
                         if (!isNullOrUndefined(paramVal)) {
-                            ctx.providers.push({ provide: new InjectReference(bp.provider || bp.type || bp.name, '__binding'), useValue: paramVal });
+                            ctx.providers.push({ provide: new InjectReference(bp.provider || bp.bindingName || bp.name, '__binding'), useValue: paramVal });
                         }
                     }));
                 }
