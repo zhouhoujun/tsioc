@@ -2,7 +2,7 @@ import { ExecOptions, exec } from 'child_process';
 import { isBoolean, isArray, lang, ObjectMap, isNullOrUndefined, PromiseUtil } from '@tsdi/ioc';
 import { Src, Task, TemplateOption, Activity, Expression } from '@tsdi/activities';
 import { NodeActivityContext } from '../core';
-import { Input } from '@tsdi/boot';
+import { Input, Binding } from '@tsdi/boot';
 
 
 /**
@@ -16,31 +16,31 @@ export interface ShellActivityOption extends TemplateOption {
     /**
      * shell cmd
      *
-     * @type {CtxType<Src>}
+     * @type {Binding<Expression<Src>>}
      * @memberof ShellActivityConfig
      */
-    shell?: Expression<Src>;
+    shell?: Binding<Expression<Src>>;
     /**
      * shell args.
      *
-     * @type {CtxType<string[] | ObjectMap<any>>}
+     * @type {Binding<Expression<string[] | ObjectMap<any>>>}
      * @memberof ShellActivityConfig
      */
-    args?: Expression<string[] | ObjectMap<any>>;
+    args?: Binding<Expression<string[] | ObjectMap<any>>>;
     /**
      * shell exec options.
      *
-     * @type {CtxType<ExecOptions>}
+     * @type {Binding<Expression<ExecOptions>>}
      * @memberof ShellActivityConfig
      */
-    options?: Expression<ExecOptions>;
+    options?: Binding<Expression<ExecOptions>>;
     /**
      * allow error or not.
      *
-     * @type {CtxType<boolean>}
+     * @type {Binding<Expression<boolean>>}
      * @memberof ShellActivityConfig
      */
-    allowError?: Expression<boolean>;
+    allowError?: Binding<Expression<boolean>>;
 }
 
 

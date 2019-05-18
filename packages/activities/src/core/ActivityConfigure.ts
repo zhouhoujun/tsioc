@@ -79,7 +79,7 @@ export interface TemplateOption {
      * @type {string}
      * @memberof ConditionOption
      */
-    activity?: string | Activities | Type<any>;
+    activity: string | Activities | Type<any>;
 
     /**
      * action name.

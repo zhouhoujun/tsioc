@@ -1,129 +1,98 @@
-import { Workflow, IfActivityToken, SequenceActivityToken, ExecuteToken } from '@tsdi/activities';
-import { INodeActivityContext, Asset, AssetToken, NodeActivityContext } from '@tsdi/build';
-import * as through from 'through2';
+import { Workflow, Task, Activities, isAcitvityClass, Activity } from '@tsdi/activities';
 import * as path from 'path';
-import { isPackClass, PackModule } from '@tsdi/pack';
-import { isString } from '@tsdi/ioc';
-const inplace = require('json-in-place');
+import { PackModule, NodeActivityContext, ShellActivityOption, JsonEditActivityOption } from '@tsdi/pack';
+import { Type, isString } from '@tsdi/ioc';
+import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 
-
-let versionSetting = (ctx: INodeActivityContext) => {
-    let envArgs = ctx.getEnvArgs();
-    return through.obj(function (file, encoding, callback) {
-        if (file.isNull()) {
-            return callback(null, file);
-        }
-
-        if (file.isStream()) {
-            return callback('doesn\'t support Streams');
-        }
-
-        let contents: string = file.contents.toString('utf8');
-        let version = envArgs['setvs'] || '';
-        if (version) {
-            let json = JSON.parse(contents);
-            let replaced = inplace(contents)
-                .set('version', version);
-
-            Object.keys(json.peerDependencies || {}).forEach(key => {
-                if (/^@tsdi/.test(key)) {
-                    replaced.set('peerDependencies.' + key, '^' + version);
-                }
-            });
-            Object.keys(json.dependencies || {}).forEach(key => {
-                if (/^@tsdi/.test(key)) {
-                    replaced.set('dependencies.' + key, '^' + version);
-                }
-            });
-
-            contents = replaced.toString();
-        }
-        file.contents = new Buffer(contents);
-        this.push(file);
-        callback();
-    })
-}
-
-@Asset({
-    pipes: [
+@Task({
+    deps: [
+        PackModule,
+        ServerActivitiesModule
+    ],
+    baseURL: __dirname,
+    template: [
         {
-            ifBody: {
-                sequence: [
-                    {
-                        src: ['packages/**/package.json', '!node_modules/**/package.json'],
-                        pipes: [
-                            ctx => versionSetting(ctx)
-                        ],
-                        dest: 'packages',
-                        activity: AssetToken
-                    },
-                    {
-                        src: ['package.json'],
-                        pipes: [
-                            ctx => versionSetting(ctx)
-                        ],
-                        dest: '.',
-                        activity: AssetToken
-                    }
-                ],
-                activity: SequenceActivityToken
+            activity: Activities.if,
+            condition: (ctx: NodeActivityContext) => {
+                let unp = ctx.platform.getEnvArgs().unp;
+                return isString(unp) && /\d+.\d+.\d+/.test(unp);
             },
-            if: ctx => ctx.getEnvArgs().setvs,
-            activity: IfActivityToken
-        },
-        {
-            execute: (ctx: INodeActivityContext) => {
-                let envArgs = ctx.getEnvArgs();
-                let packages = ctx.getFolders('packages'); // (f => !/(annotations|aop|bootstrap)/.test(f));
-
-                let activities = [];
-                if (isString(envArgs.unp) && /\d+.\d+.\d+/.test(envArgs.unp)) {
+            body: <ShellActivityOption>{
+                activity: 'shell',
+                shell: (ctx: NodeActivityContext) => {
+                    let packages = ctx.platform.getFolders('packages');
+                    let version = ctx.platform.getEnvArgs().unp;
                     let cmds = [];
                     packages.forEach(fd => {
                         let objs = require(path.join(fd, 'package.json'));
                         if (objs && objs.name) {
-                            cmds.push(`npm unpublish ${objs.name}@${envArgs.unp}`)
+                            cmds.push(`npm unpublish ${objs.name}@${version}`)
                         }
                     });
                     console.log(cmds);
-                    activities.push({
-                        shell: cmds,
-                        activity: 'shell'
-                    });
-                } else {
-                    if (!(envArgs.b === false || envArgs.b === 'false')) {
-                        packages.forEach(fd => {
-                            let objs = require(path.join(fd, 'taskfile.ts'));
-                            let builder = Object.values(objs).find(v => isPackClass(v));
-                            activities.push(builder);
-                        });
+                    return cmds;
+                }
+            }
+        },
+        {
+            activity: Activities.else,
+            body: [
+                {
+                    activity: Activities.if,
+                    condition: (ctx: NodeActivityContext) => ctx.platform.getEnvArgs().setvs,
+                    body: <JsonEditActivityOption>{
+                        activity: 'jsonEdit',
+                        fields: (json, ctx) => {
+                            let chgs = new Map<string, any>();
+                            let version = ctx.platform.getEnvArgs().setvs;
+                            Object.keys(json.peerDependencies || {}).forEach(key => {
+                                if (/^@tsdi/.test(key)) {
+                                    chgs.set('peerDependencies.' + key, '^' + version);
+                                }
+                            });
+                            Object.keys(json.dependencies || {}).forEach(key => {
+                                if (/^@tsdi/.test(key)) {
+                                    chgs.set('dependencies.' + key, '^' + version);
+                                }
+                            });
+                            return chgs;
+                        }
                     }
-                    if (envArgs.deploy) {
-                        let cmd = 'npm publish --access=public'; // envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
-                        let cmds = packages.map(fd => {
-                            return `cd ${fd} && ${cmd}`;
-                        });
-                        console.log(cmds);
-                        activities.push({
-                            shell: cmds,
-                            activity: 'shell'
-                        });
+                },
+                {
+                    activity: Activities.each,
+                    each: (ctx: NodeActivityContext) => ctx.platform.getFolders('packages'),
+                    body: {
+                        activity: Activities.execute,
+                        action: async ctx => {
+                            let activitys = Object.values(require(path.join(ctx.body, 'taskfile.ts'))).filter(b => isAcitvityClass(b)) as Type<Activity<any>>[];
+                            await Workflow.sequence(...activitys);
+                        }
+                    }
+                },
+                {
+                    activity: Activities.if,
+                    condition: (ctx: NodeActivityContext) => ctx.platform.getEnvArgs().deploy,
+                    body: <ShellActivityOption>{
+                        activity: 'shell',
+                        shell: (ctx: NodeActivityContext) => {
+                            let packages = ctx.platform.getFolders('packages');
+                            let cmd = 'npm publish --access=public'; // envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
+
+                            let shells = packages.map(fd => {
+                                return `cd ${fd} && ${cmd}`;
+                            });
+                            console.log(shells);
+                            return shells;
+                        }
                     }
                 }
-                return {
-                    contextType: NodeActivityContext,
-                    sequence: activities,
-                    activity: SequenceActivityToken
-                }
-            },
-            activity: ExecuteToken
+            ]
         }
     ]
 })
-export class BuilderIoc {
+export class BuilderTsIoc {
+
 }
 
-
-Workflow.create()
-    .use(PackModule)
-    .bootstrap(BuilderIoc);
+Workflow.run(BuilderTsIoc)

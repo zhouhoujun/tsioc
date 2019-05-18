@@ -11,11 +11,11 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
     template: <LibPackBuilderOption>{
         activity: 'libs',
         tasks: [
-            { src: 'src/**/*.ts', test: 'test/**/*.ts', clean: '../../dist/ioc/lib', dist: '../../dist/ioc/lib', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', clean: '../../dist/ioc/bundle', outputFile: '../../dist/ioc/bundle/ioc.umd.js', format: 'umd', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', clean: '../../dist/ioc/fesm5', outputFile: '../../dist/ioc/fesm5/ioc.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', clean: '../../dist/ioc/fesm2015', outputFile: '../../dist/ioc/fesm2015/ioc.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2015.json' },
-            { input: 'src/index.ts', clean: '../../dist/ioc/fesm2017', outputFile: '../../dist/ioc/fesm2017/ioc.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2017.json' }
+            { src: 'src/**/*.ts', test: 'test/**/*.ts', dist: '../../dist/ioc/lib', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', dist: '../../dist/ioc/bundle', outputFile: 'ioc.umd.js', format: 'umd', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', dist: '../../dist/ioc/fesm5', outputFile: 'ioc.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
+            { input: 'src/index.ts', dist: '../../dist/ioc/fesm2015', outputFile: 'ioc.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2015.json' },
+            { input: 'src/index.ts', dist: '../../dist/ioc/fesm2017', outputFile: 'ioc.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2017.json' }
         ]
     }
 })

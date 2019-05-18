@@ -251,6 +251,10 @@ export class PlatformService {
         return src;
     }
 
+    relativePath(path1: string, path2: string): string {
+        return relative(path1, path2);
+    }
+
     private prefixSrc(root: string, strSrc: string): string {
         let prefix = '';
         if (/^!/.test(strSrc)) {

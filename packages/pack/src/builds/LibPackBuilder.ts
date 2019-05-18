@@ -1,6 +1,6 @@
 import { Task, TemplateOption, Expression, Src, Activities } from '@tsdi/activities';
 import { BuilderTypes } from './BuilderTypes';
-import { TsBuildOption, AssetActivityOption } from '../transforms';
+import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../transforms';
 import { CompilerOptions } from 'typescript';
 import { ExternalOption, RollupCache, WatcherOptions, RollupFileOptions, RollupDirOptions, GlobalsOption } from 'rollup';
 import { RollupOption } from '../rollups';
@@ -198,9 +198,17 @@ export interface LibPackBuilderOption extends TemplateOption {
                             activity: Activities.execute,
                             action: (ctx: NodeActivityContext) => ctx.platform.copyFile(join(ctx.body.dist, 'package.json'), ctx.body.dist)
                         }
-                    }
-                    // to replace module export.
+                    },
+                    <JsonEditActivityOption>{
+                        activity: 'jsonEdit',
+                        fields: (json, ctx) => {
 
+                            // to replace module export.
+                            let chgs = new Map<string, any>();
+                            chgs.set(ctx.body.moduleName, join('./', ctx.body.moduleName, ctx.body.outputFile));
+                            return chgs;
+                        }
+                    }
                 ]
             }
         ]
