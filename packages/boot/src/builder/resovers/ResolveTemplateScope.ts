@@ -18,7 +18,6 @@ export class ResolveTemplateScope extends ResolveHandle {
                 .get(HandleRegisterer)
                 .get(TemplateParseScope)
                 .execute(pCtx);
-            console.log(ctx.type, ctx.target, ctx.annoation.template, pCtx.value);
             if (!isNullOrUndefined(pCtx.value)) {
                 ctx.component = pCtx.value;
             }
