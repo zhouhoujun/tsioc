@@ -2,10 +2,10 @@ import { Singleton } from '@tsdi/ioc';
 
 @Singleton
 export class TemplateManager {
-    protected componetns: Map<any, any>;
+    protected componetns: WeakMap<any, any>;
 
     constructor() {
-        this.componetns = new Map();
+        this.componetns = new WeakMap();
     }
 
     get(component: any): any {

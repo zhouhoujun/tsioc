@@ -131,10 +131,9 @@ export class BootApplication implements IBootApplication, ContextInit {
         return this.pools;
     }
 
-    getBootDeps(): LoadType[] {
-        let dependences = [...this.deps];
-        if (isClass(this.target)) {
-            let target = this.target;
+    protected getTargetDeps(target: Type<any> | BootOption | BootContext) {
+        let dependences = [];
+        if (isClass(target)) {
             this.container.get(MetadataService)
                 .getClassDecorators(target)
                 .forEach(d => {
@@ -146,10 +145,14 @@ export class BootApplication implements IBootApplication, ContextInit {
                             });
                     }
                 });
-        } else if (this.target.deps) {
-            dependences.push(...this.target.deps);
+        } else if (target.deps) {
+            dependences.push(...target.deps);
         }
         return dependences;
+    }
+
+    getBootDeps(): LoadType[] {
+        return [...this.deps, this.getTargetDeps(this.target)];
     }
 
 

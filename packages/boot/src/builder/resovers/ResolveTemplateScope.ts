@@ -5,7 +5,7 @@ import { HandleRegisterer } from '../../core';
 import { isNullOrUndefined } from '@tsdi/ioc';
 
 export class ResolveTemplateScope extends ResolveHandle {
-    async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
+    async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         if (ctx.target && ctx.annoation.template) {
             let raiseContainer = ctx.getRaiseContainer();
             let pCtx = TemplateContext.parse(ctx.type, {
@@ -18,12 +18,13 @@ export class ResolveTemplateScope extends ResolveHandle {
                 .get(HandleRegisterer)
                 .get(TemplateParseScope)
                 .execute(pCtx);
+            console.log(ctx.type, ctx.target, ctx.annoation.template, pCtx.value);
             if (!isNullOrUndefined(pCtx.value)) {
-                ctx.component =  pCtx.value;
+                ctx.component = pCtx.value;
             }
         }
-        if (next) {
-            await next();
-        }
+
+        await next();
+
     }
 }

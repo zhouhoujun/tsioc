@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
 import { IContainer } from '@tsdi/core';
-import { BuilderService, Input, SelectorManager, TemplateManager } from '@tsdi/boot';
+import { BuilderService, Input, SelectorManager, TemplateManager, RootContainerToken, ContainerPoolToken } from '@tsdi/boot';
 import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {
@@ -182,9 +182,16 @@ export abstract class Activity<T> {
         } else if (isClass(activity) || isMetadataObject(activity)) {
             return async (ctx: T, next?: () => Promise<void>) => {
                 let act = await this.buildActivity(activity as Type<any> | ControlTemplate);
-                if (act) {
-                    console.log(act);
+                if (act instanceof Activity) {
                     await act.run(ctx, next);
+                } else if (act) {
+                    let component = this.getContainer().get(TemplateManager).get(act);
+                    if (component instanceof Activity) {
+                        await component.run(ctx, next);
+                    } else {
+                        console.log(act);
+                        throw new Error(lang.getClassName(act) + ' is not activity');
+                    }
                 } else {
                     await next();
                 }
@@ -194,9 +201,11 @@ export abstract class Activity<T> {
         if (isFunction(activity)) {
             return activity;
         }
-        let component = this.getContainer().get(TemplateManager).get(activity);
-        if (component instanceof Activity) {
-            return component.toAction();
+        if (activity) {
+            let component = this.getContainer().get(TemplateManager).get(activity);
+            if (component instanceof Activity) {
+                return component.toAction();
+            }
         }
         return null;
 
