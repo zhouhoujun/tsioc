@@ -1,9 +1,11 @@
 import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
-import { isNullOrUndefined, lang, isString, isMetadataObject, Singleton, Type, isClass } from '@tsdi/ioc';
+import { isNullOrUndefined, lang, isString, Singleton, Type, isClass, isArray } from '@tsdi/ioc';
 import { BindingExpression } from '../../bindings';
-import { IocASyncDecoratorRegisterer, SelectorManager, RegScope } from '../../core';
+import { IocASyncDecoratorRegisterer, SelectorManager, RegScope, HandleRegisterer } from '../../core';
 import { BuilderService } from '../BuilderService';
+import { TemplateParseScope } from './TemplateParseScope';
+import { TemplateContext } from './TemplateContext';
 
 
 export class BindingValueScope extends ParsersHandle {
@@ -11,6 +13,7 @@ export class BindingValueScope extends ParsersHandle {
     setup() {
         this.container.register(BindExpressionDecoratorRegisterer);
         this.use(BindingScopeHandle)
+            .use(TranslateExpressionHandle)
             .use(TranslateAtrrHandle)
             .use(AssignBindValueHandle)
             .use(AssignDefaultValueHandle)
@@ -22,6 +25,7 @@ export class BindingValueScope extends ParsersHandle {
 export class BindExpressionDecoratorRegisterer extends IocASyncDecoratorRegisterer<Type<ParseHandle>> {
 
 }
+
 
 export class BindingScopeHandle extends ParseHandle {
 
@@ -45,15 +49,38 @@ export class BindingScopeHandle extends ParseHandle {
     }
 }
 
+export class TranslateExpressionHandle extends ParseHandle {
+    async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
+        if (!isNullOrUndefined(ctx.bindExpression)) {
+            let tpCtx = TemplateContext.parse(ctx.type, {
+                scope: ctx.scope,
+                template: ctx.bindExpression,
+                decorator: ctx.decorator,
+                annoation: ctx.annoation,
+                providers: ctx.providers
+            }, ctx.getRaiseContainer());
+            await this.container.get(HandleRegisterer)
+                .get(TemplateParseScope)
+                .execute(tpCtx);
+            if (!isNullOrUndefined(tpCtx.value)) {
+                ctx.bindExpression = tpCtx.value;
+            }
+        }
+        if (isNullOrUndefined(ctx.value)) {
+            await next();
+        }
+    }
+}
+
 export class TranslateAtrrHandle extends ParseHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
 
-        if (ctx.binding && !isNullOrUndefined(ctx.bindExpression)) {
+        if (!isNullOrUndefined(ctx.bindExpression)) {
             let mgr = this.container.get(SelectorManager);
             let pdr = ctx.binding.provider;
             let selector: Type<any>;
-            let template = ctx.bindExpression;
-            // template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
+            let template = isArray(ctx.template) ? {} : (ctx.template || {});
+            template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
             if (isString(pdr) && mgr.hasAttr(pdr)) {
                 selector = mgr.getAttr(pdr);
             } else if (isClass(ctx.binding.provider) && mgr.has(ctx.binding.provider)) {
@@ -67,15 +94,15 @@ export class TranslateAtrrHandle extends ParseHandle {
                 if (container.has(selector)) {
                     ctx.value = await this.container.get(BuilderService).resolve(selector, {
                         scope: ctx.scope,
-                        template: template,
-                        providers: ctx.providers
-                    });
+                        template: template
+                    }, ...(ctx.providers || []));
                 } else {
                     ctx.value = await this.container.get(BuilderService).createBoot({
                         module: selector,
                         scope: ctx.scope,
                         template: template,
-                        regScope: RegScope.boot, providers: ctx.providers
+                        regScope: RegScope.boot,
+                        providers: [...(ctx.providers || [])]
                     });
                 }
             }
@@ -111,36 +138,10 @@ export class AssignBindValueHandle extends ParseHandle {
 
 export class AssignDefaultValueHandle extends ParseHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
-
-        if (ctx.binding) {
-            ctx.value = ctx.binding.defaultValue;
-        }
+        ctx.value = ctx.binding.defaultValue;
 
         if (isNullOrUndefined(ctx.value)) {
             await next();
         }
     }
 }
-
-
-// export class AssignRefBindParseHandle extends ParseHandle {
-//     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
-//         if (ctx.binding && isMetadataObject(ctx.template)) {
-//             let refBind = ctx.template[ctx.binding.bindingName || ctx.binding.name];
-//             if (!isNullOrUndefined(refBind)) {
-//                 if (ctx.binding.type) {
-//                     let ttype = lang.getClass(refBind);
-//                     if (lang.isExtendsClass(ttype, ctx.binding.type)) {
-//                         ctx.value = refBind;
-//                     }
-//                 } else {
-//                     ctx.value = refBind;
-//                 }
-//             }
-//         }
-
-//         if (isNullOrUndefined(ctx.value)) {
-//             await next();
-//         }
-//     }
-// }

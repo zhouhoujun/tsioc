@@ -105,7 +105,7 @@ export class BindingParamTypeAction extends BindDeignParamTypeAction {
                 .forEach(p => {
                     bindParams.forEach(b => {
                         if (p.name === b.name) {
-                            p.provider = new InjectReference(b.provider || b.type || b.name, '__binding');
+                            p.provider = new InjectReference(b.provider || b.bindingName || b.name, '__binding');
                         }
                     })
                 });
@@ -113,7 +113,7 @@ export class BindingParamTypeAction extends BindDeignParamTypeAction {
             ref.methodParams.set(propertyKey, designParams.map(dp => {
                 let bdp = bindParams.find(p => p.name === dp.name);
                 if (bdp) {
-                    dp.provider = new InjectReference(bdp.provider || bdp.type || bdp.name, '__binding');
+                    dp.provider = new InjectReference(bdp.provider || bdp.bindingName || bdp.name, '__binding');
                 }
                 return dp;
             }));

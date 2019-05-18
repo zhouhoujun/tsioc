@@ -1,10 +1,10 @@
-import { ParseHandle, ParseContext, SelectorManager } from '@tsdi/boot';
+import { SelectorManager, TemplateContext, TemplateHandle } from '@tsdi/boot';
 import { isString, isClass, hasOwnClassMetadata, lang, Type, isMetadataObject, isArray } from '@tsdi/ioc';
 import { Activity } from '../core';
 import { SequenceActivity } from '../activities';
 
-export class TaskDecorSelectorHandle extends ParseHandle {
-    async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
+export class TaskDecorSelectorHandle extends TemplateHandle {
+    async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
         if (isArray(ctx.template) && ctx.annoation.template === ctx.template) {
             ctx.selector = SequenceActivity;
         } else if (this.isActivity(ctx.decorator, ctx.template)) {

@@ -7,13 +7,13 @@ import { IComponentContext } from '../ComponentContext';
 export interface IBindingParseOption extends IModuleResolveOption  {
     scope?: any;
     bindExpression?: any;
-    binding?: IBinding<any>;
+    binding: IBinding<any>;
 }
 
 @Injectable
 export class ParseContext extends BuildContext implements IComponentContext {
 
-    binding?: IBinding<any>;
+    binding: IBinding<any>;
 
     bindExpression?: any;
 

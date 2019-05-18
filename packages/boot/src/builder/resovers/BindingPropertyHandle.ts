@@ -23,7 +23,6 @@ export class BindingPropertyHandle extends ResolveHandle {
                             decorator: ctx.decorator
                         }, ctx.getRaiseContainer())
                         await registerer.get(BindingScope).execute(pctx);
-                        console.log(pctx.type, binding, pctx.value)
                         ctx.target[binding.name] = pctx.value;
                     } else if (!isNullOrUndefined(binding.defaultValue)) {
                         ctx.target[binding.name] = binding.defaultValue;

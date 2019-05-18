@@ -111,7 +111,7 @@ export interface ExecuteOption extends TemplateOption {
 
 
 export interface IBodyTemplate {
-    body?: ActivityType[];
+    body?: Binding<ActivityType | ActivityType[]>;
 }
 
 export interface BodyTemplate extends TemplateOption, IBodyTemplate {

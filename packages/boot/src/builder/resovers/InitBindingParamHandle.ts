@@ -32,7 +32,6 @@ export class InitBindingParamHandle extends ResolveHandle {
                                 decorator: ctx.decorator
                             }, ctx.getRaiseContainer());
                             await hregisterer.get(BindingScope).execute(pctx);
-                            console.log(pctx.type, bp, pctx.value)
                             paramVal = pctx.value;
                         } else if (!isNullOrUndefined(bp.defaultValue)) {
                             paramVal = bp.defaultValue;
