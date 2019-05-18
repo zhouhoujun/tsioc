@@ -8,9 +8,10 @@ import {
     /* ls, test, cd, ShellString, pwd, ShellArray, find, mv, TestOptions, cat, sed */
 } from 'shelljs';
 // import * as globby from 'globby';
-import { ProcessRunRootToken } from '@tsdi/boot';
+import { ProcessRunRootToken, BootContextToken } from '@tsdi/boot';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { CompilerOptions } from 'typescript';
+import { NodeActivityContext } from './NodeActivityContext';
 const globby = require('globby');
 const minimist = require('minimist');
 const del = require('del');
@@ -46,9 +47,7 @@ export interface CmdOptions {
 @Injectable()
 export class PlatformService {
 
-    constructor(
-        @Inject(ProcessRunRootToken) private baseURL: string,
-        @Inject('args') private args: string[]) {
+    constructor(@Inject(BootContextToken) private ctx: NodeActivityContext) {
 
     }
 
@@ -67,7 +66,7 @@ export class PlatformService {
      */
     getEnvArgs(): ObjectMap<any> {
         if (!this.envArgs) {
-            this.envArgs = minimist(this.args || process.argv.slice(2));
+            this.envArgs = minimist(this.ctx.args || process.argv.slice(2));
         }
         return this.envArgs;
     }
@@ -233,10 +232,8 @@ export class PlatformService {
     }
 
     getRootPath(): string {
-        if (this.baseURL) {
-            return this.baseURL;
-        }
-        return this.container.get(ProcessRunRootToken) || process.cwd();
+        let root = this.ctx.getCurrBaseURL()
+        return root || this.container.get(ProcessRunRootToken) || process.cwd();
     }
 
     toRootSrc(src: Src): Src {

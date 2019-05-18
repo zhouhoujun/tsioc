@@ -5,9 +5,6 @@ import { BootContext, ProcessRunRootToken } from '../BootContext';
 export class RegisterModuleRegisterHandle extends AnnoationHandle {
 
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.annoation && ctx.annoation.baseURL) {
-            ctx.baseURL = ctx.annoation.baseURL;
-        }
         if (ctx.regScope === RegScope.child) {
             let container = ctx.getRaiseContainer();
             if (ctx.annoation.baseURL) {

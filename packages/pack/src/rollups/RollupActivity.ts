@@ -116,6 +116,8 @@ export class RollupActivity extends NodeActivity<void> {
             opts.output.name = ctx.platform.getFileName(opts.output.file);
         }
         opts.plugins = opts.plugins.filter(p => p);
+        console.log(ctx.getCurrBaseURL(), ctx.platform.getRootPath())
+        console.log(opts);
         let bundle = await rollup(opts as any);
         await bundle.write(opts.output);
     }

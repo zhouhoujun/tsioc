@@ -67,7 +67,7 @@ import { JsonReplaceActivityOption } from 'dist/pack/lib';
                         activity: Activities.execute,
                         action: async ctx => {
                             let activitys = Object.values(require(path.join(ctx.body, 'taskfile.ts'))).filter(b => isAcitvityClass(b)) as Type<Activity<any>>[];
-                            await Workflow.sequence(...activitys);
+                            await Workflow.run(activitys[0]);
                         }
                     }
                 },

@@ -12,6 +12,10 @@ import { IComponentContext } from './builder';
 export const ProcessRunRootToken = new InjectToken<string>('__boot_process_root');
 
 /**
+ *  application boot context token.
+ */
+export const BootContextToken = new InjectToken<BootContext>('__boot_context');
+/**
  * boot options
  *
  * @export

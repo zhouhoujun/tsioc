@@ -14,6 +14,8 @@ export class BindingTaskTemplateHandle extends Handle<BuildContext> {
 
             if (ctx.component instanceof Activity && ctx.target) {
                 ctx.component.scope = ctx.target;
+                ctx.component.isScope = true;
+                ctx.component.scopeBaseURL = ctx.annoation.baseURL;
             }
         }
         await next();

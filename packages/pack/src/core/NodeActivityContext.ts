@@ -1,6 +1,6 @@
 import { ActivityContext, Activity } from '@tsdi/activities';
-import { Injectable, Refs, ProviderTypes } from '@tsdi/ioc';
-import { BootContext, ProcessRunRootToken } from '@tsdi/boot';
+import { Injectable, Refs } from '@tsdi/ioc';
+import { BootContext } from '@tsdi/boot';
 import { PlatformService } from './PlatformService';
 
 
@@ -23,11 +23,7 @@ export class NodeActivityContext extends ActivityContext {
     private _platform: PlatformService;
     get platform(): PlatformService {
         if (!this._platform) {
-            let provders: ProviderTypes[] = [{ provide: 'args', useValue: this.args }];
-            if (this.baseURL) {
-                provders.push({ provide: ProcessRunRootToken, useValue: this.baseURL });
-            }
-            this._platform = this.getRaiseContainer().resolve(PlatformService, ...provders);
+            this._platform = this.getRaiseContainer().resolve(PlatformService);
         }
         return this._platform;
     }

@@ -41,6 +41,13 @@ export abstract class Activity<T> {
      * @memberof Activity
      */
     scope?: any;
+    /**
+     * component config base URL
+     *
+     * @type {string}
+     * @memberof Activity
+     */
+    scopeBaseURL?: string;
 
     /**
      * activity display name.

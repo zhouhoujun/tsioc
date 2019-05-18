@@ -24,6 +24,11 @@ export class RegisterModuleScope extends CompositeHandle<AnnoationContext> {
                 }
             }
         }
+
+        if (ctx.annoation && ctx.annoation.baseURL) {
+            ctx.baseURL = ctx.annoation.baseURL;
+        }
+
         if (next) {
             await next();
         }

@@ -96,9 +96,18 @@ export class ActivityContext extends BootContext {
      */
     preCondition: boolean;
 
-    getEnvArgs(): ObjectMap<any> {
-        return {};
+    getCurrBaseURL() {
+        let baseURL = '';
+        if (this.runnable) {
+            this.runnable.status.scopes.some(s => {
+                baseURL = s.scope.scopeBaseURL;
+                return !!baseURL;
+            });
+        }
+        return baseURL || this.baseURL;
     }
+
+
 
     static parse(target: Type<any> | ActivityOption<ActivityContext>, raiseContainer?: ContainerFactory): ActivityContext {
         return createAnnoationContext(ActivityContext, target, raiseContainer);
