@@ -228,21 +228,20 @@ export interface LibPackBuilderOption extends TemplateOption {
                             pipes: [
                                 <JsonEditActivityOption>{
                                     activity: 'jsonEdit',
-                                    fields: (json, ctx) => {
+                                    json: (json, ctx) => {
                                         // to replace module export.
-                                        let chgs = new Map<string, any>();
                                         let outmain = ['.', ctx.scope.getModuleFolder(ctx.body), ctx.body.fileName].join('/');
                                         if (isArray(ctx.body.moduleName)) {
                                             ctx.body.moduleName.forEach(n => {
-                                                chgs.set(n, outmain);
+                                                json[n] = outmain;
                                             })
                                         } else if (ctx.body.moduleName) {
-                                            chgs.set(ctx.body.moduleName, outmain);
+                                            json[ctx.body.moduleName] = outmain;
                                         }
                                         if (ctx.body.dtsMain) {
-                                            chgs.set('typings', ['.', ctx.scope.getModuleFolder(ctx.body), ctx.body.dtsMain].join('/'));
+                                            json['typings'] = ['.', ctx.scope.getModuleFolder(ctx.body), ctx.body.dtsMain].join('/');
                                         }
-                                        return chgs;
+                                        return json;
                                     }
                                 }
                             ]
@@ -282,7 +281,7 @@ export class LibPackBuilder implements AfterInit {
             ...paths]);
     }
 
-    getModuleFolder(body: any): string{
+    getModuleFolder(body: any): string {
         return body.moduleFolder || (isArray(body.moduleName) ? lang.first(body.moduleName) : body.moduleName)
     }
 

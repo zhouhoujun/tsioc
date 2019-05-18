@@ -2,12 +2,6 @@
   "name": "@tsdi/platform-browser-boot",
   "version": "4.0.5",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
-  "es2015": "./fesm2015/platform-browser-boot.js",
-  "esm2015": "./es2015/index.js",
-  "esm5": "./lib/index.js",
-  "fesm5": "./fesm5/platform-browser-boot.js",
-  "module": "./fesm5/platform-browser-boot.js",
-  "main": "./bundles/platform-browser-boot.umd.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",

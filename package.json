@@ -51,6 +51,7 @@
     "findup": "^0.1.5",
     "fs": "0.0.1-security",
     "globby": "^7.1.1",
+    "gulp-json-editor": "^2.5.2",
     "gulp-rename": "^1.4.0",
     "gulp-replace": "^0.5.4",
     "gulp-rollup": "^2.16.2",

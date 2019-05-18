@@ -3,6 +3,7 @@ import * as path from 'path';
 import { PackModule, NodeActivityContext, ShellActivityOption, JsonEditActivityOption } from '@tsdi/pack';
 import { Type, isString } from '@tsdi/ioc';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
+import { JsonReplaceActivityOption } from 'dist/pack/lib';
 
 @Task({
     deps: [
@@ -40,8 +41,8 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                 {
                     activity: Activities.if,
                     condition: (ctx: NodeActivityContext) => ctx.platform.getEnvArgs().setvs,
-                    body: <JsonEditActivityOption>{
-                        activity: 'jsonEdit',
+                    body: <JsonReplaceActivityOption>{
+                        activity: 'jsonReplace',
                         fields: (json, ctx) => {
                             let chgs = new Map<string, any>();
                             let version = ctx.platform.getEnvArgs().setvs;

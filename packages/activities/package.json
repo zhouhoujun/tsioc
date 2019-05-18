@@ -2,13 +2,6 @@
   "name": "@tsdi/activities",
   "version": "4.0.5",
   "description": "type task framework, base on AOP, Ioc container, via @tsdi",
-  "es2015": "./fesm2015/activities.js",
-  "esm2015": "./es2015/index.js",
-  "esm5": "./lib/index.js",
-  "fesm5": "./fesm5/activities.js",
-  "module": "./fesm5/activities.js",
-  "main": "./bundles/activities.umd.js",
-  "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",

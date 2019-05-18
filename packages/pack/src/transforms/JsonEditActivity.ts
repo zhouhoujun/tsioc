@@ -3,13 +3,52 @@ import { NodeActivityContext } from '../core';
 const inplace = require('json-in-place');
 import * as through from 'through2';
 import { Input, Binding } from '@tsdi/boot';
-import { isFunction } from '@tsdi/ioc';
+import { isFunction, ObjectMap, lang } from '@tsdi/ioc';
 import { TransformActivity } from './TransformActivity';
+const jeditor = require('gulp-json-editor');
 
+export type JsonEdit = (json: any, ctx?: NodeActivityContext) => ObjectMap<any>;
 
-export type JsonEdit = (json: any, ctx?: NodeActivityContext) => Map<string, any>;
 
 export interface JsonEditActivityOption extends TemplateOption {
+    /**
+     * edite fields.
+     *
+     * @type {Binding<JsonEdit>}
+     * @memberof SourceActivityOption
+     */
+    json: Binding<JsonEdit | ObjectMap<any>>;
+}
+
+/**
+ * edit json, will format new json string.
+ *
+ * @export
+ * @class JsonEditActivity
+ * @extends {TransformActivity}
+ */
+@Task('jsonEdit')
+export class JsonEditActivity extends TransformActivity {
+
+    @Input()
+    json: JsonEdit | ObjectMap<any>;
+
+    protected async execute(ctx: NodeActivityContext): Promise<void> {
+        if (!this.json) {
+            return;
+        }
+        if (isFunction(this.json)) {
+            let jsonFunc = this.json;
+            this.result.value = jeditor((json) => jsonFunc(json, ctx));
+        } else {
+            this.result.value = jeditor(this.json);
+        }
+    }
+
+}
+
+
+export interface JsonReplaceActivityOption extends TemplateOption {
     /**
      * edite fields.
      *
@@ -19,8 +58,15 @@ export interface JsonEditActivityOption extends TemplateOption {
     fields: Binding<JsonEdit>;
 }
 
-@Task('jsonEdit')
-export class JsonEditActivity extends TransformActivity {
+/**
+ * replace json value of key. no format.
+ *
+ * @export
+ * @class JsonReplaceActivity
+ * @extends {TransformActivity}
+ */
+@Task('jsonReplace')
+export class JsonReplaceActivity extends TransformActivity {
 
     @Input()
     fields: JsonEdit;
@@ -42,7 +88,7 @@ export class JsonEditActivity extends TransformActivity {
             let contents: string = file.contents.toString('utf8');
             let json = JSON.parse(contents);
             let replaced = inplace(contents);
-            fields(json, ctx).forEach((val, key) => {
+            lang.forIn(fields(json, ctx), (val, key) => {
                 replaced.set(key, val);
             });
             contents = replaced.toString();
@@ -52,3 +98,4 @@ export class JsonEditActivity extends TransformActivity {
         });
     }
 }
+

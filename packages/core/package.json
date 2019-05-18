@@ -2,13 +2,6 @@
   "name": "@tsdi/core",
   "version": "4.0.5",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
-  "fesm2017": "./fesm2017/core.js",
-  "fesm2015": "./fesm2015/core.js",
-  "esm5": "./lib/index.js",
-  "fesm5": "./fesm5/core.min.js",
-  "module": "./fesm5/core.min.js",
-  "main": "./bundles/core.umd.js",
-  "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",

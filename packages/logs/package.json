@@ -2,13 +2,6 @@
   "name": "@tsdi/logs",
   "version": "4.0.5",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
-  "es2015": "./fesm2015/logs.js",
-  "esm2015": "./es2015/index.js",
-  "esm5": "./lib/index.js",
-  "fesm5": "./fesm5/logs.js",
-  "module": "./fesm5/logs.js",
-  "main": "./bundles/logs.umd.js",
-  "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",

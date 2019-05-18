@@ -183,6 +183,7 @@ export abstract class Activity<T> {
             return async (ctx: T, next?: () => Promise<void>) => {
                 let act = await this.buildActivity(activity as Type<any> | ControlTemplate);
                 if (act) {
+                    console.log(act);
                     await act.run(ctx, next);
                 } else {
                     await next();
