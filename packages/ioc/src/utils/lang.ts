@@ -648,7 +648,7 @@ export function isRegExp(target: any): target is RegExp {
  * @param {*} target
  * @returns {boolean}
  */
-export function isBaseType(target: any): boolean {
+export function isBaseType(target: ClassType<any>): boolean {
     if (!isFunction(target)) {
         return false;
     }
