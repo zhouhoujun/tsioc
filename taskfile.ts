@@ -1,9 +1,8 @@
 import { Workflow, Task, Activities, isAcitvityClass, Activity } from '@tsdi/activities';
 import * as path from 'path';
-import { PackModule, NodeActivityContext, ShellActivityOption, JsonEditActivityOption } from '@tsdi/pack';
+import { PackModule, NodeActivityContext, ShellActivityOption, JsonReplaceActivityOption } from '@tsdi/pack';
 import { Type, isString } from '@tsdi/ioc';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
-import { JsonReplaceActivityOption } from 'dist/pack/lib';
 
 @Task({
     deps: [
