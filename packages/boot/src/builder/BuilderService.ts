@@ -7,6 +7,7 @@ import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
 import { ResolveMoudleScope, IModuleResolveOption, BuildContext } from './resovers';
 import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
 import { BootLifeScope } from './BootLifeScope';
+import { IRunnable } from '../runnable';
 
 
 
@@ -33,7 +34,7 @@ export class BuilderService extends IocCoreService {
     }
 
     /**
-     * binding resolve.
+     * resolve binding module.
      *
      * @template T
      * @param {Type<any>} target
@@ -67,30 +68,22 @@ export class BuilderService extends IocCoreService {
     }
 
     /**
-     * resolve component ify.
+     * create module.
      *
      * @template T
-     * @param {Type<any>} target
-     * @param {IModuleResolveOption} options
-     * @param {(IContainer | ProviderTypes)} [container]
-     * @param {...ProviderTypes[]} providers
-     * @returns {Promise<T>}
+     * @param {(Type<any> | BootOption | T)} target
+     * @param {...string[]} args
+     * @returns {Promise<any>}
      * @memberof BuilderService
      */
-    async resolveCompoent<T>(target: Type<any>, options: IModuleResolveOption, container?: IContainer | ProviderTypes, ...providers: ProviderTypes[]): Promise<T> {
-        let rctx = await this.resolveModule(target, options, container, ...providers);
-        let mgr = rctx.getRaiseContainer().get(TemplateManager);
-        return mgr.has(rctx.target) ? mgr.get(rctx.target) : rctx.target;
-    }
-
     async create<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<any> {
         let ctx = await this.build(target, ...args);
         return ctx.target;
     }
 
-    async createBoot<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<any> {
+    async createBoot<T>(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<T> {
         let ctx = await this.build(target, ...args);
-        return ctx.getBootTarget();
+        return ctx.getBootTarget() as T;
     }
 
     /**
@@ -104,6 +97,20 @@ export class BuilderService extends IocCoreService {
      */
     build<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
         return this.execLifeScope(null, this.container.get(HandleRegisterer).get(ModuleBuilderLifeScope), target, ...args);
+    }
+
+    /**
+     * create runnable.
+     *
+     * @template T
+     * @param {(Type<any> | BootOption | BootContext)} target
+     * @param {...string[]} args
+     * @returns {Promise<IRunnable<T>>}
+     * @memberof BuilderService
+     */
+    async createRunnable<T>(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<IRunnable<T>> {
+        let ctx = await this.execLifeScope(ctx => ctx.autorun = false, this.container.get(HandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
+        return ctx.runnable;
     }
 
     /**
@@ -130,10 +137,19 @@ export class BuilderService extends IocCoreService {
      */
     async boot(application: IBootApplication, ...args: string[]): Promise<BootContext> {
         await this.container.load(...application.getBootDeps());
-        return await this.execLifeScope(application, this.container.get(HandleRegisterer).get(BootLifeScope), application.target, ...args);
+        return await this.execLifeScope(
+            (ctx) => {
+                ctx.regScope = RegScope.boot;
+                if (isFunction(application.onContextInit)) {
+                    application.onContextInit(ctx);
+                }
+            },
+            this.container.get(HandleRegisterer).get(BootLifeScope),
+            application.target,
+            ...args);
     }
 
-    protected async execLifeScope<T extends BootContext>(application: IBootApplication, scope: CompositeHandle<BootContext>, target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
+    protected async execLifeScope<T extends BootContext>(contextInit: (ctx: BootContext) => void, scope: CompositeHandle<BootContext>, target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
         let ctx: BootContext;
         if (target instanceof BootContext) {
             ctx = target;
@@ -149,11 +165,8 @@ export class BuilderService extends IocCoreService {
         }
 
         ctx.args = args;
-        if (application) {
-            ctx.regScope = RegScope.boot;
-            if (isFunction(application.onContextInit)) {
-                application.onContextInit(ctx);
-            }
+        if (contextInit) {
+            contextInit(ctx);
         }
         await scope.execute(ctx);
         return ctx as T;
