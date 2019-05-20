@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
 import { IContainer } from '@tsdi/core';
-import { BuilderService, Input, SelectorManager, TemplateManager, ContainerPoolToken } from '@tsdi/boot';
+import { BuilderService, Input, SelectorManager, ComponentManager, ContainerPoolToken } from '@tsdi/boot';
 import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {
@@ -193,7 +193,7 @@ export abstract class Activity<T> {
                 if (act instanceof Activity) {
                     await act.run(ctx, next);
                 } else if (act) {
-                    let component = this.getContainer().get(TemplateManager).get(act);
+                    let component = this.getContainer().get(ComponentManager).getLeaf(act);
                     if (component instanceof Activity) {
                         await component.run(ctx, next);
                     } else {
@@ -210,7 +210,7 @@ export abstract class Activity<T> {
             return activity;
         }
         if (activity) {
-            let component = this.getContainer().get(TemplateManager).get(activity);
+            let component = this.getContainer().get(ComponentManager).getLeaf(activity);
             if (component instanceof Activity) {
                 return component.toAction();
             }

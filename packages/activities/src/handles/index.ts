@@ -1,2 +1,3 @@
-export * from './BindingTaskTemplateHandle';
+export * from './ValidTaskComponentHandle';
+export * from './BindingTaskComponentHandle';
 export * from './TaskDecorSelectorHandle';

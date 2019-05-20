@@ -20,7 +20,7 @@ import { DIModuleInjectorScope, DIModuleExports, ModuleInjectLifeScope } from '.
 import { SelectorManager } from './SelectorManager';
 import { Input, Component } from './decorators';
 import { HandleRegisterer } from './handles';
-import { TemplateManager } from './TemplateManager';
+import { ComponentManager } from './ComponentManager';
 
 
 /**
@@ -100,7 +100,7 @@ export class BootModule {
 
 
         container.register(SelectorManager)
-            .register(TemplateManager);
+            .register(ComponentManager);
         registerer
             .register(container, ComponentRegisterAction)
             .register(container, BindingPropertyTypeAction)

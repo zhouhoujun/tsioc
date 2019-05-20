@@ -1,7 +1,7 @@
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
-import { BootContext, createAnnoationContext, BuilderService } from '@tsdi/boot';
+import { BootContext, createAnnoationContext, BuilderService, ComponentManager } from '@tsdi/boot';
 import { ActivityConfigure, ActivityTemplate, Expression } from './ActivityConfigure';
 import { Injectable, ObjectMap, Type, Refs, ContainerFactory, isString, isClass, isFunction, isPromise } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
@@ -99,10 +99,11 @@ export class ActivityContext extends BootContext {
     getCurrBaseURL() {
         let baseURL = '';
         if (this.runnable) {
+            let mgr = this.getRaiseContainer().resolve(ComponentManager);
             this.runnable.status.scopes.some(s => {
                 if (s.scope.scopes && s.scope.scopes.length) {
                     return s.scope.scopes.some(c => {
-                        let ann = c.$annoation ? c.$annoation() : null;
+                        let ann = mgr.getAnnoation(c);
                         if (ann) {
                             baseURL = ann.baseURL;
                         }

@@ -1,4 +1,4 @@
-import { AnnoationContext, AnnoationOption, createAnnoationContext, TemplateManager } from './core';
+import { AnnoationContext, AnnoationOption, createAnnoationContext, ComponentManager } from './core';
 import { RunnableConfigure, ConfigureManager } from './annotations';
 import { IModuleLoader } from '@tsdi/core';
 import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory } from '@tsdi/ioc';
@@ -275,12 +275,12 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof BootContext
      */
     getBootTarget(): any {
-        let mgr = this.getRaiseContainer().get(TemplateManager);
-        if (this.bootstrap && mgr.has(this.bootstrap)) {
-            return mgr.get(this.bootstrap);
+        let mgr = this.getRaiseContainer().get(ComponentManager);
+        if (this.bootstrap && mgr.hasContent(this.bootstrap)) {
+            return mgr.getLeaf(this.bootstrap);
         }
-        if (this.target && mgr.has(this.target)) {
-            return mgr.get(this.target);
+        if (this.target && mgr.hasContent(this.target)) {
+            return mgr.getLeaf(this.target);
         }
         return this.bootstrap || this.target;
     }

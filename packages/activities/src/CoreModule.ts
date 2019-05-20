@@ -4,9 +4,9 @@ import * as core from './core';
 import * as activites from './activities';
 import { IContainer, ContainerToken, IocExt, InjectorDecoratorRegisterer, ServiceDecoratorRegisterer } from '@tsdi/core';
 import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes } from '@tsdi/ioc';
-import { ComponentRegisterAction, ElementDecoratorRegisterer, HandleRegisterer, BindingComponentDecoratorRegisterer } from '@tsdi/boot';
+import { ComponentRegisterAction, ElementDecoratorRegisterer, HandleRegisterer, BindingComponentRegisterer, ValidComponentRegisterer } from '@tsdi/boot';
 import { TaskDecoratorServiceAction, TaskInjectorRegisterAction } from './core';
-import { TaskDecorSelectorHandle, BindingTaskTemplateHandle } from './handles';
+import { TaskDecorSelectorHandle, BindingTaskComponentHandle, ValidTaskComponentHandle } from './handles';
 
 
 /**
@@ -28,7 +28,8 @@ export class ActivityCoreModule {
             .register(container, TaskInjectorRegisterAction, true);
 
         container.get(HandleRegisterer)
-            .register(container, BindingTaskTemplateHandle)
+            .register(container, ValidTaskComponentHandle)
+            .register(container, BindingTaskComponentHandle)
             .register(container, TaskDecorSelectorHandle);
 
 
@@ -38,7 +39,8 @@ export class ActivityCoreModule {
 
         container.get(InjectorDecoratorRegisterer).register(Task, TaskInjectorRegisterAction);
         container.get(ElementDecoratorRegisterer).register(Task, TaskDecorSelectorHandle);
-        container.get(BindingComponentDecoratorRegisterer).register(Task, BindingTaskTemplateHandle);
+        container.get(ValidComponentRegisterer).register(Task, ValidTaskComponentHandle);
+        container.get(BindingComponentRegisterer).register(Task, BindingTaskComponentHandle);
 
         container.use(core)
             .use(RunAspect)
