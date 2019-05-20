@@ -14,9 +14,7 @@ import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
 import * as modules from './modules';
 
-import {
-    RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction,
-} from './resolves';
+import { RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction } from './resolves';
 import { RouteDesignRegisterAction, RouteRuntimRegisterAction, ComponentRegisterAction, BindingPropertyTypeAction, BindingParamTypeAction } from './registers';
 import { DIModuleInjectorScope, DIModuleExports, ModuleInjectLifeScope } from './injectors';
 import { SelectorManager } from './SelectorManager';

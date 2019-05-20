@@ -11,7 +11,9 @@ export class BindingTemplateHandle extends ResolveHandle {
             if (regs.has(ctx.decorator)) {
                 await this.execFuncs(ctx, regs.getFuncs(this.container, ctx.decorator));
             }
-            raiseContainer.get(TemplateManager).set(ctx.target, ctx.component);
+            if (ctx.component) {
+                raiseContainer.get(TemplateManager).set(ctx.target, ctx.component);
+            }
         }
         if (next) {
             await next();

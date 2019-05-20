@@ -26,8 +26,8 @@ export class TaskLogAspect extends LoggerAspect {
         let logger = this.logger;
         let target = joinPoint.target as Activity<any>;
         let name = target.name;
-        if (!name && target.scope) {
-            name = lang.getClassName(target.scope);
+        if (!name && target.scopes && target.scopes.length) {
+            name = lang.getClassName(lang.last(target.scopes));
         }
         if (!name) {
             name = lang.getClassName(joinPoint.targetType);

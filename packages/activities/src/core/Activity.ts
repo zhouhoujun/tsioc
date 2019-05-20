@@ -1,11 +1,11 @@
 import { Task } from '../decorators/Task';
 import { IContainer } from '@tsdi/core';
-import { BuilderService, Input, SelectorManager, TemplateManager, RootContainerToken, ContainerPoolToken } from '@tsdi/boot';
+import { BuilderService, Input, SelectorManager, TemplateManager, ContainerPoolToken } from '@tsdi/boot';
 import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {
     isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
-    isPromise, Abstract, PromiseUtil, Inject, isMetadataObject, isArray,
+    Abstract, PromiseUtil, Inject, isMetadataObject, isArray,
     ProviderTypes, lang, isNullOrUndefined, ContainerFactoryToken, ContainerFactory
 } from '@tsdi/ioc';
 import { ActivityType, Expression, ControlTemplate } from './ActivityConfigure';
@@ -35,19 +35,20 @@ export abstract class Activity<T> {
     isScope?: boolean;
 
     /**
-     * component scope of this activity.
+     * component of this activity.
      *
      * @type {*}
      * @memberof Activity
      */
     scope?: any;
+
     /**
-     * component config base URL
+     * components of this activity.
      *
-     * @type {string}
+     * @type {any[]}
      * @memberof Activity
      */
-    scopeBaseURL?: string;
+    scopes?: any[];
 
     /**
      * activity display name.

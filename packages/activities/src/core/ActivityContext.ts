@@ -100,8 +100,16 @@ export class ActivityContext extends BootContext {
         let baseURL = '';
         if (this.runnable) {
             this.runnable.status.scopes.some(s => {
-                baseURL = s.scope.scopeBaseURL;
-                return !!baseURL;
+                if (s.scope.scopes && s.scope.scopes.length) {
+                    return s.scope.scopes.some(c => {
+                        let ann = c.$annoation ? c.$annoation() : null;
+                        if (ann) {
+                            baseURL = ann.baseURL;
+                        }
+                        return !!baseURL
+                    })
+                }
+                return false;
             });
         }
         return baseURL || this.baseURL;
