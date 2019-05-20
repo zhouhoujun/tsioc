@@ -16,6 +16,8 @@ import { join } from 'path';
 import { CleanActivityOption } from '../tasks';
 const uglify = require('gulp-uglify');
 const rename = require('gulp-rename');
+const postcss = require('rollup-plugin-postcss');
+
 
 export interface LibTaskOption {
     /**
@@ -323,6 +325,9 @@ export class LibPackBuilder implements AfterInit {
     @Input()
     sourcemap?: Expression<boolean | string>;
 
+    @Input()
+    postcssOption: Expression<any>;
+
     get zipMapsource() {
         if (this.sourcemap && isBoolean(this.sourcemap)) {
             return './';
@@ -349,13 +354,18 @@ export class LibPackBuilder implements AfterInit {
             this.sourcemap = true;
         }
         if (!this.plugins) {
-            this.plugins = (ctx: NodeActivityContext) => [
-                resolve(),
-                commonjs(),
-                ctx.body.annotation ? rollupClassAnnotations() : null,
-                rollupSourcemaps(),
-                ctx.body.tsconfig ? ts(isString(ctx.body.tsconfig) ? ctx.platform.getCompilerOptions(ctx.body.tsconfig) : ctx.body.tsconfig) : null
-            ];
+            this.plugins = async (ctx: NodeActivityContext) => {
+                let cssOptions = await ctx.resolveExpression(this.postcssOption);
+                let sourcemap = await ctx.resolveExpression(this.sourcemap);
+                return [
+                    cssOptions ? postcss(ctx.resolveExpression(cssOptions)) : null,
+                    resolve(),
+                    commonjs(),
+                    ctx.body.annotation ? rollupClassAnnotations() : null,
+                    sourcemap ? rollupSourcemaps(isBoolean(sourcemap) ? undefined : sourcemap) : null,
+                    ctx.body.tsconfig ? ts(isString(ctx.body.tsconfig) ? ctx.platform.getCompilerOptions(ctx.body.tsconfig) : ctx.body.tsconfig) : null
+                ];
+            };
         }
     }
 

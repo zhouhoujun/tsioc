@@ -4,7 +4,10 @@ import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isProvider, ProviderMap } from '@tsdi/ioc';
 import { ModuleLoader, IModuleLoader } from './services';
 import { registerCores } from './registerCores';
-import { ResolveServiceContext, ResolveServicesContext, ServiceActionOption, ServicesActionOption, ServiceResolveLifeScope, ServicesResolveLifeScope } from './resolves';
+import {
+    ResolveServiceContext, ResolveServicesContext, ServiceActionOption,
+    ServicesActionOption, ServiceResolveLifeScope, ServicesResolveLifeScope
+} from './resolves';
 import { TargetRefs } from './TargetService';
 import { InjectorLifeScope } from './injectors';
 

@@ -3,9 +3,9 @@ import { Workflow, Task } from '@tsdi/activities';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 
 @Task({
-    deps: [
-        ServerActivitiesModule,
-        PackModule
+    deps: [,
+        PackModule,
+        ServerActivitiesModule
     ],
     baseURL: __dirname,
     template: <LibPackBuilderOption>{
