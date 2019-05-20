@@ -221,8 +221,8 @@ export interface LibPackBuilderOption extends TemplateOption {
                     ]
                 },
                 {
-                    activity: Activities.if,
-                    condition: (ctx: NodeActivityContext) => ctx.body.input && ctx.platform.getRootPath() !== process.cwd(),
+                    activity: Activities.elseif,
+                    condition: (ctx: NodeActivityContext) => ctx.body.input,
                     body: {
                         activity: 'asset',
                         src: ctx => {
@@ -235,20 +235,19 @@ export interface LibPackBuilderOption extends TemplateOption {
                                 return ctx.body.input.maps((i: string) => i.replace(ctx.platform.getFileName(i), '**/*'));
                             }
                         },
-                        dist: ctx => ctx.scope.getModuleFolder(ctx.body),
-                        pipes: ctx => {
-                            return [
-                                grollup({
-                                    name:  ctx.body.moduleName,
-                                    format: ctx.body.format || 'cjs',
-                                    plugins: ctx.scope.plugins,
-                                    external: ctx.scope.external,
-                                    globals: ctx.scope.globals
-                                }),
-                                uglify(),
-                                rename({ suffix: '.min' })
-                            ]
-                        }
+                        dist: ctx => ctx.scope.toModulePath(ctx.body),
+                        pipes: [
+                            (ctx: NodeActivityContext) => grollup({
+                                input: ctx.platform.toRootSrc(ctx.body.input),
+                                name: ctx.body.moduleName,
+                                format: ctx.body.format || 'cjs',
+                                plugins: ctx.scope.plugins.filter(f => f),
+                                external: ctx.scope.external,
+                                globals: ctx.scope.globals
+                            }),
+                            uglify(),
+                            rename({ suffix: '.min' })
+                        ]
                     }
                 },
                 {
