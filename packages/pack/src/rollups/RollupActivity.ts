@@ -6,6 +6,9 @@ import {
     OutputOptionsFile, OutputOptionsDir, ExternalOption
 } from 'rollup';
 import { isArray, isNullOrUndefined, isString } from '@tsdi/ioc';
+// import { basename } from 'path';
+// import { readFileSync } from 'fs';
+// const hypothetical = require('rollup-plugin-hypothetical');
 
 /**
  * rollup activity template option.
@@ -64,6 +67,13 @@ export interface RollupOption extends TemplateOption {
     options?: Binding<Expression<RollupFileOptions | RollupDirOptions>>;
 }
 
+/**
+ * rollup activity.
+ *
+ * @export
+ * @class RollupActivity
+ * @extends {NodeActivity<void>}
+ */
 @Task('rollup')
 export class RollupActivity extends NodeActivity<void> {
 
@@ -125,6 +135,26 @@ export class RollupActivity extends NodeActivity<void> {
             opts.output.name = ctx.platform.getFileName(opts.output.file);
         }
         opts.plugins = opts.plugins.filter(p => p);
+        // if (ctx.platform.getRootPath() !== process.cwd()) {
+        //     let matchs = [];
+        //     if (isString(opts.input)) {
+        //         matchs.push(opts.input.replace(ctx.platform.getFileName(opts.input), '**/*'));
+        //     } else if (isArray(opts.input)) {
+        //         opts.input.forEach((i: string) => {
+        //             matchs.push(i.replace(ctx.platform.getFileName(i), '**/*'));
+        //         });
+        //     }
+        //     let files = await ctx.platform.getFiles(matchs);
+        //     let fmaps = {};
+        //     let root = ctx.platform.getRootPath();
+        //     files.forEach(f => {
+        //         fmaps[f] =  readFileSync(f, {encoding: 'utf8'});
+        //     });
+        //     opts.plugins.concat(hypothetical({
+        //         files: fmaps,
+        //         cwd: root
+        //     }))
+        // }
         let bundle = await rollup(opts as any);
         await bundle.write(opts.output);
     }

@@ -16,7 +16,9 @@ import { join } from 'path';
 import { CleanActivityOption } from '../tasks';
 const uglify = require('gulp-uglify');
 const rename = require('gulp-rename');
+const grollup = require('gulp-rollup');
 const postcss = require('rollup-plugin-postcss');
+// const terser = require('rollup-plugin-terser');
 
 
 export interface LibTaskOption {
@@ -139,6 +141,14 @@ export interface LibPackBuilderOption extends TemplateOption {
      * @memberof RollupOption
      */
     options?: Binding<Expression<RollupFileOptions | RollupDirOptions>>;
+
+    /**
+     * postcss option.
+     *
+     * @type {Binding<Expression<any>>}
+     * @memberof LibPackBuilderOption
+     */
+    postcssOption?: Binding<Expression<any>>;
 }
 
 @Task({
@@ -176,7 +186,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                 },
                 {
                     activity: Activities.if,
-                    condition: ctx => ctx.body.input,
+                    condition: (ctx: NodeActivityContext) => ctx.body.input && ctx.platform.getRootPath() === process.cwd(),
                     body: [
                         <RollupOption>{
                             activity: 'rollup',
@@ -209,6 +219,37 @@ export interface LibPackBuilderOption extends TemplateOption {
                             }
                         }
                     ]
+                },
+                {
+                    activity: Activities.if,
+                    condition: (ctx: NodeActivityContext) => ctx.body.input && ctx.platform.getRootPath() !== process.cwd(),
+                    body: {
+                        activity: 'asset',
+                        src: ctx => {
+                            if (ctx.body.src) {
+                                return ctx.body.src;
+                            }
+                            if (isString(ctx.body.input)) {
+                                return ctx.body.input.replace(ctx.platform.getFileName(ctx.body.input), '**/*');
+                            } else if (isArray(ctx.body.input)) {
+                                return ctx.body.input.maps((i: string) => i.replace(ctx.platform.getFileName(i), '**/*'));
+                            }
+                        },
+                        dist: ctx => ctx.scope.getModuleFolder(ctx.body),
+                        pipes: ctx => {
+                            return [
+                                grollup({
+                                    name:  ctx.body.moduleName,
+                                    format: ctx.body.format || 'cjs',
+                                    plugins: ctx.scope.plugins,
+                                    external: ctx.scope.external,
+                                    globals: ctx.scope.globals
+                                }),
+                                uglify(),
+                                rename({ suffix: '.min' })
+                            ]
+                        }
+                    }
                 },
                 {
                     activity: Activities.if,
