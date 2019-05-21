@@ -139,7 +139,7 @@ export interface LibPackBuilderOption extends TemplateOption {
      */
     sourcemap?: Binding<NodeExpression<boolean | string>>;
 
-    test?: Binding<NodeExpression<Src>>;
+    test?: Binding<Src>;
 
     /**
      * rollup external setting.
@@ -292,6 +292,9 @@ export class LibPackBuilder implements AfterInit {
 
     @Input()
     src: Src;
+
+    @Input()
+    test: Src;
 
     /**
      * tasks

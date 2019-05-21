@@ -49,6 +49,7 @@ export class UnitTestActivity extends Activity<void> {
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let test = await this.resolveExpression(this.test, ctx);
+        console.log(test);
         let options = await this.resolveExpression(this.options, ctx);
         if (test) {
             await runTest(ctx.platform.toRootSrc(test), options, ConsoleReporter);
