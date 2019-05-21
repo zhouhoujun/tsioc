@@ -6,7 +6,6 @@ import { DestActivity } from './DestActivity';
 import { Input, Binding } from '@tsdi/boot';
 import { CleanActivity } from '../tasks';
 import { PipeActivity } from './PipeActivity';
-
 import { SourcemapInitActivity, SourcemapWriteActivity } from './SourceMap';
 
 /**
@@ -17,6 +16,12 @@ import { SourcemapInitActivity, SourcemapWriteActivity } from './SourceMap';
  * @extends {ActivityConfigure}
  */
 export interface AssetActivityOption extends TemplateOption {
+    /**
+     * clean.
+     *
+     * @type {Binding<NodeExpression<Src>>}
+     * @memberof AssetActivityOption
+     */
     clean?: Binding<NodeExpression<Src>>;
     /**
      * shell cmd
@@ -25,7 +30,12 @@ export interface AssetActivityOption extends TemplateOption {
      * @memberof AssetActivityOption
      */
     src?: Binding<NodeExpression<Src>>;
-
+    /**
+     * sourcemap.
+     *
+     * @type {(Binding<NodeExpression<string | boolean>>)}
+     * @memberof AssetActivityOption
+     */
     sourcemap?: Binding<NodeExpression<string | boolean>>;
     /**
      * shell args.
@@ -34,7 +44,6 @@ export interface AssetActivityOption extends TemplateOption {
      * @memberof AssetActivityOption
      */
     dist?: Binding<NodeExpression<Src>>;
-
     /**
      *
      *

@@ -1,11 +1,11 @@
 import { Task, TemplateOption, Src, Activities, ActivityTemplate } from '@tsdi/activities';
 import { BuilderTypes } from './BuilderTypes';
 import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../transforms';
-import { CompilerOptions, ScriptTarget } from 'typescript';
+import { CompilerOptions } from 'typescript';
 import { ExternalOption, RollupCache, WatcherOptions, RollupFileOptions, RollupDirOptions, GlobalsOption } from 'rollup';
 import { RollupOption } from '../rollups';
 import { Input, AfterInit, Binding } from '@tsdi/boot';
-import { PlatformService, NodeActivityContext, NodeExpression } from '../core';
+import { NodeActivityContext, NodeExpression } from '../core';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
