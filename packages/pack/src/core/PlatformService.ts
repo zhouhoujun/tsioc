@@ -66,7 +66,7 @@ export class PlatformService {
      */
     getEnvArgs(): ObjectMap<any> {
         if (!this.envArgs) {
-            this.envArgs = minimist(this.ctx.args || process.argv.slice(2));
+            this.envArgs = minimist([...this.ctx.args, ...process.argv.slice(2)]);
         }
         return this.envArgs;
     }

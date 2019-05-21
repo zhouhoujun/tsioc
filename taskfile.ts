@@ -40,23 +40,29 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                 {
                     activity: Activities.if,
                     condition: (ctx: NodeActivityContext) => ctx.platform.getEnvArgs().setvs,
-                    body: <JsonReplaceActivityOption>{
-                        activity: 'jsonReplace',
-                        fields: (json, ctx) => {
-                            let chgs = new Map<string, any>();
-                            let version = ctx.platform.getEnvArgs().setvs;
-                            Object.keys(json.peerDependencies || {}).forEach(key => {
-                                if (/^@tsdi/.test(key)) {
-                                    chgs.set('peerDependencies.' + key, '^' + version);
+                    body: {
+                        activity: 'asset',
+                        src: ctx => ctx.platform.getFolders('packages').map(pk => pk + '/package.json'),
+                        dist: './packages',
+                        pipes: [
+                            <JsonReplaceActivityOption>{
+                                activity: 'jsonReplace',
+                                fields: (json, ctx) => {
+                                    let chgs = new Map<string, any>();
+                                    let version = ctx.platform.getEnvArgs().setvs;
+                                    Object.keys(json.peerDependencies || {}).forEach(key => {
+                                        if (/^@tsdi/.test(key)) {
+                                            chgs.set('peerDependencies.' + key, '^' + version);
+                                        }
+                                    });
+                                    Object.keys(json.dependencies || {}).forEach(key => {
+                                        if (/^@tsdi/.test(key)) {
+                                            chgs.set('dependencies.' + key, '^' + version);
+                                        }
+                                    });
+                                    return chgs;
                                 }
-                            });
-                            Object.keys(json.dependencies || {}).forEach(key => {
-                                if (/^@tsdi/.test(key)) {
-                                    chgs.set('dependencies.' + key, '^' + version);
-                                }
-                            });
-                            return chgs;
-                        }
+                            }]
                     }
                 },
                 {
@@ -66,7 +72,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                         activity: Activities.execute,
                         action: async ctx => {
                             let activitys = Object.values(require(path.join(ctx.body, 'taskfile.ts'))).filter(b => isAcitvityClass(b)) as Type<Activity<any>>[];
-                            await Workflow.sequence(...activitys);
+                            await Workflow.run(activitys[0]);
                         }
                     }
                 },
