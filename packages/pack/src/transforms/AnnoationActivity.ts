@@ -1,19 +1,19 @@
 import { PipeActivity } from './PipeActivity';
-import { NodeActivityContext, ITransform } from '../core';
+import { NodeActivityContext, ITransform, NodeExpression } from '../core';
 import { Input } from '@tsdi/boot';
 import { classAnnotations } from '@tsdi/annotations';
-import { Task, Expression } from '@tsdi/activities';
+import { Task } from '@tsdi/activities';
 
 @Task('annoation, [annoation]')
 export class AnnoationActivity extends PipeActivity {
 
     @Input('annotationFramework', classAnnotations)
-    framework: Expression<ITransform>;
+    framework: NodeExpression<ITransform>;
 
     @Input()
-    annoation: Expression<boolean>;
+    annoation: NodeExpression<boolean>;
 
-    constructor(@Input() annoation: Expression<boolean>) {
+    constructor(@Input() annoation: NodeExpression<boolean>) {
         super();
         this.annoation = annoation;
     }

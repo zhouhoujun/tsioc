@@ -1,6 +1,6 @@
 import { PipeActivity } from './PipeActivity';
-import { Task, Expression } from '@tsdi/activities';
-import { NodeActivityContext } from '../core';
+import { Task } from '@tsdi/activities';
+import { NodeActivityContext, NodeExpression } from '../core';
 import { Input } from '@tsdi/boot';
 const uglify = require('gulp-uglify');
 
@@ -8,12 +8,12 @@ const uglify = require('gulp-uglify');
 export class UglifyActivity extends PipeActivity {
 
     @Input('uglifyOptions')
-    options: Expression<any>;
+    options: NodeExpression<any>;
 
     @Input()
-    uglify: Expression<boolean>;
+    uglify: NodeExpression<boolean>;
 
-    constructor(@Input() uglify: Expression<boolean>) {
+    constructor(@Input() uglify: NodeExpression<boolean>) {
         super();
         this.uglify = uglify;
     }

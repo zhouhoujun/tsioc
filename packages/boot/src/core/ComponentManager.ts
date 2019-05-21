@@ -26,7 +26,7 @@ export class ComponentManager {
 
     getRoot(component: any) {
         if (this.parents.has(component)) {
-            return this.getReslut(component, this.parents);
+            return this.forIn(component, this.parents);
         }
         return null;
     }
@@ -36,9 +36,21 @@ export class ComponentManager {
     }
 
 
+    getScopes(component: any) {
+        let scopes = [];
+        if (component) {
+            this.forIn(component, this.parents, com => {
+                scopes.unshift(com);
+            });
+            scopes.unshift(component);
+        }
+        return scopes;
+    }
+
+
     getLeaf(component: any): any {
         if (this.componetns.has(component)) {
-            return this.getReslut(component, this.componetns);
+            return this.forIn(component, this.componetns);
         }
         return null;
     }
@@ -64,10 +76,13 @@ export class ComponentManager {
         return this.annoations.has(component) ? this.annoations.get(component) : null;
     }
 
-    protected getReslut(component: any, map: WeakMap<any, any>) {
+
+
+    protected forIn(component: any, map: WeakMap<any, any>, action?: (component: any) => void) {
         component = this.componetns.get(component);
         while (map.has(component)) {
             component = map.get(component);
+            action && action(component);
         }
         return component;
     }

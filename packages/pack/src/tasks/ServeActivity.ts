@@ -1,5 +1,6 @@
-import { Task, Src, ActivityConfigure, Activity, Expression } from '@tsdi/activities';
-import { Input } from '@tsdi/boot';
+import { Task, Src, Activity, Expression, TemplateOption } from '@tsdi/activities';
+import { Input, Binding } from '@tsdi/boot';
+import { NodeExpression } from '../core';
 
 
 /**
@@ -8,7 +9,7 @@ import { Input } from '@tsdi/boot';
  * @export
  * @interface ServeConfigure
  */
-export interface ServeConfigure extends ActivityConfigure {
+export interface ServeConfigure extends TemplateOption {
     /**
      * serve port.
      *
@@ -22,7 +23,7 @@ export interface ServeConfigure extends ActivityConfigure {
      * @type {CtxType<Src>}
      * @memberof ServeConfigure
      */
-    dirs: Expression<Src>;
+    dirs: Binding<NodeExpression<Src>>;
 }
 
 /**

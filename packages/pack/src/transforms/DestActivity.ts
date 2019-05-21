@@ -1,5 +1,5 @@
-import { NodeActivityContext, ITransform } from '../core';
-import { Task, Expression, GActivityType, TemplateOption } from '@tsdi/activities';
+import { NodeActivityContext, ITransform, NodeExpression } from '../core';
+import { Task, GActivityType, TemplateOption } from '@tsdi/activities';
 import { DestOptions, dest } from 'vinyl-fs';
 import { Input, Binding } from '@tsdi/boot';
 import { PipeActivity } from './PipeActivity';
@@ -17,10 +17,10 @@ export interface DistActivityOption extends TemplateOption {
     /**
      * source stream to dist.
      *
-     * @type {Expression<string>}
+     * @type {NodeExpression<string>}
      * @memberof DistActivityOption
      */
-    dist: Binding<Expression<string>>;
+    dist: Binding<NodeExpression<string>>;
 
     /**
      * dist stream pipes.
@@ -36,7 +36,7 @@ export interface DistActivityOption extends TemplateOption {
      * @type {Binding<DestOptions>}
      * @memberof DistActivityOption
      */
-    distOptions?: Binding<Expression<DestOptions>>;
+    distOptions?: Binding<NodeExpression<DestOptions>>;
 }
 
 
@@ -51,12 +51,12 @@ export interface DistActivityOption extends TemplateOption {
 export class DestActivity extends PipeActivity {
 
     @Input()
-    dist: Expression<string>;
+    dist: NodeExpression<string>;
 
     @Input('destOptions')
-    options: Expression<DestOptions>;
+    options: NodeExpression<DestOptions>;
 
-    constructor(@Input() dist: Expression<string>) {
+    constructor(@Input() dist: NodeExpression<string>) {
         super()
         this.dist = dist;
     }

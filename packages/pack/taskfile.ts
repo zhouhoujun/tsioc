@@ -1,7 +1,6 @@
 import { Workflow, Task } from '@tsdi/activities';
-import { PackModule } from '@tsdi/pack';
+import { PackModule, PackMetadata, LibPackBuilderOption } from '@tsdi/pack';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
-import { LibPackBuilderOption } from './src/builds';
 import { AfterInit } from '@tsdi/boot';
 
 @Task({
@@ -12,12 +11,14 @@ import { AfterInit } from '@tsdi/boot';
     baseURL: __dirname,
     template: <LibPackBuilderOption>{
         activity: 'libs',
+        src: 'src/**/*.ts',
         outDir: '../../dist/pack',
-        tasks: [
-            { src: 'src/**/*.ts', moduleName: ['main', 'esm5'], moduleFolder: 'lib', fileName: 'index.js', dtsMain: 'index.d.ts',  uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', moduleName: 'fesm5', fileName: 'pack.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', moduleName: 'fesm2015', fileName: 'pack.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2015.json' },
-            { input: 'src/index.ts', moduleName: 'fesm2017', fileName: 'pack.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2017.json' }
+        annotation: true,
+        bundles: [
+            { target: 'es5', targetFolder: 'src', moduleName: ['esm5'], moduleFolder: 'lib', outputFile: 'index.js', dtsMain: 'index.d.ts' },
+            { input: 'src/index.js', moduleName: ['main', 'fesm5'], outputFile: 'pack.js', format: 'cjs' },
+            { target: 'es2015', input: 'es2015/index.js', moduleName: 'fesm2015', outputFile: 'pack.js', format: 'cjs' },
+            { target: 'es2017', input: 'es2017/index.js', moduleName: 'fesm2017', outputFile: 'pack.js', format: 'cjs' }
         ]
     }
 })

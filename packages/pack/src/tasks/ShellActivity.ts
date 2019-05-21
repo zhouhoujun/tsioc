@@ -1,7 +1,7 @@
 import { ExecOptions, exec } from 'child_process';
 import { isBoolean, isArray, lang, ObjectMap, isNullOrUndefined, PromiseUtil } from '@tsdi/ioc';
-import { Src, Task, TemplateOption, Activity, Expression } from '@tsdi/activities';
-import { NodeActivityContext } from '../core';
+import { Src, Task, TemplateOption, Activity } from '@tsdi/activities';
+import { NodeActivityContext, NodeExpression } from '../core';
 import { Input, Binding } from '@tsdi/boot';
 
 
@@ -16,31 +16,31 @@ export interface ShellActivityOption extends TemplateOption {
     /**
      * shell cmd
      *
-     * @type {Binding<Expression<Src>>}
+     * @type {Binding<NodeExpression<Src>>}
      * @memberof ShellActivityConfig
      */
-    shell?: Binding<Expression<Src>>;
+    shell?: Binding<NodeExpression<Src>>;
     /**
      * shell args.
      *
-     * @type {Binding<Expression<string[] | ObjectMap<any>>>}
+     * @type {Binding<NodeExpression<string[] | ObjectMap<any>>>}
      * @memberof ShellActivityConfig
      */
-    args?: Binding<Expression<string[] | ObjectMap<any>>>;
+    args?: Binding<NodeExpression<string[] | ObjectMap<any>>>;
     /**
      * shell exec options.
      *
-     * @type {Binding<Expression<ExecOptions>>}
+     * @type {Binding<NodeExpression<ExecOptions>>}
      * @memberof ShellActivityConfig
      */
-    options?: Binding<Expression<ExecOptions>>;
+    options?: Binding<NodeExpression<ExecOptions>>;
     /**
      * allow error or not.
      *
-     * @type {Binding<Expression<boolean>>}
+     * @type {Binding<NodeExpression<boolean>>}
      * @memberof ShellActivityConfig
      */
-    allowError?: Binding<Expression<boolean>>;
+    allowError?: Binding<NodeExpression<boolean>>;
 }
 
 
@@ -59,7 +59,7 @@ export class ShellActivity extends Activity<void> {
      * @memberof ShellActivity
      */
     @Input()
-    shell: Expression<Src>;
+    shell: NodeExpression<Src>;
     /**
      * shell args.
      *
@@ -67,7 +67,7 @@ export class ShellActivity extends Activity<void> {
      * @memberof ShellActivity
      */
     @Input()
-    args: Expression<string[] | ObjectMap<any>>;
+    args: NodeExpression<string[] | ObjectMap<any>>;
     /**
      * shell exec options.
      *
@@ -75,14 +75,14 @@ export class ShellActivity extends Activity<void> {
      * @memberof ShellActivity
      */
     @Input()
-    options: Expression<ExecOptions>;
+    options: NodeExpression<ExecOptions>;
     /**
      * allow error or not.
      *
      * @memberof ShellActivity
      */
     @Input()
-    allowError: Expression<boolean>
+    allowError: NodeExpression<boolean>
 
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {

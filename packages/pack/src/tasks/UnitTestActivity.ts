@@ -1,8 +1,8 @@
-import { Task, Expression, Activity, Src, TemplateOption } from '@tsdi/activities';
-import { NodeActivityContext } from '../core';
+import { Task, Activity, Src, TemplateOption } from '@tsdi/activities';
+import { NodeActivityContext, NodeExpression } from '../core';
 import { runTest, UnitTestConfigure } from '@tsdi/unit';
 import { ConsoleReporter } from '@tsdi/unit-console';
-import { Input } from '@tsdi/boot';
+import { Input, Binding } from '@tsdi/boot';
 
 
 
@@ -17,18 +17,18 @@ export interface UnitTestActivityOption extends TemplateOption {
     /**
      * test source.
      *
-     * @type {Expression<Src>}
+     * @type {NodeExpression<Src>}
      * @memberof UnitTestActivityOption
      */
-    test: Expression<Src>;
+    test: Binding<NodeExpression<Src>>;
 
     /**
      * src option
      *
-     * @type {Expression<DestOptions>}
+     * @type {NodeExpression<DestOptions>}
      * @memberof UnitTestActivityOption
      */
-    testOptions?: Expression<UnitTestConfigure>;
+    testOptions?: Binding<NodeExpression<UnitTestConfigure>>;
 }
 
 
@@ -36,13 +36,13 @@ export interface UnitTestActivityOption extends TemplateOption {
 export class UnitTestActivity extends Activity<void> {
 
     @Input()
-    test: Expression<Src>;
+    test: NodeExpression<Src>;
 
     @Input('testOptions')
-    options: Expression<UnitTestConfigure>;
+    options: NodeExpression<UnitTestConfigure>;
 
 
-    constructor(@Input() test: Expression<Src>) {
+    constructor(@Input() test: NodeExpression<Src>) {
         super()
         this.test = test;
     }

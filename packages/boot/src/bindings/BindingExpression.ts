@@ -22,3 +22,4 @@ export class AssignBinding<T> extends BindingExpression<T> {
  * binding
  */
 export type Binding<T> =  string | BindingExpression<T> | T;
+

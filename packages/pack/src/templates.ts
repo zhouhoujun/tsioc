@@ -1,12 +1,23 @@
-import { ActivityType } from '@tsdi/activities';
+import { ControlTemplate, ActivityMetadata } from '@tsdi/activities';
 import {
     CleanActivityOption, ServeConfigure, WatchActivityOption,
     ShellActivityOption, UnitTestActivityOption
 } from './tasks';
-import { TsBuildOption, DistActivityOption, AssetActivityOption, SourceActivityOption } from './transforms';
+import { TsBuildOption, DistActivityOption, AssetActivityOption, SourceActivityOption, JsonEditActivityOption, JsonReplaceActivityOption } from './transforms';
+import { RollupOption } from './rollups';
+import { LibPackBuilderOption } from './builds';
 
-export type PackTemplates = ActivityType | AssetActivityOption | CleanActivityOption
+export type PackTemplates = ControlTemplate | AssetActivityOption | CleanActivityOption
     | DistActivityOption | ServeConfigure | ShellActivityOption | SourceActivityOption
-    | UnitTestActivityOption | WatchActivityOption
-    | TsBuildOption;
+    | UnitTestActivityOption | WatchActivityOption | JsonEditActivityOption | JsonReplaceActivityOption
+    | TsBuildOption | RollupOption | LibPackBuilderOption;
 
+export interface PackMetadata extends ActivityMetadata {
+    /**
+     * package template.
+     *
+     * @type {(PackTemplates | PackTemplates[])}
+     * @memberof PackMetadata
+     */
+    template: PackTemplates | PackTemplates[];
+}

@@ -1,9 +1,9 @@
-import { Activity, Task, Src, Expression, BodyActivity, BodyTemplate } from '@tsdi/activities';
+import { Activity, Task, Src, BodyActivity, BodyTemplate } from '@tsdi/activities';
 import { PromiseUtil } from '@tsdi/ioc';
 import { fromEventPattern } from 'rxjs';
 import { bufferTime, filter } from 'rxjs/operators';
-import { NodeActivityContext } from '../core';
-import { Input } from '@tsdi/boot';
+import { NodeActivityContext, NodeExpression } from '../core';
+import { Input, Binding } from '@tsdi/boot';
 const chokidar = require('chokidar');
 
 
@@ -11,18 +11,18 @@ export interface WatchActivityOption extends BodyTemplate {
     /**
      * watch source.
      *
-     * @type {Expression<Src>}
+     * @type {NodeExpression<Src>}
      * @memberof UnitTestActivityOption
      */
-    watch: Expression<Src>;
+    watch: Binding<NodeExpression<Src>>;
 
     /**
      * src option
      *
-     * @type {Expression<DestOptions>}
+     * @type {NodeExpression<DestOptions>}
      * @memberof UnitTestActivityOption
      */
-    watchOptions?: Expression<any>;
+    watchOptions?: Binding<NodeExpression<any>>;
 }
 
 
@@ -37,10 +37,10 @@ export interface WatchActivityOption extends BodyTemplate {
 export class WatchActivity extends Activity<Src> {
 
     @Input()
-    watch: Expression<Src>;
+    watch: NodeExpression<Src>;
 
     @Input('watchOptions')
-    options:  Expression<any>;
+    options:  NodeExpression<any>;
 
     @Input()
     body: BodyActivity<any>;

@@ -1,6 +1,6 @@
-import { Task, Expression, ValuePipe, ActivityType, Src } from '@tsdi/activities';
+import { Task, ValuePipe, ActivityType, Src } from '@tsdi/activities';
 import { Input, Binding, AfterInit } from '@tsdi/boot';
-import { NodeActivityContext } from '../core';
+import { NodeActivityContext, NodeExpression } from '../core';
 import { ObjectMap, isString } from '@tsdi/ioc';
 import { CompilerOptions } from 'typescript';
 import { AssetActivityOption, AssetActivity } from './AssetActivity';
@@ -21,14 +21,14 @@ const ts = require('gulp-typescript');
  * @extends {AssetActivityOption}
  */
 export interface TsBuildOption extends AssetActivityOption {
-    test?: Binding<Expression<Src>>;
-    annotation?: Binding<Expression<boolean>>;
-    tsconfig: Binding<Expression<string | CompilerOptions>>;
-    dts?: Binding<Expression<string>>;
-    uglify?: Binding<Expression<boolean>>;
-    uglifyOptions?: Binding<Expression<any>>;
-    jsValuePipe?: Binding<Expression<ValuePipe | boolean>>;
-    dtsValuePipe?: Binding<Expression<ValuePipe | boolean>>;
+    test?: Binding<NodeExpression<Src>>;
+    annotation?: Binding<NodeExpression<boolean>>;
+    tsconfig: Binding<NodeExpression<string | CompilerOptions>>;
+    dts?: Binding<NodeExpression<string>>;
+    uglify?: Binding<NodeExpression<boolean>>;
+    uglifyOptions?: Binding<NodeExpression<any>>;
+    jsValuePipe?: Binding<NodeExpression<ValuePipe | boolean>>;
+    dtsValuePipe?: Binding<NodeExpression<ValuePipe | boolean>>;
 }
 
 
@@ -49,7 +49,7 @@ export class TsBuildActivity extends AssetActivity implements AfterInit {
     /**
      * assert src.
      *
-     * @type {Expression<Src>}
+     * @type {NodeExpression<Src>}
      * @memberof AssetActivity
      */
     @Input('src', 'src/**/*.ts')
@@ -69,7 +69,7 @@ export class TsBuildActivity extends AssetActivity implements AfterInit {
 
 
     @Input('tsconfig', './tsconfig.json')
-    tsconfig: Expression<string | ObjectMap<any>>;
+    tsconfig: NodeExpression<string | ObjectMap<any>>;
 
 
     onAfterInit(): void | Promise<void> {

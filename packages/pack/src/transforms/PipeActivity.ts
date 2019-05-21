@@ -1,5 +1,4 @@
-import { ITransform, NodeActivityContext, isTransform } from '../core';
-import { Expression } from '@tsdi/activities';
+import { ITransform, NodeActivityContext, isTransform, NodeExpression } from '../core';
 import { isUndefined } from '@tsdi/ioc';
 import { TransformActivity } from './TransformActivity';
 
@@ -24,7 +23,7 @@ export abstract class PipeActivity extends TransformActivity {
      * @returns {Promise<ITransform>}
      * @memberof TransformActivity
      */
-    protected async executePipe(ctx: NodeActivityContext, stream: ITransform, transform: Expression<ITransform>, waitend = false): Promise<ITransform> {
+    protected async executePipe(ctx: NodeActivityContext, stream: ITransform, transform: NodeExpression<ITransform>, waitend = false): Promise<ITransform> {
         let next: ITransform;
         let transPipe = await this.resolveExpression(transform, ctx);
         let vaild = false;

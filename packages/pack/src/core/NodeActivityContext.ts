@@ -1,11 +1,11 @@
-import { ActivityContext, Activity } from '@tsdi/activities';
+import { ActivityContext, Activity, CtxExpression } from '@tsdi/activities';
 import { Injectable, Refs } from '@tsdi/ioc';
 import { BootContext } from '@tsdi/boot';
 import { PlatformService } from './PlatformService';
 
 
 
-
+export type NodeExpression<T> = CtxExpression<T, NodeActivityContext>;
 
 /**
  * pipe activity context.
@@ -28,3 +28,4 @@ export class NodeActivityContext extends ActivityContext {
         return this._platform;
     }
 }
+

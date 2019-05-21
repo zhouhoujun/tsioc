@@ -1,27 +1,44 @@
-import { Task, TemplateOption, Expression, Src, Activities } from '@tsdi/activities';
+import { Task, TemplateOption, Src, Activities } from '@tsdi/activities';
 import { BuilderTypes } from './BuilderTypes';
 import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../transforms';
-import { CompilerOptions } from 'typescript';
+import { CompilerOptions, ScriptTarget } from 'typescript';
 import { ExternalOption, RollupCache, WatcherOptions, RollupFileOptions, RollupDirOptions, GlobalsOption } from 'rollup';
 import { RollupOption } from '../rollups';
 import { Input, AfterInit, Binding } from '@tsdi/boot';
-import { PlatformService, NodeActivityContext } from '../core';
+import { PlatformService, NodeActivityContext, NodeExpression } from '../core';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
 const ts = require('rollup-plugin-typescript');
-import { rollupClassAnnotations } from '@tsdi/annotations';
-import { isString, isNullOrUndefined, isBoolean, isArray, lang } from '@tsdi/ioc';
+// import { rollupClassAnnotations } from '@tsdi/annotations';
+import { isNullOrUndefined, isBoolean, isArray, lang } from '@tsdi/ioc';
 import { join } from 'path';
-import { CleanActivityOption } from '../tasks';
+import { PackMetadata } from '../templates';
 const uglify = require('gulp-uglify');
 const rename = require('gulp-rename');
-const grollup = require('gulp-rollup');
-const postcss = require('rollup-plugin-postcss');
+// const grollup = require('gulp-rollup');
+// const postcss = require('rollup-plugin-postcss');
 // const terser = require('rollup-plugin-terser');
 
 
-export interface LibTaskOption {
+export interface LibBundleOption {
+    /**
+     * typescript build target.
+     *
+     * @type {string}
+     * @memberof LibBundleOption
+     */
+    target?: string;
+
+    targetFolder?: string;
+
+    /**
+     * for package typings
+     *
+     * @type {string}
+     * @memberof LibTaskOption
+     */
+    dtsMain?: string
     /**
      * module name output for package.
      *
@@ -37,28 +54,6 @@ export interface LibTaskOption {
      * @memberof LibTaskOption
      */
     moduleFolder?: string;
-    /**
-     * pipe stream src.
-     *
-     * @type {Src}
-     * @memberof LibTaskOption
-     */
-    src?: Src;
-    /**
-     * dts sub folder name
-     *
-     * @type {string}
-     * @memberof LibTaskOption
-     */
-    dts?: string,
-
-    /**
-     * for package typings
-     *
-     * @type {string}
-     * @memberof LibTaskOption
-     */
-    dtsMain?: string;
 
     annotation?: boolean;
     uglify?: boolean;
@@ -77,7 +72,7 @@ export interface LibTaskOption {
      * @type {string>}
      * @memberof LibTaskOption
      */
-    fileName?: string;
+    outputFile?: string;
 
     /**
      * rollup format option.
@@ -92,10 +87,18 @@ export interface LibPackBuilderOption extends TemplateOption {
     /**
      * tasks
      *
-     * @type { Binding<LibTaskOption[]>}
+     * @type { Binding<LibBundleOption[]>}
      * @memberof LibPackBuilderOption
      */
-    tasks: Binding<Expression<LibTaskOption[]>>;
+    bundles: Binding<NodeExpression<LibBundleOption[]>>;
+
+    /**
+     * project source.
+     *
+     * @type {Binding<string>}
+     * @memberof LibPackBuilderOption
+     */
+    src: Binding<Src>;
 
     /**
      * project out dir.
@@ -106,91 +109,109 @@ export interface LibPackBuilderOption extends TemplateOption {
     outDir: Binding<string>;
 
     /**
-     * rollup external setting.
+     * annotation source file.
      *
-     * @type {Expression<ExternalOption>}
-     * @memberof RollupOption
+     * @type {Binding<NodeExpression<boolean>>}
+     * @memberof LibPackBuilderOption
      */
-    external?: Binding<Expression<ExternalOption>>;
+    annotation?: Binding<NodeExpression<boolean>>;
+
+    /**
+     * dts sub folder name
+     *
+     * @type {string}
+     * @memberof LibTaskOption
+     */
+    dts?: Binding<string>,
 
     /**
      * enable source maps or not.
      *
-     * @type {Binding<Expression<boolean|string>>}
+     * @type {Binding<NodeExpression<boolean|string>>}
      * @memberof RollupOption
      */
-    sourcemap?: Binding<Expression<boolean | string>>;
+    sourcemap?: Binding<NodeExpression<boolean | string>>;
+
+    test?: Binding<NodeExpression<Src>>;
+
+    /**
+     * rollup external setting.
+     *
+     * @type {NodeExpression<ExternalOption>}
+     * @memberof RollupOption
+     */
+    external?: Binding<NodeExpression<ExternalOption>>;
 
     /**
      * rollup plugins setting.
      *
-     * @type {Expression<Plugin[]>}
+     * @type {NodeExpression<Plugin[]>}
      * @memberof RollupOption
      */
-    plugins?: Binding<Expression<Plugin[]>>;
+    plugins?: Binding<NodeExpression<Plugin[]>>;
 
-    cache?: Binding<Expression<RollupCache>>;
+    cache?: Binding<NodeExpression<RollupCache>>;
 
-    watch?: Binding<Expression<WatcherOptions>>;
+    watch?: Binding<NodeExpression<WatcherOptions>>;
 
-    globals?: Binding<Expression<GlobalsOption>>;
+    globals?: Binding<NodeExpression<GlobalsOption>>;
     /**
      * custom setup rollup options.
      *
-     * @type {(Expression<RollupFileOptions | RollupDirOptions>)}
+     * @type {(NodeExpression<RollupFileOptions | RollupDirOptions>)}
      * @memberof RollupOption
      */
-    options?: Binding<Expression<RollupFileOptions | RollupDirOptions>>;
+    options?: Binding<NodeExpression<RollupFileOptions | RollupDirOptions>>;
 
     /**
      * postcss option.
      *
-     * @type {Binding<Expression<any>>}
+     * @type {Binding<NodeExpression<any>>}
      * @memberof LibPackBuilderOption
      */
-    postcssOption?: Binding<Expression<any>>;
+    postcssOption?: Binding<NodeExpression<any>>;
 }
 
-@Task({
+@Task(<PackMetadata>{
     selector: BuilderTypes.libs,
     template: [
-        <CleanActivityOption>{
+        {
             activity: 'clean',
             clean: ctx => ctx.scope.outDir
         },
         {
+            activity: 'test',
+            test: 'binding: test',
+        },
+        {
+            activity: 'asset',
+            src: ['package.json', '*.md'],
+            dist: 'binding: outDir'
+        },
+        {
             activity: 'each',
-            each: 'binding: tasks',
+            each: 'binding: bundles',
             body: [
                 {
                     activity: Activities.if,
-                    condition: ctx => ctx.body.test,
-                    body: {
-                        activity: 'test',
-                        test: ctx => ctx.body.test
-                    }
-                },
-                {
-                    activity: 'if',
-                    condition: ctx => ctx.body.src,
+                    condition: ctx => ctx.body.target,
                     body: <TsBuildOption>{
                         activity: 'ts',
-                        src: ctx => ctx.body.src,
-                        uglify: ctx => ctx.body.uglify,
-                        dist: ctx => ctx.scope.toModulePath(ctx.body),
-                        dts: ctx => ctx.scope.toModulePath(ctx.body, ctx.body.dts),
-                        annotation: ctx => ctx.body.annotation,
+                        src: 'binding: src',
+                        dist: ctx => ctx.scope.getTargetFolder(ctx.body),
+                        dts: 'binding: dts',
+                        annotation: 'binding: annotation',
                         sourcemap: 'binding: sourcemap',
-                        tsconfig: ctx => ctx.body.tsconfig
+                        tsconfig: ctx => ctx.scope.getCompileOptions(ctx.body.target)
                     }
                 },
                 {
                     activity: Activities.if,
-                    condition: (ctx: NodeActivityContext) => ctx.body.input && ctx.platform.getRootPath() === process.cwd(),
+                    condition: ctx => ctx.body.input,
                     body: [
                         <RollupOption>{
                             activity: 'rollup',
-                            input: ctx => ctx.body.input,
+                            input: ctx => ctx.scope.toOutputPath(ctx.body, ctx.body.input),
                             sourcemap: 'binding: sourcemap',
                             plugins: 'binding: plugins',
                             external: 'binding: external',
@@ -198,8 +219,8 @@ export interface LibPackBuilderOption extends TemplateOption {
                             output: ctx => {
                                 return {
                                     format: ctx.body.format || 'cjs',
-                                    file: ctx.body.fileName ? ctx.scope.toModulePath(ctx.body, ctx.body.fileName) : undefined,
-                                    dir: ctx.body.fileName ? undefined : ctx.scope.toModulePath(ctx.body),
+                                    file: ctx.body.outputFile ? ctx.scope.toModulePath(ctx.body, ctx.body.outputFile) : undefined,
+                                    dir: ctx.body.outputFile ? undefined : ctx.scope.toModulePath(ctx.body),
                                     globals: ctx.scope.globals
                                 }
                             }
@@ -209,7 +230,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                             condition: ctx => ctx.body.uglify,
                             body: <AssetActivityOption>{
                                 activity: 'asset',
-                                src: ctx => isArray(ctx.body.input) ? ctx.scope.toModulePath(ctx.body, '/**/*.js') : ctx.scope.toModulePath(ctx.body, ctx.body.fileName),
+                                src: ctx => isArray(ctx.body.input) ? ctx.scope.toModulePath(ctx.body, '/**/*.js') : ctx.scope.toModulePath(ctx.body, ctx.body.outputFile),
                                 dist: ctx => ctx.scope.toModulePath(ctx.body),
                                 sourcemap: 'binding: zipMapsource',
                                 pipes: [
@@ -221,75 +242,36 @@ export interface LibPackBuilderOption extends TemplateOption {
                     ]
                 },
                 {
-                    activity: Activities.elseif,
-                    condition: (ctx: NodeActivityContext) => ctx.body.input,
-                    body: {
-                        activity: 'asset',
-                        src: ctx => {
-                            console.log('asset:', ctx.body.src || ctx.body.input);
-                            if (ctx.body.src) {
-                                return ctx.body.src;
-                            }
-                            if (isString(ctx.body.input)) {
-                                return ctx.body.input.replace(ctx.platform.getFileName(ctx.body.input), '**/*');
-                            } else if (isArray(ctx.body.input)) {
-                                return ctx.body.input.maps((i: string) => i.replace(ctx.platform.getFileName(i), '**/*'));
-                            }
-                        },
-                        dist: ctx => ctx.scope.toModulePath(ctx.body),
-                        pipes: [
-                            (ctx: NodeActivityContext) => grollup({
-                                input: ctx.platform.toRootSrc(ctx.body.input),
-                                name: ctx.body.moduleName,
-                                format: ctx.body.format || 'cjs',
-                                plugins: ctx.scope.plugins.filter(f => f),
-                                external: ctx.scope.external,
-                                globals: ctx.scope.globals
-                            }),
-                            uglify(),
-                            rename({ suffix: '.min' })
-                        ]
-                    }
-                },
-                {
                     activity: Activities.if,
                     condition: ctx => ctx.body.moduleName,
-                    body: [
-                        {
-                            activity: Activities.if,
-                            condition: (ctx: NodeActivityContext) => !ctx.platform.existsFile(ctx.scope.toOutputPath('package.json')),
-                            body: <AssetActivityOption>{
-                                activity: 'asset',
-                                src: ['package.json', '*.md'],
-                                dist: ctx => ctx.scope.outDir
-                            }
-                        },
-                        <AssetActivityOption>{
-                            activity: 'asset',
-                            src: ctx => ctx.scope.toOutputPath('package.json'),
-                            dist: ctx => ctx.scope.outDir,
-                            pipes: [
-                                <JsonEditActivityOption>{
-                                    activity: 'jsonEdit',
-                                    json: (json, ctx) => {
-                                        // to replace module export.
-                                        let outmain = ['.', ctx.scope.getModuleFolder(ctx.body), ctx.body.fileName].join('/');
-                                        if (isArray(ctx.body.moduleName)) {
-                                            ctx.body.moduleName.forEach(n => {
-                                                json[n] = outmain;
-                                            })
-                                        } else if (ctx.body.moduleName) {
-                                            json[ctx.body.moduleName] = outmain;
-                                        }
-                                        if (ctx.body.dtsMain) {
-                                            json['typings'] = ['.', ctx.scope.getModuleFolder(ctx.body), ctx.body.dtsMain].join('/');
-                                        }
-                                        return json;
+                    body: <AssetActivityOption>{
+                        activity: 'asset',
+                        src: ctx => ctx.scope.toOutputPath('package.json'),
+                        dist: ctx => ctx.scope.outDir,
+                        pipes: [
+                            <JsonEditActivityOption>{
+                                activity: 'jsonEdit',
+                                json: (json, ctx) => {
+                                    // to replace module export.
+                                    if (ctx.body.target) {
+                                        json[ctx.body.target] = ['.', ctx.body.input].join('/');
                                     }
+                                    let outmain = ['.', ctx.scope.getModuleFolder(ctx.body), ctx.body.outputFile].join('/');
+                                    if (isArray(ctx.body.moduleName)) {
+                                        ctx.body.moduleName.forEach(n => {
+                                            json[n] = outmain;
+                                        })
+                                    } else if (ctx.body.moduleName) {
+                                        json[ctx.body.moduleName] = outmain;
+                                    }
+                                    if (ctx.body.dtsMain) {
+                                        json['typings'] = ['.', ctx.scope.getTargetFolder(ctx.body), ctx.body.dtsMain].join('/');
+                                    }
+                                    return json;
                                 }
-                            ]
-                        }
-                    ]
+                            }
+                        ]
+                    }
                 }
             ]
         }
@@ -301,17 +283,79 @@ export class LibPackBuilder implements AfterInit {
 
     }
 
+    @Input()
+    src: Src;
+
     /**
      * tasks
      *
-     * @type {(LibTaskOption[])}
+     * @type {(LibBundleOption[])}
      * @memberof LibPackBuilderOption
      */
     @Input()
-    tasks: Expression<LibTaskOption[]>;
+    bundles: NodeExpression<LibBundleOption[]>;
 
     @Input()
     outDir: string;
+
+    @Input()
+    annotation: NodeExpression<boolean>;
+
+    /**
+     * rollup external setting.
+     *
+     * @type {NodeExpression<ExternalOption>}
+     * @memberof RollupOption
+     */
+    @Input()
+    external?: NodeExpression<ExternalOption>;
+
+    /**
+     * rollup plugins setting.
+     *
+     * @type {NodeExpression<Plugin[]>}
+     * @memberof RollupOption
+     */
+    @Input()
+    plugins: NodeExpression<Plugin[]>;
+
+    @Input()
+    globals: NodeExpression<GlobalsOption>;
+
+    @Input()
+    cache?: NodeExpression<RollupCache>;
+
+    @Input()
+    watch?: NodeExpression<WatcherOptions>;
+    /**
+     * custom setup rollup options.
+     *
+     * @type {(NodeExpression<RollupFileOptions | RollupDirOptions>)}
+     * @memberof RollupOption
+     */
+    @Input()
+    options?: NodeExpression<RollupFileOptions | RollupDirOptions>;
+
+    @Input()
+    sourcemap?: NodeExpression<boolean | string>;
+
+    @Input()
+    postcssOption: NodeExpression<any>;
+
+    get zipMapsource() {
+        if (this.sourcemap && isBoolean(this.sourcemap)) {
+            return './';
+        }
+        return this.sourcemap;
+    }
+
+    getCompileOptions(target: string) {
+        if (target) {
+            return { target: target };
+        }
+        return {};
+    }
+
 
     toOutputPath(...mdpath: string[]): string {
         return join(...[this.outDir, ...mdpath]);
@@ -324,57 +368,21 @@ export class LibPackBuilder implements AfterInit {
             ...paths]);
     }
 
+    getTargetFolder(body: any): string {
+        return body.targetFolder || body.target;
+    }
+
     getModuleFolder(body: any): string {
         return body.moduleFolder || (isArray(body.moduleName) ? lang.first(body.moduleName) : body.moduleName)
     }
 
-    /**
-     * rollup external setting.
-     *
-     * @type {Expression<ExternalOption>}
-     * @memberof RollupOption
-     */
-    @Input()
-    external?: Expression<ExternalOption>;
-
-    /**
-     * rollup plugins setting.
-     *
-     * @type {Expression<Plugin[]>}
-     * @memberof RollupOption
-     */
-    @Input()
-    plugins: Expression<Plugin[]>;
-
-    @Input()
-    globals: Expression<GlobalsOption>;
-
-    @Input()
-    cache?: Expression<RollupCache>;
-
-    @Input()
-    watch?: Expression<WatcherOptions>;
-    /**
-     * custom setup rollup options.
-     *
-     * @type {(Expression<RollupFileOptions | RollupDirOptions>)}
-     * @memberof RollupOption
-     */
-    @Input()
-    options?: Expression<RollupFileOptions | RollupDirOptions>;
-
-    @Input()
-    sourcemap?: Expression<boolean | string>;
-
-    @Input()
-    postcssOption: Expression<any>;
-
-    get zipMapsource() {
-        if (this.sourcemap && isBoolean(this.sourcemap)) {
-            return './';
-        }
-        return this.sourcemap;
-    }
+    // getSource(ctx: NodeActivityContext) {
+    //     if (isString(ctx.body.input)) {
+    //         return ctx.body.input.replace(ctx.platform.getFileName(ctx.body.input), '**/*');
+    //     } else if (isArray(ctx.body.input)) {
+    //         return ctx.body.input.maps((i: string) => i.replace(ctx.platform.getFileName(i), '**/*'));
+    //     }
+    // }
 
     async onAfterInit(): Promise<void> {
         if (!this.external) {
@@ -396,15 +404,15 @@ export class LibPackBuilder implements AfterInit {
         }
         if (!this.plugins) {
             this.plugins = async (ctx: NodeActivityContext) => {
-                let cssOptions = await ctx.resolveExpression(this.postcssOption);
+                // let cssOptions = await ctx.resolveExpression(this.postcssOption);
                 let sourcemap = await ctx.resolveExpression(this.sourcemap);
                 return [
-                    cssOptions ? postcss(ctx.resolveExpression(cssOptions)) : null,
+                    // cssOptions ? postcss(ctx.resolveExpression(cssOptions)) : null,
                     resolve(),
                     commonjs(),
-                    ctx.body.annotation ? rollupClassAnnotations() : null,
+                    // ctx.body.annotation ? rollupClassAnnotations() : null,
                     sourcemap ? rollupSourcemaps(isBoolean(sourcemap) ? undefined : sourcemap) : null,
-                    ctx.body.tsconfig ? ts(isString(ctx.body.tsconfig) ? ctx.platform.getCompilerOptions(ctx.body.tsconfig) : ctx.body.tsconfig) : null
+                    // ctx.body.tsconfig ? ts(isString(ctx.body.tsconfig) ? ctx.platform.getCompilerOptions(ctx.body.tsconfig) : ctx.body.tsconfig) : null
                 ];
             };
         }

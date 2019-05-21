@@ -1,6 +1,6 @@
-import { NodeActivityContext, NodeActivity } from '../core';
+import { NodeActivityContext, NodeActivity, NodeExpression } from '../core';
 import { Input, Binding } from '@tsdi/boot';
-import { Expression, TemplateOption, Task, Src } from '@tsdi/activities';
+import { TemplateOption, Task, Src } from '@tsdi/activities';
 import {
     RollupFileOptions, rollup, WatcherOptions, RollupDirOptions, RollupCache,
     OutputOptionsFile, OutputOptionsDir, ExternalOption
@@ -21,42 +21,42 @@ export interface RollupOption extends TemplateOption {
     /**
      * rollup input setting.
      *
-     * @type {Binding<Expression<Src>>}
+     * @type {Binding<NodeExpression<Src>>}
      * @memberof RollupOption
      */
-    input: Binding<Expression<Src>>;
+    input: Binding<NodeExpression<Src>>;
 
     /**
      * rollup source maps
      *
-     * @type {Binding<Expression<boolean>>}
+     * @type {Binding<NodeExpression<boolean>>}
      * @memberof RollupOption
      */
-    sourcemap?: Binding<Expression<boolean>>;
+    sourcemap?: Binding<NodeExpression<boolean>>;
     /**
      * rollup output setting.
      *
-     * @type {(Binding<Expression<OutputOptionsFile | OutputOptionsDir>>)}
+     * @type {(Binding<NodeExpression<OutputOptionsFile | OutputOptionsDir>>)}
      * @memberof RollupOption
      */
-    output?: Binding<Expression<OutputOptionsFile | OutputOptionsDir>>;
+    output?: Binding<NodeExpression<OutputOptionsFile | OutputOptionsDir>>;
     /**
      * rollup external setting.
      *
-     * @type {Binding<Expression<ExternalOption>>}
+     * @type {Binding<NodeExpression<ExternalOption>>}
      * @memberof RollupOption
      */
-    external?: Binding<Expression<ExternalOption>>;
+    external?: Binding<NodeExpression<ExternalOption>>;
     /**
      * rollup plugins setting.
      *
-     * @type {Binding<Expression<Plugin[]>>}
+     * @type {Binding<NodeExpression<Plugin[]>>}
      * @memberof RollupOption
      */
-    plugins?: Binding<Expression<Plugin[]>>;
+    plugins?: Binding<NodeExpression<Plugin[]>>;
 
-    cache?: Binding<Expression<RollupCache>>;
-    watch?: Binding<Expression<WatcherOptions>>;
+    cache?: Binding<NodeExpression<RollupCache>>;
+    watch?: Binding<NodeExpression<WatcherOptions>>;
 
     /**
      * custom setup rollup options.
@@ -64,7 +64,7 @@ export interface RollupOption extends TemplateOption {
      * @type {(Binding<RollupFileOptions | RollupDirOptions>)}
      * @memberof RollupOption
      */
-    options?: Binding<Expression<RollupFileOptions | RollupDirOptions>>;
+    options?: Binding<NodeExpression<RollupFileOptions | RollupDirOptions>>;
 }
 
 /**
@@ -78,28 +78,28 @@ export interface RollupOption extends TemplateOption {
 export class RollupActivity extends NodeActivity<void> {
 
     @Input()
-    input: Expression<Src>;
+    input: NodeExpression<Src>;
 
     @Input()
-    output: Expression<OutputOptionsFile | OutputOptionsDir>;
+    output: NodeExpression<OutputOptionsFile | OutputOptionsDir>;
 
     @Input()
-    plugins: Expression<Plugin[]>;
+    plugins: NodeExpression<Plugin[]>;
 
     @Input()
-    external: Expression<ExternalOption>;
+    external: NodeExpression<ExternalOption>;
 
     @Input()
-    sourcemap?: Expression<boolean>;
+    sourcemap?: NodeExpression<boolean>;
 
     @Input()
-    cache: Expression<RollupCache>;
+    cache: NodeExpression<RollupCache>;
 
     @Input()
-    options: Expression<RollupFileOptions | RollupDirOptions>;
+    options: NodeExpression<RollupFileOptions | RollupDirOptions>;
 
     @Input()
-    watch: Expression<WatcherOptions>;
+    watch: NodeExpression<WatcherOptions>;
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let opts = await this.resolveExpression(this.options, ctx);

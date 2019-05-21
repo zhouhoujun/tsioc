@@ -1,8 +1,7 @@
-import { NodeActivityContext } from '../core';
-import { Task, Src, Expression, TemplateOption } from '@tsdi/activities';
+import { NodeActivityContext, NodeExpression } from '../core';
+import { Task, Src, TemplateOption } from '@tsdi/activities';
 import { SrcOptions, src } from 'vinyl-fs';
 import { Input, Binding } from '@tsdi/boot';
-import { PipeActivity } from './PipeActivity';
 import { TransformActivity } from './TransformActivity';
 
 
@@ -18,18 +17,18 @@ export interface SourceActivityOption extends TemplateOption {
     /**
      * source.
      *
-     * @type {Expression<Src>}
+     * @type {NodeExpression<Src>}
      * @memberof SourceActivityOption
      */
-    src: Binding<Expression<Src>>;
+    src: Binding<NodeExpression<Src>>;
 
     /**
      * src option
      *
-     * @type {Expression<DestOptions>}
+     * @type {NodeExpression<DestOptions>}
      * @memberof DistActivityOption
      */
-    srcOptions?: Binding<Expression<SrcOptions>>;
+    srcOptions?: Binding<NodeExpression<SrcOptions>>;
 }
 
 /**
@@ -43,12 +42,12 @@ export interface SourceActivityOption extends TemplateOption {
 export class SourceActivity extends TransformActivity {
 
     @Input()
-    protected src: Expression<Src>;
+    protected src: NodeExpression<Src>;
 
     @Input('srcOptions')
-    protected options: Expression<SrcOptions>;
+    protected options: NodeExpression<SrcOptions>;
 
-    constructor(@Input() src: Expression<Src>) {
+    constructor(@Input() src: NodeExpression<Src>) {
         super()
         this.src = src;
     }

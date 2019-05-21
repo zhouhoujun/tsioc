@@ -188,6 +188,13 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      */
     scope?: any;
 
+    get scopes() {
+        if (this.scope) {
+            return this.getRaiseContainer().get(ComponentManager).getScopes(this.scope);
+        }
+        return [];
+    }
+
     /**
      * the template data to binding property.
      *

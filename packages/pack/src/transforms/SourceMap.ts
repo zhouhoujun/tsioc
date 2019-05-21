@@ -1,6 +1,6 @@
 import { Input } from '@tsdi/boot';
-import { Expression, Task } from '@tsdi/activities';
-import { NodeActivityContext } from '../core';
+import { Task } from '@tsdi/activities';
+import { NodeActivityContext, NodeExpression } from '../core';
 import { PipeActivity } from './PipeActivity';
 import { isString } from '@tsdi/ioc';
 
@@ -8,7 +8,7 @@ export abstract class SourcemapActivity extends PipeActivity {
     @Input('sourceMapFramework')
     framework: any;
 
-    constructor(@Input() protected sourcemap: Expression<string | boolean>) {
+    constructor(@Input() protected sourcemap: NodeExpression<string | boolean>) {
         super()
     }
 

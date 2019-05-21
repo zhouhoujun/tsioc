@@ -1,5 +1,5 @@
-import { Src, Task, TemplateOption, Expression, ActivityType, GActivityType } from '@tsdi/activities';
-import { NodeActivityContext, ITransform } from '../core';
+import { Src, Task, TemplateOption, ActivityType, GActivityType } from '@tsdi/activities';
+import { NodeActivityContext, ITransform, NodeExpression } from '../core';
 import { StreamActivity } from './StreamActivity';
 import { SourceActivity } from './SourceActivity';
 import { DestActivity } from './DestActivity';
@@ -17,28 +17,28 @@ import { SourcemapInitActivity, SourcemapWriteActivity } from './SourceMap';
  * @extends {ActivityConfigure}
  */
 export interface AssetActivityOption extends TemplateOption {
-    clean?: Binding<Expression<Src>>;
+    clean?: Binding<NodeExpression<Src>>;
     /**
      * shell cmd
      *
      * @type {Binding<Src>}
      * @memberof AssetActivityOption
      */
-    src?: Binding<Expression<Src>>;
+    src?: Binding<NodeExpression<Src>>;
 
-    sourcemap?: Binding<Expression<string | boolean>>;
+    sourcemap?: Binding<NodeExpression<string | boolean>>;
     /**
      * shell args.
      *
      * @type {Binding<Src>}
      * @memberof AssetActivityOption
      */
-    dist?: Binding<Expression<Src>>;
+    dist?: Binding<NodeExpression<Src>>;
 
     /**
      *
      *
-     * @type {Binding<Expression<ITransform>[]>}
+     * @type {Binding<NodeExpression<ITransform>[]>}
      * @memberof ShellActivityOption
      */
     pipes?: Binding<GActivityType<ITransform>[]>;
@@ -60,7 +60,7 @@ export class AssetActivity extends PipeActivity {
     /**
      * assert src.
      *
-     * @type {Expression<Src>}
+     * @type {NodeExpression<Src>}
      * @memberof AssetActivity
      */
     @Input()
@@ -68,7 +68,7 @@ export class AssetActivity extends PipeActivity {
     /**
      * shell args.
      *
-     * @type {Expression<Src>}
+     * @type {NodeExpression<Src>}
      * @memberof AssetActivity
      */
     @Input('dist')

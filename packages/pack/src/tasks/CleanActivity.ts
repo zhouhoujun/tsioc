@@ -1,6 +1,6 @@
 import { Expression, Src, Task, Activity, TemplateOption } from '@tsdi/activities';
-import { NodeActivityContext } from '../core';
-import { Input } from '@tsdi/boot';
+import { NodeActivityContext, NodeExpression } from '../core';
+import { Input, Binding } from '@tsdi/boot';
 
 /**
  * clean activity template option.
@@ -16,7 +16,7 @@ export interface CleanActivityOption extends TemplateOption {
      * @type {Expression<Src>}
      * @memberof CleanActivityOption
      */
-    clean: Expression<Src>
+    clean: Binding<NodeExpression<Src>>
 }
 
 /**

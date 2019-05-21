@@ -146,7 +146,7 @@ export interface IConditionTemplate {
      * @type {Expression<boolean>}
      * @memberof ConditionOption
      */
-    condition: Binding<boolean>;
+    condition: Binding<Expression<boolean>>;
 }
 
 /**
@@ -250,9 +250,12 @@ export type ActivityType = GActivityType<any>;
 export type ActivityTemplate = TemplateType | TemplateType[];
 
 /**
+ * context expression.
+ */
+export type CtxExpression<T, TC extends ActivityContext> = T | Promise<T> | Type<Activity<T>> | Activity<T> | ((ctx: TC) => T | Promise<T>) | Type<any>;
+
+/**
  * expression.
  */
-export type Expression<T> = T | Promise<T> | Type<Activity<T>> | Activity<T> | ((ctx: ActivityContext) => T | Promise<T>) | Type<any>;
-
-
+export type Expression<T> = CtxExpression<T, ActivityContext>;
 
