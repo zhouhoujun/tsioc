@@ -15,7 +15,7 @@ export class InitBindingParamHandle extends ResolveHandle {
             if (!ref.methodParams.has('constructor')) {
                 register.get(RuntimeLifeScope).getConstructorParameters(container, ctx.type);
             }
-            ctx.argsProviders = [];
+
             if (ref.paramsBindings) {
                 let hregisterer = this.container.get(HandleRegisterer);
                 let bparams = ref.paramsBindings.get('constructor');
@@ -38,7 +38,7 @@ export class InitBindingParamHandle extends ResolveHandle {
                             paramVal = bp.defaultValue;
                         }
                         if (!isNullOrUndefined(paramVal)) {
-                            ctx.argsProviders.push({ provide: new InjectReference(bp.provider || bp.bindingName || bp.name, '__binding'), useValue: paramVal });
+                            ctx.providers.unshift({ provide: new InjectReference(bp.provider || bp.bindingName || bp.name, '__binding'), useValue: paramVal });
                         }
                     }));
                 }
