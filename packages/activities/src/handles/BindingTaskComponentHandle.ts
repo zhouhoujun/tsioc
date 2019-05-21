@@ -10,6 +10,7 @@ export class BindingTaskComponentHandle extends Handle<BuildContext> {
             ctx.component.isScope = true;
             let scope = target;
             ctx.component.scopes = this.container.get(ComponentManager).getScopes(scope);
+            console.log(ctx.component.scopes);
         }
 
         await next();

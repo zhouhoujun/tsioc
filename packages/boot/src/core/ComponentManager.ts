@@ -40,9 +40,9 @@ export class ComponentManager {
         let scopes = [];
         if (component) {
             this.forIn(component, this.parents, com => {
-                scopes.unshift(com);
+                scopes.push(com);
             });
-            scopes.unshift(component);
+            // scopes.unshift(component);
         }
         return scopes;
     }
@@ -60,6 +60,9 @@ export class ComponentManager {
     }
 
     setContent(component: any, content: any) {
+        if (component === content) {
+            return;
+        }
         this.parents.set(content, component);
         this.componetns.set(component, content);
     }
