@@ -1,4 +1,4 @@
-import { Task, TemplateOption, Src, Activities } from '@tsdi/activities';
+import { Task, TemplateOption, Src, Activities, ActivityTemplate } from '@tsdi/activities';
 import { BuilderTypes } from './BuilderTypes';
 import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../transforms';
 import { CompilerOptions, ScriptTarget } from 'typescript';
@@ -13,7 +13,6 @@ const ts = require('rollup-plugin-typescript');
 // import { rollupClassAnnotations } from '@tsdi/annotations';
 import { isNullOrUndefined, isBoolean, isArray, lang } from '@tsdi/ioc';
 import { join } from 'path';
-import { PackMetadata } from '../templates';
 const uglify = require('gulp-uglify');
 const rename = require('gulp-rename');
 // const grollup = require('gulp-rollup');
@@ -179,12 +178,12 @@ export interface LibPackBuilderOption extends TemplateOption {
     postcssOption?: Binding<NodeExpression<any>>;
 }
 
-@Task(<PackMetadata>{
+@Task({
     selector: BuilderTypes.libs,
-    template: [
+    template: <ActivityTemplate>[
         {
             activity: 'clean',
-            clean: ctx => ctx.scope.outDir
+            clean: 'binding: outDir'
         },
         {
             activity: 'test',
@@ -392,7 +391,7 @@ export class LibPackBuilder implements AfterInit {
 
     async onAfterInit(): Promise<void> {
         if (!this.external) {
-            let func = ctx => {
+            let func = (ctx: NodeActivityContext) => {
                 let external = [
                     'process', 'util', 'path', 'fs', 'events', 'stream', 'child_process', 'os',
                     ...Object.keys(ctx.platform.getPackage().dependencies || {})];
