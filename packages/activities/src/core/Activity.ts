@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
 import { IContainer } from '@tsdi/core';
-import { BuilderService, Input, SelectorManager, ComponentManager, ContainerPoolToken } from '@tsdi/boot';
+import { BuilderService, Input, SelectorManager, ComponentManager } from '@tsdi/boot';
 import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {

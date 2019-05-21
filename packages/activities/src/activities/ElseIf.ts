@@ -14,11 +14,11 @@ import { IfActivity } from './If';
 export class ElseIfActivity<T> extends IfActivity<T> {
 
     protected async execute(ctx: ActivityContext): Promise<void> {
-        let curr = ctx.runnable.status.parentScope;
+        let curr = ctx.runnable.status.currentScope;
         if (curr && curr.subs.length) {
-            let activity = curr.subs.find(a => a !== this && (a instanceof ElseIfActivity || a instanceof IfActivity)) as IfActivity<any>;
+            let activity = curr.subs.find(a => a !== this && a instanceof IfActivity) as IfActivity<any>;
             if (activity && !activity.condition.result.value) {
-                await super.execute(ctx);
+                await this.tryExec(ctx);
             }
         }
     }

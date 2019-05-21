@@ -74,7 +74,7 @@ export class CompoiseActivity<T> extends Activity<T> {
     }
 
     protected setScope(ctx: ActivityContext, parentScope?: any) {
-        ctx.currScope = parentScope || this;
+        ctx.currActionScope = parentScope || this;
     }
 
 

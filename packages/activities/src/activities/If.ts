@@ -22,6 +22,10 @@ export class IfActivity<T> extends ControlerActivity<T> {
     body: BodyActivity<T>;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
+        await this.tryExec(ctx);
+    }
+
+    protected async tryExec(ctx: ActivityContext) {
         await this.condition.run(ctx);
         if (this.condition.result.value) {
             await this.body.run(ctx);

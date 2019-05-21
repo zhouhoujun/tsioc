@@ -29,7 +29,7 @@ export class IocActionContext extends IocCoreService {
      * @type {IocAction<any>}
      * @memberof IocActionContext
      */
-    currScope?: any;
+    currActionScope?: any;
 
     @Inject(ContainerFactoryToken)
     protected raiseContainerGetter: ContainerFactory;

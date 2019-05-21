@@ -226,6 +226,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                     body: {
                         activity: 'asset',
                         src: ctx => {
+                            console.log('asset:', ctx.body.src || ctx.body.input);
                             if (ctx.body.src) {
                                 return ctx.body.src;
                             }

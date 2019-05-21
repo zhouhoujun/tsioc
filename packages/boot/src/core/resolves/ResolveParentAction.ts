@@ -11,8 +11,8 @@ import { ParentContainerToken } from '../ContainerPoolToken';
  */
 export class ResolveParentAction extends IocResolveAction {
     execute(ctx: ResolveActionContext<any>, next: () => void): void {
-        if (ctx.currScope) {
-            let scopeType: Type<IocCompositeAction<any>> = lang.getClass(ctx.currScope);
+        if (ctx.currActionScope) {
+            let scopeType: Type<IocCompositeAction<any>> = lang.getClass(ctx.currActionScope);
             let parent = this.container.get(ParentContainerToken);
             if (parent && parent !== this.container) {
                 if (parent.has(ctx.token)) {
