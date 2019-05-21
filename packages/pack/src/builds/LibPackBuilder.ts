@@ -33,6 +33,13 @@ export interface LibBundleOption {
     targetFolder?: string;
 
     /**
+     * default `index.js`
+     *
+     * @type {string}
+     * @memberof LibBundleOption
+     */
+    main?: string;
+    /**
      * for package typings
      *
      * @type {string}
@@ -198,8 +205,8 @@ export interface LibPackBuilderOption extends TemplateOption {
                     body: <TsBuildOption>{
                         activity: 'ts',
                         src: 'binding: src',
-                        dist: ctx => ctx.scope.getTargetFolder(ctx.body),
-                        dts: 'binding: dts',
+                        dist: ctx => ctx.scope.getTargetPath(ctx.body),
+                        dts: ctx => ctx.scope.dts ? ctx.scope.dts : (ctx.body.dtsMain ? './' : null),
                         annotation: 'binding: annotation',
                         sourcemap: 'binding: sourcemap',
                         tsconfig: ctx => ctx.scope.getCompileOptions(ctx.body.target)
@@ -211,17 +218,17 @@ export interface LibPackBuilderOption extends TemplateOption {
                     body: [
                         <RollupOption>{
                             activity: 'rollup',
-                            input: ctx => ctx.scope.toOutputPath(ctx.body, ctx.body.input),
+                            input: ctx => ctx.scope.toOutputPath(ctx.body.input),
                             sourcemap: 'binding: sourcemap',
                             plugins: 'binding: plugins',
                             external: 'binding: external',
                             options: 'binding: options',
+                            globals: 'binding: globals',
                             output: ctx => {
                                 return {
                                     format: ctx.body.format || 'cjs',
                                     file: ctx.body.outputFile ? ctx.scope.toModulePath(ctx.body, ctx.body.outputFile) : undefined,
                                     dir: ctx.body.outputFile ? undefined : ctx.scope.toModulePath(ctx.body),
-                                    globals: ctx.scope.globals
                                 }
                             }
                         },
@@ -254,7 +261,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                                 json: (json, ctx) => {
                                     // to replace module export.
                                     if (ctx.body.target) {
-                                        json[ctx.body.target] = ['.', ctx.body.input].join('/');
+                                        json[ctx.body.target] = ['.', ctx.scope.getModuleFolder(ctx.body), ctx.body.main || 'index.js'].join('/');
                                     }
                                     let outmain = ['.', ctx.scope.getModuleFolder(ctx.body), ctx.body.outputFile].join('/');
                                     if (isArray(ctx.body.moduleName)) {
@@ -279,7 +286,7 @@ export interface LibPackBuilderOption extends TemplateOption {
 })
 export class LibPackBuilder implements AfterInit {
 
-    constructor(private platform: PlatformService) {
+    constructor() {
 
     }
 
@@ -358,14 +365,18 @@ export class LibPackBuilder implements AfterInit {
 
 
     toOutputPath(...mdpath: string[]): string {
-        return join(...[this.outDir, ...mdpath]);
+        return join(...[this.outDir, ...mdpath.filter(f => f)]);
     }
 
     toModulePath(body: any, ...paths: string[]): string {
         return join(...[
             this.outDir,
             this.getModuleFolder(body),
-            ...paths]);
+            ...paths.filter(f => f)]);
+    }
+
+    getTargetPath(body) {
+        return this.toOutputPath(this.getTargetFolder(body));
     }
 
     getTargetFolder(body: any): string {
@@ -376,29 +387,31 @@ export class LibPackBuilder implements AfterInit {
         return body.moduleFolder || (isArray(body.moduleName) ? lang.first(body.moduleName) : body.moduleName)
     }
 
-    // getSource(ctx: NodeActivityContext) {
-    //     if (isString(ctx.body.input)) {
-    //         return ctx.body.input.replace(ctx.platform.getFileName(ctx.body.input), '**/*');
-    //     } else if (isArray(ctx.body.input)) {
-    //         return ctx.body.input.maps((i: string) => i.replace(ctx.platform.getFileName(i), '**/*'));
-    //     }
-    // }
-
     async onAfterInit(): Promise<void> {
         if (!this.external) {
-            this.external = [
-                'process', 'util', 'path', 'fs', 'events', 'stream', 'child_process', 'os',
-                ...Object.keys(this.platform.getPackage().dependencies || {})];
-            if (this.external.indexOf('rxjs')) {
-                this.external.push('rxjs/operators')
-            }
-            this.globals = this.globals || {};
-            this.external.forEach(k => {
-                if (!this.globals[k]) {
-                    this.globals[k] = k;
+            let func = ctx => {
+                let external = [
+                    'process', 'util', 'path', 'fs', 'events', 'stream', 'child_process', 'os',
+                    ...Object.keys(ctx.platform.getPackage().dependencies || {})];
+                if (external.indexOf('rxjs')) {
+                    external.push('rxjs/operators')
                 }
-            });
+                return external;
+            };
+            this.external = (ctx) => {
+                return func(ctx);
+            }
+            this.globals = (ctx) => {
+                let globals = {};
+                func(ctx).forEach(k => {
+                    if (!globals[k]) {
+                        globals[k] = k;
+                    }
+                });
+                return globals;
+            }
         }
+
         if (isNullOrUndefined(this.sourcemap)) {
             this.sourcemap = true;
         }

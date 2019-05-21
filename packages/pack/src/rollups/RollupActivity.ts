@@ -3,7 +3,7 @@ import { Input, Binding } from '@tsdi/boot';
 import { TemplateOption, Task, Src } from '@tsdi/activities';
 import {
     RollupFileOptions, rollup, WatcherOptions, RollupDirOptions, RollupCache,
-    OutputOptionsFile, OutputOptionsDir, ExternalOption
+    OutputOptionsFile, OutputOptionsDir, ExternalOption, GlobalsOption
 } from 'rollup';
 import { isArray, isNullOrUndefined, isString } from '@tsdi/ioc';
 // import { basename } from 'path';
@@ -47,6 +47,8 @@ export interface RollupOption extends TemplateOption {
      * @memberof RollupOption
      */
     external?: Binding<NodeExpression<ExternalOption>>;
+
+    globals?: Binding<NodeExpression<GlobalsOption>>;
     /**
      * rollup plugins setting.
      *
@@ -90,6 +92,9 @@ export class RollupActivity extends NodeActivity<void> {
     external: NodeExpression<ExternalOption>;
 
     @Input()
+    globals?: NodeExpression<GlobalsOption>;
+
+    @Input()
     sourcemap?: NodeExpression<boolean>;
 
     @Input()
@@ -100,6 +105,7 @@ export class RollupActivity extends NodeActivity<void> {
 
     @Input()
     watch: NodeExpression<WatcherOptions>;
+
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let opts = await this.resolveExpression(this.options, ctx);
@@ -125,6 +131,10 @@ export class RollupActivity extends NodeActivity<void> {
                 opts.output.sourcemap = isString(sourceMap) ? true : sourceMap;
             }
         }
+        if (this.globals) {
+            let globals = await this.resolveExpression(this.globals, ctx);
+            opts.output.globals = globals;
+        }
         if (opts.output.file) {
             opts.output.file = ctx.platform.toRootPath(opts.output.file);
         }
@@ -135,26 +145,7 @@ export class RollupActivity extends NodeActivity<void> {
             opts.output.name = ctx.platform.getFileName(opts.output.file);
         }
         opts.plugins = opts.plugins.filter(p => p);
-        // if (ctx.platform.getRootPath() !== process.cwd()) {
-        //     let matchs = [];
-        //     if (isString(opts.input)) {
-        //         matchs.push(opts.input.replace(ctx.platform.getFileName(opts.input), '**/*'));
-        //     } else if (isArray(opts.input)) {
-        //         opts.input.forEach((i: string) => {
-        //             matchs.push(i.replace(ctx.platform.getFileName(i), '**/*'));
-        //         });
-        //     }
-        //     let files = await ctx.platform.getFiles(matchs);
-        //     let fmaps = {};
-        //     let root = ctx.platform.getRootPath();
-        //     files.forEach(f => {
-        //         fmaps[f] =  readFileSync(f, {encoding: 'utf8'});
-        //     });
-        //     opts.plugins.concat(hypothetical({
-        //         files: fmaps,
-        //         cwd: root
-        //     }))
-        // }
+
         let bundle = await rollup(opts as any);
         await bundle.write(opts.output);
     }
