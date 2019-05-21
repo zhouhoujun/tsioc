@@ -12,11 +12,14 @@ import { AfterInit } from '@tsdi/boot';
     template: <LibPackBuilderOption>{
         activity: 'libs',
         outDir: '../../dist/platform-server-logs',
-        tasks: [
-            { src: 'src/**/*.ts', moduleName: ['main', 'esm5'], moduleFolder: 'lib', dtsMain: 'index.d.ts', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', moduleName: 'fesm5', fileName: 'platform-server-logs.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', moduleName: 'fesm2015', fileName: 'platform-server-logs.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2015.json' },
-            { input: 'src/index.ts', moduleName: 'fesm2017', fileName: 'platform-server-logs.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2017.json' }
+        src: 'src/**/*.ts',
+        test: 'test/**/*.ts',
+        annotation: true,
+        bundles: [
+            { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
+            { input: 'src/index.js', moduleName: ['fesm5', 'main', 'esm5'], outputFile: 'platform-server-logs.js', format: 'cjs' },
+            { target: 'es2015', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'platform-server-logs.js', format: 'cjs' },
+            { target: 'es2017', input: 'es2017/index.js', moduleName: ['fesm2017', 'esm2017'], outputFile: 'platform-server-logs.js', format: 'cjs' }
         ]
     }
 })

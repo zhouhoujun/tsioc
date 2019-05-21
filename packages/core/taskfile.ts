@@ -13,12 +13,15 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
     template: <LibPackBuilderOption>{
         activity: 'libs',
         outDir: '../../dist/core',
-        tasks: [
-            { src: 'src/**/*.ts', test: 'test/**/*.ts', moduleName: 'esm5', moduleFolder: 'lib', dtsMain: 'index.d.ts', uglify: false, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', moduleName: 'main', moduleFolder: 'bundle', fileName: 'core.umd.js', format: 'umd', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', moduleName: 'fesm5', fileName: 'core.js', format: 'cjs', uglify: true, annotation: true, tsconfig: './tsconfig.json' },
-            { input: 'src/index.ts', moduleName: 'fesm2015', fileName: 'core.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2015.json' },
-            { input: 'src/index.ts', moduleName: 'fesm2017', fileName: 'core.js', format: 'cjs', annotation: true, tsconfig: './tsconfig.es2017.json' }
+        src: 'src/**/*.ts',
+        test: 'test/**/*.ts',
+        annotation: true,
+        bundles: [
+            { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
+            { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundle', outputFile: 'core.umd.js', format: 'umd', uglify: true },
+            { input: 'src/index.js', moduleName: ['fesm5', 'esm5'], outputFile: 'core.js', format: 'cjs' },
+            { target: 'es2015', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'core.js', format: 'cjs' },
+            { target: 'es2017', input: 'es2017/index.js', moduleName: ['fesm2017', 'esm2017'], outputFile: 'core.js', format: 'cjs' }
         ]
     }
 })

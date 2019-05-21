@@ -11,9 +11,9 @@ import { AfterInit } from '@tsdi/boot';
     baseURL: __dirname,
     template: <LibPackBuilderOption>{
         activity: 'libs',
+        outDir: '../../dist/pack',
         src: 'src/**/*.ts',
         test: 'test/**/*.ts',
-        outDir: '../../dist/pack',
         annotation: true,
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
