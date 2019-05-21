@@ -42,7 +42,6 @@ export class ComponentManager {
             this.forIn(component, this.parents, com => {
                 scopes.push(com);
             });
-            // scopes.unshift(component);
         }
         return scopes;
     }
