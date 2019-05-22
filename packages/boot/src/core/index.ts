@@ -1,3 +1,4 @@
+export * from './IPropertyBindingReflect';
 export * from './SelectorManager';
 export * from './ComponentManager';
 export * from './decorators';

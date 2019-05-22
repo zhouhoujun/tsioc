@@ -1,7 +1,6 @@
-import { ActivityContext, Expression } from '../core';
+import { ActivityContext, Expression, ActivityType } from '../core';
 import { Task } from '../decorators';
-import { Input } from '@tsdi/boot';
-import { BodyActivity } from './BodyActivity';
+import { Input, BindingTypes } from '@tsdi/boot';
 import { ControlerActivity } from './ControlerActivity';
 import { isNullOrUndefined } from '@tsdi/ioc';
 
@@ -12,8 +11,10 @@ export class EachActicity<T> extends ControlerActivity<T> {
     @Input()
     each: Expression<any[]>;
 
-    @Input()
-    body: BodyActivity<T>;
+    @Input({
+        bindingType: BindingTypes.dynamic
+    })
+    body: ActivityType | ActivityType[];
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         let items = await this.resolveExpression(this.each, ctx);
@@ -21,7 +22,8 @@ export class EachActicity<T> extends ControlerActivity<T> {
         if (items && items.length) {
             await this.getExector().execActions(ctx, items.map(v => async (c: ActivityContext, next) => {
                 await ctx.setBody(v, true);
-                await this.body.run(c, next);
+                await this.runActivity(ctx, this.body);
+                await next();
             }));
         }
     }

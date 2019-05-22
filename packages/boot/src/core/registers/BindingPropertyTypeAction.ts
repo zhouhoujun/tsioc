@@ -1,6 +1,6 @@
 import { IocDesignAction, DesignActionContext, lang, getOwnPropertyMetadata, isClassType, isUndefined } from '@tsdi/ioc';
 import { BindingPropertyMetadata } from '../decorators';
-import { IBindingTypeReflect } from './IPropertyBindingReflect';
+import { IBindingTypeReflect } from '../IPropertyBindingReflect';
 
 
 export class BindingPropertyTypeAction extends IocDesignAction {
@@ -31,6 +31,9 @@ export class BindingPropertyTypeAction extends IocDesignAction {
 
                     if (!binding.provider) {
                         binding.provider = this.container.getToken(prop.provider || prop.type, prop.alias);
+                    }
+                    if (prop.bindingType) {
+                        binding.bindingType = prop.bindingType;
                     }
                     if (!isUndefined(prop.defaultValue)) {
                         binding.defaultValue = prop.defaultValue;

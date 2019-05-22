@@ -1,5 +1,5 @@
 import { BindDeignParamTypeAction, RuntimeActionContext, IParameter, getParamMetadata, isArray, ParameterMetadata, lang, MetadataService, isClass, isToken, ClassType, isNullOrUndefined, InjectReference, isUndefined } from '@tsdi/ioc';
-import { IBindingTypeReflect, IBinding } from './IPropertyBindingReflect';
+import { IBindingTypeReflect, IBinding } from '../IPropertyBindingReflect';
 import { BindingPropertyMetadata } from '../decorators';
 
 
@@ -46,6 +46,7 @@ export class BindingParamTypeAction extends BindDeignParamTypeAction {
                         bindParams.push({
                             name: desp.name,
                             bindingName: parm.bindingName,
+                            bindingType: parm.bindingType,
                             type: desp.type as ClassType<any>,
                             provider: parm.provider,
                             defaultValue: parm.defaultValue
@@ -86,6 +87,9 @@ export class BindingParamTypeAction extends BindDeignParamTypeAction {
                                     }
                                     if (parm.type) {
                                         bp.type = parm.type as ClassType<any>;
+                                    }
+                                    if (parm.bindingType) {
+                                        bp.bindingType = parm.bindingType;
                                     }
                                     if (!isUndefined(parm.defaultValue)) {
                                         bp.defaultValue = parm.defaultValue;

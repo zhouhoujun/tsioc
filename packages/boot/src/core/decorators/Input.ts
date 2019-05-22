@@ -1,9 +1,11 @@
 import { Token, isString, PropParamDecorator, createParamPropDecorator, ParamPropMetadata, isToken, isObject, ClassType, Registration, isUndefined } from '@tsdi/ioc';
+import { BindingTypes } from '../IPropertyBindingReflect';
 
 
 export interface BindingPropertyMetadata extends ParamPropMetadata {
     bindingName?: string;
     defaultValue?: any;
+    bindingType?: BindingTypes;
 }
 
 /**
@@ -19,6 +21,13 @@ export interface IPutPropertyDecorator {
      * @param {string} bindingName binding property name
      */
     (bindingName?: string): PropParamDecorator;
+
+    /**
+     * define Input property decorator with binding metadata.
+     *
+     * @param {string} bindingName binding property name
+     */
+    (metadata: BindingPropertyMetadata): PropParamDecorator;
     /**
      * define Input property decorator with binding property name and provider.
      *

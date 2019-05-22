@@ -7,7 +7,6 @@ export * from './BuildDecoratorRegisterer';
 export * from './BuildModuleHandle';
 export * from './DecoratorBuildHandle';
 
-export * from './InitBindingParamHandle';
 export * from './InitResolveModuleHandle';
 export * from './ModuleAfterInitHandle';
 export * from './ModuleBeforeInitHandle';
