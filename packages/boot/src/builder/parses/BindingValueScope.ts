@@ -99,14 +99,14 @@ export class TranslateAtrrHandle extends ParseHandle {
                     ctx.value = await this.container.get(BuilderService).resolve(selector, {
                         scope: ctx.scope,
                         template: template
-                    }, ...(ctx.providers || []));
+                    }, ...ctx.providers);
                 } else {
                     ctx.value = await this.container.get(BuilderService).create({
                         module: selector,
                         scope: ctx.scope,
                         template: template,
                         regScope: RegScope.boot,
-                        providers: [...(ctx.providers || [])]
+                        providers: ctx.providers
                     });
                 }
             }
