@@ -145,7 +145,9 @@ export class RollupActivity extends NodeActivity<void> {
         if (!opts.output.name && opts.output.file) {
             opts.output.name = ctx.platform.getFileName(opts.output.file);
         }
-        opts.plugins = opts.plugins.filter(p => p);
+        if (opts.plugins) {
+            opts.plugins = opts.plugins.filter(p => p);
+        }
 
         let bundle = await rollup(opts as any);
         await bundle.write(opts.output);

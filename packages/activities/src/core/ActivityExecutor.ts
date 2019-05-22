@@ -28,9 +28,9 @@ export class ActivityExecutor implements IActivityExecutor {
         return this.containerFac() as IContainer;
     }
 
-    async resolveExpression<TVal>(ctx: ActivityContext,  express: Expression<TVal>, container?: IContainer): Promise<TVal> {
+    async resolveExpression<TVal>(ctx: ActivityContext, express: Expression<TVal>, container?: IContainer): Promise<TVal> {
         if (isClass(express)) {
-            let bctx = await (container || this.getContainer()).get(BuilderService).run(express);
+            let bctx = await (container || this.getContainer()).get(BuilderService).run({ module: express, scope: ctx.scope });
             return bctx.data;
         } else if (isFunction(express)) {
             return await express(ctx);
@@ -59,7 +59,7 @@ export class ActivityExecutor implements IActivityExecutor {
             return activity.toAction();
         } else if (isClass(activity) || isMetadataObject(activity)) {
             return async (ctx: T, next?: () => Promise<void>) => {
-                let act = await this.buildActivity(activity as Type<any> | ControlTemplate);
+                let act = await this.buildActivity(activity as Type<any> | ControlTemplate, ctx.scope);
                 if (act instanceof Activity) {
                     await act.run(ctx, next);
                 } else if (act) {
@@ -89,11 +89,11 @@ export class ActivityExecutor implements IActivityExecutor {
 
     }
 
-    protected async buildActivity(activity: Type<any> | ControlTemplate): Promise<Activity<any>> {
+    protected async buildActivity(activity: Type<any> | ControlTemplate, scope?: any): Promise<Activity<any>> {
         let ctx: ActivityContext;
         let container = this.getContainer();
         if (isClass(activity)) {
-            ctx = await container.get(BuilderService).build<ActivityContext>(activity);
+            ctx = await container.get(BuilderService).build<ActivityContext>({ module: activity, scope: scope });
         } else {
             let md: Type<any>;
             let mgr = container.get(SelectorManager);
@@ -105,7 +105,8 @@ export class ActivityExecutor implements IActivityExecutor {
 
             let option = {
                 module: md,
-                template: activity
+                template: activity,
+                scope: scope
             };
             ctx = await container.get(BuilderService).build<ActivityContext>(option);
         }

@@ -13,14 +13,14 @@ export class ParseSelectorHandle extends ParsersHandle {
                 ctx.value = await this.container.get(BuilderService).resolve(selector, {
                     scope: ctx.scope,
                     template: ctx.template
-                }, ...(ctx.providers || []));
+                }, ...ctx.providers);
             } else {
                 ctx.value = await this.container.get(BuilderService).createBoot({
                     module: selector,
                     scope: ctx.scope,
                     template: ctx.template,
                     regScope: RegScope.boot,
-                    providers: [...(ctx.providers || [])]
+                    providers: ctx.providers
                 });
             }
         }

@@ -35,11 +35,8 @@ export interface TsBuildOption extends AssetActivityOption {
 @Task('ts')
 export class TsBuildActivity extends AssetActivity implements AfterInit {
 
-
     @Input()
     test: UnitTestActivity;
-
-
 
     @Input()
     annotation: AnnoationActivity;
@@ -52,7 +49,7 @@ export class TsBuildActivity extends AssetActivity implements AfterInit {
      * @type {NodeExpression<Src>}
      * @memberof AssetActivity
      */
-    @Input('src', 'src/**/*.ts')
+    @Input()
     src: SourceActivity;
 
     @Input('tsPipes')
@@ -94,8 +91,7 @@ export class TsBuildActivity extends AssetActivity implements AfterInit {
 
 
     protected getRunSequence(): ActivityType[] {
-
-        return [
+        let seq = [
             this.test,
             this.clean,
             this.src,
@@ -109,6 +105,7 @@ export class TsBuildActivity extends AssetActivity implements AfterInit {
             this.sourcemapWrite,
             this.dist
         ]
+        return seq;
     }
 
     protected async complieTs(ctx: NodeActivityContext): Promise<void> {

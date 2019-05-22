@@ -414,8 +414,6 @@ export class LibPackBuilder implements AfterInit {
             }
         }
 
-        console.log(this.globals, this.external);
-
         if (isNullOrUndefined(this.sourcemap)) {
             this.sourcemap = true;
         }

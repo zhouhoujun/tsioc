@@ -35,13 +35,17 @@ export class BindingScopeHandle extends ParseHandle {
         if (isString(ctx.bindExpression) && regs.has(ctx.decorator)) {
             await this.execFuncs(ctx, regs.getFuncs(this.container, ctx.decorator));
         }
-
+        // console.log(ctx.type, '\n--------------start----------------')
+        // console.log(ctx.binding.bindingName || ctx.binding.name);
+        // console.log(ctx.bindExpression)
+        // console.log(ctx.scope);
         if (ctx.bindExpression instanceof BindingExpression) {
             ctx.bindExpression = ctx.bindExpression.resolve(ctx.scope);
         } else if (isString(ctx.bindExpression) && ctx.bindExpression.trim().startsWith('binding:')) {
             let bindingField = ctx.bindExpression.replace('binding:', '').trim();
             ctx.bindExpression = ctx.scope ? ctx.scope[bindingField] : undefined;
         }
+        // console.log(ctx.bindExpression, '\n--------------end----------------\n')
 
         if (isNullOrUndefined(ctx.value)) {
             await next();
