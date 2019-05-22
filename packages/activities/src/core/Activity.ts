@@ -1,16 +1,17 @@
 import { Task } from '../decorators/Task';
 import { IContainer } from '@tsdi/core';
-import { BuilderService, Input, SelectorManager, ComponentManager } from '@tsdi/boot';
+import { Input } from '@tsdi/boot';
 import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from '../metadatas';
 import {
     isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
-    Abstract, PromiseUtil, Inject, isMetadataObject, isArray,
-    ProviderTypes, lang, isNullOrUndefined, ContainerFactoryToken, ContainerFactory
+    Abstract, PromiseUtil, Inject, ProviderTypes, lang, isNullOrUndefined,
+    ContainerFactoryToken, ContainerFactory
 } from '@tsdi/ioc';
-import { ActivityType, Expression, ControlTemplate } from './ActivityConfigure';
+import { ActivityType, Expression } from './ActivityConfigure';
 import { ActivityResult, NextToken } from './ActivityResult';
 import { ValuePipe } from './ValuePipe';
+import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
 
 
 
@@ -161,19 +162,20 @@ export abstract class Activity<T> {
         ctx.result = this.result.value;
     }
 
+    private _executor: IActivityExecutor;
+    getExector(): IActivityExecutor {
+        if (!this._executor) {
+            this._executor = this.getContainer().resolve(ActivityExecutorToken);
+        }
+        return this._executor;
+    }
+
 
     protected async runActivity(ctx: ActivityContext, activities: ActivityType | ActivityType[], next?: () => Promise<void>, refresh?: boolean): Promise<void> {
-        if (!activities || (isArray(activities) && activities.length < 1)) {
-            return;
-        }
-        await this.execActions(ctx, (isArray(activities) ? activities : [activities]).map(ac => this.parseAction(ac)), next);
+        await this.getExector().runActivity(ctx, activities, next);
         if (refresh !== false) {
             await this.refreshResult(ctx);
         }
-    }
-
-    protected execActions<T extends ActivityContext>(ctx: ActivityContext, actions: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
-        return PromiseUtil.runInChain(actions.filter(f => f), ctx, next);
     }
 
     private _actionFunc: PromiseUtil.ActionHandle<any>;
@@ -183,74 +185,6 @@ export abstract class Activity<T> {
         }
         return this._actionFunc;
     }
-
-    protected parseAction<T extends ActivityContext>(activity: ActivityType): PromiseUtil.ActionHandle<T> {
-        if (activity instanceof Activity) {
-            return activity.toAction();
-        } else if (isClass(activity) || isMetadataObject(activity)) {
-            return async (ctx: T, next?: () => Promise<void>) => {
-                let act = await this.buildActivity(activity as Type<any> | ControlTemplate);
-                if (act instanceof Activity) {
-                    await act.run(ctx, next);
-                } else if (act) {
-                    let component = this.getContainer().get(ComponentManager).getLeaf(act);
-                    if (component instanceof Activity) {
-                        await component.run(ctx, next);
-                    } else {
-                        console.log(act);
-                        throw new Error(lang.getClassName(act) + ' is not activity');
-                    }
-                } else {
-                    await next();
-                }
-            };
-
-        }
-        if (isFunction(activity)) {
-            return activity;
-        }
-        if (activity) {
-            let component = this.getContainer().get(ComponentManager).getLeaf(activity);
-            if (component instanceof Activity) {
-                return component.toAction();
-            }
-        }
-        return null;
-
-    }
-
-    protected promiseLikeToAction<T extends ActivityContext>(action: (ctx?: T) => Promise<any>): PromiseUtil.ActionHandle<T> {
-        return async (ctx: T, next?: () => Promise<void>) => {
-            await action(ctx);
-            if (next) {
-                await next();
-            }
-        }
-    }
-
-    protected async buildActivity(activity: Type<any> | ControlTemplate): Promise<Activity<any>> {
-        let ctx: ActivityContext;
-        let container = this.getContainer();
-        if (isClass(activity)) {
-            ctx = await container.get(BuilderService).build<ActivityContext>(activity);
-        } else {
-            let md: Type<any>;
-            let mgr = container.get(SelectorManager);
-            if (isClass(activity.activity)) {
-                md = activity.activity;
-            } else {
-                md = mgr.get(activity.activity)
-            }
-
-            let option = {
-                module: md,
-                template: activity
-            };
-            ctx = await container.get(BuilderService).build<ActivityContext>(option);
-        }
-        return ctx.getBootTarget();
-    }
-
 
     /**
      * resolve expression.
@@ -263,7 +197,16 @@ export abstract class Activity<T> {
      * @memberof Activity
      */
     protected async resolveExpression<TVal>(express: Expression<TVal>, ctx: ActivityContext): Promise<TVal> {
-        return await ctx.resolveExpression(express, this.getContainer());
+        return await this.getExector().resolveExpression(ctx, express, this.getContainer());
+    }
+
+    protected promiseLikeToAction<T extends ActivityContext>(action: (ctx?: T) => Promise<any>): PromiseUtil.ActionHandle<T> {
+        return async (ctx: T, next?: () => Promise<void>) => {
+            await action(ctx);
+            if (next) {
+                await next();
+            }
+        }
     }
 
 }

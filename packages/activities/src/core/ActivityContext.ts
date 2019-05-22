@@ -1,10 +1,11 @@
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
-import { BootContext, createAnnoationContext, BuilderService, ComponentManager } from '@tsdi/boot';
+import { BootContext, createAnnoationContext, ComponentManager } from '@tsdi/boot';
 import { ActivityConfigure, ActivityTemplate, Expression } from './ActivityConfigure';
-import { Injectable, ObjectMap, Type, Refs, ContainerFactory, isString, isClass, isFunction, isPromise } from '@tsdi/ioc';
+import { Injectable, Type, Refs, ContainerFactory, isString } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
+import { ActivityExecutor } from './ActivityExecutor';
 
 
 /**
@@ -122,18 +123,16 @@ export class ActivityContext extends BootContext {
         return createAnnoationContext(ActivityContext, target, raiseContainer);
     }
 
-    async resolveExpression<TVal>(express: Expression<TVal>, container?: IContainer): Promise<TVal> {
-        if (isClass(express)) {
-            let bctx = await (container || this.getRaiseContainer()).get(BuilderService).run(express);
-            return bctx.data;
-        } else if (isFunction(express)) {
-            return await express(this);
-        } else if (express instanceof Activity) {
-            await express.run(this);
-            return express.result.value;
-        } else if (isPromise(express)) {
-            return await express;
+    private _executor: ActivityExecutor;
+    getExector(): ActivityExecutor {
+        if (!this._executor) {
+            this._executor = this.getRaiseContainer().resolve(ActivityExecutor);
         }
-        return express;
+        return this._executor;
     }
+
+    resolveExpression<TVal>(express: Expression<TVal>, container?: IContainer): Promise<TVal> {
+       return this.getExector().resolveExpression(this, express, container);
+    }
+
 }

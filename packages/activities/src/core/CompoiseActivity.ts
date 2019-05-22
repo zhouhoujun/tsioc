@@ -70,7 +70,7 @@ export class CompoiseActivity<T> extends Activity<T> {
     }
 
     protected async execute(ctx: ActivityContext): Promise<void> {
-        await this.execActions(ctx, this.getActions());
+        await this.getExector().execActions(ctx, this.getActions());
     }
 
     protected setScope(ctx: ActivityContext, parentScope?: any) {
@@ -80,7 +80,7 @@ export class CompoiseActivity<T> extends Activity<T> {
 
     protected getActions(): PromiseUtil.ActionHandle<ActivityContext>[] {
         if (!this.actions) {
-            this.actions = this.activities.map(ac => this.parseAction(ac))
+            this.actions = this.activities.map(ac => this.getExector().parseAction(ac))
         }
         return this.actions;
     }

@@ -19,7 +19,7 @@ export class EachActicity<T> extends ControlerActivity<T> {
         let items = await this.resolveExpression(this.each, ctx);
         items = items.filter(i => !isNullOrUndefined(i));
         if (items && items.length) {
-            await this.execActions(ctx, items.map(v => async (c: ActivityContext, next) => {
+            await this.getExector().execActions(ctx, items.map(v => async (c: ActivityContext, next) => {
                 await ctx.setBody(v, true);
                 await this.body.run(c, next);
             }));

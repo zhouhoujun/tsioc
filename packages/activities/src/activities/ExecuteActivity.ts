@@ -1,7 +1,8 @@
 import { Task } from '../decorators';
-import { ActivityContext, Expression } from '../core';
+import { ActivityContext, Expression, Activity } from '../core';
 import { Input } from '@tsdi/boot';
 import { ControlerActivity } from './ControlerActivity';
+import { isFunction } from '@tsdi/ioc';
 
 /**
  * execute activity.
@@ -16,16 +17,17 @@ import { ControlerActivity } from './ControlerActivity';
 export class ExecuteActivity<T> extends ControlerActivity<T> {
 
 
-    constructor(@Input() action: Expression<T>) {
+    constructor(@Input() action: (ctx: ActivityContext, activity?: Activity<T>) => void | Promise<void>) {
         super()
         this.action = action;
     }
 
     @Input('action')
-    action: Expression<T>;
+    action: (ctx: ActivityContext, activity?: Activity<T>) => void | Promise<void>;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
-        await this.resolveExpression(this.action, ctx);
+        if (isFunction(this.action)) {
+            await this.action(ctx, this);
+        }
     }
-
 }

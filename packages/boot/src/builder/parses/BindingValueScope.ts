@@ -41,6 +41,7 @@ export class BindingScopeHandle extends ParseHandle {
         } else if (isString(ctx.bindExpression) && ctx.bindExpression.trim().startsWith('binding:')) {
             let bindingField = ctx.bindExpression.replace('binding:', '').trim();
             ctx.bindExpression = ctx.scope ? ctx.scope[bindingField] : undefined;
+            console.log(ctx.type, ctx.bindExpression);
         }
 
         if (isNullOrUndefined(ctx.value)) {

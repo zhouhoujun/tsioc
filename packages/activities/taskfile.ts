@@ -14,7 +14,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
         activity: 'libs',
         outDir: '../../dist/activities',
         src: 'src/**/*.ts',
-        test: 'test/**/*.ts',
+        // test: 'test/**/*.ts',
         annotation: true,
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts'},

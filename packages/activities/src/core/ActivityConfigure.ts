@@ -106,7 +106,7 @@ export interface InvokeTemplate extends TemplateOption {
 }
 
 export interface ExecuteOption extends TemplateOption {
-    action: Binding<Expression<any>>;
+    action: Binding<(ctx: ActivityContext, activity?: Activity<any>) => void | Promise<void>>;
 }
 
 

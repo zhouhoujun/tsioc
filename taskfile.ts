@@ -71,8 +71,10 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                     each: (ctx: NodeActivityContext) => ctx.platform.getFolders('packages'),
                     body: {
                         activity: Activities.execute,
-                        action: async ctx => {
+                        action: async (ctx) => {
                             let activitys = Object.values(require(path.join(ctx.body, 'taskfile.ts'))).filter(b => isAcitvityClass(b)) as Type<Activity<any>>[];
+                            console.log(activitys);
+                            
                             await Workflow.sequence(...activitys);
                         }
                     }
