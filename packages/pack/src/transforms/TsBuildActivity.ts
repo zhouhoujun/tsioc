@@ -7,7 +7,7 @@ import { AssetActivityOption, AssetActivity } from './AssetActivity';
 import { SourceActivity } from './SourceActivity';
 import { DestActivity } from './DestActivity';
 import { UglifyActivity } from './UglifyActivity';
-import { AnnoationActivity } from './AnnoationActivity';
+import { AnnotationActivity } from './AnnotationActivity';
 import { StreamActivity } from './StreamActivity';
 import { UnitTestActivity } from '../tasks';
 import { TypeScriptJsPipe, TypeScriptDtsPipe } from './TsPipe';
@@ -39,7 +39,7 @@ export class TsBuildActivity extends AssetActivity implements AfterInit {
     test: UnitTestActivity;
 
     @Input('annotation')
-    annotation: AnnoationActivity;
+    annotation: AnnotationActivity;
 
     @Input()
     uglify: UglifyActivity;

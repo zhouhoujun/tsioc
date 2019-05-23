@@ -1,6 +1,6 @@
 export * from './TransformActivity';
 export * from './PipeActivity';
-export * from './AnnoationActivity';
+export * from './AnnotationActivity';
 export * from './SourceMap';
 export * from './UglifyActivity';
 export * from './JsonEditActivity';
