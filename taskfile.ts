@@ -43,8 +43,8 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                     body: {
                         activity: 'asset',
                         name: 'version-setting',
-                        src: './packages/**/package.json',
-                        dist: './packages',
+                        src: 'packages/**/package.json',
+                        dist: 'packages',
                         pipes: [
                             <JsonReplaceActivityOption>{
                                 activity: 'jsonReplace',

@@ -24,7 +24,7 @@ export class RunnerLogAspect extends LoggerAspect {
         let logger = this.logger;
         let runner = joinPoint.target as WorkflowInstance;
         let uuid = runner.context.id;
-        let name = runner.getTarget().name || lang.getClassName(runner.context.module);
+        let name = runner.getBoot().name || lang.getClassName(runner.context.module);
         let start: Date, end: Date;
         let taskname = '\'' + name + '\'';
         if (joinPoint.state === JoinpointState.Before) {

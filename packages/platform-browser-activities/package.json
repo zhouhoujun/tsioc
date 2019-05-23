@@ -35,6 +35,9 @@
     "tslib": "^1.9.3",
     "@tsdi/ioc": "^5.0.0",
     "@tsdi/core": "^5.0.0",
+    "@tsdi/aop": "^5.0.0",
+    "@tsdi/logs": "^5.0.0",
+    "@tsdi/boot": "^5.0.0",
     "@tsdi/activities": "^4.0.5",
     "@tsdi/platform-browser": "^4.0.5"
   },
