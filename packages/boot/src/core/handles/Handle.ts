@@ -18,6 +18,25 @@ export interface IHandleContext {
     getRaiseContainer(): IContainer;
 }
 
+/**
+ * handle interface.
+ *
+ * @export
+ * @interface IHandle
+ * @template T
+ */
+export interface IHandle<T> {
+    /**
+     * execute handle.
+     *
+     * @param {T} ctx
+     * @param {() => Promise<void>} next
+     * @returns {Promise<void>}
+     * @memberof IHandle
+     */
+    execute(ctx: T, next: () => Promise<void>): Promise<void>
+}
+
 
 /**
  *  handle type.
@@ -34,7 +53,7 @@ export type HandleType<T extends IHandleContext> = Type<Handle<T>> | Handle<T> |
  * @extends {IocCoreService}
  * @template T
  */
-export abstract class Handle<T extends IHandleContext>  extends IocCoreService {
+export abstract class Handle<T extends IHandleContext>  extends IocCoreService implements IHandle<T> {
 
 
     constructor(@Inject(ContainerToken) protected container: IContainer) {
