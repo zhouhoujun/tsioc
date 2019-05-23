@@ -34,6 +34,10 @@ export class ModuleDecoratorService {
         if (!decorator) {
             decorator = this.getDecorator(type);
         }
-        return { ...lang.first(getOwnTypeMetadata<ModuleConfigure>(decorator, type)) };
+        let ann = { ...lang.first(getOwnTypeMetadata<ModuleConfigure>(decorator, type)) };
+        if (ann.template) {
+            ann.template = lang.cloneMetadata(ann.template);
+        }
+        return ann;
     }
 }

@@ -113,7 +113,6 @@ export class RollupActivity extends NodeActivity<void> {
         await Promise.all(['input', 'output', 'plugins', 'external', 'cache', 'watch']
             .map(async n => {
                 let val = await this.resolveExpression(this[n], ctx);
-                console.log(n, val);
                 if (n === 'input') {
                     val = ctx.platform.toRootSrc(val);
                 }

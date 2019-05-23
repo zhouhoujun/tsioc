@@ -45,7 +45,6 @@ export class ResolveModuleHandle extends ResolveHandle {
                             let pctx = ParseContext.parse(ctx.type, {
                                 scope: ctx.scope,
                                 bindExpression: bindExpression,
-                                template: isArray(ctx.template) ? undefined : ctx.template,
                                 binding: bp,
                                 annoation: ctx.annoation,
                                 decorator: ctx.decorator

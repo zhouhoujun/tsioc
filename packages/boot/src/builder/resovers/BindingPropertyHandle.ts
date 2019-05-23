@@ -20,7 +20,6 @@ export class BindingPropertyHandle extends ResolveHandle {
                             let pctx = ParseContext.parse(ctx.type, {
                                 scope: ctx.scope,
                                 bindExpression: expression,
-                                template: ctx.template,
                                 binding: binding,
                                 annoation: ctx.annoation,
                                 decorator: ctx.decorator
