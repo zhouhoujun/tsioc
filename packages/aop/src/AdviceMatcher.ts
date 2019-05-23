@@ -35,6 +35,12 @@ export class AdviceMatcher implements IAdviceMatcher {
 
         let aspectMeta = lang.first(getOwnTypeMetadata<AspectMetadata>(Aspect, aspectType));
         if (aspectMeta) {
+            if (aspectMeta.without) {
+                let outs = isArray(aspectMeta.without) ? aspectMeta.without : [aspectMeta.without];
+                if (outs.some(t => lang.isExtendsClass(targetType, t))) {
+                    return [];
+                }
+            }
             if (aspectMeta.within) {
                 let ins = isArray(aspectMeta.within) ? aspectMeta.within : [aspectMeta.within];
                 if (!ins.some(t => lang.isExtendsClass(targetType, t))) {
@@ -154,7 +160,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                 if (isArray(metadata.within)) {
                     return metadata.within.some(t => lang.isExtendsClass(targetType, t));
                 } else {
-                    return  lang.isExtendsClass(targetType, metadata.within);
+                    return lang.isExtendsClass(targetType, metadata.within);
                 }
             });
             expresses.push('&&')

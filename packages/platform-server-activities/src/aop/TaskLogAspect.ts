@@ -2,30 +2,20 @@ import { IContainer, ContainerToken } from '@tsdi/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LoggerAspect } from '@tsdi/logs';
 import chalk from 'chalk';
-import { Task, Activity } from '@tsdi/activities';
-import { Inject, lang } from '@tsdi/ioc';
+import { Task, Activity, ControlerActivity } from '@tsdi/activities';
+import { Inject, lang, Injectable } from '@tsdi/ioc';
 const timestamp = require('time-stamp');
 const prettyTime = require('pretty-hrtime');
 
-/**
- * Task Log
- *
- * @export
- * @class TaskLogAspect
- */
-@Aspect({
-    annotation: Task,
-    within: Activity,
-    singleton: true
-})
-export class TaskLogAspect extends LoggerAspect {
+
+export class ActionLogAspect extends LoggerAspect {
 
     constructor(@Inject(ContainerToken) container: IContainer) {
         super(container);
     }
 
-    @Around('execution(*.execute)')
-    logging(joinPoint: Joinpoint) {
+
+    doLogging(joinPoint: Joinpoint) {
         let logger = this.logger;
         let target = joinPoint.target as Activity<any>;
         let name = target.name;
@@ -57,5 +47,45 @@ export class TaskLogAspect extends LoggerAspect {
             logger.log('[' + chalk.grey(timestamp('HH:mm:ss', new Date())) + ']', 'Finished', taskname, chalk.red('errored after'), chalk.magenta(end));
             process.exit(1);
         }
+    }
+}
+
+/**
+ *  Custome Task Log
+ *
+ * @export
+ * @class TaskLogAspect
+ */
+@Aspect({
+    annotation: Task,
+    within: Activity,
+    without: ControlerActivity,
+    singleton: true
+})
+export class TaskLogAspect extends ActionLogAspect {
+
+    @Around('execution(*.execute)')
+    Logging(joinPoint: Joinpoint) {
+        this.doLogging(joinPoint);
+    }
+}
+
+
+/**
+ * control flow log
+ *
+ * @export
+ * @class TaskControlLogAspect
+ * @extends {ActionLogAspect}
+ */
+@Aspect({
+    annotation: Task,
+    within: ControlerActivity,
+    singleton: true
+})
+export class TaskControlLogAspect extends ActionLogAspect {
+    @Around('execution(*.execute)')
+    Logging(joinPoint: Joinpoint) {
+        this.doLogging(joinPoint);
     }
 }

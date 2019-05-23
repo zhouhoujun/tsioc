@@ -1,7 +1,8 @@
 import { Task } from '../decorators';
-import { ActivityType, CompoiseActivity } from '../core';
+import { ActivityType, CompoiseActivity, ActivityContext } from '../core';
 import { Input } from '@tsdi/boot';
-import { isArray } from '@tsdi/ioc';
+import { isArray, PromiseUtil } from '@tsdi/ioc';
+import { ControlerActivity } from './ControlerActivity';
 
 /**
  * body activity.
@@ -12,9 +13,29 @@ import { isArray } from '@tsdi/ioc';
  * @template T
  */
 @Task('[body]')
-export class BodyActivity<T> extends CompoiseActivity<T> {
+export class BodyActivity<T> extends ControlerActivity<T> {
+    private actions: PromiseUtil.ActionHandle<ActivityContext>[];
+    protected activities: ActivityType[] = [];
+
     constructor(@Input('body') activities: ActivityType | ActivityType[]) {
         super()
         this.activities = isArray(activities) ? activities : [activities];
     }
+
+    protected async execute(ctx: ActivityContext): Promise<void> {
+        await this.getExector().execActions(ctx, this.getActions());
+    }
+
+    protected setScope(ctx: ActivityContext, parentScope?: any) {
+        ctx.currActionScope = parentScope || this;
+    }
+
+
+    protected getActions(): PromiseUtil.ActionHandle<ActivityContext>[] {
+        if (!this.actions) {
+            this.actions = this.activities.map(ac => this.getExector().parseAction(ac))
+        }
+        return this.actions;
+    }
+
 }

@@ -34,6 +34,7 @@
     "@tsdi/ioc": "^5.0.0",
     "@tsdi/core": "^5.0.0",
     "@tsdi/aop": "^5.0.0",
+    "@tsdi/logs": "^5.0.0",
     "@tsdi/boot": "^5.0.0",
     "@tsdi/platform-server": "^5.0.0",
     "bluebird": "^3.5.3",

@@ -12,6 +12,8 @@ export interface AspectMetadata extends ClassMetadata {
      */
     within?: ClassType<any> | ClassType<any>[];
 
+    without?: ClassType<any> | ClassType<any>[];
+
     /**
      * set pointcut in the class with the annotation decorator only.
      *
