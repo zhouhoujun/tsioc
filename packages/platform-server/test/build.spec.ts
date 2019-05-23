@@ -10,7 +10,7 @@ describe('auto register with build', () => {
         let builder = new ContainerBuilder();
         container = builder.create();
         container.use(ServerModule);
-        await container.loadModule({
+        await container.load({
             files: __dirname + '/debug.ts'
         });
         // container.register(IocLog);
