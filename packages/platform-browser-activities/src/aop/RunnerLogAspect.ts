@@ -2,7 +2,7 @@ import { IContainer, ContainerToken } from '@tsdi/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LoggerAspect } from '@tsdi/logs';
 import {  WorkflowInstance } from '@tsdi/activities';
-import { ObjectMap, Inject, lang } from '@tsdi/ioc';
+import { Inject, lang } from '@tsdi/ioc';
 /**
  * Task Log
  *

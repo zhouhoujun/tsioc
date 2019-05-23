@@ -40,7 +40,7 @@
     "tslib": "^1.9.3"
   },
   "peerDependencies": {
-    "@tsdi/core": "^4.0.5"
+    "@tsdi/core": "^5.0.0"
   },
   "directories": {
     "lib": "lib"

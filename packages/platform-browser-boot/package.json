@@ -37,9 +37,9 @@
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3",
     "@tsdi/ioc": "^5.0.0",
-    "@tsdi/core": "^4.0.5",
-    "@tsdi/boot": "^4.0.5",
-    "@tsdi/platform-browser": "^4.0.5"
+    "@tsdi/core": "^5.0.0",
+    "@tsdi/boot": "^5.0.0",
+    "@tsdi/platform-browser": "^5.0.0"
   },
   "directories": {
     "lib": "lib"

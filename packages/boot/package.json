@@ -35,8 +35,8 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "@tsdi/ioc": "^4.0.5",
-    "@tsdi/core": "^4.0.5",
+    "@tsdi/ioc": "^5.0.0",
+    "@tsdi/core": "^5.0.0",
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3"
   },

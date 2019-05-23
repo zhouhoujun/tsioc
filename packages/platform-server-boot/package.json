@@ -37,9 +37,9 @@
     "tslib": "^1.9.2",
     "globby": "^7.1.1",
     "@tsdi/ioc": "^5.0.0",
-    "@tsdi/core": "^4.0.5",
-    "@tsdi/boot": "^4.0.5",
-    "@tsdi/platform-server": "^4.0.5"
+    "@tsdi/core": "^5.0.0",
+    "@tsdi/boot": "^5.0.0",
+    "@tsdi/platform-server": "^5.0.0"
   },
   "peerDependencies": {
   },

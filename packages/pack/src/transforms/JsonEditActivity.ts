@@ -89,9 +89,16 @@ export class JsonReplaceActivity extends TransformActivity {
             let contents: string = file.contents.toString('utf8');
             let json = JSON.parse(contents);
             let replaced = inplace(contents);
-            lang.forIn(fields(json, ctx), (val, key) => {
-                replaced.set(key, val);
-            });
+            let changs = fields(json, ctx);
+            if (changs instanceof Map) {
+                changs.forEach((val, key) => {
+                    replaced.set(key, val);
+                })
+            } else {
+                lang.forIn(fields(json, ctx), (val, key) => {
+                    replaced.set(key, val);
+                });
+            }
             contents = replaced.toString();
             file.contents = new Buffer(contents);
             this.push(file);
