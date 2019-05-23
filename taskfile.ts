@@ -51,6 +51,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                                 fields: (json, ctx) => {
                                     let chgs = new Map<string, any>();
                                     let version = ctx.platform.getEnvArgs().setvs;
+                                    chgs.set('version', version);
                                     Object.keys(json.peerDependencies || {}).forEach(key => {
                                         if (/^@tsdi/.test(key)) {
                                             chgs.set('peerDependencies.' + key, '^' + version);
