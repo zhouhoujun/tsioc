@@ -20,7 +20,6 @@ export class AnnotationActivity extends PipeActivity {
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let enable = await this.resolveExpression(this.annotation, ctx);
-        console.log(enable, this.framework);
         if (enable) {
             this.result.value = await this.executePipe(ctx, this.result.value, this.framework);
         }
