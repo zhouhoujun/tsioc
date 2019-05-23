@@ -48,15 +48,16 @@ export class JsonEditActivity extends TransformActivity {
 
 }
 
+export type JsonReplace = (json: any, ctx?: NodeActivityContext) => ObjectMap<any> | Map<string, any>;
 
 export interface JsonReplaceActivityOption extends TemplateOption {
     /**
      * edite fields.
      *
-     * @type {Binding<JsonEdit>}
+     * @type {Binding<JsonReplace>}
      * @memberof SourceActivityOption
      */
-    fields: Binding<JsonEdit>;
+    fields: Binding<JsonReplace>;
 }
 
 /**
@@ -70,7 +71,7 @@ export interface JsonReplaceActivityOption extends TemplateOption {
 export class JsonReplaceActivity extends TransformActivity {
 
     @Input()
-    fields: JsonEdit;
+    fields: JsonReplace;
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let fields = this.fields;
