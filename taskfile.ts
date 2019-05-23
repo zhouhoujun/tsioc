@@ -40,7 +40,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                 {
                     activity: Activities.if,
                     condition: (ctx: NodeActivityContext) => ctx.platform.getEnvArgs().setvs,
-                    body: {
+                    body: [{
                         activity: 'asset',
                         name: 'version-setting',
                         src: 'packages/**/package.json',
@@ -64,7 +64,21 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                                     return chgs;
                                 }
                             }]
-                    }
+                    },
+                    {
+                        activity: 'asset',
+                        name: 'version-setting',
+                        src: 'package.json',
+                        dist: '.',
+                        pipes: [
+                            <JsonReplaceActivityOption>{
+                                activity: 'jsonReplace',
+                                fields: (json, ctx) => {
+                                    let version = ctx.platform.getEnvArgs().setvs;
+                                    return { version: version };
+                                }
+                            }]
+                    }]
                 },
                 {
                     activity: Activities.each,
