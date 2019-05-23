@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/unit-console",
-  "version": "4.0.5",
+  "version": "5.0.0-beta",
   "description": "unit testing console reporter",
   "scripts": {
     "postinstall": "npm prune",

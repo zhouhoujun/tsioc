@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-server-boot",
-  "version": "4.0.5",
+  "version": "5.0.0-beta",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
     "postinstall": "npm prune",

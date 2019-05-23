@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/boot",
-  "version": "4.0.5",
+  "version": "5.0.0-beta",
   "description": "DI Module manager, application bootstrap. base on AOP, Ioc container, via @tsdi/core .",
   "scripts": {
     "postinstall": "npm prune",

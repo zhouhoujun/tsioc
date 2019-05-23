@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-browser-activities",
-  "version": "4.0.5",
+  "version": "5.0.0-beta",
   "description": "type task framework, base on AOP, Ioc container, via @tsdi",
   "scripts": {
     "postinstall": "npm prune",
