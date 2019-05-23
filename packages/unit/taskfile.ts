@@ -11,6 +11,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
     template: <LibPackBuilderOption>{
         activity: 'libs',
         src: 'src/**/*.ts',
+        outDir: '../../dist/unit',
         test: 'test/**/*.ts',
         annotation: true,
         bundles: [
