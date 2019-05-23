@@ -35,7 +35,8 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
             }
         },
         {
-            activity: Activities.else,
+            activity: Activities.elseif,
+            condition: (ctx: NodeActivityContext) => ctx.platform.getEnvArgs().build !== 'false',
             body: [
                 {
                     activity: Activities.if,
@@ -92,25 +93,25 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                             await Workflow.sequence(...activitys);
                         }
                     }
-                },
-                {
-                    activity: Activities.if,
-                    condition: (ctx: NodeActivityContext) => ctx.platform.getEnvArgs().deploy,
-                    body: <ShellActivityOption>{
-                        activity: 'shell',
-                        shell: (ctx: NodeActivityContext) => {
-                            let packages = ctx.platform.getFolders('dist');
-                            let cmd = 'npm publish --access=public'; // envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
-
-                            let shells = packages.map(fd => {
-                                return `cd ${fd} && ${cmd}`;
-                            });
-                            console.log(shells);
-                            return shells;
-                        }
-                    }
                 }
             ]
+        },
+        {
+            activity: Activities.if,
+            condition: (ctx: NodeActivityContext) => ctx.platform.getEnvArgs().deploy,
+            body: <ShellActivityOption>{
+                activity: 'shell',
+                shell: (ctx: NodeActivityContext) => {
+                    let packages = ctx.platform.getFolders('dist');
+                    let cmd = 'npm publish --access=public'; // envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
+
+                    let shells = packages.map(fd => {
+                        return `cd ${fd} && ${cmd}`;
+                    });
+                    console.log(shells);
+                    return shells;
+                }
+            }
         }
     ]
 })
