@@ -38,6 +38,7 @@
     "@tsdi/boot": "^5.0.0",
     "@tsdi/activities": "^5.0.0",
     "@tsdi/platform-server": "^5.0.0",
+    "@tsdi/platform-server-boot": "^5.0.0",
     "@tsdi/platform-server-logs": "^5.0.0",
     "bluebird": "^3.5.3",
     "chalk": "^2.4.2",

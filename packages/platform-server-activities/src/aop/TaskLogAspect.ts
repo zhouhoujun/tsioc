@@ -3,7 +3,7 @@ import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LoggerAspect } from '@tsdi/logs';
 import chalk from 'chalk';
 import { Task, Activity, ControlerActivity } from '@tsdi/activities';
-import { Inject, lang, Injectable } from '@tsdi/ioc';
+import { Inject, lang } from '@tsdi/ioc';
 const timestamp = require('time-stamp');
 const prettyTime = require('pretty-hrtime');
 
