@@ -25,7 +25,7 @@ npm install @tsdi/platform-server
 
 
 ```ts
-import { DIModule, ApplicationBuilder } from '@tsdi/boot';
+import { DIModule, BootApplication } from '@tsdi/boot';
 
 
 export class TestService {
@@ -58,6 +58,35 @@ export class ClassSevice {
     }
 }
 
+@Injectable
+export class Person {
+    constructor(name: string){
+
+    }
+}
+
+// binding component. 
+@Component({
+    selector: 'you component',
+    template: {
+        filed: 'binding: myfield'
+    }
+})
+export class MyComponent implements AfterInit {
+    
+    @Input()
+    myfield: string;
+    
+    @Input()
+    use: Person;
+
+    onAfterInit(): void | Promise<void> {
+       // todo inited field..
+
+    }
+
+}
+
 @Aspect
 export class Logger {
 
@@ -79,7 +108,7 @@ export class Logger {
     ],
     bootstrap: ClassSevice
 })
-export class ModuleB implements OnModuleStart<ClassSevice> {
+export class ModuleB {
     constructor(test: TestService, @Inject(ContainerToken) private container: IContainer) {
         console.log(test);
         test.test();
@@ -99,11 +128,9 @@ export class ModuleB implements OnModuleStart<ClassSevice> {
 }
 
 
-ApplicationBuilder.create(__dirname)
-    .bootstrap(Application)
 
-ApplicationBuilder.create(baseURL)
-    .bootstrap(Application)
+BootApplication.run(ModuleB)
+
 
 ```
 
@@ -150,9 +177,7 @@ class MvcApi {
     static main() {
         console.log('run mvc api...');
         // use your builder
-        MvcHostBuilder.create(__dirname)
-            .useConfiguration({ debug: true })
-            .bootstrap(MvcApi);
+        BootApplication.run(MvcApi);
     }
 }
 
