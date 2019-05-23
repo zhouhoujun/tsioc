@@ -73,7 +73,6 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                         activity: Activities.execute,
                         action: async (ctx) => {
                             let activitys = Object.values(require(path.join(ctx.body, 'taskfile.ts'))).filter(b => isAcitvityClass(b)) as Type<Activity<any>>[];
-                            console.log(activitys);
                             await ctx.getExector().runActivity(ctx, activitys);
                             // await Workflow.sequence(...activitys);
                         }

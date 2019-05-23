@@ -2,7 +2,7 @@ import { RegisterModuleRegisterHandle } from './RegisterModuleRegisterHandle';
 import { AnnoationContext, CompositeHandle } from '../core';
 import { RegisterAnnoationHandle } from './RegisterAnnoationHandle';
 import { BootContext } from '../BootContext';
-import { ModuleDecoratorService } from '../services';
+import { ModuleDecoratorService } from '../core';
 
 
 export class RegisterModuleScope extends CompositeHandle<AnnoationContext> {

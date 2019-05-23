@@ -25,7 +25,7 @@ import { AfterInit } from '@tsdi/boot';
 })
 export class PfServerBuilder implements AfterInit {
     onAfterInit(): void | Promise<void> {
-        console.log('pack build has inited...')
+        console.log('pf build has inited...')
     }
 }
 

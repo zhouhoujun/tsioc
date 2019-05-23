@@ -1,6 +1,6 @@
 import { ResolveHandle } from './ResolveHandle';
 import { BuildContext } from './BuildContext';
-import { ModuleDecoratorService } from '../../services';
+import { ModuleDecoratorService } from '../../core';
 
 export class InitResolveModuleHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {

@@ -302,19 +302,6 @@ export namespace lang {
         dispatch(0);
     }
 
-    export function cloneMetadata(target: any) {
-        if (isArray(target)) {
-            return target.map(it => cloneMetadata(it));
-        }
-        if (!isBaseType(getClass(target))) {
-            let newM = {};
-            forIn(target, (val, name) => {
-                newM[name] = cloneMetadata(val)
-            });
-        } else {
-            return target;
-        }
-    }
 }
 
 

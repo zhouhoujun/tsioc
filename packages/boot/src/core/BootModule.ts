@@ -21,6 +21,7 @@ import { SelectorManager } from './SelectorManager';
 import { Input, Component } from './decorators';
 import { HandleRegisterer } from './handles';
 import { ComponentManager } from './ComponentManager';
+import { ModuleDecoratorService } from './ModuleDecoratorService';
 
 
 /**
@@ -44,6 +45,7 @@ export class BootModule {
     setup(@Inject(ContainerToken) container: IContainer) {
 
         container.register(HandleRegisterer);
+        container.register(ModuleDecoratorService);
         let designReg = container.get(DesignDecoratorRegisterer);
         designReg.register(Annotation, DecoratorScopes.Class, BindProviderAction, IocAutorunAction);
         designReg.register(DIModule, DecoratorScopes.Class, BindProviderAction, IocAutorunAction);

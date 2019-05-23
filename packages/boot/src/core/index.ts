@@ -11,3 +11,4 @@ export * from './ContainerPool';
 export * from './ContainerPoolToken';
 export * from './types';
 export * from './ComponentLifecycle';
+export * from './ModuleDecoratorService';
