@@ -38,7 +38,7 @@ export class TsBuildActivity extends AssetActivity implements AfterInit {
     @Input()
     test: UnitTestActivity;
 
-    @Input()
+    @Input('annotation')
     annotation: AnnoationActivity;
 
     @Input()
@@ -86,12 +86,12 @@ export class TsBuildActivity extends AssetActivity implements AfterInit {
         }
         if (this.sourcemapWrite) {
             this.sourcemapWrite.pipe = this.sourcemapWrite.pipe || this.jsPipe;
-        }
+        };
     }
 
 
     protected getRunSequence(): ActivityType[] {
-        let seq = [
+        return [
             this.test,
             this.clean,
             this.src,
@@ -105,7 +105,6 @@ export class TsBuildActivity extends AssetActivity implements AfterInit {
             this.sourcemapWrite,
             this.dist
         ]
-        return seq;
     }
 
     protected async complieTs(ctx: NodeActivityContext): Promise<void> {

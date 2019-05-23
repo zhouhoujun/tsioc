@@ -46,6 +46,7 @@ export class ResolveModuleHandle extends ResolveHandle {
                                 scope: ctx.scope,
                                 bindExpression: bindExpression,
                                 binding: bp,
+                                template: ctx.template,
                                 annoation: ctx.annoation,
                                 decorator: ctx.decorator
                             }, ctx.getRaiseContainer());

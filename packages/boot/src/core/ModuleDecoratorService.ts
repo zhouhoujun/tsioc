@@ -1,6 +1,6 @@
 import {
     Singleton, Type, Inject, MetadataService, DesignDecoratorRegisterer, DecoratorScopes,
-    RuntimeDecoratorRegisterer, lang, getOwnTypeMetadata, isArray, isBaseType, isClass, isFunction
+    RuntimeDecoratorRegisterer, lang, getOwnTypeMetadata, isArray, isBaseType, isClass, isFunction, isBaseObject, isMetadataObject, isObject
 } from '@tsdi/ioc';
 import { ContainerToken, IContainer, InjectorDecoratorRegisterer } from '@tsdi/core';
 import { ComponentRegisterAction } from './registers';
@@ -50,13 +50,16 @@ export class ModuleDecoratorService {
         if (isArray(target)) {
             return target.map(it => this.cloneTemplate(it));
         }
-        if (isClass(target) || isFunction(target) || isBaseType(lang.getClass(target))) {
+        if (isFunction(target)) {
             return target;
-        } else if (target) {
+        } else if (isMetadataObject(target)) {
             let newM = {};
             lang.forIn(target, (val, name) => {
                 newM[name] = this.cloneTemplate(val)
             });
+            return newM;
+        } else if (isBaseType(lang.getClass(target))) {
+            return target;
         }
         return null;
     }

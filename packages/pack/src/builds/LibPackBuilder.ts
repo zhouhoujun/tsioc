@@ -249,7 +249,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                 },
                 {
                     activity: Activities.if,
-                    condition: ctx => ctx.body.moduleName,
+                    condition: ctx => ctx.body.moduleName || ctx.body.target,
                     body: <AssetActivityOption>{
                         activity: 'asset',
                         src: ctx => ctx.scope.toOutputPath('package.json'),
