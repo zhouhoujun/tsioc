@@ -98,7 +98,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                     body: <ShellActivityOption>{
                         activity: 'shell',
                         shell: (ctx: NodeActivityContext) => {
-                            let packages = ctx.platform.getFolders('packages');
+                            let packages = ctx.platform.getFolders('dist');
                             let cmd = 'npm publish --access=public'; // envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
 
                             let shells = packages.map(fd => {
