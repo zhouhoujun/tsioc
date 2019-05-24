@@ -1,7 +1,7 @@
 import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction } from '@tsdi/ioc';
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { IContainer, ContainerToken, isContainer } from '@tsdi/core';
-import { CompositeHandle, HandleRegisterer, RegScope } from '../core';
+import { BuildHandles, BuildHandleRegisterer, RegScope } from '../core';
 import { IBootApplication } from '../IBootApplication';
 import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
 import { ResolveMoudleScope, IModuleResolveOption, BuildContext } from './resovers';
@@ -26,7 +26,7 @@ export class BuilderService extends IocCoreService {
     protected container: IContainer;
 
     setup() {
-        this.container.get(HandleRegisterer)
+        this.container.get(BuildHandleRegisterer)
             .register(this.container, ResolveMoudleScope, true)
             .register(this.container, ModuleBuilderLifeScope, true)
             .register(this.container, RunnableBuildLifeScope, true)
@@ -61,7 +61,7 @@ export class BuilderService extends IocCoreService {
         if (providers.length) {
             rctx.providers = (rctx.providers || []).concat(providers);
         }
-        await this.container.get(HandleRegisterer)
+        await this.container.get(BuildHandleRegisterer)
             .get(ResolveMoudleScope)
             .execute(rctx);
         return rctx;
@@ -96,7 +96,7 @@ export class BuilderService extends IocCoreService {
      * @memberof BuilderService
      */
     build<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
-        return this.execLifeScope(null, this.container.get(HandleRegisterer).get(ModuleBuilderLifeScope), target, ...args);
+        return this.execLifeScope(null, this.container.get(BuildHandleRegisterer).get(ModuleBuilderLifeScope), target, ...args);
     }
 
     /**
@@ -109,7 +109,7 @@ export class BuilderService extends IocCoreService {
      * @memberof BuilderService
      */
     async createRunnable<T>(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<IRunnable<T>> {
-        let ctx = await this.execLifeScope(ctx => ctx.autorun = false, this.container.get(HandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
+        let ctx = await this.execLifeScope(ctx => ctx.autorun = false, this.container.get(BuildHandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
         return ctx.runnable;
     }
 
@@ -123,7 +123,7 @@ export class BuilderService extends IocCoreService {
      * @memberof RunnerService
      */
     run<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
-        return this.execLifeScope(null, this.container.get(HandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
+        return this.execLifeScope(null, this.container.get(BuildHandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
     }
 
     /**
@@ -144,12 +144,12 @@ export class BuilderService extends IocCoreService {
                     application.onContextInit(ctx);
                 }
             },
-            this.container.get(HandleRegisterer).get(BootLifeScope),
+            this.container.get(BuildHandleRegisterer).get(BootLifeScope),
             application.target,
             ...args);
     }
 
-    protected async execLifeScope<T extends BootContext>(contextInit: (ctx: BootContext) => void, scope: CompositeHandle<BootContext>, target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
+    protected async execLifeScope<T extends BootContext>(contextInit: (ctx: BootContext) => void, scope: BuildHandles<BootContext>, target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
         let ctx: BootContext;
         if (target instanceof BootContext) {
             ctx = target;

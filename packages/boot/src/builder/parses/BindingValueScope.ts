@@ -2,7 +2,7 @@ import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
 import { isNullOrUndefined, lang, isString, Singleton, Type, isClass, isArray, isBaseType } from '@tsdi/ioc';
 import { BindingExpression } from '../../bindings';
-import { IocASyncDecoratorRegisterer, SelectorManager, RegScope, HandleRegisterer } from '../../core';
+import { IocBuildDecoratorRegisterer, SelectorManager, RegScope, BuildHandleRegisterer } from '../../core';
 import { BuilderService } from '../BuilderService';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
@@ -22,7 +22,7 @@ export class BindingValueScope extends ParsersHandle {
 }
 
 @Singleton
-export class BindExpressionDecoratorRegisterer extends IocASyncDecoratorRegisterer<Type<ParseHandle>> {
+export class BindExpressionDecoratorRegisterer extends IocBuildDecoratorRegisterer<Type<ParseHandle>> {
 
 }
 
@@ -63,7 +63,7 @@ export class TranslateExpressionHandle extends ParseHandle {
                 annoation: ctx.annoation,
                 providers: ctx.providers
             }, ctx.getRaiseContainer());
-            await this.container.get(HandleRegisterer)
+            await this.container.get(BuildHandleRegisterer)
                 .get(TemplateParseScope)
                 .execute(tpCtx);
             if (!isNullOrUndefined(tpCtx.value)) {

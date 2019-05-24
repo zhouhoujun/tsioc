@@ -1,7 +1,7 @@
 import { ResolveHandle } from './ResolveHandle';
 import { BuildContext } from './BuildContext';
 import { TemplateParseScope, TemplateContext } from '../parses';
-import { HandleRegisterer } from '../../core';
+import { BuildHandleRegisterer } from '../../core';
 import { isNullOrUndefined } from '@tsdi/ioc';
 
 export class ResolveTemplateScope extends ResolveHandle {
@@ -15,7 +15,7 @@ export class ResolveTemplateScope extends ResolveHandle {
                 decorator: ctx.decorator
             }, raiseContainer);
             await this.container
-                .get(HandleRegisterer)
+                .get(BuildHandleRegisterer)
                 .get(TemplateParseScope)
                 .execute(pCtx);
             if (!isNullOrUndefined(pCtx.value)) {

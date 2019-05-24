@@ -1,58 +1,23 @@
-import { Handle, HandleType, IHandleContext } from './Handle';
-import { PromiseUtil, isBoolean, isClass, isFunction, Singleton, Type } from '@tsdi/ioc';
+import { IHandleContext, HandleType, Handle, IHandle } from './Handle';
+import { PromiseUtil, isBoolean, Type, isClass, isFunction } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-
-
-
-
-@Singleton()
-export class HandleRegisterer {
-
-    private maps: Map<Type<Handle<any>>, Handle<any>>;
-
-    constructor() {
-        this.maps = new Map();
-    }
-
-    get<T extends Handle<any>>(type: Type<T>): T {
-        if (this.maps.has(type)) {
-            return this.maps.get(type) as T;
-        }
-        return null;
-    }
-
-    register<T extends IHandleContext>(container: IContainer, HandleType: HandleType<T>, setup?: boolean): this {
-        if (!isClass(HandleType)) {
-            return this;
-        }
-        if (this.maps.has(HandleType)) {
-            return this;
-        }
-        let handle = new HandleType(container);
-        this.maps.set(HandleType, handle);
-        if (setup) {
-            if (handle instanceof CompositeHandle) {
-                handle.setup();
-            }
-        }
-        return this;
-    }
-}
 
 /**
  * composite handles.
  *
  * @export
- * @class CompositeHandle
+ * @class Handles
  * @extends {Handle<T>}
  * @template T
  */
-export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
+export abstract class Handles<T extends IHandleContext> extends Handle<T> {
 
     protected handles: HandleType<T>[];
     private funcs: PromiseUtil.ActionHandle<T>[];
 
-    onInit() {
+
+    constructor(container?: IContainer) {
+        super(container)
         this.handles = [];
     }
 
@@ -142,24 +107,18 @@ export class CompositeHandle<T extends IHandleContext> extends Handle<T> {
         this.funcs = null;
     }
 
-    protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {
-        this.container.get(HandleRegisterer)
-            .register(this.container, HandleType, setup);
-        return this;
-    }
+    protected abstract registerHandle(HandleType: HandleType<T>, setup?: boolean): this;
+
+    protected abstract resolveHanlde(ac: Type<IHandle<T>>): IHandle<T>;
 
     protected parseAction(ac: HandleType<T>): PromiseUtil.ActionHandle<T> {
         if (isClass(ac)) {
-            let action = this.container.get(HandleRegisterer).get(ac);
+            let action = this.resolveHanlde(ac);
             return action instanceof Handle ? action.toAction() : null;
 
         } else if (ac instanceof Handle) {
             return ac.toAction();
         }
         return isFunction(ac) ? ac : null;
-    }
-
-    setup() {
-
     }
 }

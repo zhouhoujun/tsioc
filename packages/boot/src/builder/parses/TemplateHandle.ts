@@ -1,4 +1,4 @@
-import { Handle, CompositeHandle } from '../../core';
+import { Handle, BuildHandles } from '../../core';
 import { TemplateContext } from './TemplateContext';
 
 export abstract class TemplateHandle extends Handle<TemplateContext> {
@@ -14,6 +14,6 @@ export abstract class TemplateHandle extends Handle<TemplateContext> {
     abstract execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void>;
 }
 
-export class TemplatesHandle extends CompositeHandle<TemplateContext> {
+export class TemplatesHandle extends BuildHandles<TemplateContext> {
 
 }

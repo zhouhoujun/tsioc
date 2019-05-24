@@ -4,7 +4,7 @@ import * as core from './core';
 import * as activites from './activities';
 import { IContainer, ContainerToken, IocExt, InjectorDecoratorRegisterer, ServiceDecoratorRegisterer } from '@tsdi/core';
 import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes } from '@tsdi/ioc';
-import { ComponentRegisterAction, ElementDecoratorRegisterer, HandleRegisterer, BindingComponentRegisterer, ValidComponentRegisterer } from '@tsdi/boot';
+import { ComponentRegisterAction, ElementDecoratorRegisterer, BuildHandleRegisterer, BindingComponentRegisterer, ValidComponentRegisterer } from '@tsdi/boot';
 import { TaskDecoratorServiceAction, TaskInjectorRegisterAction } from './core';
 import { TaskDecorSelectorHandle, BindingTaskComponentHandle, ValidTaskComponentHandle } from './handles';
 
@@ -27,7 +27,7 @@ export class ActivityCoreModule {
             .register(container, TaskDecoratorServiceAction)
             .register(container, TaskInjectorRegisterAction, true);
 
-        container.get(HandleRegisterer)
+        container.get(BuildHandleRegisterer)
             .register(container, ValidTaskComponentHandle)
             .register(container, BindingTaskComponentHandle)
             .register(container, TaskDecorSelectorHandle);

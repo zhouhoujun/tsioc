@@ -1,0 +1,66 @@
+import { Handle, HandleType, IHandleContext, IHandle } from './Handle';
+import { isClass, Singleton, Type } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
+import { Handles } from './Handles';
+
+
+
+
+@Singleton()
+export class BuildHandleRegisterer {
+
+    private maps: Map<Type<IHandle<any>>, Handle<any>>;
+
+    constructor() {
+        this.maps = new Map();
+    }
+
+    get<T extends Handle<any>>(type: Type<T>): T {
+        if (this.maps.has(type)) {
+            return this.maps.get(type) as T;
+        }
+        return null;
+    }
+
+    register<T extends IHandleContext>(container: IContainer, HandleType: HandleType<T>, setup?: boolean): this {
+        if (!isClass(HandleType)) {
+            return this;
+        }
+        if (this.maps.has(HandleType)) {
+            return this;
+        }
+        let handle = new HandleType(container);
+        this.maps.set(HandleType, handle);
+        if (setup) {
+            if (handle instanceof BuildHandles) {
+                handle.setup();
+            }
+        }
+        return this;
+    }
+}
+
+
+/**
+ * composite handles.
+ *
+ * @export
+ * @class CompositeHandle
+ * @extends {Handle<T>}
+ * @template T
+ */
+export class BuildHandles<T extends IHandleContext> extends Handles<T> {
+
+    protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {
+        this.container.get(BuildHandleRegisterer)
+            .register(this.container, HandleType, setup);
+        return this;
+    }
+
+    protected resolveHanlde(ac: Type<Handle<T>>): Handle<T> {
+        return this.container.get(BuildHandleRegisterer).get(ac)
+    }
+
+    setup() {
+    }
+}

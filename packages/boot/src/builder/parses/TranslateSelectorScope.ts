@@ -1,7 +1,7 @@
 import { TemplatesHandle, TemplateHandle } from './TemplateHandle';
 import { TemplateContext } from './TemplateContext';
 import { Singleton, Type } from '@tsdi/ioc';
-import { IocASyncDecoratorRegisterer } from '../../core';
+import { IocBuildDecoratorRegisterer } from '../../core';
 
 
 export class TranslateSelectorScope extends TemplatesHandle {
@@ -20,7 +20,7 @@ export class TranslateSelectorScope extends TemplatesHandle {
 
 
 @Singleton
-export class ElementDecoratorRegisterer extends IocASyncDecoratorRegisterer<Type<TemplateHandle>> {
+export class ElementDecoratorRegisterer extends IocBuildDecoratorRegisterer<Type<TemplateHandle>> {
 
 }
 export class TranslateElementHandle extends TemplateHandle {

@@ -1,9 +1,9 @@
-import { CompositeHandle } from '../core';
+import { BuildHandles } from '../core';
 import { BootContext } from '../BootContext';
 import { ResolveBootHandle } from './ResolveBootHandle';
 import { ResolveTypeHandle } from './ResolveTypeHandle';
 
-export class ModuleBuildScope extends CompositeHandle<BootContext> {
+export class ModuleBuildScope extends BuildHandles<BootContext> {
 
     async execute(ctx: BootContext, next?: () => Promise<void>): Promise<void> {
         // has build module instance.

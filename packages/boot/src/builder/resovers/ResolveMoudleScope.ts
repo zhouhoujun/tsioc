@@ -1,4 +1,4 @@
-import { CompositeHandle } from '../../core';
+import { BuildHandles } from '../../core';
 import { DecoratorBuildHandle } from './DecoratorBuildHandle';
 import { ResolveModuleHandle } from './ResolveModuleHandle';
 import { BuildContext } from './BuildContext';
@@ -15,7 +15,7 @@ import { BindingScope, TemplateParseScope } from '../parses';
 import { ValidComponentRegisterer } from './ValidComponentRegisterer';
 
 
-export class ResolveMoudleScope extends CompositeHandle<BuildContext> {
+export class ResolveMoudleScope extends BuildHandles<BuildContext> {
 
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
         // has build module instance.

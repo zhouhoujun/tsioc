@@ -1,4 +1,4 @@
-import { Handle, CompositeHandle } from '../../core';
+import { Handle, BuildHandles } from '../../core';
 import { ParseContext } from './ParseContext';
 
 export abstract class ParseHandle extends Handle<ParseContext> {
@@ -14,6 +14,6 @@ export abstract class ParseHandle extends Handle<ParseContext> {
     abstract execute(ctx: ParseContext, next: () => Promise<void>): Promise<void>;
 }
 
-export class ParsersHandle extends CompositeHandle<ParseContext> {
+export class ParsersHandle extends BuildHandles<ParseContext> {
 
 }

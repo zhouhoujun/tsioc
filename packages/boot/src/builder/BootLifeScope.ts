@@ -1,4 +1,4 @@
-import { CompositeHandle, AnnoationContext } from '../core';
+import { BuildHandles, AnnoationContext } from '../core';
 import { BootProvidersHandle } from './BootProvidersHandle';
 import { BootDepsHandle } from './BootDepsHandle';
 import { BootConfigureLoadHandle } from './BootConfigureLoadHandle';
@@ -9,7 +9,7 @@ import { ResolveRunnableScope } from './ResolveRunnableScope';
 import { RunBootHandle } from './RunBootHandle';
 
 
-export class BootLifeScope extends CompositeHandle<AnnoationContext> {
+export class BootLifeScope extends BuildHandles<AnnoationContext> {
 
     setup() {
         this.use(BootProvidersHandle)

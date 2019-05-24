@@ -1,11 +1,11 @@
 import { RegisterModuleRegisterHandle } from './RegisterModuleRegisterHandle';
-import { AnnoationContext, CompositeHandle } from '../core';
+import { AnnoationContext, BuildHandles } from '../core';
 import { RegisterAnnoationHandle } from './RegisterAnnoationHandle';
 import { BootContext } from '../BootContext';
 import { ModuleDecoratorService } from '../core';
 
 
-export class RegisterModuleScope extends CompositeHandle<AnnoationContext> {
+export class RegisterModuleScope extends BuildHandles<AnnoationContext> {
 
     async execute(ctx: BootContext, next?: () => Promise<void>): Promise<void> {
         if (!(ctx instanceof BootContext)) {

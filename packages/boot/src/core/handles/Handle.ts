@@ -34,7 +34,15 @@ export interface IHandle<T> {
      * @returns {Promise<void>}
      * @memberof IHandle
      */
-    execute(ctx: T, next: () => Promise<void>): Promise<void>
+    execute(ctx: T, next: () => Promise<void>): Promise<void>;
+
+    /**
+     * to action.
+     *
+     * @returns {PromiseUtil.ActionHandle<T>}
+     * @memberof IHandle
+     */
+    toAction(): PromiseUtil.ActionHandle<T>;
 }
 
 
@@ -61,11 +69,6 @@ export abstract class Handle<T extends IHandleContext> extends IocCoreService im
     constructor(container?: IContainer) {
         super();
         this.container = container;
-        this.onInit();
-    }
-
-    onInit() {
-
     }
 
 

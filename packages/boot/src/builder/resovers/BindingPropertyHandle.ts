@@ -1,4 +1,4 @@
-import { IBindingTypeReflect, HandleRegisterer, BindingTypes } from '../../core';
+import { IBindingTypeReflect, BuildHandleRegisterer, BindingTypes } from '../../core';
 import { BuildContext } from './BuildContext';
 import { isNullOrUndefined } from '@tsdi/ioc';
 import { BindingScope, ParseContext } from '../parses';
@@ -9,7 +9,7 @@ export class BindingPropertyHandle extends ResolveHandle {
         if (ctx.target) {
             let ref = this.container.getTypeReflects().get(ctx.type) as IBindingTypeReflect;
             if (ref.propBindings) {
-                let registerer = this.container.get(HandleRegisterer);
+                let registerer = this.container.get(BuildHandleRegisterer);
                 await Promise.all(Array.from(ref.propBindings.keys()).map(async n => {
                     let binding = ref.propBindings.get(n);
                     let expression = ctx.template ? ctx.template[binding.bindingName || binding.name] : null;

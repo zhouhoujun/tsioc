@@ -1,5 +1,5 @@
-import { CompositeHandle, MessageContext } from '../core';
-import { Singleton } from '@tsdi/ioc';
+import { MessageContext, Handles, IHandle, HandleType } from '../core';
+import { Singleton, Type, isClass } from '@tsdi/ioc';
 
 
 /**
@@ -7,12 +7,12 @@ import { Singleton } from '@tsdi/ioc';
  *
  * @export
  * @class MessageQueue
- * @extends {CompositeHandle<T>}
+ * @extends {BuildHandles<T>}
  * @template T
  */
 
 @Singleton
-export class MessageQueue<T extends MessageContext> extends CompositeHandle<T> {
+export class MessageQueue<T extends MessageContext> extends Handles<T> {
 
     /**
      * send message.
@@ -25,4 +25,16 @@ export class MessageQueue<T extends MessageContext> extends CompositeHandle<T> {
     async send(ctx: T, next?: () => Promise<void>): Promise<void> {
         return this.execute(ctx, next);
     }
+
+    protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {
+        if (isClass(HandleType)) {
+            this.container.register(HandleType);
+        }
+        this.use(HandleType);
+        return this;
+    }
+    protected resolveHanlde(ac: Type<IHandle<T>>): IHandle<T> {
+        return this.container.resolve(ac);
+    }
+
 }
