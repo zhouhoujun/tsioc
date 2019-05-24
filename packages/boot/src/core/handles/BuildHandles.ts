@@ -42,9 +42,9 @@ export class BuildHandleRegisterer {
 
 
 export abstract class BuildHandle<T extends IHandleContext> extends Handle<T> {
-    protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {
+    protected registerHandle(handle: HandleType<T>, setup?: boolean): this {
         this.container.get(BuildHandleRegisterer)
-            .register(this.container, HandleType, setup);
+            .register(this.container, handle, setup);
         return this;
     }
 
