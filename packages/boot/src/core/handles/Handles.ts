@@ -107,6 +107,6 @@ export abstract class Handles<T extends IHandleContext> extends Handle<T> {
         this.funcs = null;
     }
 
-    protected abstract registerHandle(HandleType: HandleType<T>, setup?: boolean): this;
+    protected abstract registerHandle(handle: HandleType<T>, setup?: boolean): this;
 
 }
