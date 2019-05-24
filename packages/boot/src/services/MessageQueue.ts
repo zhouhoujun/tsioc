@@ -33,8 +33,4 @@ export class MessageQueue<T extends MessageContext> extends Handles<T> {
         this.use(HandleType);
         return this;
     }
-    protected resolveHanlde(ac: Type<IHandle<T>>): IHandle<T> {
-        return this.container.resolve(ac);
-    }
-
 }

@@ -109,16 +109,4 @@ export abstract class Handles<T extends IHandleContext> extends Handle<T> {
 
     protected abstract registerHandle(HandleType: HandleType<T>, setup?: boolean): this;
 
-    protected abstract resolveHanlde(ac: Type<IHandle<T>>): IHandle<T>;
-
-    protected parseAction(ac: HandleType<T>): PromiseUtil.ActionHandle<T> {
-        if (isClass(ac)) {
-            let action = this.resolveHanlde(ac);
-            return action instanceof Handle ? action.toAction() : null;
-
-        } else if (ac instanceof Handle) {
-            return ac.toAction();
-        }
-        return isFunction(ac) ? ac : null;
-    }
 }
