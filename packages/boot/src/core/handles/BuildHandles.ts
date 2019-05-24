@@ -41,12 +41,21 @@ export class BuildHandleRegisterer {
 }
 
 
+export abstract class BuildHandle<T extends IHandleContext> extends Handle<T> {
+    protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {
+        this.container.get(BuildHandleRegisterer)
+            .register(this.container, HandleType, setup);
+        return this;
+    }
+
+}
+
 /**
  * composite handles.
  *
  * @export
  * @class CompositeHandle
- * @extends {Handle<T>}
+ * @extends {BuildHandle<T>}
  * @template T
  */
 export class BuildHandles<T extends IHandleContext> extends Handles<T> {
@@ -57,7 +66,7 @@ export class BuildHandles<T extends IHandleContext> extends Handles<T> {
         return this;
     }
 
-    protected resolveHanlde(ac: Type<Handle<T>>): Handle<T> {
+    protected resolveHanlde(ac: Type<BuildHandle<T>>): BuildHandle<T> {
         return this.container.get(BuildHandleRegisterer).get(ac)
     }
 

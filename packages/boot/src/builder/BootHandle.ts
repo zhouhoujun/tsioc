@@ -1,4 +1,4 @@
-import { Handle } from '../core';
+import { BuildHandle } from '../core';
 import { Abstract } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
 
@@ -8,10 +8,10 @@ import { BootContext } from '../BootContext';
  * @export
  * @abstract
  * @class BootHandle
- * @extends {Handle<BootContext>}
+ * @extends {BuildHandle<BootContext>}
  */
 @Abstract()
-export abstract class BootHandle extends Handle<BootContext> {
+export abstract class BootHandle extends BuildHandle<BootContext> {
     /**
      * execute boot Handle.
      *

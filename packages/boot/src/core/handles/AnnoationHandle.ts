@@ -1,4 +1,4 @@
-import { Handle } from './Handle';
+import { BuildHandle } from './BuildHandles';
 import { Abstract, ProviderMap, Type, ContainerFactory } from '@tsdi/ioc';
 import { ModuleConfigure, IModuleResolver, RegScope } from '../modules';
 import { AnnoationActionContext, AnnoationActionOption, createAnnoationContext } from '../injectors';
@@ -82,10 +82,10 @@ export class AnnoationContext extends AnnoationActionContext {
  * @export
  * @abstract
  * @class AnnoationHandle
- * @extends {Handle<AnnoationContext>}
+ * @extends {BuildHandle<AnnoationContext>}
  */
 @Abstract()
-export abstract class AnnoationHandle extends Handle<AnnoationContext> {
+export abstract class AnnoationHandle extends BuildHandle<AnnoationContext> {
     /**
      * execute Handles.
      *

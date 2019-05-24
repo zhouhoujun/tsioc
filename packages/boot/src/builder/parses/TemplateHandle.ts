@@ -1,7 +1,7 @@
-import { Handle, BuildHandles } from '../../core';
+import { BuildHandle, BuildHandles } from '../../core';
 import { TemplateContext } from './TemplateContext';
 
-export abstract class TemplateHandle extends Handle<TemplateContext> {
+export abstract class TemplateHandle extends BuildHandle<TemplateContext> {
     /**
      * execute binding Handle.
      *

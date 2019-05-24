@@ -1,7 +1,7 @@
-import { Handle, BuildHandles } from '../../core';
+import { BuildHandle, BuildHandles } from '../../core';
 import { ParseContext } from './ParseContext';
 
-export abstract class ParseHandle extends Handle<ParseContext> {
+export abstract class ParseHandle extends BuildHandle<ParseContext> {
     /**
      * execute binding Handle.
      *

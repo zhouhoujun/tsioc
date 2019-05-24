@@ -1,5 +1,5 @@
-import { IHandleContext, HandleType, Handle, IHandle } from './Handle';
-import { PromiseUtil, isBoolean, Type, isClass, isFunction } from '@tsdi/ioc';
+import { IHandleContext, HandleType, Handle } from './Handle';
+import { PromiseUtil, isBoolean } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 
 /**
@@ -7,7 +7,7 @@ import { IContainer } from '@tsdi/core';
  *
  * @export
  * @class Handles
- * @extends {Handle<T>}
+ * @extends {BuildHandle<T>}
  * @template T
  */
 export abstract class Handles<T extends IHandleContext> extends Handle<T> {
