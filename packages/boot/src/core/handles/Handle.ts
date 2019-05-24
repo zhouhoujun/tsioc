@@ -53,11 +53,14 @@ export type HandleType<T extends IHandleContext> = Type<Handle<T>> | Handle<T> |
  * @extends {IocCoreService}
  * @template T
  */
-export abstract class Handle<T extends IHandleContext>  extends IocCoreService implements IHandle<T> {
+export abstract class Handle<T extends IHandleContext> extends IocCoreService implements IHandle<T> {
 
+    @Inject(ContainerToken)
+    protected container: IContainer;
 
-    constructor(@Inject(ContainerToken) protected container: IContainer) {
+    constructor(container?: IContainer) {
         super();
+        this.container = container;
         this.onInit();
     }
 
@@ -81,7 +84,7 @@ export abstract class Handle<T extends IHandleContext>  extends IocCoreService i
         return PromiseUtil.runInChain(handles, ctx, next);
     }
 
-     private _action: PromiseUtil.ActionHandle<T>
+    private _action: PromiseUtil.ActionHandle<T>
     toAction(): PromiseUtil.ActionHandle<T> {
         if (!this._action) {
             this._action = (ctx: T, next?: () => Promise<void>) => this.execute(ctx, next);
