@@ -260,7 +260,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                                 json: (json, ctx) => {
                                     // to replace module export.
                                     if (ctx.body.target) {
-                                        json[ctx.body.target] = ['.', ctx.scope.getModuleFolder(ctx.body), ctx.body.main || 'index.js'].join('/');
+                                        json[ctx.body.target] = ['.', ctx.scope.getTargetFolder(ctx.body), ctx.body.main || 'index.js'].join('/');
                                     }
                                     let outmain = ['.', ctx.scope.getModuleFolder(ctx.body), ctx.body.outputFile].join('/');
                                     if (isArray(ctx.body.moduleName)) {
