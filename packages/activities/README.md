@@ -235,7 +235,7 @@ export class PackBuilder implements AfterInit {
 * run task.
 ```ts
 // 1. run modue
-Workflow.Workflow.run(PackBuilder);
+Workflow.run(PackBuilder);
 
 
 // 2. run option

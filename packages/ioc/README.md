@@ -82,7 +82,13 @@ container.use(LogModule);
 
 # Documentation
 
-class name First char must be UpperCase.
+## core
+
+### extends ioc
+1. `@IocExt` class decortator, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
+2. add service resolve.
+3. module inject.
+
 
 ## Ioc
 
@@ -90,20 +96,18 @@ class name First char must be UpperCase.
 
 2. get Instance can auto create constructor param.  (must has a class decorator or register in container).
 
-### Has [decorators](https://github.com/zhouhoujun/tsioc/tree/master/packages/core/src/core/decorators)
+### decorators
 
 1. `@Abstract`  abstract class decorator.
 2. `@AutoRun`   class, method decorator, use to define the class auto run (via a method or not) after registered.
 3. `@AutoWried`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
-4. `@Component` class decortator, use to define the class. it can setting provider to some token, singleton or not. it will execute [`ComponentLifecycle`](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/core/ComponentLifecycle.ts) hooks when create a instance .
-5. `@Inject`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
-6. `@Injectable` class decortator, use to define the class. it can setting provider to some token, singleton or not.
-7. `@IocExt` class decortator, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
-8. `@AutoWried` method decorator.
-9. `@Param`   param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
-10. `@Singleton` class decortator, use to define the class is singleton.
-11. `@Providers` Providers decorator, for class. use to add private ref service for the class.
-12. `@Refs` Refs decorator, for class. use to define the class as a service for target.
+4. `@Inject`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
+5. `@Injectable` class decortator, use to define the class. it can setting provider to some token, singleton or not.
+6. `@AutoWried` method decorator.
+7. `@Param`   param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
+8. `@Singleton` class decortator, use to define the class is singleton.
+9. `@Providers` Providers decorator, for class. use to add private ref service for the class.
+10. `@Refs` Refs decorator, for class. use to define the class as a service for target.
 
 
 ## AOP
@@ -130,15 +134,80 @@ define a Aspect class, must with decorator:
 see [simples](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop/test/aop)
 
 
-## DIModule and boot
+## boot
 DI Module manager, application bootstrap. base on AOP.
 
 *  `@DIModule` DIModule decorator, use to define class as DI Module.
 *  `@Annotation` Annotation decorator, use to define class build metadata config.
-
-see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/master/packages/annotations/taskfile.ts)
+*  `@Component`  Component decorator,  use to defaine class as component with template.
+*  `@Input` Input decorator, use to define property or param as component binding field or args.
+see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities/taskfile.ts)
 
 [mvc boot simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
+
+```ts
+
+import { DIModule, BootApplication } from '@tsdi/boot';
+
+
+export class TestService {
+    testFiled = 'test';
+    test() {
+        console.log('test');
+    }
+}
+
+@DIModule({
+    providers: [
+        { provide: 'mark', useFactory: () => 'marked' },
+        TestService
+    ],
+    exports: [
+
+    ]
+})
+export class ModuleA {
+
+}
+
+@Injectable
+export class ClassSevice {
+    @Inject('mark')
+    mark: string;
+    state: string;
+    start() {
+        console.log(this.mark);
+    }
+}
+
+@Aspect
+export class Logger {
+
+    @Around('execution(*.start)')
+    log() {
+        console.log('start........');
+    }
+}
+
+
+@DIModule({
+    imports: [
+        AopModule,
+        Logger,
+        ModuleA
+    ],
+    exports: [
+        ClassSevice
+    ],
+    bootstrap: ClassSevice
+})
+export class ModuleB {
+
+}
+
+BootApplication.run(ModuleB);
+
+```
 
 
 ## [Activites](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities)
