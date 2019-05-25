@@ -1,6 +1,6 @@
 import { Token, Modules, ComponentMetadata, Type } from '@tsdi/ioc';
 import { Runnable } from '../../runnable';
-import { RegScope } from './RegScope';
+import { RegFor } from './RegScope';
 
 /**
  * annotation metadata.
@@ -59,12 +59,12 @@ export interface IModuleMetadata<T> extends IAnnotationMetadata<T> {
     baseURL?: string;
 
     /**
-     * the way to register the module. default as child module.
+     * set where this module to register. default as child module.
      *
      * @type {boolean}
      * @memberof ModuleConfig
      */
-    regScope?: RegScope;
+    regFor?: RegFor;
 
     /**
      * module name.

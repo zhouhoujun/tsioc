@@ -1,5 +1,5 @@
 import { IocActionContext, Type, ProviderMap, ActionContextOption, isFunction, isClass, Inject, ContainerFactory } from '@tsdi/ioc';
-import { ModuleConfigure, RegScope, IModuleResolver } from '../modules';
+import { ModuleConfigure, RegFor, IModuleResolver } from '../modules';
 import { IContainer } from '@tsdi/core';
 
 /**
@@ -112,5 +112,5 @@ export class AnnoationActionContext extends IocActionContext {
      * @type {boolean}
      * @memberof ModuleConfig
      */
-    regScope?: RegScope;
+    regScope?: RegFor;
 }

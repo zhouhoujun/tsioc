@@ -1,7 +1,7 @@
 import { IocCompositeAction } from '@tsdi/ioc';
 import { AnnoationActionContext } from './AnnoationActionContext';
 import { ContainerPoolToken } from '../ContainerPoolToken';
-import { RegScope } from '../modules';
+import { RegFor } from '../modules';
 import { IContainer } from '@tsdi/core';
 import { RegModuleAction } from './RegModuleAction';
 import { RegModuleImportsAction } from './RegModuleImportsAction';
@@ -12,23 +12,23 @@ export class AnnoationRegisterScope extends IocCompositeAction<AnnoationActionCo
     execute(ctx: AnnoationActionContext, next?: () => void): void {
         let pools = this.container.get(ContainerPoolToken);
         if (!ctx.regScope) {
-            ctx.regScope = ctx.annoation.regScope || RegScope.child;
+            ctx.regScope = ctx.annoation.regFor || RegFor.child;
         }
 
         let container = ctx.getRaiseContainer() as IContainer;
-        if (ctx.regScope === RegScope.boot) {
+        if (ctx.regScope === RegFor.boot) {
             return super.execute(ctx, next);
         }
 
         let moduleContainers: IContainer[] = [];
         switch (ctx.regScope) {
-            case RegScope.root:
+            case RegFor.root:
                 moduleContainers.push(pools.getRoot());
                 break;
-            case RegScope.all:
+            case RegFor.all:
                 moduleContainers = pools.getContainers();
                 break;
-            case RegScope.child:
+            case RegFor.child:
                 moduleContainers.push(pools.create(container));
                 break;
         }

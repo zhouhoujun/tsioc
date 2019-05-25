@@ -1,5 +1,5 @@
 import { ITypeDecorator, ClassMetadata, createClassDecorator,  TypeMetadata, isNumber, ArgsIterator } from '@tsdi/ioc';
-import { RegScope } from '../modules/RegScope';
+import { RegFor } from '../modules/RegScope';
 
 
 /**
@@ -11,12 +11,12 @@ import { RegScope } from '../modules/RegScope';
  */
 export interface RegisterForMetadata extends TypeMetadata {
     /**
-     * the way to register the module. default as child module.
+     * set where this module to register. default as child module.
      *
      * @type {boolean}
      * @memberof ModuleConfig
      */
-    regScope?: RegScope;
+    regFor?: RegFor;
 }
 
 /**
@@ -34,9 +34,9 @@ export interface IRegisterForDecorator extends ITypeDecorator<RegisterForMetadat
      *
      * @RegisterFor
      *
-     * @param {RegScope} moduleScope register module scope.
+     * @param {RegFor} regFor register module scope.
      */
-    (moduleScope: RegScope): ClassDecorator;
+    (regFor: RegFor): ClassDecorator;
 
     /**
      * RegisterFor decorator, for class. use to define the the way to register the module. default as child module.
@@ -57,7 +57,7 @@ export const RegisterFor: IRegisterForDecorator = createClassDecorator<RegisterF
     args.next<RegisterForMetadata>({
         match: (arg) => isNumber(arg),
         setMetadata: (metadata, arg) => {
-            metadata.regScope = arg;
+            metadata.regFor = arg;
         }
     });
 }) as IRegisterForDecorator;

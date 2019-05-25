@@ -1,7 +1,7 @@
 import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction } from '@tsdi/ioc';
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { IContainer, ContainerToken, isContainer } from '@tsdi/core';
-import { BuildHandles, BuildHandleRegisterer, RegScope } from '../core';
+import { BuildHandles, BuildHandleRegisterer, RegFor } from '../core';
 import { IBootApplication } from '../IBootApplication';
 import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
 import { ResolveMoudleScope, IModuleResolveOption, BuildContext } from './resovers';
@@ -139,7 +139,7 @@ export class BuilderService extends IocCoreService {
         await this.container.load(...application.getBootDeps());
         return await this.execLifeScope(
             (ctx) => {
-                ctx.regScope = RegScope.boot;
+                ctx.regScope = RegFor.boot;
                 if (isFunction(application.onContextInit)) {
                     application.onContextInit(ctx);
                 }

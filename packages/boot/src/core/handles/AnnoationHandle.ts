@@ -1,6 +1,6 @@
 import { BuildHandle } from './BuildHandles';
 import { Abstract, ProviderMap, Type, ContainerFactory } from '@tsdi/ioc';
-import { ModuleConfigure, IModuleResolver, RegScope } from '../modules';
+import { ModuleConfigure, IModuleResolver, RegFor } from '../modules';
 import { AnnoationActionContext, AnnoationActionOption, createAnnoationContext } from '../injectors';
 
 
@@ -26,7 +26,7 @@ export interface AnnoationOption extends AnnoationActionOption {
      * @type {boolean}
      * @memberof ModuleConfig
      */
-    regScope?: RegScope;
+    regScope?: RegFor;
 
 }
 
@@ -73,7 +73,7 @@ export class AnnoationContext extends AnnoationActionContext {
      * @type {boolean}
      * @memberof ModuleConfig
      */
-    regScope?: RegScope;
+    regScope?: RegFor;
 }
 
 /**

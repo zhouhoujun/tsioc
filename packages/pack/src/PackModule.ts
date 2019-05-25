@@ -1,4 +1,4 @@
-import { DIModule, RegScope } from '@tsdi/boot';
+import { DIModule, RegFor } from '@tsdi/boot';
 import * as cores from './core';
 import * as tasks from './tasks';
 import * as transforms from './transforms';
@@ -7,7 +7,7 @@ import * as builds from './builds';
 import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
 
 @DIModule({
-    regScope: RegScope.boot,
+    regFor: RegFor.boot,
     imports: [
         ServerBootstrapModule,
         cores,

@@ -2,7 +2,7 @@ import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
 import { isNullOrUndefined, lang, isString, Singleton, Type, isClass, isArray, isBaseType } from '@tsdi/ioc';
 import { BindingExpression } from '../../bindings';
-import { IocBuildDecoratorRegisterer, SelectorManager, RegScope, BuildHandleRegisterer } from '../../core';
+import { IocBuildDecoratorRegisterer, SelectorManager, RegFor, BuildHandleRegisterer } from '../../core';
 import { BuilderService } from '../BuilderService';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
@@ -106,7 +106,7 @@ export class TranslateAtrrHandle extends ParseHandle {
                         module: selector,
                         scope: ctx.scope,
                         template: template,
-                        regScope: RegScope.boot,
+                        regScope: RegFor.boot,
                         providers: ctx.providers
                     });
                 }

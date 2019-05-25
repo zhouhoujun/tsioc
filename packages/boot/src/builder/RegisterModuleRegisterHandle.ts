@@ -1,11 +1,11 @@
-import { AnnoationHandle, ModuleRegister, RegScope } from '../core';
+import { AnnoationHandle, ModuleRegister, RegFor } from '../core';
 import { BootContext, ProcessRunRootToken } from '../BootContext';
 
 
 export class RegisterModuleRegisterHandle extends AnnoationHandle {
 
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.regScope === RegScope.child) {
+        if (ctx.regScope === RegFor.child) {
             let container = ctx.getRaiseContainer();
             if (ctx.annoation.baseURL) {
                 container.bindProvider(ProcessRunRootToken, ctx.annoation.baseURL);

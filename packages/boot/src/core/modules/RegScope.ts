@@ -1,10 +1,10 @@
 /**
- * register module scope.
+ * define register module scope.
  *
  * @export
  * @enum {number}
  */
-export enum RegScope {
+export enum RegFor {
     /**
      * current boot module
      */

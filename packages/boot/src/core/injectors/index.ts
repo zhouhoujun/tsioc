@@ -11,6 +11,8 @@ export * from './RegModuleExportsAction';
 export * from './DIModuleInjectorScope';
 export * from './RegisterDIModuleAction';
 
+export * from './RegForInjectorAction';
+
 
 export * from './ModuleResovler';
 export * from './DIModuleExports';

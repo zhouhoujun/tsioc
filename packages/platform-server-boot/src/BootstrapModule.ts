@@ -1,5 +1,5 @@
 import { IContainer } from '@tsdi/core';
-import { IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken, RegScope } from '@tsdi/boot';
+import { IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken, RegFor } from '@tsdi/boot';
 import * as path from 'path';
 import { ServerModule } from '@tsdi/platform-server';
 import { Injectable } from '@tsdi/ioc';
@@ -54,7 +54,7 @@ let processRoot = path.join(path.dirname(cwd), path.basename(cwd));
  * @class ServerBootstrapModule
  */
 @DIModule({
-    regScope: RegScope.boot,
+    regFor: RegFor.boot,
     imports: [
         ServerModule,
         ConfigureFileLoader

@@ -2,7 +2,7 @@ import { ParsersHandle } from './ParseHandle';
 import { TemplateContext } from './TemplateContext';
 import { isNullOrUndefined } from '@tsdi/ioc';
 import { BuilderService } from '../BuilderService';
-import { RegScope } from '../../core';
+import { RegFor } from '../../core';
 
 export class ParseSelectorHandle extends ParsersHandle {
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
@@ -19,7 +19,7 @@ export class ParseSelectorHandle extends ParsersHandle {
                     module: selector,
                     scope: ctx.scope,
                     template: ctx.template,
-                    regScope: RegScope.boot,
+                    regScope: RegFor.boot,
                     providers: ctx.providers
                 });
             }

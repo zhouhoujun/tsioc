@@ -143,7 +143,7 @@ function requireRegisters() {
 
 function runActivity(fileName, options) {
     const wf = requireCwd('@tsdi/activities');
-    const pk = requireCwd('@tsdi/pack');
+    // const pk = requireCwd('@tsdi/pack');
 
     let config;
     if (options.config && isString(options.config)) {
@@ -153,14 +153,11 @@ function runActivity(fileName, options) {
     if (isBoolean(options.debug)) {
         config.debug = options.debug;
     }
-    let wfi = wf.Workflow.create(config).use(pk.PackModule);
+
     let md = requireCwd(fileName);
     let activites = Object.values(md);
     if (activites.some(v => wf.isAcitvityClass(v))) {
-        wfi.sequence(...activites.filter(v => wf.isAcitvityClass(v)));
-    } else {
-        md.watch = options.watch === true;
-        wfi.bootstrap(md);
+        wf.Workflow.sequence(...activites.filter(v => wf.isAcitvityClass(v)));
     }
 }
 

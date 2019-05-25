@@ -16,9 +16,9 @@ import * as modules from './modules';
 
 import { RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction } from './resolves';
 import { RouteDesignRegisterAction, RouteRuntimRegisterAction, ComponentRegisterAction, BindingPropertyTypeAction, BindingParamTypeAction } from './registers';
-import { DIModuleInjectorScope, DIModuleExports, ModuleInjectLifeScope } from './injectors';
+import { DIModuleInjectorScope, DIModuleExports, ModuleInjectLifeScope, RegForInjectorAction } from './injectors';
 import { SelectorManager } from './SelectorManager';
-import { Input, Component } from './decorators';
+import { Input, Component, RegisterFor } from './decorators';
 import { BuildHandleRegisterer } from './handles';
 import { ComponentManager } from './ComponentManager';
 import { ModuleDecoratorService } from './ModuleDecoratorService';
@@ -63,10 +63,12 @@ export class BootModule {
 
         registerer
             .register(container, ModuleInjectLifeScope, true)
-            .register(container, DIModuleInjectorScope, true);
+            .register(container, DIModuleInjectorScope, true)
+            .register(container, RegForInjectorAction);
 
         container.get(InjectorDecoratorRegisterer)
-            .register(DIModule, DIModuleInjectorScope);
+            .register(DIModule, DIModuleInjectorScope)
+            .register(RegisterFor, RegForInjectorAction);
 
 
         // route service

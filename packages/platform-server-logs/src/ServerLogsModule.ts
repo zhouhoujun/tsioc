@@ -1,9 +1,9 @@
-import { DIModule, RegScope } from '@tsdi/boot';
+import { DIModule, RegFor } from '@tsdi/boot';
 import { ServerLogFormater } from './ServerLogFormater';
 import { Log4jsAdapter } from './Log4jsAdapter';
 
 @DIModule({
-    regScope: RegScope.boot,
+    regFor: RegFor.boot,
     imports: [
         ServerLogFormater,
         Log4jsAdapter

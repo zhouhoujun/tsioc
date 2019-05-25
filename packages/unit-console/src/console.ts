@@ -1,14 +1,14 @@
 import { ISuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
 import { Token, ObjectMap, lang } from '@tsdi/ioc';
 import chalk from 'chalk';
-import { DIModule, RegScope } from '@tsdi/boot';
+import { DIModule, RegFor } from '@tsdi/boot';
 import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerLogsModule } from '@tsdi/platform-server-logs';
 
 
 @DIModule({
-    regScope: RegScope.boot,
+    regFor: RegFor.boot,
     imports: [
         ServerModule,
         ServerBootstrapModule,
