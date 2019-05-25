@@ -6,6 +6,7 @@ import { IocBuildDecoratorRegisterer, SelectorManager, RegScope, BuildHandleRegi
 import { BuilderService } from '../BuilderService';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
+import { BaseTypeParserToken } from '../../services';
 
 
 export class BindingValueScope extends ParsersHandle {
@@ -125,16 +126,9 @@ export class AssignBindValueHandle extends ParseHandle {
 
         if (!isNullOrUndefined(ctx.bindExpression)) {
             let type = ctx.binding.type;
-            if (isBaseType(type) && isString(ctx.bindExpression)) {
-                if (type === Boolean) {
-                    ctx.value = new Boolean(ctx.bindExpression);
-                } else if (type === Number) {
-                    ctx.value = parseFloat(ctx.bindExpression);
-                } else if (type === Date) {
-                    ctx.value = new Date(ctx.bindExpression);
-                } else {
-                    ctx.value = ctx.bindExpression;
-                }
+            if (isBaseType(type)) {
+                ctx.value = this.container.get(BaseTypeParserToken)
+                    .parse(type, ctx.bindExpression);
             } else if (isClass(type)) {
                 let ttype = lang.getClass(ctx.bindExpression);
                 if (lang.isExtendsClass(ttype, type)) {
