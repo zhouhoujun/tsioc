@@ -3,8 +3,6 @@ import {
     isFunction, isClass, createClassDecorator
 } from '@tsdi/ioc';
 import { RunnableConfigure } from '../annotations';
-import { BootApplication } from '../BootApplication';
-import { BootContext } from '../BootContext';
 
 /**
  * bootstrap metadata.
@@ -79,10 +77,6 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
         if (isClass(metadata.type) && isFunction(metadata.type['main'])) {
             setTimeout(() => {
                 metadata.type['main'](metadata);
-            }, 100);
-        } else if (metadata.bootstrap) {
-            setTimeout(() => {
-                BootApplication.run(BootContext.parse({ module: metadata.type, annoation: metadata }));
             }, 100);
         } else {
             throw new Error(`boot config error. has not found static main and bootstrap in [class: ${metadata.type.name}]`);

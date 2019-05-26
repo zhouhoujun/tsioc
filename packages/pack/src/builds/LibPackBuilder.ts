@@ -262,7 +262,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                                     if (ctx.body.target) {
                                         json[ctx.body.target] = ['.', ctx.scope.getTargetFolder(ctx.body), ctx.body.main || 'index.js'].join('/');
                                     }
-                                    let outmain = ['.', ctx.scope.getModuleFolder(ctx.body), ctx.body.outputFile].join('/');
+                                    let outmain = ['.', ctx.scope.getModuleFolder(ctx.body), ctx.body.outputFile || 'index.js'].join('/');
                                     if (isArray(ctx.body.moduleName)) {
                                         ctx.body.moduleName.forEach(n => {
                                             json[n] = outmain;
@@ -423,7 +423,7 @@ export class LibPackBuilder implements AfterInit {
                 let sourcemap = await ctx.resolveExpression(this.sourcemap);
                 return [
                     // cssOptions ? postcss(ctx.resolveExpression(cssOptions)) : null,
-                    resolve(),
+                    resolve({ browser: ctx.body.format === 'umd' }),
                     commonjs(),
                     // ctx.body.annotation ? rollupClassAnnotations() : null,
                     sourcemap ? rollupSourcemaps(isBoolean(sourcemap) ? undefined : sourcemap) : null,

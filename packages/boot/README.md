@@ -134,30 +134,6 @@ BootApplication.run(ModuleB)
 
 ```
 
-* use @Bootstrap config to boot application
-```ts
-
-@Bootstrap({
-    baseURL: __dirname,
-    imports: [
-        KoaModule
-    ],
-    //use your builder
-    builder: MvcHostBuilder,
-    bootstrap: MvcServerToken,
-    //bootDeps:[s
-        //module
-    //],
-    //bootConfiguration: config
-    //debug: true
-})
-class MvcApi {
-    constructor() {
-        console.log('boot application');
-    }
-}
-
-```
 
 * use @Bootstrap main to boot application
 
