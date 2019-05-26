@@ -32,9 +32,9 @@
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme",
   "dependencies": {
     "@tsdi/ioc": "^5.0.0-beta4",
+    "@tsdi/core": "^5.0.0-beta4",
     "@tsdi/aop": "^5.0.0-beta4",
     "@tsdi/boot": "^5.0.0-beta4",
-    "@tsdi/core": "^5.0.0-beta4",
     "@tsdi/logs": "^5.0.0-beta4",
     "reflect-metadata": "^0.1.12",
     "gulp-sourcemaps": "^2.1.1",
