@@ -8,8 +8,6 @@ export * from './RegModuleProvidersAction';
 export * from './RegModuleResolverAction';
 export * from './RegModuleExportsAction';
 
-export * from './DIModuleInjectorScope';
-export * from './RegisterDIModuleAction';
 
 export * from './RegForInjectorAction';
 

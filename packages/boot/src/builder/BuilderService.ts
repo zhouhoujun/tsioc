@@ -8,6 +8,7 @@ import { ResolveMoudleScope, IModuleResolveOption, BuildContext } from './resove
 import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
 import { BootLifeScope } from './BootLifeScope';
 import { IRunnable } from '../runnable';
+import { IBuilderService, BuilderServiceToken } from './IBuilderService';
 
 
 
@@ -18,9 +19,9 @@ import { IRunnable } from '../runnable';
  * @class BuilderService
  * @extends {IocCoreService}
  */
-@Singleton()
+@Singleton(BuilderServiceToken)
 @Autorun('setup')
-export class BuilderService extends IocCoreService {
+export class BuilderService extends IocCoreService implements IBuilderService {
 
     @Inject(ContainerToken)
     protected container: IContainer;

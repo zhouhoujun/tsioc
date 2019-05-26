@@ -1,7 +1,7 @@
 import { ParsersHandle } from './ParseHandle';
 import { TemplateContext } from './TemplateContext';
 import { isNullOrUndefined } from '@tsdi/ioc';
-import { BuilderService } from '../BuilderService';
+import { BuilderServiceToken } from '../IBuilderService';
 import { RegFor } from '../../core';
 
 export class ParseSelectorHandle extends ParsersHandle {
@@ -10,12 +10,12 @@ export class ParseSelectorHandle extends ParsersHandle {
             let selector = ctx.selector;
             let container = ctx.getRaiseContainer();
             if (container.has(selector)) {
-                ctx.value = await this.container.get(BuilderService).resolve(selector, {
+                ctx.value = await this.container.get(BuilderServiceToken).resolve(selector, {
                     scope: ctx.scope,
                     template: ctx.template
                 }, ...ctx.providers);
             } else {
-                ctx.value = await this.container.get(BuilderService).createBoot({
+                ctx.value = await this.container.get(BuilderServiceToken).createBoot({
                     module: selector,
                     scope: ctx.scope,
                     template: ctx.template,

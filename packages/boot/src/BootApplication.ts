@@ -2,7 +2,7 @@ import { BootContext, BootOption, BootContextToken } from './BootContext';
 import { Type, LoadType, isArray, isString, InjectReference, isClass, MetadataService, getOwnTypeMetadata } from '@tsdi/ioc';
 import { ContainerPool } from './core';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
-import { BuilderService } from './builder';
+import { BuilderServiceToken } from './builder';
 import { IBootApplication } from './IBootApplication';
 import { bootSetup } from './setup';
 import { RunnableConfigure } from './annotations';
@@ -122,7 +122,7 @@ export class BootApplication implements IBootApplication, ContextInit {
      * @memberof BootApplication
      */
     run(...args: string[]): Promise<BootContext> {
-        return this.container.resolve(BuilderService).boot(this, ...args);
+        return this.container.resolve(BuilderServiceToken).boot(this, ...args);
     }
 
     getPools(): ContainerPool {

@@ -1,11 +1,11 @@
-import { LifeScope, Type, Inject, ContainerFactoryToken } from '@tsdi/ioc';
+import { isClass, LifeScope, Type, Inject, ContainerFactoryToken, hasOwnClassMetadata } from '@tsdi/ioc';
 import { ModuleResovler } from './ModuleResovler';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { AnnoationActionContext } from './AnnoationActionContext';
-import { DIModuleInjectorScope } from './DIModuleInjectorScope';
 import { CheckAnnoationAction } from './CheckAnnoationAction';
 import { AnnoationRegisterScope } from './AnnoationRegisterScope';
 import { RegModuleExportsAction } from './RegModuleExportsAction';
+import { InjectorAction, InjectorActionContext, InjectorRegisterScope } from '@tsdi/core';
 
 
 export class ModuleInjectLifeScope extends LifeScope<AnnoationActionContext> {
@@ -31,5 +31,40 @@ export class ModuleInjectLifeScope extends LifeScope<AnnoationActionContext> {
         }, this.container.get(ContainerFactoryToken));
         this.execute(ctx);
         return ctx.moduleResolver as ModuleResovler<T>;
+    }
+}
+
+
+export class DIModuleInjectorScope extends InjectorRegisterScope {
+
+    execute(ctx: InjectorActionContext, next?: () => void): void {
+        let types = this.getTypes(ctx);
+        this.registerTypes(ctx, types);
+        next && next();
+    }
+
+    protected getTypes(ctx: InjectorActionContext): Type<any>[] {
+        return ctx.types.filter(ty => hasOwnClassMetadata(ctx.currDecoractor, ty));
+    }
+
+    protected setNextRegTypes(ctx: InjectorActionContext, registered: Type<any>[]) {
+        ctx.types = [];
+    }
+
+    setup() {
+        this.use(RegisterDIModuleAction);
+    }
+}
+
+export class RegisterDIModuleAction extends InjectorAction {
+    execute(ctx: InjectorActionContext, next: () => void): void {
+        if (isClass(ctx.currType) && ctx.currDecoractor) {
+            this.container
+                .getActionRegisterer()
+                .get(ModuleInjectLifeScope)
+                .register(ctx.currType, ctx.currDecoractor);
+            ctx.registered.push(ctx.currType);
+        }
+        next();
     }
 }

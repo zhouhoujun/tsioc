@@ -26,4 +26,6 @@ export * from './BootLifeScope';
 
 export * from './parses';
 export * from './resovers';
+
+export * from './IBuilderService';
 export * from './BuilderService';
