@@ -1,7 +1,7 @@
 import { ActivityContext, Activity, CtxExpression } from '@tsdi/activities';
 import { Injectable, Refs } from '@tsdi/ioc';
 import { BootContext } from '@tsdi/boot';
-import { PlatformService } from './PlatformService';
+import { IPlatformService, PlatformServiceToken } from './IPlatformService';
 
 
 
@@ -20,10 +20,10 @@ export type NodeExpression<T> = CtxExpression<T, NodeActivityContext>;
 @Refs('@Task', BootContext)
 export class NodeActivityContext extends ActivityContext {
 
-    private _platform: PlatformService;
-    get platform(): PlatformService {
+    private _platform: IPlatformService;
+    get platform(): IPlatformService {
         if (!this._platform) {
-            this._platform = this.getRaiseContainer().resolve(PlatformService);
+            this._platform = this.getRaiseContainer().resolve(PlatformServiceToken);
         }
         return this._platform;
     }

@@ -12,39 +12,15 @@ import { ProcessRunRootToken, BootContextToken } from '@tsdi/boot';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { CompilerOptions } from 'typescript';
 import { NodeActivityContext } from './NodeActivityContext';
+import { PlatformServiceToken, CmdOptions } from './IPlatformService';
 const globby = require('globby');
 const minimist = require('minimist');
 const del = require('del');
 
 
 
-/**
- * cmd options.
- *
- * @export
- * @interface CmdOptions
- */
-export interface CmdOptions {
-    /**
-     * force execute command.
-     *
-     * @type {boolean}
-     * @memberof CmdOptions
-     */
-    force?: boolean;
-    /**
-     * silent run command.
-     *
-     * @type {boolean}
-     * @memberof CmdOptions
-     */
-    silent?: boolean;
-}
 
-
-
-
-@Injectable()
+@Injectable(PlatformServiceToken)
 export class PlatformService {
 
     constructor(@Inject(BootContextToken) private ctx: NodeActivityContext) {
