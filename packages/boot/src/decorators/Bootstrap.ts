@@ -78,8 +78,6 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(
             setTimeout(() => {
                 metadata.type['main'](metadata);
             }, 100);
-        } else {
-            throw new Error(`boot config error. has not found static main and bootstrap in [class: ${metadata.type.name}]`);
         }
         return metadata;
     }) as IBootstrapDecorator<T>;
