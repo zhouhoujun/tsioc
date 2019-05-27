@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/unit",
-  "version": "5.0.0-beta6",
+  "version": "5.0.0-beta7",
   "description": "unit testing framework, base on AOP, Ioc container",
   "scripts": {
     "postinstall": "npm prune",
@@ -36,11 +36,11 @@
   "dependencies": {
     "@types/expect": "^1.20.3",
     "@types/mocha": "^5.2.5",
-    "@tsdi/ioc": "^5.0.0-beta6",
-    "@tsdi/core": "^5.0.0-beta6",
-    "@tsdi/aop": "^5.0.0-beta6",
-    "@tsdi/boot": "^5.0.0-beta6",
-    "@tsdi/logs": "^5.0.0-beta6",
+    "@tsdi/ioc": "^5.0.0-beta7",
+    "@tsdi/core": "^5.0.0-beta7",
+    "@tsdi/aop": "^5.0.0-beta7",
+    "@tsdi/boot": "^5.0.0-beta7",
+    "@tsdi/logs": "^5.0.0-beta7",
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.2",
     "assert": "^1.4.1",
