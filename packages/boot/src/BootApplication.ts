@@ -153,7 +153,7 @@ export class BootApplication implements IBootApplication, ContextInit {
     }
 
     getBootDeps(): LoadType[] {
-        return [...this.deps, this.getTargetDeps(this.target)];
+        return [...this.deps, ...this.getTargetDeps(this.target)];
     }
 
 
