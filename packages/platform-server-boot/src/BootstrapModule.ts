@@ -43,10 +43,6 @@ export class ConfigureFileLoader implements IConfigureLoader<RunnableConfigure> 
 }
 
 
-
-let cwd = process.cwd();
-let processRoot = path.join(path.dirname(cwd), path.basename(cwd));
-
 /**
  * server boot module
  *
@@ -60,7 +56,7 @@ let processRoot = path.join(path.dirname(cwd), path.basename(cwd));
         ConfigureFileLoader
     ],
     providers: [
-        { provide: ProcessRunRootToken, useValue: processRoot }
+        { provide: ProcessRunRootToken, useValue: runMainPath() }
     ]
 })
 export class ServerBootstrapModule {

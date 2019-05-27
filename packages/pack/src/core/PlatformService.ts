@@ -1,6 +1,6 @@
 import { Src } from '@tsdi/activities';
 import { Injectable, ObjectMap, Express2, isArray, isString, lang, Inject } from '@tsdi/ioc';
-import { toAbsolutePath } from '@tsdi/platform-server';
+import { toAbsolutePath, runMainPath } from '@tsdi/platform-server';
 import { existsSync, readdirSync, lstatSync } from 'fs';
 import { join, dirname, normalize, relative, basename, extname } from 'path';
 import {
@@ -209,7 +209,7 @@ export class PlatformService {
 
     getRootPath(): string {
         let root = this.ctx.getCurrBaseURL()
-        return root || this.container.get(ProcessRunRootToken) || process.cwd();
+        return root || this.container.get(ProcessRunRootToken) || runMainPath();
     }
 
     toRootSrc(src: Src): Src {

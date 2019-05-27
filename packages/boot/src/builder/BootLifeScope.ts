@@ -7,6 +7,7 @@ import { ModuleBuildScope } from './ModuleBuildScope';
 import { BootConfigureRegisterHandle } from './BootConfigureRegisterHandle';
 import { ResolveRunnableScope } from './ResolveRunnableScope';
 import { RunBootHandle } from './RunBootHandle';
+import { ModuleConfigureRegisterHandle } from './ModuleConfigureRegisterHandle';
 
 
 export class BootLifeScope extends BuildHandles<AnnoationContext> {
@@ -16,8 +17,9 @@ export class BootLifeScope extends BuildHandles<AnnoationContext> {
             .use(BootDepsHandle)
             .use(BootConfigureLoadHandle)
             .use(RegisterModuleScope, true)
-            .use(ModuleBuildScope, true)
             .use(BootConfigureRegisterHandle)
+            .use(ModuleBuildScope, true)
+            .use(ModuleConfigureRegisterHandle)
             .use(ResolveRunnableScope, true)
             .use(RunBootHandle);
     }
