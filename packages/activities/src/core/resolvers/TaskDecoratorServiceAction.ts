@@ -15,7 +15,7 @@ export class TaskDecoratorServiceAction extends IocResolveServiceAction {
         if (!ctx.instance && lang.isExtendsClass(stype, BootContext)) {
             let metas = getOwnTypeMetadata<ActivityMetadata>(ctx.currDecorator, ctx.currTargetType);
             metas.some(m => {
-                if (m && lang.isExtendsClass(m.contextType, stype)) {
+                if (m && m.contextType && lang.isExtendsClass(m.contextType, stype)) {
                     ctx.instance = this.container.get(m.contextType, ...ctx.providers);
                 }
                 return !!ctx.instance;
