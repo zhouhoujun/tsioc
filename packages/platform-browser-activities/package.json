@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-browser-activities",
-  "version": "5.0.0-beta5",
+  "version": "5.0.0-beta6",
   "description": "type task framework, base on AOP, Ioc container, via @tsdi",
   "scripts": {
     "postinstall": "npm prune",
@@ -33,13 +33,13 @@
   "dependencies": {
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3",
-    "@tsdi/ioc": "^5.0.0-beta5",
-    "@tsdi/core": "^5.0.0-beta5",
-    "@tsdi/aop": "^5.0.0-beta5",
-    "@tsdi/logs": "^5.0.0-beta5",
-    "@tsdi/boot": "^5.0.0-beta5",
-    "@tsdi/activities": "^5.0.0-beta5",
-    "@tsdi/platform-browser": "^5.0.0-beta5"
+    "@tsdi/ioc": "^5.0.0-beta6",
+    "@tsdi/core": "^5.0.0-beta6",
+    "@tsdi/aop": "^5.0.0-beta6",
+    "@tsdi/logs": "^5.0.0-beta6",
+    "@tsdi/boot": "^5.0.0-beta6",
+    "@tsdi/activities": "^5.0.0-beta6",
+    "@tsdi/platform-browser": "^5.0.0-beta6"
   },
   "directories": {
     "lib": "lib",

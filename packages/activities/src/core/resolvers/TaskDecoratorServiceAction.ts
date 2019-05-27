@@ -9,21 +9,24 @@ export class TaskDecoratorServiceAction extends IocResolveServiceAction {
         if (!isClassType(ctx.currTargetType)) {
             return next();
         }
-        let metas = getOwnTypeMetadata<ActivityMetadata>(ctx.currDecorator, ctx.currTargetType);
+
         let stype = this.container.getTokenProvider(ctx.currToken || ctx.token);
-        metas.some(m => {
-            if (m && lang.isExtendsClass(m.contextType, stype)) {
-                ctx.instance = this.container.get(m.contextType, ...ctx.providers);
-            }
-            return !!ctx.instance;
-        });
 
         if (!ctx.instance && lang.isExtendsClass(stype, BootContext)) {
-            let ref = new InjectReference(BootContext, ctx.currDecorator);
-            if (this.container.has(ref)) {
-                this.resolve(ctx, ref);
-            } else {
-                this.resolve(ctx, ActivityContext);
+            let metas = getOwnTypeMetadata<ActivityMetadata>(ctx.currDecorator, ctx.currTargetType);
+            metas.some(m => {
+                if (m && lang.isExtendsClass(m.contextType, stype)) {
+                    ctx.instance = this.container.get(m.contextType, ...ctx.providers);
+                }
+                return !!ctx.instance;
+            });
+            if (!ctx.instance) {
+                let ref = new InjectReference(BootContext, ctx.currDecorator);
+                if (this.container.has(ref)) {
+                    this.resolve(ctx, ref);
+                } else {
+                    this.resolve(ctx, ActivityContext);
+                }
             }
         }
         if (!ctx.instance) {

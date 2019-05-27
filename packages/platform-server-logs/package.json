@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-server-logs",
-  "version": "5.0.0-beta5",
+  "version": "5.0.0-beta6",
   "description": "type task framework, base on AOP, Ioc container, via @tsdi",
   "scripts": {
     "postinstall": "npm prune",
@@ -31,12 +31,12 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-server-logs#readme",
   "dependencies": {
-    "@tsdi/ioc": "^5.0.0-beta5",
-    "@tsdi/core": "^5.0.0-beta5",
-    "@tsdi/aop": "^5.0.0-beta5",
-    "@tsdi/logs": "^5.0.0-beta5",
-    "@tsdi/boot": "^5.0.0-beta5",
-    "@tsdi/platform-server": "^5.0.0-beta5",
+    "@tsdi/ioc": "^5.0.0-beta6",
+    "@tsdi/core": "^5.0.0-beta6",
+    "@tsdi/aop": "^5.0.0-beta6",
+    "@tsdi/logs": "^5.0.0-beta6",
+    "@tsdi/boot": "^5.0.0-beta6",
+    "@tsdi/platform-server": "^5.0.0-beta6",
     "bluebird": "^3.5.3",
     "chalk": "^2.4.2",
     "globby": "^9.0.0",
