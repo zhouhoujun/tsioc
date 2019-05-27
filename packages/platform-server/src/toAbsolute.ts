@@ -17,6 +17,19 @@ export function toAbsolutePath(root: string, pathstr: string): string {
 }
 
 /**
+ * get run main path.
+ *
+ * @export
+ * @returns {string}
+ */
+export function runMainPath(): string {
+    if (process.mainModule && process.mainModule.filename) {
+        return path.dirname(process.mainModule.filename);
+    }
+    return process.cwd();
+}
+
+/**
  * convert src to absolute path src.
  *
  * @export

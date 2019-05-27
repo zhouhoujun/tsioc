@@ -1,5 +1,5 @@
 import { IModuleLoader, ModuleLoader } from '@tsdi/core';
-import { toAbsoluteSrc } from './toAbsolute';
+import { toAbsoluteSrc, runMainPath } from './toAbsolute';
 import { Modules } from '@tsdi/ioc';
 
 declare let require: any;
@@ -21,7 +21,7 @@ export class NodeModuleLoader extends ModuleLoader implements IModuleLoader {
 
     protected loadFile(files: string | string[], basePath?: string): Promise<Modules[]> {
         let globby = require('globby');
-        basePath = basePath || process.cwd();
+        basePath = basePath || runMainPath();
         return globby(toAbsoluteSrc(basePath, files)).then((mflies: string[]) => {
             return mflies.map(fp => {
                 return require(fp);

@@ -1,7 +1,7 @@
 import { IContainer } from '@tsdi/core';
 import { IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken, RegFor } from '@tsdi/boot';
 import * as path from 'path';
-import { ServerModule } from '@tsdi/platform-server';
+import { ServerModule, runMainPath } from '@tsdi/platform-server';
 import { Injectable } from '@tsdi/ioc';
 import { RunnableConfigure } from '@tsdi/boot';
 
@@ -10,7 +10,7 @@ declare let require: any;
 @Injectable(ConfigureLoaderToken)
 export class ConfigureFileLoader implements IConfigureLoader<RunnableConfigure> {
     constructor(private baseURL: string, private container: IContainer) {
-
+        this.baseURL = this.baseURL || runMainPath();
     }
     async load(uri?: string): Promise<RunnableConfigure> {
         const fs = require('fs');
