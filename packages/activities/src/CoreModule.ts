@@ -17,11 +17,10 @@ import { TaskDecorSelectorHandle, BindingTaskComponentHandle, ValidTaskComponent
  */
 @IocExt('setup')
 export class ActivityCoreModule {
-    constructor(@Inject(ContainerToken) private container: IContainer) {
+    constructor() {
     }
 
-    setup() {
-        let container = this.container;
+    setup(@Inject(ContainerToken) container: IContainer) {
 
         container.getActionRegisterer()
             .register(container, TaskDecoratorServiceAction)

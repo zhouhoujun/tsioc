@@ -169,7 +169,7 @@ export function getClassDecorators(target: Type<any> | AbstractType<any>): strin
             if (!/^@/.test(d)) {
                 return false;
             }
-            return !/__\w+$/.test(d);
+            return !/__(method|props|params)$/.test(d);
         });
 }
 

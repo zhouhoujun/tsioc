@@ -8,3 +8,4 @@ export * from './builder';
 export * from './IBootApplication';
 export * from './BootApplication';
 export * from './BootContext';
+export * from './components';
