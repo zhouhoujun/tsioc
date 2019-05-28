@@ -1,5 +1,7 @@
 import { isString } from '@tsdi/ioc';
 import * as path from 'path';
+import { execFileSync } from 'child_process';
+import { existsSync } from 'fs';
 
 declare let require: any;
 
@@ -36,10 +38,17 @@ export function toAbsolutePath(root: string, pathstr: string): string {
  * @returns {string}
  */
 export function runMainPath(): string {
-    if (process.mainModule && process.mainModule.filename) {
+    let cwd = process.cwd();
+    if (process.mainModule && process.mainModule.filename && process.mainModule.filename.startsWith(cwd)) {
         return path.dirname(process.mainModule.filename);
     }
-    return process.cwd();
+    if (process.argv.length > 2) {
+        let mainfile = process.argv.slice(2).find(arg => /(\w+\.ts|\.js)$/.test(arg) && existsSync(path.join(cwd, arg)));
+        if (mainfile) {
+            return path.dirname(path.join(cwd, mainfile));
+        }
+    }
+    return cwd;
 }
 
 /**
