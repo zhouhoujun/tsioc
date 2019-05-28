@@ -102,7 +102,6 @@ export class BootModule {
         registerer.get(RuntimeAnnoationScope)
             .use(RouteRuntimRegisterAction);
 
-
         container.register(SelectorManager)
             .register(ComponentManager);
         registerer
@@ -113,7 +112,6 @@ export class BootModule {
         container.get(DesignDecoratorRegisterer)
             .register(Component, DecoratorScopes.Class, ComponentRegisterAction)
             .register(Input, DecoratorScopes.Property, BindingPropertyTypeAction);
-        // .register(Input, DecoratorScopes.Parameter, BindInputParamTypeAction);
 
         container.get(RuntimeDecoratorRegisterer)
             .register(Input, DecoratorScopes.Parameter, BindingParamTypeAction);

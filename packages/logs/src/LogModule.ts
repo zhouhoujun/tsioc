@@ -16,7 +16,7 @@ import { LogFormater } from './LogFormater';
 @IocExt('setup')
 export class LogModule {
 
-    constructor(@Inject(ContainerToken) private container: IContainer) {
+    constructor() {
 
     }
 
@@ -25,8 +25,7 @@ export class LogModule {
      *
      * @memberof AopModule
      */
-    setup() {
-        let container = this.container;
+    setup(@Inject(ContainerToken) container: IContainer) {
         if (!container.has(AopModule)) {
             container.register(AopModule);
         }

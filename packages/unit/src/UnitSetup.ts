@@ -13,7 +13,7 @@ import { SuiteDecoratorRegisterer } from './registers';
 @IocExt('setup')
 export class UnitSetup {
 
-    constructor(@Inject(ContainerToken) private container: IContainer) {
+    constructor() {
 
     }
 
@@ -22,13 +22,13 @@ export class UnitSetup {
      *
      * @memberof AopModule
      */
-    setup() {
-        this.container.get(RuntimeDecoratorRegisterer)
+    setup(@Inject(ContainerToken) container: IContainer) {
+        container.get(RuntimeDecoratorRegisterer)
             .register(Suite, DecoratorScopes.Class, RegisterSingletionAction);
 
-        this.container.getActionRegisterer()
-            .register(this.container, SuiteDecoratorRegisterer);
+        container.getActionRegisterer()
+            .register(container, SuiteDecoratorRegisterer);
 
-        this.container.get(ServiceDecoratorRegisterer).register(Suite, SuiteDecoratorRegisterer);
+        container.get(ServiceDecoratorRegisterer).register(Suite, SuiteDecoratorRegisterer);
     }
 }

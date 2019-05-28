@@ -13,7 +13,7 @@ import { Inject } from '@tsdi/ioc';
 @IocExt('setup')
 export class BrowserModule {
 
-    constructor(@Inject(ContainerToken) private container: IContainer) {
+    constructor() {
 
     }
 
@@ -22,8 +22,7 @@ export class BrowserModule {
      *
      * @memberof AopModule
      */
-    setup() {
-        let container = this.container;
+    setup(@Inject(ContainerToken) container: IContainer) {
         container.bindProvider(ModuleLoader,  new BrowserModuleLoader());
     }
 }

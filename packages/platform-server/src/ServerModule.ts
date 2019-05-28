@@ -11,7 +11,7 @@ import { Inject } from '@tsdi/ioc';
 @IocExt('setup')
 export class ServerModule {
 
-    constructor(@Inject(ContainerToken) private container: IContainer) {
+    constructor() {
 
     }
 
@@ -20,8 +20,7 @@ export class ServerModule {
      *
      * @memberof AopModule
      */
-    setup() {
-        let container = this.container;
+    setup(@Inject(ContainerToken) container: IContainer) {
         container.bindProvider(ModuleLoader, new NodeModuleLoader());
     }
 }
