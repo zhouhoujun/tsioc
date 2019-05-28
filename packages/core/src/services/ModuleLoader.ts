@@ -1,6 +1,6 @@
 import {
     LoadType, Modules, Type, Token, IocCoreService, isString,
-    isObject, PathModules, isArray, isClass, Singleton, InjectReference
+    isObject, PathModules, isArray, isClass, Singleton, InjectReference, lang
 } from '@tsdi/ioc';
 
 
@@ -19,6 +19,15 @@ export interface IModuleLoader {
      * @memberof IModuleLoader
      */
     load(...modules: LoadType[]): Promise<Modules[]>;
+
+    /**
+     * dynamic require file.
+     *
+     * @param {string} fileName
+     * @returns {Promise<any>}
+     * @memberof IModuleLoader
+     */
+    require(fileName: string): Promise<any>;
 
     /**
      * load all class types in modules
@@ -114,6 +123,11 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
     getTypes(modules: Modules): Type<any>[] {
         return this.getContentTypes(modules);
     }
+
+    async require(fileName: string): Promise<any> {
+        return lang.first(await this.loadFile(fileName));
+    }
+
 
     protected loadFile(files: string | string[], basePath?: string): Promise<Modules[]> {
         let loader = this.getLoader();

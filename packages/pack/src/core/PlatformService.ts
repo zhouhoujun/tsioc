@@ -247,7 +247,7 @@ export class PlatformService {
     getPackage(): any {
         let filename = this.toRootPath(this.packageFile);
         if (!this._package) {
-            this._package = require(filename);
+            this._package = this.container.getLoader().load(filename);
         }
         return this._package;
     }
