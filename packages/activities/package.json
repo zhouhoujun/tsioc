@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/activities",
-  "version": "5.0.0-beta8",
+  "version": "5.0.0-beta9",
   "description": "type task framework, base on AOP, Ioc container, via @tsdi",
   "scripts": {
     "postinstall": "npm prune",
@@ -31,11 +31,11 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme",
   "dependencies": {
-    "@tsdi/ioc": "^5.0.0-beta8",
-    "@tsdi/core": "^5.0.0-beta8",
-    "@tsdi/aop": "^5.0.0-beta8",
-    "@tsdi/boot": "^5.0.0-beta8",
-    "@tsdi/logs": "^5.0.0-beta8",
+    "@tsdi/ioc": "^5.0.0-beta9",
+    "@tsdi/core": "^5.0.0-beta9",
+    "@tsdi/aop": "^5.0.0-beta9",
+    "@tsdi/boot": "^5.0.0-beta9",
+    "@tsdi/logs": "^5.0.0-beta9",
     "reflect-metadata": "^0.1.12",
     "gulp-sourcemaps": "^2.1.1",
     "gulp-typescript": "^5.0.0",
