@@ -17,36 +17,36 @@ npm install -g '@tsdi/cli'
 ```
 
 ```
-  pk --help  //show help
-  pk -V  //show version of cli.
+  tsdi --help  //show help
+  tsdi -V  //show version of cli.
 ```
 
 ### init project
 ```
 //init project with tsioc, dev: save in devDependencies or dependencies.
-pk init [--browser] [--version tsioc_version] [--dev]
+tsdi init [--browser] [--version tsioc_version] [--dev]
 
 //init project with bootstrap, dev: save in devDependencies or dependencies.
-pk init boot [--browser] [--version tsioc_version] [--dev] 
+tsdi init boot [--browser] [--version tsioc_version] [--dev] 
 
 //init project with workflow, dev: save in devDependencies or dependencies.
-pk init activity [--browser] [--version tsioc_version] [--dev]
+tsdi init activity [--browser] [--version tsioc_version] [--dev]
 
 //init project with build pack, dev: save in devDependencies or dependencies.
-pk init pack [--browser] [--version tsioc_version] [--dev]
+tsdi init pack [--browser] [--version tsioc_version] [--dev]
 
 ```
 
 ### build pack
 ```
-pk run [--activity] [taskfile.ts] [--your_env_arg=val]...
-pk build [taskfile config]  [--your_env_arg=val]...
+tsdi run [--activity] [taskfile.ts] [--your_env_arg=val]...
+tsdi build [taskfile config]  [--your_env_arg=val]...
 ```
 
 ### Unit test
 
 ```shell
-pk test [test/**/*.(ts|js)]
+tsdi test [test/**/*.(ts|js)]
 ```
 
 
