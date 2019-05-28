@@ -1,6 +1,19 @@
 import { isString } from '@tsdi/ioc';
 import * as path from 'path';
 
+declare let require: any;
+
+/**
+ * sync require.
+ *
+ * @export
+ * @param {string} filename
+ * @returns {*}
+ */
+export function syncRequire(filename: string): any {
+    return require(filename);
+}
+
 /**
  * convert path to absolute path.
  *

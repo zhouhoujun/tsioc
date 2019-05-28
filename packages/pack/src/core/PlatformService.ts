@@ -1,6 +1,6 @@
 import { Src } from '@tsdi/activities';
 import { Injectable, ObjectMap, Express2, isArray, isString, lang, Inject } from '@tsdi/ioc';
-import { toAbsolutePath, runMainPath } from '@tsdi/platform-server';
+import { toAbsolutePath, runMainPath, syncRequire } from '@tsdi/platform-server';
 import { existsSync, readdirSync, lstatSync } from 'fs';
 import { join, dirname, normalize, relative, basename, extname } from 'path';
 import {
@@ -16,7 +16,6 @@ import { PlatformServiceToken, CmdOptions } from './IPlatformService';
 const globby = require('globby');
 const minimist = require('minimist');
 const del = require('del');
-
 
 
 
@@ -64,7 +63,7 @@ export class PlatformService {
 
     getCompilerOptions(tsconfig: string): CompilerOptions {
         let filename = this.toRootPath(tsconfig);
-        let cfg = require(filename) || {};
+        let cfg = syncRequire(filename) || {};
         return cfg.compilerOptions || {};
 
         // let cfg = readConfigFile(this.toRootPath(tsconfig), sys.readFile);
@@ -245,9 +244,9 @@ export class PlatformService {
      * @memberof NodeContext
      */
     getPackage(): any {
-        let filename = this.toRootPath(this.packageFile);
         if (!this._package) {
-            this._package = this.container.getLoader().load(filename);
+            let filename = this.toRootPath(this.packageFile);
+            this._package = syncRequire(filename);
         }
         return this._package;
     }

@@ -9,7 +9,8 @@ import { NodeActivityContext, NodeExpression } from '../core';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
-const ts = require('rollup-plugin-typescript');
+// const buildin = require('rollup-plugin-node-builtins');
+// const ts = require('rollup-plugin-typescript');
 // import { rollupClassAnnotations } from '@tsdi/annotations';
 import { isNullOrUndefined, isBoolean, isArray, lang } from '@tsdi/ioc';
 import { join } from 'path';
@@ -394,6 +395,7 @@ export class LibPackBuilder implements AfterInit {
             let func = (ctx: NodeActivityContext) => {
                 let external = [
                     'process', 'util', 'path', 'fs', 'events', 'stream', 'child_process', 'os',
+                    'https', 'http',
                     ...Object.keys(ctx.platform.getPackage().dependencies || {})];
                 if (external.indexOf('rxjs')) {
                     external.push('rxjs/operators')
@@ -425,6 +427,7 @@ export class LibPackBuilder implements AfterInit {
                     // cssOptions ? postcss(ctx.resolveExpression(cssOptions)) : null,
                     resolve({ browser: ctx.body.format === 'umd' }),
                     commonjs(),
+                    // ctx.body.format === 'cjs' ? buildin() : null,
                     // ctx.body.annotation ? rollupClassAnnotations() : null,
                     sourcemap ? rollupSourcemaps(isBoolean(sourcemap) ? undefined : sourcemap) : null,
                     // ctx.body.tsconfig ? ts(isString(ctx.body.tsconfig) ? ctx.platform.getCompilerOptions(ctx.body.tsconfig) : ctx.body.tsconfig) : null

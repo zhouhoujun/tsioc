@@ -1,11 +1,10 @@
 import { IContainer } from '@tsdi/core';
 import { IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken, RegFor } from '@tsdi/boot';
 import * as path from 'path';
-import { ServerModule, runMainPath } from '@tsdi/platform-server';
+import { ServerModule, runMainPath, syncRequire } from '@tsdi/platform-server';
 import { Injectable } from '@tsdi/ioc';
 import { RunnableConfigure } from '@tsdi/boot';
 
-declare let require: any;
 
 @Injectable(ConfigureLoaderToken)
 export class ConfigureFileLoader implements IConfigureLoader<RunnableConfigure> {
@@ -13,12 +12,12 @@ export class ConfigureFileLoader implements IConfigureLoader<RunnableConfigure> 
         this.baseURL = this.baseURL || runMainPath();
     }
     async load(uri?: string): Promise<RunnableConfigure> {
-        const fs = require('fs');
+        const fs = syncRequire('fs');
         if (uri) {
             if (fs.existsSync(uri)) {
-                return require(uri) as RunnableConfigure;
+                return syncRequire(uri) as RunnableConfigure;
             } else if (fs.existsSync(path.join(this.baseURL, uri))) {
-                return require(path.join(this.baseURL, uri)) as RunnableConfigure;
+                return syncRequire(path.join(this.baseURL, uri)) as RunnableConfigure;
             } else {
                 console.log(`config file: ${uri} not exists.`)
                 return null;
@@ -31,7 +30,7 @@ export class ConfigureFileLoader implements IConfigureLoader<RunnableConfigure> 
                     return false;
                 }
                 if (fs.existsSync(cfgpath + ext)) {
-                    cfgmodeles = require(cfgpath + ext);
+                    cfgmodeles = syncRequire(cfgpath + ext);
                     return false;
                 }
                 return true;
