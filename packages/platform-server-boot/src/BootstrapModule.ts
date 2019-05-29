@@ -25,15 +25,11 @@ export class ConfigureFileLoader implements IConfigureLoader<RunnableConfigure> 
         } else {
             let cfgmodeles: RunnableConfigure;
             let cfgpath = path.join(this.baseURL, './config');
-            ['.js', '.ts', '.json'].forEach(ext => {
-                if (cfgmodeles) {
-                    return false;
-                }
+            ['.js', '.ts', '.json'].some(ext => {
                 if (fs.existsSync(cfgpath + ext)) {
                     cfgmodeles = syncRequire(cfgpath + ext);
-                    return false;
                 }
-                return true;
+                return !!cfgmodeles;
             });
             return cfgmodeles;
         }

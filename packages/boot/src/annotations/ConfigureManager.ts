@@ -1,9 +1,10 @@
-import { Inject, isUndefined, Singleton, isString, ObjectMapProvider } from '@tsdi/ioc';
+import { Inject, isUndefined, Singleton, isString, ObjectMapProvider, isMetadataObject } from '@tsdi/ioc';
 import {
     ConfigureMgrToken, ConfigureLoaderToken, IConfigureManager, DefaultConfigureToken
 } from './IConfigureManager';
 import { RunnableConfigure } from './RunnableConfigure';
 import { ContainerToken, IContainer } from '@tsdi/core';
+import { ProcessRunRootToken } from './RunnableConfigure';
 
 
 /**
@@ -19,7 +20,7 @@ export class ConfigureManager<T extends RunnableConfigure> implements IConfigure
      * @param {string} [baseURL]
      * @memberof ConfigureManager
      */
-    constructor(protected baseURL?: string) {
+    constructor(@Inject(ProcessRunRootToken) protected baseURL?: string) {
         this.configs = [];
     }
 
@@ -84,6 +85,7 @@ export class ConfigureManager<T extends RunnableConfigure> implements IConfigure
         }));
         exts.forEach(exCfg => {
             if (exCfg) {
+                exCfg = isMetadataObject(exCfg['default']) ? exCfg['default'] : exCfg;
                 Object.assign(config, exCfg);
             }
         });

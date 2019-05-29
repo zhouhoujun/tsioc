@@ -1,5 +1,10 @@
-import { ObjectMap, LoadType } from '@tsdi/ioc';
+import { ObjectMap, LoadType, InjectToken } from '@tsdi/ioc';
 import { ModuleConfigure } from '../core';
+
+/**
+ *  process run root.
+ */
+export const ProcessRunRootToken = new InjectToken<string>('__boot_process_root');
 
 /**
  * runnable configure.

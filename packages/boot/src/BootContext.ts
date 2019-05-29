@@ -6,10 +6,6 @@ import { Runnable } from './runnable';
 import { IComponentContext } from './builder';
 
 
-/**
- *  process run root.
- */
-export const ProcessRunRootToken = new InjectToken<string>('__boot_process_root');
 
 /**
  *  application boot context token.

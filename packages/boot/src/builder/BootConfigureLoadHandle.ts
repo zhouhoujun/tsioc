@@ -8,20 +8,26 @@ export class BootConfigureLoadHandle extends BootHandle {
         if (!(ctx instanceof BootContext)) {
             return;
         }
+        let mgr = this.resolve(ctx, ConfigureManager);
+
         if (ctx.configures && ctx.configures.length) {
-            let mgr = this.resolve(ctx, ConfigureManager);
             ctx.configures.forEach(config => {
                 mgr.useConfiguration(config);
-            })
-            let config = await mgr.getConfig();
-            if (config.deps && config.deps.length) {
-                let container = ctx.getRaiseContainer();
-                await container.load(...config.deps);
-            }
-            if (config.baseURL) {
-                ctx.baseURL = config.baseURL;
-            }
+            });
+        } else {
+            // load default config.
+            mgr.useConfiguration();
         }
+
+        let config = await mgr.getConfig();
+        if (config.deps && config.deps.length) {
+            let container = ctx.getRaiseContainer();
+            await container.load(...config.deps);
+        }
+        if (config.baseURL) {
+            ctx.baseURL = config.baseURL;
+        }
+
         await next();
     }
 }
