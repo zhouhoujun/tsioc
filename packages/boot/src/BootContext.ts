@@ -188,7 +188,7 @@ export class BootContext extends AnnoationContext implements IComponentContext {
     get scopes() {
         if (this.scope) {
             let container = this.getRaiseContainer();
-            return container.get(ContextScopeToken).getScopes(container, this.scope);
+            return container.resolve(ContextScopeToken).getScopes(container, this.scope);
         }
         return [];
     }
@@ -280,7 +280,7 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof BootContext
      */
     getBootTarget(): any {
-        return this.getRaiseContainer().get(ContextScopeToken).getBoot(this);
+        return this.getRaiseContainer().resolve(ContextScopeToken).getBoot(this);
     }
 
     /**
