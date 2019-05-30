@@ -50,7 +50,7 @@ export class CompoiseActivity<T> extends Activity<T> {
      * @memberof LifeScope
      */
     useBefore(activity: ActivityType, before: ActivityType): this {
-        this.activities.splice(this.activities.indexOf(before) - 1, 0, activity);
+        this.activities.splice(this.activities.indexOf(before), 0, activity);
         this.resetFuncs();
         return this;
     }

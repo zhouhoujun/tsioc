@@ -1,7 +1,9 @@
-import { ContextScope, BootContext } from '@tsdi/boot';
+import { ContextScope, BootContext, ContextScopeToken } from '@tsdi/boot';
 import { IContainer } from '@tsdi/core';
 import { ComponentManager } from './ComponentManager';
+import { Singleton } from '@tsdi/ioc';
 
+@Singleton(ContextScopeToken)
 export class ComponentContextScope extends ContextScope {
 
     getScopes(container: IContainer, scope: any) {

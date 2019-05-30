@@ -59,7 +59,7 @@ export abstract class Handles<T extends IHandleContext> extends Handle<T> {
                 this.handles.unshift(handle);
                 setup = before;
             } else {
-                this.handles.splice(this.handles.indexOf(before) - 1, 0, handle);
+                this.handles.splice(this.handles.indexOf(before), 0, handle);
             }
         } else {
             this.handles.unshift(handle);

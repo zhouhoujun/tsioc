@@ -91,7 +91,7 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
                 this.actions.unshift(action);
                 setup = after;
             } else {
-                this.actions.splice(this.actions.indexOf(after) - 1, 0, action);
+                this.actions.splice(this.actions.indexOf(after) + 1, 0, action);
             }
         } else {
             this.actions.unshift(action)

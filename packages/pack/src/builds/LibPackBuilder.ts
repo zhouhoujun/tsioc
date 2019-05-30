@@ -4,7 +4,7 @@ import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../t
 import { CompilerOptions } from 'typescript';
 import { ExternalOption, RollupCache, WatcherOptions, RollupFileOptions, RollupDirOptions, GlobalsOption } from 'rollup';
 import { RollupOption } from '../rollups';
-import { Input, AfterInit, Binding } from '@tsdi/boot';
+import { Input, AfterInit, Binding } from '@tsdi/components';
 import { NodeActivityContext, NodeExpression } from '../core';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');

@@ -39,6 +39,7 @@
     "@tsdi/ioc": "^5.0.0-beta11",
     "@tsdi/aop": "^5.0.0-beta11",
     "@tsdi/boot": "^5.0.0-beta11",
+    "@tsdi/components": "^5.0.0-beta11",
     "@tsdi/core": "^5.0.0-beta11",
     "@tsdi/unit": "^5.0.0-beta11",
     "@tsdi/unit-console": "^5.0.0-beta11",

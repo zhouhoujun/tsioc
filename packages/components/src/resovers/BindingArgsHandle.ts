@@ -9,7 +9,6 @@ export class BindingArgsHandle extends ResolveComponentHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
 
         if (this.isComponent(ctx)) {
-
             let container = ctx.getRaiseContainer();
             let providers = [];
             let register = this.container.getActionRegisterer();

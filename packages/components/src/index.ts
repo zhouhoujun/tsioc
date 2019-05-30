@@ -7,4 +7,6 @@ export * from './registers';
 export * from './ComponentLifecycle';
 export * from './ComponentManager';
 export * from './SelectorManager';
+export * from './ComponentContextScope';
+export * from './ComponentDecoratorService';
 export * from './ComponentsModule';

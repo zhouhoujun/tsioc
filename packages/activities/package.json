@@ -35,6 +35,7 @@
     "@tsdi/core": "^5.0.0-beta11",
     "@tsdi/aop": "^5.0.0-beta11",
     "@tsdi/boot": "^5.0.0-beta11",
+    "@tsdi/components": "^5.0.0-beta11",
     "@tsdi/logs": "^5.0.0-beta11",
     "reflect-metadata": "^0.1.12",
     "gulp-sourcemaps": "^2.1.1",
