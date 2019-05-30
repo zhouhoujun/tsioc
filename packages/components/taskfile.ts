@@ -23,9 +23,9 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
         ]
     }
 })
-export class BootBuilder {
+export class ComponentsBuilder {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.run(BootBuilder);
+    Workflow.run(ComponentsBuilder);
 }

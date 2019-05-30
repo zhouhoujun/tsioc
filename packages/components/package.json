@@ -37,6 +37,7 @@
   "dependencies": {
     "@tsdi/ioc": "^5.0.0-beta11",
     "@tsdi/core": "^5.0.0-beta11",
+    "@tsdi/boot": "^5.0.0-beta11",
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3"
   },
