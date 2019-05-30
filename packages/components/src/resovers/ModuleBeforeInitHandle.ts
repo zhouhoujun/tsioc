@@ -1,9 +1,10 @@
-import { BuildContext, ResolveHandle } from '@tsdi/boot';
+import { BuildContext } from '@tsdi/boot';
 import { BeforeInit } from '../ComponentLifecycle';
 import { isFunction } from '@tsdi/ioc';
+import { ResolveComponentHandle } from './ResolveComponentHandle';
 
 
-export class ModuleBeforeInitHandle extends ResolveHandle {
+export class ModuleBeforeInitHandle extends ResolveComponentHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
         if (!this.isComponent(ctx)) {
             return;

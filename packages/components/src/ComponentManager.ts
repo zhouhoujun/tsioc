@@ -1,6 +1,12 @@
 import { Singleton } from '@tsdi/ioc';
 import { ModuleConfigure } from '@tsdi/boot';
 
+/**
+ * component manager.
+ *
+ * @export
+ * @class ComponentManager
+ */
 @Singleton
 export class ComponentManager {
     protected componetns: WeakMap<any, any>;

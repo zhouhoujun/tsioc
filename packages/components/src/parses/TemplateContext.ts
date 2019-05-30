@@ -1,7 +1,6 @@
 import { IContainer } from '@tsdi/core';
 import { ContainerFactory, Injectable, Type } from '@tsdi/ioc';
-import { BuildContext, IModuleResolveOption } from '../resovers/BuildContext';
-import { IComponentContext } from '../ComponentContext';
+import { BuildContext, IModuleResolveOption, IComponentContext } from '@tsdi/boot';
 
 export interface ITemplateOption extends IModuleResolveOption  {
     scope?: any;

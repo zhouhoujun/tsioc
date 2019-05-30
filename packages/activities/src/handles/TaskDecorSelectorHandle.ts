@@ -1,4 +1,4 @@
-import { SelectorManager, TemplateContext, TemplateHandle } from '@tsdi/boot';
+import { SelectorManager, TemplateContext, TemplateHandle } from '@tsdi/components';
 import { isString, isClass, hasOwnClassMetadata, lang, Type, isMetadataObject, isArray } from '@tsdi/ioc';
 import { Activity } from '../core';
 import { SequenceActivity } from '../activities';

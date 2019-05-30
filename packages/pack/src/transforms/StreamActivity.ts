@@ -1,6 +1,6 @@
 import { Task, Expression } from '@tsdi/activities';
 import { ITransform, NodeActivityContext, isTransform } from '../core';
-import { Input } from '@tsdi/boot';
+import { Input } from '@tsdi/components';
 import { PipeActivity } from './PipeActivity';
 import { isUndefined } from '@tsdi/ioc';
 

@@ -1,4 +1,4 @@
-import { Input } from '@tsdi/boot';
+import { Input } from '@tsdi/components';
 import { Task } from '@tsdi/activities';
 import { NodeActivityContext, NodeExpression } from '../core';
 import { PipeActivity } from './PipeActivity';

@@ -1,9 +1,10 @@
 
 import { IocExt, ContainerToken, IContainer } from '@tsdi/core';
 import { Inject } from '@tsdi/ioc';
-import { ElementDecoratorRegisterer, ValidComponentRegisterer, BindingComponentRegisterer } from '../builder';
-import { Component } from '../core';
+import { Component } from '../decorators';
 import { ComponentSelectorHandle, ValidComponentHandle } from './handles';
+import { ElementDecoratorRegisterer } from '../parses';
+import { ValidComponentRegisterer, BindingComponentRegisterer } from '../resovers';
 
 /**
  * default component extends module.

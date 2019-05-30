@@ -3,7 +3,7 @@ import { PromiseUtil } from '@tsdi/ioc';
 import { fromEventPattern } from 'rxjs';
 import { bufferTime, filter } from 'rxjs/operators';
 import { NodeActivityContext, NodeExpression } from '../core';
-import { Input, Binding } from '@tsdi/boot';
+import { Input, Binding } from '@tsdi/components';
 const chokidar = require('chokidar');
 
 

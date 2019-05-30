@@ -1,6 +1,6 @@
 import { IocDesignAction, DesignActionContext, lang, getOwnPropertyMetadata, isClassType, isUndefined } from '@tsdi/ioc';
 import { BindingPropertyMetadata } from '../decorators';
-import { IBindingTypeReflect } from '../IPropertyBindingReflect';
+import { IBindingTypeReflect } from '../bindings';
 
 
 export class BindingPropertyTypeAction extends IocDesignAction {

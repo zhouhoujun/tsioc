@@ -1,7 +1,7 @@
 import { PipeActivity } from './PipeActivity';
 import { Task } from '@tsdi/activities';
 import { NodeActivityContext, NodeExpression } from '../core';
-import { Input } from '@tsdi/boot';
+import { Input } from '@tsdi/components';
 const uglify = require('gulp-uglify');
 
 @Task('uglify, [uglify]')

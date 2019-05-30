@@ -1,8 +1,9 @@
-import { SelectorManager } from '../../core';
-import { TemplateHandle, TemplateContext } from '../../builder';
+
 import { isString, isClass, hasOwnClassMetadata, lang, Type, isMetadataObject, isArray } from '@tsdi/ioc';
 import { ContentElement } from '../ContentElement';
 import { Element } from '../Element';
+import { TemplateHandle, TemplateContext } from '../../parses';
+import { SelectorManager } from '../../SelectorManager';
 
 
 export class ComponentSelectorHandle extends TemplateHandle {

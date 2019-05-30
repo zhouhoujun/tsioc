@@ -1,13 +1,13 @@
 import { AnnoationHandle, ModuleInjectLifeScope } from '../core';
 import { lang } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
-import { ModuleDecoratorService } from '../core';
+import { ModuleDecoratorServiceToken } from '../core';
 
 
 export class RegisterAnnoationHandle extends AnnoationHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
         if (!ctx.decorator) {
-            ctx.decorator = this.container.get(ModuleDecoratorService).getDecorator(ctx.module);
+            ctx.decorator = this.container.get(ModuleDecoratorServiceToken).getDecorator(ctx.module);
         }
         if (ctx.annoation && ctx.annoation.baseURL) {
             ctx.baseURL = ctx.annoation.baseURL;

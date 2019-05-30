@@ -1,7 +1,5 @@
-import { ResolveHandle } from './ResolveHandle';
-import { BuildContext } from './BuildContext';
 import { TemplateParseScope, TemplateContext } from '../parses';
-import { BuildHandleRegisterer } from '../../core';
+import { BuildHandleRegisterer, ResolveHandle, BuildContext } from '@tsdi/boot';
 import { isNullOrUndefined } from '@tsdi/ioc';
 
 export class ResolveTemplateScope extends ResolveHandle {
@@ -22,8 +20,6 @@ export class ResolveTemplateScope extends ResolveHandle {
                 ctx.component = pCtx.value;
             }
         }
-
         await next();
-
     }
 }

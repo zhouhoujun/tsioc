@@ -1,4 +1,4 @@
-# packaged @tsdi/boot
+# packaged @tsdi/components
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
@@ -10,155 +10,16 @@ version 2+ of [`tsioc`](https://www.npmjs.com/zhouhoujun/package/tsioc)
 
 ```shell
 
-npm install @tsdi/boot
-
-// in browser
-npm install @tsdi/platform-browser
-
-// in server
-npm install @tsdi/platform-server
-```
-
-## add extends modules
-
-### use bootstrap
-
-
-```ts
-import { DIModule, BootApplication } from '@tsdi/boot';
-
-
-export class TestService {
-    testFiled = 'test';
-    test() {
-        console.log('test');
-    }
-}
-
-@DIModule({
-    providers: [
-        { provide: 'mark', useFactory: () => 'marked' },
-        TestService
-    ],
-    exports: [
-
-    ]
-})
-export class ModuleA {
-
-}
-
-@Injectable
-export class ClassSevice {
-    @Inject('mark')
-    mark: string;
-    state: string;
-    start() {
-        console.log(this.mark);
-    }
-}
-
-@Injectable
-export class Person {
-    constructor(name: string){
-
-    }
-}
-
-// binding component. 
-@Component({
-    selector: 'you component',
-    template: {
-        filed: 'binding: myfield'
-    }
-})
-export class MyComponent implements AfterInit {
-    
-    @Input()
-    myfield: string;
-    
-    @Input()
-    use: Person;
-
-    onAfterInit(): void | Promise<void> {
-       // todo inited field..
-
-    }
-
-}
-
-@Aspect
-export class Logger {
-
-    @Around('execution(*.start)')
-    log() {
-        console.log('start........');
-    }
-}
-
-
-@DIModule({
-    imports: [
-        AopModule,
-        Logger,
-        ModuleA
-    ],
-    exports: [
-        ClassSevice
-    ],
-    bootstrap: ClassSevice
-})
-export class ModuleB {
-    constructor(test: TestService, @Inject(ContainerToken) private container: IContainer) {
-        console.log(test);
-        test.test();
-        // console.log(container);
-        // console.log('container pools..................\n');
-        let pools = container.get(ContainerPoolToken);
-        // console.log(pools);
-        console.log('container pools defaults..................\n');
-        console.log(pools.defaults);
-    }
-    mdOnStart(instance: ClassSevice): void | Promise<any> {
-        console.log('mdOnStart...');
-        console.log(this.container);
-        instance.start();
-        instance.state = 'started';
-    }
-}
-
-
-
-BootApplication.run(ModuleB)
-
+npm install @tsdi/components
 
 ```
 
+## components
+*  `@Component`  Component decorator,  use to defaine class as component with template.
+*  `@Input` Input decorator, use to define property or param as component binding field or args.
 
-* use @Bootstrap main to boot application
+see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities/taskfile.ts)
 
-```ts
-
-@Bootstrap({
-    imports: [
-        KoaModule
-    ],
-    bootstrap: MvcServerToken
-})
-class MvcApi {
-    constructor() {
-        console.log('boot application');
-    }
-
-    static main() {
-        console.log('run mvc api...');
-        // use your builder
-        BootApplication.run(MvcApi);
-    }
-}
-
-
-```
 
 
 ## Container Interface

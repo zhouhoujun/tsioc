@@ -15,12 +15,10 @@ import { Annotation } from './decorators/Annotation';
 import * as modules from './modules';
 
 import { RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction } from './resolves';
-import { RouteDesignRegisterAction, RouteRuntimRegisterAction, ComponentRegisterAction, BindingPropertyTypeAction, BindingParamTypeAction } from './registers';
+import { RouteDesignRegisterAction, RouteRuntimRegisterAction } from './registers';
 import { DIModuleInjectorScope, DIModuleExports, ModuleInjectLifeScope, RegForInjectorAction } from './injectors';
-import { SelectorManager } from './SelectorManager';
-import { Input, Component, RegisterFor } from './decorators';
+import { RegisterFor } from './decorators';
 import { BuildHandleRegisterer } from './handles';
-import { ComponentManager } from './ComponentManager';
 import { ModuleDecoratorService } from './ModuleDecoratorService';
 
 
@@ -46,13 +44,11 @@ export class BootModule {
 
         container.register(BuildHandleRegisterer);
         container.register(ModuleDecoratorService);
-        let designReg = container.get(DesignDecoratorRegisterer);
-        designReg.register(Annotation, DecoratorScopes.Class, BindProviderAction, IocAutorunAction);
-        designReg.register(DIModule, DecoratorScopes.Class, BindProviderAction, IocAutorunAction);
-        designReg.register(Component, DecoratorScopes.Class, BindProviderAction)
+        container.get(DesignDecoratorRegisterer)
+            .register(Annotation, DecoratorScopes.Class, BindProviderAction, IocAutorunAction)
+            .register(DIModule, DecoratorScopes.Class, BindProviderAction, IocAutorunAction);
 
         container.get(RuntimeDecoratorRegisterer)
-            .register(Component, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
             .register(Annotation, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
             .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
@@ -101,20 +97,6 @@ export class BootModule {
 
         registerer.get(RuntimeAnnoationScope)
             .use(RouteRuntimRegisterAction);
-
-        container.register(SelectorManager)
-            .register(ComponentManager);
-        registerer
-            .register(container, ComponentRegisterAction)
-            .register(container, BindingPropertyTypeAction)
-            .register(container, BindingParamTypeAction);
-
-        container.get(DesignDecoratorRegisterer)
-            .register(Component, DecoratorScopes.Class, ComponentRegisterAction)
-            .register(Input, DecoratorScopes.Property, BindingPropertyTypeAction);
-
-        container.get(RuntimeDecoratorRegisterer)
-            .register(Input, DecoratorScopes.Parameter, BindingParamTypeAction);
 
     }
 }

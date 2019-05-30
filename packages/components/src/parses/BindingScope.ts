@@ -1,7 +1,7 @@
 import { ParsersHandle, ParseHandle } from './ParseHandle';
 import { BindingValueScope } from './BindingValueScope';
 import { ParseContext } from './ParseContext';
-import { BuildHandleRegisterer } from '../../core';
+import { BuildHandleRegisterer } from '@tsdi/boot';
 import { isArray, isNullOrUndefined } from '@tsdi/ioc';
 
 export class BindingScope extends ParsersHandle {

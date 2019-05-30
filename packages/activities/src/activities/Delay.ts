@@ -3,7 +3,7 @@ import { Task } from '../decorators/Task';
 import { ActivityContext } from '../core';
 import { TimerActivity } from './TimerActivity';
 import { BodyActivity } from './BodyActivity';
-import { Input } from '@tsdi/boot';
+import { Input } from '@tsdi/components';
 import { ControlerActivity } from './ControlerActivity';
 
 

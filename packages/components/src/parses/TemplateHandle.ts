@@ -1,4 +1,4 @@
-import { BuildHandle, BuildHandles } from '../../core';
+import { BuildHandle, BuildHandles } from '@tsdi/boot';
 import { TemplateContext } from './TemplateContext';
 
 export abstract class TemplateHandle extends BuildHandle<TemplateContext> {

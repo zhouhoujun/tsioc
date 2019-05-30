@@ -1,4 +1,4 @@
-import { BuildHandle, BuildHandles } from '../../core';
+import { BuildHandle, BuildHandles } from '@tsdi/boot';
 import { ParseContext } from './ParseContext';
 
 export abstract class ParseHandle extends BuildHandle<ParseContext> {

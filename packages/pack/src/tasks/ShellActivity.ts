@@ -2,7 +2,7 @@ import { ExecOptions, exec } from 'child_process';
 import { isBoolean, isArray, lang, ObjectMap, isNullOrUndefined, PromiseUtil } from '@tsdi/ioc';
 import { Src, Task, TemplateOption, Activity } from '@tsdi/activities';
 import { NodeActivityContext, NodeExpression } from '../core';
-import { Input, Binding } from '@tsdi/boot';
+import { Input, Binding } from '@tsdi/components';
 
 
 /**

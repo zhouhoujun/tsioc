@@ -2,7 +2,7 @@ import { Task, Activity, Src, TemplateOption } from '@tsdi/activities';
 import { NodeActivityContext, NodeExpression } from '../core';
 import { runTest, UnitTestConfigure } from '@tsdi/unit';
 import { ConsoleReporter } from '@tsdi/unit-console';
-import { Input, Binding } from '@tsdi/boot';
+import { Input, Binding } from '@tsdi/components';
 
 
 

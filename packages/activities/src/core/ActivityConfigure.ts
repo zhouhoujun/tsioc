@@ -1,8 +1,9 @@
 import { InjectToken, Type, PromiseUtil, Token, ProviderTypes } from '@tsdi/ioc';
-import { RunnableConfigure, Binding } from '@tsdi/boot';
+import { RunnableConfigure } from '@tsdi/boot';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
 import { ValuePipe } from './ValuePipe';
+import { Binding } from '@tsdi/components';
 
 
 export const WorkflowId = new InjectToken<string>('Workflow_ID');

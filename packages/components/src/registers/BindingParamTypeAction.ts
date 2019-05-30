@@ -1,5 +1,8 @@
-import { BindDeignParamTypeAction, RuntimeActionContext, IParameter, getParamMetadata, isArray, ParameterMetadata, lang, MetadataService, isClass, isToken, ClassType, isNullOrUndefined, InjectReference, isUndefined } from '@tsdi/ioc';
-import { IBindingTypeReflect, IBinding } from '../IPropertyBindingReflect';
+import {
+    BindDeignParamTypeAction, RuntimeActionContext, IParameter, getParamMetadata,
+    isArray, lang, MetadataService, isClass, ClassType, InjectReference, isUndefined
+} from '@tsdi/ioc';
+import { IBindingTypeReflect, IBinding } from '../bindings';
 import { BindingPropertyMetadata } from '../decorators';
 
 

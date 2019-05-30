@@ -1,6 +1,6 @@
 import { Task } from '../decorators';
 import { ExpressionActivity } from './ExpressionActivity';
-import { Input } from '@tsdi/boot';
+import { Input } from '@tsdi/components';
 import { Expression } from '../core';
 
 /**

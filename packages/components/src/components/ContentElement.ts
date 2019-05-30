@@ -1,4 +1,4 @@
-import { Component } from '../core';
+import { Component } from '../decorators';
 import { Element } from './Element';
 
 @Component()

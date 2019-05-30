@@ -1,6 +1,3 @@
-export * from './IPropertyBindingReflect';
-export * from './SelectorManager';
-export * from './ComponentManager';
 export * from './decorators';
 export * from './registers';
 export * from './injectors';
@@ -10,5 +7,4 @@ export * from './handles';
 export * from './ContainerPool';
 export * from './ContainerPoolToken';
 export * from './types';
-export * from './ComponentLifecycle';
 export * from './ModuleDecoratorService';

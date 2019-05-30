@@ -1,10 +1,11 @@
-import { BuildContext, ResolveHandle, BuildHandleRegisterer } from '@tsdi/boot';
+import { BuildContext, BuildHandleRegisterer } from '@tsdi/boot';
 import { IBindingTypeReflect, BindingTypes } from '../bindings';
 import { RuntimeLifeScope, isNullOrUndefined, isArray, InjectReference } from '@tsdi/ioc';
 import { ParseContext, BindingScope } from '../parses';
+import { ResolveComponentHandle } from './ResolveComponentHandle';
 
 
-export class BindingArgsHandle extends ResolveHandle {
+export class BindingArgsHandle extends ResolveComponentHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
 
         if (this.isComponent(ctx)) {

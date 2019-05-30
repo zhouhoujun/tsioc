@@ -1,29 +1,42 @@
 import {
     Singleton, Type, Inject, MetadataService, DesignDecoratorRegisterer, DecoratorScopes,
-    RuntimeDecoratorRegisterer, lang, getOwnTypeMetadata, isArray, isBaseType, isClass, isFunction, isBaseObject, isMetadataObject, isObject
+    RuntimeDecoratorRegisterer, lang, getOwnTypeMetadata, InjectToken
 } from '@tsdi/ioc';
 import { ContainerToken, IContainer, InjectorDecoratorRegisterer } from '@tsdi/core';
-import { ComponentRegisterAction } from './registers';
 import { ModuleConfigure } from './modules';
 
-@Singleton()
-export class ModuleDecoratorService {
+/**
+ * module decorator metadata service
+ *
+ * @export
+ * @interface IModuleDecoratorService
+ */
+export interface IModuleDecoratorService {
+    getDecorator(type: Type<any>): string;
+    getAnnoation(type: Type<any>, decorator?: string): ModuleConfigure;
+}
+
+export const ModuleDecoratorServiceToken = new InjectToken<IModuleDecoratorService>('ModuleDecoratorService');
+
+@Singleton(ModuleDecoratorServiceToken)
+export class ModuleDecoratorService implements IModuleDecoratorService {
 
     @Inject(ContainerToken)
     protected container: IContainer;
 
-    getDecorator(type: Type<any>) {
-        let decorator = '';
+    getDecorator(type: Type<any>): string {
         let decorators = this.container.get(MetadataService)
             .getClassDecorators(type);
 
-        let designReg = this.container.get(DesignDecoratorRegisterer).getRegisterer(DecoratorScopes.Class);
-        decorator = decorators.find(c => designReg.has(c, ComponentRegisterAction));
+        return this.getMatchDecorator(decorators);
+    }
 
-        if (!decorator) {
-            let mdRgr = this.container.get(InjectorDecoratorRegisterer);
-            decorator = decorators.find(c => mdRgr.has(c));
-        }
+    protected getMatchDecorator(decorators: string[]) {
+        let decorator = '';
+        let designReg = this.container.get(DesignDecoratorRegisterer).getRegisterer(DecoratorScopes.Class);
+
+        let mdRgr = this.container.get(InjectorDecoratorRegisterer);
+        decorator = decorators.find(c => mdRgr.has(c));
 
         decorator = decorator || decorators.find(c => designReg.has(c));
 
@@ -38,29 +51,6 @@ export class ModuleDecoratorService {
         if (!decorator) {
             decorator = this.getDecorator(type);
         }
-        let ann = { ...lang.first(getOwnTypeMetadata<ModuleConfigure>(decorator, type)) };
-        if (ann.template) {
-            ann.template = this.cloneTemplate(ann.template);
-        }
-        return ann;
-    }
-
-
-    cloneTemplate(target: any) {
-        if (isArray(target)) {
-            return target.map(it => this.cloneTemplate(it));
-        }
-        if (isFunction(target)) {
-            return target;
-        } else if (isMetadataObject(target)) {
-            let newM = {};
-            lang.forIn(target, (val, name) => {
-                newM[name] = this.cloneTemplate(val)
-            });
-            return newM;
-        } else if (isBaseType(lang.getClass(target))) {
-            return target;
-        }
-        return null;
+        return { ...lang.first(getOwnTypeMetadata<ModuleConfigure>(decorator, type)) };
     }
 }

@@ -1,7 +1,7 @@
 import { Task, TemplateOption } from '@tsdi/activities';
 import { NodeActivityContext } from '../core';
 import * as through from 'through2';
-import { Input, Binding } from '@tsdi/boot';
+import { Input, Binding } from '@tsdi/components';
 import { isFunction, ObjectMap, lang } from '@tsdi/ioc';
 import { TransformActivity } from './TransformActivity';
 const jeditor = require('gulp-json-editor');

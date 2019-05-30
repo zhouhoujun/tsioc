@@ -1,9 +1,9 @@
-# ts-ioc framework src
+# packaged @tsdi/ioc
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-AOP,  Ioc container, Boot framework, unit testing framework , activities workflow framework.
+`@tsdi/core` is AOP, Ioc container, via typescript decorator.
 
 version 2+ of [`tsioc`](https://www.npmjs.com/zhouhoujun/package/tsioc)
 
@@ -26,13 +26,8 @@ npm run build -- --setvs=4.0.0-beta
 
 ```shell
 
-npm install @tsdi/core
+npm install @tsdi/ioc
 
-// in browser
-npm install @tsdi/platform-browser
-
-// in server
-npm install @tsdi/platform-server
 ```
 
 ## add extends modules
@@ -87,30 +82,35 @@ container.use(LogModule);
 
 # Documentation
 
-class name First char must be UpperCase.
+## core
 
-## [Ioc](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/README.md)
+### extends ioc
+1. `@IocExt` class decortator, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
+2. add service resolve.
+3. module inject.
+
+
+## Ioc
 
 1. Register one class will auto register depdence class (must has a class decorator).
 
 2. get Instance can auto create constructor param.  (must has a class decorator or register in container).
 
-### Has [decorators](https://github.com/zhouhoujun/tsioc/tree/master/packages/core/src/core/decorators)
+### decorators
 
 1. `@Abstract`  abstract class decorator.
 2. `@AutoRun`   class, method decorator, use to define the class auto run (via a method or not) after registered.
-3. `@AutoWried`  property, method or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
-4. `@Component` class decortator, use to define the class. it can setting provider to some token, singleton or not. it will execute [`ComponentLifecycle`](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/core/ComponentLifecycle.ts) hooks when create a instance .
-5. `@Inject`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
-6. `@Injectable` class decortator, use to define the class. it can setting provider to some token, singleton or not.
-7. `@IocExt` class decortator, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
-9. `@Param`   param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
-10. `@Singleton` class decortator, use to define the class is singleton.
-11. `@Providers` Providers decorator, for class, method. use to add private ref service for the class or method.
-12. `@Refs` Refs decorator, for class. use to define the class as a service for target.
+3. `@AutoWried`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
+4. `@Inject`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
+5. `@Injectable` class decortator, use to define the class. it can setting provider to some token, singleton or not.
+6. `@AutoWried` method decorator.
+7. `@Param`   param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
+8. `@Singleton` class decortator, use to define the class is singleton.
+9. `@Providers` Providers decorator, for class. use to add private ref service for the class.
+10. `@Refs` Refs decorator, for class. use to define the class as a service for target.
 
 
-## [AOP](https://github.com/zhouhoujun/tsioc/blob/master/packages/aop/README.md)
+## AOP
 
 It's a dynamic aop base on ioc.
 
@@ -134,19 +134,17 @@ define a Aspect class, must with decorator:
 see [simples](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop/test/aop)
 
 
-## [DIModule and boot](https://github.com/zhouhoujun/tsioc/blob/master/packages/bootstrap/README.md)
+## boot
 DI Module manager, application bootstrap. base on AOP.
 
 *  `@DIModule` DIModule decorator, use to define class as DI Module.
 *  `@Annotation` Annotation decorator, use to define class build metadata config.
 
-see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/master/packages/annotations/taskfile.ts)
-
 [mvc boot simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
 
 ```ts
 
-import { DIModule, ApplicationBuilder } from '@tsdi/bootstrap';
+import { DIModule, BootApplication } from '@tsdi/boot';
 
 
 export class TestService {
@@ -204,9 +202,16 @@ export class ModuleB {
 
 }
 
-ApplicationBuilder.create(__dirname)
-    .bootstrap(ModuleB)
+BootApplication.run(ModuleB);
+
 ```
+
+## components
+*  `@Component`  Component decorator,  use to defaine class as component with template.
+*  `@Input` Input decorator, use to define property or param as component binding field or args.
+
+see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities/taskfile.ts)
+
 
 ## [Activites](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities)
 
@@ -214,36 +219,11 @@ ApplicationBuilder.create(__dirname)
 * [build](https://github.com/zhouhoujun/tsioc/tree/master/packages/build)
 * [pack](https://github.com/zhouhoujun/tsioc/tree/master/packages/pack)
 
-
-
-## [Unit Test framwork](https://github.com/zhouhoujun/tsioc/tree/master/packages/unit#readme)
-
-## usage
 ### create Container
 
-* in browser can not:
-    1. use syncBuild
-    2. syncLoadModule
-    3. can not use minimatch to match file.
-    4. support es5 uglify, [@tsdi/annotations](https://www.npmjs.com/package/@tsdi/annotations)  [] or [typescript-class-annotations](https://www.npmjs.com/package/typescript-class-annotations) to get class annotations before typescript compile.
-
 ```ts
-let builder = new ContainerBuilder();
 
-// 1. via create.
-let container = builder.create();
-
-// 2. via build.
-//with BuildOptions to auto register module.
-let container = await builder.build({
-  files: [__dirname +'/controller/**/*.ts', __dirname + '/*.model.js'],
-  moudles:['node-modules-name', ClassType]
-});
-
-// 3. via syncBuild
-let container = builder.syncBuild({
-  moudles:['node-modules-name', ClassType]
-});
+let container = new IocContainer();
 
 ```
 
@@ -252,163 +232,38 @@ let container = builder.syncBuild({
 see interface [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IContainer.ts)
 
 ```ts
-// 1.  you can load modules by self
-await builder.loadModule(container, {
-  files: [__dirname +'/controller/**/*.ts', __dirname + '/*.model.js'],
-  moudles:['node-modules-name', ClassType]
-});
-// 2. load sync
-builder.syncLoadModule(container, {
-  moudles:['node-modules-name', ClassType]
-});
 
-// 3. use modules
-container.use(...modules);
 
-// 4. register a class
+
+// 1. register a class
 container.register(Person);
 
-// 5. register a factory;
+// 2. register a factory;
 container.register(Person, (container)=> {
     ...
     return new Person(...);
 });
 
-// 6. register with keyword
+// 3. register with keyword
 container.register('keyword', Perosn);
 
-// 8. register with alais
+// 4. register with alais
 container.register(new Registration(Person, aliasname));
 
-```
+// register singleton
+container.registerSingleton(Person)
 
-### get instance of type
-
-```ts
-// 8. get instance use get method of container.
-    /**
-     * resolve type instance with token and param provider.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IResolver
-     */
-    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
-    /**
-     * Retrieves an instance from the container based on the provided token.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    get<T>(token: Token<T>, alias?: string, ...providers: ProviderTypes[]): T;
-
-    /**
-     * resolve token value in this container only.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    resolveValue<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {Token<T>} token servive token.
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {Token<T>} token servive token.
-     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], ...providers: ProviderTypes[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {Token<T>} token servive token.
-     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
-     * @param {RefTokenFac<T>} toRefToken
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], toRefToken: RefTokenFac<T>, ...providers: ProviderTypes[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {Token<T>} token servive token.
-     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
-     * @param {(boolean | Token<T>)} defaultToken
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], defaultToken: boolean | Token<T>, ...providers: ProviderTypes[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {Token<T>} token servive token.
-     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
-     * @param {RefTokenFac<T>} toRefToken
-     * @param {(boolean | Token<T>)} defaultToken
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], toRefToken: RefTokenFac<T>, defaultToken: boolean | Token<T>, ...providers: ProviderTypes[]): T;
-
-    /**
-     * get target reference service.
-     *
-     * @template T
-     * @param {ReferenceToken<T>} [refToken] reference service Registration Injector
-     * @param {(Token<any> | Token<any>[])} target  the service reference to.
-     * @param {Token<T>} [defaultToken] default service token.
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any> | Token<any>[], defaultToken?: Token<T>, ...providers: ProviderTypes[]): T
-
-
-//get simple person
-let person = container.get(Person);
-//get colloge person
-let person = container.get(Person, 'Colloge');
-
-// resolve with providers
-container.resolve(Person, ...providers);
+// bind provider
+container.bindProvider
+// bind providers.
+container.bindProviders
 
 ```
+more see inteface [IIocContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/ioc/src/IIocContainer.ts)
 
 ### Invoke method
 
-you can use yourself `MethodAccessor` by implement IMethodAccessor, register `MethodAccessorToken` with your `MethodAccessor` in container,   see interface [IMethodAccessor](https://github.com/zhouhoujun/@tsdi/core/blob/master/packages/core/src/IMethodAccessor.ts).
+you can use yourself `MethodAccessor` by implement IMethodAccessor, register `MethodAccessorToken` with your `MethodAccessor` in container,   see interface [MethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/packages/ioc/src/services/MethodAccessor.ts).
 
 ```ts
 
@@ -517,6 +372,7 @@ container.invoke(MethodTest3, 'sayHello')
 
 
 ```
+
 
 ## Use Demo
 

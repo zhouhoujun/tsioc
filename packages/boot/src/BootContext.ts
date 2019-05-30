@@ -1,9 +1,10 @@
-import { AnnoationContext, AnnoationOption, createAnnoationContext, ComponentManager } from './core';
+import { AnnoationContext, AnnoationOption, createAnnoationContext } from './core';
 import { RunnableConfigure, ConfigureManager } from './annotations';
 import { IModuleLoader } from '@tsdi/core';
 import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory } from '@tsdi/ioc';
 import { Runnable } from './runnable';
 import { IComponentContext } from './builder';
+import { ContextScopeToken } from './IContextScope';
 
 
 
@@ -186,7 +187,8 @@ export class BootContext extends AnnoationContext implements IComponentContext {
 
     get scopes() {
         if (this.scope) {
-            return this.getRaiseContainer().get(ComponentManager).getScopes(this.scope);
+            let container = this.getRaiseContainer();
+            return container.get(ContextScopeToken).getScopes(container, this.scope);
         }
         return [];
     }
@@ -278,14 +280,7 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof BootContext
      */
     getBootTarget(): any {
-        let mgr = this.getRaiseContainer().get(ComponentManager);
-        if (this.bootstrap && mgr.hasContent(this.bootstrap)) {
-            return mgr.getLeaf(this.bootstrap);
-        }
-        if (this.target && mgr.hasContent(this.target)) {
-            return mgr.getLeaf(this.target);
-        }
-        return this.bootstrap || this.target;
+        return this.getRaiseContainer().get(ContextScopeToken).getBoot(this);
     }
 
     /**

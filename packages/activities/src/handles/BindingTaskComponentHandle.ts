@@ -1,5 +1,6 @@
-import { BuildHandle, BuildContext, ComponentManager } from '@tsdi/boot';
+import { BuildHandle, BuildContext } from '@tsdi/boot';
 import { Activity } from '../core';
+import { ComponentManager } from '@tsdi/components';
 
 export class BindingTaskComponentHandle extends BuildHandle<BuildContext> {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {

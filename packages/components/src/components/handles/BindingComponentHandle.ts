@@ -1,7 +1,8 @@
 
 import { Element } from '../Element';
-import { BuildHandle, ComponentManager } from '../../core';
-import { BuildContext } from '../../builder';
+import { BuildHandle, BuildContext } from '@tsdi/boot';
+import { ComponentManager } from '../../ComponentManager';
+
 
 export class BindingComponentHandle extends BuildHandle<BuildContext> {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {

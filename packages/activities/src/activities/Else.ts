@@ -2,7 +2,7 @@ import { Task } from '../decorators';
 import { ActivityContext } from '../core';
 import { BodyActivity } from './BodyActivity';
 import { IfActivity } from './If';
-import { Input } from '@tsdi/boot';
+import { Input } from '@tsdi/components';
 import { ControlerActivity } from './ControlerActivity';
 
 /**

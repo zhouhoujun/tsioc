@@ -8,6 +8,7 @@ import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 import { ActivityCoreModule } from './CoreModule';
 import { SequenceActivity } from './activities';
+import { ComponentsModule } from '@tsdi/components';
 
 /**
  * workflow builder.
@@ -80,7 +81,7 @@ export class Workflow extends BootApplication implements ContextInit {
                 deps.push(... this.getTargetDeps(t));
             });
         }
-        return [AopModule, LogModule, ActivityCoreModule, ...deps];
+        return [AopModule, LogModule, ComponentsModule, ActivityCoreModule, ...deps];
     }
 
     protected createUUID() {

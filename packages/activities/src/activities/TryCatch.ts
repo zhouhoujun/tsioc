@@ -1,7 +1,7 @@
 import { Task } from '../decorators';
 import { ActivityContext, Activity } from '../core';
 import { BodyActivity } from './BodyActivity';
-import { Input } from '@tsdi/boot';
+import { Input } from '@tsdi/components';
 import { lang, Type } from '@tsdi/ioc';
 import { ControlerActivity } from './ControlerActivity';
 

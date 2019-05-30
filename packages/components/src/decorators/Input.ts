@@ -1,5 +1,5 @@
 import { Token, isString, PropParamDecorator, createParamPropDecorator, ParamPropMetadata, isToken, isObject, ClassType, Registration, isUndefined } from '@tsdi/ioc';
-import { BindingTypes } from '../IPropertyBindingReflect';
+import { BindingTypes } from '../bindings';
 
 
 export interface BindingPropertyMetadata extends ParamPropMetadata {

@@ -12,7 +12,7 @@ import { InitResolveModuleHandle } from './InitResolveModuleHandle';
 // import { ModuleAfterContentInitHandle } from './ModuleAfterContentInitHandle';
 // import { BindingPropertyHandle } from './BindingPropertyHandle';
 // import { BindingScope, TemplateParseScope } from '../parses';
-import { ValidComponentRegisterer } from './ValidComponentRegisterer';
+// import { ValidComponentRegisterer } from './ValidComponentRegisterer';
 
 
 export class ResolveMoudleScope extends BuildHandles<BuildContext> {
@@ -31,9 +31,9 @@ export class ResolveMoudleScope extends BuildHandles<BuildContext> {
         if (!this.container.has(BuildDecoratorRegisterer)) {
             this.container.register(BuildDecoratorRegisterer);
         }
-        if (!this.container.has(ValidComponentRegisterer)) {
-            this.container.register(ValidComponentRegisterer);
-        }
+        // if (!this.container.has(ValidComponentRegisterer)) {
+        //     this.container.register(ValidComponentRegisterer);
+        // }
         // if (!this.container.has(BindingComponentRegisterer)) {
         //     this.container.register(BindingComponentRegisterer);
         // }

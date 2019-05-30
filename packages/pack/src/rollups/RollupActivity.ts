@@ -1,5 +1,5 @@
 import { NodeActivityContext, NodeActivity, NodeExpression } from '../core';
-import { Input, Binding } from '@tsdi/boot';
+import { Input, Binding } from '@tsdi/components';
 import { TemplateOption, Task, Src } from '@tsdi/activities';
 import {
     RollupFileOptions, rollup, WatcherOptions, RollupDirOptions, RollupCache,

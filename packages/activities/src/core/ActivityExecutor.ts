@@ -6,8 +6,9 @@ import { ActivityType, ControlTemplate, Expression } from './ActivityConfigure';
 import { ActivityContext } from './ActivityContext';
 import { Activity } from './Activity';
 import { IContainer } from '@tsdi/core';
-import { ComponentManager, BuilderService, SelectorManager } from '@tsdi/boot';
+import { BuilderService } from '@tsdi/boot';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
+import { ComponentManager, SelectorManager } from '@tsdi/components';
 
 @Injectable(ActivityExecutorToken)
 export class ActivityExecutor implements IActivityExecutor {

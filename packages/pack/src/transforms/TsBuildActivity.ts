@@ -1,5 +1,5 @@
 import { Task, ValuePipe, ActivityType, Src } from '@tsdi/activities';
-import { Input, Binding, AfterInit } from '@tsdi/boot';
+import { Input, Binding, AfterInit } from '@tsdi/components';
 import { NodeActivityContext, NodeExpression } from '../core';
 import { ObjectMap, isString } from '@tsdi/ioc';
 import { CompilerOptions } from 'typescript';

@@ -1,4 +1,4 @@
-import { Component, Input } from '../core';
+import { Component, Input } from '../decorators';
 
 @Component()
 export class Element {

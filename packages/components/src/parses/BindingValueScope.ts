@@ -1,12 +1,11 @@
 import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
 import { isNullOrUndefined, lang, isString, Singleton, Type, isClass, isArray, isBaseType } from '@tsdi/ioc';
-import { BindingExpression } from '../../bindings';
-import { IocBuildDecoratorRegisterer, SelectorManager, RegFor, BuildHandleRegisterer } from '../../core';
-import { BuilderServiceToken } from '../IBuilderService';
+import { BindingExpression } from '../bindings';
+import { IocBuildDecoratorRegisterer, RegFor, BuildHandleRegisterer, BuilderServiceToken, BaseTypeParserToken } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
-import { BaseTypeParserToken } from '../../services';
+import { SelectorManager } from '../SelectorManager';
 
 
 export class BindingValueScope extends ParsersHandle {

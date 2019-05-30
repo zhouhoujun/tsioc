@@ -1,7 +1,6 @@
-import { BuildHandle } from '../../core';
-import { BuildContext } from '../../builder';
 import { isArray } from '@tsdi/ioc';
 import { ContentElement } from '../ContentElement';
+import { BuildHandle, BuildContext } from '@tsdi/boot';
 
 export class ValidComponentHandle extends BuildHandle<BuildContext> {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {

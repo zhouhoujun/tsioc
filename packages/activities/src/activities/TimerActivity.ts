@@ -1,6 +1,6 @@
 import { Task } from '../decorators';
 import { Expression, ActivityContext } from '../core';
-import { Input } from '@tsdi/boot';
+import { Input } from '@tsdi/components';
 import { ControlerActivity } from './ControlerActivity';
 
 

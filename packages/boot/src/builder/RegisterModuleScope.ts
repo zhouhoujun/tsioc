@@ -2,7 +2,7 @@ import { RegisterModuleRegisterHandle } from './RegisterModuleRegisterHandle';
 import { AnnoationContext, BuildHandles } from '../core';
 import { RegisterAnnoationHandle } from './RegisterAnnoationHandle';
 import { BootContext } from '../BootContext';
-import { ModuleDecoratorService } from '../core';
+import { ModuleDecoratorServiceToken } from '../core';
 
 
 export class RegisterModuleScope extends BuildHandles<AnnoationContext> {
@@ -16,11 +16,11 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> {
             await super.execute(ctx);
         } else {
             if (!ctx.decorator) {
-                ctx.decorator = this.container.get(ModuleDecoratorService).getDecorator(ctx.module);
+                ctx.decorator = this.container.get(ModuleDecoratorServiceToken).getDecorator(ctx.module);
             }
             if (ctx.decorator) {
                 if (!ctx.annoation) {
-                    ctx.annoation = this.container.get(ModuleDecoratorService).getAnnoation(ctx.module, ctx.decorator);
+                    ctx.annoation = this.container.get(ModuleDecoratorServiceToken).getAnnoation(ctx.module, ctx.decorator);
                 }
             }
         }

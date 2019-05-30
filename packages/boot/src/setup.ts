@@ -9,10 +9,11 @@ import {
 } from '@tsdi/ioc';
 import { DIModuleInjectorScope } from './core';
 import { BuilderService } from './builder';
+import { ContextScope } from './ContextScope';
 
 
 export function bootSetup(container: IContainer) {
-
+    container.register(ContextScope);
     container.register(BuilderService);
     container.use(annotations, runnable, services);
 

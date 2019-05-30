@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
 import { ActivityContext, CompoiseActivity, ActivityType } from '../core';
-import { Input } from '@tsdi/boot';
+import { Input } from '@tsdi/components';
 
 
 

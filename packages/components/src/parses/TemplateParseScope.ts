@@ -3,7 +3,7 @@ import { TemplateContext } from './TemplateContext';
 import { isNullOrUndefined, isArray } from '@tsdi/ioc';
 import { ParseSelectorHandle } from './ParseSelectorHandle';
 import { TranslateSelectorScope } from './TranslateSelectorScope';
-import { BuildHandleRegisterer } from '../../core';
+import { BuildHandleRegisterer } from '@tsdi/boot';
 
 
 export class TemplateParseScope extends TemplatesHandle {

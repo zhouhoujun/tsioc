@@ -1,8 +1,8 @@
-import { IBinding } from '../../core';
+import { IBinding } from '../bindings';
 import { IContainer } from '@tsdi/core';
 import { ContainerFactory, Injectable, Type } from '@tsdi/ioc';
-import { BuildContext, IModuleResolveOption } from '../resovers/BuildContext';
-import { IComponentContext } from '../ComponentContext';
+import { BuildContext, IModuleResolveOption, IComponentContext } from '@tsdi/boot';
+
 
 export interface IBindingParseOption extends IModuleResolveOption  {
     scope?: any;
