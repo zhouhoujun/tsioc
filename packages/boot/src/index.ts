@@ -1,5 +1,4 @@
 export * from './decorators/Bootstrap';
-export * from './bindings';
 export * from './services';
 export * from './annotations';
 export * from './runnable';
@@ -8,4 +7,3 @@ export * from './builder';
 export * from './IBootApplication';
 export * from './BootApplication';
 export * from './BootContext';
-export * from './components';

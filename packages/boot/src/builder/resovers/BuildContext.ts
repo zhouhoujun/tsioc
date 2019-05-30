@@ -91,6 +91,14 @@ export class BuildContext extends IocActionContext implements IComponentContext 
     */
     providers?: ProviderTypes[];
 
+    /**
+     * current args providers.
+     *
+     * @type {ProviderTypes[]}
+     * @memberof BuildContext
+     */
+    argsProviders?: ProviderTypes[];
+
     constructor(type: Type<any>) {
         super();
         this.type = type;

@@ -1,0 +1,50 @@
+{
+  "name": "@tsdi/components",
+  "version": "5.0.0-beta11",
+  "description": "DI Module manager, application components. base on AOP, Ioc container, via @tsdi/core .",
+  "scripts": {
+    "postinstall": "npm prune",
+    "reinstall": "npm cache clean && npm install",
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts"
+  },
+  "keywords": [
+    "boot",
+    "frameworks",
+    "Application",
+    "IoC",
+    "dependency",
+    "injection",
+    "ts-ioc",
+    "tsdi",
+    "tsioc",
+    "container",
+    "decorator",
+    "autofac",
+    "Inject",
+    "type",
+    "typescript"
+  ],
+  "author": "houjun",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhouhoujun/tsioc/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhouhoujun/tsioc.git"
+  },
+  "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "dependencies": {
+    "@tsdi/ioc": "^5.0.0-beta11",
+    "@tsdi/core": "^5.0.0-beta11",
+    "reflect-metadata": "^0.1.12",
+    "tslib": "^1.9.3"
+  },
+  "peerDependencies": {
+  },
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "devDependencies": {}
+}

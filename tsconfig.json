@@ -18,6 +18,9 @@
       "@tsdi/boot":[
         "packages/boot/src"
       ],
+      "@tsdi/components":[
+        "packages/components/src"
+      ],
       "@tsdi/logs": [
         "packages/logs/src"
       ],

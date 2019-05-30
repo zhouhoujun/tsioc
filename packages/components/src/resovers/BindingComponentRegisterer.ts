@@ -1,6 +1,5 @@
-import { IocBuildDecoratorRegisterer, BuildHandle } from '../../core';
+import { IocBuildDecoratorRegisterer, BuildContext, BuildHandle } from '@tsdi/boot';
 import { Type, Singleton } from '@tsdi/ioc';
-import { BuildContext } from './BuildContext';
 
 @Singleton()
 export class BindingComponentRegisterer extends IocBuildDecoratorRegisterer<Type<BuildHandle<BuildContext>>> {

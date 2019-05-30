@@ -1,7 +1,5 @@
-
-import { BuildContext } from './BuildContext';
-import { ResolveHandle } from './ResolveHandle';
-import { BeforeInit } from '../../core';
+import { BuildContext, ResolveHandle } from '@tsdi/boot';
+import { BeforeInit } from '../ComponentLifecycle';
 import { isFunction } from '@tsdi/ioc';
 
 

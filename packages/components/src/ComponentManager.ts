@@ -1,5 +1,5 @@
 import { Singleton } from '@tsdi/ioc';
-import { ModuleConfigure } from './modules';
+import { ModuleConfigure } from '@tsdi/boot';
 
 @Singleton
 export class ComponentManager {

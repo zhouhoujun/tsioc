@@ -1,5 +1,5 @@
-import { MessageContext, Handles, IHandle, HandleType } from '../core';
-import { Singleton, Type, isClass } from '@tsdi/ioc';
+import { MessageContext, Handles, HandleType } from '../core';
+import { Singleton, isClass } from '@tsdi/ioc';
 
 
 /**

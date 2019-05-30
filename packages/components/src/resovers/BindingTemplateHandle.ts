@@ -1,6 +1,5 @@
-import { ResolveHandle } from './ResolveHandle';
-import { BuildContext } from './BuildContext';
-import { ComponentManager } from '../../core';
+import { ResolveHandle, BuildContext } from '@tsdi/boot';
+import { ComponentManager } from '../ComponentManager';
 import { BindingComponentRegisterer } from './BindingComponentRegisterer';
 import { ValidComponentRegisterer } from './ValidComponentRegisterer';
 

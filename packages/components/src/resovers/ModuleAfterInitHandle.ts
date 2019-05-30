@@ -1,9 +1,7 @@
 
-import { BuildContext } from './BuildContext';
-import { ResolveHandle } from './ResolveHandle';
-import { AfterInit } from '../../core';
+import { BuildContext, ResolveHandle } from '@tsdi/boot';
+import { AfterInit } from '../ComponentLifecycle';
 import { isFunction } from '@tsdi/ioc';
-
 
 export class ModuleAfterInitHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
