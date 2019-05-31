@@ -1,7 +1,7 @@
 import { IocDesignAction, DesignActionContext, getOwnTypeMetadata } from '@tsdi/ioc';
-import { RootContainerToken } from '@tsdi/boot';
 import { MessageQueueToken } from '../messages';
 import { MessageMetadata } from '../decorators';
+import { RootContainerToken } from '../ContainerPoolToken';
 
 
 export class MessageRegisterAction extends IocDesignAction {
