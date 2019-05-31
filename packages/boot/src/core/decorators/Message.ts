@@ -1,8 +1,8 @@
-import { TypeMetadata, ITypeDecorator, createClassDecorator, ArgsIterator, isNumber, Type, isString, isClass } from '@tsdi/ioc';
+import { TypeMetadata, ITypeDecorator, createClassDecorator, ArgsIterator, Type, isString, isClass } from '@tsdi/ioc';
 import { MessageHandle } from '../messages';
 
 /**
- * register for metadata.
+ * message metadata. use to define the class as message handle register in global message queue.
  *
  * @export
  * @interface RegisterForMetadata
@@ -10,20 +10,32 @@ import { MessageHandle } from '../messages';
  */
 export interface MessageMetadata extends TypeMetadata {
     /**
-     * set where this module to register. default as child module.
+     * message type.
      *
      * @type {boolean}
      * @memberof ModuleConfig
      */
     msgType?: string;
 
+    /**
+     * register this message handle before this handle.
+     *
+     * @type {Type<MessageHandle>}
+     * @memberof MessageMetadata
+     */
     before?: Type<MessageHandle>;
 
+    /**
+     * register this message handle after this handle.
+     *
+     * @type {Type<MessageHandle>}
+     * @memberof MessageMetadata
+     */
     after?: Type<MessageHandle>;
 }
 
 /**
- * Message decorator.
+ * Message decorator, for class. use to define the class as message handle register in global message queue.
  *
  * @export
  * @interface IMessageDecorator
@@ -35,7 +47,8 @@ export interface IMessageDecorator extends ITypeDecorator<MessageMetadata> {
      *
      * @RegisterFor
      *
-     * @param {RegFor} regFor register module scope.
+     * @param {string} msgType the message handle type.
+     * @param {Type<MessageHandle>} [before] register this message handle before this handle.
      */
     (msgType: string, before?: Type<MessageHandle>): ClassDecorator;
 
@@ -50,7 +63,7 @@ export interface IMessageDecorator extends ITypeDecorator<MessageMetadata> {
 }
 
 /**
- * Message decorator, for class. use to define the class as root module for root conatiner only.
+ * Message decorator, for class. use to define the class as message handle register in global message queue.
  *
  * @Message
  */
