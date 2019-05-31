@@ -140,7 +140,7 @@ DI Module manager, application bootstrap. base on AOP.
 *  `@DIModule` DIModule decorator, use to define class as DI Module.
 *  `@Bootstrap` Bootstrap decorator, use to define class as bootstrp module.
 *  `@Annotation` Annotation decorator, use to define class build metadata config.
-*  `@Message`  Message decorator, use to define class as message handle.
+*  `@Message`  Message decorator, for class. use to define the class as message handle register in global message queue.
 
 [mvc boot simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
 
