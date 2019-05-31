@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/pack",
-  "version": "5.0.0-beta13",
+  "version": "5.0.0-beta14",
   "description": "type task framework, base on AOP, Ioc container, via @tsdi. dev build pack activities.",
   "scripts": {
     "postinstall": "npm prune",
@@ -36,18 +36,18 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme",
   "dependencies": {
-    "@tsdi/ioc": "^5.0.0-beta13",
-    "@tsdi/aop": "^5.0.0-beta13",
-    "@tsdi/boot": "^5.0.0-beta13",
-    "@tsdi/components": "^5.0.0-beta13",
-    "@tsdi/core": "^5.0.0-beta13",
-    "@tsdi/unit": "^5.0.0-beta13",
-    "@tsdi/unit-console": "^5.0.0-beta13",
-    "@tsdi/logs": "^5.0.0-beta13",
-    "@tsdi/annotations": "^5.0.0-beta13",
-    "@tsdi/activities": "^5.0.0-beta13",
-    "@tsdi/platform-server": "^5.0.0-beta13",
-    "@tsdi/platform-server-boot": "^5.0.0-beta13",
+    "@tsdi/ioc": "^5.0.0-beta14",
+    "@tsdi/aop": "^5.0.0-beta14",
+    "@tsdi/boot": "^5.0.0-beta14",
+    "@tsdi/components": "^5.0.0-beta14",
+    "@tsdi/core": "^5.0.0-beta14",
+    "@tsdi/unit": "^5.0.0-beta14",
+    "@tsdi/unit-console": "^5.0.0-beta14",
+    "@tsdi/logs": "^5.0.0-beta14",
+    "@tsdi/annotations": "^5.0.0-beta14",
+    "@tsdi/activities": "^5.0.0-beta14",
+    "@tsdi/platform-server": "^5.0.0-beta14",
+    "@tsdi/platform-server-boot": "^5.0.0-beta14",
     "uglify": "^0.1.5",
     "uglify-js": "^3.5.12",
     "@types/execa": "^0.9.0",
@@ -82,6 +82,5 @@
     "lib": "lib",
     "test": "test"
   },
-  "devDependencies": {
-  }
+  "devDependencies": {}
 }
