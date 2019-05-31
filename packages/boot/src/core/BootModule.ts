@@ -13,11 +13,12 @@ import {
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
 import * as modules from './modules';
+import * as messages from './messages';
 
 import { RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction } from './resolves';
-import { RouteDesignRegisterAction, RouteRuntimRegisterAction } from './registers';
+import { RouteDesignRegisterAction, RouteRuntimRegisterAction, MessageRegisterAction } from './registers';
 import { DIModuleInjectorScope, DIModuleExports, ModuleInjectLifeScope, RegForInjectorAction } from './injectors';
-import { RegisterFor } from './decorators';
+import { RegisterFor, Message } from './decorators';
 import { BuildHandleRegisterer } from './handles';
 import { ModuleDecoratorService } from './ModuleDecoratorService';
 
@@ -46,13 +47,14 @@ export class BootModule {
         container.register(ModuleDecoratorService);
         container.get(DesignDecoratorRegisterer)
             .register(Annotation, DecoratorScopes.Class, BindProviderAction, IocAutorunAction)
-            .register(DIModule, DecoratorScopes.Class, BindProviderAction, IocAutorunAction);
+            .register(DIModule, DecoratorScopes.Class, BindProviderAction, IocAutorunAction)
+            .register(Message,  DecoratorScopes.Class, BindProviderAction, MessageRegisterAction);
 
         container.get(RuntimeDecoratorRegisterer)
             .register(Annotation, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
             .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
-        container.use(modules);
+        container.use(modules, messages);
         container.register(DIModuleExports);
 
         let registerer = container.getActionRegisterer();
@@ -60,7 +62,8 @@ export class BootModule {
         registerer
             .register(container, ModuleInjectLifeScope, true)
             .register(container, DIModuleInjectorScope, true)
-            .register(container, RegForInjectorAction);
+            .register(container, RegForInjectorAction)
+            .register(container, MessageRegisterAction);
 
         container.get(InjectorDecoratorRegisterer)
             .register(DIModule, DIModuleInjectorScope)

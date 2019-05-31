@@ -4,15 +4,6 @@ import { ResolveModuleHandle } from './ResolveModuleHandle';
 import { BuildContext } from './BuildContext';
 import { BuildDecoratorRegisterer } from './BuildDecoratorRegisterer';
 import { InitResolveModuleHandle } from './InitResolveModuleHandle';
-// import { ModuleBeforeInitHandle } from './ModuleBeforeInitHandle';
-// import { ModuleAfterInitHandle } from './ModuleAfterInitHandle';
-// import { ResolveTemplateScope } from './ResolveTemplateScope';
-// import { BindingComponentRegisterer } from './BindingComponentRegisterer';
-// import { BindingTemplateHandle } from './BindingTemplateHandle';
-// import { ModuleAfterContentInitHandle } from './ModuleAfterContentInitHandle';
-// import { BindingPropertyHandle } from './BindingPropertyHandle';
-// import { BindingScope, TemplateParseScope } from '../parses';
-// import { ValidComponentRegisterer } from './ValidComponentRegisterer';
 
 
 export class ResolveMoudleScope extends BuildHandles<BuildContext> {
@@ -31,24 +22,9 @@ export class ResolveMoudleScope extends BuildHandles<BuildContext> {
         if (!this.container.has(BuildDecoratorRegisterer)) {
             this.container.register(BuildDecoratorRegisterer);
         }
-        // if (!this.container.has(ValidComponentRegisterer)) {
-        //     this.container.register(ValidComponentRegisterer);
-        // }
-        // if (!this.container.has(BindingComponentRegisterer)) {
-        //     this.container.register(BindingComponentRegisterer);
-        // }
-
-        // this.registerHandle(BindingScope, true)
-        //     .registerHandle(TemplateParseScope, true);
 
         this.use(InitResolveModuleHandle)
             .use(ResolveModuleHandle)
-            .use(DecoratorBuildHandle)
-            // .use(ModuleBeforeInitHandle)
-            // .use(BindingPropertyHandle)
-            // .use(ModuleAfterInitHandle)
-            // .use(ResolveTemplateScope)
-            // .use(BindingTemplateHandle)
-            // .use(ModuleAfterContentInitHandle);
+            .use(DecoratorBuildHandle);
     }
 }

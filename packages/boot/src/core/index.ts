@@ -4,6 +4,7 @@ export * from './injectors';
 export * from './resolves';
 export * from './modules';
 export * from './handles';
+export * from './messages';
 export * from './ContainerPool';
 export * from './ContainerPoolToken';
 export * from './types';

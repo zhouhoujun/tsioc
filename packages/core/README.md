@@ -145,10 +145,9 @@ see [simples](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop/test/
 DI Module manager, application bootstrap. base on AOP.
 
 *  `@DIModule` DIModule decorator, use to define class as DI Module.
+*  `@Bootstrap` Bootstrap decorator, use to define class as bootstrp module.
 *  `@Annotation` Annotation decorator, use to define class build metadata config.
-*  `@Component`  Component decorator,  use to defaine class as component with template.
-*  `@Input` Input decorator, use to define property or param as component binding field or args.
-see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities/taskfile.ts)
+*  `@Message`  Message decorator, use to define class as message handle.
 
 [mvc boot simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
 
@@ -215,6 +214,14 @@ export class ModuleB {
 BootApplication.run(ModuleB);
 
 ```
+
+## components
+*  `@Component`  Component decorator,  use to defaine class as component with template.
+*  `@Input` Input decorator, use to define property or param as component binding field or args.
+
+see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities/taskfile.ts)
+
+
 ## [Activites](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities)
 
 * [activities](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities)

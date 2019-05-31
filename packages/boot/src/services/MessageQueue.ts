@@ -1,4 +1,4 @@
-import { MessageContext, Handles, HandleType } from '../core';
+import { MessageContext, Handles, HandleType, MessageQueueToken } from '../core';
 import { Singleton, isClass } from '@tsdi/ioc';
 
 
@@ -11,7 +11,7 @@ import { Singleton, isClass } from '@tsdi/ioc';
  * @template T
  */
 
-@Singleton
+@Singleton(MessageQueueToken)
 export class MessageQueue<T extends MessageContext> extends Handles<T> {
 
     /**

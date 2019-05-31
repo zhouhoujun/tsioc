@@ -21,6 +21,18 @@ npm install @tsdi/platform-server
 
 ## add extends modules
 
+
+## boot
+DI Module manager, application bootstrap. base on AOP.
+
+*  `@DIModule` DIModule decorator, use to define class as DI Module.
+*  `@Bootstrap` Bootstrap decorator, use to define class as bootstrp module.
+*  `@Annotation` Annotation decorator, use to define class build metadata config.
+*  `@Message`  Message decorator, use to define class as message handle.
+
+[mvc boot simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
+
+
 ### use bootstrap
 
 

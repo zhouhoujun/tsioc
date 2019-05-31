@@ -23,7 +23,7 @@ export interface RegisterForMetadata extends TypeMetadata {
  * RegisterFor decorator.
  *
  * @export
- * @interface IRootOnlyDecorator
+ * @interface IRegisterForDecorator
  * @extends {ITypeDecorator<ClassMetadata>}
  */
 export interface IRegisterForDecorator extends ITypeDecorator<RegisterForMetadata> {
