@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/core",
-  "version": "5.0.0-beta15",
+  "version": "5.0.0-beta16",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
     "postinstall": "npm prune",
@@ -35,7 +35,7 @@
   "dependencies": {
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3",
-    "@tsdi/ioc": "^5.0.0-beta15"
+    "@tsdi/ioc": "^5.0.0-beta16"
   },
   "directories": {
     "lib": "lib",

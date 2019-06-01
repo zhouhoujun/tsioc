@@ -1,4 +1,4 @@
 export * from './handles';
-export * from './ComponentModule';
+export * from './ElementModule';
 export * from './Element';
 export * from './ContentElement';
