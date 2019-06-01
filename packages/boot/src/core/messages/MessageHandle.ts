@@ -12,15 +12,15 @@ import { MessageContext } from './MessageContext';
  * @extends {Middleware<MessageContext>}
  */
 @Abstract()
-export abstract class MessageHandle extends Handle<MessageContext> {
+export abstract class MessageHandle<T extends MessageContext> extends Handle<T> {
     /**
      * execute middleware.
      *
      * @abstract
-     * @param {MessageContext} ctx
+     * @param {T} ctx
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      * @memberof AnnoationMiddleware
      */
-    abstract execute(ctx: MessageContext, next: () => Promise<void>): Promise<void>;
+    abstract execute(ctx: T, next: () => Promise<void>): Promise<void>;
 }
