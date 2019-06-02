@@ -13,7 +13,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
         outDir: '../../dist/ioc',
         src: 'src/**/*.ts',
         test: 'test/**/*.ts',
-        annotation: true,
+        annotation: false,
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
             { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundle', outputFile: 'ioc.umd.js', format: 'umd', uglify: true },

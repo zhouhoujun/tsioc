@@ -1,5 +1,6 @@
 import { lang, isBoolean } from '../utils';
 import { IocAction, IocActionType, IocActionContext } from './Action';
+import { IIocContainer } from '../IIocContainer';
 
 
 /**
@@ -17,7 +18,9 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
     protected afters: IocActionType[];
 
     private actionFuncs: lang.IAction<any>[];
-    protected initAction() {
+    constructor(container?: IIocContainer) {
+        super(container);
+
         this.befores = [];
         this.actions = [];
         this.afters = [];

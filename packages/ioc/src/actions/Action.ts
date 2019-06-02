@@ -84,12 +84,13 @@ export class IocActionContext extends IocCoreService {
  */
 export abstract class IocAction<T extends IocActionContext> {
 
-    constructor(@Inject(IocContainerToken) protected container?: IIocContainer) {
-        this.initAction();
-    }
+    @Inject(IocContainerToken)
+    protected container: IIocContainer;
 
-    protected initAction() {
-
+    constructor(container?: IIocContainer) {
+        if (container) {
+            this.container = container;
+        }
     }
 
     abstract execute(ctx: T, next: () => void): void;
