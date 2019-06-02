@@ -1,6 +1,7 @@
 export * from './Action';
 export * from './ActionRegisterer';
 export * from './IocCompositeAction';
+export * from './ActionScope';
 export * from './IocCacheManager';
 export * from './LifeScope';
 export * from './RegisterLifeScope';

@@ -1,5 +1,5 @@
 import { IocActionContext } from './Action';
-import { IocCompositeAction } from './IocCompositeAction';
+import { ActionScope } from './ActionScope';
 
 
 /**
@@ -9,6 +9,6 @@ import { IocCompositeAction } from './IocCompositeAction';
  * @class LifeScope
  * @extends {IocCompositeAction<T>}
  */
-export class LifeScope<T extends IocActionContext> extends IocCompositeAction<T> {
+export class LifeScope<T extends IocActionContext> extends ActionScope<T> {
 
 }

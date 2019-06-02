@@ -1,10 +1,9 @@
-import { LifeScope } from './LifeScope';
 import { Token } from '../types';
 import { ProviderTypes } from '../providers';
 import { ResolveActionContext } from './ResolveActionContext';
 import { IocResolveScope } from './IocResolveScope';
 
-export class ResolveLifeScope<T> extends LifeScope<ResolveActionContext<T>> {
+export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>> {
 
     execute(ctx: ResolveActionContext<any>, next?: () => void): void {
         if (!ctx.instance) {

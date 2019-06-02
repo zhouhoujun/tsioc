@@ -1,6 +1,7 @@
 import { IocCompositeAction } from './IocCompositeAction';
 import { ResolveActionContext } from './ResolveActionContext';
 import { IocDefaultResolveAction } from './resolves/IocDefaultResolveAction';
+import { ActionScope } from './ActionScope';
 
 
 /**
@@ -11,12 +12,12 @@ import { IocDefaultResolveAction } from './resolves/IocDefaultResolveAction';
  * @export
  * @abstract
  * @class IocResolveScope
- * @extends {IocCompositeAction<T>}
+ * @extends {ActionScope<T>}
  * @template T
  */
-export class IocResolveScope extends IocCompositeAction<ResolveActionContext<any>> {
+export class IocResolveScope<T extends ResolveActionContext<any>> extends ActionScope<T> {
 
-    execute(ctx: ResolveActionContext<any>, next?: () => void): void {
+    execute(ctx: T, next?: () => void): void {
         if (!ctx.instance) {
             super.execute(ctx, next);
         }

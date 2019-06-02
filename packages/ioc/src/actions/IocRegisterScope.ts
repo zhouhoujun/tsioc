@@ -1,5 +1,5 @@
-import { IocCompositeAction } from './IocCompositeAction';
 import { RegisterActionContext } from './RegisterActionContext';
+import { ActionScope } from './ActionScope';
 
 
 /**
@@ -10,9 +10,9 @@ import { RegisterActionContext } from './RegisterActionContext';
  * @export
  * @abstract
  * @class IocRegisterScope
- * @extends {IocCompositeAction<T>}
+ * @extends {ActionScope<T>}
  * @template T
  */
-export abstract class IocRegisterScope<T extends RegisterActionContext> extends IocCompositeAction<T> {
+export abstract class IocRegisterScope<T extends RegisterActionContext> extends ActionScope<T> {
 
 }

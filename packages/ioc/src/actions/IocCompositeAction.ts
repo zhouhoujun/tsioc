@@ -132,22 +132,15 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
     }
 
     execute(ctx: T, next?: () => void): void {
-        let scope = ctx.currActionScope;
-        this.setScope(ctx);
         if (!this.actionFuncs) {
             this.actionFuncs = [...this.befores, ...this.actions, ...this.afters].map(ac => this.parseAction(ac)).filter(f => f);
         }
         this.execFuncs(ctx, this.actionFuncs, next);
-        this.setScope(ctx, scope);
     }
 
     protected registerAction(action: IocActionType, setup?: boolean): this {
         this.container.getActionRegisterer().register(this.container, action, setup);
         return this;
-    }
-
-    protected setScope(ctx: T, parentScope?: any) {
-        ctx.currActionScope = parentScope || this;
     }
 
     protected resetFuncs() {

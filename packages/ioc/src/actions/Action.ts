@@ -24,12 +24,12 @@ export interface ActionContextOption {
 export class IocActionContext extends IocCoreService {
 
     /**
-     * currScope
+     * curr action scope
      *
      * @type {IocAction<any>}
      * @memberof IocActionContext
      */
-    currActionScope?: any;
+    actionScope?: any;
 
     @Inject(ContainerFactoryToken)
     protected raiseContainerGetter: ContainerFactory;

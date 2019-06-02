@@ -1,9 +1,9 @@
-import { IocCompositeAction, isToken, isClassType } from '@tsdi/ioc';
+import { IocResolveScope, isToken, isClassType } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { ResolveServiceInClassChain } from './ResolveServiceInClassChain';
 import { ResolveDecoratorServiceAction } from './ResolveDecoratorServiceAction';
 
-export class ResolveTargetServiceAction extends IocCompositeAction<ResolveServiceContext<any>> {
+export class ResolveTargetServiceAction extends IocResolveScope<ResolveServiceContext<any>> {
     execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
         if (!ctx.instance && ctx.targetRefs) {
             let has = ctx.targetRefs.some(t => {

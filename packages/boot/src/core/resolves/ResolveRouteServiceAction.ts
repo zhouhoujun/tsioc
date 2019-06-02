@@ -22,8 +22,8 @@ export class ResolveRouteServiceAction extends IocCompositeAction<ResolveService
     }
 
     protected setScope(ctx: ResolveServiceContext<any>, parentScope?: any) {
-        if (!ctx.currActionScope) {
-            ctx.currActionScope = this;
+        if (!ctx.actionScope) {
+            ctx.actionScope = this;
         }
     }
 
