@@ -1,15 +1,15 @@
 import { IocActionContext, Type, ProviderMap, ActionContextOption, isFunction, isClass, Inject, ContainerFactory } from '@tsdi/ioc';
-import { ModuleConfigure, RegFor, IModuleResolver } from '../modules';
+import { ModuleConfigure, RegFor, IModuleResolver } from './modules';
 import { IContainer } from '@tsdi/core';
 
 /**
  * annoation action option.
  *
  * @export
- * @interface AnnoationActionOption
+ * @interface AnnoationOption
  * @extends {ActionContextOption}
  */
-export interface AnnoationActionOption extends ActionContextOption {
+export interface AnnoationOption extends ActionContextOption {
     /**
      * target module type.
      *
@@ -32,13 +32,13 @@ export interface AnnoationActionOption extends ActionContextOption {
  * @export
  * @template T
  * @param {Type<T>} CtxType
- * @param {(Type<any> | AnnoationActionOption)} target
+ * @param {(Type<any> | AnnoationOption)} target
  * @param {(IContainer | (() => IContainer))} [raiseContainer]
  * @returns {T}
  */
-export function createAnnoationContext<T extends AnnoationActionContext>(CtxType: Type<T>, target: Type<any> | AnnoationActionOption, raiseContainer?: ContainerFactory): T {
+export function createAnnoationContext<T extends AnnoationContext>(CtxType: Type<T>, target: Type<any> | AnnoationOption, raiseContainer?: ContainerFactory): T {
     let type: Type<any>;
-    let options: AnnoationActionOption;
+    let options: AnnoationOption;
     if (isClass(target)) {
         type = target;
     } else {
@@ -58,15 +58,15 @@ export function createAnnoationContext<T extends AnnoationActionContext>(CtxType
  * @class AnnoationContext
  * @extends {HandleContext}
  */
-export class AnnoationActionContext extends IocActionContext {
+export class AnnoationContext extends IocActionContext {
 
     constructor(type: Type<any>) {
         super();
         this.module = type;
     }
 
-    static parse(target: Type<any> | AnnoationActionOption, raiseContainer?: ContainerFactory): AnnoationActionContext {
-        return createAnnoationContext(AnnoationActionContext, target, raiseContainer);
+    static parse(target: Type<any> | AnnoationOption, raiseContainer?: ContainerFactory): AnnoationContext {
+        return createAnnoationContext(AnnoationContext, target, raiseContainer);
     }
 
     hasRaiseContainer(): boolean {

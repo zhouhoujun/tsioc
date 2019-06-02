@@ -1,4 +1,5 @@
 export * from './decorators';
+export * from './AnnoationContext';
 export * from './registers';
 export * from './injectors';
 export * from './resolves';

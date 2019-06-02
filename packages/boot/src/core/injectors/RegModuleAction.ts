@@ -1,8 +1,8 @@
 import { AnnoationAction } from './AnnoationAction';
-import { AnnoationActionContext } from './AnnoationActionContext';
+import { AnnoationContext } from '../AnnoationContext';
 
 export class RegModuleAction extends AnnoationAction {
-    execute(ctx: AnnoationActionContext, next: () => void): void {
+    execute(ctx: AnnoationContext, next: () => void): void {
         ctx.getRaiseContainer().register(ctx.module);
         next();
     }

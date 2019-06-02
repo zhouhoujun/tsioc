@@ -1,14 +1,14 @@
 import { isClass, LifeScope, Type, Inject, ContainerFactoryToken, hasOwnClassMetadata } from '@tsdi/ioc';
 import { ModuleResovler } from './ModuleResovler';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { AnnoationActionContext } from './AnnoationActionContext';
+import { AnnoationContext } from '../AnnoationContext';
 import { CheckAnnoationAction } from './CheckAnnoationAction';
 import { AnnoationRegisterScope } from './AnnoationRegisterScope';
 import { RegModuleExportsAction } from './RegModuleExportsAction';
 import { InjectorAction, InjectorActionContext, InjectorRegisterScope } from '@tsdi/core';
 
 
-export class ModuleInjectLifeScope extends LifeScope<AnnoationActionContext> {
+export class ModuleInjectLifeScope extends LifeScope<AnnoationContext> {
 
     @Inject(ContainerToken)
     container: IContainer;
@@ -25,7 +25,7 @@ export class ModuleInjectLifeScope extends LifeScope<AnnoationActionContext> {
     }
 
     register<T>(type: Type<T>, decorator: string): ModuleResovler<T> {
-        let ctx = AnnoationActionContext.parse({
+        let ctx = AnnoationContext.parse({
             module: type,
             decorator: decorator
         }, this.container.get(ContainerFactoryToken));

@@ -1,5 +1,4 @@
 export * from './AnnoationAction';
-export * from './AnnoationActionContext';
 export * from './AnnoationRegisterScope';
 export * from './CheckAnnoationAction';
 export * from './RegModuleAction';

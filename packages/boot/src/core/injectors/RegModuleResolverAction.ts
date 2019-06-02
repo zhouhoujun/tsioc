@@ -1,10 +1,10 @@
 import { AnnoationAction } from './AnnoationAction';
-import { AnnoationActionContext } from './AnnoationActionContext';
+import { AnnoationContext } from '../AnnoationContext';
 import { IDIModuleReflect } from '../modules';
 import { ModuleResovler } from './ModuleResovler';
 
 export class RegModuleResolverAction extends AnnoationAction {
-    execute(ctx: AnnoationActionContext, next: () => void): void {
+    execute(ctx: AnnoationContext, next: () => void): void {
         let annoation = ctx.annoation;
         let container = ctx.getRaiseContainer();
         let mdResolver = new ModuleResovler(annoation.token || ctx.module, annoation, container, ctx.module, ctx.exports);
