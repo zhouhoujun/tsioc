@@ -73,11 +73,6 @@ export class CompoiseActivity<T> extends Activity<T> {
         await this.getExector().execActions(ctx, this.getActions());
     }
 
-    protected setScope(ctx: ActivityContext, parentScope?: any) {
-        ctx.currActionScope = parentScope || this;
-    }
-
-
     protected getActions(): PromiseUtil.ActionHandle<ActivityContext>[] {
         if (!this.actions) {
             this.actions = this.activities.map(ac => this.getExector().parseAction(ac))
