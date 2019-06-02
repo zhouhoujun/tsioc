@@ -124,25 +124,43 @@ describe('Array', function(){
 ```
 
 ### custom run test code
-```ts
 
-new UnitTest()
-    .use(ConsoleReporter)
-    .use(...) // your assert expect ...
-    .test(SuiteTest);
-    // match test file. will auto load class with @Suite decorator.
-    //.test('test/');
+* use runTest to run
+
+```ts
+// run Test
+/**
+ * unit test.
+ *
+ * @export
+ * @param {(string | Type<any> | (string | Type<any>)[])} src test source.
+ * @param {(string | AppConfigure)} [config] test configure.
+ * @param {...LoadType[]} deps custom set unit test dependencies.
+ * @returns {Promise<any>}
+ */
+export function runTest(src: string | Type<any> | (string | Type<any>)[], config?: string | UnitTestConfigure, ...deps: LoadType[]): Promise<any>;
+
+runTest(SuiteTest, {...}, ConsoleReporter);
+
+```
+
+* use boot application
+```ts
+import { BootApplication, DIModule, ConfigureRegister } from '@tsdi/boot';
+import { UnitTest } from '@tsdi/unit';
+
+BootApplication.run(UnitTestContext.parse({ module: UnitTest, deps: [ConsoleReporter], configures: [config, { src: src }] }))
 ```
 
 ### use command run test code
-`pk test [test/**/*.ts]`
+`tsdi test [test/**/*.ts]`
 
 ```shell
 
-pk test  //default load test/**/*.ts
+tsdi test  //default load test/**/*.ts
 
 //or
-pk test test/**/*.ts
+tsdi test test/**/*.ts
 
 ```
 
@@ -152,7 +170,7 @@ pk test test/**/*.ts
 
 
 Documentation is available on the
-[@tsdi/unit-console docs site](https://github.com/zhouhoujun/tsioc/blob/master/packages/unit-console#readme).
+[@tsdi/unit docs site](https://github.com/zhouhoujun/tsioc/blob/master/packages/unit#readme).
 
 ## License
 
