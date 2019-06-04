@@ -1,5 +1,5 @@
-import { TypeMetadata, ITypeDecorator, createClassDecorator, ArgsIterator, Type, isString, isClass } from '@tsdi/ioc';
-import { MessageHandle, MessageContext } from '../messages';
+import { TypeMetadata, ITypeDecorator, createClassDecorator, ArgsIterator, Type, isClass, isUndefined } from '@tsdi/ioc';
+import { MessageHandle, MessageContext, MessageQueue } from '../messages';
 
 /**
  * message metadata. use to define the class as message handle register in global message queue.
@@ -10,12 +10,19 @@ import { MessageHandle, MessageContext } from '../messages';
  */
 export interface MessageMetadata extends TypeMetadata {
     /**
+     * is singleton or not.
+     *
+     * @type {boolean}
+     * @memberof ClassMetadata
+     */
+    singleton?: boolean;
+    /**
      * message type.
      *
      * @type {boolean}
      * @memberof ModuleConfig
      */
-    msgType?: string;
+    regIn?: Type<MessageQueue<MessageContext>>;
 
     /**
      * register this message handle before this handle.
@@ -47,10 +54,10 @@ export interface IMessageDecorator extends ITypeDecorator<MessageMetadata> {
      *
      * @RegisterFor
      *
-     * @param {string} msgType the message handle type.
+     * @param {Type<MessageQueue<MessageContext>>} regIn the message reg in the message queue.
      * @param {Type<MessageHandle<MessageContext>>} [before] register this message handle before this handle.
      */
-    (msgType: string, before?: Type<MessageHandle<MessageContext>>): ClassDecorator;
+    (regIn: Type<MessageQueue<MessageContext>>, before?: Type<MessageHandle<MessageContext>>): ClassDecorator;
 
     /**
      * RegisterFor decorator, for class. use to define the the way to register the module. default as child module.
@@ -69,9 +76,9 @@ export interface IMessageDecorator extends ITypeDecorator<MessageMetadata> {
  */
 export const Message: IMessageDecorator = createClassDecorator<MessageMetadata>('Message', (args: ArgsIterator) => {
     args.next<MessageMetadata>({
-        match: (arg) => isString(arg),
+        match: (arg) => isClass(arg),
         setMetadata: (metadata, arg) => {
-            metadata.msgType = arg;
+            metadata.regIn = arg;
         }
     });
     args.next<MessageMetadata>({
@@ -80,4 +87,8 @@ export const Message: IMessageDecorator = createClassDecorator<MessageMetadata>(
             metadata.before = arg;
         }
     });
+}, meta => {
+    if (isUndefined(meta.singleton)) {
+        meta.singleton = true;
+    }
 }) as IMessageDecorator;

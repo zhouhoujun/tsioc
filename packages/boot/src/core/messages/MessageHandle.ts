@@ -1,6 +1,7 @@
-import { Handle } from '../handles';
-import { Abstract } from '@tsdi/ioc';
+import { Handle, Handles, HandleType } from '../handles';
+import { Abstract, isClass, Injectable } from '@tsdi/ioc';
 import { MessageContext } from './MessageContext';
+import { IMessageQueue } from './IMessageQueue';
 
 
 /**
@@ -8,7 +9,7 @@ import { MessageContext } from './MessageContext';
  *
  * @export
  * @abstract
- * @class AnnoationMiddleware
+ * @class MessageHandle
  * @extends {Middleware<MessageContext>}
  */
 @Abstract()
@@ -23,4 +24,28 @@ export abstract class MessageHandle<T extends MessageContext> extends Handle<T> 
      * @memberof AnnoationMiddleware
      */
     abstract execute(ctx: T, next: () => Promise<void>): Promise<void>;
+}
+
+/**
+ * composite message.
+ *
+ * @export
+ * @abstract
+ * @class MessageQueue
+ * @extends {Handles<T>}
+ * @template T
+ */
+@Injectable
+export class MessageQueue<T extends MessageContext> extends Handles<T> implements IMessageQueue<T> {
+
+    send(ctx: T, next?: () => Promise<void>): Promise<void> {
+        return this.execute(ctx, next);
+    }
+    protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {
+        if (isClass(HandleType)) {
+            this.container.register(HandleType);
+        }
+        this.use(HandleType);
+        return this;
+    }
 }

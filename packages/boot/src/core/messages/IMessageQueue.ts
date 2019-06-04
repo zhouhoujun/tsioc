@@ -65,6 +65,6 @@ export interface IMessageQueue<T extends MessageContext> {
 }
 
 /**
- * message queue token.
+ * root message queue token.
  */
-export const MessageQueueToken = new InjectToken<IMessageQueue<MessageContext>>('BOOT_MessageQueue');
+export const RootMessageQueueToken = new InjectToken<IMessageQueue<MessageContext>>('BOOT_ROOT_MessageQueue');
