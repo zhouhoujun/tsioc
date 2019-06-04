@@ -144,8 +144,11 @@ function storeMetadata<T>(name: string, metaName: string, args: any[], metadata?
                 target = args[0];
                 let propertyKey = args[1];
                 let descriptor = args[2] as TypedPropertyDescriptor<any>;
+                if (!descriptor) {
+                    return;
+                }
                 // is set get or not.
-                if (descriptor && descriptor.set) {
+                if (descriptor.set || descriptor.get) {
                     setPropertyMetadata(name, metaName, target, propertyKey, metadata, metadataExtends);
                 } else {
                     setMethodMetadata(name, metaName, target, propertyKey, descriptor, metadata, metadataExtends);
