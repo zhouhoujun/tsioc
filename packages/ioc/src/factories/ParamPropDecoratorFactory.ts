@@ -10,7 +10,7 @@ import { Token } from '../types';
 /**
  * property parameter decorator.
  */
-export type PropParamDecorator = (target: Object, propertyKey: string | symbol, parameterIndex?: number) => void;
+export type PropParamDecorator = (target: Object, propertyKey: string | symbol, parameterIndex?: number | TypedPropertyDescriptor<any>) => void;
 
 /**
  * Parameter and Property decorator.
@@ -33,7 +33,7 @@ export interface IParamPropDecorator<T extends ParamPropMetadata> {
     /**
      * define parameter or property decorator.
      */
-    (target: object, propertyKey: string | symbol, parameterIndex?: number): void;
+    (target: object, propertyKey: string | symbol, parameterIndex?: number | TypedPropertyDescriptor<any>): void;
 }
 
 /**

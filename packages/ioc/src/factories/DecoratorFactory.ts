@@ -115,7 +115,7 @@ function argsToMetadata<T>(args: any[], adapter?: MetadataAdapter): T {
 }
 
 
-function storeMetadata<T>(name: string, metaName: string, args: any[], metadata?: any, metadataExtends?: MetadataExtends<T>) {
+function storeMetadata<T>(name: string, metaName: string, args: any[], metadata?: any, metadataExtends?: MetadataExtends<T>): any {
     let target;
     switch (args.length) {
         case 1:
@@ -143,8 +143,13 @@ function storeMetadata<T>(name: string, metaName: string, args: any[], metadata?
             } else {
                 target = args[0];
                 let propertyKey = args[1];
-                let descriptor = args[2];
-                setMethodMetadata(name, metaName, target, propertyKey, descriptor, metadata, metadataExtends);
+                let descriptor = args[2] as TypedPropertyDescriptor<any>;
+                // is set get or not.
+                if (descriptor && descriptor.set) {
+                    setPropertyMetadata(name, metaName, target, propertyKey, metadata, metadataExtends);
+                } else {
+                    setMethodMetadata(name, metaName, target, propertyKey, descriptor, metadata, metadataExtends);
+                }
                 return descriptor;
             }
             break;

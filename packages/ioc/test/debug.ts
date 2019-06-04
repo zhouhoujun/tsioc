@@ -53,8 +53,18 @@ export class MiddleSchoolStudent extends Student {
 
 @Injectable()
 export class MClassRoom {
+    private stu: Student;
+
     @AutoWired(MiddleSchoolStudent)
-    leader: Student;
+    set leader(stu: Student) {
+        console.log('set MClassRoom leader value')
+        this.stu = stu;
+    }
+
+    get leader() {
+        return this.stu;
+    }
+
     constructor() {
 
     }
@@ -85,9 +95,19 @@ export class CollegeClassRoom {
 @Injectable()
 export class InjMClassRoom {
     // @Inject(MiddleSchoolStudent)
+    private stu: Student;
+
     @Inject
     // @Inject({ type: MiddleSchoolStudent })
-    leader: Student;
+    set leader(stu: Student) {
+        console.log('set InjMClassRoom leader value')
+        this.stu = stu;
+    }
+
+    get leader() {
+        return this.stu;
+    }
+
     constructor() {
 
     }
@@ -140,7 +160,7 @@ export class StingMClassRoom {
 }
 
 export class StringIdTest {
-    constructor( @Inject('StringClassRoom') public room: IClassRoom) {
+    constructor(@Inject('StringClassRoom') public room: IClassRoom) {
 
     }
 }
@@ -163,7 +183,7 @@ export class SymbolIdest {
 
     @Inject(IocContainerToken)
     public container: IIocContainer
-    constructor( @Param('StringClassRoom')
+    constructor(@Param('StringClassRoom')
     public room2: IClassRoom) {
 
     }

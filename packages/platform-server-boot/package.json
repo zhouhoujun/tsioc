@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-server-boot",
-  "version": "5.0.0-beta17",
+  "version": "5.0.0-beta18",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
     "postinstall": "npm prune",
@@ -36,10 +36,10 @@
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.2",
     "globby": "^7.1.1",
-    "@tsdi/ioc": "^5.0.0-beta17",
-    "@tsdi/core": "^5.0.0-beta17",
-    "@tsdi/boot": "^5.0.0-beta17",
-    "@tsdi/platform-server": "^5.0.0-beta17"
+    "@tsdi/ioc": "^5.0.0-beta18",
+    "@tsdi/core": "^5.0.0-beta18",
+    "@tsdi/boot": "^5.0.0-beta18",
+    "@tsdi/platform-server": "^5.0.0-beta18"
   },
   "peerDependencies": {
   },
