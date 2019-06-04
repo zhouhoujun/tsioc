@@ -1,13 +1,17 @@
 import { Token, ResolveActionContext, ResolveActionOption, IIocContainer, createResolveContext, ClassType } from '@tsdi/ioc';
 import { TargetRef } from '../TargetService';
+
+
+export type TargetRefType =  Object | TargetRef;
+
 /**
- * service action option.
+ * service context option.
  *
  * @export
- * @interface ServiceActionOption
+ * @interface ServiceOption
  * @extends {ResovleActionOption}
  */
-export interface ServiceActionOption<T> extends ResolveActionOption<T> {
+export interface ServiceOption<T> extends ResolveActionOption<T> {
     /**
      * token provider service type.
      *
@@ -17,31 +21,20 @@ export interface ServiceActionOption<T> extends ResolveActionOption<T> {
     tokens?: Token<T>[];
 
     /**
-     * curr token.
+     * get extend servie or not.
      *
-     * @type {Token<any>}
-     * @memberof ServiceActionOption
+     * @type {boolean}
+     * @memberof ServiceOption
      */
-    currToken?: Token<T>;
+    extend?: boolean;
 
     /**
      * service reference target.
      *
-     * @type {*}
+     * @type {(TargetRefType | TargetRefType[])}
      * @memberof ServiceActionOption
      */
-    target?: any;
-
-
-    targetRefs?: TargetRef[];
-
-    /**
-     * current target ref.
-     *
-     * @type {TargetRef}
-     * @memberof ServiceActionOption
-     */
-    currTargetRef?: TargetRef;
+    target?: TargetRefType | TargetRefType[];
 
     /**
      * reolve this defualt service, if not found any service.
@@ -84,7 +77,7 @@ export class ResolveServiceContext<T> extends ResolveActionContext<T> {
      * @returns {ResolveActionContext}
      * @memberof ResolveActionContext
      */
-    static parse<T>(target?: Token<T> | ServiceActionOption<T>, raiseContainer?: IIocContainer | (() => IIocContainer)): ResolveServiceContext<T> {
+    static parse<T>(target?: Token<T> | ServiceOption<T>, raiseContainer?: IIocContainer | (() => IIocContainer)): ResolveServiceContext<T> {
         return createResolveContext<T, ResolveServiceContext<T>>(ResolveServiceContext, target, raiseContainer);
     }
 
@@ -95,6 +88,14 @@ export class ResolveServiceContext<T> extends ResolveActionContext<T> {
      * @memberof ServiceActionOption
      */
     currToken?: Token<any>;
+
+    /**
+     * get extend servie or not.
+     *
+     * @type {boolean}
+     * @memberof ServiceOption
+     */
+    extend?: boolean;
 
     /**
      * service tokens.

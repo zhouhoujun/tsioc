@@ -8,8 +8,7 @@ import { Runnable } from '../runnable';
 export class RefDecoratorRunnableHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
         ctx.runnable = ctx.getRaiseContainer().getService(
-            Runnable,
-            ctx.decorator,
+            { token: Runnable, target: ctx.decorator },
             { provide: BootContext, useValue: ctx },
             { provide: lang.getClass(ctx), useValue: ctx });
 

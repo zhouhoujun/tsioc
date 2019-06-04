@@ -121,7 +121,7 @@ export abstract class Activity<T> {
 
     protected async initResult(ctx: ActivityContext, next?: () => Promise<void>, ...providers: ProviderTypes[]): Promise<ActivityResult<any>> {
         providers.unshift({ provide: NextToken, useValue: next });
-        let result = this.getContainer().getService(ActivityResult, lang.getClass(this), ...providers);
+        let result = this.getContainer().getService({ token: ActivityResult, target: lang.getClass(this) }, ...providers);
         if (!isNullOrUndefined(ctx.result)) {
             if (this.pipe) {
                 result.value = this.pipe.transform(ctx.result);

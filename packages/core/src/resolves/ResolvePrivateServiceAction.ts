@@ -1,4 +1,4 @@
-import { InjectReference, ProviderMap, Token, isToken, isClassType } from '@tsdi/ioc';
+import { InjectReference, ProviderMap, Token, isToken, isClassType, isNullOrUndefined, lang } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { TargetPrivateService } from '../TargetService';
@@ -22,6 +22,12 @@ export class ResolvePrivateServiceAction extends IocResolveServiceAction {
                 let map = this.container.has(tk) ? this.container.resolve(tk) : null;
                 if (map && map.has(token)) {
                     ctx.instance = map.resolve(token, ...ctx.providers);
+                }
+                if (ctx.extend && isNullOrUndefined(ctx.instance) && isClassType(token)) {
+                    let extk = map.keys().find(k => isClassType(k) && lang.isExtendsClass(k, token));
+                    if (extk) {
+                        ctx.instance = map.resolve(extk, ...ctx.providers);
+                    }
                 }
             }
         }

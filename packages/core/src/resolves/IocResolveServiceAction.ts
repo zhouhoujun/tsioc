@@ -1,4 +1,4 @@
-import { Token, IocResolveAction } from '@tsdi/ioc';
+import { Token, IocResolveAction, isNullOrUndefined, isClassType, lang } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 
 /**
@@ -22,6 +22,15 @@ export abstract class IocResolveServiceAction extends IocResolveAction {
     protected resolve(ctx: ResolveServiceContext<any>, token: Token<any>) {
         if (!ctx.instance) {
             ctx.instance = this.container.resolve(token, ...ctx.providers);
+            if (ctx.extend && isNullOrUndefined(ctx.instance) && isClassType(token)) {
+                this.container.iterator((fac, k) => {
+                    if (isNullOrUndefined(ctx.instance) && isClassType(k) && lang.isExtendsClass(k, token)) {
+                        ctx.instance = fac(...ctx.providers);
+                        return false;
+                    }
+                    return true;
+                });
+            }
         }
     }
 }

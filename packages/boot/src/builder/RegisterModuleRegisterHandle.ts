@@ -11,7 +11,7 @@ export class RegisterModuleRegisterHandle extends AnnoationHandle {
             if (ctx.annoation.baseURL) {
                 container.bindProvider(ProcessRunRootToken, ctx.annoation.baseURL);
             }
-            let regs = container.getServices(ModuleRegister, ctx.module);
+            let regs = container.getServices({ token: ModuleRegister, target: ctx.module });
             if (regs && regs.length) {
                 await Promise.all(regs.map(reg => reg.register(ctx.annoation)));
             }

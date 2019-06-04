@@ -19,10 +19,14 @@ export class InitServiceResolveAction extends IocResolveServiceAction {
                 .filter(t => t);
         }
         ctx.tokens = ctx.tokens || [];
-        if (isFunction(ctx.serviceTokenFactory)) {
-            ctx.tokens = ctx.tokens.concat(ctx.serviceTokenFactory(ctx.token) || []);
+        if (ctx.token) {
+            if (isFunction(ctx.serviceTokenFactory)) {
+                ctx.tokens = (ctx.serviceTokenFactory(ctx.token) || []).concat(ctx.tokens);
+            } else {
+                ctx.tokens.push(ctx.token);
+            }
         }
-        ctx.tokens.push(ctx.token);
+
         if (ctx instanceof ResolveServicesContext) {
             ctx.tokens = ctx.tokens.filter(t => isToken(t));
             ctx.types = ctx.types || [];

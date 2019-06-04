@@ -5,7 +5,7 @@ import { ConfigureRegister, ConfigureManager } from '../annotations';
 
 export class ModuleConfigureRegisterHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
-        let regs = ctx.getRaiseContainer().getServices(ConfigureRegister, ctx.module);
+        let regs = ctx.getRaiseContainer().getServices({ token: ConfigureRegister, target: ctx.module });
         if (regs && regs.length) {
             let mgr = this.resolve(ctx, ConfigureManager);
             let config = await mgr.getConfig();

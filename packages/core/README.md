@@ -317,91 +317,37 @@ container.register(new Registration(Person, aliasname));
     get<T>(token: Token<T>, alias?: string, ...providers: ProviderTypes[]): T;
 
     /**
-     * resolve token value in this container only.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    resolveValue<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
-
-    /**
      * get service or target reference service.
      *
      * @template T
-     * @param {Token<T>} token servive token.
+     * @param {(Token<T> | ServiceActionOption<T> | ResolveServiceContext<T>)} target servive token.
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getService<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
+    getService<T>(target: Token<T> | ServiceActionOption<T> | ResolveServiceContext<T>, ...providers: ProviderTypes[]): T;
 
     /**
-     * get service or target reference service.
+     * get all service extends type.
      *
      * @template T
-     * @param {Token<T>} token servive token.
-     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
+     * @param {(Token<T> | ServicesActionOption<T> | ResolveServicesContext<T>)} target servive token or express match token.
      * @param {...ProviderTypes[]} providers
-     * @returns {T}
+     * @returns {T[]} all service instance type of token type.
      * @memberof IContainer
      */
-    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], ...providers: ProviderTypes[]): T;
+    getServices<T>(target: Token<T> | ServicesActionOption<T> | ResolveServicesContext<T>, ...providers: ProviderTypes[]): T[];
 
     /**
-     * get service or target reference service.
+     * get all provider service.
      *
      * @template T
-     * @param {Token<T>} token servive token.
-     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
-     * @param {RefTokenFac<T>} toRefToken
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
+     * @param {(Token<T> | ServicesActionOption<T> | ResolveServicesContext<T>)} target
+     * @param {ResolveServicesContext<T>} [ctx]
+     * @returns {ProviderMap}
+     * @memberof IServicesResolver
      */
-    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], toRefToken: RefTokenFac<T>, ...providers: ProviderTypes[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {Token<T>} token servive token.
-     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
-     * @param {(boolean | Token<T>)} defaultToken
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], defaultToken: boolean | Token<T>, ...providers: ProviderTypes[]): T;
-
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {Token<T>} token servive token.
-     * @param {(Token<any> | Token<any>[])} [target] service refrence target.
-     * @param {RefTokenFac<T>} toRefToken
-     * @param {(boolean | Token<T>)} defaultToken
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(token: Token<T>, target: Token<any> | Token<any>[], toRefToken: RefTokenFac<T>, defaultToken: boolean | Token<T>, ...providers: ProviderTypes[]): T;
-
-    /**
-     * get target reference service.
-     *
-     * @template T
-     * @param {ReferenceToken<T>} [refToken] reference service Registration Injector
-     * @param {(Token<any> | Token<any>[])} target  the service reference to.
-     * @param {Token<T>} [defaultToken] default service token.
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getRefService<T>(refToken: ReferenceToken<T>, target: Token<any> | Token<any>[], defaultToken?: Token<T>, ...providers: ProviderTypes[]): T
+    getServiceProviders<T>(target: Token<T> | ServicesActionOption<T> | ResolveServicesContext<T>, ctx?: ResolveServicesContext<T>): ProviderMap;
 
 
 //get simple person

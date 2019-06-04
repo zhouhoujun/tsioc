@@ -38,11 +38,6 @@ export class TargetService {
 export type TargetRef = Token<any> | TargetService;
 
 /**
- * target refs.
- */
-export type TargetRefs = TargetRef | TargetRef[];
-
-/**
  * target reference service.
  *
  * @export

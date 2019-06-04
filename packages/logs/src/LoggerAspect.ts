@@ -97,7 +97,7 @@ export abstract class LoggerAspect {
         let formater: ILogFormater;
         config.format = config.format || LogFormaterToken;
         if (isToken(config.format)) {
-            formater = this.container.getService(config.format, lang.getClass(this));
+            formater = this.container.getService({ token: config.format, target: lang.getClass(this) });
         } else if (isFunction(config.format)) {
             formater = { format: config.format };
         } else if (isObject(config.format) && isFunction(config.format.format)) {

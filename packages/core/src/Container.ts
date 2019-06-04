@@ -1,14 +1,13 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isProvider, ProviderMap } from '@tsdi/ioc';
+import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, ProviderMap, isToken, isArray } from '@tsdi/ioc';
 import { ModuleLoader, IModuleLoader } from './services';
 import { registerCores } from './registerCores';
 import {
-    ResolveServiceContext, ResolveServicesContext, ServiceActionOption,
-    ServicesActionOption, ServiceResolveLifeScope, ServicesResolveLifeScope
+    ResolveServiceContext, ResolveServicesContext, ServiceOption,
+    ServicesOption, ServiceResolveLifeScope, ServicesResolveLifeScope
 } from './resolves';
-import { TargetRefs } from './TargetService';
 import { InjectorLifeScope } from './injectors';
 
 
@@ -104,41 +103,27 @@ export class Container extends IocContainer implements IContainer {
      *  get service or target reference service.
      *
      * @template T
-     * @param {Token<T>} token
-     * @param {(TargetRefs | ResolveServiceContext | ProviderTypes)} [target]
-     * @param {(ResolveServiceContext | ProviderTypes)} [ctx]
+     * @param {(Token<T> | ServiceOption<T> | ResolveServiceContext<T>)} target
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof Container
      */
-    getService<T>(token: Token<T>, target?: TargetRefs | ResolveServiceContext<T> | ProviderTypes, ctx?: ResolveServiceContext<T> | ProviderTypes, ...providers: ProviderTypes[]): T {
+    getService<T>(target: Token<T> | ServiceOption<T> | ResolveServiceContext<T>, ...providers: ProviderTypes[]): T {
         let context: ResolveServiceContext<T>;
-        if (isProvider(ctx)) {
-            providers.unshift(ctx);
-            ctx = null;
-        } else if (ctx instanceof ResolveServiceContext) {
-            context = ctx;
-        }
-        if (isProvider(target)) {
-            providers.unshift(target);
-            target = null;
+        if (isToken(target)) {
+            context = ResolveServiceContext.parse(target);
         } else if (target instanceof ResolveServiceContext) {
             context = target;
-            target = null;
-        }
-        if (!context) {
-            context = ResolveServiceContext.parse({
-                token: token,
-                target: target,
-                providers: providers
-            }, this);
         } else {
-            context.setOptions(<ServiceActionOption<T>>{
-                token: token,
-                target: target,
-                providers: providers
-            });
+            context = ResolveServiceContext.parse(target);
         }
+
+        if (isArray(context.providers)) {
+            context.providers.push(...providers);
+        } else {
+            context.providers = providers;
+        }
+
         this.getActionRegisterer().get(ServiceResolveLifeScope).execute(context);
         return context.instance || null;
     }
@@ -147,36 +132,13 @@ export class Container extends IocContainer implements IContainer {
      * get all service extends type and reference target.
      *
      * @template T
-     * @param {Token<T>} token
-     * @param {(TargetRefs | ResolveServicesContext | ProviderTypes)} [target]
-     * @param {(ResolveServicesContext | ProviderTypes)} [ctx]
+     * @param {(Token<T> | ServicesOption<T> | ResolveServicesContext<T>)} target
      * @param {...ProviderTypes[]} providers
      * @returns {T[]}
      * @memberof Container
      */
-    getServices<T>(token: Token<T>, target?: TargetRefs | ResolveServicesContext<T> | ProviderTypes, ctx?: ResolveServicesContext<T> | ProviderTypes, ...providers: ProviderTypes[]): T[] {
-        let context: ResolveServicesContext<T>;
-        let tag: TargetRefs;
-        if (isProvider(target)) {
-            providers.unshift(target);
-            ctx = null;
-            tag = null;
-        } else if (target instanceof ResolveServicesContext) {
-            context = target;
-        } else {
-            tag = target;
-        }
-
-        if (!context) {
-            if (isProvider(ctx)) {
-                providers.unshift(ctx);
-            } else if (ctx instanceof ResolveServicesContext) {
-                context = ctx;
-            }
-        }
-
-        let maps = this.getServiceProviders(token, tag, context);
-
+    getServices<T>(target: Token<T> | ServicesOption<T> | ResolveServicesContext<T>, ...providers: ProviderTypes[]): T[] {
+        let maps = this.getServiceProviders(target);
         let services = [];
         maps.iterator((fac) => {
             services.push(fac(...providers));
@@ -188,35 +150,19 @@ export class Container extends IocContainer implements IContainer {
      * get service providers.
      *
      * @template T
-     * @param {Token<T>} token
-     * @param {(TargetRefs | ResolveServicesContext)} [target]
+     * @param {Token<T>} target
      * @param {ResolveServicesContext} [ctx]
      * @returns {ProviderMap}
      * @memberof Container
      */
-    getServiceProviders<T>(token: Token<T>, target?: TargetRefs | ResolveServicesContext<T>, ctx?: ResolveServicesContext<T>): ProviderMap {
+    getServiceProviders<T>(target: Token<T> | ServicesOption<T> | ResolveServicesContext<T>, ctx?: ResolveServicesContext<T>): ProviderMap {
         let context: ResolveServicesContext<T>;
-        let tag: TargetRefs;
-        if (target instanceof ResolveServicesContext) {
+        if (isToken(target)) {
+            context = ResolveServicesContext.parse(target);
+        } else if (target instanceof ResolveServicesContext) {
             context = target;
         } else {
-            tag = target;
-        }
-
-        if (!context && ctx instanceof ResolveServicesContext) {
-            context = ctx;
-        }
-
-        if (!context) {
-            context = ResolveServicesContext.parse({
-                token: token,
-                target: tag
-            }, this);
-        } else {
-            context.setOptions(<ServicesActionOption<T>>{
-                token: token,
-                target: tag
-            });
+            context = ResolveServicesContext.parse(target);
         }
         this.getActionRegisterer().get(ServicesResolveLifeScope).execute(context);
         return context.services;

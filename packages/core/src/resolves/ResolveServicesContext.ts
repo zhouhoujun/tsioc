@@ -1,14 +1,14 @@
 import { ClassType, ProviderMap, Token, IIocContainer, createResolveContext } from '@tsdi/ioc';
-import { ServiceActionOption, ResolveServiceContext } from './ResolveServiceContext';
+import { ServiceOption, ResolveServiceContext } from './ResolveServiceContext';
 
 /**
- * services action options
+ * services context options
  *
  * @export
- * @interface ServicesActionOption
- * @extends {ServiceActionOption}
+ * @interface ServicesOption
+ * @extends {ServiceOption}
  */
-export interface ServicesActionOption<T> extends ServiceActionOption<T> {
+export interface ServicesOption<T> extends ServiceOption<T> {
     /**
      * get services both in container and target private refrence service.
      *
@@ -38,12 +38,12 @@ export class ResolveServicesContext<T> extends ResolveServiceContext<T> {
      * parse service resolve context.
      *
      * @static
-     * @param {ServicesActionOption} [options]
+     * @param {ServicesOption} [options]
      * @param {(IContainer | (() => IContainer))} [raiseContainer]
      * @returns {ResolveServicesContext}
      * @memberof ResolveServicesContext
      */
-    static parse<T>(target?: Token<T> | ServicesActionOption<T>, raiseContainer?: IIocContainer | (() => IIocContainer)): ResolveServicesContext<T> {
+    static parse<T>(target?: Token<T> | ServicesOption<T>, raiseContainer?: IIocContainer | (() => IIocContainer)): ResolveServicesContext<T> {
         return createResolveContext<T, ResolveServicesContext<T>>(ResolveServicesContext, target, raiseContainer);
     }
 
