@@ -109,6 +109,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
             .forEach(advicer => {
                 this.invokeAdvice(cloneJp, advicer);
             });
+
     }
 
     afterReturning(joinPoint: Joinpoint) {

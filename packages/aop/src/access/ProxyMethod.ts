@@ -101,10 +101,15 @@ export class ProxyMethod implements IProxyMethod {
             } catch (err) {
                 exeErr = err;
             }
-
-            adChain.invoaction(joinPoint, JoinpointState.After, val);
+            (async () => {
+                adChain.invoaction(joinPoint, JoinpointState.After, val);
+            })();
             if (exeErr) {
-                adChain.invoaction(joinPoint, JoinpointState.AfterThrowing, exeErr);
+                (async () => {
+                    adChain.invoaction(joinPoint, JoinpointState.AfterThrowing, exeErr);
+                })().catch(err => {
+                    throw err;
+                })
             } else {
                 adChain.invoaction(joinPoint, JoinpointState.AfterReturning, val);
                 return joinPoint.returning;
