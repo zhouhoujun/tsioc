@@ -470,15 +470,15 @@ export class IocContainer implements IIocContainer {
      * invoke method.
      *
      * @template T
-     * @param {*} target type of class or instance
+     * @param {(T | Type<T>)} target type of class or instance
      * @param {string} propertyKey
-     * @param {*} [instance] instance of target type.
+     * @param {T} [instance] instance of target type.
      * @param {...ParamProviders[]} providers
-     * @returns {T}
+     * @returns {TR}
      * @memberof Container
      */
-    invoke<T>(target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
-        return this.get(MethodAccessor).invoke(this, target, propertyKey, instance, ...providers);
+    invoke<T, TR = any>(target: T | Type<T>, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR {
+        return this.get(MethodAccessor).invoke(this, target, propertyKey, ...providers);
     }
 
     createParams(params: IParameter[], ...providers: ParamProviders[]): any[] {

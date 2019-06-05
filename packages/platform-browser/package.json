@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-browser",
-  "version": "5.0.0-beta23",
+  "version": "5.0.0-beta24",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
     "postinstall": "npm prune",
@@ -33,14 +33,14 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "@tsdi/ioc": "^5.0.0-beta23",
-    "@tsdi/core": "^5.0.0-beta23",
+    "@tsdi/ioc": "^5.0.0-beta24",
+    "@tsdi/core": "^5.0.0-beta24",
     "reflect-metadata": "^0.1.12",
     "core-js": "^2.6.2",
     "tslib": "^1.9.3"
   },
   "peerDependencies": {
-    "@tsdi/core": "^5.0.0-beta23"
+    "@tsdi/core": "^5.0.0-beta24"
   },
   "directories": {
     "lib": "lib"

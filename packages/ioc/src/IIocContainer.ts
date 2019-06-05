@@ -193,40 +193,16 @@ export interface IIocContainer extends IResolverContainer {
     getToken<T>(target: Token<T>, alias?: string): Token<T>;
 
     /**
-     * try create instance to invoke property method.
-     *
-     * @template T
-     * @param {*} target type  instance
-     * @param {string} propertyKey
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IMethodAccessor
-     */
-    invoke<T>(target: any, propertyKey: string, ...providers: ParamProviders[]): T;
-
-    /**
      * try to invoke the method of intance, if is token will create instance to invoke.
      *
      * @template T
-     * @param {Token<any>} target type class
-     * @param {string} propertyKey
+     * @param {(Token<T> | T)} target type class
+     * @param {(string | ((tag: T) => Function))} propertyKey
      * @param {...ParamProviders[]} providers
-     * @returns {T}
+     * @returns {TR}
      * @memberof IMethodAccessor
      */
-    invoke<T>(target: Token<any>, propertyKey: string, ...providers: ParamProviders[]): T;
-
-    /**
-     * try to invoke the method of intance, if is token will create instance to invoke.
-     *
-     * @template T
-     * @param {Token<any>} target type class
-     * @param {string} propertyKey
-     * @param {*} instance instance of target type.
-     * @param {...ParamProviders[]} providers
-     * @memberof IMethodAccessor
-     */
-    invoke<T>(target: Token<any>, propertyKey: string, instance: any, ...providers: ParamProviders[])
+    invoke<T, TR = any>(target: Token<T> | T, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR;
 
     /**
      * create params instances with IParameter and provider

@@ -1,9 +1,10 @@
 import { Token, Type } from '../types';
 import { IParameter } from '../IParameter';
-import { ParamProviders, isProvider, ProviderParser } from '../providers';
-import { isToken, isNullOrUndefined, lang, isFunction } from '../utils';
+import { ParamProviders, ProviderParser } from '../providers';
+import { isToken, lang, isFunction } from '../utils';
 import { IIocContainer } from '../IIocContainer';
 import { RuntimeLifeScope } from './RuntimeLifeScope';
+import { getParamerterNames } from '../factories';
 
 /**
  * execution, invoke some type method.
@@ -17,40 +18,13 @@ export interface IMethodAccessor {
      * try to async invoke the method of intance, if no instance will create by type.
      *
      * @template T
-     * @param {IIocContainer} container
-     * @param {*} target
-     * @param {string} propertyKey
+     * @param {(Token<T> | T)} target
+     * @param {(string | ((tag: T) => Function))} propertyKey
      * @param {...ParamProviders[]} providers
-     * @returns {T}
+     * @returns {TR}
      * @memberof IMethodAccessor
      */
-    invoke<T>(container: IIocContainer, target: any, propertyKey: string, ...providers: ParamProviders[]): T;
-
-    /**
-     * try to async invoke the method of intance, if no instance will create by type.
-     *
-     * @template T
-     * @param {Token<any>} target
-     * @param {string} propertyKey
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IMethodAccessor
-     */
-    invoke<T>(container: IIocContainer, target: Token<any>, propertyKey: string, ...providers: ParamProviders[]): T;
-
-    /**
-     * try to async invoke the method of intance, if no instance will create by type.
-     *
-     * @template T
-     * @param {IIocContainer} container
-     * @param {Token<any>} target
-     * @param {string} propertyKey
-     * @param {*} instance
-     * @param {...ParamProviders[]} providers
-     * @returns {T}
-     * @memberof IMethodAccessor
-     */
-    invoke<T>(container: IIocContainer, target: Token<any>, propertyKey: string, instance: any, ...providers: ParamProviders[]): T;
+    invoke<T, TR = any>(container: IIocContainer, target: Token<T> | T, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR;
 
     /**
      * create params instances with IParameter and provider
@@ -84,37 +58,42 @@ export class MethodAccessor implements IMethodAccessor {
      * @template T
      * @param {IIocContainer} container
      * @param {*} target
-     * @param {string} propertyKey
+     * @param {(string | ((tag: T) => Function))} propertyKey
      * @param {...ParamProviders[]} providers
      * @returns {T}
      * @memberof IMethodAccessor
      */
-    invoke<T>(container: IIocContainer, target: any, propertyKey: string, instance?: any, ...providers: ParamProviders[]): T {
-
+    invoke<T, TR = any>(container: IIocContainer, target: Token<T> | T, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR {
         let targetClass: Type<any>;
-        if (isProvider(instance)) {
-            providers.unshift(instance);
-            instance = undefined;
-        }
+        let instance: T;
         if (isToken(target)) {
-            if (isNullOrUndefined(instance)) {
-                targetClass = container.getTokenProvider(target);
-                instance = container.resolve(target, ...providers);
-            } else {
-                targetClass = lang.getClass(instance) || container.getTokenProvider(target);
-            }
+            targetClass = container.getTokenProvider(target);
+            instance = container.resolve(target, ...providers);
             lang.assert(targetClass, target.toString() + ' is not implements by any class.');
         } else {
             targetClass = lang.getClass(target);
             instance = target;
         }
-        lang.assertExp(instance && isFunction(instance[propertyKey]), `type: ${targetClass} has no method ${propertyKey.toString()}.`);
+
+        let key: string;
+        if (isFunction(propertyKey)) {
+            let meth = propertyKey(instance);
+            lang.forInClassChain(lang.getClass(instance), t => {
+                let dcp = Object.getOwnPropertyDescriptors(t.prototype);
+                key = Object.keys(dcp).find(k => isFunction(dcp[k].value) && !(dcp[k].set || dcp[k].get) && instance[k] === meth);
+                return !key;
+            });
+        } else {
+            key = propertyKey;
+        }
+
+        lang.assertExp(instance && isFunction(instance[key]), `type: ${targetClass} has no method ${(key || '').toString()}.`);
         let lifeScope = container.getActionRegisterer().get(RuntimeLifeScope);
-        let pds = lifeScope.getParamProviders(container, targetClass, propertyKey, instance);
+        let pds = lifeScope.getParamProviders(container, targetClass, key, instance);
         providers = providers.concat(pds);
-        let parameters = lifeScope.getMethodParameters(container, targetClass, instance, propertyKey);
+        let parameters = lifeScope.getMethodParameters(container, targetClass, instance, key);
         let paramInstances = this.createParams(container, parameters, ...providers);
-        return instance[propertyKey](...paramInstances) as T;
+        return instance[key](...paramInstances) as TR;
 
     }
 

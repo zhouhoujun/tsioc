@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/boot",
-  "version": "5.0.0-beta23",
+  "version": "5.0.0-beta24",
   "description": "DI Module manager, application bootstrap. base on AOP, Ioc container, via @tsdi/core .",
   "scripts": {
     "postinstall": "npm prune",
@@ -35,8 +35,8 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "@tsdi/ioc": "^5.0.0-beta23",
-    "@tsdi/core": "^5.0.0-beta23",
+    "@tsdi/ioc": "^5.0.0-beta24",
+    "@tsdi/core": "^5.0.0-beta24",
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3"
   },
