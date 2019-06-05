@@ -385,34 +385,36 @@ export class IocContainer implements IIocContainer {
     }
 
     protected registerFactory<T>(token: Token<T>, value?: Factory<T>, singleton?: boolean) {
-        let key = this.getTokenKey(token);
+        (async () => {
+            let key = this.getTokenKey(token);
 
-        if (this.factories.has(key)) {
-            return;
-        }
+            if (this.factories.has(key)) {
+                return;
+            }
 
-        let classFactory;
-        if (!isUndefined(value)) {
-            if (isFunction(value)) {
-                if (isClass(value)) {
-                    this.bindTypeFactory(key, value as Type<T>, singleton);
-                } else {
-                    classFactory = this.createCustomFactory(key, value as ToInstance<T>, singleton);
+            let classFactory;
+            if (!isUndefined(value)) {
+                if (isFunction(value)) {
+                    if (isClass(value)) {
+                        this.bindTypeFactory(key, value as Type<T>, singleton);
+                    } else {
+                        classFactory = this.createCustomFactory(key, value as ToInstance<T>, singleton);
+                    }
+                } else if (singleton && value !== undefined) {
+                    classFactory = this.createCustomFactory(key, () => value, singleton);
                 }
-            } else if (singleton && value !== undefined) {
-                classFactory = this.createCustomFactory(key, () => value, singleton);
+
+            } else if (!isString(token) && !isSymbol(token)) {
+                let ClassT = (token instanceof Registration) ? token.getClass() : token;
+                if (isClass(ClassT)) {
+                    this.bindTypeFactory(key, ClassT as Type<T>, singleton);
+                }
             }
 
-        } else if (!isString(token) && !isSymbol(token)) {
-            let ClassT = (token instanceof Registration) ? token.getClass() : token;
-            if (isClass(ClassT)) {
-                this.bindTypeFactory(key, ClassT as Type<T>, singleton);
+            if (classFactory) {
+                this.factories.set(key, classFactory);
             }
-        }
-
-        if (classFactory) {
-            this.factories.set(key, classFactory);
-        }
+        })();
     }
 
     protected createCustomFactory<T>(key: SymbolType<T>, factory?: ToInstance<T>, singleton?: boolean) {
@@ -455,11 +457,13 @@ export class IocContainer implements IIocContainer {
             this.bindProvider(key, ClassT);
         }
 
-        this.getActionRegisterer().get(DesignLifeScope).register(
-            DesignActionContext.parse({
-                tokenKey: key,
-                targetType: ClassT
-            }, this));
+        (async () => {
+            this.getActionRegisterer().get(DesignLifeScope).register(
+                DesignActionContext.parse({
+                    tokenKey: key,
+                    targetType: ClassT
+                }, this));
+        })();
     }
 
     /**

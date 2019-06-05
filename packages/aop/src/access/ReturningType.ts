@@ -14,9 +14,9 @@ export enum ReturningType {
     /**
      * it is promise asyce returning
      */
-    promise = 'promise',
-    /**
-     * it is observable asyce returning
-     */
-    observable = 'observable'
+    promise = 'promise'
+    // /**
+    //  * it is observable asyce returning
+    //  */
+    // observable = 'observable'
 }

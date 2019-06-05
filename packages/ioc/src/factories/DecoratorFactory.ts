@@ -378,7 +378,6 @@ function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: str
     methodMeadata.decorator = name;
     methodMeadata.propertyKey = propertyKey;
     // methodMeadata.descriptor = descriptor;
-
     if (metadataExtends) {
         metadataExtends(methodMeadata);
     }

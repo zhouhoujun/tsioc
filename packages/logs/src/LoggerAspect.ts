@@ -41,7 +41,7 @@ export abstract class LoggerAspect {
 
     protected processLog(joinPoint: Joinpoint, annotation?: LoggerMetadata[], message?: string, level?: Level) {
         if (annotation && annotation.length) {
-            annotation.forEach(logmeta => {
+            annotation.forEach(async logmeta => {
                 let canlog = false;
                 if (logmeta.express && logmeta.express(joinPoint)) {
                     canlog = true;
@@ -57,7 +57,9 @@ export abstract class LoggerAspect {
                 }
             });
         } else {
-            this.writeLog(this.logger, joinPoint, message, level);
+            (async () => {
+                this.writeLog(this.logger, joinPoint, message, level);
+            })();
         }
     }
 

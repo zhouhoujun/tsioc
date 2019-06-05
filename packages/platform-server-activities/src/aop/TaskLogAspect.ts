@@ -16,37 +16,39 @@ export class ActionLogAspect extends LoggerAspect {
 
 
     doLogging(joinPoint: Joinpoint) {
-        let logger = this.logger;
-        let target = joinPoint.target as Activity<any>;
-        let name = target.name;
-        if (!name && target.scopes && target.scopes.length) {
-            name = lang.getClassName(lang.last(target.scopes));
-        }
-        if (!name) {
-            name = lang.getClassName(joinPoint.targetType);
-        }
-        let start, end;
-        let taskname = '\'' + chalk.cyan(name) + '\'';
-        if (joinPoint.state === JoinpointState.Before) {
-            start = process.hrtime();
-            target['__startAt'] = start;
-            logger.log('[' + chalk.grey(timestamp('HH:mm:ss', new Date())) + ']', 'Starting', taskname, '...');
-        }
+        (async () => {
+            let logger = this.logger;
+            let target = joinPoint.target as Activity<any>;
+            let name = target.name;
+            if (!name && target.scopes && target.scopes.length) {
+                name = lang.getClassName(lang.last(target.scopes));
+            }
+            if (!name) {
+                name = lang.getClassName(joinPoint.targetType);
+            }
+            let start, end;
+            let taskname = '\'' + chalk.cyan(name) + '\'';
+            if (joinPoint.state === JoinpointState.Before) {
+                start = process.hrtime();
+                target['__startAt'] = start;
+                logger.log('[' + chalk.grey(timestamp('HH:mm:ss', new Date())) + ']', 'Starting', taskname, '...');
+            }
 
-        if (joinPoint.state === JoinpointState.AfterReturning) {
-            start = target['__startAt'];
-            end = prettyTime(process.hrtime(start));
-            delete target['__startAt'];
-            logger.log('[' + chalk.grey(timestamp('HH:mm:ss', new Date())) + ']', 'Finished', taskname, ' after ', chalk.magenta(end));
-        }
+            if (joinPoint.state === JoinpointState.AfterReturning) {
+                start = target['__startAt'];
+                end = prettyTime(process.hrtime(start));
+                delete target['__startAt'];
+                logger.log('[' + chalk.grey(timestamp('HH:mm:ss', new Date())) + ']', 'Finished', taskname, ' after ', chalk.magenta(end));
+            }
 
-        if (joinPoint.state === JoinpointState.AfterThrowing) {
-            start = target['__startAt'];
-            end = prettyTime(process.hrtime(start));
-            delete target['__startAt'];
-            logger.log('[' + chalk.grey(timestamp('HH:mm:ss', new Date())) + ']', 'Finished', taskname, chalk.red('errored after'), chalk.magenta(end));
-            process.exit(1);
-        }
+            if (joinPoint.state === JoinpointState.AfterThrowing) {
+                start = target['__startAt'];
+                end = prettyTime(process.hrtime(start));
+                delete target['__startAt'];
+                logger.log('[' + chalk.grey(timestamp('HH:mm:ss', new Date())) + ']', 'Finished', taskname, chalk.red('errored after'), chalk.magenta(end));
+                process.exit(1);
+            }
+        })();
     }
 }
 

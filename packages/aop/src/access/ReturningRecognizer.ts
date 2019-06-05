@@ -1,4 +1,4 @@
-import { Singleton, isPromise, isObservable } from '@tsdi/ioc';
+import { Singleton, isPromise } from '@tsdi/ioc';
 import { ReturningType } from './ReturningType';
 import { JoinpointState } from '../joinpoints';
 import { NonePointcut } from '../decorators/NonePointcut';
@@ -13,9 +13,9 @@ export class ReturningRecognizer extends IocRecognizer {
             return ReturningType.promise;
         }
 
-        if (isObservable(value)) {
-            return ReturningType.observable;
-        }
+        // if (isObservable(value)) {
+        //     return ReturningType.observable;
+        // }
 
         return ReturningType.sync;
     }

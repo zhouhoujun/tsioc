@@ -67,7 +67,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
         }
 
         this.getAdvicers('Before')
-            .forEach(advicer => {
+            .forEach(async advicer => {
                 this.invokeAdvice(cloneJp, advicer);
             });
 
@@ -88,12 +88,12 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
     after(joinPoint: Joinpoint) {
         let cloneJp = Object.assign({}, joinPoint);
         this.getAdvicers('Around')
-            .forEach(advicer => {
+            .forEach(async advicer => {
                 this.invokeAdvice(cloneJp, advicer);
             });
 
         this.getAdvicers('After')
-            .forEach(advicer => {
+            .forEach(async advicer => {
                 this.invokeAdvice(cloneJp, advicer);
             });
     }
@@ -113,7 +113,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
 
     afterReturning(joinPoint: Joinpoint) {
         let cloneJp = Object.assign({}, joinPoint);
-        let advChain = this.container.get<IAdvisorChain>(AdvisorChainToken,  { provide: Joinpoint, useValue: cloneJp });
+        let advChain = this.container.get<IAdvisorChain>(AdvisorChainToken, { provide: Joinpoint, useValue: cloneJp });
         this.getAdvicers('Around')
             .forEach(advicer => {
                 advChain.next((jp) => {

@@ -42,11 +42,13 @@ export class TestReport implements ITestReport {
             describe.cases = [];
 
             this.suites.set(suit, describe);
-            this.getReports().forEach(rep => {
+
+            this.getReports().forEach(async rep => {
                 if (rep instanceof RealtimeReporter) {
                     rep.renderSuite(describe);
                 }
             });
+
         }
     }
 
@@ -82,11 +84,13 @@ export class TestReport implements ITestReport {
 
     setCaseCompleted(testCase: ICaseDescribe) {
         testCase.end = new Date().getTime();
-        this.getReports().forEach(rep => {
+
+        this.getReports().forEach(async rep => {
             if (rep instanceof RealtimeReporter) {
                 rep.renderCase(testCase);
             }
         });
+
     }
 
     async report(): Promise<void> {

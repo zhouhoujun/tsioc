@@ -83,7 +83,9 @@ export class Container extends IocContainer implements IContainer {
      * @memberof Container
      */
     use(...modules: Modules[]): this {
-        this.getActionRegisterer().get(InjectorLifeScope).register(...modules);
+        (async () => {
+            this.getActionRegisterer().get(InjectorLifeScope).register(...modules);
+        })();
         return this;
     }
 

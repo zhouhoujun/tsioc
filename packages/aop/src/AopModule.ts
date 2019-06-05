@@ -12,8 +12,7 @@ import {
 import { AdviceMatcher } from './AdviceMatcher';
 import { Joinpoint } from './joinpoints';
 import {
-    ProxyMethod, AdvisorChainFactory, AdvisorChain, SyncProceeding,
-    AsyncObservableProceeding, AsyncPromiseProceeding, ReturningRecognizer
+    ProxyMethod, AdvisorChainFactory, AdvisorChain, SyncProceeding, AsyncPromiseProceeding, ReturningRecognizer
 } from './access';
 
 
@@ -42,7 +41,7 @@ export class AopModule {
         container.register(ReturningRecognizer);
         container.register(SyncProceeding);
         container.register(AsyncPromiseProceeding);
-        container.register(AsyncObservableProceeding);
+        // container.register(AsyncObservableProceeding);
         container.register(AdvisorChain);
         container.register(ProxyMethod);
         container.register(Advisor);

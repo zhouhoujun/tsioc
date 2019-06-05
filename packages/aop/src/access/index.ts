@@ -7,7 +7,7 @@ export * from './IProxyMethod';
 export * from './ProxyMethod';
 
 export * from './AsyncPromiseProceeding';
-export * from './AsyncObservableProceeding';
+// export * from './AsyncObservableProceeding';
 export * from './AdvisorProceeding';
 export * from './ReturningRecognizer';
 export * from './ReturningType';
