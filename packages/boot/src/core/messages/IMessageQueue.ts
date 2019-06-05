@@ -2,6 +2,11 @@ import { HandleType } from '../handles';
 import { MessageContext } from './MessageContext';
 import { InjectToken } from '@tsdi/ioc';
 
+
+export interface IMessage<T extends MessageContext> {
+    execute(ctx: T, next: () => Promise<void>): Promise<void>
+}
+
 /**
  * message queue.
  *
@@ -9,7 +14,7 @@ import { InjectToken } from '@tsdi/ioc';
  * @interface IMessageQueue
  * @template T
  */
-export interface IMessageQueue<T extends MessageContext> {
+export interface IMessageQueue<T extends MessageContext> extends IMessage<T> {
 
     /**
      * send message

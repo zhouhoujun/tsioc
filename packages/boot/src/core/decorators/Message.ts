@@ -1,5 +1,8 @@
-import { TypeMetadata, ITypeDecorator, createClassDecorator, ArgsIterator, Type, isClass, isUndefined } from '@tsdi/ioc';
-import { MessageHandle, MessageContext, MessageQueue } from '../messages';
+import { TypeMetadata, createClassDecorator, ArgsIterator, Type, isClass, isUndefined } from '@tsdi/ioc';
+import { MessageHandle, MessageContext, MessageQueue, IMessage } from '../messages';
+
+export type MessageDecorator = <TFunction extends Type<IMessage<any>>>(target: TFunction) => TFunction | void;
+
 
 /**
  * message metadata. use to define the class as message handle register in global message queue.
@@ -48,7 +51,7 @@ export interface MessageMetadata extends TypeMetadata {
  * @interface IMessageDecorator
  * @extends {ITypeDecorator<ClassMetadata>}
  */
-export interface IMessageDecorator extends ITypeDecorator<MessageMetadata> {
+export interface IMessageDecorator {
     /**
      * Message decorator, for class. use to define the the way to register the module. default as child module.
      *
@@ -57,7 +60,7 @@ export interface IMessageDecorator extends ITypeDecorator<MessageMetadata> {
      * @param {Type<MessageQueue<MessageContext>>} regIn the message reg in the message queue.
      * @param {Type<MessageHandle<MessageContext>>} [before] register this message handle before this handle.
      */
-    (regIn: Type<MessageQueue<MessageContext>>, before?: Type<MessageHandle<MessageContext>>): ClassDecorator;
+    (regIn: Type<MessageQueue<MessageContext>>, before?: Type<MessageHandle<MessageContext>>): MessageDecorator;
 
     /**
      * RegisterFor decorator, for class. use to define the the way to register the module. default as child module.
@@ -66,7 +69,7 @@ export interface IMessageDecorator extends ITypeDecorator<MessageMetadata> {
      *
      * @param {ClassMetadata} [metadata] metadata map.
      */
-    (metadata?: MessageMetadata): ClassDecorator;
+    (metadata?: MessageMetadata): MessageDecorator;
 }
 
 /**
