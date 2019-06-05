@@ -17,6 +17,7 @@ export class ResolveBootHandle extends BootHandle {
             if (isClass(bootModule)) {
                 ctx.bootstrap = await this.container.get(BuilderServiceToken).resolve(bootModule, {
                     scope: ctx.scope,
+                    template: ctx.template,
                     providers: extProviders
                 }, ctx.getRaiseContainer());
             } else if (bootModule) {
