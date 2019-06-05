@@ -9,7 +9,7 @@ import { Handles } from './Handles';
 @Singleton()
 export class BuildHandleRegisterer {
 
-    private maps: Map<Type<IHandle<any>>, Handle<any>>;
+    private maps: Map<Type<IHandle<any>>, IHandle<any>>;
 
     constructor() {
         this.maps = new Map();

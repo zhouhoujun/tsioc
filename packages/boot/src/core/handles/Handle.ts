@@ -49,7 +49,7 @@ export interface IHandle<T> {
 /**
  *  handle type.
  */
-export type HandleType<T extends IHandleContext> = Type<Handle<T>> | Handle<T> | PromiseUtil.ActionHandle<T>;
+export type HandleType<T extends IHandleContext> = Type<IHandle<T>> | Handle<T> | PromiseUtil.ActionHandle<T>;
 
 
 /**

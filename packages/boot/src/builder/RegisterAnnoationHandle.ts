@@ -9,9 +9,7 @@ export class RegisterAnnoationHandle extends AnnoationHandle {
         if (!ctx.decorator) {
             ctx.decorator = this.container.get(ModuleDecoratorServiceToken).getDecorator(ctx.module);
         }
-        if (ctx.annoation && ctx.annoation.baseURL) {
-            ctx.baseURL = ctx.annoation.baseURL;
-        }
+
         if (ctx.decorator) {
             this.container
                 .getActionRegisterer()
