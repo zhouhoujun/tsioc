@@ -362,7 +362,7 @@ container.resolve(Person, ...providers);
 
 ### Invoke method
 
-you can use yourself `MethodAccessor` by implement IMethodAccessor, register `MethodAccessorToken` with your `MethodAccessor` in container,   see interface [IMethodAccessor](https://github.com/zhouhoujun/@tsdi/core/blob/master/packages/core/src/IMethodAccessor.ts).
+you can use yourself `MethodAccessor` by implement IMethodAccessor, register `MethodAccessorToken` with your `MethodAccessor` in container,   see [interface](https://github.com/zhouhoujun/tsioc/blob/master/packages/ioc/src/IIocContainer.ts).
 
 ```ts
 
@@ -432,8 +432,8 @@ class Geet {
 
 container.register(Geet);
 
-container.invoke(Geet, 'print', null,
-{hi: 'How are you.', name:'zhou' },
+container.invoke(Geet, gt=> gt.print,
+ {hi: 'How are you.', name:'zhou' },
 { hi: (container: IContainer)=> 'How are you.' }, ... },
 { hi:{type: Token<any>, value: any |(container: IContainer)=>any }},
 Provider.createParam('name', 'zhou'),
@@ -442,32 +442,22 @@ Provider.create('hi', value:'Hello'),
 ...
 )
 
-container.resolve(Geet,
+let instance = container.resolve(Geet,
 {name: 'zhou' },
 { name: (container: IContainer)=>any } },
 {name:{type: Token<any>, value: any|(container: IContainer)=>any }})
 
-
+container.invoke(instance, gt=> gt.print, ...);
+container.invoke(instance, 'print', ...);
 
 container.register(MethodTest);
-container.invoke(MethodTest, 'sayHello')
-    .then(data =>{
-        console.log(data);
-    });
+container.invoke(MethodTest, 'sayHello');
 
 container.register(MethodTest2);
-container.invoke(MethodTest2, 'sayHello')
-    .then(data =>{
-        console.log(data);
-    });
+container.invoke(MethodTest2, tg=> tg.sayHello);
 
 container.register(MethodTest3);
-container.invoke(MethodTest3, 'sayHello')
-    .then(data =>{
-        console.log(data);
-    });
-
-
+container.invoke(MethodTest3, 'sayHello');
 
 
 ```
