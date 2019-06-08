@@ -67,7 +67,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
         }
 
         this.getAdvicers('Before')
-            .forEach(async advicer => {
+            .forEach(advicer => {
                 this.invokeAdvice(cloneJp, advicer);
             });
 

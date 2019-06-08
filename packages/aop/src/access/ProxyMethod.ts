@@ -93,24 +93,21 @@ export class ProxyMethod implements IProxyMethod {
             }));
 
             let adChain = container.get(AdvisorChainFactory, { provide: IocContainerToken, useValue: container }, { provide: AdvisorToken, useValue: this.advisor }, ObjectMapProvider.parse({ container: container, advisor: this.advisor, advices: advices }));
-            adChain.invoaction(joinPoint, JoinpointState.Before);
-            adChain.invoaction(joinPoint, JoinpointState.Pointcut);
+
             let val, exeErr;
             try {
+                adChain.invoaction(joinPoint, JoinpointState.Before);
+                adChain.invoaction(joinPoint, JoinpointState.Pointcut);
                 val = propertyMethod(...joinPoint.args);
             } catch (err) {
                 exeErr = err;
+                adChain.invoaction(joinPoint, JoinpointState.AfterThrowing, exeErr);
+                throw exeErr;
             }
             (async () => {
                 adChain.invoaction(joinPoint, JoinpointState.After, val);
             })();
-            if (exeErr) {
-                (async () => {
-                    adChain.invoaction(joinPoint, JoinpointState.AfterThrowing, exeErr);
-                })().catch(err => {
-                    throw err;
-                })
-            } else {
+            if (!exeErr) {
                 adChain.invoaction(joinPoint, JoinpointState.AfterReturning, val);
                 return joinPoint.returning;
             }
