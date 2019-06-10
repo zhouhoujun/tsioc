@@ -6,7 +6,7 @@ import { ProcessRunRootToken } from '../annotations';
 export class RegisterModuleRegisterHandle extends AnnoationHandle {
 
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.regScope === RegFor.child) {
+        if (ctx.regFor === RegFor.child) {
             let container = ctx.getRaiseContainer();
             if (ctx.annoation.baseURL) {
                 container.bindProvider(ProcessRunRootToken, ctx.annoation.baseURL);

@@ -19,7 +19,7 @@ export class ParseSelectorHandle extends ParsersHandle {
                     module: selector,
                     scope: ctx.scope,
                     template: ctx.template,
-                    regScope: RegFor.boot,
+                    regFor: RegFor.boot,
                     providers: ctx.providers
                 });
             }

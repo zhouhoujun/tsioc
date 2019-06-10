@@ -105,7 +105,7 @@ export class TranslateAtrrHandle extends ParseHandle {
                         module: selector,
                         scope: ctx.scope,
                         template: template,
-                        regScope: RegFor.boot,
+                        regFor: RegFor.boot,
                         providers: ctx.providers
                     });
                 }

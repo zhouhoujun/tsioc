@@ -11,17 +11,17 @@ import { RegModuleResolverAction } from './RegModuleResolverAction';
 export class AnnoationRegisterScope extends IocCompositeAction<AnnoationContext> {
     execute(ctx: AnnoationContext, next?: () => void): void {
         let pools = this.container.get(ContainerPoolToken);
-        if (!ctx.regScope) {
-            ctx.regScope = ctx.annoation.regFor || RegFor.child;
+        if (!ctx.regFor) {
+            ctx.regFor = ctx.annoation.regFor || RegFor.child;
         }
 
         let container = ctx.getRaiseContainer() as IContainer;
-        if (ctx.regScope === RegFor.boot) {
+        if (ctx.regFor === RegFor.boot) {
             return super.execute(ctx, next);
         }
 
         let moduleContainers: IContainer[] = [];
-        switch (ctx.regScope) {
+        switch (ctx.regFor) {
             case RegFor.root:
                 moduleContainers.push(pools.getRoot());
                 break;

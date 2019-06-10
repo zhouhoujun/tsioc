@@ -140,7 +140,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         await this.container.load(...application.getBootDeps());
         return await this.execLifeScope(
             (ctx) => {
-                ctx.regScope = RegFor.boot;
+                ctx.regFor = RegFor.boot;
                 if (isFunction(application.onContextInit)) {
                     application.onContextInit(ctx);
                 }

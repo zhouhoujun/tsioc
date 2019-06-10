@@ -112,5 +112,5 @@ export class AnnoationContext extends IocActionContext {
      * @type {boolean}
      * @memberof ModuleConfig
      */
-    regScope?: RegFor;
+    regFor?: RegFor;
 }
