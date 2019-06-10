@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/annotations",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "typescript class annotations is a solution for typescript class compile to es5 uglify.  for project used tsioc to es5 uglify",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
