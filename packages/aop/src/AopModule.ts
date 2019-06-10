@@ -1,7 +1,7 @@
 import {
     Inject, IocBeforeConstructorScope, IocAfterConstructorScope, IocContainerToken, IIocContainer, Autorun,
-    RuntimeMethodScope, DesignDecoratorRegisterer, BindProviderAction, RuntimeDecoratorRegisterer, RegisterSingletionAction,
-    DecoratorScopes, RuntimeLifeScope, ConstructorArgsAction, DesignAnnoationScope
+    RuntimeMethodScope, DesignDecoratorRegisterer, BindProviderAction, RuntimeDecoratorRegisterer,
+    RegisterSingletionAction, DecoratorScopes, RuntimeLifeScope, ConstructorArgsAction
 } from '@tsdi/ioc';
 import { Aspect } from './decorators/Aspect';
 import { Advisor } from './Advisor';
