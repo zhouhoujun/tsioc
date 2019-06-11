@@ -4,7 +4,6 @@
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "typings": "./lib/index.d.ts",
   "scripts": {
-    "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },

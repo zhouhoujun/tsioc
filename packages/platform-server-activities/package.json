@@ -3,7 +3,6 @@
   "version": "5.0.2",
   "description": "type task framework, base on AOP, Ioc container, via @tsdi",
   "scripts": {
-    "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
@@ -54,8 +53,7 @@
     "tsconfig-paths": "^3.7.0",
     "zone.js": "^0.8.27"
   },
-  "peerDependencies": {
-  },
+  "peerDependencies": {},
   "directories": {
     "lib": "lib",
     "test": "test"

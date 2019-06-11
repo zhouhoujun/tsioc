@@ -3,7 +3,6 @@
   "version": "5.0.2",
   "description": "DI Module manager, application components. base on AOP, Ioc container, via @tsdi/core .",
   "scripts": {
-    "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
@@ -41,8 +40,7 @@
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3"
   },
-  "peerDependencies": {
-  },
+  "peerDependencies": {},
   "directories": {
     "lib": "lib",
     "test": "test"

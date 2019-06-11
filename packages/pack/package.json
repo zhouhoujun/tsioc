@@ -3,7 +3,6 @@
   "version": "5.0.2",
   "description": "type task framework, base on AOP, Ioc container, via @tsdi. dev build pack activities.",
   "scripts": {
-    "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },

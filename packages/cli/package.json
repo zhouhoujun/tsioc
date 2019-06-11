@@ -8,7 +8,6 @@
     "tsdi": "./lib/cli.js"
   },
   "scripts": {
-    "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
