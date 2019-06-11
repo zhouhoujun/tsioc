@@ -15,7 +15,7 @@ export class ParseSelectorHandle extends ParsersHandle {
                     template: ctx.template
                 }, ...ctx.providers);
             } else {
-                ctx.value = await this.container.get(BuilderServiceToken).createBoot({
+                ctx.value = await this.container.get(BuilderServiceToken).buildBootTarget({
                     module: selector,
                     scope: ctx.scope,
                     template: ctx.template,

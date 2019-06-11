@@ -1,14 +1,14 @@
-import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction } from '@tsdi/ioc';
+import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, isBoolean } from '@tsdi/ioc';
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { IContainer, ContainerToken, isContainer } from '@tsdi/core';
-import { BuildHandles, BuildHandleRegisterer, RegFor } from '../core';
+import { BuildHandles, BuildHandleRegisterer, RegFor, ContainerPoolToken, DIModuleExports } from '../core';
 import { IBootApplication } from '../IBootApplication';
 import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
 import { ResolveMoudleScope, IModuleResolveOption, BuildContext } from './resovers';
 import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
 import { BootLifeScope } from './BootLifeScope';
 import { IRunnable } from '../runnable';
-import { IBuilderService, BuilderServiceToken } from './IBuilderService';
+import { IBuilderService, BuilderServiceToken, SubAppBootOption } from './IBuilderService';
 
 
 
@@ -69,7 +69,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     }
 
     /**
-     * create module.
+     * build module instace.
      *
      * @template T
      * @param {(Type<any> | BootOption | T)} target
@@ -77,12 +77,12 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @returns {Promise<any>}
      * @memberof BuilderService
      */
-    async create<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<any> {
+    async buildTarget<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<any> {
         let ctx = await this.build(target, ...args);
         return ctx.target;
     }
 
-    async createBoot<T>(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<T> {
+    async buildBootTarget<T>(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<T> {
         let ctx = await this.build(target, ...args);
         return ctx.getBootTarget() as T;
     }
@@ -109,7 +109,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @returns {Promise<IRunnable<T>>}
      * @memberof BuilderService
      */
-    async createRunnable<T>(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<IRunnable<T>> {
+    async buildRunnable<T>(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<IRunnable<T>> {
         let ctx = await this.execLifeScope(ctx => ctx.autorun = false, this.container.get(BuildHandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
         return ctx.runnable;
     }
@@ -127,6 +127,48 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         return this.execLifeScope(null, this.container.get(BuildHandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
     }
 
+
+    /**
+     * boot application.
+     *
+     * @template T
+     * @param {(Type<any> | BootOption | T)} target
+     * @param {(SubAppBootOption<T> | string)} [options]
+     * @param {...string[]} args
+     * @returns {Promise<T>}
+     * @memberof BuilderService
+     */
+    async boot<T extends BootContext>(target: Type<any> | BootOption | T, options?: SubAppBootOption<T> | string, ...args: string[]): Promise<T> {
+        let opt: SubAppBootOption<T>;
+        if (isString(options)) {
+            args.unshift(options);
+            opt = {};
+        } else {
+            opt = options;
+        }
+        let ctx = await this.execLifeScope(
+            ctx => {
+                ctx.setRaiseContainer(this.container.get(ContainerPoolToken).create());
+                if (opt.contextInit) {
+                    opt.contextInit(ctx as T);
+                }
+            },
+            this.container.get(BuildHandleRegisterer).get(BootLifeScope),
+            target,
+            ...args);
+
+        if (opt.regExports && ctx.moduleResolver) {
+            if (isFunction(opt.regExports)) {
+                opt.regExports(ctx, this.container);
+            } else if (isBoolean(opt.regExports)) {
+                let diexports = this.container.resolve(DIModuleExports);
+                diexports.use(ctx.moduleResolver);
+            }
+        }
+        return ctx;
+
+    }
+
     /**
      * boot application.
      *
@@ -136,7 +178,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    async boot(application: IBootApplication, ...args: string[]): Promise<BootContext> {
+    async bootApp(application: IBootApplication, ...args: string[]): Promise<BootContext> {
         await this.container.load(...application.getBootDeps());
         return await this.execLifeScope(
             (ctx) => {

@@ -101,7 +101,7 @@ export class TranslateAtrrHandle extends ParseHandle {
                         template: template
                     }, ...ctx.providers);
                 } else {
-                    ctx.value = await this.container.get(BuilderServiceToken).create({
+                    ctx.value = await this.container.get(BuilderServiceToken).buildTarget({
                         module: selector,
                         scope: ctx.scope,
                         template: template,

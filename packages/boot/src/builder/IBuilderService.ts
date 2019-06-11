@@ -4,6 +4,23 @@ import { IContainer } from '@tsdi/core';
 import { IBootApplication } from '../IBootApplication';
 import { IModuleResolveOption } from './resovers';
 import { IRunnable } from '../runnable';
+
+export interface SubAppBootOption<T extends BootContext> {
+    /**
+     * sub context init.
+     *
+     * @memberof SubAppBootOption
+     */
+    contextInit?: (ctx: T) => void;
+
+    /**
+     * reg exports.
+     *
+     * @memberof SubAppBootOption
+     */
+    regExports?: boolean | ((ctx: T, parent: IContainer) => void);
+}
+
 /**
  * service run runnable module.
  *
@@ -33,8 +50,8 @@ export interface IBuilderService extends IocCoreService {
      * @returns {Promise<any>}
      * @memberof BuilderService
      */
-    create<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<any>;
-    createBoot<T>(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<T>;
+    buildTarget<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<any>;
+    buildBootTarget<T>(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<T>;
     /**
      * build module.
      *
@@ -45,6 +62,7 @@ export interface IBuilderService extends IocCoreService {
      * @memberof BuilderService
      */
     build<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T>;
+
     /**
      * create runnable.
      *
@@ -54,7 +72,7 @@ export interface IBuilderService extends IocCoreService {
      * @returns {Promise<IRunnable<T>>}
      * @memberof BuilderService
      */
-    createRunnable<T>(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<IRunnable<T>>;
+    buildRunnable<T>(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<IRunnable<T>>;
     /**
      * run module.
      *
@@ -70,11 +88,22 @@ export interface IBuilderService extends IocCoreService {
      *
      * @template T
      * @param {(Type<any> | BootOption | T)} target
+     * @param {(SubAppBootOption<T> | string)} [options]
+     * @param {...string[]} args
+     * @returns {Promise<T>}
+     * @memberof IBuilderService
+     */
+    boot<T extends BootContext>(target: Type<any> | BootOption | T, options?: SubAppBootOption<T> | string, ...args: string[]): Promise<T>;
+    /**
+     * boot application.
+     *
+     * @template T
+     * @param {(Type<any> | BootOption | T)} target
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    boot(application: IBootApplication, ...args: string[]): Promise<BootContext>;
+    bootApp(application: IBootApplication, ...args: string[]): Promise<BootContext>;
 }
 
 
