@@ -14,11 +14,11 @@ export interface BootSubAppOption<T extends BootContext> {
     contextInit?: (ctx: T) => void;
 
     /**
-     * reg exports.
+     * custom reg current app exports to parent.
      *
      * @memberof SubAppBootOption
      */
-    regExports?: boolean | ((ctx: T, parent: IContainer) => void);
+    regExports?: (ctx: T, parent: IContainer) => void;
 }
 
 /**
@@ -97,12 +97,12 @@ export interface IBuilderService extends IocCoreService {
      *
      * @template T
      * @param {(Type<any> | BootOption | T)} target
-     * @param {(BootSubAppOption<T> | string)} [options]
+     * @param {((ctx: T) => void |BootSubAppOption<T> | string)} [options]
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof IBuilderService
      */
-    boot<T extends BootContext>(target: Type<any> | BootOption | T, options?: BootSubAppOption<T> | string, ...args: string[]): Promise<T>;
+    boot<T extends BootContext>(target: Type<any> | BootOption | T, options?: (ctx: T) => void | BootSubAppOption<T> | string, ...args: string[]): Promise<T>;
     /**
      * boot application.
      *

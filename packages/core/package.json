@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/core",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
     "reinstall": "npm cache clean && npm install",
@@ -34,7 +34,7 @@
   "dependencies": {
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3",
-    "@tsdi/ioc": "^5.0.2"
+    "@tsdi/ioc": "^5.0.3"
   },
   "directories": {
     "lib": "lib",

@@ -138,13 +138,15 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    async boot<T extends BootContext>(target: Type<any> | BootOption | T, options?: BootSubAppOption<T> | string, ...args: string[]): Promise<T> {
+    async boot<T extends BootContext>(target: Type<any> | BootOption | T, options?: (ctx: T) => void | BootSubAppOption<T> | string, ...args: string[]): Promise<T> {
         let opt: BootSubAppOption<T>;
-        if (isString(options)) {
+        if (isFunction(options)) {
+            opt = { contextInit: options };
+        } else if (isString(options)) {
             args.unshift(options);
             opt = {};
         } else {
-            opt = options;
+            opt = options || {};
         }
         let ctx = await this.execLifeScope(
             ctx => {
@@ -157,13 +159,8 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             target,
             ...args);
 
-        if (opt.regExports && ctx.moduleResolver) {
-            if (isFunction(opt.regExports)) {
-                opt.regExports(ctx, this.container);
-            } else if (isBoolean(opt.regExports)) {
-                let diexports = this.container.resolve(DIModuleExports);
-                diexports.use(ctx.moduleResolver);
-            }
+        if (isFunction(opt.regExports) && ctx.moduleResolver) {
+            opt.regExports(ctx, this.container);
         }
         return ctx;
 

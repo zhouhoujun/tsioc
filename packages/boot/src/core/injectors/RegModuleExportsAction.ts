@@ -6,7 +6,7 @@ import { RegFor } from '../modules';
 
 export class RegModuleExportsAction extends AnnoationAction {
     execute(ctx: AnnoationContext, next: () => void): void {
-        if (ctx.moduleResolver && ctx.regFor === RegFor.child) {
+        if (ctx.moduleResolver && (ctx.regFor === RegFor.boot || ctx.regFor === RegFor.child)) {
             let pool = this.container.get(ContainerPoolToken);
             let parent = pool.getParent(ctx.getRaiseContainer());
             if (parent) {

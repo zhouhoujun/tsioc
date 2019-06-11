@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/activities",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "description": "type task framework, base on AOP, Ioc container, via @tsdi",
   "scripts": {
     "reinstall": "npm cache clean && npm install",
@@ -30,12 +30,12 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme",
   "dependencies": {
-    "@tsdi/ioc": "^5.0.2",
-    "@tsdi/core": "^5.0.2",
-    "@tsdi/aop": "^5.0.2",
-    "@tsdi/boot": "^5.0.2",
-    "@tsdi/components": "^5.0.2",
-    "@tsdi/logs": "^5.0.2",
+    "@tsdi/ioc": "^5.0.3",
+    "@tsdi/core": "^5.0.3",
+    "@tsdi/aop": "^5.0.3",
+    "@tsdi/boot": "^5.0.3",
+    "@tsdi/components": "^5.0.3",
+    "@tsdi/logs": "^5.0.3",
     "reflect-metadata": "^0.1.12",
     "gulp-sourcemaps": "^2.1.1",
     "gulp-typescript": "^5.0.0",
